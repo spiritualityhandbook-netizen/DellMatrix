@@ -1,13 +1,17 @@
 # REFERENCE DUMP
 
-## Parked
-- Claw nickname lore
-- Consciousness / patent emotional narratives
-- English grammar encyclopedias, SMS acronyms, tongue twisters
-- Biomimicry article bulk (unmapped)
-- External “what to call you” essay filler beyond Language Architect / Formal Semanticist
-- DSPy/Instructor industry notes (context only)
-- Core lexicon name-clash snapshot (13/14) until full reconcile pass
+## This pass
+- Religion / senses / placebo / déjà vu lists
+- Car engine aside
+- Pisces note
+- Incomplete `🟡:🫥[Manny]>>>` fragment
+- World-job-replacement speculation
+- Book information (Architect: handle elsewhere)
 
-## Rule
-Dump = storage. Preform = keep-set. True Mandel = only declared by Architect.
+## Prior dump
+- English grammar bulk, SMS acronyms, tongue twisters
+- Biomimicry article bulk
+- Claw lore, consciousness vents
+- Unreconciled 400+ function expansions
+
+Dump ≠ True Mandel. Mine later only with DDECC + number confirm.

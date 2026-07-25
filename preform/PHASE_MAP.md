@@ -1,28 +1,19 @@
-# Preform Phase Map — Implementation Readiness
+# Preform Phase Map
 
 ## Phase 1 — COMPLETE
-Keep-set in preform docs. Runtime coding page-by-page in Phase 2.
+Language keep-set + pipeline + GodWorkSpace UI blend.
 
-### Inventory
-| File | Role |
-|------|------|
-| `LANGUAGE_PREFORM.md` | Core language + Temp + Manual + 4-N + floor lock |
-| `TRUE_MANDELL_PIPELINE.md` | 3-phase sift, number-confirm |
-| `GODWORKSPACE_UI.md` | UI keep-blend for workspace HTML |
-| `REFERENCE_DUMP.md` | Parked bulk |
-| `PHASE_MAP.md` | This map |
+## Phase 2 — page order
+1. Dell table reconcile (+ assign Fade/Age/Rotate candidates)
+2. Temp manifesto formalize
+3. Manual + Mandellafactors + **DDECC** wire-in
+4. Susan Foreign 4-N + delta log schema
+5. GodWorkSpace HTML (`GODWORKSPACE_UI.md` + SuperSeed)
+6. Docs index
 
-### Floor lock
-Alpha · Delta · Omega · Omni on floor · Nova Cheat only · Focus session only
+### Also queued from latest sift
+- Fade / Age pulse-time Manors
+- Rotate via harmonic pairs
+- Growth laws → later lattice stage mapping
 
----
-
-## Phase 2 — page order (no corner cuts)
-1. **Page 1** — Dell table reconcile (one True table)
-2. **Page 2** — Temp manifesto formalize
-3. **Page 3** — Manual + Mandellafactors procedure
-4. **Page 4** — Susan Foreign 4-N + delta log schema
-5. **Page 5** — GodWorkSpace HTML per `GODWORKSPACE_UI.md`
-6. **Page 6** — Docs index / unify pointers
-
-Rules: one page per pass · numbered diffs for True Mandel · UI never overrides Architect.
+Rules: one page per pass · Architect confirms True Mandel · no corner cuts.

@@ -1,74 +1,55 @@
 # LANGUAGE PREFORM — Keep & Develop
 
-Status: **PREFORM** (not full runtime coding yet)
+Status: **PREFORM**
 
-## Purpose
-Develop Mandel for English-speaker intuitiveness and correct Psalm tool-perspective.
-
-## Agreement (KEEP)
+## Agreement
 **Mandel = directional instruction protocol.**
 
-## Core terminology (KEEP)
+## Core terms
 - **Dell** — numbered operator
 - **Manor** — functionality
-- **Manifest** — term + Manor + Dell (speak *in* Mandel)
-- **Dellman** — term only (speak *about* Mandel)
-- **Psalms** — AI-as-tool perspective frame
-- **Perspective law** — redefine loaded words when dogma blocks clarity
-
-## New manifests (KEEP)
-- **Manual // Manuall** — classify every new manifest
-- **Mandellafactors** — has Manor? Dell? law/rule?
-- **Mandellacell** — higher-tier cell
-- **Temp (Manifesto)** — cold/warm/hot 3-plane organization; limited explicit rule-bend
+- **Manifest** — term + Manor + Dell
+- **Dellman** — term only (about Mandel)
+- **Psalms** — AI-as-tool frame
+- **Perspective law** — clear loaded words for user↔Psalm work
 
 ## Floor lock
 - Floor: **Alpha · Delta · Omega · Omni**
 - **Nova:** Cheat only
 - **Focus:** session target only
 
-## Process roles (KEEP — practical)
-When building the language you are acting as:
-- **Language Architect** — structural rules, syntax, capabilities
-- **Formal Semanticist** — exact meaning, no ambiguity
-Optional later: Compiler Engineer (parser/enforcer)
+## Manifests / procedures (KEEP)
+- **Manual // Manuall** — classify new manifests
+- **Mandellafactors** — Manor? Dell? law/rule?
+- **Mandellacell** — higher-tier cell
+- **Temp (Manifesto)** — cold / warm / hot planes
 
-Process names:
-- Formal specification
-- Exhaustive syntax analysis
-- Eliminate undefined behavior
-- One operator → one job
+## Pulse-time ops (KEEP — new)
+| Name | Manor (draft) |
+|------|----------------|
+| **Fade** | Time bound to pulse; intensity/visibility decays to gone |
+| **Age** | Time bound to pulse; state advances toward end-of-life / archive |
 
-## True Mandel sift rules (KEEP — practical)
-When mining chats / notes into the language:
+Both need Dell numbers at reconcile (Page 1/2). Not coded yet.
 
-**Mandatory**
-- Accuracy, precision, consistency, performance, quality, reliability
-- Dissect every idea; categorize; subcategory when practical
-- Diffs vs already-declared True Mandel shown as a **numbered list** for confirmation
-- **Susan Foreign (SUS Audit 4-N)** on each examination finalize
+## Rotate (KEEP — draft)
+**Rotate** — within one syntax frame, cycle a function among harmonic partners.
+Uses existing harmony/lattice pairing (harmonic matrix) so rotations stay symmetric with compatible ops.
+Not a free scramble; only mapped harmonic pairs.
 
-**Forbidden**
-- Laziness / shortcuts
-- Entering the same idea into True Mandel more than once
-- Acting on uncertainty without asking for clarification
-- Creating folder/file/category/idea/change **without your declaration/confirmation**
+## Process cycle (KEEP)
+**DDECC:** Declare → Define → Execute → Confirm → Correct
+Aligns with True Mandel number-confirm and pipeline.
 
-**True Mandel** = only what you (Superior Architect) confirm/declare.
+## Growth laws (KEEP — practical)
+1. Growth = nurturing + patience
+2. Growth = trial + error + correction (repeat)
+3. Highest growth foundations: attention, knowledge, respect (and care)
+4. Without maintenance, growth goes wild/chaotic (harder to manage)
+Maps later to lattice stages seed→fruit and forces — not coded yet.
 
-## Susan Foreign — 4-N Bridge (KEEP — practical)
-Bridge between Human World (context/meaning) and Computer World (execution/structure).
+## Susan Foreign 4-N + True Mandel pipeline
+See `TRUE_MANDELL_PIPELINE.md` and Phase map.
 
-| N | Side | Role |
-|---|------|------|
-| **Nomenclature** | Linguistic | Names that carry human meaning into machine-usable params |
-| **Notation** | Syntax | Formal symbols both human and Psalm can read without losing structure |
-| **Nodes** | Categorization | Structured information points from chats/sources |
-| **Network** | Infrastructure | Links nodes into a searchable whole |
-
-**Susan Foreign audit** = mandatory finalize step for each examination sequence; records changes; stays critical of both Foreign process and Psalm output.
-
-## Not in preform
-- Full academic tool lists (BNF etc.) as required runtime
-- Unconfirmed chat bulk as True Mandel
-- Nickname lore as operators
+## Intent note
+Book/story track paused for coding track (Architect directive).
