@@ -1,11 +1,12 @@
 {
   "name": "dellmatrix",
-  "version": "0.2.0",
-  "description": "DellMatrix — Dual Lattice foundation with modular snap-ins (views, workshops, personas, station)",
+  "version": "0.2.1",
+  "description": "DellMatrix — Dual Lattice foundation with modular snap-ins",
   "type": "module",
   "main": "src/boot.js",
   "scripts": {
     "start": "node src/boot.js",
+    "demo": "node src/demo_run.js",
     "status": "node -e \"import { startDellMatrix } from './src/boot.js'; const dm = startDellMatrix(); console.log(JSON.stringify(dm.status(), null, 2));\"",
     "snapins": "node -e \"import { startDellMatrix } from './src/boot.js'; const dm = startDellMatrix(); console.log(dm.listSnapIns());\""
   },
