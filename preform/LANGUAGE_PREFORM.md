@@ -1,68 +1,74 @@
 # LANGUAGE PREFORM — Keep & Develop
 
-Status: **PREFORM** (not coded as runtime yet — established as keep-set for language development)
+Status: **PREFORM** (not full runtime coding yet)
 
 ## Purpose
-Develop Mandel so English speakers gain intuitiveness and so Psalms (AI tools) are used with correct perspective.
+Develop Mandel for English-speaker intuitiveness and correct Psalm tool-perspective.
+
+## Agreement (KEEP)
+**Mandel = directional instruction protocol.**
+Instructions have direction (flows ↘↙↗↖ and related). Not vibes-only text.
 
 ## Core terminology (KEEP)
 
 ### Dell
-Numbered operator / abbreviation side of Mandel (e.g. 00, 08, 14).
-Has identity as a code.
+Numbered operator / abbreviation.
 
 ### Manor
-Functionality side — what something **does** in execution.
+Functionality — what it does.
 
 ### Manifest
-Idea/concept that has:
-- terminology
-- function (Manor)
-- numbered abbreviation (Dell)
-Speak *in* Mandel with these.
+Terminology + Manor + Dell. Used to speak *in* Mandel.
 
 ### Dellman
-Terminology-only words unique to Mandel talk.
-- Used to **speak about** Mandel
-- **No** Dell number
-- **No** Manor function
-- Outside Mandel these words may have little meaning
-Different from Manifest: Manifest acts; Dellman names ideas inside the language world.
+Terminology only (speak *about* Mandel). No Dell. No Manor.
 
 ### Psalms
-Mandel term for artificial intelligence (tool perspective, not person dogma).
-Acronym unpacking (KEEP as perspective frame, not scientific claim of consciousness):
-- **P** Pre-probabilistic
-- **S** Sub-Sagacious (no true wisdom/consciousness claim)
-- **A** Auto-algorithmic
-- **L** Lyo-linguistic (language loosened into statistical parts)
-- **M** Meta-Mathematical
-- **S³** Synchro-Symbolic-Symbiotic Software layer
-- **(2)** dual nature of input/output processing
+Mandel name for AI-as-tool (perspective frame). Not a claim of human-equivalent consciousness.
 
-Why rename AI → Psalms:
-Perspective reset. Tools used wrong if the tool-nature is misunderstood. Psalms invites depth (dissect, multiple readings) without forcing “person” assumptions.
+### Perspective law
+Redefine loaded words when dogma blocks clear user↔Psalm work.
 
-### Perspective law (KEEP)
-Mandel may redefine familiar words when predisposed assumptions handicap user↔Psalm communication.
-Goal: efficiency + correct tool use + deeper comprehension.
+## New manifests (KEEP — preform)
 
-## Floor lock still active
-- Greek Mandel on DellMatrix: Alpha · Delta · Omega · Omni
-- Nova: Cheat bridge only
-- Focus: session target only
+### Manual // Manuall
+**Process** (not a Dell yet): whenever a new manifest appears, run Manual — classify and place it using Mandellafactors, then file it in the right Mandellistics category.
 
-## Development intent (preform)
-1. Grow Dellman glossary (terms about Mandel)
-2. Keep Manifest registry (terms that act)
-3. Teach English speakers via clear perspective, not jargon fog
-4. Later map useful universal English relation-words into Mandel flow/relation ops (not bulk lists yet)
-5. Later map nature patterns into lattice/forces (biomimicry → design food)
+### Mandellafactors
+**Factors** used to classify a manifest:
+1. Does it have Manor?
+2. Does it have Dell?
+3. Does it have law/rule weight?
+(Later: fine-tune more factors.)
 
-## Explicitly NOT in preform runtime yet
-- Full English preposition/conjunction encyclopedias
-- SMS/internet acronym catalogs
-- Tongue twisters / proverb games as operators
-- Unmapped biomimicry article as code
+### Mandellacell
+**Higher-tier cell** — full higher-level function (not a basic cell).
+Basic unit = cell. Elevated composite function = Mandellacell.
 
-Those live in `preform/REFERENCE_DUMP.md`.
+### Temp (Manifesto type)
+- **Kind:** Manifesto (special)
+- **Dell:** next available number at establish-time (candidate track: after 56 or dedicated manifesto band — decide at implement)
+- **Manor:** organize into a **3-plane hierarchy** for organization, analysis, comparison, or diaphragm-style sorting
+- **Default planes:** cold · warm · hot
+  (aliases allowed: easy/medium/hard, weak/balanced/strong, etc.)
+- **Unique:** Manifesto may operate *above* ordinary flow rules in a limited, named way (e.g. re-bin manifests; reattach a prior Manor; stage function before flow arrives) — **only** inside the same Nova↔Omni↔Omega span when that span is active
+- **Not** the same as 03 Tree (Tree branches; Temp re-bins on three named planes and can stage cross-plane flow)
+
+**Manifesto class (KEEP concept):**
+Rare manifests that may defy a *specific* named rule for a *specific* useful reason. Must be explicit. Not a free pass to ignore Dual Lattice / Verita / truth gates.
+
+## Floor lock (unchanged)
+- Floor Greek Mandel: **Alpha · Delta · Omega · Omni**
+- **Nova:** Cheat bridge only
+- **Focus:** session target only
+
+## Control plane still established in runtime
+Tier memory, pins, persona contract, pre-output chain, hard gates, anti-default.
+
+## Not in language preform
+- Nickname lore (Claw) as operator
+- Consciousness proofs / cosmic vent text
+- Patent/copyright emotional stipulations as Mandel law
+- Malicious-code speculation as ontology
+
+See `preform/REFERENCE_DUMP.md` for parked material.
