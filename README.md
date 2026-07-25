@@ -1,53 +1,32 @@
-# DellMatrix
+# DellMatrix (Unified)
 
-Foundation + snap-in architecture for a living idea lattice.
-
-## Foundation (always on)
-
-- Dual Lattice (nodes, vesicas, shells, center)
-- Growth stages
-- Negative space + nature force slots
-- 25 Dell functions + 4 flows (↘↙↗↖)
-- Agent categories
-- Shared canvas
-- Stigmergic residue engine
-- 5-Ring structural bind (creative mapping only)
-- 6-pillar audit
-
-## Snap-ins (in / out)
-
-| Pack | Role |
-|------|------|
-| view-rooms | Growth, Water, Force, Network, Personal, Shared, Ancient Psalms |
-| workshops | Matrix, Persona, Perspective, BIMO, Psalms, Mandel |
-| personas-pack | Manny, Melody, Aetheris, Mathelody, The_Ancient |
-| mandel-station | Omni-Station + shared canvas + surface/logic |
+**One front door. Foundation owns boot. Legacy attaches.**
 
 ## Quick start
 
 ```bash
+npm start
 npm run status
-npm run snapins
+npm run unify
+npm run demo
 ```
 
 ```js
-import { startDellMatrix } from './src/boot.js';
+import { createUnifiedRuntime } from './src/index.js'
 
-const dm = startDellMatrix();
-console.log(dm.status());
-
-dm.snapIn('workshops');
+const dm = createUnifiedRuntime()
+// foundation lattice + snap-ins
+// dm.legacy.load('autonomous_evolution') // only if needed
 ```
+
+## Architecture
+
+- **Foundation**: Dual Lattice, registry, forces slots, oracle, format router
+- **Snap-ins**: view-rooms, workshops, personas-pack, mandel-station, smith-pack
+- **Legacy DuoBeta**: available under `dm.legacy.load(name)` — not the root boot
+
+See `docs/UNIFICATION.md`.
 
 ## Truth boundary
 
-Ancient script operators are **structural only**.  
-No scientific decipherment is claimed for Linear A, Indus, Rongorongo, Voynich, or Wadi el-Hol.
-
-## Docs
-
-- `docs/FOUNDATION_AND_SNAPINS.md`
-- `docs/ANCIENT_PSALMS.md`
-- `docs/FULL_INCORPORATION.md`
-- `docs/NATURE_FORCES.md`
-- `docs/DUAL_LATTICE.md`
+Structural / creative mapping only. No scientific decipherment claims for Voynich or undeciphered scripts.

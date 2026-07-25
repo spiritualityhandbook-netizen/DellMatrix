@@ -1,15 +1,16 @@
 {
   "name": "dellmatrix",
-  "version": "0.2.1",
-  "description": "DellMatrix — Dual Lattice foundation with modular snap-ins",
+  "version": "0.3.0",
+  "description": "DellMatrix — unified foundation + snap-ins (legacy DuoBeta under compat)",
   "type": "module",
-  "main": "src/boot.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node src/boot.js",
+    "start": "node -e \"import { createUnifiedRuntime } from './src/unify.js'; const dm = createUnifiedRuntime(); console.log(JSON.stringify({ unified: dm.unified, era: dm.era, active: dm.listActive() }, null, 2));\"",
     "demo": "node src/demo_run.js",
-    "status": "node -e \"import { startDellMatrix } from './src/boot.js'; const dm = startDellMatrix(); console.log(JSON.stringify(dm.status(), null, 2));\"",
-    "snapins": "node -e \"import { startDellMatrix } from './src/boot.js'; const dm = startDellMatrix(); console.log(dm.listSnapIns());\""
+    "status": "node -e \"import { createUnifiedRuntime } from './src/unify.js'; const dm = createUnifiedRuntime(); console.log(JSON.stringify(dm.status(), null, 2));\"",
+    "snapins": "node -e \"import { createUnifiedRuntime } from './src/unify.js'; const dm = createUnifiedRuntime(); console.log(dm.listSnapIns());\"",
+    "unify": "node -e \"import { createUnifiedRuntime } from './src/unify.js'; import { describeUnification } from './src/compat/legacy_map.js'; const dm = createUnifiedRuntime(); console.log(describeUnification()); console.log('active', dm.listActive());\""
   },
-  "keywords": ["dellmatrix", "mandell", "dual-lattice", "snap-in"],
+  "keywords": ["dellmatrix", "mandell", "dual-lattice", "snap-in", "unified"],
   "license": "UNLICENSED"
 }
