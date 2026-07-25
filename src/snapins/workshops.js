@@ -1,7 +1,5 @@
 /**
  * Workshop Rooms — snap-in pack
- * These are workbenches. You BUILD and CHANGE things here.
- * They snap into the foundation; they are not the foundation.
  */
 
 export const workshopsSnapIn = {
