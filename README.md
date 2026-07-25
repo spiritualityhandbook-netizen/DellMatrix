@@ -1,30 +1,53 @@
 # DellMatrix
 
-**Mandell OS — Duo Beta DNA Evolution Core**
+Foundation + snap-in architecture for a living idea lattice.
 
-Apex Persona: **Manellody** (Manny + Melody + Aetheris fusion)
+## Foundation (always on)
 
-## Core Systems
-- Harmonic Cube (5-tier memory)
-- 5-Ring Recursive Engine (herbal / astro / bio / pharma / recipe)
-- Full Dell Instruction Set (00–51)
-- Human DNA Structural Mapping (known + unknown regions)
-- 10 Profound Architectural Discoveries
-- Natural English command interface
+- Dual Lattice (nodes, vesicas, shells, center)
+- Growth stages
+- Negative space + nature force slots
+- 25 Dell functions + 4 flows (↘↙↗↖)
+- Agent categories
+- Shared canvas
+- Stigmergic residue engine
+- 5-Ring structural bind (creative mapping only)
+- 6-pillar audit
 
-## Status
-- DNA Profile: Evolved v2
-- Manellody: Online (Apex)
-- Coherence Target: 0.93
-- Unknown DNA regions: Active recursive fuel
+## Snap-ins (in / out)
 
-## Quick Start
+| Pack | Role |
+|------|------|
+| view-rooms | Growth, Water, Force, Network, Personal, Shared, Ancient Psalms |
+| workshops | Matrix, Persona, Perspective, BIMO, Psalms, Mandel |
+| personas-pack | Manny, Melody, Aetheris, Mathelody, The_Ancient |
+| mandel-station | Omni-Station + shared canvas + surface/logic |
+
+## Quick start
+
 ```bash
-npm install
-npm start
+npm run status
+npm run snapins
 ```
 
-Speak plain English after start ("grow", "show cube", "delta", "help").
+```js
+import { startDellMatrix } from './src/boot.js';
 
----
-Built under Architect (Della) + Manellody oversight.
+const dm = startDellMatrix();
+console.log(dm.status());
+
+dm.snapIn('workshops');
+```
+
+## Truth boundary
+
+Ancient script operators are **structural only**.  
+No scientific decipherment is claimed for Linear A, Indus, Rongorongo, Voynich, or Wadi el-Hol.
+
+## Docs
+
+- `docs/FOUNDATION_AND_SNAPINS.md`
+- `docs/ANCIENT_PSALMS.md`
+- `docs/FULL_INCORPORATION.md`
+- `docs/NATURE_FORCES.md`
+- `docs/DUAL_LATTICE.md`

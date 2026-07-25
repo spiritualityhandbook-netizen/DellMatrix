@@ -1,19 +1,14 @@
 {
   "name": "dellmatrix",
   "version": "0.2.0",
+  "description": "DellMatrix — Dual Lattice foundation with modular snap-ins (views, workshops, personas, station)",
   "type": "module",
-  "description": "DellMatrix - Full DuoBeta Mandell OS imported + DNA Evolution Core",
+  "main": "src/boot.js",
   "scripts": {
-    "test": "node --test",
-    "prepare:workspace": "node ./src/bootstrap_project.js",
-    "execute:preform": "node ./src/execute_preform.js",
-    "execute:autonomous": "node ./src/execute_preform.js --autonomous",
-    "visual:dashboard": "node ./src/visual/display_dashboard.js",
-    "start": "node ./src/execute_preform.js",
-    "grow": "node ./src/autonomous_evolution.js",
-    "delta": "node ./src/master_delta.js"
+    "start": "node src/boot.js",
+    "status": "node -e \"import { startDellMatrix } from './src/boot.js'; const dm = startDellMatrix(); console.log(JSON.stringify(dm.status(), null, 2));\"",
+    "snapins": "node -e \"import { startDellMatrix } from './src/boot.js'; const dm = startDellMatrix(); console.log(dm.listSnapIns());\""
   },
-  "dependencies": {
-    "pdf-parse": "^2.4.5"
-  }
+  "keywords": ["dellmatrix", "mandell", "dual-lattice", "snap-in"],
+  "license": "UNLICENSED"
 }
