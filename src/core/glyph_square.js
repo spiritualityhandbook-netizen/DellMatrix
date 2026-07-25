@@ -1,8 +1,11 @@
 /**
- * Glyph squaring — coherence growth
- * C_{n+1} = C_n² + Δ
- * Squaring a glyph-state multiplies internal structure by itself:
- * features reinforce, noise drops, influence rises.
+ * Glyph orbit / coherence growth — evolved formula
+ *
+ *   C_{n+1} = C_n² + Δ_known + Δ_unknown
+ *
+ * Squaring reinforces existing structure (coherence growth).
+ * Δ_known  = measured / already-mapped contribution
+ * Δ_unknown = residual / undiscovered contribution (drives exploration)
  */
 
 export function squareGlyphState(state = {}) {
@@ -13,34 +16,60 @@ export function squareGlyphState(state = {}) {
     squared[k] = Number((n * n).toFixed(4));
   }
   const coherenceIn = Number(state.coherence) || 0.5;
-  const coherenceOut = Math.min(1, Number((coherenceIn * coherenceIn + 0.05).toFixed(4)));
+  // pure square term on coherence (before deltas)
+  const coherenceSquared = Number((coherenceIn * coherenceIn).toFixed(4));
   return {
     ...state,
     features: squared,
-    coherence: coherenceOut,
+    coherence: coherenceSquared,
     influence: Number(((state.influence || 1) * (state.influence || 1)).toFixed(4)),
     squared: true
   };
 }
 
-export function applyDelta(state, delta = {}) {
+/**
+ * Apply known + unknown deltas after squaring
+ * deltaKnown / deltaUnknown may include { features, coherence, influence }
+ */
+export function applyKnownUnknown(state, deltaKnown = {}, deltaUnknown = {}) {
   const features = { ...(state.features || {}) };
-  for (const [k, v] of Object.entries(delta.features || {})) {
+
+  for (const [k, v] of Object.entries(deltaKnown.features || {})) {
     features[k] = Number(((Number(features[k]) || 0) + Number(v)).toFixed(4));
   }
-  const coherence = Math.min(
-    1,
-    Math.max(0, (Number(state.coherence) || 0) + (Number(delta.coherence) || 0))
-  );
+  for (const [k, v] of Object.entries(deltaUnknown.features || {})) {
+    features[k] = Number(((Number(features[k]) || 0) + Number(v)).toFixed(4));
+  }
+
+  const c0 = Number(state.coherence) || 0;
+  const cKnown = Number(deltaKnown.coherence) || 0;
+  const cUnknown = Number(deltaUnknown.coherence) || 0;
+  const coherence = Math.min(1, Math.max(0, Number((c0 + cKnown + cUnknown).toFixed(4))));
+
+  const i0 = Number(state.influence) || 1;
+  const iKnown = Number(deltaKnown.influence) || 0;
+  const iUnknown = Number(deltaUnknown.influence) || 0;
+  const influence = Number((i0 + iKnown + iUnknown).toFixed(4));
+
   return {
     ...state,
     features,
     coherence,
-    deltaApplied: true
+    influence,
+    deltaKnown: true,
+    deltaUnknown: true
   };
 }
 
-/** One orbit step: square then add delta */
-export function orbitStep(state, delta = {}) {
-  return applyDelta(squareGlyphState(state), delta);
+/**
+ * One full orbit step:
+ *   C_{n+1} = C_n² + Δ_known + Δ_unknown
+ */
+export function orbitStep(state, deltaKnown = {}, deltaUnknown = {}) {
+  const squared = squareGlyphState(state);
+  return applyKnownUnknown(squared, deltaKnown, deltaUnknown);
+}
+
+export function formulaLabel() {
+  return 'C_{n+1} = C_n^2 + Δ_known + Δ_unknown';
 }
