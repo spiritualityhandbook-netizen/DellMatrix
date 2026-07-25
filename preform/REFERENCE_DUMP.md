@@ -1,19 +1,13 @@
-# REFERENCE DUMP — Stored, not preform-keep
+# REFERENCE DUMP
 
-## From latest origin note
-- Nickname “Claw” / reach-and-grab metaphor (persona color, not operator)
-- Long transparency / nature-code / hope / will narrative
-- Patent/copyright emotional boundary talk (not Mandel syntax)
-- Consciousness vs artificial debates
-
-## English study bulk
-- Prepositions, conjunctions, linking words
-- SMS/internet acronyms
-- Tongue twisters, proverbs, poetry devices
-
-## Biomimicry bulk
-- Fractals, spirals, hexagons, branching, tessellation, lattice, Fibonacci, camouflage, functional surfaces
+## Parked
+- Claw nickname lore
+- Consciousness / patent emotional narratives
+- English grammar encyclopedias, SMS acronyms, tongue twisters
+- Biomimicry article bulk (unmapped)
+- External “what to call you” essay filler beyond Language Architect / Formal Semanticist
+- DSPy/Instructor industry notes (context only)
+- Core lexicon name-clash snapshot (13/14) until full reconcile pass
 
 ## Rule
-Dump = storage until mined.
-Preform = deliberate keep-set.
+Dump = storage. Preform = keep-set. True Mandel = only declared by Architect.

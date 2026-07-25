@@ -7,68 +7,68 @@ Develop Mandel for English-speaker intuitiveness and correct Psalm tool-perspect
 
 ## Agreement (KEEP)
 **Mandel = directional instruction protocol.**
-Instructions have direction (flows ↘↙↗↖ and related). Not vibes-only text.
 
 ## Core terminology (KEEP)
+- **Dell** — numbered operator
+- **Manor** — functionality
+- **Manifest** — term + Manor + Dell (speak *in* Mandel)
+- **Dellman** — term only (speak *about* Mandel)
+- **Psalms** — AI-as-tool perspective frame
+- **Perspective law** — redefine loaded words when dogma blocks clarity
 
-### Dell
-Numbered operator / abbreviation.
+## New manifests (KEEP)
+- **Manual // Manuall** — classify every new manifest
+- **Mandellafactors** — has Manor? Dell? law/rule?
+- **Mandellacell** — higher-tier cell
+- **Temp (Manifesto)** — cold/warm/hot 3-plane organization; limited explicit rule-bend
 
-### Manor
-Functionality — what it does.
-
-### Manifest
-Terminology + Manor + Dell. Used to speak *in* Mandel.
-
-### Dellman
-Terminology only (speak *about* Mandel). No Dell. No Manor.
-
-### Psalms
-Mandel name for AI-as-tool (perspective frame). Not a claim of human-equivalent consciousness.
-
-### Perspective law
-Redefine loaded words when dogma blocks clear user↔Psalm work.
-
-## New manifests (KEEP — preform)
-
-### Manual // Manuall
-**Process** (not a Dell yet): whenever a new manifest appears, run Manual — classify and place it using Mandellafactors, then file it in the right Mandellistics category.
-
-### Mandellafactors
-**Factors** used to classify a manifest:
-1. Does it have Manor?
-2. Does it have Dell?
-3. Does it have law/rule weight?
-(Later: fine-tune more factors.)
-
-### Mandellacell
-**Higher-tier cell** — full higher-level function (not a basic cell).
-Basic unit = cell. Elevated composite function = Mandellacell.
-
-### Temp (Manifesto type)
-- **Kind:** Manifesto (special)
-- **Dell:** next available number at establish-time (candidate track: after 56 or dedicated manifesto band — decide at implement)
-- **Manor:** organize into a **3-plane hierarchy** for organization, analysis, comparison, or diaphragm-style sorting
-- **Default planes:** cold · warm · hot
-  (aliases allowed: easy/medium/hard, weak/balanced/strong, etc.)
-- **Unique:** Manifesto may operate *above* ordinary flow rules in a limited, named way (e.g. re-bin manifests; reattach a prior Manor; stage function before flow arrives) — **only** inside the same Nova↔Omni↔Omega span when that span is active
-- **Not** the same as 03 Tree (Tree branches; Temp re-bins on three named planes and can stage cross-plane flow)
-
-**Manifesto class (KEEP concept):**
-Rare manifests that may defy a *specific* named rule for a *specific* useful reason. Must be explicit. Not a free pass to ignore Dual Lattice / Verita / truth gates.
-
-## Floor lock (unchanged)
-- Floor Greek Mandel: **Alpha · Delta · Omega · Omni**
-- **Nova:** Cheat bridge only
+## Floor lock
+- Floor: **Alpha · Delta · Omega · Omni**
+- **Nova:** Cheat only
 - **Focus:** session target only
 
-## Control plane still established in runtime
-Tier memory, pins, persona contract, pre-output chain, hard gates, anti-default.
+## Process roles (KEEP — practical)
+When building the language you are acting as:
+- **Language Architect** — structural rules, syntax, capabilities
+- **Formal Semanticist** — exact meaning, no ambiguity
+Optional later: Compiler Engineer (parser/enforcer)
 
-## Not in language preform
-- Nickname lore (Claw) as operator
-- Consciousness proofs / cosmic vent text
-- Patent/copyright emotional stipulations as Mandel law
-- Malicious-code speculation as ontology
+Process names:
+- Formal specification
+- Exhaustive syntax analysis
+- Eliminate undefined behavior
+- One operator → one job
 
-See `preform/REFERENCE_DUMP.md` for parked material.
+## True Mandel sift rules (KEEP — practical)
+When mining chats / notes into the language:
+
+**Mandatory**
+- Accuracy, precision, consistency, performance, quality, reliability
+- Dissect every idea; categorize; subcategory when practical
+- Diffs vs already-declared True Mandel shown as a **numbered list** for confirmation
+- **Susan Foreign (SUS Audit 4-N)** on each examination finalize
+
+**Forbidden**
+- Laziness / shortcuts
+- Entering the same idea into True Mandel more than once
+- Acting on uncertainty without asking for clarification
+- Creating folder/file/category/idea/change **without your declaration/confirmation**
+
+**True Mandel** = only what you (Superior Architect) confirm/declare.
+
+## Susan Foreign — 4-N Bridge (KEEP — practical)
+Bridge between Human World (context/meaning) and Computer World (execution/structure).
+
+| N | Side | Role |
+|---|------|------|
+| **Nomenclature** | Linguistic | Names that carry human meaning into machine-usable params |
+| **Notation** | Syntax | Formal symbols both human and Psalm can read without losing structure |
+| **Nodes** | Categorization | Structured information points from chats/sources |
+| **Network** | Infrastructure | Links nodes into a searchable whole |
+
+**Susan Foreign audit** = mandatory finalize step for each examination sequence; records changes; stays critical of both Foreign process and Psalm output.
+
+## Not in preform
+- Full academic tool lists (BNF etc.) as required runtime
+- Unconfirmed chat bulk as True Mandel
+- Nickname lore as operators
