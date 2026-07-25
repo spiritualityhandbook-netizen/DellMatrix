@@ -1,27 +1,19 @@
 /**
  * Origin Control Primitives — ESTABLISHED
- * Source: early ABCC / directive-control origin form
- * Kept as real control plane primitives (not transformer-internals claims)
- *
- * 1. Tier Memory
- * 2. Persona Contract
- * 3. Pre-Output Chain
- * 4. Hard Gates
- * 5. Pin Set
- * 6. Anti-Default
+ * + Compendium V2 alignment hooks (RU-PAT refine stage = preOutputChain)
  */
 
 export const TIER = {
-  LAW: 0,      // permanent — never forget
-  SESSION: 1,  // current working context
-  TURN: 2      // this reply only
+  LAW: 0,
+  SESSION: 1,
+  TURN: 2
 };
 
 export class TierMemory {
   constructor() {
-    this.law = [];      // Tier 0
-    this.session = [];  // Tier 1
-    this.turn = [];     // Tier 2
+    this.law = [];
+    this.session = [];
+    this.turn = [];
   }
 
   add(tier, entry) {
@@ -44,7 +36,6 @@ export class TierMemory {
     };
   }
 
-  /** Priority read: law first, then session, then turn */
   stack() {
     return [
       ...this.law.map(x => ({ tier: 0, ...x })),
@@ -105,7 +96,6 @@ export class PinSet {
     return [...this.pins];
   }
 
-  /** Pins must remain visible in any control summary */
   enforceSummary() {
     return this.list().map(p => ({ pin: p, status: 'LOCKED' }));
   }
@@ -120,7 +110,9 @@ export const HARD_GATES = {
   COMPLETENESS: 'Answer ask; state done vs not done',
   ACHIEVABILITY: 'Prefer runnable/pastable/explicit placement',
   PERSONA_LIMITS: 'Persona limits are hard',
-  ANTI_DEFAULT: 'No generic autopilot AI voice'
+  ANTI_DEFAULT: 'No generic autopilot AI voice',
+  NO_ORPHANS: 'Every node must connect (Compendium Law 3)',
+  FLOOR_LOCK: 'Nova not on floor; Focus not floor operator'
 };
 
 export function runHardGates(ctx = {}) {
@@ -134,6 +126,8 @@ export function runHardGates(ctx = {}) {
   if (ctx.unachievable) fails.push('ACHIEVABILITY');
   if (ctx.personaLimitBroken) fails.push('PERSONA_LIMITS');
   if (ctx.genericAutopilot) fails.push('ANTI_DEFAULT');
+  if (ctx.hasOrphanNodes) fails.push('NO_ORPHANS');
+  if (ctx.novaOnFloor || ctx.focusAsFloorOp) fails.push('FLOOR_LOCK');
   return {
     ok: fails.length === 0,
     fails,
@@ -141,18 +135,10 @@ export function runHardGates(ctx = {}) {
   };
 }
 
-/**
- * Pre-Output Chain — Gate self-check before display
- * 1. pins present
- * 2. persona limits ok
- * 3. hard gates ok
- * 4. anti-default ok
- */
 export function preOutputChain({ pins, persona, gateCtx, antiDefault = true } = {}) {
   const steps = [];
-
   const pinList = pins instanceof PinSet ? pins.list() : (pins || []);
-  steps.push({ step: 'pins', ok: pinList.length >= 0, pins: pinList });
+  steps.push({ step: 'pins', ok: true, pins: pinList });
 
   let personaOk = true;
   if (persona instanceof PersonaContract && gateCtx && gateCtx.draftText) {
@@ -181,7 +167,9 @@ export class ControlPlane {
       'Mandel inside / English out',
       'Verita double-gate',
       'Orbit C^2 + Δ_known + Δ_unknown',
-      'No scientific decipherment claims'
+      'No scientific decipherment claims',
+      'Floor: Alpha Delta Omega Omni only',
+      'Nova via Cheat only'
     ]);
     this.persona = options.persona ? new PersonaContract(options.persona) : null;
     this.antiDefault = true;
