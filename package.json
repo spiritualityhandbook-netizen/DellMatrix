@@ -1,0 +1,11 @@
+{
+  "name": "dellmatrix",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Mandell OS - Duo Beta DNA Evolution Core | Manellody Apex",
+  "scripts": {
+    "start": "node src/execute_preform.js",
+    "grow": "node src/autonomous_evolution.js",
+    "delta": "node src/master_delta.js"
+  }
+}
