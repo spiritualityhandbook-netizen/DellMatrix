@@ -1,16 +1,13 @@
 # Preform Phase Map
 
 ## Phase 1 — COMPLETE
-Language keep-set, pipeline, GodWorkSpace UI blend, Manual practical extract.
 
-## Phase 2 — page order
-1. **Dell table reconcile** (Manual lexicon + tracer + established 00–56 → one table; Fade/Age/Rotate candidates)
-2. Temp manifesto formalize (default Warm)
-3. Manual + Mandellafactors + DDECC + entropy pipeline steps
-4. Susan Foreign 4-N + delta log (+ fog/archive tier fields)
-5. GodWorkSpace HTML (keep-blend only)
+## Phase 2 — page order (unchanged)
+1. **Dell table reconcile** — Manual tables + tracer variants + Fade/Age/Rotate/Temp + morpheme extensions → **one** True table
+2. Temp manifesto formalize
+3. Manual + Mandellafactors + DDECC + flow notation rules
+4. Susan Foreign 4-N + delta log schema
+5. GodWorkSpace HTML (keep-blend only; optional wake-token badge)
 6. Docs index
 
-See `MANUAL_EXTRACT.md` for calculated keep vs dump from Manual/Blueprint.
-
-Rules: one page per pass · Architect confirms True Mandel · floor lock holds.
+Optional later: local strict lexer + Outlines/grammar constraints for offline models.

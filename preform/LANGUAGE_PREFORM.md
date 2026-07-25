@@ -5,51 +5,45 @@ Status: **PREFORM**
 ## Agreement
 **Mandel = directional instruction protocol.**
 
-## Core terms
-- **Dell** — numbered operator
-- **Manor** — functionality
-- **Manifest** — term + Manor + Dell
-- **Dellman** — term only (about Mandel)
-- **Psalms** — AI-as-tool frame
-- **Perspective law** — clear loaded words for user↔Psalm work
-
 ## Floor lock
 - Floor: **Alpha · Delta · Omega · Omni**
 - **Nova:** Cheat only
 - **Focus:** session target only
 
-## Manifests / procedures (KEEP)
-- **Manual // Manuall** — classify new manifests
-- **Mandellafactors** — Manor? Dell? law/rule?
-- **Mandellacell** — higher-tier cell
-- **Temp (Manifesto)** — cold / warm / hot planes
+## Core terms
+Dell · Manor · Manifest · Dellman · Psalms · Perspective law
 
-## Pulse-time ops (KEEP — new)
-| Name | Manor (draft) |
-|------|----------------|
-| **Fade** | Time bound to pulse; intensity/visibility decays to gone |
-| **Age** | Time bound to pulse; state advances toward end-of-life / archive |
+## Manifests / procedures
+- Manual // Manuall
+- Mandellafactors
+- Mandellacell
+- **Temp** manifesto (C/W/H) — default Warm for coding
+- **DDECC:** Declare → Define → Execute → Confirm → Correct
+- **Fade** / **Age** (pulse-time) — Dell assign on reconcile
+- **Rotate** — harmonic-pair only
 
-Both need Dell numbers at reconcile (Page 1/2). Not coded yet.
+## Flow notation candidates (Page 1/3)
+From Architect improvisation — formalize later, not auto-True:
+- `>` sequence · `>>` blocking · `>>>` major jump
+- `:` FlowBy · `::` DeepFlowBy
+- Manifest flows into `[]` naturally; Dell needs `:`
+- Capitalize new English words in seeds; Latin uses `-`
+- `_` only when ambiguity requires
 
-## Rotate (KEEP — draft)
-**Rotate** — within one syntax frame, cycle a function among harmonic partners.
-Uses existing harmony/lattice pairing (harmonic matrix) so rotations stay symmetric with compatible ops.
-Not a free scramble; only mapped harmonic pairs.
+## Morpheme extensions (candidates)
+Prefixes: Com- Re- Pre- Trans- De- Omni- **Iso- Syn- Nud-**
+Roots: -man- -fac- -log- -mit- -spec- -voc-
+Suffixes: -dell -ure -ce -re **-ex -term**
 
-## Process cycle (KEEP)
-**DDECC:** Declare → Define → Execute → Confirm → Correct
-Aligns with True Mandel number-confirm and pipeline.
+## Wake token (optional local)
+`🟡[Mandel:Active]` as **strict-mode signal** for local/offline tools.
+Not forced on every Grok turn; document for GodWorkSpace / local runtime.
 
-## Growth laws (KEEP — practical)
-1. Growth = nurturing + patience
-2. Growth = trial + error + correction (repeat)
-3. Highest growth foundations: attention, knowledge, respect (and care)
-4. Without maintenance, growth goes wild/chaotic (harder to manage)
-Maps later to lattice stages seed→fruit and forces — not coded yet.
+## Growth laws
+nurture+patience · trial+error+correct · maintenance vs wild
 
-## Susan Foreign 4-N + True Mandel pipeline
-See `TRUE_MANDELL_PIPELINE.md` and Phase map.
+## Dual output
+Mandel structure inside · English display out
 
-## Intent note
-Book/story track paused for coding track (Architect directive).
+## Rejected from this paste
+Bible modernization · KODEX_PRIME mandatory override · English-as-disease · 100% zero-hallucination guarantee · Terminal↔Gemini BiSync · silent inject · 400+ functions as True without reconcile · Nyla companion as core OS · mystical observer=matrix as physics
