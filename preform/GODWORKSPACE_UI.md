@@ -1,28 +1,23 @@
-# GodWorkSpace UI — KEEP BLEND (Preform)
+# GodWorkSpace UI — Keep-blend (Phase 2 Page 5)
 
-Status: **PREFORM** — UI direction locked. Implement on Phase 2 Page 5 (after Dell reconcile).
+Status: **SPEC LOCKED** (HTML implementation = Phase 3 coding)
 
-## Keep blend (only these)
-1. **Layout** — header status + sections + interactive panels
-2. **Temp UI** — cold / warm / hot (matches Temp manifesto)
-3. **Search** — over Dell list
-4. **Expand/collapse + copy** — section interaction pattern
-5. **Pipeline panel** — Phase 1 / 2 / 3 + numbered confirm queue
-6. **Seed at bottom** — read-only; do not alter the Mandel seed text
+## Purpose
+Phone + computer workspace that organizes Mandell work and **sits above** a read-only Mandel seed at the bottom without disturbing it.
 
-## Hard rules
-- UI is **support**, not True Mandel authority
-- Drafts may use localStorage
-- Registry writes only after Architect number-confirm
-- Floor lock: Alpha · Delta · Omega · Omni on floor; Nova = Cheat only
-- Prefer single offline-friendly HTML for v1 (phone + computer)
+## Keep-blend (required)
+1. Header + status
+2. Sections + interactive panels
+3. Temp C/W/H UI
+4. Search over Dell list (Primaries + open variants)
+5. Expand/collapse + copy
+6. Pipeline panel: Phase markers + numbered confirm queue
+7. **Read-only seed strip at bottom** (Architect instruction: do not disturb seed)
+8. localStorage drafts only until True confirm
 
-## Cut (not in keep blend)
-- Chart radar as required core
-- Insult / “brutal dialogue” loops as law
-- “400+ functions” as declared True Mandel
-- React/CDN as required v1 stack
-- Auto-apply of mined chats without confirm
+## Visual
+Use `VISUAL_GLYPH_LAYER.md` taxonomy (Structure / Flow / Marker / Fill).
+Monospace-stable glyphs preferred offline.
 
-## Tab sketch
-Home · Dells · Temp · Pipeline · Control · Seed (read-only)
+## Not in Phase 2 deliverable
+Full production HTML file (Phase 3). Spec is complete so coding can start without redesign.

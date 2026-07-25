@@ -1,14 +1,25 @@
-# Preform Phase Map
+# Phase Map
 
-## Phase 1 — COMPLETE
+## Phase 1 — COMPLETE (preform foundations)
 
-## Phase 2
-1. **Dell table reconcile** — TRUE PRIMARIES (A) LOCKED · multi-matrix model recorded · variants open
-2. Temp manifesto formalize (26 already Primary)
-3. Manual + Mandellafactors + DDECC + flow notation + Leight/Loure
-4. Susan Foreign 4-N + delta log
-5. GodWorkSpace HTML + visual glyph layer
-6. Lattice architecture (16³ default, ECS, snap)
-7. Docs index
+## Phase 2 — COMPLETE (2026-07-25)
+1. Dell Primaries A TRUE + multi-matrix model
+2. Temp manifesto (26)
+3. Manual · Mandellafactors · DDECC · Flow notation · Leight/Loure
+4. Susan Foreign 4-N + delta log rules
+5. GodWorkSpace UI keep-blend spec
+6. Lattice architecture (16³, dual, snap, ECS map)
+7. Docs index → `preform/README.md`
 
-Next page when Architect says so.
+## Phase 3 — READY TO START (coding)
+MDL order:
+- Tokenizer · Parser · AST
+- Runtime engine
+- Memory tiers implementation
+- Optional local strict constraints
+- GodWorkSpace HTML build from keep-blend
+- Visual renderer
+- Persona snap-ins later (Manelody not forced in chat)
+- Final language spec
+
+No True registry writes without Architect number confirm.
