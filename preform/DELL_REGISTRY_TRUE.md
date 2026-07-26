@@ -1,18 +1,6 @@
-# Dell Registry — True Primaries (A)
+# Dell Registry — True Primaries + Extensions
 
-Status: **TRUE PRIMARIES LOCKED** (Architect confirm 2026-07-25)
-Variants B+ remain open and grow via Manual + Leight/Loure + confirm.
-
-## Multi-matrix law (Architect)
-- Start: **blank personal matrix** — user builds what resonates.
-- Canonical Primaries below = **default starter set** for the main/shared line, not a prison.
-- User may customize names/variants inside their matrix.
-- Optional: **connect** personal matrix ↔ main (shared growth).
-- Optional: **pull-only** from main (or any matrix) without contributing.
-- Peer matrices (friends, coworkers, projects) allowed; growth is contribution-driven.
-- Resonance links nodes across matrices when users choose to link.
-
-## Primaries (A) — locked
+## Primaries (A) 00–26 — LOCKED (unchanged)
 
 | Dell | Primary (A) | Core manor |
 |------|-------------|------------|
@@ -44,8 +32,64 @@ Variants B+ remain open and grow via Manual + Leight/Loure + confirm.
 | 25 | Pulse | Broadcast outward |
 | 26 | Temp | Cold / Warm / Hot planes |
 
-## Variants (B+)
-Empty by default. Example pattern for 04 Transform: B=Change C=Rotate D=Shift E=Twist — filled when Architect or growth path confirms.
+Variants B+ still open under each Primary.
 
-## Not yet numbered
-Fade · Age · Hypo · Hyper — assign as new Dell or as variants under existing Primaries when needed.
+## Multi-matrix law
+Blank personal · optional link to main · pull-only · peer matrices.
+
+---
+
+## Extensions 27+ (new — unused numbers)
+
+Status: **ADDED as True extension set** (Architect: useful ops on free IDs).  
+Do not renumber 00–26.
+
+| Dell | Primary (A) | Core manor |
+|------|-------------|------------|
+| 27 | Checkpoint | Snapshot state for later restore |
+| 28 | Rollback | Restore from checkpoint |
+| 29 | Compress | Shrink payload / token weight |
+| 30 | Expand | Reverse compress / unfold |
+| 31 | Simulate | Dry-run · no commit writes |
+| 32 | Pause | Halt pipeline until resume |
+| 33 | Resume | Continue from pause |
+| 34 | Stamp | Attach time / order mark |
+| 35 | Discover | Scan unknown structure |
+| 36 | Inject | Load external config/data into scope |
+| 37 | Stream | Chunked continuous out |
+| 38 | Distill | Summarize / reduce to core |
+| 39 | Schema | Validate structure (e.g. JSON shape) |
+| 40 | TokenCount | Measure token/char cost |
+| 41 | Sanitize | Strip injection / secret patterns |
+| 42 | Retry | Re-attempt failed step |
+| 43 | Fallback | Switch to safe local path on fail |
+| 44 | Bridge | Connect external model/tool (explicit) |
+| 45 | Translate | English ↔ Mandell assist |
+| 46 | Rank | Score / order matches |
+| 47 | Embed | Vectorize text for search |
+| 48 | Macro | Bind sequence under one shortcut |
+| 49 | Profile | Benchmark duration / cost |
+| 50 | Unify | Master run of a sealed pipeline |
+
+**Note:** 50 Manifest was historical name in some seeds; here **Unify** = run sealed pipeline. If you prefer `50 Manifest`, say so and we rename.
+
+Further IDs 51+ remain free for growth.
+
+---
+
+## Side class: Mod (not Dell numbers)
+
+Middleware flags · do not consume Dell IDs.
+
+| Mod | Manor |
+|-----|--------|
+| Mod[Throttle] | Rate-limit / delay steps |
+| Mod[Mock] | Local fake returns · no external call |
+| Mod[Cache] | Prefer stored answer |
+| FailSafe | On error → safe path (pairs with 43) |
+| Mod[Log] | Verbose transaction log |
+| Mod[Telemetry] | Emit metrics to dashboard |
+| Mod[Censor] | Redact secrets in Show |
+| Mod[Surgical] | Clamp to strict deterministic rules |
+
+Syntax candidate: `Mod[Name]` beside a Dell chain · parser type MODIFIER (Code P2+).
