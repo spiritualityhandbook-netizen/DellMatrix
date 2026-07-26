@@ -1,23 +1,19 @@
 # DellMatrix Preform Index
 
-## Build order (Architect)
-Phase 3 preform → **Code Phase 1** → **Code Phase 2** → **Code Phase 3** → later phases after their preforms.
+**Start here for phase placement:** `CONSOLIDATED_PHASE_ASSIGNMENT.md`
 
-## Files
-| File | Content |
-|------|--------|
-| MASTER_BUILD_ORDER.md | Process lock + page walk list |
+| File | Role |
+|------|------|
+| CONSOLIDATED_PHASE_ASSIGNMENT.md | All ideas → Code P1 / P2 / P3 / Later |
+| MASTER_BUILD_ORDER.md | Process order |
 | DELL_REGISTRY_TRUE.md | Primaries 00–26 · multi-matrix |
 | TEMP_MANIFESTO.md | Dell 26 |
-| MANUAL_AND_FLOW.md | Manual · Leight · Loure · DDECC · flows |
-| SUSAN_FOREIGN.md | 4-N · delta log |
+| MANUAL_AND_FLOW.md | Manual · flow · Leight · Loure · DDECC |
+| SUSAN_FOREIGN.md | 4-N · confirm-only True writes |
 | GODWORKSPACE_UI.md | UI keep-blend |
-| VISUAL_GLYPH_LAYER.md | Glyph taxonomy |
+| VISUAL_GLYPH_LAYER.md | Glyphs |
 | LATTICE_ARCHITECTURE.md | 16³ · dual · snap · ECS |
-| LANGUAGE_PREFORM.md | Language agreements |
-| TRUE_MANDELL_PIPELINE.md | Authority pipeline |
-| PHASE3_BRIEFING_EXTRACT.md | Briefing sift for Phase 3 preform |
+| PHASE3_BRIEFING_EXTRACT.md | Briefing sift |
+| PHASE3_POETRY_SCANSION.md | Rhythm layer |
+| PHASE3_BODY_HEART_MIND_AVATAR.md | Entity FSM |
 | REFERENCE_DUMP.md | Parked |
-| PHASE_MAP.md | Status |
-
-Floor: Alpha · Delta · Omega · Omni · Nova=Cheat only
