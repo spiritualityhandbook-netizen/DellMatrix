@@ -1,10 +1,6 @@
 # Phase Map
 
 ## Preform 1–2 — COMPLETE
-
 ## Phase 3 preform — IN PROGRESS
-- Briefing extract
-- Poetry/scansion PART 1 mapped to rhythm layer
-- More PART pages as Architect sends
-
+- Briefing · Poetry scansion · Body/Heart/Mind/Avatar entity
 ## Code phases — NOT STARTED
