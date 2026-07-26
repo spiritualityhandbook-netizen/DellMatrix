@@ -1,19 +1,17 @@
 # DellMatrix Preform Index
 
-**Start here for phase placement:** `CONSOLIDATED_PHASE_ASSIGNMENT.md`
+**Phases grow as needed.** See `MASTER_BUILD_ORDER.md` and `CONSOLIDATED_PHASE_ASSIGNMENT.md`.
 
 | File | Role |
 |------|------|
-| CONSOLIDATED_PHASE_ASSIGNMENT.md | All ideas → Code P1 / P2 / P3 / Later |
-| MASTER_BUILD_ORDER.md | Process order |
-| DELL_REGISTRY_TRUE.md | Primaries 00–26 · multi-matrix |
+| MASTER_BUILD_ORDER.md | Open-ended process |
+| CONSOLIDATED_PHASE_ASSIGNMENT.md | Concept → phase |
+| DELL_REGISTRY_TRUE.md | Primaries · multi-matrix |
 | TEMP_MANIFESTO.md | Dell 26 |
-| MANUAL_AND_FLOW.md | Manual · flow · Leight · Loure · DDECC |
-| SUSAN_FOREIGN.md | 4-N · confirm-only True writes |
+| MANUAL_AND_FLOW.md | Manual · flow · Leight · Loure |
+| SUSAN_FOREIGN.md | 4-N · confirm-only |
 | GODWORKSPACE_UI.md | UI keep-blend |
 | VISUAL_GLYPH_LAYER.md | Glyphs |
-| LATTICE_ARCHITECTURE.md | 16³ · dual · snap · ECS |
-| PHASE3_BRIEFING_EXTRACT.md | Briefing sift |
-| PHASE3_POETRY_SCANSION.md | Rhythm layer |
-| PHASE3_BODY_HEART_MIND_AVATAR.md | Entity FSM |
+| LATTICE_ARCHITECTURE.md | Lattice · ECS |
+| PHASE3_*.md | Phase 3 intake |
 | REFERENCE_DUMP.md | Parked |
