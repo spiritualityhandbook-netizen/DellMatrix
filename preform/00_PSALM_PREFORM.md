@@ -13,8 +13,8 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 | Preform Phase 1 | COMPLETE |
 | Preform Phase 2 | COMPLETE |
 | Phase 3 Preform | IN PROGRESS |
-| Code Phase 1 | TRUE · ACTIVE |
-| Code Phase 2 | NOT STARTED |
+| Code Phase 1 | COMPLETE |
+| Code Phase 2 | TRUE · ACTIVE |
 | Code Phase 3 | NOT STARTED |
 
 **Floor Lock (immutable):**  
@@ -57,3 +57,4 @@ Focus = session target only
 - 2026-07-27 — Architect confirm: Code Phase 1 is True. Status moved from NOT STARTED to TRUE · ACTIVE. First cell (registry data · flow · tiny lexer · offline) now open for execution.
 - 2026-07-27 — Code Phase 1 Artifact 1 written: offline registry data in both Markdown and JSON forms under preform/code/. Flow set locked for lexer.
 - 2026-07-27 — Code Phase 1 Artifact 2 written: Tiny Lexer Stub (Python, zero-dep, longest-match, dual-boundary aware). Decisions locked in 02_TINY_LEXER.md.
+- 2026-07-27 — Code Phase 1 marked COMPLETE. Code Phase 2 opened as TRUE · ACTIVE under living Psalm discipline. Next best step taken.
