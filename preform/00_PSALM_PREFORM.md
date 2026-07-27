@@ -55,3 +55,4 @@ Focus = session target only
 
 - 2026-07-27 — Restructured entire current Preform into living page-by-page Psalm structure. Preform 1+2 marked complete. Phase 3 preform in progress. Code phases still open.
 - 2026-07-27 — Architect confirm: Code Phase 1 is True. Status moved from NOT STARTED to TRUE · ACTIVE. First cell (registry data · flow · tiny lexer · offline) now open for execution.
+- 2026-07-27 — Code Phase 1 Artifact 1 written: offline registry data in both Markdown and JSON forms under preform/code/. Flow set locked for lexer.
