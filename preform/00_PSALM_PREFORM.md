@@ -15,7 +15,7 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 | Phase 3 Preform | MAJOR ROOT MATERIAL FOLDED |
 | Code Phase 1 | COMPLETE |
 | Code Phase 2 | COMPLETE |
-| Code Phase 3 | TRUE · ACTIVE (Artifacts 8 + 9 + 10) |
+| Code Phase 3 | TRUE · ACTIVE (Artifacts 8–11) |
 
 **Floor Lock (immutable):**  
 Alpha · Delta · Omega · Omni  
@@ -62,10 +62,5 @@ Focus = session target only
 
 - 2026-07-27 — Restructured entire current Preform into living page-by-page Psalm structure.
 - 2026-07-27 — Code Phase 1 + Code Phase 2 completed with offline artifacts.
-- 2026-07-27 — Code Phase 3 opened. Page 10 + Artifact 8 (Face-State Cycles) added.
-- 2026-07-27 — Page 05 Visual Glyph expanded to full living form.
-- 2026-07-27 — Page 11 Persona Arsenal created (MANUELL practical, Aetheris primary, The_Ancient structural-only).
-- 2026-07-27 — Named Dell Operators added as lightweight readability extension on page 02.
-- 2026-07-27 — Major Phase 3 root fold into page 09.
-- 2026-07-27 — Code Phase 3 Artifact 9: Expandable Kaomoji Packs.
-- 2026-07-27 — Code Phase 3 Artifact 10: ASCII Animation Player (`code/10_ASCII_ANIMATION.py`). Grows from Kaomoji Packs + Face-State Cycles + ExpressionField. Offline text frames only. Next cell: Reach / inventory on Grid.
+- 2026-07-27 — Code Phase 3 opened. Artifacts 8–11 completed (Face-State, Kaomoji Packs, ASCII Animation, Reach/Inventory).
+- 2026-07-27 — Next cell: GodWorkSpace UI implementation.

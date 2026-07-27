@@ -26,8 +26,8 @@ No silent code drops. Growth only through the Psalm.
 1. Avatar face-state cycles — **DONE** (Artifact 8)
 2. Expandable kaomoji packs — **DONE** (Artifact 9)
 3. ASCII animation player — **DONE** (Artifact 10)
-4. Reach / inventory on Grid — **NEXT**
-5. GodWorkSpace UI implementation
+4. Reach / inventory on Grid — **DONE** (Artifact 11)
+5. GodWorkSpace UI implementation — **NEXT**
 6. Thinks thread (async, body-first law enforced)
 7. Token budget + work-memory graph helpers
 
@@ -38,6 +38,7 @@ No silent code drops. Growth only through the Psalm.
 | 8 | `code/08_FACE_STATE_CYCLES.py` | TRUE |
 | 9 | `code/09_KAOMOJI_PACKS.py` | TRUE |
 | 10 | `code/10_ASCII_ANIMATION.py` | TRUE |
+| 11 | `code/11_REACH_INVENTORY.py` | TRUE |
 
 ## Evolution rule for this page
 
