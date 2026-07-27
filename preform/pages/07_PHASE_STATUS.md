@@ -4,12 +4,11 @@ Status: Living
 
 ## Code Phases
 
-### Code Phase 1–2 — COMPLETE
-### Code Phase 3 — TRUE · HARDENED COMPLETE (Artifacts 8–15)
-
+### Code Phase 1–3 — COMPLETE · HARDENED
 ### Code Phase 4 — ACTIVE
-- 4.1 Import Adapter — TRUE (Artifact 16)
-- 4.2 Integrator ↔ Adapter bridge — TRUE (`resolve_components`)
-- Next: 4.3 TokenBudget on Show/seed paths
+- 4.1 Import Adapter — TRUE
+- 4.2 Adapter bridge — TRUE
+- 4.3 Token Show Gate — TRUE
+- Next: 4B GWS expand/collapse + flow search
 
 Living plan: `pages/12_CODE_PHASE4_PLAN.md`
