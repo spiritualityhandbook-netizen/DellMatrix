@@ -27,8 +27,8 @@ No silent code drops. Growth only through the Psalm.
 2. Expandable kaomoji packs — **DONE** (Artifact 9)
 3. ASCII animation player — **DONE** (Artifact 10)
 4. Reach / inventory on Grid — **DONE** (Artifact 11)
-5. GodWorkSpace UI implementation — **NEXT**
-6. Thinks thread (async, body-first law enforced)
+5. GodWorkSpace UI implementation — **DONE** (Artifact 12 · terminal shell)
+6. Thinks thread (async, body-first law enforced) — **NEXT**
 7. Token budget + work-memory graph helpers
 
 ## Artifacts
@@ -39,6 +39,7 @@ No silent code drops. Growth only through the Psalm.
 | 9 | `code/09_KAOMOJI_PACKS.py` | TRUE |
 | 10 | `code/10_ASCII_ANIMATION.py` | TRUE |
 | 11 | `code/11_REACH_INVENTORY.py` | TRUE |
+| 12 | `code/12_GODWORKSPACE.py` | TRUE |
 
 ## Evolution rule for this page
 

@@ -15,7 +15,7 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 | Phase 3 Preform | MAJOR ROOT MATERIAL FOLDED |
 | Code Phase 1 | COMPLETE |
 | Code Phase 2 | COMPLETE |
-| Code Phase 3 | TRUE · ACTIVE (Artifacts 8–11) |
+| Code Phase 3 | TRUE · ACTIVE (Artifacts 8–12) |
 
 **Floor Lock (immutable):**  
 Alpha · Delta · Omega · Omni  
@@ -51,7 +51,7 @@ Focus = session target only
 | 05 | `pages/05_VISUAL_GLYPH.md` | Visual Glyph Layer (full living form) |
 | 06 | `pages/06_MANUAL_FLOW_TEMP.md` | Manual, Flow operators, Temp |
 | 07 | `pages/07_PHASE_STATUS.md` | Phase map + build order |
-| 08 | `pages/08_GODWORKSPACE.md` | GodWorkSpace UI keep-blend |
+| 08 | `pages/08_GODWORKSPACE.md` | GodWorkSpace UI (terminal shell live) |
 | 09 | `pages/09_PHASE3_INTAKE.md` | Body/Heart/Mind/Avatar + Expression/Kaomoji + ASCII + Language Components + Memory/RAG (folded) |
 | 10 | `pages/10_CODE_PHASE3_LIVING.md` | Code Phase 3 living home + growth order |
 | 11 | `pages/11_PERSONA_ARSENAL.md` | Persona Arsenal (Aetheris primary, MANUELL, The_Ancient structural-only) |
@@ -62,5 +62,5 @@ Focus = session target only
 
 - 2026-07-27 — Restructured entire current Preform into living page-by-page Psalm structure.
 - 2026-07-27 — Code Phase 1 + Code Phase 2 completed with offline artifacts.
-- 2026-07-27 — Code Phase 3 opened. Artifacts 8–11 completed (Face-State, Kaomoji Packs, ASCII Animation, Reach/Inventory).
-- 2026-07-27 — Next cell: GodWorkSpace UI implementation.
+- 2026-07-27 — Code Phase 3 Artifacts 8–12 completed (Face-State, Kaomoji, ASCII Anim, Reach/Inventory, GodWorkSpace terminal shell).
+- 2026-07-27 — Next cell: Thinks thread (async, body-first law).

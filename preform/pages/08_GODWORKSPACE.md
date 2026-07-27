@@ -1,6 +1,6 @@
 # Page 08 — GodWorkSpace UI
 
-Status: SPEC LOCKED (implementation = Code Phase 3)
+Status: TRUE · Minimal terminal shell live (Artifact 12)
 
 ## Keep-blend Requirements
 1. Header + status
@@ -11,6 +11,20 @@ Status: SPEC LOCKED (implementation = Code Phase 3)
 6. Pipeline panel (Phase markers + numbered confirm queue)
 7. Read-only Mandel seed strip at the bottom (do not disturb)
 8. localStorage drafts only until True confirm
+
+## Current Implementation (Artifact 12)
+Offline terminal shell covering:
+- Header + status
+- Temp C/W/H
+- Read-only seed strip
+- Drafts (in-memory)
+- Status panes for Avatar / frame / inventory
+
+Still open for later expansion:
+- Full Dell search
+- Expand/collapse + copy
+- Pipeline panel with confirm queue
+- Graphical host (future)
 
 ## Visual
 Uses the Visual Glyph Layer taxonomy.
