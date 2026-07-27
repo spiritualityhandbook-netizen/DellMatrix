@@ -58,3 +58,4 @@ Focus = session target only
 - 2026-07-27 — Code Phase 1 Artifact 1 written: offline registry data in both Markdown and JSON forms under preform/code/. Flow set locked for lexer.
 - 2026-07-27 — Code Phase 1 Artifact 2 written: Tiny Lexer Stub (Python, zero-dep, longest-match, dual-boundary aware). Decisions locked in 02_TINY_LEXER.md.
 - 2026-07-27 — Code Phase 1 marked COMPLETE. Code Phase 2 opened as TRUE · ACTIVE under living Psalm discipline. Next best step taken.
+- 2026-07-27 — NBD executed: Code Phase 2 Artifact 3 (Minimal Parser + AST Stub) written under preform/code/.
