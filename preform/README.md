@@ -1,17 +1,30 @@
-# DellMatrix Preform Index
+# DellMatrix Preform
 
-**Phases grow as needed.** See `MASTER_BUILD_ORDER.md` and `CONSOLIDATED_PHASE_ASSIGNMENT.md`.
+This folder is the **living Preform Codex**.
 
-| File | Role |
-|------|------|
-| MASTER_BUILD_ORDER.md | Open-ended process |
-| CONSOLIDATED_PHASE_ASSIGNMENT.md | Concept → phase |
-| DELL_REGISTRY_TRUE.md | Primaries · multi-matrix |
-| TEMP_MANIFESTO.md | Dell 26 |
-| MANUAL_AND_FLOW.md | Manual · flow · Leight · Loure |
-| SUSAN_FOREIGN.md | 4-N · confirm-only |
-| GODWORKSPACE_UI.md | UI keep-blend |
-| VISUAL_GLYPH_LAYER.md | Glyphs |
-| LATTICE_ARCHITECTURE.md | Lattice · ECS |
-| PHASE3_*.md | Phase 3 intake |
-| REFERENCE_DUMP.md | Parked |
+It is organized as a Psalm so it can evolve page-by-page without losing structure.
+
+## Start Here
+
+→ Open **`00_PSALM_PREFORM.md`**
+
+That file is the master index and evolution log.
+
+## Structure
+
+```
+preform/
+├── 00_PSALM_PREFORM.md      ← Living master
+└── pages/
+    ├── 01_FLOOR_LOCK.md
+    ├── 02_DELL_REGISTRY.md
+    ├── 03_LANGUAGE_CORE.md
+    ├── 04_PIPELINE_AUTHORITY.md
+    ├── 05_VISUAL_GLYPH.md
+    ├── 06_MANUAL_FLOW_TEMP.md
+    ├── 07_PHASE_STATUS.md
+    ├── 08_GODWORKSPACE.md
+    └── 09_PHASE3_INTAKE.md
+```
+
+Older individual files remain for reference but the numbered pages above are now the canonical Preform.
