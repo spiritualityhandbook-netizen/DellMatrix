@@ -12,7 +12,7 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 |-------|--------|
 | Preform Phase 1 | COMPLETE |
 | Preform Phase 2 | COMPLETE |
-| Phase 3 Preform | IN PROGRESS |
+| Phase 3 Preform | IN PROGRESS (forms still being folded) |
 | Code Phase 1 | COMPLETE |
 | Code Phase 2 | COMPLETE |
 | Code Phase 3 | TRUE · ACTIVE |
@@ -32,6 +32,7 @@ Focus = session target only
 4. No silent changes to True registry or floor.
 5. Everything must remain practical, offline-capable, and token-efficient.
 6. Code artifacts must grow from prior True modules and be registered on a living page.
+7. Root-level preform files are historical until their content is folded into numbered pages.
 
 ---
 
@@ -44,7 +45,7 @@ Focus = session target only
 | 02 | `pages/02_DELL_REGISTRY.md` | True Primaries 00–50 |
 | 03 | `pages/03_LANGUAGE_CORE.md` | Leight, Loure, terms, dual output |
 | 04 | `pages/04_PIPELINE_AUTHORITY.md` | True Mandel pipeline + Susan Foreign |
-| 05 | `pages/05_VISUAL_GLYPH.md` | Glyph taxonomy + visual law |
+| 05 | `pages/05_VISUAL_GLYPH.md` | Visual Glyph Layer (full living form) |
 | 06 | `pages/06_MANUAL_FLOW_TEMP.md` | Manual, Flow operators, Temp |
 | 07 | `pages/07_PHASE_STATUS.md` | Phase map + build order |
 | 08 | `pages/08_GODWORKSPACE.md` | GodWorkSpace UI keep-blend |
@@ -66,3 +67,4 @@ Focus = session target only
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 6 (Avatar FSM Stub) written. Body-first, 8-dir, posture + locomotion.
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 7 (Static Expression Field) written. Code Phase 2 marked COMPLETE.
 - 2026-07-27 — Code Phase 3 opened. New living page 10 created. Artifact 8 (Face-State Cycles) written as structural growth of ExpressionField + Avatar, registered on page 10. Not a drop.
+- 2026-07-27 — Preform form growth: Page 05 Visual Glyph expanded to full living form (taxonomy, rules, incorporation map). Root VISUAL_GLYPH_LAYER.md treated as historical. Remaining root PHASE3_* and MANUAL_* files still to be folded.
