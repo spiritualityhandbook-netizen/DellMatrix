@@ -34,6 +34,7 @@ Focus = session target only
 6. Code artifacts must grow from prior True modules and be registered on a living page.
 7. Root-level preform files are historical until their content is folded into numbered pages.
 8. Personas and new forms are added only when practical and non-clashing.
+9. Named Dell operators are lightweight readability aids only; numbered registry remains True.
 
 ---
 
@@ -43,7 +44,7 @@ Focus = session target only
 |------|------|---------|
 | 00 | `00_PSALM_PREFORM.md` | This living index |
 | 01 | `pages/01_FLOOR_LOCK.md` | Floor + core agreement |
-| 02 | `pages/02_DELL_REGISTRY.md` | True Primaries 00–50 |
+| 02 | `pages/02_DELL_REGISTRY.md` | True Primaries 00–50 + Named Dell lightweight extension |
 | 03 | `pages/03_LANGUAGE_CORE.md` | Leight, Loure, terms, dual output |
 | 04 | `pages/04_PIPELINE_AUTHORITY.md` | True Mandel pipeline + Susan Foreign |
 | 05 | `pages/05_VISUAL_GLYPH.md` | Visual Glyph Layer (full living form) |
@@ -58,12 +59,9 @@ Focus = session target only
 
 ## Evolution Log
 
-- 2026-07-27 — Restructured entire current Preform into living page-by-page Psalm structure. Preform 1+2 marked complete. Phase 3 preform in progress. Code phases still open.
-- 2026-07-27 — Architect confirm: Code Phase 1 is True. Status moved from NOT STARTED to TRUE · ACTIVE. First cell (registry data · flow · tiny lexer · offline) now open for execution.
-- 2026-07-27 — Code Phase 1 Artifact 1 written: offline registry data in both Markdown and JSON forms under preform/code/. Flow set locked for lexer.
-- 2026-07-27 — Code Phase 1 Artifact 2 written: Tiny Lexer Stub (Python, zero-dep, longest-match, dual-boundary aware). Decisions locked in 02_TINY_LEXER.md.
-- 2026-07-27 — Code Phase 1 marked COMPLETE. Code Phase 2 opened as TRUE · ACTIVE under living Psalm discipline. Next best step taken.
-- 2026-07-27 — NBD executed: Code Phase 2 Artifact 3–7 completed (Parser, Runtime, Grid, Avatar FSM, Expression Field). Code Phase 2 COMPLETE.
-- 2026-07-27 — Code Phase 3 opened. Page 10 created. Artifact 8 (Face-State Cycles) grown from prior modules.
-- 2026-07-27 — Preform form growth: Page 05 Visual Glyph expanded to full living form.
-- 2026-07-27 — Preform form growth: Page 11 Persona Arsenal created. Added MANUELL (practical AutoFill / Syntax Coach). Reinforced Aetheris as primary always-active and The_Ancient as structural-only. AOK noted as always-on functional guard. Rejected clashing / duplicate / high-fog material from external pastes.
+- 2026-07-27 — Restructured entire current Preform into living page-by-page Psalm structure.
+- 2026-07-27 — Code Phase 1 + Code Phase 2 completed with offline artifacts.
+- 2026-07-27 — Code Phase 3 opened. Page 10 + Artifact 8 (Face-State Cycles) added.
+- 2026-07-27 — Page 05 Visual Glyph expanded to full living form.
+- 2026-07-27 — Page 11 Persona Arsenal created (MANUELL practical, Aetheris primary, The_Ancient structural-only).
+- 2026-07-27 — Named Dell Operators added as lightweight readability extension on page 02. Numbered registry remains the only True source. Full Leight/Loure lists and SUS evaluator dumps rejected as clashing or already covered.

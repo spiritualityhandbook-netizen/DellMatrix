@@ -61,6 +61,31 @@ Status: LOCKED for 00–26 · Extensions 27–50 formalized
 | 47 | Embed | Vectorize |
 | 48 | Macro | Shortcut sequence |
 | 49 | Profile | Benchmark |
-| **50** | **Manifest** | Make real / bring into form / exec outward |
+| 50 | Manifest | Make real / bring into form / exec outward |
 
 51+ remain free. Multi-matrix law unchanged.
+
+---
+
+## Named Dell Operators (Lightweight Extension)
+
+Status: PRACTICAL · Non-replacing
+
+These are human-readable names that map to the numbered Dells above.  
+They do **not** replace the True numbered registry.  
+They exist only for readability and rapid reference inside the living Preform.
+
+| Named Form | Maps primarily to | Practical use |
+|------------|-------------------|---------------|
+| Bindell | 14 Bind | Connection / edge |
+| Formadell | 08 Create + 09 Show | Rendering / format |
+| Evoludell | 04 Transform + growth | Progression |
+| Harmonidell | 05 Tone + balance | Coherence / balance |
+| Mirrordell | 18 Mirror | Reflection / self-check |
+| Pulsadell | 25 Pulse | Broadcast / jolt |
+| Pure-dell | 23 Lock + purity | Crystalline lock |
+| Recurdell | 13 Loop | Recursion |
+| Transdell | 04 Transform | Crossing / change |
+| Prosopadell | 02 Persona | Persona realization |
+
+New named forms may be proposed but must be confirmed and mapped to an existing numbered Dell before use in True structure.
