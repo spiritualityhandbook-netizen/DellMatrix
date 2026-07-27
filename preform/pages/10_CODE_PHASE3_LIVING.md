@@ -19,6 +19,7 @@ No silent code drops. Growth only through the Psalm.
 - ASCII animation player
 - Avatar face-state cycles
 - Thinks (async cognitive thread) bound to body state
+- Token budget / work-memory helpers
 
 ## Current Growth Order (updated)
 
@@ -28,12 +29,15 @@ No silent code drops. Growth only through the Psalm.
 4. Reach / inventory on Grid
 5. GodWorkSpace UI implementation
 6. Thinks thread (async, body-first law enforced)
+7. Token budget + work-memory graph helpers (from folded Memory/RAG)
 
 ## Folded material from root
 
 - Expression / Kaomoji categories and rules → page 09
 - Body · Heart · Mind · Avatar law and phase ownership → page 09
 - ASCII Animation model, efficiency rules, Dell hooks → page 09
+- Language Components mapping → page 09
+- Memory / RAG practical patterns (work memory, context budget, graph) → page 09
 
 ## Evolution rule for this page
 

@@ -96,19 +96,38 @@ Anim = {
 | 32/33 Pause/Resume | Freeze/unfreeze |
 | 05 Tone | Choose expression pack |
 
-## Language Components (summary)
+## Language Components (folded)
 
-Phonology → glyphs  
-Morphology → Leight / Loure  
-Syntax → flow / parser  
-Semantics → Manor  
-Pragmatics → Temp + Manual
+| Component | Mandell home |
+|-----------|--------------|
+| Phonology | Glyph layer · optional scansion · spoken seed rhythm |
+| Morphology | **Leight / Loure** · morpheme engine |
+| Syntax | **Flow ops** · brackets · Dell + manor order · parser |
+| Semantics | **Manor** definitions · Primaries · Bind edges |
+| Pragmatics | **Temp** · Persona · Architect confirm · context Horizon |
+
+**One-line law:** Mandell already carries form (flow/morph), content (manor), and use (Temp/pragmatics); linguistics labels help audit gaps, not replace Primaries.
+
+## Memory · Context Budget · Work Graph (folded practical)
+
+| Kind | Map |
+|------|-----|
+| Work memory (what ran, failed, corrections) | Checkpoint 27 · Stamp 34 · Shadow 17 · delta log |
+| Preference / taste | Optional personal matrix only |
+| Traceable source links | Bind 14 · Map 15 · Keep 10 |
+| Context budget / chunking | TokenCount 40 · Distill 38 · Split/Merge |
+| Work context graph | Lightweight nodes (seed · file · correction) + Bind edges |
+
+**Law:** Main matrix prefers work/coherence memory. Personal matrix may store vibe. Never answer only from summary when raw exists.
 
 ## Root files now historical
 
-The following root extracts have been folded into this page or page 10:
+Folded into this page or page 10:
 - PHASE3_EXPRESSION_KAOMOJI.md
 - PHASE3_BODY_HEART_MIND_AVATAR.md
 - PHASE3_ASCII_ANIMATION.md
+- PHASE3_LANGUAGE_COMPONENTS.md
+- PHASE3_MEMORY_RAG_PATTERNS.md
+- PHASE3_BRIEFING_EXTRACT.md (useful non-decipherment bits only)
 
 They remain for reference only.

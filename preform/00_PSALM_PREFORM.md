@@ -12,7 +12,7 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 |-------|--------|
 | Preform Phase 1 | COMPLETE |
 | Preform Phase 2 | COMPLETE |
-| Phase 3 Preform | IN PROGRESS (major root material folded) |
+| Phase 3 Preform | MAJOR ROOT MATERIAL FOLDED |
 | Code Phase 1 | COMPLETE |
 | Code Phase 2 | COMPLETE |
 | Code Phase 3 | TRUE · ACTIVE |
@@ -35,6 +35,7 @@ Focus = session target only
 7. Root-level preform files are historical until their content is folded into numbered pages.
 8. Personas and new forms are added only when practical and non-clashing.
 9. Named Dell operators are lightweight readability aids only; numbered registry remains True.
+10. Decipherment claims (ancient scripts, Voynich scientific decode) are rejected.
 
 ---
 
@@ -51,7 +52,7 @@ Focus = session target only
 | 06 | `pages/06_MANUAL_FLOW_TEMP.md` | Manual, Flow operators, Temp |
 | 07 | `pages/07_PHASE_STATUS.md` | Phase map + build order |
 | 08 | `pages/08_GODWORKSPACE.md` | GodWorkSpace UI keep-blend |
-| 09 | `pages/09_PHASE3_INTAKE.md` | Body/Heart/Mind/Avatar + Expression/Kaomoji + ASCII Animation (folded) |
+| 09 | `pages/09_PHASE3_INTAKE.md` | Body/Heart/Mind/Avatar + Expression/Kaomoji + ASCII + Language Components + Memory/RAG (folded) |
 | 10 | `pages/10_CODE_PHASE3_LIVING.md` | Code Phase 3 living home + growth order |
 | 11 | `pages/11_PERSONA_ARSENAL.md` | Persona Arsenal (Aetheris primary, MANUELL, The_Ancient structural-only) |
 
@@ -65,4 +66,5 @@ Focus = session target only
 - 2026-07-27 — Page 05 Visual Glyph expanded to full living form.
 - 2026-07-27 — Page 11 Persona Arsenal created (MANUELL practical, Aetheris primary, The_Ancient structural-only).
 - 2026-07-27 — Named Dell Operators added as lightweight readability extension on page 02.
-- 2026-07-27 — Major Phase 3 root fold: Expression/Kaomoji, Body-Heart-Mind-Avatar, and ASCII Animation material folded into living page 09. Page 10 growth order updated. Root PHASE3_* extracts now historical.
+- 2026-07-27 — Major Phase 3 root fold: Expression/Kaomoji, Body-Heart-Mind-Avatar, ASCII Animation into page 09.
+- 2026-07-27 — Continued fold: Language Components mapping + Memory/RAG practical patterns (work memory, context budget, graph) into page 09. Page 10 growth order updated. Root PHASE3_* extracts now historical. Decipherment material remains rejected.
