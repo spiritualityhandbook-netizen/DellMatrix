@@ -29,7 +29,9 @@ No silent code drops. Growth only through the Psalm.
 4. Reach / inventory on Grid — **DONE** (Artifact 11)
 5. GodWorkSpace UI implementation — **DONE** (Artifact 12)
 6. Thinks thread (async, body-first) — **DONE** (Artifact 13)
-7. Token budget + work-memory graph helpers — **NEXT**
+7. Token budget + work-memory graph helpers — **DONE** (Artifact 14)
+
+**Primary Code Phase 3 growth order complete.**
 
 ## Artifacts
 
@@ -41,7 +43,9 @@ No silent code drops. Growth only through the Psalm.
 | 11 | `code/11_REACH_INVENTORY.py` | TRUE |
 | 12 | `code/12_GODWORKSPACE.py` | TRUE |
 | 13 | `code/13_THINKS.py` | TRUE |
+| 14 | `code/14_TOKEN_WORKMEM.py` | TRUE |
 
 ## Evolution rule for this page
 
 Every new artifact in Code Phase 3 appends a short entry here and in 00_PSALM.
+Further expansion (richer GodWorkSpace panels, full intent bridge, etc.) continues under this page.

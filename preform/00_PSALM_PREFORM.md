@@ -15,7 +15,7 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 | Phase 3 Preform | MAJOR ROOT MATERIAL FOLDED |
 | Code Phase 1 | COMPLETE |
 | Code Phase 2 | COMPLETE |
-| Code Phase 3 | TRUE · ACTIVE (Artifacts 8–13) |
+| Code Phase 3 | TRUE · ACTIVE — primary growth order COMPLETE (Artifacts 8–14) |
 
 **Floor Lock (immutable):**  
 Alpha · Delta · Omega · Omni  
@@ -62,5 +62,5 @@ Focus = session target only
 
 - 2026-07-27 — Restructured entire current Preform into living page-by-page Psalm structure.
 - 2026-07-27 — Code Phase 1 + Code Phase 2 completed with offline artifacts.
-- 2026-07-27 — Code Phase 3 Artifacts 8–13 completed (Face-State, Kaomoji, ASCII Anim, Reach/Inventory, GodWorkSpace shell, Thinks thread).
-- 2026-07-27 — Next cell: Token budget + work-memory graph helpers.
+- 2026-07-27 — Code Phase 3 primary growth order completed (Artifacts 8–14): Face-State, Kaomoji Packs, ASCII Animation, Reach/Inventory, GodWorkSpace shell, Thinks thread, Token Budget + Work-Memory Graph.
+- 2026-07-27 — Further Code Phase 3 expansion or Code Phase 4 planning may continue under living pages.
