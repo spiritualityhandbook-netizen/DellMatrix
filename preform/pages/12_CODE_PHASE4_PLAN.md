@@ -1,41 +1,40 @@
 # Page 12 — Code Phase 4 Planning
 
-Status: OPEN · Planning only (no implementation forced)
+Status: OPEN · **4.1 STARTED**
 
 ## Purpose
-Define the next phase after Code Phase 3 primary order + Integrator.
+Define and grow Code Phase 4 after Phase 3 primary order + Integrator.
 
-## Candidate Scope (not locked)
+## Active cells
 
-### 4A — Integration hardening (near-term)
-- Replace Integrator stand-ins with real imports of 05–14 when package path is stable
-- Automated smoke tests as CI-local offline script
+| Cell | Artifact | Status |
+|------|----------|--------|
+| 4.1 Real-module import layer | `code/16_IMPORT_ADAPTER.py` | **TRUE** |
+| 4.2 Integrator prefers real modules | — | NEXT |
+| 4.3 TokenBudget on Show/seed paths | — | queued |
+| 4B GWS expand/collapse + flow search | — | queued |
+| 4C Persona runtime lens | — | queued |
+
+## Candidate Scope
+
+### 4A — Integration hardening
+- ~~Real import adapter~~ **DONE (16)**
+- Integrator consumption of LoadReport (prefer real 05–14)
 - TokenBudget applied to seed-strip and Show paths
 
 ### 4B — GodWorkSpace expansion
-- Expand/collapse sections + copy-to-clipboard helpers (terminal-safe)
-- Full pipeline panel with numbered confirm queue (started in Artifact 15)
-- Dell search UI already live; add flow-symbol search
+- Expand/collapse + copy helpers
+- Flow-symbol search
 
 ### 4C — Persona runtime
-- Wire page 11 Persona Arsenal into Thinks as optional lens (Aetheris primary)
-- MANUELL as practical syntax coach mode (read-only suggestions)
-- The_Ancient remains structural-only (no decipherment)
+- Aetheris lens on Thinks
+- MANUELL syntax coach (read-only)
+- The_Ancient structural-only
 
-### 4D — Visual / multi-surface
-- Richer ASCII bodies from Visual Glyph Layer
-- Optional terminal multi-pane layout
-- Future graphical host (explicitly later; not required for Phase 4 open)
-
-### 4E — Multi-user / persistence (later)
-- Checkpoint 27 / Rollback 28 against WorkMemory
-- Multi-session work-graph merge rules
+### 4D / 4E
+Visual multi-surface · persistence (later)
 
 ## Entry rules
-- No material enters Code Phase 4 implementation until page 10 marks Phase 3 stable for that slice
-- Functionality first: every 4.x artifact must be steppable from the Integrator or an explicit extension of it
+- Functionality first: every 4.x artifact steppable from Integrator or explicit extension
 - Offline purity retained
-
-## First recommended 4.x cell (when directed)
-**4.1 — Real-module import layer**  
-Thin adapter so Integrator uses true 05–14 classes instead of stand-ins, with the same public API.
+- Growth registers on this page + Psalm
