@@ -12,7 +12,7 @@ Status: Living
 ### Code Phase 1 — COMPLETE
 Registry data · flow · tiny lexer · offline capability
 
-### Code Phase 2 — TRUE · ACTIVE
+### Code Phase 2 — COMPLETE
 Parser · AST / runtime stub · grid · Avatar FSM stub · static expression field
 
 ### Code Phase 3

@@ -14,7 +14,7 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 | Preform Phase 2 | COMPLETE |
 | Phase 3 Preform | IN PROGRESS |
 | Code Phase 1 | COMPLETE |
-| Code Phase 2 | TRUE · ACTIVE |
+| Code Phase 2 | COMPLETE |
 | Code Phase 3 | NOT STARTED |
 
 **Floor Lock (immutable):**  
@@ -62,3 +62,4 @@ Focus = session target only
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 4 (Thin Runtime Stub) written. Offline DELL/FLOW evaluator against True registry.
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 5 (Grid / Coordinate Layer) written. Sparse (x,y) plane ready for Avatar.
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 6 (Avatar FSM Stub) written. Body-first, 8-dir, posture + locomotion.
+- 2026-07-27 — NBD executed: Code Phase 2 Artifact 7 (Static Expression Field) written. Code Phase 2 marked COMPLETE.
