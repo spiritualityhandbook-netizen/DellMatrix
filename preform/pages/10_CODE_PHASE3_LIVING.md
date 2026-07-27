@@ -20,6 +20,7 @@ No silent code drops. Growth only through the Psalm.
 - Avatar face-state cycles
 - Thinks (async cognitive thread) bound to body state
 - Token budget / work-memory helpers
+- **Unified integrator (end-to-end runner)**
 
 ## Current Growth Order (updated)
 
@@ -30,8 +31,9 @@ No silent code drops. Growth only through the Psalm.
 5. GodWorkSpace UI implementation — **DONE** (Artifact 12)
 6. Thinks thread (async, body-first) — **DONE** (Artifact 13)
 7. Token budget + work-memory graph helpers — **DONE** (Artifact 14)
+8. Integrator (unified runner + intent bridge) — **DONE** (Artifact 15)
 
-**Primary Code Phase 3 growth order complete.**
+**Primary Code Phase 3 growth order + P0 integration complete.**
 
 ## Artifacts
 
@@ -44,8 +46,8 @@ No silent code drops. Growth only through the Psalm.
 | 12 | `code/12_GODWORKSPACE.py` | TRUE |
 | 13 | `code/13_THINKS.py` | TRUE |
 | 14 | `code/14_TOKEN_WORKMEM.py` | TRUE |
+| 15 | `code/15_INTEGRATOR.py` | TRUE |
 
 ## Evolution rule for this page
 
 Every new artifact in Code Phase 3 appends a short entry here and in 00_PSALM.
-Further expansion (richer GodWorkSpace panels, full intent bridge, etc.) continues under this page.

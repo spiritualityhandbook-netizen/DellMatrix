@@ -15,19 +15,16 @@ Registry data · flow · tiny lexer · offline capability
 ### Code Phase 2 — COMPLETE
 Parser · AST / runtime stub · grid · Avatar FSM stub · static expression field
 
-### Code Phase 3 — TRUE · ACTIVE (primary growth order COMPLETE)
-Artifacts 8–14:
-- Face-state cycles
-- Kaomoji packs
-- ASCII animation player
-- Reach / inventory
-- GodWorkSpace terminal shell
-- Thinks thread
+### Code Phase 3 — TRUE · ACTIVE (primary order + integrator COMPLETE)
+Artifacts 8–15:
+- Face-state cycles · Kaomoji packs · ASCII animation
+- Reach / inventory · GodWorkSpace shell · Thinks thread
 - Token budget + work-memory graph
+- **Integrator (unified offline runner)**
 
 Living home: `pages/10_CODE_PHASE3_LIVING.md`
 
-Further Code Phase 3 expansion continues as needed under page 10.
+Further expansion continues under page 10 as needed.
 
 ### Code Phase 4+
 Phase 4 content · personas · heavy visual · multi-user
