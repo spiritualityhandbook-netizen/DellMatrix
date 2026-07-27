@@ -5,16 +5,8 @@ Code Phase 4 · Artifact 16 (cell 4.1)
 Status: TRUE
 Offline · Zero dependencies · Stdlib only
 
-Thin import layer:
-- Tries to load real preform/code modules 05–14 by file path
-- Falls back to None markers when missing or incompatible
-- Reports load map for smoke / diagnostics
-- Does not change Integrator public API — Integrator may consume this map later
-
-Usage:
-    from import_adapter import load_all, LoadReport
-    report = load_all()
-    print(report.summary())
+Thin import layer for preform/code modules.
+Used by Integrator (4.2) to prefer real 05–14 when available.
 """
 
 from __future__ import annotations
@@ -26,7 +18,6 @@ import sys
 
 _CODE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Module file → expected attribute names (best-effort)
 MODULE_SPEC: Dict[str, List[str]] = {
     "05_GRID.py": ["Grid", "Cell", "place_dell", "place_text"],
     "06_AVATAR_FSM.py": ["Avatar", "BodyState", "Facing", "Posture", "Locomotion", "Reach"],
@@ -38,7 +29,7 @@ MODULE_SPEC: Dict[str, List[str]] = {
     "12_GODWORKSPACE.py": ["GodWorkSpace", "WorkspaceState"],
     "13_THINKS.py": ["Thinks", "Thought", "Intent", "BodySnapshot", "try_execute"],
     "14_TOKEN_WORKMEM.py": ["TokenWorkMem", "TokenBudget", "WorkMemory", "WorkGraph"],
-    "01_REGISTRY_DATA.json": [],  # data file, not a module
+    "01_REGISTRY_DATA.json": [],
     "02_TINY_LEXER.py": ["tokenize"],
 }
 
@@ -46,7 +37,7 @@ MODULE_SPEC: Dict[str, List[str]] = {
 class ModuleLoad:
     file: str
     loaded: bool
-    source: str  # "real" | "missing" | "error"
+    source: str  # real | missing | error
     attrs: Dict[str, Any] = field(default_factory=dict)
     error: str = ""
 
@@ -67,8 +58,7 @@ class LoadReport:
             else:
                 errors += 1
                 flag = "ERR "
-            attr_n = len(m.attrs)
-            extra = f" attrs={attr_n}" if attr_n else ""
+            extra = f" attrs={len(m.attrs)}" if m.attrs else ""
             err = f" | {m.error}" if m.error else ""
             lines.append(f"  [{flag}] {name}{extra}{err}")
         lines.append(f"--- real={real} missing={missing} errors={errors} ---")
@@ -80,18 +70,16 @@ class LoadReport:
             return default
         return m.attrs.get(attr, default)
 
-    def all_real(self, files: Optional[List[str]] = None) -> bool:
-        targets = files or list(MODULE_SPEC.keys())
-        return all(
-            self.modules.get(f, ModuleLoad(f, False, "missing")).source == "real"
-            for f in targets
-            if f.endswith(".py")
-        )
+    def source_of(self, file: str) -> str:
+        m = self.modules.get(file)
+        return m.source if m else "missing"
+
+    def real_count(self) -> int:
+        return sum(1 for m in self.modules.values() if m.source == "real")
 
 
 def _load_py(path: str) -> Any:
     name = os.path.splitext(os.path.basename(path))[0]
-    # unique module name to avoid collisions
     mod_name = f"preform_code_{name}"
     spec = importlib.util.spec_from_file_location(mod_name, path)
     if spec is None or spec.loader is None:
@@ -110,15 +98,11 @@ def load_module(filename: str, expected_attrs: Optional[List[str]] = None) -> Mo
         return ModuleLoad(file=filename, loaded=False, source="missing", error="file not found")
 
     if filename.endswith(".json"):
-        # presence-only check for data files
         return ModuleLoad(file=filename, loaded=True, source="real", attrs={"path": path})
 
     try:
         mod = _load_py(path)
-        attrs = {}
-        for a in expected_attrs:
-            if hasattr(mod, a):
-                attrs[a] = getattr(mod, a)
+        attrs = {a: getattr(mod, a) for a in expected_attrs if hasattr(mod, a)}
         return ModuleLoad(file=filename, loaded=True, source="real", attrs=attrs)
     except Exception as e:
         return ModuleLoad(
@@ -139,23 +123,56 @@ def load_all(code_dir: Optional[str] = None) -> LoadReport:
     return report
 
 
+def resolve_components(report: Optional[LoadReport] = None) -> Dict[str, Any]:
+    """
+    Build a component map for Integrator.
+    Values are either real classes/callables or None (caller uses stand-in).
+    Never raises.
+    """
+    if report is None:
+        try:
+            report = load_all()
+        except Exception:
+            report = LoadReport()
+
+    def take(file: str, attr: str):
+        if report.source_of(file) != "real":
+            return None
+        return report.get(file, attr, None)
+
+    return {
+        "report": report,
+        "Grid": take("05_GRID.py", "Grid"),
+        "Avatar": take("06_AVATAR_FSM.py", "Avatar"),
+        "Reach": take("06_AVATAR_FSM.py", "Reach"),
+        "Facing": take("06_AVATAR_FSM.py", "Facing"),
+        "ExpressionField": take("07_EXPRESSION_FIELD.py", "ExpressionField"),
+        "FaceStateController": take("08_FACE_STATE_CYCLES.py", "FaceStateController"),
+        "KaomojiRegistry": take("09_KAOMOJI_PACKS.py", "KaomojiRegistry"),
+        "AsciiPlayer": take("10_ASCII_ANIMATION.py", "AsciiPlayer"),
+        "Anim": take("10_ASCII_ANIMATION.py", "Anim"),
+        "ReachInventory": take("11_REACH_INVENTORY.py", "ReachInventory"),
+        "GodWorkSpace": take("12_GODWORKSPACE.py", "GodWorkSpace"),
+        "Thinks": take("13_THINKS.py", "Thinks"),
+        "Intent": take("13_THINKS.py", "Intent"),
+        "TokenWorkMem": take("14_TOKEN_WORKMEM.py", "TokenWorkMem"),
+        "tokenize": take("02_TINY_LEXER.py", "tokenize"),
+    }
+
+
 def smoke_adapter() -> bool:
-    """Adapter self-test with error handling."""
     print("=== IMPORT ADAPTER SMOKE ===")
     results = []
 
     def record(name: str, passed: bool, detail: str = "") -> None:
-        status = "PASS" if passed else "FAIL"
-        suffix = f" | {detail}" if detail else ""
-        print(f"[{len(results)+1}] {name}: {status}{suffix}")
-        results.append((name, passed, detail))
+        print(f"[{len(results)+1}] {name}: {'PASS' if passed else 'FAIL'}" + (f" | {detail}" if detail else ""))
+        results.append(passed)
 
     try:
         report = load_all()
-        record("load_all", True, f"modules={len(report.modules)}")
+        record("load_all", True, f"modules={len(report.modules)} real={report.real_count()}")
     except Exception as e:
         record("load_all", False, f"EXCEPTION {type(e).__name__}: {e}")
-        print("=== RESULT: FAIL ===")
         return False
 
     try:
@@ -164,28 +181,21 @@ def smoke_adapter() -> bool:
     except Exception as e:
         record("summary", False, f"EXCEPTION {type(e).__name__}: {e}")
 
-    # Core files that should exist in a full checkout
-    for core in ["02_TINY_LEXER.py", "05_GRID.py", "06_AVATAR_FSM.py"]:
-        m = report.modules.get(core)
-        if m is None:
-            record(f"present:{core}", False, "not in report")
-        else:
-            # PASS if real OR missing (missing is valid offline partial checkout)
-            # FAIL only on error source
-            ok = m.source in ("real", "missing")
-            record(f"load:{core}", ok, f"source={m.source} err={m.error or '-'}")
+    try:
+        comps = resolve_components(report)
+        record("resolve_components", isinstance(comps, dict), f"keys={len(comps)}")
+    except Exception as e:
+        record("resolve_components", False, f"EXCEPTION {type(e).__name__}: {e}")
 
-    # get() must not raise on missing
     try:
         val = report.get("99_NOT_REAL.py", "Grid", default="FALLBACK")
         record("get_missing_safe", val == "FALLBACK", f"val={val}")
     except Exception as e:
         record("get_missing_safe", False, f"EXCEPTION {type(e).__name__}: {e}")
 
-    passed = sum(1 for _, p, _ in results if p)
-    total = len(results)
-    print(f"=== RESULT: {passed}/{total} PASS ===")
-    return passed == total
+    passed = sum(1 for p in results if p)
+    print(f"=== RESULT: {passed}/{len(results)} PASS ===")
+    return passed == len(results)
 
 
 if __name__ == "__main__":
