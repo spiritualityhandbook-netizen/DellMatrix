@@ -23,13 +23,13 @@ No silent code drops. Growth only through the Psalm.
 
 ## Current Growth Order (updated)
 
-1. Avatar face-state cycles (extends ExpressionField + Avatar FSM) — **DONE** (Artifact 8)
+1. Avatar face-state cycles — **DONE** (Artifact 8)
 2. Expandable kaomoji packs — **DONE** (Artifact 9)
-3. ASCII animation player (frames + Cycle/Show hooks) — **NEXT**
-4. Reach / inventory on Grid
+3. ASCII animation player — **DONE** (Artifact 10)
+4. Reach / inventory on Grid — **NEXT**
 5. GodWorkSpace UI implementation
 6. Thinks thread (async, body-first law enforced)
-7. Token budget + work-memory graph helpers (from folded Memory/RAG)
+7. Token budget + work-memory graph helpers
 
 ## Artifacts
 
@@ -37,14 +37,7 @@ No silent code drops. Growth only through the Psalm.
 |---|------|--------|
 | 8 | `code/08_FACE_STATE_CYCLES.py` | TRUE |
 | 9 | `code/09_KAOMOJI_PACKS.py` | TRUE |
-
-## Folded material from root
-
-- Expression / Kaomoji categories and rules → page 09
-- Body · Heart · Mind · Avatar law and phase ownership → page 09
-- ASCII Animation model, efficiency rules, Dell hooks → page 09
-- Language Components mapping → page 09
-- Memory / RAG practical patterns → page 09
+| 10 | `code/10_ASCII_ANIMATION.py` | TRUE |
 
 ## Evolution rule for this page
 

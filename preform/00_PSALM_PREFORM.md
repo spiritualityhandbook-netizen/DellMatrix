@@ -15,7 +15,7 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 | Phase 3 Preform | MAJOR ROOT MATERIAL FOLDED |
 | Code Phase 1 | COMPLETE |
 | Code Phase 2 | COMPLETE |
-| Code Phase 3 | TRUE · ACTIVE (Artifacts 8 + 9) |
+| Code Phase 3 | TRUE · ACTIVE (Artifacts 8 + 9 + 10) |
 
 **Floor Lock (immutable):**  
 Alpha · Delta · Omega · Omni  
@@ -66,6 +66,6 @@ Focus = session target only
 - 2026-07-27 — Page 05 Visual Glyph expanded to full living form.
 - 2026-07-27 — Page 11 Persona Arsenal created (MANUELL practical, Aetheris primary, The_Ancient structural-only).
 - 2026-07-27 — Named Dell Operators added as lightweight readability extension on page 02.
-- 2026-07-27 — Major Phase 3 root fold: Expression/Kaomoji, Body-Heart-Mind-Avatar, ASCII Animation into page 09.
-- 2026-07-27 — Continued fold: Language Components + Memory/RAG practical patterns into page 09.
-- 2026-07-27 — Code Phase 3 Artifact 9: Expandable Kaomoji Packs (`code/09_KAOMOJI_PACKS.py`). Grows from ExpressionField + Face-State Cycles. Offline stdlib only. Next cell: ASCII animation player.
+- 2026-07-27 — Major Phase 3 root fold into page 09.
+- 2026-07-27 — Code Phase 3 Artifact 9: Expandable Kaomoji Packs.
+- 2026-07-27 — Code Phase 3 Artifact 10: ASCII Animation Player (`code/10_ASCII_ANIMATION.py`). Grows from Kaomoji Packs + Face-State Cycles + ExpressionField. Offline text frames only. Next cell: Reach / inventory on Grid.
