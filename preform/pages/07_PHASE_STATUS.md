@@ -9,7 +9,7 @@ Status: Living
 
 ## Code Phases (open-ended)
 
-### Code Phase 1 (next)
+### Code Phase 1 — TRUE · ACTIVE
 Registry data · flow · tiny lexer · offline capability
 
 ### Code Phase 2

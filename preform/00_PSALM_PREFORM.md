@@ -13,7 +13,7 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 | Preform Phase 1 | COMPLETE |
 | Preform Phase 2 | COMPLETE |
 | Phase 3 Preform | IN PROGRESS |
-| Code Phase 1 | NOT STARTED (waiting confirm) |
+| Code Phase 1 | TRUE · ACTIVE |
 | Code Phase 2 | NOT STARTED |
 | Code Phase 3 | NOT STARTED |
 
@@ -54,3 +54,4 @@ Focus = session target only
 ## Evolution Log
 
 - 2026-07-27 — Restructured entire current Preform into living page-by-page Psalm structure. Preform 1+2 marked complete. Phase 3 preform in progress. Code phases still open.
+- 2026-07-27 — Architect confirm: Code Phase 1 is True. Status moved from NOT STARTED to TRUE · ACTIVE. First cell (registry data · flow · tiny lexer · offline) now open for execution.
