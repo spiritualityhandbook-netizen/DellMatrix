@@ -33,6 +33,7 @@ Focus = session target only
 5. Everything must remain practical, offline-capable, and token-efficient.
 6. Code artifacts must grow from prior True modules and be registered on a living page.
 7. Root-level preform files are historical until their content is folded into numbered pages.
+8. Personas and new forms are added only when practical and non-clashing.
 
 ---
 
@@ -51,6 +52,7 @@ Focus = session target only
 | 08 | `pages/08_GODWORKSPACE.md` | GodWorkSpace UI keep-blend |
 | 09 | `pages/09_PHASE3_INTAKE.md` | Avatar, Kaomoji, Language components, Body/Heart/Mind |
 | 10 | `pages/10_CODE_PHASE3_LIVING.md` | Code Phase 3 living home + growth order |
+| 11 | `pages/11_PERSONA_ARSENAL.md` | Persona Arsenal (Aetheris primary, MANUELL, The_Ancient structural-only) |
 
 ---
 
@@ -61,10 +63,7 @@ Focus = session target only
 - 2026-07-27 — Code Phase 1 Artifact 1 written: offline registry data in both Markdown and JSON forms under preform/code/. Flow set locked for lexer.
 - 2026-07-27 — Code Phase 1 Artifact 2 written: Tiny Lexer Stub (Python, zero-dep, longest-match, dual-boundary aware). Decisions locked in 02_TINY_LEXER.md.
 - 2026-07-27 — Code Phase 1 marked COMPLETE. Code Phase 2 opened as TRUE · ACTIVE under living Psalm discipline. Next best step taken.
-- 2026-07-27 — NBD executed: Code Phase 2 Artifact 3 (Minimal Parser + AST Stub) written under preform/code/.
-- 2026-07-27 — NBD executed: Code Phase 2 Artifact 4 (Thin Runtime Stub) written. Offline DELL/FLOW evaluator against True registry.
-- 2026-07-27 — NBD executed: Code Phase 2 Artifact 5 (Grid / Coordinate Layer) written. Sparse (x,y) plane ready for Avatar.
-- 2026-07-27 — NBD executed: Code Phase 2 Artifact 6 (Avatar FSM Stub) written. Body-first, 8-dir, posture + locomotion.
-- 2026-07-27 — NBD executed: Code Phase 2 Artifact 7 (Static Expression Field) written. Code Phase 2 marked COMPLETE.
-- 2026-07-27 — Code Phase 3 opened. New living page 10 created. Artifact 8 (Face-State Cycles) written as structural growth of ExpressionField + Avatar, registered on page 10. Not a drop.
-- 2026-07-27 — Preform form growth: Page 05 Visual Glyph expanded to full living form (taxonomy, rules, incorporation map). Root VISUAL_GLYPH_LAYER.md treated as historical. Remaining root PHASE3_* and MANUAL_* files still to be folded.
+- 2026-07-27 — NBD executed: Code Phase 2 Artifact 3–7 completed (Parser, Runtime, Grid, Avatar FSM, Expression Field). Code Phase 2 COMPLETE.
+- 2026-07-27 — Code Phase 3 opened. Page 10 created. Artifact 8 (Face-State Cycles) grown from prior modules.
+- 2026-07-27 — Preform form growth: Page 05 Visual Glyph expanded to full living form.
+- 2026-07-27 — Preform form growth: Page 11 Persona Arsenal created. Added MANUELL (practical AutoFill / Syntax Coach). Reinforced Aetheris as primary always-active and The_Ancient as structural-only. AOK noted as always-on functional guard. Rejected clashing / duplicate / high-fog material from external pastes.
