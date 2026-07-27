@@ -15,7 +15,7 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 | Phase 3 Preform | IN PROGRESS |
 | Code Phase 1 | COMPLETE |
 | Code Phase 2 | COMPLETE |
-| Code Phase 3 | NOT STARTED |
+| Code Phase 3 | TRUE · ACTIVE |
 
 **Floor Lock (immutable):**  
 Alpha · Delta · Omega · Omni  
@@ -31,6 +31,7 @@ Focus = session target only
 3. Evolution log is appended at the bottom of this file.
 4. No silent changes to True registry or floor.
 5. Everything must remain practical, offline-capable, and token-efficient.
+6. Code artifacts must grow from prior True modules and be registered on a living page.
 
 ---
 
@@ -48,6 +49,7 @@ Focus = session target only
 | 07 | `pages/07_PHASE_STATUS.md` | Phase map + build order |
 | 08 | `pages/08_GODWORKSPACE.md` | GodWorkSpace UI keep-blend |
 | 09 | `pages/09_PHASE3_INTAKE.md` | Avatar, Kaomoji, Language components, Body/Heart/Mind |
+| 10 | `pages/10_CODE_PHASE3_LIVING.md` | Code Phase 3 living home + growth order |
 
 ---
 
@@ -63,3 +65,4 @@ Focus = session target only
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 5 (Grid / Coordinate Layer) written. Sparse (x,y) plane ready for Avatar.
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 6 (Avatar FSM Stub) written. Body-first, 8-dir, posture + locomotion.
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 7 (Static Expression Field) written. Code Phase 2 marked COMPLETE.
+- 2026-07-27 — Code Phase 3 opened. New living page 10 created. Artifact 8 (Face-State Cycles) written as structural growth of ExpressionField + Avatar, registered on page 10. Not a drop.

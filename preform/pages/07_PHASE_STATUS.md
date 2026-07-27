@@ -15,11 +15,14 @@ Registry data · flow · tiny lexer · offline capability
 ### Code Phase 2 — COMPLETE
 Parser · AST / runtime stub · grid · Avatar FSM stub · static expression field
 
-### Code Phase 3
+### Code Phase 3 — TRUE · ACTIVE
 GodWorkSpace · reach / inventory · kaomoji packs · ASCII animation player · Avatar face-state cycles
+
+Living home: `pages/10_CODE_PHASE3_LIVING.md`
 
 ### Code Phase 4+
 Phase 4 content · personas · heavy visual · multi-user
 
 ## Rule
 Make as many phases as needed. Never force material into the wrong phase.
+Growth must update the living pages, not only drop files.
