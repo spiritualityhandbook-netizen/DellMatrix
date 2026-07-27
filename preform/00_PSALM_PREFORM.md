@@ -61,3 +61,4 @@ Focus = session target only
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 3 (Minimal Parser + AST Stub) written under preform/code/.
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 4 (Thin Runtime Stub) written. Offline DELL/FLOW evaluator against True registry.
 - 2026-07-27 — NBD executed: Code Phase 2 Artifact 5 (Grid / Coordinate Layer) written. Sparse (x,y) plane ready for Avatar.
+- 2026-07-27 — NBD executed: Code Phase 2 Artifact 6 (Avatar FSM Stub) written. Body-first, 8-dir, posture + locomotion.
