@@ -1,23 +1,19 @@
-# 15 — Integrator (Code Phase 3 Artifact 15)
+# 15 — Integrator (HARDENED)
 
 Status: TRUE
 
-## Purpose
-Unified offline runner that closes the P0 gaps from the SUS audit.
+## Hardening
+- Loads real `01_REGISTRY_DATA.json` when present
+- Loads real `02_TINY_LEXER.tokenize` when present
+- Falls back cleanly if either is missing
+- `--smoke` runs full path tests (pick/stow/express/move/search/confirm)
 
-## Public API
-- `boot()` — seed demo world + seed strip
-- `command(content, intent?, **payload)` — inject into Thinks
-- `tick()` — observe body → execute one intent → advance anim → sync GWS
-- `render()` — GodWorkSpace text pane
-- `status()` — machine snapshot
+## Expanded GodWorkSpace
+- Dell search (`search(query)` → registry name/manor/number)
+- Pipeline confirm queue (`pipeline_add` / `confirm(n)`)
 
-## Intent bridge
-MOVE · TURN · PICK · PLACE · STOW · DRAW · EXPRESS · NOTE
-
-## Wires
-Grid · Avatar · Reach/Inventory · ASCII Anim · Thinks · GodWorkSpace · Token/WorkMem
-
-## Note
-Embeds minimal compatible stand-ins so the file runs standalone.
-Real 05–14 modules can replace stand-ins later without changing the API.
+## Run
+```bash
+python preform/code/15_INTEGRATOR.py          # demo
+python preform/code/15_INTEGRATOR.py --smoke  # smoke test
+```

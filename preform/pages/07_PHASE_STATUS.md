@@ -10,24 +10,17 @@ Status: Living
 ## Code Phases
 
 ### Code Phase 1 — COMPLETE
-Registry data · flow · tiny lexer · offline capability
+Registry · flow · tiny lexer · offline
 
 ### Code Phase 2 — COMPLETE
-Parser · AST / runtime stub · grid · Avatar FSM stub · static expression field
+Parser · runtime stub · grid · Avatar · expression field
 
-### Code Phase 3 — TRUE · ACTIVE (primary order + integrator COMPLETE)
-Artifacts 8–15:
-- Face-state cycles · Kaomoji packs · ASCII animation
-- Reach / inventory · GodWorkSpace shell · Thinks thread
-- Token budget + work-memory graph
-- **Integrator (unified offline runner)**
+### Code Phase 3 — TRUE · HARDENED COMPLETE
+Artifacts 8–15 (primary order + Integrator with smoke tests, Dell search, pipeline confirm)
 
-Living home: `pages/10_CODE_PHASE3_LIVING.md`
-
-Further expansion continues under page 10 as needed.
-
-### Code Phase 4+
-Phase 4 content · personas · heavy visual · multi-user
+### Code Phase 4 — PLANNING OPEN
+Living plan: `pages/12_CODE_PHASE4_PLAN.md`
+No implementation forced until directed.
 
 ## Rule
 Make as many phases as needed. Never force material into the wrong phase.

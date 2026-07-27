@@ -10,12 +10,11 @@ Purpose: Single source of truth for all Preform decisions so the system can grow
 
 | Layer | Status |
 |-------|--------|
-| Preform Phase 1 | COMPLETE |
-| Preform Phase 2 | COMPLETE |
+| Preform Phase 1–2 | COMPLETE |
 | Phase 3 Preform | MAJOR ROOT MATERIAL FOLDED |
-| Code Phase 1 | COMPLETE |
-| Code Phase 2 | COMPLETE |
-| Code Phase 3 | TRUE · ACTIVE — primary order + Integrator (Artifacts 8–15) |
+| Code Phase 1–2 | COMPLETE |
+| Code Phase 3 | TRUE · HARDENED (Artifacts 8–15) |
+| Code Phase 4 | PLANNING OPEN (page 12) |
 
 **Floor Lock (immutable):**  
 Alpha · Delta · Omega · Omni  
@@ -45,23 +44,23 @@ Focus = session target only
 |------|------|---------|
 | 00 | `00_PSALM_PREFORM.md` | This living index |
 | 01 | `pages/01_FLOOR_LOCK.md` | Floor + core agreement |
-| 02 | `pages/02_DELL_REGISTRY.md` | True Primaries 00–50 + Named Dell lightweight extension |
+| 02 | `pages/02_DELL_REGISTRY.md` | True Primaries 00–50 + Named Dell extension |
 | 03 | `pages/03_LANGUAGE_CORE.md` | Leight, Loure, terms, dual output |
 | 04 | `pages/04_PIPELINE_AUTHORITY.md` | True Mandel pipeline + Susan Foreign |
-| 05 | `pages/05_VISUAL_GLYPH.md` | Visual Glyph Layer (full living form) |
+| 05 | `pages/05_VISUAL_GLYPH.md` | Visual Glyph Layer |
 | 06 | `pages/06_MANUAL_FLOW_TEMP.md` | Manual, Flow operators, Temp |
 | 07 | `pages/07_PHASE_STATUS.md` | Phase map + build order |
-| 08 | `pages/08_GODWORKSPACE.md` | GodWorkSpace UI (terminal shell live) |
-| 09 | `pages/09_PHASE3_INTAKE.md` | Body/Heart/Mind/Avatar + Expression/Kaomoji + ASCII + Language Components + Memory/RAG (folded) |
-| 10 | `pages/10_CODE_PHASE3_LIVING.md` | Code Phase 3 living home + growth order |
-| 11 | `pages/11_PERSONA_ARSENAL.md` | Persona Arsenal (Aetheris primary, MANUELL, The_Ancient structural-only) |
+| 08 | `pages/08_GODWORKSPACE.md` | GodWorkSpace UI (search + pipeline live) |
+| 09 | `pages/09_PHASE3_INTAKE.md` | Body/Heart/Mind/Avatar + Expression + ASCII + Memory fold |
+| 10 | `pages/10_CODE_PHASE3_LIVING.md` | Code Phase 3 living home |
+| 11 | `pages/11_PERSONA_ARSENAL.md` | Persona Arsenal |
+| 12 | `pages/12_CODE_PHASE4_PLAN.md` | Code Phase 4 planning |
 
 ---
 
 ## Evolution Log
 
-- 2026-07-27 — Restructured entire current Preform into living page-by-page Psalm structure.
-- 2026-07-27 — Code Phase 1 + Code Phase 2 completed with offline artifacts.
-- 2026-07-27 — Code Phase 3 Artifacts 8–14 completed (primary growth order).
-- 2026-07-27 — SUS audit identified P0 integration gap.
-- 2026-07-27 — Artifact 15 Integrator added: unified offline runner, intent bridge (Thinks→Reach/Anim), live GodWorkSpace tick. P0 closed.
+- 2026-07-27 — Living Psalm structure established; Code Phase 1–2 complete.
+- 2026-07-27 — Code Phase 3 primary order (8–14) + Integrator (15) complete.
+- 2026-07-27 — Integrator hardened: real 01 registry + 02 lexer load, smoke tests, Dell search, pipeline confirm.
+- 2026-07-27 — Code Phase 4 planning page opened (page 12). No implementation forced.

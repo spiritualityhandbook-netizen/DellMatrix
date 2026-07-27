@@ -1,30 +1,23 @@
 # Page 08 — GodWorkSpace UI
 
-Status: TRUE · Minimal terminal shell live (Artifact 12)
+Status: TRUE · Terminal shell expanded (Artifact 15)
 
 ## Keep-blend Requirements
-1. Header + status
-2. Sections + interactive panels
-3. Temp C/W/H UI
-4. Search over Dell list
-5. Expand / collapse + copy
-6. Pipeline panel (Phase markers + numbered confirm queue)
-7. Read-only Mandel seed strip at the bottom (do not disturb)
-8. localStorage drafts only until True confirm
+1. Header + status — live
+2. Sections + interactive panels — live
+3. Temp C/W/H UI — live
+4. Search over Dell list — **live** (`search_dell`)
+5. Expand / collapse + copy — deferred
+6. Pipeline panel (Phase markers + numbered confirm queue) — **live**
+7. Read-only Mandel seed strip — live
+8. localStorage drafts only until True confirm — partial (in-memory)
 
-## Current Implementation (Artifact 12)
-Offline terminal shell covering:
-- Header + status
-- Temp C/W/H
-- Read-only seed strip
-- Drafts (in-memory)
-- Status panes for Avatar / frame / inventory
+## Current Implementation
+Artifact 15 GodWorkSpace:
+- Header · Temp · Avatar/Frame/Hand/Inv
+- Seed strip (read-only)
+- Pipeline queue + confirm
+- Dell search against real registry JSON
+- Log
 
-Still open for later expansion:
-- Full Dell search
-- Expand/collapse + copy
-- Pipeline panel with confirm queue
-- Graphical host (future)
-
-## Visual
-Uses the Visual Glyph Layer taxonomy.
+Still open: expand/collapse, copy helpers, full draft persistence.
