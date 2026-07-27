@@ -11,21 +11,29 @@ All new material for this phase must either:
 
 No silent code drops. Growth only through the Psalm.
 
-## Code Phase 3 Scope (from page 07)
+## Code Phase 3 Scope
 
 - GodWorkSpace implementation (see page 08)
 - Reach / inventory
 - Kaomoji packs (expandable)
 - ASCII animation player
 - Avatar face-state cycles
+- Thinks (async cognitive thread) bound to body state
 
-## Current Growth Order (calculated)
+## Current Growth Order (updated)
 
-1. Avatar face-state cycles (extends ExpressionField + Avatar FSM) — ACTIVE
-2. Expandable kaomoji packs
-3. ASCII animation player
+1. Avatar face-state cycles (extends ExpressionField + Avatar FSM) — **DONE** (Artifact 8)
+2. Expandable kaomoji packs — **NEXT** (data packs + Tone/Show acceptance)
+3. ASCII animation player (frames + Cycle/Show hooks)
 4. Reach / inventory on Grid
 5. GodWorkSpace UI implementation
+6. Thinks thread (async, body-first law enforced)
+
+## Folded material from root
+
+- Expression / Kaomoji categories and rules → page 09
+- Body · Heart · Mind · Avatar law and phase ownership → page 09
+- ASCII Animation model, efficiency rules, Dell hooks → page 09
 
 ## Evolution rule for this page
 
