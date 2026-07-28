@@ -7,17 +7,18 @@
 | Layer | Status |
 |-------|--------|
 | Code Phase 1–3 | COMPLETE · HARDENED |
-| Code Phase 4 | ACTIVE (4.1–4.3 · 4B · Distribution) |
-| **Blank Seed + Snap-back** | **TRUE** |
+| Code Phase 4 | ACTIVE |
+| Blank Seed + Snap-back + Give-pack | TRUE |
 
 **Floor Lock:** Alpha · Delta · Omega · Omni · Nova=Cheat only
 
-## Distribution model
-- **Main** (`preform/`) — living shared True
-- **Blank** (`preform/seed/`) — give to others (basics only)
-- **Personal** (`seed/personal/`) — their enhancements
-- **Snap** — voluntary upward Bind; Floor never overwritten
+## Distribution
+- Main = living shared True
+- Blank = `preform/seed/` give-away
+- Personal = local enhance
+- Snap = voluntary upward Bind
+- Handoff gate = `seed/check_seed.py` → READY TO GIVE
 
 ## Evolution Log
 
-- 2026-07-28 — Distribution NBD: Blank Dell Matrix seed, DISTRIBUTION guide, SNAP_TEMPLATE, Snap Registry (Artifact 20). Others can start minimal, enhance locally, snap contributions back to Main without replacing Floor or each other’s sandboxes.
+- 2026-07-28 — Give-pack NBD: `GIVE_PACK.md` + `check_seed.py` integrity gate for clean handoff of Blank Dell Matrix.

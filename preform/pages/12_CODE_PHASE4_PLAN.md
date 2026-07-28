@@ -7,17 +7,10 @@ Status: ACTIVE
 | Cell | Status |
 |------|--------|
 | 4.1–4.3 · 4B | TRUE |
-| **Distribution · Blank Seed · Snap-back** | **TRUE** |
-| 4C Persona runtime lens | NEXT (optional) |
+| Distribution · Blank Seed · Snap-back | TRUE |
+| **Give-pack checklist + seed integrity** | **TRUE** |
+| 4C Persona runtime lens | optional NEXT |
 
-## Distribution artifacts
-- `preform/DISTRIBUTION.md` — give Full vs Blank; snap rules
-- `preform/seed/` — Blank Dell Matrix for others
-- `preform/seed/SNAP_TEMPLATE/` — contribution shape
-- `preform/code/20_SNAP_REGISTRY.py` — validate packs
-
-## Model
-Main = living shared True  
-Blank = give-away basics  
-Personal = local enhance  
-Snap = voluntary Bind upward (Floor never merges)
+## Handoff
+- `seed/GIVE_PACK.md` — what to send + what to say
+- `seed/check_seed.py` — READY TO GIVE gate

@@ -4,76 +4,64 @@ Status: TRUE · Living
 
 ## What you can give someone
 
-### A) Full Living Matrix (this repo)
-Everything under `preform/` — Floor, registry, Code Phase artifacts, Integrator, panels.
-Use when they want the complete working system.
+### A) Full Living Matrix
+Whole `preform/` (or whole repo). Complete system.
 
-### B) Blank Dell Matrix (seed only)
+### B) Blank Dell Matrix (recommended handoff)
 Folder: `preform/seed/`
 
-Minimal kit:
-- Floor lock (immutable)
-- Core Dell registry 00–26 + Manifest 50
-- Dual-output law (Mandel inside · English display)
-- Offline stub runner
-- Empty personal snap slot
-
-They enhance **their** copy. They do not need your full history.
+Before sending:
+```bash
+cd preform/seed && python check_seed.py
+```
+Follow `seed/GIVE_PACK.md`.
 
 ---
 
-## How others use the Blank
-
-1. Copy `preform/seed/` (or clone repo and work only in seed).
-2. Read `seed/00_FLOOR.md` and `seed/README.md`.
-3. Run `python seed/blank_runner.py` — confirms Floor + registry live.
-4. Add personal pages under `seed/personal/` only.
-5. Add personal code under `seed/personal_code/` only.
-6. Never edit Floor or True registry numbers in the seed core.
+## Recipient path
+1. Open `seed/`
+2. `python blank_runner.py`
+3. Enhance under `personal/` and `personal_code/` only
+4. Floor + core registry stay locked
+5. Optional later: fill `SNAP_TEMPLATE` → propose to Main
 
 ---
 
-## Snap-back to Main (contribution path)
+## Snap-back to Main
 
-Personal work stays local until they choose to snap.
+Personal work stays local until they snap.
 
 ### Rules
-1. **Floor never merges** — Alpha·Delta·Omega·Omni stay locked everywhere.
-2. **Registry numbers 00–50 are shared True** — personal may *alias* (Named Dell) but not redefine manors.
-3. **Snap packages** are additive modules: pages, packs, panels, helpers.
-4. Main accepts a snap only if:
-   - Floor untouched
-   - No decipherment claims
-   - Offline-capable
-   - Declares what it adds (manifest)
-5. Snap does **not** delete anyone else’s personal matrix.
+1. Floor never merges — Alpha·Delta·Omega·Omni everywhere
+2. Registry 00–50 manors not redefined (Named Dell aliases OK)
+3. Snap packs are additive only
+4. Main accepts only Floor-safe, offline, non-decipherment packs
+5. Snap does not delete anyone’s personal matrix
 
 ### Snap package shape
 ```
 snap_pack/
-  MANIFEST.md      # name, author, what it adds, Dell hooks
-  pages/           # optional living page fragments
-  code/            # optional offline modules
-  personal/        # optional — stays with author unless dual-licensed
+  MANIFEST.md
+  pages/
+  code/
 ```
+
+Validate: `python preform/code/20_SNAP_REGISTRY.py`
 
 ### Flow
 ```
-Blank → personal enhance → snap_pack → propose to Main
-Main  → review (Architect) → bind into living pages/code
-Author keeps their Blank+personal intact either way
+Blank → personal enhance → snap_pack → Main review → Bind
+Author keeps Blank+personal either way
 ```
-
-Main enhancement absorbs useful snaps so **what you’re doing, what they’re doing, what anyone given the kit is doing** can feed the same living matrix without overwriting individual sandboxes.
 
 ---
 
-## Identity of matrices
+## Matrix identity
 
 | Matrix | Role |
 |--------|------|
-| **Main** (`preform/`) | Living shared True — Floor, registry, verified artifacts |
-| **Blank** (`preform/seed/`) | Give-away starter — basics only |
-| **Personal** (`seed/personal/`) | Their enhancements — local until snapped |
+| Main (`preform/`) | Living shared True |
+| Blank (`preform/seed/`) | Give-away starter |
+| Personal (`seed/personal/`) | Local enhancements |
 
-Snap is voluntary Bind, not automatic sync.
+Snap = voluntary Bind, not automatic sync.

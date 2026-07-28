@@ -1,29 +1,33 @@
 # Blank Dell Matrix (Seed)
 
-This is the **give-away starter**. Basics only.
+Give-away starter. Basics only.
 
 ## Included
 - Floor: Alpha · Delta · Omega · Omni (locked)
 - Dual-output law
-- Core Dells 00–26 + 50 Manifest
-- Core flows
-- Offline blank runner
-- Empty `personal/` and `personal_code/` for your enhancements
+- Core Dells + Manifest 50
+- Offline `blank_runner.py`
+- Empty `personal/` + `personal_code/`
+- `SNAP_TEMPLATE/` for upward contribution
+- `GIVE_PACK.md` — handoff checklist
+- `check_seed.py` — integrity before you send
 
-## Not included
-Full Code Phase stack, Integrator, personas, your friend’s private work.
-You add what you need.
-
-## Quick start
+## Quick start (recipient)
 ```bash
 cd preform/seed
 python blank_runner.py
 ```
 
-## Enhance
-1. Put notes/pages in `personal/`
-2. Put offline scripts in `personal_code/`
-3. Keep Floor + `CORE_REGISTRY.json` unchanged
+## Before you give this folder away (author)
+```bash
+python check_seed.py
+```
+Expect: `READY TO GIVE`
 
-## Snap back to Main later
-See `../DISTRIBUTION.md` — package a `snap_pack/` when you want to contribute upward.
+## Enhance
+1. Notes → `personal/`
+2. Scripts → `personal_code/`
+3. Do not edit Floor or core registry manors
+
+## Snap back to Main
+See `../DISTRIBUTION.md` and `SNAP_TEMPLATE/`.
