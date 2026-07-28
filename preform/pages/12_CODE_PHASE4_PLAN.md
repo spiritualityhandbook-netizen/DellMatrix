@@ -4,13 +4,20 @@ Status: ACTIVE
 
 ## Active cells
 
-| Cell | Artifact | Status |
-|------|----------|--------|
-| 4.1 Import Adapter | `16_IMPORT_ADAPTER.py` | TRUE |
-| 4.2 Adapter bridge | `resolve_components` | TRUE |
-| 4.3 Token Show Gate | `18_TOKEN_SHOW_GATE.py` | TRUE |
-| 4B GWS expand/collapse + flow search | `19_GWS_PANELS.py` | **TRUE** |
-| 4C Persona runtime lens | — | **NEXT** |
+| Cell | Status |
+|------|--------|
+| 4.1–4.3 · 4B | TRUE |
+| **Distribution · Blank Seed · Snap-back** | **TRUE** |
+| 4C Persona runtime lens | NEXT (optional) |
 
-## Entry rules
-Functionality first · offline · register on page + Psalm
+## Distribution artifacts
+- `preform/DISTRIBUTION.md` — give Full vs Blank; snap rules
+- `preform/seed/` — Blank Dell Matrix for others
+- `preform/seed/SNAP_TEMPLATE/` — contribution shape
+- `preform/code/20_SNAP_REGISTRY.py` — validate packs
+
+## Model
+Main = living shared True  
+Blank = give-away basics  
+Personal = local enhance  
+Snap = voluntary Bind upward (Floor never merges)
