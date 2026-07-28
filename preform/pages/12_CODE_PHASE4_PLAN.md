@@ -1,11 +1,11 @@
 # Page 12 — Code Phase 4 Planning
 
-Status: ACTIVE · 4C complete
+Status: ACTIVE
 
 | Cell | Status |
 |------|--------|
-| 4.1–4.3 · 4B | TRUE |
-| Distribution · Blank · Pack | TRUE |
-| **4C Persona runtime lens** | **TRUE** (`21_PERSONA_LENS.py`) |
+| 4.1–4.3 · 4B · 4C | TRUE |
+| Distribution · Pack | TRUE |
+| **Lens ↔ Integrator bridge** | **TRUE** (`22_LENS_BRIDGE.py`) |
 
-Further Phase 4 polish optional (wire lens into Integrator tick, richer MANUELL map).
+Optional later: embed bridge panel inside full GodWorkSpace render.
