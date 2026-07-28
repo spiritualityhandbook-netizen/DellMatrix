@@ -7,18 +7,14 @@
 | Layer | Status |
 |-------|--------|
 | Code Phase 1–3 | COMPLETE · HARDENED |
-| Code Phase 4 | ACTIVE |
-| Blank Seed + Snap-back + Give-pack | TRUE |
+| Blank Seed + Snap + Give + Pack zip | TRUE |
 
-**Floor Lock:** Alpha · Delta · Omega · Omni · Nova=Cheat only
+**Floor:** Alpha · Delta · Omega · Omni · Nova=Cheat only
 
-## Distribution
-- Main = living shared True
-- Blank = `preform/seed/` give-away
-- Personal = local enhance
-- Snap = voluntary upward Bind
-- Handoff gate = `seed/check_seed.py` → READY TO GIVE
+## Handoff
+```bash
+cd preform/seed && python pack_seed.py   # → READY TO SEND
+```
 
 ## Evolution Log
-
-- 2026-07-28 — Give-pack NBD: `GIVE_PACK.md` + `check_seed.py` integrity gate for clean handoff of Blank Dell Matrix.
+- 2026-07-28 — `pack_seed.py`: integrity + zip one-command handoff for Blank Dell Matrix.

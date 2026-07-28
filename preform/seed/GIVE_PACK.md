@@ -1,41 +1,42 @@
 # Give Pack — Hand someone a Blank Dell Matrix
 
+## Fast path (recommended)
+
+```bash
+cd preform/seed
+python pack_seed.py
+```
+
+That:
+1. Runs integrity check
+2. Builds `BlankDellMatrix-YYYY-MM-DD.zip` next to `seed/`
+3. Prints `READY TO SEND`
+
+Send the zip.
+
+Manual check only:
+```bash
+python check_seed.py
+```
+
+---
+
 ## What to send
-Send **only** the `preform/seed/` folder (or a zip of it).
+**Blank:** the zip from `pack_seed.py` (or the `seed/` folder)  
+**Full living:** whole repo only if they ask for everything
 
-Do **not** require them to take your full Main history unless they ask for the full living matrix.
+## What you tell them
 
-## Checklist before you send
-
-- [ ] `00_FLOOR.md` present (Alpha · Delta · Omega · Omni)
-- [ ] `01_DUAL_OUTPUT.md` present
-- [ ] `CORE_REGISTRY.json` present and valid JSON
-- [ ] `blank_runner.py` present
-- [ ] `README.md` present
-- [ ] `personal/` empty (or only `.gitkeep`) — their space
-- [ ] `personal_code/` empty (or only `.gitkeep`)
-- [ ] `SNAP_TEMPLATE/MANIFEST.md` present
-- [ ] Run integrity check: `python check_seed.py` → READY
-
-## What you tell them (short)
-
-1. Unzip / open `seed/`
-2. Run: `python blank_runner.py`
-3. Put your own notes in `personal/`
-4. Put your own scripts in `personal_code/`
+1. Unzip
+2. `cd seed` (folder name may be `seed` inside the zip)
+3. `python blank_runner.py`
+4. Put notes in `personal/` · scripts in `personal_code/`
 5. Do not edit Floor or core registry manors
-6. When you want to contribute upward, copy `SNAP_TEMPLATE/` → fill MANIFEST → see `../DISTRIBUTION.md`
+6. Optional later: `SNAP_TEMPLATE/` → see DISTRIBUTION.md to contribute up
 
-## Two gifts
+## Checklist (if packing by hand)
 
-| Gift | Contents |
-|------|----------|
-| **Blank** | `preform/seed/` only |
-| **Full Living** | whole repo / whole `preform/` |
-
-Blank = they build their way.  
-Full = they inherit Main + can still keep a personal fork.
-
-## After they enhance
-Their work stays theirs until they build a snap pack.  
-You absorb snaps into Main only when Floor-safe and useful.
+- [ ] `python check_seed.py` → READY TO GIVE
+- [ ] personal slots empty (or intentional examples only)
+- [ ] SNAP_TEMPLATE present
+- [ ] Floor still Alpha · Delta · Omega · Omni
