@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — sandbox on|off (default OFF)."""
+"""REPL — sandbox default OFF + network + grow ideas."""
 
 from __future__ import annotations
 
@@ -22,9 +22,9 @@ except ImportError:
 
 HELP = """
   place | grow ideas [N] | enhance on|off | sandbox on|off
-  pulse | show | visual | save | realize | tutorial | help | quit
-
-Sandbox DEFAULT OFF (ideas connected). sandbox on = isolation mode.
+  ambient on | ambient files|screen|mic|clipboard on | intake
+  network <url> | net_push | net_pull
+  pulse | show | visual | save | help | quit
 """.strip()
 
 
@@ -36,7 +36,7 @@ def _skin(name: str) -> Skin:
 
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
-    print("Dell Matrix — sandbox default OFF")
+    print("Dell Matrix FORM — sandbox default OFF · ambient folders · network ready")
     print(f"owner={owner}\n")
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
@@ -61,7 +61,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd in ("help", "?"):
             print(HELP)
         elif cmd == "tutorial":
-            print("place ideas → grow ideas 5 → show\nsandbox on (isolate all) → sandbox off (reconnect)")
+            print("place a A words · place b B words · grow ideas 5 · sandbox on|off")
         elif cmd == "realize":
             from form.realize import realize
 
@@ -71,8 +71,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd == "show":
             print(p.render())
         elif cmd == "status":
-            st = p.status()
-            print({"sandbox": st["sandbox"], "enhance": st["enhance"]["on"], "units": list(p.cube.session.plane.units.keys())})
+            print(p.status())
         elif cmd == "scores":
             print(p.scores())
         elif cmd == "main":
@@ -87,7 +86,14 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             elif parts[1] == "off":
                 print(p.sandbox_off())
             else:
-                print("sandbox | sandbox on | sandbox off")
+                print("sandbox on|off")
+        elif cmd == "network" and len(parts) >= 2:
+            p.set_network(parts[1])
+            print("network", p.network_url)
+        elif cmd == "net_push":
+            print(p.net_push())
+        elif cmd == "net_pull":
+            print(p.net_pull())
         elif cmd == "ambient":
             if len(parts) == 1:
                 print(p.ambient.status())
@@ -106,10 +112,11 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd == "verify":
             print(p.matrix.verify())
         elif cmd == "health":
-            print({"sandbox": p.sandbox.on, "enhance": p.enhance.on, "units": len(p.cube.session.plane.units)})
+            print({"sandbox": p.sandbox.on, "enhance": p.enhance.on, "net": p.network_url or None})
         elif cmd == "place" and len(parts) >= 3:
             p.place(parts[1], parts[2], words=" ".join(parts[3:]), skin=Skin.CUBE)
-            print("placed", parts[1], "sandboxed" if p.cube.session.plane.units[parts[1]].sandboxed else "connected")
+            u = p.cube.session.plane.units[parts[1]]
+            print("placed", parts[1], "sandboxed" if u.sandboxed else "connected")
         elif cmd == "words" and len(parts) >= 3:
             u = p.cube.session.plane.units.get(parts[1])
             if u:
