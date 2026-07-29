@@ -6,17 +6,17 @@
 
 | Layer | Status |
 |-------|--------|
-| Code Phase 1–3 | COMPLETE · HARDENED |
-| Code Phase 4 | TRUE · Compose · SUS · Capabilities doc |
+| Code Phase 1–4 | TRUE |
+| Voynich structural 5-ring | TRUE (not decipherment) |
+| DuoBeta-style evolve loop | TRUE |
 | Blank handoff | TRUE |
 
-**Floor:** Alpha · Delta · Omega · Omni · Nova=Cheat only
+**Floor:** Alpha · Delta · Omega · Omni
 
 ## Surfaces
-- Living: `python preform/code/29_COMPOSE_ENTRY.py`
+- Compose: `python preform/code/29_COMPOSE_ENTRY.py`
+- **Self-evolve workspace:** `python preform/code/31_VOYNICH_DUOBETA.py`
 - Give: `cd preform/seed && python pack_seed.py`
-- **What it can do:** `preform/CAPABILITIES.md`
-- **Where it is:** `preform/CURRENT_STATUS.md`
 
 ## Evolution Log
-- 2026-07-28 — CAPABILITIES + CURRENT_STATUS written for operators and recipients.
+- 2026-07-28 — Voynich structural rings + DuoBeta-style propose/gate/ledger/evolve (`31_VOYNICH_DUOBETA.py`).
