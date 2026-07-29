@@ -2,5 +2,5 @@
 
 | NBD | Result |
 |-----|--------|
-| SelfGrow L3 | selfgrow.py |
-| **Resonance L3** | **resonance.py** — history, decay, clear, richer vesica |
+| Resonance L3 | resonance.py |
+| **EnhanceGate L3** | **enhance_gate.py** — budget, decay/clear, level 3 |
