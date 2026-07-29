@@ -2,5 +2,5 @@
 
 | NBD | Module |
 |-----|--------|
-| Main L3 | main_field.py |
-| **Surface coherence** | open render scores · persist pulls · REPL main/scores/pull |
+| Surface coherence | open/persist/repl |
+| **BlankCube L3** | **blank_cube.py** — clean give, pack export/import, contact |

@@ -2,6 +2,7 @@
 
 ```bash
 python -m form.repl --owner Ace
-python -m form.dell_matrix.main_field --smoke
-python -m form.dell_matrix.plane --smoke
+python -m form.dell_matrix.blank_cube --give Alice
+python -m form.dell_matrix.blank_cube --give Bob --clean
+python -m form.dell_matrix.blank_cube --smoke
 ```
