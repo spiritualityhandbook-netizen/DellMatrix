@@ -2,9 +2,7 @@
 
 ```bash
 python -m form.open
-python -m form.open --smoke
-python -m form.dell_matrix.enhance_gate --smoke
-python -m form.dell_matrix.resonance --smoke
+python -m form.persist --smoke
+# after using program:
+# save/load via form.persist.save / form.persist.load
 ```
-
-Enhance is **OFF** until you turn it on.

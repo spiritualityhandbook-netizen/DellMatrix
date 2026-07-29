@@ -8,6 +8,9 @@
 | OneProgramBoot | open.py |
 | GraphView | graph_view.py |
 | ResonanceAct | resonance.py |
-| **EnhanceGate** | **enhance_gate.py** — default OFF; gates pulse |
+| EnhanceGate | enhance_gate.py |
+| **Persist** | **persist.py** — save/load program state |
 
-Next recompute: L3 depth, persistence, richer UI, ambient learn (preform until ready)…
+```bash
+python -m form.persist --smoke
+```
