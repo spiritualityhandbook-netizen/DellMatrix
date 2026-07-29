@@ -7,6 +7,7 @@
 | BlankCube | blank_cube.py |
 | OneProgramBoot | open.py |
 | GraphView | graph_view.py |
-| **ResonanceAct** | **resonance.py** — pulse enhance + vesica + sandbox isolation |
+| ResonanceAct | resonance.py |
+| **EnhanceGate** | **enhance_gate.py** — default OFF; gates pulse |
 
-Next: EnhanceGate, L3 depth, wire pulse into open.py, UI polish…
+Next recompute: L3 depth, persistence, richer UI, ambient learn (preform until ready)…

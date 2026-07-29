@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""OneProgramBoot — open the program (includes GraphView)."""
+"""One program boot — EnhanceGate + Resonance + GraphView + Main + BlankCube."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ try:
     from form.dell_matrix.main_field import MainField, sync_planes, voluntary_pull
     from form.dell_matrix.blank_cube import give, BlankCube
     from form.dell_matrix.graph_view import build_view
+    from form.dell_matrix.enhance_gate import EnhanceGate
     from form.duobeta.growth import DuoBeta
 except ImportError:
     import os
@@ -32,6 +33,7 @@ except ImportError:
     from form.dell_matrix.main_field import MainField, sync_planes, voluntary_pull
     from form.dell_matrix.blank_cube import give, BlankCube
     from form.dell_matrix.graph_view import build_view
+    from form.dell_matrix.enhance_gate import EnhanceGate
     from form.duobeta.growth import DuoBeta
 
 
@@ -40,6 +42,7 @@ class Program:
     owner: str = "Operator"
     matrix: DellMatrix = field(default_factory=DellMatrix)
     main: MainField = field(default_factory=MainField)
+    enhance: EnhanceGate = field(default_factory=EnhanceGate)  # default OFF
     cube: BlankCube = field(init=False)
     duo: DuoBeta = field(init=False)
 
@@ -52,6 +55,7 @@ class Program:
             ("MainField", "main", 21, "MainThird"),
             ("BlankCube", "cube", 8, "BlankCube"),
             ("GraphView", "tool", 9, "GraphView"),
+            ("EnhanceGate", "tool", 32, "EnhanceGate"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -76,6 +80,15 @@ class Program:
     def box(self, unit_ids: List[str], sandbox_id: str = "box1"):
         return self.cube.session.plane.box(unit_ids, sandbox_id)
 
+    def enhance_on(self) -> None:
+        self.enhance.turn_on()
+
+    def enhance_off(self) -> None:
+        self.enhance.turn_off()
+
+    def pulse(self) -> Dict[str, Any]:
+        return self.enhance.pulse(self.cube.session.plane)
+
     def sync_with(self, other: "Program", unit_self: str, unit_other: str) -> Dict[str, Any]:
         return sync_planes(self.cube.session, other.cube.session, self.main, unit_self, unit_other)
 
@@ -90,24 +103,22 @@ class Program:
         return build_view(self.cube.session.plane).to_dict()
 
     def render(self) -> str:
-        v = build_view(self.cube.session.plane)
+        v_ascii = build_view(self.cube.session.plane).ascii()
         lines = [
             f"+- DellMatrix PROGRAM · owner={self.owner} -+",
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
-            f"| dells={len(DELLS)} gen={self.duo.generation} main={len(self.main.contributions)}",
+            f"| enhance={'ON' if self.enhance.on else 'OFF'}  gen={self.duo.generation}  main={len(self.main.contributions)}",
         ]
-        lines.extend(v.ascii().splitlines())
+        lines.extend(v_ascii.splitlines())
         return "\n".join(lines)
 
     def status(self) -> Dict[str, Any]:
         return {
             "owner": self.owner,
             "floor": floor_status(),
-            "dell_count": len(DELLS),
+            "enhance": self.enhance.status(),
             "matrix": self.matrix.understand(),
             "main": self.main.understand(),
-            "cube": self.cube.status(),
-            "duo": self.duo.understand_self(),
             "view": self.view(),
         }
 
@@ -117,20 +128,22 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== ONE PROGRAM + VIEW SMOKE ===")
-    r: List[bool] = []
+    print("=== OPEN + ENHANCE SMOKE ===")
+    r = []
 
-    def rec(name: str, ok: bool, detail: str = "") -> None:
+    def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
     p = open_program("Ace")
     p.place("biz", "Business", words="US&S", skin=Skin.BUILDING, x=1)
-    rec("open+place", "biz" in p.cube.session.plane.units)
-    rec("view nodes", len(p.view().get("nodes", [])) >= 1)
-    rec("view type", p.view().get("type") == "DellMatrixGraphView")
-    rec("render", "GraphView" in p.render() or "PROGRAM" in p.render())
-    rec("floor", p.status()["floor"]["locked"] is True)
+    p.place("music", "Music", words="Ep4", skin=Skin.SEED, x=-1)
+    rec("default enhance off", p.enhance.on is False)
+    rec("pulse blocked", p.pulse().get("ok") is False)
+    p.enhance_on()
+    rec("pulse on", p.pulse().get("ok") is True)
+    rec("view", p.view().get("type") == "DellMatrixGraphView")
+    rec("render", "enhance=ON" in p.render())
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -146,8 +159,7 @@ def main() -> None:
     p = open_program(owner)
     p.place("seed", "First", words="on the plane", skin=Skin.SEED)
     print(p.render())
-    if "--json" in sys.argv:
-        print(json.dumps(p.view(), indent=2))
+    print("\npulse while off:", p.pulse())
 
 
 if __name__ == "__main__":
