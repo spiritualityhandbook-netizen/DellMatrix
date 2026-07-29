@@ -3,6 +3,14 @@
 Status: Living
 
 ## Code Phase 1–3 — COMPLETE · HARDENED
-## Code Phase 4 — TRUE for core + GWS lens embed
+## Code Phase 4 — TRUE (incl. Unified Entry)
 
-Handoff: `preform/seed/pack_seed.py`
+### Run living core
+```bash
+python preform/code/24_UNIFIED_ENTRY.py
+```
+
+### Give Blank to others
+```bash
+cd preform/seed && python pack_seed.py
+```
