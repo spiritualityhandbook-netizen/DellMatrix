@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — NBD x10 surface commands included."""
+"""REPL — SUS audit: ambient + snapshot_main on surface."""
 
 from __future__ import annotations
 
@@ -21,13 +21,17 @@ except ImportError:
     from form.persist import list_checkpoints
 
 HELP = """
+Quick path:
+  place idea1 MyIdea words here
+  enhance on → pulse → show → visual → save
+
 Commands:
-  help | show | status | scores | main | shared | verify | health
+  help | show | status | scores | main | shared | ambient | verify | health
   place | words | skin | move | remove | box | unbox | neighbors
   perspective | zoom
   enhance on|off | pulse | decay [factor] | clear
   pull <unit> <tag>
-  push_main | pull_main
+  push_main | pull_main | snapshot_main
   visual | checkpoint | checkpoints | pack | save | load | grow
   quit
 """.strip()
@@ -41,8 +45,8 @@ def _skin(name: str) -> Skin:
 
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
-    print("01[Initiate] > 13[Loop] >> 09[Show] :: REPL")
-    print(f"English: Dell Matrix — owner={owner}\n")
+    print("Dell Matrix REPL — type help")
+    print(f"owner={owner}\n")
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
 
@@ -69,17 +73,19 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             print(p.render())
         elif cmd == "status":
             st = p.status()
-            print({"owner": st["owner"], "enhance": st["enhance"]["on"], "main": st["main"], "units": list(p.cube.session.plane.units.keys())})
+            print({"owner": st["owner"], "enhance": st["enhance"]["on"], "ambient": st["ambient"]["master_on"], "main": st["main"], "units": list(p.cube.session.plane.units.keys())})
         elif cmd == "scores":
             print(p.scores())
         elif cmd == "main":
             print(p.main.summary())
         elif cmd == "shared":
             print(p.shared_main_summary())
+        elif cmd == "ambient":
+            print(p.ambient.status())
         elif cmd == "verify":
             print(p.matrix.verify())
         elif cmd == "health":
-            print({"enhance": p.enhance.on, "units": len(p.cube.session.plane.units), "gen": p.duo.generation, "verify_ok": p.matrix.verify().get("ok")})
+            print({"enhance": p.enhance.on, "ambient": p.ambient.master_on, "units": len(p.cube.session.plane.units), "gen": p.duo.generation, "verify_ok": p.matrix.verify().get("ok")})
         elif cmd == "place" and len(parts) >= 3:
             p.place(parts[1], parts[2], words=" ".join(parts[3:]), skin=Skin.CUBE)
             print("placed", parts[1])
@@ -131,6 +137,8 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             print(p.push_main())
         elif cmd == "pull_main":
             print(p.pull_main())
+        elif cmd == "snapshot_main":
+            print(p.snapshot_main())
         elif cmd == "visual":
             print(p.visual())
         elif cmd == "checkpoint":
@@ -152,7 +160,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         else:
             print("unknown — type help")
 
-    print("20[Alpha] :: REPL end")
+    print("session end")
 
 
 def main() -> None:

@@ -1,4 +1,4 @@
-"""Dell Matrix snap host L3 — required set includes Visual + SharedMain."""
+"""Dell Matrix snap host L3."""
 
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -33,6 +33,7 @@ REQUIRED_FOR_OPEN: Tuple[str, ...] = (
     "Persist",
     "Visual",
     "SharedMain",
+    "AmbientGate",
 )
 
 
