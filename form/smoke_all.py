@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unified Form smoke."""
+"""Unified Form smoke — SUS full suite."""
 
 from __future__ import annotations
 
@@ -26,12 +26,15 @@ def main() -> None:
     from form.dell_matrix.visual import smoke as vis_smoke
     from form.dell_matrix.shared_main import smoke as shared_smoke
     from form.dell_matrix.ambient_gate import smoke as ambient_smoke
+    from form.dell_matrix.sandbox_gate import smoke as sandbox_smoke
+    from form.dell_matrix.idea_grow import smoke as idea_smoke
+    from form.dell_matrix.network_main import smoke as net_smoke
     from form.dell_matrix.graph_view import smoke as graph_smoke
     from form.persist import smoke as persist_smoke
     from form.open import smoke as open_smoke
     from form.dual_output import smoke as dual_smoke
 
-    for name, fn in [
+    suite = [
         ("plane", plane_smoke),
         ("main_field", main_smoke),
         ("resonance", res_smoke),
@@ -40,14 +43,34 @@ def main() -> None:
         ("visual", vis_smoke),
         ("shared_main", shared_smoke),
         ("ambient_gate", ambient_smoke),
+        ("sandbox_gate", sandbox_smoke),
+        ("idea_grow", idea_smoke),
+        ("network_main", net_smoke),
         ("graph_view", graph_smoke),
         ("persist", persist_smoke),
         ("open", open_smoke),
         ("dual_output", dual_smoke),
-    ]:
+    ]
+    for name, fn in suite:
         run(name, fn)
 
-    print("\n=== SMOKE ALL ===")
+    # full required verify
+    print("\n--- verify_required ---")
+    try:
+        from form.open import open_program
+
+        p = open_program("SUSVerify")
+        v = p.matrix.verify()
+        ok = v.get("ok") is True
+        if not ok:
+            print("missing:", v.get("missing"))
+        print("PASS" if ok else "FAIL")
+        results.append(("verify_required", ok))
+    except Exception as e:
+        print("ERROR:", e)
+        results.append(("verify_required", False))
+
+    print("\n=== SMOKE ALL SUS ===")
     for name, ok in results:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}")
     passed = sum(1 for _, ok in results if ok)

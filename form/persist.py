@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Persist L3 — includes ambient gate flags (Form 1.00 completeness)."""
+"""Persist — SUS: sandbox + network_url + ambient + enhance."""
 
 from __future__ import annotations
 
@@ -63,13 +63,15 @@ def serialize(program: Program) -> Dict[str, Any]:
     amb = program.ambient
     return {
         "type": "DellMatrixProgramState",
-        "version": 4,
+        "version": 5,
         "level": LEVEL,
-        "form_scope": "1.00",
+        "form_scope": "SUS",
         "saved": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "floor": list(FLOOR),
         "owner": program.owner,
         "enhance_on": program.enhance.on,
+        "sandbox_on": program.sandbox.on,
+        "network_url": program.network_url or "",
         "ambient": {
             "master_on": amb.master_on,
             "enabled": dict(amb.enabled),
@@ -180,6 +182,14 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     else:
         p.enhance.turn_off()
 
+    # sandbox gate: restore flag only; unit flags already set
+    if data.get("sandbox_on"):
+        p.sandbox.turn_on()
+    else:
+        p.sandbox.turn_off()
+
+    p.network_url = data.get("network_url") or ""
+
     amb = data.get("ambient", {})
     if amb.get("master_on"):
         p.ambient.turn_on()
@@ -230,29 +240,32 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
 
 
 def smoke() -> bool:
-    print("=== PERSIST V4 SMOKE ===")
+    print("=== PERSIST SUS SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    p = open_program("PersistV4")
+    p = open_program("PersistSUS")
     p.place("biz", "Business", words="CRM", skin=Skin.BUILDING, x=1)
     p.enhance_on()
     p.pulse()
+    p.sandbox.turn_on()
+    p.set_network("http://127.0.0.1:8765")
     p.ambient.turn_on()
     p.ambient.enable_source("files")
     path = save(p)
     rec("save", os.path.isfile(path))
-    p2 = load("PersistV4")
+    p2 = load("PersistSUS")
     rec("units", "biz" in p2.cube.session.plane.units)
-    rec("ambient master", p2.ambient.master_on is True)
-    rec("ambient files", p2.ambient.enabled.get("files") is True)
-    rec("enhance", p2.enhance.on is True)
+    rec("sandbox flag", p2.sandbox.on is True)
+    rec("network", p2.network_url == "http://127.0.0.1:8765")
+    rec("ambient", p2.ambient.master_on and p2.ambient.enabled.get("files"))
+    rec("enhance", p2.enhance.on)
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    rec("form_scope 1.00", data.get("form_scope") == "1.00" and data.get("version") == 4)
+    rec("version 5", data.get("version") == 5)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -260,7 +273,7 @@ def smoke() -> bool:
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    print("Persist Form 1.00")
+    print("Persist SUS v5")
 
 
 if __name__ == "__main__":

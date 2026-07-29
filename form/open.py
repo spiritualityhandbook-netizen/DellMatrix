@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One program — NetworkMain + SandboxGate + full ambient."""
+"""One program — SUS open with full required snaps."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ class Program:
     ambient: AmbientGate = field(default_factory=AmbientGate)
     sandbox: SandboxGate = field(default_factory=SandboxGate)
     idea_grow: IdeaGrow = field(default_factory=IdeaGrow)
-    network_url: str = ""  # e.g. http://127.0.0.1:8765
+    network_url: str = ""
     cube: BlankCube = field(init=False)
     duo: DuoBeta = field(init=False)
 
@@ -128,9 +128,8 @@ class Program:
             return out
         placed = []
         for it in out.get("items", []):
-            uid = it["id"]
-            self.place(uid, it["label"], words=it.get("words", ""), skin=Skin.WORDS)
-            placed.append(uid)
+            self.place(it["id"], it["label"], words=it.get("words", ""), skin=Skin.WORDS)
+            placed.append(it["id"])
         out["placed"] = placed
         return out
 
@@ -236,6 +235,7 @@ class Program:
             "scores": self.scores(),
             "main": self.main.summary(),
             "shared_main": self.shared_main_summary(),
+            "verify": self.matrix.verify(),
             "matrix": self.matrix.understand(),
             "view": self.view(),
         }
@@ -246,10 +246,25 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    p = open_program("NetOpen")
-    ok = p.matrix.has_snap("NetworkMain") and p.sandbox.on is False
-    print("PASS" if ok else "FAIL")
-    return ok
+    print("=== OPEN SUS SMOKE ===")
+    r = []
+
+    def rec(name, ok, detail=""):
+        print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
+        r.append(bool(ok))
+
+    p = open_program("OpenSUS")
+    v = p.matrix.verify()
+    rec("verify required", v.get("ok") is True, str(v.get("missing")))
+    rec("sandbox default off", p.sandbox.on is False)
+    rec("enhance default off", p.enhance.on is False)
+    rec("ambient default off", p.ambient.master_on is False)
+    p.place("a", "A", words="one")
+    p.place("b", "B", words="two", x=1)
+    out = p.grow_ideas(2)
+    rec("grow ideas", all(o.get("ok") for o in out))
+    print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
+    return all(r)
 
 
 def main() -> None:

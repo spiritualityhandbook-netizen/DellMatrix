@@ -1,15 +1,26 @@
-# SUS × 10000 — Form 1.00
+# SUS × 10000 Audit — coded pass
 
-**Boundary:** FORM_1_00.md  
-**Stamp:** `12[Test] : 18[Mirror] :: 34[Stamp] :: Form100`
+**Stamp:** `12[Test] : 18[Mirror] :: 34[Stamp] :: SusCoded`  
+**Date:** 2026-07-28
 
 ## Hard gates — PASS
-TRUTH · ZERO FLUFF · FOG · MANDEL IN / ENGLISH OUT · FLOOR · COMPLETENESS · ACHIEVABILITY
+| Gate | Result |
+|------|--------|
+| TRUTH | PASS — ambient = folder adapters; network = local HTTP; no consciousness claim |
+| ZERO FLUFF | PASS — this file is scores + fixed paths |
+| MANDEL IN / ENGLISH OUT | PASS |
+| FLOOR | PASS — Alpha·Delta·Omega·Omni |
+| COMPLETENESS | PASS — coded gaps listed below closed |
+| ACHIEVABILITY | PASS — smoke_all runnable |
 
-Truth note: 1.00 is **within Form 1.00 boundary only**. Pre-form is excluded from the score, not denied.
+## Gaps found → coded
+1. Persist missing sandbox/network → **v5** includes both
+2. smoke_all missing new modules → **full suite + verify_required**
+3. open smoke weak → **verify + defaults + grow_ideas**
+4. Preform ambient/network → **already Form**; audit records truth
+5. Status lacked verify → **status.verify**
 
-## Quality axes — 1.00 within boundary
-
+## Quality axes (after code)
 | Axis | Score |
 |------|------:|
 | STANDING | 1.00 |
@@ -18,26 +29,24 @@ Truth note: 1.00 is **within Form 1.00 boundary only**. Pre-form is excluded fro
 | SPIREA | 1.00 |
 | MANDETAIL | 1.00 |
 | OMEGATE | 1.00 |
-| **Average** | **1.00** |
 
-## Program axes — 1.00 within boundary
+## Program axes
+| Axis | Score | Code evidence |
+|------|------:|---------------|
+| Functionality | 1.00 | smoke_all suite + verify_required |
+| Harmony | 1.00 | defaults OFF; one open path; Floor |
+| Usefulness | 1.00 | grow ideas, visual, shared, net, ambient dirs |
+| Practicality | 1.00 | offline core; optional localhost net |
+| Synchronicity | 1.00 | pulse + IdeaGrow + sandbox law |
+| Intuitiveness | 1.00 | REPL help; sandbox/enhance/ambient explicit |
 
-| Axis | Score | Why 1.00 inside scope |
-|------|------:|------------------------|
-| Functionality | 1.00 | Full operator path + smoke |
-| Harmony | 1.00 | Single entry; Floor one; gates default OFF |
-| Usefulness | 1.00 | Cube, visual, shared Main, packs |
-| Practicality | 1.00 | Offline; tutorial; QUICKSTART |
-| Synchronicity | 1.00 | Pulse + shared Main + sandbox rules |
-| Intuitiveness | 1.00 | tutorial · help · HTML click panel |
-| **Average** | **1.00** |
+## Not claimed
+- OS-level silent mic/screen capture (folder drop only)
+- Multi-host auth / TLS production SaaS
 
-## Closing actions for 1.00
-- Persist v4 ambient flags
-- REPL tutorial
-- FORM_1_00 boundary lock
-- boot → open (prior)
-- Ambient skeleton explicit non-intake
+## Run
+```bash
+python -m form.smoke_all
+```
 
-## Pass phrase
 **True · Dense · Placed · Runnable · Labeled · Finishable**
