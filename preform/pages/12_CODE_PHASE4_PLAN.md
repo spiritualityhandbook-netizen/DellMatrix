@@ -4,5 +4,5 @@ Status: ACTIVE
 
 | Cell | Status |
 |------|--------|
-| Phase 4 core cells | TRUE |
-| Unified Entry (bind · token · search · **pipeline**) | **TRUE** |
+| Unified Entry 24 | TRUE |
+| **PipelineQueue 28 + EntryWithPipeline 29** | **TRUE** |
