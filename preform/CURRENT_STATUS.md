@@ -1,12 +1,6 @@
 # Current Status — Pre-form
 
-As of: 2026-07-28
+**Direction locked in `FOUNDATION.md`**
 
-## Done this step
-All Mandelistics inventory rows placed into Pre-form plan pages (16–22).
-
-## Phase
-PRE-FORM plan spine for language + DuoBeta×OS capabilities + Psalm growth = formalized.
-
-## When ready
-Say **FORM** to leave plan-only and implement the matrix.
+Phase: Pre-form plan aligned to real matrix vision.  
+Next: Form = build one program from that foundation (when user says FORM / start creating).

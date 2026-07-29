@@ -2,14 +2,11 @@
 
 **Living Master Document — PLAN phase**
 
+## Direction (LOCKED)
+See **`FOUNDATION.md`** — Dell Matrix · Mandala Matrix · Main Matrix · Mandell OS · DuoBeta · workspace · resonance · whole programs not pieces.
+
 ## Pre-form
-Plan before implementation. Primary objective: matrix = **full DuoBeta + full Mandell OS**, grows via **Psalms**, Floor locked.
-
-## Mandelistics
-All inventory rows formalized into pages 16–22 + language spine. See `GAP_MANDELISTICS.md`.
-
-## Direct
-`STEER.md` — NBD · LANG · PSALM · DUO · OS · REG · GAP · STOP CODE · **FORM**
+Plan before Form. Language first. Foundation before ornaments.
 
 ## Evolution Log
-- 2026-07-28 — All Mandelistics partial/missing rows written into Pre-form pages 16–22; gap map closed for language spine.
+- 2026-07-28 — FOUNDATION directive locked from user: three programs whole; three matrix layers; workspace table/matrix geometry; DuoBeta resonance; Mandell core.
