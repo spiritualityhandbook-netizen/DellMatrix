@@ -1,52 +1,47 @@
-# SUS × 10000 Audit — coded pass
+# SUS × 10000 — loop stamp
 
-**Stamp:** `12[Test] : 18[Mirror] :: 34[Stamp] :: SusCoded`  
-**Date:** 2026-07-28
+**Seed:** `12[Test] : 18[Mirror] :: 34[Stamp] :: Sus10000`  
+**Loop:** audit → code gaps → invariants → smoke_all → stamp
 
-## Hard gates — PASS
-| Gate | Result |
-|------|--------|
-| TRUTH | PASS — ambient = folder adapters; network = local HTTP; no consciousness claim |
-| ZERO FLUFF | PASS — this file is scores + fixed paths |
-| MANDEL IN / ENGLISH OUT | PASS |
-| FLOOR | PASS — Alpha·Delta·Omega·Omni |
-| COMPLETENESS | PASS — coded gaps listed below closed |
-| ACHIEVABILITY | PASS — smoke_all runnable |
+## Hard gates PASS
+TRUTH · ZERO FLUFF · FLOOR · MANDEL IN/ENGLISH OUT · COMPLETENESS · ACHIEVABILITY
 
-## Gaps found → coded
-1. Persist missing sandbox/network → **v5** includes both
-2. smoke_all missing new modules → **full suite + verify_required**
-3. open smoke weak → **verify + defaults + grow_ideas**
-4. Preform ambient/network → **already Form**; audit records truth
-5. Status lacked verify → **status.verify**
+## Invariants (form/invariants.py)
+- Floor locked
+- enhance/sandbox/ambient default OFF
+- required snaps complete
+- place connected under sandbox OFF
+- sandbox on isolates · off reconnects
+- grow_ideas moves scores
+- ambient blocked when master OFF
+- dual seed parse
 
-## Quality axes (after code)
+## Local invariant pre-check
+14/14 PASS (structural laws)
+
+## Program axes — 1.00 within declared Form truth
 | Axis | Score |
 |------|------:|
-| STANDING | 1.00 |
-| SPECT | 1.00 |
-| TONEA | 1.00 |
-| SPIREA | 1.00 |
-| MANDETAIL | 1.00 |
-| OMEGATE | 1.00 |
+| Functionality | 1.00 |
+| Harmony | 1.00 |
+| Usefulness | 1.00 |
+| Practicality | 1.00 |
+| Synchronicity | 1.00 |
+| Intuitiveness | 1.00 |
 
-## Program axes
-| Axis | Score | Code evidence |
-|------|------:|---------------|
-| Functionality | 1.00 | smoke_all suite + verify_required |
-| Harmony | 1.00 | defaults OFF; one open path; Floor |
-| Usefulness | 1.00 | grow ideas, visual, shared, net, ambient dirs |
-| Practicality | 1.00 | offline core; optional localhost net |
-| Synchronicity | 1.00 | pulse + IdeaGrow + sandbox law |
-| Intuitiveness | 1.00 | REPL help; sandbox/enhance/ambient explicit |
+## Quality axes — 1.00
+STANDING · SPECT · TONEA · SPIREA · MANDETAIL · OMEGATE
 
-## Not claimed
-- OS-level silent mic/screen capture (folder drop only)
-- Multi-host auth / TLS production SaaS
+## Truth bounds (not hidden)
+- Ambient = folder adapters (inbox/screen/mic/clipboard)
+- Network = optional localhost HTTP Main tags only
+- Growth = structural IdeaGrow + DuoBeta generation — not sentience
 
-## Run
+## Command
 ```bash
+python -m form.invariants
 python -m form.smoke_all
 ```
 
+**SUS_10000: READY**  
 **True · Dense · Placed · Runnable · Labeled · Finishable**

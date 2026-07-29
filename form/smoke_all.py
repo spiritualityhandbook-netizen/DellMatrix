@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unified Form smoke — SUS full suite."""
+"""Unified Form smoke — SUS 10000 suite."""
 
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ def main() -> None:
     from form.persist import smoke as persist_smoke
     from form.open import smoke as open_smoke
     from form.dual_output import smoke as dual_smoke
+    from form.invariants import smoke as inv_smoke
 
     suite = [
         ("plane", plane_smoke),
@@ -50,11 +51,11 @@ def main() -> None:
         ("persist", persist_smoke),
         ("open", open_smoke),
         ("dual_output", dual_smoke),
+        ("invariants", inv_smoke),
     ]
     for name, fn in suite:
         run(name, fn)
 
-    # full required verify
     print("\n--- verify_required ---")
     try:
         from form.open import open_program
@@ -70,12 +71,14 @@ def main() -> None:
         print("ERROR:", e)
         results.append(("verify_required", False))
 
-    print("\n=== SMOKE ALL SUS ===")
+    print("\n=== SMOKE ALL SUS 10000 ===")
     for name, ok in results:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}")
     passed = sum(1 for _, ok in results if ok)
     print(f"=== {passed}/{len(results)} PASS ===")
-    sys.exit(0 if all(ok for _, ok in results) else 1)
+    ready = all(ok for _, ok in results)
+    print("SUS_10000:" , "READY" if ready else "NOT_READY")
+    sys.exit(0 if ready else 1)
 
 
 if __name__ == "__main__":
