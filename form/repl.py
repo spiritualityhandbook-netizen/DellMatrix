@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — Form 1.00 with tutorial."""
+"""REPL — realized ambient intake command."""
 
 from __future__ import annotations
 
@@ -21,33 +21,23 @@ except ImportError:
     from form.persist import list_checkpoints
 
 HELP = """
-Form 1.00 — type tutorial once, then operate.
+Form realized — type tutorial
 
-  place <id> <label> [words…]   put an idea on the plane
-  enhance on → pulse → show     feel resonance
-  visual                        write HTML map
-  save / load                   keep your cube
-  push_main / pull_main         shared third field
-  box <id…>                     sandbox (no outside enhance)
-  help | quit
+  place | enhance on | pulse | show | visual | save
+  ambient on | ambient files on | intake
+  push_main | pull_main | box | help | quit
 """.strip()
 
 TUTORIAL = """
-TUTORIAL (Form 1.00)
---------------------
-1) place biz Business my company idea
-2) place music Music a song idea
-3) enhance on
-4) pulse
-5) show          ← scores rise between connected ideas
-6) visual        ← open the HTML path printed
-7) save
-
-Rules:
-- enhance stays OFF until you turn it on
-- box isolates an idea from the others
-- push_main shares tags to Main without changing your plane
-- ambient has no capture engines in Form 1.00 (skeleton only)
+1) place biz Business my idea
+2) place music Music a song
+3) enhance on → pulse → show
+4) visual → open the HTML path
+5) Put a .txt in form/state/inbox/ then:
+     ambient on
+     ambient files on
+     intake
+6) save
 """.strip()
 
 
@@ -59,7 +49,7 @@ def _skin(name: str) -> Skin:
 
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
-    print("Dell Matrix Form 1.00 — type tutorial or help")
+    print("Dell Matrix — realized. Type tutorial or help")
     print(f"owner={owner}\n")
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
@@ -89,7 +79,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             print(p.render())
         elif cmd == "status":
             st = p.status()
-            print({"owner": st["owner"], "enhance": st["enhance"]["on"], "ambient": st["ambient"]["master_on"], "main": st["main"], "units": list(p.cube.session.plane.units.keys())})
+            print({"owner": st["owner"], "enhance": st["enhance"]["on"], "ambient": st["ambient"]["master_on"], "units": list(p.cube.session.plane.units.keys())})
         elif cmd == "scores":
             print(p.scores())
         elif cmd == "main":
@@ -97,11 +87,26 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd == "shared":
             print(p.shared_main_summary())
         elif cmd == "ambient":
-            print(p.ambient.status())
+            if len(parts) == 1:
+                print(p.ambient.status())
+            elif parts[1] == "on":
+                p.ambient.turn_on()
+                print("ambient master ON")
+            elif parts[1] == "off":
+                p.ambient.turn_off()
+                print("ambient master OFF")
+            elif len(parts) >= 3 and parts[2] == "on":
+                print("ok" if p.ambient.enable_source(parts[1]) else "bad source")
+            elif len(parts) >= 3 and parts[2] == "off":
+                print("ok" if p.ambient.disable_source(parts[1]) else "bad source")
+            else:
+                print("ambient | ambient on|off | ambient files on|off")
+        elif cmd == "intake":
+            print(p.ambient_intake(apply=True))
         elif cmd == "verify":
             print(p.matrix.verify())
         elif cmd == "health":
-            print({"enhance": p.enhance.on, "ambient": p.ambient.master_on, "units": len(p.cube.session.plane.units), "gen": p.duo.generation, "verify_ok": p.matrix.verify().get("ok"), "form": "1.00"})
+            print({"enhance": p.enhance.on, "ambient": p.ambient.master_on, "units": len(p.cube.session.plane.units), "verify_ok": p.matrix.verify().get("ok")})
         elif cmd == "place" and len(parts) >= 3:
             p.place(parts[1], parts[2], words=" ".join(parts[3:]), skin=Skin.CUBE)
             print("placed", parts[1])

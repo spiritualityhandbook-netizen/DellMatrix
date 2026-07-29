@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One program — AmbientGate skeleton + shared snapshot (NBD x10)."""
+"""One program — realized ambient apply."""
 
 from __future__ import annotations
 
@@ -96,6 +96,19 @@ class Program:
     def pulse(self) -> Dict[str, Any]:
         return self.enhance.pulse(self.cube.session.plane)
 
+    def ambient_intake(self, apply: bool = True) -> Dict[str, Any]:
+        """Run ambient intake; optionally place items on plane as WORDS units."""
+        out = self.ambient.intake()
+        if not out.get("ok") or not apply:
+            return out
+        placed = []
+        for it in out.get("items", []):
+            uid = it["id"]
+            self.place(uid, it["label"], words=it.get("words", ""), skin=Skin.WORDS)
+            placed.append(uid)
+        out["placed"] = placed
+        return out
+
     def sync_with(self, other: "Program", unit_self: str, unit_other: str) -> Dict[str, Any]:
         return sync_planes(self.cube.session, other.cube.session, self.main, unit_self, unit_other)
 
@@ -188,17 +201,16 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== OPEN NBD x10 SMOKE ===")
+    print("=== OPEN REALIZE SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    p = open_program("NBD10")
+    p = open_program("RealizeSmoke")
+    rec("verify", p.matrix.verify().get("ok") is True, str(p.matrix.verify().get("missing")))
     rec("ambient default off", p.ambient.master_on is False)
-    rec("AmbientGate snap", p.matrix.has_snap("AmbientGate"))
-    rec("view scores key", "score" in p.view()["nodes"][0] if p.view()["nodes"] else True)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
