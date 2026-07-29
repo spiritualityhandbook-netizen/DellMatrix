@@ -7,14 +7,14 @@
 | Layer | Status |
 |-------|--------|
 | Code Phase 1–3 | COMPLETE · HARDENED |
-| Code Phase 4 | TRUE + Unified Entry |
+| Code Phase 4 | TRUE · Unified Entry deep-bind |
 | Blank handoff | `seed/pack_seed.py` |
 
 **Floor:** Alpha · Delta · Omega · Omni
 
-## Quick surfaces
-- Living core: `python preform/code/24_UNIFIED_ENTRY.py`
-- Blank pack: `cd preform/seed && python pack_seed.py`
+## Surfaces
+- Living: `python preform/code/24_UNIFIED_ENTRY.py`
+- Give: `cd preform/seed && python pack_seed.py`
 
 ## Evolution Log
-- 2026-07-28 — Unified Entry TRUE (`24_UNIFIED_ENTRY.py`): single offline boot/command/tick/render over GWS + PersonaLens.
+- 2026-07-28 — Unified Entry deep-bind: prefer Integrator 15; full intent bridge on stand-in; lens+GWS retained.
