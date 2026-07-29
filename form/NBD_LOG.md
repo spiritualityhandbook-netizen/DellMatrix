@@ -2,5 +2,10 @@
 
 | NBD | Result |
 |-----|--------|
-| EnhanceGate L3 | enhance_gate.py |
-| **Persist L3** | **persist.py** — checkpoints, list, load cp, version 3 |
+| Persist L3 | persist.py checkpoints |
+| **UI / Visual L3** | **visual.py** — SVG + HTML plane surface |
+
+```bash
+python -m form.dell_matrix.visual --smoke
+# open form/state/visual/matrix_<owner>.html in a browser
+```

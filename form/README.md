@@ -2,7 +2,6 @@
 
 ```bash
 python -m form.repl --owner Ace
-python -m form.repl --owner Ace --load
+python -m form.dell_matrix.visual --smoke
+# open form/state/visual/matrix_*.html
 ```
-
-REPL L3: place · words · remove · box · pulse · enhance · main · scores · verify · pack · save · load
