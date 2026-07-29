@@ -3,11 +3,10 @@
 | NBD | Module |
 |-----|--------|
 | … | … |
-| Persist | persist.py |
-| **OpenPersist** | **open.py** — `--load` / `--save` / `--pulse` / `--enhance-on` |
+| OpenPersist | open.py flags |
+| **REPL** | **repl.py** — interactive matrix session |
 
 ```bash
-python -m form.open --owner Ace --save
-python -m form.open --owner Ace --load
-python -m form.open --smoke
+python -m form.repl --owner Ace
+python -m form.repl --owner Ace --load
 ```
