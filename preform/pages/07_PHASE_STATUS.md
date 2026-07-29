@@ -3,7 +3,7 @@
 Status: Living
 
 ## Code Phase 1–3 — COMPLETE · HARDENED
-## Code Phase 4 — TRUE (Unified Entry: integrator · lens · token · search)
+## Code Phase 4 — TRUE · Unified Entry complete surface
 
 ```bash
 python preform/code/24_UNIFIED_ENTRY.py --smoke

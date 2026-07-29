@@ -4,6 +4,5 @@ Status: ACTIVE
 
 | Cell | Status |
 |------|--------|
-| 4.1–4.3 · 4B · 4C | TRUE |
-| Distribution · Pack | TRUE |
-| Unified Entry deep-bind + token + **search** | **TRUE** |
+| Phase 4 core cells | TRUE |
+| Unified Entry (bind · token · search · **pipeline**) | **TRUE** |
