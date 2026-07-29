@@ -5,6 +5,5 @@ Status: ACTIVE
 | Cell | Status |
 |------|--------|
 | Unified Entry stack | TRUE |
-| **Pipeline Queue** | **TRUE** (`28_PIPELINE_QUEUE.py`) |
-
-Next optional: merge PipelineQueue into UnifiedEntry.boot/command/render as default field.
+| Pipeline Queue | TRUE (`28`) |
+| **Pipeline owned by Unified-shaped host** | **TRUE** (`24_PIPELINE_HOST.py`) |
