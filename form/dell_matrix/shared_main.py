@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 """
-Shared Main — multi-owner third field (local disk).
+Shared Main L3 — multi-owner third field (local disk).
 
 21[Merge] : 25[Pulse] >> 10[Keep] :: SharedMain
 
-Many personal programs can contribute to one shared Main file.
-- push: local Main tags/contributions → shared (merge weights)
-- pull: shared tags → local Main only (not personal plane units)
-- personal cubes never rewritten by shared Main
-
-This is multi_main without a network server — same-machine / shared-folder ready.
+L3: snapshot export, owners report, merge stamps, still no personal clobber.
 
 Run:
   python -m form.dell_matrix.shared_main --smoke
@@ -42,16 +37,21 @@ DEFAULT_SHARED = os.path.join(_STATE, "main_shared.json")
 LEVEL = 3
 
 
+def _ts() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def _empty() -> Dict[str, Any]:
     return {
         "type": "DellMatrixSharedMain",
-        "version": 1,
+        "version": 2,
         "level": LEVEL,
         "floor": list(FLOOR),
         "updated": "",
         "tags": {},
         "contributions": [],
         "owners_seen": [],
+        "merges": [],
     }
 
 
@@ -68,7 +68,8 @@ def load_shared(path: str = DEFAULT_SHARED) -> Dict[str, Any]:
 def save_shared(data: Dict[str, Any], path: str = DEFAULT_SHARED) -> str:
     data["floor"] = list(FLOOR)
     data["level"] = LEVEL
-    data["updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    data["version"] = 2
+    data["updated"] = _ts()
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     return path
@@ -79,7 +80,6 @@ def push_to_shared(
     owner: str,
     path: str = DEFAULT_SHARED,
 ) -> Dict[str, Any]:
-    """Merge local Main into shared. Does not touch personal planes."""
     assert_floor_intact()
     shared = load_shared(path)
     tags: Dict[str, float] = {k: float(v) for k, v in shared.get("tags", {}).items()}
@@ -94,19 +94,23 @@ def push_to_shared(
                 "labels": list(c.labels),
                 "note": c.note,
                 "weight": c.weight,
-                "ts": getattr(c, "ts", ""),
+                "ts": getattr(c, "ts", "") or _ts(),
             }
         )
     owners = list(shared.get("owners_seen", []))
     if owner not in owners:
         owners.append(owner)
+    merges = list(shared.get("merges", []))
+    merges.append({"op": "push", "owner": owner, "ts": _ts(), "tags_in": len(local.tags)})
     shared["tags"] = tags
-    shared["contributions"] = contribs[-200:]  # cap log
+    shared["contributions"] = contribs[-200:]
     shared["owners_seen"] = owners
+    shared["merges"] = merges[-50:]
     path_out = save_shared(shared, path)
     return {
         "ok": True,
         "path": path_out,
+        "level": LEVEL,
         "tag_count": len(tags),
         "owners": owners,
         "personal_clobber": False,
@@ -118,12 +122,8 @@ def pull_from_shared(
     path: str = DEFAULT_SHARED,
     *,
     mode: str = "merge",
+    owner: str = "",
 ) -> Dict[str, Any]:
-    """
-    Bring shared tags into local Main only.
-    mode=merge: add weights; mode=replace_tags: local tags become shared copy.
-    Never mutates plane units.
-    """
     assert_floor_intact()
     shared = load_shared(path)
     stags = {k: float(v) for k, v in shared.get("tags", {}).items()}
@@ -132,14 +132,32 @@ def pull_from_shared(
     else:
         for k, v in stags.items():
             local.tags[k] = local.tags.get(k, 0.0) + v
+    # stamp merge on shared log if path exists / will exist
+    if os.path.isfile(path) or shared.get("owners_seen"):
+        merges = list(shared.get("merges", []))
+        merges.append({"op": f"pull:{mode}", "owner": owner or "?", "ts": _ts()})
+        shared["merges"] = merges[-50:]
+        save_shared(shared, path)
     return {
         "ok": True,
         "mode": mode,
+        "level": LEVEL,
         "shared_tags": len(stags),
         "local_tags": len(local.tags),
         "top": sorted(local.tags.items(), key=lambda kv: -kv[1])[:5],
         "personal_clobber": False,
     }
+
+
+def snapshot(path: str = DEFAULT_SHARED, dest: Optional[str] = None) -> str:
+    """Freeze a copy of shared Main."""
+    data = load_shared(path)
+    dest = dest or os.path.join(
+        _STATE, f"main_shared_snap_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
+    )
+    with open(dest, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+    return dest
 
 
 def shared_summary(path: str = DEFAULT_SHARED) -> Dict[str, Any]:
@@ -148,10 +166,13 @@ def shared_summary(path: str = DEFAULT_SHARED) -> Dict[str, Any]:
     top = sorted(tags.items(), key=lambda kv: -float(kv[1]))[:8]
     return {
         "level": data.get("level", LEVEL),
+        "version": data.get("version", 1),
         "updated": data.get("updated"),
         "owners_seen": data.get("owners_seen", []),
+        "owner_count": len(data.get("owners_seen", [])),
         "tag_count": len(tags),
         "contribution_count": len(data.get("contributions", [])),
+        "merge_count": len(data.get("merges", [])),
         "top_tags": top,
         "floor": data.get("floor", list(FLOOR)),
         "path": path if os.path.isfile(path) else DEFAULT_SHARED,
@@ -159,15 +180,14 @@ def shared_summary(path: str = DEFAULT_SHARED) -> Dict[str, Any]:
 
 
 def smoke() -> bool:
-    print("=== SHARED MAIN SMOKE ===")
+    print("=== SHARED MAIN L3 SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    # isolated path for test
-    path = os.path.join(_STATE, "main_shared_smoke.json")
+    path = os.path.join(_STATE, "main_shared_l3_smoke.json")
     if os.path.isfile(path):
         os.remove(path)
 
@@ -175,25 +195,22 @@ def smoke() -> bool:
     b = open_program("OwnerB")
     a.place("biz", "Business", words="CRM", skin=Skin.BUILDING)
     b.place("art", "Design", words="logo", skin=Skin.SPHERE)
-    # local sync into each Main then push
     from form.dell_matrix.main_field import sync_planes
 
     sync_planes(a.cube.session, b.cube.session, a.main, "biz", "art")
-    before_words = a.cube.session.plane.units["biz"].words
-
-    out = push_to_shared(a.main, "OwnerA", path)
-    rec("push A", out.get("ok") is True)
-    sync_planes(b.cube.session, a.cube.session, b.main, "art", "biz")
+    before = a.cube.session.plane.units["biz"].words
+    rec("push", push_to_shared(a.main, "OwnerA", path).get("ok") is True)
     push_to_shared(b.main, "OwnerB", path)
     summ = shared_summary(path)
-    rec("owners", "OwnerA" in summ["owners_seen"] and "OwnerB" in summ["owners_seen"], str(summ["owners_seen"]))
-    rec("tags", summ["tag_count"] >= 1)
-
+    rec("level 3", summ.get("level") == 3)
+    rec("owners", summ["owner_count"] >= 2)
+    rec("merges", summ["merge_count"] >= 1)
+    snap = snapshot(path)
+    rec("snapshot", os.path.isfile(snap), snap)
     c = open_program("OwnerC")
-    pull_from_shared(c.main, path)
-    rec("C pulled tags", len(c.main.tags) >= 1, str(c.main.top_tags()))
-    rec("no clobber A plane", a.cube.session.plane.units["biz"].words == before_words)
-    rec("floor", summ["floor"] == list(FLOOR))
+    pull_from_shared(c.main, path, owner="OwnerC")
+    rec("pull", len(c.main.tags) >= 1)
+    rec("no clobber", a.cube.session.plane.units["biz"].words == before)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -201,7 +218,7 @@ def smoke() -> bool:
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    print("21[Merge] : 25[Pulse] >> 10[Keep] :: SharedMain")
+    print("21[Merge] : 25[Pulse] >> 10[Keep] :: SharedMain L3")
     print(json.dumps(shared_summary(), indent=2))
 
 
