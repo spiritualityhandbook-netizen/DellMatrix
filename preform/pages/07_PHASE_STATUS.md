@@ -3,10 +3,14 @@
 Status: Living
 
 ## Code Phase 4 — TRUE
-Pipeline owned on Unified-shaped host (`24_PIPELINE_HOST.py` + `28_PIPELINE_QUEUE.py`)
 
+### Recommended living runner
 ```bash
-python preform/code/24_PIPELINE_HOST.py
-python preform/code/24_UNIFIED_ENTRY.py --smoke
+python preform/code/29_COMPOSE_ENTRY.py
+python preform/code/29_COMPOSE_ENTRY.py --smoke
+```
+
+### Give Blank
+```bash
 cd preform/seed && python pack_seed.py
 ```

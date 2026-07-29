@@ -4,6 +4,7 @@ Status: ACTIVE
 
 | Cell | Status |
 |------|--------|
-| Unified Entry stack | TRUE |
-| Pipeline Queue | TRUE (`28`) |
-| **Pipeline owned by Unified-shaped host** | **TRUE** (`24_PIPELINE_HOST.py`) |
+| Phase 4 stack | TRUE |
+| **Compose Entry (recommended)** | **TRUE** (`29_COMPOSE_ENTRY.py`) |
+
+Primary living runner: `29_COMPOSE_ENTRY.py`
