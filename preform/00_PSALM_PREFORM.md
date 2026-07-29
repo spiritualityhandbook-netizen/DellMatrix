@@ -7,15 +7,14 @@
 | Layer | Status |
 |-------|--------|
 | Code Phase 1–3 | COMPLETE · HARDENED |
-| Code Phase 4 | TRUE · pipeline queue on entry surface |
+| Code Phase 4 | TRUE · Unified Entry (+ pipeline queue) |
 | Blank handoff | `seed/pack_seed.py` |
 
 **Floor:** Alpha · Delta · Omega · Omni
 
 ## Surfaces
-- Core: `24_UNIFIED_ENTRY.py`
-- +Pipeline: `29_ENTRY_WITH_PIPELINE.py`
-- Give: `seed/pack_seed.py`
+- Living: `python preform/code/24_UNIFIED_ENTRY.py`
+- Give: `cd preform/seed && python pack_seed.py`
 
 ## Evolution Log
-- 2026-07-28 — PipelineQueue (28) + EntryWithPipeline (29) TRUE.
+- 2026-07-28 — Pipeline confirm queue on UnifiedEntry (`pipeline_add` / `confirm` / pending + render).

@@ -4,5 +4,5 @@ Status: ACTIVE
 
 | Cell | Status |
 |------|--------|
-| Unified Entry 24 | TRUE |
-| **PipelineQueue 28 + EntryWithPipeline 29** | **TRUE** |
+| 4.1–4.3 · 4B · 4C · Distribution | TRUE |
+| Unified Entry (bind · token · search · **pipeline**) | **TRUE** |
