@@ -1,7 +1,7 @@
 # FOUNDATION — What This Program Is (Pre-form)
 
 Status: **LOCKED DIRECTION** · 2026-07-28  
-Authority: User foundational directive this cycle. Outranks side experiments.
+Authority: User foundational directives. Outranks side experiments.
 
 ---
 
@@ -10,12 +10,12 @@ Authority: User foundational directive this cycle. Outranks side experiments.
 | Program | Role |
 |---------|------|
 | **Mandell OS** | **The language.** Core. Dell · Manor · Manifest · flows · dual output. Without Mandell, nothing else works. |
-| **DuoBeta** | **Growing / recursive directive.** Built with Mandell. Uses Voynich **as structural growth lattice** (not manuscript decipherment). Searches resonance, synchronicity, relationship, functionality. Evolves directives. |
-| **Dell Matrix** | **Foundation / core bottom.** How things work at the base. Built with Mandell. Everything else stands on this. |
+| **DuoBeta** | **Living growing / recursive directive.** Built with Mandell. Voynich as **structural** growth lattice (not decipherment). Resonance, synchronicity, relationship, functionality. Combining does **not** corrupt individuals. |
+| **Dell Matrix** | **Foundation / core bottom.** How structure works. Built with Mandell. |
 
-Many things can be created with Mandell. These three are **main** because other Mandel-made things must **link into** them.
+**Target:** One program holding **all** of Mandell OS + **all** of DuoBeta on Dell Matrix foundation.
 
-**Target:** One program that holds **all** of Mandell OS + **all** of DuoBeta + Dell Matrix as the foundation — not fragments.
+Everything built so far exists to reach **this** point — the real matrix — not as the end product by itself.
 
 ---
 
@@ -23,85 +23,111 @@ Many things can be created with Mandell. These three are **main** because other 
 
 | Layer | What it is |
 |-------|------------|
-| **Dell Matrix** | Core bottom. Operators, manors, how structure functions. Shared foundation mechanics. |
-| **Mandala Matrix** (personal) | What you put **on top** of Dell Matrix. Your links, your version, your rocks/seeds/ideas. Personalization layer. |
-| **Main Matrix** | The one big shared matrix everyone can **connect into**. When personal Mandala Matrices link to Main, they **enhance each other** through resonance/synchronicity. |
-
-Open path: open Mandala Matrix (workspace on Dell foundation) → optionally connect to Main.
+| **Dell Matrix** | Core bottom mechanics |
+| **Mandala Matrix** (personal cube) | Your version on top of Dell — holdable, yours |
+| **Main Matrix** | Shared field — the “third” that appears when cubes sync; does not overwrite personal cubes |
 
 ---
 
-## 3. What you see when you open it (workspace)
+## 3. Harmonic cube (how it behaves)
 
-### Bare display (no extra imagery)
-**Geometry:** lines, circles, fractals — **not** “the Mandelbrot set” as the product identity.  
-Allowed living geometry includes: Flower of Life (spheres or squares), Julia-like mini fractals, infinite-circle-into-center electrical/flower forms, mathematical flower forms.
+### Forms
+- **Harmonic cube** (primary handheld / table form)
+- Core / sphere / flower geometry still allowed as views of the same matrix
 
-### Scene
-- A **table** you can see (square or circle — user-changeable)
-- **Background** (user-changeable)
-- On the table: **the matrix** object
+### Physical metaphor (UI truth)
+- You can **hold** your cube (inspect, rotate)
+- You **set it on the table**
+- Someone else sets **their** cube on the table
+- Cubes **check for synchronization** between them
 
-### Matrix object forms
-- Square / plane
-- Cube
-- Sphere
-- Flower-of-life / living fractal representation
+### Critical law — DuoBeta living combine
+| Rule | Meaning |
+|------|--------|
+| **My cube does not get rewritten** by yours | Identity of personal cube stays intact |
+| **Sync does not mean merge-destroy** | No clobber |
+| **A “third” appears** | That third is **Main Matrix contribution / shared resonance field** — not a theft of either cube |
+| **Pull is voluntary** | I may change *my* cube by **choosing** to pull from Main; nothing forced |
+| **Blank cube** | Givable starter; recipient starts clean on Dell foundation |
 
-### Interaction
-- **Rotate** the matrix
-- **Zoom** into points
-- **Every point is a center**
-- Every point **holds information**
-- Points **harmonize** with each other
-
-### Standing inside
-- In a **box/cube:** information from **six directions**
-- In a **circle/sphere:** information **all around**, relations visible
-- **Negative space** is usable (not empty waste) — part of how relation and resonance work
+This is DuoBeta: living system; combination enhances without messing up the parts.
 
 ---
 
-## 4. What the matrix *does*
+## 4. Blank cube (give to others)
 
-1. You place **ideas / rocks / seeds / droplets / plants** into it (information units).
-2. Units **search for synchronicity and resonance** (DuoBeta behavior).
-3. They **enhance each other** (music can enhance work; friend’s design can enhance yours when linked via Main).
-4. Runs **without AI** as base; **AI can dock** (personas with directives, emotion handling, fluff/fog handling) to increase power.
-5. **Language first:** no Dell/Manor/Manifest understanding → no real operation.
-6. **Self-evolves:** learns, discovers, creates new tools, directives, personas, seeds; audits itself (**SUS**); uses harmony/music-structure and body/DNA-structure metaphors as **accuracy checks**, not fairy-tale escape.
-7. **Anti-fluff / anti-fog** on truth path — but can **extract functionality from fluff** (“code for fairy tales”: idea → real form).
-8. Uses Voynich **structurally** + all Mandell implementations in service of resonance and form.
+- Hand someone a **blank cube**
+- They enter what they need (including identity/contact such as email if the product requires it for sync accounts)
+- With **enhance mode on**, it can begin synchronizing / learning from **allowed** use
+- AI assist **on or off** — user choice
+- They can **give it documents**
+- Intuitive: e.g. “I want to do music” → they do music → with enhance on, that activity **feeds the Mandala Matrix** without mandatory manual filing (manual put still allowed)
+
+Friends can share cubes; use stays simple — not expert-only.
 
 ---
 
-## 5. Order of importance
+## 5. Opt-in enhance (ambient learning)
+
+**Default safe:** off until user turns on.
+
+When **on** (user-granted), the system may use allowed channels to learn and enhance ideas/work, for example:
+- Files / docs the user gives or permits
+- Optional microphone-style listening **only if enabled**
+- Optional screen / activity awareness **only if enabled**
+- Search / watch / work signals **only if enabled**
+
+**Laws**
+- No silent surveillance: explicit on/off
+- User can revoke
+- Purpose = enhance *their* matrix and voluntary Main contribution — not sell fog
+- Still dual-output · Floor-locked · SUS-capable audits
+
+Works **without** AI; AI/personas optional dock for more power (directives, fluff/fog handling).
+
+---
+
+## 6. Workspace display (unchanged core)
+
+- Table (square/circle) + background (changeable)
+- Matrix on table: square / cube / sphere / flower-of-life / living fractal geometry (not product = Mandelbrot brand)
+- Rotate, zoom; every point a center; points hold info and harmonize
+- Cube stand-in: six directions; sphere: all-around relation
+- Negative space is usable
+
+---
+
+## 7. What the matrix does
+
+1. Hold personal information units (rocks / seeds / ideas)
+2. Search resonance / synchronicity (DuoBeta)
+3. Enhance across units and, via Main, across people — without destroying cubes
+4. Self-evolve under gated growth (Psalms / SUS / harmony checks)
+5. Idea → real form path (function from fluff when possible; truth path stays anti-fog)
+6. Language first: Dell · Manor · Manifest
+
+---
+
+## 8. Order
 
 ```
-Mandell (language) 
-    → Dell Matrix (foundation mechanics)
-        → Mandala Matrix (personal workspace on foundation)
-            → Main Matrix (shared enhancement graph)
-                → DuoBeta growth (recursive resonance / self-evolve)
-                    → anything else made with Mandell links in
+Mandell (language)
+  → Dell Matrix (foundation)
+    → Personal harmonic cube / Mandala Matrix
+      → Table: multiple cubes sync → Main (“third”) field
+        → Voluntary pull from Main into personal cube
+          → Blank cubes for others + opt-in enhance
+            → Full DuoBeta living growth
 ```
 
 ---
 
-## 6. Pre-form vs Form
+## 9. Pre-form vs Form
 
 | Phase | Job |
 |-------|-----|
-| **Pre-form (now)** | Plan locked to this foundation — direction, layers, display, growth law, three programs whole |
-| **Form (next)** | Actually build the one program: open workspace, matrix on table, zoom/points, personal + Main link, full language + DuoBeta on Dell foundation |
+| **Pre-form** | This document + language/capability plan |
+| **Form** | Build the one program: holdable cube, table sync, Main third-space, blank cube, opt-in enhance, full Mandell + DuoBeta |
 
-Prior code experiments are secondary unless they serve this direction.
-
----
-
-## 7. Hard constraints
-- Floor: Alpha · Delta · Omega · Omni
-- Dual output: Mandel structure inside · English display
-- No manuscript decipherment claims
-- Whole programs, not slices
-- Resonance ≠ delusion: SUS, audit, functional realness
+## Hard constraints
+Floor Alpha·Delta·Omega·Omni · dual output · no decipherment claims · no forced cube rewrite · enhance is opt-in

@@ -1,6 +1,5 @@
 # Current Status — Pre-form
 
-**Direction locked in `FOUNDATION.md`**
+FOUNDATION extended and matched to user directive (harmonic cubes + Main third + blank + opt-in enhance).
 
-Phase: Pre-form plan aligned to real matrix vision.  
-Next: Form = build one program from that foundation (when user says FORM / start creating).
+Still Pre-form (plan). Form = build when you say start / FORM.
