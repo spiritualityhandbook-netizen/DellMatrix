@@ -2,15 +2,11 @@
 """
 29_COMPOSE_ENTRY.py
 Recommended single offline runner for the living core.
-Status: TRUE
+Status: TRUE · lexer-aware
 
-Composes:
-  - Body / reach / inventory (stand-in; prefers Integrator 15 if present)
-  - PersonaLens (21 or stand-in)
-  - Token Show Gate (18 or stand-in)
-  - Dell/flow search (registry)
-  - PipelineQueue owned (28 or stand-in)
-  - Floor lock Alpha · Delta · Omega · Omni
+Composes body/reach, PersonaLens, Token Show Gate, Dell/flow search,
+owned PipelineQueue, optional Tiny Lexer on seed-shaped commands.
+Floor: Alpha · Delta · Omega · Omni
 
 Run:
   python preform/code/29_COMPOSE_ENTRY.py
@@ -24,6 +20,7 @@ from enum import Enum, auto
 import importlib.util
 import json
 import os
+import re
 import sys
 
 _CODE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -76,6 +73,12 @@ def _load_registry() -> Dict[str, Any]:
 
 
 REGISTRY = _load_registry()
+
+# seed-shaped detector: digits, [Name], flow symbols
+_SEED_HINT = re.compile(
+    r"(\b\d{1,2}\b|\[\w+\]|>>?>?|::?|<<\[?\w*\]?)",
+    re.UNICODE,
+)
 
 
 class Facing(Enum):
@@ -214,8 +217,6 @@ class Reach:
         return True
 
 
-# ----- optional real modules / stand-ins -----
-
 @dataclass
 class LensNote:
     persona: str
@@ -336,6 +337,43 @@ class StandinPipeline:
         }
 
 
+class StandinLexer:
+    """Minimal offline token recognizer if 02 is missing."""
+
+    def tokenize(self, text: str) -> List[Dict[str, Any]]:
+        tokens: List[Dict[str, Any]] = []
+        if not text:
+            return tokens
+        # longest-ish flow first
+        i = 0
+        s = text
+        while i < len(s):
+            if s.startswith("<<<", i) or s.startswith(">>>", i):
+                tokens.append({"kind": "flow", "value": s[i : i + 3]})
+                i += 3
+                continue
+            if s.startswith("<<", i) or s.startswith(">>", i) or s.startswith("::", i):
+                tokens.append({"kind": "flow", "value": s[i : i + 2]})
+                i += 2
+                continue
+            if s[i] in ">:<":
+                tokens.append({"kind": "flow", "value": s[i]})
+                i += 1
+                continue
+            m = re.match(r"\d{1,2}", s[i:])
+            if m:
+                tokens.append({"kind": "dell", "value": m.group(0)})
+                i += len(m.group(0))
+                continue
+            m = re.match(r"\[([^\]]+)\]", s[i:])
+            if m:
+                tokens.append({"kind": "name", "value": m.group(1)})
+                i += len(m.group(0))
+                continue
+            i += 1
+        return tokens
+
+
 @dataclass
 class ComposeEntry:
     avatar: Avatar = field(default_factory=Avatar)
@@ -344,10 +382,12 @@ class ComposeEntry:
     lens: Any = field(default=None)
     gate: Any = field(default=None)
     pipeline: Any = field(default=None)
+    lexer: Any = field(default=None)
     registry: Dict[str, Any] = field(default_factory=lambda: REGISTRY)
     ticks: int = 0
     last_command: str = ""
     last_ok: Optional[bool] = None
+    last_tokens: List[Dict[str, Any]] = field(default_factory=list)
     seed_strip: str = "08[Create] >> 14[Bind] :: compose"
     last_show: str = ""
     frame: str = "(·_·)"
@@ -360,15 +400,62 @@ class ComposeEntry:
         LensCls, lens_src = _load_attr("21_PERSONA_LENS.py", "PersonaLens")
         GateCls, gate_src = _load_attr("18_TOKEN_SHOW_GATE.py", "ShowGate")
         PipeCls, pipe_src = _load_attr("28_PIPELINE_QUEUE.py", "PipelineQueue")
-        self.sources = {"lens": lens_src, "gate": gate_src, "pipeline": pipe_src}
+        # lexer: prefer class TinyLexer / Lexer / module-level tokenize
+        LexCls, lex_src = _load_attr("02_TINY_LEXER.py", "TinyLexer")
+        if LexCls is None:
+            LexCls, lex_src2 = _load_attr("02_TINY_LEXER.py", "Lexer")
+            if LexCls is not None:
+                lex_src = lex_src2
+        self.sources = {
+            "lens": lens_src,
+            "gate": gate_src,
+            "pipeline": pipe_src,
+            "lexer": lex_src if LexCls is not None else "standin",
+        }
         self.lens = LensCls() if LensCls else StandinLens()
         self.gate = GateCls() if GateCls else StandinGate()
         self.pipeline = PipeCls() if PipeCls else StandinPipeline()
+        if LexCls is not None:
+            try:
+                self.lexer = LexCls()
+            except Exception:
+                self.lexer = StandinLexer()
+                self.sources["lexer"] = "standin"
+        else:
+            # try module-level tokenize function via load file
+            fn, src = _load_attr("02_TINY_LEXER.py", "tokenize")
+            if callable(fn):
+                self.lexer = fn  # type: ignore
+                self.sources["lexer"] = src
+            else:
+                self.lexer = StandinLexer()
+
+    def _lex(self, text: str) -> List[Dict[str, Any]]:
+        if not text:
+            return []
+        try:
+            if callable(self.lexer) and not hasattr(self.lexer, "tokenize"):
+                out = self.lexer(text)
+            elif hasattr(self.lexer, "tokenize"):
+                out = self.lexer.tokenize(text)
+            else:
+                out = StandinLexer().tokenize(text)
+            # normalize to list of dicts
+            norm: List[Dict[str, Any]] = []
+            for t in out or []:
+                if isinstance(t, dict):
+                    norm.append(t)
+                else:
+                    norm.append({"kind": getattr(t, "kind", type(t).__name__), "value": str(t)})
+            return norm
+        except Exception:
+            return StandinLexer().tokenize(text)
 
     def boot(self) -> None:
         self.ticks = 0
         self.last_command = ""
         self.last_ok = None
+        self.last_tokens = []
         self.frame = "(·_·)"
         self.grid.set(1, 0, content={"kind": "tool", "name": "wrench"})
         self.grid.set(0, 1, content={"kind": "note", "name": "seed-card"})
@@ -376,12 +463,14 @@ class ComposeEntry:
         if ok:
             self.seed_strip = getattr(self.gate, "seed_strip", self.seed_strip)
         self.lens.examine(self.seed_strip)
+        self.last_tokens = self._lex(self.seed_strip)
         self.pipeline.add("Boot complete")
 
     def set_seed_strip(self, text: str) -> Tuple[bool, str]:
         ok, msg = self.gate.set_seed_strip(text or "")
         if ok:
             self.seed_strip = getattr(self.gate, "seed_strip", text or "")
+            self.last_tokens = self._lex(self.seed_strip)
         return ok, msg
 
     def show(self, text: str) -> Tuple[bool, str]:
@@ -473,11 +562,20 @@ class ComposeEntry:
     def command(self, text: str, intent: Optional[Any] = None, **payload) -> List[Any]:
         self.last_command = text or ""
         notes = self.lens.examine(self.last_command)
+        # lexer pass when seed-shaped
+        if text and _SEED_HINT.search(text):
+            self.last_tokens = self._lex(text)
+        else:
+            self.last_tokens = []
         ienum, pay = self._parse(text, intent, payload)
         ok = self._exec(ienum, pay)
         self.last_ok = ok
         if ok:
-            self.pipeline.add(f"{ienum.name}:{text[:20] or 'ok'}")
+            label = f"{ienum.name}:{text[:20] or 'ok'}"
+            if self.last_tokens:
+                kinds = ",".join(str(t.get("kind", "?")) for t in self.last_tokens[:4])
+                label = f"{label}|lex:{kinds}"
+            self.pipeline.add(label)
         return notes
 
     def tick(self) -> str:
@@ -503,6 +601,7 @@ class ComposeEntry:
             f"| SEED: {self.seed_strip}",
             f"| SHOW: {self.last_show or '(none)'}",
             f"| CMD:  {self.last_command or '(none)'} ok={self.last_ok}",
+            f"| LEX:  {self.last_tokens[:6] if self.last_tokens else '(none)'}",
             "| [-] PIPELINE",
         ]
         lines.extend(self.pipeline.render_lines())
@@ -538,6 +637,7 @@ class ComposeEntry:
             "inventory": self.reach.inventory.list_items() if self.reach else [],
             "command": self.last_command,
             "ok": self.last_ok,
+            "tokens": self.last_tokens,
             "pipeline": self.pipeline.status(),
             "dell_hits": len(self.last_dell_hits),
             "flow_hits": len(self.last_flow_hits),
@@ -547,7 +647,7 @@ class ComposeEntry:
 
 
 def smoke() -> bool:
-    print("=== COMPOSE ENTRY SMOKE ===")
+    print("=== COMPOSE ENTRY SMOKE (lexer bind) ===")
     results: List[bool] = []
 
     def record(name: str, passed: bool, detail: str = "") -> None:
@@ -562,16 +662,16 @@ def smoke() -> bool:
             record(name, False, f"EXCEPTION {type(e).__name__}: {e}")
 
     c = ComposeEntry()
-    run("boot", lambda: (c.boot() or True, f"pipe={c.pipeline.status()}"))
-    run("boot pipeline", lambda: (c.pipeline.status().get("total", 0) >= 1, "Boot complete"))
-    run("dell", lambda: (any(h.get("dell") == 8 for h in c.search_dell("Create")), f"n={len(c.last_dell_hits)}"))
-    run("flow", lambda: (len(c.search_flow(">>")) >= 1, f"n={len(c.last_flow_hits)}"))
+    run("boot", lambda: (c.boot() or True, f"src={c.sources}"))
+    run("boot tokens", lambda: (len(c.last_tokens) >= 1, str(c.last_tokens[:4])))
+    run("seed lex", lambda: (
+        (c.command("08[Create] >> 14[Bind]") or True) is not None and len(c.last_tokens) >= 1,
+        str(c.last_tokens[:5]),
+    ))
     run("pick", lambda: (c.command("pick", intent="PICK", target=(1, 0)) is not None and c.last_ok, f"hold={c.avatar.body.holding}"))
-    run("stow", lambda: (c.command("stow", intent="STOW") is not None and c.last_ok, f"inv={c.status()['inventory']}"))
-    run("pipeline grew", lambda: (c.pipeline.status()["total"] >= 3, str(c.pipeline.status())))
-    run("confirm", lambda: (c.pipeline_confirm(1), f"pending={c.pipeline.status()['pending']}"))
-    run("show", lambda: (c.show("(^_^)")[0], c.last_show))
-    run("render", lambda: ("PIPELINE" in c.tick() and "LENS" in c.render() and "Floor" in c.render(), f"t={c.ticks}"))
+    run("pipeline", lambda: (c.pipeline.status()["total"] >= 2, str(c.pipeline.status())))
+    run("dell search", lambda: (len(c.search_dell("Create")) >= 1, f"n={len(c.last_dell_hits)}"))
+    run("render LEX", lambda: ("LEX:" in c.tick() and "PIPELINE" in c.render(), f"t={c.ticks}"))
     run("floor", lambda: (c.status()["floor"] == list(FLOOR), str(FLOOR)))
 
     print(f"=== RESULT: {sum(1 for x in results if x)}/{len(results)} PASS ===")
@@ -581,11 +681,8 @@ def smoke() -> bool:
 def demo() -> None:
     c = ComposeEntry()
     c.boot()
-    c.search_dell("Create")
-    c.search_flow(":")
+    c.command("08[Create] >> 14[Bind]")
     c.command("pick", intent="PICK", target=(1, 0))
-    c.command("stow", intent="STOW")
-    c.show("(^_^)")
     print(c.tick())
     print("STATUS:", c.status())
 

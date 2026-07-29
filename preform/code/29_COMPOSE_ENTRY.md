@@ -1,14 +1,8 @@
 # 29 — Compose Entry (recommended runner)
 
-Status: TRUE
+Status: TRUE · lexer-aware
 
-Single offline surface:
-- Body / reach / inventory
-- PersonaLens
-- Token Show Gate
-- Dell / flow search
-- **PipelineQueue owned** (boot line + success lines + confirm)
-- Floor lock
+Single offline surface: body · lens · token gate · search · pipeline · **lexer on seed-shaped cmds** · Floor lock
 
 ```bash
 python preform/code/29_COMPOSE_ENTRY.py
