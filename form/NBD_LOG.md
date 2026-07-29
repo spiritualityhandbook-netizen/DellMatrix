@@ -3,10 +3,9 @@
 | NBD | Module |
 |-----|--------|
 | … | … |
-| OpenPersist | open.py flags |
-| **REPL** | **repl.py** — interactive matrix session |
+| REPL | repl.py |
+| **Snap L3** | **core.py** — verify / required / all_snaps |
 
 ```bash
-python -m form.repl --owner Ace
-python -m form.repl --owner Ace --load
+python -m form.dell_matrix.core_test
 ```

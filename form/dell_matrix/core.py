@@ -1,32 +1,44 @@
 """
-Dell Matrix — foundation snap host.
+Dell Matrix — foundation snap host (L3).
 
-Holds foundational ports. Everything that works with the system
-snaps here because it shares Mandell relationship (Manifest / Floor).
+14[Bind] : 12[Test] >> 35[Discover] :: SnapHost
+
+Everything snaps here through Mandell relationship (Manifest / Floor).
+L3: health verify, required snap names, full inventory.
 """
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-from form.mandell.floor import floor_status, assert_floor_intact
+from form.mandell.floor import floor_status, assert_floor_intact, FLOOR
 from form.mandell.registry import DELLS
 from form.mandell.manifest import Manifest, manifest_from_dell
 from .snap import SnapCandidate, SnapResult, resonate
 
-
-# Foundational ports — what the matrix is built to receive
 FOUNDATION_PORTS = (
-    "language",   # Mandell itself
-    "registry",   # Dell True table
-    "growth",     # DuoBeta / Voynich-structural
-    "cube",       # personal harmonic cube
-    "main",       # main matrix link
-    "persona",    # docked AI personas
-    "tool",       # tools created with Mandell
-    "doc",        # documents / seeds user gives
-    "pipeline",   # confirm queues
+    "language",
+    "registry",
+    "growth",
+    "cube",
+    "main",
+    "persona",
+    "tool",
+    "doc",
+    "pipeline",
     "other",
+)
+
+# Names the full program expects after open() (L3 health)
+REQUIRED_FOR_OPEN: Tuple[str, ...] = (
+    "Mandell",
+    "TrueRegistry",
+    "PlaneSurface",
+    "MainField",
+    "BlankCube",
+    "GraphView",
+    "EnhanceGate",
+    "Persist",
 )
 
 
@@ -41,7 +53,6 @@ class DellMatrix:
         assert_floor_intact()
         for p in FOUNDATION_PORTS:
             self.snapped.setdefault(p, [])
-        # Foundation always holds language + registry manifests
         if not self.snapped["language"]:
             m = manifest_from_dell(1, "Mandell")
             self.snapped["language"].append(
@@ -66,7 +77,6 @@ class DellMatrix:
             "manifest": candidate.manifest.to_dict() if candidate.manifest else None,
             "payload": dict(candidate.payload),
         }
-        # replace same name on port
         self.snapped[port] = [e for e in self.snapped[port] if e["name"] != candidate.name]
         self.snapped[port].append(entry)
         self.log.append(f"SNAP {candidate.name} → {port}")
@@ -75,16 +85,60 @@ class DellMatrix:
     def list_port(self, port: str) -> List[Dict[str, Any]]:
         return list(self.snapped.get(port, []))
 
+    def all_snaps(self) -> List[Dict[str, Any]]:
+        """Flat inventory of every snapped entry."""
+        out: List[Dict[str, Any]] = []
+        for port, entries in self.snapped.items():
+            for e in entries:
+                row = dict(e)
+                row["port"] = port
+                out.append(row)
+        return out
+
+    def snap_names(self) -> Set[str]:
+        return {e["name"] for e in self.all_snaps() if e.get("name")}
+
+    def has_snap(self, name: str) -> bool:
+        return name in self.snap_names()
+
+    def verify(self, required: Optional[Tuple[str, ...]] = None) -> Dict[str, Any]:
+        """
+        L3 health check.
+        Floor intact, registry size, required names present.
+        """
+        assert_floor_intact()
+        req = required if required is not None else REQUIRED_FOR_OPEN
+        names = self.snap_names()
+        missing = [n for n in req if n not in names]
+        ok = (
+            list(FLOOR) == ["Alpha", "Delta", "Omega", "Omni"]
+            and len(DELLS) == 51
+            and len(missing) == 0
+        )
+        report = {
+            "ok": ok,
+            "floor": list(FLOOR),
+            "dell_count": len(DELLS),
+            "snap_count": len(names),
+            "missing": missing,
+            "present": sorted(names),
+        }
+        self.log.append(f"VERIFY ok={ok} missing={missing}")
+        return report
+
     def understand(self) -> Dict[str, Any]:
-        """Program self-description — not human consciousness."""
+        health = self.verify(required=())  # soft: no required names for bare matrix
         return {
             "self": "DellMatrix",
             "role": "foundation snap host",
+            "level": 3,
             "requires": "Mandell language",
             "floor": floor_status(),
             "ports": {p: len(self.snapped.get(p, [])) for p in FOUNDATION_PORTS},
             "dell_count": len(DELLS),
-            "log_tail": self.log[-8:],
+            "snap_names": sorted(self.snap_names()),
+            "log_tail": self.log[-10:],
+            "health_soft": health,
         }
 
     def status(self) -> Dict[str, Any]:

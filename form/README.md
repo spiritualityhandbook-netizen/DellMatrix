@@ -1,13 +1,7 @@
-# FORM — one program
+# FORM
 
 ```bash
-# Interactive (recommended)
 python -m form.repl --owner Ace
-python -m form.repl --owner Ace --load
-
-# One-shot CLI
-python -m form.open --owner Ace --save
 python -m form.open --smoke
+python -m form.dell_matrix.core_test
 ```
-
-REPL: place · show · pulse · enhance on/off · box · perspective · save · load · quit
