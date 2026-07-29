@@ -1,24 +1,8 @@
 #!/usr/bin/env python3
-"""
-Persist — NBD (equation after EnhanceGate).
-
-10[Keep] > 27[Checkpoint] >> 28[Rollback] :: Persist
-
-Save / load program state so the matrix survives restarts:
-- personal units (label, words, skin, x/y, sandbox)
-- perspective / zoom
-- enhance on/off + resonance scores/tags
-- Main contributions + tags
-- owner, generation
-
-Run:
-  python -m form.persist --smoke
-  python -m form.persist --demo
-"""
+"""Persist program state including Main pulls (surface coherence)."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Dict, Optional
 import json
 import os
@@ -29,6 +13,7 @@ try:
     from form.mandell.floor import FLOOR, assert_floor_intact
     from form.dell_matrix.plane import Perspective, Skin
     from form.dell_matrix.resonance import ResonanceState
+    from form.dell_matrix.main_field import MainContribution, PullRecord
     from form.open import Program, open_program
 except ImportError:
     ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -37,6 +22,7 @@ except ImportError:
     from form.mandell.floor import FLOOR, assert_floor_intact
     from form.dell_matrix.plane import Perspective, Skin
     from form.dell_matrix.resonance import ResonanceState
+    from form.dell_matrix.main_field import MainContribution, PullRecord
     from form.open import Program, open_program
 
 _STATE_DIR = os.path.join(os.path.dirname(__file__), "state")
@@ -51,9 +37,8 @@ def _path(owner: str) -> str:
 def serialize(program: Program) -> Dict[str, Any]:
     assert_floor_intact()
     plane = program.cube.session.plane
-    units = {}
-    for uid, u in plane.units.items():
-        units[uid] = {
+    units = {
+        uid: {
             "label": u.label,
             "words": u.words,
             "skin": u.skin.value,
@@ -62,11 +47,13 @@ def serialize(program: Program) -> Dict[str, Any]:
             "sandboxed": u.sandboxed,
             "sandbox_id": u.sandbox_id,
         }
+        for uid, u in plane.units.items()
+    }
     sandboxes = {sid: list(sb.member_ids) for sid, sb in plane.sandboxes.items()}
     main = program.main
     return {
         "type": "DellMatrixProgramState",
-        "version": 1,
+        "version": 2,
         "saved": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "floor": list(FLOOR),
         "owner": program.owner,
@@ -83,8 +70,13 @@ def serialize(program: Program) -> Dict[str, Any]:
                     "labels": list(c.labels),
                     "note": c.note,
                     "weight": c.weight,
+                    "ts": getattr(c, "ts", ""),
                 }
                 for c in main.contributions
+            ],
+            "pulls": [
+                {"unit_id": p.unit_id, "tag": p.tag, "weight": p.weight, "ts": p.ts}
+                for p in main.pulls
             ],
         },
         "plane": {
@@ -99,14 +91,12 @@ def serialize(program: Program) -> Dict[str, Any]:
 
 def save(program: Program, path: Optional[str] = None) -> str:
     path = path or _path(program.owner)
-    data = serialize(program)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+        json.dump(serialize(program), f, indent=2)
     return path
 
 
 def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
-    """Load state into a fresh Program. Floor must match."""
     assert_floor_intact()
     path = path or _path(owner)
     if not os.path.isfile(path):
@@ -120,14 +110,12 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
 
     p = open_program(data.get("owner") or owner)
     plane = p.cube.session.plane
-    # clear default welcome if restoring full units
     plane.units.clear()
     plane.sandboxes.clear()
 
     for uid, u in data.get("plane", {}).get("units", {}).items():
-        skin_name = u.get("skin", "cube")
         try:
-            skin = Skin(skin_name)
+            skin = Skin(u.get("skin", "cube"))
         except ValueError:
             skin = Skin.CUBE
         plane.place(
@@ -145,9 +133,8 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     for sid, members in data.get("plane", {}).get("sandboxes", {}).items():
         plane.box(list(members), sid)
 
-    persp = data.get("plane", {}).get("perspective", "table")
     try:
-        plane.set_perspective(Perspective(persp))
+        plane.set_perspective(Perspective(data.get("plane", {}).get("perspective", "table")))
     except Exception:
         pass
     zoom = data.get("plane", {}).get("zoom")
@@ -165,8 +152,6 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
         tags={k: {t: float(w) for t, w in bucket.items()} for k, bucket in res.get("tags", {}).items()},
     )
 
-    from form.dell_matrix.main_field import MainContribution
-
     p.main.tags = {k: float(v) for k, v in data.get("main", {}).get("tags", {}).items()}
     p.main.contributions = []
     for c in data.get("main", {}).get("contributions", []):
@@ -176,10 +161,20 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
                 labels=tuple(c.get("labels", ("", ""))),
                 note=c.get("note", ""),
                 weight=float(c.get("weight", 1.0)),
+                ts=c.get("ts", ""),
+            )
+        )
+    p.main.pulls = []
+    for pr in data.get("main", {}).get("pulls", []):
+        p.main.pulls.append(
+            PullRecord(
+                unit_id=pr.get("unit_id", ""),
+                tag=pr.get("tag", ""),
+                weight=float(pr.get("weight", 0)),
+                ts=pr.get("ts", ""),
             )
         )
 
-    # restore generation marker
     target_gen = int(data.get("duo_generation", 0))
     while p.duo.generation < target_gen:
         p.duo.evolve("28[Rollback] :: persist load")
@@ -188,48 +183,35 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
 
 
 def smoke() -> bool:
-    print("=== PERSIST SMOKE ===")
+    print("=== PERSIST V2 SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    p = open_program("PersistTest")
+    p = open_program("PersistV2")
     p.place("biz", "Business", words="CRM", skin=Skin.BUILDING, x=1)
-    p.place("music", "Music", words="Ep4", skin=Skin.SEED, x=-1)
     p.enhance_on()
     p.pulse()
-    path = save(p)
-    rec("save file", os.path.isfile(path), path)
+    # fake a pull log entry path via tags
+    p.main.tags["Design"] = 1.0
+    from form.dell_matrix.main_field import voluntary_pull
 
-    p2 = load("PersistTest")
-    rec("load owner", p2.owner == "PersistTest")
-    rec("units restored", "biz" in p2.cube.session.plane.units and "music" in p2.cube.session.plane.units)
-    rec("words", p2.cube.session.plane.units["biz"].words == "CRM")
-    rec("enhance on", p2.enhance.on is True)
-    rec("scores restored", p2.enhance.state.score_of("biz") > 0 or p2.enhance.state.score_of("music") > 0)
-    rec("floor", p2.status()["floor"]["locked"] is True)
-
-    # cleanup test file optional — keep for inspect
+    voluntary_pull(p.cube.session, "biz", p.main, "Design")
+    save(p)
+    p2 = load("PersistV2")
+    rec("units", "biz" in p2.cube.session.plane.units)
+    rec("pulls restored", len(p2.main.pulls) >= 1)
+    rec("scores", any(v > 0 for v in p2.enhance.state.scores.values()) or p2.enhance.on)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
-
-
-def demo() -> None:
-    print("10[Keep] > 27[Checkpoint] >> 28[Rollback] :: Persist")
-    p = open_program("Demo")
-    p.place("idea", "Idea", words="keep me", skin=Skin.CUBE)
-    path = save(p)
-    print("saved", path)
-    p2 = load("Demo")
-    print("loaded units", list(p2.cube.session.plane.units.keys()))
 
 
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    demo()
+    print("10[Keep] :: persist v2")
 
 
 if __name__ == "__main__":

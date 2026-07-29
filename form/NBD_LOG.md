@@ -2,6 +2,5 @@
 
 | NBD | Module |
 |-----|--------|
-| Snap L3 | core.py |
-| Plane L3 | plane.py |
-| **Main L3** | **main_field.py** — top_tags, pulls, weight stack, summary |
+| Main L3 | main_field.py |
+| **Surface coherence** | open render scores · persist pulls · REPL main/scores/pull |

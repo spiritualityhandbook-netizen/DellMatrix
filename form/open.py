@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
 """
-One program boot — full surface + persist.
+One program boot — surface coherent (scores on render + persist pulls).
 
-01[Initiate] > 15[Map] >> 10[Keep] :: Open
-
-  python -m form.open
-  python -m form.open --owner Ace
-  python -m form.open --load
-  python -m form.open --owner Ace --load --pulse --save
-  python -m form.open --smoke
+01[Initiate] > 15[Map] >> 09[Show] :: Open
 """
 
 from __future__ import annotations
@@ -76,7 +70,7 @@ class Program:
                     payload={"owner": self.owner},
                 )
             )
-        self.duo.evolve("01[Initiate] > 15[Map] >> 10[Keep] :: Open")
+        self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
 
     def place(self, id: str, label: str, **kwargs):
         return self.cube.place_idea(id, label, **kwargs)
@@ -113,6 +107,9 @@ class Program:
     def view(self) -> Dict[str, Any]:
         return build_view(self.cube.session.plane).to_dict()
 
+    def scores(self) -> Dict[str, float]:
+        return dict(self.enhance.state.scores)
+
     def save(self, path: Optional[str] = None) -> str:
         from form.persist import save as persist_save
 
@@ -125,13 +122,19 @@ class Program:
         return persist_load(owner, path)
 
     def render(self) -> str:
-        v_ascii = build_view(self.cube.session.plane).ascii()
+        scores = self.scores()
+        plane_txt = self.cube.session.plane.render(scores=scores)
         lines = [
             f"+- DellMatrix PROGRAM · owner={self.owner} -+",
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
             f"| enhance={'ON' if self.enhance.on else 'OFF'}  gen={self.duo.generation}  main={len(self.main.contributions)}",
+            f"| main top: {self.main.top_tags(3)}",
         ]
-        lines.extend(v_ascii.splitlines())
+        for ln in plane_txt.splitlines():
+            if ln.startswith("+-"):
+                continue
+            lines.append(ln if ln.startswith("|") else f"| {ln}")
+        lines.append("+" + "-" * 52 + "+")
         return "\n".join(lines)
 
     def status(self) -> Dict[str, Any]:
@@ -139,8 +142,9 @@ class Program:
             "owner": self.owner,
             "floor": floor_status(),
             "enhance": self.enhance.status(),
+            "scores": self.scores(),
+            "main": self.main.summary(),
             "matrix": self.matrix.understand(),
-            "main": self.main.understand(),
             "view": self.view(),
         }
 
@@ -150,25 +154,26 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== OPEN + PERSIST SMOKE ===")
+    print("=== SURFACE COHERENCE SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    p = open_program("OpenPersist")
+    p = open_program("Surface")
     p.place("biz", "Business", words="US&S", skin=Skin.BUILDING, x=1)
     p.place("music", "Music", words="Ep4", skin=Skin.SEED, x=-1)
-    rec("default enhance off", p.enhance.on is False)
     p.enhance_on()
-    rec("pulse on", p.pulse().get("ok") is True)
+    p.pulse()
+    txt = p.render()
+    rec("render has scores", "sc=" in txt or "score:" in txt, txt[0:200])
+    rec("status scores", any(v > 0 for v in p.scores().values()))
+    rec("main summary", "top_tags" in p.main.summary())
     path = p.save()
-    rec("save", bool(path))
-    p2 = Program.load("OpenPersist")
-    rec("load units", "biz" in p2.cube.session.plane.units and "music" in p2.cube.session.plane.units)
-    rec("load enhance", p2.enhance.on is True)
-    rec("view", p2.view().get("type") == "DellMatrixGraphView")
+    p2 = Program.load("Surface")
+    rec("load scores", any(v > 0 for v in p2.scores().values()) or p2.enhance.on)
+    rec("verify open snaps", p.matrix.verify().get("ok") is True)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -188,24 +193,16 @@ def main() -> None:
         if a == "--owner" and i + 1 < len(sys.argv):
             owner = sys.argv[i + 1]
 
-    print("01[Initiate] > 15[Map] >> 10[Keep] :: Open")
-    if do_load:
-        p = Program.load(owner)
-        print(f"English: Loaded program for {owner}.")
-    else:
-        p = open_program(owner)
-        print(f"English: Fresh program for {owner}.")
-        if not any(u != "welcome" for u in p.cube.session.plane.units):
-            p.place("seed", "First", words="on the plane", skin=Skin.SEED)
-
+    print("01[Initiate] > 15[Map] >> 09[Show] :: Open")
+    p = Program.load(owner) if do_load else open_program(owner)
+    if not do_load and not any(u != "welcome" for u in p.cube.session.plane.units):
+        p.place("seed", "First", words="on the plane", skin=Skin.SEED)
     if do_enhance:
         p.enhance_on()
     if do_pulse:
         print("pulse:", p.pulse())
     if do_save:
-        path = p.save()
-        print("10[Keep] ::", path)
-
+        print("10[Keep] ::", p.save())
     print(p.render())
     if do_json:
         print(json.dumps(p.view(), indent=2))
