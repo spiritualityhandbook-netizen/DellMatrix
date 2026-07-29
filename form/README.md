@@ -1,10 +1,8 @@
-# FORM — one program
+# FORM
 
 ```bash
 python -m form.open
-python -m form.open --owner Ace
+python -m form.open --json
 python -m form.open --smoke
-python -m form
+python -m form.dell_matrix.graph_view --smoke
 ```
-
-Also: plane · main_field · blank_cube · nbd_equation · selfgrow · boot

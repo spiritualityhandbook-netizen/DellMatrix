@@ -2,9 +2,10 @@
 
 | NBD | Module |
 |-----|--------|
-| Plane | dell_matrix/plane.py |
-| MainThird | dell_matrix/main_field.py |
-| BlankCube | dell_matrix/blank_cube.py |
-| **OneProgramBoot** | **open.py** — `python -m form.open` |
+| Plane | plane.py |
+| MainThird | main_field.py |
+| BlankCube | blank_cube.py |
+| OneProgramBoot | open.py |
+| **GraphView** | **graph_view.py** — UI contract nodes/edges/json |
 
-Next recompute: ResonanceAct, EnhanceGate, deeper L3, GraphUI…
+Next recompute: ResonanceAct (live enhance), EnhanceGate, L3 depth…
