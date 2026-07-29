@@ -2,19 +2,14 @@
 
 **Living Master Document — PLAN phase**
 
-## Pre-form definition (locked this cycle)
-Pre-form = **plan before implementation**.  
-Not the finished DuoBeta×Mandell OS matrix. That is **Form** (later).
+## Pre-form
+Plan before implementation. Primary objective: matrix = **full DuoBeta + full Mandell OS**, grows via **Psalms**, Floor locked.
 
-## Primary objective
-Plan one matrix: **full DuoBeta + full Mandell OS**, self-growing through **Psalms**, under Floor **Alpha · Delta · Omega · Omni**.
+## Mandelistics
+All inventory rows formalized into pages 16–22 + language spine. See `GAP_MANDELISTICS.md`.
 
-## Language spine
-See `UNDERSTANDING_MANDELL.md` + `LANGUAGE_PREFORM.md`  
-Terms → Manifest (Term+Manor+Dell) + Mandelistics.
-
-## How to direct
-See `STEER.md` — codes: NBD · LANG · PSALM · DUO · OS · REG · GAP · STOP CODE · FORM
+## Direct
+`STEER.md` — NBD · LANG · PSALM · DUO · OS · REG · GAP · STOP CODE · **FORM**
 
 ## Evolution Log
-- 2026-07-28 — Reset: Pre-form = plan only; STEER + Mandell understanding spine; NBD returns to Pre-form completeness from user materials.
+- 2026-07-28 — All Mandelistics partial/missing rows written into Pre-form pages 16–22; gap map closed for language spine.
