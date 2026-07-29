@@ -1,19 +1,11 @@
-# FORM — Foundation + Self-Grow
+# FORM
 
-```
-Mandell → Dell Matrix (snap) → DuoBeta self-grow
-```
-
-## Boot foundation
 ```bash
 python -m form.boot --smoke
+python -m form.dell_matrix.plane --demo
+python -m form.dell_matrix.plane --smoke
+python -m form.mandell.nbd_equation
+python -m form.duobeta.selfgrow --cycles 5
 ```
 
-## Turn grow on (watch the program evolve into itself)
-```bash
-python -m form.duobeta.selfgrow
-python -m form.duobeta.selfgrow --cycles 10
-```
-
-Inside: Mandell seeds. Outside: English watch lines.
-State kept under `form/state/`.
+Plane = first working Dell Matrix surface (perspectives, skins, sandbox).

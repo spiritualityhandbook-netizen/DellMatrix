@@ -1,5 +1,6 @@
 from .core import DellMatrix, FOUNDATION_PORTS
 from .snap import SnapCandidate, SnapResult, resonate
+from .plane import Plane, Perspective, Skin, Unit, Sandbox
 
 __all__ = [
     "DellMatrix",
@@ -7,4 +8,9 @@ __all__ = [
     "SnapCandidate",
     "SnapResult",
     "resonate",
+    "Plane",
+    "Perspective",
+    "Skin",
+    "Unit",
+    "Sandbox",
 ]
