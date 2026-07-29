@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — realized ambient intake command."""
+"""REPL — includes realize command (NBD)."""
 
 from __future__ import annotations
 
@@ -24,6 +24,7 @@ HELP = """
 Form realized — type tutorial
 
   place | enhance on | pulse | show | visual | save
+  realize                 full demo path on this owner
   ambient on | ambient files on | intake
   push_main | pull_main | box | help | quit
 """.strip()
@@ -33,10 +34,7 @@ TUTORIAL = """
 2) place music Music a song
 3) enhance on → pulse → show
 4) visual → open the HTML path
-5) Put a .txt in form/state/inbox/ then:
-     ambient on
-     ambient files on
-     intake
+5) Or run: realize   (full path in one command)
 6) save
 """.strip()
 
@@ -49,7 +47,7 @@ def _skin(name: str) -> Skin:
 
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
-    print("Dell Matrix — realized. Type tutorial or help")
+    print("Dell Matrix — type tutorial, realize, or help")
     print(f"owner={owner}\n")
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
@@ -75,6 +73,14 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             print(HELP)
         elif cmd == "tutorial":
             print(TUTORIAL)
+        elif cmd == "realize":
+            from form.realize import realize
+
+            rep = realize(owner)
+            p = Program.load(owner)
+            print(rep["render"])
+            print("visual:", rep["visual"])
+            print("verify:", rep["verify"].get("ok"), "missing:", rep["verify"].get("missing"))
         elif cmd == "show":
             print(p.render())
         elif cmd == "status":
@@ -178,7 +184,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             p.grow(1)
             print("gen", p.duo.generation)
         else:
-            print("unknown — type help or tutorial")
+            print("unknown — type help, tutorial, or realize")
 
     print("session end")
 

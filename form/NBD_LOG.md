@@ -1,16 +1,8 @@
 # NBD Log
 
-## NBD ×10 (second pass)
+| NBD | Result |
+|-----|--------|
+| Realize stack | realize.py + ambient files |
+| **repl_realize** | **REPL `realize` runs full end-to-end path** |
 
-1. AmbientGate skeleton (no intake)
-2. dual_output check utility
-3. GraphView scores in payload v2
-4. Program.ambient + AmbientGate snap
-5. Program.snapshot_main()
-6. view() passes scores into graph
-7. nbd_equation levels updated
-8. smoke_all expanded
-9. FORM_COMPLETE.md stamp
-10. NBD log this entry
-
-Pre-form still: ambient intake engines, network Main transport.
+Rank note: net_main highest raw score but Pre-form blocked; Form-safe win = repl_realize.
