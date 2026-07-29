@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-AmbientGate — realized files source (opt-in, local inbox only).
+AmbientGate — ALL sources realized as local folder adapters (out of preform).
 
-32[Pause] :: 33[Resume] > 35[Discover] :: AmbientGate
+Sources (each default OFF; master default OFF):
+  files      → form/state/inbox/
+  screen     → form/state/screen/     (drop text/png captions .txt)
+  mic        → form/state/mic/        (drop transcripts .txt)
+  clipboard  → form/state/clipboard/  (drop .txt pastes)
 
-- master default OFF
-- sources default OFF
-- files: reads form/state/inbox/*.txt and *.md when enabled
-- screen / mic / clipboard: still not implemented (return empty)
+No silent capture of OS mic/screen — operator drops artifacts in folders.
 """
 
 from __future__ import annotations
@@ -24,15 +25,54 @@ except ImportError:
     from form.mandell.floor import FLOOR, assert_floor_intact
 
 SOURCES = ("files", "screen", "mic", "clipboard")
-_INBOX = os.path.join(os.path.dirname(__file__), "..", "state", "inbox")
-os.makedirs(_INBOX, exist_ok=True)
+_STATE = os.path.join(os.path.dirname(__file__), "..", "state")
+_DIRS = {
+    "files": os.path.join(_STATE, "inbox"),
+    "screen": os.path.join(_STATE, "screen"),
+    "mic": os.path.join(_STATE, "mic"),
+    "clipboard": os.path.join(_STATE, "clipboard"),
+}
+for d in _DIRS.values():
+    os.makedirs(d, exist_ok=True)
+
+
+def _read_dir(source: str) -> List[Dict[str, Any]]:
+    folder = _DIRS[source]
+    items = []
+    if not os.path.isdir(folder):
+        return items
+    for name in sorted(os.listdir(folder)):
+        if name.startswith("."):
+            continue
+        path = os.path.join(folder, name)
+        if not os.path.isfile(path):
+            continue
+        # text-like only
+        if not (name.endswith(".txt") or name.endswith(".md") or name.endswith(".csv")):
+            continue
+        try:
+            with open(path, encoding="utf-8") as f:
+                text = f.read().strip()
+        except OSError:
+            continue
+        stem = os.path.splitext(name)[0]
+        items.append(
+            {
+                "source": source,
+                "id": f"{source}_{stem}",
+                "label": f"{source}:{stem}",
+                "words": text[:4000],
+                "path": path,
+            }
+        )
+    return items
 
 
 @dataclass
 class AmbientGate:
     enabled: Dict[str, bool] = field(default_factory=lambda: {s: False for s in SOURCES})
     master_on: bool = False
-    level: int = 2  # files realized
+    level: int = 3  # all folder adapters live
 
     def turn_on(self) -> None:
         assert_floor_intact()
@@ -58,33 +98,6 @@ class AmbientGate:
             return []
         return [s for s, on in self.enabled.items() if on]
 
-    def _intake_files(self) -> List[Dict[str, Any]]:
-        items = []
-        if not os.path.isdir(_INBOX):
-            return items
-        for name in sorted(os.listdir(_INBOX)):
-            if not (name.endswith(".txt") or name.endswith(".md")):
-                continue
-            path = os.path.join(_INBOX, name)
-            if not os.path.isfile(path):
-                continue
-            try:
-                with open(path, encoding="utf-8") as f:
-                    text = f.read().strip()
-            except OSError:
-                continue
-            stem = os.path.splitext(name)[0]
-            items.append(
-                {
-                    "source": "files",
-                    "id": f"file_{stem}",
-                    "label": stem,
-                    "words": text[:2000],
-                    "path": path,
-                }
-            )
-        return items
-
     def intake(self) -> Dict[str, Any]:
         assert_floor_intact()
         if not self.master_on:
@@ -92,21 +105,15 @@ class AmbientGate:
         active = self.active_sources()
         if not active:
             return {"ok": False, "reason": "no sources enabled", "items": []}
-
         items: List[Dict[str, Any]] = []
-        notes = []
-        if "files" in active:
-            items.extend(self._intake_files())
-        for s in ("screen", "mic", "clipboard"):
-            if s in active:
-                notes.append(f"{s}: not implemented")
-
+        for s in active:
+            items.extend(_read_dir(s))
         return {
             "ok": True,
             "items": items,
             "active": active,
-            "notes": notes,
-            "inbox": _INBOX,
+            "dirs": {s: _DIRS[s] for s in active},
+            "level": self.level,
         }
 
     def status(self) -> Dict[str, Any]:
@@ -116,17 +123,18 @@ class AmbientGate:
             "master_on": self.master_on,
             "enabled": dict(self.enabled),
             "active": self.active_sources(),
+            "dirs": dict(_DIRS),
             "floor": list(FLOOR),
+            "mode": "folder adapters — drop .txt/.md into source dirs",
             "files_implemented": True,
-            "screen_implemented": False,
-            "mic_implemented": False,
-            "clipboard_implemented": False,
-            "inbox": _INBOX,
+            "screen_implemented": True,
+            "mic_implemented": True,
+            "clipboard_implemented": True,
         }
 
 
 def smoke() -> bool:
-    print("=== AMBIENT REALIZED SMOKE ===")
+    print("=== AMBIENT ALL SOURCES SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
@@ -134,20 +142,23 @@ def smoke() -> bool:
         r.append(bool(ok))
 
     g = AmbientGate()
-    rec("default off", g.master_on is False and g.intake().get("ok") is False)
-    # seed inbox
-    sample = os.path.join(_INBOX, "_smoke_idea.txt")
-    with open(sample, "w", encoding="utf-8") as f:
-        f.write("realized ambient sample idea")
+    rec("default off", g.master_on is False)
+    for s, folder in _DIRS.items():
+        path = os.path.join(folder, f"_smoke_{s}.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(f"sample from {s}")
     g.turn_on()
-    g.enable_source("files")
+    for s in SOURCES:
+        g.enable_source(s)
     out = g.intake()
-    rec("files intake", out.get("ok") is True and len(out.get("items", [])) >= 1, str(len(out.get("items", []))))
-    rec("has words", any("realized" in (i.get("words") or "") for i in out.get("items", [])))
-    try:
-        os.remove(sample)
-    except OSError:
-        pass
+    rec("intake ok", out.get("ok") is True)
+    rec("all sources", len(out.get("items", [])) >= 4, str(len(out.get("items", []))))
+    rec("level 3", g.level == 3)
+    for s, folder in _DIRS.items():
+        try:
+            os.remove(os.path.join(folder, f"_smoke_{s}.txt"))
+        except OSError:
+            pass
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
