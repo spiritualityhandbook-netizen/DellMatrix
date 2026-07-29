@@ -2,12 +2,7 @@
 
 | NBD | Result |
 |-----|--------|
-| VisualBind | open.visual / checkpoint |
-| **SharedMain** | **shared_main.py** — multi-owner disk Main; push/pull no clobber |
+| SharedMain | shared_main.py |
+| **Interactive HTML** | **visual.py** — click nodes, detail panel, offline |
 
-```bash
-python -m form.dell_matrix.shared_main --smoke
-python -m form.open --owner Ace --push-main
-```
-
-Still Pre-form (not Form yet): ambient enhance, interactive HTML click handlers, true network transport.
+Still Pre-form: ambient enhance, true network transport beyond shared file.
