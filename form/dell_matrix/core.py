@@ -1,11 +1,4 @@
-"""
-Dell Matrix — foundation snap host (L3).
-
-14[Bind] : 12[Test] >> 35[Discover] :: SnapHost
-
-Everything snaps here through Mandell relationship (Manifest / Floor).
-L3: health verify, required snap names, full inventory.
-"""
+"""Dell Matrix snap host L3 — required set includes Visual + SharedMain."""
 
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -29,7 +22,6 @@ FOUNDATION_PORTS = (
     "other",
 )
 
-# Names the full program expects after open() (L3 health)
 REQUIRED_FOR_OPEN: Tuple[str, ...] = (
     "Mandell",
     "TrueRegistry",
@@ -39,13 +31,13 @@ REQUIRED_FOR_OPEN: Tuple[str, ...] = (
     "GraphView",
     "EnhanceGate",
     "Persist",
+    "Visual",
+    "SharedMain",
 )
 
 
 @dataclass
 class DellMatrix:
-    """Core bottom — snap host."""
-
     snapped: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
     log: List[str] = field(default_factory=list)
 
@@ -86,7 +78,6 @@ class DellMatrix:
         return list(self.snapped.get(port, []))
 
     def all_snaps(self) -> List[Dict[str, Any]]:
-        """Flat inventory of every snapped entry."""
         out: List[Dict[str, Any]] = []
         for port, entries in self.snapped.items():
             for e in entries:
@@ -102,19 +93,11 @@ class DellMatrix:
         return name in self.snap_names()
 
     def verify(self, required: Optional[Tuple[str, ...]] = None) -> Dict[str, Any]:
-        """
-        L3 health check.
-        Floor intact, registry size, required names present.
-        """
         assert_floor_intact()
         req = required if required is not None else REQUIRED_FOR_OPEN
         names = self.snap_names()
         missing = [n for n in req if n not in names]
-        ok = (
-            list(FLOOR) == ["Alpha", "Delta", "Omega", "Omni"]
-            and len(DELLS) == 51
-            and len(missing) == 0
-        )
+        ok = list(FLOOR) == ["Alpha", "Delta", "Omega", "Omni"] and len(DELLS) == 51 and len(missing) == 0
         report = {
             "ok": ok,
             "floor": list(FLOOR),
@@ -127,7 +110,7 @@ class DellMatrix:
         return report
 
     def understand(self) -> Dict[str, Any]:
-        health = self.verify(required=())  # soft: no required names for bare matrix
+        health = self.verify(required=())
         return {
             "self": "DellMatrix",
             "role": "foundation snap host",

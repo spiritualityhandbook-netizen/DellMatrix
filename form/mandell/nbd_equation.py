@@ -1,81 +1,81 @@
 #!/usr/bin/env python3
-"""NBD Equation — reassess after plane vision lock."""
+"""NBD equation — levels reflect post L3 Form stack."""
 
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
-import json
 
-FLOOR = ("Alpha", "Delta", "Omega", "Omni")
+from dataclasses import dataclass
+from typing import List
+import sys
+
 L_STAR = 3
-SPINE = ("mandell", "dell_matrix", "duobeta", "plane", "perspective", "sandbox", "resonance")
+SPINE = (
+    "mandell",
+    "dell_matrix",
+    "duobeta",
+    "plane",
+    "main",
+    "integrate",
+    "resonance",
+    "enhance",
+    "persist",
+    "ui",
+)
 
 
 @dataclass
-class Capability:
+class Cap:
     id: str
     term: str
-    manor: str
-    dell: int
     spine: str
-    level_now: int
-    level_goal: int = L_STAR
-    floor_safe: bool = True
-    manifest_complete: bool = True
-    seq: float = 0.5
-
-    def phi(self) -> float:
-        return 1.0 if (self.floor_safe and self.manifest_complete) else 0.0
+    L: int
+    seq: float
 
     def rho(self) -> float:
-        try:
-            i = SPINE.index(self.spine)
-        except ValueError:
-            i = len(SPINE)
-        return max(0.35, 1.0 - 0.08 * i)
+        i = SPINE.index(self.spine) if self.spine in SPINE else len(SPINE)
+        return max(0.35, 1.0 - 0.07 * i)
 
-    def lambda_def(self) -> float:
-        return float(max(0, self.level_goal - self.level_now))
+    def lam(self) -> int:
+        return max(0, L_STAR - self.L)
 
     def score(self) -> float:
-        return self.phi() * self.rho() * self.lambda_def() * self.seq
+        return self.rho() * self.lam() * self.seq
 
 
-def goal_star() -> List[Capability]:
-    return [
-        Capability("floor", "Floor", "Immutable base", 23, "mandell", 3, seq=1.0),
-        Capability("registry", "Registry", "Dell 00–50", 11, "mandell", 3, seq=0.98),
-        Capability("manifest", "Manifest", "Term+Manor+Dell", 50, "mandell", 3, seq=0.96),
-        Capability("snap", "SnapHost", "Ports + resonate", 14, "dell_matrix", 2, seq=0.94),
-        Capability("plane", "Plane", "Geometric plane place units", 15, "plane", 2, seq=0.93),
-        Capability("perspective", "Perspective", "table/page/cube/circle/flower/sphere", 9, "perspective", 2, seq=0.91),
-        Capability("sandbox", "Sandbox", "Box/void isolation", 23, "sandbox", 2, seq=0.89),
-        Capability("skins", "PerceptionSkin", "cube/sphere/seed/building/words", 4, "perspective", 2, seq=0.87),
-        Capability("selfgrow", "SelfGrow", "Curriculum loop", 13, "duobeta", 2, seq=0.86),
-        Capability("resonance", "ResonanceSeek", "Enhance when connected", 35, "resonance", 1, seq=0.80),
-        Capability("vesica", "VesicaMiddle", "Flower left⊗right middle", 18, "resonance", 2, seq=0.78),
-        Capability("ui_graph", "GraphUI", "Real visual surface", 9, "plane", 0, seq=0.70),
-    ]
+# Living levels after NBD chain through interactive HTML + shared main
+CAPS: List[Cap] = [
+    Cap("floor", "Floor", "mandell", 3, 1.0),
+    Cap("registry", "Registry", "mandell", 3, 0.98),
+    Cap("snap", "SnapHost", "dell_matrix", 3, 0.94),
+    Cap("plane", "Plane", "plane", 3, 0.93),
+    Cap("main", "MainThird", "main", 3, 0.92),
+    Cap("shared_main", "SharedMain", "main", 2, 0.88),
+    Cap("blank", "BlankCube", "plane", 3, 0.88),
+    Cap("integrate", "OneProgram", "integrate", 3, 0.97),
+    Cap("repl", "REPL", "integrate", 3, 0.96),
+    Cap("resonance", "Resonance", "resonance", 3, 0.90),
+    Cap("enhance", "EnhanceGate", "enhance", 3, 0.90),
+    Cap("persist", "Persist", "persist", 3, 0.91),
+    Cap("ui", "Visual", "ui", 3, 0.88),
+    Cap("selfgrow", "SelfGrow", "duobeta", 3, 0.85),
+    Cap("ambient", "Ambient", "enhance", 0, 0.35),
+    Cap("net_main", "NetworkMain", "main", 0, 0.40),
+]
 
 
-def compute_nbd() -> Tuple[Optional[Capability], List[Tuple[str, float]]]:
-    G = goal_star()
-    d = [c for c in G if c.lambda_def() > 0]
-    ranked = sorted(((c.id, c.score(), c) for c in d), key=lambda x: x[1], reverse=True)
-    table = [(i, s) for i, s, _ in ranked]
-    winner = ranked[0][2] if ranked else None
-    return winner, table
+def rank() -> List[Cap]:
+    return sorted([c for c in CAPS if c.lam() > 0], key=lambda c: -c.score())
 
 
 def main() -> None:
-    w, table = compute_nbd()
     print("15[Map] : 18[Mirror] >> 46[Rank] > 50[Manifest] :: NBD")
     print("NBD_t = argmax φ·ρ·λ·σ\n")
-    for i, s in table[:10]:
-        print(f"  {s:6.3f}  {i}")
-    if w:
-        print(f"\nNBD → {w.dell:02d}[{w.term}] > 50[Manifest]")
-        print(f"English: {w.term} — {w.manor} (L{w.level_now}→{w.level_goal})")
+    ranked = rank()
+    if not ranked:
+        print("Δ empty at L* for tracked caps — only ambient/network remain (Pre-form).")
+        return
+    for c in ranked:
+        print(f"  {c.score():.3f}  {c.id:16} L{c.L}→{L_STAR}")
+    print("\nNBD →", ranked[0].id, ranked[0].term)
 
 
 if __name__ == "__main__":

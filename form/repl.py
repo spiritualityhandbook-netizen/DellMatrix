@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL L3 + visual/checkpoint bound."""
+"""REPL — NBD x10 surface commands included."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ try:
     from form.open import Program, open_program
     from form.dell_matrix.plane import Skin
     from form.dell_matrix.blank_cube import BlankCube
+    from form.persist import list_checkpoints
 except ImportError:
     import os
 
@@ -17,18 +18,17 @@ except ImportError:
     from form.open import Program, open_program
     from form.dell_matrix.plane import Skin
     from form.dell_matrix.blank_cube import BlankCube
+    from form.persist import list_checkpoints
 
 HELP = """
 Commands:
-  help | show | status | scores | main | verify | health
-  place <id> <label> [words…] | words <id> <text…>
-  skin <id> <skin> | move <id> <x> <y> | remove <id>
-  box <id> [id…] | unbox <id> | neighbors <id>
-  perspective <mode> | zoom <id> | zoom out
-  enhance on|off | pulse | pull <unit> <tag>
-  visual          write SVG+HTML and print paths
-  checkpoint      timestamped save
-  pack | save | load | grow
+  help | show | status | scores | main | shared | verify | health
+  place | words | skin | move | remove | box | unbox | neighbors
+  perspective | zoom
+  enhance on|off | pulse | decay [factor] | clear
+  pull <unit> <tag>
+  push_main | pull_main
+  visual | checkpoint | checkpoints | pack | save | load | grow
   quit
 """.strip()
 
@@ -42,7 +42,7 @@ def _skin(name: str) -> Skin:
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print("01[Initiate] > 13[Loop] >> 09[Show] :: REPL")
-    print(f"English: Interactive Dell Matrix — owner={owner}\n")
+    print(f"English: Dell Matrix — owner={owner}\n")
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
 
@@ -74,10 +74,12 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             print(p.scores())
         elif cmd == "main":
             print(p.main.summary())
+        elif cmd == "shared":
+            print(p.shared_main_summary())
         elif cmd == "verify":
             print(p.matrix.verify())
         elif cmd == "health":
-            print({"floor": list(p.status()["floor"]["floor"]), "enhance": p.enhance.on, "units": len(p.cube.session.plane.units), "gen": p.duo.generation, "verify_ok": p.matrix.verify().get("ok")})
+            print({"enhance": p.enhance.on, "units": len(p.cube.session.plane.units), "gen": p.duo.generation, "verify_ok": p.matrix.verify().get("ok")})
         elif cmd == "place" and len(parts) >= 3:
             p.place(parts[1], parts[2], words=" ".join(parts[3:]), skin=Skin.CUBE)
             print("placed", parts[1])
@@ -118,12 +120,23 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                 print("enhance OFF")
         elif cmd == "pulse":
             print(p.pulse())
+        elif cmd == "decay":
+            factor = float(parts[1]) if len(parts) > 1 else 0.9
+            print(p.enhance.decay(factor))
+        elif cmd == "clear":
+            print(p.enhance.clear())
         elif cmd == "pull" and len(parts) >= 3:
             print(p.pull(parts[1], parts[2]))
+        elif cmd == "push_main":
+            print(p.push_main())
+        elif cmd == "pull_main":
+            print(p.pull_main())
         elif cmd == "visual":
             print(p.visual())
         elif cmd == "checkpoint":
             print(p.checkpoint())
+        elif cmd == "checkpoints":
+            print(list_checkpoints(owner))
         elif cmd == "pack":
             pack_cube = BlankCube(owner=p.owner, clean=True)
             pack_cube.session = p.cube.session
