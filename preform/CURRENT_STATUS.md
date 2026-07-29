@@ -1,5 +1,11 @@
-# Current Status — Pre-form
+# Status
 
-FOUNDATION extended and matched to user directive (harmonic cubes + Main third + blank + opt-in enhance).
+**FORM foundation started** in `/form`
 
-Still Pre-form (plan). Form = build when you say start / FORM.
+- Mandell: floor, registry 00–50, Manifest dual output
+- Dell Matrix: snap ports + resonance contract
+- DuoBeta: generation + self-understand (structural)
+
+```bash
+python -m form.boot --smoke
+```

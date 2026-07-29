@@ -1,7 +1,14 @@
 # 00 — PSALM PREFORM
 
-## Direction
-**`FOUNDATION.md`** locked — includes harmonic cube, Main-as-third, blank cube, opt-in enhance, whole Mandell OS + DuoBeta on Dell Matrix.
+Plan remains in `preform/`. **Form foundation is live under `form/`.**
+
+## Order
+Mandell (language) → Dell Matrix (snap host) → DuoBeta (growth / self-understand)
+
+```bash
+python -m form.boot --smoke
+python -m form.boot
+```
 
 ## Evolution Log
-- 2026-07-28 — Cube hold/table sync; third = Main; no forced rewrite; blank cube; opt-in enhance.
+- 2026-07-28 — FORM foundation created: form/mandell, form/dell_matrix, form/duobeta, form/boot.py
