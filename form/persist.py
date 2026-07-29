@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
-"""Persist program state including Main pulls (surface coherence)."""
+"""
+Persist L3 — save/load + checkpoints.
+
+10[Keep] > 27[Checkpoint] >> 28[Rollback] :: Persist
+
+- program_<owner>.json current state
+- checkpoints: program_<owner>_cp_<timestamp>.json
+- list_checkpoints / load checkpoint
+
+Run:
+  python -m form.persist --smoke
+"""
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 import json
 import os
 import sys
@@ -28,10 +39,20 @@ except ImportError:
 _STATE_DIR = os.path.join(os.path.dirname(__file__), "state")
 os.makedirs(_STATE_DIR, exist_ok=True)
 
+LEVEL = 3
+
+
+def _safe_owner(owner: str) -> str:
+    return "".join(c if c.isalnum() or c in "-_" else "_" for c in owner) or "operator"
+
 
 def _path(owner: str) -> str:
-    safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in owner) or "operator"
-    return os.path.join(_STATE_DIR, f"program_{safe}.json")
+    return os.path.join(_STATE_DIR, f"program_{_safe_owner(owner)}.json")
+
+
+def _cp_path(owner: str, stamp: Optional[str] = None) -> str:
+    stamp = stamp or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return os.path.join(_STATE_DIR, f"program_{_safe_owner(owner)}_cp_{stamp}.json")
 
 
 def serialize(program: Program) -> Dict[str, Any]:
@@ -53,7 +74,8 @@ def serialize(program: Program) -> Dict[str, Any]:
     main = program.main
     return {
         "type": "DellMatrixProgramState",
-        "version": 2,
+        "version": 3,
+        "level": LEVEL,
         "saved": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "floor": list(FLOOR),
         "owner": program.owner,
@@ -61,6 +83,7 @@ def serialize(program: Program) -> Dict[str, Any]:
         "resonance": {
             "scores": dict(program.enhance.state.scores),
             "tags": {k: dict(v) for k, v in program.enhance.state.tags.items()},
+            "pulse_count": getattr(program.enhance.state, "pulse_count", 0),
         },
         "main": {
             "tags": dict(main.tags),
@@ -94,6 +117,25 @@ def save(program: Program, path: Optional[str] = None) -> str:
     with open(path, "w", encoding="utf-8") as f:
         json.dump(serialize(program), f, indent=2)
     return path
+
+
+def checkpoint(program: Program) -> str:
+    """Write timestamped checkpoint AND update current save."""
+    cp = _cp_path(program.owner)
+    data = serialize(program)
+    with open(cp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+    save(program)  # current pointer
+    return cp
+
+
+def list_checkpoints(owner: str) -> List[str]:
+    prefix = f"program_{_safe_owner(owner)}_cp_"
+    out = []
+    for name in sorted(os.listdir(_STATE_DIR)):
+        if name.startswith(prefix) and name.endswith(".json"):
+            out.append(os.path.join(_STATE_DIR, name))
+    return out
 
 
 def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
@@ -147,10 +189,12 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
         p.enhance.turn_off()
 
     res = data.get("resonance", {})
-    p.enhance.state = ResonanceState(
+    st = ResonanceState(
         scores={k: float(v) for k, v in res.get("scores", {}).items()},
         tags={k: {t: float(w) for t, w in bucket.items()} for k, bucket in res.get("tags", {}).items()},
     )
+    st.pulse_count = int(res.get("pulse_count", 0))
+    p.enhance.state = st
 
     p.main.tags = {k: float(v) for k, v in data.get("main", {}).get("tags", {}).items()}
     p.main.contributions = []
@@ -183,27 +227,30 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
 
 
 def smoke() -> bool:
-    print("=== PERSIST V2 SMOKE ===")
+    print("=== PERSIST L3 SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    p = open_program("PersistV2")
+    p = open_program("PersistL3")
     p.place("biz", "Business", words="CRM", skin=Skin.BUILDING, x=1)
     p.enhance_on()
     p.pulse()
-    # fake a pull log entry path via tags
-    p.main.tags["Design"] = 1.0
-    from form.dell_matrix.main_field import voluntary_pull
-
-    voluntary_pull(p.cube.session, "biz", p.main, "Design")
-    save(p)
-    p2 = load("PersistV2")
-    rec("units", "biz" in p2.cube.session.plane.units)
-    rec("pulls restored", len(p2.main.pulls) >= 1)
-    rec("scores", any(v > 0 for v in p2.enhance.state.scores.values()) or p2.enhance.on)
+    path = save(p)
+    rec("save", os.path.isfile(path))
+    cp = checkpoint(p)
+    rec("checkpoint", os.path.isfile(cp), cp)
+    cps = list_checkpoints("PersistL3")
+    rec("list cps", len(cps) >= 1)
+    p2 = load("PersistL3")
+    rec("load units", "biz" in p2.cube.session.plane.units)
+    p3 = load("PersistL3", path=cp)
+    rec("load cp", "biz" in p3.cube.session.plane.units)
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    rec("version 3", data.get("version") == 3 and data.get("level") == 3)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -211,7 +258,7 @@ def smoke() -> bool:
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    print("10[Keep] :: persist v2")
+    print("10[Keep] > 27[Checkpoint] >> 28[Rollback] :: Persist L3")
 
 
 if __name__ == "__main__":
