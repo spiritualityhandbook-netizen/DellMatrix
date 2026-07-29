@@ -6,6 +6,7 @@
 | MainThird | main_field.py |
 | BlankCube | blank_cube.py |
 | OneProgramBoot | open.py |
-| **GraphView** | **graph_view.py** — UI contract nodes/edges/json |
+| GraphView | graph_view.py |
+| **ResonanceAct** | **resonance.py** — pulse enhance + vesica + sandbox isolation |
 
-Next recompute: ResonanceAct (live enhance), EnhanceGate, L3 depth…
+Next: EnhanceGate, L3 depth, wire pulse into open.py, UI polish…
