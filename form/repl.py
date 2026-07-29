@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — SUS audit: ambient + snapshot_main on surface."""
+"""REPL — Form 1.00 with tutorial."""
 
 from __future__ import annotations
 
@@ -21,19 +21,33 @@ except ImportError:
     from form.persist import list_checkpoints
 
 HELP = """
-Quick path:
-  place idea1 MyIdea words here
-  enhance on → pulse → show → visual → save
+Form 1.00 — type tutorial once, then operate.
 
-Commands:
-  help | show | status | scores | main | shared | ambient | verify | health
-  place | words | skin | move | remove | box | unbox | neighbors
-  perspective | zoom
-  enhance on|off | pulse | decay [factor] | clear
-  pull <unit> <tag>
-  push_main | pull_main | snapshot_main
-  visual | checkpoint | checkpoints | pack | save | load | grow
-  quit
+  place <id> <label> [words…]   put an idea on the plane
+  enhance on → pulse → show     feel resonance
+  visual                        write HTML map
+  save / load                   keep your cube
+  push_main / pull_main         shared third field
+  box <id…>                     sandbox (no outside enhance)
+  help | quit
+""".strip()
+
+TUTORIAL = """
+TUTORIAL (Form 1.00)
+--------------------
+1) place biz Business my company idea
+2) place music Music a song idea
+3) enhance on
+4) pulse
+5) show          ← scores rise between connected ideas
+6) visual        ← open the HTML path printed
+7) save
+
+Rules:
+- enhance stays OFF until you turn it on
+- box isolates an idea from the others
+- push_main shares tags to Main without changing your plane
+- ambient has no capture engines in Form 1.00 (skeleton only)
 """.strip()
 
 
@@ -45,7 +59,7 @@ def _skin(name: str) -> Skin:
 
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
-    print("Dell Matrix REPL — type help")
+    print("Dell Matrix Form 1.00 — type tutorial or help")
     print(f"owner={owner}\n")
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
@@ -67,8 +81,10 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
 
         if cmd in ("quit", "exit", "q"):
             break
-        elif cmd == "help":
+        elif cmd in ("help", "?"):
             print(HELP)
+        elif cmd == "tutorial":
+            print(TUTORIAL)
         elif cmd == "show":
             print(p.render())
         elif cmd == "status":
@@ -85,7 +101,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd == "verify":
             print(p.matrix.verify())
         elif cmd == "health":
-            print({"enhance": p.enhance.on, "ambient": p.ambient.master_on, "units": len(p.cube.session.plane.units), "gen": p.duo.generation, "verify_ok": p.matrix.verify().get("ok")})
+            print({"enhance": p.enhance.on, "ambient": p.ambient.master_on, "units": len(p.cube.session.plane.units), "gen": p.duo.generation, "verify_ok": p.matrix.verify().get("ok"), "form": "1.00"})
         elif cmd == "place" and len(parts) >= 3:
             p.place(parts[1], parts[2], words=" ".join(parts[3:]), skin=Skin.CUBE)
             print("placed", parts[1])
@@ -127,8 +143,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd == "pulse":
             print(p.pulse())
         elif cmd == "decay":
-            factor = float(parts[1]) if len(parts) > 1 else 0.9
-            print(p.enhance.decay(factor))
+            print(p.enhance.decay(float(parts[1]) if len(parts) > 1 else 0.9))
         elif cmd == "clear":
             print(p.enhance.clear())
         elif cmd == "pull" and len(parts) >= 3:
@@ -158,7 +173,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             p.grow(1)
             print("gen", p.duo.generation)
         else:
-            print("unknown — type help")
+            print("unknown — type help or tutorial")
 
     print("session end")
 

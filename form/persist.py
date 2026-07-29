@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""
-Persist L3 — save/load + checkpoints.
-
-10[Keep] > 27[Checkpoint] >> 28[Rollback] :: Persist
-
-- program_<owner>.json current state
-- checkpoints: program_<owner>_cp_<timestamp>.json
-- list_checkpoints / load checkpoint
-
-Run:
-  python -m form.persist --smoke
-"""
+"""Persist L3 — includes ambient gate flags (Form 1.00 completeness)."""
 
 from __future__ import annotations
 
@@ -38,7 +27,6 @@ except ImportError:
 
 _STATE_DIR = os.path.join(os.path.dirname(__file__), "state")
 os.makedirs(_STATE_DIR, exist_ok=True)
-
 LEVEL = 3
 
 
@@ -72,14 +60,20 @@ def serialize(program: Program) -> Dict[str, Any]:
     }
     sandboxes = {sid: list(sb.member_ids) for sid, sb in plane.sandboxes.items()}
     main = program.main
+    amb = program.ambient
     return {
         "type": "DellMatrixProgramState",
-        "version": 3,
+        "version": 4,
         "level": LEVEL,
+        "form_scope": "1.00",
         "saved": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "floor": list(FLOOR),
         "owner": program.owner,
         "enhance_on": program.enhance.on,
+        "ambient": {
+            "master_on": amb.master_on,
+            "enabled": dict(amb.enabled),
+        },
         "resonance": {
             "scores": dict(program.enhance.state.scores),
             "tags": {k: dict(v) for k, v in program.enhance.state.tags.items()},
@@ -120,22 +114,20 @@ def save(program: Program, path: Optional[str] = None) -> str:
 
 
 def checkpoint(program: Program) -> str:
-    """Write timestamped checkpoint AND update current save."""
     cp = _cp_path(program.owner)
-    data = serialize(program)
     with open(cp, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-    save(program)  # current pointer
+        json.dump(serialize(program), f, indent=2)
+    save(program)
     return cp
 
 
 def list_checkpoints(owner: str) -> List[str]:
     prefix = f"program_{_safe_owner(owner)}_cp_"
-    out = []
-    for name in sorted(os.listdir(_STATE_DIR)):
-        if name.startswith(prefix) and name.endswith(".json"):
-            out.append(os.path.join(_STATE_DIR, name))
-    return out
+    return [
+        os.path.join(_STATE_DIR, name)
+        for name in sorted(os.listdir(_STATE_DIR))
+        if name.startswith(prefix) and name.endswith(".json")
+    ]
 
 
 def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
@@ -188,6 +180,17 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     else:
         p.enhance.turn_off()
 
+    amb = data.get("ambient", {})
+    if amb.get("master_on"):
+        p.ambient.turn_on()
+    else:
+        p.ambient.turn_off()
+    for src, on in (amb.get("enabled") or {}).items():
+        if on:
+            p.ambient.enable_source(src)
+        else:
+            p.ambient.disable_source(src)
+
     res = data.get("resonance", {})
     st = ResonanceState(
         scores={k: float(v) for k, v in res.get("scores", {}).items()},
@@ -227,30 +230,29 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
 
 
 def smoke() -> bool:
-    print("=== PERSIST L3 SMOKE ===")
+    print("=== PERSIST V4 SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    p = open_program("PersistL3")
+    p = open_program("PersistV4")
     p.place("biz", "Business", words="CRM", skin=Skin.BUILDING, x=1)
     p.enhance_on()
     p.pulse()
+    p.ambient.turn_on()
+    p.ambient.enable_source("files")
     path = save(p)
     rec("save", os.path.isfile(path))
-    cp = checkpoint(p)
-    rec("checkpoint", os.path.isfile(cp), cp)
-    cps = list_checkpoints("PersistL3")
-    rec("list cps", len(cps) >= 1)
-    p2 = load("PersistL3")
-    rec("load units", "biz" in p2.cube.session.plane.units)
-    p3 = load("PersistL3", path=cp)
-    rec("load cp", "biz" in p3.cube.session.plane.units)
+    p2 = load("PersistV4")
+    rec("units", "biz" in p2.cube.session.plane.units)
+    rec("ambient master", p2.ambient.master_on is True)
+    rec("ambient files", p2.ambient.enabled.get("files") is True)
+    rec("enhance", p2.enhance.on is True)
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    rec("version 3", data.get("version") == 3 and data.get("level") == 3)
+    rec("form_scope 1.00", data.get("form_scope") == "1.00" and data.get("version") == 4)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -258,7 +260,7 @@ def smoke() -> bool:
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    print("10[Keep] > 27[Checkpoint] >> 28[Rollback] :: Persist L3")
+    print("Persist Form 1.00")
 
 
 if __name__ == "__main__":

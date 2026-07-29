@@ -1,24 +1,8 @@
-# Form Complete Stamp
+# Form Complete — 1.00
 
-**Seed:** `12[Test] : 18[Mirror] :: 34[Stamp] :: FormComplete`
+See **FORM_1_00.md** for the locked boundary.  
+See **SUS_AUDIT_X10000.md** for 1.00 scores **within that boundary**.
 
-## What Form is
-One offline Dell Matrix program:
-- Mandell Floor locked
-- Plane · Main · SharedMain · BlankCube
-- Resonance · EnhanceGate · AmbientGate skeleton (no intake)
-- Persist checkpoints · Visual interactive HTML
-- Open + REPL · SelfGrow · NBD equation
-
-## What Form is not (Pre-form)
-- Ambient file/screen/mic capture engines
-- Network Main beyond shared JSON file
-
-## Run
 ```bash
-python -m form.smoke_all
 python -m form.repl --owner Ace
-python -m form.mandell.nbd_equation
 ```
-
-English: Core Form path is complete enough to operate and give blank cubes. Further work is either Pre-form gates you open or polish you name.
