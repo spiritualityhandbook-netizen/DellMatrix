@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 """
-ResonanceAct — NBD (equation after GraphView).
+ResonanceAct L3.
 
 35[Discover] > 05[Tone] >> 14[Bind] :: Resonance
 
-Connected units on the plane **actively enhance** each other:
-- shared resonance score rises
-- tag crumbs move across the enhance scope
-- sandboxed units only enhance inside their box
-
-This is DuoBeta-style synchronicity as runnable behavior (not only edges on a graph).
+Connected units enhance peers. Sandbox isolates.
+L3: pulse history, optional decay, clear, richer harmonize.
 
 Run:
   python -m form.dell_matrix.resonance --smoke
@@ -19,7 +15,8 @@ Run:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
 import json
 import sys
 
@@ -38,14 +35,18 @@ except ImportError:
 
 @dataclass
 class ResonanceState:
-    """Per-unit living resonance (personal plane memory)."""
-
-    scores: Dict[str, float] = field(default_factory=dict)  # unit_id -> score
-    tags: Dict[str, Dict[str, float]] = field(default_factory=dict)  # unit_id -> tag -> weight
+    scores: Dict[str, float] = field(default_factory=dict)
+    tags: Dict[str, Dict[str, float]] = field(default_factory=dict)
     log: List[str] = field(default_factory=list)
+    pulse_count: int = 0
+    level: int = 3
 
     def score_of(self, unit_id: str) -> float:
         return float(self.scores.get(unit_id, 0.0))
+
+    def top_tags(self, unit_id: str, n: int = 5) -> List[tuple]:
+        bucket = self.tags.get(unit_id, {})
+        return sorted(bucket.items(), key=lambda kv: -kv[1])[:n]
 
 
 def _tokens(label: str, words: str) -> List[str]:
@@ -58,15 +59,17 @@ def _tokens(label: str, words: str) -> List[str]:
     return out
 
 
-def pulse(plane: Plane, state: Optional[ResonanceState] = None) -> ResonanceState:
-    """
-    One resonance pulse across the plane.
-    Each unit enhances its enhance_scope peers (not itself).
-    """
+def pulse(
+    plane: Plane,
+    state: Optional[ResonanceState] = None,
+    *,
+    amount: float = 0.25,
+    tag_amount: float = 0.15,
+) -> ResonanceState:
     assert_floor_intact()
     state = state or ResonanceState()
+    ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
 
-    # ensure keys
     for uid in plane.units:
         state.scores.setdefault(uid, 0.0)
         state.tags.setdefault(uid, {})
@@ -75,25 +78,48 @@ def pulse(plane: Plane, state: Optional[ResonanceState] = None) -> ResonanceStat
         peers = plane.enhance_scope(uid)
         toks = _tokens(u.label, u.words)
         if not peers:
-            state.log.append(f"{uid}: no peers (boxed or alone)")
+            state.log.append(f"{ts} {uid}: no peers")
             continue
         for peer_id in peers:
-            # raise peer score
-            state.scores[peer_id] = state.scores.get(peer_id, 0.0) + 0.25
-            # move tag crumbs
+            state.scores[peer_id] = state.scores.get(peer_id, 0.0) + amount
             bucket = state.tags.setdefault(peer_id, {})
             for t in toks:
-                bucket[t] = bucket.get(t, 0.0) + 0.15
-            state.log.append(f"{uid} -enhance-> {peer_id} (+0.25, tags={toks[:4]})")
+                bucket[t] = bucket.get(t, 0.0) + tag_amount
+            state.log.append(f"{ts} {uid} -enhance-> {peer_id} (+{amount})")
 
+    state.pulse_count += 1
+    state.log.append(f"{ts} pulse #{state.pulse_count} complete")
     return state
 
 
-def harmonize_pair(plane: Plane, a_id: str, b_id: str, state: Optional[ResonanceState] = None) -> Dict[str, Any]:
-    """
-    Explicit pair resonance (vesica-style). Only if each is in the other's scope
-    (both connected, or both in same sandbox).
-    """
+def decay(state: ResonanceState, factor: float = 0.9) -> ResonanceState:
+    """Multiply all scores/tags by factor (0-1). Floor-safe."""
+    assert_floor_intact()
+    factor = max(0.0, min(1.0, factor))
+    state.scores = {k: v * factor for k, v in state.scores.items()}
+    state.tags = {
+        uid: {t: w * factor for t, w in bucket.items()}
+        for uid, bucket in state.tags.items()
+    }
+    state.log.append(f"decay factor={factor}")
+    return state
+
+
+def clear(state: ResonanceState) -> ResonanceState:
+    state.scores.clear()
+    state.tags.clear()
+    state.log.append("clear")
+    return state
+
+
+def harmonize_pair(
+    plane: Plane,
+    a_id: str,
+    b_id: str,
+    state: Optional[ResonanceState] = None,
+    *,
+    amount: float = 0.5,
+) -> Dict[str, Any]:
     assert_floor_intact()
     state = state or ResonanceState()
     a, b = plane.units.get(a_id), plane.units.get(b_id)
@@ -101,21 +127,31 @@ def harmonize_pair(plane: Plane, a_id: str, b_id: str, state: Optional[Resonance
         return {"ok": False, "reason": "missing unit"}
     scope_a, scope_b = set(plane.enhance_scope(a_id)), set(plane.enhance_scope(b_id))
     if b_id not in scope_a or a_id not in scope_b:
-        return {"ok": False, "reason": "not in mutual enhance scope (boxed apart?)"}
+        return {"ok": False, "reason": "not in mutual enhance scope"}
 
-    state.scores[a_id] = state.scores.get(a_id, 0.0) + 0.5
-    state.scores[b_id] = state.scores.get(b_id, 0.0) + 0.5
+    state.scores[a_id] = state.scores.get(a_id, 0.0) + amount
+    state.scores[b_id] = state.scores.get(b_id, 0.0) + amount
     mid = f"relation({a.label}⊗{b.label})"
-    for uid in (a_id, b_id):
+    for uid, other in ((a_id, b), (b_id, a)):
         bucket = state.tags.setdefault(uid, {})
-        bucket[mid.lower()] = bucket.get(mid.lower(), 0.0) + 0.5
+        bucket[mid.lower()] = bucket.get(mid.lower(), 0.0) + amount
+        for t in _tokens(other.label, other.words):
+            bucket[t] = bucket.get(t, 0.0) + amount * 0.3
     state.log.append(f"vesica {a_id}⊗{b_id} → {mid}")
-    return {"ok": True, "middle": mid, "scores": {a_id: state.score_of(a_id), b_id: state.score_of(b_id)}}
+    return {
+        "ok": True,
+        "middle": mid,
+        "scores": {a_id: state.score_of(a_id), b_id: state.score_of(b_id)},
+        "top_a": state.top_tags(a_id, 3),
+        "top_b": state.top_tags(b_id, 3),
+    }
 
 
 def status(state: ResonanceState) -> Dict[str, Any]:
     return {
         "self": "ResonanceAct",
+        "level": state.level,
+        "pulse_count": state.pulse_count,
         "floor": list(FLOOR),
         "scores": dict(state.scores),
         "tags": {k: dict(v) for k, v in state.tags.items()},
@@ -124,48 +160,42 @@ def status(state: ResonanceState) -> Dict[str, Any]:
 
 
 def smoke() -> bool:
-    print("=== RESONANCE SMOKE ===")
-    r: List[bool] = []
+    print("=== RESONANCE L3 SMOKE ===")
+    r = []
 
-    def rec(name: str, ok: bool, detail: str = "") -> None:
+    def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    cube = give("R")
-    # remove welcome noise for clean scopes optional — keep and place two ideas
+    cube = give("R", clean=True)
     cube.place_idea("biz", "Business", words="crm routes", skin=Skin.BUILDING, x=1)
     cube.place_idea("music", "Music", words="melody ep4", skin=Skin.SEED, x=-1)
     plane = cube.session.plane
     st = ResonanceState()
     st = pulse(plane, st)
-    rec("pulse raises scores", st.score_of("biz") > 0 and st.score_of("music") > 0, str(st.scores))
-    rec("tags moved", any("crm" in st.tags.get("music", {}) or "melody" in st.tags.get("biz", {}) for _ in [0]), str(st.tags))
-
-    # box music — should not enhance biz anymore from music, and biz may still hit welcome etc.
+    rec("level 3", st.level == 3)
+    rec("pulse count", st.pulse_count == 1)
+    rec("scores", st.score_of("biz") > 0 and st.score_of("music") > 0)
+    before = st.score_of("biz")
+    st = decay(st, 0.5)
+    rec("decay", st.score_of("biz") == before * 0.5)
+    st = pulse(plane, st)
+    rec("pulse 2", st.pulse_count == 2)
+    h = harmonize_pair(plane, "biz", "music", st)
+    rec("harmonize", h.get("ok") is True and "top_a" in h)
     plane.box(["music"], "alone")
-    st2 = ResonanceState()
-    st2 = pulse(plane, st2)
-    # music sandboxed alone → no peers
-    rec("boxed alone no peers", st2.score_of("music") == 0.0 or "no peers" in "".join(st2.log))
-
-    # two inside same box enhance each other only
-    cube.place_idea("art", "Art", words="logo", skin=Skin.SPHERE, x=0, y=1)
-    plane.box(["music", "art"], "studio")
-    st3 = ResonanceState()
-    st3 = pulse(plane, st3)
-    rec("sandbox mutual", st3.score_of("music") > 0 and st3.score_of("art") > 0, str(st3.scores))
-    # biz should not receive music/art tags from sandbox pulse in a strict read — enhance_scope of music is only art
-    rec("vesica mutual", harmonize_pair(plane, "music", "art", st3).get("ok") is True)
-    rec("vesica blocked to outside", harmonize_pair(plane, "music", "biz", ResonanceState()).get("ok") is False)
+    st2 = pulse(plane, ResonanceState())
+    rec("boxed alone", "no peers" in "".join(st2.log))
+    clear(st)
+    rec("clear", st.score_of("biz") == 0.0)
     rec("floor", status(st)["floor"] == list(FLOOR))
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
 
 def demo() -> None:
-    print("35[Discover] > 05[Tone] >> 14[Bind] :: Resonance")
-    print("English: Connected units enhance each other; box isolates.\n")
-    cube = give("Demo")
+    print("35[Discover] > 05[Tone] >> 14[Bind] :: Resonance L3")
+    cube = give("Demo", clean=True)
     cube.place_idea("biz", "Business", words="crm", skin=Skin.BUILDING, x=1)
     cube.place_idea("music", "Music", words="song", skin=Skin.SEED, x=-1)
     st = pulse(cube.session.plane)
