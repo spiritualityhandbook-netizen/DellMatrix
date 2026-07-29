@@ -6,5 +6,4 @@ Status: ACTIVE
 |------|--------|
 | 4.1–4.3 · 4B · 4C | TRUE |
 | Distribution · Pack | TRUE |
-| Unified Entry deep-bind | TRUE |
-| **Token Show Gate on UnifiedEntry** | **TRUE** |
+| Unified Entry deep-bind + token + **search** | **TRUE** |

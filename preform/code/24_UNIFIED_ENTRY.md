@@ -1,20 +1,18 @@
-# 24 — Unified Entry (deep-bind)
+# 24 — Unified Entry
 
-Status: TRUE
+Status: TRUE · deep-bind + token gate + search
+
+## API
+`boot` · `command` · `tick` · `render` · `status`  
+`set_seed_strip` · `show` · `search_dell` · `search_flow`  
+`expand_lens` / `collapse_lens`
 
 ## Modes
-| Mode | When |
-|------|------|
-| `integrator` | Artifact 15 `Integrator` loads |
-| `standin` | Fallback body + reach + inventory |
+`integrator` if Artifact 15 loads · else `standin` body/reach
 
-Always: PersonaLens on command · GWS-style lens panel · Floor locked
+## Always
+PersonaLens · Token Show Gate · Floor lock · Dell/flow search
 
-## Intents
-MOVE · TURN · PICK · PLACE · STOW · DRAW · EXPRESS · NOTE
-
-## Run
 ```bash
-python preform/code/24_UNIFIED_ENTRY.py
 python preform/code/24_UNIFIED_ENTRY.py --smoke
 ```

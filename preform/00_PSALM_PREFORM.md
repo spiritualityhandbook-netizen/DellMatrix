@@ -7,7 +7,7 @@
 | Layer | Status |
 |-------|--------|
 | Code Phase 1–3 | COMPLETE · HARDENED |
-| Code Phase 4 | TRUE · Unified Entry + Token Gate |
+| Code Phase 4 | TRUE · Unified Entry (bind · token · search) |
 | Blank handoff | `seed/pack_seed.py` |
 
 **Floor:** Alpha · Delta · Omega · Omni
@@ -17,4 +17,4 @@
 - Give: `cd preform/seed && python pack_seed.py`
 
 ## Evolution Log
-- 2026-07-28 — Token Show Gate bound into UnifiedEntry seed-strip + Show paths.
+- 2026-07-28 — UnifiedEntry Dell/flow search panel bound (`search_dell` / `search_flow` + SEARCH section in render).

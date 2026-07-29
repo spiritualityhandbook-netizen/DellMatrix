@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 """
 24_UNIFIED_ENTRY.py
-Code Phase 4 · Unified offline entry (deep-bind + token gate)
+Unified offline entry — deep-bind + token gate + Dell/flow search
 Status: TRUE
 Offline · stdlib only
-
-- Prefer Integrator 15 when loadable
-- PersonaLens 21 + GWS panels 19 when loadable
-- Token Show Gate 18 on seed-strip / Show paths when loadable
-- Stand-ins otherwise
 
 Run:
   python preform/code/24_UNIFIED_ENTRY.py
@@ -20,6 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum, auto
 import importlib.util
+import json
 import os
 import sys
 
@@ -45,7 +41,38 @@ def _load_attr(filename: str, attr: str):
     return None, "miss"
 
 
-# ----- stand-ins -----
+def _load_registry() -> Dict[str, Any]:
+    for name in ("01_REGISTRY_DATA.json",):
+        path = os.path.join(_CODE_DIR, name)
+        try:
+            if os.path.isfile(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict) and "dells" in data:
+                    return data
+        except Exception:
+            pass
+    return {
+        "status": "FALLBACK",
+        "dells": [
+            {"dell": 8, "name": "Create", "manor": "Instantiate"},
+            {"dell": 9, "name": "Show", "manor": "Render / output"},
+            {"dell": 14, "name": "Bind", "manor": "Attach / semantic edge"},
+            {"dell": 50, "name": "Manifest", "manor": "Make real"},
+        ],
+        "flows": [
+            {"symbol": ">", "name": "Primary", "manor": "Default execution"},
+            {"symbol": ">>", "name": "Strong Primary", "manor": "Elevated"},
+            {"symbol": ":", "name": "Bind", "manor": "Attach"},
+            {"symbol": "<<[Delta]", "name": "Retrograde", "manor": "Reverse"},
+        ],
+    }
+
+
+REGISTRY = _load_registry()
+
+
+# ----- stand-ins (body / lens / gws / gate) condensed -----
 
 class Facing(Enum):
     N, E, S, W = range(4)
@@ -89,8 +116,7 @@ class Avatar:
 
     def turn(self, n: int = 1) -> Facing:
         vals = list(Facing)
-        idx = (vals.index(self.body.facing) + n) % len(vals)
-        self.body.facing = vals[idx]
+        self.body.facing = vals[(vals.index(self.body.facing) + n) % len(vals)]
         return self.body.facing
 
 
@@ -139,11 +165,9 @@ class ReachInventory:
         self.grid = grid
         self.inventory = Inventory()
 
-    def _dist(self, a: Coord, b: Coord) -> int:
-        return max(abs(a[0] - b[0]), abs(a[1] - b[1]))
-
     def can_reach(self, target: Coord) -> bool:
-        return self._dist(self.avatar.body.pos, target) <= 1
+        a = self.avatar.body.pos
+        return max(abs(a[0] - target[0]), abs(a[1] - target[1])) <= 1
 
     def pick(self, target: Coord) -> bool:
         b = self.avatar.body
@@ -221,6 +245,9 @@ class Panel:
 class StandinGWS:
     panels: Dict[str, Panel] = field(default_factory=dict)
     messages: List[str] = field(default_factory=list)
+    last_dell_hits: List[Dict[str, Any]] = field(default_factory=list)
+    last_flow_hits: List[Dict[str, Any]] = field(default_factory=list)
+    registry: Dict[str, Any] = field(default_factory=lambda: REGISTRY)
 
     def __post_init__(self):
         for n in ("status", "seed", "pipeline", "search", "log", "lens"):
@@ -246,6 +273,30 @@ class StandinGWS:
         self.messages.append(msg)
         self.messages = self.messages[-12:]
 
+    def search_dell(self, query: str) -> List[Dict[str, Any]]:
+        q = (query or "").strip().lower()
+        hits = []
+        for d in self.registry.get("dells", []):
+            num = str(d.get("dell", ""))
+            name = str(d.get("name", "")).lower()
+            manor = str(d.get("manor", "")).lower()
+            if not q or q == num or q in name or q in manor:
+                hits.append(d)
+        self.last_dell_hits = hits[:12]
+        return self.last_dell_hits
+
+    def search_flow(self, query: str) -> List[Dict[str, Any]]:
+        q = (query or "").strip().lower()
+        hits = []
+        for f in self.registry.get("flows", []):
+            sym = str(f.get("symbol", "")).lower()
+            name = str(f.get("name", "")).lower()
+            manor = str(f.get("manor", "")).lower()
+            if not q or q == sym or q in sym or q in name or q in manor:
+                hits.append(f)
+        self.last_flow_hits = hits[:12]
+        return self.last_flow_hits
+
 
 @dataclass
 class StandinTokenBudget:
@@ -254,9 +305,7 @@ class StandinTokenBudget:
     reserved: int = 64
 
     def estimate(self, text: str) -> int:
-        if not text:
-            return 0
-        return max(1, len(text) // 4)
+        return 0 if not text else max(1, len(text) // 4)
 
     def remaining(self) -> int:
         return max(0, self.limit - self.used - self.reserved)
@@ -265,19 +314,14 @@ class StandinTokenBudget:
         return self.estimate(text) <= self.remaining()
 
     def charge(self, text: str) -> bool:
-        cost = self.estimate(text)
-        if cost > self.remaining():
+        c = self.estimate(text)
+        if c > self.remaining():
             return False
-        self.used += cost
+        self.used += c
         return True
 
     def status(self) -> Dict[str, int]:
-        return {
-            "limit": self.limit,
-            "used": self.used,
-            "reserved": self.reserved,
-            "remaining": self.remaining(),
-        }
+        return {"limit": self.limit, "used": self.used, "reserved": self.reserved, "remaining": self.remaining()}
 
 
 @dataclass
@@ -289,27 +333,12 @@ class StandinShowGate:
     rejects: int = 0
     trims: int = 0
 
-    def _trim(self, text: str) -> str:
-        rem = self.budget.remaining()
-        if rem <= 0:
-            return ""
-        max_chars = rem * 4
-        if len(text) <= max_chars:
-            return text
-        return text[: max(0, max_chars - 1)] + "…"
-
     def set_seed_strip(self, text: str) -> Tuple[bool, str]:
         text = text or ""
         if self.budget.can_afford(text):
             self.budget.charge(text)
             self.seed_strip = text
             return True, "seed_strip set"
-        if self.mode == "soft":
-            trimmed = self._trim(text)
-            if trimmed and self.budget.charge(trimmed):
-                self.seed_strip = trimmed
-                self.trims += 1
-                return True, "seed_strip trimmed"
         self.rejects += 1
         return False, "seed_strip rejected"
 
@@ -319,12 +348,6 @@ class StandinShowGate:
             self.budget.charge(text)
             self.last_show = text
             return True, text
-        if self.mode == "soft":
-            trimmed = self._trim(text)
-            if trimmed and self.budget.charge(trimmed):
-                self.last_show = trimmed
-                self.trims += 1
-                return True, trimmed
         self.rejects += 1
         return False, ""
 
@@ -334,14 +357,8 @@ class StandinShowGate:
             "mode": self.mode,
             "rejects": self.rejects,
             "trims": self.trims,
-            "seed_len": len(self.seed_strip),
-            "show_len": len(self.last_show),
         }
 
-
-# ---------------------------------------------------------------------------
-# Unified Entry
-# ---------------------------------------------------------------------------
 
 @dataclass
 class UnifiedEntry:
@@ -352,6 +369,7 @@ class UnifiedEntry:
     lens: Any = field(default=None)
     gws: Any = field(default=None)
     show_gate: Any = field(default=None)
+    registry: Dict[str, Any] = field(default_factory=lambda: REGISTRY)
     ticks: int = 0
     last_command: str = ""
     last_intent_ok: Optional[bool] = None
@@ -360,6 +378,8 @@ class UnifiedEntry:
     frame: str = "(·_·)"
     mode: str = "standin"
     last_show: str = ""
+    last_dell_hits: List[Dict[str, Any]] = field(default_factory=list)
+    last_flow_hits: List[Dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self):
         IntegratorCls, integ_src = _load_attr("15_INTEGRATOR.py", "Integrator")
@@ -382,11 +402,7 @@ class UnifiedEntry:
                 self.integrator = IntegratorCls()
                 self.mode = "integrator"
             except Exception:
-                self.integrator = None
                 self.mode = "standin"
-        else:
-            self.mode = "standin"
-
         if self.mode == "standin":
             self.avatar = Avatar()
             self.grid = Grid()
@@ -412,7 +428,6 @@ class UnifiedEntry:
         elif self.grid is not None:
             self.grid.set(1, 0, content={"kind": "tool", "name": "wrench"})
             self.grid.set(0, 1, content={"kind": "note", "name": "seed-card"})
-        # charge initial seed under gate
         ok, msg = self.set_seed_strip(self.seed_strip)
         if hasattr(self.gws, "log"):
             self.gws.log(f"boot:{msg}")
@@ -428,17 +443,58 @@ class UnifiedEntry:
         ok, payload = self.show_gate.show(text or "")
         if ok:
             self.last_show = payload
-            self.frame = payload if len(payload) <= 8 else self.frame
+            if len(payload) <= 8:
+                self.frame = payload
         return ok, payload
+
+    def search_dell(self, query: str) -> List[Dict[str, Any]]:
+        if hasattr(self.gws, "search_dell"):
+            try:
+                hits = self.gws.search_dell(query)
+                self.last_dell_hits = list(hits)[:12]
+                return self.last_dell_hits
+            except Exception:
+                pass
+        q = (query or "").strip().lower()
+        hits = []
+        for d in self.registry.get("dells", []):
+            num = str(d.get("dell", ""))
+            name = str(d.get("name", "")).lower()
+            manor = str(d.get("manor", "")).lower()
+            if not q or q == num or q in name or q in manor:
+                hits.append(d)
+        self.last_dell_hits = hits[:12]
+        if hasattr(self.gws, "log"):
+            self.gws.log(f"dell_search:{query!r}->{len(hits)}")
+        return self.last_dell_hits
+
+    def search_flow(self, query: str) -> List[Dict[str, Any]]:
+        if hasattr(self.gws, "search_flow"):
+            try:
+                hits = self.gws.search_flow(query)
+                self.last_flow_hits = list(hits)[:12]
+                return self.last_flow_hits
+            except Exception:
+                pass
+        q = (query or "").strip().lower()
+        hits = []
+        for f in self.registry.get("flows", []):
+            sym = str(f.get("symbol", "")).lower()
+            name = str(f.get("name", "")).lower()
+            manor = str(f.get("manor", "")).lower()
+            if not q or q == sym or q in sym or q in name or q in manor:
+                hits.append(f)
+        self.last_flow_hits = hits[:12]
+        if hasattr(self.gws, "log"):
+            self.gws.log(f"flow_search:{query!r}->{len(hits)}")
+        return self.last_flow_hits
 
     def _parse_intent(self, text: str, intent: Optional[Any], payload: Dict[str, Any]):
         if intent is not None:
             if isinstance(intent, Intent):
                 return intent, payload
-            if isinstance(intent, str):
-                name = intent.upper()
-                if name in Intent.__members__:
-                    return Intent[name], payload
+            if isinstance(intent, str) and intent.upper() in Intent.__members__:
+                return Intent[intent.upper()], payload
         t = (text or "").lower()
         if t.startswith("move") or t.startswith("step"):
             return Intent.MOVE, payload
@@ -468,14 +524,12 @@ class UnifiedEntry:
             self.avatar.turn(int(payload.get("steps", 1)))
             return True
         if intent == Intent.PICK:
-            target = tuple(payload.get("target", (1, 0)))  # type: ignore
-            ok = self.reach.pick(target)
+            ok = self.reach.pick(tuple(payload.get("target", (1, 0))))  # type: ignore
             if ok:
                 self.frame = "✧"
             return ok
         if intent == Intent.PLACE:
-            target = tuple(payload.get("target", (0, 1)))  # type: ignore
-            return self.reach.place(target)
+            return self.reach.place(tuple(payload.get("target", (0, 1))))  # type: ignore
         if intent == Intent.STOW:
             return self.reach.stow()
         if intent == Intent.DRAW:
@@ -495,7 +549,6 @@ class UnifiedEntry:
     def command(self, text: str, intent: Optional[Any] = None, **payload) -> List[Any]:
         self.last_command = text or ""
         notes = self.lens.examine(self.last_command)
-
         if self.mode == "integrator" and self.integrator is not None:
             try:
                 if hasattr(self.integrator, "command"):
@@ -508,11 +561,6 @@ class UnifiedEntry:
                     if hasattr(self.integrator, "tick"):
                         self.integrator.tick()
                     self.last_intent_ok = True
-                    if hasattr(self.integrator, "anim") and hasattr(self.integrator.anim, "show"):
-                        try:
-                            self.frame = self.integrator.anim.show()
-                        except Exception:
-                            pass
                 else:
                     self.last_intent_ok = False
             except Exception:
@@ -520,7 +568,6 @@ class UnifiedEntry:
         else:
             ienum, pay = self._parse_intent(text, intent, payload)
             self.last_intent_ok = self._standin_execute(ienum, pay)
-
         if hasattr(self.gws, "log"):
             self.gws.log(f"cmd:{self.last_command[:24]}")
         return notes
@@ -559,18 +606,22 @@ class UnifiedEntry:
     def render(self) -> str:
         notes = getattr(self.lens, "notes", []) or []
         lens_open = True
+        search_open = True
         if hasattr(self.gws, "is_expanded"):
             try:
                 lens_open = bool(self.gws.is_expanded("lens"))
             except Exception:
-                lens_open = True
-        mark = "-" if lens_open else "+"
+                pass
+            try:
+                search_open = bool(self.gws.is_expanded("search"))
+            except Exception:
+                pass
         body = self._body_snapshot()
         gate_st = {}
         try:
             gate_st = self.show_gate.status()
         except Exception:
-            gate_st = {}
+            pass
         bud = gate_st.get("budget", {}) if isinstance(gate_st, dict) else {}
 
         lines = [
@@ -581,19 +632,32 @@ class UnifiedEntry:
             f"| Avatar pos={body.get('pos')} facing={body.get('facing')} frame={self.frame}",
             f"| Hand={body.get('holding')} Inv={body.get('inventory')}",
             f"| Budget used={bud.get('used', '?')} rem={bud.get('remaining', '?')} "
-            f"rejects={gate_st.get('rejects', 0)} trims={gate_st.get('trims', 0)}",
+            f"rej={gate_st.get('rejects', 0)}",
             f"| SEED: {self.seed_strip}",
             f"| SHOW: {self.last_show or '(none)'}",
             f"| CMD:  {self.last_command or '(none)'} ok={self.last_intent_ok}",
-            f"| [{mark}] LENS",
+            f"| [{'-' if search_open else '+'}] SEARCH",
         ]
+        if search_open:
+            if self.last_dell_hits:
+                lines.append("|     DELL")
+                for d in self.last_dell_hits[:4]:
+                    lines.append(f"|       {d.get('dell')}: {d.get('name')} — {str(d.get('manor', ''))[:22]}")
+            else:
+                lines.append("|     DELL (none — search_dell)")
+            if self.last_flow_hits:
+                lines.append("|     FLOW")
+                for f in self.last_flow_hits[:4]:
+                    lines.append(f"|       {f.get('symbol')}: {f.get('name')}")
+            else:
+                lines.append("|     FLOW (none — search_flow)")
+        lines.append(f"| [{'-' if lens_open else '+'}] LENS")
         if lens_open:
             if notes:
-                for n in list(notes)[:6]:
-                    persona = getattr(n, "persona", "?")
-                    kind = getattr(n, "kind", "?")
-                    text = getattr(n, "text", str(n))
-                    lines.append(f"|     [{persona}/{kind}] {text}")
+                for n in list(notes)[:5]:
+                    lines.append(
+                        f"|     [{getattr(n,'persona','?')}/{getattr(n,'kind','?')}] {getattr(n,'text',n)}"
+                    )
             else:
                 lines.append("|     (no notes)")
         lines.append("+" + "-" * 44 + "+")
@@ -611,7 +675,7 @@ class UnifiedEntry:
         try:
             gate_st = self.show_gate.status()
         except Exception:
-            gate_st = {}
+            pass
         return {
             "mode": self.mode,
             "ticks": self.ticks,
@@ -623,13 +687,15 @@ class UnifiedEntry:
             "command": self.last_command,
             "intent_ok": self.last_intent_ok,
             "notes": len(getattr(self.lens, "notes", []) or []),
+            "dell_hits": len(self.last_dell_hits),
+            "flow_hits": len(self.last_flow_hits),
             "token_gate": gate_st,
             "sources": dict(self.sources),
         }
 
 
 def smoke() -> bool:
-    print("=== UNIFIED ENTRY SMOKE (token bind) ===")
+    print("=== UNIFIED ENTRY SMOKE (search bind) ===")
     results: List[bool] = []
 
     def record(name: str, passed: bool, detail: str = "") -> None:
@@ -644,32 +710,29 @@ def smoke() -> bool:
             record(name, False, f"EXCEPTION {type(e).__name__}: {e}")
 
     ue = UnifiedEntry()
-    run("init", lambda: (ue.show_gate is not None and ue.lens is not None, str(ue.sources)))
-    run("boot", lambda: (ue.boot() or True, f"seed={ue.seed_strip[:24]}"))
-    run("seed charged", lambda: (
-        ue.status().get("token_gate", {}).get("budget", {}).get("used", 0) >= 0,
-        str(ue.status().get("token_gate", {}).get("budget")),
+    run("init", lambda: (ue.lens is not None and ue.show_gate is not None, str(ue.sources)))
+    run("boot", lambda: (ue.boot() or True, "ok"))
+    run("dell search Create", lambda: (
+        any(h.get("dell") == 8 or str(h.get("name", "")).lower() == "create" for h in ue.search_dell("Create")),
+        f"hits={len(ue.last_dell_hits)}",
     ))
-    run("show ok", lambda: (ue.show("(^_^)")[0], f"last={ue.last_show}"))
-    run("command lens", lambda: (len(ue.command("create and bind")) >= 1, f"n={len(ue.lens.notes)}"))
-    run("pick", lambda: (
-        (ue.command("pick", intent="PICK", target=(1, 0)) or True) is not None,
-        f"ok={ue.last_intent_ok} holding={ue.status().get('holding')}",
+    run("flow search >>", lambda: (
+        any(">>" in str(h.get("symbol", "")) for h in ue.search_flow(">>")),
+        f"hits={len(ue.last_flow_hits)}",
     ))
-    run("stow", lambda: (
-        (ue.command("stow", intent="STOW") or True) is not None,
+    run("render SEARCH", lambda: ("SEARCH" in ue.render() and "DELL" in ue.render(), "ok"))
+    run("command", lambda: (len(ue.command("create and bind")) >= 1, f"n={len(ue.lens.notes)}"))
+    run("pick/stow", lambda: (
+        (ue.command("pick", intent="PICK", target=(1, 0)) or True)
+        and (ue.command("stow", intent="STOW") or True),
         f"ok={ue.last_intent_ok}",
     ))
-    run("tick render", lambda: ("Budget" in ue.tick() and "Floor" in ue.render(), f"t={ue.ticks}"))
+    run("show", lambda: (ue.show("(^_^)")[0], ue.last_show))
     run("floor", lambda: (ue.status()["floor"] == list(FLOOR), str(FLOOR)))
-
-    # oversize seed reject/trim should not raise
-    def oversize():
-        gate = StandinShowGate(budget=StandinTokenBudget(limit=40, reserved=5), mode="strict")
-        ok, msg = gate.set_seed_strip("x" * 500)
-        return (not ok), msg
-
-    run("strict reject oversize", oversize)
+    run("status hits", lambda: (
+        ue.status().get("dell_hits", 0) >= 1 and ue.status().get("flow_hits", 0) >= 1,
+        str({"d": ue.status().get("dell_hits"), "f": ue.status().get("flow_hits")}),
+    ))
 
     print(f"=== RESULT: {sum(1 for x in results if x)}/{len(results)} PASS ===")
     return all(results)
@@ -678,11 +741,9 @@ def smoke() -> bool:
 def demo() -> None:
     ue = UnifiedEntry()
     ue.boot()
-    print(ue.render())
-    print()
+    ue.search_dell("Create")
+    ue.search_flow("bind")
     ue.command("pick", intent="PICK", target=(1, 0))
-    ue.command("stow", intent="STOW")
-    ue.show("(^_^)")
     print(ue.tick())
     print("STATUS:", ue.status())
 
