@@ -1,17 +1,8 @@
 #!/usr/bin/env python3
-"""
-REPL L3 — full interactive session on the one program.
-
-01[Initiate] > 13[Loop] >> 09[Show] :: REPL
-
-Run:
-  python -m form.repl
-  python -m form.repl --owner Ace --load
-"""
+"""REPL L3 + visual/checkpoint bound."""
 
 from __future__ import annotations
 
-import json
 import shlex
 import sys
 
@@ -28,28 +19,16 @@ except ImportError:
     from form.dell_matrix.blank_cube import BlankCube
 
 HELP = """
-Commands (L3):
-  help                         this list
-  show                         render plane + scores
-  status                       compact status
-  scores                       resonance scores
-  main                         Main summary / top tags
-  verify                       snap host health (required ports)
-  health                       floor + enhance + unit count
-  place <id> <label> [words…]  put unit on plane
-  words <id> <text…>           set unit words
-  skin <id> <skin>             cube|sphere|seed|building|words|circle|flower
-  move <id> <x> <y>
-  remove <id>                  take unit off plane
-  box <id> [id…] | unbox <id>
-  neighbors <id>               spatial neighbors
-  perspective <mode>           table|page|cube|circle|flower|sphere
-  zoom <id> | zoom out
-  enhance on | enhance off
-  pulse                        resonance pulse
-  pull <unit_id> <tag>         voluntary pull from Main
-  pack                         write BlankCube pack for owner
-  save | load | grow
+Commands:
+  help | show | status | scores | main | verify | health
+  place <id> <label> [words…] | words <id> <text…>
+  skin <id> <skin> | move <id> <x> <y> | remove <id>
+  box <id> [id…] | unbox <id> | neighbors <id>
+  perspective <mode> | zoom <id> | zoom out
+  enhance on|off | pulse | pull <unit> <tag>
+  visual          write SVG+HTML and print paths
+  checkpoint      timestamped save
+  pack | save | load | grow
   quit
 """.strip()
 
@@ -62,10 +41,8 @@ def _skin(name: str) -> Skin:
 
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
-    print("01[Initiate] > 13[Loop] >> 09[Show] :: REPL L3")
-    print(f"English: Interactive Dell Matrix — owner={owner}")
-    print("Type 'help'.\n")
-
+    print("01[Initiate] > 13[Loop] >> 09[Show] :: REPL")
+    print(f"English: Interactive Dell Matrix — owner={owner}\n")
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
 
@@ -92,14 +69,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             print(p.render())
         elif cmd == "status":
             st = p.status()
-            print(
-                {
-                    "owner": st["owner"],
-                    "enhance": st["enhance"]["on"],
-                    "main": st["main"],
-                    "units": list(p.cube.session.plane.units.keys()),
-                }
-            )
+            print({"owner": st["owner"], "enhance": st["enhance"]["on"], "main": st["main"], "units": list(p.cube.session.plane.units.keys())})
         elif cmd == "scores":
             print(p.scores())
         elif cmd == "main":
@@ -107,16 +77,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd == "verify":
             print(p.matrix.verify())
         elif cmd == "health":
-            print(
-                {
-                    "floor": list(p.status()["floor"]["floor"]),
-                    "enhance": p.enhance.on,
-                    "units": len(p.cube.session.plane.units),
-                    "gen": p.duo.generation,
-                    "main_contributions": len(p.main.contributions),
-                    "verify_ok": p.matrix.verify().get("ok"),
-                }
-            )
+            print({"floor": list(p.status()["floor"]["floor"]), "enhance": p.enhance.on, "units": len(p.cube.session.plane.units), "gen": p.duo.generation, "verify_ok": p.matrix.verify().get("ok")})
         elif cmd == "place" and len(parts) >= 3:
             p.place(parts[1], parts[2], words=" ".join(parts[3:]), skin=Skin.CUBE)
             print("placed", parts[1])
@@ -159,12 +120,14 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             print(p.pulse())
         elif cmd == "pull" and len(parts) >= 3:
             print(p.pull(parts[1], parts[2]))
+        elif cmd == "visual":
+            print(p.visual())
+        elif cmd == "checkpoint":
+            print(p.checkpoint())
         elif cmd == "pack":
-            # export current personal plane as blank pack under owner name
             pack_cube = BlankCube(owner=p.owner, clean=True)
             pack_cube.session = p.cube.session
-            path = pack_cube.write_pack()
-            print("pack", path)
+            print("pack", pack_cube.write_pack())
         elif cmd == "save":
             print("saved", p.save())
         elif cmd == "load":

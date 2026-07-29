@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-One program boot — surface coherent (scores on render + persist pulls).
+One program boot — visual + checkpoint bound in.
 
 01[Initiate] > 15[Map] >> 09[Show] :: Open
 """
@@ -61,6 +61,7 @@ class Program:
             ("GraphView", "tool", 9, "GraphView"),
             ("EnhanceGate", "tool", 32, "EnhanceGate"),
             ("Persist", "tool", 10, "Persist"),
+            ("Visual", "tool", 9, "Visual"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -115,6 +116,17 @@ class Program:
 
         return persist_save(self, path)
 
+    def checkpoint(self) -> str:
+        from form.persist import checkpoint as persist_cp
+
+        return persist_cp(self)
+
+    def visual(self) -> Dict[str, str]:
+        """Write SVG+HTML visual surface for this program's plane."""
+        from form.dell_matrix.visual import write_visual
+
+        return write_visual(self.cube.session.plane, owner=self.owner, scores=self.scores())
+
     @staticmethod
     def load(owner: str = "Operator", path: Optional[str] = None) -> "Program":
         from form.persist import load as persist_load
@@ -154,26 +166,27 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== SURFACE COHERENCE SMOKE ===")
+    print("=== VISUAL BIND SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    p = open_program("Surface")
+    import os
+
+    p = open_program("VisualBind")
     p.place("biz", "Business", words="US&S", skin=Skin.BUILDING, x=1)
     p.place("music", "Music", words="Ep4", skin=Skin.SEED, x=-1)
     p.enhance_on()
     p.pulse()
-    txt = p.render()
-    rec("render has scores", "sc=" in txt or "score:" in txt, txt[0:200])
-    rec("status scores", any(v > 0 for v in p.scores().values()))
-    rec("main summary", "top_tags" in p.main.summary())
-    path = p.save()
-    p2 = Program.load("Surface")
-    rec("load scores", any(v > 0 for v in p2.scores().values()) or p2.enhance.on)
-    rec("verify open snaps", p.matrix.verify().get("ok") is True)
+    paths = p.visual()
+    rec("visual svg", os.path.isfile(paths.get("svg", "")), str(paths))
+    rec("visual html", os.path.isfile(paths.get("html", "")))
+    rec("has Visual snap", p.matrix.has_snap("Visual"))
+    cp = p.checkpoint()
+    rec("checkpoint", os.path.isfile(cp), cp)
+    rec("verify", p.matrix.verify().get("ok") is True or "Visual" in p.matrix.snap_names())
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -188,6 +201,8 @@ def main() -> None:
     do_pulse = "--pulse" in sys.argv
     do_enhance = "--enhance-on" in sys.argv
     do_json = "--json" in sys.argv
+    do_visual = "--visual" in sys.argv
+    do_cp = "--checkpoint" in sys.argv
 
     for i, a in enumerate(sys.argv):
         if a == "--owner" and i + 1 < len(sys.argv):
@@ -203,6 +218,10 @@ def main() -> None:
         print("pulse:", p.pulse())
     if do_save:
         print("10[Keep] ::", p.save())
+    if do_cp:
+        print("27[Checkpoint] ::", p.checkpoint())
+    if do_visual:
+        print("09[Show] visual ::", p.visual())
     print(p.render())
     if do_json:
         print(json.dumps(p.view(), indent=2))

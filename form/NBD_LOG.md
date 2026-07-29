@@ -2,10 +2,11 @@
 
 | NBD | Result |
 |-----|--------|
-| Persist L3 | persist.py checkpoints |
-| **UI / Visual L3** | **visual.py** — SVG + HTML plane surface |
+| Visual L3 | visual.py |
+| **VisualBind** | **open.visual / checkpoint + REPL commands** |
 
 ```bash
-python -m form.dell_matrix.visual --smoke
-# open form/state/visual/matrix_<owner>.html in a browser
+python -m form.open --owner Ace --visual --checkpoint
+# matrix> visual
+# matrix> checkpoint
 ```
