@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One program — includes shared Main push/pull."""
+"""One program — AmbientGate skeleton + shared snapshot (NBD x10)."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ try:
     from form.dell_matrix.blank_cube import give, BlankCube
     from form.dell_matrix.graph_view import build_view
     from form.dell_matrix.enhance_gate import EnhanceGate
+    from form.dell_matrix.ambient_gate import AmbientGate
     from form.duobeta.growth import DuoBeta
 except ImportError:
     import os
@@ -34,6 +35,7 @@ except ImportError:
     from form.dell_matrix.blank_cube import give, BlankCube
     from form.dell_matrix.graph_view import build_view
     from form.dell_matrix.enhance_gate import EnhanceGate
+    from form.dell_matrix.ambient_gate import AmbientGate
     from form.duobeta.growth import DuoBeta
 
 
@@ -43,6 +45,7 @@ class Program:
     matrix: DellMatrix = field(default_factory=DellMatrix)
     main: MainField = field(default_factory=MainField)
     enhance: EnhanceGate = field(default_factory=EnhanceGate)
+    ambient: AmbientGate = field(default_factory=AmbientGate)
     cube: BlankCube = field(init=False)
     duo: DuoBeta = field(init=False)
 
@@ -59,6 +62,7 @@ class Program:
             ("Persist", "tool", 10, "Persist"),
             ("Visual", "tool", 9, "Visual"),
             ("SharedMain", "main", 21, "SharedMain"),
+            ("AmbientGate", "tool", 32, "AmbientGate"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -106,7 +110,12 @@ class Program:
     def pull_main(self, path: Optional[str] = None, mode: str = "merge") -> Dict[str, Any]:
         from form.dell_matrix.shared_main import pull_from_shared, DEFAULT_SHARED
 
-        return pull_from_shared(self.main, path or DEFAULT_SHARED, mode=mode)
+        return pull_from_shared(self.main, path or DEFAULT_SHARED, mode=mode, owner=self.owner)
+
+    def snapshot_main(self) -> str:
+        from form.dell_matrix.shared_main import snapshot
+
+        return snapshot()
 
     def shared_main_summary(self) -> Dict[str, Any]:
         from form.dell_matrix.shared_main import shared_summary
@@ -118,7 +127,7 @@ class Program:
             self.duo.evolve("13[Loop] > 04[Transform] :: Open.grow")
 
     def view(self) -> Dict[str, Any]:
-        return build_view(self.cube.session.plane).to_dict()
+        return build_view(self.cube.session.plane, scores=self.scores()).to_dict()
 
     def scores(self) -> Dict[str, float]:
         return dict(self.enhance.state.scores)
@@ -150,7 +159,7 @@ class Program:
         lines = [
             f"+- DellMatrix PROGRAM · owner={self.owner} -+",
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
-            f"| enhance={'ON' if self.enhance.on else 'OFF'}  gen={self.duo.generation}  main={len(self.main.contributions)}",
+            f"| enhance={'ON' if self.enhance.on else 'OFF'} ambient={'ON' if self.ambient.master_on else 'OFF'} gen={self.duo.generation}",
             f"| main top: {self.main.top_tags(3)}",
         ]
         for ln in plane_txt.splitlines():
@@ -165,6 +174,7 @@ class Program:
             "owner": self.owner,
             "floor": floor_status(),
             "enhance": self.enhance.status(),
+            "ambient": self.ambient.status(),
             "scores": self.scores(),
             "main": self.main.summary(),
             "shared_main": self.shared_main_summary(),
@@ -178,22 +188,17 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== OPEN + SHARED MAIN SMOKE ===")
+    print("=== OPEN NBD x10 SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    import os
-
-    p = open_program("BindMain")
-    p.place("biz", "Business", skin=Skin.BUILDING, x=1)
-    p.main.tags["seed"] = 1.0
-    out = p.push_main()
-    rec("push_main", out.get("ok") is True)
-    rec("visual", os.path.isfile(p.visual().get("html", "")))
-    rec("SharedMain snap", p.matrix.has_snap("SharedMain"))
+    p = open_program("NBD10")
+    rec("ambient default off", p.ambient.master_on is False)
+    rec("AmbientGate snap", p.matrix.has_snap("AmbientGate"))
+    rec("view scores key", "score" in p.view()["nodes"][0] if p.view()["nodes"] else True)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -205,13 +210,7 @@ def main() -> None:
     for i, a in enumerate(sys.argv):
         if a == "--owner" and i + 1 < len(sys.argv):
             owner = sys.argv[i + 1]
-    p = Program.load(owner) if "--load" in sys.argv else open_program(owner)
-    if "--push-main" in sys.argv:
-        print(p.push_main())
-    if "--pull-main" in sys.argv:
-        print(p.pull_main())
-    if "--visual" in sys.argv:
-        print(p.visual())
+    p = open_program(owner)
     print(p.render())
 
 
