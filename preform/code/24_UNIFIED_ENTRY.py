@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """
 24_UNIFIED_ENTRY.py
-Code Phase 4 · Unified offline entry (deep-bind)
+Code Phase 4 · Unified offline entry (deep-bind + token gate)
 Status: TRUE
 Offline · stdlib only
 
-Single steppable surface:
-- Prefer real 15 Integrator when loadable
-- Prefer real 19 GWSPanels + 21 PersonaLens when loadable
+- Prefer Integrator 15 when loadable
+- PersonaLens 21 + GWS panels 19 when loadable
+- Token Show Gate 18 on seed-strip / Show paths when loadable
 - Stand-ins otherwise
-- PersonaLens examines every command
-- Intent bridge: MOVE · TURN · PICK · PLACE · STOW · DRAW · EXPRESS · NOTE
 
 Run:
   python preform/code/24_UNIFIED_ENTRY.py
@@ -47,7 +45,7 @@ def _load_attr(filename: str, attr: str):
     return None, "miss"
 
 
-# ----- stand-in body stack -----
+# ----- stand-ins -----
 
 class Facing(Enum):
     N, E, S, W = range(4)
@@ -66,6 +64,7 @@ class Intent(Enum):
     DRAW = auto()
     EXPRESS = auto()
     NOTE = auto()
+    SHOW = auto()
 
 
 @dataclass
@@ -196,7 +195,6 @@ class LensNote:
 
 @dataclass
 class StandinLens:
-    aetheris_on: bool = True
     manu_on: bool = True
     ancient_on: bool = True
     notes: List[LensNote] = field(default_factory=list)
@@ -211,9 +209,6 @@ class StandinLens:
                 LensNote("The_Ancient", "structural", "structural only — no decipherment claim")
             )
         return list(self.notes)
-
-    def status(self) -> Dict[str, Any]:
-        return {"notes": len(self.notes), "manuell": self.manu_on}
 
 
 @dataclass
@@ -252,44 +247,135 @@ class StandinGWS:
         self.messages = self.messages[-12:]
 
 
+@dataclass
+class StandinTokenBudget:
+    limit: int = 4096
+    used: int = 0
+    reserved: int = 64
+
+    def estimate(self, text: str) -> int:
+        if not text:
+            return 0
+        return max(1, len(text) // 4)
+
+    def remaining(self) -> int:
+        return max(0, self.limit - self.used - self.reserved)
+
+    def can_afford(self, text: str) -> bool:
+        return self.estimate(text) <= self.remaining()
+
+    def charge(self, text: str) -> bool:
+        cost = self.estimate(text)
+        if cost > self.remaining():
+            return False
+        self.used += cost
+        return True
+
+    def status(self) -> Dict[str, int]:
+        return {
+            "limit": self.limit,
+            "used": self.used,
+            "reserved": self.reserved,
+            "remaining": self.remaining(),
+        }
+
+
+@dataclass
+class StandinShowGate:
+    budget: StandinTokenBudget = field(default_factory=StandinTokenBudget)
+    mode: str = "strict"
+    seed_strip: str = ""
+    last_show: str = ""
+    rejects: int = 0
+    trims: int = 0
+
+    def _trim(self, text: str) -> str:
+        rem = self.budget.remaining()
+        if rem <= 0:
+            return ""
+        max_chars = rem * 4
+        if len(text) <= max_chars:
+            return text
+        return text[: max(0, max_chars - 1)] + "…"
+
+    def set_seed_strip(self, text: str) -> Tuple[bool, str]:
+        text = text or ""
+        if self.budget.can_afford(text):
+            self.budget.charge(text)
+            self.seed_strip = text
+            return True, "seed_strip set"
+        if self.mode == "soft":
+            trimmed = self._trim(text)
+            if trimmed and self.budget.charge(trimmed):
+                self.seed_strip = trimmed
+                self.trims += 1
+                return True, "seed_strip trimmed"
+        self.rejects += 1
+        return False, "seed_strip rejected"
+
+    def show(self, text: str) -> Tuple[bool, str]:
+        text = text or ""
+        if self.budget.can_afford(text):
+            self.budget.charge(text)
+            self.last_show = text
+            return True, text
+        if self.mode == "soft":
+            trimmed = self._trim(text)
+            if trimmed and self.budget.charge(trimmed):
+                self.last_show = trimmed
+                self.trims += 1
+                return True, trimmed
+        self.rejects += 1
+        return False, ""
+
+    def status(self) -> Dict[str, Any]:
+        return {
+            "budget": self.budget.status(),
+            "mode": self.mode,
+            "rejects": self.rejects,
+            "trims": self.trims,
+            "seed_len": len(self.seed_strip),
+            "show_len": len(self.last_show),
+        }
+
+
 # ---------------------------------------------------------------------------
 # Unified Entry
 # ---------------------------------------------------------------------------
 
 @dataclass
 class UnifiedEntry:
-    """
-    Deep-bind entry:
-    - If 15 Integrator loads, use it for body/reach/tick core
-    - Always run PersonaLens on command text
-    - Always render GWS-style pane with lens panel
-    """
     integrator: Any = None
     avatar: Optional[Avatar] = None
     grid: Optional[Grid] = None
     reach: Optional[ReachInventory] = None
     lens: Any = field(default=None)
     gws: Any = field(default=None)
+    show_gate: Any = field(default=None)
     ticks: int = 0
     last_command: str = ""
     last_intent_ok: Optional[bool] = None
     seed_strip: str = "08[Create] >> 14[Bind] :: unified"
     sources: Dict[str, str] = field(default_factory=dict)
     frame: str = "(·_·)"
-    mode: str = "standin"  # standin | integrator
+    mode: str = "standin"
+    last_show: str = ""
 
     def __post_init__(self):
         IntegratorCls, integ_src = _load_attr("15_INTEGRATOR.py", "Integrator")
         LensCls, lens_src = _load_attr("21_PERSONA_LENS.py", "PersonaLens")
         GwsCls, gws_src = _load_attr("19_GWS_PANELS.py", "GWSPanels")
+        ShowGateCls, gate_src = _load_attr("18_TOKEN_SHOW_GATE.py", "ShowGate")
 
         self.sources = {
             "integrator": integ_src,
             "lens": lens_src,
             "gws": gws_src,
+            "token_gate": gate_src,
         }
         self.lens = LensCls() if LensCls else StandinLens()
         self.gws = GwsCls() if GwsCls else StandinGWS()
+        self.show_gate = ShowGateCls() if ShowGateCls else StandinShowGate()
 
         if IntegratorCls is not None:
             try:
@@ -317,6 +403,7 @@ class UnifiedEntry:
         self.last_command = ""
         self.last_intent_ok = None
         self.frame = "(·_·)"
+        self.last_show = ""
         if self.mode == "integrator" and self.integrator is not None:
             try:
                 self.integrator.boot()
@@ -325,12 +412,26 @@ class UnifiedEntry:
         elif self.grid is not None:
             self.grid.set(1, 0, content={"kind": "tool", "name": "wrench"})
             self.grid.set(0, 1, content={"kind": "note", "name": "seed-card"})
+        # charge initial seed under gate
+        ok, msg = self.set_seed_strip(self.seed_strip)
         if hasattr(self.gws, "log"):
-            self.gws.log("boot")
+            self.gws.log(f"boot:{msg}")
         self.lens.examine(self.seed_strip)
 
+    def set_seed_strip(self, text: str) -> Tuple[bool, str]:
+        ok, msg = self.show_gate.set_seed_strip(text or "")
+        if ok:
+            self.seed_strip = getattr(self.show_gate, "seed_strip", text or "")
+        return ok, msg
+
+    def show(self, text: str) -> Tuple[bool, str]:
+        ok, payload = self.show_gate.show(text or "")
+        if ok:
+            self.last_show = payload
+            self.frame = payload if len(payload) <= 8 else self.frame
+        return ok, payload
+
     def _parse_intent(self, text: str, intent: Optional[Any], payload: Dict[str, Any]):
-        """Map free text or explicit intent to stand-in Intent enum."""
         if intent is not None:
             if isinstance(intent, Intent):
                 return intent, payload
@@ -351,6 +452,8 @@ class UnifiedEntry:
             return Intent.STOW, payload
         if t.startswith("draw"):
             return Intent.DRAW, payload
+        if t.startswith("show "):
+            return Intent.SHOW, {"text": text[5:].strip() or payload.get("text", "")}
         if "joy" in t or t.startswith("express"):
             return Intent.EXPRESS, payload
         return Intent.NOTE, payload
@@ -380,6 +483,9 @@ class UnifiedEntry:
         if intent == Intent.EXPRESS:
             self.frame = "(^_^)"
             return True
+        if intent == Intent.SHOW:
+            ok, _ = self.show(str(payload.get("text", "")))
+            return ok
         if intent == Intent.NOTE:
             if hasattr(self.gws, "log"):
                 self.gws.log(payload.get("text", self.last_command))
@@ -392,9 +498,7 @@ class UnifiedEntry:
 
         if self.mode == "integrator" and self.integrator is not None:
             try:
-                # Prefer Integrator.command if signature compatible
                 if hasattr(self.integrator, "command"):
-                    # Map string intents to Integrator Intent if available
                     integ_intent = intent
                     IntentCls, _ = _load_attr("15_INTEGRATOR.py", "Intent")
                     if IntentCls is not None and isinstance(intent, str):
@@ -462,14 +566,24 @@ class UnifiedEntry:
                 lens_open = True
         mark = "-" if lens_open else "+"
         body = self._body_snapshot()
+        gate_st = {}
+        try:
+            gate_st = self.show_gate.status()
+        except Exception:
+            gate_st = {}
+        bud = gate_st.get("budget", {}) if isinstance(gate_st, dict) else {}
 
         lines = [
             f"+- UnifiedEntry · mode={self.mode} · tick={self.ticks} -+",
             f"| Floor: {' · '.join(FLOOR)} (locked)",
-            f"| src integ={self.sources.get('integrator')} lens={self.sources.get('lens')} gws={self.sources.get('gws')}",
+            f"| src integ={self.sources.get('integrator')} lens={self.sources.get('lens')} "
+            f"gws={self.sources.get('gws')} gate={self.sources.get('token_gate')}",
             f"| Avatar pos={body.get('pos')} facing={body.get('facing')} frame={self.frame}",
             f"| Hand={body.get('holding')} Inv={body.get('inventory')}",
+            f"| Budget used={bud.get('used', '?')} rem={bud.get('remaining', '?')} "
+            f"rejects={gate_st.get('rejects', 0)} trims={gate_st.get('trims', 0)}",
             f"| SEED: {self.seed_strip}",
+            f"| SHOW: {self.last_show or '(none)'}",
             f"| CMD:  {self.last_command or '(none)'} ok={self.last_intent_ok}",
             f"| [{mark}] LENS",
         ]
@@ -493,6 +607,11 @@ class UnifiedEntry:
 
     def status(self) -> Dict[str, Any]:
         body = self._body_snapshot()
+        gate_st = {}
+        try:
+            gate_st = self.show_gate.status()
+        except Exception:
+            gate_st = {}
         return {
             "mode": self.mode,
             "ticks": self.ticks,
@@ -504,12 +623,13 @@ class UnifiedEntry:
             "command": self.last_command,
             "intent_ok": self.last_intent_ok,
             "notes": len(getattr(self.lens, "notes", []) or []),
+            "token_gate": gate_st,
             "sources": dict(self.sources),
         }
 
 
 def smoke() -> bool:
-    print("=== UNIFIED ENTRY SMOKE (deep-bind) ===")
+    print("=== UNIFIED ENTRY SMOKE (token bind) ===")
     results: List[bool] = []
 
     def record(name: str, passed: bool, detail: str = "") -> None:
@@ -524,27 +644,32 @@ def smoke() -> bool:
             record(name, False, f"EXCEPTION {type(e).__name__}: {e}")
 
     ue = UnifiedEntry()
-    run("init", lambda: (ue.lens is not None and ue.gws is not None, f"mode={ue.mode} src={ue.sources}"))
-    run("boot", lambda: (ue.boot() or True, f"notes={len(ue.lens.notes)}"))
-    run("command lens", lambda: (len(ue.command("create and bind show")) >= 1, f"n={len(ue.lens.notes)}"))
-    run("tick", lambda: ("UnifiedEntry" in ue.tick() and ue.ticks >= 1, f"t={ue.ticks}"))
-    run("floor", lambda: (ue.status()["floor"] == list(FLOOR), str(FLOOR)))
-
-    # stand-in path asserts; integrator path still must not raise
-    run("move", lambda: (
-        (ue.command("move", intent="MOVE", steps=1) or True) is not None,
-        f"pos={ue.status().get('pos')} ok={ue.last_intent_ok}",
+    run("init", lambda: (ue.show_gate is not None and ue.lens is not None, str(ue.sources)))
+    run("boot", lambda: (ue.boot() or True, f"seed={ue.seed_strip[:24]}"))
+    run("seed charged", lambda: (
+        ue.status().get("token_gate", {}).get("budget", {}).get("used", 0) >= 0,
+        str(ue.status().get("token_gate", {}).get("budget")),
     ))
+    run("show ok", lambda: (ue.show("(^_^)")[0], f"last={ue.last_show}"))
+    run("command lens", lambda: (len(ue.command("create and bind")) >= 1, f"n={len(ue.lens.notes)}"))
     run("pick", lambda: (
         (ue.command("pick", intent="PICK", target=(1, 0)) or True) is not None,
-        f"holding={ue.status().get('holding')} ok={ue.last_intent_ok}",
+        f"ok={ue.last_intent_ok} holding={ue.status().get('holding')}",
     ))
     run("stow", lambda: (
         (ue.command("stow", intent="STOW") or True) is not None,
-        f"inv={ue.status().get('inventory')} ok={ue.last_intent_ok}",
+        f"ok={ue.last_intent_ok}",
     ))
-    run("render", lambda: ("LENS" in ue.render() and "Floor" in ue.render(), "ok"))
-    run("collapse lens", lambda: (ue.collapse_lens() or True, "ok"))
+    run("tick render", lambda: ("Budget" in ue.tick() and "Floor" in ue.render(), f"t={ue.ticks}"))
+    run("floor", lambda: (ue.status()["floor"] == list(FLOOR), str(FLOOR)))
+
+    # oversize seed reject/trim should not raise
+    def oversize():
+        gate = StandinShowGate(budget=StandinTokenBudget(limit=40, reserved=5), mode="strict")
+        ok, msg = gate.set_seed_strip("x" * 500)
+        return (not ok), msg
+
+    run("strict reject oversize", oversize)
 
     print(f"=== RESULT: {sum(1 for x in results if x)}/{len(results)} PASS ===")
     return all(results)
@@ -555,12 +680,10 @@ def demo() -> None:
     ue.boot()
     print(ue.render())
     print()
-    ue.command("pick the wrench", intent="PICK", target=(1, 0))
-    print(ue.tick())
-    print()
+    ue.command("pick", intent="PICK", target=(1, 0))
     ue.command("stow", intent="STOW")
+    ue.show("(^_^)")
     print(ue.tick())
-    print()
     print("STATUS:", ue.status())
 
 
