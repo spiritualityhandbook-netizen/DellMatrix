@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""
-One program boot — visual + checkpoint bound in.
-
-01[Initiate] > 15[Map] >> 09[Show] :: Open
-"""
+"""One program — includes shared Main push/pull."""
 
 from __future__ import annotations
 
@@ -62,6 +58,7 @@ class Program:
             ("EnhanceGate", "tool", 32, "EnhanceGate"),
             ("Persist", "tool", 10, "Persist"),
             ("Visual", "tool", 9, "Visual"),
+            ("SharedMain", "main", 21, "SharedMain"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -101,6 +98,21 @@ class Program:
     def pull(self, unit_id: str, tag: str) -> Dict[str, Any]:
         return voluntary_pull(self.cube.session, unit_id, self.main, tag)
 
+    def push_main(self, path: Optional[str] = None) -> Dict[str, Any]:
+        from form.dell_matrix.shared_main import push_to_shared, DEFAULT_SHARED
+
+        return push_to_shared(self.main, self.owner, path or DEFAULT_SHARED)
+
+    def pull_main(self, path: Optional[str] = None, mode: str = "merge") -> Dict[str, Any]:
+        from form.dell_matrix.shared_main import pull_from_shared, DEFAULT_SHARED
+
+        return pull_from_shared(self.main, path or DEFAULT_SHARED, mode=mode)
+
+    def shared_main_summary(self) -> Dict[str, Any]:
+        from form.dell_matrix.shared_main import shared_summary
+
+        return shared_summary()
+
     def grow(self, n: int = 1) -> None:
         for _ in range(max(1, n)):
             self.duo.evolve("13[Loop] > 04[Transform] :: Open.grow")
@@ -122,7 +134,6 @@ class Program:
         return persist_cp(self)
 
     def visual(self) -> Dict[str, str]:
-        """Write SVG+HTML visual surface for this program's plane."""
         from form.dell_matrix.visual import write_visual
 
         return write_visual(self.cube.session.plane, owner=self.owner, scores=self.scores())
@@ -156,6 +167,7 @@ class Program:
             "enhance": self.enhance.status(),
             "scores": self.scores(),
             "main": self.main.summary(),
+            "shared_main": self.shared_main_summary(),
             "matrix": self.matrix.understand(),
             "view": self.view(),
         }
@@ -166,7 +178,7 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== VISUAL BIND SMOKE ===")
+    print("=== OPEN + SHARED MAIN SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
@@ -175,18 +187,13 @@ def smoke() -> bool:
 
     import os
 
-    p = open_program("VisualBind")
-    p.place("biz", "Business", words="US&S", skin=Skin.BUILDING, x=1)
-    p.place("music", "Music", words="Ep4", skin=Skin.SEED, x=-1)
-    p.enhance_on()
-    p.pulse()
-    paths = p.visual()
-    rec("visual svg", os.path.isfile(paths.get("svg", "")), str(paths))
-    rec("visual html", os.path.isfile(paths.get("html", "")))
-    rec("has Visual snap", p.matrix.has_snap("Visual"))
-    cp = p.checkpoint()
-    rec("checkpoint", os.path.isfile(cp), cp)
-    rec("verify", p.matrix.verify().get("ok") is True or "Visual" in p.matrix.snap_names())
+    p = open_program("BindMain")
+    p.place("biz", "Business", skin=Skin.BUILDING, x=1)
+    p.main.tags["seed"] = 1.0
+    out = p.push_main()
+    rec("push_main", out.get("ok") is True)
+    rec("visual", os.path.isfile(p.visual().get("html", "")))
+    rec("SharedMain snap", p.matrix.has_snap("SharedMain"))
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -194,37 +201,18 @@ def smoke() -> bool:
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-
     owner = "Operator"
-    do_load = "--load" in sys.argv
-    do_save = "--save" in sys.argv
-    do_pulse = "--pulse" in sys.argv
-    do_enhance = "--enhance-on" in sys.argv
-    do_json = "--json" in sys.argv
-    do_visual = "--visual" in sys.argv
-    do_cp = "--checkpoint" in sys.argv
-
     for i, a in enumerate(sys.argv):
         if a == "--owner" and i + 1 < len(sys.argv):
             owner = sys.argv[i + 1]
-
-    print("01[Initiate] > 15[Map] >> 09[Show] :: Open")
-    p = Program.load(owner) if do_load else open_program(owner)
-    if not do_load and not any(u != "welcome" for u in p.cube.session.plane.units):
-        p.place("seed", "First", words="on the plane", skin=Skin.SEED)
-    if do_enhance:
-        p.enhance_on()
-    if do_pulse:
-        print("pulse:", p.pulse())
-    if do_save:
-        print("10[Keep] ::", p.save())
-    if do_cp:
-        print("27[Checkpoint] ::", p.checkpoint())
-    if do_visual:
-        print("09[Show] visual ::", p.visual())
+    p = Program.load(owner) if "--load" in sys.argv else open_program(owner)
+    if "--push-main" in sys.argv:
+        print(p.push_main())
+    if "--pull-main" in sys.argv:
+        print(p.pull_main())
+    if "--visual" in sys.argv:
+        print(p.visual())
     print(p.render())
-    if do_json:
-        print(json.dumps(p.view(), indent=2))
 
 
 if __name__ == "__main__":
