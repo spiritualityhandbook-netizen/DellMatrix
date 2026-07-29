@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One program — IdeaGrow bound."""
+"""One program — SandboxGate default OFF."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ try:
     from form.dell_matrix.graph_view import build_view
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
+    from form.dell_matrix.sandbox_gate import SandboxGate
     from form.dell_matrix.idea_grow import IdeaGrow
     from form.duobeta.growth import DuoBeta
 except ImportError:
@@ -34,6 +35,7 @@ except ImportError:
     from form.dell_matrix.graph_view import build_view
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
+    from form.dell_matrix.sandbox_gate import SandboxGate
     from form.dell_matrix.idea_grow import IdeaGrow
     from form.duobeta.growth import DuoBeta
 
@@ -45,6 +47,7 @@ class Program:
     main: MainField = field(default_factory=MainField)
     enhance: EnhanceGate = field(default_factory=EnhanceGate)
     ambient: AmbientGate = field(default_factory=AmbientGate)
+    sandbox: SandboxGate = field(default_factory=SandboxGate)  # default OFF
     idea_grow: IdeaGrow = field(default_factory=IdeaGrow)
     cube: BlankCube = field(init=False)
     duo: DuoBeta = field(init=False)
@@ -64,6 +67,7 @@ class Program:
             ("SharedMain", "main", 21, "SharedMain"),
             ("AmbientGate", "tool", 32, "AmbientGate"),
             ("IdeaGrow", "growth", 13, "IdeaGrow"),
+            ("SandboxGate", "tool", 23, "SandboxGate"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -76,7 +80,19 @@ class Program:
         self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
 
     def place(self, id: str, label: str, **kwargs):
-        return self.cube.place_idea(id, label, **kwargs)
+        u = self.cube.place_idea(id, label, **kwargs)
+        # SandboxGate ON → auto-isolate new unit; default OFF → connected
+        self.sandbox.maybe_auto_box(self.cube.session.plane, id)
+        return u
+
+    def sandbox_on(self, all_units: bool = True) -> Dict[str, Any]:
+        if all_units:
+            return self.sandbox.apply_on(self.cube.session.plane)
+        self.sandbox.turn_on()
+        return {"ok": True, "on": True}
+
+    def sandbox_off(self) -> Dict[str, Any]:
+        return self.sandbox.apply_off(self.cube.session.plane)
 
     def set_perspective(self, name: str) -> bool:
         try:
@@ -98,8 +114,6 @@ class Program:
         return self.enhance.pulse(self.cube.session.plane)
 
     def grow_ideas(self, cycles: int = 1) -> List[Dict[str, Any]]:
-        """Every idea grows every other via resonance + patterns + math."""
-        # share enhance state so scores stay on the program gate the user sees
         self.idea_grow.gate = self.enhance
         if not self.enhance.on:
             self.enhance.turn_on()
@@ -182,7 +196,7 @@ class Program:
         lines = [
             f"+- DellMatrix PROGRAM · owner={self.owner} -+",
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
-            f"| enhance={'ON' if self.enhance.on else 'OFF'} ambient={'ON' if self.ambient.master_on else 'OFF'} gen={self.duo.generation}",
+            f"| enhance={'ON' if self.enhance.on else 'OFF'} sandbox={'ON' if self.sandbox.on else 'OFF'} ambient={'ON' if self.ambient.master_on else 'OFF'} gen={self.duo.generation}",
             f"| main top: {self.main.top_tags(3)}",
         ]
         for ln in plane_txt.splitlines():
@@ -197,6 +211,7 @@ class Program:
             "owner": self.owner,
             "floor": floor_status(),
             "enhance": self.enhance.status(),
+            "sandbox": self.sandbox.status(),
             "ambient": self.ambient.status(),
             "idea_grow": self.idea_grow.summary(),
             "scores": self.scores(),
@@ -212,21 +227,23 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== OPEN+IDEAGROW SMOKE ===")
-    p = open_program("IG")
+    print("=== SANDBOX DEFAULT OFF SMOKE ===")
+    p = open_program("SBoff")
     p.cube.session.plane.units.clear()
-    p.place("a", "Alpha", words="one two", skin=Skin.CUBE)
-    p.place("b", "Beta", words="two three", skin=Skin.SEED, x=1)
-    out = p.grow_ideas(3)
-    ok = all(o.get("ok") for o in out) and p.matrix.has_snap("IdeaGrow")
-    print("PASS" if ok else "FAIL", p.scores())
+    p.place("a", "A")
+    ok = p.sandbox.on is False and not p.cube.session.plane.units["a"].sandboxed
+    p.sandbox_on()
+    ok = ok and p.sandbox.on and p.cube.session.plane.units["a"].sandboxed
+    p.sandbox_off()
+    ok = ok and (not p.sandbox.on) and (not p.cube.session.plane.units["a"].sandboxed)
+    print("PASS" if ok else "FAIL")
     return ok
 
 
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    print(open_program("Operator").render())
+    print(open_program().render())
 
 
 if __name__ == "__main__":

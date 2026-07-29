@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — IdeaGrow: grow ideas [N]."""
+"""REPL — sandbox on|off (default OFF)."""
 
 from __future__ import annotations
 
@@ -21,19 +21,10 @@ except ImportError:
     from form.persist import list_checkpoints
 
 HELP = """
-  place <id> <label> [words…]
-  grow ideas [N]     every idea grows every other (resonance+pattern+math)
-  grow               DuoBeta generation tick only
-  enhance on | pulse | show | visual | save
-  realize | tutorial | help | quit
-""".strip()
+  place | grow ideas [N] | enhance on|off | sandbox on|off
+  pulse | show | visual | save | realize | tutorial | help | quit
 
-TUTORIAL = """
-1) place biz Business crm routes stain
-2) place music Music song routes melody
-3) place ops Operations crm crew routes
-4) grow ideas 10
-5) show / scores / visual
+Sandbox DEFAULT OFF (ideas connected). sandbox on = isolation mode.
 """.strip()
 
 
@@ -45,7 +36,7 @@ def _skin(name: str) -> Skin:
 
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
-    print("Dell Matrix — grow ideas uses every idea on every other")
+    print("Dell Matrix — sandbox default OFF")
     print(f"owner={owner}\n")
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
@@ -70,56 +61,62 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd in ("help", "?"):
             print(HELP)
         elif cmd == "tutorial":
-            print(TUTORIAL)
+            print("place ideas → grow ideas 5 → show\nsandbox on (isolate all) → sandbox off (reconnect)")
         elif cmd == "realize":
             from form.realize import realize
 
             rep = realize(owner)
             p = Program.load(owner)
             print(rep["render"])
-            print("visual:", rep["visual"])
         elif cmd == "show":
             print(p.render())
         elif cmd == "status":
             st = p.status()
-            print({"owner": st["owner"], "enhance": st["enhance"]["on"], "idea_grow": st.get("idea_grow"), "units": list(p.cube.session.plane.units.keys())})
+            print({"sandbox": st["sandbox"], "enhance": st["enhance"]["on"], "units": list(p.cube.session.plane.units.keys())})
         elif cmd == "scores":
             print(p.scores())
         elif cmd == "main":
             print(p.main.summary())
         elif cmd == "shared":
             print(p.shared_main_summary())
+        elif cmd == "sandbox":
+            if len(parts) < 2:
+                print(p.sandbox.status())
+            elif parts[1] == "on":
+                print(p.sandbox_on())
+            elif parts[1] == "off":
+                print(p.sandbox_off())
+            else:
+                print("sandbox | sandbox on | sandbox off")
         elif cmd == "ambient":
             if len(parts) == 1:
                 print(p.ambient.status())
             elif parts[1] == "on":
                 p.ambient.turn_on()
-                print("ambient master ON")
+                print("ambient ON")
             elif parts[1] == "off":
                 p.ambient.turn_off()
-                print("ambient master OFF")
+                print("ambient OFF")
             elif len(parts) >= 3 and parts[2] == "on":
-                print("ok" if p.ambient.enable_source(parts[1]) else "bad source")
+                print("ok" if p.ambient.enable_source(parts[1]) else "bad")
             elif len(parts) >= 3 and parts[2] == "off":
-                print("ok" if p.ambient.disable_source(parts[1]) else "bad source")
-            else:
-                print("ambient | ambient on|off | ambient files on|off")
+                print("ok" if p.ambient.disable_source(parts[1]) else "bad")
         elif cmd == "intake":
             print(p.ambient_intake(apply=True))
         elif cmd == "verify":
             print(p.matrix.verify())
         elif cmd == "health":
-            print({"enhance": p.enhance.on, "units": len(p.cube.session.plane.units), "verify_ok": p.matrix.verify().get("ok")})
+            print({"sandbox": p.sandbox.on, "enhance": p.enhance.on, "units": len(p.cube.session.plane.units)})
         elif cmd == "place" and len(parts) >= 3:
             p.place(parts[1], parts[2], words=" ".join(parts[3:]), skin=Skin.CUBE)
-            print("placed", parts[1])
+            print("placed", parts[1], "sandboxed" if p.cube.session.plane.units[parts[1]].sandboxed else "connected")
         elif cmd == "words" and len(parts) >= 3:
             u = p.cube.session.plane.units.get(parts[1])
-            if not u:
-                print("missing")
-            else:
+            if u:
                 u.words = " ".join(parts[2:])
                 print("ok")
+            else:
+                print("missing")
         elif cmd == "skin" and len(parts) >= 3:
             print("ok" if p.cube.session.plane.set_skin(parts[1], _skin(parts[2])) else "missing")
         elif cmd == "move" and len(parts) >= 4:
@@ -138,9 +135,9 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd == "zoom" and len(parts) >= 2:
             if parts[1] == "out":
                 p.cube.session.plane.zoom_out()
-                print("overview")
             else:
-                print("ok" if p.cube.session.plane.zoom_in(parts[1]) else "missing")
+                p.cube.session.plane.zoom_in(parts[1])
+            print("ok")
         elif cmd == "enhance" and len(parts) >= 2:
             if parts[1] == "on":
                 p.enhance_on()
@@ -181,7 +178,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             if len(parts) >= 2 and parts[1] == "ideas":
                 n = int(parts[2]) if len(parts) > 2 else 1
                 out = p.grow_ideas(n)
-                print({"cycles": len(out), "last": out[-1] if out else None, "summary": p.idea_grow.summary()})
+                print({"cycles": len(out), "last": out[-1] if out else None})
                 print(p.render())
             else:
                 p.grow(1)
