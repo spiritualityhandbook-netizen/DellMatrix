@@ -2,11 +2,16 @@
 
 Status: TRUE
 
+Numbered confirm queue for GodWorkSpace / UnifiedEntry.
+
 ```python
 q = PipelineQueue()
-q.add("Boot")
+q.add("Boot complete")
 q.confirm(1)
-q.pending()
+print(q.render_lines())
+print(q.status())
 ```
 
-Compose via `29_ENTRY_WITH_PIPELINE.py`.
+Wire into UnifiedEntry:
+- on successful command → `queue.add(f"{intent}:ok")`
+- render section uses `queue.render_lines()`

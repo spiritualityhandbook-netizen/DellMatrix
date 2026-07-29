@@ -4,5 +4,7 @@ Status: ACTIVE
 
 | Cell | Status |
 |------|--------|
-| 4.1–4.3 · 4B · 4C · Distribution | TRUE |
-| Unified Entry (bind · token · search · **pipeline**) | **TRUE** |
+| Unified Entry stack | TRUE |
+| **Pipeline Queue** | **TRUE** (`28_PIPELINE_QUEUE.py`) |
+
+Next optional: merge PipelineQueue into UnifiedEntry.boot/command/render as default field.
