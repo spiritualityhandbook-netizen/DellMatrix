@@ -1,12 +1,11 @@
-# Pre-form: Network Main Transport
+# Network Main — MOVED TO FORM
 
-**Status:** PRE-FORM — not Form yet  
-**Now in Form:** SharedMain via `form/state/main_shared.json` (same machine / shared folder).
+**Status:** FORM (out of preform)
 
-## Next (when prioritized)
-- Authenticated remote Main endpoint
-- Conflict merge policy beyond weight add
-- Still: no personal cube clobber
+```bash
+python -m form.dell_matrix.network_main --serve --port 8765
+# Program.set_network('http://127.0.0.1:8765')
+# net_push / net_pull
+```
 
-## Seed
-`21[Merge] : 25[Pulse] >> 14[Bind] :: NetworkMain`
+Code: `form/dell_matrix/network_main.py`

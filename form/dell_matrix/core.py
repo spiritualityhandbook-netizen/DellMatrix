@@ -1,4 +1,4 @@
-"""Dell Matrix snap host L3."""
+"""Dell Matrix snap host — required set post-preform open."""
 
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -10,16 +10,8 @@ from form.mandell.manifest import Manifest, manifest_from_dell
 from .snap import SnapCandidate, SnapResult, resonate
 
 FOUNDATION_PORTS = (
-    "language",
-    "registry",
-    "growth",
-    "cube",
-    "main",
-    "persona",
-    "tool",
-    "doc",
-    "pipeline",
-    "other",
+    "language", "registry", "growth", "cube", "main",
+    "persona", "tool", "doc", "pipeline", "other",
 )
 
 REQUIRED_FOR_OPEN: Tuple[str, ...] = (
@@ -34,6 +26,9 @@ REQUIRED_FOR_OPEN: Tuple[str, ...] = (
     "Visual",
     "SharedMain",
     "AmbientGate",
+    "IdeaGrow",
+    "SandboxGate",
+    "NetworkMain",
 )
 
 
@@ -48,13 +43,9 @@ class DellMatrix:
             self.snapped.setdefault(p, [])
         if not self.snapped["language"]:
             m = manifest_from_dell(1, "Mandell")
-            self.snapped["language"].append(
-                {"name": "Mandell", "manifest": m.to_dict() if m else None}
-            )
+            self.snapped["language"].append({"name": "Mandell", "manifest": m.to_dict() if m else None})
         if not self.snapped["registry"]:
-            self.snapped["registry"].append(
-                {"name": "TrueRegistry", "count": len(DELLS)}
-            )
+            self.snapped["registry"].append({"name": "TrueRegistry", "count": len(DELLS)})
 
     def snap(self, candidate: SnapCandidate) -> SnapResult:
         result = resonate(candidate)
@@ -79,7 +70,7 @@ class DellMatrix:
         return list(self.snapped.get(port, []))
 
     def all_snaps(self) -> List[Dict[str, Any]]:
-        out: List[Dict[str, Any]] = []
+        out = []
         for port, entries in self.snapped.items():
             for e in entries:
                 row = dict(e)
@@ -99,7 +90,7 @@ class DellMatrix:
         names = self.snap_names()
         missing = [n for n in req if n not in names]
         ok = list(FLOOR) == ["Alpha", "Delta", "Omega", "Omni"] and len(DELLS) == 51 and len(missing) == 0
-        report = {
+        return {
             "ok": ok,
             "floor": list(FLOOR),
             "dell_count": len(DELLS),
@@ -107,22 +98,17 @@ class DellMatrix:
             "missing": missing,
             "present": sorted(names),
         }
-        self.log.append(f"VERIFY ok={ok} missing={missing}")
-        return report
 
     def understand(self) -> Dict[str, Any]:
-        health = self.verify(required=())
         return {
             "self": "DellMatrix",
             "role": "foundation snap host",
             "level": 3,
-            "requires": "Mandell language",
             "floor": floor_status(),
             "ports": {p: len(self.snapped.get(p, [])) for p in FOUNDATION_PORTS},
             "dell_count": len(DELLS),
             "snap_names": sorted(self.snap_names()),
             "log_tail": self.log[-10:],
-            "health_soft": health,
         }
 
     def status(self) -> Dict[str, Any]:

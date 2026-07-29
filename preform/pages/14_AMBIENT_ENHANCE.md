@@ -1,16 +1,11 @@
-# Pre-form: Ambient Enhance
+# Ambient — MOVED TO FORM
 
-**Status:** PRE-FORM — not Form yet  
-**Why deferred:** Requires explicit user opt-in design for files/screen/mic; safety + privacy gates first.
+**Status:** FORM (out of preform)
 
-## Intent
-Optional ambient intake (documents, screen context, mic) to feed the plane when enhance is ON.
+Folder adapters:
+- form/state/inbox/
+- form/state/screen/
+- form/state/mic/
+- form/state/clipboard/
 
-## Gates required before Form
-1. Default OFF (same as EnhanceGate)
-2. Per-source toggles
-3. No silent upload; local-first
-4. Floor + dual-output law unchanged
-
-## Seed
-`32[Pause] :: 33[Resume] > 35[Discover] :: Ambient`
+Code: `form/dell_matrix/ambient_gate.py`

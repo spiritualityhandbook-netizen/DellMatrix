@@ -1,18 +1,18 @@
-# NBD ×10 — SandboxGate
+# NBD ×10 — OUT OF PREFORM
 
-1. SandboxGate default **OFF**
-2. Program.sandbox_on / sandbox_off
-3. place() auto-box only when ON
-4. apply_off → unbox-all
-5. REPL `sandbox on|off`
-6. Snap SandboxGate on open
-7. render shows sandbox ON/OFF
-8. status includes sandbox
-9. smoke default-off path
+1. Ambient files/screen/mic/clipboard folder adapters (all)
+2. NetworkMain HTTP serve + client push/pull
+3. Program.net_push / net_pull / set_network
+4. NetworkMain required snap
+5. SandboxGate stays default OFF (prior)
+6. IdeaGrow (prior)
+7. Preform pages 14/15 marked FORM
+8. open snaps NetworkMain
+9. Ambient level 3
 10. This log
 
-```text
-matrix> sandbox          # status (default off)
-matrix> sandbox on       # isolate all
-matrix> sandbox off      # reconnect all
+```bash
+python -m form.dell_matrix.ambient_gate --smoke
+python -m form.dell_matrix.network_main --smoke
+python -m form.dell_matrix.network_main --serve --port 8765
 ```

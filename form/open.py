@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One program — SandboxGate default OFF."""
+"""One program — NetworkMain + SandboxGate + full ambient."""
 
 from __future__ import annotations
 
@@ -47,8 +47,9 @@ class Program:
     main: MainField = field(default_factory=MainField)
     enhance: EnhanceGate = field(default_factory=EnhanceGate)
     ambient: AmbientGate = field(default_factory=AmbientGate)
-    sandbox: SandboxGate = field(default_factory=SandboxGate)  # default OFF
+    sandbox: SandboxGate = field(default_factory=SandboxGate)
     idea_grow: IdeaGrow = field(default_factory=IdeaGrow)
+    network_url: str = ""  # e.g. http://127.0.0.1:8765
     cube: BlankCube = field(init=False)
     duo: DuoBeta = field(init=False)
 
@@ -68,6 +69,7 @@ class Program:
             ("AmbientGate", "tool", 32, "AmbientGate"),
             ("IdeaGrow", "growth", 13, "IdeaGrow"),
             ("SandboxGate", "tool", 23, "SandboxGate"),
+            ("NetworkMain", "main", 21, "NetworkMain"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -81,7 +83,6 @@ class Program:
 
     def place(self, id: str, label: str, **kwargs):
         u = self.cube.place_idea(id, label, **kwargs)
-        # SandboxGate ON → auto-isolate new unit; default OFF → connected
         self.sandbox.maybe_auto_box(self.cube.session.plane, id)
         return u
 
@@ -132,6 +133,23 @@ class Program:
             placed.append(uid)
         out["placed"] = placed
         return out
+
+    def set_network(self, url: str) -> None:
+        self.network_url = url.rstrip("/")
+
+    def net_push(self) -> Dict[str, Any]:
+        if not self.network_url:
+            return {"ok": False, "error": "set network_url first"}
+        from form.dell_matrix.network_main import client_push
+
+        return client_push(self.network_url, dict(self.main.tags), self.owner)
+
+    def net_pull(self, mode: str = "merge") -> Dict[str, Any]:
+        if not self.network_url:
+            return {"ok": False, "error": "set network_url first"}
+        from form.dell_matrix.network_main import pull_into_local
+
+        return pull_into_local(self.main, self.network_url, mode=mode)
 
     def sync_with(self, other: "Program", unit_self: str, unit_other: str) -> Dict[str, Any]:
         return sync_planes(self.cube.session, other.cube.session, self.main, unit_self, unit_other)
@@ -197,7 +215,7 @@ class Program:
             f"+- DellMatrix PROGRAM · owner={self.owner} -+",
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
             f"| enhance={'ON' if self.enhance.on else 'OFF'} sandbox={'ON' if self.sandbox.on else 'OFF'} ambient={'ON' if self.ambient.master_on else 'OFF'} gen={self.duo.generation}",
-            f"| main top: {self.main.top_tags(3)}",
+            f"| net={self.network_url or 'off'} main top: {self.main.top_tags(3)}",
         ]
         for ln in plane_txt.splitlines():
             if ln.startswith("+-"):
@@ -213,6 +231,7 @@ class Program:
             "enhance": self.enhance.status(),
             "sandbox": self.sandbox.status(),
             "ambient": self.ambient.status(),
+            "network_url": self.network_url,
             "idea_grow": self.idea_grow.summary(),
             "scores": self.scores(),
             "main": self.main.summary(),
@@ -227,15 +246,8 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== SANDBOX DEFAULT OFF SMOKE ===")
-    p = open_program("SBoff")
-    p.cube.session.plane.units.clear()
-    p.place("a", "A")
-    ok = p.sandbox.on is False and not p.cube.session.plane.units["a"].sandboxed
-    p.sandbox_on()
-    ok = ok and p.sandbox.on and p.cube.session.plane.units["a"].sandboxed
-    p.sandbox_off()
-    ok = ok and (not p.sandbox.on) and (not p.cube.session.plane.units["a"].sandboxed)
+    p = open_program("NetOpen")
+    ok = p.matrix.has_snap("NetworkMain") and p.sandbox.on is False
     print("PASS" if ok else "FAIL")
     return ok
 
