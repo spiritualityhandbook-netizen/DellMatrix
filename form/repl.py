@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — includes realize command (NBD)."""
+"""REPL — IdeaGrow: grow ideas [N]."""
 
 from __future__ import annotations
 
@@ -21,21 +21,19 @@ except ImportError:
     from form.persist import list_checkpoints
 
 HELP = """
-Form realized — type tutorial
-
-  place | enhance on | pulse | show | visual | save
-  realize                 full demo path on this owner
-  ambient on | ambient files on | intake
-  push_main | pull_main | box | help | quit
+  place <id> <label> [words…]
+  grow ideas [N]     every idea grows every other (resonance+pattern+math)
+  grow               DuoBeta generation tick only
+  enhance on | pulse | show | visual | save
+  realize | tutorial | help | quit
 """.strip()
 
 TUTORIAL = """
-1) place biz Business my idea
-2) place music Music a song
-3) enhance on → pulse → show
-4) visual → open the HTML path
-5) Or run: realize   (full path in one command)
-6) save
+1) place biz Business crm routes stain
+2) place music Music song routes melody
+3) place ops Operations crm crew routes
+4) grow ideas 10
+5) show / scores / visual
 """.strip()
 
 
@@ -47,7 +45,7 @@ def _skin(name: str) -> Skin:
 
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
-    print("Dell Matrix — type tutorial, realize, or help")
+    print("Dell Matrix — grow ideas uses every idea on every other")
     print(f"owner={owner}\n")
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
@@ -80,12 +78,11 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             p = Program.load(owner)
             print(rep["render"])
             print("visual:", rep["visual"])
-            print("verify:", rep["verify"].get("ok"), "missing:", rep["verify"].get("missing"))
         elif cmd == "show":
             print(p.render())
         elif cmd == "status":
             st = p.status()
-            print({"owner": st["owner"], "enhance": st["enhance"]["on"], "ambient": st["ambient"]["master_on"], "units": list(p.cube.session.plane.units.keys())})
+            print({"owner": st["owner"], "enhance": st["enhance"]["on"], "idea_grow": st.get("idea_grow"), "units": list(p.cube.session.plane.units.keys())})
         elif cmd == "scores":
             print(p.scores())
         elif cmd == "main":
@@ -112,7 +109,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd == "verify":
             print(p.matrix.verify())
         elif cmd == "health":
-            print({"enhance": p.enhance.on, "ambient": p.ambient.master_on, "units": len(p.cube.session.plane.units), "verify_ok": p.matrix.verify().get("ok")})
+            print({"enhance": p.enhance.on, "units": len(p.cube.session.plane.units), "verify_ok": p.matrix.verify().get("ok")})
         elif cmd == "place" and len(parts) >= 3:
             p.place(parts[1], parts[2], words=" ".join(parts[3:]), skin=Skin.CUBE)
             print("placed", parts[1])
@@ -181,10 +178,16 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             p = Program.load(owner)
             print(p.render())
         elif cmd == "grow":
-            p.grow(1)
-            print("gen", p.duo.generation)
+            if len(parts) >= 2 and parts[1] == "ideas":
+                n = int(parts[2]) if len(parts) > 2 else 1
+                out = p.grow_ideas(n)
+                print({"cycles": len(out), "last": out[-1] if out else None, "summary": p.idea_grow.summary()})
+                print(p.render())
+            else:
+                p.grow(1)
+                print("gen", p.duo.generation)
         else:
-            print("unknown — type help, tutorial, or realize")
+            print("unknown — type help")
 
     print("session end")
 
