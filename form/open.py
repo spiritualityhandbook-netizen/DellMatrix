@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""One program — realized ambient apply."""
+"""One program — IdeaGrow bound."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-import json
 import sys
 
 try:
     from form.mandell.floor import FLOOR, assert_floor_intact, floor_status
-    from form.mandell.registry import DELLS
     from form.mandell.manifest import manifest_from_dell
     from form.dell_matrix.core import DellMatrix
     from form.dell_matrix.snap import SnapCandidate
@@ -20,13 +18,13 @@ try:
     from form.dell_matrix.graph_view import build_view
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
+    from form.dell_matrix.idea_grow import IdeaGrow
     from form.duobeta.growth import DuoBeta
 except ImportError:
     import os
 
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     from form.mandell.floor import FLOOR, assert_floor_intact, floor_status
-    from form.mandell.registry import DELLS
     from form.mandell.manifest import manifest_from_dell
     from form.dell_matrix.core import DellMatrix
     from form.dell_matrix.snap import SnapCandidate
@@ -36,6 +34,7 @@ except ImportError:
     from form.dell_matrix.graph_view import build_view
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
+    from form.dell_matrix.idea_grow import IdeaGrow
     from form.duobeta.growth import DuoBeta
 
 
@@ -46,6 +45,7 @@ class Program:
     main: MainField = field(default_factory=MainField)
     enhance: EnhanceGate = field(default_factory=EnhanceGate)
     ambient: AmbientGate = field(default_factory=AmbientGate)
+    idea_grow: IdeaGrow = field(default_factory=IdeaGrow)
     cube: BlankCube = field(init=False)
     duo: DuoBeta = field(init=False)
 
@@ -63,6 +63,7 @@ class Program:
             ("Visual", "tool", 9, "Visual"),
             ("SharedMain", "main", 21, "SharedMain"),
             ("AmbientGate", "tool", 32, "AmbientGate"),
+            ("IdeaGrow", "growth", 13, "IdeaGrow"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -96,8 +97,17 @@ class Program:
     def pulse(self) -> Dict[str, Any]:
         return self.enhance.pulse(self.cube.session.plane)
 
+    def grow_ideas(self, cycles: int = 1) -> List[Dict[str, Any]]:
+        """Every idea grows every other via resonance + patterns + math."""
+        # share enhance state so scores stay on the program gate the user sees
+        self.idea_grow.gate = self.enhance
+        if not self.enhance.on:
+            self.enhance.turn_on()
+        out = self.idea_grow.run(self.cube.session.plane, cycles=cycles)
+        self.duo.evolve(f"13[Loop] :: IdeaGrow x{cycles}")
+        return out
+
     def ambient_intake(self, apply: bool = True) -> Dict[str, Any]:
-        """Run ambient intake; optionally place items on plane as WORDS units."""
         out = self.ambient.intake()
         if not out.get("ok") or not apply:
             return out
@@ -188,6 +198,7 @@ class Program:
             "floor": floor_status(),
             "enhance": self.enhance.status(),
             "ambient": self.ambient.status(),
+            "idea_grow": self.idea_grow.summary(),
             "scores": self.scores(),
             "main": self.main.summary(),
             "shared_main": self.shared_main_summary(),
@@ -201,29 +212,21 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== OPEN REALIZE SMOKE ===")
-    r = []
-
-    def rec(name, ok, detail=""):
-        print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
-        r.append(bool(ok))
-
-    p = open_program("RealizeSmoke")
-    rec("verify", p.matrix.verify().get("ok") is True, str(p.matrix.verify().get("missing")))
-    rec("ambient default off", p.ambient.master_on is False)
-    print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
-    return all(r)
+    print("=== OPEN+IDEAGROW SMOKE ===")
+    p = open_program("IG")
+    p.cube.session.plane.units.clear()
+    p.place("a", "Alpha", words="one two", skin=Skin.CUBE)
+    p.place("b", "Beta", words="two three", skin=Skin.SEED, x=1)
+    out = p.grow_ideas(3)
+    ok = all(o.get("ok") for o in out) and p.matrix.has_snap("IdeaGrow")
+    print("PASS" if ok else "FAIL", p.scores())
+    return ok
 
 
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    owner = "Operator"
-    for i, a in enumerate(sys.argv):
-        if a == "--owner" and i + 1 < len(sys.argv):
-            owner = sys.argv[i + 1]
-    p = open_program(owner)
-    print(p.render())
+    print(open_program("Operator").render())
 
 
 if __name__ == "__main__":
