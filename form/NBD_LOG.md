@@ -1,11 +1,10 @@
 # NBD Log
 
-Method: `NBD_t = argmax φ·ρ·λ·σ` toward end goal.
+| NBD | Module |
+|-----|--------|
+| Plane | dell_matrix/plane.py |
+| MainThird | dell_matrix/main_field.py |
+| BlankCube | dell_matrix/blank_cube.py |
+| **OneProgramBoot** | **open.py** — `python -m form.open` |
 
-| When | NBD | Done |
-|------|-----|------|
-| … | Plane | plane.py |
-| … | MainThird | main_field.py |
-| 2026-07-28 | **BlankCube** | blank_cube.py — givable starter session |
-
-Next: recompute (integrate one-program boot, resonance, enhance, UI…).
+Next recompute: ResonanceAct, EnhanceGate, deeper L3, GraphUI…

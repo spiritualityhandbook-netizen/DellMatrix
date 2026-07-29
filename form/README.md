@@ -1,9 +1,10 @@
-# FORM
+# FORM — one program
 
 ```bash
-python -m form.dell_matrix.plane --smoke
-python -m form.dell_matrix.main_field --smoke
-python -m form.dell_matrix.blank_cube --smoke
-python -m form.dell_matrix.blank_cube --give Alice
-python -m form.mandell.nbd_equation
+python -m form.open
+python -m form.open --owner Ace
+python -m form.open --smoke
+python -m form
 ```
+
+Also: plane · main_field · blank_cube · nbd_equation · selfgrow · boot
