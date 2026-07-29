@@ -3,7 +3,6 @@
 Status: Living
 
 ## Code Phase 1–3 — COMPLETE · HARDENED
-## Code Phase 4 — ACTIVE · cells TRUE
-Including 4C Persona Lens + Lens Bridge (`22_LENS_BRIDGE.py`)
+## Code Phase 4 — TRUE for core + GWS lens embed
 
-Distribution: `preform/seed/pack_seed.py` → READY TO SEND
+Handoff: `preform/seed/pack_seed.py`

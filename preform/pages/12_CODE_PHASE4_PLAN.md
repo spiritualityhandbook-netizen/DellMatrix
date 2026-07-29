@@ -6,6 +6,7 @@ Status: ACTIVE
 |------|--------|
 | 4.1–4.3 · 4B · 4C | TRUE |
 | Distribution · Pack | TRUE |
-| **Lens ↔ Integrator bridge** | **TRUE** (`22_LENS_BRIDGE.py`) |
+| Lens Bridge | TRUE |
+| **GWS Lens Panel** | **TRUE** (`23_GWS_LENS_PANEL.py`) |
 
-Optional later: embed bridge panel inside full GodWorkSpace render.
+Phase 4 primary integration path complete for panels + personas + handoff.
