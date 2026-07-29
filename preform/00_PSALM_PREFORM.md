@@ -1,22 +1,20 @@
 # 00 — PSALM PREFORM
 
-**Living Master Document**
+**Living Master Document — PLAN phase**
 
-## Current State (as of 2026-07-28)
+## Pre-form definition (locked this cycle)
+Pre-form = **plan before implementation**.  
+Not the finished DuoBeta×Mandell OS matrix. That is **Form** (later).
 
-| Layer | Status |
-|-------|--------|
-| Code Phase 1–4 | TRUE |
-| Voynich structural 5-ring | TRUE (not decipherment) |
-| DuoBeta-style evolve loop | TRUE |
-| Blank handoff | TRUE |
+## Primary objective
+Plan one matrix: **full DuoBeta + full Mandell OS**, self-growing through **Psalms**, under Floor **Alpha · Delta · Omega · Omni**.
 
-**Floor:** Alpha · Delta · Omega · Omni
+## Language spine
+See `UNDERSTANDING_MANDELL.md` + `LANGUAGE_PREFORM.md`  
+Terms → Manifest (Term+Manor+Dell) + Mandelistics.
 
-## Surfaces
-- Compose: `python preform/code/29_COMPOSE_ENTRY.py`
-- **Self-evolve workspace:** `python preform/code/31_VOYNICH_DUOBETA.py`
-- Give: `cd preform/seed && python pack_seed.py`
+## How to direct
+See `STEER.md` — codes: NBD · LANG · PSALM · DUO · OS · REG · GAP · STOP CODE · FORM
 
 ## Evolution Log
-- 2026-07-28 — Voynich structural rings + DuoBeta-style propose/gate/ledger/evolve (`31_VOYNICH_DUOBETA.py`).
+- 2026-07-28 — Reset: Pre-form = plan only; STEER + Mandell understanding spine; NBD returns to Pre-form completeness from user materials.

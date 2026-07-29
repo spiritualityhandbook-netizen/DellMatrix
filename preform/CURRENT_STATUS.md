@@ -1,18 +1,18 @@
-# Current Status — DellMatrix Preform
+# Current Status — Pre-form phase
 
 As of: 2026-07-28
 
 ## Phase
-Code Phase 1–3 complete · Phase 4 TRUE · Voynich structural + DuoBeta evolve TRUE
+**PRE-FORM (plan)** — not Form/implementation as the goal.
 
-## Run
-```bash
-python preform/code/29_COMPOSE_ENTRY.py --smoke
-python preform/code/31_VOYNICH_DUOBETA.py --smoke
-cd preform/seed && python pack_seed.py
-```
+## Objective
+Plan DuoBeta × Mandell OS matrix that grows via Psalms.
 
-## Docs
-- Capabilities: `CAPABILITIES.md`
-- Voynich structural: `pages/14_VOYNICH_STRUCTURAL.md`
-- DuoBeta evolve: `pages/15_DUOBETA_EVOLVE.md`
+## Direct me with
+`STEER.md` codes (NBD, LANG, PSALM, DUO, OS, REG, GAP, STOP CODE, FORM)
+
+## Language understanding spine
+`UNDERSTANDING_MANDELL.md`
+
+## Note on prior code under preform/code/
+Treated as early experiments / not the definition of Pre-form. Pre-form authority = language + your forms + phase plans + STEER.
