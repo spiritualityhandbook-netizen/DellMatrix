@@ -1,6 +1,7 @@
 from .core import DellMatrix, FOUNDATION_PORTS
 from .snap import SnapCandidate, SnapResult, resonate
 from .plane import Plane, Perspective, Skin, Unit, Sandbox
+from .main_field import MainField, MatrixSession, sync_planes, voluntary_pull, MainContribution
 
 __all__ = [
     "DellMatrix",
@@ -13,4 +14,9 @@ __all__ = [
     "Skin",
     "Unit",
     "Sandbox",
+    "MainField",
+    "MatrixSession",
+    "sync_planes",
+    "voluntary_pull",
+    "MainContribution",
 ]
