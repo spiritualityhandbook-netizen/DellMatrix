@@ -2,7 +2,7 @@
 
 ```bash
 python -m form.repl --owner Ace
-python -m form.dell_matrix.blank_cube --give Alice
-python -m form.dell_matrix.blank_cube --give Bob --clean
-python -m form.dell_matrix.blank_cube --smoke
+python -m form.repl --owner Ace --load
 ```
+
+REPL L3: place · words · remove · box · pulse · enhance · main · scores · verify · pack · save · load

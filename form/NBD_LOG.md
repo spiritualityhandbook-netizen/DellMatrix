@@ -2,5 +2,5 @@
 
 | NBD | Module |
 |-----|--------|
-| Surface coherence | open/persist/repl |
-| **BlankCube L3** | **blank_cube.py** — clean give, pack export/import, contact |
+| BlankCube L3 | blank_cube.py |
+| **REPL L3** | **repl.py** — remove, verify, pack, neighbors, words, health |
