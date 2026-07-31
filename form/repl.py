@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — sandbox default OFF + network + grow ideas."""
+"""REPL — Form front door. English → Mandell path active."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ try:
     from form.dell_matrix.plane import Skin
     from form.dell_matrix.blank_cube import BlankCube
     from form.persist import list_checkpoints
+    from form.mandell.translate import translate
 except ImportError:
     import os
 
@@ -19,12 +20,25 @@ except ImportError:
     from form.dell_matrix.plane import Skin
     from form.dell_matrix.blank_cube import BlankCube
     from form.persist import list_checkpoints
+    from form.mandell.translate import translate
 
 HELP = """
-  place | grow ideas [N] | enhance on|off | sandbox on|off
-  ambient on | ambient files|screen|mic|clipboard on | intake
-  network <url> | net_push | net_pull
-  pulse | show | visual | save | help | quit
+DellMatrix FORM — type normal English or commands
+
+  say <english>          ← natural language (recommended)
+  place <id> <label> ...
+  grow ideas [N]
+  enhance on|off
+  sandbox on|off
+  pulse | show | visual | save | status
+  help | quit
+
+Examples:
+  say create an idea called business plan
+  say grow ideas 3
+  say show me the matrix
+  say enhance on and pulse
+  visual
 """.strip()
 
 
@@ -35,9 +49,76 @@ def _skin(name: str) -> Skin:
         return Skin.CUBE
 
 
+def _execute_intent(p: Program, intent) -> None:
+    """Run a translated Intent against the live Program."""
+    action = intent.action
+    args = intent.args or {}
+
+    print(f"  → {intent.mandel}")
+
+    if action == "place":
+        uid = args.get("id", "idea")
+        label = args.get("label", uid)
+        words = args.get("words", "")
+        p.place(uid, label, words=words, skin=Skin.CUBE)
+        u = p.cube.session.plane.units.get(uid)
+        state = "sandboxed" if u and u.sandboxed else "connected"
+        print(f"  placed {uid} ({state})")
+
+    elif action == "grow":
+        n = int(args.get("cycles", 1))
+        out = p.grow_ideas(n)
+        print({"cycles": len(out), "last": out[-1] if out else None})
+        print(p.render())
+
+    elif action == "show":
+        print(p.render())
+
+    elif action == "visual":
+        paths = p.visual()
+        print("Visual workspace written:")
+        print("  HTML:", paths.get("html"))
+        print("  SVG :", paths.get("svg"))
+        print("Open the HTML file in any browser (works offline).")
+
+    elif action == "enhance_on":
+        p.enhance_on()
+        print("enhance ON")
+
+    elif action == "enhance_off":
+        p.enhance_off()
+        print("enhance OFF")
+
+    elif action == "pulse":
+        print(p.pulse())
+
+    elif action == "sandbox_on":
+        print(p.sandbox_on())
+
+    elif action == "sandbox_off":
+        print(p.sandbox_off())
+
+    elif action == "save":
+        print("saved", p.save())
+
+    elif action == "status":
+        print(p.status())
+
+    elif action == "help":
+        print(HELP)
+
+    elif action == "raw_mandel":
+        print("  raw seeds recognized:", intent.args.get("seeds"))
+        print("  (no automatic execution for raw seeds yet — use place/grow/etc)")
+
+    else:
+        print("  intent not mapped to runtime action yet:", action)
+
+
 def run(owner: str = "Operator", do_load: bool = False) -> None:
-    print("Dell Matrix FORM — sandbox default OFF · ambient folders · network ready")
-    print(f"owner={owner}\n")
+    print("DellMatrix FORM — English → Mandell active")
+    print(f"owner={owner}")
+    print("Type normal English after 'say', or use commands. Type help.\n")
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
 
@@ -49,22 +130,51 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             break
         if not line:
             continue
+
+        # Natural language path
+        if line.lower().startswith("say "):
+            english = line[4:].strip()
+            intent = translate(english)
+            _execute_intent(p, intent)
+            continue
+
+        # Also accept free English if it doesn't start with a known command
         try:
             parts = shlex.split(line)
         except ValueError as e:
             print("parse error:", e)
             continue
+
+        if not parts:
+            continue
         cmd = parts[0].lower()
+
+        known = {
+            "quit", "exit", "q", "help", "?", "tutorial", "realize", "show", "status",
+            "scores", "main", "shared", "sandbox", "network", "net_push", "net_pull",
+            "ambient", "intake", "verify", "health", "place", "words", "skin", "move",
+            "remove", "box", "unbox", "neighbors", "perspective", "zoom", "enhance",
+            "pulse", "decay", "clear", "pull", "push_main", "pull_main", "snapshot_main",
+            "visual", "checkpoint", "checkpoints", "pack", "save", "load", "grow", "say",
+        }
+
+        if cmd not in known:
+            # treat entire line as English
+            intent = translate(line)
+            _execute_intent(p, intent)
+            continue
 
         if cmd in ("quit", "exit", "q"):
             break
         elif cmd in ("help", "?"):
             print(HELP)
         elif cmd == "tutorial":
-            print("place a A words · place b B words · grow ideas 5 · sandbox on|off")
+            print("say create an idea called test")
+            print("say grow ideas 3")
+            print("say show me the matrix")
+            print("visual")
         elif cmd == "realize":
             from form.realize import realize
-
             rep = realize(owner)
             p = Program.load(owner)
             print(rep["render"])
@@ -167,7 +277,11 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         elif cmd == "snapshot_main":
             print(p.snapshot_main())
         elif cmd == "visual":
-            print(p.visual())
+            paths = p.visual()
+            print("Visual workspace written:")
+            print("  HTML:", paths.get("html"))
+            print("  SVG :", paths.get("svg"))
+            print("Open the HTML file in any browser (works offline).")
         elif cmd == "checkpoint":
             print(p.checkpoint())
         elif cmd == "checkpoints":
@@ -191,7 +305,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                 p.grow(1)
                 print("gen", p.duo.generation)
         else:
-            print("unknown — type help")
+            print("unknown — type help or use: say <english>")
 
     print("session end")
 
