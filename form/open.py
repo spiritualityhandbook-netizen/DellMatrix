@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One program — Form front door with Avatar."""
+"""One program — Form front door with Avatar + controlled growth Nursery."""
 
 from __future__ import annotations
 
@@ -19,9 +19,10 @@ try:
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
     from form.dell_matrix.sandbox_gate import SandboxGate
-    from form.dell_matrix.idea_grow import IdeaGrow
+    from form.dell_matrix.nursery import Nursery
+    from form.dell_matrix.growth_engine import GrowthEngine
     from form.duobeta.growth import DuoBeta
-    from form.avatar import Avatar, Facing, Posture, Locomotion, Reach, FaceController, Expression, build_default_registry
+    from form.avatar import Avatar, FaceController, Expression, build_default_registry
 except ImportError:
     import os
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -36,9 +37,10 @@ except ImportError:
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
     from form.dell_matrix.sandbox_gate import SandboxGate
-    from form.dell_matrix.idea_grow import IdeaGrow
+    from form.dell_matrix.nursery import Nursery
+    from form.dell_matrix.growth_engine import GrowthEngine
     from form.duobeta.growth import DuoBeta
-    from form.avatar import Avatar, Facing, Posture, Locomotion, Reach, FaceController, Expression, build_default_registry
+    from form.avatar import Avatar, FaceController, Expression, build_default_registry
 
 
 @dataclass
@@ -49,13 +51,14 @@ class Program:
     enhance: EnhanceGate = field(default_factory=EnhanceGate)
     ambient: AmbientGate = field(default_factory=AmbientGate)
     sandbox: SandboxGate = field(default_factory=SandboxGate)
-    idea_grow: IdeaGrow = field(default_factory=IdeaGrow)
     network_url: str = ""
     cube: BlankCube = field(init=False)
     duo: DuoBeta = field(init=False)
     avatar: Avatar = field(init=False)
     face: FaceController = field(init=False)
     kaomoji: Any = field(init=False)
+    nursery: Nursery = field(init=False)
+    growth: GrowthEngine = field(init=False)
 
     def __post_init__(self):
         assert_floor_intact()
@@ -64,6 +67,8 @@ class Program:
         self.avatar = Avatar(name=self.owner)
         self.face = FaceController()
         self.kaomoji = build_default_registry()
+        self.nursery = Nursery.load()
+        self.growth = GrowthEngine(nursery=self.nursery)
         for name, kind, dell, term in (
             ("PlaneSurface", "tool", 15, "Plane"),
             ("MainField", "main", 21, "MainThird"),
@@ -72,11 +77,8 @@ class Program:
             ("EnhanceGate", "tool", 32, "EnhanceGate"),
             ("Persist", "tool", 10, "Persist"),
             ("Visual", "tool", 9, "Visual"),
-            ("SharedMain", "main", 21, "SharedMain"),
-            ("AmbientGate", "tool", 32, "AmbientGate"),
-            ("IdeaGrow", "growth", 13, "IdeaGrow"),
-            ("SandboxGate", "tool", 23, "SandboxGate"),
-            ("NetworkMain", "main", 21, "NetworkMain"),
+            ("Nursery", "growth", 23, "Nursery"),
+            ("GrowthEngine", "growth", 13, "GrowthEngine"),
             ("Avatar", "entity", 2, "Avatar"),
         ):
             self.matrix.snap(
@@ -89,7 +91,6 @@ class Program:
             )
         self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
 
-    # ----- Avatar helpers -----
     def avatar_status(self) -> Dict[str, Any]:
         return {
             "body": self.avatar.status(),
@@ -103,6 +104,31 @@ class Program:
         self.sandbox.maybe_auto_box(self.cube.session.plane, id)
         return u
 
+    def grow_ideas(self, cycles: int = 1) -> Dict[str, Any]:
+        """Powerful growth → proposals only (Nursery). Active matrix unchanged."""
+        if not self.enhance.on:
+            self.enhance.turn_on()
+        result = self.growth.run(self.cube.session.plane, cycles=cycles)
+        self.duo.evolve(f"13[Loop] :: NurseryGrow x{cycles}")
+        return result
+
+    def list_proposals(self) -> List[Dict[str, Any]]:
+        return [p.to_dict() for p in self.nursery.pending()]
+
+    def confirm_proposal(self, pid: str) -> Dict[str, Any]:
+        prop = self.nursery.confirm(pid)
+        if not prop:
+            return {"ok": False, "reason": "not found or not pending"}
+        # Enter active matrix
+        self.place(prop.id, prop.label, words=prop.words, skin=Skin.SEED)
+        return {"ok": True, "id": prop.id, "label": prop.label, "kind": prop.kind}
+
+    def reject_proposal(self, pid: str) -> Dict[str, Any]:
+        prop = self.nursery.reject(pid)
+        if not prop:
+            return {"ok": False, "reason": "not found or not pending"}
+        return {"ok": True, "id": prop.id, "label": prop.label}
+
     def sandbox_on(self, all_units: bool = True) -> Dict[str, Any]:
         if all_units:
             return self.sandbox.apply_on(self.cube.session.plane)
@@ -111,16 +137,6 @@ class Program:
 
     def sandbox_off(self) -> Dict[str, Any]:
         return self.sandbox.apply_off(self.cube.session.plane)
-
-    def set_perspective(self, name: str) -> bool:
-        try:
-            self.cube.session.plane.set_perspective(Perspective(name))
-            return True
-        except Exception:
-            return False
-
-    def box(self, unit_ids: List[str], sandbox_id: str = "box1"):
-        return self.cube.session.plane.box(unit_ids, sandbox_id)
 
     def enhance_on(self) -> None:
         self.enhance.turn_on()
@@ -131,79 +147,13 @@ class Program:
     def pulse(self) -> Dict[str, Any]:
         return self.enhance.pulse(self.cube.session.plane)
 
-    def grow_ideas(self, cycles: int = 1) -> List[Dict[str, Any]]:
-        self.idea_grow.gate = self.enhance
-        if not self.enhance.on:
-            self.enhance.turn_on()
-        out = self.idea_grow.run(self.cube.session.plane, cycles=cycles)
-        self.duo.evolve(f"13[Loop] :: IdeaGrow x{cycles}")
-        return out
-
-    def ambient_intake(self, apply: bool = True) -> Dict[str, Any]:
-        out = self.ambient.intake()
-        if not out.get("ok") or not apply:
-            return out
-        placed = []
-        for it in out.get("items", []):
-            self.place(it["id"], it["label"], words=it.get("words", ""), skin=Skin.WORDS)
-            placed.append(it["id"])
-        out["placed"] = placed
-        return out
-
-    def set_network(self, url: str) -> None:
-        self.network_url = url.rstrip("/")
-
-    def net_push(self) -> Dict[str, Any]:
-        if not self.network_url:
-            return {"ok": False, "error": "set network_url first"}
-        from form.dell_matrix.network_main import client_push
-        return client_push(self.network_url, dict(self.main.tags), self.owner)
-
-    def net_pull(self, mode: str = "merge") -> Dict[str, Any]:
-        if not self.network_url:
-            return {"ok": False, "error": "set network_url first"}
-        from form.dell_matrix.network_main import pull_into_local
-        return pull_into_local(self.main, self.network_url, mode=mode)
-
-    def sync_with(self, other: "Program", unit_self: str, unit_other: str) -> Dict[str, Any]:
-        return sync_planes(self.cube.session, other.cube.session, self.main, unit_self, unit_other)
-
-    def pull(self, unit_id: str, tag: str) -> Dict[str, Any]:
-        return voluntary_pull(self.cube.session, unit_id, self.main, tag)
-
-    def push_main(self, path: Optional[str] = None) -> Dict[str, Any]:
-        from form.dell_matrix.shared_main import push_to_shared, DEFAULT_SHARED
-        return push_to_shared(self.main, self.owner, path or DEFAULT_SHARED)
-
-    def pull_main(self, path: Optional[str] = None, mode: str = "merge") -> Dict[str, Any]:
-        from form.dell_matrix.shared_main import pull_from_shared, DEFAULT_SHARED
-        return pull_from_shared(self.main, path or DEFAULT_SHARED, mode=mode, owner=self.owner)
-
-    def snapshot_main(self) -> str:
-        from form.dell_matrix.shared_main import snapshot
-        return snapshot()
-
-    def shared_main_summary(self) -> Dict[str, Any]:
-        from form.dell_matrix.shared_main import shared_summary
-        return shared_summary()
-
-    def grow(self, n: int = 1) -> None:
-        for _ in range(max(1, n)):
-            self.duo.evolve("13[Loop] > 04[Transform] :: Open.grow")
-
-    def view(self) -> Dict[str, Any]:
-        return build_view(self.cube.session.plane, scores=self.scores()).to_dict()
-
     def scores(self) -> Dict[str, float]:
         return dict(self.enhance.state.scores)
 
     def save(self, path: Optional[str] = None) -> str:
         from form.persist import save as persist_save
+        self.nursery.save()
         return persist_save(self, path)
-
-    def checkpoint(self) -> str:
-        from form.persist import checkpoint as persist_cp
-        return persist_cp(self)
 
     def visual(self) -> Dict[str, str]:
         from form.dell_matrix.visual import write_visual
@@ -218,11 +168,12 @@ class Program:
         scores = self.scores()
         plane_txt = self.cube.session.plane.render(scores=scores)
         av = self.avatar_status()
+        ns = self.nursery.summary()
         lines = [
-            f"+- DellMatrix PROGRAM · owner={self.owner} -+",
+            f"+- DellMatrix · owner={self.owner} -+",
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
             f"| {av['look']}  {av['describe']}",
-            f"| enhance={'ON' if self.enhance.on else 'OFF'} sandbox={'ON' if self.sandbox.on else 'OFF'} gen={self.duo.generation}",
+            f"| ideas={len(self.cube.session.plane.units)}  nursery_pending={ns['pending']}  gen={self.duo.generation}",
         ]
         for ln in plane_txt.splitlines():
             if ln.startswith("+-"):
@@ -236,11 +187,9 @@ class Program:
             "owner": self.owner,
             "floor": floor_status(),
             "avatar": self.avatar_status(),
+            "nursery": self.nursery.summary(),
+            "ideas": len(self.cube.session.plane.units),
             "enhance": self.enhance.status(),
-            "sandbox": self.sandbox.status(),
-            "scores": self.scores(),
-            "main": self.main.summary(),
-            "verify": self.matrix.verify(),
         }
 
 
@@ -249,19 +198,19 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== OPEN + AVATAR SMOKE ===")
+    print("=== OPEN + NURSERY SMOKE ===")
     r = []
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
     p = open_program("Smoke")
-    rec("avatar exists", p.avatar is not None)
-    p.avatar.step(2)
-    rec("walk", p.avatar.body.pos != (0, 0))
-    p.face.set(Expression.JOY)
-    rec("face", p.face.show() != "")
-    p.place("a", "A", words="one")
-    rec("place", "a" in p.cube.session.plane.units)
+    p.place("biz", "Business", words="crm routes")
+    p.place("music", "Music", words="song routes")
+    out = p.grow_ideas(1)
+    rec("grow ok", out.get("ok") is True)
+    rec("proposals made", out.get("proposed_new", 0) + out.get("proposed_evolved", 0) >= 0)
+    pending = p.list_proposals()
+    rec("nursery list", isinstance(pending, list))
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
