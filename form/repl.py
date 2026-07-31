@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — talk normally. Growth goes to Nursery until you confirm."""
+"""REPL — talk normally. Ringed growth → Nursery until confirm."""
 
 from __future__ import annotations
 
@@ -19,13 +19,13 @@ except ImportError:
     from form.avatar import Facing, Posture, Locomotion, Expression
 
 HELP = """
-Talk normally. Growth is powerful but safe.
+Talk normally. Growth is ringed + quarantined.
 
   create an idea called grocery list
-  grow ideas 2          → proposes into Nursery (not live yet)
-  proposals             → list quarantined ideas
-  confirm <id>          → move proposal into live matrix
-  reject <id>           → discard proposal
+  grow ideas 2
+  proposals
+  confirm <id>
+  reject <id>
   walk forward / smile / how do I look
   show me / visual / save
   help / quit
@@ -52,14 +52,14 @@ def _say(msg: str) -> None:
 def _show_proposals(p: Program) -> None:
     pending = p.list_proposals()
     if not pending:
-        _say("Nursery is empty. Nothing waiting for confirmation.")
+        _say("Nursery is empty. Nothing waiting.")
         return
-    _say(f"Nursery has {len(pending)} proposal(s) waiting:")
+    _say(f"Nursery has {len(pending)} proposal(s):")
     for i, prop in enumerate(pending[:20], 1):
-        kind = prop.get("kind", "?")
-        aff = prop.get("affinity", 0)
-        _say(f"  {i}. [{kind}] {prop['id']}")
-        _say(f"      {prop['label']}  (affinity {aff:.2f})")
+        _say(f"  {i}. [{prop.get('kind')}] {prop['id']}")
+        _say(f"      {prop['label']}  (affinity {prop.get('affinity', 0):.2f})")
+        if prop.get("reason"):
+            _say(f"      {prop['reason']}")
     if len(pending) > 20:
         _say(f"  ... and {len(pending) - 20} more")
     _say("Type: confirm <id>   or   reject <id>")
@@ -70,7 +70,6 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
     args = intent.args or {}
     lower = raw_line.lower().strip()
 
-    # Direct nursery commands (before translator fallback)
     if lower in ("proposals", "nursery", "void", "pending"):
         _show_proposals(p)
         return
@@ -88,7 +87,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
         pid = raw_line.split(maxsplit=1)[1].strip()
         res = p.reject_proposal(pid)
         if res.get("ok"):
-            _say(f'Rejected. "{res["label"]}" stays out of the matrix.')
+            _say(f'Rejected. "{res["label"]}" stays out.')
         else:
             _say(f"Could not reject: {res.get('reason')}")
         return
@@ -104,10 +103,18 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
         out = p.grow_ideas(n)
         new_n = out.get("proposed_new", 0)
         evo_n = out.get("proposed_evolved", 0)
+        fog = out.get("fog_cut", 0)
+        gates = out.get("gates", {})
         pending = out.get("nursery", {}).get("pending", 0)
-        _say(f"Growth complete. Proposed {new_n} new + {evo_n} evolved ideas.")
-        _say(f"They are quarantined in the Nursery ({pending} pending).")
-        _say("They cannot grow further or affect the matrix until you confirm.")
+        _say(f"Ringed growth complete ({' → '.join(out.get('rings', []))}).")
+        _say(f"Proposed {new_n} new + {evo_n} evolved. FOG cut {fog}.")
+        if gates:
+            _say(
+                f"Gates: Solstice={gates.get('Solstice', 0)} "
+                f"Equinox={gates.get('Equinox', 0)} "
+                f"Standstill={gates.get('Standstill', 0)}"
+            )
+        _say(f"Nursery pending: {pending}. Nothing is live until you confirm.")
         _say("Type: proposals")
 
     elif action == "show":
@@ -211,6 +218,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
         _say(f"{st['look']}  {st['describe']}")
         _say(f"Live ideas: {len(p.cube.session.plane.units)}")
         _say(f"Nursery pending: {ns['pending']}")
+        _say(f"Rings: {' → '.join(p.duo.rings)}")
 
     elif action == "help":
         print()
@@ -226,8 +234,8 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
-    print("  DellMatrix")
-    print("  Talk normally. Growth stays in Nursery until you confirm.")
+    print("  DellMatrix — Ringed Growth")
+    print("  Growth is powerful, FOG-cut, and quarantined until you confirm.")
     print()
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())

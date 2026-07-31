@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One program — Form front door with Avatar + controlled growth Nursery."""
+"""One program — Form front door with Avatar + Ringed Growth Nursery."""
 
 from __future__ import annotations
 
@@ -13,14 +13,13 @@ try:
     from form.dell_matrix.core import DellMatrix
     from form.dell_matrix.snap import SnapCandidate
     from form.dell_matrix.plane import Perspective, Skin
-    from form.dell_matrix.main_field import MainField, sync_planes, voluntary_pull
+    from form.dell_matrix.main_field import MainField
     from form.dell_matrix.blank_cube import give, BlankCube
-    from form.dell_matrix.graph_view import build_view
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
     from form.dell_matrix.sandbox_gate import SandboxGate
     from form.dell_matrix.nursery import Nursery
-    from form.dell_matrix.growth_engine import GrowthEngine
+    from form.dell_matrix.ringed_growth import RingedGrowth
     from form.duobeta.growth import DuoBeta
     from form.avatar import Avatar, FaceController, Expression, build_default_registry
 except ImportError:
@@ -31,14 +30,13 @@ except ImportError:
     from form.dell_matrix.core import DellMatrix
     from form.dell_matrix.snap import SnapCandidate
     from form.dell_matrix.plane import Perspective, Skin
-    from form.dell_matrix.main_field import MainField, sync_planes, voluntary_pull
+    from form.dell_matrix.main_field import MainField
     from form.dell_matrix.blank_cube import give, BlankCube
-    from form.dell_matrix.graph_view import build_view
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
     from form.dell_matrix.sandbox_gate import SandboxGate
     from form.dell_matrix.nursery import Nursery
-    from form.dell_matrix.growth_engine import GrowthEngine
+    from form.dell_matrix.ringed_growth import RingedGrowth
     from form.duobeta.growth import DuoBeta
     from form.avatar import Avatar, FaceController, Expression, build_default_registry
 
@@ -58,7 +56,7 @@ class Program:
     face: FaceController = field(init=False)
     kaomoji: Any = field(init=False)
     nursery: Nursery = field(init=False)
-    growth: GrowthEngine = field(init=False)
+    growth: RingedGrowth = field(init=False)
 
     def __post_init__(self):
         assert_floor_intact()
@@ -68,7 +66,7 @@ class Program:
         self.face = FaceController()
         self.kaomoji = build_default_registry()
         self.nursery = Nursery.load()
-        self.growth = GrowthEngine(nursery=self.nursery)
+        self.growth = RingedGrowth(nursery=self.nursery)
         for name, kind, dell, term in (
             ("PlaneSurface", "tool", 15, "Plane"),
             ("MainField", "main", 21, "MainThird"),
@@ -78,7 +76,7 @@ class Program:
             ("Persist", "tool", 10, "Persist"),
             ("Visual", "tool", 9, "Visual"),
             ("Nursery", "growth", 23, "Nursery"),
-            ("GrowthEngine", "growth", 13, "GrowthEngine"),
+            ("RingedGrowth", "growth", 13, "RingedGrowth"),
             ("Avatar", "entity", 2, "Avatar"),
         ):
             self.matrix.snap(
@@ -105,11 +103,11 @@ class Program:
         return u
 
     def grow_ideas(self, cycles: int = 1) -> Dict[str, Any]:
-        """Powerful growth → proposals only (Nursery). Active matrix unchanged."""
+        """Ringed growth → Nursery only. Live matrix never mutated by proposals."""
         if not self.enhance.on:
             self.enhance.turn_on()
         result = self.growth.run(self.cube.session.plane, cycles=cycles)
-        self.duo.evolve(f"13[Loop] :: NurseryGrow x{cycles}")
+        self.duo.evolve(f"13[Loop] :: RingedGrow x{cycles}")
         return result
 
     def list_proposals(self) -> List[Dict[str, Any]]:
@@ -119,7 +117,6 @@ class Program:
         prop = self.nursery.confirm(pid)
         if not prop:
             return {"ok": False, "reason": "not found or not pending"}
-        # Enter active matrix
         self.place(prop.id, prop.label, words=prop.words, skin=Skin.SEED)
         return {"ok": True, "id": prop.id, "label": prop.label, "kind": prop.kind}
 
@@ -173,7 +170,8 @@ class Program:
             f"+- DellMatrix · owner={self.owner} -+",
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
             f"| {av['look']}  {av['describe']}",
-            f"| ideas={len(self.cube.session.plane.units)}  nursery_pending={ns['pending']}  gen={self.duo.generation}",
+            f"| ideas={len(self.cube.session.plane.units)}  nursery={ns['pending']}  gen={self.duo.generation}",
+            f"| rings: {' → '.join(self.duo.rings)}",
         ]
         for ln in plane_txt.splitlines():
             if ln.startswith("+-"):
@@ -189,6 +187,7 @@ class Program:
             "avatar": self.avatar_status(),
             "nursery": self.nursery.summary(),
             "ideas": len(self.cube.session.plane.units),
+            "rings": list(self.duo.rings),
             "enhance": self.enhance.status(),
         }
 
@@ -198,19 +197,20 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== OPEN + NURSERY SMOKE ===")
+    print("=== RINGED GROWTH SMOKE ===")
     r = []
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
     p = open_program("Smoke")
-    p.place("biz", "Business", words="crm routes")
-    p.place("music", "Music", words="song routes")
+    p.place("biz", "Business", words="crm routes seal")
+    p.place("music", "Music", words="song melody routes")
+    p.place("code", "Mandell", words="language matrix routes")
     out = p.grow_ideas(1)
     rec("grow ok", out.get("ok") is True)
-    rec("proposals made", out.get("proposed_new", 0) + out.get("proposed_evolved", 0) >= 0)
-    pending = p.list_proposals()
-    rec("nursery list", isinstance(pending, list))
+    rec("engine", out.get("engine") == "RingedGrowth")
+    rec("rings present", "Seed" in out.get("rings", []))
+    rec("nursery", isinstance(out.get("nursery"), dict))
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
