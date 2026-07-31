@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — talk normally. Ringed growth → Nursery until confirm."""
+"""REPL — talk normally. Full session save/load."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ try:
     from form.dell_matrix.plane import Skin
     from form.mandell.translate import translate
     from form.avatar import Facing, Posture, Locomotion, Expression
+    from form.persist import load as persist_load
 except ImportError:
     import os
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -17,20 +18,19 @@ except ImportError:
     from form.dell_matrix.plane import Skin
     from form.mandell.translate import translate
     from form.avatar import Facing, Posture, Locomotion, Expression
+    from form.persist import load as persist_load
 
 HELP = """
-Talk normally. Growth is ringed + quarantined.
+Talk normally.
 
   create an idea called grocery list
   grow ideas 2
-  proposals
-  confirm <id>
-  reject <id>
+  proposals / confirm <id> / reject <id>
   walk forward / smile / how do I look
-  show me / visual / save
+  visual
+  save          ← saves matrix + avatar + nursery
+  load          ← restores last session
   help / quit
-
-After visual: open DellMatrix_UI.html in this folder.
 """.strip()
 
 _FACING = {
@@ -58,19 +58,18 @@ def _show_proposals(p: Program) -> None:
     for i, prop in enumerate(pending[:20], 1):
         _say(f"  {i}. [{prop.get('kind')}] {prop['id']}")
         _say(f"      {prop['label']}  (affinity {prop.get('affinity', 0):.2f})")
-    if len(pending) > 20:
-        _say(f"  ... and {len(pending) - 20} more")
     _say("Type: confirm <id>   or   reject <id>")
 
 
-def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
+def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
+    """Returns program (may be replaced on load)."""
     action = intent.action
     args = intent.args or {}
     lower = raw_line.lower().strip()
 
     if lower in ("proposals", "nursery", "void", "pending"):
         _show_proposals(p)
-        return
+        return p
 
     if lower.startswith("confirm "):
         pid = raw_line.split(maxsplit=1)[1].strip()
@@ -79,7 +78,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
             _say(f'Confirmed. "{res["label"]}" is now live in the matrix.')
         else:
             _say(f"Could not confirm: {res.get('reason')}")
-        return
+        return p
 
     if lower.startswith("reject "):
         pid = raw_line.split(maxsplit=1)[1].strip()
@@ -88,7 +87,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
             _say(f'Rejected. "{res["label"]}" stays out.')
         else:
             _say(f"Could not reject: {res.get('reason')}")
-        return
+        return p
 
     if action == "place":
         uid = args.get("id", "idea")
@@ -102,16 +101,9 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
         new_n = out.get("proposed_new", 0)
         evo_n = out.get("proposed_evolved", 0)
         fog = out.get("fog_cut", 0)
-        gates = out.get("gates", {})
         pending = out.get("nursery", {}).get("pending", 0)
         _say(f"Ringed growth complete ({' → '.join(out.get('rings', []))}).")
         _say(f"Proposed {new_n} new + {evo_n} evolved. FOG cut {fog}.")
-        if gates:
-            _say(
-                f"Gates: Solstice={gates.get('Solstice', 0)} "
-                f"Equinox={gates.get('Equinox', 0)} "
-                f"Standstill={gates.get('Standstill', 0)}"
-            )
         _say(f"Nursery pending: {pending}. Nothing is live until you confirm.")
         _say("Type: proposals")
 
@@ -125,7 +117,6 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
         _say("Visual control panel ready (offline).")
         _say("Open this file in any browser:")
         _say(easy)
-        _say("(Also saved as DellMatrix_UI.html in the project folder.)")
 
     elif action == "walk":
         steps = int(args.get("steps", 1))
@@ -210,8 +201,23 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
 
     elif action == "save":
         path = p.save()
-        _say("Saved.")
-        _say(f"Location: {path}")
+        ns = p.nursery.summary()
+        _say("Session saved.")
+        _say(f"  ideas: {len(p.cube.session.plane.units)}")
+        _say(f"  avatar: {p.avatar.describe()}")
+        _say(f"  nursery pending: {ns['pending']}")
+        _say(f"  file: {path}")
+
+    elif action == "load":
+        p2 = persist_load(p.owner)
+        ns = p2.nursery.summary()
+        _say("Session loaded.")
+        _say(f"  ideas: {len(p2.cube.session.plane.units)}")
+        _say(f"  avatar: {p2.avatar.describe()}")
+        _say(f"  nursery pending: {ns['pending']}")
+        print()
+        print(p2.render())
+        return p2
 
     elif action == "status":
         st = p.avatar_status()
@@ -232,13 +238,17 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
         p.place(uid, label, words=intent.english, skin=Skin.CUBE)
         _say(f'Created idea: "{label}"')
 
+    return p
+
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
-    print("  DellMatrix — Ringed Growth (Voynich-inspired)")
-    print("  Growth is powerful, FOG-cut, and quarantined until you confirm.")
+    print("  DellMatrix — full session save/load")
+    print("  Growth quarantined · Voynich-inspired rings")
     print()
-    p = Program.load(owner) if do_load else open_program(owner)
+    p = persist_load(owner) if do_load else open_program(owner)
+    if do_load:
+        _say(f"Loaded session for {owner}.")
     print(p.render())
     print()
 
@@ -257,7 +267,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             line = line[4:].strip()
 
         intent = translate(line)
-        _execute_intent(p, intent, raw_line=line)
+        p = _execute_intent(p, intent, raw_line=line)
 
     print()
 
