@@ -1,73 +1,68 @@
 # DellMatrix
 
-**Form is the only front door.**
+**Just talk to it.**
 
-This is a Mandell language + Dell Matrix system.
-Floor is locked: **Alpha · Delta · Omega · Omni**
+Form is the only front door.  
+Floor locked: Alpha · Delta · Omega · Omni
 
 ---
 
-## Quick Start (the only way)
+## Start (average user)
 
 ```bash
-# Interactive session
 python -m form.repl --owner Ace
-
-# One-shot open + status
-python -m form.boot --owner Ace
-
-# Generate visual workspace (HTML you can open)
-python -m form.open --owner Ace
-# then in the REPL type: visual
 ```
 
-### Most useful commands inside the REPL
+Then type normal English:
 
 ```
-place idea1 "My first idea" words here
-grow ideas 3
-enhance on
-pulse
+create an idea called grocery list
+grow ideas 2
+walk forward
+turn left
+smile
+how do I look
+show me the matrix
 visual
-say grow the business idea and show me
-show
 save
-help
 ```
 
-`say` accepts normal English and maps it into Mandell structure.
+`visual` writes an offline HTML file you can open in any browser.
 
 ---
 
-## Architecture (current)
+## What you can say
+
+| You type | What happens |
+|----------|--------------|
+| create an idea called X | Places a new idea |
+| grow ideas 3 | Grows the matrix |
+| walk forward / turn left / sit down | Moves your Avatar |
+| smile / calm / focus | Changes face expression |
+| how do I look | Shows Avatar status |
+| show me the matrix | Prints current state |
+| visual | Opens visual workspace |
+| enhance on / pulse | Activates growth energy |
+| save | Saves your session |
+
+---
+
+## Structure
 
 ```
-form/                  ← THE SYSTEM (Python)
-├── mandell/           Language floor + registry + translate
-├── dell_matrix/       Matrix host, plane, visual, growth
-├── duobeta/           Growth / self-understand
-├── open.py            One program object
-├── repl.py            Interactive front door
-├── boot.py            Status entry
-└── persist.py         Save / load
+form/           ← THE SYSTEM
+├── avatar/     Body + face + kaomoji
+├── mandell/    Language + English translator
+├── dell_matrix/ Matrix, visual, growth
+├── open.py     One program object
+└── repl.py     Front door (talk here)
 
-preform/               Planning + living Psalm pages (not runtime)
-src/                   LEGACY (old JS). Do not use for new work.
+src/            LEGACY — do not use
+preform/        Planning docs only
 ```
 
 ---
 
-## Rules
+## Goal
 
-- Floor is locked. Nova is cheat-only.
-- True registry writes require Architect confirm.
-- Structure stays Mandell. English is display only.
-- `src/` is legacy. All new work goes into `form/`.
-
----
-
-## Status
-
-Form foundation is live.  
-English → Mandell path is active via `say`.  
-Visual workspace generates offline interactive HTML.
+A non-developer can open it, talk in plain English, move an Avatar, place ideas, grow them, and see a visual workspace — without writing code.
