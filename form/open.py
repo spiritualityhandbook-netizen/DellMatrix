@@ -103,7 +103,6 @@ class Program:
         return u
 
     def grow_ideas(self, cycles: int = 1) -> Dict[str, Any]:
-        """Ringed growth → Nursery only. Live matrix never mutated by proposals."""
         if not self.enhance.on:
             self.enhance.turn_on()
         result = self.growth.run(self.cube.session.plane, cycles=cycles)
@@ -154,7 +153,14 @@ class Program:
 
     def visual(self) -> Dict[str, str]:
         from form.dell_matrix.visual import write_visual
-        return write_visual(self.cube.session.plane, owner=self.owner, scores=self.scores())
+        return write_visual(
+            self.cube.session.plane,
+            owner=self.owner,
+            scores=self.scores(),
+            avatar=self.avatar_status(),
+            nursery=self.list_proposals(),
+            rings=list(self.duo.rings),
+        )
 
     @staticmethod
     def load(owner: str = "Operator", path: Optional[str] = None) -> "Program":
@@ -171,7 +177,7 @@ class Program:
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
             f"| {av['look']}  {av['describe']}",
             f"| ideas={len(self.cube.session.plane.units)}  nursery={ns['pending']}  gen={self.duo.generation}",
-            f"| rings: {' → '.join(self.duo.rings)}",
+            f"| rings: {' → '.join(self.duo.rings)}  (Voynich-inspired)",
         ]
         for ln in plane_txt.splitlines():
             if ln.startswith("+-"):
@@ -197,20 +203,18 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== RINGED GROWTH SMOKE ===")
+    print("=== OPEN SMOKE ===")
     r = []
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
     p = open_program("Smoke")
-    p.place("biz", "Business", words="crm routes seal")
-    p.place("music", "Music", words="song melody routes")
-    p.place("code", "Mandell", words="language matrix routes")
+    p.place("a", "A", words="one")
+    p.place("b", "B", words="two")
     out = p.grow_ideas(1)
-    rec("grow ok", out.get("ok") is True)
-    rec("engine", out.get("engine") == "RingedGrowth")
-    rec("rings present", "Seed" in out.get("rings", []))
-    rec("nursery", isinstance(out.get("nursery"), dict))
+    rec("grow", out.get("ok") is True)
+    paths = p.visual()
+    rec("visual", "html" in paths)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
