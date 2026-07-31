@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Persist — SUS: sandbox + network_url + ambient + enhance."""
+"""
+Persist v6 — one session: matrix + avatar + face + nursery.
+
+save  → writes everything
+load  → restores everything
+nothing left behind
+"""
 
 from __future__ import annotations
 
@@ -14,6 +20,8 @@ try:
     from form.dell_matrix.plane import Perspective, Skin
     from form.dell_matrix.resonance import ResonanceState
     from form.dell_matrix.main_field import MainContribution, PullRecord
+    from form.dell_matrix.nursery import Nursery, Proposal, NURSERY_PATH
+    from form.avatar import Facing, Posture, Locomotion, Reach, Expression
     from form.open import Program, open_program
 except ImportError:
     ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -23,11 +31,14 @@ except ImportError:
     from form.dell_matrix.plane import Perspective, Skin
     from form.dell_matrix.resonance import ResonanceState
     from form.dell_matrix.main_field import MainContribution, PullRecord
+    from form.dell_matrix.nursery import Nursery, Proposal, NURSERY_PATH
+    from form.avatar import Facing, Posture, Locomotion, Reach, Expression
     from form.open import Program, open_program
 
 _STATE_DIR = os.path.join(os.path.dirname(__file__), "state")
 os.makedirs(_STATE_DIR, exist_ok=True)
-LEVEL = 3
+LEVEL = 6
+VERSION = 6
 
 
 def _safe_owner(owner: str) -> str:
@@ -41,6 +52,25 @@ def _path(owner: str) -> str:
 def _cp_path(owner: str, stamp: Optional[str] = None) -> str:
     stamp = stamp or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return os.path.join(_STATE_DIR, f"program_{_safe_owner(owner)}_cp_{stamp}.json")
+
+
+def _serialize_avatar(program: Program) -> Dict[str, Any]:
+    b = program.avatar.body
+    return {
+        "name": program.avatar.name,
+        "pos": list(b.pos),
+        "facing": b.facing.name,
+        "posture": b.posture.name,
+        "locomotion": b.locomotion.name,
+        "reach": b.reach.name,
+        "holding": b.holding,
+        "expression": program.face.current.value,
+        "custom_face": program.face.custom_face,
+    }
+
+
+def _serialize_nursery(program: Program) -> Dict[str, Any]:
+    return {k: v.to_dict() for k, v in program.nursery.proposals.items()}
 
 
 def serialize(program: Program) -> Dict[str, Any]:
@@ -63,9 +93,8 @@ def serialize(program: Program) -> Dict[str, Any]:
     amb = program.ambient
     return {
         "type": "DellMatrixProgramState",
-        "version": 5,
+        "version": VERSION,
         "level": LEVEL,
-        "form_scope": "SUS",
         "saved": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "floor": list(FLOOR),
         "owner": program.owner,
@@ -105,13 +134,23 @@ def serialize(program: Program) -> Dict[str, Any]:
             "sandboxes": sandboxes,
         },
         "duo_generation": program.duo.generation,
+        # v6 session pieces
+        "avatar": _serialize_avatar(program),
+        "nursery": _serialize_nursery(program),
     }
 
 
 def save(program: Program, path: Optional[str] = None) -> str:
     path = path or _path(program.owner)
+    data = serialize(program)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(serialize(program), f, indent=2)
+        json.dump(data, f, indent=2)
+    # Keep nursery file in sync too
+    program.nursery.proposals = {
+        k: Proposal(**v) if isinstance(v, dict) else v
+        for k, v in data.get("nursery", {}).items()
+    }
+    program.nursery.save()
     return path
 
 
@@ -125,11 +164,60 @@ def checkpoint(program: Program) -> str:
 
 def list_checkpoints(owner: str) -> List[str]:
     prefix = f"program_{_safe_owner(owner)}_cp_"
+    if not os.path.isdir(_STATE_DIR):
+        return []
     return [
         os.path.join(_STATE_DIR, name)
         for name in sorted(os.listdir(_STATE_DIR))
         if name.startswith(prefix) and name.endswith(".json")
     ]
+
+
+def _restore_avatar(p: Program, data: Dict[str, Any]) -> None:
+    av = data.get("avatar") or {}
+    if not av:
+        return
+    body = p.avatar.body
+    if "name" in av:
+        p.avatar.name = av["name"]
+    if "pos" in av and isinstance(av["pos"], (list, tuple)) and len(av["pos"]) >= 2:
+        body.pos = (int(av["pos"][0]), int(av["pos"][1]))
+    try:
+        body.facing = Facing[av.get("facing", "N")]
+    except Exception:
+        body.facing = Facing.N
+    try:
+        body.posture = Posture[av.get("posture", "STAND")]
+    except Exception:
+        body.posture = Posture.STAND
+    try:
+        body.locomotion = Locomotion[av.get("locomotion", "IDLE")]
+    except Exception:
+        body.locomotion = Locomotion.IDLE
+    try:
+        body.reach = Reach[av.get("reach", "CLOSE")]
+    except Exception:
+        body.reach = Reach.CLOSE
+    body.holding = av.get("holding")
+    # face
+    expr_name = av.get("expression", "neutral")
+    try:
+        p.face.current = Expression(expr_name)
+    except Exception:
+        p.face.current = Expression.NEUTRAL
+    p.face.custom_face = av.get("custom_face")
+
+
+def _restore_nursery(p: Program, data: Dict[str, Any]) -> None:
+    raw = data.get("nursery") or {}
+    p.nursery.proposals = {}
+    for k, v in raw.items():
+        try:
+            if isinstance(v, dict):
+                p.nursery.proposals[k] = Proposal(**v)
+        except Exception:
+            continue
+    p.nursery.save()
 
 
 def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
@@ -182,7 +270,6 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     else:
         p.enhance.turn_off()
 
-    # sandbox gate: restore flag only; unit flags already set
     if data.get("sandbox_on"):
         p.sandbox.turn_on()
     else:
@@ -236,36 +323,44 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     while p.duo.generation < target_gen:
         p.duo.evolve("28[Rollback] :: persist load")
 
+    # v6: avatar + nursery
+    _restore_avatar(p, data)
+    _restore_nursery(p, data)
+
     return p
 
 
 def smoke() -> bool:
-    print("=== PERSIST SUS SMOKE ===")
+    print("=== PERSIST v6 SESSION SMOKE ===")
     r = []
 
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
-    p = open_program("PersistSUS")
+    p = open_program("PersistV6")
     p.place("biz", "Business", words="CRM", skin=Skin.BUILDING, x=1)
-    p.enhance_on()
-    p.pulse()
-    p.sandbox.turn_on()
-    p.set_network("http://127.0.0.1:8765")
-    p.ambient.turn_on()
-    p.ambient.enable_source("files")
+    p.avatar.step(3)
+    p.avatar.turn_right()
+    p.face.set(Expression.JOY)
+    p.grow_ideas(1)
+    before_pending = len(p.list_proposals())
     path = save(p)
-    rec("save", os.path.isfile(path))
-    p2 = load("PersistSUS")
+    rec("save file", os.path.isfile(path))
+
+    p2 = load("PersistV6")
     rec("units", "biz" in p2.cube.session.plane.units)
-    rec("sandbox flag", p2.sandbox.on is True)
-    rec("network", p2.network_url == "http://127.0.0.1:8765")
-    rec("ambient", p2.ambient.master_on and p2.ambient.enabled.get("files"))
-    rec("enhance", p2.enhance.on)
+    rec("avatar pos", p2.avatar.body.pos != (0, 0), str(p2.avatar.body.pos))
+    rec("avatar facing", p2.avatar.body.facing.name in {"N", "NE", "E", "SE", "S", "SW", "W", "NW"})
+    rec("face", p2.face.current == Expression.JOY or p2.face.show() != "")
+    rec("nursery", len(p2.list_proposals()) == before_pending, str(len(p2.list_proposals())))
+
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    rec("version 5", data.get("version") == 5)
+    rec("version 6", data.get("version") == 6)
+    rec("has avatar key", "avatar" in data)
+    rec("has nursery key", "nursery" in data)
+
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -273,7 +368,7 @@ def smoke() -> bool:
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    print("Persist SUS v5")
+    print("Persist v6 — matrix + avatar + nursery")
 
 
 if __name__ == "__main__":
