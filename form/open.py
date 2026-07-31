@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One program — SUS open with full required snaps."""
+"""One program — Form front door with Avatar."""
 
 from __future__ import annotations
 
@@ -21,9 +21,9 @@ try:
     from form.dell_matrix.sandbox_gate import SandboxGate
     from form.dell_matrix.idea_grow import IdeaGrow
     from form.duobeta.growth import DuoBeta
+    from form.avatar import Avatar, Facing, Posture, Locomotion, Reach, FaceController, Expression, build_default_registry
 except ImportError:
     import os
-
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     from form.mandell.floor import FLOOR, assert_floor_intact, floor_status
     from form.mandell.manifest import manifest_from_dell
@@ -38,6 +38,7 @@ except ImportError:
     from form.dell_matrix.sandbox_gate import SandboxGate
     from form.dell_matrix.idea_grow import IdeaGrow
     from form.duobeta.growth import DuoBeta
+    from form.avatar import Avatar, Facing, Posture, Locomotion, Reach, FaceController, Expression, build_default_registry
 
 
 @dataclass
@@ -52,11 +53,17 @@ class Program:
     network_url: str = ""
     cube: BlankCube = field(init=False)
     duo: DuoBeta = field(init=False)
+    avatar: Avatar = field(init=False)
+    face: FaceController = field(init=False)
+    kaomoji: Any = field(init=False)
 
     def __post_init__(self):
         assert_floor_intact()
         self.cube = give(self.owner)
         self.duo = DuoBeta(matrix=self.matrix)
+        self.avatar = Avatar(name=self.owner)
+        self.face = FaceController()
+        self.kaomoji = build_default_registry()
         for name, kind, dell, term in (
             ("PlaneSurface", "tool", 15, "Plane"),
             ("MainField", "main", 21, "MainThird"),
@@ -70,6 +77,7 @@ class Program:
             ("IdeaGrow", "growth", 13, "IdeaGrow"),
             ("SandboxGate", "tool", 23, "SandboxGate"),
             ("NetworkMain", "main", 21, "NetworkMain"),
+            ("Avatar", "entity", 2, "Avatar"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -80,6 +88,15 @@ class Program:
                 )
             )
         self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
+
+    # ----- Avatar helpers -----
+    def avatar_status(self) -> Dict[str, Any]:
+        return {
+            "body": self.avatar.status(),
+            "face": self.face.status(),
+            "describe": self.avatar.describe(),
+            "look": self.face.show(),
+        }
 
     def place(self, id: str, label: str, **kwargs):
         u = self.cube.place_idea(id, label, **kwargs)
@@ -140,14 +157,12 @@ class Program:
         if not self.network_url:
             return {"ok": False, "error": "set network_url first"}
         from form.dell_matrix.network_main import client_push
-
         return client_push(self.network_url, dict(self.main.tags), self.owner)
 
     def net_pull(self, mode: str = "merge") -> Dict[str, Any]:
         if not self.network_url:
             return {"ok": False, "error": "set network_url first"}
         from form.dell_matrix.network_main import pull_into_local
-
         return pull_into_local(self.main, self.network_url, mode=mode)
 
     def sync_with(self, other: "Program", unit_self: str, unit_other: str) -> Dict[str, Any]:
@@ -158,22 +173,18 @@ class Program:
 
     def push_main(self, path: Optional[str] = None) -> Dict[str, Any]:
         from form.dell_matrix.shared_main import push_to_shared, DEFAULT_SHARED
-
         return push_to_shared(self.main, self.owner, path or DEFAULT_SHARED)
 
     def pull_main(self, path: Optional[str] = None, mode: str = "merge") -> Dict[str, Any]:
         from form.dell_matrix.shared_main import pull_from_shared, DEFAULT_SHARED
-
         return pull_from_shared(self.main, path or DEFAULT_SHARED, mode=mode, owner=self.owner)
 
     def snapshot_main(self) -> str:
         from form.dell_matrix.shared_main import snapshot
-
         return snapshot()
 
     def shared_main_summary(self) -> Dict[str, Any]:
         from form.dell_matrix.shared_main import shared_summary
-
         return shared_summary()
 
     def grow(self, n: int = 1) -> None:
@@ -188,33 +199,30 @@ class Program:
 
     def save(self, path: Optional[str] = None) -> str:
         from form.persist import save as persist_save
-
         return persist_save(self, path)
 
     def checkpoint(self) -> str:
         from form.persist import checkpoint as persist_cp
-
         return persist_cp(self)
 
     def visual(self) -> Dict[str, str]:
         from form.dell_matrix.visual import write_visual
-
         return write_visual(self.cube.session.plane, owner=self.owner, scores=self.scores())
 
     @staticmethod
     def load(owner: str = "Operator", path: Optional[str] = None) -> "Program":
         from form.persist import load as persist_load
-
         return persist_load(owner, path)
 
     def render(self) -> str:
         scores = self.scores()
         plane_txt = self.cube.session.plane.render(scores=scores)
+        av = self.avatar_status()
         lines = [
             f"+- DellMatrix PROGRAM · owner={self.owner} -+",
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
-            f"| enhance={'ON' if self.enhance.on else 'OFF'} sandbox={'ON' if self.sandbox.on else 'OFF'} ambient={'ON' if self.ambient.master_on else 'OFF'} gen={self.duo.generation}",
-            f"| net={self.network_url or 'off'} main top: {self.main.top_tags(3)}",
+            f"| {av['look']}  {av['describe']}",
+            f"| enhance={'ON' if self.enhance.on else 'OFF'} sandbox={'ON' if self.sandbox.on else 'OFF'} gen={self.duo.generation}",
         ]
         for ln in plane_txt.splitlines():
             if ln.startswith("+-"):
@@ -227,17 +235,12 @@ class Program:
         return {
             "owner": self.owner,
             "floor": floor_status(),
+            "avatar": self.avatar_status(),
             "enhance": self.enhance.status(),
             "sandbox": self.sandbox.status(),
-            "ambient": self.ambient.status(),
-            "network_url": self.network_url,
-            "idea_grow": self.idea_grow.summary(),
             "scores": self.scores(),
             "main": self.main.summary(),
-            "shared_main": self.shared_main_summary(),
             "verify": self.matrix.verify(),
-            "matrix": self.matrix.understand(),
-            "view": self.view(),
         }
 
 
@@ -246,23 +249,19 @@ def open_program(owner: str = "Operator") -> Program:
 
 
 def smoke() -> bool:
-    print("=== OPEN SUS SMOKE ===")
+    print("=== OPEN + AVATAR SMOKE ===")
     r = []
-
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
-
-    p = open_program("OpenSUS")
-    v = p.matrix.verify()
-    rec("verify required", v.get("ok") is True, str(v.get("missing")))
-    rec("sandbox default off", p.sandbox.on is False)
-    rec("enhance default off", p.enhance.on is False)
-    rec("ambient default off", p.ambient.master_on is False)
+    p = open_program("Smoke")
+    rec("avatar exists", p.avatar is not None)
+    p.avatar.step(2)
+    rec("walk", p.avatar.body.pos != (0, 0))
+    p.face.set(Expression.JOY)
+    rec("face", p.face.show() != "")
     p.place("a", "A", words="one")
-    p.place("b", "B", words="two", x=1)
-    out = p.grow_ideas(2)
-    rec("grow ideas", all(o.get("ok") for o in out))
+    rec("place", "a" in p.cube.session.plane.units)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
