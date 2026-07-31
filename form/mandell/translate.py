@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 """
-45[Translate] — English → Mandell path
-
-Takes normal English and returns structured Mandell intents
-that the runtime can execute.
+45[Translate] — English → Mandell path (expanded for average users)
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 import re
 
-from .registry import DELLS, lookup
+from .registry import lookup
 from .manifest import Manifest, manifest_from_dell
 
 
@@ -21,162 +18,121 @@ class Intent:
     action: str
     dell: Optional[int] = None
     term: str = ""
-    args: Dict[str, Any] = None
+    args: Dict[str, Any] = field(default_factory=dict)
     mandel: str = ""
     english: str = ""
 
-    def __post_init__(self):
-        if self.args is None:
-            self.args = {}
-
-
-# Simple pattern → intent map (expandable)
-_PATTERNS = [
-    # place / create
-    (r"(?:place|add|create|put)\s+(?:an?\s+)?(?:idea\s+)?['\"]?([\w\-]+)['\"]?(?:\s+called\s+['\"]?(.+?)['\"]?)?(?:\s+(.+))?$",
-     "place"),
-    (r"(?:make|new)\s+(?:an?\s+)?idea\s+['\"]?(.+?)['\"]?$",
-     "place_simple"),
-
-    # grow
-    (r"(?:grow|evolve|expand)(?:\s+ideas?)?(?:\s+(\d+))?",
-     "grow"),
-
-    # show / visual
-    (r"(?:show|display|render|visual(?:ize)?)(?:\s+me)?(?:\s+the\s+matrix)?",
-     "show"),
-    (r"(?:open\s+)?visual(?:\s+workspace)?",
-     "visual"),
-
-    # enhance / pulse
-    (r"enhance\s+on", "enhance_on"),
-    (r"enhance\s+off", "enhance_off"),
-    (r"(?:pulse|resonate)", "pulse"),
-
-    # sandbox
-    (r"sandbox\s+on", "sandbox_on"),
-    (r"sandbox\s+off", "sandbox_off"),
-
-    # save / status
-    (r"(?:save|keep|persist)", "save"),
-    (r"(?:status|what.?s\s+going\s+on|where\s+am\s+i)", "status"),
-    (r"(?:help|what\s+can\s+i\s+do)", "help"),
-]
-
-
-def _extract_dell_mentions(text: str) -> List[Manifest]:
-    """Find explicit Dell references like 08[Create] or 'create'."""
-    found = []
-    for m in re.finditer(r"(\d{1,2})\[([A-Za-z_]+)\]", text):
-        n = int(m.group(1))
-        man = manifest_from_dell(n, m.group(2))
-        if man:
-            found.append(man)
-    # also try bare names
-    for word in re.findall(r"\b([A-Za-z]{3,})\b", text):
-        d = lookup(word)
-        if d:
-            found.append(Manifest(term=d["name"], manor=d["manor"], dell=d["dell"]))
-    return found
-
 
 def translate(english: str) -> Intent:
-    """
-    Core English → Mandell translation.
-    Returns an Intent the runtime can act on.
-    """
     text = english.strip()
-    lower = text.lower()
+    lower = text.lower().strip()
 
-    # explicit Mandell already present
-    seeds = re.findall(r"\d{1,2}\[[A-Za-z_]+\]", text)
-    if seeds and not any(p[0] for p in _PATTERNS if re.search(p[0], lower)):
-        return Intent(
-            action="raw_mandel",
-            mandel=" ".join(seeds),
-            english=text,
-            args={"seeds": seeds},
-        )
+    # ----- Avatar movement -----
+    if re.search(r"\b(walk|go|move)\s+(forward|ahead)\b", lower) or lower in ("walk", "go forward", "move forward"):
+        steps = 1
+        m = re.search(r"(\d+)\s*(steps?|times)?", lower)
+        if m:
+            steps = int(m.group(1))
+        return Intent("walk", 19, "Drive", {"steps": steps}, f"19[Drive] :: walk x{steps}", text)
 
-    for pattern, action in _PATTERNS:
-        m = re.search(pattern, lower, re.I)
-        if not m:
-            continue
+    if re.search(r"\b(run|jog)\b", lower):
+        return Intent("run", 19, "Drive", {}, "19[Drive] :: run", text)
 
-        if action == "place":
-            uid = m.group(1) or "idea"
-            label = (m.group(2) or uid).strip()
-            words = (m.group(3) or "").strip()
-            return Intent(
-                action="place",
-                dell=8,
-                term="Create",
-                mandel=f"08[Create] > 15[Map] :: {uid}",
-                english=text,
-                args={"id": uid, "label": label, "words": words},
-            )
+    if re.search(r"\b(stop|stand\s*still|idle|halt)\b", lower):
+        return Intent("stop", 32, "Pause", {}, "32[Pause] :: stop", text)
 
-        if action == "place_simple":
-            label = m.group(1).strip()
-            uid = re.sub(r"[^a-z0-9]+", "_", label.lower())[:24] or "idea"
-            return Intent(
-                action="place",
-                dell=8,
-                term="Create",
-                mandel=f"08[Create] > 15[Map] :: {uid}",
-                english=text,
-                args={"id": uid, "label": label, "words": label},
-            )
+    if re.search(r"\bturn\s+(left|right)\b", lower) or lower in ("turn left", "turn right"):
+        direction = "left" if "left" in lower else "right"
+        return Intent("turn", 4, "Transform", {"direction": direction}, f"04[Transform] :: turn {direction}", text)
 
-        if action == "grow":
-            n = int(m.group(1)) if m.lastindex and m.group(1) else 1
-            return Intent(
-                action="grow",
-                dell=13,
-                term="Loop",
-                mandel=f"13[Loop] > 04[Transform] :: grow x{n}",
-                english=text,
-                args={"cycles": n},
-            )
+    if re.search(r"\b(face|look)\s+(north|south|east|west|n|s|e|w)\b", lower):
+        m = re.search(r"(north|south|east|west|n|s|e|w)\b", lower)
+        d = m.group(1) if m else "n"
+        return Intent("face", 15, "Map", {"direction": d}, f"15[Map] :: face {d}", text)
 
-        if action in ("show", "visual"):
-            return Intent(
-                action=action,
-                dell=9,
-                term="Show",
-                mandel="09[Show] > 15[Map] >> 47[Embed]",
-                english=text,
-            )
+    if re.search(r"\b(sit|sit\s+down)\b", lower):
+        return Intent("sit", 4, "Transform", {}, "04[Transform] :: sit", text)
 
-        if action == "enhance_on":
-            return Intent(action="enhance_on", dell=25, term="Pulse", mandel="25[Pulse] :: enhance on", english=text)
-        if action == "enhance_off":
-            return Intent(action="enhance_off", dell=32, term="Pause", mandel="32[Pause] :: enhance off", english=text)
-        if action == "pulse":
-            return Intent(action="pulse", dell=25, term="Pulse", mandel="25[Pulse]", english=text)
-        if action == "sandbox_on":
-            return Intent(action="sandbox_on", dell=23, term="Lock", mandel="23[Lock] :: sandbox on", english=text)
-        if action == "sandbox_off":
-            return Intent(action="sandbox_off", dell=24, term="Unlock", mandel="24[Unlock] :: sandbox off", english=text)
-        if action == "save":
-            return Intent(action="save", dell=10, term="Keep", mandel="10[Keep]", english=text)
-        if action == "status":
-            return Intent(action="status", dell=35, term="Discover", mandel="35[Discover]", english=text)
-        if action == "help":
-            return Intent(action="help", dell=9, term="Show", mandel="09[Show] :: help", english=text)
+    if re.search(r"\b(stand|stand\s+up|get\s+up)\b", lower):
+        return Intent("stand", 4, "Transform", {}, "04[Transform] :: stand", text)
 
-    # fallback: treat as place with the whole phrase as words
+    if re.search(r"\b(jump|hop)\b", lower):
+        return Intent("jump", 4, "Transform", {}, "04[Transform] :: jump", text)
+
+    if re.search(r"\b(bend|bend\s+over)\b", lower):
+        return Intent("bend", 4, "Transform", {}, "04[Transform] :: bend", text)
+
+    if re.search(r"\b(pick\s+up|grab|take)\s+(.+)", lower):
+        m = re.search(r"(?:pick\s+up|grab|take)\s+(.+)", lower)
+        item = m.group(1).strip() if m else "item"
+        return Intent("pick_up", 8, "Create", {"item": item}, f"08[Create] :: pick {item}", text)
+
+    if re.search(r"\b(put\s+down|place\s+down|drop)\b", lower):
+        return Intent("place_down", 9, "Show", {}, "09[Show] :: place down", text)
+
+    # ----- Avatar expression / face -----
+    if re.search(r"\b(smile|happy|joy)\b", lower):
+        return Intent("express", 5, "Tone", {"expression": "joy"}, "05[Tone] :: joy", text)
+    if re.search(r"\b(frown|mad|intense|serious)\b", lower):
+        return Intent("express", 5, "Tone", {"expression": "intense"}, "05[Tone] :: intense", text)
+    if re.search(r"\b(calm|relax|chill)\b", lower):
+        return Intent("express", 5, "Tone", {"expression": "calm"}, "05[Tone] :: calm", text)
+    if re.search(r"\b(curious|wonder|hmm)\b", lower):
+        return Intent("express", 5, "Tone", {"expression": "curious"}, "05[Tone] :: curious", text)
+    if re.search(r"\b(focus|concentrate)\b", lower):
+        return Intent("express", 5, "Tone", {"expression": "focus"}, "05[Tone] :: focus", text)
+    if re.search(r"\b(soft|gentle|kind)\b", lower):
+        return Intent("express", 5, "Tone", {"expression": "soft"}, "05[Tone] :: soft", text)
+    if re.search(r"\b(neutral|normal|reset\s+face)\b", lower):
+        return Intent("express", 5, "Tone", {"expression": "neutral"}, "05[Tone] :: neutral", text)
+
+    if re.search(r"\b(show\s+face|what\s+do\s+i\s+look\s+like|avatar\s+status|how\s+do\s+i\s+look)\b", lower):
+        return Intent("avatar_status", 9, "Show", {}, "09[Show] :: avatar", text)
+
+    # ----- Ideas / matrix -----
+    m = re.search(r"(?:create|add|make|new|place)\s+(?:an?\s+)?(?:idea\s+)?(?:called\s+)?['\"]?([^'\"]+)['\"]?$", lower)
+    if m or re.search(r"^(?:create|add|make)\s+.+", lower):
+        label = m.group(1).strip() if m else re.sub(r"^(?:create|add|make|new|place)\s+(?:an?\s+)?(?:idea\s+)?", "", lower).strip()
+        label = label.strip("'")
+        uid = re.sub(r"[^a-z0-9]+", "_", label.lower())[:24] or "idea"
+        return Intent("place", 8, "Create", {"id": uid, "label": label, "words": label}, f"08[Create] > 15[Map] :: {uid}", text)
+
+    if re.search(r"\b(grow|evolve|expand)(?:\s+ideas?)?(?:\s+(\d+))?", lower):
+        m = re.search(r"(\d+)", lower)
+        n = int(m.group(1)) if m else 1
+        return Intent("grow", 13, "Loop", {"cycles": n}, f"13[Loop] > 04[Transform] :: grow x{n}", text)
+
+    if re.search(r"\b(show|display|render|see)\s*(me)?\s*(the\s+)?(matrix|everything|it)?\b", lower) or lower in ("show", "show me"):
+        return Intent("show", 9, "Show", {}, "09[Show]", text)
+
+    if re.search(r"\b(visual|open\s+visual|workspace|see\s+it)\b", lower):
+        return Intent("visual", 9, "Show", {}, "09[Show] > 47[Embed] :: visual", text)
+
+    if re.search(r"\benhance\s+on\b", lower):
+        return Intent("enhance_on", 25, "Pulse", {}, "25[Pulse] :: enhance on", text)
+    if re.search(r"\benhance\s+off\b", lower):
+        return Intent("enhance_off", 32, "Pause", {}, "32[Pause] :: enhance off", text)
+    if re.search(r"\b(pulse|resonate)\b", lower):
+        return Intent("pulse", 25, "Pulse", {}, "25[Pulse]", text)
+
+    if re.search(r"\bsandbox\s+on\b", lower):
+        return Intent("sandbox_on", 23, "Lock", {}, "23[Lock] :: sandbox on", text)
+    if re.search(r"\bsandbox\s+off\b", lower):
+        return Intent("sandbox_off", 24, "Unlock", {}, "24[Unlock] :: sandbox off", text)
+
+    if re.search(r"\b(save|keep|persist)\b", lower):
+        return Intent("save", 10, "Keep", {}, "10[Keep]", text)
+
+    if re.search(r"\b(status|what.?s\s+going\s+on|where\s+am\s+i|what.?s\s+happening)\b", lower):
+        return Intent("status", 35, "Discover", {}, "35[Discover]", text)
+
+    if re.search(r"\b(help|what\s+can\s+i\s+do|commands)\b", lower):
+        return Intent("help", 9, "Show", {}, "09[Show] :: help", text)
+
+    # fallback — treat as new idea
     uid = "idea_" + str(abs(hash(text)) % 10000)
-    return Intent(
-        action="place",
-        dell=8,
-        term="Create",
-        mandel=f"08[Create] > 15[Map] :: free",
-        english=text,
-        args={"id": uid, "label": text[:40], "words": text},
-    )
+    return Intent("place", 8, "Create", {"id": uid, "label": text[:48], "words": text}, "08[Create] > 15[Map] :: free", text)
 
 
 def translate_to_mandel(english: str) -> str:
-    """Convenience: just return the Mandell string."""
     return translate(english).mandel
