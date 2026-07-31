@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 """
-Visual surface L3 + interactive HTML.
+Visual control panel — intuitive offline HTML UI.
 
-09[Show] > 15[Map] >> 47[Embed] :: Visual
+Buttons for all general options. Click a button → shows the exact
+English phrase to type in the program. Matrix graph + nursery + avatar.
 
-SVG graph + offline HTML with:
-- click unit → detail panel (label, skin, words, score, sandbox)
-- hover highlight
-- perspective / unit count meta
-
-Run:
-  python -m form.dell_matrix.visual --smoke
-  python -m form.dell_matrix.visual --demo
+Voynich-inspired Ringed Growth credited in the panel.
 """
 
 from __future__ import annotations
@@ -24,22 +18,20 @@ import sys
 
 try:
     from form.mandell.floor import FLOOR, assert_floor_intact
-    from form.dell_matrix.plane import Plane, Perspective, Skin
-    from form.dell_matrix.graph_view import build_view, GraphView
-    from form.dell_matrix.blank_cube import give
+    from form.dell_matrix.plane import Plane, Skin
+    from form.dell_matrix.graph_view import build_view
     from form.open import open_program
 except ImportError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
     from form.mandell.floor import FLOOR, assert_floor_intact
-    from form.dell_matrix.plane import Plane, Perspective, Skin
-    from form.dell_matrix.graph_view import build_view, GraphView
-    from form.dell_matrix.blank_cube import give
+    from form.dell_matrix.plane import Plane, Skin
+    from form.dell_matrix.graph_view import build_view
     from form.open import open_program
 
 _OUT = os.path.join(os.path.dirname(__file__), "..", "state", "visual")
 os.makedirs(_OUT, exist_ok=True)
 
-LEVEL = 3
+LEVEL = 4
 
 _SKIN_COLOR = {
     "cube": "#5b8def",
@@ -51,8 +43,39 @@ _SKIN_COLOR = {
     "circle": "#2aa7a0",
 }
 
+# Button groups shown in the UI
+ACTIONS = [
+    {"group": "Ideas", "items": [
+        {"label": "Create idea", "cmd": "create an idea called ", "hint": "Type a name after this"},
+        {"label": "Grow ideas", "cmd": "grow ideas 2", "hint": "Ringed growth → Nursery"},
+        {"label": "Show proposals", "cmd": "proposals", "hint": "View Nursery quarantine"},
+        {"label": "Show matrix", "cmd": "show me", "hint": "Print live state"},
+    ]},
+    {"group": "Nursery", "items": [
+        {"label": "Confirm idea", "cmd": "confirm ", "hint": "Paste proposal id after"},
+        {"label": "Reject idea", "cmd": "reject ", "hint": "Paste proposal id after"},
+    ]},
+    {"group": "Avatar", "items": [
+        {"label": "Walk forward", "cmd": "walk forward", "hint": ""},
+        {"label": "Turn left", "cmd": "turn left", "hint": ""},
+        {"label": "Turn right", "cmd": "turn right", "hint": ""},
+        {"label": "Sit down", "cmd": "sit down", "hint": ""},
+        {"label": "Stand up", "cmd": "stand up", "hint": ""},
+        {"label": "Smile", "cmd": "smile", "hint": ""},
+        {"label": "How do I look?", "cmd": "how do I look", "hint": ""},
+    ]},
+    {"group": "System", "items": [
+        {"label": "Enhance ON", "cmd": "enhance on", "hint": ""},
+        {"label": "Enhance OFF", "cmd": "enhance off", "hint": ""},
+        {"label": "Pulse", "cmd": "pulse", "hint": ""},
+        {"label": "Save", "cmd": "save", "hint": ""},
+        {"label": "Status", "cmd": "status", "hint": ""},
+        {"label": "Help", "cmd": "help", "hint": ""},
+    ]},
+]
 
-def _map_pos(x: float, y: float, scale: float = 80.0, cx: float = 400.0, cy: float = 300.0) -> Tuple[float, float]:
+
+def _map_pos(x: float, y: float, scale: float = 70.0, cx: float = 360.0, cy: float = 260.0) -> Tuple[float, float]:
     return cx + x * scale, cy - y * scale
 
 
@@ -60,8 +83,8 @@ def plane_to_svg(
     plane: Plane,
     *,
     scores: Optional[Dict[str, float]] = None,
-    width: int = 800,
-    height: int = 600,
+    width: int = 720,
+    height: int = 520,
     title: str = "Dell Matrix",
 ) -> str:
     assert_floor_intact()
@@ -71,9 +94,9 @@ def plane_to_svg(
 
     parts: List[str] = [
         f'<svg id="matrix-svg" xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
-        f'<rect width="100%" height="100%" fill="#0f1115"/>',
-        f'<text x="16" y="28" fill="#9aa3b2" font-family="system-ui,sans-serif" font-size="14">{html.escape(title)} · {plane.perspective.value} · L{LEVEL}</text>',
-        f'<text x="16" y="48" fill="#5c6575" font-family="system-ui,sans-serif" font-size="11">Floor: {" · ".join(FLOOR)} · click a node</text>',
+        f'<rect width="100%" height="100%" fill="#0f1115" rx="12"/>',
+        f'<text x="16" y="26" fill="#9aa3b2" font-family="system-ui,sans-serif" font-size="13">{html.escape(title)}</text>',
+        f'<text x="16" y="44" fill="#5c6575" font-family="system-ui,sans-serif" font-size="11">Voynich-inspired rings · Floor: {" · ".join(FLOOR)}</text>',
     ]
 
     pos: Dict[str, Tuple[float, float]] = {}
@@ -91,42 +114,21 @@ def plane_to_svg(
             f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{color}" stroke-width="1.5"{dash} opacity="0.7"/>'
         )
 
-    for sid, members in view.sandboxes.items():
-        if not members:
-            continue
-        xs = [pos[m][0] for m in members if m in pos]
-        ys = [pos[m][1] for m in members if m in pos]
-        if not xs:
-            continue
-        minx, maxx = min(xs) - 36, max(xs) + 36
-        miny, maxy = min(ys) - 36, max(ys) + 36
-        parts.append(
-            f'<rect x="{minx:.1f}" y="{miny:.1f}" width="{maxx-minx:.1f}" height="{maxy-miny:.1f}" '
-            f'fill="none" stroke="#a67c52" stroke-width="1.5" stroke-dasharray="6 4" rx="12" opacity="0.8"/>'
-        )
-        parts.append(
-            f'<text x="{minx:.1f}" y="{miny-6:.1f}" fill="#a67c52" font-size="10" font-family="system-ui,sans-serif">box:{html.escape(sid)}</text>'
-        )
-
     for n in view.nodes:
         x, y = pos[n.id]
         color = _SKIN_COLOR.get(n.skin, "#5b8def")
-        r = 18 if n.skin != "building" else 16
+        r = 18
         sc = scores.get(n.id, 0.0)
-        # clickable group
         parts.append(f'<g class="node" data-id="{html.escape(n.id)}" style="cursor:pointer">')
         if n.skin in ("sphere", "circle", "seed", "flower"):
-            parts.append(
-                f'<circle class="node-shape" cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="{color}" opacity="0.9"/>'
-            )
+            parts.append(f'<circle class="node-shape" cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="{color}" opacity="0.9"/>')
         else:
             parts.append(
                 f'<rect class="node-shape" x="{x-r:.1f}" y="{y-r:.1f}" width="{2*r}" height="{2*r}" fill="{color}" rx="4" opacity="0.9"/>'
             )
-        label = html.escape(n.label[:18])
         parts.append(
             f'<text x="{x:.1f}" y="{y+r+14:.1f}" text-anchor="middle" fill="#e8eaed" '
-            f'font-family="system-ui,sans-serif" font-size="12">{label}</text>'
+            f'font-family="system-ui,sans-serif" font-size="12">{html.escape(n.label[:16])}</text>'
         )
         if sc and sc > 0:
             parts.append(
@@ -134,6 +136,12 @@ def plane_to_svg(
                 f'font-family="system-ui,sans-serif" font-size="10" font-weight="600">{sc:.1f}</text>'
             )
         parts.append("</g>")
+
+    if not view.nodes:
+        parts.append(
+            f'<text x="{cx}" y="{cy}" text-anchor="middle" fill="#5c6575" '
+            f'font-family="system-ui,sans-serif" font-size="14">No ideas yet — create one</text>'
+        )
 
     parts.append("</svg>")
     return "\n".join(parts)
@@ -143,20 +151,16 @@ def _nodes_payload(plane: Plane, scores: Optional[Dict[str, float]] = None) -> L
     scores = scores or {}
     out = []
     for uid, u in plane.units.items():
-        out.append(
-            {
-                "id": uid,
-                "label": u.label,
-                "words": u.words,
-                "skin": u.skin.value,
-                "x": u.x,
-                "y": u.y,
-                "sandboxed": u.sandboxed,
-                "sandbox_id": u.sandbox_id,
-                "score": float(scores.get(uid, 0.0)),
-                "connected": not u.sandboxed,
-            }
-        )
+        out.append({
+            "id": uid,
+            "label": u.label,
+            "words": u.words,
+            "skin": u.skin.value,
+            "x": u.x,
+            "y": u.y,
+            "sandboxed": u.sandboxed,
+            "score": float(scores.get(uid, 0.0)),
+        })
     return out
 
 
@@ -165,9 +169,21 @@ def plane_to_html(
     *,
     scores: Optional[Dict[str, float]] = None,
     title: str = "Dell Matrix",
+    owner: str = "Operator",
+    avatar: Optional[Dict[str, Any]] = None,
+    nursery: Optional[List[Dict[str, Any]]] = None,
+    rings: Optional[List[str]] = None,
 ) -> str:
     svg = plane_to_svg(plane, scores=scores, title=title)
-    payload = json.dumps(_nodes_payload(plane, scores))
+    nodes = json.dumps(_nodes_payload(plane, scores))
+    actions = json.dumps(ACTIONS)
+    nursery = nursery or []
+    avatar = avatar or {}
+    rings = rings or ["Seed", "Token", "Body", "Lens", "Evolve"]
+    nursery_json = json.dumps(nursery)
+    avatar_json = json.dumps(avatar)
+    rings_s = " → ".join(rings)
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -175,46 +191,153 @@ def plane_to_html(
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>{html.escape(title)}</title>
 <style>
-  :root {{ color-scheme: dark; }}
-  body {{ margin:0; background:#0a0b0e; color:#e8eaed; font-family:system-ui,sans-serif; }}
-  header {{ padding:12px 16px; border-bottom:1px solid #222; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }}
-  .meta {{ color:#9aa3b2; font-size:13px; }}
-  main {{ display:flex; flex-wrap:wrap; gap:16px; padding:16px; justify-content:center; }}
-  #panel {{
-    min-width:240px; max-width:320px; background:#151820; border:1px solid #2a2f3a;
-    border-radius:12px; padding:14px 16px; height:fit-content;
+  :root {{ color-scheme: dark; --bg:#0a0b0e; --card:#151820; --line:#2a2f3a; --text:#e8eaed; --muted:#9aa3b2; --accent:#5b8def; --ok:#3cb371; }}
+  * {{ box-sizing: border-box; }}
+  body {{ margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,sans-serif; }}
+  header {{
+    padding:14px 18px; border-bottom:1px solid var(--line);
+    display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
   }}
-  #panel h2 {{ margin:0 0 8px; font-size:16px; }}
-  #panel .k {{ color:#9aa3b2; font-size:12px; margin-top:10px; }}
-  #panel .v {{ font-size:14px; white-space:pre-wrap; word-break:break-word; }}
-  .node-shape:hover {{ filter: brightness(1.15); stroke:#fff; stroke-width:2; }}
+  header h1 {{ margin:0; font-size:18px; font-weight:600; }}
+  header .meta {{ color:var(--muted); font-size:12px; }}
+  .layout {{
+    display:grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap:14px; padding:14px; max-width:1400px; margin:0 auto;
+  }}
+  @media (max-width: 1000px) {{
+    .layout {{ grid-template-columns: 1fr; }}
+  }}
+  .card {{
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px;
+  }}
+  .card h2 {{ margin:0 0 10px; font-size:14px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }}
+  .group {{ margin-bottom:14px; }}
+  .group-title {{ font-size:12px; color:var(--muted); margin-bottom:6px; }}
+  .btn-row {{ display:flex; flex-wrap:wrap; gap:6px; }}
+  button.action {{
+    background:#1c2230; color:var(--text); border:1px solid var(--line);
+    border-radius:10px; padding:8px 12px; font-size:13px; cursor:pointer;
+  }}
+  button.action:hover {{ border-color:var(--accent); background:#222a3a; }}
+  button.action:active {{ transform: scale(0.98); }}
+  #cmd-box {{
+    margin-top:12px; padding:12px; background:#0f1115; border-radius:10px;
+    border:1px dashed var(--line); min-height:64px;
+  }}
+  #cmd-box .label {{ font-size:11px; color:var(--muted); margin-bottom:4px; }}
+  #cmd-text {{ font-size:15px; font-family:ui-monospace,monospace; color:#7dd3a0; word-break:break-word; }}
+  #cmd-hint {{ font-size:12px; color:var(--muted); margin-top:6px; }}
+  .copy-btn {{
+    margin-top:8px; background:var(--accent); color:#fff; border:none;
+    border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer;
+  }}
+  .node-shape:hover {{ filter:brightness(1.15); stroke:#fff; stroke-width:2; }}
   .node.active .node-shape {{ stroke:#fff; stroke-width:2.5; }}
-  .hint {{ color:#5c6575; font-size:12px; }}
+  #detail .k {{ color:var(--muted); font-size:11px; margin-top:8px; }}
+  #detail .v {{ font-size:13px; word-break:break-word; }}
+  .proposal {{
+    border:1px solid var(--line); border-radius:10px; padding:8px 10px; margin-bottom:8px;
+    font-size:13px;
+  }}
+  .proposal .kind {{ color:var(--ok); font-size:11px; }}
+  .avatar-line {{ font-size:14px; margin-bottom:6px; }}
+  .empty {{ color:var(--muted); font-size:13px; }}
+  .credit {{ font-size:11px; color:#5c6575; margin-top:10px; line-height:1.4; }}
 </style>
 </head>
 <body>
 <header>
   <div>
-    <strong>{html.escape(title)}</strong>
-    <div class="meta">perspective={html.escape(plane.perspective.value)} · units={len(plane.units)} · Floor locked · interactive L{LEVEL}</div>
+    <h1>{html.escape(title)}</h1>
+    <div class="meta">owner={html.escape(owner)} · ideas={len(plane.units)} · rings: {html.escape(rings_s)}</div>
   </div>
-  <div class="hint">Click a node for details</div>
+  <div class="meta">Offline control panel · type commands in the program window</div>
 </header>
-<main>
-{svg}
-<aside id="panel">
-  <h2 id="p-title">Select a unit</h2>
-  <div class="k">id</div><div class="v" id="p-id">—</div>
-  <div class="k">skin</div><div class="v" id="p-skin">—</div>
-  <div class="k">score</div><div class="v" id="p-score">—</div>
-  <div class="k">state</div><div class="v" id="p-state">—</div>
-  <div class="k">words</div><div class="v" id="p-words">—</div>
-</aside>
-</main>
+
+<div class="layout">
+  <!-- LEFT: buttons -->
+  <section class="card" id="controls">
+    <h2>Actions</h2>
+    <div id="btn-root"></div>
+    <div id="cmd-box">
+      <div class="label">Type this in the program:</div>
+      <div id="cmd-text">(tap a button)</div>
+      <div id="cmd-hint"></div>
+      <button class="copy-btn" id="copy-btn" type="button">Copy command</button>
+    </div>
+    <div class="credit">
+      Growth uses Voynich-inspired rings (Seed→Token→Body→Lens→Evolve).
+      Proposals stay in Nursery until you confirm. Live matrix is never auto-changed.
+    </div>
+  </section>
+
+  <!-- CENTER: graph -->
+  <section class="card" style="overflow:auto">
+    <h2>Live matrix</h2>
+    {svg}
+    <div id="detail" style="margin-top:12px">
+      <h2 style="margin-top:0">Selected idea</h2>
+      <div class="k">label</div><div class="v" id="p-title">—</div>
+      <div class="k">id</div><div class="v" id="p-id">—</div>
+      <div class="k">score</div><div class="v" id="p-score">—</div>
+      <div class="k">words</div><div class="v" id="p-words">—</div>
+    </div>
+  </section>
+
+  <!-- RIGHT: avatar + nursery -->
+  <section class="card">
+    <h2>Avatar</h2>
+    <div id="avatar-box" class="avatar-line empty">—</div>
+
+    <h2 style="margin-top:18px">Nursery (quarantine)</h2>
+    <div id="nursery-box" class="empty">No pending proposals</div>
+  </section>
+</div>
+
 <script>
-const NODES = {payload};
+const NODES = {nodes};
+const ACTIONS = {actions};
+const NURSERY = {nursery_json};
+const AVATAR = {avatar_json};
 const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
-function show(id) {{
+
+// Build buttons
+const root = document.getElementById('btn-root');
+ACTIONS.forEach(g => {{
+  const wrap = document.createElement('div');
+  wrap.className = 'group';
+  wrap.innerHTML = '<div class="group-title">' + g.group + '</div>';
+  const row = document.createElement('div');
+  row.className = 'btn-row';
+  g.items.forEach(item => {{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'action';
+    b.textContent = item.label;
+    b.addEventListener('click', () => {{
+      document.getElementById('cmd-text').textContent = item.cmd;
+      document.getElementById('cmd-hint').textContent = item.hint || '';
+      window._lastCmd = item.cmd;
+    }});
+    row.appendChild(b);
+  }});
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}});
+
+document.getElementById('copy-btn').addEventListener('click', async () => {{
+  const t = window._lastCmd || '';
+  if (!t) return;
+  try {{
+    await navigator.clipboard.writeText(t);
+    document.getElementById('cmd-hint').textContent = 'Copied — paste into the program window';
+  }} catch (e) {{
+    document.getElementById('cmd-hint').textContent = 'Select and copy the command above';
+  }}
+}});
+
+function showNode(id) {{
   const n = byId[id];
   if (!n) return;
   document.querySelectorAll('.node').forEach(g => g.classList.remove('active'));
@@ -222,14 +345,43 @@ function show(id) {{
   if (g) g.classList.add('active');
   document.getElementById('p-title').textContent = n.label;
   document.getElementById('p-id').textContent = n.id;
-  document.getElementById('p-skin').textContent = n.skin;
   document.getElementById('p-score').textContent = (n.score || 0).toFixed(2);
-  document.getElementById('p-state').textContent = n.sandboxed ? ('SANDBOX '+(n.sandbox_id||'')) : 'CONNECTED';
   document.getElementById('p-words').textContent = n.words || '(empty)';
 }}
 document.querySelectorAll('.node').forEach(g => {{
-  g.addEventListener('click', () => show(g.getAttribute('data-id')));
+  g.addEventListener('click', () => showNode(g.getAttribute('data-id')));
 }});
+
+// Avatar
+(function(){{
+  const box = document.getElementById('avatar-box');
+  if (AVATAR && (AVATAR.look || AVATAR.describe)) {{
+    box.className = 'avatar-line';
+    box.textContent = (AVATAR.look || '') + '  ' + (AVATAR.describe || '');
+  }}
+}})();
+
+// Nursery
+(function(){{
+  const box = document.getElementById('nursery-box');
+  if (!NURSERY || !NURSERY.length) return;
+  box.className = '';
+  box.innerHTML = '';
+  NURSERY.slice(0, 12).forEach(p => {{
+    const d = document.createElement('div');
+    d.className = 'proposal';
+    d.innerHTML = '<div class="kind">' + (p.kind || '') + ' · ' + (p.id || '') + '</div>'
+      + '<div>' + (p.label || '') + '</div>'
+      + '<div class="k" style="color:var(--muted);font-size:11px;margin-top:4px">confirm ' + (p.id || '') + '</div>';
+    box.appendChild(d);
+  }});
+  if (NURSERY.length > 12) {{
+    const more = document.createElement('div');
+    more.className = 'empty';
+    more.textContent = '… and ' + (NURSERY.length - 12) + ' more';
+    box.appendChild(more);
+  }}
+}})();
 </script>
 </body>
 </html>
@@ -240,12 +392,24 @@ def write_visual(
     plane: Plane,
     owner: str = "Operator",
     scores: Optional[Dict[str, float]] = None,
+    avatar: Optional[Dict[str, Any]] = None,
+    nursery: Optional[List[Dict[str, Any]]] = None,
+    rings: Optional[List[str]] = None,
 ) -> Dict[str, str]:
     base = os.path.join(_OUT, f"matrix_{owner}")
     svg_path = base + ".svg"
     html_path = base + ".html"
-    svg = plane_to_svg(plane, scores=scores, title=f"Dell Matrix · {owner}")
-    doc = plane_to_html(plane, scores=scores, title=f"Dell Matrix · {owner}")
+    title = f"Dell Matrix · {owner}"
+    svg = plane_to_svg(plane, scores=scores, title=title)
+    doc = plane_to_html(
+        plane,
+        scores=scores,
+        title=title,
+        owner=owner,
+        avatar=avatar,
+        nursery=nursery,
+        rings=rings,
+    )
     with open(svg_path, "w", encoding="utf-8") as f:
         f.write(svg)
     with open(html_path, "w", encoding="utf-8") as f:
@@ -254,41 +418,39 @@ def write_visual(
 
 
 def smoke() -> bool:
-    print("=== VISUAL INTERACTIVE SMOKE ===")
+    print("=== VISUAL UI SMOKE ===")
     r = []
-
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
-
-    p = open_program("VisInt")
-    p.place("biz", "Business", words="CRM routes", skin=Skin.BUILDING, x=1)
-    p.place("music", "Music", words="Ep4", skin=Skin.SEED, x=-1)
-    p.enhance_on()
-    p.pulse()
-    paths = write_visual(p.cube.session.plane, owner="VisInt", scores=p.scores())
-    rec("files", os.path.isfile(paths["svg"]) and os.path.isfile(paths["html"]))
-    html_txt = open(paths["html"], encoding="utf-8").read()
-    rec("has script", "NODES" in html_txt and "addEventListener" in html_txt)
-    rec("has panel", "p-words" in html_txt)
-    rec("has node data", "Business" in html_txt)
-    rec("interactive flag", paths.get("interactive") == "true")
+    p = open_program("VisUI")
+    p.place("biz", "Business", words="crm", skin=Skin.BUILDING, x=1)
+    p.place("music", "Music", words="song", skin=Skin.SEED, x=-1)
+    paths = write_visual(
+        p.cube.session.plane,
+        owner="VisUI",
+        scores=p.scores(),
+        avatar=p.avatar_status(),
+        nursery=p.list_proposals(),
+        rings=list(p.duo.rings),
+    )
+    rec("files", os.path.isfile(paths["html"]))
+    txt = open(paths["html"], encoding="utf-8").read()
+    rec("has buttons", "Grow ideas" in txt and "Walk forward" in txt)
+    rec("has nursery section", "Nursery" in txt)
+    rec("has voynich credit", "Voynich-inspired" in txt)
+    rec("has copy", "Copy command" in txt)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
-
-
-def demo() -> None:
-    print("09[Show] > 15[Map] >> 47[Embed] :: Visual interactive")
-    p = open_program("Demo")
-    p.place("biz", "Business", skin=Skin.BUILDING, x=1)
-    p.place("music", "Music", skin=Skin.SEED, x=-1)
-    print(write_visual(p.cube.session.plane, owner="Demo"))
 
 
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    demo()
+    p = open_program("Demo")
+    p.place("biz", "Business", x=1)
+    p.place("music", "Music", x=-1)
+    print(write_visual(p.cube.session.plane, owner="Demo", avatar=p.avatar_status(), rings=list(p.duo.rings)))
 
 
 if __name__ == "__main__":
