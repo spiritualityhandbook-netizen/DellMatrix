@@ -1,16 +1,16 @@
 {
   "name": "dellmatrix",
-  "version": "0.3.0",
-  "description": "DellMatrix — unified foundation + snap-ins (legacy DuoBeta under compat)",
+  "version": "0.4.0",
+  "description": "DellMatrix — Form is the only front door. Legacy JS under src/ is frozen.",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "start": "node -e \"import { createUnifiedRuntime } from './src/unify.js'; const dm = createUnifiedRuntime(); console.log(JSON.stringify({ unified: dm.unified, era: dm.era, active: dm.listActive() }, null, 2));\"",
-    "demo": "node src/demo_run.js",
-    "status": "node -e \"import { createUnifiedRuntime } from './src/unify.js'; const dm = createUnifiedRuntime(); console.log(JSON.stringify(dm.status(), null, 2));\"",
-    "snapins": "node -e \"import { createUnifiedRuntime } from './src/unify.js'; const dm = createUnifiedRuntime(); console.log(dm.listSnapIns());\"",
-    "unify": "node -e \"import { createUnifiedRuntime } from './src/unify.js'; import { describeUnification } from './src/compat/legacy_map.js'; const dm = createUnifiedRuntime(); console.log(describeUnification()); console.log('active', dm.listActive());\""
+    "start": "echo 'Form is the front door. Run: python -m form.repl --owner Ace' && python -m form.boot",
+    "form": "python -m form.repl",
+    "boot": "python -m form.boot",
+    "smoke": "python -m form.boot --smoke",
+    "legacy-status": "node -e \"import { createUnifiedRuntime } from './src/unify.js'; const dm = createUnifiedRuntime(); console.log(JSON.stringify({ unified: dm.unified, era: dm.era, note: 'LEGACY' }, null, 2));\""
   },
-  "keywords": ["dellmatrix", "mandell", "dual-lattice", "snap-in", "unified"],
+  "keywords": ["dellmatrix", "mandell", "form", "dual-lattice"],
   "license": "UNLICENSED"
 }
