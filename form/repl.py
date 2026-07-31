@@ -29,13 +29,13 @@ Talk normally. Growth is ringed + quarantined.
   walk forward / smile / how do I look
   show me / visual / save
   help / quit
+
+After visual: open DellMatrix_UI.html in this folder.
 """.strip()
 
 _FACING = {
-    "n": Facing.N, "north": Facing.N,
-    "s": Facing.S, "south": Facing.S,
-    "e": Facing.E, "east": Facing.E,
-    "w": Facing.W, "west": Facing.W,
+    "n": Facing.N, "north": Facing.N, "s": Facing.S, "south": Facing.S,
+    "e": Facing.E, "east": Facing.E, "w": Facing.W, "west": Facing.W,
 }
 _EXPR = {
     "neutral": Expression.NEUTRAL, "focus": Expression.FOCUS,
@@ -58,8 +58,6 @@ def _show_proposals(p: Program) -> None:
     for i, prop in enumerate(pending[:20], 1):
         _say(f"  {i}. [{prop.get('kind')}] {prop['id']}")
         _say(f"      {prop['label']}  (affinity {prop.get('affinity', 0):.2f})")
-        if prop.get("reason"):
-            _say(f"      {prop['reason']}")
     if len(pending) > 20:
         _say(f"  ... and {len(pending) - 20} more")
     _say("Type: confirm <id>   or   reject <id>")
@@ -123,8 +121,11 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
 
     elif action == "visual":
         paths = p.visual()
-        _say("Visual workspace ready (offline).")
-        _say(paths.get("html", ""))
+        easy = paths.get("easy") or paths.get("html", "")
+        _say("Visual control panel ready (offline).")
+        _say("Open this file in any browser:")
+        _say(easy)
+        _say("(Also saved as DellMatrix_UI.html in the project folder.)")
 
     elif action == "walk":
         steps = int(args.get("steps", 1))
@@ -218,7 +219,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
         _say(f"{st['look']}  {st['describe']}")
         _say(f"Live ideas: {len(p.cube.session.plane.units)}")
         _say(f"Nursery pending: {ns['pending']}")
-        _say(f"Rings: {' → '.join(p.duo.rings)}")
+        _say(f"Rings: {' → '.join(p.duo.rings)} (Voynich-inspired)")
 
     elif action == "help":
         print()
@@ -234,7 +235,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> None:
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
-    print("  DellMatrix — Ringed Growth")
+    print("  DellMatrix — Ringed Growth (Voynich-inspired)")
     print("  Growth is powerful, FOG-cut, and quarantined until you confirm.")
     print()
     p = Program.load(owner) if do_load else open_program(owner)

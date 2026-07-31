@@ -2,79 +2,69 @@
 
 **Just talk to it.**
 
----
-
-## How to start (easiest)
-
-### Windows
-Double-click:
-
-```
-Launch DellMatrix.bat
-```
-
-### Mac
-Double-click:
-
-```
-Launch DellMatrix.command
-```
-(If it asks for permission the first time, right-click → Open)
-
-### Any system
-```bash
-python launch.py
-```
-or
-```bash
-python -m form.repl --owner Ace
-```
+Voynich-inspired Ringed Growth · Nursery quarantine · Avatar · offline visual UI
 
 ---
 
-## What to type
+## Start
 
-Just use normal English:
+**Windows:** double-click `Launch DellMatrix.bat`  
+**Mac:** double-click `Launch DellMatrix.command`  
+**Any:** `python launch.py`
+
+---
+
+## Everyday flow
 
 ```
-create an idea called grocery list
+create an idea called business
+create an idea called music
 grow ideas 2
-walk forward
-turn left
-sit down
-smile
-how do I look
-show me
+proposals
+confirm <id>
 visual
 save
 ```
 
-The system replies in plain English, for example:
+After `visual`, open:
 
 ```
-  Created idea: "grocery list"
-  You walked forward 1 step(s). Now at (1, 0), facing N.
-  (^_^)  You look joy.
+DellMatrix_UI.html
 ```
+
+in the project folder (any browser, works offline).
 
 ---
 
-## What it does
+## What the system does
 
-- Understands normal English
-- Moves an Avatar (walk, turn, sit, expressions)
-- Lets you create and grow ideas in a matrix
-- Can show a visual workspace (offline HTML)
-- Works offline
+| Feature | Behavior |
+|---------|----------|
+| English in | Normal phrases → actions |
+| Ringed growth | Seed→Token→Body→Lens→Evolve (Voynich-inspired) |
+| Nursery | New/evolved ideas quarantined until you confirm |
+| Avatar | Walk, turn, sit, expressions |
+| Visual UI | Buttons for all main options + matrix graph |
+| Offline | Core + UI work without internet |
+
+Nothing enters the live matrix until you `confirm`. Reject discards. Live ideas are never deleted by growth.
 
 ---
 
 ## Structure
 
 ```
-form/           ← the actual program
-launch.py       ← simple starter
-Launch *.bat / *.command  ← double-click starters
-src/            ← old system (ignore)
-preform/        ← planning docs only
+form/                 ← the program
+  avatar/             body + face
+  mandell/            language + English translator
+  dell_matrix/        matrix, nursery, ringed growth, visual
+  duobeta/            generation + rings ledger
+  open.py · repl.py   front door
+Launch DellMatrix.*   double-click starters
+launch.py
+DellMatrix_UI.html    easy visual (written when you run visual)
+src/                  legacy (ignore)
+preform/              planning docs
 ```
+
+Floor locked: Alpha · Delta · Omega · Omni
