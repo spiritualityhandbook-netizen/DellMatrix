@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-"""REPL — Form front door. Talk normally. Avatar included."""
+"""REPL — Form front door. Talk normally. Clear English feedback."""
 
 from __future__ import annotations
 
-import shlex
 import sys
 
 try:
     from form.open import Program, open_program
     from form.dell_matrix.plane import Skin
-    from form.dell_matrix.blank_cube import BlankCube
-    from form.persist import list_checkpoints
     from form.mandell.translate import translate
     from form.avatar import Facing, Posture, Locomotion, Expression
 except ImportError:
@@ -18,32 +15,24 @@ except ImportError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     from form.open import Program, open_program
     from form.dell_matrix.plane import Skin
-    from form.dell_matrix.blank_cube import BlankCube
-    from form.persist import list_checkpoints
     from form.mandell.translate import translate
     from form.avatar import Facing, Posture, Locomotion, Expression
 
 HELP = """
-Just talk normally. Examples:
+Just type normal English. Examples:
 
   create an idea called grocery list
-  grow ideas 3
-  show me the matrix
-  visual
-
+  grow ideas 2
   walk forward
   turn left
-  turn right
   sit down
-  stand up
-  jump
   smile
   how do I look
-
-  enhance on
-  pulse
+  show me
+  visual
   save
   help
+  quit
 """.strip()
 
 _FACING = {
@@ -65,139 +54,168 @@ _EXPR = {
 }
 
 
+def _say(msg: str) -> None:
+    """Plain English reply to the user."""
+    print(f"  {msg}")
+
+
 def _execute_intent(p: Program, intent) -> None:
     action = intent.action
     args = intent.args or {}
-
-    print(f"  → {intent.mandel}")
 
     if action == "place":
         uid = args.get("id", "idea")
         label = args.get("label", uid)
         words = args.get("words", "")
         p.place(uid, label, words=words, skin=Skin.CUBE)
-        print(f"  placed: {label}")
+        _say(f'Created idea: "{label}"')
 
     elif action == "grow":
         n = int(args.get("cycles", 1))
         out = p.grow_ideas(n)
-        print(f"  grew {len(out)} cycle(s)")
+        _say(f"Grew the matrix {len(out)} time(s).")
+        print()
         print(p.render())
 
     elif action == "show":
+        print()
         print(p.render())
 
     elif action == "visual":
         paths = p.visual()
-        print("  Visual workspace ready (offline):")
-        print("  →", paths.get("html"))
-        print("  Open that file in any browser.")
+        html = paths.get("html", "")
+        _say("Visual workspace ready (works offline).")
+        _say(f"Open this file in any browser:")
+        _say(html)
 
     elif action == "walk":
         steps = int(args.get("steps", 1))
         p.avatar.set_locomotion(Locomotion.WALK)
         pos = p.avatar.step(steps)
-        print(f"  walked to {pos}")
+        facing = p.avatar.body.facing.name
+        _say(f"You walked forward {steps} step(s). Now at {pos}, facing {facing}.")
 
     elif action == "run":
         p.avatar.set_locomotion(Locomotion.RUN)
         pos = p.avatar.step(2)
-        print(f"  ran to {pos}")
+        facing = p.avatar.body.facing.name
+        _say(f"You ran. Now at {pos}, facing {facing}.")
 
     elif action == "stop":
         p.avatar.set_locomotion(Locomotion.IDLE)
-        print("  stopped")
+        _say("You stopped.")
 
     elif action == "turn":
         direction = args.get("direction", "right")
         if direction == "left":
             facing = p.avatar.turn_left()
+            _say(f"You turned left. Now facing {facing}.")
         else:
             facing = p.avatar.turn_right()
-        print(f"  now facing {facing}")
+            _say(f"You turned right. Now facing {facing}.")
 
     elif action == "face":
         d = str(args.get("direction", "n")).lower()
         facing = _FACING.get(d, Facing.N)
         p.avatar.face(facing)
-        print(f"  facing {facing.name}")
+        _say(f"You are now facing {facing.name}.")
 
     elif action == "sit":
         p.avatar.set_posture(Posture.SIT)
-        print("  sat down")
+        _say("You sat down.")
 
     elif action == "stand":
         p.avatar.set_posture(Posture.STAND)
-        print("  standing")
+        _say("You stood up.")
 
     elif action == "jump":
         p.avatar.set_posture(Posture.JUMP)
-        print("  jumped")
         p.avatar.set_posture(Posture.STAND)
+        _say("You jumped.")
 
     elif action == "bend":
         p.avatar.set_posture(Posture.BEND)
-        print("  bent over")
+        _say("You bent over.")
 
     elif action == "pick_up":
         item = args.get("item", "item")
         ok = p.avatar.pick_up(item)
-        print(f"  picked up {item}" if ok else "  hands full")
+        if ok:
+            _say(f'You picked up "{item}".')
+        else:
+            _say("Your hands are already full.")
 
     elif action == "place_down":
         item = p.avatar.place_down()
-        print(f"  put down {item}" if item else "  nothing in hands")
+        if item:
+            _say(f'You put down "{item}".')
+        else:
+            _say("You weren't holding anything.")
 
     elif action == "express":
         name = args.get("expression", "neutral")
         expr = _EXPR.get(name, Expression.NEUTRAL)
         face = p.face.set(expr)
-        print(f"  {face}  ({name})")
+        _say(f"{face}  You look {name}.")
 
     elif action == "avatar_status":
         st = p.avatar_status()
-        print(f"  {st['look']}  {st['describe']}")
+        _say(f"{st['look']}  {st['describe']}")
 
     elif action == "enhance_on":
         p.enhance_on()
-        print("  enhance ON")
+        _say("Enhance is now ON.")
 
     elif action == "enhance_off":
         p.enhance_off()
-        print("  enhance OFF")
+        _say("Enhance is now OFF.")
 
     elif action == "pulse":
-        print(p.pulse())
+        result = p.pulse()
+        _say("Pulse sent.")
+        if result:
+            _say(str(result))
 
     elif action == "sandbox_on":
-        print(p.sandbox_on())
+        p.sandbox_on()
+        _say("Sandbox is now ON.")
 
     elif action == "sandbox_off":
-        print(p.sandbox_off())
+        p.sandbox_off()
+        _say("Sandbox is now OFF.")
 
     elif action == "save":
-        print("  saved", p.save())
+        path = p.save()
+        _say("Saved.")
+        _say(f"Location: {path}")
 
     elif action == "status":
-        print(p.status())
+        st = p.avatar_status()
+        _say(f"{st['look']}  {st['describe']}")
+        _say(f"Ideas in matrix: {len(p.cube.session.plane.units)}")
+        _say(f"Enhance: {'ON' if p.enhance.on else 'OFF'}")
 
     elif action == "help":
+        print()
         print(HELP)
+        print()
 
     else:
-        print("  (understood as idea)")
+        # Fallback treated as new idea
         uid = args.get("id", "idea")
-        label = args.get("label", intent.english[:40])
+        label = args.get("label", intent.english[:48])
         p.place(uid, label, words=intent.english, skin=Skin.CUBE)
-        print(f"  placed: {label}")
+        _say(f'Created idea: "{label}"')
 
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
-    print("DellMatrix — just talk to it")
-    print(f"owner={owner}\n")
+    print()
+    print("  DellMatrix")
+    print("  Talk normally. Type help for examples. Type quit to leave.")
+    print()
     p = Program.load(owner) if do_load else open_program(owner)
     print(p.render())
-    print("\nType normal English. Examples: create an idea called test · walk forward · smile · help\n")
+    print()
 
     while True:
         try:
@@ -209,20 +227,20 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             continue
 
         if line.lower() in ("quit", "exit", "q"):
+            _say("Goodbye.")
             break
 
         if line.lower().startswith("say "):
             line = line[4:].strip()
 
-        # Always go through the translator for average-user experience
         intent = translate(line)
         _execute_intent(p, intent)
 
-    print("session end")
+    print()
 
 
 def main() -> None:
-    owner = "Operator"
+    owner = "Ace"
     do_load = "--load" in sys.argv
     for i, a in enumerate(sys.argv):
         if a == "--owner" and i + 1 < len(sys.argv):
