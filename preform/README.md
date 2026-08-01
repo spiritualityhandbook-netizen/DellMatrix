@@ -1,30 +1,14 @@
-# DellMatrix Preform
+# preform/ — LEGACY (not live Form)
 
-This folder is the **living Preform Codex**.
+**Status: LEGACY · historical · do not extend as runtime.**
 
-It is organized as a Psalm so it can evolve page-by-page without losing structure.
+Live runtime is **`form/`** only.
 
-## Start Here
+- Mandell Origin: `form/mandell/`
+- Program door: `form/open.py` + `form/repl.py`
+- Authority docs: `docs/START_HERE.md`, `docs/AUDIT_AND_NEXT_50.md`, `docs/LIVE_INDEX.md`
 
-→ Open **`00_PSALM_PREFORM.md`**
+Material here is pre-Form research, phase notes, and early stubs.
+It is kept for history. It is **not** the execution path.
 
-That file is the master index and evolution log.
-
-## Structure
-
-```
-preform/
-├── 00_PSALM_PREFORM.md      ← Living master
-└── pages/
-    ├── 01_FLOOR_LOCK.md
-    ├── 02_DELL_REGISTRY.md
-    ├── 03_LANGUAGE_CORE.md
-    ├── 04_PIPELINE_AUTHORITY.md
-    ├── 05_VISUAL_GLYPH.md
-    ├── 06_MANUAL_FLOW_TEMP.md
-    ├── 07_PHASE_STATUS.md
-    ├── 08_GODWORKSPACE.md
-    └── 09_PHASE3_INTAKE.md
-```
-
-Older individual files remain for reference but the numbered pages above are now the canonical Preform.
+When cleaning, prefer move into `docs/archive/` over deletion.

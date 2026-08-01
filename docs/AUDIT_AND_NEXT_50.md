@@ -1,68 +1,99 @@
-# DellMatrix / Mandell — Full Audit + Next 50 Directives
+# DellMatrix / Mandell — Full Audit + Next Directives
 
 Date: 2026-08-01  
-Scope: `form/` runtime on GitHub main
+Scope: `form/` runtime on GitHub main  
+Source: live full audit (post lattice · growth · perception · Lupe session)
 
 ---
 
-## Execution Stamp
+## Executive verdict
 
-**NBD lattice bind (1–3) EXECUTED**  
-**NBD one growth entrypoint EXECUTED 2026-08-01**
-- RingedGrowth is the sole public growth engine
-- growth_engine and idea_grow deprecated / redirected
+| Axis | Grade |
+|------|-------|
+| Core runtime | **Strong** |
+| Mandell Origin | **Strong** |
+| Controlled growth | **Strong** |
+| Average-user path | **Good** |
+| Perception / lattice | **Good** |
+| Polyglot / bridge | **Partial** |
+| Docs hygiene | **Partial** |
+| Legacy dual-era | **Risk** |
 
----
-
-## 1. Full audit
-
-### 1.1 What is solid
-
-| Area | Status | Notes |
-|------|--------|-------|
-| **Form as front door** | Strong | `open.py` + `repl.py` + launchers |
-| **Floor lock** | Strong | Alpha·Delta·Omega·Omni immutable |
-| **Dell registry 00–50** | Strong | Named manors present |
-| **Session save/load v7** | Strong | Matrix + avatar + nursery + lattice |
-| **Nursery quarantine** | Strong | Growth cannot auto-pollute live |
-| **Ringed growth** | **Sole public path** | Gates + FOG + lineage |
-| **H/V/F lattice** | Bound | Single session object |
-| **Perception duals** | Code ready | cube/sphere/core/flower |
-| **Mandell Origin law** | Strong | Documented priority |
-
-### 1.2 Remaining weak
-
-1. Perception not yet in REPL/UI  
-2. Visual still primarily idea graph  
-3. Phrase coverage thin  
-4. Polyglot tiny  
-5. Legacy `src/` dual-era risk  
-6. Acceptance path not yet formalized as test  
-
-### 1.3 Goal alignment
-
-| Goal | Progress |
-|------|----------|
-| Mandell as Origin | Foundation yes |
-| Practical man↔computer | Core actions yes |
-| Controlled powerful growth | **Yes — single entrypoint** |
-| Average-user daily use | Partial |
-| H/V/F creativity matrix | Bound · REPL still missing |
+Core is runnable and coherent. Foundation + controlled growth met. Worldwide bridge not claimed.
 
 ---
 
-## 2. Next directives (current ranking)
+## Architecture
 
-5. REPL: `cube` / `sphere` / `core` / `flower` / `toggle form`  
-6. REPL: `lattice` show ASCII + status  
-7. REPL: `chord at H V`  
-8. Visual skin by perception  
-50. Cold-start acceptance path offline  
+```
+launch / repl
+  → Program (open.py)
+       matrix · plane · nursery · RingedGrowth only
+       HarmonicLattice (H/V/F + perception)
+       avatar · history (seed-form) · persist v7
+  → visual HTML (form skins + ranked nursery)
+```
+
+Laws: Floor locked · growth never auto-writes live · Mandell seeds structured · English door.
 
 ---
 
-## 3. Non-goals
+## Solid
 
-- Claiming global language adoption  
-- Autonomous self-aware evolution  
-- Full 4D tesseract UI  
+- Form front door, Floor, Dell 00–50 registry
+- Session v7: matrix + avatar + nursery + lattice + history
+- RingedGrowth sole public growth + Nursery quarantine
+- Lattice bound; place lands on H/V/F
+- Perception: cube/sphere/core/flower/toggle in REPL
+- lattice / chord / shell / lineage
+- confirm-all / reject-all / rank / macro / distill / replay
+- Offline acceptance (`form/accept.py`)
+- Phrase hit-rate gate ≥ 0.90
+- ES/FR polyglot maps
+- Honesty gates in START_HERE
+- Lupe / bare NBD → E(X) law (steady X=5)
+
+---
+
+## Weak / remaining
+
+1. Some Dells still thin (being densified)
+2. `src/` LEGACY dual-era
+3. `preform/` historical — LEGACY stamped (not live runtime)
+4. Docs scatter under form/ (STATUS-style)
+5. Translate vs phrase gap on some English paths
+6. Polyglot ES/FR only
+7. trading/ + llm/ **out of core Form narrative** (quarantined scope)
+
+---
+
+## Goal alignment
+
+| Goal | Status |
+|------|--------|
+| Mandell as Origin | Yes |
+| Practical man↔computer | Yes |
+| Controlled growth | Yes |
+| Average-user daily use | Good |
+| Worldwide bridge | Not yet |
+
+---
+
+## Next ranked (live)
+
+1. Keep densifying thin Dells by use frequency
+2. Physical archive moves when safe
+3. Polyglot depth beyond ES/FR
+4. note_seed on all avatar paths
+5. CI smoke on every push
+
+---
+
+## Non-goals
+
+- Claiming global language adoption
+- Autonomous self-aware evolution
+- Full 4D tesseract UI
+- Treating preform/ or src/ as live Form
+
+Authority: `docs/START_HERE.md` · this file · `form/NBD_LOG.md` · `form/MODE_LUPE.md` · `docs/LIVE_INDEX.md`
