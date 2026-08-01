@@ -98,18 +98,12 @@ class Program:
         self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
 
     def note(self, action: str) -> None:
-        """Store history as seed-shaped strings when possible (replay_exec friendly)."""
         text = (action or "").strip()[:120]
-        # promote compact notes to seed form if they look like Dell::label
-        if text and not text[0].isdigit() and "[" not in text and "::" in text:
-            # leave as-is
-            pass
         self.history.append(text)
         if len(self.history) > self.history_max:
             self.history = self.history[-self.history_max :]
 
     def note_seed(self, dell: int, term: str, label: str = "") -> None:
-        """Prefer this for actions — full seed form for replay."""
         body = f"{dell:02d}[{term}]"
         if label:
             body = f"{body} :: {label[:40]}"
@@ -208,22 +202,28 @@ class Program:
         return {"ok": True, "id": prop.id, "label": prop.label}
 
     def sandbox_on(self, all_units: bool = True) -> Dict[str, Any]:
+        self.note_seed(23, "Lock", "sandbox_on")
         if all_units:
             return self.sandbox.apply_on(self.cube.session.plane)
         self.sandbox.turn_on()
         return {"ok": True, "on": True}
 
     def sandbox_off(self) -> Dict[str, Any]:
+        self.note_seed(24, "Unlock", "sandbox_off")
         return self.sandbox.apply_off(self.cube.session.plane)
 
     def enhance_on(self) -> None:
         self.enhance.turn_on()
+        self.note_seed(25, "Pulse", "enhance_on")
 
     def enhance_off(self) -> None:
         self.enhance.turn_off()
+        self.note_seed(32, "Pause", "enhance_off")
 
     def pulse(self) -> Dict[str, Any]:
-        return self.enhance.pulse(self.cube.session.plane)
+        out = self.enhance.pulse(self.cube.session.plane)
+        self.note_seed(25, "Pulse")
+        return out
 
     def scores(self) -> Dict[str, float]:
         return dict(self.enhance.state.scores)
@@ -300,11 +300,13 @@ def smoke() -> bool:
         r.append(bool(ok))
     p = open_program("Smoke")
     p.place("a", "A", words="one")
-    p.place("b", "B", words="two")
+    p.enhance_on()
+    p.pulse()
     out = p.grow_ideas(1)
     rec("grow", out.get("ok") is True)
     rec("lattice", hasattr(p, "lattice") and p.lattice is not None)
     rec("history seed form", any("[" in h for h in p.history))
+    rec("enhance noted", any("Pulse" in h or "Enhance" in h or "25[" in h for h in p.history))
     rec("macro", p.macro_seed(3).startswith("48[Macro]"))
     rec("ranked", isinstance(p.ranked_proposals(), list))
     paths = p.visual()
