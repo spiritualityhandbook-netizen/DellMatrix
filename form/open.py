@@ -106,12 +106,35 @@ class Program:
         recent = self.history[-max(1, n) :]
         if not recent:
             return "48[Macro] :: empty"
-        body = " > ".join(recent)
-        return f"48[Macro] :: {body}"[:200]
+        return f"48[Macro] :: {' > '.join(recent)}"[:200]
 
     def replay(self, n: int = 3) -> List[str]:
-        """Return last N history entries for re-execution (caller runs them)."""
         return list(self.history[-max(1, n) :])
+
+    def replay_exec(self, n: int = 3) -> Dict[str, Any]:
+        """Re-execute last N history entries that look like Mandell seeds."""
+        from form.mandell.seed import looks_like_seed
+        from form.mandell.executor import execute_seed
+
+        items = self.replay(n)
+        ran = []
+        skipped = []
+        for item in items:
+            # history stores compact notes like 08[Create]::label or full seeds
+            seed = item
+            if "::" in item and not item.strip()[0:1].isdigit():
+                # already compact note — try to promote to seed if starts with digits later
+                skipped.append(item)
+                continue
+            if looks_like_seed(seed) or (seed[:2].isdigit() and "[" in seed):
+                try:
+                    res = execute_seed(self, seed)
+                    ran.append({"seed": seed, "ok": res.get("ok", False)})
+                except Exception as e:
+                    ran.append({"seed": seed, "ok": False, "error": str(e)})
+            else:
+                skipped.append(item)
+        return {"ok": True, "ran": ran, "skipped": skipped, "n": n}
 
     def distill_label(self, text: str) -> str:
         tokens = [t for t in (text or "").replace("_", " ").split() if len(t) > 2]
@@ -159,6 +182,9 @@ class Program:
 
     def list_proposals(self) -> List[Dict[str, Any]]:
         return [p.to_dict() for p in self.nursery.pending()]
+
+    def ranked_proposals(self) -> List[Dict[str, Any]]:
+        return sorted(self.list_proposals(), key=lambda p: -float(p.get("affinity", 0)))
 
     def confirm_proposal(self, pid: str) -> Dict[str, Any]:
         prop = self.nursery.confirm(pid)
@@ -210,7 +236,7 @@ class Program:
             owner=self.owner,
             scores=self.scores(),
             avatar=self.avatar_status(),
-            nursery=self.list_proposals(),
+            nursery=self.ranked_proposals(),
             rings=list(self.duo.rings),
             form=self.lattice.perception.form.value,
             skin=self.lattice.perception.skin_name(),
@@ -271,10 +297,11 @@ def smoke() -> bool:
     p.place("b", "B", words="two")
     out = p.grow_ideas(1)
     rec("grow", out.get("ok") is True)
-    rec("lattice bound", hasattr(p, "lattice") and p.lattice is not None)
+    rec("lattice", hasattr(p, "lattice") and p.lattice is not None)
     rec("history", len(p.history) >= 2)
     rec("macro", p.macro_seed(3).startswith("48[Macro]"))
     rec("replay", len(p.replay(2)) >= 1)
+    rec("ranked", isinstance(p.ranked_proposals(), list))
     paths = p.visual()
     rec("visual", "html" in paths)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")

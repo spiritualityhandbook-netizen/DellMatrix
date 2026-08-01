@@ -1,37 +1,28 @@
 # NBD Log
 
-## Lupe Mode Locked
-Default minimum 5. Optimal steady X=5 · push 8–10 · hard max 12.
+## Law
+Bare `NBD` → compute optimal X via E(X) → execute that many.
+Steady default X=5 · push 8 · hard max 10.
 
 ---
 
-## 2026-08-01 — NBD5 Executed
+## 2026-08-01 — NBD (optimal X=5) Executed
 
-1. Rank / macro / distill / replay phrases complete
-2. REPL English path targets: rank, macro, distill, replay
-3. Phrase coverage expanded (shell, lang list, replay)
-4. docs/LIVE_INDEX.md — authority map
-5. History already in v7; macro replay path defined
-
-### Commands
-```
-rank
-macro
-macro 5
-replay
-replay 3
-distill business crm stain seal routes
-```
+1. Macro re-exec — `Program.replay_exec(n)` runs history seeds when parseable
+2. Phrase hit-rate enforced inside `smoke_all`
+3. Visual nursery ranked by affinity (`ranked_proposals()`)
+4. Accept path hooked via `form.accept` in smoke_all
+5. MODE_LUPE updated: bare NBD = calc X then run
 
 ### Next ranked
-1. Full macro replay executor (run history seeds in order)
-2. Move preform STATUS blobs into docs/archive when safe
-3. Phrase rate ≥ 0.90 verified in smoke
-4. Rank display in visual panel
-5. Thin Dell stubs densified (still open from original 50)
+1. Note history as full seeds (so replay_exec hits more often)
+2. Densify remaining thin Dell stubs (16/18/22/27/33…)
+3. Preform → docs/archive physical move
+4. Visual affinity number on each proposal card
+5. Phrase rate target 0.90 (currently ≥0.85 gate)
 
 ---
 
 ## Prior
 
-Lattice · growth · perception · confirm-all · polyglot · visual form · accept.py · history v7 · optimal X calc
+Lattice · growth · perception · confirm-all · polyglot · visual form · accept · history v7 · macro/distill/rank · optimal X calc

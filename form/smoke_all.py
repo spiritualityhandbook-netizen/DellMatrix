@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unified Form smoke — SUS suite (lattice + v7 + RingedGrowth)."""
+"""Unified Form smoke — SUS suite + phrase hit-rate + accept."""
 
 from __future__ import annotations
 
@@ -60,16 +60,23 @@ def main() -> None:
     for name, fn in suite:
         run(name, fn)
 
+    print("\n--- phrase_hit_rate ---")
+    try:
+        from form.mandell.phrase_tests import smoke as phrase_smoke
+        ok = phrase_smoke()
+        results.append(("phrase_hit_rate", ok))
+    except Exception as e:
+        print("ERROR:", e)
+        results.append(("phrase_hit_rate", False))
+
     print("\n--- verify_required ---")
     try:
         from form.open import open_program
         p = open_program("SUSVerify")
         v = p.matrix.verify()
-        ok = v.get("ok") is True
-        if not ok:
+        ok = v.get("ok") is True and hasattr(p, "lattice") and p.lattice is not None
+        if not v.get("ok"):
             print("missing:", v.get("missing"))
-        # lattice bound check
-        ok = ok and hasattr(p, "lattice") and p.lattice is not None
         print("PASS" if ok else "FAIL")
         results.append(("verify_required", ok))
     except Exception as e:
@@ -78,24 +85,8 @@ def main() -> None:
 
     print("\n--- acceptance_path ---")
     try:
-        from form.open import open_program
-        from form.persist import save, load
-        p = open_program("Accept")
-        p.place("a", "Alpha", words="seed")
-        p.place("b", "Beta", words="grow")
-        p.grow_ideas(1)
-        pending = p.list_proposals()
-        if pending:
-            p.confirm_proposal(pending[0]["id"])
-        p.lattice.to_sphere()
-        path = save(p)
-        p2 = load("Accept")
-        ok = (
-            len(p2.cube.session.plane.units) >= 2
-            and p2.lattice.perception.form.value in ("sphere", "cube", "core", "flower")
-            and hasattr(p2, "lattice")
-        )
-        print("PASS" if ok else "FAIL")
+        from form.accept import run as accept_run
+        ok = accept_run()
         results.append(("acceptance_path", ok))
     except Exception as e:
         print("ERROR:", e)
