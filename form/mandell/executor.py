@@ -23,9 +23,9 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     label = s.label or ""
     new_program = None
 
-    def place_idea(name: str) -> None:
+    def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
         uid = name.replace(" ", "_")[:24] or "idea"
-        program.place(uid, name.replace("_", " "), words=name, skin=Skin.CUBE)
+        program.place(uid, name.replace("_", " "), words=name, skin=skin)
         messages.append(f'Created idea: "{name}"')
 
     if primary == 0:
@@ -108,14 +108,31 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             place_idea(label)
         else:
             messages.append(f"Mapped units={len(program.cube.session.plane.units)}")
-    elif primary == 16:
+    elif primary == 16:  # Decay densified
+        factor = 0.9
+        if label.replace(".", "", 1).isdigit():
+            factor = max(0.1, min(1.0, float(label)))
         if hasattr(program.enhance, "decay"):
-            program.enhance.decay(0.9)
-            messages.append("Scores decayed ×0.9.")
+            program.enhance.decay(factor)
+            messages.append(f"Scores decayed ×{factor}.")
         else:
-            messages.append("Decay noted.")
-    elif primary == 18:
-        messages.append(f"Mirror: ideas={list(program.cube.session.plane.units.keys())[:12]}")
+            # manual soft decay on scores dict
+            st = program.enhance.state
+            for k in list(st.scores.keys()):
+                st.scores[k] = float(st.scores[k]) * factor
+            messages.append(f"Scores decayed ×{factor} (manual).")
+        if hasattr(program, "note_seed"):
+            program.note_seed(16, "Decay", str(factor))
+    elif primary == 18:  # Mirror densified
+        ids = list(program.cube.session.plane.units.keys())
+        messages.append(f"Mirror: {len(ids)} live ideas")
+        for uid in ids[:16]:
+            u = program.cube.session.plane.units[uid]
+            messages.append(f"  · {uid}: {u.label} [{u.skin.value}]")
+        ns = program.nursery.summary()
+        messages.append(f"nursery pending={ns['pending']} history={len(getattr(program, 'history', []))}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(18, "Mirror")
     elif primary == 19:
         lab = (label or "walk").lower()
         if "run" in lab:
@@ -129,8 +146,16 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             messages.append(f"Walked to {program.avatar.step(1)}.")
     elif primary == 21:
         place_idea(label or "merge")
-    elif primary == 22:
-        place_idea(label or "split")
+    elif primary == 22:  # Split densified
+        source = label
+        if not source and program.cube.session.plane.units:
+            source = list(program.cube.session.plane.units.values())[-1].label
+        base = (source or "split").replace(" ", "_")[:20]
+        place_idea(f"{base}_a", Skin.SEED)
+        place_idea(f"{base}_b", Skin.SEED)
+        messages.append(f"Split → {base}_a + {base}_b")
+        if hasattr(program, "note_seed"):
+            program.note_seed(22, "Split", base)
     elif primary == 23:
         program.sandbox_on()
         messages.append("Sandbox ON.")
@@ -145,15 +170,23 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         else:
             program.pulse()
             messages.append("Pulse sent.")
-    elif primary == 27:
-        messages.append(f"Checkpoint stand-in: {program.save()}")
+    elif primary == 27:  # Checkpoint densified
+        from form.persist import checkpoint as persist_cp
+        try:
+            cp = persist_cp(program)
+            messages.append(f"Checkpoint written: {cp}")
+        except Exception:
+            path = program.save()
+            messages.append(f"Checkpoint stand-in save: {path}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(27, "Checkpoint")
     elif primary == 28:
         from form.persist import load as persist_load
         new_program = persist_load(program.owner)
         messages.append("Session loaded.")
     elif primary == 29:
         short = program.distill_label(label) if hasattr(program, "distill_label") else (label or "x")
-        place_idea(f"compress_{short}")
+        place_idea(f"compress_{short}", Skin.SEED)
         messages.append(f"Compressed → {short}")
     elif primary == 32:
         if "enhance" in (label or "").lower():
@@ -162,9 +195,15 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         else:
             program.avatar.set_locomotion(Locomotion.IDLE)
             messages.append("Paused.")
-    elif primary == 33:
+    elif primary == 33:  # Resume densified
         program.avatar.set_locomotion(Locomotion.WALK)
-        messages.append("Resumed.")
+        if not program.enhance.on:
+            program.enhance_on()
+            messages.append("Resumed walk + enhance ON.")
+        else:
+            messages.append("Resumed walk.")
+        if hasattr(program, "note_seed"):
+            program.note_seed(33, "Resume")
     elif primary == 35:
         lab = (label or "").lower()
         if "nursery" in lab:
@@ -192,10 +231,10 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             last = list(program.cube.session.plane.units.values())[-1]
             source = f"{last.label} {last.words}"
         short = program.distill_label(source)
-        place_idea(short)
+        place_idea(short, Skin.SEED)
         messages.append(f"Distilled → {short}")
-        if hasattr(program, "note"):
-            program.note(f"38[Distill]::{short}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(38, "Distill", short)
     elif primary == 45:
         from form.mandell.bridge import bridge
         rep = bridge(label or "")
@@ -222,20 +261,18 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         if "replay" in lab or "replay" in terms:
             if hasattr(program, "replay_exec"):
                 out = program.replay_exec(n)
-                messages.append(f"Replay exec n={n} ran={len(out.get('ran', []))} skipped={len(out.get('skipped', []))}")
+                messages.append(
+                    f"Replay exec n={n} ran={len(out.get('ran', []))} "
+                    f"skipped={len(out.get('skipped', []))}"
+                )
                 for item in out.get("ran", [])[:8]:
                     messages.append(f"  · {item}")
-                for item in out.get("skipped", [])[:6]:
-                    messages.append(f"  skip {item}")
             else:
-                items = program.replay(n)
-                messages.append(f"Replay last {len(items)}:")
-                for item in items:
+                for item in program.replay(n):
                     messages.append(f"  · {item}")
         else:
             n = int(label) if label.isdigit() else 5
-            seed = program.macro_seed(n) if hasattr(program, "macro_seed") else "48[Macro] :: empty"
-            messages.append(seed)
+            messages.append(program.macro_seed(n))
             messages.append(f"history={len(getattr(program, 'history', []))}")
     elif primary == 50:
         lab = (label or "").lower()
