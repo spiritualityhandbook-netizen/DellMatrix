@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unified Form smoke — SUS suite + phrase hit-rate + accept."""
+"""Unified Form smoke — core suite + phrase + polyglot + accept."""
 
 from __future__ import annotations
 
@@ -63,11 +63,18 @@ def main() -> None:
     print("\n--- phrase_hit_rate ---")
     try:
         from form.mandell.phrase_tests import smoke as phrase_smoke
-        ok = phrase_smoke()
-        results.append(("phrase_hit_rate", ok))
+        results.append(("phrase_hit_rate", phrase_smoke()))
     except Exception as e:
         print("ERROR:", e)
         results.append(("phrase_hit_rate", False))
+
+    print("\n--- polyglot_es_fr ---")
+    try:
+        from form.mandell.polyglot_tests import smoke as poly_smoke
+        results.append(("polyglot_es_fr", poly_smoke()))
+    except Exception as e:
+        print("ERROR:", e)
+        results.append(("polyglot_es_fr", False))
 
     print("\n--- verify_required ---")
     try:
@@ -75,8 +82,6 @@ def main() -> None:
         p = open_program("SUSVerify")
         v = p.matrix.verify()
         ok = v.get("ok") is True and hasattr(p, "lattice") and p.lattice is not None
-        if not v.get("ok"):
-            print("missing:", v.get("missing"))
         print("PASS" if ok else "FAIL")
         results.append(("verify_required", ok))
     except Exception as e:
@@ -86,8 +91,7 @@ def main() -> None:
     print("\n--- acceptance_path ---")
     try:
         from form.accept import run as accept_run
-        ok = accept_run()
-        results.append(("acceptance_path", ok))
+        results.append(("acceptance_path", accept_run()))
     except Exception as e:
         print("ERROR:", e)
         results.append(("acceptance_path", False))
