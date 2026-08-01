@@ -6,7 +6,7 @@ Writes:
   1) form/state/visual/matrix_<owner>.html  (history)
   2) DellMatrix_UI.html at project root     (easy to find)
 
-Buttons for all general options. Voynich-inspired Ringed Growth credited.
+Node shapes follow live lattice form when unit skin is generic.
 """
 
 from __future__ import annotations
@@ -34,11 +34,22 @@ _OUT = os.path.join(os.path.dirname(__file__), "..", "state", "visual")
 os.makedirs(_OUT, exist_ok=True)
 EASY_UI = os.path.join(_ROOT, "DellMatrix_UI.html")
 
-LEVEL = 4
+LEVEL = 5
 
 _SKIN_COLOR = {
     "cube": "#5b8def", "sphere": "#7c5cbf", "seed": "#3cb371",
     "flower": "#e6a817", "building": "#c47c48", "words": "#888888", "circle": "#2aa7a0",
+    "core": "#d97706",
+}
+
+# form → default geometric skin for generic units
+_FORM_SKIN = {
+    "cube": "cube",
+    "sphere": "sphere",
+    "core": "seed",
+    "flower": "flower",
+    "square": "cube",
+    "circle": "circle",
 }
 
 ACTIONS = [
@@ -51,6 +62,15 @@ ACTIONS = [
     {"group": "Nursery", "items": [
         {"label": "Confirm idea", "cmd": "confirm ", "hint": "Paste proposal id after"},
         {"label": "Reject idea", "cmd": "reject ", "hint": "Paste proposal id after"},
+        {"label": "Confirm all", "cmd": "confirm all", "hint": ""},
+        {"label": "Reject all", "cmd": "reject all", "hint": ""},
+    ]},
+    {"group": "Lattice", "items": [
+        {"label": "Cube", "cmd": "cube", "hint": ""},
+        {"label": "Sphere", "cmd": "sphere", "hint": ""},
+        {"label": "Core", "cmd": "core", "hint": ""},
+        {"label": "Flower", "cmd": "flower", "hint": ""},
+        {"label": "Lattice", "cmd": "lattice", "hint": ""},
     ]},
     {"group": "Avatar", "items": [
         {"label": "Walk forward", "cmd": "walk forward", "hint": ""},
@@ -76,6 +96,13 @@ def _map_pos(x: float, y: float, scale: float = 70.0, cx: float = 360.0, cy: flo
     return cx + x * scale, cy - y * scale
 
 
+def _resolve_skin(unit_skin: str, form: str) -> str:
+    """Prefer explicit unit skin; otherwise follow live lattice form."""
+    if unit_skin and unit_skin not in ("cube", ""):
+        return unit_skin
+    return _FORM_SKIN.get(form, "cube")
+
+
 def plane_to_svg(
     plane: Plane,
     *,
@@ -83,6 +110,7 @@ def plane_to_svg(
     width: int = 720,
     height: int = 520,
     title: str = "Dell Matrix",
+    form: str = "cube",
 ) -> str:
     assert_floor_intact()
     scores = scores or {}
@@ -92,7 +120,7 @@ def plane_to_svg(
         f'<svg id="matrix-svg" xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         f'<rect width="100%" height="100%" fill="#0f1115" rx="12"/>',
         f'<text x="16" y="26" fill="#9aa3b2" font-family="system-ui,sans-serif" font-size="13">{html.escape(title)}</text>',
-        f'<text x="16" y="44" fill="#5c6575" font-family="system-ui,sans-serif" font-size="11">Voynich-inspired rings · Floor: {" · ".join(FLOOR)}</text>',
+        f'<text x="16" y="44" fill="#5c6575" font-family="system-ui,sans-serif" font-size="11">form={html.escape(form)} · Floor: {" · ".join(FLOOR)}</text>',
     ]
     pos: Dict[str, Tuple[float, float]] = {}
     for n in view.nodes:
@@ -109,11 +137,12 @@ def plane_to_svg(
         )
     for n in view.nodes:
         x, y = pos[n.id]
-        color = _SKIN_COLOR.get(n.skin, "#5b8def")
+        skin = _resolve_skin(n.skin, form)
+        color = _SKIN_COLOR.get(skin, "#5b8def")
         r = 18
         sc = scores.get(n.id, 0.0)
         parts.append(f'<g class="node" data-id="{html.escape(n.id)}" style="cursor:pointer">')
-        if n.skin in ("sphere", "circle", "seed", "flower"):
+        if skin in ("sphere", "circle", "seed", "flower", "core"):
             parts.append(f'<circle class="node-shape" cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="{color}" opacity="0.9"/>')
         else:
             parts.append(
@@ -159,8 +188,10 @@ def plane_to_html(
     avatar: Optional[Dict[str, Any]] = None,
     nursery: Optional[List[Dict[str, Any]]] = None,
     rings: Optional[List[str]] = None,
+    form: str = "cube",
+    skin: str = "cube",
 ) -> str:
-    svg = plane_to_svg(plane, scores=scores, title=title)
+    svg = plane_to_svg(plane, scores=scores, title=title, form=form)
     nodes = json.dumps(_nodes_payload(plane, scores))
     actions = json.dumps(ACTIONS)
     nursery = nursery or []
@@ -212,7 +243,7 @@ def plane_to_html(
 <header>
   <div>
     <h1>{html.escape(title)}</h1>
-    <div class="meta">owner={html.escape(owner)} · ideas={len(plane.units)} · rings: {html.escape(rings_s)}</div>
+    <div class="meta">owner={html.escape(owner)} · ideas={len(plane.units)} · form={html.escape(form)} · skin={html.escape(skin)} · rings: {html.escape(rings_s)}</div>
   </div>
   <div class="meta">Offline control panel · type commands in the program window</div>
 </header>
@@ -229,6 +260,7 @@ def plane_to_html(
     <div class="credit">
       Growth uses Voynich-inspired rings (Seed→Token→Body→Lens→Evolve).
       Proposals stay in Nursery until you confirm. Live matrix is never auto-changed.
+      Node shapes follow live lattice form when unit skin is generic.
     </div>
   </section>
   <section class="card" style="overflow:auto">
@@ -324,21 +356,23 @@ def write_visual(
     avatar: Optional[Dict[str, Any]] = None,
     nursery: Optional[List[Dict[str, Any]]] = None,
     rings: Optional[List[str]] = None,
+    form: str = "cube",
+    skin: str = "cube",
 ) -> Dict[str, str]:
     base = os.path.join(_OUT, f"matrix_{owner}")
     svg_path = base + ".svg"
     html_path = base + ".html"
     title = f"Dell Matrix · {owner}"
-    svg = plane_to_svg(plane, scores=scores, title=title)
+    svg = plane_to_svg(plane, scores=scores, title=title, form=form)
     doc = plane_to_html(
         plane, scores=scores, title=title, owner=owner,
         avatar=avatar, nursery=nursery, rings=rings,
+        form=form, skin=skin,
     )
     with open(svg_path, "w", encoding="utf-8") as f:
         f.write(svg)
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(doc)
-    # Easy-to-find copy at project root
     with open(EASY_UI, "w", encoding="utf-8") as f:
         f.write(doc)
     return {
@@ -346,6 +380,8 @@ def write_visual(
         "html": html_path,
         "easy": EASY_UI,
         "level": str(LEVEL),
+        "form": form,
+        "skin": skin,
         "interactive": "true",
     }
 
@@ -358,12 +394,19 @@ def smoke() -> bool:
         r.append(bool(ok))
     p = open_program("VisUI")
     p.place("biz", "Business", words="crm", skin=Skin.BUILDING, x=1)
-    paths = write_visual(p.cube.session.plane, owner="VisUI", avatar=p.avatar_status(), rings=list(p.duo.rings))
+    p.lattice.to_sphere()
+    paths = write_visual(
+        p.cube.session.plane, owner="VisUI",
+        avatar=p.avatar_status(), rings=list(p.duo.rings),
+        form=p.lattice.perception.form.value,
+        skin=p.lattice.perception.skin_name(),
+    )
     rec("html", os.path.isfile(paths["html"]))
     rec("easy path", os.path.isfile(paths.get("easy", "")))
     txt = open(paths["html"], encoding="utf-8").read()
     rec("buttons", "Grow ideas" in txt)
-    rec("voynich credit", "Voynich-inspired" in txt)
+    rec("form meta", "form=sphere" in txt or "form=cube" in txt)
+    rec("lattice buttons", "Sphere" in txt)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -372,7 +415,12 @@ def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
     p = open_program("Demo")
-    print(write_visual(p.cube.session.plane, owner="Demo", avatar=p.avatar_status(), rings=list(p.duo.rings)))
+    print(write_visual(
+        p.cube.session.plane, owner="Demo",
+        avatar=p.avatar_status(), rings=list(p.duo.rings),
+        form=p.lattice.perception.form.value,
+        skin=p.lattice.perception.skin_name(),
+    ))
 
 
 if __name__ == "__main__":
