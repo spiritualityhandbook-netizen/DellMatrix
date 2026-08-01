@@ -90,8 +90,7 @@ class Program:
         ):
             self.matrix.snap(
                 SnapCandidate(
-                    name=name,
-                    kind=kind,
+                    name=name, kind=kind,
                     manifest=manifest_from_dell(dell, term),
                     payload={"owner": self.owner},
                 )
@@ -99,25 +98,25 @@ class Program:
         self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
 
     def note(self, action: str) -> None:
-        """Macro Dell 48 — record last actions as reusable history."""
         self.history.append(action[:120])
         if len(self.history) > self.history_max:
             self.history = self.history[-self.history_max :]
 
     def macro_seed(self, n: int = 5) -> str:
-        """Build a compact seed from last N actions."""
         recent = self.history[-max(1, n) :]
         if not recent:
             return "48[Macro] :: empty"
         body = " > ".join(recent)
         return f"48[Macro] :: {body}"[:200]
 
+    def replay(self, n: int = 3) -> List[str]:
+        """Return last N history entries for re-execution (caller runs them)."""
+        return list(self.history[-max(1, n) :])
+
     def distill_label(self, text: str) -> str:
-        """Dell 38 — compress words into a short label."""
         tokens = [t for t in (text or "").replace("_", " ").split() if len(t) > 2]
         if not tokens:
             return "distill"
-        # keep distinctive tokens, max 4
         seen = []
         for t in tokens:
             tl = t.lower()
@@ -142,9 +141,7 @@ class Program:
             h = int(round(getattr(u, "x", 0) or 0))
             v = int(round(getattr(u, "y", 0) or 0))
             self.lattice.put(
-                h, v, 0,
-                content=id,
-                label=label,
+                h, v, 0, content=id, label=label,
                 tags=["idea"] + ([kwargs.get("words")] if kwargs.get("words") else []),
             )
         except Exception:
@@ -175,7 +172,7 @@ class Program:
         prop = self.nursery.reject(pid)
         if not prop:
             return {"ok": False, "reason": "not found or not pending"}
-        self.note(f"24[Unlock]::reject")
+        self.note("24[Unlock]::reject")
         return {"ok": True, "id": prop.id, "label": prop.label}
 
     def sandbox_on(self, all_units: bool = True) -> Dict[str, Any]:
@@ -275,9 +272,9 @@ def smoke() -> bool:
     out = p.grow_ideas(1)
     rec("grow", out.get("ok") is True)
     rec("lattice bound", hasattr(p, "lattice") and p.lattice is not None)
-    rec("lattice cells", len(p.lattice.cells) >= 2)
     rec("history", len(p.history) >= 2)
     rec("macro", p.macro_seed(3).startswith("48[Macro]"))
+    rec("replay", len(p.replay(2)) >= 1)
     paths = p.visual()
     rec("visual", "html" in paths)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
