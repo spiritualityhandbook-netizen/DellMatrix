@@ -202,8 +202,8 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append(f"mandel: {rep.get('mandel')}")
         messages.append(f"english: {rep.get('english')}")
     elif primary == 46:
-        pending = program.list_proposals()
-        ranked = sorted(pending, key=lambda p: -float(p.get("affinity", 0)))
+        ranked = program.ranked_proposals() if hasattr(program, "ranked_proposals") else program.list_proposals()
+        ranked = sorted(ranked, key=lambda p: -float(p.get("affinity", 0)))
         messages.append(f"Ranked {len(ranked)} proposals:")
         for i, prop in enumerate(ranked[:12], 1):
             messages.append(
@@ -215,17 +215,23 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append(paths.get("easy") or paths.get("html", ""))
     elif primary == 48:
         lab = (label or "").lower()
+        n = 3
+        for tok in lab.replace("_", " ").split():
+            if tok.isdigit():
+                n = int(tok)
         if "replay" in lab or "replay" in terms:
-            n = 3
-            for tok in lab.replace("_", " ").split():
-                if tok.isdigit():
-                    n = int(tok)
-            items = program.replay(n) if hasattr(program, "replay") else []
-            messages.append(f"Replay last {len(items)}:")
-            for item in items:
-                messages.append(f"  · {item}")
-            if not items:
-                messages.append("  (history empty)")
+            if hasattr(program, "replay_exec"):
+                out = program.replay_exec(n)
+                messages.append(f"Replay exec n={n} ran={len(out.get('ran', []))} skipped={len(out.get('skipped', []))}")
+                for item in out.get("ran", [])[:8]:
+                    messages.append(f"  · {item}")
+                for item in out.get("skipped", [])[:6]:
+                    messages.append(f"  skip {item}")
+            else:
+                items = program.replay(n)
+                messages.append(f"Replay last {len(items)}:")
+                for item in items:
+                    messages.append(f"  · {item}")
         else:
             n = int(label) if label.isdigit() else 5
             seed = program.macro_seed(n) if hasattr(program, "macro_seed") else "48[Macro] :: empty"
