@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One program — Form front door with Avatar + Ringed Growth Nursery."""
+"""One program — Form front door with Avatar + Ringed Growth Nursery + HarmonicLattice."""
 
 from __future__ import annotations
 
@@ -20,6 +20,8 @@ try:
     from form.dell_matrix.sandbox_gate import SandboxGate
     from form.dell_matrix.nursery import Nursery
     from form.dell_matrix.ringed_growth import RingedGrowth
+    from form.dell_matrix.harmonic_lattice import HarmonicLattice
+    from form.dell_matrix.perception import Form
     from form.duobeta.growth import DuoBeta
     from form.avatar import Avatar, FaceController, Expression, build_default_registry
 except ImportError:
@@ -37,6 +39,8 @@ except ImportError:
     from form.dell_matrix.sandbox_gate import SandboxGate
     from form.dell_matrix.nursery import Nursery
     from form.dell_matrix.ringed_growth import RingedGrowth
+    from form.dell_matrix.harmonic_lattice import HarmonicLattice
+    from form.dell_matrix.perception import Form
     from form.duobeta.growth import DuoBeta
     from form.avatar import Avatar, FaceController, Expression, build_default_registry
 
@@ -57,6 +61,7 @@ class Program:
     kaomoji: Any = field(init=False)
     nursery: Nursery = field(init=False)
     growth: RingedGrowth = field(init=False)
+    lattice: HarmonicLattice = field(init=False)
 
     def __post_init__(self):
         assert_floor_intact()
@@ -67,6 +72,7 @@ class Program:
         self.kaomoji = build_default_registry()
         self.nursery = Nursery.load()
         self.growth = RingedGrowth(nursery=self.nursery)
+        self.lattice = HarmonicLattice(size=12)
         for name, kind, dell, term in (
             ("PlaneSurface", "tool", 15, "Plane"),
             ("MainField", "main", 21, "MainThird"),
@@ -78,6 +84,7 @@ class Program:
             ("Nursery", "growth", 23, "Nursery"),
             ("RingedGrowth", "growth", 13, "RingedGrowth"),
             ("Avatar", "entity", 2, "Avatar"),
+            ("HarmonicLattice", "lattice", 15, "Lattice"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -100,6 +107,18 @@ class Program:
     def place(self, id: str, label: str, **kwargs):
         u = self.cube.place_idea(id, label, **kwargs)
         self.sandbox.maybe_auto_box(self.cube.session.plane, id)
+        # NBD 1+3: also land on HarmonicLattice (H/V from plane coords)
+        try:
+            h = int(round(getattr(u, "x", 0) or 0))
+            v = int(round(getattr(u, "y", 0) or 0))
+            self.lattice.put(
+                h, v, 0,
+                content=id,
+                label=label,
+                tags=["idea"] + ([kwargs.get("words")] if kwargs.get("words") else []),
+            )
+        except Exception:
+            pass
         return u
 
     def grow_ideas(self, cycles: int = 1) -> Dict[str, Any]:
@@ -172,11 +191,13 @@ class Program:
         plane_txt = self.cube.session.plane.render(scores=scores)
         av = self.avatar_status()
         ns = self.nursery.summary()
+        form_name = self.lattice.perception.form.value
         lines = [
             f"+- DellMatrix · owner={self.owner} -+",
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
             f"| {av['look']}  {av['describe']}",
             f"| ideas={len(self.cube.session.plane.units)}  nursery={ns['pending']}  gen={self.duo.generation}",
+            f"| lattice form={form_name} cells={len(self.lattice.cells)}  size={self.lattice.size}",
             f"| rings: {' → '.join(self.duo.rings)}  (Voynich-inspired)",
         ]
         for ln in plane_txt.splitlines():
@@ -195,6 +216,7 @@ class Program:
             "ideas": len(self.cube.session.plane.units),
             "rings": list(self.duo.rings),
             "enhance": self.enhance.status(),
+            "lattice": self.lattice.status(),
         }
 
 
@@ -213,6 +235,8 @@ def smoke() -> bool:
     p.place("b", "B", words="two")
     out = p.grow_ideas(1)
     rec("grow", out.get("ok") is True)
+    rec("lattice bound", hasattr(p, "lattice") and p.lattice is not None)
+    rec("lattice cells", len(p.lattice.cells) >= 2)
     paths = p.visual()
     rec("visual", "html" in paths)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
