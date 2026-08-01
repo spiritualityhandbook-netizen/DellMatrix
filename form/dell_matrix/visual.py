@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""
-Visual control panel — intuitive offline HTML UI.
-
-Writes:
-  1) form/state/visual/matrix_<owner>.html  (history)
-  2) DellMatrix_UI.html at project root     (easy to find)
-
-Node shapes follow live lattice form when unit skin is generic.
-"""
+"""Visual control panel — offline HTML UI. Form-driven skins + ranked nursery."""
 
 from __future__ import annotations
 
@@ -33,23 +25,16 @@ _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _OUT = os.path.join(os.path.dirname(__file__), "..", "state", "visual")
 os.makedirs(_OUT, exist_ok=True)
 EASY_UI = os.path.join(_ROOT, "DellMatrix_UI.html")
-
-LEVEL = 5
+LEVEL = 6
 
 _SKIN_COLOR = {
     "cube": "#5b8def", "sphere": "#7c5cbf", "seed": "#3cb371",
     "flower": "#e6a817", "building": "#c47c48", "words": "#888888", "circle": "#2aa7a0",
     "core": "#d97706",
 }
-
-# form → default geometric skin for generic units
 _FORM_SKIN = {
-    "cube": "cube",
-    "sphere": "sphere",
-    "core": "seed",
-    "flower": "flower",
-    "square": "cube",
-    "circle": "circle",
+    "cube": "cube", "sphere": "sphere", "core": "seed",
+    "flower": "flower", "square": "cube", "circle": "circle",
 }
 
 ACTIONS = [
@@ -57,6 +42,7 @@ ACTIONS = [
         {"label": "Create idea", "cmd": "create an idea called ", "hint": "Type a name after this"},
         {"label": "Grow ideas", "cmd": "grow ideas 2", "hint": "Ringed growth → Nursery"},
         {"label": "Show proposals", "cmd": "proposals", "hint": "View Nursery quarantine"},
+        {"label": "Rank", "cmd": "rank", "hint": "Sort by affinity"},
         {"label": "Show matrix", "cmd": "show me", "hint": "Print live state"},
     ]},
     {"group": "Nursery", "items": [
@@ -97,20 +83,16 @@ def _map_pos(x: float, y: float, scale: float = 70.0, cx: float = 360.0, cy: flo
 
 
 def _resolve_skin(unit_skin: str, form: str) -> str:
-    """Prefer explicit unit skin; otherwise follow live lattice form."""
     if unit_skin and unit_skin not in ("cube", ""):
         return unit_skin
     return _FORM_SKIN.get(form, "cube")
 
 
 def plane_to_svg(
-    plane: Plane,
-    *,
+    plane: Plane, *,
     scores: Optional[Dict[str, float]] = None,
-    width: int = 720,
-    height: int = 520,
-    title: str = "Dell Matrix",
-    form: str = "cube",
+    width: int = 720, height: int = 520,
+    title: str = "Dell Matrix", form: str = "cube",
 ) -> str:
     assert_floor_intact()
     scores = scores or {}
@@ -180,16 +162,13 @@ def _nodes_payload(plane: Plane, scores: Optional[Dict[str, float]] = None) -> L
 
 
 def plane_to_html(
-    plane: Plane,
-    *,
+    plane: Plane, *,
     scores: Optional[Dict[str, float]] = None,
-    title: str = "Dell Matrix",
-    owner: str = "Operator",
+    title: str = "Dell Matrix", owner: str = "Operator",
     avatar: Optional[Dict[str, Any]] = None,
     nursery: Optional[List[Dict[str, Any]]] = None,
     rings: Optional[List[str]] = None,
-    form: str = "cube",
-    skin: str = "cube",
+    form: str = "cube", skin: str = "cube",
 ) -> str:
     svg = plane_to_svg(plane, scores=scores, title=title, form=form)
     nodes = json.dumps(_nodes_payload(plane, scores))
@@ -234,6 +213,7 @@ def plane_to_html(
   #detail .v {{ font-size:13px; word-break:break-word; }}
   .proposal {{ border:1px solid var(--line); border-radius:10px; padding:8px 10px; margin-bottom:8px; font-size:13px; }}
   .proposal .kind {{ color:var(--ok); font-size:11px; }}
+  .proposal .aff {{ color:var(--accent); font-size:11px; font-weight:600; }}
   .avatar-line {{ font-size:14px; margin-bottom:6px; }}
   .empty {{ color:var(--muted); font-size:13px; }}
   .credit {{ font-size:11px; color:#5c6575; margin-top:10px; line-height:1.4; }}
@@ -258,9 +238,7 @@ def plane_to_html(
       <button class="copy-btn" id="copy-btn" type="button">Copy command</button>
     </div>
     <div class="credit">
-      Growth uses Voynich-inspired rings (Seed→Token→Body→Lens→Evolve).
-      Proposals stay in Nursery until you confirm. Live matrix is never auto-changed.
-      Node shapes follow live lattice form when unit skin is generic.
+      Growth uses Voynich-inspired rings. Nursery ranked by affinity. Live matrix never auto-changed.
     </div>
   </section>
   <section class="card" style="overflow:auto">
@@ -277,7 +255,7 @@ def plane_to_html(
   <section class="card">
     <h2>Avatar</h2>
     <div id="avatar-box" class="avatar-line empty">—</div>
-    <h2 style="margin-top:18px">Nursery (quarantine)</h2>
+    <h2 style="margin-top:18px">Nursery (ranked)</h2>
     <div id="nursery-box" class="empty">No pending proposals</div>
   </section>
 </div>
@@ -337,7 +315,9 @@ document.querySelectorAll('.node').forEach(g => g.addEventListener('click', () =
   NURSERY.slice(0, 12).forEach(p => {{
     const d = document.createElement('div');
     d.className = 'proposal';
+    const aff = (typeof p.affinity === 'number') ? p.affinity.toFixed(3) : '—';
     d.innerHTML = '<div class="kind">' + (p.kind || '') + ' · ' + (p.id || '') + '</div>'
+      + '<div class="aff">aff ' + aff + '</div>'
       + '<div>' + (p.label || '') + '</div>'
       + '<div style="color:var(--muted);font-size:11px;margin-top:4px">confirm ' + (p.id || '') + '</div>';
     box.appendChild(d);
@@ -376,13 +356,8 @@ def write_visual(
     with open(EASY_UI, "w", encoding="utf-8") as f:
         f.write(doc)
     return {
-        "svg": svg_path,
-        "html": html_path,
-        "easy": EASY_UI,
-        "level": str(LEVEL),
-        "form": form,
-        "skin": skin,
-        "interactive": "true",
+        "svg": svg_path, "html": html_path, "easy": EASY_UI,
+        "level": str(LEVEL), "form": form, "skin": skin, "interactive": "true",
     }
 
 
@@ -400,13 +375,14 @@ def smoke() -> bool:
         avatar=p.avatar_status(), rings=list(p.duo.rings),
         form=p.lattice.perception.form.value,
         skin=p.lattice.perception.skin_name(),
+        nursery=p.ranked_proposals(),
     )
     rec("html", os.path.isfile(paths["html"]))
     rec("easy path", os.path.isfile(paths.get("easy", "")))
     txt = open(paths["html"], encoding="utf-8").read()
     rec("buttons", "Grow ideas" in txt)
     rec("form meta", "form=sphere" in txt or "form=cube" in txt)
-    rec("lattice buttons", "Sphere" in txt)
+    rec("affinity css", "aff" in txt)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
