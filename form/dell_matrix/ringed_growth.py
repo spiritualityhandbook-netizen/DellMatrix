@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Ringed Growth Engine — revolutionary but controlled.
+Ringed Growth Engine — sole public growth path.
 
 Synthesizes:
 - Voynich 5 rings: Seed → Token → Body → Lens → Evolve
-- Stonehenge gates: growth only fires on alignment (threshold + ring law)
-- Aetheris: FOG cut — only clear, structural proposals pass
-- Ancient: full lineage preserved on every proposal
-- Manelody: harmonic affinity (not only word overlap)
-- DuoBeta: generation ledger + self-understand
+- Stonehenge gates: growth only fires on alignment
+- Aetheris: FOG cut
+- Ancient: full lineage preserved
+- Manelody: harmonic affinity
+- DuoBeta: generation ledger
 - Nursery: all output quarantined until user confirms
 
 Law:
@@ -29,17 +29,14 @@ import re
 from form.dell_matrix.nursery import Nursery
 from form.dell_matrix.plane import Plane
 
-# Voynich / DuoBeta structural rings
 RINGS = ("Seed", "Token", "Body", "Lens", "Evolve")
 
 _TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
 
-# Stonehenge-style alignment thresholds (practical solstice markers)
-SOLSTICE_AFFINITY = 0.28   # strong alignment → new concept allowed
-EQUINOX_AFFINITY = 0.16    # medium → evolved form allowed
-STANSTILL_AFFINITY = 0.10  # weak → only deepen existing (still proposed)
+SOLSTICE_AFFINITY = 0.28
+EQUINOX_AFFINITY = 0.16
+STANSTILL_AFFINITY = 0.10
 
-# Aetheris FOG filters — reject unclear / pure noise proposals
 FOG_MIN_LABEL_LEN = 3
 FOG_MAX_LABEL_LEN = 72
 FOG_BANNED_FRAGMENTS = ("asdf", "test123", "xxx", "???", "null", "undefined")
@@ -59,15 +56,12 @@ def _jaccard(a: Set[str], b: Set[str]) -> float:
 
 
 def _harmonic(a: Set[str], b: Set[str]) -> float:
-    """Manelody-style harmonic score: shared core + complementary tension."""
     if not a and not b:
         return 0.0
     jac = _jaccard(a, b)
-    # complementarity: unique tokens that could bridge
     only_a, only_b = a - b, b - a
     bridge = min(len(only_a), len(only_b))
     tension = bridge / (1.0 + len(a | b))
-    # harmonic mean bias toward balanced pairs
     if jac <= 0 and tension <= 0:
         return 0.0
     return (2 * jac * (jac + tension)) / (2 * jac + tension + 1e-9)
@@ -89,7 +83,6 @@ def _affinity(plane: Plane, a: str, b: str) -> Dict[str, float]:
     spatial = 1.0 / (1.0 + dist)
     scope = set(plane.enhance_scope(a))
     in_scope = 1.0 if b in scope else 0.2
-    # blended score (Manelody + space + scope)
     aff = harm * 0.45 + jac * 0.25 + spatial * 0.15 + in_scope * 0.15
     return {
         "affinity": aff,
@@ -101,7 +94,6 @@ def _affinity(plane: Plane, a: str, b: str) -> Dict[str, float]:
 
 
 def _aetheris_clear(label: str, words: str) -> bool:
-    """FOG cut — reject low-clarity proposals."""
     lab = (label or "").strip()
     if len(lab) < FOG_MIN_LABEL_LEN or len(lab) > FOG_MAX_LABEL_LEN:
         return False
@@ -110,20 +102,18 @@ def _aetheris_clear(label: str, words: str) -> bool:
         return False
     if lab.count("?") > 2 or lab.count("!") > 3:
         return False
-    # must have at least one real token
     if not _tokens(lab, words):
         return False
     return True
 
 
 def _ring_phase(affinity: float) -> str:
-    """Stonehenge gate: which ring event fired."""
     if affinity >= SOLSTICE_AFFINITY:
-        return "Solstice"   # strong → new concept
+        return "Solstice"
     if affinity >= EQUINOX_AFFINITY:
-        return "Equinox"    # medium → evolve
+        return "Equinox"
     if affinity >= STANSTILL_AFFINITY:
-        return "Standstill" # weak → deepen only
+        return "Standstill"
     return "None"
 
 
@@ -141,15 +131,6 @@ def _evolve_label(label: str, gained: Set[str]) -> str:
 
 @dataclass
 class RingedGrowth:
-    """
-    Full pipeline:
-      Seed (live ideas)
-        → Token (extract patterns)
-        → Body (form candidates)
-        → Lens (Aetheris FOG + Stonehenge gates)
-        → Evolve (Nursery proposals with Ancient lineage)
-    """
-
     nursery: Nursery = field(default_factory=Nursery.load)
     max_new: int = 10
     max_evolved: int = 8
@@ -167,7 +148,6 @@ class RingedGrowth:
                 report.append({"cycle": cycle + 1, "ok": False, "reason": "no live ideas"})
                 continue
 
-            # --- Ring 1–2: Seed + Token — pair scan ---
             pairs: List[Tuple[str, str, Dict[str, float]]] = []
             for i, a in enumerate(ids):
                 for b in ids[i + 1 :]:
@@ -178,7 +158,6 @@ class RingedGrowth:
             new_this = 0
             evo_this = 0
 
-            # --- Ring 3–5: Body → Lens → Evolve ---
             for a, b, aff in pairs:
                 gate = _ring_phase(aff["affinity"])
                 gate_counts[gate] = gate_counts.get(gate, 0) + 1
@@ -215,7 +194,6 @@ class RingedGrowth:
                     total_new += 1
 
                 elif gate in ("Equinox", "Standstill") and evo_this < self.max_evolved:
-                    # evolve the stronger parent
                     primary = a if aff["affinity"] >= 0 else b
                     u = plane.units[primary]
                     peer = plane.units[b if primary == a else a]
@@ -266,3 +244,29 @@ class RingedGrowth:
             "steps": report,
             "law": "proposals quarantined · live matrix untouched · lineage preserved",
         }
+
+
+def smoke() -> bool:
+    print("=== RINGED GROWTH SMOKE ===")
+    r = []
+    def rec(n, ok, d=""):
+        print(f"[{len(r)+1}] {n}: {'PASS' if ok else 'FAIL'}" + (f" | {d}" if d else ""))
+        r.append(bool(ok))
+    from form.open import open_program
+    from form.dell_matrix.plane import Skin
+    p = open_program("RingSmoke")
+    p.cube.session.plane.units.clear()
+    p.place("x", "Alpha", words="seed structure", skin=Skin.CUBE, x=0)
+    p.place("y", "Beta", words="structure grow", skin=Skin.CUBE, x=1)
+    out = p.grow_ideas(1)
+    rec("ok", out.get("ok") is True)
+    rec("engine", out.get("engine") == "RingedGrowth")
+    rec("rings", out.get("rings") == list(RINGS))
+    rec("nursery key", "nursery" in out)
+    print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
+    return all(r)
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(0 if smoke() else 1)
