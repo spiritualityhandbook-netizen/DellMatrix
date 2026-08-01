@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — Mandell Origin. English, seeds, patterns, polyglot bridge."""
+"""REPL — Mandell Origin. English, seeds, patterns, polyglot bridge, lattice."""
 
 from __future__ import annotations
 
@@ -38,17 +38,20 @@ Mandell Origin — English or seeds.
   create an idea called business
   08[Create] > 15[Map] :: business
   grow ideas 2
-  13[Loop] > 04[Transform] :: grow
   save / load / visual / proposals / confirm <id>
 
+Lattice / Perception:
+  cube | sphere | core | flower | toggle
+  lattice
+  chord 0 0
+
 Teach:
-  teach loop | teach grow | patterns | phrases
+  teach loop | patterns | phrases
 
 Bridge:
   mandell <english>
   english <seed>
-  es crea una idea llamada prueba
-  fr marche
+  es ... | fr ...
 """.strip()
 
 _FACING = {
@@ -79,6 +82,60 @@ def _show_proposals(p: Program) -> None:
     _say("Type: confirm <id>  or  reject <id>")
 
 
+def _handle_lattice(p: Program, lower: str, raw: str) -> bool:
+    """Return True if command was a lattice/perception command."""
+    if lower in ("cube", "to cube", "form cube"):
+        p.lattice.to_cube()
+        _say(f"Form → cube  (skin={p.lattice.perception.skin_name()})")
+        return True
+    if lower in ("sphere", "to sphere", "form sphere"):
+        p.lattice.to_sphere()
+        _say(f"Form → sphere  (skin={p.lattice.perception.skin_name()})")
+        return True
+    if lower in ("core", "to core", "form core"):
+        p.lattice.to_core()
+        _say(f"Form → core  (skin={p.lattice.perception.skin_name()})")
+        return True
+    if lower in ("flower", "to flower", "form flower"):
+        n = p.lattice.plant_flower(1)
+        _say(f"Form → flower  planted {n} centers  (skin={p.lattice.perception.skin_name()})")
+        return True
+    if lower in ("toggle", "toggle form", "dual"):
+        new = p.lattice.toggle_form()
+        _say(f"Form toggled → {new.value}  (skin={p.lattice.perception.skin_name()})")
+        return True
+    if lower in ("lattice", "show lattice", "lattice status"):
+        st = p.lattice.status()
+        _say(f"size={st['size']} form={st['form']} dual={st['dual']} skin={st['skin']}")
+        _say(f"cells={st['cells']} modules={st['modules']} origin={st['example_origin']}")
+        print()
+        print(p.lattice.render_ascii())
+        print()
+        return True
+    if lower.startswith("chord "):
+        parts = raw.split()
+        try:
+            h = int(parts[1]) if len(parts) > 1 else 0
+            v = int(parts[2]) if len(parts) > 2 else 0
+            f = int(parts[3]) if len(parts) > 3 else 0
+        except ValueError:
+            h = v = f = 0
+        chord = p.lattice.pull_chord(h, v, f)
+        _say(f"Chord at ({h},{v},{f}):")
+        for c in chord:
+            mark = "●" if c["has_content"] else "·"
+            _say(f"  {mark} {c['coords']}  {c['note']}  shell={c['shell']}  {c['label'] or '—'}")
+        return True
+    if lower == "chord":
+        chord = p.lattice.pull_chord(0, 0, 0)
+        _say("Chord at origin (0,0,0):")
+        for c in chord:
+            mark = "●" if c["has_content"] else "·"
+            _say(f"  {mark} {c['coords']}  {c['note']}  shell={c['shell']}  {c['label'] or '—'}")
+        return True
+    return False
+
+
 def _apply_seed_result(p: Program, result: dict) -> Program:
     for msg in result.get("messages") or []:
         if msg == "__RENDER__":
@@ -98,6 +155,10 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
     action = intent.action
     args = intent.args or {}
     lower = raw_line.lower().strip()
+
+    # --- Lattice / Perception (NBD) ---
+    if _handle_lattice(p, lower, raw_line):
+        return p
 
     if lower in ("proposals", "nursery", "void", "pending"):
         _show_proposals(p)
@@ -149,7 +210,6 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
         _say(f"english: {rep.get('english')}")
         return p
 
-    # polyglot: es ... / fr ...
     if lower.startswith("es ") or lower.startswith("spanish "):
         text = raw_line.split(maxsplit=1)[1]
         rep = bridge_lang("es", text)
@@ -270,7 +330,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
         path = p.save()
         ns = p.nursery.summary()
         _say("Session saved.")
-        _say(f"ideas={len(p.cube.session.plane.units)} nursery={ns['pending']}")
+        _say(f"ideas={len(p.cube.session.plane.units)} nursery={ns['pending']} lattice_cells={len(p.lattice.cells)}")
         _say(f"file={path}")
 
     elif action == "load":
@@ -283,8 +343,10 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
     elif action == "status":
         st = p.avatar_status()
         ns = p.nursery.summary()
+        lat = p.lattice.status()
         _say(f"{st['look']}  {st['describe']}")
         _say(f"ideas={len(p.cube.session.plane.units)} nursery={ns['pending']}")
+        _say(f"lattice form={lat['form']} cells={lat['cells']}")
 
     elif action == "help":
         print()
@@ -305,7 +367,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
     print("  DellMatrix — Mandell Origin")
-    print("  English · Seeds · Patterns · Polyglot bridge")
+    print("  English · Seeds · Lattice · Perception")
     print()
     p = persist_load(owner) if do_load else open_program(owner)
     if do_load:
