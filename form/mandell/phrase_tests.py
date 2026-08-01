@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bidirectional EN ↔ Mandell hit-rate checks for stable phrases."""
+"""Bidirectional EN ↔ Mandell hit-rate checks. Gate ≥ 0.90."""
 
 from __future__ import annotations
 
@@ -49,6 +49,13 @@ SAMPLES: List[str] = [
     "sandbox off",
     "acceptance",
     "place test",
+    "macro",
+    "macro 5",
+    "rank",
+    "distill business crm",
+    "replay",
+    "shell",
+    "lang list",
 ]
 
 
@@ -68,12 +75,7 @@ def roundtrip_sample(english: str) -> dict:
     m = match_phrase(english)
     mandel = m["mandel"] if m else to_mandell(english)
     back = to_english(mandel) if mandel else ""
-    return {
-        "english": english,
-        "mandel": mandel,
-        "back": back,
-        "hit": bool(m),
-    }
+    return {"english": english, "mandel": mandel, "back": back, "hit": bool(m)}
 
 
 def smoke() -> bool:
@@ -85,7 +87,7 @@ def smoke() -> bool:
         print("misses:")
         for m in misses[:12]:
             print(f"  - {m}")
-    passed = rate >= 0.85
+    passed = rate >= 0.90
     print("PASS" if passed else "FAIL")
     return passed
 

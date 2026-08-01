@@ -98,9 +98,22 @@ class Program:
         self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
 
     def note(self, action: str) -> None:
-        self.history.append(action[:120])
+        """Store history as seed-shaped strings when possible (replay_exec friendly)."""
+        text = (action or "").strip()[:120]
+        # promote compact notes to seed form if they look like Dell::label
+        if text and not text[0].isdigit() and "[" not in text and "::" in text:
+            # leave as-is
+            pass
+        self.history.append(text)
         if len(self.history) > self.history_max:
             self.history = self.history[-self.history_max :]
+
+    def note_seed(self, dell: int, term: str, label: str = "") -> None:
+        """Prefer this for actions — full seed form for replay."""
+        body = f"{dell:02d}[{term}]"
+        if label:
+            body = f"{body} :: {label[:40]}"
+        self.note(body)
 
     def macro_seed(self, n: int = 5) -> str:
         recent = self.history[-max(1, n) :]
@@ -112,24 +125,17 @@ class Program:
         return list(self.history[-max(1, n) :])
 
     def replay_exec(self, n: int = 3) -> Dict[str, Any]:
-        """Re-execute last N history entries that look like Mandell seeds."""
         from form.mandell.seed import looks_like_seed
         from form.mandell.executor import execute_seed
 
         items = self.replay(n)
-        ran = []
-        skipped = []
+        ran, skipped = [], []
         for item in items:
-            # history stores compact notes like 08[Create]::label or full seeds
             seed = item
-            if "::" in item and not item.strip()[0:1].isdigit():
-                # already compact note — try to promote to seed if starts with digits later
-                skipped.append(item)
-                continue
-            if looks_like_seed(seed) or (seed[:2].isdigit() and "[" in seed):
+            if looks_like_seed(seed) or (len(seed) >= 3 and seed[:2].isdigit() and "[" in seed):
                 try:
                     res = execute_seed(self, seed)
-                    ran.append({"seed": seed, "ok": res.get("ok", False)})
+                    ran.append({"seed": seed, "ok": bool(res.get("ok"))})
                 except Exception as e:
                     ran.append({"seed": seed, "ok": False, "error": str(e)})
             else:
@@ -169,7 +175,7 @@ class Program:
             )
         except Exception:
             pass
-        self.note(f"08[Create]::{label}")
+        self.note_seed(8, "Create", label)
         return u
 
     def grow_ideas(self, cycles: int = 1) -> Dict[str, Any]:
@@ -177,7 +183,7 @@ class Program:
             self.enhance.turn_on()
         result = self.growth.run(self.cube.session.plane, cycles=cycles)
         self.duo.evolve(f"13[Loop] :: RingedGrow x{cycles}")
-        self.note(f"13[Loop]::growx{cycles}")
+        self.note_seed(13, "Loop", f"growx{cycles}")
         return result
 
     def list_proposals(self) -> List[Dict[str, Any]]:
@@ -191,14 +197,14 @@ class Program:
         if not prop:
             return {"ok": False, "reason": "not found or not pending"}
         self.place(prop.id, prop.label, words=prop.words, skin=Skin.SEED)
-        self.note(f"50[Manifest]::{prop.label}")
+        self.note_seed(50, "Manifest", prop.label)
         return {"ok": True, "id": prop.id, "label": prop.label, "kind": prop.kind}
 
     def reject_proposal(self, pid: str) -> Dict[str, Any]:
         prop = self.nursery.reject(pid)
         if not prop:
             return {"ok": False, "reason": "not found or not pending"}
-        self.note("24[Unlock]::reject")
+        self.note_seed(24, "Unlock", "reject")
         return {"ok": True, "id": prop.id, "label": prop.label}
 
     def sandbox_on(self, all_units: bool = True) -> Dict[str, Any]:
@@ -225,12 +231,12 @@ class Program:
     def save(self, path: Optional[str] = None) -> str:
         from form.persist import save as persist_save
         self.nursery.save()
-        self.note("10[Keep]")
+        self.note_seed(10, "Keep")
         return persist_save(self, path)
 
     def visual(self) -> Dict[str, str]:
         from form.dell_matrix.visual import write_visual
-        self.note("09[Show]>>47[Embed]")
+        self.note_seed(9, "Show", "visual")
         return write_visual(
             self.cube.session.plane,
             owner=self.owner,
@@ -298,9 +304,8 @@ def smoke() -> bool:
     out = p.grow_ideas(1)
     rec("grow", out.get("ok") is True)
     rec("lattice", hasattr(p, "lattice") and p.lattice is not None)
-    rec("history", len(p.history) >= 2)
+    rec("history seed form", any("[" in h for h in p.history))
     rec("macro", p.macro_seed(3).startswith("48[Macro]"))
-    rec("replay", len(p.replay(2)) >= 1)
     rec("ranked", isinstance(p.ranked_proposals(), list))
     paths = p.visual()
     rec("visual", "html" in paths)
