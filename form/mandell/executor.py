@@ -7,19 +7,15 @@ Maps parsed seeds onto Program actions.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Dict
 
-from .seed import Seed, parse_seed
+from .seed import parse_seed
 from .registry import get_dell
 
 
 def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
-    """
-    Run a Mandell seed against a Program-like object.
-    Returns a result dict with ok, messages, and optional new_program.
-    """
     from form.dell_matrix.plane import Skin
-    from form.avatar import Locomotion, Posture, Expression, Facing
+    from form.avatar import Locomotion, Posture, Expression
 
     s = parse_seed(seed_text)
     if not s.ok:
@@ -36,18 +32,17 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         program.place(uid, name.replace("_", " "), words=name, skin=Skin.CUBE)
         messages.append(f'Created idea: "{name}"')
 
-    # --- Dell coverage ---
-    if primary == 0:  # Nova — fresh note only
+    if primary == 0:
         messages.append("Nova is cheat/edge only — floor stays locked.")
 
-    elif primary == 1:  # Initiate
+    elif primary == 1:
         messages.append(f"Initiated. owner={program.owner}")
 
-    elif primary == 2:  # Persona / avatar focus
+    elif primary == 2:
         st = program.avatar_status()
         messages.append(f"{st['look']}  {st['describe']}")
 
-    elif primary == 4:  # Transform — posture / turn from label
+    elif primary == 4:
         lab = label.lower()
         if "left" in lab:
             facing = program.avatar.turn_left()
@@ -68,10 +63,13 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         elif "bend" in lab:
             program.avatar.set_posture(Posture.BEND)
             messages.append("Bent over.")
+        elif "toggle" in lab:
+            new = program.lattice.toggle_form()
+            messages.append(f"Form toggled → {new.value}")
         else:
-            messages.append("Transform ready — use label sit/stand/jump/turn_left/turn_right.")
+            messages.append("Transform ready — sit/stand/jump/turn_left/turn_right/toggle.")
 
-    elif primary == 5:  # Tone
+    elif primary == 5:
         expr_map = {
             "joy": Expression.JOY, "smile": Expression.JOY,
             "calm": Expression.CALM, "focus": Expression.FOCUS,
@@ -83,35 +81,37 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         face = program.face.set(expr)
         messages.append(f"{face}  tone={expr.value}")
 
-    elif primary == 7:  # Link — record as idea bridge label
-        name = label or "link"
-        place_idea(f"link_{name}")
+    elif primary == 7:
+        place_idea(f"link_{label or 'link'}")
 
-    elif primary == 8:  # Create
+    elif primary == 8:
         place_idea(label or "idea")
 
-    elif primary == 9:  # Show
-        if "embed" in terms or "visual" in (label or "").lower() or 47 in [a.dell for a in s.atoms]:
+    elif primary == 9:
+        lab = (label or "").lower()
+        if "embed" in terms or "visual" in lab or 47 in [a.dell for a in s.atoms]:
             paths = program.visual()
             messages.append("Visual ready.")
             messages.append(paths.get("easy") or paths.get("html", ""))
-        elif "avatar" in (label or "").lower():
+        elif "avatar" in lab:
             st = program.avatar_status()
             messages.append(f"{st['look']}  {st['describe']}")
-        elif "help" in (label or "").lower():
+        elif "lattice" in lab:
+            messages.append(program.lattice.render_ascii())
+        elif "help" in lab:
             messages.append("Help: English or seeds. Type help in REPL for full list.")
         else:
             messages.append("(render)")
             messages.append("__RENDER__")
 
-    elif primary == 10:  # Keep
+    elif primary == 10:
         path = program.save()
         ns = program.nursery.summary()
         messages.append("Session saved.")
         messages.append(f"ideas={len(program.cube.session.plane.units)} nursery={ns['pending']}")
         messages.append(f"file={path}")
 
-    elif primary == 13:  # Loop / grow
+    elif primary == 13:
         cycles = 1
         if label.isdigit():
             cycles = max(1, int(label))
@@ -122,26 +122,30 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         )
         messages.append(f"Nursery pending: {out.get('nursery', {}).get('pending', 0)}")
 
-    elif primary == 14:  # Bind
+    elif primary == 14:
         place_idea(label or "bind")
 
-    elif primary == 15:  # Map — often chained after Create
-        if label:
+    elif primary == 15:
+        lab = (label or "").lower()
+        if lab in ("cube", "sphere", "core", "flower"):
+            getattr(program.lattice, f"to_{lab}")()
+            messages.append(f"Form → {lab}")
+        elif label:
             place_idea(label)
         else:
             messages.append(f"Mapped units={len(program.cube.session.plane.units)}")
 
-    elif primary == 16:  # Decay
+    elif primary == 16:
         if hasattr(program.enhance, "decay"):
             program.enhance.decay(0.9)
             messages.append("Scores decayed ×0.9.")
         else:
-            messages.append("Decay noted (enhance decay).")
+            messages.append("Decay noted.")
 
-    elif primary == 18:  # Mirror
+    elif primary == 18:
         messages.append(f"Mirror: ideas={list(program.cube.session.plane.units.keys())[:12]}")
 
-    elif primary == 19:  # Drive
+    elif primary == 19:
         lab = (label or "walk").lower()
         if "run" in lab:
             program.avatar.set_locomotion(Locomotion.RUN)
@@ -155,48 +159,44 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             pos = program.avatar.step(1)
             messages.append(f"Walked to {pos}, facing {program.avatar.body.facing.name}.")
 
-    elif primary == 21:  # Merge
+    elif primary == 21:
         place_idea(label or "merge")
-        messages.append("Merge recorded as idea (full pair-merge UI later).")
 
-    elif primary == 22:  # Split
+    elif primary == 22:
         place_idea(label or "split")
 
-    elif primary == 23:  # Lock
+    elif primary == 23:
         program.sandbox_on()
-        messages.append("Sandbox ON (locked region).")
+        messages.append("Sandbox ON.")
 
-    elif primary == 24:  # Unlock
+    elif primary == 24:
         program.sandbox_off()
         messages.append("Sandbox OFF.")
 
-    elif primary == 25:  # Pulse
+    elif primary == 25:
         lab = (label or "").lower()
-        if "enhance_on" in lab or "on" == lab:
+        if "enhance_on" in lab or lab == "on":
             program.enhance_on()
             messages.append("Enhance ON.")
         else:
             program.pulse()
             messages.append("Pulse sent.")
 
-    elif primary == 27:  # Checkpoint
-        if hasattr(program, "checkpoint"):
-            cp = program.checkpoint()
-            messages.append(f"Checkpoint: {cp}")
-        else:
-            path = program.save()
-            messages.append(f"Saved as checkpoint stand-in: {path}")
+    elif primary == 27:
+        path = program.save()
+        messages.append(f"Checkpoint stand-in: {path}")
 
-    elif primary == 28:  # Rollback / load
+    elif primary == 28:
         from form.persist import load as persist_load
         new_program = persist_load(program.owner)
         messages.append("Session loaded.")
 
-    elif primary == 29:  # Compress
-        place_idea(f"compress_{label or 'x'}")
-        messages.append("Compress marker placed (payload shrink is future work).")
+    elif primary == 29:
+        short = program.distill_label(label) if hasattr(program, "distill_label") else (label or "x")
+        place_idea(f"compress_{short}")
+        messages.append(f"Compressed → {short}")
 
-    elif primary == 32:  # Pause
+    elif primary == 32:
         lab = (label or "").lower()
         if "enhance" in lab:
             program.enhance_off()
@@ -205,17 +205,24 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             program.avatar.set_locomotion(Locomotion.IDLE)
             messages.append("Paused / idle.")
 
-    elif primary == 33:  # Resume
+    elif primary == 33:
         program.avatar.set_locomotion(Locomotion.WALK)
         messages.append("Resumed walk posture.")
 
-    elif primary == 35:  # Discover
+    elif primary == 35:
         lab = (label or "").lower()
         if "nursery" in lab:
             pending = program.list_proposals()
             messages.append(f"Nursery pending: {len(pending)}")
             for prop in pending[:8]:
                 messages.append(f"  [{prop.get('kind')}] {prop.get('id')} — {prop.get('label')}")
+        elif lab.startswith("shell"):
+            n = 0
+            parts = lab.split()
+            if len(parts) > 1 and parts[1].isdigit():
+                n = int(parts[1])
+            cells = program.lattice.cells_by_shell(n)
+            messages.append(f"Shell {n}: {len(cells)} cells")
         else:
             st = program.avatar_status()
             ns = program.nursery.summary()
@@ -226,21 +233,50 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             )
 
     elif primary == 38:  # Distill
-        place_idea(f"distill_{label or 'x'}")
-        messages.append("Distill marker placed.")
+        source = label
+        if not source and program.cube.session.plane.units:
+            # distill last idea words
+            last = list(program.cube.session.plane.units.values())[-1]
+            source = f"{last.label} {last.words}"
+        short = program.distill_label(source)
+        place_idea(short)
+        messages.append(f"Distilled → {short}")
+        if hasattr(program, "note"):
+            program.note(f"38[Distill]::{short}")
 
-    elif primary == 45:  # Translate
+    elif primary == 45:
         from form.mandell.bridge import bridge
         rep = bridge(label or "")
         messages.append(f"mandel: {rep.get('mandel')}")
         messages.append(f"english: {rep.get('english')}")
 
-    elif primary == 47:  # Embed → visual
+    elif primary == 46:  # Rank nursery by affinity
+        pending = program.list_proposals()
+        ranked = sorted(pending, key=lambda p: -float(p.get("affinity", 0)))
+        messages.append(f"Ranked {len(ranked)} proposals:")
+        for i, prop in enumerate(ranked[:12], 1):
+            messages.append(
+                f"  {i}. aff={float(prop.get('affinity', 0)):.3f} [{prop.get('kind')}] "
+                f"{prop.get('id')} — {prop.get('label')}"
+            )
+
+    elif primary == 47:
         paths = program.visual()
         messages.append(paths.get("easy") or paths.get("html", ""))
 
-    elif primary == 50:  # Manifest
-        if label:
+    elif primary == 48:  # Macro
+        n = 5
+        if label.isdigit():
+            n = max(1, int(label))
+        seed = program.macro_seed(n) if hasattr(program, "macro_seed") else "48[Macro] :: empty"
+        messages.append(seed)
+        messages.append(f"history={len(getattr(program, 'history', []))}")
+
+    elif primary == 50:
+        lab = (label or "").lower()
+        if lab in ("acceptance", "accept"):
+            messages.append("Acceptance path: create → grow → confirm → sphere → save → load → visual")
+        elif label:
             place_idea(label)
             messages.append("Manifested into the matrix.")
         else:
