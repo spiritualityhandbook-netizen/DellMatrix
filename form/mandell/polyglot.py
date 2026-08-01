@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Polyglot bridge foundation — other languages → same Dell layer.
+Polyglot bridge — other languages → same Dell layer.
 
 Later goal: any two languages meet in Mandell operators.
 Now: expanded ES/FR maps → English intent → Mandell seed.
@@ -39,6 +39,11 @@ ES_MAP = [
     (r"^(?:nucleo|n[uú]cleo)$", "core"),
     (r"^(?:flor)$", "flower"),
     (r"^(?:ret[ií]cula|lattice)$", "lattice"),
+    (r"^(?:clasifica|rank|ordenar)$", "rank"),
+    (r"^(?:macro)(?:\s+(\d+))?$", "macro {x}"),
+    (r"^(?:repite|replay)(?:\s+(\d+))?$", "replay {x}"),
+    (r"^(?:destila|resumir)\s+(.+)$", "distill {x}"),
+    (r"^(?:aceptaci[oó]n|acceptance)$", "acceptance"),
 ]
 
 FR_MAP = [
@@ -66,6 +71,11 @@ FR_MAP = [
     (r"^(?:noyau|core)$", "core"),
     (r"^(?:fleur)$", "flower"),
     (r"^(?:treillis|lattice)$", "lattice"),
+    (r"^(?:classe|rank|ordonner)$", "rank"),
+    (r"^(?:macro)(?:\s+(\d+))?$", "macro {x}"),
+    (r"^(?:rejoue|replay)(?:\s+(\d+))?$", "replay {x}"),
+    (r"^(?:distille|r[eé]sume)\s+(.+)$", "distill {x}"),
+    (r"^(?:acceptation|acceptance)$", "acceptance"),
 ]
 
 LANG_MAPS = {
@@ -94,7 +104,7 @@ def to_english_from(lang: str, text: str) -> Optional[str]:
         if not m:
             continue
         x = m.group(1).strip() if m.lastindex and m.group(1) else "1"
-        return eng_t.replace("{x}", x)
+        return eng_t.replace("{x}", x).replace("  ", " ").strip()
     return None
 
 

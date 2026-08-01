@@ -1,19 +1,31 @@
 # Core Form scope
 
-**In core (Mandell Origin path)**
+## In core (Mandell Origin path)
 
-- `form/open.py`, `form/repl.py`, `form/persist.py`
-- `form/mandell/`
-- `form/dell_matrix/` (lattice, growth, nursery, visual, plane, gates)
+Required for the Origin loop and offline acceptance:
+
+- `form/open.py`, `form/repl.py`, `form/persist.py`, `form/accept.py`
+- `form/mandell/` (floor, seed, registry, phrases, executor, polyglot, …)
+- `form/dell_matrix/` (plane, lattice, growth, nursery, visual, gates)
 - `form/avatar/`
-- `form/duobeta/` (generation ledger only as used by Program)
-- `form/accept.py`, `form/smoke_all.py`
+- `form/duobeta/` (generation ledger as used by Program)
+- `form/smoke_all.py`, `form/invariants.py`
 
-**Out of core narrative (quarantined / optional side packages)**
+Acceptance path:
 
-- `form/trading/` — sister trading tools; not required for Mandell Origin loop
-- `form/llm/` — local model bridge experiments; not required for offline acceptance
+```
+create → grow → confirm → sphere → save → load → visual
+```
 
-These may exist in the repo. They are **not** part of the core Form acceptance path:
+## Out of core (quarantined side packages)
 
-`create → grow → confirm → sphere → save → load → visual`
+| Package | Role | Rule |
+|---------|------|------|
+| `form/trading/` | Sister trading tools | Optional. Not required for Origin. |
+| `form/llm/` | Local model bridge experiments | Optional. Offline acceptance must not depend on it. |
+
+These may live in the repo. They must not be described as part of the core Form runtime in START_HERE, AUDIT, or LIVE_INDEX.
+
+## LEGACY (frozen, not side)
+
+See `form/LEGACY.md` — `src/` and `preform/` are frozen historical, not optional features.

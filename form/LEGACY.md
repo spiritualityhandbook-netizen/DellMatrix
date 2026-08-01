@@ -1,13 +1,35 @@
 # LEGACY — Do Not Use for New Work
 
-The `src/` directory is the **old JavaScript era** of DellMatrix.
+Unified freeze map for dual-era and pre-Form material.
 
-It is kept only for historical reference and compatibility.
+## Frozen paths
+
+| Path | Era | Rule |
+|------|-----|------|
+| `src/` | Old JavaScript DellMatrix | Frozen. Port into `form/` if needed. |
+| `preform/` | Pre-Form research, phases, stubs | Historical only. Not the execution path. |
+
+## Live path
+
+All new development: **`form/`** (Python).
+
+- Door: `form/open.py` + `form/repl.py`
+- Origin: `form/mandell/`
+- Matrix: `form/dell_matrix/`
+
+## Side packages (not LEGACY, not core)
+
+See `form/CORE_SCOPE.md`:
+
+- `form/trading/` — optional sister tools
+- `form/llm/` — optional local-model experiments
+
+Neither is required for offline acceptance:
+
+`create → grow → confirm → sphere → save → load → visual`
 
 ## Rule
 
-- All new development happens in `form/` (Python).
-- `src/` is frozen.
-- README and boot paths no longer point here as the primary system.
-
-If you need something from the old system, port it deliberately into Form rather than extending `src/`.
+Do not extend LEGACY paths.  
+Do not import preform into production.  
+Do not treat STATUS files under preform as roadmap authority.

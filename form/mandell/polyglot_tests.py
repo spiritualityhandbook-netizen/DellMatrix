@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ES/FR polyglot smoke — top phrases must map."""
+"""ES/FR polyglot smoke — top phrases must map. Gate ≥ 0.70 per language."""
 
 from __future__ import annotations
 
@@ -18,6 +18,10 @@ ES_SAMPLES = [
     "esfera",
     "cubo",
     "propuestas",
+    "clasifica",
+    "macro",
+    "confirma todo",
+    "aceptación",
 ]
 
 FR_SAMPLES = [
@@ -30,6 +34,10 @@ FR_SAMPLES = [
     "sphère",
     "cube",
     "propositions",
+    "classe",
+    "macro",
+    "confirme tout",
+    "acceptation",
 ]
 
 
@@ -53,7 +61,7 @@ def smoke() -> bool:
         rate = ok / total if total else 0.0
         print(f"{lang}: {ok}/{total}  rate={rate:.2%}")
         if misses:
-            for m in misses[:6]:
+            for m in misses[:8]:
                 print(f"  miss: {m}")
         results.append(rate >= 0.70)
     passed = all(results)
