@@ -5,7 +5,9 @@ DellMatrix is the host that runs it.
 
 Bridge language goal: humans and computers share one structured language — operators (Dells), flow, math/nature patterns — readable by people, executable by machines.
 
-Start here: [`docs/START_HERE.md`](docs/START_HERE.md)
+**Start here:** [`docs/START_HERE.md`](docs/START_HERE.md)  
+**Roadmap:** [`docs/AUDIT_AND_NEXT_50.md`](docs/AUDIT_AND_NEXT_50.md)  
+**Authority index:** [`docs/LIVE_INDEX.md`](docs/LIVE_INDEX.md)
 
 ---
 
@@ -28,6 +30,10 @@ create an idea called business
 grow ideas 2
 13[Loop] > 04[Transform] :: grow
 
+rank
+macro 5
+replay 3
+distill business crm
 sphere
 lattice
 save
@@ -54,10 +60,14 @@ lang list
 | **Dells 00–50** | Numbered operators |
 | **Floor** | Alpha · Delta · Omega · Omni (locked) |
 | **Ringed growth** | Sole public growth · Nursery quarantine |
-| **Harmonic lattice** | H/V/F + cube/sphere/core/flower perception |
+| **Harmonic lattice** | H/V/F + cube/sphere/core/flower |
 | **Avatar** | Move / express in the same session |
-| **Save/load v7** | Matrix + avatar + nursery + lattice |
+| **Save/load v7** | Matrix + avatar + nursery + lattice + history |
 | **Visual** | `DellMatrix_UI.html` offline panel |
+
+Acceptance path (offline, no AI):
+
+`create → grow → confirm → sphere → save → load → visual`
 
 ---
 
@@ -67,11 +77,15 @@ lang list
 form/mandell/     ← ORIGIN (language, seeds, bridge, Dells)
 form/dell_matrix/ ← matrix, growth, nursery, lattice, visual
 form/avatar/      ← body + face
-form/duobeta/     ← generation rings ledger
 form/open.py      ← one program
 form/repl.py      ← front door
-src/              ← LEGACY (read-only dual-era; do not extend)
+form/trading/     ← SIDE (not core Origin)
+form/llm/         ← SIDE (not core Origin)
+src/              ← LEGACY frozen
+preform/          ← LEGACY historical
 ```
+
+See `form/CORE_SCOPE.md` and `form/LEGACY.md`.
 
 ## Honesty
 
@@ -79,5 +93,4 @@ src/              ← LEGACY (read-only dual-era; do not extend)
 - Orbit / reality-loop language is metaphor for controlled growth.
 - Mandell is a practical bridge under construction.
 
-See `form/MODE_LUPE.md` for Lupe operating mode.
-See `docs/AUDIT_AND_NEXT_50.md` for roadmap.
+See `form/MODE_LUPE.md` for Lupe / bare-NBD law (steady X=5).

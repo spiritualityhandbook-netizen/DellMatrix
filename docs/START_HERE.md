@@ -19,6 +19,7 @@ Mac: `Launch DellMatrix.command`
 create an idea called business
 grow ideas 2
 proposals
+rank
 sphere
 lattice
 save
@@ -31,13 +32,17 @@ visual
 |----------|--------------|
 | create an idea called X | Places idea + lands on lattice |
 | grow ideas N | RingedGrowth → Nursery only |
-| confirm <id> / confirm all | Live the proposal(s) |
-| reject <id> / reject all | Drop proposal(s) |
+| confirm \<id\> / confirm all | Live the proposal(s) |
+| reject \<id\> / reject all | Drop proposal(s) |
+| rank | Sort nursery by affinity |
+| macro [n] | Show last n history as macro seed |
+| replay [n] | Re-exec last n seed-shaped history |
+| distill words… | Compress to a short idea |
 | cube / sphere / core / flower | Perception form |
 | lattice | ASCII + status |
 | chord 0 0 | Neighborhood |
 | shell 0 | Cells on shell 0 |
-| lineage <id> | Parent chain of a proposal/idea |
+| lineage \<id\> | Parent chain |
 | save / load | Session v7 |
 | visual | Offline HTML panel |
 | lang list | Supported polyglot languages |
@@ -54,6 +59,7 @@ If that loop works, the core is alive.
 - Reality-loop / orbit language is **metaphor** for controlled growth, not a physics claim.
 - Mandell is a practical bridge language under construction, not a finished worldwide standard.
 - Growth never auto-writes the live matrix; Nursery quarantine is law.
+- `preform/` and `src/` are **LEGACY**. `trading/` and `llm/` are **side packages**, not core Origin.
 
 ## Law
 
@@ -61,5 +67,4 @@ If that loop works, the core is alive.
 - Growth never auto-writes the live matrix
 - Mandell seeds are the structured surface; English is the friendly door
 
-See `docs/AUDIT_AND_NEXT_50.md` for the full roadmap.
-See `form/MODE_LUPE.md` for Lupe operating mode.
+See `docs/AUDIT_AND_NEXT_50.md` · `docs/LIVE_INDEX.md` · `form/MODE_LUPE.md` · `form/CORE_SCOPE.md`
