@@ -1,32 +1,36 @@
 # NBD Log
 
 ## Lupe Mode Locked
-Default minimum 5. Syntax: Lupe x N | Lupe N | Loop a N | Nbd5 Lupe5
+Default minimum 5. Syntax: Lupe x N | Lupe N | Nbd5 | Nbd5 Continue
 
 ---
 
-## 2026-08-01 — NBD5 Lupe5 Executed
+## 2026-08-01 — NBD5 Continue Executed
 
-1. Visual form-driven path — Program.visual() now passes live lattice form + skin
-2. Bidirectional phrase hit-rate suite — form/mandell/phrase_tests.py
-3. README refresh — lattice, v7, legacy src/ mark, honesty, START_HERE pointer
-4. Distill / phrase coverage path strengthened via fixed sample set
-5. Offline polish — README states core loop needs no network; acceptance path held
+1. Macro Dell 48 — Program.history + macro_seed(n) + note() on key actions
+2. Distill Dell 38 — Program.distill_label() for compact labels
+3. docs/archive/README.md — STATUS noise authority redirect
+4. form/accept.py — one-click offline acceptance path
+5. Phrase hit-rate sample set expanded (target ≥ 0.85)
+
+**Commands to use**
+```
+macro
+macro 5
+distill long messy idea words here
+python -m form.accept
+python -m form.mandell.phrase_tests --smoke
+```
 
 **Next ranked**
-- Visual SVG fully default-shaped by live form when unit skin is generic
-- Macro Dell 48 record last N actions
-- Docs archive/ folder for STATUS noise
-- Deeper Distill Dell 38 executor wiring
-- Offline one-click smoke acceptance binary story
+- Wire macro/distill into REPL + executor Dell 38/48 fully
+- Persist history in v7 (optional)
+- Move obsolete preform STATUS files into docs/archive/
+- Phrase rate ≥ 0.90
+- Rank Dell 46 nursery proposals by affinity in REPL
 
 ---
 
-## Prior blocks this session
+## Prior
 
-- Lattice bind + persist v7 + place on H/V/F
-- One growth entrypoint (RingedGrowth)
-- REPL cube/sphere/core/flower/lattice/chord/shell/lineage
-- confirm all / reject all / always-echo
-- smoke_all + acceptance + START_HERE + MODE_LUPE
-- ES/FR expand + honesty gates + lang list
+Lattice · growth entrypoint · REPL perception · confirm-all · polyglot · visual form skins · START_HERE · MODE_LUPE · honesty gates

@@ -62,6 +62,8 @@ class Program:
     nursery: Nursery = field(init=False)
     growth: RingedGrowth = field(init=False)
     lattice: HarmonicLattice = field(init=False)
+    history: List[str] = field(default_factory=list)
+    history_max: int = 24
 
     def __post_init__(self):
         assert_floor_intact()
@@ -96,6 +98,35 @@ class Program:
             )
         self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
 
+    def note(self, action: str) -> None:
+        """Macro Dell 48 — record last actions as reusable history."""
+        self.history.append(action[:120])
+        if len(self.history) > self.history_max:
+            self.history = self.history[-self.history_max :]
+
+    def macro_seed(self, n: int = 5) -> str:
+        """Build a compact seed from last N actions."""
+        recent = self.history[-max(1, n) :]
+        if not recent:
+            return "48[Macro] :: empty"
+        body = " > ".join(recent)
+        return f"48[Macro] :: {body}"[:200]
+
+    def distill_label(self, text: str) -> str:
+        """Dell 38 — compress words into a short label."""
+        tokens = [t for t in (text or "").replace("_", " ").split() if len(t) > 2]
+        if not tokens:
+            return "distill"
+        # keep distinctive tokens, max 4
+        seen = []
+        for t in tokens:
+            tl = t.lower()
+            if tl not in seen:
+                seen.append(tl)
+            if len(seen) >= 4:
+                break
+        return "_".join(seen)[:40]
+
     def avatar_status(self) -> Dict[str, Any]:
         return {
             "body": self.avatar.status(),
@@ -118,6 +149,7 @@ class Program:
             )
         except Exception:
             pass
+        self.note(f"08[Create]::{label}")
         return u
 
     def grow_ideas(self, cycles: int = 1) -> Dict[str, Any]:
@@ -125,6 +157,7 @@ class Program:
             self.enhance.turn_on()
         result = self.growth.run(self.cube.session.plane, cycles=cycles)
         self.duo.evolve(f"13[Loop] :: RingedGrow x{cycles}")
+        self.note(f"13[Loop]::growx{cycles}")
         return result
 
     def list_proposals(self) -> List[Dict[str, Any]]:
@@ -135,12 +168,14 @@ class Program:
         if not prop:
             return {"ok": False, "reason": "not found or not pending"}
         self.place(prop.id, prop.label, words=prop.words, skin=Skin.SEED)
+        self.note(f"50[Manifest]::{prop.label}")
         return {"ok": True, "id": prop.id, "label": prop.label, "kind": prop.kind}
 
     def reject_proposal(self, pid: str) -> Dict[str, Any]:
         prop = self.nursery.reject(pid)
         if not prop:
             return {"ok": False, "reason": "not found or not pending"}
+        self.note(f"24[Unlock]::reject")
         return {"ok": True, "id": prop.id, "label": prop.label}
 
     def sandbox_on(self, all_units: bool = True) -> Dict[str, Any]:
@@ -167,10 +202,12 @@ class Program:
     def save(self, path: Optional[str] = None) -> str:
         from form.persist import save as persist_save
         self.nursery.save()
+        self.note("10[Keep]")
         return persist_save(self, path)
 
     def visual(self) -> Dict[str, str]:
         from form.dell_matrix.visual import write_visual
+        self.note("09[Show]>>47[Embed]")
         return write_visual(
             self.cube.session.plane,
             owner=self.owner,
@@ -218,6 +255,7 @@ class Program:
             "rings": list(self.duo.rings),
             "enhance": self.enhance.status(),
             "lattice": self.lattice.status(),
+            "history_len": len(self.history),
         }
 
 
@@ -238,6 +276,8 @@ def smoke() -> bool:
     rec("grow", out.get("ok") is True)
     rec("lattice bound", hasattr(p, "lattice") and p.lattice is not None)
     rec("lattice cells", len(p.lattice.cells) >= 2)
+    rec("history", len(p.history) >= 2)
+    rec("macro", p.macro_seed(3).startswith("48[Macro]"))
     paths = p.visual()
     rec("visual", "html" in paths)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")

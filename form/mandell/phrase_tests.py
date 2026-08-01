@@ -6,22 +6,31 @@ from __future__ import annotations
 from typing import List, Tuple
 import sys
 
-from form.mandell.phrases import match_phrase, PHRASES
+from form.mandell.phrases import match_phrase
 from form.mandell.bridge import to_english, to_mandell
 
-# Fixed sample set for hit-rate measurement
 SAMPLES: List[str] = [
     "create an idea called business",
+    "create an idea called crm",
+    "grow ideas",
     "grow ideas 2",
+    "grow ideas 3",
     "save",
     "load",
     "show me",
     "visual",
     "walk forward",
+    "walk",
+    "run",
+    "stop",
     "turn left",
+    "turn right",
     "sit down",
     "stand up",
+    "jump",
     "smile",
+    "calm",
+    "focus",
     "status",
     "help",
     "proposals",
@@ -31,11 +40,15 @@ SAMPLES: List[str] = [
     "cube",
     "core",
     "flower",
+    "toggle",
     "lattice",
     "enhance on",
+    "enhance off",
     "pulse",
+    "sandbox on",
     "sandbox off",
     "acceptance",
+    "place test",
 ]
 
 
@@ -70,10 +83,9 @@ def smoke() -> bool:
     print(f"hits: {ok}/{total}  rate={rate:.2%}")
     if misses:
         print("misses:")
-        for m in misses[:10]:
+        for m in misses[:12]:
             print(f"  - {m}")
-    # require strong coverage on the fixed set
-    passed = rate >= 0.80
+    passed = rate >= 0.85
     print("PASS" if passed else "FAIL")
     return passed
 
