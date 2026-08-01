@@ -1,70 +1,69 @@
 # DellMatrix
 
-**Just talk to it.**
+**Mandell is the Origin.**  
+DellMatrix is the host that runs it.
 
-Voynich-inspired Ringed Growth · Nursery quarantine · Avatar · offline visual UI
+Bridge language goal: humans and computers share one structured language — operators (Dells), flow, math/nature patterns — readable by people, executable by machines.
 
 ---
 
 ## Start
 
-**Windows:** double-click `Launch DellMatrix.bat`  
-**Mac:** double-click `Launch DellMatrix.command`  
+**Windows:** `Launch DellMatrix.bat`  
+**Mac:** `Launch DellMatrix.command`  
 **Any:** `python launch.py`
 
 ---
 
-## Everyday flow
+## Speak English **or** Mandell
 
 ```
 create an idea called business
-create an idea called music
+08[Create] > 15[Map] :: business
+
 grow ideas 2
-proposals
-confirm <id>
-visual
+13[Loop] > 04[Transform] :: grow
+
 save
+10[Keep]
+
+visual
+09[Show] >> 47[Embed]
 ```
 
-After `visual`, open:
+Bridge helpers:
 
 ```
-DellMatrix_UI.html
+mandell create an idea called test
+english 08[Create] > 15[Map] :: test
+bridge walk forward
 ```
-
-in the project folder (any browser, works offline).
 
 ---
 
-## What the system does
+## Core ideas
 
-| Feature | Behavior |
-|---------|----------|
-| English in | Normal phrases → actions |
-| Ringed growth | Seed→Token→Body→Lens→Evolve (Voynich-inspired) |
-| Nursery | New/evolved ideas quarantined until you confirm |
-| Avatar | Walk, turn, sit, expressions |
-| Visual UI | Buttons for all main options + matrix graph |
-| Offline | Core + UI work without internet |
+| Piece | Role |
+|-------|------|
+| **Mandell seeds** | `08[Create] > 15[Map] :: name` |
+| **Dells 00–50** | Numbered operators (Create, Loop, Show, Keep…) |
+| **Floor** | Alpha · Delta · Omega · Omni (locked) |
+| **Ringed growth** | Voynich-inspired · proposals in Nursery until confirm |
+| **Avatar** | Move / express in the same session |
+| **Save/load** | Matrix + avatar + nursery as one session |
+| **Visual** | `DellMatrix_UI.html` offline control panel |
 
-Nothing enters the live matrix until you `confirm`. Reject discards. Live ideas are never deleted by growth.
+See `form/mandell/MANDELL_ORIGIN.md` for the language priority law.
 
 ---
 
 ## Structure
 
 ```
-form/                 ← the program
-  avatar/             body + face
-  mandell/            language + English translator
-  dell_matrix/        matrix, nursery, ringed growth, visual
-  duobeta/            generation + rings ledger
-  open.py · repl.py   front door
-Launch DellMatrix.*   double-click starters
-launch.py
-DellMatrix_UI.html    easy visual (written when you run visual)
-src/                  legacy (ignore)
-preform/              planning docs
+form/mandell/     ← ORIGIN (language, seeds, bridge, Dells)
+form/dell_matrix/ ← matrix, growth, nursery, visual
+form/avatar/      ← body + face
+form/duobeta/     ← generation rings ledger
+form/open.py      ← one program
+form/repl.py      ← front door
 ```
-
-Floor locked: Alpha · Delta · Omega · Omni

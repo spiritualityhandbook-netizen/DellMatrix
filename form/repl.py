@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — talk normally. Full session save/load."""
+"""REPL — Mandell Origin. English or pure seeds."""
 
 from __future__ import annotations
 
@@ -9,6 +9,8 @@ try:
     from form.open import Program, open_program
     from form.dell_matrix.plane import Skin
     from form.mandell.translate import translate
+    from form.mandell.seed import looks_like_seed, parse_seed
+    from form.mandell.bridge import bridge, to_english, to_mandell
     from form.avatar import Facing, Posture, Locomotion, Expression
     from form.persist import load as persist_load
 except ImportError:
@@ -17,20 +19,29 @@ except ImportError:
     from form.open import Program, open_program
     from form.dell_matrix.plane import Skin
     from form.mandell.translate import translate
+    from form.mandell.seed import looks_like_seed, parse_seed
+    from form.mandell.bridge import bridge, to_english, to_mandell
     from form.avatar import Facing, Posture, Locomotion, Expression
     from form.persist import load as persist_load
 
 HELP = """
-Talk normally.
+Mandell is the Origin. Speak English or pure Mandell seeds.
 
+English:
   create an idea called grocery list
   grow ideas 2
-  proposals / confirm <id> / reject <id>
-  walk forward / smile / how do I look
-  visual
-  save          ← saves matrix + avatar + nursery
-  load          ← restores last session
-  help / quit
+  proposals / confirm <id>
+  walk forward / smile / save / load / visual
+
+Mandell seeds:
+  08[Create] > 15[Map] :: grocery_list
+  13[Loop] > 04[Transform] :: grow
+  09[Show]
+  10[Keep]
+
+Bridge:
+  mandell create an idea called test
+  english 08[Create] > 15[Map] :: test
 """.strip()
 
 _FACING = {
@@ -42,6 +53,24 @@ _EXPR = {
     "joy": Expression.JOY, "calm": Expression.CALM,
     "intense": Expression.INTENSE, "curious": Expression.CURIOUS,
     "resolute": Expression.RESOLUTE, "soft": Expression.SOFT,
+}
+
+# Map primary Dell → runtime action
+_DELL_ACTION = {
+    8: "place",
+    9: "show",
+    10: "save",
+    13: "grow",
+    19: "walk",
+    25: "pulse",
+    28: "load",
+    32: "enhance_off",
+    23: "sandbox_on",
+    24: "sandbox_off",
+    35: "status",
+    45: "bridge",
+    4: "turn",  # weak default; seed label may refine
+    5: "express",
 }
 
 
@@ -61,8 +90,70 @@ def _show_proposals(p: Program) -> None:
     _say("Type: confirm <id>   or   reject <id>")
 
 
+def _run_seed(p: Program, seed_text: str) -> Program:
+    """Execute a pure Mandell seed."""
+    s = parse_seed(seed_text)
+    if not s.ok:
+        _say(f"Seed error: {s.error}")
+        return p
+    _say(f"Mandell: {s.as_mandel()}")
+    _say(f"English: {s.as_english()}")
+
+    primary = s.primary_dell()
+    label = s.label or "idea"
+    action = _DELL_ACTION.get(primary or -1)
+
+    # richer chain handling
+    terms = [a.term.lower() for a in s.atoms]
+    if primary == 8 or "create" in terms:
+        uid = label.replace(" ", "_")[:24] or "idea"
+        p.place(uid, label.replace("_", " "), words=label, skin=Skin.CUBE)
+        _say(f'Created idea: "{label}"')
+    elif primary == 13 or "loop" in terms:
+        out = p.grow_ideas(1)
+        _say(f"Grew (proposed {out.get('proposed_new', 0)} new + {out.get('proposed_evolved', 0)} evolved).")
+        _say(f"Nursery pending: {out.get('nursery', {}).get('pending', 0)}")
+    elif primary == 9 or "show" in terms:
+        if any(t in terms for t in ("embed",)):
+            paths = p.visual()
+            _say(paths.get("easy") or paths.get("html", ""))
+        else:
+            print()
+            print(p.render())
+    elif primary == 10 or "keep" in terms:
+        path = p.save()
+        _say(f"Session saved: {path}")
+    elif primary == 28:
+        p2 = persist_load(p.owner)
+        _say("Session loaded.")
+        print(p2.render())
+        return p2
+    elif primary == 19 or "drive" in terms:
+        p.avatar.set_locomotion(Locomotion.WALK)
+        pos = p.avatar.step(1)
+        _say(f"Walked to {pos}, facing {p.avatar.body.facing.name}.")
+    elif primary == 25 or "pulse" in terms:
+        p.pulse()
+        _say("Pulse sent.")
+    elif primary == 5 or "tone" in terms:
+        face = p.face.set(Expression.JOY)
+        _say(f"{face}  tone set")
+    elif primary == 35 or "discover" in terms:
+        st = p.avatar_status()
+        _say(f"{st['look']}  {st['describe']}")
+        _say(f"ideas={len(p.cube.session.plane.units)} nursery={p.nursery.summary()['pending']}")
+    elif primary == 45:
+        # translate/bridge — label is the text to bridge
+        report = bridge(label or seed_text)
+        _say(f"mandel: {report.get('mandel')}")
+        _say(f"english: {report.get('english')}")
+    else:
+        _say(f"Seed understood; primary Dell {primary} not yet mapped to a runtime action.")
+        _say("It is valid Mandell — extend the executor to handle it.")
+    return p
+
+
 def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
-    """Returns program (may be replaced on load)."""
     action = intent.action
     args = intent.args or {}
     lower = raw_line.lower().strip()
@@ -74,37 +165,47 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
     if lower.startswith("confirm "):
         pid = raw_line.split(maxsplit=1)[1].strip()
         res = p.confirm_proposal(pid)
-        if res.get("ok"):
-            _say(f'Confirmed. "{res["label"]}" is now live in the matrix.')
-        else:
-            _say(f"Could not confirm: {res.get('reason')}")
+        _say(f'Confirmed. "{res["label"]}" is live.' if res.get("ok") else f"Could not confirm: {res.get('reason')}")
         return p
 
     if lower.startswith("reject "):
         pid = raw_line.split(maxsplit=1)[1].strip()
         res = p.reject_proposal(pid)
-        if res.get("ok"):
-            _say(f'Rejected. "{res["label"]}" stays out.')
-        else:
-            _say(f"Could not reject: {res.get('reason')}")
+        _say(f'Rejected. "{res["label"]}" stays out.' if res.get("ok") else f"Could not reject: {res.get('reason')}")
+        return p
+
+    if lower.startswith("mandell ") or lower.startswith("to mandell "):
+        text = raw_line.split(maxsplit=1)[1] if " " in raw_line else ""
+        _say(to_mandell(text))
+        return p
+
+    if lower.startswith("english ") or lower.startswith("to english "):
+        text = raw_line.split(maxsplit=1)[1] if " " in raw_line else ""
+        _say(to_english(text))
+        return p
+
+    if lower.startswith("bridge "):
+        text = raw_line.split(maxsplit=1)[1] if " " in raw_line else ""
+        rep = bridge(text)
+        _say(f"mandel:  {rep.get('mandel')}")
+        _say(f"english: {rep.get('english')}")
         return p
 
     if action == "place":
         uid = args.get("id", "idea")
         label = args.get("label", uid)
         p.place(uid, label, words=args.get("words", ""), skin=Skin.CUBE)
+        seed = to_mandell(raw_line)
         _say(f'Created idea: "{label}"')
+        if seed:
+            _say(f"Mandell: {seed}")
 
     elif action == "grow":
         n = int(args.get("cycles", 1))
         out = p.grow_ideas(n)
-        new_n = out.get("proposed_new", 0)
-        evo_n = out.get("proposed_evolved", 0)
-        fog = out.get("fog_cut", 0)
-        pending = out.get("nursery", {}).get("pending", 0)
         _say(f"Ringed growth complete ({' → '.join(out.get('rings', []))}).")
-        _say(f"Proposed {new_n} new + {evo_n} evolved. FOG cut {fog}.")
-        _say(f"Nursery pending: {pending}. Nothing is live until you confirm.")
+        _say(f"Proposed {out.get('proposed_new', 0)} new + {out.get('proposed_evolved', 0)} evolved. FOG cut {out.get('fog_cut', 0)}.")
+        _say(f"Nursery pending: {out.get('nursery', {}).get('pending', 0)}")
         _say("Type: proposals")
 
     elif action == "show":
@@ -113,10 +214,8 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
 
     elif action == "visual":
         paths = p.visual()
-        easy = paths.get("easy") or paths.get("html", "")
         _say("Visual control panel ready (offline).")
-        _say("Open this file in any browser:")
-        _say(easy)
+        _say(paths.get("easy") or paths.get("html", ""))
 
     elif action == "walk":
         steps = int(args.get("steps", 1))
@@ -237,14 +336,17 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
         label = args.get("label", intent.english[:48])
         p.place(uid, label, words=intent.english, skin=Skin.CUBE)
         _say(f'Created idea: "{label}"')
+        m = to_mandell(raw_line)
+        if m:
+            _say(f"Mandell: {m}")
 
     return p
 
 
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
-    print("  DellMatrix — full session save/load")
-    print("  Growth quarantined · Voynich-inspired rings")
+    print("  DellMatrix — Mandell Origin")
+    print("  Speak English or pure Mandell seeds (08[Create] > 15[Map] :: name)")
     print()
     p = persist_load(owner) if do_load else open_program(owner)
     if do_load:
@@ -265,6 +367,11 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             break
         if line.lower().startswith("say "):
             line = line[4:].strip()
+
+        # Pure Mandell path first
+        if looks_like_seed(line):
+            p = _run_seed(p, line)
+            continue
 
         intent = translate(line)
         p = _execute_intent(p, intent, raw_line=line)
