@@ -12,7 +12,6 @@ from typing import Dict, List, Optional, Tuple
 import re
 
 # (pattern, seed_template, action_hint)
-# Templates may use {label} {n}
 PHRASES: List[Tuple[str, str, str]] = [
     # create / place
     (r"^(?:create|add|make|new)\s+(?:an?\s+)?(?:idea\s+)?(?:called\s+)?(.+)$",
@@ -64,7 +63,20 @@ PHRASES: List[Tuple[str, str, str]] = [
     (r"^(?:help|what\s+can\s+i\s+do)$", "09[Show] :: help", "help"),
     (r"^(?:proposals|nursery|pending)$", "35[Discover] :: nursery", "proposals"),
 
-    # merge / link ideas (language-forward)
+    # nursery bulk
+    (r"^confirm\s+all$", "23[Lock] > 50[Manifest] :: confirm_all", "confirm_all"),
+    (r"^reject\s+all$", "24[Unlock] :: reject_all", "reject_all"),
+
+    # lattice / perception (NBD)
+    (r"^(?:cube|form\s+cube|to\s+cube)$", "15[Map] :: cube", "form_cube"),
+    (r"^(?:sphere|form\s+sphere|to\s+sphere)$", "15[Map] :: sphere", "form_sphere"),
+    (r"^(?:core|form\s+core|to\s+core)$", "15[Map] :: core", "form_core"),
+    (r"^(?:flower|form\s+flower|to\s+flower)$", "15[Map] :: flower", "form_flower"),
+    (r"^(?:toggle|toggle\s+form|dual)$", "04[Transform] :: toggle_form", "toggle_form"),
+    (r"^(?:lattice|show\s+lattice)$", "09[Show] :: lattice", "lattice"),
+    (r"^chord(?:\s+(-?\d+)\s+(-?\d+)(?:\s+(-?\d+))?)?$", "35[Discover] :: chord", "chord"),
+
+    # merge / link
     (r"^(?:merge|combine)\s+(.+?)\s+(?:and|with)\s+(.+)$",
      "21[Merge] > 14[Bind] :: {label}", "merge"),
     (r"^(?:link|connect)\s+(.+?)\s+(?:to|and|with)\s+(.+)$",
@@ -75,11 +87,14 @@ PHRASES: List[Tuple[str, str, str]] = [
      "38[Distill] :: {label}", "distill"),
     (r"^(?:compress)\s+(.+)$",
      "29[Compress] :: {label}", "compress"),
+
+    # acceptance
+    (r"^(?:accept|acceptance|cold\s*start)$",
+     "50[Manifest] :: acceptance", "acceptance"),
 ]
 
 
 def match_phrase(english: str) -> Optional[Dict[str, str]]:
-    """Match English to a stable Mandell phrase."""
     text = (english or "").strip()
     lower = text.lower().strip()
     for pattern, seed_t, hint in PHRASES:
@@ -89,15 +104,15 @@ def match_phrase(english: str) -> Optional[Dict[str, str]]:
         label = ""
         n = "1"
         if m.lastindex:
-            # last group often label or count
             g1 = m.group(1) if m.lastindex >= 1 else ""
             if g1 and g1.isdigit():
                 n = g1
             else:
                 label = (g1 or "").strip()
             if m.lastindex >= 2:
-                g2 = m.group(2).strip()
-                label = f"{label}_x_{g2}".strip("_")
+                g2 = (m.group(2) or "").strip()
+                if g2:
+                    label = f"{label}_x_{g2}".strip("_")
         label = label or "item"
         seed = seed_t.replace("{label}", label.replace(" ", "_")[:40]).replace("{n}", n)
         return {
@@ -110,7 +125,6 @@ def match_phrase(english: str) -> Optional[Dict[str, str]]:
 
 
 def list_phrases() -> List[Dict[str, str]]:
-    """Teachable list for humans."""
     out = []
     for pattern, seed, hint in PHRASES:
         out.append({"pattern": pattern, "mandel": seed, "hint": hint})
