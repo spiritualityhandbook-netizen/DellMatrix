@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""
-Stable Mandell phrase dictionary.
-
-Common human intents → canonical Mandell seeds.
-"""
+"""Stable Mandell phrase dictionary."""
 
 from __future__ import annotations
 
@@ -63,6 +59,7 @@ PHRASES: List[Tuple[str, str, str]] = [
     (r"^(?:toggle|toggle\s+form|dual)$", "04[Transform] :: toggle_form", "toggle_form"),
     (r"^(?:lattice|show\s+lattice)$", "09[Show] :: lattice", "lattice"),
     (r"^chord(?:\s+(-?\d+)\s+(-?\d+)(?:\s+(-?\d+))?)?$", "35[Discover] :: chord", "chord"),
+    (r"^shell(?:\s+(\d+))?$", "35[Discover] :: shell", "shell"),
 
     (r"^(?:merge|combine)\s+(.+?)\s+(?:and|with)\s+(.+)$",
      "21[Merge] > 14[Bind] :: {label}", "merge"),
@@ -76,11 +73,15 @@ PHRASES: List[Tuple[str, str, str]] = [
 
     (r"^(?:macro)(?:\s+(\d+))?$",
      "48[Macro] :: {label}", "macro"),
+    (r"^(?:replay)(?:\s+(\d+))?$",
+     "48[Macro] >> 13[Loop] :: replay", "replay"),
     (r"^(?:rank|rank\s+proposals)$",
      "46[Rank]", "rank"),
 
     (r"^(?:accept|acceptance|cold\s*start)$",
      "50[Manifest] :: acceptance", "acceptance"),
+    (r"^(?:lang\s+list|languages)$",
+     "35[Discover] :: lang_list", "lang_list"),
 ]
 
 
@@ -116,7 +117,4 @@ def match_phrase(english: str) -> Optional[Dict[str, str]]:
 
 
 def list_phrases() -> List[Dict[str, str]]:
-    out = []
-    for pattern, seed, hint in PHRASES:
-        out.append({"pattern": pattern, "mandel": seed, "hint": hint})
-    return out
+    return [{"pattern": p, "mandel": s, "hint": h} for p, s, h in PHRASES]
