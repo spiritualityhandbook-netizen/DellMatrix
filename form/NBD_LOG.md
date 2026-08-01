@@ -1,41 +1,35 @@
 # NBD Log
 
-## Lupe Mode Locked 2026-08-01
-
-Default minimum 5 passes on every future directive.
-Syntax: `Lupe x N` | `Lupe N` | `Loop a N`
+## Lupe Mode Locked
+Default minimum 5. Syntax: Lupe x N | Lupe N | Loop a N
 
 ---
 
-## 2026-08-01 — NBD × 10 (Lupe block) Executed
+## 2026-08-01 — NBD × 10 (block 2) Executed
 
-1. Always-echo Mandell seeds (phrases expanded; REPL ready)
-2. confirm all / reject all phrases + commands path
-3. Expanded help (Lattice · Growth · Avatar · System)
-4. smoke_all → lattice + perception + RingedGrowth + persist v7 + acceptance_path
-5. docs/START_HERE.md
-6. Phrase density: lattice/perception/confirm-all/acceptance
-7. Visual form awareness path prepared (meta + skin colors already support sphere/flower)
-8. Acceptance path formalized in smoke_all + START_HERE
-9. Legacy src/ still marked dual-era (README remains)
-10. MODE_LUPE.md + this stamp
+1. Visual form awareness reinforced (skin colors + form meta path)
+2. ES map expanded (~20+ intents including lattice/nursery)
+3. FR map expanded (~20+ intents including lattice/nursery)
+4. Honesty gates written into START_HERE
+5. `lang list` support in polyglot
+6. Shell listing path prepared (`shell N`)
+7. Lineage print path prepared (`lineage <id>`)
+8. Phrase / polyglot density up
+9. Archive / dual-era note held in audit
+10. This stamp + START_HERE refresh
 
-**Growth law held** — RingedGrowth sole public engine  
-**Lattice bound** — session v7  
-**Floor intact**
-
-### Next ranked (post Lupe×10)
-
-1. Visual: draw node skin from current lattice form
-2. Deeper phrase hit-rate + bidirectional tests
-3. ES/FR expand top 20
-4. Archive doc noise
-5. Honesty gates explicit in START_HERE / Origin
+**Still open (next rank)**
+- Full visual node-shape driven purely by live lattice form at render time
+- Bidirectional EN↔Mandell automated hit-rate suite
+- Docs archive folder cleanup
+- Macro Dell 48 / Distill 38 deeper wiring
 
 ---
 
-## Prior executed this session
+## Prior this session
 
-- Lattice bind + persist v7 + place on H/V/F
+- Lattice bind + persist v7
 - One growth entrypoint (RingedGrowth)
 - REPL cube/sphere/core/flower/lattice/chord
+- confirm all / reject all / always-echo seeds
+- smoke_all + acceptance path + START_HERE + MODE_LUPE

@@ -36,14 +36,24 @@ visual
 | cube / sphere / core / flower | Perception form |
 | lattice | ASCII + status |
 | chord 0 0 | Neighborhood |
-| save / load | Session v7 (matrix + avatar + nursery + lattice) |
+| shell 0 | Cells on shell 0 |
+| lineage <id> | Parent chain of a proposal/idea |
+| save / load | Session v7 |
 | visual | Offline HTML panel |
+| lang list | Supported polyglot languages |
 
 ## Acceptance path (offline, no AI)
 
 create → grow → confirm → sphere → save → load → visual
 
 If that loop works, the core is alive.
+
+## Honesty gates (required)
+
+- Voynich references are **structural / inspirational**, not a claim of decoded text.
+- Reality-loop / orbit language is **metaphor** for controlled growth, not a physics claim.
+- Mandell is a practical bridge language under construction, not a finished worldwide standard.
+- Growth never auto-writes the live matrix; Nursery quarantine is law.
 
 ## Law
 
@@ -52,3 +62,4 @@ If that loop works, the core is alive.
 - Mandell seeds are the structured surface; English is the friendly door
 
 See `docs/AUDIT_AND_NEXT_50.md` for the full roadmap.
+See `form/MODE_LUPE.md` for Lupe operating mode.
