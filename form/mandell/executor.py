@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict
+from datetime import datetime, timezone
 
 from .seed import parse_seed
 from .registry import get_dell
@@ -89,6 +90,19 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append("Session saved.")
         messages.append(f"ideas={len(program.cube.session.plane.units)} nursery={ns['pending']}")
         messages.append(f"file={path}")
+    elif primary == 12:  # Test densified
+        checks = []
+        checks.append(("floor", True))
+        checks.append(("lattice", hasattr(program, "lattice") and program.lattice is not None))
+        checks.append(("growth", hasattr(program, "growth")))
+        checks.append(("nursery", hasattr(program, "nursery")))
+        checks.append(("ideas", len(program.cube.session.plane.units) >= 0))
+        ok_n = sum(1 for _, v in checks if v)
+        for name, ok in checks:
+            messages.append(f"  {'PASS' if ok else 'FAIL'}  {name}")
+        messages.append(f"Test: {ok_n}/{len(checks)}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(12, "Test", f"{ok_n}/{len(checks)}")
     elif primary == 13:
         cycles = int(label) if label.isdigit() else 1
         out = program.grow_ideas(max(1, cycles))
@@ -108,7 +122,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             place_idea(label)
         else:
             messages.append(f"Mapped units={len(program.cube.session.plane.units)}")
-    elif primary == 16:  # Decay densified
+    elif primary == 16:
         factor = 0.9
         if label.replace(".", "", 1).isdigit():
             factor = max(0.1, min(1.0, float(label)))
@@ -116,14 +130,13 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             program.enhance.decay(factor)
             messages.append(f"Scores decayed ×{factor}.")
         else:
-            # manual soft decay on scores dict
             st = program.enhance.state
             for k in list(st.scores.keys()):
                 st.scores[k] = float(st.scores[k]) * factor
             messages.append(f"Scores decayed ×{factor} (manual).")
         if hasattr(program, "note_seed"):
             program.note_seed(16, "Decay", str(factor))
-    elif primary == 18:  # Mirror densified
+    elif primary == 18:
         ids = list(program.cube.session.plane.units.keys())
         messages.append(f"Mirror: {len(ids)} live ideas")
         for uid in ids[:16]:
@@ -146,7 +159,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             messages.append(f"Walked to {program.avatar.step(1)}.")
     elif primary == 21:
         place_idea(label or "merge")
-    elif primary == 22:  # Split densified
+    elif primary == 22:
         source = label
         if not source and program.cube.session.plane.units:
             source = list(program.cube.session.plane.units.values())[-1].label
@@ -170,7 +183,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         else:
             program.pulse()
             messages.append("Pulse sent.")
-    elif primary == 27:  # Checkpoint densified
+    elif primary == 27:
         from form.persist import checkpoint as persist_cp
         try:
             cp = persist_cp(program)
@@ -188,6 +201,15 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         short = program.distill_label(label) if hasattr(program, "distill_label") else (label or "x")
         place_idea(f"compress_{short}", Skin.SEED)
         messages.append(f"Compressed → {short}")
+    elif primary == 31:  # Simulate densified — dry-run status only
+        st = program.status()
+        messages.append("Simulate (dry-run — no mutation):")
+        messages.append(f"  owner={st.get('owner')} ideas={st.get('ideas')}")
+        messages.append(f"  nursery={st.get('nursery')}")
+        messages.append(f"  lattice={st.get('lattice')}")
+        messages.append(f"  history_len={st.get('history_len')}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(31, "Simulate")
     elif primary == 32:
         if "enhance" in (label or "").lower():
             program.enhance_off()
@@ -195,7 +217,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         else:
             program.avatar.set_locomotion(Locomotion.IDLE)
             messages.append("Paused.")
-    elif primary == 33:  # Resume densified
+    elif primary == 33:
         program.avatar.set_locomotion(Locomotion.WALK)
         if not program.enhance.on:
             program.enhance_on()
@@ -204,6 +226,17 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             messages.append("Resumed walk.")
         if hasattr(program, "note_seed"):
             program.note_seed(33, "Resume")
+    elif primary == 34:  # Stamp densified
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        mark = label or "stamp"
+        messages.append(f"Stamp: {mark} @ {ts}")
+        messages.append(
+            f"ideas={len(program.cube.session.plane.units)} "
+            f"history={len(getattr(program, 'history', []))} "
+            f"form={program.lattice.perception.form.value}"
+        )
+        if hasattr(program, "note_seed"):
+            program.note_seed(34, "Stamp", f"{mark}_{ts}")
     elif primary == 35:
         lab = (label or "").lower()
         if "nursery" in lab:
