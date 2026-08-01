@@ -107,7 +107,6 @@ class Program:
     def place(self, id: str, label: str, **kwargs):
         u = self.cube.place_idea(id, label, **kwargs)
         self.sandbox.maybe_auto_box(self.cube.session.plane, id)
-        # NBD 1+3: also land on HarmonicLattice (H/V from plane coords)
         try:
             h = int(round(getattr(u, "x", 0) or 0))
             v = int(round(getattr(u, "y", 0) or 0))
@@ -179,6 +178,8 @@ class Program:
             avatar=self.avatar_status(),
             nursery=self.list_proposals(),
             rings=list(self.duo.rings),
+            form=self.lattice.perception.form.value,
+            skin=self.lattice.perception.skin_name(),
         )
 
     @staticmethod
