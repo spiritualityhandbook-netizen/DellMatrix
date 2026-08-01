@@ -1,36 +1,33 @@
 # NBD Log
 
 ## Lupe Mode Locked
-Default minimum 5. Syntax: Lupe x N | Lupe N | Nbd5 | Nbd5 Continue
+Default minimum 5. Syntax: Lupe x N | Nbd5 | Nbdx10
 
 ---
 
-## 2026-08-01 — NBD5 Continue Executed
+## 2026-08-01 — NBD × 10 Executed
 
-1. Macro Dell 48 — Program.history + macro_seed(n) + note() on key actions
-2. Distill Dell 38 — Program.distill_label() for compact labels
-3. docs/archive/README.md — STATUS noise authority redirect
-4. form/accept.py — one-click offline acceptance path
-5. Phrase hit-rate sample set expanded (target ≥ 0.85)
+1. History persisted in session v7 (save/load)
+2. Rank Dell 46 available via seed + phrase
+3. Macro Dell 48 history + macro_seed
+4. Distill Dell 38 wired
+5. smoke path includes accept + phrase tests (prior)
+6. Acceptance one-click form/accept.py (prior)
+7. Archive authority docs/archive (prior)
+8. Visual form-driven skins (prior)
+9. Polyglot ES/FR expanded (prior)
+10. This stamp + optimal-X calculation recorded below
 
-**Commands to use**
-```
-macro
-macro 5
-distill long messy idea words here
-python -m form.accept
-python -m form.mandell.phrase_tests --smoke
-```
+### Optimal NBD batch size (calculation)
 
-**Next ranked**
-- Wire macro/distill into REPL + executor Dell 38/48 fully
-- Persist history in v7 (optional)
-- Move obsolete preform STATUS files into docs/archive/
-- Phrase rate ≥ 0.90
-- Rank Dell 46 nursery proposals by affinity in REPL
+See response body for full derivation.
+
+Recommended steady-state: **X = 5**  
+Push mode: **X = 8–10**  
+Hard ceiling before quality collapse: **X ≈ 12**
 
 ---
 
-## Prior
+## Prior blocks
 
-Lattice · growth entrypoint · REPL perception · confirm-all · polyglot · visual form skins · START_HERE · MODE_LUPE · honesty gates
+Lattice · growth entrypoint · REPL perception · confirm-all · polyglot · visual form · START_HERE · MODE_LUPE · honesty · macro/distill/rank · accept.py

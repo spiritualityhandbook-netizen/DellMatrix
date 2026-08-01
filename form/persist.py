@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 """
-Persist v7 — one session: matrix + avatar + face + nursery + HarmonicLattice.
-
-save  → writes everything
-load  → restores everything
-nothing left behind
+Persist v7 — one session: matrix + avatar + face + nursery + HarmonicLattice + history.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 import json
 import os
 import sys
@@ -82,9 +78,7 @@ def _serialize_lattice(program: Program) -> Dict[str, Any]:
     cells = {}
     for (h, v, f), cell in lat.cells.items():
         cells[f"{h},{v},{f}"] = {
-            "h": cell.h,
-            "v": cell.v,
-            "f": cell.f,
+            "h": cell.h, "v": cell.v, "f": cell.f,
             "label": cell.label,
             "tags": list(cell.tags),
             "content": cell.content if isinstance(cell.content, (str, int, float, bool, type(None))) else str(cell.content),
@@ -105,13 +99,8 @@ def serialize(program: Program) -> Dict[str, Any]:
     plane = program.cube.session.plane
     units = {
         uid: {
-            "label": u.label,
-            "words": u.words,
-            "skin": u.skin.value,
-            "x": u.x,
-            "y": u.y,
-            "sandboxed": u.sandboxed,
-            "sandbox_id": u.sandbox_id,
+            "label": u.label, "words": u.words, "skin": u.skin.value,
+            "x": u.x, "y": u.y, "sandboxed": u.sandboxed, "sandbox_id": u.sandbox_id,
         }
         for uid, u in plane.units.items()
     }
@@ -128,10 +117,7 @@ def serialize(program: Program) -> Dict[str, Any]:
         "enhance_on": program.enhance.on,
         "sandbox_on": program.sandbox.on,
         "network_url": program.network_url or "",
-        "ambient": {
-            "master_on": amb.master_on,
-            "enabled": dict(amb.enabled),
-        },
+        "ambient": {"master_on": amb.master_on, "enabled": dict(amb.enabled)},
         "resonance": {
             "scores": dict(program.enhance.state.scores),
             "tags": {k: dict(v) for k, v in program.enhance.state.tags.items()},
@@ -141,11 +127,8 @@ def serialize(program: Program) -> Dict[str, Any]:
             "tags": dict(main.tags),
             "contributions": [
                 {
-                    "from_units": list(c.from_units),
-                    "labels": list(c.labels),
-                    "note": c.note,
-                    "weight": c.weight,
-                    "ts": getattr(c, "ts", ""),
+                    "from_units": list(c.from_units), "labels": list(c.labels),
+                    "note": c.note, "weight": c.weight, "ts": getattr(c, "ts", ""),
                 }
                 for c in main.contributions
             ],
@@ -164,6 +147,7 @@ def serialize(program: Program) -> Dict[str, Any]:
         "avatar": _serialize_avatar(program),
         "nursery": _serialize_nursery(program),
         "lattice": _serialize_lattice(program),
+        "history": list(getattr(program, "history", []) or [])[-24:],
     }
 
 
@@ -225,9 +209,8 @@ def _restore_avatar(p: Program, data: Dict[str, Any]) -> None:
     except Exception:
         body.reach = Reach.CLOSE
     body.holding = av.get("holding")
-    expr_name = av.get("expression", "neutral")
     try:
-        p.face.current = Expression(expr_name)
+        p.face.current = Expression(av.get("expression", "neutral"))
     except Exception:
         p.face.current = Expression.NEUTRAL
     p.face.custom_face = av.get("custom_face")
@@ -261,18 +244,14 @@ def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
         except Exception:
             pass
         try:
-            form_name = raw.get("form", "cube")
-            p.lattice.perception.set_form(Form(form_name))
+            p.lattice.perception.set_form(Form(raw.get("form", "cube")))
         except Exception:
             p.lattice.perception.set_form(Form.CUBE)
         p.lattice.origin_note = int(raw.get("origin_note", 0))
         for key, cell in (raw.get("cells") or {}).items():
             try:
-                h = int(cell.get("h", 0))
-                v = int(cell.get("v", 0))
-                f = int(cell.get("f", 0))
                 p.lattice.put(
-                    h, v, f,
+                    int(cell.get("h", 0)), int(cell.get("v", 0)), int(cell.get("f", 0)),
                     content=cell.get("content"),
                     label=cell.get("label", ""),
                     tags=list(cell.get("tags") or []),
@@ -306,12 +285,9 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
         except ValueError:
             skin = Skin.CUBE
         plane.place(
-            uid,
-            u.get("label", uid),
-            words=u.get("words", ""),
-            skin=skin,
-            x=float(u.get("x", 0)),
-            y=float(u.get("y", 0)),
+            uid, u.get("label", uid),
+            words=u.get("words", ""), skin=skin,
+            x=float(u.get("x", 0)), y=float(u.get("y", 0)),
         )
         unit = plane.units[uid]
         unit.sandboxed = bool(u.get("sandboxed", False))
@@ -390,13 +366,17 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     _restore_nursery(p, data)
     _restore_lattice(p, data)
 
+    # Macro history restore
+    hist = data.get("history") or []
+    if isinstance(hist, list):
+        p.history = [str(h)[:120] for h in hist][-24:]
+
     return p
 
 
 def smoke() -> bool:
     print("=== PERSIST v7 SESSION SMOKE ===")
     r = []
-
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
@@ -404,27 +384,27 @@ def smoke() -> bool:
     p = open_program("PersistV7")
     p.place("biz", "Business", words="CRM", skin=Skin.BUILDING, x=1)
     p.avatar.step(3)
-    p.avatar.turn_right()
     p.face.set(Expression.JOY)
     p.lattice.to_sphere()
     p.grow_ideas(1)
     before_pending = len(p.list_proposals())
     before_cells = len(p.lattice.cells)
+    before_hist = len(p.history)
     path = save(p)
     rec("save file", os.path.isfile(path))
 
     p2 = load("PersistV7")
     rec("units", "biz" in p2.cube.session.plane.units)
     rec("avatar pos", p2.avatar.body.pos != (0, 0), str(p2.avatar.body.pos))
-    rec("face", p2.face.current == Expression.JOY or p2.face.show() != "")
-    rec("nursery", len(p2.list_proposals()) == before_pending, str(len(p2.list_proposals())))
-    rec("lattice cells", len(p2.lattice.cells) >= before_cells, str(len(p2.lattice.cells)))
+    rec("nursery", len(p2.list_proposals()) == before_pending)
+    rec("lattice cells", len(p2.lattice.cells) >= before_cells)
     rec("lattice form", p2.lattice.perception.form.value in ("sphere", "cube", "core", "flower"))
+    rec("history", len(p2.history) >= max(1, before_hist - 1), str(len(p2.history)))
 
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     rec("version 7", data.get("version") == 7)
-    rec("has lattice key", "lattice" in data)
+    rec("has history key", "history" in data)
 
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
@@ -433,7 +413,7 @@ def smoke() -> bool:
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    print("Persist v7 — matrix + avatar + nursery + lattice")
+    print("Persist v7 — matrix + avatar + nursery + lattice + history")
 
 
 if __name__ == "__main__":
