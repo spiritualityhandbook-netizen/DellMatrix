@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
-"""
-Mandell pattern layer — math & nature as teachable forms.
-
-These are first-class named patterns, not decoration.
-Each pattern maps to Dell chains humans and machines can share.
-"""
+"""Mandell pattern layer — math & nature as teachable forms."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 
 @dataclass
 class Pattern:
     name: str
-    nature: str          # nature metaphor
-    math: str            # math metaphor (plain text)
-    mandel: str          # canonical seed
-    english: str         # human gloss
-    teach: str           # one-line lesson
+    nature: str
+    math: str
+    mandel: str
+    english: str
+    teach: str
 
 
 PATTERNS: Dict[str, Pattern] = {
@@ -102,6 +97,30 @@ PATTERNS: Dict[str, Pattern] = {
         mandel="23[Lock]",
         english="sandbox / freeze",
         teach="Lock isolates. Unlock reconnects.",
+    ),
+    "lattice": Pattern(
+        name="lattice",
+        nature="crystal / Tonnetz tone-network",
+        math="H=fifths V=thirds F=frequency; sparse coords",
+        mandel="15[Map] > 14[Bind] :: lattice",
+        english="H/V/F harmonic structural plane",
+        teach="Lattice is the creativity ground. Overlay can be harmonic or pure math.",
+    ),
+    "chord": Pattern(
+        name="chord",
+        nature="several notes sounding as one color",
+        math="neighborhood query on interval graph",
+        mandel="07[Link] > 21[Merge] :: chord",
+        english="pull related cells by harmonic neighborhood",
+        teach="Chord retrieval is multi-topic without copying files.",
+    ),
+    "imagination": Pattern(
+        name="imagination",
+        nature="seed → engine → latch → charged form",
+        math="ima (seed) + gin (loop) + at (coord) + ion (F expand)",
+        mandel="08[Create] > 15[Map] > 50[Manifest] :: imagination",
+        english="turn a raw idea into a latched 3D cell",
+        teach="ima-gin-at-ion is the process, not a daydream: seed, generate, place, manifest.",
     ),
 }
 
