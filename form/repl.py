@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — Mandell Origin. English, seeds, patterns, lattice, Lupe-ready."""
+"""REPL — Mandell Origin. English, seeds, lattice, polyglot, Lupe-ready."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ try:
     from form.mandell.bridge import to_english, to_mandell, bridge
     from form.mandell.executor import execute_seed
     from form.mandell.patterns import teach, list_patterns, get_pattern
-    from form.mandell.polyglot import bridge_lang
+    from form.mandell.polyglot import bridge_lang, list_langs
     from form.mandell.phrases import list_phrases, match_phrase
     from form.avatar import Facing, Posture, Locomotion, Expression
     from form.persist import load as persist_load
@@ -27,7 +27,7 @@ except ImportError:
     from form.mandell.bridge import to_english, to_mandell, bridge
     from form.mandell.executor import execute_seed
     from form.mandell.patterns import teach, list_patterns, get_pattern
-    from form.mandell.polyglot import bridge_lang
+    from form.mandell.polyglot import bridge_lang, list_langs
     from form.mandell.phrases import list_phrases, match_phrase
     from form.avatar import Facing, Posture, Locomotion, Expression
     from form.persist import load as persist_load
@@ -39,18 +39,18 @@ Ideas / Growth
   create an idea called business
   grow ideas 2
   proposals | confirm <id> | confirm all | reject all
+  lineage <id>
 
 Lattice / Perception
   cube | sphere | core | flower | toggle
-  lattice
-  chord 0 0
+  lattice | chord 0 0 | shell 0
 
 Avatar
   walk | turn left/right | sit | stand | smile | how do I look
 
 System
   save | load | visual | status | enhance on/off | pulse
-  acceptance   (cold-start path reminder)
+  acceptance | lang list
 
 Bridge
   mandell <english> | english <seed> | es ... | fr ...
@@ -73,7 +73,6 @@ def _say(msg: str) -> None:
 
 
 def _echo_seed(english: str = "", mandel: str = "") -> None:
-    """Always surface Mandell when available."""
     if mandel:
         _say(f"Mandell: {mandel}")
         return
@@ -92,7 +91,7 @@ def _show_proposals(p: Program) -> None:
     for i, prop in enumerate(pending[:20], 1):
         _say(f"  {i}. [{prop.get('kind')}] {prop['id']}")
         _say(f"      {prop['label']}")
-    _say("Type: confirm <id>  |  confirm all  |  reject <id>  |  reject all")
+    _say("Type: confirm <id>  |  confirm all  |  reject <id>  |  reject all  |  lineage <id>")
 
 
 def _handle_lattice(p: Program, lower: str, raw: str) -> bool:
@@ -153,6 +152,24 @@ def _handle_lattice(p: Program, lower: str, raw: str) -> bool:
             _say(f"  {mark} {c['coords']}  {c['note']}  shell={c['shell']}  {c['label'] or '—'}")
         _echo_seed(mandel="35[Discover] :: chord")
         return True
+    if lower.startswith("shell "):
+        parts = raw.split()
+        try:
+            n = int(parts[1])
+        except (IndexError, ValueError):
+            n = 0
+        cells = p.lattice.cells_by_shell(n)
+        _say(f"Shell {n}: {len(cells)} cell(s)")
+        for c in cells[:24]:
+            _say(f"  ({c.h},{c.v},{c.f})  {c.label or '—'}  tags={c.tags}")
+        _echo_seed(mandel=f"35[Discover] :: shell_{n}")
+        return True
+    if lower == "shell":
+        cells = p.lattice.cells_by_shell(0)
+        _say(f"Shell 0: {len(cells)} cell(s)")
+        for c in cells[:24]:
+            _say(f"  ({c.h},{c.v},{c.f})  {c.label or '—'}")
+        return True
     return False
 
 
@@ -181,6 +198,41 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
 
     if lower in ("proposals", "nursery", "void", "pending"):
         _show_proposals(p)
+        return p
+
+    if lower in ("lang list", "langs", "languages"):
+        _say("Supported: " + ", ".join(list_langs()))
+        _echo_seed(mandel="35[Discover] :: lang_list")
+        return p
+
+    if lower.startswith("lineage "):
+        pid = raw_line.split(maxsplit=1)[1].strip()
+        # try nursery first
+        prop = p.nursery.proposals.get(pid)
+        if prop:
+            _say(f"Proposal {prop.id} [{prop.kind}] {prop.label}")
+            _say(f"  parents: {prop.parents or '—'}")
+            _say(f"  affinity: {prop.affinity:.3f}")
+            _say(f"  reason: {prop.reason or '—'}")
+            _say(f"  status: {prop.status}")
+            _echo_seed(mandel="35[Discover] :: lineage")
+            return p
+        # live idea
+        unit = p.cube.session.plane.units.get(pid)
+        if unit:
+            _say(f"Live idea {pid}: {unit.label}")
+            _say(f"  words: {unit.words or '—'}")
+            # any nursery children that list this as parent
+            kids = [pr for pr in p.nursery.proposals.values() if pid in (pr.parents or [])]
+            if kids:
+                _say(f"  nursery children: {len(kids)}")
+                for k in kids[:8]:
+                    _say(f"    - {k.id} [{k.status}] {k.label}")
+            else:
+                _say("  no nursery children recorded")
+            _echo_seed(mandel="35[Discover] :: lineage")
+            return p
+        _say(f"No proposal or idea found for id: {pid}")
         return p
 
     if lower in ("confirm all", "confirm-all"):
@@ -423,7 +475,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
     print("  DellMatrix — Mandell Origin")
-    print("  English · Seeds · Lattice · Perception · Lupe-ready")
+    print("  English · Seeds · Lattice · Perception · Polyglot · Lupe-ready")
     print()
     p = persist_load(owner) if do_load else open_program(owner)
     if do_load:
