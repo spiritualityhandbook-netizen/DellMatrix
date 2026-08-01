@@ -3,7 +3,6 @@
 Stable Mandell phrase dictionary.
 
 Common human intents → canonical Mandell seeds.
-This is the teachable surface for everyday use.
 """
 
 from __future__ import annotations
@@ -11,32 +10,25 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Tuple
 import re
 
-# (pattern, seed_template, action_hint)
 PHRASES: List[Tuple[str, str, str]] = [
-    # create / place
     (r"^(?:create|add|make|new)\s+(?:an?\s+)?(?:idea\s+)?(?:called\s+)?(.+)$",
      "08[Create] > 15[Map] :: {label}", "place"),
     (r"^place\s+(.+)$",
      "08[Create] > 15[Map] :: {label}", "place"),
 
-    # grow / evolve
     (r"^(?:grow|evolve)(?:\s+ideas?)?(?:\s+(\d+))?$",
-     "13[Loop] > 04[Transform] :: grow",
-     "grow"),
+     "13[Loop] > 04[Transform] :: grow", "grow"),
 
-    # show / visual
     (r"^(?:show|show\s+me|display)(?:\s+the\s+matrix)?$",
      "09[Show]", "show"),
     (r"^(?:visual|open\s+visual|workspace)$",
      "09[Show] >> 47[Embed] :: visual", "visual"),
 
-    # save / load
     (r"^(?:save|keep|persist)(?:\s+session)?$",
      "10[Keep]", "save"),
     (r"^(?:load|reload|restore)(?:\s+session)?$",
      "28[Rollback] :: load", "load"),
 
-    # movement
     (r"^(?:walk|go|move)\s*(?:forward|ahead)?(?:\s+(\d+))?$",
      "19[Drive] :: walk", "walk"),
     (r"^run$", "19[Drive] :: run", "run"),
@@ -47,13 +39,11 @@ PHRASES: List[Tuple[str, str, str]] = [
     (r"^(?:stand|stand\s+up)$", "04[Transform] :: stand", "stand"),
     (r"^jump$", "04[Transform] :: jump", "jump"),
 
-    # tone / face
     (r"^(?:smile|happy|joy)$", "05[Tone] :: joy", "express_joy"),
     (r"^(?:calm|relax)$", "05[Tone] :: calm", "express_calm"),
     (r"^(?:focus|concentrate)$", "05[Tone] :: focus", "express_focus"),
     (r"^(?:how\s+do\s+i\s+look|avatar\s+status)$", "09[Show] :: avatar", "avatar_status"),
 
-    # system
     (r"^enhance\s+on$", "25[Pulse] :: enhance_on", "enhance_on"),
     (r"^enhance\s+off$", "32[Pause] :: enhance_off", "enhance_off"),
     (r"^pulse$", "25[Pulse]", "pulse"),
@@ -63,11 +53,9 @@ PHRASES: List[Tuple[str, str, str]] = [
     (r"^(?:help|what\s+can\s+i\s+do)$", "09[Show] :: help", "help"),
     (r"^(?:proposals|nursery|pending)$", "35[Discover] :: nursery", "proposals"),
 
-    # nursery bulk
     (r"^confirm\s+all$", "23[Lock] > 50[Manifest] :: confirm_all", "confirm_all"),
     (r"^reject\s+all$", "24[Unlock] :: reject_all", "reject_all"),
 
-    # lattice / perception (NBD)
     (r"^(?:cube|form\s+cube|to\s+cube)$", "15[Map] :: cube", "form_cube"),
     (r"^(?:sphere|form\s+sphere|to\s+sphere)$", "15[Map] :: sphere", "form_sphere"),
     (r"^(?:core|form\s+core|to\s+core)$", "15[Map] :: core", "form_core"),
@@ -76,19 +64,21 @@ PHRASES: List[Tuple[str, str, str]] = [
     (r"^(?:lattice|show\s+lattice)$", "09[Show] :: lattice", "lattice"),
     (r"^chord(?:\s+(-?\d+)\s+(-?\d+)(?:\s+(-?\d+))?)?$", "35[Discover] :: chord", "chord"),
 
-    # merge / link
     (r"^(?:merge|combine)\s+(.+?)\s+(?:and|with)\s+(.+)$",
      "21[Merge] > 14[Bind] :: {label}", "merge"),
     (r"^(?:link|connect)\s+(.+?)\s+(?:to|and|with)\s+(.+)$",
      "07[Link] > 14[Bind] :: {label}", "link"),
 
-    # distill / compress
-    (r"^(?:distill|summarize)\s+(.+)$",
+    (r"^(?:distill|summarize)(?:\s+(.+))?$",
      "38[Distill] :: {label}", "distill"),
     (r"^(?:compress)\s+(.+)$",
      "29[Compress] :: {label}", "compress"),
 
-    # acceptance
+    (r"^(?:macro)(?:\s+(\d+))?$",
+     "48[Macro] :: {label}", "macro"),
+    (r"^(?:rank|rank\s+proposals)$",
+     "46[Rank]", "rank"),
+
     (r"^(?:accept|acceptance|cold\s*start)$",
      "50[Manifest] :: acceptance", "acceptance"),
 ]
@@ -107,6 +97,7 @@ def match_phrase(english: str) -> Optional[Dict[str, str]]:
             g1 = m.group(1) if m.lastindex >= 1 else ""
             if g1 and g1.isdigit():
                 n = g1
+                label = g1
             else:
                 label = (g1 or "").strip()
             if m.lastindex >= 2:
