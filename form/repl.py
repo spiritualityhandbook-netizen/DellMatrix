@@ -32,7 +32,19 @@ except ImportError:
     from form.avatar import Facing, Posture, Locomotion, Expression
     from form.persist import load as persist_load
 
-HELP = """
+HELP_SHORT = """
+Top commands (type help more for full list)
+
+  tutorial              guided walkthrough
+  create an idea called test
+  grow ideas 2
+  proposals | confirm all | rank
+  sphere | lattice | visual
+  save | load | status
+  lang list
+""".strip()
+
+HELP_MORE = """
 Mandell Origin — English or seeds.
 
 Ideas / Growth
@@ -50,6 +62,7 @@ Avatar
   walk | turn left/right | sit | stand | smile | how do I look
 
 System
+  tutorial | start
   save | load | visual | status | enhance on/off | pulse
   acceptance | lang list
 
@@ -81,6 +94,63 @@ def _echo_seed(english: str = "", mandel: str = "") -> None:
         hit = match_phrase(english)
         if hit and hit.get("mandel"):
             _say(f"Mandell: {hit['mandel']}")
+
+
+def _run_tutorial(p: Program) -> Program:
+    """Guided acceptance path with plain-English steps (runs a safe demo)."""
+    print()
+    _say("Tutorial — offline acceptance path (~1 min)")
+    _say("Path: create → grow → confirm → sphere → save → load → visual")
+    print()
+
+    _say("Step 1 — create")
+    p.place("tutorial_seed", "Tutorial Seed", words="first idea", skin=Skin.CUBE)
+    _say('Created idea: "Tutorial Seed"')
+    print()
+
+    _say("Step 2 — grow (Nursery only; live matrix unchanged)")
+    out = p.grow_ideas(1)
+    _say(f"Proposed {out.get('proposed_new', 0)} new + {out.get('proposed_evolved', 0)} evolved.")
+    _say(f"Nursery pending: {out.get('nursery', {}).get('pending', 0)}")
+    print()
+
+    _say("Step 3 — confirm")
+    pending = p.list_proposals()
+    n = 0
+    for prop in list(pending):
+        res = p.confirm_proposal(prop["id"])
+        if res.get("ok"):
+            n += 1
+            _say(f'Confirmed: "{res.get("label", "")}"')
+    if n == 0:
+        _say("No proposals to confirm (still ok).")
+    else:
+        _say(f"Confirmed {n} proposal(s).")
+    print()
+
+    _say("Step 4 — sphere")
+    p.lattice.to_sphere()
+    _say(f"Form → sphere  (skin={p.lattice.perception.skin_name()})")
+    print()
+
+    _say("Step 5 — save")
+    path = p.save()
+    _say(f"Session saved: {path}")
+    print()
+
+    _say("Step 6 — load")
+    p2 = persist_load(p.owner)
+    _say(f"Session loaded for {p2.owner}. ideas={len(p2.cube.session.plane.units)}")
+    print()
+
+    _say("Step 7 — visual")
+    paths = p2.visual()
+    _say("Open this file in a browser (offline):")
+    _say(paths.get("easy") or paths.get("html", ""))
+    print()
+    _say("Tutorial complete. Type help anytime. You are ready.")
+    print()
+    return p2
 
 
 def _show_proposals(p: Program) -> None:
@@ -161,7 +231,6 @@ def _handle_lattice(p: Program, lower: str, raw: str) -> bool:
 
 
 def _handle_macro_rank(p: Program, lower: str, raw: str) -> bool:
-    """Early English handlers — not seed-only."""
     if lower in ("rank", "rank proposals"):
         ranked = p.ranked_proposals() if hasattr(p, "ranked_proposals") else p.list_proposals()
         if not ranked:
@@ -239,6 +308,22 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
     args = intent.args or {}
     lower = raw_line.lower().strip()
 
+    if lower in ("tutorial", "start", "guide", "walkthrough"):
+        return _run_tutorial(p)
+
+    if lower in ("help", "?"):
+        print()
+        print(HELP_SHORT)
+        print()
+        _say("Type: help more")
+        return p
+
+    if lower in ("help more", "help full", "more"):
+        print()
+        print(HELP_MORE)
+        print()
+        return p
+
     if _handle_lattice(p, lower, raw_line):
         return p
     if _handle_macro_rank(p, lower, raw_line):
@@ -308,6 +393,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
 
     if lower in ("acceptance", "accept", "cold start", "coldstart"):
         _say("Acceptance: create → grow → confirm → sphere → save → load → visual")
+        _say("Or type: tutorial")
         return p
 
     if lower.startswith("teach "):
@@ -498,8 +584,9 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
 
     elif action == "help":
         print()
-        print(HELP)
+        print(HELP_SHORT)
         print()
+        _say("Type: help more")
 
     else:
         uid = args.get("id", "idea")
@@ -514,7 +601,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
     print("  DellMatrix — Mandell Origin")
-    print("  Offline · English or seeds · Type help anytime")
+    print("  Offline · Type tutorial  or  help")
     print("  Try: create an idea called test")
     print()
     p = persist_load(owner) if do_load else open_program(owner)
