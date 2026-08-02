@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Persist v7 — one session: matrix + avatar + face + nursery + HarmonicLattice + history.
+Persist v7 — one session: matrix + avatar + face + nursery + HarmonicLattice + history + LatinMandell customs.
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 
 try:
     from form.mandell.floor import FLOOR, assert_floor_intact
+    from form.mandell.latinmandell import export_customs, import_customs, clear_customs
     from form.dell_matrix.plane import Perspective, Skin
     from form.dell_matrix.resonance import ResonanceState
     from form.dell_matrix.main_field import MainContribution, PullRecord
@@ -26,6 +27,7 @@ except ImportError:
     if ROOT not in sys.path:
         sys.path.insert(0, ROOT)
     from form.mandell.floor import FLOOR, assert_floor_intact
+    from form.mandell.latinmandell import export_customs, import_customs, clear_customs
     from form.dell_matrix.plane import Perspective, Skin
     from form.dell_matrix.resonance import ResonanceState
     from form.dell_matrix.main_field import MainContribution, PullRecord
@@ -148,6 +150,7 @@ def serialize(program: Program) -> Dict[str, Any]:
         "nursery": _serialize_nursery(program),
         "lattice": _serialize_lattice(program),
         "history": list(getattr(program, "history", []) or [])[-24:],
+        "latinmandell_customs": export_customs(),
     }
 
 
@@ -366,10 +369,13 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     _restore_nursery(p, data)
     _restore_lattice(p, data)
 
-    # Macro history restore
     hist = data.get("history") or []
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]
+
+    # LatinMandell customs (session depth survives load)
+    clear_customs()
+    import_customs(data.get("latinmandell_customs") or {})
 
     return p
 
@@ -381,18 +387,23 @@ def smoke() -> bool:
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
 
+    from form.mandell.latinmandell import customize, root_of, clear_customs as cc
+
+    cc()
     p = open_program("PersistV7")
     p.place("biz", "Business", words="CRM", skin=Skin.BUILDING, x=1)
     p.avatar.step(3)
     p.face.set(Expression.JOY)
     p.lattice.to_sphere()
     p.grow_ideas(1)
+    customize("lumen", dell=9, term="Show", sense="light made visible", la="lumen")
     before_pending = len(p.list_proposals())
     before_cells = len(p.lattice.cells)
     before_hist = len(p.history)
     path = save(p)
     rec("save file", os.path.isfile(path))
 
+    cc()
     p2 = load("PersistV7")
     rec("units", "biz" in p2.cube.session.plane.units)
     rec("avatar pos", p2.avatar.body.pos != (0, 0), str(p2.avatar.body.pos))
@@ -400,12 +411,15 @@ def smoke() -> bool:
     rec("lattice cells", len(p2.lattice.cells) >= before_cells)
     rec("lattice form", p2.lattice.perception.form.value in ("sphere", "cube", "core", "flower"))
     rec("history", len(p2.history) >= max(1, before_hist - 1), str(len(p2.history)))
+    rec("latinmandell custom", root_of("lumen") is not None and root_of("lumen").get("custom") is True)
 
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     rec("version 7", data.get("version") == 7)
     rec("has history key", "history" in data)
+    rec("has latinmandell_customs", "latinmandell_customs" in data)
 
+    cc()
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
@@ -413,7 +427,7 @@ def smoke() -> bool:
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    print("Persist v7 — matrix + avatar + nursery + lattice + history")
+    print("Persist v7 — matrix + avatar + nursery + lattice + history + LatinMandell customs")
 
 
 if __name__ == "__main__":
