@@ -18,7 +18,7 @@ PREFIXES: Dict[str, str] = {
     "pre": "before · predictive",
     "post": "after",
     "trans": "across · transformative",
-    "de": "down · analytical · reverse",
+    "de": "down · analytical · reverse · intensive",
     "omni": "all · universal · whole",
     "im": "in · isolated",
     "sub": "under · nested",
@@ -28,35 +28,50 @@ PREFIXES: Dict[str, str] = {
     "omega": "end · completion",
     "delta": "change",
     "man": "control · hand · execution",
-    "nur": "nurse · feed",
+    "nur": "nurse · feed · adaptive growth",
+    "syn": "synchronized",
+    "iso": "quarantined · equal",
+    "aequi": "balanced",
+    "ob": "against · opposed",
+    "ad": "toward · directed",
+    "fu": "forward vector",
+    "nud": "raw · naked",
 }
 
 ROOTS: Dict[str, str] = {
     "fac": "construct · make",
     "log": "trace · reason",
-    "mit": "send",
+    "mit": "send · transmit",
     "spec": "evaluate · look",
     "men": "mind",
-    "mend": "validate · repair",
+    "mend": "validate · repair · honor",
     "tu": "protect",
     "birth": "genesis",
-    "dell": "nested unit · operator cell",
-    "mand": "command · order",
+    "dell": "nested unit · operator cell · protected pocket",
+    "mand": "command · order · execute",
     "cor": "heart · core",
     "ordo": "order · rank",
     "lux": "light",
     "lumen": "light made visible",
     "pulse": "stroke · beat",
+    "voc": "voice",
+    "gen": "origin · generate",
+    "struct": "structure",
+    "plete": "terminate · complete",
 }
 
 SUFFIXES: Dict[str, str] = {
     "ce": "attribute / act",
     "er": "actor",
-    "re": "loop / again",
-    "ure": "object / result",
-    "dell": "fragment · nested cell",
+    "re": "loop / again · return frame",
+    "ure": "object / result · formalized",
+    "dell": "fragment · nested cell · protected pocket",
     "tion": "act or state",
-    "ment": "result or means",
+    "ment": "result or means · mind",
+    "ing": "active pipeline",
+    "ex": "execute immediately",
+    "term": "terminate · wipe",
+    "mut": "mutate variable",
 }
 
 # Flat lookup for quick sense
@@ -68,6 +83,8 @@ MORPHEMES.update({
     "mandel": "control-nest · Mandell root surface",
     "mandell": "control-nest · Mandell root surface",
     "nurture": "feed growth",
+    "commandell": "unified execution protected pocket",
+    "omnifacure": "universal object construction",
 })
 
 
@@ -100,6 +117,12 @@ def force_mandell_morphemes(word: str) -> str:
         "omni-fac-ure": "Omni-fac-ure",
         "transfacure": "Trans-fac-ure",
         "rebirth": "Re-birth",
+        "defacure": "De-fac-ure",
+        "refacure": "Re-fac-ure",
+        "conlogure": "Con-log-ure",
+        "premiture": "Pre-mit-ure",
+        "omnispecure": "Omni-spec-ure",
+        "translogdell": "Trans-log-dell",
     }
     if low in table:
         return table[low]
@@ -157,6 +180,7 @@ def smoke() -> bool:
     rec("split", split_delimited("Com-man-dell") == ["Com", "man", "dell"])
     rec("prefix sense", "unified" in sense_of("com").lower() or "together" in sense_of("com").lower())
     rec("explain", len(explain_morphemes("Omni-fac-ure")["parts"]) >= 2)
+    rec("new prefix syn", "syn" in PREFIXES)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

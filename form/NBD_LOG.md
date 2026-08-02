@@ -3,28 +3,41 @@
 ## Law
 Bare `NBD` → E(X) → execute. Steady X=5.
 **Form intake:** analyze → S(c) → **high‑S only** (`form/MODE_FORM.md`).
+Lupe×10 used once for this Voynich/form flood; revert to X=5.
 
 ---
 
-## 2026-08-01 — Notebook + Voynich/OS forms
+## 2026-08-01 — Form flood (Voynich pages + logos + long pastes)
 
 ### Notebook
-URL `notebook.google.com/notebook/e9554645-...` → **HTTP 302 to Google login**.  
-Not readable from this environment. **Cannot NBD 200+ notebook sources** until exported (PDF/MD zip) or made public.
+Still login-walled. Not processed.
 
-### Pasted forms — high‑S implemented
+### Batch score (Lupe×10)
 
-| Piece | S | Done |
-|-------|---|------|
-| Voynich honesty (interpretive ≠ scientific decode) | ~0.95 | `VOYNICH_HONESTY.md` + START_HERE |
-| Bounded Orbit C²+Δ tracker | ~0.55 | `bounded_orbit.py` |
-| Persona roster (doc) | ~0.45 | `PERSONAS.md` |
-| Mandell_OS alternate repo tree | low | deferred (DellMatrix is live Origin host) |
-| External “master directive” prompt block | low | deferred (not offline runtime) |
-| Claim of verified Voynich decryption | 0 | **rejected** |
+| Item | S | Action |
+|------|---|--------|
+| Voynich honesty (interpretive ≠ decode) | 0.95 | Already locked; held |
+| 5-ring organizational metaphor | 0.55 | `VOYNICH_RINGS.md` |
+| Latin morpheme densify (Com-/Omni-/-dell etc.) | 0.70 | `morpheme.py` expanded |
+| Bounded Orbit C²+Δ | 0.55 | Already live |
+| Persona roster doc | 0.45 | Already live |
+| External logos / news screenshots | ~0 | Rejected (noise) |
+| “Voynich fully decoded / universal key” claims | **0** | **Rejected** |
+| Sovereign Blueprint / AbCC nuclear as Origin runtime | low | Deferred (conflicts offline + English-first) |
+| Pure-Mandell-only ban on English | low | Rejected (Origin: English primary daily door) |
+| Alternate Mandell_OS repo tree as replace | low | Deferred (DellMatrix is live host) |
+
+### Implemented this pass
+- `form/mandell/VOYNICH_RINGS.md`
+- densified `form/mandell/morpheme.py`
+
+### Held firm
+- No scientific Voynich decryption claim
+- English remains primary daily door; LatinMandell is core *depth*
+- Nursery quarantine + Floor lock unchanged
 
 ---
 
 ## Prior
 
-Harmonic link grader · visual terminal · Mandel Lang V0 · Harmonic Core · Origin stable
+Voynich honesty · Bounded Orbit · Personas · Harmonic link · Origin stable
