@@ -6,6 +6,7 @@
 |-----|------|
 | `docs/START_HERE.md` | First door |
 | `docs/AUDIT_AND_NEXT_50.md` | Roadmap + audit |
+| `docs/RESIDUAL_COMPLETE.md` | Residual closed |
 | `form/NBD_LOG.md` | Execution log |
 | `form/MODE_LUPE.md` | Batch / NBD law |
 | `form/CORE_SCOPE.md` | Core vs side |
@@ -18,7 +19,7 @@
 
 | Path | Status |
 |------|--------|
-| `preform/` | LEGACY historical |
+| `preform/` | LEGACY historical (stamp closed residual) |
 | `src/` | LEGACY dual-era JS |
 | `form/trading/` | Side package |
 | `form/llm/` | Side package |

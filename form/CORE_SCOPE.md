@@ -21,14 +21,15 @@ create → grow → confirm → sphere → save → load → visual
 
 | Package | Role | Rule |
 |---------|------|------|
-| `form/trading/` | Sister trading tools | Optional. Not required for Origin. Do not import into open/repl. |
-| `form/llm/` | Local model bridge experiments | Optional. Offline acceptance must not depend on it. |
+| `form/trading/` | Sister trading tools | Optional. README SIDE lock. Do not import into open/repl. |
+| `form/llm/` | Local model bridge experiments | Optional. README SIDE lock. Offline acceptance must not depend on it. |
 
 **Lock:** Origin path never requires network, brokers, or external models.
 
 ## LEGACY (frozen, not side)
 
-See `form/LEGACY.md` — `src/` and `preform/` are frozen historical, not optional features.
+See `form/LEGACY.md` — `src/` and `preform/` are frozen historical.
+preform residual archive is **closed** via stamp (`docs/RESIDUAL_COMPLETE.md`).
 
 ## CI
 

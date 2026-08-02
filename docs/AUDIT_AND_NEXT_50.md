@@ -1,8 +1,8 @@
 # DellMatrix / Mandell — Full Audit + Next Directives
 
-Date: 2026-08-01 (Origin stable stamp)  
+Date: 2026-08-01 (residual complete)  
 Scope: `form/` runtime · GitHub main  
-Authority: `docs/START_HERE.md` · `docs/LIVE_INDEX.md` · `form/MODE_LUPE.md`
+Authority: `docs/START_HERE.md` · `docs/LIVE_INDEX.md` · `form/MODE_LUPE.md` · `docs/RESIDUAL_COMPLETE.md`
 
 ---
 
@@ -15,11 +15,12 @@ Authority: `docs/START_HERE.md` · `docs/LIVE_INDEX.md` · `form/MODE_LUPE.md`
 | C Growth quality | confirm-all, rank, lineage | **Done** |
 | D Perception/lattice | forms, chord, shell, visual | **Done** |
 | E Average user | START_HERE, accept, help | **Done** |
-| F Bridge/honesty | ES/FR, honesty, offline | **Good** |
-| Dell densify | 00–50 runtime | **Dense** (see `form/mandell/DELL_RUNTIME.md`) |
+| F Bridge/honesty | ES/FR, honesty, offline | **Done** |
+| Dell densify | 00–50 runtime | **Dense** |
+| Residual hygiene | archive stamp, side lock, CI | **Done** |
 
-**Estimate:** original Next-50 intent ~**90–95%**.  
-Residual is on-demand densify, optional archive moves, polyglot only when requested.
+**Estimate:** original Next-50 intent **~100% of committed residual**.  
+Worldwide bridge remains a longer horizon goal, not a residual defect.
 
 ---
 
@@ -33,9 +34,10 @@ Residual is on-demand densify, optional archive moves, polyglot only when reques
 | Average-user path | **Good** |
 | Perception / lattice | **Good** |
 | Dell runtime | **Dense** |
-| Polyglot | **Partial** (ES/FR) |
+| Polyglot | **ES/FR** (more on request) |
 | Docs hygiene | **Good** |
 | Legacy dual-era | **Contained** |
+| Residual queue | **Empty** |
 
 ---
 
@@ -47,17 +49,18 @@ Residual is on-demand densify, optional archive moves, polyglot only when reques
 | Practical man↔computer | Yes |
 | Controlled growth | Yes |
 | Average-user daily use | Good |
-| Worldwide bridge | Not yet |
+| Worldwide bridge | Horizon — not residual |
 
 ---
 
-## Remaining (low urgency)
+## Open residual
 
-1. Optional preform → `docs/archive/` physical move
-2. Third language only when requested
-3. trading/llm stay side packages
-4. Hold offline CI
-5. Selective Dell polish on real usage friction
+**None.** See `docs/RESIDUAL_COMPLETE.md`.
+
+Re-open work only on:
+- Explicit new directive
+- Reported friction in the Origin path
+- Requested third language
 
 ---
 
@@ -67,3 +70,4 @@ Residual is on-demand densify, optional archive moves, polyglot only when reques
 - Autonomous self-aware evolution
 - Full 4D tesseract UI
 - Treating preform/src as live Form
+- Pulling trading/llm into Origin
