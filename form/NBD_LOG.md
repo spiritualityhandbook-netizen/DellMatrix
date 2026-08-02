@@ -1,25 +1,25 @@
 # NBD Log
 
 ## Law
-Bare `NBD` → E(X) → execute. Steady X=5.  
-Lupe×N = quality passes. High‑S form intake only.
+Bare `NBD` → E(X) → execute. Steady X=5.
 
 ---
 
-## 2026-08-01 — SUS refine audit
+## 2026-08-02 — LatinMandell depth → Strong
 
-| Check | Result |
-|-------|--------|
-| LIVE_INDEX ↔ Voynich honesty/inspire | Synced |
-| FULL_AUDIT_AND_CAPABILITIES | Refined step-by-step SUS report |
-| Runtime vs docs | Aligned |
-| Residual | Empty |
-| User-ready seal | Intact |
+| Item | Result |
+|------|--------|
+| `la …` in REPL | Wired like es/fr |
+| `explain` / `deepen` / `morph` | English REPL commands |
+| `customize` / `customs` | REPL + persist v7 |
+| Hyphen morpheme tokens | `Com-man-dell` depth path |
+| Classic Latin when useful | ROOTS + LA_MAP |
+| New-age morphology otherwise | morpheme.py + force split |
 
-No code change required. Docs authority synchronized.
+Depth grade target: **Strong across board** (operational LatinMandell, not classical NLP).
 
 ---
 
 ## Prior
 
-Voynich safe inspire (Lupe×5) · Hyper-refinement 1–4 · residual closed
+SUS refine audit · Voynich safe inspire · user-ready seal

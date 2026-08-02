@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""REPL — Mandell Origin. English, seeds, lattice, polyglot, Lupe-ready."""
+"""REPL — Mandell Origin. English, seeds, lattice, polyglot, LatinMandell depth."""
 
 from __future__ import annotations
 
@@ -15,6 +15,10 @@ try:
     from form.mandell.patterns import teach, list_patterns
     from form.mandell.polyglot import bridge_lang, list_langs
     from form.mandell.phrases import list_phrases, match_phrase
+    from form.mandell.latinmandell import (
+        format_explain, deepen, customize, list_customs, root_of,
+    )
+    from form.mandell.morpheme import force_mandell_morphemes, explain_morphemes
     from form.avatar import Facing, Posture, Locomotion, Expression
     from form.persist import load as persist_load
 except ImportError:
@@ -29,6 +33,10 @@ except ImportError:
     from form.mandell.patterns import teach, list_patterns
     from form.mandell.polyglot import bridge_lang, list_langs
     from form.mandell.phrases import list_phrases, match_phrase
+    from form.mandell.latinmandell import (
+        format_explain, deepen, customize, list_customs, root_of,
+    )
+    from form.mandell.morpheme import force_mandell_morphemes, explain_morphemes
     from form.avatar import Facing, Posture, Locomotion, Expression
     from form.persist import load as persist_load
 
@@ -41,11 +49,13 @@ Top commands (type help more for full list)
   proposals | confirm all | rank
   sphere | lattice | visual
   save | load | status
+  explain create        LatinMandell depth
+  la cresce 2           Latin door
   lang list
 """.strip()
 
 HELP_MORE = """
-Mandell Origin — English or seeds.
+Mandell Origin — English, seeds, or LatinMandell.
 
 Ideas / Growth
   create an idea called test
@@ -61,13 +71,23 @@ Lattice / Perception
 Avatar
   walk | turn left/right | sit | stand | smile | how do I look
 
+LatinMandell (core depth)
+  explain <word|phrase|Com-man-dell>
+  deepen <phrase>
+  morph <word>              force '-' morpheme split
+  customize <label> [dell N] [sense ...]
+  customs                   list custom bindings
+  la <latin phrase>         same door as es/fr
+
+Bridge
+  mandell <english> | english <seed>
+  es ... | fr ... | la ...
+  lang list
+
 System
   tutorial | start
   save | load | visual | status | enhance on/off | pulse
-  acceptance | lang list
-
-Bridge
-  mandell <english> | english <seed> | es ... | fr ...
+  acceptance
 """.strip()
 
 _FACING = {
@@ -96,8 +116,103 @@ def _echo_seed(english: str = "", mandel: str = "") -> None:
             _say(f"Mandell: {hit['mandel']}")
 
 
+def _handle_latinmandell(p: Program, lower: str, raw: str) -> bool:
+    """explain / deepen / morph / customize / customs / la …"""
+
+    if lower.startswith("la ") or lower.startswith("latin "):
+        text = raw.split(maxsplit=1)[1]
+        rep = bridge_lang("la", text)
+        _say(f"english: {rep.get('english')}")
+        _say(f"mandel:  {rep.get('mandel')}")
+        if rep.get("ok") == "true" and rep.get("english"):
+            return ("__exec__", rep["english"])  # type: ignore
+        if rep.get("ok") != "true":
+            _say("no LA map for that phrase yet — try explain / customize")
+        return True
+
+    if lower.startswith("explain ") or lower == "explain":
+        text = raw.split(maxsplit=1)[1] if " " in raw else ""
+        if not text:
+            _say("Usage: explain <word|phrase|Com-man-dell>")
+            return True
+        print()
+        print(format_explain(text))
+        print()
+        if hasattr(p, "note_seed"):
+            p.note_seed(45, "Translate", "explain")
+        return True
+
+    if lower.startswith("deepen "):
+        text = raw.split(maxsplit=1)[1]
+        parts = deepen(text)
+        if not parts:
+            _say("No roots found — try hyphen form (Com-man-dell) or customize")
+            return True
+        for r in parts:
+            dell = r.get("dell")
+            d = f" dell={int(dell):02d}" if dell is not None else ""
+            _say(f"{r.get('word')}: {r.get('la')} — {r.get('sense')}{d}")
+        return True
+
+    if lower.startswith("morph ") or lower.startswith("morpheme "):
+        text = raw.split(maxsplit=1)[1]
+        forced = force_mandell_morphemes(text)
+        payload = explain_morphemes(forced)
+        _say(f"forced: {forced}")
+        for part in payload.get("parts") or []:
+            _say(f"  - {part.get('morpheme')} ({part.get('kind')}): {part.get('sense')}")
+        r = root_of(forced)
+        if r:
+            _say(f"combined: {r.get('sense')}")
+        return True
+
+    if lower in ("customs", "list customs", "custom list"):
+        items = list_customs()
+        if not items:
+            _say("No custom LatinMandell bindings. Use: customize <label> dell N sense ...")
+            return True
+        for c in items:
+            _say(f"  {c.get('label')}: la={c.get('la')} dell={c.get('dell')} — {c.get('sense')}")
+        return True
+
+    if lower.startswith("customize ") or lower.startswith("custom "):
+        # customize lumen dell 9 sense light made visible
+        rest = raw.split(maxsplit=1)[1].strip()
+        tokens = rest.split()
+        if not tokens:
+            _say("Usage: customize <label> [dell N] [sense ...]")
+            return True
+        label = tokens[0]
+        dell = None
+        sense_parts: list = []
+        i = 1
+        while i < len(tokens):
+            t = tokens[i]
+            if t.lower() in ("dell", "d") and i + 1 < len(tokens) and tokens[i + 1].isdigit():
+                dell = int(tokens[i + 1])
+                i += 2
+                continue
+            if t.lower() in ("sense", "as") and i + 1 < len(tokens):
+                sense_parts = tokens[i + 1 :]
+                break
+            sense_parts.append(t)
+            i += 1
+        sense = " ".join(sense_parts).strip()
+        out = customize(label, dell=dell, sense=sense or f"custom · {label}", la=label)
+        if out.get("ok"):
+            c = out["custom"]
+            _say(f"Bound: {c.get('label')} → dell={c.get('dell')} · {c.get('sense')}")
+            _say("Survives save/load.")
+            if hasattr(p, "note_seed"):
+                p.note_seed(14, "Bind", label[:24])
+        else:
+            _say(f"Could not customize: {out.get('error')}")
+        return True
+
+    return False
+
+
 def _run_tutorial(p: Program) -> Program:
-    """Guided acceptance path with plain-English steps (runs a safe demo)."""
     print()
     _say("Tutorial — offline acceptance path (~1 min)")
     _say("Path: create → grow → confirm → sphere → save → load → visual")
@@ -324,6 +439,14 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
         print()
         return p
 
+    # LatinMandell depth door (may request nested english exec)
+    lm = _handle_latinmandell(p, lower, raw_line)
+    if lm is True:
+        return p
+    if isinstance(lm, tuple) and lm and lm[0] == "__exec__":
+        eng = lm[1]
+        return _execute_intent(p, translate(eng), raw_line=eng)
+
     if _handle_lattice(p, lower, raw_line):
         return p
     if _handle_macro_rank(p, lower, raw_line):
@@ -334,7 +457,8 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
         return p
 
     if lower in ("lang list", "langs", "languages"):
-        _say("Supported: " + ", ".join(list_langs()))
+        _say("Supported: " + ", ".join(list_langs()) + " · en (primary)")
+        _say("LatinMandell: explain · deepen · morph · customize · la …")
         _echo_seed(mandel="35[Discover] :: lang_list")
         return p
 
@@ -603,6 +727,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     print("  DellMatrix — Mandell Origin")
     print("  Offline · Type tutorial  or  help")
     print("  Try: create an idea called test")
+    print("  Depth: explain create · la cresce 2")
     print()
     p = persist_load(owner) if do_load else open_program(owner)
     if do_load:
