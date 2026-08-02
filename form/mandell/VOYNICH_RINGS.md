@@ -1,16 +1,20 @@
 # Voynich 5-Ring metaphor (organizational only)
 
-**Not a decryption.** See `VOYNICH_HONESTY.md`.
+**Not a decryption.** See `VOYNICH_HONESTY.md` · `VOYNICH_INSPIRE.md`.
 
-Optional lens for treating a codex (or any dense symbolic surface) as five functional rings:
+Optional lens for treating a dense symbolic surface as five functional rings:
 
 | Ring | Metaphor role | Origin touch |
 |------|----------------|--------------|
-| **Herbal** | Data / variable registry | idea plane · matrix cells |
-| **Astro** | Phase / temporal gate | lattice H/V/F · orbit steps |
+| **Herbal** | Whole live specimen | idea plane · confirmed units |
+| **Astro** | Phase / circular reading | lattice perception · shells |
 | **Bio** | Coherence / human check | Nursery confirm · honesty |
-| **Pharma** | Synthesis / transform | growth · rank · distill |
-| **Recipe** | Executable output | save · load · visual · acceptance path |
+| **Pharma** | Parts before whole | growth proposals · rank |
+| **Recipe** | Executable sequence | save · load · visual · acceptance |
+
+Growth pipeline echo (also used in DuoBeta rings):
+
+`Seed → Token → Body → Lens → Evolve`
 
 Use when mapping *structure*. Never claim historical plaintext recovery.
 

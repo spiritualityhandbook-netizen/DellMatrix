@@ -1,43 +1,29 @@
 # NBD Log
 
 ## Law
-Bare `NBD` → E(X) → execute. Steady X=5.
-**Form intake:** analyze → S(c) → **high‑S only** (`form/MODE_FORM.md`).
+Bare `NBD` → E(X) → execute. Steady X=5.  
+Lupe×N = quality passes on the batch.  
+**Form intake:** high‑S only (`MODE_FORM.md`).
 
 ---
 
-## 2026-08-01 — Hyper-refinement Directive 4 (Friction + user-ready seal)
+## 2026-08-01 — NBD Lupe×5 · Voynich safe inspire
 
-| Change | Result |
-|--------|--------|
-| `docs/USER_READY.md` | Seal + acceptance checklist |
-| Friction sweep | Owner neutral · LEGACY/SIDE called out · US&S personal-only held |
-| LIVE_INDEX / RESIDUAL | Hyper-refinement 1–4 complete |
+| Pass | Check |
+|------|-------|
+| 1 | Honesty gate intact — no decode claim |
+| 2 | Section↔Nursery/plane map = metaphor only |
+| 3 | Montemurro = affinity/distribution idea only |
+| 4 | Rugg table-grille = structured-null insight; not core language |
+| 5 | No new runtime dependency; docs only; reinforces existing Nursery/rank/morphology |
 
-**Status: USER-READY** for offline average use.
+**Added:** `form/mandell/VOYNICH_INSPIRE.md`  
+**Updated:** `VOYNICH_HONESTY.md` · `VOYNICH_RINGS.md`
 
-Further NBD only on reported friction or named new surface.
-
----
-
-## 2026-08-01 — Directive 3 (Visual polish)
-
-Empty state · copy UX · mobile spacing · tutorial button · LEVEL 7
-
----
-
-## 2026-08-01 — Directive 2 (Tutorial)
-
-`tutorial` / `start` · short help · `docs/TUTORIAL.md`
-
----
-
-## 2026-08-01 — Directive 1 (Install & first-run)
-
-Neutral owner · `docs/INSTALL.md` · launchers
+Useful for matrix: quarantine clarity, affinity-as-structure, morphology slots, test-null generators (future SIDE only).
 
 ---
 
 ## Prior
 
-US&S personal only · Block 1–2 residual closed · Origin stable
+Hyper-refinement 1–4 user-ready · residual empty · US&S personal only
