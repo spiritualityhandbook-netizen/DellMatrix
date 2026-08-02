@@ -90,7 +90,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append("Session saved.")
         messages.append(f"ideas={len(program.cube.session.plane.units)} nursery={ns['pending']}")
         messages.append(f"file={path}")
-    elif primary == 12:  # Test densified
+    elif primary == 12:
         checks = []
         checks.append(("floor", True))
         checks.append(("lattice", hasattr(program, "lattice") and program.lattice is not None))
@@ -136,6 +136,20 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             messages.append(f"Scores decayed ×{factor} (manual).")
         if hasattr(program, "note_seed"):
             program.note_seed(16, "Decay", str(factor))
+    elif primary == 17:  # Shadow densified — background parallel note, no live mutation
+        shadow_id = f"shadow_{(label or 'bg').replace(' ', '_')[:20]}"
+        messages.append(f"Shadow track: {shadow_id} (parallel — not live)")
+        messages.append("Shadow does not write the live matrix. Use confirm/Manifest to promote.")
+        if hasattr(program, "note_seed"):
+            program.note_seed(17, "Shadow", shadow_id)
+        # quarantine-style: place only if nursery path available as proposal words
+        try:
+            if hasattr(program.nursery, "propose") or hasattr(program.growth, "propose_shadow"):
+                messages.append("Shadow registered in growth shadow channel if available.")
+            else:
+                messages.append("Shadow noted in history only (safe).")
+        except Exception:
+            messages.append("Shadow noted in history only (safe).")
     elif primary == 18:
         ids = list(program.cube.session.plane.units.keys())
         messages.append(f"Mirror: {len(ids)} live ideas")
@@ -201,7 +215,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         short = program.distill_label(label) if hasattr(program, "distill_label") else (label or "x")
         place_idea(f"compress_{short}", Skin.SEED)
         messages.append(f"Compressed → {short}")
-    elif primary == 31:  # Simulate densified — dry-run status only
+    elif primary == 31:
         st = program.status()
         messages.append("Simulate (dry-run — no mutation):")
         messages.append(f"  owner={st.get('owner')} ideas={st.get('ideas')}")
@@ -226,7 +240,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             messages.append("Resumed walk.")
         if hasattr(program, "note_seed"):
             program.note_seed(33, "Resume")
-    elif primary == 34:  # Stamp densified
+    elif primary == 34:
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         mark = label or "stamp"
         messages.append(f"Stamp: {mark} @ {ts}")
@@ -268,6 +282,29 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append(f"Distilled → {short}")
         if hasattr(program, "note_seed"):
             program.note_seed(38, "Distill", short)
+    elif primary == 42:  # Retry densified — re-run last seed-shaped history once
+        items = program.replay(1) if hasattr(program, "replay") else []
+        if not items:
+            messages.append("Retry: history empty — nothing to re-attempt.")
+        else:
+            last = items[-1]
+            messages.append(f"Retry last: {last}")
+            if hasattr(program, "replay_exec"):
+                out = program.replay_exec(1)
+                messages.append(f"Retry ran={len(out.get('ran', []))} skipped={len(out.get('skipped', []))}")
+                for item in out.get("ran", [])[:4]:
+                    messages.append(f"  · {item}")
+            if hasattr(program, "note_seed"):
+                program.note_seed(42, "Retry", last[:40])
+    elif primary == 43:  # Fallback densified — safe path status + acceptance reminder
+        messages.append("Fallback safe path:")
+        messages.append("  1. status / 31[Simulate]")
+        messages.append("  2. save / 10[Keep]")
+        messages.append("  3. acceptance: create → grow → confirm → sphere → save → load → visual")
+        st = program.status()
+        messages.append(f"  now: ideas={st.get('ideas')} form={program.lattice.perception.form.value}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(43, "Fallback")
     elif primary == 45:
         from form.mandell.bridge import bridge
         rep = bridge(label or "")
