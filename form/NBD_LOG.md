@@ -3,34 +3,38 @@
 ## Law
 Bare `NBD` → E(X) → execute. Steady X=5.
 **Form intake:** analyze → S(c) → **high‑S only** (`form/MODE_FORM.md`).
-Lupe×10 used once for Voynich/form flood; revert to X=5.
 
 ---
 
-## 2026-08-01 — Hyper-refinement Directive 3 (Visual polish)
+## 2026-08-01 — Hyper-refinement Directive 4 (Friction + user-ready seal)
 
 | Change | Result |
 |--------|--------|
-| Empty state | "No ideas yet" + "Try: create an idea called test" |
-| Copy UX | Clearer paste-into-program hint; better copy feedback |
-| Mobile/spacing | Larger tap targets, padding, gaps |
-| Tutorial action | Button in panel → `tutorial` |
-| LEVEL | 7 |
-| Smoke | empty-state + tutorial btn + copy hint checks |
+| `docs/USER_READY.md` | Seal + acceptance checklist |
+| Friction sweep | Owner neutral · LEGACY/SIDE called out · US&S personal-only held |
+| LIVE_INDEX / RESIDUAL | Hyper-refinement 1–4 complete |
 
-Directive 4 still queued (friction sweep + user-ready seal).
+**Status: USER-READY** for offline average use.
 
----
-
-## 2026-08-01 — Hyper-refinement Directive 2 (Tutorial)
-
-`tutorial` / `start` guided path · short `help` + `help more` · `docs/TUTORIAL.md`
+Further NBD only on reported friction or named new surface.
 
 ---
 
-## 2026-08-01 — Hyper-refinement Directive 1 (Install & first-run)
+## 2026-08-01 — Directive 3 (Visual polish)
 
-Neutral owner `Operator` · `docs/INSTALL.md` · clearer launchers
+Empty state · copy UX · mobile spacing · tutorial button · LEVEL 7
+
+---
+
+## 2026-08-01 — Directive 2 (Tutorial)
+
+`tutorial` / `start` · short help · `docs/TUTORIAL.md`
+
+---
+
+## 2026-08-01 — Directive 1 (Install & first-run)
+
+Neutral owner · `docs/INSTALL.md` · launchers
 
 ---
 

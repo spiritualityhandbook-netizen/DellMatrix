@@ -3,12 +3,13 @@
 **Mandell is the Origin.**  
 DellMatrix is the host that runs it.
 
-Bridge language goal: humans and computers share one structured language — operators (Dells), flow, math/nature patterns — readable by people, executable by machines.
+Bridge language: humans and computers share one structured language — operators (Dells), flow, math/nature patterns — readable by people, executable by machines.
 
-**Install (average user):** [`docs/INSTALL.md`](docs/INSTALL.md)  
-**Start here:** [`docs/START_HERE.md`](docs/START_HERE.md)  
-**Full audit + capabilities:** [`docs/FULL_AUDIT_AND_CAPABILITIES.md`](docs/FULL_AUDIT_AND_CAPABILITIES.md)  
-**Polyglot (ES+FR complete):** [`form/mandell/POLYGLOT.md`](form/mandell/POLYGLOT.md)
+**Status:** [User-ready (offline)](docs/USER_READY.md)
+
+**Install:** [`docs/INSTALL.md`](docs/INSTALL.md)  
+**Tutorial:** [`docs/TUTORIAL.md`](docs/TUTORIAL.md) · or type `tutorial` in the program  
+**Start here:** [`docs/START_HERE.md`](docs/START_HERE.md)
 
 ---
 
@@ -46,7 +47,7 @@ es esfera
 fr sauvegarde
 ```
 
-Polyglot foundation (ES+FR) is **complete** for Origin core commands. More languages on request.
+Polyglot foundation (ES+FR) complete for Origin core commands. More languages on request.
 
 ---
 
@@ -55,7 +56,7 @@ Polyglot foundation (ES+FR) is **complete** for Origin core commands. More langu
 | Piece | Role |
 |-------|------|
 | **Mandell seeds** | `08[Create] > 15[Map] :: name` |
-| **Dells 00–50** | Numbered operators (dense runtime) |
+| **Dells 00–50** | Numbered operators |
 | **Floor** | Alpha · Delta · Omega · Omni (locked) |
 | **Ringed growth** | Sole public growth · Nursery quarantine |
 | **Harmonic lattice** | H/V/F + cube/sphere/core/flower |
@@ -73,13 +74,13 @@ Acceptance path (offline, no AI):
 ## Structure
 
 ```
-form/mandell/     ← ORIGIN (language, seeds, bridge, Dells, polyglot)
+form/mandell/     ← ORIGIN
 form/dell_matrix/ ← matrix, growth, nursery, lattice, visual
 form/avatar/      ← body + face
 form/open.py      ← one program
 form/repl.py      ← front door
-form/trading/     ← SIDE (not core Origin)
-form/llm/         ← SIDE (not core Origin)
+form/trading/     ← SIDE (not core)
+form/llm/         ← SIDE (not core)
 src/              ← LEGACY frozen
 preform/          ← LEGACY historical
 ```
@@ -89,9 +90,8 @@ See `form/CORE_SCOPE.md` and `form/LEGACY.md`.
 ## Honesty
 
 - Voynich references are structural / inspirational, not a decode claim.
-- Orbit / reality-loop language is metaphor for controlled growth.
+- Orbit language is metaphor for controlled growth.
 - Mandell is a practical bridge under construction.
-- ES/FR polyglot foundation is complete; worldwide multi-language bridge is horizon.
 - Built for **any user**. Personal business ideas are not product features.
 
 See `form/MODE_LUPE.md` for Lupe / bare-NBD law (steady X=5).

@@ -4,6 +4,7 @@
 
 | Doc | Role |
 |-----|------|
+| `docs/USER_READY.md` | **User-ready seal** + acceptance checklist |
 | `docs/INSTALL.md` | Average-user install + first run |
 | `docs/TUTORIAL.md` | 2-minute guided path |
 | `docs/START_HERE.md` | First door after install |
@@ -22,7 +23,7 @@
 
 **Not authority:** `preform/` · `src/` · `form/trading/` · `form/llm/` · `docs/archive/`
 
-Live runtime: **`form/` only**. Origin offline for acceptance. Built for any user.
-
-Residual (physical + conceptual): **Closed** 2026-08-01.  
-Hyper-refinement: Directives 1–2 done · 3–4 queued.
+Live runtime: **`form/` only**.  
+Residual: **Closed**.  
+Hyper-refinement Directives 1–4: **Done**.  
+**User-ready for offline average use.**
