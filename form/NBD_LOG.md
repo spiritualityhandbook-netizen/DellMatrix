@@ -3,7 +3,23 @@
 ## Law
 Bare `NBD` → E(X) → execute. Steady X=5.
 **Form intake:** analyze → S(c) → **high‑S only** (`form/MODE_FORM.md`).
-Lupe×10 used once for this Voynich/form flood; revert to X=5.
+Lupe×10 used once for Voynich/form flood; revert to X=5.
+
+---
+
+## 2026-08-01 — NBD Block 1 (1–3) complete
+
+Physical residual closed.
+
+| Step | Action | Result |
+|------|--------|--------|
+| 1 | Physical archive decision | Closed via hard LEGACY stamp (final). No bulk move required. |
+| 2 | `src/` freeze confirm | Confirmed under `form/LEGACY.md` |
+| 3 | Authority update | `RESIDUAL_COMPLETE` · `LIVE_INDEX` · `preform/README` · `PREFORM_LEGACY` updated |
+
+`preform/` remains on disk only as frozen history. Zero roadmap authority.
+
+Next open residual (if any): Block 2 high-S absorption (Context Horizon formalization) only when requested.
 
 ---
 

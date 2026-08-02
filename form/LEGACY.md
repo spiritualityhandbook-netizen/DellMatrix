@@ -6,8 +6,8 @@ Unified freeze map for dual-era and pre-Form material.
 
 | Path | Era | Rule |
 |------|-----|------|
-| `src/` | Old JavaScript DellMatrix | Frozen. Port into `form/` if needed. |
-| `preform/` | Pre-Form research, phases, stubs | Historical only. Not the execution path. |
+| `src/` | Old JavaScript DellMatrix | **Frozen.** Port into `form/` only if high-S and explicitly requested. |
+| `preform/` | Pre-Form research, phases, stubs | **Frozen · residual closed 2026-08-01.** Historical only. Not the execution path. |
 
 ## Live path
 
@@ -32,4 +32,5 @@ Neither is required for offline acceptance:
 
 Do not extend LEGACY paths.  
 Do not import preform into production.  
-Do not treat STATUS files under preform as roadmap authority.
+Do not treat STATUS files under preform as roadmap authority.  
+Physical residual of preform is **closed** via hard stamp (NBD Block 1).
