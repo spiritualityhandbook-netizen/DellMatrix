@@ -15,9 +15,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Core smoke (offline)
+      - name: Core offline smoke (no network deps)
+        env:
+          # Origin path must not require brokers / external models
+          DELLMATRIX_OFFLINE: "1"
         run: |
           python -m form.open --smoke
           python -m form.mandell.phrase_tests --smoke
           python -m form.mandell.polyglot_tests
-          python -m form.accept || python -c "from form.accept import run; raise SystemExit(0 if run() else 1)"
+          python -c "from form.accept import run; raise SystemExit(0 if run() else 1)"
