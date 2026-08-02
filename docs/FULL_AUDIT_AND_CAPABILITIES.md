@@ -1,136 +1,174 @@
-# DellMatrix / Mandell — Full Audit · Report · Capabilities
+# DellMatrix — SUS Capabilities Report
 
-Date: 2026-08-01 (Strong axes · polyglot foundation complete)  
-Repo: DellMatrix (main)
+Date: 2026-08-01 (refine audit)  
+Runtime: `form/` only · Offline core · User-ready sealed
+
+**One line:** English (or seed/ES/FR) at a prompt → ideas on a plane → grow into Nursery only → confirm to live → perceive on one lattice → save/load v7 → offline HTML snapshot — under Floor lock and Dell spine.
 
 ---
 
-# Part 1 — Full Audit Report
+## 0. Laws (never bend)
 
-## Verdict
+1. Floor locked: Alpha · Delta · Omega · Omni  
+2. Growth never writes live plane until **confirm**  
+3. English daily door; LatinMandell = depth  
+4. Core offline (no network / API / AI required)  
+5. `trading/` `llm/` = SIDE · `preform/` `src/` = LEGACY  
+6. Voynich = structural inspire only (`VOYNICH_HONESTY.md`)
 
-| Axis | Grade |
-|------|-------|
-| Core runtime | **Strong** |
-| Mandell Origin | **Strong** |
-| Controlled growth | **Strong** |
-| Session unity | **Strong** |
-| Average-user path | **Strong** |
-| Perception / lattice | **Strong** |
-| Polyglot foundation (ES+FR) | **Strong** |
-| Dell runtime 00–50 | **Strong** |
-| Docs hygiene | **Strong** |
-| Legacy / side quarantine | **Contained** (intentional) |
-| Residual queue | **Empty** |
+---
 
-**Overall:** Origin path strong for daily offline use. Worldwide multi-language bridge remains horizon — ES/FR foundation is complete.
-
-## Goal alignment
-
-| Origin goal | Status |
-|-------------|--------|
-| Mandell as Origin | **Met** |
-| Practical man ↔ computer | **Met** |
-| Controlled growth | **Met** |
-| Average-user daily use | **Met** |
-| Polyglot foundation ES+FR | **Met** |
-| Worldwide bridge language | **Horizon** |
-
-## Architecture
+## 1. Launch → prompt
 
 ```
-launch / REPL → Program
-  plane/cube · nursery · RingedGrowth ONLY
-  HarmonicLattice (H/V/F + perception)
-  avatar · history · gates · persist v7 → visual
+python launch.py
+# Launch DellMatrix.bat / .command
+# optional: python launch.py YourName
 ```
 
-Laws: Floor locked · growth quarantine · RingedGrowth sole entry · Mandell spine · offline acceptance.
+Default owner: `Operator`. Banner · `render()` · `you>`  
+Commands: `tutorial` · `help` · `help more` · `acceptance` · `quit`
 
-## Residual
-
-Empty. See `docs/RESIDUAL_COMPLETE.md`.
-
----
-
-# Part 2 — Program explanation
-
-**Mandell** = structured bridge language (Dells 00–50).  
-**DellMatrix** = offline host.  
-**Polyglot** = extra language doors (ES+FR complete) into the same Dell spine.
-
-Growth: grow → Nursery proposals → confirm → live.
+**Visual now:** terminal ASCII box.  
+**Horizon:** optional splash + side panel (not claimed).
 
 ---
 
-# Part 3 — Capabilities (step by step)
+## 2. Create (live plane)
 
-## Page 0 — Launch
-`python launch.py` or `python -m form.repl`
+`create an idea called X` · seed `08[Create] > 15[Map] :: X` · unknown English → create-with-label
 
-## Page 1 — Create
-`create an idea called business` · `08[Create] > 15[Map] :: business`
+Effects: plane unit · lattice cell · permanent KeyLedger entry · history note  
+Fields: id, label, words, skin, x/y, sandboxed  
+Skins: cube · sphere · seed · flower · building · words · circle · core
 
-## Page 2 — Grow
-`grow ideas 2` → Nursery only
+---
 
-## Page 3 — Nursery
-`proposals` · `rank` · `confirm all` · `reject all`
+## 3. Grow → Nursery (quarantine)
 
-## Page 4 — Perceive
-`cube` · `sphere` · `core` · `flower` · `lattice` · `chord 0 0` · `shell 0`
+`grow ideas N` → RingedGrowth only → **proposals**, not live  
+`proposals` · `rank` (affinity) · `confirm` / `confirm all` · `reject` / `reject all` · `lineage <id>`
 
-## Page 5 — Avatar
-`walk` · `run` · `stop` · turns · sit/stand · smile
+Confirm → `place` on plane (skin seed) · Manifest note  
+Reject → drop pending
 
-## Page 6 — History
-`macro 5` · `replay 3` · `distill …`
+**Metaphor:** Voynich pharma (parts) vs herbal (whole) — docs only.
 
-## Page 7 — Gates
-`enhance on/off` · `pulse` · `sandbox on/off` · `26[Temp]`
+---
 
-## Page 8 — Inspect
-`status` · `11[Architect]` · `12[Test]` · `31[Simulate]` · `39[Schema]` · `41[Sanitize]`
+## 4. Lattice · perception
 
-## Page 9 — Persist v7
-`save` · `load` · `10[Keep]` · `27[Checkpoint]`
+One H/V/F lattice. Perception changes **reading**, not underlying points.
 
-## Page 10 — Visual
-`visual` → offline HTML panel
+| Command | Form | Distance sense |
+|---------|------|----------------|
+| `cube` | cube | max-norm shells |
+| `sphere` | sphere | Euclidean radial |
+| `core` | core | radial seed shells |
+| `flower` | flower | FoL centers on lattice |
+| `toggle` | dual pair | square↔circle · cube↔sphere |
+| `lattice` | status + ASCII | |
+| `chord h v [f]` | cells on chord | |
+| `shell N` | cells on shell N | |
 
-## Page 11 — Polyglot (complete foundation)
+Sizes: chromatic 12 default · harmonic 14 via API.
+
+---
+
+## 5. Avatar · face
+
+`walk` · `run` · `stop` · turns · `sit`/`stand`/`jump`/`bend` · `smile` / expressions · `how do I look`
+
+Body: pos, facing, posture, locomotion, reach, holding  
+Face: neutral · focus · joy · calm · intense · curious · resolute · soft  
+**Visual now:** text + kaomoji strings in terminal/HTML column — not animated sprite.
+
+---
+
+## 6. History tools
+
+`macro [n]` · `replay [n]` · distill label path  
+History max 24 · seed-looking lines re-executable via API
+
+---
+
+## 7. Gates
+
+`enhance on/off` · `pulse` · `sandbox on/off`  
+Scores drawn on SVG when > 0 · sandbox ⇒ dashed edges in graph view
+
+---
+
+## 8. Status · language doors
+
+`status` · `lang list`  
+`mandell` / `english` / `bridge` · `es …` / `fr …` · `la …` · `teach` · `patterns` · `phrases`  
+Polyglot ES+FR foundation complete for core commands (hit-rate gated in tests).
+
+---
+
+## 9. Persist v7
+
+`save` · `load`  
+Payload: floor · owner · gates · plane · avatar · nursery · lattice · history · scores  
+Load refuses Floor mismatch  
+Context Horizon doc: Hot (RAM) · Warm (last save) · Cold (checkpoints)
+
+---
+
+## 10. Visual panel (offline snapshot)
+
+`visual` → HTML + SVG under `form/state/visual/` + root easy path  
+Layout: actions (groups) · matrix SVG · avatar + nursery rank  
+Copy command → paste at `you>` — panel does **not** execute  
+Empty state + tutorial button present  
+**Not claimed:** live two-way OS
+
+---
+
+## 11. Dell spine 00–50
+
+Daily map examples: 08 Create · 13 Loop · 15 Map · 09 Show · 10 Keep · 50 Manifest · 46 Rank · 38 Distill · 48 Macro · 25 Pulse · 23/24 Lock/Unlock · 45 Translate  
+Full table: `form/mandell/registry.py` · density: `DELL_RUNTIME.md`
+
+---
+
+## 12. Acceptance path
+
 ```
-es crea una idea llamada prueba
-es crece 2
-es esfera
-es guarda
-fr crée une idée appelée test
-fr sphère
-fr sauvegarde
-lang list
+create → grow → confirm → sphere → save → load → visual
 ```
-See `form/mandell/POLYGLOT.md`. Gate ≥ 0.90.
 
-## Page 12 — Acceptance
-`create → grow → confirm → sphere → save → load → visual`
-
-## Page 13 — Dell 00–50
-All dense — `form/mandell/DELL_RUNTIME.md`
-
-## Page 14 — Not core
-`trading/` · `llm/` SIDE · `src/` · `preform/` LEGACY
-
-## Page 15 — Lupe / NBD
-Bare `NBD` → E(X) → execute (steady X=5)
+`tutorial` runs it guided.  
+`python -m form.accept` · `python -m form.smoke_all`
 
 ---
 
-# Honesty
+## 13. Intentionally not core
 
-Voynich = structural inspiration · orbit = metaphor · Mandell under construction · growth never auto-writes live · ES/FR foundation complete · worldwide bridge = horizon
+| Item | Status |
+|------|--------|
+| Live two-way visual | Horizon |
+| Languages beyond ES+FR | On request |
+| trading / llm | SIDE |
+| preform / src | LEGACY |
+| US&S business | Personal only |
+| Voynich decode | Not claimed |
+| Rugg structured-null generator | SIDE/test only if ever built |
 
 ---
 
-# Conclusion
+## 14. SUS alignment check (refine audit)
 
-All committed Origin axes are **Strong**. Residual empty. Ready for daily offline Origin use.
+| Check | Result |
+|-------|--------|
+| Docs vs Program (`open.py`) | Aligned |
+| USER_READY vs acceptance path | Aligned |
+| LIVE_INDEX includes honesty/inspire | Aligned (this pass) |
+| Nursery sole growth entry | Aligned |
+| Visual = snapshot stated everywhere | Aligned |
+| Owner default Operator | Aligned |
+| Residual queue | Empty |
+| Horizon items labeled horizon | Yes |
+
+**No blocking misalignments.** Matrix is in a good place.

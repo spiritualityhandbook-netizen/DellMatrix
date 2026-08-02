@@ -2,28 +2,24 @@
 
 ## Law
 Bare `NBD` → E(X) → execute. Steady X=5.  
-Lupe×N = quality passes on the batch.  
-**Form intake:** high‑S only (`MODE_FORM.md`).
+Lupe×N = quality passes. High‑S form intake only.
 
 ---
 
-## 2026-08-01 — NBD Lupe×5 · Voynich safe inspire
+## 2026-08-01 — SUS refine audit
 
-| Pass | Check |
-|------|-------|
-| 1 | Honesty gate intact — no decode claim |
-| 2 | Section↔Nursery/plane map = metaphor only |
-| 3 | Montemurro = affinity/distribution idea only |
-| 4 | Rugg table-grille = structured-null insight; not core language |
-| 5 | No new runtime dependency; docs only; reinforces existing Nursery/rank/morphology |
+| Check | Result |
+|-------|--------|
+| LIVE_INDEX ↔ Voynich honesty/inspire | Synced |
+| FULL_AUDIT_AND_CAPABILITIES | Refined step-by-step SUS report |
+| Runtime vs docs | Aligned |
+| Residual | Empty |
+| User-ready seal | Intact |
 
-**Added:** `form/mandell/VOYNICH_INSPIRE.md`  
-**Updated:** `VOYNICH_HONESTY.md` · `VOYNICH_RINGS.md`
-
-Useful for matrix: quarantine clarity, affinity-as-structure, morphology slots, test-null generators (future SIDE only).
+No code change required. Docs authority synchronized.
 
 ---
 
 ## Prior
 
-Hyper-refinement 1–4 user-ready · residual empty · US&S personal only
+Voynich safe inspire (Lupe×5) · Hyper-refinement 1–4 · residual closed
