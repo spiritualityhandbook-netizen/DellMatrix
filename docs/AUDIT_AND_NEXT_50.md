@@ -1,8 +1,8 @@
 # DellMatrix / Mandell — Full Audit + Next Directives
 
-Date: 2026-08-01 (phase progress stamp)  
+Date: 2026-08-01 (Origin stable stamp)  
 Scope: `form/` runtime · GitHub main  
-Authority with: `docs/START_HERE.md` · `docs/LIVE_INDEX.md` · `form/MODE_LUPE.md`
+Authority: `docs/START_HERE.md` · `docs/LIVE_INDEX.md` · `form/MODE_LUPE.md`
 
 ---
 
@@ -16,9 +16,10 @@ Authority with: `docs/START_HERE.md` · `docs/LIVE_INDEX.md` · `form/MODE_LUPE.
 | D Perception/lattice | forms, chord, shell, visual | **Done** |
 | E Average user | START_HERE, accept, help | **Done** |
 | F Bridge/honesty | ES/FR, honesty, offline | **Good** |
+| Dell densify | 00–50 runtime | **Dense** (see `form/mandell/DELL_RUNTIME.md`) |
 
-**Estimate:** original Next-50 intent ~**85–90%** implemented.  
-Residual: thin Dells densify, optional archive moves, polyglot depth on demand.
+**Estimate:** original Next-50 intent ~**90–95%**.  
+Residual is on-demand densify, optional archive moves, polyglot only when requested.
 
 ---
 
@@ -31,24 +32,10 @@ Residual: thin Dells densify, optional archive moves, polyglot depth on demand.
 | Controlled growth | **Strong** |
 | Average-user path | **Good** |
 | Perception / lattice | **Good** |
-| Polyglot / bridge | **Partial** |
+| Dell runtime | **Dense** |
+| Polyglot | **Partial** (ES/FR) |
 | Docs hygiene | **Good** |
 | Legacy dual-era | **Contained** |
-
----
-
-## Solid
-
-Form door · Floor · Dell registry · Session v7 · RingedGrowth only · Nursery · Lattice bound · Perception REPL · rank/macro/distill/replay · accept offline · phrase ≥0.90 · ES/FR · honesty gates · Lupe/NBD law · CORE_SCOPE · LEGACY · Form smoke CI
-
----
-
-## Remaining weak
-
-1. Some Dells still thinner than primaries (being densified by NBD)
-2. `preform/` stamp-only (optional physical archive)
-3. Polyglot only ES/FR until a third language is requested
-4. trading/llm side packages — keep out of Origin
 
 ---
 
@@ -64,13 +51,13 @@ Form door · Floor · Dell registry · Session v7 · RingedGrowth only · Nurser
 
 ---
 
-## Next ranked
+## Remaining (low urgency)
 
-1. Continue residual Dell densify by use
-2. Optional preform → docs/archive/
-3. No third language until requested
-4. trading/llm stay side
-5. Hold Origin offline in CI
+1. Optional preform → `docs/archive/` physical move
+2. Third language only when requested
+3. trading/llm stay side packages
+4. Hold offline CI
+5. Selective Dell polish on real usage friction
 
 ---
 
