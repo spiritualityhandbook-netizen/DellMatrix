@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-Polyglot bridge — other languages → same Dell layer.
+Polyglot bridge — natural languages → same Dell layer.
 
-Committed foundation: Spanish (ES) + French (FR) full core-command maps.
-Further languages: on explicit request only.
+Core Mandell linguistic doors:
+  EN (primary) · LA (Latin — core Mandell root) · ES · FR
+
+All map: phrase → English intent → Mandell seed → executor.
 """
 
 from __future__ import annotations
@@ -14,7 +16,51 @@ import re
 from .phrases import match_phrase
 from .bridge import to_mandell
 
-# Full Origin-path command coverage for ES
+# Latin — core Mandell root language
+LA_MAP = [
+    (r"^(?:crea|creare|fac|facere)\s+(?:ideam\s+)?(?:nomine\s+|vocatam\s+)?(.+)$", "create an idea called {x}"),
+    (r"^(?:serva|servare|conserva|conservare)$", "save"),
+    (r"^(?:onera|onerare|restaura|restaurare|recupera)$", "load"),
+    (r"^(?:cresce|crescere|auge|augere)(?:\s+(\d+))?$", "grow ideas {x}"),
+    (r"^(?:ambula|ambulare|vade)(?:\s+(\d+))?$", "walk forward {x}"),
+    (r"^(?:curre|currere)$", "run"),
+    (r"^(?:siste|sistere|para|parare|sta)$", "stop"),
+    (r"^(?:flecte\s+sinistr(?:a|orsum)|sinistrorsum)$", "turn left"),
+    (r"^(?:flecte\s+dextr(?:a|orsum)|dextrorsum)$", "turn right"),
+    (r"^(?:sede|sedere)$", "sit down"),
+    (r"^(?:surge|surgere|sta\s+rectus)$", "stand up"),
+    (r"^(?:sali|salire)$", "jump"),
+    (r"^(?:ride|ridere)$", "smile"),
+    (r"^(?:quiesce|tranquillus)$", "calm"),
+    (r"^(?:attende|focus)$", "focus"),
+    (r"^(?:adiuva|adiuvare|auxilium|help)$", "help"),
+    (r"^(?:monstra|monstrare|ostende|vide)$", "show me"),
+    (r"^(?:status|ubi\s+sum)$", "status"),
+    (r"^(?:visuale|visual|tabula)$", "visual"),
+    (r"^(?:propositiones|seminarium|pendentes)$", "proposals"),
+    (r"^(?:confirma\s+omnia)$", "confirm all"),
+    (r"^(?:reice\s+omnia|rejice\s+omnia)$", "reject all"),
+    (r"^(?:sphaera)$", "sphere"),
+    (r"^(?:cubus)$", "cube"),
+    (r"^(?:nucleus|cor)$", "core"),
+    (r"^(?:flos)$", "flower"),
+    (r"^(?:reticulum|cancelli|lattice)$", "lattice"),
+    (r"^(?:alterna|toggle)$", "toggle"),
+    (r"^(?:ordina|rank|ordina\s+propositiones)$", "rank"),
+    (r"^(?:macro)(?:\s+(\d+))?$", "macro {x}"),
+    (r"^(?:repete|repetere|replay)(?:\s+(\d+))?$", "replay {x}"),
+    (r"^(?:destilla|destillare|compende)\s+(.+)$", "distill {x}"),
+    (r"^(?:acceptatio|acceptance)$", "acceptance"),
+    (r"^(?:linguae|lang\s+list)$", "lang list"),
+    (r"^(?:pulsus|pulse)$", "pulse"),
+    (r"^(?:enhance\s+on|auge\s+on)$", "enhance on"),
+    (r"^(?:enhance\s+off|auge\s+off)$", "enhance off"),
+    (r"^(?:sandbox\s+on|arca\s+on)$", "sandbox on"),
+    (r"^(?:sandbox\s+off|arca\s+off)$", "sandbox off"),
+    (r"^(?:concha|shell)(?:\s+(\d+))?$", "shell {x}"),
+    (r"^(?:chorda|chord)(?:\s+(-?\d+)\s+(-?\d+))?$", "chord {x}"),
+]
+
 ES_MAP = [
     (r"^(?:crea|crear|haz)\s+(?:una\s+)?(?:idea\s+)?(?:llamada\s+)?(.+)$", "create an idea called {x}"),
     (r"^(?:guarda|guardar|salvar)(?:\s+sesi[oó]n)?$", "save"),
@@ -28,7 +74,7 @@ ES_MAP = [
     (r"^(?:sientate|si[eé]ntate|sentarse)$", "sit down"),
     (r"^(?:levantate|lev[aá]ntate|levantarse)$", "stand up"),
     (r"^(?:salta|saltar)$", "jump"),
-    (r"^(?:sonr[ií]e|sonreir|sonr[ií]e)$", "smile"),
+    (r"^(?:sonr[ií]e|sonreir)$", "smile"),
     (r"^(?:calma|relajate)$", "calm"),
     (r"^(?:enfoca|concentra)$", "focus"),
     (r"^(?:ayuda|help)$", "help"),
@@ -104,14 +150,17 @@ FR_MAP = [
 ]
 
 LANG_MAPS = {
+    "la": LA_MAP,
+    "latin": LA_MAP,
     "es": ES_MAP,
     "spanish": ES_MAP,
     "fr": FR_MAP,
     "french": FR_MAP,
 }
 
-# Foundation complete for these codes
-FOUNDATION_LANGS = ("es", "fr")
+# Core foundation: Latin is core Mandell root; ES/FR complete doors
+FOUNDATION_LANGS = ("la", "es", "fr")
+CORE_LANGS = ("la",)  # linguistic root of Mandell surface
 
 
 def normalize_lang(lang: str) -> str:
@@ -165,4 +214,5 @@ def bridge_lang(lang: str, text: str) -> Dict[str, str]:
         "english": eng,
         "mandel": mandel,
         "note": "via Dell bridge layer",
+        "core": "true" if normalize_lang(lang) in ("la", "latin") else "false",
     }

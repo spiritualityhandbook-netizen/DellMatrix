@@ -40,47 +40,45 @@ visual
 | distill words… | Compress to a short idea |
 | cube / sphere / core / flower | Perception form |
 | lattice | ASCII + status |
-| chord 0 0 | Neighborhood |
-| shell 0 | Cells on shell 0 |
-| lineage \<id\> | Parent chain |
 | save / load | Session v7 |
 | visual | Offline HTML panel |
-| lang list | Supported polyglot languages |
+| lang list | Supported languages |
 
-## Polyglot (ES + FR foundation complete)
+## Languages (core + foundation)
+
+**English** — primary full door  
+**Latin (LA)** — **core Mandell root**  
+**Spanish / French** — foundation doors
 
 ```
+la crea ideam nomine negotium
+la cresce 2
+la sphaera
+la serva
+la reticulum
+
 es crea una idea llamada negocio
-es crece 2
-es esfera
-es guarda
-fr crée une idée appelée test
 fr sphère
-fr sauvegarde
 lang list
 ```
 
-Same Dell spine as English. See `form/mandell/POLYGLOT.md`.
+See `form/mandell/POLYGLOT.md`.
 
 ## Acceptance path (offline, no AI)
 
 create → grow → confirm → sphere → save → load → visual
 
-If that loop works, the core is alive.
+## Honesty gates
 
-## Honesty gates (required)
-
-- Voynich references are **structural / inspirational**, not a claim of decoded text.
-- Reality-loop / orbit language is **metaphor** for controlled growth, not a physics claim.
-- Mandell is a practical bridge language under construction, not a finished worldwide standard.
-- Growth never auto-writes the live matrix; Nursery quarantine is law.
-- `preform/` and `src/` are **LEGACY**. `trading/` and `llm/` are **side packages**, not core Origin.
-- Polyglot foundation = ES+FR complete; more languages on request; worldwide bridge is horizon.
+- Voynich references are structural / inspirational, not a decode claim.
+- Orbit language is metaphor for controlled growth.
+- Mandell is a practical bridge under construction.
+- **Latin is core Mandell** — not a side language.
+- Growth never auto-writes the live matrix.
+- `preform/` / `src/` LEGACY · `trading/` / `llm/` SIDE.
 
 ## Law
 
-- Floor is locked (Alpha · Delta · Omega · Omni)
-- Growth never auto-writes the live matrix
-- Mandell seeds are the structured surface; English is the friendly door
+Floor locked · Nursery quarantine · Mandell spine · English + Latin core doors
 
-See `docs/AUDIT_AND_NEXT_50.md` · `docs/LIVE_INDEX.md` · `docs/FULL_AUDIT_AND_CAPABILITIES.md` · `form/MODE_LUPE.md` · `form/CORE_SCOPE.md`
+See `docs/AUDIT_AND_NEXT_50.md` · `docs/LIVE_INDEX.md` · `form/CORE_SCOPE.md`

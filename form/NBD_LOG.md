@@ -5,21 +5,25 @@ Bare `NBD` → E(X) → execute. Steady X=5 · Lupe5 = batch of 5.
 
 ---
 
-## 2026-08-01 — Lupe5 · Strong axes + polyglot complete
+## 2026-08-01 — LatinMandell core
 
-1. ES/FR maps expanded to full Origin core commands
-2. Polyglot tests gate raised to **≥ 0.90** + full samples
-3. `form/mandell/POLYGLOT.md` — foundation complete declaration
-4. START_HERE + FULL_AUDIT + AUDIT + LIVE_INDEX — Strong verdict axes
-5. Docs audit: authority set consistent · residual still empty
+1. `LA_MAP` full Origin core commands
+2. Latin marked **core Mandell root** (not optional)
+3. Polyglot tests: LA + ES + FR · gate ≥ 0.90
+4. POLYGLOT.md hierarchy: EN primary · LA core · ES/FR foundation
+5. START_HERE + NBD stamp
 
-### Result
-Polyglot foundation (ES+FR) = **Strong / complete**  
-Average-user + perception + docs = **Strong**  
-Worldwide multi-lang bridge remains **horizon** (honest)
+### Law update
+LatinMandell is Origin linguistic structure — same spine as English.
+
+```
+la crea ideam nomine negotium
+la sphaera
+la serva
+```
 
 ---
 
 ## Prior
 
-Residual complete · DELL_RUNTIME · Origin stable · densify 00–50 · CI · lattice · growth
+ES/FR foundation complete · Strong axes · residual empty · DELL_RUNTIME · Origin stable

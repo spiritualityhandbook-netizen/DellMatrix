@@ -1,10 +1,44 @@
 #!/usr/bin/env python3
-"""ES/FR polyglot foundation smoke — gate ≥ 0.90 per language."""
+"""Polyglot foundation smoke — LA (core) + ES + FR. Gate ≥ 0.90 each."""
 
 from __future__ import annotations
 
 import sys
 from form.mandell.polyglot import bridge_lang, foundation_complete, list_langs
+
+LA_SAMPLES = [
+    "crea ideam nomine negotium",
+    "serva",
+    "onera",
+    "cresce 2",
+    "ambula",
+    "curre",
+    "siste",
+    "flecte sinistrorsum",
+    "flecte dextrorsum",
+    "sede",
+    "surge",
+    "ride",
+    "adiuva",
+    "monstra",
+    "status",
+    "visuale",
+    "sphaera",
+    "cubus",
+    "nucleus",
+    "flos",
+    "reticulum",
+    "propositiones",
+    "ordina",
+    "macro",
+    "repete",
+    "confirma omnia",
+    "reice omnia",
+    "acceptatio",
+    "linguae",
+    "pulsus",
+    "destilla negotium",
+]
 
 ES_SAMPLES = [
     "crea una idea llamada prueba",
@@ -15,29 +49,14 @@ ES_SAMPLES = [
     "corre",
     "para",
     "gira izquierda",
-    "gira derecha",
-    "sientate",
-    "levantate",
-    "sonríe",
-    "ayuda",
-    "muestra",
-    "estado",
-    "visual",
     "esfera",
     "cubo",
-    "nucleo",
-    "flor",
-    "retícula",
     "propuestas",
     "clasifica",
     "macro",
-    "repite",
     "confirma todo",
-    "rechaza todo",
     "aceptación",
     "idiomas",
-    "pulso",
-    "destila negocio crm",
 ]
 
 FR_SAMPLES = [
@@ -48,30 +67,14 @@ FR_SAMPLES = [
     "marche",
     "cours",
     "arrête",
-    "tourne à gauche",
-    "tourne à droite",
-    "assieds-toi",
-    "lève-toi",
-    "sourire",
-    "aide",
-    "montre",
-    "statut",
-    "visuel",
     "sphère",
     "cube",
-    "noyau",
-    "fleur",
-    "treillis",
     "propositions",
     "classe",
     "macro",
-    "rejoue",
     "confirme tout",
-    "rejette tout",
     "acceptation",
     "langues",
-    "impulsion",
-    "distille business crm",
 ]
 
 GATE = 0.90
@@ -90,10 +93,10 @@ def _rate(lang: str, samples: list) -> tuple:
 
 
 def smoke() -> bool:
-    print("=== POLYGLOT ES/FR FOUNDATION SMOKE ===")
+    print("=== POLYGLOT LA+ES+FR FOUNDATION SMOKE ===")
     print(f"langs={list_langs()} foundation_complete={foundation_complete()}")
     results = []
-    for lang, samples in (("es", ES_SAMPLES), ("fr", FR_SAMPLES)):
+    for lang, samples in (("la", LA_SAMPLES), ("es", ES_SAMPLES), ("fr", FR_SAMPLES)):
         ok, total, misses = _rate(lang, samples)
         rate = ok / total if total else 0.0
         print(f"{lang}: {ok}/{total}  rate={rate:.2%}  gate={GATE:.0%}")

@@ -1,40 +1,56 @@
-# Polyglot foundation — complete (ES + FR)
+# Polyglot — Core Mandell languages
 
-**Status: Strong / complete for committed foundation languages.**
+## Hierarchy
 
-## What polyglot is
+| Layer | Languages | Role |
+|-------|-----------|------|
+| **Primary door** | English | Full phrase dictionary + docs + REPL |
+| **Core Mandell root** | **Latin (LA)** | Linguistic root of Mandell surface — **core** |
+| **Foundation doors** | Spanish (ES), French (FR) | Complete Origin command maps |
 
-Other natural languages enter the **same Dell layer** as English:
+All doors enter the **same Dell spine**:
 
 ```
-ES/FR phrase  →  English intent  →  phrase match / Mandell seed  →  executor
+LA / ES / FR phrase  →  English intent  →  Mandell seed  →  executor
 ```
 
-There is one operator spine (Dells 00–50). Polyglot is extra doors, not parallel runtimes.
+## Latin is core
 
-## Foundation (complete)
+LatinMandell is not optional flavor. It is part of Origin linguistic structure — classical operator clarity aligned with numbered Dells and Floor law.
 
-| Code | Language | Coverage |
-|------|----------|----------|
-| `es` | Spanish | Full Origin core commands |
-| `fr` | French | Full Origin core commands |
+```
+la crea ideam nomine negotium
+la cresce 2
+la sphaera
+la serva
+la reticulum
+la confirma omnia
+```
 
-Core covered: create, save/load, grow, walk/run/stop, turns, sit/stand/jump, tone, help, show, status, visual, proposals, confirm/reject all, perception forms, lattice, rank, macro, replay, distill, acceptance, lang list, pulse, enhance, sandbox, shell, chord.
+## Foundation complete
 
-## Gate
+| Code | Language | Status |
+|------|----------|--------|
+| `en` | English | Primary (full) |
+| `la` | Latin | **Core Mandell** |
+| `es` | Spanish | Foundation complete |
+| `fr` | French | Foundation complete |
 
-`form/mandell/polyglot_tests.py` requires **≥ 0.90** hit-rate on the foundation sample set per language.
+Gate: `polyglot_tests.py` ≥ **0.90** hit-rate per foundation language.
 
 ## Usage
 
 ```
-es crea una idea llamada prueba
+la crea ideam nomine negotium
+la ambula
+la sphaera
+la serva
+es crea una idea llamada negocio
 fr sphère
 lang list
 ```
 
-## Beyond foundation
+## Horizon
 
-Additional languages (DE, PT, …) are **on explicit request only** — not residual debt.
-
-Worldwide bridge language (many languages meeting in Mandell) remains a **horizon goal**. The ES/FR foundation is complete.
+More modern languages on request. Worldwide bridge = horizon.  
+Latin + English + ES/FR foundation = **core complete**.
