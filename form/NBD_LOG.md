@@ -6,18 +6,19 @@ Bare `NBD` → E(X) → execute. Steady X=5.
 
 ---
 
-## 2026-08-01 — Visual Control forms (high‑S)
+## 2026-08-01 — LatinMandell Harmonic Lexer / Lexicon forms
 
-| Piece | Done |
-|-------|------|
-| Morpheme lexicon PREFIX/ROOT/SUFFIX | `morpheme.py` expanded |
-| Deterministic terminal OpBox + flows | `form/dell_matrix/visual_terminal.py` |
-| Rule 90 optional fractal | same module |
-| Random 300/4800 engines | deferred |
-| React CDN Mandel host | deferred |
+| Piece | S | Done |
+|-------|---|------|
+| Tri-Harmonic Fusion grader | ~0.75 | `harmonic_link.py` |
+| [P-R-S] tokenize + entropy | ~0.70 | same |
+| Core prefix/root/suffix + vectors | ~0.65 | same |
+| Full 400/Vol2 medical dump | ~0.25 | deferred (expand on demand) |
+| JS mandell_lexer.js only | ~0.20 | deferred (Python is Origin) |
+| Apex HTML / PureMandel-only persona | ~0.05 | deferred (conflicts English door + honesty) |
 
 ---
 
 ## Prior
 
-Mandel Lang V0 rules/operators · Harmonic Core slice · LatinMandell · polyglot · Origin stable
+Visual terminal high-S · Mandel Lang V0 · Harmonic Core · LatinMandell · Origin stable
