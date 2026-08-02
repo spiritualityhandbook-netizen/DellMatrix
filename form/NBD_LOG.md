@@ -7,6 +7,18 @@ Lupe×10 used once for Voynich/form flood; revert to X=5.
 
 ---
 
+## 2026-08-01 — NBD Block 2 (high-S absorption)
+
+| Item | S | Result |
+|------|---|--------|
+| Context Horizon (Hot/Warm/Cold over persist v7) | high | `form/mandell/CONTEXT_HORIZON.md` |
+| Fog pattern (offline, user-visible recovery) | high | folded into Context Horizon doc |
+| US&S business bridge | high practical | `form/mandell/BUSINESS_BRIDGE_NOTE.md` parked only |
+
+No SilentInject. No Gemini orchestration. No live business code. English door + offline acceptance held.
+
+---
+
 ## 2026-08-01 — NBD Block 1 (1–3) complete
 
 Physical residual closed.
@@ -18,8 +30,6 @@ Physical residual closed.
 | 3 | Authority update | `RESIDUAL_COMPLETE` · `LIVE_INDEX` · `preform/README` · `PREFORM_LEGACY` updated |
 
 `preform/` remains on disk only as frozen history. Zero roadmap authority.
-
-Next open residual (if any): Block 2 high-S absorption (Context Horizon formalization) only when requested.
 
 ---
 
