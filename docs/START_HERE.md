@@ -32,37 +32,38 @@ visual
 |----------|--------------|
 | create an idea called X | Places idea + lands on lattice |
 | grow ideas N | RingedGrowth → Nursery only |
-| confirm \<id\> / confirm all | Live the proposal(s) |
-| reject \<id\> / reject all | Drop proposal(s) |
-| rank | Sort nursery by affinity |
-| macro [n] | Show last n history as macro seed |
-| replay [n] | Re-exec last n seed-shaped history |
-| distill words… | Compress to a short idea |
+| confirm / reject (all) | Live or drop proposals |
+| rank · macro · replay · distill | Nursery + history tools |
 | cube / sphere / core / flower | Perception form |
-| lattice | ASCII + status |
-| save / load | Session v7 |
-| visual | Offline HTML panel |
-| lang list | Supported languages |
+| lattice · save · load · visual | Structure + persist + panel |
+| lang list | EN · LA · ES · FR |
 
-## Languages (core + foundation)
+## LatinMandell (core)
 
-**English** — primary full door  
-**Latin (LA)** — **core Mandell root**  
-**Spanish / French** — foundation doors
+Latin is the **depth layer** of Mandell — morphology and meaning, not just translation.
+
+**Speak Latin**
 
 ```
 la crea ideam nomine negotium
 la cresce 2
 la sphaera
 la serva
-la reticulum
-
-es crea una idea llamada negocio
-fr sphère
-lang list
 ```
 
-See `form/mandell/POLYGLOT.md`.
+**Deeper meaning of English (and other words)**
+
+LatinMandell maps surface words → root → sense → Dell.  
+Functions can be customized with Latin (or any) labels bound to Dells.
+
+See `form/mandell/latinmandell.py` · `form/mandell/POLYGLOT.md`.
+
+**Other doors**
+
+```
+es crea una idea llamada negocio
+fr sphère
+```
 
 ## Acceptance path (offline, no AI)
 
@@ -73,12 +74,10 @@ create → grow → confirm → sphere → save → load → visual
 - Voynich references are structural / inspirational, not a decode claim.
 - Orbit language is metaphor for controlled growth.
 - Mandell is a practical bridge under construction.
-- **Latin is core Mandell** — not a side language.
+- **LatinMandell is core** — deeper meaning + customizable function.
 - Growth never auto-writes the live matrix.
-- `preform/` / `src/` LEGACY · `trading/` / `llm/` SIDE.
+- LEGACY: preform/src · SIDE: trading/llm.
 
 ## Law
 
-Floor locked · Nursery quarantine · Mandell spine · English + Latin core doors
-
-See `docs/AUDIT_AND_NEXT_50.md` · `docs/LIVE_INDEX.md` · `form/CORE_SCOPE.md`
+Floor locked · Nursery quarantine · Mandell spine · LatinMandell depth · English primary door

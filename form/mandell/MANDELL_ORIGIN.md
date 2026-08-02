@@ -10,8 +10,9 @@ DellMatrix exists to host and exercise Mandell.
 A practical **bridge language**:
 
 - Human ↔ Computer
-- Eventually: surface languages ↔ same Dell operator layer
-- Built from operators, flow, math patterns, and nature metaphors
+- Surface languages ↔ same Dell operator layer
+- **LatinMandell** reveals deeper meaning via morphology and roots
+- Words and functions can be **customized** through LatinMandell
 - Readable by humans · executable by machines
 
 ---
@@ -26,42 +27,35 @@ A practical **bridge language**:
 | Phrases | `phrases.py` | Stable English → seed dictionary |
 | Patterns | `patterns.py` | Math/nature teachable forms |
 | Bridge | `bridge.py` | EN ↔ Mandell |
-| Polyglot | `polyglot.py` | ES/FR → English → Mandell (foundation) |
+| **LatinMandell** | `latinmandell.py` | **Core** morphology · sense · customize |
+| Polyglot | `polyglot.py` | LA/ES/FR → English → Mandell |
 | Executor | `executor.py` | Dense Dell runtime coverage |
 
 ---
 
-## Roadmap progress
+## LatinMandell (core)
 
-1. **Denser seed coverage** — executor maps many Dells to real actions  
-2. **Phrase dictionary** — common human intents → canonical seeds  
-3. **Pattern layer** — loop, grow, merge, pulse, ring, bridge, keep…  
-4. **Polyglot foundation** — `es …` / `fr …` map into the same Dell layer  
+Latin is not a side translation. It is the **morphological depth layer**:
 
----
-
-## Teach
+- Understand deeper meanings of English and other languages
+- Map surface words → Latin root → sense → Dell
+- Customize new word/function bindings without breaking Floor law
 
 ```
-teach grow
-teach loop
-patterns
-phrases
+explain("create grow save")
+customize("lumen", dell=9, sense="light made visible")
+la crea ideam nomine negotium
 ```
 
-## Polyglot examples
-
-```
-es crea una idea llamada prueba
-fr marche
-```
+See `POLYGLOT.md` and `latinmandell.py`.
 
 ---
 
 ## Laws
 
-1. Structure inside · English (or other surface) outside  
+1. Structure inside · surface language outside  
 2. Every important action is a Dell  
 3. Compose with flow — don’t invent chaos  
 4. Math/nature patterns are first-class and teachable  
-5. Both humans and the runtime must be able to read the seed  
+5. **LatinMandell is core** — morphology and custom function are Origin tools  
+6. Both humans and the runtime must be able to read the seed  
