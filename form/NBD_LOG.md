@@ -6,19 +6,25 @@ Bare `NBD` → E(X) → execute. Steady X=5.
 
 ---
 
-## 2026-08-01 — LatinMandell Harmonic Lexer / Lexicon forms
+## 2026-08-01 — Notebook + Voynich/OS forms
+
+### Notebook
+URL `notebook.google.com/notebook/e9554645-...` → **HTTP 302 to Google login**.  
+Not readable from this environment. **Cannot NBD 200+ notebook sources** until exported (PDF/MD zip) or made public.
+
+### Pasted forms — high‑S implemented
 
 | Piece | S | Done |
 |-------|---|------|
-| Tri-Harmonic Fusion grader | ~0.75 | `harmonic_link.py` |
-| [P-R-S] tokenize + entropy | ~0.70 | same |
-| Core prefix/root/suffix + vectors | ~0.65 | same |
-| Full 400/Vol2 medical dump | ~0.25 | deferred (expand on demand) |
-| JS mandell_lexer.js only | ~0.20 | deferred (Python is Origin) |
-| Apex HTML / PureMandel-only persona | ~0.05 | deferred (conflicts English door + honesty) |
+| Voynich honesty (interpretive ≠ scientific decode) | ~0.95 | `VOYNICH_HONESTY.md` + START_HERE |
+| Bounded Orbit C²+Δ tracker | ~0.55 | `bounded_orbit.py` |
+| Persona roster (doc) | ~0.45 | `PERSONAS.md` |
+| Mandell_OS alternate repo tree | low | deferred (DellMatrix is live Origin host) |
+| External “master directive” prompt block | low | deferred (not offline runtime) |
+| Claim of verified Voynich decryption | 0 | **rejected** |
 
 ---
 
 ## Prior
 
-Visual terminal high-S · Mandel Lang V0 · Harmonic Core · LatinMandell · Origin stable
+Harmonic link grader · visual terminal · Mandel Lang V0 · Harmonic Core · Origin stable

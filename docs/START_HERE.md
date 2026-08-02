@@ -38,46 +38,31 @@ visual
 | lattice · save · load · visual | Structure + persist + panel |
 | lang list | EN · LA · ES · FR |
 
-## LatinMandell (core)
-
-Latin is the **depth layer** of Mandell — morphology and meaning, not just translation.
-
-**Speak Latin**
+## LatinMandell (core depth)
 
 ```
 la crea ideam nomine negotium
-la cresce 2
 la sphaera
-la serva
 ```
 
-**Deeper meaning of English (and other words)**
-
-LatinMandell maps surface words → root → sense → Dell.  
-Functions can be customized with Latin (or any) labels bound to Dells.
-
-See `form/mandell/latinmandell.py` · `form/mandell/POLYGLOT.md`.
-
-**Other doors**
-
-```
-es crea una idea llamada negocio
-fr sphère
-```
+Tri-Harmonic grades for `[P-R-S]` compounds: `form/mandell/harmonic_link.py`  
+Morphemes: `form/mandell/morpheme.py`
 
 ## Acceptance path (offline, no AI)
 
 create → grow → confirm → sphere → save → load → visual
 
-## Honesty gates
+## Honesty gates (required)
 
-- Voynich references are structural / inspirational, not a decode claim.
-- Orbit language is metaphor for controlled growth.
-- Mandell is a practical bridge under construction.
-- **LatinMandell is core** — deeper meaning + customizable function.
-- Growth never auto-writes the live matrix.
-- LEGACY: preform/src · SIDE: trading/llm.
+- **Voynich is not scientifically decoded.** Mandell may treat codices as *interpretive algorithmic surfaces* (rings, orbits, pattern maps). That is **not** a verified historical decryption. See `form/mandell/VOYNICH_HONESTY.md`.
+- Orbit / reality-loop language is **metaphor** for controlled growth / coherence tracking (`bounded_orbit.py`).
+- Mandell is a practical bridge language under construction, not a finished worldwide standard.
+- Growth never auto-writes the live matrix; Nursery quarantine is law.
+- `preform/` and `src/` are **LEGACY**. `trading/` and `llm/` are **SIDE**.
+- LatinMandell is core depth; English is the primary daily door.
 
 ## Law
 
-Floor locked · Nursery quarantine · Mandell spine · LatinMandell depth · English primary door
+Floor locked · Nursery quarantine · Mandell spine · high‑S form intake only
+
+See `docs/LIVE_INDEX.md` · `form/CORE_SCOPE.md` · `form/MODE_FORM.md`
