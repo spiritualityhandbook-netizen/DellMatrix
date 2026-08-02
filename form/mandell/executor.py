@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 from datetime import datetime, timezone
+import re
 
 from .seed import parse_seed
 from .registry import get_dell
@@ -36,7 +37,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     elif primary == 2:
         st = program.avatar_status()
         messages.append(f"{st['look']}  {st['describe']}")
-    elif primary == 3:  # Logic densified — constraints / rules surface
+    elif primary == 3:
         messages.append("Logic constraints (live):")
         messages.append("  · Floor locked (Alpha · Delta · Omega · Omni)")
         messages.append("  · Growth never auto-writes live matrix (Nursery only)")
@@ -114,9 +115,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append(f"  ideas={len(program.cube.session.plane.units)}")
         messages.append(f"  lattice size={program.lattice.size} form={program.lattice.perception.form.value}")
         messages.append(f"  cells={len(program.lattice.cells)}")
-        ns = program.nursery.summary()
-        messages.append(f"  nursery={ns}")
-        messages.append(f"  history_len={len(getattr(program, 'history', []))}")
         if hasattr(program, "note_seed"):
             program.note_seed(11, "Architect")
     elif primary == 12:
@@ -169,7 +167,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     elif primary == 17:
         shadow_id = f"shadow_{(label or 'bg').replace(' ', '_')[:20]}"
         messages.append(f"Shadow track: {shadow_id} (parallel — not live)")
-        messages.append("Shadow does not write the live matrix.")
         if hasattr(program, "note_seed"):
             program.note_seed(17, "Shadow", shadow_id)
     elif primary == 18:
@@ -191,11 +188,10 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         else:
             program.avatar.set_locomotion(Locomotion.WALK)
             messages.append(f"Walked to {program.avatar.step(1)}.")
-    elif primary == 20:  # Alpha densified — finalize / close surface
+    elif primary == 20:
         messages.append("Alpha close:")
         messages.append(f"  ideas={len(program.cube.session.plane.units)}")
         messages.append(f"  form={program.lattice.perception.form.value}")
-        messages.append(f"  history={len(getattr(program, 'history', []))}")
         messages.append("  Tip: save before exit — 10[Keep]")
         if hasattr(program, "note_seed"):
             program.note_seed(20, "Alpha", label or "close")
@@ -273,7 +269,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         st = program.status()
         messages.append("Simulate (dry-run — no mutation):")
         messages.append(f"  owner={st.get('owner')} ideas={st.get('ideas')}")
-        messages.append(f"  nursery={st.get('nursery')}")
         messages.append(f"  history_len={st.get('history_len')}")
         if hasattr(program, "note_seed"):
             program.note_seed(31, "Simulate")
@@ -318,12 +313,22 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             ns = program.nursery.summary()
             messages.append(f"{st['look']}  {st['describe']}")
             messages.append(f"ideas={len(program.cube.session.plane.units)} nursery={ns['pending']}")
-    elif primary == 36:  # Inject densified — place label into session as seed
+    elif primary == 36:
         name = label or "inject"
         place_idea(name, Skin.SEED)
         messages.append(f"Injected into scope: {name}")
         if hasattr(program, "note_seed"):
             program.note_seed(36, "Inject", name)
+    elif primary == 37:  # Stream densified — chunked history out
+        n = int(label) if label.isdigit() else 8
+        items = program.replay(n) if hasattr(program, "replay") else list(getattr(program, "history", []))[-n:]
+        messages.append(f"Stream last {len(items)} history chunk(s):")
+        for item in items:
+            messages.append(f"  · {item}")
+        if not items:
+            messages.append("  (empty)")
+        if hasattr(program, "note_seed"):
+            program.note_seed(37, "Stream", str(len(items)))
     elif primary == 38:
         source = label
         if not source and program.cube.session.plane.units:
@@ -334,7 +339,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append(f"Distilled → {short}")
         if hasattr(program, "note_seed"):
             program.note_seed(38, "Distill", short)
-    elif primary == 39:  # Schema densified — shape validation of session
+    elif primary == 39:
         ok = True
         reasons = []
         if not hasattr(program, "lattice") or program.lattice is None:
@@ -349,14 +354,9 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append(f"Schema: {'VALID' if ok else 'INVALID'}")
         for r in reasons:
             messages.append(f"  · {r}")
-        if ok:
-            messages.append(
-                f"  ideas={len(program.cube.session.plane.units)} "
-                f"form={program.lattice.perception.form.value}"
-            )
         if hasattr(program, "note_seed"):
             program.note_seed(39, "Schema", "valid" if ok else "invalid")
-    elif primary == 40:  # TokenCount densified — cheap size measure
+    elif primary == 40:
         ideas = len(program.cube.session.plane.units)
         hist = len(getattr(program, "history", []))
         cells = len(program.lattice.cells)
@@ -367,6 +367,18 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append(f"  approx_units={approx}")
         if hasattr(program, "note_seed"):
             program.note_seed(40, "TokenCount", str(approx))
+    elif primary == 41:  # Sanitize densified — strip obvious secret-like tokens from label display
+        raw = label or ""
+        cleaned = re.sub(
+            r"(?i)(password|secret|token|api[_-]?key|bearer)\s*[:=]?\s*\S+",
+            r"\1=[REDACTED]",
+            raw,
+        )
+        cleaned = re.sub(r"\b\d{12,}\b", "[REDACTED_NUM]", cleaned)
+        messages.append(f"Sanitize in:  {raw or '(empty)'}")
+        messages.append(f"Sanitize out: {cleaned or '(empty)'}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(41, "Sanitize")
     elif primary == 42:
         items = program.replay(1) if hasattr(program, "replay") else []
         if not items:
@@ -386,6 +398,15 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append("  3. acceptance: create → grow → confirm → sphere → save → load → visual")
         if hasattr(program, "note_seed"):
             program.note_seed(43, "Fallback")
+    elif primary == 44:  # Bridge densified — external-tool posture (no network call)
+        messages.append("Bridge (external tool posture):")
+        messages.append("  · Origin stays offline for acceptance")
+        messages.append("  · Side packages: form/trading, form/llm (not core)")
+        messages.append("  · Use 45[Translate] for EN ↔ Mandell")
+        if label:
+            messages.append(f"  · noted target: {label}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(44, "Bridge", label or "external")
     elif primary == 45:
         from form.mandell.bridge import bridge
         rep = bridge(label or "")
@@ -422,6 +443,16 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         else:
             n = int(label) if label.isdigit() else 5
             messages.append(program.macro_seed(n))
+    elif primary == 49:  # Profile densified — lightweight benchmark snapshot
+        st = program.status()
+        messages.append("Profile:")
+        messages.append(f"  owner={st.get('owner')}")
+        messages.append(f"  ideas={st.get('ideas')} history={st.get('history_len')}")
+        messages.append(f"  nursery={st.get('nursery')}")
+        messages.append(f"  lattice={st.get('lattice')}")
+        messages.append(f"  enhance={st.get('enhance')}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(49, "Profile")
     elif primary == 50:
         lab = (label or "").lower()
         if lab in ("acceptance", "accept"):
