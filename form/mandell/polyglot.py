@@ -2,8 +2,8 @@
 """
 Polyglot bridge — other languages → same Dell layer.
 
-Later goal: any two languages meet in Mandell operators.
-Now: expanded ES/FR maps → English intent → Mandell seed.
+Committed foundation: Spanish (ES) + French (FR) full core-command maps.
+Further languages: on explicit request only.
 """
 
 from __future__ import annotations
@@ -14,68 +14,93 @@ import re
 from .phrases import match_phrase
 from .bridge import to_mandell
 
+# Full Origin-path command coverage for ES
 ES_MAP = [
     (r"^(?:crea|crear|haz)\s+(?:una\s+)?(?:idea\s+)?(?:llamada\s+)?(.+)$", "create an idea called {x}"),
-    (r"^(?:guarda|guardar|salvar)$", "save"),
-    (r"^(?:carga|cargar|restaurar)$", "load"),
-    (r"^(?:crece|crecer|evoluciona)(?:\s+(\d+))?$", "grow ideas {x}"),
-    (r"^(?:camina|avanzar)(?:\s+(\d+))?$", "walk forward {x}"),
-    (r"^(?:corre)$", "run"),
-    (r"^(?:para|detener)$", "stop"),
-    (r"^(?:gira\s+izquierda|vuelta\s+izquierda)$", "turn left"),
-    (r"^(?:gira\s+derecha|vuelta\s+derecha)$", "turn right"),
-    (r"^(?:sientate|sentarse)$", "sit down"),
-    (r"^(?:levantate|levantarse)$", "stand up"),
-    (r"^(?:sonr[ií]e|sonreir)$", "smile"),
+    (r"^(?:guarda|guardar|salvar)(?:\s+sesi[oó]n)?$", "save"),
+    (r"^(?:carga|cargar|restaurar)(?:\s+sesi[oó]n)?$", "load"),
+    (r"^(?:crece|crecer|evoluciona)(?:\s+(?:ideas?\s+)?(\d+))?$", "grow ideas {x}"),
+    (r"^(?:camina|avanzar|anda)(?:\s+(\d+))?$", "walk forward {x}"),
+    (r"^(?:corre|correr)$", "run"),
+    (r"^(?:para|detener|alto)$", "stop"),
+    (r"^(?:gira\s+a?\s*izquierda|vuelta\s+izquierda)$", "turn left"),
+    (r"^(?:gira\s+a?\s*derecha|vuelta\s+derecha)$", "turn right"),
+    (r"^(?:sientate|si[eé]ntate|sentarse)$", "sit down"),
+    (r"^(?:levantate|lev[aá]ntate|levantarse)$", "stand up"),
+    (r"^(?:salta|saltar)$", "jump"),
+    (r"^(?:sonr[ií]e|sonreir|sonr[ií]e)$", "smile"),
+    (r"^(?:calma|relajate)$", "calm"),
+    (r"^(?:enfoca|concentra)$", "focus"),
     (r"^(?:ayuda|help)$", "help"),
-    (r"^(?:muestra|mostrar|ver)$", "show me"),
-    (r"^(?:estado|status)$", "status"),
+    (r"^(?:muestra|mostrar|ver|ense[nñ]a)(?:\s+me)?$", "show me"),
+    (r"^(?:estado|status|d[oó]nde\s+estoy)$", "status"),
     (r"^(?:visual|panel)$", "visual"),
-    (r"^(?:propuestas|vivero)$", "proposals"),
+    (r"^(?:propuestas|vivero|pendientes)$", "proposals"),
     (r"^(?:confirma\s+todo)$", "confirm all"),
     (r"^(?:rechaza\s+todo)$", "reject all"),
     (r"^(?:esfera)$", "sphere"),
     (r"^(?:cubo)$", "cube"),
     (r"^(?:nucleo|n[uú]cleo)$", "core"),
     (r"^(?:flor)$", "flower"),
-    (r"^(?:ret[ií]cula|lattice)$", "lattice"),
-    (r"^(?:clasifica|rank|ordenar)$", "rank"),
+    (r"^(?:ret[ií]cula|lattice|rejilla)$", "lattice"),
+    (r"^(?:alternar|toggle)$", "toggle"),
+    (r"^(?:clasifica|rank|ordenar|ordena)$", "rank"),
     (r"^(?:macro)(?:\s+(\d+))?$", "macro {x}"),
-    (r"^(?:repite|replay)(?:\s+(\d+))?$", "replay {x}"),
-    (r"^(?:destila|resumir)\s+(.+)$", "distill {x}"),
+    (r"^(?:repite|replay|reproducir)(?:\s+(\d+))?$", "replay {x}"),
+    (r"^(?:destila|resumir|resume)\s+(.+)$", "distill {x}"),
     (r"^(?:aceptaci[oó]n|acceptance)$", "acceptance"),
+    (r"^(?:idiomas|lenguas|lang\s+list)$", "lang list"),
+    (r"^(?:pulso|pulse)$", "pulse"),
+    (r"^(?:enhance\s+on|mejora\s+on)$", "enhance on"),
+    (r"^(?:enhance\s+off|mejora\s+off)$", "enhance off"),
+    (r"^(?:sandbox\s+on|caja\s+on)$", "sandbox on"),
+    (r"^(?:sandbox\s+off|caja\s+off)$", "sandbox off"),
+    (r"^(?:cascar[oó]n|shell)(?:\s+(\d+))?$", "shell {x}"),
+    (r"^(?:acorde|chord)(?:\s+(-?\d+)\s+(-?\d+))?$", "chord {x}"),
 ]
 
 FR_MAP = [
-    (r"^(?:cr[eé]e|cr[eé]er)\s+(?:une\s+)?(?:id[eé]e\s+)?(?:appel[eé]e\s+)?(.+)$", "create an idea called {x}"),
-    (r"^(?:sauvegarde|sauver)$", "save"),
-    (r"^(?:charge|charger)$", "load"),
-    (r"^(?:grandis|évoluer)(?:\s+(\d+))?$", "grow ideas {x}"),
+    (r"^(?:cr[eé]e|cr[eé]er|fais)\s+(?:une\s+)?(?:id[eé]e\s+)?(?:appel[eé]e\s+)?(.+)$", "create an idea called {x}"),
+    (r"^(?:sauvegarde|sauver|enregistrer)(?:\s+session)?$", "save"),
+    (r"^(?:charge|charger|restaurer)(?:\s+session)?$", "load"),
+    (r"^(?:grandis|grandir|évoluer)(?:\s+(?:id[eé]es?\s+)?(\d+))?$", "grow ideas {x}"),
     (r"^(?:marche|avancer)(?:\s+(\d+))?$", "walk forward {x}"),
     (r"^(?:cours|courir)$", "run"),
-    (r"^(?:arr[eê]te|stop)$", "stop"),
+    (r"^(?:arr[eê]te|stop|halte)$", "stop"),
     (r"^(?:tourne\s+[aà]\s+gauche)$", "turn left"),
     (r"^(?:tourne\s+[aà]\s+droite)$", "turn right"),
     (r"^(?:assieds[- ]toi|s'asseoir)$", "sit down"),
     (r"^(?:l[eè]ve[- ]toi|se lever)$", "stand up"),
-    (r"^(?:sourire)$", "smile"),
+    (r"^(?:saute|sauter)$", "jump"),
+    (r"^(?:sourire|souris)$", "smile"),
+    (r"^(?:calme|détends[- ]toi)$", "calm"),
+    (r"^(?:focus|concentre)$", "focus"),
     (r"^(?:aide|help)$", "help"),
-    (r"^(?:montre|afficher)$", "show me"),
-    (r"^(?:statut|status)$", "status"),
+    (r"^(?:montre|afficher|voir)(?:\s+moi)?$", "show me"),
+    (r"^(?:statut|status|o[uù]\s+suis[- ]je)$", "status"),
     (r"^(?:visuel|panel)$", "visual"),
-    (r"^(?:propositions|p[eé]pini[eè]re)$", "proposals"),
+    (r"^(?:propositions|p[eé]pini[eè]re|en\s+attente)$", "proposals"),
     (r"^(?:confirme\s+tout)$", "confirm all"),
     (r"^(?:rejette\s+tout)$", "reject all"),
     (r"^(?:sph[eè]re)$", "sphere"),
     (r"^(?:cube)$", "cube"),
     (r"^(?:noyau|core)$", "core"),
     (r"^(?:fleur)$", "flower"),
-    (r"^(?:treillis|lattice)$", "lattice"),
-    (r"^(?:classe|rank|ordonner)$", "rank"),
+    (r"^(?:treillis|lattice|grille)$", "lattice"),
+    (r"^(?:bascule|toggle)$", "toggle"),
+    (r"^(?:classe|rank|ordonner|ordonne)$", "rank"),
     (r"^(?:macro)(?:\s+(\d+))?$", "macro {x}"),
-    (r"^(?:rejoue|replay)(?:\s+(\d+))?$", "replay {x}"),
-    (r"^(?:distille|r[eé]sume)\s+(.+)$", "distill {x}"),
+    (r"^(?:rejoue|replay|rejouer)(?:\s+(\d+))?$", "replay {x}"),
+    (r"^(?:distille|r[eé]sume|r[eé]sumer)\s+(.+)$", "distill {x}"),
     (r"^(?:acceptation|acceptance)$", "acceptance"),
+    (r"^(?:langues|lang\s+list)$", "lang list"),
+    (r"^(?:impulsion|pulse)$", "pulse"),
+    (r"^(?:enhance\s+on|am[eé]liore\s+on)$", "enhance on"),
+    (r"^(?:enhance\s+off|am[eé]liore\s+off)$", "enhance off"),
+    (r"^(?:sandbox\s+on|bac\s+on)$", "sandbox on"),
+    (r"^(?:sandbox\s+off|bac\s+off)$", "sandbox off"),
+    (r"^(?:coquille|shell)(?:\s+(\d+))?$", "shell {x}"),
+    (r"^(?:accord|chord)(?:\s+(-?\d+)\s+(-?\d+))?$", "chord {x}"),
 ]
 
 LANG_MAPS = {
@@ -85,6 +110,9 @@ LANG_MAPS = {
     "french": FR_MAP,
 }
 
+# Foundation complete for these codes
+FOUNDATION_LANGS = ("es", "fr")
+
 
 def normalize_lang(lang: str) -> str:
     return (lang or "en").lower().strip()
@@ -92,6 +120,10 @@ def normalize_lang(lang: str) -> str:
 
 def list_langs() -> List[str]:
     return sorted({k for k in LANG_MAPS if len(k) <= 7})
+
+
+def foundation_complete() -> bool:
+    return all(code in LANG_MAPS for code in FOUNDATION_LANGS)
 
 
 def to_english_from(lang: str, text: str) -> Optional[str]:
@@ -103,7 +135,12 @@ def to_english_from(lang: str, text: str) -> Optional[str]:
         m = re.match(pattern, lower, re.I)
         if not m:
             continue
-        x = m.group(1).strip() if m.lastindex and m.group(1) else "1"
+        if m.lastindex and m.lastindex >= 2 and m.group(1) and m.group(2):
+            x = f"{m.group(1).strip()} {m.group(2).strip()}"
+        elif m.lastindex and m.group(1):
+            x = m.group(1).strip()
+        else:
+            x = "1"
         return eng_t.replace("{x}", x).replace("  ", " ").strip()
     return None
 

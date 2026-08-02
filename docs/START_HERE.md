@@ -47,6 +47,21 @@ visual
 | visual | Offline HTML panel |
 | lang list | Supported polyglot languages |
 
+## Polyglot (ES + FR foundation complete)
+
+```
+es crea una idea llamada negocio
+es crece 2
+es esfera
+es guarda
+fr crée une idée appelée test
+fr sphère
+fr sauvegarde
+lang list
+```
+
+Same Dell spine as English. See `form/mandell/POLYGLOT.md`.
+
 ## Acceptance path (offline, no AI)
 
 create → grow → confirm → sphere → save → load → visual
@@ -60,6 +75,7 @@ If that loop works, the core is alive.
 - Mandell is a practical bridge language under construction, not a finished worldwide standard.
 - Growth never auto-writes the live matrix; Nursery quarantine is law.
 - `preform/` and `src/` are **LEGACY**. `trading/` and `llm/` are **side packages**, not core Origin.
+- Polyglot foundation = ES+FR complete; more languages on request; worldwide bridge is horizon.
 
 ## Law
 
@@ -67,4 +83,4 @@ If that loop works, the core is alive.
 - Growth never auto-writes the live matrix
 - Mandell seeds are the structured surface; English is the friendly door
 
-See `docs/AUDIT_AND_NEXT_50.md` · `docs/LIVE_INDEX.md` · `form/MODE_LUPE.md` · `form/CORE_SCOPE.md`
+See `docs/AUDIT_AND_NEXT_50.md` · `docs/LIVE_INDEX.md` · `docs/FULL_AUDIT_AND_CAPABILITIES.md` · `form/MODE_LUPE.md` · `form/CORE_SCOPE.md`

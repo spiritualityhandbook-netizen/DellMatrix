@@ -1,24 +1,25 @@
 # NBD Log
 
 ## Law
-Bare `NBD` → E(X) → execute. Steady X=5 · push 8 · max 10.
+Bare `NBD` → E(X) → execute. Steady X=5 · Lupe5 = batch of 5.
 
 ---
 
-## 2026-08-01 — Residual complete (all residual work)
+## 2026-08-01 — Lupe5 · Strong axes + polyglot complete
 
-1. preform residual **closed** (LEGACY stamp = implemented disposition)
-2. `form/trading/README.md` SIDE lock
-3. `form/llm/README.md` SIDE lock
-4. `docs/RESIDUAL_COMPLETE.md` · AUDIT residual queue **empty**
-5. LIVE_INDEX + NBD stamp — Origin stable, residual done
+1. ES/FR maps expanded to full Origin core commands
+2. Polyglot tests gate raised to **≥ 0.90** + full samples
+3. `form/mandell/POLYGLOT.md` — foundation complete declaration
+4. START_HERE + FULL_AUDIT + AUDIT + LIVE_INDEX — Strong verdict axes
+5. Docs audit: authority set consistent · residual still empty
 
-### Next
-
-No residual queue. Bare NBD will report stable unless a new surface is named.
+### Result
+Polyglot foundation (ES+FR) = **Strong / complete**  
+Average-user + perception + docs = **Strong**  
+Worldwide multi-lang bridge remains **horizon** (honest)
 
 ---
 
 ## Prior
 
-DELL_RUNTIME · 00–50 dense · CI offline · lattice · growth · audit 1–8 · Origin stable
+Residual complete · DELL_RUNTIME · Origin stable · densify 00–50 · CI · lattice · growth

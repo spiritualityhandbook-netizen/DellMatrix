@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""ES/FR polyglot smoke — top phrases must map. Gate ≥ 0.70 per language."""
+"""ES/FR polyglot foundation smoke — gate ≥ 0.90 per language."""
 
 from __future__ import annotations
 
 import sys
-from form.mandell.polyglot import bridge_lang
+from form.mandell.polyglot import bridge_lang, foundation_complete, list_langs
 
 ES_SAMPLES = [
     "crea una idea llamada prueba",
@@ -12,33 +12,69 @@ ES_SAMPLES = [
     "cargar",
     "crece 2",
     "camina",
+    "corre",
+    "para",
+    "gira izquierda",
+    "gira derecha",
+    "sientate",
+    "levantate",
+    "sonríe",
     "ayuda",
     "muestra",
     "estado",
+    "visual",
     "esfera",
     "cubo",
+    "nucleo",
+    "flor",
+    "retícula",
     "propuestas",
     "clasifica",
     "macro",
+    "repite",
     "confirma todo",
+    "rechaza todo",
     "aceptación",
+    "idiomas",
+    "pulso",
+    "destila negocio crm",
 ]
 
 FR_SAMPLES = [
     "crée une idée appelée test",
     "sauvegarde",
     "charger",
+    "grandis 2",
     "marche",
+    "cours",
+    "arrête",
+    "tourne à gauche",
+    "tourne à droite",
+    "assieds-toi",
+    "lève-toi",
+    "sourire",
     "aide",
     "montre",
+    "statut",
+    "visuel",
     "sphère",
     "cube",
+    "noyau",
+    "fleur",
+    "treillis",
     "propositions",
     "classe",
     "macro",
+    "rejoue",
     "confirme tout",
+    "rejette tout",
     "acceptation",
+    "langues",
+    "impulsion",
+    "distille business crm",
 ]
+
+GATE = 0.90
 
 
 def _rate(lang: str, samples: list) -> tuple:
@@ -54,16 +90,18 @@ def _rate(lang: str, samples: list) -> tuple:
 
 
 def smoke() -> bool:
-    print("=== POLYGLOT ES/FR SMOKE ===")
+    print("=== POLYGLOT ES/FR FOUNDATION SMOKE ===")
+    print(f"langs={list_langs()} foundation_complete={foundation_complete()}")
     results = []
     for lang, samples in (("es", ES_SAMPLES), ("fr", FR_SAMPLES)):
         ok, total, misses = _rate(lang, samples)
         rate = ok / total if total else 0.0
-        print(f"{lang}: {ok}/{total}  rate={rate:.2%}")
+        print(f"{lang}: {ok}/{total}  rate={rate:.2%}  gate={GATE:.0%}")
         if misses:
-            for m in misses[:8]:
+            for m in misses[:12]:
                 print(f"  miss: {m}")
-        results.append(rate >= 0.70)
+        results.append(rate >= GATE)
+    results.append(foundation_complete())
     passed = all(results)
     print("PASS" if passed else "FAIL")
     return passed

@@ -6,6 +6,7 @@
 |-----|------|
 | `docs/START_HERE.md` | First door |
 | `docs/AUDIT_AND_NEXT_50.md` | Roadmap + audit |
+| `docs/FULL_AUDIT_AND_CAPABILITIES.md` | Full walkthrough |
 | `docs/RESIDUAL_COMPLETE.md` | Residual closed |
 | `form/NBD_LOG.md` | Execution log |
 | `form/MODE_LUPE.md` | Batch / NBD law |
@@ -13,16 +14,9 @@
 | `form/LEGACY.md` | Frozen paths |
 | `form/mandell/MANDELL_ORIGIN.md` | Language law |
 | `form/mandell/DELL_RUNTIME.md` | Dell density map |
+| `form/mandell/POLYGLOT.md` | ES/FR foundation |
 | `README.md` | Repo front |
 
-**Not authority**
+**Not authority:** `preform/` · `src/` · `form/trading/` · `form/llm/` · `docs/archive/`
 
-| Path | Status |
-|------|--------|
-| `preform/` | LEGACY historical (stamp closed residual) |
-| `src/` | LEGACY dual-era JS |
-| `form/trading/` | Side package |
-| `form/llm/` | Side package |
-| `docs/archive/` | Redirects / stamps |
-
-Live runtime path: **`form/` only**. Origin offline for acceptance.
+Live runtime: **`form/` only**. Origin offline for acceptance.
