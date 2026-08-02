@@ -2,7 +2,10 @@
 
 Mandell is the Origin. DellMatrix is the host.
 
-**New here?** Read [`INSTALL.md`](INSTALL.md) first (Python + how to open the program).
+**New here?**  
+1. [`INSTALL.md`](INSTALL.md) — open the program  
+2. [`TUTORIAL.md`](TUTORIAL.md) — 2-minute walkthrough  
+3. Or type `tutorial` at the `you>` prompt
 
 ---
 
@@ -23,7 +26,11 @@ Optional: `python launch.py YourName`
 
 ## First 60 seconds
 
-At the `you>` prompt:
+```
+tutorial
+```
+
+Or by hand:
 
 ```
 help
@@ -31,13 +38,13 @@ create an idea called test
 grow ideas 2
 proposals
 rank
+confirm all
 sphere
-lattice
 save
 visual
 ```
 
-Then open the HTML file path that `visual` prints (browser, offline).
+Open the HTML path that `visual` prints (browser, offline).
 
 ---
 
@@ -45,6 +52,7 @@ Then open the HTML file path that `visual` prints (browser, offline).
 
 | You type | What happens |
 |----------|--------------|
+| tutorial / start | Guided acceptance walkthrough |
 | create an idea called X | Places idea + lands on lattice |
 | grow ideas N | RingedGrowth → Nursery only |
 | confirm / reject (all) | Live or drop proposals |
@@ -77,10 +85,10 @@ create → grow → confirm → sphere → save → load → visual
 - Growth never auto-writes the live matrix; Nursery quarantine is law.
 - `preform/` and `src/` are **LEGACY**. `trading/` and `llm/` are **SIDE**.
 - LatinMandell is core depth; English is the primary daily door.
-- Personal business ideas (e.g. a private shop) are **not** product features.
+- Personal business ideas are **not** product features.
 
 ## Law
 
 Floor locked · Nursery quarantine · Mandell spine · high‑S form intake only
 
-See `docs/LIVE_INDEX.md` · `docs/INSTALL.md` · `form/CORE_SCOPE.md` · `form/MODE_FORM.md`
+See `docs/LIVE_INDEX.md` · `docs/INSTALL.md` · `docs/TUTORIAL.md` · `form/CORE_SCOPE.md`

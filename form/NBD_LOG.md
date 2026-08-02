@@ -7,39 +7,31 @@ Lupe×10 used once for Voynich/form flood; revert to X=5.
 
 ---
 
-## 2026-08-01 — Hyper-refinement Directive 1 (Install & first-run)
+## 2026-08-01 — Hyper-refinement Directive 2 (Tutorial)
 
 | Change | Result |
 |--------|--------|
-| Default owner | `Operator` (not hard-coded personal name) in launch.py / bat / command / repl |
-| `docs/INSTALL.md` | Average-user install: Python, open, first minute, troubleshooting |
-| README + START_HERE | Point to INSTALL first |
-| First-screen copy | “ready for anyone” + try `create an idea called test` |
-| `visual` message | Explicit “open this file in a browser (offline)” |
+| `tutorial` / `start` | Guided acceptance walkthrough in REPL |
+| `help` | Short top commands; `help more` for full |
+| `docs/TUTORIAL.md` | 2-minute average-user path |
+| START_HERE | Points to tutorial first |
 
-Directives 2–4 still queued (tutorial, visual polish, friction seal).
+Directives 3–4 still queued (visual polish, friction seal).
+
+---
+
+## 2026-08-01 — Hyper-refinement Directive 1 (Install & first-run)
+
+Neutral owner `Operator` · `docs/INSTALL.md` · clearer launchers · visual path hint.
 
 ---
 
 ## 2026-08-01 — Clarification: US&S personal only
 
-Ultimate Stain & Seal is personal business — not DellMatrix product.  
-Matrix target = full user-ready use for everyone.
-
----
-
-## 2026-08-01 — NBD Block 2 (high-S absorption)
-
-Context Horizon + Fog pattern docs; US&S parked then scoped personal-only.
-
----
-
-## 2026-08-01 — NBD Block 1 (1–3) complete
-
-Physical residual closed via hard LEGACY stamp.
+Personal business ≠ product. Matrix = user-ready for everyone.
 
 ---
 
 ## Prior
 
-Voynich honesty · Bounded Orbit · Personas · Harmonic link · Origin stable
+Block 1 physical residual · Block 2 Context Horizon · Voynich honesty · Origin stable
