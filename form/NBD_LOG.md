@@ -7,31 +7,33 @@ Lupe×10 used once for Voynich/form flood; revert to X=5.
 
 ---
 
-## 2026-08-01 — Hyper-refinement Directive 2 (Tutorial)
+## 2026-08-01 — Hyper-refinement Directive 3 (Visual polish)
 
 | Change | Result |
 |--------|--------|
-| `tutorial` / `start` | Guided acceptance walkthrough in REPL |
-| `help` | Short top commands; `help more` for full |
-| `docs/TUTORIAL.md` | 2-minute average-user path |
-| START_HERE | Points to tutorial first |
+| Empty state | "No ideas yet" + "Try: create an idea called test" |
+| Copy UX | Clearer paste-into-program hint; better copy feedback |
+| Mobile/spacing | Larger tap targets, padding, gaps |
+| Tutorial action | Button in panel → `tutorial` |
+| LEVEL | 7 |
+| Smoke | empty-state + tutorial btn + copy hint checks |
 
-Directives 3–4 still queued (visual polish, friction seal).
+Directive 4 still queued (friction sweep + user-ready seal).
+
+---
+
+## 2026-08-01 — Hyper-refinement Directive 2 (Tutorial)
+
+`tutorial` / `start` guided path · short `help` + `help more` · `docs/TUTORIAL.md`
 
 ---
 
 ## 2026-08-01 — Hyper-refinement Directive 1 (Install & first-run)
 
-Neutral owner `Operator` · `docs/INSTALL.md` · clearer launchers · visual path hint.
-
----
-
-## 2026-08-01 — Clarification: US&S personal only
-
-Personal business ≠ product. Matrix = user-ready for everyone.
+Neutral owner `Operator` · `docs/INSTALL.md` · clearer launchers
 
 ---
 
 ## Prior
 
-Block 1 physical residual · Block 2 Context Horizon · Voynich honesty · Origin stable
+US&S personal only · Block 1–2 residual closed · Origin stable
