@@ -2,26 +2,22 @@
 
 ## Law
 Bare `NBD` → E(X) → execute. Steady X=5.
-
-**Form intake:** always analyze → score S(c) → implement **high‑S only**. See `form/MODE_FORM.md`.
+**Form intake:** analyze → S(c) → **high‑S only** (`form/MODE_FORM.md`).
 
 ---
 
-## 2026-08-01 — Mandel Syntactic Codex high‑S slice
+## 2026-08-01 — Visual Control forms (high‑S)
 
-| Piece | S | Done |
-|-------|---|------|
-| 7 Core Rules V0 | ~0.70 | `rules_v0.py` |
-| Morpheme delimiter protocol | ~0.65 | `morpheme.py` |
-| Operator → Dell map | ~0.55 | `operators_v0.py` |
-| Personas V7 doc | ~0.50 | `personas_v7.md` |
-| Visual grid compiler | low | deferred |
-| AIOps agents | low | deferred (SIDE/horizon) |
-
-Also: `MANDEL_LANG_V0.md` · `MODE_FORM.md` standing law.
+| Piece | Done |
+|-------|------|
+| Morpheme lexicon PREFIX/ROOT/SUFFIX | `morpheme.py` expanded |
+| Deterministic terminal OpBox + flows | `form/dell_matrix/visual_terminal.py` |
+| Rule 90 optional fractal | same module |
+| Random 300/4800 engines | deferred |
+| React CDN Mandel host | deferred |
 
 ---
 
 ## Prior
 
-Harmonic Core practical slice · LatinMandell · polyglot · residual empty · Origin stable
+Mandel Lang V0 rules/operators · Harmonic Core slice · LatinMandell · polyglot · Origin stable
