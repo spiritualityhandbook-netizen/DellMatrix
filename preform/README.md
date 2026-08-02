@@ -4,11 +4,13 @@
 
 Live runtime is **`form/`** only.
 
-- Mandell Origin: `form/mandell/`
-- Program door: `form/open.py` + `form/repl.py`
-- Authority docs: `docs/START_HERE.md`, `docs/AUDIT_AND_NEXT_50.md`, `docs/LIVE_INDEX.md`
+| Live | This folder |
+|------|-------------|
+| `form/open.py` + `form/repl.py` | Research notes, phase pages |
+| `form/mandell/` | Early stubs under `preform/code/` |
+| `docs/START_HERE.md` | `CURRENT_STATUS.md` etc. (not authority) |
 
-Material here is pre-Form research, phase notes, and early stubs.
-It is kept for history. It is **not** the execution path.
+Authority: `docs/LIVE_INDEX.md` · `form/LEGACY.md` · `docs/archive/PREFORM_LEGACY.md`
 
-When cleaning, prefer move into `docs/archive/` over deletion.
+Physical archive move into `docs/archive/` is optional cleanup — stamp is law until then.
+Do not import preform into production paths.

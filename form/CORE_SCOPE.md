@@ -21,11 +21,15 @@ create → grow → confirm → sphere → save → load → visual
 
 | Package | Role | Rule |
 |---------|------|------|
-| `form/trading/` | Sister trading tools | Optional. Not required for Origin. |
+| `form/trading/` | Sister trading tools | Optional. Not required for Origin. Do not import into open/repl. |
 | `form/llm/` | Local model bridge experiments | Optional. Offline acceptance must not depend on it. |
 
-These may live in the repo. They must not be described as part of the core Form runtime in START_HERE, AUDIT, or LIVE_INDEX.
+**Lock:** Origin path never requires network, brokers, or external models.
 
 ## LEGACY (frozen, not side)
 
 See `form/LEGACY.md` — `src/` and `preform/` are frozen historical, not optional features.
+
+## CI
+
+`.github/workflows/form-smoke.yml` runs core offline checks on push to main.

@@ -1,0 +1,23 @@
+name: Form smoke
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Core smoke (offline)
+        run: |
+          python -m form.open --smoke
+          python -m form.mandell.phrase_tests --smoke
+          python -m form.mandell.polyglot_tests
+          python -m form.accept || python -c "from form.accept import run; raise SystemExit(0 if run() else 1)"
