@@ -2,6 +2,10 @@
 
 Mandell is the Origin. DellMatrix is the host.
 
+**New here?** Read [`INSTALL.md`](INSTALL.md) first (Python + how to open the program).
+
+---
+
 ## Launch
 
 ```bash
@@ -13,10 +17,17 @@ python -m form.repl
 Windows: `Launch DellMatrix.bat`  
 Mac: `Launch DellMatrix.command`
 
+Optional: `python launch.py YourName`
+
+---
+
 ## First 60 seconds
 
+At the `you>` prompt:
+
 ```
-create an idea called business
+help
+create an idea called test
 grow ideas 2
 proposals
 rank
@@ -25,6 +36,10 @@ lattice
 save
 visual
 ```
+
+Then open the HTML file path that `visual` prints (browser, offline).
+
+---
 
 ## Core commands
 
@@ -45,24 +60,27 @@ la crea ideam nomine negotium
 la sphaera
 ```
 
-Tri-Harmonic grades for `[P-R-S]` compounds: `form/mandell/harmonic_link.py`  
+Tri-Harmonic grades: `form/mandell/harmonic_link.py`  
 Morphemes: `form/mandell/morpheme.py`
 
 ## Acceptance path (offline, no AI)
 
+```
 create → grow → confirm → sphere → save → load → visual
+```
 
 ## Honesty gates (required)
 
-- **Voynich is not scientifically decoded.** Mandell may treat codices as *interpretive algorithmic surfaces* (rings, orbits, pattern maps). That is **not** a verified historical decryption. See `form/mandell/VOYNICH_HONESTY.md`.
-- Orbit / reality-loop language is **metaphor** for controlled growth / coherence tracking (`bounded_orbit.py`).
-- Mandell is a practical bridge language under construction, not a finished worldwide standard.
+- **Voynich is not scientifically decoded.** Interpretive surfaces only. See `form/mandell/VOYNICH_HONESTY.md`.
+- Orbit language is **metaphor** for controlled growth (`bounded_orbit.py`).
+- Mandell is a practical bridge under construction.
 - Growth never auto-writes the live matrix; Nursery quarantine is law.
 - `preform/` and `src/` are **LEGACY**. `trading/` and `llm/` are **SIDE**.
 - LatinMandell is core depth; English is the primary daily door.
+- Personal business ideas (e.g. a private shop) are **not** product features.
 
 ## Law
 
 Floor locked · Nursery quarantine · Mandell spine · high‑S form intake only
 
-See `docs/LIVE_INDEX.md` · `form/CORE_SCOPE.md` · `form/MODE_FORM.md`
+See `docs/LIVE_INDEX.md` · `docs/INSTALL.md` · `form/CORE_SCOPE.md` · `form/MODE_FORM.md`

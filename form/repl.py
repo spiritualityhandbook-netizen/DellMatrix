@@ -36,7 +36,7 @@ HELP = """
 Mandell Origin — English or seeds.
 
 Ideas / Growth
-  create an idea called business
+  create an idea called test
   grow ideas 2
   proposals | confirm <id> | confirm all | reject all
   rank | lineage <id>
@@ -379,7 +379,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
 
     elif action == "visual":
         paths = p.visual()
-        _say("Visual ready:")
+        _say("Visual ready — open this file in a browser (offline):")
         _say(paths.get("easy") or paths.get("html", ""))
 
     elif action == "walk":
@@ -514,7 +514,8 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
     print("  DellMatrix — Mandell Origin")
-    print("  English · Seeds · Lattice · Perception · Polyglot · Lupe-ready")
+    print("  Offline · English or seeds · Type help anytime")
+    print("  Try: create an idea called test")
     print()
     p = persist_load(owner) if do_load else open_program(owner)
     if do_load:
@@ -548,7 +549,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
 
 
 def main() -> None:
-    owner = "Ace"
+    owner = "Operator"
     do_load = "--load" in sys.argv
     for i, a in enumerate(sys.argv):
         if a == "--owner" and i + 1 < len(sys.argv):

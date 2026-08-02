@@ -5,6 +5,7 @@ DellMatrix is the host that runs it.
 
 Bridge language goal: humans and computers share one structured language — operators (Dells), flow, math/nature patterns — readable by people, executable by machines.
 
+**Install (average user):** [`docs/INSTALL.md`](docs/INSTALL.md)  
 **Start here:** [`docs/START_HERE.md`](docs/START_HERE.md)  
 **Full audit + capabilities:** [`docs/FULL_AUDIT_AND_CAPABILITIES.md`](docs/FULL_AUDIT_AND_CAPABILITIES.md)  
 **Polyglot (ES+FR complete):** [`form/mandell/POLYGLOT.md`](form/mandell/POLYGLOT.md)
@@ -17,17 +18,18 @@ Bridge language goal: humans and computers share one structured language — ope
 **Mac:** `Launch DellMatrix.command`  
 **Any:** `python launch.py`
 
-Offline. No network required for core loop.
+Offline. No network required for core loop.  
+Optional owner: `python launch.py YourName`
 
 ---
 
 ## Speak English, Mandell, Spanish, or French
 
 ```
-create an idea called business
-08[Create] > 15[Map] :: business
+create an idea called test
+08[Create] > 15[Map] :: test
 
-es crea una idea llamada negocio
+es crea una idea llamada prueba
 fr crée une idée appelée test
 
 grow ideas 2
@@ -90,5 +92,6 @@ See `form/CORE_SCOPE.md` and `form/LEGACY.md`.
 - Orbit / reality-loop language is metaphor for controlled growth.
 - Mandell is a practical bridge under construction.
 - ES/FR polyglot foundation is complete; worldwide multi-language bridge is horizon.
+- Built for **any user**. Personal business ideas are not product features.
 
 See `form/MODE_LUPE.md` for Lupe / bare-NBD law (steady X=5).
