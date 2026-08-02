@@ -1,8 +1,8 @@
-# DellMatrix / Mandell — Full Audit + Next Directives
+# DellMatrix / Mandell — Full Audit
 
-Date: 2026-08-01 (Strong-axes + polyglot foundation complete)  
+Date: 2026-08-01 (post hyper-refinement · user-ready seal)  
 Scope: `form/` runtime · GitHub main  
-Authority: START_HERE · LIVE_INDEX · RESIDUAL_COMPLETE · FULL_AUDIT_AND_CAPABILITIES · POLYGLOT · MODE_LUPE
+Authority: USER_READY · START_HERE · INSTALL · TUTORIAL · LIVE_INDEX · RESIDUAL_COMPLETE · NBD_LOG
 
 ---
 
@@ -12,18 +12,20 @@ Authority: START_HERE · LIVE_INDEX · RESIDUAL_COMPLETE · FULL_AUDIT_AND_CAPAB
 |------|-------|
 | Core runtime | **Strong** |
 | Mandell Origin | **Strong** |
-| Controlled growth | **Strong** |
-| Session unity | **Strong** |
+| Controlled growth (Nursery) | **Strong** |
+| Session unity (persist v7) | **Strong** |
 | Average-user path | **Strong** |
 | Perception / lattice | **Strong** |
+| Visual offline panel | **Strong** |
 | Polyglot foundation (ES+FR) | **Strong** |
 | Dell runtime 00–50 | **Strong** |
-| Docs hygiene | **Strong** |
+| Docs hygiene (user door) | **Strong** |
 | Legacy dual-era | **Contained** (by design) |
-| Side packages | **Contained** (by design) |
+| Side packages (trading/llm) | **Contained** (by design) |
 | Residual queue | **Empty** |
+| User-ready seal | **Yes** (`docs/USER_READY.md`) |
 
-**Contained** is intentional quarantine — not an incomplete Origin grade.
+**Contained** = intentional quarantine, not incomplete Origin.
 
 ---
 
@@ -35,9 +37,10 @@ Authority: START_HERE · LIVE_INDEX · RESIDUAL_COMPLETE · FULL_AUDIT_AND_CAPAB
 | B Mandell density | **Done** |
 | C Growth quality | **Done** |
 | D Perception/lattice | **Done** |
-| E Average user | **Done** |
-| F Bridge/honesty + ES/FR foundation | **Done** |
+| E Average user | **Done** (Install · Tutorial · Visual polish · Seal) |
+| F Bridge/honesty + ES/FR | **Done** |
 | Residual hygiene | **Done** |
+| Hyper-refinement 1–4 | **Done** |
 
 ---
 
@@ -45,12 +48,43 @@ Authority: START_HERE · LIVE_INDEX · RESIDUAL_COMPLETE · FULL_AUDIT_AND_CAPAB
 
 | Goal | Status |
 |------|--------|
-| Mandell as Origin | Yes |
-| Practical man↔computer | Yes |
-| Controlled growth | Yes |
-| Average-user daily use | Yes |
-| Polyglot foundation ES+FR | Yes |
-| Worldwide bridge language | Horizon (honest) |
+| Mandell as Origin | **Yes** |
+| Practical man↔computer | **Yes** |
+| Controlled growth | **Yes** |
+| Average-user daily use (offline) | **Yes** |
+| Polyglot foundation ES+FR | **Yes** |
+| Worldwide bridge language | **Horizon** (honest) |
+| Live two-way visual OS | **Horizon** (panel is offline snapshot) |
+| Personal business as product | **No** — held personal-only |
+
+---
+
+## Live acceptance path
+
+```
+create → grow → confirm → sphere → save → load → visual
+```
+
+Entry: `python launch.py` · `tutorial` · `docs/INSTALL.md` · `docs/TUTORIAL.md`
+
+Automated: `python -m form.accept` · `python -m form.smoke_all`
+
+---
+
+## Structure (authority)
+
+```
+form/mandell/     ORIGIN
+form/dell_matrix/ matrix · growth · nursery · lattice · visual
+form/avatar/      body + face
+form/open.py      one Program
+form/repl.py      front door (tutorial · help · English)
+form/persist.py   session v7
+form/trading/     SIDE
+form/llm/         SIDE
+src/              LEGACY frozen
+preform/          LEGACY historical
+```
 
 ---
 
@@ -58,4 +92,6 @@ Authority: START_HERE · LIVE_INDEX · RESIDUAL_COMPLETE · FULL_AUDIT_AND_CAPAB
 
 **None.**
 
-Re-open only on named surface, reported friction, or requested new language.
+Re-open only on: reported friction · named new surface · explicit third language · explicit live-visual work.
+
+Bare `NBD` holds steady.
