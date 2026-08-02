@@ -25,7 +25,7 @@ _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _OUT = os.path.join(os.path.dirname(__file__), "..", "state", "visual")
 os.makedirs(_OUT, exist_ok=True)
 EASY_UI = os.path.join(_ROOT, "DellMatrix_UI.html")
-LEVEL = 6
+LEVEL = 7
 
 _SKIN_COLOR = {
     "cube": "#5b8def", "sphere": "#7c5cbf", "seed": "#3cb371",
@@ -38,9 +38,13 @@ _FORM_SKIN = {
 }
 
 ACTIONS = [
+    {"group": "Start", "items": [
+        {"label": "Tutorial", "cmd": "tutorial", "hint": "Guided acceptance path in the program"},
+        {"label": "Help", "cmd": "help", "hint": "Top commands"},
+    ]},
     {"group": "Ideas", "items": [
-        {"label": "Create idea", "cmd": "create an idea called ", "hint": "Type a name after this"},
-        {"label": "Grow ideas", "cmd": "grow ideas 2", "hint": "Ringed growth → Nursery"},
+        {"label": "Create idea", "cmd": "create an idea called ", "hint": "Type a name after this, then paste into the program"},
+        {"label": "Grow ideas", "cmd": "grow ideas 2", "hint": "Ringed growth → Nursery only"},
         {"label": "Show proposals", "cmd": "proposals", "hint": "View Nursery quarantine"},
         {"label": "Rank", "cmd": "rank", "hint": "Sort by affinity"},
         {"label": "Show matrix", "cmd": "show me", "hint": "Print live state"},
@@ -73,7 +77,6 @@ ACTIONS = [
         {"label": "Pulse", "cmd": "pulse", "hint": ""},
         {"label": "Save", "cmd": "save", "hint": ""},
         {"label": "Status", "cmd": "status", "hint": ""},
-        {"label": "Help", "cmd": "help", "hint": ""},
     ]},
 ]
 
@@ -142,8 +145,12 @@ def plane_to_svg(
         parts.append("</g>")
     if not view.nodes:
         parts.append(
-            f'<text x="{cx}" y="{cy}" text-anchor="middle" fill="#5c6575" '
-            f'font-family="system-ui,sans-serif" font-size="14">No ideas yet — create one</text>'
+            f'<text x="{cx}" y="{cy - 10}" text-anchor="middle" fill="#9aa3b2" '
+            f'font-family="system-ui,sans-serif" font-size="15">No ideas yet</text>'
+        )
+        parts.append(
+            f'<text x="{cx}" y="{cy + 14}" text-anchor="middle" fill="#5c6575" '
+            f'font-family="system-ui,sans-serif" font-size="13">Try: create an idea called test</text>'
         )
     parts.append("</svg>")
     return "\n".join(parts)
@@ -189,34 +196,35 @@ def plane_to_html(
 <style>
   :root {{ color-scheme: dark; --bg:#0a0b0e; --card:#151820; --line:#2a2f3a; --text:#e8eaed; --muted:#9aa3b2; --accent:#5b8def; --ok:#3cb371; }}
   * {{ box-sizing: border-box; }}
-  body {{ margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,sans-serif; }}
-  header {{ padding:14px 18px; border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }}
+  body {{ margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,sans-serif; line-height:1.45; }}
+  header {{ padding:16px 18px; border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }}
   header h1 {{ margin:0; font-size:18px; font-weight:600; }}
   header .meta {{ color:var(--muted); font-size:12px; }}
-  .layout {{ display:grid; grid-template-columns: 280px 1fr 280px; gap:14px; padding:14px; max-width:1400px; margin:0 auto; }}
-  @media (max-width: 1000px) {{ .layout {{ grid-template-columns: 1fr; }} }}
-  .card {{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }}
-  .card h2 {{ margin:0 0 10px; font-size:14px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }}
-  .group {{ margin-bottom:14px; }}
-  .group-title {{ font-size:12px; color:var(--muted); margin-bottom:6px; }}
-  .btn-row {{ display:flex; flex-wrap:wrap; gap:6px; }}
-  button.action {{ background:#1c2230; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-size:13px; cursor:pointer; }}
+  .layout {{ display:grid; grid-template-columns: 280px 1fr 280px; gap:16px; padding:16px; max-width:1400px; margin:0 auto; }}
+  @media (max-width: 1000px) {{ .layout {{ grid-template-columns: 1fr; padding:12px; gap:12px; }} }}
+  .card {{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; }}
+  .card h2 {{ margin:0 0 12px; font-size:13px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }}
+  .group {{ margin-bottom:16px; }}
+  .group-title {{ font-size:12px; color:var(--muted); margin-bottom:8px; }}
+  .btn-row {{ display:flex; flex-wrap:wrap; gap:8px; }}
+  button.action {{ background:#1c2230; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13px; cursor:pointer; min-height:40px; }}
   button.action:hover {{ border-color:var(--accent); background:#222a3a; }}
-  #cmd-box {{ margin-top:12px; padding:12px; background:#0f1115; border-radius:10px; border:1px dashed var(--line); min-height:64px; }}
-  #cmd-box .label {{ font-size:11px; color:var(--muted); margin-bottom:4px; }}
+  #cmd-box {{ margin-top:14px; padding:14px; background:#0f1115; border-radius:10px; border:1px dashed var(--line); min-height:72px; }}
+  #cmd-box .label {{ font-size:11px; color:var(--muted); margin-bottom:6px; }}
   #cmd-text {{ font-size:15px; font-family:ui-monospace,monospace; color:#7dd3a0; word-break:break-word; }}
-  #cmd-hint {{ font-size:12px; color:var(--muted); margin-top:6px; }}
-  .copy-btn {{ margin-top:8px; background:var(--accent); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; }}
+  #cmd-hint {{ font-size:12px; color:var(--muted); margin-top:8px; }}
+  .copy-btn {{ margin-top:10px; background:var(--accent); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; min-height:36px; }}
+  .copy-btn:hover {{ filter:brightness(1.08); }}
   .node-shape:hover {{ filter:brightness(1.15); stroke:#fff; stroke-width:2; }}
   .node.active .node-shape {{ stroke:#fff; stroke-width:2.5; }}
   #detail .k {{ color:var(--muted); font-size:11px; margin-top:8px; }}
   #detail .v {{ font-size:13px; word-break:break-word; }}
-  .proposal {{ border:1px solid var(--line); border-radius:10px; padding:8px 10px; margin-bottom:8px; font-size:13px; }}
+  .proposal {{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:10px; font-size:13px; }}
   .proposal .kind {{ color:var(--ok); font-size:11px; }}
   .proposal .aff {{ color:var(--accent); font-size:11px; font-weight:600; }}
   .avatar-line {{ font-size:14px; margin-bottom:6px; }}
   .empty {{ color:var(--muted); font-size:13px; }}
-  .credit {{ font-size:11px; color:#5c6575; margin-top:10px; line-height:1.4; }}
+  .credit {{ font-size:11px; color:#5c6575; margin-top:12px; line-height:1.5; }}
 </style>
 </head>
 <body>
@@ -225,26 +233,27 @@ def plane_to_html(
     <h1>{html.escape(title)}</h1>
     <div class="meta">owner={html.escape(owner)} · ideas={len(plane.units)} · form={html.escape(form)} · skin={html.escape(skin)} · rings: {html.escape(rings_s)}</div>
   </div>
-  <div class="meta">Offline control panel · type commands in the program window</div>
+  <div class="meta">Offline panel · copy a command · paste into the program window</div>
 </header>
 <div class="layout">
   <section class="card" id="controls">
     <h2>Actions</h2>
     <div id="btn-root"></div>
     <div id="cmd-box">
-      <div class="label">Type this in the program:</div>
+      <div class="label">Copy, then paste into the program window (you>)</div>
       <div id="cmd-text">(tap a button)</div>
       <div id="cmd-hint"></div>
       <button class="copy-btn" id="copy-btn" type="button">Copy command</button>
     </div>
     <div class="credit">
-      Growth uses Voynich-inspired rings. Nursery ranked by affinity. Live matrix never auto-changed.
+      This panel is a snapshot. Commands run in the program window.
+      Growth stays in Nursery until you confirm. Offline — no network required.
     </div>
   </section>
   <section class="card" style="overflow:auto">
     <h2>Live matrix</h2>
     {svg}
-    <div id="detail" style="margin-top:12px">
+    <div id="detail" style="margin-top:14px">
       <h2 style="margin-top:0">Selected idea</h2>
       <div class="k">label</div><div class="v" id="p-title">—</div>
       <div class="k">id</div><div class="v" id="p-id">—</div>
@@ -277,7 +286,7 @@ ACTIONS.forEach(g => {{
     b.type = 'button'; b.className = 'action'; b.textContent = item.label;
     b.addEventListener('click', () => {{
       document.getElementById('cmd-text').textContent = item.cmd;
-      document.getElementById('cmd-hint').textContent = item.hint || '';
+      document.getElementById('cmd-hint').textContent = item.hint || 'Paste into the program window';
       window._lastCmd = item.cmd;
     }});
     row.appendChild(b);
@@ -286,9 +295,16 @@ ACTIONS.forEach(g => {{
 }});
 document.getElementById('copy-btn').addEventListener('click', async () => {{
   const t = window._lastCmd || '';
-  if (!t) return;
-  try {{ await navigator.clipboard.writeText(t); document.getElementById('cmd-hint').textContent = 'Copied — paste into the program window'; }}
-  catch (e) {{ document.getElementById('cmd-hint').textContent = 'Select and copy the command above'; }}
+  if (!t) {{
+    document.getElementById('cmd-hint').textContent = 'Tap a button first';
+    return;
+  }}
+  try {{
+    await navigator.clipboard.writeText(t);
+    document.getElementById('cmd-hint').textContent = 'Copied — paste into the program window (you>)';
+  }} catch (e) {{
+    document.getElementById('cmd-hint').textContent = 'Select the green text above and copy it';
+  }}
 }});
 function showNode(id) {{
   const n = byId[id]; if (!n) return;
@@ -381,8 +397,16 @@ def smoke() -> bool:
     rec("easy path", os.path.isfile(paths.get("easy", "")))
     txt = open(paths["html"], encoding="utf-8").read()
     rec("buttons", "Grow ideas" in txt)
+    rec("tutorial btn", "Tutorial" in txt)
     rec("form meta", "form=sphere" in txt or "form=cube" in txt)
     rec("affinity css", "aff" in txt)
+    rec("copy hint", "paste into the program" in txt.lower())
+    # empty-state path
+    p2 = open_program("VisEmpty")
+    p2.cube.session.plane.units.clear()
+    paths2 = write_visual(p2.cube.session.plane, owner="VisEmpty")
+    empty_txt = open(paths2["html"], encoding="utf-8").read()
+    rec("empty state", "No ideas yet" in empty_txt and "create an idea called test" in empty_txt)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
