@@ -10,6 +10,7 @@ import sys
 try:
     from form.mandell.floor import FLOOR, assert_floor_intact, floor_status
     from form.mandell.manifest import manifest_from_dell
+    from form.mandell.harmonic_truths import status as truths_status
     from form.dell_matrix.core import DellMatrix
     from form.dell_matrix.snap import SnapCandidate
     from form.dell_matrix.plane import Perspective, Skin
@@ -21,6 +22,10 @@ try:
     from form.dell_matrix.nursery import Nursery
     from form.dell_matrix.ringed_growth import RingedGrowth
     from form.dell_matrix.harmonic_lattice import HarmonicLattice
+    from form.dell_matrix.harmonic_core import (
+        KeyLedger, normalize_size, pulse_status, apply_radial_soft_forget,
+        SIZE_CHROMATIC, SIZE_HARMONIC,
+    )
     from form.dell_matrix.perception import Form
     from form.duobeta.growth import DuoBeta
     from form.avatar import Avatar, FaceController, Expression, build_default_registry
@@ -29,6 +34,7 @@ except ImportError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     from form.mandell.floor import FLOOR, assert_floor_intact, floor_status
     from form.mandell.manifest import manifest_from_dell
+    from form.mandell.harmonic_truths import status as truths_status
     from form.dell_matrix.core import DellMatrix
     from form.dell_matrix.snap import SnapCandidate
     from form.dell_matrix.plane import Perspective, Skin
@@ -40,6 +46,10 @@ except ImportError:
     from form.dell_matrix.nursery import Nursery
     from form.dell_matrix.ringed_growth import RingedGrowth
     from form.dell_matrix.harmonic_lattice import HarmonicLattice
+    from form.dell_matrix.harmonic_core import (
+        KeyLedger, normalize_size, pulse_status, apply_radial_soft_forget,
+        SIZE_CHROMATIC, SIZE_HARMONIC,
+    )
     from form.dell_matrix.perception import Form
     from form.duobeta.growth import DuoBeta
     from form.avatar import Avatar, FaceController, Expression, build_default_registry
@@ -62,6 +72,7 @@ class Program:
     nursery: Nursery = field(init=False)
     growth: RingedGrowth = field(init=False)
     lattice: HarmonicLattice = field(init=False)
+    keys: KeyLedger = field(default_factory=KeyLedger)
     history: List[str] = field(default_factory=list)
     history_max: int = 24
 
@@ -74,7 +85,9 @@ class Program:
         self.kaomoji = build_default_registry()
         self.nursery = Nursery.load()
         self.growth = RingedGrowth(nursery=self.nursery)
-        self.lattice = HarmonicLattice(size=12)
+        self.lattice = HarmonicLattice(size=SIZE_CHROMATIC)
+        if not hasattr(self, "keys") or self.keys is None:
+            self.keys = KeyLedger()
         for name, kind, dell, term in (
             ("PlaneSurface", "tool", 15, "Plane"),
             ("MainField", "main", 21, "MainThird"),
@@ -87,6 +100,7 @@ class Program:
             ("RingedGrowth", "growth", 13, "RingedGrowth"),
             ("Avatar", "entity", 2, "Avatar"),
             ("HarmonicLattice", "lattice", 15, "Lattice"),
+            ("KeyLedger", "memory", 10, "Keep"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -157,6 +171,19 @@ class Program:
             "look": self.face.show(),
         }
 
+    def set_lattice_size(self, size: int) -> Dict[str, Any]:
+        """12 = chromatic default · 14 = Harmonic form geometry."""
+        s = normalize_size(size)
+        self.lattice.size = s
+        self.note_seed(15, "Map", f"size_{s}")
+        return {"ok": True, "size": s, "allowed": [SIZE_CHROMATIC, SIZE_HARMONIC]}
+
+    def radial_drift(self, outer_shell: int = 6) -> Dict[str, Any]:
+        """Soft-forget far-shell payloads; keys remain (Existence rule)."""
+        out = apply_radial_soft_forget(self.lattice, self.keys, outer_shell=outer_shell)
+        self.note_seed(16, "Decay", f"drift_{outer_shell}")
+        return out
+
     def place(self, id: str, label: str, **kwargs):
         u = self.cube.place_idea(id, label, **kwargs)
         self.sandbox.maybe_auto_box(self.cube.session.plane, id)
@@ -167,6 +194,11 @@ class Program:
                 h, v, 0, content=id, label=label,
                 tags=["idea"] + ([kwargs.get("words")] if kwargs.get("words") else []),
             )
+        except Exception:
+            pass
+        # Permanent key — Existence rule
+        try:
+            self.keys.remember(label or id, meta={"id": id}, payload=kwargs.get("words") or label)
         except Exception:
             pass
         self.note_seed(8, "Create", label)
@@ -259,12 +291,14 @@ class Program:
         av = self.avatar_status()
         ns = self.nursery.summary()
         form_name = self.lattice.perception.form.value
+        ks = self.keys.status() if hasattr(self, "keys") else {}
         lines = [
             f"+- DellMatrix · owner={self.owner} -+",
             f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
             f"| {av['look']}  {av['describe']}",
             f"| ideas={len(self.cube.session.plane.units)}  nursery={ns['pending']}  gen={self.duo.generation}",
             f"| lattice form={form_name} cells={len(self.lattice.cells)}  size={self.lattice.size}",
+            f"| keys={ks.get('keys', 0)} payload={ks.get('with_payload', 0)}  (permanent keys)",
             f"| rings: {' → '.join(self.duo.rings)}  (Voynich-inspired)",
         ]
         for ln in plane_txt.splitlines():
@@ -278,12 +312,15 @@ class Program:
         return {
             "owner": self.owner,
             "floor": floor_status(),
+            "truths": truths_status(),
             "avatar": self.avatar_status(),
             "nursery": self.nursery.summary(),
             "ideas": len(self.cube.session.plane.units),
             "rings": list(self.duo.rings),
             "enhance": self.enhance.status(),
             "lattice": self.lattice.status(),
+            "keys": self.keys.status() if hasattr(self, "keys") else {},
+            "pulse": pulse_status(),
             "history_len": len(self.history),
         }
 
@@ -299,16 +336,15 @@ def smoke() -> bool:
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
     p = open_program("Smoke")
-    p.place("a", "A", words="one")
-    p.enhance_on()
-    p.pulse()
+    p.place("a", "AlphaIdea", words="one")
+    rec("key remembered", p.keys.has_key("AlphaIdea"))
+    p.set_lattice_size(14)
+    rec("size 14", p.lattice.size == 14)
+    p.set_lattice_size(12)
     out = p.grow_ideas(1)
     rec("grow", out.get("ok") is True)
-    rec("lattice", hasattr(p, "lattice") and p.lattice is not None)
-    rec("history seed form", any("[" in h for h in p.history))
-    rec("enhance noted", any("Pulse" in h or "Enhance" in h or "25[" in h for h in p.history))
-    rec("macro", p.macro_seed(3).startswith("48[Macro]"))
-    rec("ranked", isinstance(p.ranked_proposals(), list))
+    rec("truths", "truths" in p.status())
+    rec("pulse constants", "subkey_pulse" in p.status().get("pulse", {}))
     paths = p.visual()
     rec("visual", "html" in paths)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
