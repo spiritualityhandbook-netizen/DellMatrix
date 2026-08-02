@@ -3,45 +3,25 @@
 ## Law
 Bare `NBD` → E(X) → execute. Steady X=5.
 
+**Form intake:** always analyze → score S(c) → implement **high‑S only**. See `form/MODE_FORM.md`.
+
 ---
 
-## 2026-08-01 — Harmonic Core practical slice (calculated)
+## 2026-08-01 — Mandel Syntactic Codex high‑S slice
 
-### Selection equation (Origin-weighted)
+| Piece | S | Done |
+|-------|---|------|
+| 7 Core Rules V0 | ~0.70 | `rules_v0.py` |
+| Morpheme delimiter protocol | ~0.65 | `morpheme.py` |
+| Operator → Dell map | ~0.55 | `operators_v0.py` |
+| Personas V7 doc | ~0.50 | `personas_v7.md` |
+| Visual grid compiler | low | deferred |
+| AIOps agents | low | deferred (SIDE/horizon) |
 
-For each candidate c from Harmonic 14×14 form:
-
-\[
-S(c) = \phi(c)\,\rho(c)\,\lambda(c)\,\sigma(c)
-\]
-
-| Symbol | Meaning |
-|--------|---------|
-| ϕ | Practicality for offline Origin |
-| ρ | Relatedness to Mandell / lattice / Floor |
-| λ | Leverage (reuse existing Program surfaces) |
-| σ | Safety (won’t break acceptance / pull SIDE in) |
-
-| Candidate | ϕ | ρ | λ | σ | S |
-|-----------|---|---|---|---|---|
-| 3 Absolute Truths | 0.9 | 0.95 | 0.9 | 1.0 | **0.77** |
-| Permanent keys + soft payload | 0.9 | 0.9 | 0.85 | 1.0 | **0.69** |
-| Pulse ratio constants | 0.8 | 0.7 | 0.9 | 1.0 | **0.50** |
-| Lattice size 12\|14 | 0.75 | 0.8 | 0.85 | 1.0 | **0.51** |
-| Radial soft-forget | 0.8 | 0.85 | 0.8 | 0.95 | **0.52** |
-| Full relay scheduler | 0.4 | 0.5 | 0.3 | 0.7 | 0.04 |
-| NPC agentic social | 0.2 | 0.15 | 0.2 | 0.3 | 0.002 |
-
-**Implemented (top S):** truths · keys · pulses · size policy · radial drift  
-**Deferred:** full relays · NPC layer (horizon / not Origin)
-
-### Code
-- `form/mandell/harmonic_truths.py`
-- `form/dell_matrix/harmonic_core.py`
-- Program: `keys`, `set_lattice_size`, `radial_drift`, status truths+pulse
+Also: `MANDEL_LANG_V0.md` · `MODE_FORM.md` standing law.
 
 ---
 
 ## Prior
 
-LatinMandell · polyglot LA/ES/FR · residual empty · DELL_RUNTIME · Origin stable
+Harmonic Core practical slice · LatinMandell · polyglot · residual empty · Origin stable
