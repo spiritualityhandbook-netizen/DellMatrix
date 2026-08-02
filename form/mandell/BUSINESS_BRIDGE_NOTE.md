@@ -1,32 +1,38 @@
-# Business Bridge Note — Ultimate Stain & Seal (parked)
+# Personal test surface — Ultimate Stain & Seal (US&S)
 
 Date: 2026-08-01  
-Status: **high-S idea · not live code · future NBD only**
+Status: **personal only · not core DellMatrix · not general-user product**
 
 ---
 
-## Why high-S
+## Law
 
-Ultimate Stain & Seal is the real income surface.  
-A thin bridge from Mandell Origin → customer / job / property memory advances average-user daily use without breaking offline Form.
+DellMatrix is built for **any user**.  
+Ultimate Stain & Seal is the operator’s **personal business**.
 
-## Candidate concepts (do not implement yet)
+US&S ideas are **not** features of the matrix product.  
+They may later be used as a **private test load** once the visual operating system reaches vision + acceptance — to exercise the matrix, not to define it.
 
-| Concept | Intent |
-|---------|--------|
-| CustomerNode | Property history, stain cycles, preferences |
-| JobManifest | Job as living seed with Route-style history |
-| Property living memory | Fence/wood aging notes + recommended re-seal timing |
-
-## Rules
-
-- Must stay optional (SIDE or dedicated thin module later)
-- Must not enter core acceptance path until explicitly requested
-- Must remain offline-capable
-- Must respect Floor + Nursery quarantine
+---
 
 ## Disposition
 
-Parked. Re-open only on explicit NBD for business bridge.
+| Item | Rule |
+|------|------|
+| CustomerNode / JobManifest / Property memory | **Hold.** Personal. Do not ship in core Form. |
+| General user-ready path | Primary goal — offline acceptance, visual OS, average-user daily use |
+| Personal ideas | Evolve later as tests of the matrix, after vision + acceptance are met |
 
-Authority: `form/CORE_SCOPE.md` · `form/MODE_FORM.md`
+---
+
+## Core goal (unchanged)
+
+Full user-ready use of DellMatrix for everyone:
+
+```
+create → grow → confirm → sphere → save → load → visual
+```
+
+English primary door · offline · Floor lock · Nursery quarantine · high-S only.
+
+Authority: `form/CORE_SCOPE.md` · `docs/START_HERE.md` · `form/MODE_FORM.md`

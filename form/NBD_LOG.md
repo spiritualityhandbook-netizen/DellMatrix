@@ -7,15 +7,28 @@ Lupe×10 used once for Voynich/form flood; revert to X=5.
 
 ---
 
+## 2026-08-01 — Clarification: US&S personal only
+
+Ultimate Stain & Seal is the operator’s personal business.  
+It is **not** a DellMatrix product feature for general users.
+
+DellMatrix target = full user-ready use for **everyone**.  
+Personal ideas (including US&S) may later serve as private tests of the matrix after visual OS + acceptance reach vision — not as core roadmap.
+
+`BUSINESS_BRIDGE_NOTE.md` updated to lock this boundary.  
+Hold all US&S-specific implementation.
+
+---
+
 ## 2026-08-01 — NBD Block 2 (high-S absorption)
 
 | Item | S | Result |
 |------|---|--------|
 | Context Horizon (Hot/Warm/Cold over persist v7) | high | `form/mandell/CONTEXT_HORIZON.md` |
 | Fog pattern (offline, user-visible recovery) | high | folded into Context Horizon doc |
-| US&S business bridge | high practical | `form/mandell/BUSINESS_BRIDGE_NOTE.md` parked only |
+| US&S business bridge | — | **Personal only.** Parked and scoped out of core product. |
 
-No SilentInject. No Gemini orchestration. No live business code. English door + offline acceptance held.
+No SilentInject. No Gemini orchestration. English door + offline acceptance held.
 
 ---
 
