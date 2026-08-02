@@ -5,6 +5,7 @@
 | Doc | Role |
 |-----|------|
 | `docs/INSTALL.md` | Average-user install + first run |
+| `docs/TUTORIAL.md` | 2-minute guided path |
 | `docs/START_HERE.md` | First door after install |
 | `docs/AUDIT_AND_NEXT_50.md` | Roadmap + audit |
 | `docs/FULL_AUDIT_AND_CAPABILITIES.md` | Full walkthrough |
@@ -24,4 +25,4 @@
 Live runtime: **`form/` only**. Origin offline for acceptance. Built for any user.
 
 Residual (physical + conceptual): **Closed** 2026-08-01.  
-Hyper-refinement: Directive 1 done · 2–4 queued.
+Hyper-refinement: Directives 1–2 done · 3–4 queued.
