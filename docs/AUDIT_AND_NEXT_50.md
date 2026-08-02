@@ -1,8 +1,24 @@
 # DellMatrix / Mandell — Full Audit + Next Directives
 
-Date: 2026-08-01 (refined)  
+Date: 2026-08-01 (phase progress stamp)  
 Scope: `form/` runtime · GitHub main  
 Authority with: `docs/START_HERE.md` · `docs/LIVE_INDEX.md` · `form/MODE_LUPE.md`
+
+---
+
+## Phase progress (Next-50 intent)
+
+| Block | Theme | Progress |
+|-------|--------|----------|
+| A Unify | Lattice, v7, one growth, REPL forms | **Done** |
+| B Mandell density | Phrases, echo, macros, tests | **Done** |
+| C Growth quality | confirm-all, rank, lineage | **Done** |
+| D Perception/lattice | forms, chord, shell, visual | **Done** |
+| E Average user | START_HERE, accept, help | **Done** |
+| F Bridge/honesty | ES/FR, honesty, offline | **Good** |
+
+**Estimate:** original Next-50 intent ~**85–90%** implemented.  
+Residual: thin Dells densify, optional archive moves, polyglot depth on demand.
 
 ---
 
@@ -15,59 +31,24 @@ Authority with: `docs/START_HERE.md` · `docs/LIVE_INDEX.md` · `form/MODE_LUPE.
 | Controlled growth | **Strong** |
 | Average-user path | **Good** |
 | Perception / lattice | **Good** |
-| Polyglot / bridge | **Partial → improving** |
-| Docs hygiene | **Good** (LIVE_INDEX + LEGACY) |
+| Polyglot / bridge | **Partial** |
+| Docs hygiene | **Good** |
 | Legacy dual-era | **Contained** |
 
-Core is runnable. Foundation + controlled growth met. Worldwide bridge not claimed.
+---
+
+## Solid
+
+Form door · Floor · Dell registry · Session v7 · RingedGrowth only · Nursery · Lattice bound · Perception REPL · rank/macro/distill/replay · accept offline · phrase ≥0.90 · ES/FR · honesty gates · Lupe/NBD law · CORE_SCOPE · LEGACY · Form smoke CI
 
 ---
 
-## Architecture (live)
+## Remaining weak
 
-```
-launch / repl
-  → Program (open.py)
-       matrix · plane · nursery · RingedGrowth ONLY
-       HarmonicLattice (H/V/F + perception)
-       avatar · history (note_seed) · persist v7
-  → visual HTML (form skins + ranked nursery + affinity)
-```
-
-Laws: Floor locked · growth never auto-writes live · Mandell seeds structured · English door.
-
----
-
-## Solid (verified by implementation)
-
-- Form front door, Floor, Dell 00–50 registry
-- Session v7: matrix + avatar + nursery + lattice + history
-- RingedGrowth sole public growth + Nursery quarantine
-- Lattice bound; place lands on H/V/F
-- Perception: cube/sphere/core/flower/toggle
-- REPL: lattice · chord · shell · lineage · rank · macro · distill · replay
-- Offline acceptance (`form/accept.py`)
-- Phrase hit-rate gate ≥ 0.90
-- ES/FR polyglot + polyglot smoke
-- Honesty gates in START_HERE
-- Lupe / bare NBD → E(X) (steady X=5)
-- CORE_SCOPE: trading/llm out of core narrative
-- LEGACY: src/ + preform/ stamped non-runtime
-
----
-
-## Audit follow-through 1–8 (refined status)
-
-| # | Implication | Status |
-|---|-------------|--------|
-| 1 | AUDIT rewrite | **Live authority** |
-| 2 | REPL rank/macro/distill/replay English-first | **Wired** |
-| 3 | Dell 16/18/22/27/33 densified | **Runtime real** |
-| 4 | preform LEGACY | **Stamped** · not deleted |
-| 5 | Phrase gate ≥ 0.90 | **Enforced in smoke_all** |
-| 6 | note_seed avatar/enhance | **On walk/run/sit/stand/tone/pulse/enhance** |
-| 7 | Polyglot ES/FR smoke | **Suite + expanded maps** |
-| 8 | trading/llm quarantine | **CORE_SCOPE.md** |
+1. Some Dells still thinner than primaries (being densified by NBD)
+2. `preform/` stamp-only (optional physical archive)
+3. Polyglot only ES/FR until a third language is requested
+4. trading/llm side packages — keep out of Origin
 
 ---
 
@@ -85,11 +66,11 @@ Laws: Floor locked · growth never auto-writes live · Mandell seeds structured 
 
 ## Next ranked
 
-1. Expand polyglot beyond ES/FR (only when needed)
-2. Further Dell densify by real usage frequency
-3. Optional physical move of preform files into docs/archive/
-4. CI smoke on push
-5. Sister/trading remains side package — do not pull into Origin path
+1. Continue residual Dell densify by use
+2. Optional preform → docs/archive/
+3. No third language until requested
+4. trading/llm stay side
+5. Hold Origin offline in CI
 
 ---
 
@@ -98,5 +79,4 @@ Laws: Floor locked · growth never auto-writes live · Mandell seeds structured 
 - Claiming global language adoption
 - Autonomous self-aware evolution
 - Full 4D tesseract UI
-- Treating preform/ or src/ as live Form
-- Treating trading/llm as required for acceptance
+- Treating preform/src as live Form
