@@ -1,20 +1,14 @@
 # NBD Log
 
-## 2026-08-02 — Matrix tiers + idea goals foundation
+## 2026-08-02 — Code Evolution form (Boolean → shells)
 
 | Item | Result |
 |------|--------|
-| DellMatrix = DEV | Documented |
-| Blank / Ace / Worldwide / Main | Architecture |
-| True Lore Identifier | Future goal (Worldwide) |
-| Idea detail + goals | Unit fields + persist path + growth bias |
-| Main auto-evolve | Spec only — not coded (protect DEV) |
-| Live visual | Deferred |
+| Chronicle sealed | `form/mandell/CODE_EVOLUTION.md` |
+| Worldwide idea card | `form/worldwide/CODE_EVOLUTION_IDEA.md` |
+| Runnable shells | `decision_shells.py` ternary + fuzzy + soft_gate |
+| Boolean replaced? | **No** — substrate kept |
+| Full new language? | **Not claimed** |
+| Δ_unknown | PROJECTED_NOT_FACT only |
 
-See `form/MATRIX_ARCHITECTURE.md` · `docs/AUDIT_MATRIX_TIERS.md`
-
----
-
-## Prior
-
-LatinMandell Strong · user-ready · Voynich inspire-only
+Prior: matrix tiers · idea detail/goals · LatinMandell Strong
