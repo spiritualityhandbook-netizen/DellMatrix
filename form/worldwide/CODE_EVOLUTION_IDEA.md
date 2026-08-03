@@ -9,13 +9,14 @@ detail:  Post-Boolean decision shells + post-static variables + ultra-intuitive
          coding surface bound into Mandell. Boolean stays silicon substrate of the host.
          Δ_known is permanent fuel and is never closed.
          Evolutionary pressure: surfaces that defer forced Boolean collapse.
-         prefer_open() is the default growth path (dimmer instead of light switch).
+         Classical reversible residue included.
+         Quasicrystal order-without-periodicity recorded as structural analogy only.
 goals:
   - Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)
   - Push decision surfaces that defer forced Boolean collapse
   - Map variable models beyond static containers
   - Minimal intuitive surface that runs on current machines
-  - Keep PROJECTED_NOT_FACT on unknown claims (including true non-Boolean runtime)
+  - Keep PROJECTED_NOT_FACT on unknown claims (true non-Boolean runtime, quantum hardware, quasicrystal identity)
   - Never break DEV Floor / Nursery law
 ```
 
@@ -31,6 +32,7 @@ Live shells (Boolean host still underneath):
 - GrowthResidue
 - OpenShell — refuses silent Boolean collapse
 - prefer_open() — **default growth path**
+- ReversibleShell — classical forward + inverse recovery path
 
 Plant in session (example):
 

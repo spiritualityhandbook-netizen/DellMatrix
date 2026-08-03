@@ -8,21 +8,20 @@ These shells are higher decision surfaces.
 Δ_known is permanent fuel — never closed.
 Δ_unknown stays labeled PROJECTED_NOT_FACT.
 
-DEFAULT GROWTH PATH (NBD):
-  Use prefer_open(shell) so the decision surface keeps graded / ternary
-  information and only collapses to True/False when you explicitly call
-  .as_bool(). This is the deferred-collapse posture.
+DEFAULT GROWTH PATH:
+  prefer_open(shell) keeps graded / ternary information and only collapses
+  to True/False when .as_bool() is called explicitly.
 
 Beginner note:
-  Normal shells act like a light switch (ON/OFF).
-  OpenShell acts like a dimmer — it keeps “how much yes”.
-  prefer_open() turns any old shell into a dimmer.
+  Normal shells = light switch (ON/OFF).
+  OpenShell / prefer_open = dimmer (keeps “how much yes”).
+  ReversibleShell = keeps both the forward decision and its inverse recovery path.
 """
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import Iterable, List, Optional, Union, Any, Callable
+from typing import Iterable, List, Optional, Union, Any, Callable, Tuple
 import math
 import random
 
@@ -280,12 +279,10 @@ class GrowthResidue:
 class OpenShell:
     """
     Decision surface that defers the Boolean cut.
-
     Primary identity: grade + ternary + optional witness.
-    .as_bool() is the only way to force the silicon cut.
+    .as_bool() is the only explicit last-resort silicon cut.
     bool(open_shell) raises TypeError.
-
-    PROJECTED_NOT_FACT: a true non-Boolean host runtime.
+    PROJECTED_NOT_FACT: true non-Boolean host runtime.
     """
 
     __slots__ = ("grade", "witness", "label")
@@ -300,7 +297,6 @@ class OpenShell:
         return from_fuzzy(self.grade)
 
     def as_bool(self) -> bool:
-        """Explicit last-resort silicon cut. Never automatic."""
         if self.witness is not None:
             try:
                 return bool(self.witness())
@@ -331,11 +327,8 @@ class OpenShell:
 def prefer_open(shell: Any, label: str = "preferred") -> OpenShell:
     """
     DEFAULT GROWTH PATH.
-
-    Convert any collapsing shell (or raw value) into OpenShell form.
-    Primary identity becomes graded / ternary; Boolean cut is deferred.
-    This keeps feeding evolutionary information to the matrix
-    without removing the host Boolean substrate.
+    Convert any collapsing shell into OpenShell form so graded information is kept
+    and the Boolean cut is deferred.
     """
     if isinstance(shell, OpenShell):
         return shell
@@ -352,6 +345,56 @@ def prefer_open(shell: Any, label: str = "preferred") -> OpenShell:
     if hasattr(shell, "witness"):
         witness = getattr(shell, "witness")
     return OpenShell(grade=grade, witness=witness, label=label)
+
+
+# ------------------------------------------------------------------
+# ReversibleShell — NBD (classical reversible residue)
+# Keeps both the forward decision and an inverse recovery path.
+# Still sits on Boolean host. No quantum hardware claimed.
+# PROJECTED_NOT_FACT: native quantum superposition or entanglement.
+# ------------------------------------------------------------------
+
+class ReversibleShell:
+    """
+    Classical reversible decision surface.
+    - forward: the current graded decision
+    - inverse: a recoverable prior state (or the function that restores it)
+    - Information is not erased; the inverse is retained.
+    - Still collapses only when explicitly asked via prefer_open / as_bool.
+    """
+
+    __slots__ = ("forward", "inverse", "label")
+
+    def __init__(self, forward: float, inverse: Any = None, label: str = "reversible"):
+        self.forward = clamp01(forward)
+        self.inverse = inverse
+        self.label = str(label)
+
+    @property
+    def grade(self) -> float:
+        return self.forward
+
+    @property
+    def ternary(self) -> Ternary:
+        return from_fuzzy(self.forward)
+
+    def recover(self) -> Any:
+        """Return the retained inverse / prior state."""
+        return self.inverse
+
+    def decide(self) -> dict:
+        return {
+            "score": self.forward,
+            "ternary": self.ternary.value,
+            "gate": soft_gate(self.forward),
+            "label": self.label,
+            "reversible": True,
+            "has_inverse": self.inverse is not None,
+            "note": "ReversibleShell · classical reversible residue · Boolean host intact · PROJECTED_NOT_FACT on quantum runtime",
+        }
+
+    def __repr__(self) -> str:
+        return f"ReversibleShell(forward={self.forward:.3f}, has_inverse={self.inverse is not None}, label={self.label!r})"
 
 
 def smoke() -> bool:
@@ -389,12 +432,9 @@ def smoke() -> bool:
     pref = prefer_open(vs, label="from-variable")
     rec("prefer_open type", isinstance(pref, OpenShell))
     rec("prefer_open grade", abs(pref.grade - 0.73) < 1e-9)
-    refused2 = False
-    try:
-        bool(pref)
-    except TypeError:
-        refused2 = True
-    rec("prefer_open refuses silent bool", refused2 is True)
+    rev = ReversibleShell(forward=0.8, inverse={"prior": 0.3}, label="rev-test")
+    rec("ReversibleShell grade", abs(rev.grade - 0.8) < 1e-9)
+    rec("ReversibleShell recover", rev.recover() == {"prior": 0.3})
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

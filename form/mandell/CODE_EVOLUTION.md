@@ -23,10 +23,23 @@ It turns any collapsing shell into OpenShell form so the decision keeps graded /
 
 Beginner picture:  
 Normal shells = light switch (ON/OFF).  
-OpenShell / prefer_open = dimmer (keeps “how much yes”).
+OpenShell / prefer_open = dimmer (keeps “how much yes”).  
+ReversibleShell = keeps both the forward decision and its inverse recovery path.
 
 Host Python still has Boolean underneath.  
-A true non-Boolean host runtime remains **PROJECTED_NOT_FACT**.
+A true non-Boolean or quantum host runtime remains **PROJECTED_NOT_FACT**.
+
+---
+
+## Δ_known fuel (updated)
+
+1. Ternary / multi-valued  
+2. Fuzzy continuous [0,1]  
+3. Probabilistic distributions  
+4. Intuitionistic / constructive  
+5. **Quantum / reversible logic** (classical reversible residue now runnable; full quantum runtime PROJECTED_NOT_FACT)  
+6. Resource-sensitive linear logic  
+7. **Quasicrystal structural analogy** — order without classical periodicity (structural analogy only; no identity claim)
 
 ---
 
@@ -41,7 +54,8 @@ A true non-Boolean host runtime remains **PROJECTED_NOT_FACT**.
 - ResourceShell  
 - GrowthResidue  
 - OpenShell — defers Boolean cut  
-- prefer_open() — **default growth path** (converts collapsing shells into deferred-cut form)
+- prefer_open() — **default growth path**  
+- **ReversibleShell** — classical reversible residue (forward + inverse recovery); still on Boolean host
 
 Does **not** replace Python `bool`.  
 Keeps feeding evolutionary information to the matrix.
@@ -51,14 +65,14 @@ Keeps feeding evolutionary information to the matrix.
 ## Idea card (Worldwide)
 
 **Label:** Code Evolution  
-**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel. Surfaces that defer forced Boolean collapse. prefer_open is the default growth path.  
+**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel. Surfaces that defer forced Boolean collapse. Classical reversible residue included. Quasicrystal order-without-periodicity recorded as structural analogy only.  
 **Goals:**
 
 1. Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)  
 2. Push decision surfaces that defer forced Boolean collapse  
 3. Map variable models beyond static containers  
 4. Design minimal intuitive surface that runs on current machines  
-5. Keep PROJECTED_NOT_FACT on unknown claims (including true non-Boolean runtime)  
+5. Keep PROJECTED_NOT_FACT on unknown claims (true non-Boolean runtime, quantum hardware, quasicrystal identity)  
 6. Never break DEV Nursery / Floor law  
 
 ---
@@ -67,8 +81,8 @@ Keeps feeding evolutionary information to the matrix.
 
 - Full new programming language shipped  
 - Boolean removed from host Python  
-- True non-Boolean runtime achieved  
-- Quantum runtime in Origin offline path  
+- True non-Boolean or quantum runtime achieved  
+- Code Evolution “is” a quasicrystal  
 - Full type theory or linear logic  
 - History rewrite  
 
