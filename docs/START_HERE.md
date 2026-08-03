@@ -1,94 +1,48 @@
-# START HERE — DellMatrix / Mandell Origin
+# Start here — DellMatrix (DEV)
 
-Mandell is the Origin. DellMatrix is the host.
-
-**New here?**  
-1. [`INSTALL.md`](INSTALL.md) — open the program  
-2. [`TUTORIAL.md`](TUTORIAL.md) — 2-minute walkthrough  
-3. Or type `tutorial` at the `you>` prompt
-
----
-
-## Launch
+**DellMatrix = the developer matrix.**  
+Blank matrices share its capabilities, not your personal lore.
 
 ```bash
-python launch.py
-# or
-python -m form.repl
+python launch.py              # DEV / Operator
+python launch.py Ace          # Dell Matrix Ace (personal)
+python launch.py Worldwide    # Worldwide ideas
+python launch.py Friend       # blank-style profile
 ```
 
-Windows: `Launch DellMatrix.bat`  
-Mac: `Launch DellMatrix.command`
+## Ideas need substance
 
-Optional: `python launch.py YourName`
-
----
-
-## First 60 seconds
-
-```
-tutorial
+```text
+create an idea called True Lore detail: deeper meanings of names and lore goals: teach patterns; honest research; loved name tool
 ```
 
-Or by hand:
+`detail:` what it is · `goals:` what evolution aims at  
+Growth biases toward goals. Nursery still quarantines until confirm.
 
-```
-help
-create an idea called test
-grow ideas 2
-proposals
-rank
-confirm all
-sphere
-save
-visual
-```
+## Acceptance
 
-Open the HTML path that `visual` prints (browser, offline).
-
----
-
-## Core commands
-
-| You type | What happens |
-|----------|--------------|
-| tutorial / start | Guided acceptance walkthrough |
-| create an idea called X | Places idea + lands on lattice |
-| grow ideas N | RingedGrowth → Nursery only |
-| confirm / reject (all) | Live or drop proposals |
-| rank · macro · replay · distill | Nursery + history tools |
-| cube / sphere / core / flower | Perception form |
-| lattice · save · load · visual | Structure + persist + panel |
-| lang list | EN · LA · ES · FR |
-
-## LatinMandell (core depth)
-
-```
-la crea ideam nomine negotium
-la sphaera
-```
-
-Tri-Harmonic grades: `form/mandell/harmonic_link.py`  
-Morphemes: `form/mandell/morpheme.py`
-
-## Acceptance path (offline, no AI)
-
-```
+```text
 create → grow → confirm → sphere → save → load → visual
 ```
 
-## Honesty gates (required)
+Or type `tutorial`.
 
-- **Voynich is not scientifically decoded.** Interpretive surfaces only. See `form/mandell/VOYNICH_HONESTY.md`.
-- Orbit language is **metaphor** for controlled growth (`bounded_orbit.py`).
-- Mandell is a practical bridge under construction.
-- Growth never auto-writes the live matrix; Nursery quarantine is law.
-- `preform/` and `src/` are **LEGACY**. `trading/` and `llm/` are **SIDE**.
-- LatinMandell is core depth; English is the primary daily door.
-- Personal business ideas are **not** product features.
+## Tiers
 
-## Law
+See `form/MATRIX_ARCHITECTURE.md`  
+True Lore (future): `form/mandell/TRUE_LORE.md`  
+Audit: `docs/AUDIT_MATRIX_TIERS.md`
 
-Floor locked · Nursery quarantine · Mandell spine · high‑S form intake only
+## LatinMandell
 
-See `docs/LIVE_INDEX.md` · `docs/INSTALL.md` · `docs/TUTORIAL.md` · `form/CORE_SCOPE.md`
+```text
+explain create
+la cresce 2
+morph Commandell
+```
+
+## Visual
+
+Snapshot HTML is temporary. Live real-time visual is the target — not now.
+
+LEGACY: `preform/` · `src/` frozen · trading/llm SIDE
