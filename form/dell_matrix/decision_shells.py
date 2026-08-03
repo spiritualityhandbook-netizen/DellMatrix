@@ -12,19 +12,25 @@ DEFAULT GROWTH PATH:
   prefer_open(shell) keeps graded / ternary information and only collapses
   to True/False when .as_bool() is called explicitly.
 
-MULTI-DIRECTIONAL FLOW:
+MULTI-DIRECTIONAL FLOW (stable continuous fuel):
   Code in nature does not move left-to-right on a page.
   Code is shared-context language executable mentally or digitally.
   8 cardinal + 9 upper + 9 lower directions.
-  FlowShell = observation/movement atom.
-  multi_look = fan-out observation (look without moving).
-  aggregate_looks = combine multiple looks into one residue.
+
+  FlowShell          = observation / movement atom
+  multi_look(...)    = fan-out observation (optional per-direction grades)
+  aggregate_looks()  = combine looks → GrowthResidue → prefer_open
+
+Minimal usage pattern:
+  looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6, context="shared")
+  surface = aggregate_looks(looks)          # deferred-cut OpenShell
+  # surface.as_bool() only when the silicon cut is deliberately required
 """
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import Iterable, List, Optional, Union, Any, Callable, Sequence, Dict
+from typing import Iterable, List, Optional, Union, Any, Callable, Sequence
 import math
 import random
 

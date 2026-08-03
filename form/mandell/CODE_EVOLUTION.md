@@ -33,7 +33,7 @@ You can move or look without moving.
 
 ---
 
-## Architecture pattern (locked)
+## Architecture pattern (locked · continuous fuel)
 
 | Piece | Role |
 |-------|------|
@@ -42,6 +42,12 @@ You can move or look without moving.
 | aggregate_looks | Combine looks → GrowthResidue → prefer_open |
 | prefer_open | Default growth path (deferred Boolean cut) |
 | OpenShell | Refuses silent Boolean collapse |
+
+Minimal usage:
+```text
+looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6, context="shared")
+surface = aggregate_looks(looks)   # deferred-cut OpenShell
+```
 
 Host Python still has Boolean underneath.  
 Full 3D matrix navigation runtime remains **PROJECTED_NOT_FACT**.
@@ -58,8 +64,8 @@ Full 3D matrix navigation runtime remains **PROJECTED_NOT_FACT**.
 - OpenShell · prefer_open()  
 - ReversibleShell  
 - FlowShell  
-- multi_look() — with optional per-direction grades  
-- **aggregate_looks()** — combine multiple looks into one OpenShell
+- multi_look()  
+- aggregate_looks()
 
 Does **not** replace Python `bool`.  
 Does **not** claim full 3D navigation is already running.
