@@ -23,6 +23,7 @@ Live shells (all on Boolean substrate):
 - VariableShell (Lupe5)
 - ProbabilisticShell (NBD)
 - ConstructiveShell (NBD) — witness residue
+- ResourceShell (NBD next-growth) — linear / ownership residue
 
 Plant in session (example):
 

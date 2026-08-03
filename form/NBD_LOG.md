@@ -1,14 +1,14 @@
 # NBD Log
 
-## 2026-08-02 — Bare NBD (X=5) #2 Code Evolution
+## 2026-08-02 — NBD next-growth (X=5) Code Evolution
 
 | Item | Result |
 |------|--------|
-| Mode | Bare NBD → Steady X=5 |
+| Mode | Bare NBD + next growth → Steady X=5 |
 | Lattice | Code Evolution |
-| Operator | ConstructiveShell (witness residue) added |
+| Operator | ResourceShell (linear / ownership residue) added |
 | Boolean | Substrate intact |
-| PROJECTED_NOT_FACT | Full type theory / proof assistants still labeled |
+| PROJECTED_NOT_FACT | Full linear types / borrow checker still labeled |
 | Floor / Nursery | Untouched |
 | Push | This commit |
 
@@ -16,4 +16,4 @@
 python -m form.dell_matrix.decision_shells
 ```
 
-Prior: ProbabilisticShell · VariableShell · Strong ideas + handoff · DEV stable
+Prior: ConstructiveShell · ProbabilisticShell · VariableShell · Strong ideas + handoff · DEV stable

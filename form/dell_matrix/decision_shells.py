@@ -10,6 +10,7 @@ These shells are higher decision surfaces used where soft gates already matter
 Lupe5 2026-08-02: VariableShell (beyond static container).
 NBD 2026-08-02: ProbabilisticShell (light distribution residue).
 NBD 2026-08-02: ConstructiveShell (witness residue).
+NBD next-growth 2026-08-02: ResourceShell (linear / ownership residue).
 """
 
 from __future__ import annotations
@@ -195,9 +196,7 @@ class ProbabilisticShell:
 
 
 # ------------------------------------------------------------------
-# ConstructiveShell — NBD addition (witness residue)
-# Intuitionistic flavour: truth carries a witness callable.
-# Still collapses to Boolean substrate. No full type theory claimed.
+# ConstructiveShell — witness residue (intuitionistic flavour)
 # ------------------------------------------------------------------
 
 class ConstructiveShell:
@@ -244,8 +243,60 @@ class ConstructiveShell:
         return f"ConstructiveShell(witness={'yes' if has_w else 'no'}, grade={self.grade:.3f}, bool={self.bool})"
 
 
+# ------------------------------------------------------------------
+# ResourceShell — NBD next-growth (linear / ownership residue)
+# Resource is consumed on use. Still collapses to Boolean substrate.
+# PROJECTED_NOT_FACT: full linear logic or ownership type system.
+# ------------------------------------------------------------------
+
+class ResourceShell:
+    """
+    Minimal resource / linear decision surface.
+    - units = available resource count
+    - consume(n) spends units; returns False if insufficient
+    - .bool is True only while units > 0
+    - grade reflects remaining fraction of initial capacity
+    PROJECTED_NOT_FACT: full linear types, ownership borrow checker, or affine logic.
+    """
+
+    __slots__ = ("units", "capacity")
+
+    def __init__(self, units: int = 1, capacity: Optional[int] = None):
+        self.units = max(0, int(units))
+        self.capacity = max(self.units, int(capacity) if capacity is not None else self.units)
+
+    @property
+    def bool(self) -> bool:
+        """Silicon substrate: resource still available."""
+        return self.units > 0
+
+    @property
+    def grade(self) -> float:
+        if self.capacity <= 0:
+            return 0.0
+        return clamp01(self.units / self.capacity)
+
+    @property
+    def ternary(self) -> Ternary:
+        return from_fuzzy(self.grade)
+
+    def consume(self, n: int = 1) -> bool:
+        """Spend resource. Returns False if not enough units."""
+        n = max(0, int(n))
+        if self.units < n:
+            return False
+        self.units -= n
+        return True
+
+    def decide(self) -> dict:
+        return decide(self.grade)
+
+    def __repr__(self) -> str:
+        return f"ResourceShell(units={self.units}/{self.capacity}, bool={self.bool}, grade={self.grade:.3f})"
+
+
 def smoke() -> bool:
-    print("=== DECISION SHELLS SMOKE (NBD) ===")
+    print("=== DECISION SHELLS SMOKE (NBD next-growth) ===")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")
@@ -267,6 +318,10 @@ def smoke() -> bool:
     rec("ConstructiveShell ternary", cs.ternary is Ternary.POS)
     cs2 = ConstructiveShell(witness=None)
     rec("ConstructiveShell no-witness", cs2.bool is False)
+    rs = ResourceShell(units=2, capacity=2)
+    rec("ResourceShell available", rs.bool is True)
+    rec("ResourceShell consume", rs.consume(1) is True and rs.units == 1)
+    rec("ResourceShell exhaust", rs.consume(1) is True and rs.bool is False)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

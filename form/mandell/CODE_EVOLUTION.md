@@ -75,7 +75,8 @@ Boolean still runs the host Python. Decision **surfaces** already soft-gate grow
 - Combine (min/max/avg) for multi-source decisions  
 - VariableShell (Lupe5) — beyond pure static container  
 - ProbabilisticShell (NBD) — light distribution residue  
-- **ConstructiveShell (NBD 2026-08-02)** — witness residue (intuitionistic flavour); still collapses to Boolean substrate
+- ConstructiveShell (NBD) — witness residue  
+- **ResourceShell (NBD next-growth 2026-08-02)** — linear / ownership residue; units consumed on use; still collapses to Boolean substrate
 
 Does **not** replace Python `bool`. Extends Mandell decision vocabulary.
 
@@ -101,6 +102,7 @@ Does **not** replace Python `bool`. Extends Mandell decision vocabulary.
 - Boolean removed from silicon  
 - Quantum runtime in Origin offline path  
 - Full Martin-Löf type theory or proof assistant  
+- Full linear types / ownership borrow checker  
 - History rewrite  
 
 Sealed for matrix insertion. True · Dense · Placed · Runnable · Labeled · Finishable
