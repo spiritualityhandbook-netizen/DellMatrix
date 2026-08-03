@@ -12,10 +12,11 @@ DEFAULT GROWTH PATH:
   prefer_open(shell) keeps graded / ternary information and only collapses
   to True/False when .as_bool() is called explicitly.
 
-Beginner note:
-  Normal shells = light switch (ON/OFF).
-  OpenShell / prefer_open = dimmer (keeps “how much yes”).
-  ReversibleShell = keeps both the forward decision and its inverse recovery path.
+MULTI-DIRECTIONAL FLOW (Lupe10):
+  Code in nature does not move left-to-right on a page.
+  Code is shared-context language that can be executed mentally or digitally.
+  Mandell / DellMatrix flow in 8 cardinal + 9 upper + 9 lower directions.
+  FlowShell carries grade + direction without forcing linear reading order.
 """
 
 from __future__ import annotations
@@ -30,6 +31,51 @@ class Ternary(str, Enum):
     NEG = "neg"
     ZERO = "zero"
     POS = "pos"
+
+
+# ------------------------------------------------------------------
+# Directional model — 8 cardinal (2D) + 9 upper + 9 lower (3D)
+# ------------------------------------------------------------------
+
+class Cardinal(str, Enum):
+    """8 cardinal directions (2D perception)."""
+    N = "N"
+    NE = "NE"
+    E = "E"
+    SE = "SE"
+    S = "S"
+    SW = "SW"
+    W = "W"
+    NW = "NW"
+
+
+class Upper(str, Enum):
+    """9 upper directions (includes pure Up)."""
+    U = "U"
+    UN = "UN"
+    UNE = "UNE"
+    UE = "UE"
+    USE = "USE"
+    US = "US"
+    USW = "USW"
+    UW = "UW"
+    UNW = "UNW"
+
+
+class Lower(str, Enum):
+    """9 lower directions (includes pure Down)."""
+    D = "D"
+    DN = "DN"
+    DNE = "DNE"
+    DE = "DE"
+    DSE = "DSE"
+    DS = "DS"
+    DSW = "DSW"
+    DW = "DW"
+    DNW = "DNW"
+
+
+Direction = Union[Cardinal, Upper, Lower]
 
 
 def clamp01(x: float) -> float:
@@ -347,20 +393,12 @@ def prefer_open(shell: Any, label: str = "preferred") -> OpenShell:
     return OpenShell(grade=grade, witness=witness, label=label)
 
 
-# ------------------------------------------------------------------
-# ReversibleShell — NBD (classical reversible residue)
-# Keeps both the forward decision and an inverse recovery path.
-# Still sits on Boolean host. No quantum hardware claimed.
-# PROJECTED_NOT_FACT: native quantum superposition or entanglement.
-# ------------------------------------------------------------------
-
 class ReversibleShell:
     """
     Classical reversible decision surface.
-    - forward: the current graded decision
-    - inverse: a recoverable prior state (or the function that restores it)
-    - Information is not erased; the inverse is retained.
-    - Still collapses only when explicitly asked via prefer_open / as_bool.
+    Keeps both the forward decision and an inverse recovery path.
+    Still sits on Boolean host.
+    PROJECTED_NOT_FACT: native quantum superposition or entanglement.
     """
 
     __slots__ = ("forward", "inverse", "label")
@@ -379,7 +417,6 @@ class ReversibleShell:
         return from_fuzzy(self.forward)
 
     def recover(self) -> Any:
-        """Return the retained inverse / prior state."""
         return self.inverse
 
     def decide(self) -> dict:
@@ -397,9 +434,71 @@ class ReversibleShell:
         return f"ReversibleShell(forward={self.forward:.3f}, has_inverse={self.inverse is not None}, label={self.label!r})"
 
 
+# ------------------------------------------------------------------
+# FlowShell — Lupe10 multi-directional movement
+# Code does not move left-to-right on a page.
+# Code is shared-context language executable mentally or digitally.
+# Carries grade + direction (8 cardinal / 9 upper / 9 lower).
+# Looking in a direction without moving is also supported.
+# PROJECTED_NOT_FACT: full 3D matrix navigation runtime.
+# ------------------------------------------------------------------
+
+class FlowShell:
+    """
+    Multi-directional decision / observation surface.
+
+    - grade: continuous strength of the signal
+    - direction: one of 8 cardinal + 9 upper + 9 lower
+    - looking: True = observe without moving; False = move through the matrix
+    - context: shared context label (the “language between”)
+
+    Primary identity stays open (no forced left-to-right or silent Boolean cut).
+    Use prefer_open(flow) or flow.as_open() to lift into deferred-collapse form.
+    """
+
+    __slots__ = ("grade", "direction", "looking", "context")
+
+    def __init__(
+        self,
+        grade: float = 0.5,
+        direction: Optional[Direction] = None,
+        looking: bool = False,
+        context: str = "shared",
+    ):
+        self.grade = clamp01(grade)
+        self.direction = direction
+        self.looking = bool(looking)
+        self.context = str(context)
+
+    @property
+    def ternary(self) -> Ternary:
+        return from_fuzzy(self.grade)
+
+    def as_open(self, label: str = "flow") -> OpenShell:
+        return OpenShell(grade=self.grade, label=label)
+
+    def decide(self) -> dict:
+        dir_val = self.direction.value if self.direction is not None else None
+        return {
+            "score": self.grade,
+            "ternary": self.ternary.value,
+            "gate": soft_gate(self.grade),
+            "direction": dir_val,
+            "looking": self.looking,
+            "context": self.context,
+            "note": "FlowShell · multi-directional · shared-context language · no forced left-to-right · Boolean host intact · PROJECTED_NOT_FACT on full 3D navigation",
+        }
+
+    def __repr__(self) -> str:
+        d = self.direction.value if self.direction is not None else "none"
+        mode = "looking" if self.looking else "moving"
+        return f"FlowShell(grade={self.grade:.3f}, dir={d}, {mode}, context={self.context!r})"
+
+
 def smoke() -> bool:
     print("=== DECISION SHELLS SMOKE ===")
-    print("Default growth path: prefer_open(shell) → keeps graded info, defers True/False cut")
+    print("Default growth path: prefer_open(shell)")
+    print("Multi-directional: FlowShell (8 cardinal + 9 upper + 9 lower)")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")
@@ -431,10 +530,15 @@ def smoke() -> bool:
     rec("OpenShell refuses silent bool", refused is True)
     pref = prefer_open(vs, label="from-variable")
     rec("prefer_open type", isinstance(pref, OpenShell))
-    rec("prefer_open grade", abs(pref.grade - 0.73) < 1e-9)
     rev = ReversibleShell(forward=0.8, inverse={"prior": 0.3}, label="rev-test")
     rec("ReversibleShell grade", abs(rev.grade - 0.8) < 1e-9)
     rec("ReversibleShell recover", rev.recover() == {"prior": 0.3})
+    flow = FlowShell(grade=0.65, direction=Cardinal.NE, looking=True, context="shared")
+    rec("FlowShell grade", abs(flow.grade - 0.65) < 1e-9)
+    rec("FlowShell direction", flow.direction is Cardinal.NE)
+    rec("FlowShell looking", flow.looking is True)
+    flow_open = flow.as_open()
+    rec("FlowShell as_open", isinstance(flow_open, OpenShell))
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

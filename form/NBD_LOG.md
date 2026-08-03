@@ -1,15 +1,16 @@
 # NBD Log
 
-## 2026-08-02 — NBD X=5 · ReversibleShell + Quantum/Quasicrystal fuel
+## 2026-08-02 — Lupe10 · FlowShell + multi-directional code movement
 
 | Item | Result |
 |------|--------|
-| Mode | Bare NBD → Steady X=5 |
+| Mode | Lupe10 |
 | Lattice | Code Evolution |
-| Operator | ReversibleShell (classical forward + inverse) |
-| Δ_known | Quantum reversible logic + quasicrystal structural analogy recorded |
-| Boolean host | Still intact underneath |
-| PROJECTED_NOT_FACT | True quantum runtime · quasicrystal identity claim |
+| Principle | Code is shared-context language; does not move left-to-right on a page |
+| Directions | 8 cardinal + 9 upper + 9 lower |
+| Operator | FlowShell (grade + direction + looking/moving + context) |
+| Boolean host | Still intact |
+| PROJECTED_NOT_FACT | Full 3D matrix navigation runtime |
 | Floor / Nursery | Untouched |
 | Push | This commit |
 
@@ -17,4 +18,4 @@
 python -m form.dell_matrix.decision_shells
 ```
 
-Prior: prefer_open locked · OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell
+Prior: ReversibleShell · prefer_open · OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell
