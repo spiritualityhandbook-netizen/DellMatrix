@@ -9,12 +9,13 @@ These shells are higher decision surfaces used where soft gates already matter
 Δ_known runnable today · Δ_unknown stays labeled PROJECTED_NOT_FACT elsewhere.
 Lupe5 2026-08-02: VariableShell (beyond static container).
 NBD 2026-08-02: ProbabilisticShell (light distribution residue).
+NBD 2026-08-02: ConstructiveShell (witness residue).
 """
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import Iterable, List, Optional, Union, Any
+from typing import Iterable, List, Optional, Union, Any, Callable
 import math
 import random
 
@@ -156,8 +157,7 @@ class VariableShell:
 
 
 # ------------------------------------------------------------------
-# ProbabilisticShell — NBD addition (light distribution residue)
-# Still collapses to Boolean substrate. No full probabilistic language claimed.
+# ProbabilisticShell — light distribution residue
 # ------------------------------------------------------------------
 
 class ProbabilisticShell:
@@ -194,6 +194,56 @@ class ProbabilisticShell:
         return f"ProbabilisticShell(p={self.p:.3f})"
 
 
+# ------------------------------------------------------------------
+# ConstructiveShell — NBD addition (witness residue)
+# Intuitionistic flavour: truth carries a witness callable.
+# Still collapses to Boolean substrate. No full type theory claimed.
+# ------------------------------------------------------------------
+
+class ConstructiveShell:
+    """
+    Minimal constructive / witness decision surface.
+    - claim is accepted only when a witness function returns True
+    - .bool recovers the silicon cut from the witness result
+    - grade is 1.0 when witnessed, 0.0 otherwise (or partial if provided)
+    PROJECTED_NOT_FACT: full Martin-Löf type theory, dependent types, or proof assistants.
+    """
+
+    __slots__ = ("witness", "_grade")
+
+    def __init__(self, witness: Optional[Callable[[], bool]] = None, grade: Optional[float] = None):
+        self.witness = witness
+        if grade is not None:
+            self._grade = clamp01(grade)
+        else:
+            self._grade = 1.0 if (witness is not None and witness()) else 0.0
+
+    @property
+    def bool(self) -> bool:
+        """Silicon substrate via witness execution."""
+        if self.witness is None:
+            return False
+        try:
+            return bool(self.witness())
+        except Exception:
+            return False
+
+    @property
+    def grade(self) -> float:
+        return self._grade if self.witness is not None else 0.0
+
+    @property
+    def ternary(self) -> Ternary:
+        return from_fuzzy(self.grade)
+
+    def decide(self) -> dict:
+        return decide(self.grade)
+
+    def __repr__(self) -> str:
+        has_w = self.witness is not None
+        return f"ConstructiveShell(witness={'yes' if has_w else 'no'}, grade={self.grade:.3f}, bool={self.bool})"
+
+
 def smoke() -> bool:
     print("=== DECISION SHELLS SMOKE (NBD) ===")
     r = []
@@ -212,6 +262,11 @@ def smoke() -> bool:
     ps = ProbabilisticShell(0.9)
     rec("ProbabilisticShell grade", abs(ps.grade - 0.9) < 1e-9)
     rec("ProbabilisticShell ternary", ps.ternary is Ternary.POS)
+    cs = ConstructiveShell(witness=lambda: True, grade=1.0)
+    rec("ConstructiveShell bool", cs.bool is True)
+    rec("ConstructiveShell ternary", cs.ternary is Ternary.POS)
+    cs2 = ConstructiveShell(witness=None)
+    rec("ConstructiveShell no-witness", cs2.bool is False)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

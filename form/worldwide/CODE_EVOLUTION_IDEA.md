@@ -18,8 +18,11 @@ goals:
 Authority: `form/mandell/CODE_EVOLUTION.md`  
 Runnable: `python -m form.dell_matrix.decision_shells`
 
-Lupe5: VariableShell live.  
-NBD 2026-08-02: ProbabilisticShell live (light distribution residue, Boolean substrate kept).
+Live shells (all on Boolean substrate):
+- Ternary / Fuzzy
+- VariableShell (Lupe5)
+- ProbabilisticShell (NBD)
+- ConstructiveShell (NBD) — witness residue
 
 Plant in session (example):
 
