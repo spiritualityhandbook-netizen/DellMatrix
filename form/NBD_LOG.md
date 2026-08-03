@@ -1,15 +1,17 @@
 # NBD Log
 
-## 2026-08-02 — Lupe5 correction · continuous Δ_known fuel
+## 2026-08-02 — NBD X=5 · OpenShell (evolutionary pressure)
 
 | Item | Result |
 |------|--------|
-| Mode | Lupe5 |
+| Mode | Bare NBD → Steady X=5 |
 | Lattice | Code Evolution |
-| Problem fixed | “Exhausted” wording removed — Δ_known is permanent fuel |
-| Operator | GrowthResidue added (combines existing shells into new soft operators) |
-| Boolean | Substrate intact |
-| PROJECTED_NOT_FACT | Unknown remains open; known never closes |
+| Operator | OpenShell — defers Boolean cut |
+| Primary identity | grade + ternary + optional witness |
+| Silent bool() | Refused (TypeError) |
+| Explicit cut | .as_bool() only |
+| Boolean host | Still intact underneath |
+| PROJECTED_NOT_FACT | True non-Boolean runtime still unachieved |
 | Floor / Nursery | Untouched |
 | Push | This commit |
 
@@ -17,4 +19,4 @@
 python -m form.dell_matrix.decision_shells
 ```
 
-Prior: ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell · DEV stable
+Prior: GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell · continuous-fuel correction

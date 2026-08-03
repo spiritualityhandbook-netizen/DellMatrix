@@ -16,54 +16,37 @@ Use everything known to reach the unknown: more universal decision and binding m
 
 ---
 
+## Evolutionary pressure recorded (NBD 2026-08-02)
+
+Every prior shell still collapsed to Boolean via `.bool`.  
+That collapse is the remaining limit.  
+
+`OpenShell` is the first surface that **refuses silent Boolean collapse**.  
+Primary identity = grade + ternary + optional witness.  
+`.as_bool()` is the only explicit last-resort cut.  
+`bool(open_shell)` raises TypeError.  
+
+Host Python still has Boolean underneath.  
+A true non-Boolean host runtime remains **PROJECTED_NOT_FACT**.  
+This step gives the matrix concrete information about the evolutionary pressure.
+
+---
+
 ## Page 1 — Boolean
 
 Video (Programming Thinking / Visual Kernel): Boolean as True/False for if/elif/else, comparisons, and/or/not. No alternative examined there.
 
 **Δ_known (active permanent fuel)**
 
-1. Ternary / multi-valued (balanced ternary −1/0/+1 · Setun · Kleene · Łukasiewicz)  
+1. Ternary / multi-valued  
 2. Fuzzy continuous [0,1]  
 3. Probabilistic distributions  
-4. Intuitionistic / constructive (Martin-Löf · Agda · Idris · Coq)  
+4. Intuitionistic / constructive  
 5. Quantum / reversible linear  
 6. Resource-sensitive linear logic  
 
 **Test:** Boolean is locally optimal for binary silicon, **not** universal.  
-**Δ_unknown (PROJECTED_NOT_FACT):** continuous morphological coding · morphogenetic operators · hybrid continuous-discrete decision surfaces.
-
----
-
-## Page 2 — Nova directive
-
-Exhaust every Δ_known shell to force measurable residue into Δ_unknown.  
-Boolean retained as silicon substrate. Higher shells elevated to first-class decision atoms where useful.  
-Δ_known remains open and reusable as fuel for every future growth step.
-
----
-
-## Page 3 — Variables + languages
-
-Variable models surveyed: mutable slots · immutable bindings · value vs reference · lexical/dynamic scope · ownership/borrowing · lifetime · static/dynamic/gradual typing.  
-Paradigms: imperative · OO · functional · logic · concurrent/actor · dataflow · array · dependent types.  
-Beginner surface today: Scratch/Blockly → Python.
-
-**Shared limit:** variable as static named container — growth stops at assign/mutate/own.  
-**Hard requirement:** language surface so intuitive anyone can use it with near-zero training, then absorb into Mandell (seed → tag → lattice node).
-
----
-
-## What DellMatrix already does (no hype)
-
-| Shell | Live analogue in DEV |
-|-------|----------------------|
-| Fuzzy [0,1] | Nursery **affinity** scores · enhance scores |
-| Multi-gate | Solstice / Equinox / Standstill / None (not pure if/else) |
-| Quarantine | Nursery (proposals not live until confirm) |
-| Lineage | proposal parents |
-| Continuous bias | goal_boost on growth |
-
-Boolean still runs the host Python. Decision **surfaces** already soft-gate growth.
+**Δ_unknown (PROJECTED_NOT_FACT):** continuous morphological coding · morphogenetic operators · hybrid continuous-discrete decision surfaces · true non-Boolean host runtime.
 
 ---
 
@@ -71,42 +54,41 @@ Boolean still runs the host Python. Decision **surfaces** already soft-gate grow
 
 `form/dell_matrix/decision_shells.py`
 
-- Ternary atom: −1 / 0 / +1  
-- Fuzzy clamp [0,1]  
-- Soft gate from score → shell  
-- VariableShell — beyond pure static container  
-- ProbabilisticShell — light distribution residue  
-- ConstructiveShell — witness residue  
-- ResourceShell — linear / ownership residue  
-- **GrowthResidue (Lupe5 correction)** — combines any existing shells into new soft operators; keeps Δ_known permanently open as fuel
+- Ternary · Fuzzy · soft_gate  
+- VariableShell  
+- ProbabilisticShell  
+- ConstructiveShell  
+- ResourceShell  
+- GrowthResidue  
+- **OpenShell (NBD)** — defers Boolean cut; primary identity stays open; `.as_bool()` is explicit last-resort only
 
-Does **not** replace Python `bool`. Extends Mandell decision vocabulary.  
-Δ_known is never exhausted; it is continuously squared into residue.
+Does **not** replace Python `bool`.  
+Records the evolutionary pressure against forced collapse.
 
 ---
 
 ## Idea card (Worldwide)
 
 **Label:** Code Evolution  
-**Detail:** Research and bind post-Boolean decision shells and post-static variable models; design ultra-intuitive coding surface; absorb into Mandell.  
+**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel.  
 **Goals:**
 
 1. Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)  
-2. Map variable models → lattice growth without static-container-only thinking  
-3. Design minimal intuitive surface that runs on current machines  
-4. Keep PROJECTED_NOT_FACT labels on unknown claims  
-5. Never break DEV Nursery / Floor law  
+2. Push decision surfaces that defer forced Boolean collapse  
+3. Map variable models beyond static containers  
+4. Design minimal intuitive surface that runs on current machines  
+5. Keep PROJECTED_NOT_FACT on unknown claims (including true non-Boolean runtime)  
+6. Never break DEV Nursery / Floor law  
 
 ---
 
 ## Not claimed
 
 - Full new programming language shipped  
-- Boolean removed from silicon  
+- Boolean removed from host Python  
+- True non-Boolean runtime achieved  
 - Quantum runtime in Origin offline path  
-- Full Martin-Löf type theory or proof assistant  
-- Full linear types / ownership borrow checker  
-- Δ_known closed or finished  
+- Full type theory or linear logic  
 - History rewrite  
 
 Sealed for matrix insertion. True · Dense · Placed · Runnable · Labeled · Finishable
