@@ -12,17 +12,18 @@ DEFAULT GROWTH PATH:
   prefer_open(shell) keeps graded / ternary information and only collapses
   to True/False when .as_bool() is called explicitly.
 
-MULTI-DIRECTIONAL FLOW (Lupe10):
+MULTI-DIRECTIONAL FLOW:
   Code in nature does not move left-to-right on a page.
   Code is shared-context language that can be executed mentally or digitally.
   Mandell / DellMatrix flow in 8 cardinal + 9 upper + 9 lower directions.
   FlowShell carries grade + direction without forcing linear reading order.
+  multi_look() observes several directions without moving.
 """
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import Iterable, List, Optional, Union, Any, Callable, Tuple
+from typing import Iterable, List, Optional, Union, Any, Callable, Tuple, Sequence
 import math
 import random
 
@@ -32,10 +33,6 @@ class Ternary(str, Enum):
     ZERO = "zero"
     POS = "pos"
 
-
-# ------------------------------------------------------------------
-# Directional model — 8 cardinal (2D) + 9 upper + 9 lower (3D)
-# ------------------------------------------------------------------
 
 class Cardinal(str, Enum):
     """8 cardinal directions (2D perception)."""
@@ -373,8 +370,8 @@ class OpenShell:
 def prefer_open(shell: Any, label: str = "preferred") -> OpenShell:
     """
     DEFAULT GROWTH PATH.
-    Convert any collapsing shell into OpenShell form so graded information is kept
-    and the Boolean cut is deferred.
+    Convert any collapsing shell (including FlowShell) into OpenShell form
+    so graded information is kept and the Boolean cut is deferred.
     """
     if isinstance(shell, OpenShell):
         return shell
@@ -434,15 +431,6 @@ class ReversibleShell:
         return f"ReversibleShell(forward={self.forward:.3f}, has_inverse={self.inverse is not None}, label={self.label!r})"
 
 
-# ------------------------------------------------------------------
-# FlowShell — Lupe10 multi-directional movement
-# Code does not move left-to-right on a page.
-# Code is shared-context language executable mentally or digitally.
-# Carries grade + direction (8 cardinal / 9 upper / 9 lower).
-# Looking in a direction without moving is also supported.
-# PROJECTED_NOT_FACT: full 3D matrix navigation runtime.
-# ------------------------------------------------------------------
-
 class FlowShell:
     """
     Multi-directional decision / observation surface.
@@ -495,10 +483,28 @@ class FlowShell:
         return f"FlowShell(grade={self.grade:.3f}, dir={d}, {mode}, context={self.context!r})"
 
 
+def multi_look(
+    directions: Sequence[Direction],
+    grade: float = 0.5,
+    context: str = "shared",
+) -> List[FlowShell]:
+    """
+    Observe several directions without moving.
+    Returns a list of FlowShells all in looking mode.
+    This is how the matrix is examined from one place in many directions at once.
+    PROJECTED_NOT_FACT: full simultaneous 3D navigation runtime.
+    """
+    g = clamp01(grade)
+    return [
+        FlowShell(grade=g, direction=d, looking=True, context=context)
+        for d in directions
+    ]
+
+
 def smoke() -> bool:
     print("=== DECISION SHELLS SMOKE ===")
     print("Default growth path: prefer_open(shell)")
-    print("Multi-directional: FlowShell (8 cardinal + 9 upper + 9 lower)")
+    print("Multi-directional: FlowShell + multi_look (8 cardinal + 9 upper + 9 lower)")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")
@@ -539,6 +545,9 @@ def smoke() -> bool:
     rec("FlowShell looking", flow.looking is True)
     flow_open = flow.as_open()
     rec("FlowShell as_open", isinstance(flow_open, OpenShell))
+    looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6, context="audit")
+    rec("multi_look count", len(looks) == 3)
+    rec("multi_look all looking", all(f.looking for f in looks))
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

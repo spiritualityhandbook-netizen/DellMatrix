@@ -9,10 +9,10 @@ detail:  Post-Boolean decision shells + post-static variables + ultra-intuitive
          coding surface bound into Mandell. Boolean stays silicon substrate of the host.
          Δ_known is permanent fuel and is never closed.
          Evolutionary pressure: surfaces that defer forced Boolean collapse.
-         Classical reversible residue included.
          Multi-directional flow (8 cardinal + 9 upper + 9 lower):
          code is shared-context language that moves and is examined in all directions,
-         not left-to-right on a page. Looking without moving is also supported.
+         not left-to-right on a page. Looking without moving is supported.
+         multi_look observes several directions at once.
 goals:
   - Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)
   - Push decision surfaces that defer forced Boolean collapse
@@ -37,6 +37,7 @@ Live shells (Boolean host still underneath):
 - prefer_open() — default growth path
 - ReversibleShell — classical forward + inverse
 - FlowShell — multi-directional (8+9+9) + looking/moving + shared context
+- multi_look() — observe several directions without moving
 
 Plant in session (example):
 

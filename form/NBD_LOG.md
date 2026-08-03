@@ -1,14 +1,13 @@
 # NBD Log
 
-## 2026-08-02 — Lupe10 · FlowShell + multi-directional code movement
+## 2026-08-03 — NBD X=5 · multi_look + FlowShell deepen
 
 | Item | Result |
 |------|--------|
-| Mode | Lupe10 |
+| Mode | Bare NBD → Steady X=5 |
 | Lattice | Code Evolution |
-| Principle | Code is shared-context language; does not move left-to-right on a page |
-| Directions | 8 cardinal + 9 upper + 9 lower |
-| Operator | FlowShell (grade + direction + looking/moving + context) |
+| Operator | multi_look() — observe several directions without moving |
+| Integration | prefer_open works cleanly with FlowShell |
 | Boolean host | Still intact |
 | PROJECTED_NOT_FACT | Full 3D matrix navigation runtime |
 | Floor / Nursery | Untouched |
@@ -18,4 +17,4 @@
 python -m form.dell_matrix.decision_shells
 ```
 
-Prior: ReversibleShell · prefer_open · OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell
+Prior: FlowShell (Lupe10) · ReversibleShell · prefer_open · OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell
