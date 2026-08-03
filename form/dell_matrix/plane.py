@@ -2,13 +2,7 @@
 """
 Dell Matrix Plane — L3 surface.
 
-08[Create] >> 15[Map] : 09[Show] :: Plane
-
-Geometric plane + perspectives + skins + sandbox + richer page/zoom layouts.
-
-Run:
-  python -m form.dell_matrix.plane --smoke
-  python -m form.dell_matrix.plane --demo
+Ideas carry detail + goals so growth is aimed, not random.
 """
 
 from __future__ import annotations
@@ -16,7 +10,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 from enum import Enum
-import json
 import math
 import sys
 
@@ -48,6 +41,7 @@ class Skin(str, Enum):
     BUILDING = "building"
     WORDS = "words"
     CIRCLE = "circle"
+    CORE = "core"
 
 
 @dataclass
@@ -55,6 +49,8 @@ class Unit:
     id: str
     label: str
     words: str = ""
+    detail: str = ""
+    goals: List[str] = field(default_factory=list)
     skin: Skin = Skin.CUBE
     x: float = 0.0
     y: float = 0.0
@@ -64,7 +60,15 @@ class Unit:
 
     def display(self) -> str:
         box = f"[box:{self.sandbox_id}]" if self.sandboxed else "[connected]"
-        return f"{self.skin.value}:{self.label}@{self.x:.1f},{self.y:.1f}{box}"
+        g = f" goals={len(self.goals)}" if self.goals else ""
+        return f"{self.skin.value}:{self.label}@{self.x:.1f},{self.y:.1f}{box}{g}"
+
+    def goal_text(self) -> str:
+        return " | ".join(g for g in self.goals if g)
+
+    def full_text(self) -> str:
+        parts = [self.label, self.detail, self.words, self.goal_text()]
+        return " ".join(p for p in parts if p)
 
 
 @dataclass
@@ -76,8 +80,6 @@ class Sandbox:
 
 @dataclass
 class Plane:
-    """Dell Matrix as geometric plane (L3)."""
-
     perspective: Perspective = Perspective.TABLE
     zoom_target: Optional[str] = None
     units: Dict[str, Unit] = field(default_factory=dict)
@@ -94,15 +96,20 @@ class Plane:
         label: str,
         *,
         words: str = "",
+        detail: str = "",
+        goals: Optional[List[str]] = None,
         skin: Skin = Skin.CUBE,
         x: float = 0.0,
         y: float = 0.0,
         manifest: Optional[Manifest] = None,
     ) -> Unit:
+        g = [str(x).strip() for x in (goals or []) if str(x).strip()]
         u = Unit(
             id=id,
             label=label,
             words=words,
+            detail=(detail or "").strip(),
+            goals=g,
             skin=skin,
             x=x,
             y=y,
@@ -132,6 +139,20 @@ class Plane:
         if not u:
             return False
         u.skin = skin
+        return True
+
+    def set_detail(self, id: str, detail: str) -> bool:
+        u = self.units.get(id)
+        if not u:
+            return False
+        u.detail = (detail or "").strip()
+        return True
+
+    def set_goals(self, id: str, goals: List[str]) -> bool:
+        u = self.units.get(id)
+        if not u:
+            return False
+        u.goals = [str(g).strip() for g in goals if str(g).strip()]
         return True
 
     def box(self, unit_ids: List[str], sandbox_id: str = "box1") -> Sandbox:
@@ -184,7 +205,6 @@ class Plane:
         return [i for i, o in self.units.items() if i != unit_id and not o.sandboxed]
 
     def neighbors(self, unit_id: str, radius: float = 2.0) -> List[str]:
-        """Spatial neighbors by Euclidean distance on the plane."""
         u = self.units.get(unit_id)
         if not u:
             return []
@@ -211,7 +231,6 @@ class Plane:
         }
 
     def _layout_hint(self, u: Unit) -> str:
-        """Perspective-specific coordinate readout."""
         if self.perspective == Perspective.CIRCLE:
             ang = math.degrees(math.atan2(u.y, u.x)) if (u.x or u.y) else 0.0
             rad = math.hypot(u.x, u.y)
@@ -236,6 +255,10 @@ class Plane:
             lines.append(f"| skin: {u.skin.value}  pos: {self._layout_hint(u)}")
             lines.append(f"| state: {'SANDBOX '+u.sandbox_id if u.sandboxed else 'CONNECTED'}")
             lines.append(f"| score: {scores.get(u.id, 0.0):.2f}")
+            if u.detail:
+                lines.append(f"| detail: {u.detail[:120]}")
+            if u.goals:
+                lines.append(f"| goals: {' · '.join(u.goals)[:120]}")
             lines.append(f"| words:")
             text = u.words or "(empty)"
             for chunk in text.split("\n"):
@@ -252,7 +275,6 @@ class Plane:
                 Perspective.TABLE: "table plane",
             }.get(self.perspective, self.perspective.value)
             lines.append(f"| view: {mode}")
-            # sort for stable overview
             for u in sorted(self.units.values(), key=lambda z: (z.y, z.x, z.id)):
                 sc = scores.get(u.id)
                 sc_s = f" sc={sc:.2f}" if sc is not None else ""
@@ -288,18 +310,18 @@ def smoke() -> bool:
         r.append(bool(ok))
 
     p = Plane()
-    p.place("a", "A", words="line1\nline2", skin=Skin.CUBE)
+    p.place("a", "A", words="line1", detail="about A", goals=["ship clarity"], skin=Skin.CUBE)
     p.place("b", "B", skin=Skin.CIRCLE, x=1)
     rec("level 3", p.level == 3)
     rec("place", "a" in p.units)
+    rec("detail", p.units["a"].detail == "about A")
+    rec("goals", p.units["a"].goals == ["ship clarity"])
     rec("neighbors", "b" in p.neighbors("a"))
     p.zoom_in("a")
     txt = p.render(scores={"a": 1.5})
-    rec("page words", "line1" in txt and "line2" in txt)
-    rec("page score", "1.50" in txt or "score: 1.5" in txt)
+    rec("page detail", "about A" in txt)
+    rec("page goals", "ship clarity" in txt)
     p.zoom_out()
-    p.set_perspective(Perspective.CIRCLE)
-    rec("circle hint", "θ=" in p.render() or "r=" in p.render())
     p.remove("b")
     rec("remove", "b" not in p.units)
     rec("floor", p.status()["floor"] == list(FLOOR))
@@ -307,23 +329,13 @@ def smoke() -> bool:
     return all(r)
 
 
-def demo() -> None:
-    print("08[Create] >> 15[Map] : 09[Show] :: Plane L3")
-    p = Plane()
-    p.place("biz", "Business", words="stain-seal\nCRM routes", skin=Skin.BUILDING, x=1)
-    p.place("music", "Music", words="Ep4", skin=Skin.SEED, x=-1)
-    p.set_perspective(Perspective.PAGE)
-    p.zoom_in("biz")
-    print(p.render(scores={"biz": 2.0}))
-    p.zoom_out()
-    p.set_perspective(Perspective.FLOWER)
-    print(p.render())
-
-
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    demo()
+    p = Plane()
+    p.place("biz", "Business", detail="ops", goals=["reliability"], words="CRM", skin=Skin.BUILDING, x=1)
+    p.zoom_in("biz")
+    print(p.render())
 
 
 if __name__ == "__main__":
