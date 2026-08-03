@@ -9,6 +9,7 @@ detail:  Post-Boolean decision shells + post-static variables + ultra-intuitive
          coding surface bound into Mandell. Boolean stays silicon substrate of the host.
          Δ_known is permanent fuel and is never closed.
          Evolutionary pressure: surfaces that defer forced Boolean collapse.
+         prefer_open() makes deferred-cut the default growth path.
 goals:
   - Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)
   - Push decision surfaces that defer forced Boolean collapse
@@ -28,7 +29,8 @@ Live shells (Boolean host still underneath):
 - ConstructiveShell
 - ResourceShell
 - GrowthResidue
-- OpenShell — refuses silent Boolean collapse; .as_bool() is explicit last-resort only
+- OpenShell — refuses silent Boolean collapse
+- prefer_open() — converts any collapsing shell into deferred-cut form
 
 Plant in session (example):
 

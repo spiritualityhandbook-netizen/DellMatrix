@@ -8,10 +8,11 @@ These shells are higher decision surfaces.
 Δ_known is permanent fuel — never closed.
 Δ_unknown stays labeled PROJECTED_NOT_FACT.
 
-Evolutionary pressure (NBD 2026-08-02):
-  Create surfaces that defer the Boolean cut.
+Evolutionary pressure:
+  Surfaces that defer the Boolean cut.
   Primary identity stays graded / ternary / constructive.
-  .bool is explicit last-resort only, never automatic identity.
+  .as_bool() is explicit last-resort only.
+  prefer_open() converts collapsing shells into OpenShell form.
 """
 
 from __future__ import annotations
@@ -272,43 +273,18 @@ class GrowthResidue:
         return f"GrowthResidue(sources={len(self.sources)}, grade={self.grade:.3f}, bool={self.bool})"
 
 
-# ------------------------------------------------------------------
-# OpenShell — NBD evolutionary pressure
-# Primary identity is the open (graded / ternary / constructive) state.
-# .bool is an explicit last-resort method only — never automatic identity.
-# Host Python still has Boolean underneath; this shell refuses to collapse
-# until the caller deliberately asks for the cut.
-# PROJECTED_NOT_FACT: a true non-Boolean host runtime.
-# ------------------------------------------------------------------
-
 class OpenShell:
     """
     Decision surface that defers the Boolean cut.
 
-    Primary identity:
-      - grade  (continuous)
-      - ternary
-      - optional witness
-
+    Primary identity: grade + ternary + optional witness.
     .as_bool() is the only way to force the silicon cut.
-    There is no .bool property. Calling bool(open_shell) will fail
-    or return a non-collapsing sentinel depending on context.
+    bool(open_shell) raises TypeError.
 
-    This records evolutionary pressure: the matrix now knows that
-    forced Boolean collapse is the remaining limit.
+    PROJECTED_NOT_FACT: a true non-Boolean host runtime.
     """
 
     __slots__ = ("grade", "witness", "label")
-
-    def __init(
-        self,
-        grade: float = 0.5,
-        witness: Optional[Callable[[], bool]] = None,
-        label: str = "open",
-    ):
-        self.grade = clamp01(grade)
-        self.witness = witness
-        self.label = str(label)
 
     def __init__(self, grade: float = 0.5, witness: Optional[Callable[[], bool]] = None, label: str = "open"):
         self.grade = clamp01(grade)
@@ -339,7 +315,6 @@ class OpenShell:
         }
 
     def __bool__(self) -> bool:
-        """Refuse silent collapse. Force the caller to use as_bool()."""
         raise TypeError(
             "OpenShell refuses silent Boolean collapse. "
             "Call .as_bool() explicitly if the silicon cut is required."
@@ -349,8 +324,32 @@ class OpenShell:
         return f"OpenShell(label={self.label!r}, grade={self.grade:.3f}, ternary={self.ternary.value}, collapsed=False)"
 
 
+def prefer_open(shell: Any, label: str = "preferred") -> OpenShell:
+    """
+    Convert any collapsing shell (or raw value) into OpenShell form.
+    Primary identity becomes graded / ternary; Boolean cut is deferred.
+    This is the growth path that keeps feeding evolutionary information
+    to the matrix without removing the host Boolean substrate.
+    """
+    if isinstance(shell, OpenShell):
+        return shell
+    grade = 0.5
+    witness = None
+    if hasattr(shell, "grade"):
+        grade = clamp01(getattr(shell, "grade"))
+    elif isinstance(shell, (int, float)):
+        grade = clamp01(float(shell))
+    elif isinstance(shell, bool):
+        grade = 1.0 if shell else 0.0
+    elif isinstance(shell, Ternary):
+        grade = to_fuzzy(shell)
+    if hasattr(shell, "witness"):
+        witness = getattr(shell, "witness")
+    return OpenShell(grade=grade, witness=witness, label=label)
+
+
 def smoke() -> bool:
-    print("=== DECISION SHELLS SMOKE (NBD OpenShell) ===")
+    print("=== DECISION SHELLS SMOKE (NBD prefer_open) ===")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")
@@ -373,7 +372,6 @@ def smoke() -> bool:
     rec("GrowthResidue grade", 0.0 <= gr.grade <= 1.0)
     op = OpenShell(grade=0.73, label="evo-pressure")
     rec("OpenShell grade", abs(op.grade - 0.73) < 1e-9)
-    rec("OpenShell ternary", op.ternary is Ternary.POS)
     rec("OpenShell as_bool", op.as_bool() is True)
     refused = False
     try:
@@ -381,6 +379,15 @@ def smoke() -> bool:
     except TypeError:
         refused = True
     rec("OpenShell refuses silent bool", refused is True)
+    pref = prefer_open(vs, label="from-variable")
+    rec("prefer_open type", isinstance(pref, OpenShell))
+    rec("prefer_open grade", abs(pref.grade - 0.73) < 1e-9)
+    refused2 = False
+    try:
+        bool(pref)
+    except TypeError:
+        refused2 = True
+    rec("prefer_open refuses silent bool", refused2 is True)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

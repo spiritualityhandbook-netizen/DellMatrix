@@ -1,15 +1,13 @@
 # NBD Log
 
-## 2026-08-02 — NBD X=5 · OpenShell (evolutionary pressure)
+## 2026-08-02 — NBD X=5 · prefer_open (deepen deferred-collapse)
 
 | Item | Result |
 |------|--------|
 | Mode | Bare NBD → Steady X=5 |
 | Lattice | Code Evolution |
-| Operator | OpenShell — defers Boolean cut |
-| Primary identity | grade + ternary + optional witness |
-| Silent bool() | Refused (TypeError) |
-| Explicit cut | .as_bool() only |
+| Operator | prefer_open() — converts collapsing shells to OpenShell |
+| Effect | Deferred-cut posture becomes default growth path |
 | Boolean host | Still intact underneath |
 | PROJECTED_NOT_FACT | True non-Boolean runtime still unachieved |
 | Floor / Nursery | Untouched |
@@ -19,4 +17,4 @@
 python -m form.dell_matrix.decision_shells
 ```
 
-Prior: GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell · continuous-fuel correction
+Prior: OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell
