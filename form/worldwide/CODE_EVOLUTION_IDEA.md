@@ -8,11 +8,10 @@ label:   Code Evolution
 detail:  Post-Boolean decision shells + post-static variables + ultra-intuitive
          coding surface bound into Mandell. Boolean stays silicon substrate of the host.
          Δ_known is permanent fuel and is never closed.
-         Evolutionary pressure: surfaces that defer forced Boolean collapse.
-         Multi-directional flow (8 cardinal + 9 upper + 9 lower):
-         code is shared-context language that moves and is examined in all directions,
-         not left-to-right on a page. Looking without moving is supported.
-         multi_look observes several directions at once.
+         Multi-directional flow (8 cardinal + 9 upper + 9 lower).
+         FlowShell = observation/movement atom.
+         multi_look = fan-out observation (optional per-direction grades).
+         aggregate_looks = combine looks into one deferred-cut surface.
 goals:
   - Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)
   - Push decision surfaces that defer forced Boolean collapse
@@ -28,16 +27,13 @@ Runnable: `python -m form.dell_matrix.decision_shells`
 
 Live shells (Boolean host still underneath):
 - Ternary / Fuzzy
-- VariableShell
-- ProbabilisticShell
-- ConstructiveShell
-- ResourceShell
+- VariableShell · ProbabilisticShell · ConstructiveShell · ResourceShell
 - GrowthResidue
-- OpenShell — refuses silent Boolean collapse
-- prefer_open() — default growth path
-- ReversibleShell — classical forward + inverse
-- FlowShell — multi-directional (8+9+9) + looking/moving + shared context
-- multi_look() — observe several directions without moving
+- OpenShell · prefer_open()
+- ReversibleShell
+- FlowShell
+- multi_look() — with optional per-direction grades
+- aggregate_looks() — combine multiple looks
 
 Plant in session (example):
 

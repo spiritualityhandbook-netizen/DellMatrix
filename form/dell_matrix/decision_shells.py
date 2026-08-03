@@ -14,16 +14,17 @@ DEFAULT GROWTH PATH:
 
 MULTI-DIRECTIONAL FLOW:
   Code in nature does not move left-to-right on a page.
-  Code is shared-context language that can be executed mentally or digitally.
-  Mandell / DellMatrix flow in 8 cardinal + 9 upper + 9 lower directions.
-  FlowShell carries grade + direction without forcing linear reading order.
-  multi_look() observes several directions without moving.
+  Code is shared-context language executable mentally or digitally.
+  8 cardinal + 9 upper + 9 lower directions.
+  FlowShell = observation/movement atom.
+  multi_look = fan-out observation (look without moving).
+  aggregate_looks = combine multiple looks into one residue.
 """
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import Iterable, List, Optional, Union, Any, Callable, Tuple, Sequence
+from typing import Iterable, List, Optional, Union, Any, Callable, Sequence, Dict
 import math
 import random
 
@@ -35,7 +36,6 @@ class Ternary(str, Enum):
 
 
 class Cardinal(str, Enum):
-    """8 cardinal directions (2D perception)."""
     N = "N"
     NE = "NE"
     E = "E"
@@ -47,7 +47,6 @@ class Cardinal(str, Enum):
 
 
 class Upper(str, Enum):
-    """9 upper directions (includes pure Up)."""
     U = "U"
     UN = "UN"
     UNE = "UNE"
@@ -60,7 +59,6 @@ class Upper(str, Enum):
 
 
 class Lower(str, Enum):
-    """9 lower directions (includes pure Down)."""
     D = "D"
     DN = "DN"
     DNE = "DNE"
@@ -435,13 +433,15 @@ class FlowShell:
     """
     Multi-directional decision / observation surface.
 
-    - grade: continuous strength of the signal
-    - direction: one of 8 cardinal + 9 upper + 9 lower
-    - looking: True = observe without moving; False = move through the matrix
-    - context: shared context label (the “language between”)
+    Architecture pattern:
+      - grade: continuous strength
+      - direction: 8 cardinal | 9 upper | 9 lower
+      - looking: True = observe without moving; False = move
+      - context: shared-context language label
 
-    Primary identity stays open (no forced left-to-right or silent Boolean cut).
-    Use prefer_open(flow) or flow.as_open() to lift into deferred-collapse form.
+    No forced left-to-right order.
+    Lift via .as_open() or prefer_open(flow).
+    PROJECTED_NOT_FACT: full 3D matrix navigation runtime.
     """
 
     __slots__ = ("grade", "direction", "looking", "context")
@@ -487,24 +487,51 @@ def multi_look(
     directions: Sequence[Direction],
     grade: float = 0.5,
     context: str = "shared",
+    grades: Optional[Sequence[float]] = None,
 ) -> List[FlowShell]:
     """
-    Observe several directions without moving.
-    Returns a list of FlowShells all in looking mode.
-    This is how the matrix is examined from one place in many directions at once.
+    Observe several directions without moving (fan-out observation).
+
+    - directions: sequence of Cardinal / Upper / Lower
+    - grade: default strength applied to every direction
+    - grades: optional per-direction strengths (must match length of directions)
+    - context: shared-context label
+
+    Returns list of FlowShells all with looking=True.
     PROJECTED_NOT_FACT: full simultaneous 3D navigation runtime.
     """
-    g = clamp01(grade)
+    dirs = list(directions)
+    if grades is not None:
+        if len(grades) != len(dirs):
+            raise ValueError("grades length must match directions length")
+        g_list = [clamp01(g) for g in grades]
+    else:
+        g = clamp01(grade)
+        g_list = [g] * len(dirs)
     return [
-        FlowShell(grade=g, direction=d, looking=True, context=context)
-        for d in directions
+        FlowShell(grade=g_list[i], direction=dirs[i], looking=True, context=context)
+        for i in range(len(dirs))
     ]
+
+
+def aggregate_looks(
+    looks: Sequence[FlowShell],
+    mode: str = "avg",
+    label: str = "aggregate-look",
+) -> OpenShell:
+    """
+    Combine multiple multi_look / FlowShell results into one deferred-cut surface.
+    Uses GrowthResidue under the hood, then prefer_open.
+    Keeps graded information; Boolean cut stays deferred.
+    """
+    residue = GrowthResidue(*looks, mode=mode)
+    return prefer_open(residue, label=label)
 
 
 def smoke() -> bool:
     print("=== DECISION SHELLS SMOKE ===")
     print("Default growth path: prefer_open(shell)")
-    print("Multi-directional: FlowShell + multi_look (8 cardinal + 9 upper + 9 lower)")
+    print("Multi-directional: FlowShell + multi_look + aggregate_looks")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")
@@ -548,6 +575,11 @@ def smoke() -> bool:
     looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6, context="audit")
     rec("multi_look count", len(looks) == 3)
     rec("multi_look all looking", all(f.looking for f in looks))
+    looks2 = multi_look([Cardinal.S, Lower.D], grades=[0.4, 0.9], context="weighted")
+    rec("multi_look per-grade", abs(looks2[0].grade - 0.4) < 1e-9 and abs(looks2[1].grade - 0.9) < 1e-9)
+    agg = aggregate_looks(looks, mode="avg", label="agg-test")
+    rec("aggregate_looks type", isinstance(agg, OpenShell))
+    rec("aggregate_looks grade", 0.0 <= agg.grade <= 1.0)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

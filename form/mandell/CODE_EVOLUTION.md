@@ -20,24 +20,28 @@ Use everything known to reach the unknown: more universal decision and binding m
 
 Code in nature does not move left-to-right on a page.  
 Code is shared-context language between entities.  
-Once comprehended it can be executed mentally or digitally (DNA, light, particles, sound, pitch, smell, color…).  
+Once comprehended it can be executed mentally or digitally.  
 
-Mandell / DellMatrix therefore flow in all directions:  
-- 8 cardinal (2D perception)  
-- 9 upper (including pure Up)  
-- 9 lower (including pure Down)  
+Mandell / DellMatrix flow in:  
+- 8 cardinal (2D)  
+- 9 upper (incl. Up)  
+- 9 lower (incl. Down)  
 
-You can move through the matrix or look in a direction without moving and still receive information with many connections.  
-`multi_look()` observes several directions at once without moving.
+You can move or look without moving.  
+`multi_look` examines many directions at once.  
+`aggregate_looks` combines those observations into one deferred-cut surface.
 
 ---
 
-## Default growth path (locked)
+## Architecture pattern (locked)
 
-`prefer_open(shell)` keeps graded / ternary information and only collapses to True/False when `.as_bool()` is called explicitly.
-
-`FlowShell` adds direction + looking/moving mode + shared context.  
-`multi_look(directions)` returns multiple looking FlowShells.
+| Piece | Role |
+|-------|------|
+| FlowShell | Observation / movement atom (grade + direction + looking + context) |
+| multi_look | Fan-out observation (several directions, optional per-direction grades) |
+| aggregate_looks | Combine looks → GrowthResidue → prefer_open |
+| prefer_open | Default growth path (deferred Boolean cut) |
+| OpenShell | Refuses silent Boolean collapse |
 
 Host Python still has Boolean underneath.  
 Full 3D matrix navigation runtime remains **PROJECTED_NOT_FACT**.
@@ -53,8 +57,9 @@ Full 3D matrix navigation runtime remains **PROJECTED_NOT_FACT**.
 - GrowthResidue  
 - OpenShell · prefer_open()  
 - ReversibleShell  
-- FlowShell — grade + direction + looking/moving + context  
-- **multi_look()** — observe several directions without moving
+- FlowShell  
+- multi_look() — with optional per-direction grades  
+- **aggregate_looks()** — combine multiple looks into one OpenShell
 
 Does **not** replace Python `bool`.  
 Does **not** claim full 3D navigation is already running.
@@ -64,7 +69,7 @@ Does **not** claim full 3D navigation is already running.
 ## Idea card (Worldwide)
 
 **Label:** Code Evolution  
-**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel. Surfaces that defer forced Boolean collapse. Multi-directional flow (8+9+9) so code moves and is examined like natural shared-context language. multi_look supports examining many directions at once without moving.  
+**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel. Multi-directional flow (8+9+9). multi_look + aggregate_looks support examining and combining many directions without forced left-to-right order.  
 **Goals:**
 
 1. Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)  
