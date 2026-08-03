@@ -49,6 +49,8 @@ looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6, context="shared
 surface = aggregate_looks(looks)   # deferred-cut OpenShell
 ```
 
+This multi-directional layer is permanent continuous fuel. It is not closed.
+
 Host Python still has Boolean underneath.  
 Full 3D matrix navigation runtime remains **PROJECTED_NOT_FACT**.
 

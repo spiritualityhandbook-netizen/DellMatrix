@@ -12,7 +12,7 @@ detail:  Post-Boolean decision shells + post-static variables + ultra-intuitive
          FlowShell = observation/movement atom.
          multi_look = fan-out observation (optional per-direction grades).
          aggregate_looks = combine looks into one deferred-cut surface.
-         This layer is locked as stable continuous fuel.
+         This layer is permanent continuous fuel.
 goals:
   - Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)
   - Push decision surfaces that defer forced Boolean collapse
