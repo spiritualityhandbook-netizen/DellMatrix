@@ -12,13 +12,15 @@
 
 Use everything known to reach the unknown: more universal decision and binding models than Boolean-only / static-variable-only coding — and an ultra-intuitive surface that can bind into Mandell/Mandelistics.
 
+**Δ_known is permanent fuel. It is never closed.**
+
 ---
 
 ## Page 1 — Boolean
 
 Video (Programming Thinking / Visual Kernel): Boolean as True/False for if/elif/else, comparisons, and/or/not. No alternative examined there.
 
-**Δ_known (active fuel)**
+**Δ_known (active permanent fuel)**
 
 1. Ternary / multi-valued (balanced ternary −1/0/+1 · Setun · Kleene · Łukasiewicz)  
 2. Fuzzy continuous [0,1]  
@@ -36,7 +38,7 @@ Video (Programming Thinking / Visual Kernel): Boolean as True/False for if/elif/
 
 Exhaust every Δ_known shell to force measurable residue into Δ_unknown.  
 Boolean retained as silicon substrate. Higher shells elevated to first-class decision atoms where useful.  
-Immediate runnable step: constructive + multi-valued minimal operators that execute **today** while leaving residue labeled unknown.
+Δ_known remains open and reusable as fuel for every future growth step.
 
 ---
 
@@ -65,20 +67,21 @@ Boolean still runs the host Python. Decision **surfaces** already soft-gate grow
 
 ---
 
-## Implemented this pass (runnable)
+## Implemented (runnable — continuous fuel)
 
 `form/dell_matrix/decision_shells.py`
 
 - Ternary atom: −1 / 0 / +1  
 - Fuzzy clamp [0,1]  
 - Soft gate from score → shell  
-- Combine (min/max/avg) for multi-source decisions  
-- VariableShell (Lupe5) — beyond pure static container  
-- ProbabilisticShell (NBD) — light distribution residue  
-- ConstructiveShell (NBD) — witness residue  
-- **ResourceShell (NBD next-growth 2026-08-02)** — linear / ownership residue; units consumed on use; still collapses to Boolean substrate
+- VariableShell — beyond pure static container  
+- ProbabilisticShell — light distribution residue  
+- ConstructiveShell — witness residue  
+- ResourceShell — linear / ownership residue  
+- **GrowthResidue (Lupe5 correction)** — combines any existing shells into new soft operators; keeps Δ_known permanently open as fuel
 
-Does **not** replace Python `bool`. Extends Mandell decision vocabulary.
+Does **not** replace Python `bool`. Extends Mandell decision vocabulary.  
+Δ_known is never exhausted; it is continuously squared into residue.
 
 ---
 
@@ -88,7 +91,7 @@ Does **not** replace Python `bool`. Extends Mandell decision vocabulary.
 **Detail:** Research and bind post-Boolean decision shells and post-static variable models; design ultra-intuitive coding surface; absorb into Mandell.  
 **Goals:**
 
-1. Exhaust Δ_known decision shells into runnable Mandell operators  
+1. Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)  
 2. Map variable models → lattice growth without static-container-only thinking  
 3. Design minimal intuitive surface that runs on current machines  
 4. Keep PROJECTED_NOT_FACT labels on unknown claims  
@@ -103,6 +106,7 @@ Does **not** replace Python `bool`. Extends Mandell decision vocabulary.
 - Quantum runtime in Origin offline path  
 - Full Martin-Löf type theory or proof assistant  
 - Full linear types / ownership borrow checker  
+- Δ_known closed or finished  
 - History rewrite  
 
 Sealed for matrix insertion. True · Dense · Placed · Runnable · Labeled · Finishable

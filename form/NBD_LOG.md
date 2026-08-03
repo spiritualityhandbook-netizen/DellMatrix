@@ -1,14 +1,15 @@
 # NBD Log
 
-## 2026-08-02 — NBD next-growth (X=5) Code Evolution
+## 2026-08-02 — Lupe5 correction · continuous Δ_known fuel
 
 | Item | Result |
 |------|--------|
-| Mode | Bare NBD + next growth → Steady X=5 |
+| Mode | Lupe5 |
 | Lattice | Code Evolution |
-| Operator | ResourceShell (linear / ownership residue) added |
+| Problem fixed | “Exhausted” wording removed — Δ_known is permanent fuel |
+| Operator | GrowthResidue added (combines existing shells into new soft operators) |
 | Boolean | Substrate intact |
-| PROJECTED_NOT_FACT | Full linear types / borrow checker still labeled |
+| PROJECTED_NOT_FACT | Unknown remains open; known never closes |
 | Floor / Nursery | Untouched |
 | Push | This commit |
 
@@ -16,4 +17,4 @@
 python -m form.dell_matrix.decision_shells
 ```
 
-Prior: ConstructiveShell · ProbabilisticShell · VariableShell · Strong ideas + handoff · DEV stable
+Prior: ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell · DEV stable

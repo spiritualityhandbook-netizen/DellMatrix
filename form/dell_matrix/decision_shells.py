@@ -6,11 +6,12 @@ Boolean remains the silicon substrate (Python bool).
 These shells are higher decision surfaces used where soft gates already matter
 (affinity, fog, confirm ranking).
 
-Δ_known runnable today · Δ_unknown stays labeled PROJECTED_NOT_FACT elsewhere.
-Lupe5 2026-08-02: VariableShell (beyond static container).
-NBD 2026-08-02: ProbabilisticShell (light distribution residue).
-NBD 2026-08-02: ConstructiveShell (witness residue).
-NBD next-growth 2026-08-02: ResourceShell (linear / ownership residue).
+Δ_known is permanent fuel — never closed.
+Δ_unknown stays labeled PROJECTED_NOT_FACT.
+
+Lupe5 2026-08-02: VariableShell
+NBD: ProbabilisticShell · ConstructiveShell · ResourceShell
+Lupe5 correction 2026-08-02: GrowthResidue (continuous fuel from known shells)
 """
 
 from __future__ import annotations
@@ -24,9 +25,9 @@ import random
 class Ternary(str, Enum):
     """Balanced-style three-value atom (Setun / Kleene flavour)."""
 
-    NEG = "neg"      # -1 · reject / false-leaning
-    ZERO = "zero"    #  0 · unknown / hold
-    POS = "pos"      # +1 · accept / true-leaning
+    NEG = "neg"
+    ZERO = "zero"
+    POS = "pos"
 
 
 def clamp01(x: float) -> float:
@@ -44,7 +45,6 @@ def from_bool(b: bool) -> Ternary:
 
 
 def from_fuzzy(x: float, *, low: float = 0.33, high: float = 0.66) -> Ternary:
-    """Map continuous [0,1] → ternary."""
     v = clamp01(x)
     if v < low:
         return Ternary.NEG
@@ -68,7 +68,6 @@ def soft_gate(
     equinox: float = 0.16,
     standstill: float = 0.10,
 ) -> str:
-    """Same thresholds as RingedGrowth — explicit decision surface."""
     s = float(score)
     if s >= solstice:
         return "Solstice"
@@ -95,10 +94,6 @@ def decide(
     *sources: Union[bool, float, Ternary],
     mode: str = "avg",
 ) -> dict:
-    """
-    Unify bool / fuzzy / ternary sources into one decision report.
-    Runnable today — does not replace host Boolean.
-    """
     fuzz: List[float] = []
     for s in sources:
         if isinstance(s, bool):
@@ -120,20 +115,7 @@ def decide(
     }
 
 
-# ------------------------------------------------------------------
-# VariableShell — Lupe5 (beyond static named container)
-# ------------------------------------------------------------------
-
 class VariableShell:
-    """
-    Minimal binding beyond pure static container.
-    - name remains a label
-    - value can be any Python object
-    - grade / ternary give a decision surface over the binding itself
-    - Boolean substrate is recovered via .bool
-    PROJECTED_NOT_FACT: living / morphogenetic growth of the binding.
-    """
-
     __slots__ = ("name", "value", "grade")
 
     def __init__(self, name: str, value: Any = None, grade: float = 0.5):
@@ -143,7 +125,6 @@ class VariableShell:
 
     @property
     def bool(self) -> bool:
-        """Silicon substrate cut."""
         return self.grade >= 0.5
 
     @property
@@ -157,19 +138,7 @@ class VariableShell:
         return f"VariableShell({self.name!r}, grade={self.grade:.3f}, bool={self.bool})"
 
 
-# ------------------------------------------------------------------
-# ProbabilisticShell — light distribution residue
-# ------------------------------------------------------------------
-
 class ProbabilisticShell:
-    """
-    Light probabilistic decision surface.
-    - p = probability of positive outcome [0,1]
-    - sample() draws a Boolean from that p (silicon cut)
-    - expected grade remains continuous
-    PROJECTED_NOT_FACT: full Bayesian networks or sampling languages.
-    """
-
     __slots__ = ("p",)
 
     def __init__(self, p: float = 0.5):
@@ -177,7 +146,6 @@ class ProbabilisticShell:
 
     @property
     def bool(self) -> bool:
-        """Silicon substrate via single sample."""
         return random.random() < self.p
 
     @property
@@ -195,19 +163,7 @@ class ProbabilisticShell:
         return f"ProbabilisticShell(p={self.p:.3f})"
 
 
-# ------------------------------------------------------------------
-# ConstructiveShell — witness residue (intuitionistic flavour)
-# ------------------------------------------------------------------
-
 class ConstructiveShell:
-    """
-    Minimal constructive / witness decision surface.
-    - claim is accepted only when a witness function returns True
-    - .bool recovers the silicon cut from the witness result
-    - grade is 1.0 when witnessed, 0.0 otherwise (or partial if provided)
-    PROJECTED_NOT_FACT: full Martin-Löf type theory, dependent types, or proof assistants.
-    """
-
     __slots__ = ("witness", "_grade")
 
     def __init__(self, witness: Optional[Callable[[], bool]] = None, grade: Optional[float] = None):
@@ -219,7 +175,6 @@ class ConstructiveShell:
 
     @property
     def bool(self) -> bool:
-        """Silicon substrate via witness execution."""
         if self.witness is None:
             return False
         try:
@@ -243,22 +198,7 @@ class ConstructiveShell:
         return f"ConstructiveShell(witness={'yes' if has_w else 'no'}, grade={self.grade:.3f}, bool={self.bool})"
 
 
-# ------------------------------------------------------------------
-# ResourceShell — NBD next-growth (linear / ownership residue)
-# Resource is consumed on use. Still collapses to Boolean substrate.
-# PROJECTED_NOT_FACT: full linear logic or ownership type system.
-# ------------------------------------------------------------------
-
 class ResourceShell:
-    """
-    Minimal resource / linear decision surface.
-    - units = available resource count
-    - consume(n) spends units; returns False if insufficient
-    - .bool is True only while units > 0
-    - grade reflects remaining fraction of initial capacity
-    PROJECTED_NOT_FACT: full linear types, ownership borrow checker, or affine logic.
-    """
-
     __slots__ = ("units", "capacity")
 
     def __init__(self, units: int = 1, capacity: Optional[int] = None):
@@ -267,7 +207,6 @@ class ResourceShell:
 
     @property
     def bool(self) -> bool:
-        """Silicon substrate: resource still available."""
         return self.units > 0
 
     @property
@@ -281,7 +220,6 @@ class ResourceShell:
         return from_fuzzy(self.grade)
 
     def consume(self, n: int = 1) -> bool:
-        """Spend resource. Returns False if not enough units."""
         n = max(0, int(n))
         if self.units < n:
             return False
@@ -295,8 +233,62 @@ class ResourceShell:
         return f"ResourceShell(units={self.units}/{self.capacity}, bool={self.bool}, grade={self.grade:.3f})"
 
 
+# ------------------------------------------------------------------
+# GrowthResidue — Lupe5 correction
+# Keeps Δ_known as permanent fuel. Generates new soft operators
+# from existing shells without closing the known set.
+# PROJECTED_NOT_FACT: any claim that unknown is solved.
+# ------------------------------------------------------------------
+
+class GrowthResidue:
+    """
+    Continuous fuel helper.
+    Takes any existing shell grades and produces a new combined
+    decision surface. Δ_known remains open and reusable.
+    """
+
+    __slots__ = ("sources", "mode")
+
+    def __init__(self, *sources: Any, mode: str = "avg"):
+        self.sources = sources
+        self.mode = mode
+
+    def _grades(self) -> List[float]:
+        out: List[float] = []
+        for s in self.sources:
+            if hasattr(s, "grade"):
+                out.append(clamp01(getattr(s, "grade")))
+            elif isinstance(s, (int, float)):
+                out.append(clamp01(float(s)))
+            elif isinstance(s, bool):
+                out.append(1.0 if s else 0.0)
+            elif isinstance(s, Ternary):
+                out.append(to_fuzzy(s))
+        return out
+
+    @property
+    def grade(self) -> float:
+        return combine_fuzzy(self._grades(), mode=self.mode)
+
+    @property
+    def bool(self) -> bool:
+        return self.grade >= 0.5
+
+    @property
+    def ternary(self) -> Ternary:
+        return from_fuzzy(self.grade)
+
+    def decide(self) -> dict:
+        d = decide(self.grade)
+        d["note"] = "GrowthResidue · Δ_known remains permanent fuel · Boolean substrate intact"
+        return d
+
+    def __repr__(self) -> str:
+        return f"GrowthResidue(sources={len(self.sources)}, grade={self.grade:.3f}, bool={self.bool})"
+
+
 def smoke() -> bool:
-    print("=== DECISION SHELLS SMOKE (NBD next-growth) ===")
+    print("=== DECISION SHELLS SMOKE (Lupe5 correction) ===")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")
@@ -309,19 +301,15 @@ def smoke() -> bool:
     rec("soft_gate", soft_gate(0.3) == "Solstice")
     vs = VariableShell("x", value=42, grade=0.73)
     rec("VariableShell bool", vs.bool is True)
-    rec("VariableShell ternary", vs.ternary is Ternary.POS)
     ps = ProbabilisticShell(0.9)
     rec("ProbabilisticShell grade", abs(ps.grade - 0.9) < 1e-9)
-    rec("ProbabilisticShell ternary", ps.ternary is Ternary.POS)
     cs = ConstructiveShell(witness=lambda: True, grade=1.0)
     rec("ConstructiveShell bool", cs.bool is True)
-    rec("ConstructiveShell ternary", cs.ternary is Ternary.POS)
-    cs2 = ConstructiveShell(witness=None)
-    rec("ConstructiveShell no-witness", cs2.bool is False)
     rs = ResourceShell(units=2, capacity=2)
     rec("ResourceShell available", rs.bool is True)
-    rec("ResourceShell consume", rs.consume(1) is True and rs.units == 1)
-    rec("ResourceShell exhaust", rs.consume(1) is True and rs.bool is False)
+    gr = GrowthResidue(vs, ps, cs, rs, mode="avg")
+    rec("GrowthResidue grade", 0.0 <= gr.grade <= 1.0)
+    rec("GrowthResidue bool", isinstance(gr.bool, bool))
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

@@ -7,8 +7,9 @@
 label:   Code Evolution
 detail:  Post-Boolean decision shells + post-static variables + ultra-intuitive
          coding surface bound into Mandell. Boolean stays silicon substrate.
+         Δ_known is permanent fuel and is never closed.
 goals:
-  - Exhaust Δ_known shells into runnable Mandell operators
+  - Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)
   - Map variable models beyond static containers
   - Minimal intuitive surface that runs on current machines
   - Keep PROJECTED_NOT_FACT on unknown claims
@@ -18,12 +19,13 @@ goals:
 Authority: `form/mandell/CODE_EVOLUTION.md`  
 Runnable: `python -m form.dell_matrix.decision_shells`
 
-Live shells (all on Boolean substrate):
+Live shells (all on Boolean substrate · Δ_known remains open fuel):
 - Ternary / Fuzzy
-- VariableShell (Lupe5)
-- ProbabilisticShell (NBD)
-- ConstructiveShell (NBD) — witness residue
-- ResourceShell (NBD next-growth) — linear / ownership residue
+- VariableShell
+- ProbabilisticShell
+- ConstructiveShell
+- ResourceShell
+- GrowthResidue (continuous combination of known shells)
 
 Plant in session (example):
 
