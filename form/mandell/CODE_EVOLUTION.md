@@ -73,6 +73,7 @@ Boolean still runs the host Python. Decision **surfaces** already soft-gate grow
 - Fuzzy clamp [0,1]  
 - Soft gate from score → shell  
 - Combine (min/max/avg) for multi-source decisions  
+- **Lupe5 2026-08-02:** VariableShell — minimal binding beyond pure static container (still on Boolean substrate)
 
 Does **not** replace Python `bool`. Extends Mandell decision vocabulary.
 

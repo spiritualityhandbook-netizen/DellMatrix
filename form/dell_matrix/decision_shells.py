@@ -7,12 +7,13 @@ These shells are higher decision surfaces used where soft gates already matter
 (affinity, fog, confirm ranking).
 
 Δ_known runnable today · Δ_unknown stays labeled PROJECTED_NOT_FACT elsewhere.
+Lupe5 2026-08-02: added minimal VariableShell (beyond static container).
 """
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, List, Optional, Union, Any
 import math
 
 
@@ -115,8 +116,46 @@ def decide(
     }
 
 
+# ------------------------------------------------------------------
+# VariableShell — Lupe5 addition (beyond static named container)
+# Still rests on Boolean substrate. No claim of full language.
+# ------------------------------------------------------------------
+
+class VariableShell:
+    """
+    Minimal binding beyond pure static container.
+    - name remains a label
+    - value can be any Python object
+    - grade / ternary give a decision surface over the binding itself
+    - Boolean substrate is recovered via .bool
+    PROJECTED_NOT_FACT: living / morphogenetic growth of the binding.
+    """
+
+    __slots__ = ("name", "value", "grade")
+
+    def __init__(self, name: str, value: Any = None, grade: float = 0.5):
+        self.name = str(name)
+        self.value = value
+        self.grade = clamp01(grade)
+
+    @property
+    def bool(self) -> bool:
+        """Silicon substrate cut."""
+        return self.grade >= 0.5
+
+    @property
+    def ternary(self) -> Ternary:
+        return from_fuzzy(self.grade)
+
+    def decide(self) -> dict:
+        return decide(self.grade)
+
+    def __repr__(self) -> str:
+        return f"VariableShell({self.name!r}, grade={self.grade:.3f}, bool={self.bool})"
+
+
 def smoke() -> bool:
-    print("=== DECISION SHELLS SMOKE ===")
+    print("=== DECISION SHELLS SMOKE (Lupe5) ===")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")
@@ -127,6 +166,9 @@ def smoke() -> bool:
     d = decide(True, 0.8, Ternary.ZERO, mode="avg")
     rec("decide score", 0.0 <= d["score"] <= 1.0)
     rec("soft_gate", soft_gate(0.3) == "Solstice")
+    vs = VariableShell("x", value=42, grade=0.73)
+    rec("VariableShell bool", vs.bool is True)
+    rec("VariableShell ternary", vs.ternary is Ternary.POS)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

@@ -1,19 +1,19 @@
 # NBD Log
 
-## 2026-08-02 — Strong ideas + handoff
+## 2026-08-02 — Lupe5 Code Evolution
 
 | Item | Result |
 |------|--------|
-| Idea law | `form/IDEA_LAW.md` |
-| Strength score | `idea_create.strength_score` |
-| Seed strong ideas | `seed_strong_ideas.py` → Worldwide |
-| Code Evolution | Sealed for side-chat development |
-| DEV | Stable — return later |
+| Mode | Lupe5 (Steady X=5) |
+| Lattice | Code Evolution |
+| Operator | VariableShell added to decision_shells.py |
+| Boolean | Substrate intact |
+| PROJECTED_NOT_FACT | Living/morphogenetic binding still labeled |
+| Floor / Nursery | Untouched |
+| Push | This commit |
 
 ```bash
-python -m form.seed_strong_ideas --owner Worldwide
-python -m form.idea_create --check "create an idea called X detail: … goals: …"
 python -m form.dell_matrix.decision_shells
 ```
 
-Prior: Code Evolution form · matrix tiers · LatinMandell Strong · user-ready
+Prior: Strong ideas + handoff · Code Evolution sealed for side-chat · DEV stable
