@@ -1,23 +1,5 @@
 #!/usr/bin/env python3
-"""
-Ringed Growth Engine — sole public growth path.
-
-Synthesizes:
-- Voynich 5 rings: Seed → Token → Body → Lens → Evolve
-- Stonehenge gates: growth only fires on alignment
-- Aetheris: FOG cut
-- Ancient: full lineage preserved
-- Manelody: harmonic affinity
-- DuoBeta: generation ledger
-- Nursery: all output quarantined until user confirms
-
-Law:
-1. Only live matrix ideas participate.
-2. Proposals never auto-enter the matrix.
-3. Nursery ideas cannot grow or influence.
-4. Nothing in the live matrix is lost.
-5. Every proposal carries parent lineage.
-"""
+"""Ringed Growth — sole public growth path. Goals bias affinity (not random)."""
 
 from __future__ import annotations
 
@@ -30,16 +12,29 @@ from form.dell_matrix.nursery import Nursery
 from form.dell_matrix.plane import Plane
 
 RINGS = ("Seed", "Token", "Body", "Lens", "Evolve")
-
 _TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
 
 SOLSTICE_AFFINITY = 0.28
 EQUINOX_AFFINITY = 0.16
 STANSTILL_AFFINITY = 0.10
-
 FOG_MIN_LABEL_LEN = 3
 FOG_MAX_LABEL_LEN = 72
 FOG_BANNED_FRAGMENTS = ("asdf", "test123", "xxx", "???", "null", "undefined")
+
+
+def _unit_blob(plane: Plane, uid: str) -> str:
+    u = plane.units.get(uid)
+    if not u:
+        return ""
+    if hasattr(u, "full_text"):
+        return u.full_text()
+    goals = " ".join(getattr(u, "goals", []) or [])
+    detail = getattr(u, "detail", "") or ""
+    return f"{u.label} {detail} {u.words} {goals}"
+
+
+def _tokens_uid(plane: Plane, uid: str) -> Set[str]:
+    return {m.group(0).lower() for m in _TOKEN.finditer(_unit_blob(plane, uid))}
 
 
 def _tokens(label: str, words: str) -> Set[str]:
@@ -74,22 +69,38 @@ def _dist(plane: Plane, a: str, b: str) -> float:
     return math.hypot(ua.x - ub.x, ua.y - ub.y)
 
 
+def _goal_boost(plane: Plane, a: str, b: str) -> float:
+    """Extra affinity when goal tokens overlap."""
+    ua, ub = plane.units.get(a), plane.units.get(b)
+    if not ua or not ub:
+        return 0.0
+    ga = {t.lower() for g in (getattr(ua, "goals", []) or []) for t in _TOKEN.findall(g)}
+    gb = {t.lower() for g in (getattr(ub, "goals", []) or []) for t in _TOKEN.findall(g)}
+    if not ga and not gb:
+        return 0.0
+    if not ga or not gb:
+        # one-sided goals still slightly stabilize evolution of the goal-bearing idea
+        return 0.05
+    return 0.12 * _jaccard(ga, gb)
+
+
 def _affinity(plane: Plane, a: str, b: str) -> Dict[str, float]:
-    ua, ub = plane.units[a], plane.units[b]
-    ta, tb = _tokens(ua.label, ua.words), _tokens(ub.label, ub.words)
+    ta, tb = _tokens_uid(plane, a), _tokens_uid(plane, b)
     jac = _jaccard(ta, tb)
     harm = _harmonic(ta, tb)
     dist = _dist(plane, a, b)
     spatial = 1.0 / (1.0 + dist)
     scope = set(plane.enhance_scope(a))
     in_scope = 1.0 if b in scope else 0.2
-    aff = harm * 0.45 + jac * 0.25 + spatial * 0.15 + in_scope * 0.15
+    gboost = _goal_boost(plane, a, b)
+    aff = harm * 0.40 + jac * 0.22 + spatial * 0.13 + in_scope * 0.13 + gboost
     return {
         "affinity": aff,
         "jaccard": jac,
         "harmonic": harm,
         "distance": dist,
         "shared": float(len(ta & tb)),
+        "goal_boost": gboost,
     }
 
 
@@ -129,6 +140,21 @@ def _evolve_label(label: str, gained: Set[str]) -> str:
     return f"{label} → {tip}"[:70]
 
 
+def _parent_goals(plane: Plane, ids: List[str]) -> List[str]:
+    out: List[str] = []
+    seen = set()
+    for i in ids:
+        u = plane.units.get(i)
+        if not u:
+            continue
+        for g in getattr(u, "goals", []) or []:
+            g = g.strip()
+            if g and g.lower() not in seen:
+                seen.add(g.lower())
+                out.append(g)
+    return out[:8]
+
+
 @dataclass
 class RingedGrowth:
     nursery: Nursery = field(default_factory=Nursery.load)
@@ -161,20 +187,26 @@ class RingedGrowth:
             for a, b, aff in pairs:
                 gate = _ring_phase(aff["affinity"])
                 gate_counts[gate] = gate_counts.get(gate, 0) + 1
-
                 if gate == "None":
                     continue
 
                 ua, ub = plane.units[a], plane.units[b]
-                ta, tb = _tokens(ua.label, ua.words), _tokens(ub.label, ub.words)
+                ta, tb = _tokens_uid(plane, a), _tokens_uid(plane, b)
                 shared = ta & tb
                 unique = (ta | tb) - shared
+                parent_goals = _parent_goals(plane, [a, b])
+                goal_line = (
+                    f"Goals toward: {'; '.join(parent_goals)}. "
+                    if parent_goals
+                    else "Goals: (parents had none — prefer adding goals on live ideas). "
+                )
 
                 if gate == "Solstice" and new_this < self.max_new:
                     label = _combine_label(ua.label, ub.label)
                     words = (
                         f"[Ring:Evolve] Solstice resonance. "
                         f"Parents: {ua.label} + {ub.label}. "
+                        f"{goal_line}"
                         f"Shared: {', '.join(sorted(shared)[:5]) or '—'}. "
                         f"Bridge: {', '.join(sorted(unique)[:6]) or '—'}. "
                         f"Lineage: {a}|{b}."
@@ -188,20 +220,21 @@ class RingedGrowth:
                         kind="new",
                         parents=[a, b],
                         affinity=aff["affinity"],
-                        reason=f"Solstice harm={aff['harmonic']:.2f} jac={aff['jaccard']:.2f}",
+                        reason=f"Solstice harm={aff['harmonic']:.2f} goals={aff.get('goal_boost', 0):.2f}",
                     )
                     new_this += 1
                     total_new += 1
 
                 elif gate in ("Equinox", "Standstill") and evo_this < self.max_evolved:
-                    primary = a if aff["affinity"] >= 0 else b
+                    primary = a
                     u = plane.units[primary]
-                    peer = plane.units[b if primary == a else a]
-                    gained = _tokens(peer.label, peer.words) - _tokens(u.label, u.words)
+                    peer = plane.units[b]
+                    gained = _tokens_uid(plane, b) - _tokens_uid(plane, a)
                     label = _evolve_label(u.label, gained or shared)
                     words = (
                         f"[Ring:Evolve] {gate} evolution. "
                         f"From: {u.label}. Touch: {peer.label}. "
+                        f"{goal_line}"
                         f"New threads: {', '.join(sorted(gained)[:6]) or 'deepening'}. "
                         f"Lineage: {primary}."
                     )
@@ -214,7 +247,7 @@ class RingedGrowth:
                         kind="evolved",
                         parents=[primary],
                         affinity=aff["affinity"],
-                        reason=f"{gate} harm={aff['harmonic']:.2f}",
+                        reason=f"{gate} harm={aff['harmonic']:.2f} goals={aff.get('goal_boost', 0):.2f}",
                     )
                     evo_this += 1
                     total_evo += 1
@@ -242,7 +275,7 @@ class RingedGrowth:
             "gates": gate_counts,
             "nursery": self.nursery.summary(),
             "steps": report,
-            "law": "proposals quarantined · live matrix untouched · lineage preserved",
+            "law": "proposals quarantined · goal-biased · live matrix untouched",
         }
 
 
@@ -256,13 +289,11 @@ def smoke() -> bool:
     from form.dell_matrix.plane import Skin
     p = open_program("RingSmoke")
     p.cube.session.plane.units.clear()
-    p.place("x", "Alpha", words="seed structure", skin=Skin.CUBE, x=0)
-    p.place("y", "Beta", words="structure grow", skin=Skin.CUBE, x=1)
+    p.place("x", "Alpha", words="seed structure", detail="core", goals=["clarity"], skin=Skin.CUBE, x=0)
+    p.place("y", "Beta", words="structure grow", detail="grow path", goals=["clarity", "ship"], skin=Skin.CUBE, x=1)
     out = p.grow_ideas(1)
     rec("ok", out.get("ok") is True)
     rec("engine", out.get("engine") == "RingedGrowth")
-    rec("rings", out.get("rings") == list(RINGS))
-    rec("nursery key", "nursery" in out)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 

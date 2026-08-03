@@ -1,25 +1,20 @@
 # NBD Log
 
-## Law
-Bare `NBD` → E(X) → execute. Steady X=5.
-
----
-
-## 2026-08-02 — LatinMandell depth → Strong
+## 2026-08-02 — Matrix tiers + idea goals foundation
 
 | Item | Result |
 |------|--------|
-| `la …` in REPL | Wired like es/fr |
-| `explain` / `deepen` / `morph` | English REPL commands |
-| `customize` / `customs` | REPL + persist v7 |
-| Hyphen morpheme tokens | `Com-man-dell` depth path |
-| Classic Latin when useful | ROOTS + LA_MAP |
-| New-age morphology otherwise | morpheme.py + force split |
+| DellMatrix = DEV | Documented |
+| Blank / Ace / Worldwide / Main | Architecture |
+| True Lore Identifier | Future goal (Worldwide) |
+| Idea detail + goals | Unit fields + persist path + growth bias |
+| Main auto-evolve | Spec only — not coded (protect DEV) |
+| Live visual | Deferred |
 
-Depth grade target: **Strong across board** (operational LatinMandell, not classical NLP).
+See `form/MATRIX_ARCHITECTURE.md` · `docs/AUDIT_MATRIX_TIERS.md`
 
 ---
 
 ## Prior
 
-SUS refine audit · Voynich safe inspire · user-ready seal
+LatinMandell Strong · user-ready · Voynich inspire-only
