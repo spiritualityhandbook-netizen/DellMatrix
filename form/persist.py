@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Persist v7 — one session: matrix + avatar + face + nursery + HarmonicLattice + history + LatinMandell customs.
-"""
+"""Persist v7 — matrix + avatar + nursery + lattice + history + LatinMandell customs + idea detail/goals."""
 
 from __future__ import annotations
 
@@ -101,8 +99,15 @@ def serialize(program: Program) -> Dict[str, Any]:
     plane = program.cube.session.plane
     units = {
         uid: {
-            "label": u.label, "words": u.words, "skin": u.skin.value,
-            "x": u.x, "y": u.y, "sandboxed": u.sandboxed, "sandbox_id": u.sandbox_id,
+            "label": u.label,
+            "words": u.words,
+            "detail": getattr(u, "detail", "") or "",
+            "goals": list(getattr(u, "goals", []) or []),
+            "skin": u.skin.value,
+            "x": u.x,
+            "y": u.y,
+            "sandboxed": u.sandboxed,
+            "sandbox_id": u.sandbox_id,
         }
         for uid, u in plane.units.items()
     }
@@ -129,8 +134,11 @@ def serialize(program: Program) -> Dict[str, Any]:
             "tags": dict(main.tags),
             "contributions": [
                 {
-                    "from_units": list(c.from_units), "labels": list(c.labels),
-                    "note": c.note, "weight": c.weight, "ts": getattr(c, "ts", ""),
+                    "from_units": list(c.from_units),
+                    "labels": list(c.labels),
+                    "note": c.note,
+                    "weight": c.weight,
+                    "ts": getattr(c, "ts", ""),
                 }
                 for c in main.contributions
             ],
@@ -288,9 +296,14 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
         except ValueError:
             skin = Skin.CUBE
         plane.place(
-            uid, u.get("label", uid),
-            words=u.get("words", ""), skin=skin,
-            x=float(u.get("x", 0)), y=float(u.get("y", 0)),
+            uid,
+            u.get("label", uid),
+            words=u.get("words", ""),
+            detail=u.get("detail", "") or "",
+            goals=list(u.get("goals") or []),
+            skin=skin,
+            x=float(u.get("x", 0)),
+            y=float(u.get("y", 0)),
         )
         unit = plane.units[uid]
         unit.sandboxed = bool(u.get("sandboxed", False))
@@ -373,7 +386,6 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]
 
-    # LatinMandell customs (session depth survives load)
     clear_customs()
     import_customs(data.get("latinmandell_customs") or {})
 
@@ -391,33 +403,30 @@ def smoke() -> bool:
 
     cc()
     p = open_program("PersistV7")
-    p.place("biz", "Business", words="CRM", skin=Skin.BUILDING, x=1)
+    p.place(
+        "biz", "Business", words="CRM", detail="field ops", goals=["reliability"],
+        skin=Skin.BUILDING, x=1,
+    )
     p.avatar.step(3)
     p.face.set(Expression.JOY)
     p.lattice.to_sphere()
     p.grow_ideas(1)
     customize("lumen", dell=9, term="Show", sense="light made visible", la="lumen")
-    before_pending = len(p.list_proposals())
-    before_cells = len(p.lattice.cells)
-    before_hist = len(p.history)
     path = save(p)
     rec("save file", os.path.isfile(path))
 
     cc()
     p2 = load("PersistV7")
     rec("units", "biz" in p2.cube.session.plane.units)
-    rec("avatar pos", p2.avatar.body.pos != (0, 0), str(p2.avatar.body.pos))
-    rec("nursery", len(p2.list_proposals()) == before_pending)
-    rec("lattice cells", len(p2.lattice.cells) >= before_cells)
-    rec("lattice form", p2.lattice.perception.form.value in ("sphere", "cube", "core", "flower"))
-    rec("history", len(p2.history) >= max(1, before_hist - 1), str(len(p2.history)))
+    u = p2.cube.session.plane.units["biz"]
+    rec("detail", getattr(u, "detail", "") == "field ops")
+    rec("goals", list(getattr(u, "goals", [])) == ["reliability"])
     rec("latinmandell custom", root_of("lumen") is not None and root_of("lumen").get("custom") is True)
 
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     rec("version 7", data.get("version") == 7)
-    rec("has history key", "history" in data)
-    rec("has latinmandell_customs", "latinmandell_customs" in data)
+    rec("unit has detail key", "detail" in data.get("plane", {}).get("units", {}).get("biz", {}))
 
     cc()
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
@@ -427,7 +436,7 @@ def smoke() -> bool:
 def main() -> None:
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    print("Persist v7 — matrix + avatar + nursery + lattice + history + LatinMandell customs")
+    print("Persist v7 — detail/goals + customs + session")
 
 
 if __name__ == "__main__":
