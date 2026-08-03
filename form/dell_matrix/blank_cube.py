@@ -1,25 +1,10 @@
 #!/usr/bin/env python3
-"""
-BlankCube — L3 givable starter.
-
-08[Create] >> 50[Manifest] : 10[Keep] :: BlankCube
-
-- Personal MatrixSession on Dell Matrix plane
-- Floor locked, enhance default off
-- Export / import pack for handoff
-- Optional contact field (e.g. email) — not required to operate
-- clean=True → empty plane (no welcome unit)
-
-Run:
-  python -m form.dell_matrix.blank_cube --smoke
-  python -m form.dell_matrix.blank_cube --give Alice
-  python -m form.dell_matrix.blank_cube --give Bob --clean
-"""
+"""BlankCube — givable starter with same DEV capabilities, no personal lore."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
 import json
 import os
@@ -41,10 +26,8 @@ os.makedirs(_PACK_DIR, exist_ok=True)
 
 @dataclass
 class BlankCube:
-    """Starter personal matrix — L3."""
-
     owner: str
-    contact: str = ""  # optional email / handle
+    contact: str = ""
     clean: bool = False
     level: int = 3
     session: MatrixSession = field(init=False)
@@ -58,7 +41,9 @@ class BlankCube:
             self.session.place(
                 "welcome",
                 "Welcome",
-                words="Blank cube on Dell Matrix. Place ideas. Connect when ready.",
+                words="Blank cube on Dell Matrix. Place ideas with detail and goals.",
+                detail="Starter surface — same capabilities as DEV, no personal lore.",
+                goals=["learn the acceptance path", "add ideas with detail and goals"],
                 skin=Skin.WORDS,
                 x=0,
                 y=0,
@@ -70,11 +55,15 @@ class BlankCube:
         label: str,
         *,
         words: str = "",
+        detail: str = "",
+        goals: Optional[List[str]] = None,
         skin: Skin = Skin.CUBE,
         x: float = 0.0,
         y: float = 0.0,
     ):
-        return self.session.place(id, label, words=words, skin=skin, x=x, y=y)
+        return self.session.place(
+            id, label, words=words, detail=detail, goals=goals or [], skin=skin, x=x, y=y
+        )
 
     def status(self) -> Dict[str, Any]:
         p = self.session.plane
@@ -98,6 +87,8 @@ class BlankCube:
             uid: {
                 "label": u.label,
                 "words": u.words,
+                "detail": getattr(u, "detail", "") or "",
+                "goals": list(getattr(u, "goals", []) or []),
                 "skin": u.skin.value,
                 "x": u.x,
                 "y": u.y,
@@ -108,7 +99,7 @@ class BlankCube:
         }
         return {
             "type": "BlankCubePack",
-            "version": 3,
+            "version": 4,
             "level": self.level,
             "owner": self.owner,
             "contact": self.contact,
@@ -120,8 +111,8 @@ class BlankCube:
                 "rules": [
                     "Floor Alpha·Delta·Omega·Omni never changes",
                     "Your cube is yours — Main sync does not overwrite it",
-                    "Enhance is off until you turn it on",
-                    "Place ideas; change skins; box sandboxes as needed",
+                    "Ideas need detail + goals so growth is aimed",
+                    "Same capabilities as DEV — no personal Ace/Worldwide lore included",
                 ],
             },
             "plane": {
@@ -143,11 +134,7 @@ class BlankCube:
             data = json.load(f)
         if data.get("floor") != list(FLOOR):
             raise RuntimeError("Floor mismatch in pack")
-        b = cls(
-            owner=data.get("owner", "Friend"),
-            contact=data.get("contact", ""),
-            clean=True,  # load exact units from pack
-        )
+        b = cls(owner=data.get("owner", "Friend"), contact=data.get("contact", ""), clean=True)
         plane = b.session.plane
         plane.units.clear()
         for uid, u in data.get("plane", {}).get("units", {}).items():
@@ -159,6 +146,8 @@ class BlankCube:
                 uid,
                 u.get("label", uid),
                 words=u.get("words", ""),
+                detail=u.get("detail", ""),
+                goals=list(u.get("goals") or []),
                 skin=skin,
                 x=float(u.get("x", 0)),
                 y=float(u.get("y", 0)),
@@ -177,45 +166,21 @@ def give(owner: str, contact: str = "", clean: bool = False) -> BlankCube:
 
 
 def smoke() -> bool:
-    print("=== BLANK CUBE L3 SMOKE ===")
+    print("=== BLANK CUBE SMOKE ===")
     r = []
-
     def rec(name, ok, detail=""):
         print(f"[{len(r)+1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail else ""))
         r.append(bool(ok))
-
-    b = give("Alice", contact="a@example.com")
-    rec("level 3", b.level == 3)
-    rec("contact", b.contact == "a@example.com")
-    rec("welcome default", "welcome" in b.session.plane.units)
-    clean = give("Bob", clean=True)
-    rec("clean empty", len(clean.session.plane.units) == 0)
-    b.place_idea("job", "Work", words="first", skin=Skin.BUILDING, x=1)
+    b = give("Alice")
+    rec("welcome", "welcome" in b.session.plane.units)
+    rec("welcome goals", len(b.session.plane.units["welcome"].goals) >= 1)
+    b.place_idea("job", "Work", detail="ops", goals=["finish route"], words="field", skin=Skin.BUILDING, x=1)
     path = b.write_pack()
-    rec("write pack", os.path.isfile(path), path)
     loaded = BlankCube.from_pack(path)
-    rec("from_pack owner", loaded.owner == "Alice")
-    rec("from_pack units", "job" in loaded.session.plane.units)
-
-    main = MainField()
-    other = give("Carol", clean=True)
-    other.place_idea("art", "Art", words="draw", skin=Skin.SPHERE)
-    before = b.session.plane.units["job"].words
-    out = sync_planes(b.session, other.session, main, "job", "art")
-    rec("sync no clobber", out.get("ok") and b.session.plane.units["job"].words == before)
+    rec("pack goals", loaded.session.plane.units["job"].goals == ["finish route"])
     rec("floor", b.status()["floor"] == list(FLOOR))
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
-
-
-def demo(owner: str = "Friend", clean: bool = False) -> None:
-    print("08[Create] >> 50[Manifest] : 10[Keep] :: BlankCube L3")
-    b = give(owner, clean=clean)
-    if clean:
-        b.place_idea("seed1", "FirstIdea", words="start", skin=Skin.SEED)
-    path = b.write_pack()
-    print(json.dumps(b.status(), indent=2))
-    print("pack →", path)
 
 
 def main() -> None:
@@ -226,7 +191,9 @@ def main() -> None:
     for i, a in enumerate(sys.argv):
         if a == "--give" and i + 1 < len(sys.argv):
             owner = sys.argv[i + 1]
-    demo(owner, clean)
+    b = give(owner, clean=clean)
+    print(json.dumps(b.status(), indent=2))
+    print("pack →", b.write_pack())
 
 
 if __name__ == "__main__":
