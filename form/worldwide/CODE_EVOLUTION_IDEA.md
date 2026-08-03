@@ -10,6 +10,7 @@ detail:  Post-Boolean decision shells + post-static variables + ultra-intuitive
          Δ_known is permanent fuel and is never closed.
          Multi-directional flow (8 cardinal + 9 upper + 9 lower).
          FlowShell = observation/movement atom.
+         look = single-direction observation.
          multi_look = fan-out observation (optional per-direction grades).
          aggregate_looks = combine looks into one deferred-cut surface.
          This layer is permanent continuous fuel.
@@ -33,6 +34,7 @@ Live shells (Boolean host still underneath):
 - OpenShell · prefer_open()
 - ReversibleShell
 - FlowShell
+- look()
 - multi_look()
 - aggregate_looks()
 

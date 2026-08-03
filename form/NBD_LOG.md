@@ -1,13 +1,13 @@
 # NBD Log
 
-## 2026-08-03 — NBD X=5 · continuous-fuel confirmation
+## 2026-08-03 — NBD Lupe5 · look() single-direction helper
 
 | Item | Result |
 |------|--------|
-| Mode | Bare NBD → Steady X=5 |
+| Mode | NBD Lupe5 (X=5) |
 | Lattice | Code Evolution |
-| Action | Multi-directional layer confirmed as permanent continuous fuel (no closure) |
-| Operators | FlowShell · multi_look · aggregate_looks remain stable |
+| Operator | look(direction) — single-direction observation (looking mode) |
+| Composes with | prefer_open · aggregate_looks · multi_look |
 | Boolean host | Still intact |
 | PROJECTED_NOT_FACT | Full 3D matrix navigation runtime |
 | Floor / Nursery | Untouched |
@@ -17,4 +17,4 @@
 python -m form.dell_matrix.decision_shells
 ```
 
-Prior: multi-directional layer locked · Lupe10 enrich · FlowShell · ReversibleShell · prefer_open · OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell
+Prior: continuous-fuel confirmation · multi-directional layer locked · FlowShell · multi_look · aggregate_looks · ReversibleShell · prefer_open · OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell

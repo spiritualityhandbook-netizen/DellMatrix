@@ -12,19 +12,20 @@ DEFAULT GROWTH PATH:
   prefer_open(shell) keeps graded / ternary information and only collapses
   to True/False when .as_bool() is called explicitly.
 
-MULTI-DIRECTIONAL FLOW (stable continuous fuel):
+MULTI-DIRECTIONAL FLOW (permanent continuous fuel):
   Code in nature does not move left-to-right on a page.
   Code is shared-context language executable mentally or digitally.
   8 cardinal + 9 upper + 9 lower directions.
 
   FlowShell          = observation / movement atom
+  look(direction)    = single-direction observation (looking mode)
   multi_look(...)    = fan-out observation (optional per-direction grades)
   aggregate_looks()  = combine looks → GrowthResidue → prefer_open
 
-Minimal usage pattern:
-  looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6, context="shared")
-  surface = aggregate_looks(looks)          # deferred-cut OpenShell
-  # surface.as_bool() only when the silicon cut is deliberately required
+Minimal usage:
+  one = look(Cardinal.N, grade=0.7, context="shared")
+  looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6)
+  surface = aggregate_looks(looks)   # deferred-cut OpenShell
 """
 
 from __future__ import annotations
@@ -489,6 +490,19 @@ class FlowShell:
         return f"FlowShell(grade={self.grade:.3f}, dir={d}, {mode}, context={self.context!r})"
 
 
+def look(
+    direction: Direction,
+    grade: float = 0.5,
+    context: str = "shared",
+) -> FlowShell:
+    """
+    Single-direction observation (looking mode, no movement).
+    Convenience wrapper around FlowShell.
+    Composes with prefer_open and aggregate_looks.
+    """
+    return FlowShell(grade=clamp01(grade), direction=direction, looking=True, context=context)
+
+
 def multi_look(
     directions: Sequence[Direction],
     grade: float = 0.5,
@@ -526,7 +540,7 @@ def aggregate_looks(
     label: str = "aggregate-look",
 ) -> OpenShell:
     """
-    Combine multiple multi_look / FlowShell results into one deferred-cut surface.
+    Combine multiple look / multi_look / FlowShell results into one deferred-cut surface.
     Uses GrowthResidue under the hood, then prefer_open.
     Keeps graded information; Boolean cut stays deferred.
     """
@@ -537,7 +551,7 @@ def aggregate_looks(
 def smoke() -> bool:
     print("=== DECISION SHELLS SMOKE ===")
     print("Default growth path: prefer_open(shell)")
-    print("Multi-directional: FlowShell + multi_look + aggregate_looks")
+    print("Multi-directional: look + FlowShell + multi_look + aggregate_looks")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")
@@ -578,6 +592,10 @@ def smoke() -> bool:
     rec("FlowShell looking", flow.looking is True)
     flow_open = flow.as_open()
     rec("FlowShell as_open", isinstance(flow_open, OpenShell))
+    one = look(Cardinal.N, grade=0.7, context="single")
+    rec("look type", isinstance(one, FlowShell))
+    rec("look looking", one.looking is True)
+    rec("look direction", one.direction is Cardinal.N)
     looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6, context="audit")
     rec("multi_look count", len(looks) == 3)
     rec("multi_look all looking", all(f.looking for f in looks))

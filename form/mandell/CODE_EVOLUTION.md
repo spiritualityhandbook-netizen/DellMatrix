@@ -28,8 +28,9 @@ Mandell / DellMatrix flow in:
 - 9 lower (incl. Down)  
 
 You can move or look without moving.  
-`multi_look` examines many directions at once.  
-`aggregate_looks` combines those observations into one deferred-cut surface.
+`look` = single direction.  
+`multi_look` = many directions at once.  
+`aggregate_looks` = combine into one deferred-cut surface.
 
 ---
 
@@ -38,14 +39,16 @@ You can move or look without moving.
 | Piece | Role |
 |-------|------|
 | FlowShell | Observation / movement atom (grade + direction + looking + context) |
-| multi_look | Fan-out observation (several directions, optional per-direction grades) |
+| look | Single-direction observation (looking mode) |
+| multi_look | Fan-out observation (optional per-direction grades) |
 | aggregate_looks | Combine looks → GrowthResidue → prefer_open |
 | prefer_open | Default growth path (deferred Boolean cut) |
 | OpenShell | Refuses silent Boolean collapse |
 
 Minimal usage:
 ```text
-looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6, context="shared")
+one = look(Cardinal.N, grade=0.7, context="shared")
+looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6)
 surface = aggregate_looks(looks)   # deferred-cut OpenShell
 ```
 
@@ -66,6 +69,7 @@ Full 3D matrix navigation runtime remains **PROJECTED_NOT_FACT**.
 - OpenShell · prefer_open()  
 - ReversibleShell  
 - FlowShell  
+- look()  
 - multi_look()  
 - aggregate_looks()
 
@@ -77,7 +81,7 @@ Does **not** claim full 3D navigation is already running.
 ## Idea card (Worldwide)
 
 **Label:** Code Evolution  
-**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel. Multi-directional flow (8+9+9). multi_look + aggregate_looks support examining and combining many directions without forced left-to-right order.  
+**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel. Multi-directional flow (8+9+9). look + multi_look + aggregate_looks support examining and combining directions without forced left-to-right order.  
 **Goals:**
 
 1. Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)  
