@@ -7,7 +7,8 @@ These shells are higher decision surfaces used where soft gates already matter
 (affinity, fog, confirm ranking).
 
 Δ_known runnable today · Δ_unknown stays labeled PROJECTED_NOT_FACT elsewhere.
-Lupe5 2026-08-02: added minimal VariableShell (beyond static container).
+Lupe5 2026-08-02: VariableShell (beyond static container).
+NBD 2026-08-02: ProbabilisticShell (light distribution residue).
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Iterable, List, Optional, Union, Any
 import math
+import random
 
 
 class Ternary(str, Enum):
@@ -117,8 +119,7 @@ def decide(
 
 
 # ------------------------------------------------------------------
-# VariableShell — Lupe5 addition (beyond static named container)
-# Still rests on Boolean substrate. No claim of full language.
+# VariableShell — Lupe5 (beyond static named container)
 # ------------------------------------------------------------------
 
 class VariableShell:
@@ -154,8 +155,47 @@ class VariableShell:
         return f"VariableShell({self.name!r}, grade={self.grade:.3f}, bool={self.bool})"
 
 
+# ------------------------------------------------------------------
+# ProbabilisticShell — NBD addition (light distribution residue)
+# Still collapses to Boolean substrate. No full probabilistic language claimed.
+# ------------------------------------------------------------------
+
+class ProbabilisticShell:
+    """
+    Light probabilistic decision surface.
+    - p = probability of positive outcome [0,1]
+    - sample() draws a Boolean from that p (silicon cut)
+    - expected grade remains continuous
+    PROJECTED_NOT_FACT: full Bayesian networks or sampling languages.
+    """
+
+    __slots__ = ("p",)
+
+    def __init__(self, p: float = 0.5):
+        self.p = clamp01(p)
+
+    @property
+    def bool(self) -> bool:
+        """Silicon substrate via single sample."""
+        return random.random() < self.p
+
+    @property
+    def grade(self) -> float:
+        return self.p
+
+    @property
+    def ternary(self) -> Ternary:
+        return from_fuzzy(self.p)
+
+    def decide(self) -> dict:
+        return decide(self.p)
+
+    def __repr__(self) -> str:
+        return f"ProbabilisticShell(p={self.p:.3f})"
+
+
 def smoke() -> bool:
-    print("=== DECISION SHELLS SMOKE (Lupe5) ===")
+    print("=== DECISION SHELLS SMOKE (NBD) ===")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")
@@ -169,6 +209,9 @@ def smoke() -> bool:
     vs = VariableShell("x", value=42, grade=0.73)
     rec("VariableShell bool", vs.bool is True)
     rec("VariableShell ternary", vs.ternary is Ternary.POS)
+    ps = ProbabilisticShell(0.9)
+    rec("ProbabilisticShell grade", abs(ps.grade - 0.9) < 1e-9)
+    rec("ProbabilisticShell ternary", ps.ternary is Ternary.POS)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 
