@@ -1,14 +1,19 @@
 # NBD Log
 
-## 2026-08-02 — Code Evolution form (Boolean → shells)
+## 2026-08-02 — Strong ideas + handoff
 
 | Item | Result |
 |------|--------|
-| Chronicle sealed | `form/mandell/CODE_EVOLUTION.md` |
-| Worldwide idea card | `form/worldwide/CODE_EVOLUTION_IDEA.md` |
-| Runnable shells | `decision_shells.py` ternary + fuzzy + soft_gate |
-| Boolean replaced? | **No** — substrate kept |
-| Full new language? | **Not claimed** |
-| Δ_unknown | PROJECTED_NOT_FACT only |
+| Idea law | `form/IDEA_LAW.md` |
+| Strength score | `idea_create.strength_score` |
+| Seed strong ideas | `seed_strong_ideas.py` → Worldwide |
+| Code Evolution | Sealed for side-chat development |
+| DEV | Stable — return later |
 
-Prior: matrix tiers · idea detail/goals · LatinMandell Strong
+```bash
+python -m form.seed_strong_ideas --owner Worldwide
+python -m form.idea_create --check "create an idea called X detail: … goals: …"
+python -m form.dell_matrix.decision_shells
+```
+
+Prior: Code Evolution form · matrix tiers · LatinMandell Strong · user-ready

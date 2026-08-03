@@ -1,32 +1,35 @@
-# Live Index — DellMatrix
+# Live Index — DellMatrix (DEV)
 
-**Only these are current authority:**
+**DellMatrix = developer matrix.** Blank mirrors capabilities, not personal lore.
 
 | Doc | Role |
-|-----|------|
-| `docs/USER_READY.md` | User-ready seal + acceptance checklist |
-| `docs/INSTALL.md` | Average-user install + first run |
+|------|------|
+| `docs/START_HERE.md` | First door |
+| `docs/INSTALL.md` | Install |
 | `docs/TUTORIAL.md` | Guided path |
-| `docs/START_HERE.md` | First door after install |
-| `docs/AUDIT_AND_NEXT_50.md` | Audit + goals |
-| `docs/FULL_AUDIT_AND_CAPABILITIES.md` | **Full step-by-step capabilities** |
-| `docs/RESIDUAL_COMPLETE.md` | Residual closed |
-| `form/NBD_LOG.md` | Execution log |
-| `form/MODE_LUPE.md` | Batch / NBD law |
-| `form/MODE_FORM.md` | High-S form intake |
-| `form/CORE_SCOPE.md` | Core vs side |
-| `form/LEGACY.md` | Frozen paths |
+| `docs/USER_READY.md` | User-ready seal |
+| `form/MATRIX_ARCHITECTURE.md` | DEV / Blank / Ace / Worldwide / Main |
+| `form/IDEA_LAW.md` | Strong ideas: detail + goals |
+| `form/mandell/CODE_EVOLUTION.md` | Code Evolution chronicle (side-chat OK) |
+| `form/mandell/TRUE_LORE.md` | True Lore future goal |
 | `form/mandell/MANDELL_ORIGIN.md` | Language law |
-| `form/mandell/DELL_RUNTIME.md` | Dell density |
-| `form/mandell/POLYGLOT.md` | ES/FR foundation |
-| `form/mandell/CONTEXT_HORIZON.md` | Memory plane |
-| `form/mandell/VOYNICH_HONESTY.md` | Decode not claimed |
-| `form/mandell/VOYNICH_INSPIRE.md` | Safe structural borrows only |
-| `form/mandell/VOYNICH_RINGS.md` | Ring metaphor |
+| `form/mandell/POLYGLOT.md` | EN/LA/ES/FR + LatinMandell |
+| `docs/AUDIT_MATRIX_TIERS.md` | Tier audit |
+| `docs/FULL_AUDIT_AND_CAPABILITIES.md` | Capabilities |
+| `form/NBD_LOG.md` | Execution log |
+| `form/CORE_SCOPE.md` | Core vs side |
 | `README.md` | Repo front |
 
-**Not authority:** `preform/` · `src/` · `form/trading/` · `form/llm/` · `docs/archive/`
+**Runnable helpers**
 
-Live runtime: **`form/` only**.  
-Residual: **Empty**.  
-User-ready: **Yes** (offline average use).
+| Module | Use |
+|--------|-----|
+| `form.idea_create` | `--check` strong idea lines |
+| `form.seed_strong_ideas` | Plant Code Evolution + True Lore + law seeds |
+| `form.dell_matrix.decision_shells` | Ternary/fuzzy soft gates |
+| `form.mandell.latinmandell` | Depth / explain |
+
+**Profiles:** `python launch.py` · `Ace` · `Worldwide` · `Friend`  
+**Not authority:** `preform/` · `src/` · `trading/` · `llm/`  
+**Visual:** snapshot only for now · live real-time later  
+**Main auto-evolve:** specified, not coded
