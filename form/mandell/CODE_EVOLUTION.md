@@ -16,17 +16,17 @@ Use everything known to reach the unknown: more universal decision and binding m
 
 ---
 
-## Evolutionary pressure (recorded)
+## Default growth path (locked)
 
-Forced Boolean collapse is the remaining limit.  
-`OpenShell` refuses silent collapse.  
-`prefer_open()` converts any collapsing shell into deferred-cut form.  
-Primary identity stays graded / ternary / constructive.  
-`.as_bool()` is the only explicit last-resort silicon cut.  
+`prefer_open(shell)` is the recommended entry point.  
+It turns any collapsing shell into OpenShell form so the decision keeps graded / ternary information and only collapses to True/False when `.as_bool()` is called explicitly.
+
+Beginner picture:  
+Normal shells = light switch (ON/OFF).  
+OpenShell / prefer_open = dimmer (keeps “how much yes”).
 
 Host Python still has Boolean underneath.  
-A true non-Boolean host runtime remains **PROJECTED_NOT_FACT**.  
-The matrix now holds concrete information about this evolutionary pressure.
+A true non-Boolean host runtime remains **PROJECTED_NOT_FACT**.
 
 ---
 
@@ -41,7 +41,7 @@ The matrix now holds concrete information about this evolutionary pressure.
 - ResourceShell  
 - GrowthResidue  
 - OpenShell — defers Boolean cut  
-- **prefer_open()** — converts collapsing shells into OpenShell form so the deferred-cut posture becomes the default growth path
+- prefer_open() — **default growth path** (converts collapsing shells into deferred-cut form)
 
 Does **not** replace Python `bool`.  
 Keeps feeding evolutionary information to the matrix.
@@ -51,7 +51,7 @@ Keeps feeding evolutionary information to the matrix.
 ## Idea card (Worldwide)
 
 **Label:** Code Evolution  
-**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel. Surfaces that defer forced Boolean collapse.  
+**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel. Surfaces that defer forced Boolean collapse. prefer_open is the default growth path.  
 **Goals:**
 
 1. Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)  

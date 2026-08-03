@@ -8,11 +8,15 @@ These shells are higher decision surfaces.
 Δ_known is permanent fuel — never closed.
 Δ_unknown stays labeled PROJECTED_NOT_FACT.
 
-Evolutionary pressure:
-  Surfaces that defer the Boolean cut.
-  Primary identity stays graded / ternary / constructive.
-  .as_bool() is explicit last-resort only.
-  prefer_open() converts collapsing shells into OpenShell form.
+DEFAULT GROWTH PATH (NBD):
+  Use prefer_open(shell) so the decision surface keeps graded / ternary
+  information and only collapses to True/False when you explicitly call
+  .as_bool(). This is the deferred-collapse posture.
+
+Beginner note:
+  Normal shells act like a light switch (ON/OFF).
+  OpenShell acts like a dimmer — it keeps “how much yes”.
+  prefer_open() turns any old shell into a dimmer.
 """
 
 from __future__ import annotations
@@ -326,10 +330,12 @@ class OpenShell:
 
 def prefer_open(shell: Any, label: str = "preferred") -> OpenShell:
     """
+    DEFAULT GROWTH PATH.
+
     Convert any collapsing shell (or raw value) into OpenShell form.
     Primary identity becomes graded / ternary; Boolean cut is deferred.
-    This is the growth path that keeps feeding evolutionary information
-    to the matrix without removing the host Boolean substrate.
+    This keeps feeding evolutionary information to the matrix
+    without removing the host Boolean substrate.
     """
     if isinstance(shell, OpenShell):
         return shell
@@ -349,7 +355,8 @@ def prefer_open(shell: Any, label: str = "preferred") -> OpenShell:
 
 
 def smoke() -> bool:
-    print("=== DECISION SHELLS SMOKE (NBD prefer_open) ===")
+    print("=== DECISION SHELLS SMOKE ===")
+    print("Default growth path: prefer_open(shell) → keeps graded info, defers True/False cut")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")

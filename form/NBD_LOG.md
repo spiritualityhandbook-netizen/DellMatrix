@@ -1,13 +1,13 @@
 # NBD Log
 
-## 2026-08-02 — NBD X=5 · prefer_open (deepen deferred-collapse)
+## 2026-08-02 — NBD X=5 · lock prefer_open as default growth path
 
 | Item | Result |
 |------|--------|
 | Mode | Bare NBD → Steady X=5 |
 | Lattice | Code Evolution |
-| Operator | prefer_open() — converts collapsing shells to OpenShell |
-| Effect | Deferred-cut posture becomes default growth path |
+| Action | prefer_open locked as recommended default growth path |
+| Beginner note | Added (light switch vs dimmer) |
 | Boolean host | Still intact underneath |
 | PROJECTED_NOT_FACT | True non-Boolean runtime still unachieved |
 | Floor / Nursery | Untouched |
@@ -17,4 +17,4 @@
 python -m form.dell_matrix.decision_shells
 ```
 
-Prior: OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell
+Prior: prefer_open helper · OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell
