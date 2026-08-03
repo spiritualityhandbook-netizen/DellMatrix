@@ -1,13 +1,13 @@
 # NBD Log
 
-## 2026-08-03 — NBD Lupe5 · look() single-direction helper
+## 2026-08-03 — NBD X=5 · move() companion to look()
 
 | Item | Result |
 |------|--------|
-| Mode | NBD Lupe5 (X=5) |
+| Mode | Bare NBD → Steady X=5 |
 | Lattice | Code Evolution |
-| Operator | look(direction) — single-direction observation (looking mode) |
-| Composes with | prefer_open · aggregate_looks · multi_look |
+| Operator | move(direction) — single-direction movement (looking=False) |
+| Companion | look() (looking=True) |
 | Boolean host | Still intact |
 | PROJECTED_NOT_FACT | Full 3D matrix navigation runtime |
 | Floor / Nursery | Untouched |
@@ -17,4 +17,4 @@
 python -m form.dell_matrix.decision_shells
 ```
 
-Prior: continuous-fuel confirmation · multi-directional layer locked · FlowShell · multi_look · aggregate_looks · ReversibleShell · prefer_open · OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell
+Prior: look() · continuous-fuel confirmation · multi-directional layer locked · FlowShell · multi_look · aggregate_looks · ReversibleShell · prefer_open · OpenShell · GrowthResidue · ResourceShell · ConstructiveShell · ProbabilisticShell · VariableShell

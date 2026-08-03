@@ -11,8 +11,9 @@ detail:  Post-Boolean decision shells + post-static variables + ultra-intuitive
          Multi-directional flow (8 cardinal + 9 upper + 9 lower).
          FlowShell = observation/movement atom.
          look = single-direction observation.
-         multi_look = fan-out observation (optional per-direction grades).
-         aggregate_looks = combine looks into one deferred-cut surface.
+         move = single-direction movement.
+         multi_look = fan-out observation.
+         aggregate_looks = combine into one deferred-cut surface.
          This layer is permanent continuous fuel.
 goals:
   - Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)
@@ -35,6 +36,7 @@ Live shells (Boolean host still underneath):
 - ReversibleShell
 - FlowShell
 - look()
+- move()
 - multi_look()
 - aggregate_looks()
 

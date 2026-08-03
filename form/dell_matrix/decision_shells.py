@@ -18,14 +18,16 @@ MULTI-DIRECTIONAL FLOW (permanent continuous fuel):
   8 cardinal + 9 upper + 9 lower directions.
 
   FlowShell          = observation / movement atom
-  look(direction)    = single-direction observation (looking mode)
-  multi_look(...)    = fan-out observation (optional per-direction grades)
-  aggregate_looks()  = combine looks → GrowthResidue → prefer_open
+  look(direction)    = single-direction observation (looking=True)
+  move(direction)    = single-direction movement (looking=False)
+  multi_look(...)    = fan-out observation
+  aggregate_looks()  = combine → GrowthResidue → prefer_open
 
 Minimal usage:
-  one = look(Cardinal.N, grade=0.7, context="shared")
+  one_look = look(Cardinal.N, grade=0.7)
+  one_move = move(Cardinal.E, grade=0.6)
   looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6)
-  surface = aggregate_looks(looks)   # deferred-cut OpenShell
+  surface = aggregate_looks(looks)
 """
 
 from __future__ import annotations
@@ -495,12 +497,17 @@ def look(
     grade: float = 0.5,
     context: str = "shared",
 ) -> FlowShell:
-    """
-    Single-direction observation (looking mode, no movement).
-    Convenience wrapper around FlowShell.
-    Composes with prefer_open and aggregate_looks.
-    """
+    """Single-direction observation (looking=True, no movement)."""
     return FlowShell(grade=clamp01(grade), direction=direction, looking=True, context=context)
+
+
+def move(
+    direction: Direction,
+    grade: float = 0.5,
+    context: str = "shared",
+) -> FlowShell:
+    """Single-direction movement (looking=False). Companion to look()."""
+    return FlowShell(grade=clamp01(grade), direction=direction, looking=False, context=context)
 
 
 def multi_look(
@@ -511,13 +518,7 @@ def multi_look(
 ) -> List[FlowShell]:
     """
     Observe several directions without moving (fan-out observation).
-
-    - directions: sequence of Cardinal / Upper / Lower
-    - grade: default strength applied to every direction
-    - grades: optional per-direction strengths (must match length of directions)
-    - context: shared-context label
-
-    Returns list of FlowShells all with looking=True.
+    Optional per-direction grades.
     PROJECTED_NOT_FACT: full simultaneous 3D navigation runtime.
     """
     dirs = list(directions)
@@ -540,9 +541,8 @@ def aggregate_looks(
     label: str = "aggregate-look",
 ) -> OpenShell:
     """
-    Combine multiple look / multi_look / FlowShell results into one deferred-cut surface.
-    Uses GrowthResidue under the hood, then prefer_open.
-    Keeps graded information; Boolean cut stays deferred.
+    Combine multiple look / move / multi_look / FlowShell results into one deferred-cut surface.
+    Uses GrowthResidue then prefer_open. Boolean cut stays deferred.
     """
     residue = GrowthResidue(*looks, mode=mode)
     return prefer_open(residue, label=label)
@@ -551,7 +551,7 @@ def aggregate_looks(
 def smoke() -> bool:
     print("=== DECISION SHELLS SMOKE ===")
     print("Default growth path: prefer_open(shell)")
-    print("Multi-directional: look + FlowShell + multi_look + aggregate_looks")
+    print("Multi-directional: look + move + FlowShell + multi_look + aggregate_looks")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}")
@@ -596,6 +596,10 @@ def smoke() -> bool:
     rec("look type", isinstance(one, FlowShell))
     rec("look looking", one.looking is True)
     rec("look direction", one.direction is Cardinal.N)
+    moved = move(Cardinal.E, grade=0.55, context="path")
+    rec("move type", isinstance(moved, FlowShell))
+    rec("move not looking", moved.looking is False)
+    rec("move direction", moved.direction is Cardinal.E)
     looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6, context="audit")
     rec("multi_look count", len(looks) == 3)
     rec("multi_look all looking", all(f.looking for f in looks))

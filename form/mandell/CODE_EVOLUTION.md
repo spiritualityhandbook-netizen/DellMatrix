@@ -27,8 +27,8 @@ Mandell / DellMatrix flow in:
 - 9 upper (incl. Up)  
 - 9 lower (incl. Down)  
 
-You can move or look without moving.  
-`look` = single direction.  
+You can **look** (observe without moving) or **move** through the matrix.  
+`look` / `move` = single direction.  
 `multi_look` = many directions at once.  
 `aggregate_looks` = combine into one deferred-cut surface.
 
@@ -39,17 +39,19 @@ You can move or look without moving.
 | Piece | Role |
 |-------|------|
 | FlowShell | Observation / movement atom (grade + direction + looking + context) |
-| look | Single-direction observation (looking mode) |
+| look | Single-direction observation (looking=True) |
+| move | Single-direction movement (looking=False) |
 | multi_look | Fan-out observation (optional per-direction grades) |
-| aggregate_looks | Combine looks → GrowthResidue → prefer_open |
+| aggregate_looks | Combine → GrowthResidue → prefer_open |
 | prefer_open | Default growth path (deferred Boolean cut) |
 | OpenShell | Refuses silent Boolean collapse |
 
 Minimal usage:
 ```text
-one = look(Cardinal.N, grade=0.7, context="shared")
+one_look = look(Cardinal.N, grade=0.7)
+one_move = move(Cardinal.E, grade=0.6)
 looks = multi_look([Cardinal.N, Cardinal.E, Upper.U], grade=0.6)
-surface = aggregate_looks(looks)   # deferred-cut OpenShell
+surface = aggregate_looks(looks)
 ```
 
 This multi-directional layer is permanent continuous fuel. It is not closed.
@@ -70,6 +72,7 @@ Full 3D matrix navigation runtime remains **PROJECTED_NOT_FACT**.
 - ReversibleShell  
 - FlowShell  
 - look()  
+- move()  
 - multi_look()  
 - aggregate_looks()
 
@@ -81,7 +84,7 @@ Does **not** claim full 3D navigation is already running.
 ## Idea card (Worldwide)
 
 **Label:** Code Evolution  
-**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel. Multi-directional flow (8+9+9). look + multi_look + aggregate_looks support examining and combining directions without forced left-to-right order.  
+**Detail:** Post-Boolean decision shells + post-static variables + ultra-intuitive coding surface bound into Mandell. Boolean stays silicon substrate of the host. Δ_known is permanent fuel. Multi-directional flow (8+9+9). look + move + multi_look + aggregate_looks support examining and moving through the matrix without forced left-to-right order.  
 **Goals:**
 
 1. Keep exhausting Δ_known shells into runnable Mandell operators (fuel never closes)  
