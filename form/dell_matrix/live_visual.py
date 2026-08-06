@@ -2,8 +2,8 @@
 """
 Live two-way visual bridge — localhost only.
 
-DellMatrix enhances itself: the panel both shows state and sends commands
-that execute on the live Program, then returns fresh state.
+Enhanced panel: SVG matrix from node positions, skin colors, more actions,
+node detail, nursery reject, auto-refresh, clearer feedback.
 
 Constraints kept:
 - Offline core (127.0.0.1 only)
@@ -22,14 +22,11 @@ import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-# Late imports to avoid circulars at module load
-
 _HOST = "127.0.0.1"
 _DEFAULT_PORT = 8765
 
 
 def _state_payload(program) -> Dict[str, Any]:
-    """Full live state for the panel."""
     plane = program.cube.session.plane
     scores = program.scores() if hasattr(program, "scores") else {}
     nodes = []
@@ -58,16 +55,14 @@ def _state_payload(program) -> Dict[str, Any]:
         "skin": lat.get("skin", "cube"),
         "rings": list(getattr(program.duo, "rings", [])),
         "history_len": len(getattr(program, "history", [])),
-        "floor": list(getattr(program, "FLOOR", ["Alpha", "Delta", "Omega", "Omni"])),
+        "floor": ["Alpha", "Delta", "Omega", "Omni"],
     }
 
 
 def _run_command(program, cmd: str) -> Dict[str, Any]:
-    """Execute one command through the same path the REPL uses."""
     cmd = (cmd or "").strip()
     if not cmd:
         return {"ok": False, "error": "empty command"}
-
     try:
         from form.mandell.seed import looks_like_seed
         from form.mandell.executor import execute_seed
@@ -75,11 +70,9 @@ def _run_command(program, cmd: str) -> Dict[str, Any]:
         from form.repl import _execute_intent, _apply_seed_result
     except Exception as e:
         return {"ok": False, "error": f"import: {e}"}
-
     try:
         if looks_like_seed(cmd):
             result = execute_seed(program, cmd)
-            # side-effect messages ignored in live mode; state is truth
             _apply_seed_result(program, result)
         else:
             intent = translate(cmd)
@@ -92,7 +85,6 @@ def _run_command(program, cmd: str) -> Dict[str, Any]:
 def _make_handler(program):
     class LiveHandler(BaseHTTPRequestHandler):
         def log_message(self, format, *args):
-            # quiet
             pass
 
         def _cors(self):
@@ -139,15 +131,12 @@ def _make_handler(program):
                 data = json.loads(raw) if raw else {}
                 cmd = data.get("cmd") or data.get("command") or ""
             except Exception:
-                # plain text body
                 cmd = raw.strip()
             result = _run_command(program, cmd)
             self._json(200 if result.get("ok") else 400, result)
 
         def _serve_ui(self):
-            # Minimal live panel that talks to /cmd and /state
-            html = _LIVE_HTML
-            body = html.encode("utf-8")
+            body = _LIVE_HTML.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
@@ -157,141 +146,170 @@ def _make_handler(program):
     return LiveHandler
 
 
-_LIVE_HTML = """<!DOCTYPE html>
+_LIVE_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>DellMatrix Live</title>
 <style>
-  :root { color-scheme: dark; --bg:#0a0b0e; --card:#151820; --line:#2a2f3a; --text:#e8eaed; --muted:#9aa3b2; --accent:#5b8def; --ok:#3cb371; }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; }
-  header { padding:14px 18px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
-  h1 { margin:0; font-size:17px; }
-  .meta { color:var(--muted); font-size:12px; }
-  .layout { display:grid; grid-template-columns: 300px 1fr; gap:14px; padding:14px; max-width:1200px; margin:0 auto; }
-  @media (max-width:900px){ .layout { grid-template-columns:1fr; } }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
-  h2 { margin:0 0 10px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
-  .btn-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
-  button { background:#1c2230; color:var(--text); border:1px solid var(--line); border-radius:9px; padding:9px 11px; font-size:13px; cursor:pointer; min-height:38px; }
-  button:hover { border-color:var(--accent); }
-  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
-  #cmd { width:100%; background:#0f1115; border:1px solid var(--line); border-radius:8px; color:#7dd3a0; padding:10px; font-family:ui-monospace,monospace; font-size:14px; }
-  #log { font-size:12px; color:var(--muted); min-height:40px; margin-top:8px; white-space:pre-wrap; }
-  .node { display:inline-block; margin:4px; padding:8px 10px; border-radius:8px; background:#1c2230; border:1px solid var(--line); font-size:13px; cursor:pointer; }
-  .node:hover { border-color:var(--accent); }
-  .proposal { border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-bottom:8px; font-size:13px; }
-  .aff { color:var(--accent); font-size:11px; }
-  .ok { color:var(--ok); }
+:root{color-scheme:dark;--bg:#0a0b0e;--card:#151820;--line:#2a2f3a;--text:#e8eaed;--muted:#9aa3b2;--accent:#5b8def;--ok:#3cb371;--warn:#e6a817}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+h1{margin:0;font-size:16px}.meta{color:var(--muted);font-size:12px}
+.layout{display:grid;grid-template-columns:280px 1fr 260px;gap:12px;padding:12px;max-width:1400px;margin:0 auto}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+h2{margin:0 0 8px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.btn-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+button{background:#1c2230;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;cursor:pointer;min-height:34px}
+button:hover{border-color:var(--accent)}button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.ok{border-color:var(--ok)}button.warn{border-color:var(--warn)}
+#cmd{width:100%;background:#0f1115;border:1px solid var(--line);border-radius:8px;color:#7dd3a0;padding:9px;font-family:ui-monospace,monospace;font-size:13px}
+#log{font-size:11px;color:var(--muted);min-height:28px;margin-top:6px;white-space:pre-wrap}
+#svg-wrap{width:100%;overflow:auto;background:#0f1115;border-radius:10px;border:1px solid var(--line)}
+svg{display:block;width:100%;height:auto}
+.node-label{font-size:11px;fill:#e8eaed}
+.detail .k{color:var(--muted);font-size:10px;margin-top:6px}.detail .v{font-size:12px;word-break:break-word}
+.proposal{border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px}
+.aff{color:var(--accent);font-size:10px}
+.chip{display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;margin-right:4px}
 </style>
 </head>
 <body>
 <header>
-  <div>
-    <h1>DellMatrix Live</h1>
-    <div class="meta" id="meta">connecting…</div>
-  </div>
-  <div class="meta">localhost only · two-way · Floor locked</div>
+  <div><h1>DellMatrix Live</h1><div class="meta" id="meta">connecting…</div></div>
+  <div class="meta">localhost · two-way · Floor locked · <label><input type="checkbox" id="auto" checked> auto 2s</label></div>
 </header>
 <div class="layout">
   <section class="card">
-    <h2>Command</h2>
+    <h2>Actions</h2>
     <div class="btn-row">
-      <button type="button" data-cmd="create an idea called live_seed">Create</button>
-      <button type="button" data-cmd="grow ideas 1">Grow</button>
-      <button type="button" data-cmd="proposals">Proposals</button>
-      <button type="button" data-cmd="confirm all">Confirm all</button>
-      <button type="button" data-cmd="sphere">Sphere</button>
-      <button type="button" data-cmd="status">Status</button>
-      <button type="button" data-cmd="save">Save</button>
+      <button data-cmd="create an idea called live_seed">Create</button>
+      <button data-cmd="grow ideas 1">Grow</button>
+      <button data-cmd="confirm all" class="ok">Confirm all</button>
+      <button data-cmd="reject all" class="warn">Reject all</button>
     </div>
-    <input id="cmd" placeholder="type any command…" />
-    <div class="btn-row" style="margin-top:8px">
-      <button class="primary" type="button" id="send">Send</button>
-      <button type="button" id="refresh">Refresh state</button>
+    <div class="btn-row">
+      <button data-cmd="cube">Cube</button>
+      <button data-cmd="sphere">Sphere</button>
+      <button data-cmd="core">Core</button>
+      <button data-cmd="flower">Flower</button>
+      <button data-cmd="lattice">Lattice</button>
+    </div>
+    <div class="btn-row">
+      <button data-cmd="enhance on">Enhance ON</button>
+      <button data-cmd="pulse">Pulse</button>
+      <button data-cmd="walk forward">Walk</button>
+      <button data-cmd="smile">Smile</button>
+      <button data-cmd="save">Save</button>
+      <button data-cmd="status">Status</button>
+    </div>
+    <input id="cmd" placeholder="any command…"/>
+    <div class="btn-row" style="margin-top:6px">
+      <button class="primary" id="send">Send</button>
+      <button id="refresh">Refresh</button>
     </div>
     <div id="log"></div>
   </section>
   <section class="card">
-    <h2>Live matrix</h2>
-    <div id="nodes"></div>
-    <h2 style="margin-top:16px">Nursery</h2>
+    <h2>Matrix</h2>
+    <div id="svg-wrap"><svg id="matrix" viewBox="0 0 640 400"></svg></div>
+    <div class="detail" id="detail" style="margin-top:10px">
+      <h2 style="margin:0">Selected</h2>
+      <div class="k">label</div><div class="v" id="d-label">—</div>
+      <div class="k">id</div><div class="v" id="d-id">—</div>
+      <div class="k">skin / score</div><div class="v" id="d-skin">—</div>
+      <div class="k">words</div><div class="v" id="d-words">—</div>
+    </div>
+  </section>
+  <section class="card">
+    <h2>Nursery</h2>
     <div id="nursery"></div>
-    <h2 style="margin-top:16px">Avatar</h2>
+    <h2 style="margin-top:12px">Avatar</h2>
     <div id="avatar" class="meta">—</div>
+    <h2 style="margin-top:12px">Rings</h2>
+    <div id="rings" class="meta">—</div>
   </section>
 </div>
 <script>
-const log = (t) => { document.getElementById('log').textContent = t; };
-async function getState() {
-  const r = await fetch('/state');
-  return r.json();
+const SKIN = {cube:'#5b8def',sphere:'#7c5cbf',seed:'#3cb371',flower:'#e6a817',building:'#c47c48',words:'#888',circle:'#2aa7a0',core:'#d97706'};
+const log = t => document.getElementById('log').textContent = t;
+let lastState = null;
+async function getState(){const r=await fetch('/state');return r.json()}
+async function sendCmd(cmd){
+  log('→ '+cmd);
+  const r=await fetch('/cmd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd})});
+  const data=await r.json();
+  if(data.ok){log('✓ '+cmd);render(data.state||await getState())}
+  else{log('✗ '+(data.error||'failed'));if(data.state)render(data.state)}
 }
-async function sendCmd(cmd) {
-  log('→ ' + cmd);
-  const r = await fetch('/cmd', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({cmd})
+function render(s){
+  if(!s)return; lastState=s;
+  document.getElementById('meta').textContent=`owner=${s.owner||'?'} · ideas=${s.ideas??0} · form=${s.form||'?'} · skin=${s.skin||'?'} · hist=${s.history_len??0}`;
+  // SVG matrix
+  const svg=document.getElementById('matrix');
+  const W=640,H=400,cx=W/2,cy=H/2,scale=55;
+  let maxR=1;
+  (s.nodes||[]).forEach(n=>{const r=Math.hypot(n.x,n.y);if(r>maxR)maxR=r});
+  if(maxR<1)maxR=1;
+  let els=`<rect width="100%" height="100%" fill="#0f1115" rx="8"/>`;
+  els+=`<text x="12" y="20" fill="#5c6575" font-size="11">form=${s.form||'?'} · Floor locked</text>`;
+  (s.nodes||[]).forEach(n=>{
+    const x=cx+(n.x/maxR)*scale*3, y=cy-(n.y/maxR)*scale*3;
+    const col=SKIN[n.skin]||'#5b8def';
+    const r=n.sandboxed?12:16;
+    if(['sphere','circle','seed','flower','core'].includes(n.skin))
+      els+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" opacity="0.9" data-id="${n.id}" style="cursor:pointer"/>`;
+    else
+      els+=`<rect x="${x-r}" y="${y-r}" width="${r*2}" height="${r*2}" rx="4" fill="${col}" opacity="0.9" data-id="${n.id}" style="cursor:pointer"/>`;
+    els+=`<text x="${x}" y="${y+r+12}" text-anchor="middle" class="node-label">${(n.label||'').slice(0,14)}</text>`;
+    if(n.score>0)els+=`<text x="${x}" y="${y+4}" text-anchor="middle" fill="#0f1115" font-size="10" font-weight="600">${n.score.toFixed(1)}</text>`;
   });
-  const data = await r.json();
-  if (data.ok) {
-    log('✓ ' + cmd);
-    render(data.state || await getState());
-  } else {
-    log('✗ ' + (data.error || 'failed') + (data.state ? '' : ''));
-    if (data.state) render(data.state);
-  }
-}
-function render(s) {
-  if (!s) return;
-  document.getElementById('meta').textContent =
-    `owner=${s.owner || '?'} · ideas=${s.ideas ?? 0} · form=${s.form || '?'} · skin=${s.skin || '?'}`;
-  const nodes = document.getElementById('nodes');
-  nodes.innerHTML = '';
-  (s.nodes || []).forEach(n => {
-    const d = document.createElement('div');
-    d.className = 'node';
-    d.textContent = `${n.label} (${n.skin}) ${n.score ? n.score.toFixed(1) : ''}`;
-    d.title = n.id + ' · ' + (n.words || '');
-    d.onclick = () => { document.getElementById('cmd').value = 'confirm ' + n.id; };
-    nodes.appendChild(d);
+  if(!(s.nodes||[]).length)els+=`<text x="${cx}" y="${cy}" text-anchor="middle" fill="#9aa3b2" font-size="14">No ideas yet</text>`;
+  svg.innerHTML=els;
+  svg.querySelectorAll('[data-id]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const id=el.getAttribute('data-id');
+      const n=(s.nodes||[]).find(x=>x.id===id);
+      if(!n)return;
+      document.getElementById('d-label').textContent=n.label;
+      document.getElementById('d-id').textContent=n.id;
+      document.getElementById('d-skin').textContent=`${n.skin} · score ${n.score||0}`;
+      document.getElementById('d-words').textContent=n.words||'(empty)';
+      document.getElementById('cmd').value='confirm '+n.id;
+    });
   });
-  if (!(s.nodes || []).length) nodes.innerHTML = '<span class="meta">No ideas yet — try Create</span>';
-  const nur = document.getElementById('nursery');
-  nur.innerHTML = '';
-  (s.nursery || []).forEach(p => {
-    const d = document.createElement('div');
-    d.className = 'proposal';
-    d.innerHTML = `<div class="aff">aff ${(p.affinity||0).toFixed(3)} · ${p.kind||''} · ${p.id||''}</div>
+  // Nursery
+  const nur=document.getElementById('nursery');
+  nur.innerHTML='';
+  (s.nursery||[]).forEach(p=>{
+    const d=document.createElement('div');d.className='proposal';
+    d.innerHTML=`<div class="aff">aff ${(p.affinity||0).toFixed(3)} · ${p.kind||''}</div>
       <div>${p.label||''}</div>
-      <button type="button" style="margin-top:6px" data-confirm="${p.id||''}">Confirm</button>`;
+      <div style="margin-top:4px">
+        <button data-c="${p.id||''}">Confirm</button>
+        <button data-r="${p.id||''}" class="warn">Reject</button>
+      </div>`;
     nur.appendChild(d);
   });
-  if (!(s.nursery || []).length) nur.innerHTML = '<span class="meta">Nursery empty</span>';
-  nur.querySelectorAll('[data-confirm]').forEach(b => {
-    b.onclick = () => sendCmd('confirm ' + b.getAttribute('data-confirm'));
-  });
-  const av = s.avatar || {};
-  document.getElementById('avatar').textContent = (av.look || '') + '  ' + (av.describe || '—');
+  if(!(s.nursery||[]).length)nur.innerHTML='<span class="meta">Nursery empty</span>';
+  nur.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>sendCmd('confirm '+b.getAttribute('data-c')));
+  nur.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>sendCmd('reject '+b.getAttribute('data-r')));
+  const av=s.avatar||{};
+  document.getElementById('avatar').textContent=(av.look||'')+'  '+(av.describe||'—');
+  document.getElementById('rings').textContent=(s.rings||[]).join(' → ')||'—';
 }
-document.getElementById('send').onclick = () => {
-  const c = document.getElementById('cmd').value.trim();
-  if (c) sendCmd(c);
-};
-document.getElementById('cmd').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('send').click();
-});
-document.getElementById('refresh').onclick = async () => {
-  render(await getState());
-  log('state refreshed');
-};
-document.querySelectorAll('[data-cmd]').forEach(b => {
-  b.onclick = () => sendCmd(b.getAttribute('data-cmd'));
-});
-getState().then(render).catch(e => log('connect failed: ' + e));
+document.getElementById('send').onclick=()=>{const c=document.getElementById('cmd').value.trim();if(c)sendCmd(c)};
+document.getElementById('cmd').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('send').click()});
+document.getElementById('refresh').onclick=async()=>{render(await getState());log('refreshed')};
+document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>sendCmd(b.getAttribute('data-cmd')));
+getState().then(render).catch(e=>log('connect failed: '+e));
+setInterval(async()=>{
+  if(document.getElementById('auto').checked){
+    try{render(await getState())}catch(e){}
+  }
+},2000);
 </script>
 </body>
 </html>
@@ -299,7 +317,6 @@ getState().then(render).catch(e => log('connect failed: ' + e));
 
 
 def start_live(program, port: int = _DEFAULT_PORT, background: bool = True) -> Dict[str, Any]:
-    """Start the live visual server bound to the given Program."""
     handler = _make_handler(program)
     server = HTTPServer((_HOST, port), handler)
 
