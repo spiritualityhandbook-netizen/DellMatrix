@@ -2,12 +2,10 @@
 """
 Live two-way visual bridge — localhost only.
 
-Full movement + directional vision for User and AI.
-When you look, you see ideas, patterns, and what the AI sees/does.
-You can act on that information.
+Lupe20 enhance: vision cone on SVG, WASD keys, facing arrows, movement trails,
+proximity, AI follow/wander, in-view node highlight, command history.
 
-Constraints: offline (127.0.0.1), Nursery+confirm, Floor locked.
-Pure stdlib.
+Law: offline 127.0.0.1 · Nursery+confirm · Floor locked · pure stdlib.
 """
 
 from __future__ import annotations
@@ -29,15 +27,28 @@ _AI: Dict[str, Any] = {
     "label": "AI",
     "doing": "idle",
     "last_action": "spawned",
+    "mode": "manual",  # manual | wander | follow
+    "trail": [],
 }
+
+_USER_TRAIL: List[List[float]] = []
+_CMD_HISTORY: List[str] = []
+_MAX_TRAIL = 12
+_MAX_HIST = 16
 
 _FACING_DELTA = {
     "N": (0, 1), "NE": (1, 1), "E": (1, 0), "SE": (1, -1),
     "S": (0, -1), "SW": (-1, -1), "W": (-1, 0), "NW": (-1, 1),
 }
 _FACING_ORDER = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
-_VISION_RANGE = 5.0
-_VISION_HALF_ANGLE = 55.0  # degrees either side of facing
+_VISION_RANGE = 5.5
+_VISION_HALF_ANGLE = 55.0
+
+
+def _push_trail(trail: List, pos) -> None:
+    trail.append([float(pos[0]), float(pos[1])])
+    while len(trail) > _MAX_TRAIL:
+        trail.pop(0)
 
 
 def _ai_step(steps: int = 1) -> Tuple[int, int]:
@@ -46,6 +57,7 @@ def _ai_step(steps: int = 1) -> Tuple[int, int]:
     _AI["pos"][1] += dy * steps
     _AI["doing"] = "walking"
     _AI["last_action"] = f"walked to {tuple(_AI['pos'])}"
+    _push_trail(_AI["trail"], _AI["pos"])
     return tuple(_AI["pos"])
 
 
@@ -57,13 +69,45 @@ def _ai_turn(steps: int = 1) -> str:
     return _AI["facing"]
 
 
+def _ai_tick_modes(user_pos: List[float]) -> None:
+    mode = _AI.get("mode", "manual")
+    if mode == "wander":
+        # simple: step, occasionally turn
+        import random
+        if random.random() < 0.35:
+            _ai_turn(1 if random.random() < 0.5 else -1)
+        _ai_step(1)
+        _AI["doing"] = "wandering"
+    elif mode == "follow":
+        ux, uy = float(user_pos[0]), float(user_pos[1])
+        ax, ay = float(_AI["pos"][0]), float(_AI["pos"][1])
+        dx, dy = ux - ax, uy - ay
+        dist = math.hypot(dx, dy)
+        if dist > 1.2:
+            # face toward user then step
+            ang = math.degrees(math.atan2(dy, dx)) % 360
+            best, best_d = "E", 999
+            for name, (fx, fy) in _FACING_DELTA.items():
+                fa = math.degrees(math.atan2(fy, fx)) % 360
+                d = abs(fa - ang) % 360
+                d = min(d, 360 - d)
+                if d < best_d:
+                    best_d, best = d, name
+            _AI["facing"] = best
+            _ai_step(1)
+            _AI["doing"] = "following"
+            _AI["last_action"] = f"follow → {tuple(_AI['pos'])}"
+        else:
+            _AI["doing"] = "near user"
+            _AI["last_action"] = "holding near"
+
+
 def _angle_diff(a: float, b: float) -> float:
     d = abs(a - b) % 360
     return min(d, 360 - d)
 
 
 def _facing_angle(facing: str) -> float:
-    # 0 = East, 90 = North (math angles)
     table = {"E": 0, "NE": 45, "N": 90, "NW": 135, "W": 180, "SW": 225, "S": 270, "SE": 315}
     return float(table.get(facing, 90))
 
@@ -75,10 +119,10 @@ def _vision(
     other: Optional[Dict[str, Any]] = None,
     range_: float = _VISION_RANGE,
 ) -> Dict[str, Any]:
-    """Return what is visible in the facing cone."""
     px, py = float(pos[0]), float(pos[1])
     face_ang = _facing_angle(facing)
     seen_nodes: List[Dict[str, Any]] = []
+    in_view_ids: List[str] = []
     for n in nodes:
         dx = float(n.get("x", 0)) - px
         dy = float(n.get("y", 0)) - py
@@ -95,9 +139,9 @@ def _vision(
                 "words": (n.get("words") or "")[:60],
                 "dist": round(dist, 2),
             })
+            in_view_ids.append(str(n.get("id")))
     seen_nodes.sort(key=lambda x: x["dist"])
 
-    # patterns
     skins: Dict[str, int] = {}
     for sn in seen_nodes:
         skins[sn["skin"]] = skins.get(sn["skin"], 0) + 1
@@ -109,10 +153,12 @@ def _vision(
     }
 
     other_seen = None
+    proximity = None
     if other and other.get("pos"):
         ox, oy = float(other["pos"][0]), float(other["pos"][1])
         dx, dy = ox - px, oy - py
         dist = math.hypot(dx, dy)
+        proximity = {"name": other.get("name") or other.get("label"), "dist": round(dist, 2)}
         if 0.01 < dist <= range_:
             ang = math.degrees(math.atan2(dy, dx)) % 360
             if _angle_diff(ang, face_ang) <= _VISION_HALF_ANGLE:
@@ -128,9 +174,12 @@ def _vision(
     return {
         "facing": facing,
         "range": range_,
+        "half_angle": _VISION_HALF_ANGLE,
         "nodes": seen_nodes[:12],
+        "in_view_ids": in_view_ids,
         "pattern": pattern,
         "sees_other": other_seen,
+        "proximity": proximity,
     }
 
 
@@ -144,6 +193,7 @@ def _user_body(program) -> Dict[str, Any]:
             "posture": b.posture.name.lower() if hasattr(b.posture, "name") else "stand",
             "locomotion": b.locomotion.name.lower() if hasattr(b.locomotion, "name") else "idle",
         }
+        _push_trail(_USER_TRAIL, body["pos"])
     return body
 
 
@@ -167,6 +217,10 @@ def _state_payload(program) -> Dict[str, Any]:
     body = _user_body(program)
     lat = program.lattice.status() if hasattr(program, "lattice") else {}
 
+    # AI modes tick lightly on state read when active
+    if _AI.get("mode") in ("wander", "follow"):
+        _ai_tick_modes(body["pos"])
+
     ai_info = {
         "name": _AI["name"],
         "pos": list(_AI["pos"]),
@@ -174,6 +228,8 @@ def _state_payload(program) -> Dict[str, Any]:
         "label": _AI["label"],
         "doing": _AI.get("doing", "idle"),
         "last_action": _AI.get("last_action", ""),
+        "mode": _AI.get("mode", "manual"),
+        "trail": list(_AI.get("trail") or []),
     }
 
     user_vision = _vision(body["pos"], body["facing"], nodes, other=ai_info)
@@ -190,14 +246,18 @@ def _state_payload(program) -> Dict[str, Any]:
         "nursery": nursery[:20],
         "avatar": avatar,
         "user": body,
+        "user_trail": list(_USER_TRAIL),
         "ai": ai_info,
         "user_vision": user_vision,
         "ai_vision": ai_vision,
+        "cmd_history": list(_CMD_HISTORY[-_MAX_HIST:]),
         "form": lat.get("form", "cube"),
         "skin": lat.get("skin", "cube"),
         "rings": list(getattr(program.duo, "rings", [])),
         "history_len": len(getattr(program, "history", [])),
         "floor": ["Alpha", "Delta", "Omega", "Omni"],
+        "vision_range": _VISION_RANGE,
+        "vision_half_angle": _VISION_HALF_ANGLE,
     }
 
 
@@ -231,16 +291,32 @@ def _handle_ai_command(cmd: str) -> Optional[Dict[str, Any]]:
             return {"ok": True, "msg": f"AI facing {d}"}
         return {"ok": False, "error": f"unknown facing {d}"}
     if rest in ("status", "where", "pos"):
-        return {"ok": True, "msg": f"AI at {_AI['pos']} facing {_AI['facing']} doing={_AI.get('doing')}"}
+        return {"ok": True, "msg": f"AI at {_AI['pos']} face {_AI['facing']} mode={_AI.get('mode')} doing={_AI.get('doing')}"}
     if rest in ("look", "see", "vision"):
         _AI["doing"] = "looking"
         _AI["last_action"] = "looked"
         return {"ok": True, "msg": "AI looked"}
+    if rest in ("wander", "mode wander"):
+        _AI["mode"] = "wander"
+        _AI["doing"] = "wandering"
+        _AI["last_action"] = "mode=wander"
+        return {"ok": True, "msg": "AI mode → wander"}
+    if rest in ("follow", "mode follow"):
+        _AI["mode"] = "follow"
+        _AI["doing"] = "following"
+        _AI["last_action"] = "mode=follow"
+        return {"ok": True, "msg": "AI mode → follow"}
+    if rest in ("manual", "mode manual", "stop"):
+        _AI["mode"] = "manual"
+        _AI["doing"] = "idle"
+        _AI["last_action"] = "mode=manual"
+        return {"ok": True, "msg": "AI mode → manual"}
     if rest.startswith("goto ") or rest.startswith("move "):
         parts = rest.split()
         try:
             x, y = int(parts[1]), int(parts[2])
             _AI["pos"] = [x, y]
+            _push_trail(_AI["trail"], _AI["pos"])
             _AI["doing"] = "moved"
             _AI["last_action"] = f"goto {[x, y]}"
             return {"ok": True, "msg": f"AI moved to {[x, y]}"}
@@ -254,10 +330,28 @@ def _run_command(program, cmd: str) -> Dict[str, Any]:
     if not cmd:
         return {"ok": False, "error": "empty command"}
 
+    _CMD_HISTORY.append(cmd)
+    while len(_CMD_HISTORY) > _MAX_HIST:
+        _CMD_HISTORY.pop(0)
+
     lower = cmd.lower().strip()
     if lower in ("look", "see", "vision", "look around"):
-        # just refresh vision in state
         return {"ok": True, "msg": "Looking…", "command": cmd, "state": _state_payload(program)}
+
+    # quick WASD-style aliases for user
+    if lower in ("w", "forward"):
+        cmd = "walk forward"
+        lower = cmd
+    elif lower == "a":
+        cmd = "turn left"
+        lower = cmd
+    elif lower == "d":
+        cmd = "turn right"
+        lower = cmd
+    elif lower == "s":
+        cmd = "turn right"
+        # double turn ≈ about face then optional; keep simple: turn right twice via two cmds not here
+        lower = cmd
 
     ai_res = _handle_ai_command(cmd)
     if ai_res is not None:
@@ -358,30 +452,32 @@ _LIVE_HTML = r"""<!DOCTYPE html>
 <style>
 :root{color-scheme:dark;--bg:#0a0b0e;--card:#151820;--line:#2a2f3a;--text:#e8eaed;--muted:#9aa3b2;--accent:#5b8def;--ok:#3cb371;--warn:#e6a817;--ai:#e879f9;--user:#38bdf8}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
-header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-h1{margin:0;font-size:16px}.meta{color:var(--muted);font-size:12px}
-.layout{display:grid;grid-template-columns:270px 1fr 280px;gap:12px;padding:12px;max-width:1480px;margin:0 auto}
+header{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+h1{margin:0;font-size:15px}.meta{color:var(--muted);font-size:11px}
+.layout{display:grid;grid-template-columns:260px 1fr 270px;gap:10px;padding:10px;max-width:1500px;margin:0 auto}
 @media(max-width:1100px){.layout{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
-h2{margin:0 0 8px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.btn-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-button{background:#1c2230;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12px;cursor:pointer;min-height:32px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+h2{margin:0 0 6px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.btn-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+button{background:#1c2230;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:11px;cursor:pointer;min-height:30px}
 button:hover{border-color:var(--accent)}button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 button.ok{border-color:var(--ok)}button.warn{border-color:var(--warn)}
 button.user{border-color:var(--user)}button.ai{border-color:var(--ai)}
-#cmd{width:100%;background:#0f1115;border:1px solid var(--line);border-radius:8px;color:#7dd3a0;padding:9px;font-family:ui-monospace,monospace;font-size:13px}
-#log{font-size:11px;color:var(--muted);min-height:24px;margin-top:6px;white-space:pre-wrap}
+#cmd{width:100%;background:#0f1115;border:1px solid var(--line);border-radius:8px;color:#7dd3a0;padding:8px;font-family:ui-monospace,monospace;font-size:12px}
+#log{font-size:11px;color:var(--muted);min-height:22px;margin-top:4px;white-space:pre-wrap}
 #svg-wrap{width:100%;overflow:auto;background:#0f1115;border-radius:10px;border:1px solid var(--line)}
-svg{display:block;width:100%;height:auto}.node-label{font-size:11px;fill:#e8eaed}
-.seen{border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:5px;font-size:12px}
-.seen .d{color:var(--muted);font-size:10px}.pattern{font-size:11px;color:var(--muted);margin-bottom:8px}
-.proposal{border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px}.aff{color:var(--accent);font-size:10px}
+svg{display:block;width:100%;height:auto}.node-label{font-size:10px;fill:#e8eaed}
+.seen{border:1px solid var(--line);border-radius:7px;padding:5px 7px;margin-bottom:4px;font-size:11px}
+.seen .d{color:var(--muted);font-size:10px}.pattern{font-size:10px;color:var(--muted);margin-bottom:6px}
+.proposal{border:1px solid var(--line);border-radius:7px;padding:6px;margin-bottom:5px;font-size:11px}.aff{color:var(--accent);font-size:10px}
+.hist{font-size:10px;color:var(--muted);max-height:70px;overflow:auto}
+kbd{background:#1c2230;border:1px solid var(--line);border-radius:4px;padding:1px 4px;font-size:10px}
 </style>
 </head>
 <body>
 <header>
-  <div><h1>DellMatrix Live</h1><div class="meta" id="meta">connecting…</div></div>
-  <div class="meta">look · patterns · AI vision · act · <label><input type="checkbox" id="auto" checked> auto 2s</label></div>
+  <div><h1>DellMatrix Live · Lupe20</h1><div class="meta" id="meta">connecting…</div></div>
+  <div class="meta">WASD · vision cone · trails · AI modes · <label><input type="checkbox" id="auto" checked> auto</label></div>
 </header>
 <div class="layout">
   <section class="card">
@@ -398,20 +494,25 @@ svg{display:block;width:100%;height:auto}.node-label{font-size:11px;fill:#e8eaed
       <button data-cmd="core">Core</button>
       <button data-cmd="flower">Flower</button>
     </div>
-    <h2>User move / look</h2>
+    <h2>User <kbd>W</kbd><kbd>A</kbd><kbd>D</kbd> + look</h2>
     <div class="btn-row">
-      <button class="user" data-cmd="walk forward">Walk</button>
-      <button class="user" data-cmd="turn left">←</button>
-      <button class="user" data-cmd="turn right">→</button>
-      <button class="user" data-cmd="face north">Face N</button>
+      <button class="user" data-cmd="walk forward">W Walk</button>
+      <button class="user" data-cmd="turn left">A ←</button>
+      <button class="user" data-cmd="turn right">D →</button>
       <button class="user" data-cmd="look">Look</button>
+      <button class="user" data-cmd="face north">Face N</button>
     </div>
-    <h2>AI move / look</h2>
+    <h2>AI</h2>
     <div class="btn-row">
       <button class="ai" data-cmd="ai walk">Walk</button>
       <button class="ai" data-cmd="ai turn left">←</button>
       <button class="ai" data-cmd="ai turn right">→</button>
       <button class="ai" data-cmd="ai look">Look</button>
+    </div>
+    <div class="btn-row">
+      <button class="ai" data-cmd="ai follow">Follow me</button>
+      <button class="ai" data-cmd="ai wander">Wander</button>
+      <button class="ai" data-cmd="ai manual">Manual</button>
       <button class="ai" data-cmd="ai status">Status</button>
     </div>
     <div class="btn-row">
@@ -420,38 +521,43 @@ svg{display:block;width:100%;height:auto}.node-label{font-size:11px;fill:#e8eaed
       <button data-cmd="save">Save</button>
       <button data-cmd="status">Status</button>
     </div>
-    <input id="cmd" placeholder="look · ai look · ai goto 3 4 · confirm id"/>
-    <div class="btn-row" style="margin-top:6px">
+    <input id="cmd" placeholder="W/A/D · look · ai follow · ai goto 3 4"/>
+    <div class="btn-row" style="margin-top:5px">
       <button class="primary" id="send">Send</button>
       <button id="refresh">Refresh</button>
     </div>
     <div id="log"></div>
+    <h2 style="margin-top:8px">Cmd history</h2>
+    <div class="hist" id="hist">—</div>
   </section>
   <section class="card">
     <h2>Matrix</h2>
-    <div id="svg-wrap"><svg id="matrix" viewBox="0 0 640 420"></svg></div>
-    <h2 style="margin-top:10px">Your vision</h2>
+    <div id="svg-wrap"><svg id="matrix" viewBox="0 0 640 440"></svg></div>
+    <h2 style="margin-top:8px">Your vision</h2>
     <div class="pattern" id="user-pattern">—</div>
     <div id="user-seen"></div>
-    <h2 style="margin-top:10px">AI vision + doing</h2>
+    <h2 style="margin-top:8px">AI vision + doing</h2>
     <div class="pattern" id="ai-pattern">—</div>
     <div id="ai-seen"></div>
   </section>
   <section class="card">
     <h2>Nursery</h2>
     <div id="nursery"></div>
-    <h2 style="margin-top:12px">User</h2>
+    <h2 style="margin-top:10px">User</h2>
     <div id="user-pos" class="meta">—</div>
-    <h2 style="margin-top:12px">AI</h2>
+    <h2 style="margin-top:10px">AI</h2>
     <div id="ai-pos" class="meta">—</div>
-    <h2 style="margin-top:12px">Avatar</h2>
+    <h2 style="margin-top:10px">Proximity</h2>
+    <div id="prox" class="meta">—</div>
+    <h2 style="margin-top:10px">Avatar</h2>
     <div id="avatar" class="meta">—</div>
-    <h2 style="margin-top:12px">Rings</h2>
+    <h2 style="margin-top:10px">Rings</h2>
     <div id="rings" class="meta">—</div>
   </section>
 </div>
 <script>
 const SKIN={cube:'#5b8def',sphere:'#7c5cbf',seed:'#3cb371',flower:'#e6a817',building:'#c47c48',words:'#888',circle:'#2aa7a0',core:'#d97706'};
+const FACE_ANG={E:0,NE:45,N:90,NW:135,W:180,SW:225,S:270,SE:315};
 const log=t=>document.getElementById('log').textContent=t;
 async function getState(){const r=await fetch('/state');return r.json()}
 async function sendCmd(cmd){
@@ -461,25 +567,33 @@ async function sendCmd(cmd){
   if(data.ok){log('✓ '+(data.msg||cmd));render(data.state||await getState())}
   else{log('✗ '+(data.error||'failed'));if(data.state)render(data.state)}
 }
-function renderVision(elId,patId,vision,prefix){
+function conePath(cx,cy,facing,rangePx,halfAng){
+  const base=(FACE_ANG[facing]||90)*Math.PI/180;
+  // SVG y is down; our map already flips y, so invert angle for screen
+  const a0= -base + (halfAng*Math.PI/180);
+  const a1= -base - (halfAng*Math.PI/180);
+  const x1=cx+Math.cos(a0)*rangePx, y1=cy+Math.sin(a0)*rangePx;
+  const x2=cx+Math.cos(a1)*rangePx, y2=cy+Math.sin(a1)*rangePx;
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${rangePx} ${rangePx} 0 0 1 ${x2} ${y2} Z`;
+}
+function renderVision(elId,patId,vision){
   const box=document.getElementById(elId); const pat=document.getElementById(patId);
   if(!vision){box.innerHTML='';pat.textContent='—';return}
   const p=vision.pattern||{};
-  pat.textContent=`facing ${vision.facing} · see ${p.count||0} · skins ${JSON.stringify(p.skins||{})} · avg score ${p.avg_score||0} · nearest ${p.nearest||'—'}`;
+  pat.textContent=`face ${vision.facing} · see ${p.count||0} · skins ${JSON.stringify(p.skins||{})} · avg ${p.avg_score||0} · near ${p.nearest||'—'}`;
   box.innerHTML='';
   (vision.nodes||[]).forEach(n=>{
     const d=document.createElement('div');d.className='seen';
     d.innerHTML=`<div><b>${n.label}</b> <span class="d">${n.skin} · d=${n.dist} · sc=${n.score||0}</span></div>
       <div class="d">${n.words||''}</div>
-      <button data-act="confirm ${n.id}" style="margin-top:3px">Confirm</button>
-      <button data-act="create an idea called seen_${(n.label||'x').slice(0,12)}">Note</button>`;
+      <button data-act="confirm ${n.id}">Confirm</button>
+      <button data-act="create an idea called seen_${(n.label||'x').slice(0,10)}">Note</button>`;
     box.appendChild(d);
   });
   if(vision.sees_other){
     const o=vision.sees_other;
     const d=document.createElement('div');d.className='seen';
-    d.innerHTML=`<div><b>sees ${o.name}</b> <span class="d">d=${o.dist} face ${o.facing} doing ${o.doing||'?'}</span></div>
-      <div class="d">${o.last_action||''}</div>`;
+    d.innerHTML=`<div><b>sees ${o.name}</b> <span class="d">d=${o.dist} face ${o.facing} · ${o.doing||''}</span></div><div class="d">${o.last_action||''}</div>`;
     box.appendChild(d);
   }
   if(!(vision.nodes||[]).length && !vision.sees_other)box.innerHTML='<span class="meta">Nothing in view</span>';
@@ -487,68 +601,109 @@ function renderVision(elId,patId,vision,prefix){
 }
 function render(s){
   if(!s)return;
-  document.getElementById('meta').textContent=`owner=${s.owner||'?'} · ideas=${s.ideas??0} · form=${s.form||'?'}`;
+  document.getElementById('meta').textContent=`owner=${s.owner||'?'} · ideas=${s.ideas??0} · form=${s.form||'?'} · AI mode=${(s.ai&&s.ai.mode)||'manual'}`;
   const svg=document.getElementById('matrix');
-  const W=640,H=420,cx=W/2,cy=H/2,scale=48;
-  let maxR=2;
+  const W=640,H=440,cx=W/2,cy=H/2,scale=46;
+  let maxR=2.5;
   (s.nodes||[]).forEach(n=>{const r=Math.hypot(n.x,n.y);if(r>maxR)maxR=r});
   const user=s.user||{}, ai=s.ai||{};
   if(user.pos){const r=Math.hypot(user.pos[0]||0,user.pos[1]||0);if(r>maxR)maxR=r}
   if(ai.pos){const r=Math.hypot(ai.pos[0]||0,ai.pos[1]||0);if(r>maxR)maxR=r}
-  if(maxR<2)maxR=2;
+  if(maxR<2.5)maxR=2.5;
   const map=(x,y)=>[cx+(x/maxR)*scale*3.2, cy-(y/maxR)*scale*3.2];
+  const rangePx=(s.vision_range||5.5)/maxR*scale*3.2;
+  const half=s.vision_half_angle||55;
+  const inView=new Set((s.user_vision&&s.user_vision.in_view_ids)||[]);
   let els=`<rect width="100%" height="100%" fill="#0f1115" rx="8"/>`;
-  els+=`<text x="12" y="18" fill="#5c6575" font-size="11">form=${s.form||'?'} · vision cones active</text>`;
-  (s.nodes||[]).forEach(n=>{
-    const [x,y]=map(n.x,n.y); const col=SKIN[n.skin]||'#5b8def'; const r=n.sandboxed?11:15;
-    if(['sphere','circle','seed','flower','core'].includes(n.skin))
-      els+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" opacity="0.9" data-id="${n.id}" style="cursor:pointer"/>`;
-    else els+=`<rect x="${x-r}" y="${y-r}" width="${r*2}" height="${r*2}" rx="3" fill="${col}" opacity="0.9" data-id="${n.id}" style="cursor:pointer"/>`;
-    els+=`<text x="${x}" y="${y+r+11}" text-anchor="middle" class="node-label">${(n.label||'').slice(0,12)}</text>`;
-  });
+  els+=`<text x="12" y="16" fill="#5c6575" font-size="10">form=${s.form||'?'} · cones · trails · lupe20</text>`;
+  // trails
+  const drawTrail=(trail,col)=>{
+    if(!trail||trail.length<2)return;
+    let d='';
+    trail.forEach((p,i)=>{const [x,y]=map(p[0],p[1]);d+=(i?`L ${x} ${y}`:`M ${x} ${y}`)});
+    els+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="2" opacity="0.35"/>`;
+  };
+  drawTrail(s.user_trail,'#38bdf8');
+  drawTrail(ai.trail,'#e879f9');
+  // vision cones
   if(user.pos){const [ux,uy]=map(user.pos[0]||0,user.pos[1]||0);
-    els+=`<circle cx="${ux}" cy="${uy}" r="10" fill="#38bdf8" stroke="#fff" stroke-width="2"/>`;
-    els+=`<text x="${ux}" y="${uy-14}" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="600">YOU</text>`;
-    els+=`<text x="${ux}" y="${uy+4}" text-anchor="middle" fill="#0f1115" font-size="9">${(user.facing||'N').slice(0,2)}</text>`;}
+    els+=`<path d="${conePath(ux,uy,user.facing||'N',rangePx,half)}" fill="#38bdf8" opacity="0.12" stroke="#38bdf8" stroke-width="1" opacity="0.2"/>`;}
   if(ai.pos){const [ax,ay]=map(ai.pos[0]||0,ai.pos[1]||0);
-    els+=`<circle cx="${ax}" cy="${ay}" r="10" fill="#e879f9" stroke="#fff" stroke-width="2"/>`;
-    els+=`<text x="${ax}" y="${ay-14}" text-anchor="middle" fill="#e879f9" font-size="11" font-weight="600">AI</text>`;
-    els+=`<text x="${ax}" y="${ay+4}" text-anchor="middle" fill="#0f1115" font-size="9">${(ai.facing||'N').slice(0,2)}</text>`;}
+    els+=`<path d="${conePath(ax,ay,ai.facing||'N',rangePx,half)}" fill="#e879f9" opacity="0.10" stroke="#e879f9" stroke-width="1"/>`;}
+  // nodes
+  (s.nodes||[]).forEach(n=>{
+    const [x,y]=map(n.x,n.y); const col=SKIN[n.skin]||'#5b8def'; const r=n.sandboxed?10:14;
+    const glow=inView.has(String(n.id))?` stroke="#fff" stroke-width="2.5"`:'';
+    if(['sphere','circle','seed','flower','core'].includes(n.skin))
+      els+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" opacity="0.92" data-id="${n.id}" style="cursor:pointer"${glow}/>`;
+    else els+=`<rect x="${x-r}" y="${y-r}" width="${r*2}" height="${r*2}" rx="3" fill="${col}" opacity="0.92" data-id="${n.id}" style="cursor:pointer"${glow}/>`;
+    els+=`<text x="${x}" y="${y+r+10}" text-anchor="middle" class="node-label">${(n.label||'').slice(0,11)}</text>`;
+  });
+  // markers + facing arrows
+  const arrow=(x,y,facing,col)=>{
+    const ang=(-(FACE_ANG[facing]||90))*Math.PI/180;
+    const len=16; const x2=x+Math.cos(ang)*len, y2=y+Math.sin(ang)*len;
+    els+=`<line x1="${x}" y1="${y}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="2.5" marker-end="url(#arrow)"/>`;
+  };
+  els+=`<defs><marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#fff"/></marker></defs>`;
+  if(user.pos){const [ux,uy]=map(user.pos[0]||0,user.pos[1]||0);
+    els+=`<circle cx="${ux}" cy="${uy}" r="9" fill="#38bdf8" stroke="#fff" stroke-width="2"/>`;
+    els+=`<text x="${ux}" y="${uy-13}" text-anchor="middle" fill="#38bdf8" font-size="10" font-weight="600">YOU</text>`;
+    arrow(ux,uy,user.facing||'N','#38bdf8');
+  }
+  if(ai.pos){const [ax,ay]=map(ai.pos[0]||0,ai.pos[1]||0);
+    els+=`<circle cx="${ax}" cy="${ay}" r="9" fill="#e879f9" stroke="#fff" stroke-width="2"/>`;
+    els+=`<text x="${ax}" y="${ay-13}" text-anchor="middle" fill="#e879f9" font-size="10" font-weight="600">AI</text>`;
+    arrow(ax,ay,ai.facing||'N','#e879f9');
+  }
   svg.innerHTML=els;
   svg.querySelectorAll('[data-id]').forEach(el=>{
     el.addEventListener('click',()=>{
-      const id=el.getAttribute('data-id'); const n=(s.nodes||[]).find(x=>x.id===id);
-      if(!n)return; document.getElementById('cmd').value='confirm '+n.id;
+      const id=el.getAttribute('data-id');
+      document.getElementById('cmd').value='confirm '+id;
     });
   });
-  renderVision('user-seen','user-pattern',s.user_vision,'user');
-  renderVision('ai-seen','ai-pattern',s.ai_vision,'ai');
-  // also show AI doing in pattern line
+  renderVision('user-seen','user-pattern',s.user_vision);
+  renderVision('ai-seen','ai-pattern',s.ai_vision);
   if(s.ai){const ap=document.getElementById('ai-pattern');
-    ap.textContent=(ap.textContent||'')+` · AI doing: ${s.ai.doing||'idle'} · ${s.ai.last_action||''}`;
+    ap.textContent+=(ap.textContent?' · ':'')+`mode ${s.ai.mode||'manual'} · ${s.ai.doing||''} · ${s.ai.last_action||''}`;
   }
   const nur=document.getElementById('nursery');nur.innerHTML='';
   (s.nursery||[]).forEach(p=>{
     const d=document.createElement('div');d.className='proposal';
     d.innerHTML=`<div class="aff">aff ${(p.affinity||0).toFixed(3)} · ${p.kind||''}</div><div>${p.label||''}</div>
-      <div style="margin-top:4px"><button data-c="${p.id||''}">Confirm</button> <button data-r="${p.id||''}" class="warn">Reject</button></div>`;
+      <div style="margin-top:3px"><button data-c="${p.id||''}">Confirm</button> <button data-r="${p.id||''}" class="warn">Reject</button></div>`;
     nur.appendChild(d);
   });
   if(!(s.nursery||[]).length)nur.innerHTML='<span class="meta">Nursery empty</span>';
   nur.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>sendCmd('confirm '+b.getAttribute('data-c')));
   nur.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>sendCmd('reject '+b.getAttribute('data-r')));
   document.getElementById('user-pos').textContent=`pos ${JSON.stringify(user.pos||[0,0])} · face ${user.facing||'?'} · ${user.posture||''} ${user.locomotion||''}`;
-  document.getElementById('ai-pos').textContent=`pos ${JSON.stringify(ai.pos||[0,0])} · face ${ai.facing||'?'} · ${ai.doing||''} · ${ai.last_action||''}`;
+  document.getElementById('ai-pos').textContent=`pos ${JSON.stringify(ai.pos||[0,0])} · face ${ai.facing||'?'} · mode ${ai.mode||'manual'} · ${ai.doing||''}`;
+  const prox=(s.user_vision&&s.user_vision.proximity)||null;
+  document.getElementById('prox').textContent=prox?`${prox.name} dist ${prox.dist}`:'—';
   const av=s.avatar||{};
   document.getElementById('avatar').textContent=(av.look||'')+'  '+(av.describe||'—');
   document.getElementById('rings').textContent=(s.rings||[]).join(' → ')||'—';
+  document.getElementById('hist').textContent=(s.cmd_history||[]).slice().reverse().join(' · ')||'—';
 }
 document.getElementById('send').onclick=()=>{const c=document.getElementById('cmd').value.trim();if(c)sendCmd(c)};
 document.getElementById('cmd').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('send').click()});
 document.getElementById('refresh').onclick=async()=>{render(await getState());log('refreshed')};
 document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>sendCmd(b.getAttribute('data-cmd')));
+// WASD when not typing in input
+window.addEventListener('keydown',e=>{
+  if(document.activeElement===document.getElementById('cmd'))return;
+  const k=e.key.toLowerCase();
+  if(k==='w'){e.preventDefault();sendCmd('walk forward')}
+  else if(k==='a'){e.preventDefault();sendCmd('turn left')}
+  else if(k==='d'){e.preventDefault();sendCmd('turn right')}
+  else if(k==='q'){e.preventDefault();sendCmd('look')}
+  else if(k==='e'){e.preventDefault();sendCmd('ai look')}
+  else if(k==='f'){e.preventDefault();sendCmd('ai follow')}
+});
 getState().then(render).catch(e=>log('connect failed: '+e));
-setInterval(async()=>{if(document.getElementById('auto').checked){try{render(await getState())}catch(e){}}},2000);
+setInterval(async()=>{if(document.getElementById('auto').checked){try{render(await getState())}catch(e){}}},1800);
 </script>
 </body>
 </html>
@@ -576,26 +731,25 @@ def start_live(program, port: int = _DEFAULT_PORT, background: bool = True) -> D
         "url": f"http://{_HOST}:{port}/",
         "host": _HOST,
         "port": port,
-        "note": "Look around. See patterns. See what AI sees and does. Act on it.",
+        "note": "Lupe20: WASD, vision cones, trails, AI follow/wander, proximity, act on seen.",
         "stop": "Process exit stops the server.",
     }
 
 
 def smoke() -> bool:
-    print("=== LIVE VISUAL SMOKE ===")
+    print("=== LIVE VISUAL LUPE20 SMOKE ===")
     try:
         from form.open import open_program
         p = open_program("LiveSmoke")
         p.place("a", "Alpha", words="test", x=1, y=2)
         st = _state_payload(p)
         assert "user_vision" in st and "ai_vision" in st
-        print("[PASS] vision in state")
+        assert "user_trail" in st
+        out = _run_command(p, "ai follow")
+        assert out.get("ok") is True
         out = _run_command(p, "look")
         assert out.get("ok") is True
-        print("[PASS] look")
-        out = _run_command(p, "ai look")
-        assert out.get("ok") is True
-        print("[PASS] ai look")
+        print("[PASS] lupe20 core")
         print("=== RESULT: PASS ===")
         return True
     except Exception as e:
