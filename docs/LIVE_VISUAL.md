@@ -1,41 +1,64 @@
-# Live two-way visual
+# Live two-way visual — DEV
 
-**Status:** Horizon feature implemented as opt-in bridge.  
-**Default visual remains the offline snapshot.**
+**Status:** Implemented (opt-in). Snapshot `visual` remains default.
 
-## What it is
+## Capabilities (code, not talk)
 
-A localhost-only HTTP bridge so the panel both **shows** live state and **sends** commands that execute on the running Program.
+| Layer | What |
+|-------|------|
+| Two-way bridge | Browser ↔ live Program on `127.0.0.1` |
+| Matrix SVG | Ideas drawn from x/y · skin colors |
+| User movement | Avatar body pos/facing · walk · turn · face · sit/stand |
+| AI companion | Independent pos/facing · walk · turn · goto · status |
+| Directional vision | Look cone from facing · range 5 · half-angle ~55° |
+| Patterns | Seen count · skin mix · avg score · nearest |
+| AI vision + doing | What AI sees · what AI is doing / last action |
+| Act on seen | Confirm / Note buttons on every seen idea |
+| Nursery | Confirm / Reject live |
+| Lattice forms | cube · sphere · core · flower |
+| Auto-refresh | Optional 2s poll |
 
-- Browser → `POST /cmd` with `{ "cmd": "grow ideas 1" }`
-- Python executes through the same path the REPL uses
-- Response includes fresh state (nodes, nursery, avatar, form)
-- `GET /state` returns current snapshot
-
-## Constraints preserved
-
-- 127.0.0.1 only (offline core)
-- Growth still only produces Nursery proposals until `confirm`
-- Floor lock untouched
-- Snapshot `visual` command unchanged
-
-## How to use
+## Commands
 
 ```text
 you> live
-# or
 you> visual live
-```
 
-Then open the printed URL (default `http://127.0.0.1:8765/`) in a browser.
+# movement
+walk forward
+turn left / turn right
+face north
+ai walk
+ai walk 2
+ai turn left
+ai face N
+ai goto 3 4
+ai status
+
+# vision
+look
+ai look
+```
 
 ## Files
 
-- `form/dell_matrix/live_visual.py` — server + minimal live UI
-- `Program.live_visual()` — starts the bridge
-- REPL: `live` / `visual live`
+- `form/dell_matrix/live_visual.py` — server, vision, AI, UI
+- `Program.live_visual()` in `form/open.py`
+- REPL: `live` / `visual live` in `form/repl.py`
 
 ## Law
 
-DellMatrix enhances itself under the same Nursery + Floor rules.  
-No silent live-plane writes. No network beyond localhost.
+- Localhost only (offline core)
+- Growth still Nursery → confirm only
+- Floor locked
+- No silent live-plane writes
+- Snapshot path unchanged
+
+## Use
+
+```bash
+python launch.py
+# at prompt:
+live
+# open printed URL (default http://127.0.0.1:8765/)
+```

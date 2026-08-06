@@ -8,6 +8,7 @@
 | `docs/INSTALL.md` | Install |
 | `docs/TUTORIAL.md` | Guided path |
 | `docs/USER_READY.md` | User-ready seal |
+| `docs/LIVE_VISUAL.md` | Live two-way visual + movement + vision |
 | `form/MATRIX_ARCHITECTURE.md` | DEV / Blank / Ace / Worldwide / Main |
 | `form/IDEA_LAW.md` | Strong ideas: detail + goals |
 | `form/mandell/CODE_EVOLUTION.md` | Code Evolution chronicle (side-chat OK) |
@@ -27,9 +28,10 @@
 | `form.idea_create` | `--check` strong idea lines |
 | `form.seed_strong_ideas` | Plant Code Evolution + True Lore + law seeds |
 | `form.dell_matrix.decision_shells` | Ternary/fuzzy soft gates |
+| `form.dell_matrix.live_visual` | Live two-way panel (movement + vision) |
 | `form.mandell.latinmandell` | Depth / explain |
 
 **Profiles:** `python launch.py` · `Ace` · `Worldwide` · `Friend`  
 **Not authority:** `preform/` · `src/` · `trading/` · `llm/`  
-**Visual:** snapshot only for now · live real-time later  
+**Visual:** snapshot default · **live** = opt-in two-way with User+AI movement and directional vision  
 **Main auto-evolve:** specified, not coded
