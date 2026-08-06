@@ -47,7 +47,7 @@ Top commands (type help more for full list)
   create an idea called test
   grow ideas 2
   proposals | confirm all | rank
-  sphere | lattice | visual
+  sphere | lattice | visual | live
   save | load | status
   explain create        LatinMandell depth
   la cresce 2           Latin door
@@ -86,7 +86,7 @@ Bridge
 
 System
   tutorial | start
-  save | load | visual | status | enhance on/off | pulse
+  save | load | visual | live | status | enhance on/off | pulse
   acceptance
 """.strip()
 
@@ -116,16 +116,14 @@ def _echo_seed(english: str = "", mandel: str = "") -> None:
             _say(f"Mandell: {hit['mandel']}")
 
 
-def _handle_latinmandell(p: Program, lower: str, raw: str) -> bool:
-    """explain / deepen / morph / customize / customs / la …"""
-
+def _handle_latinmandell(p: Program, lower: str, raw: str):
     if lower.startswith("la ") or lower.startswith("latin "):
         text = raw.split(maxsplit=1)[1]
         rep = bridge_lang("la", text)
         _say(f"english: {rep.get('english')}")
         _say(f"mandel:  {rep.get('mandel')}")
         if rep.get("ok") == "true" and rep.get("english"):
-            return ("__exec__", rep["english"])  # type: ignore
+            return ("__exec__", rep["english"])
         if rep.get("ok") != "true":
             _say("no LA map for that phrase yet — try explain / customize")
         return True
@@ -176,7 +174,6 @@ def _handle_latinmandell(p: Program, lower: str, raw: str) -> bool:
         return True
 
     if lower.startswith("customize ") or lower.startswith("custom "):
-        # customize lumen dell 9 sense light made visible
         rest = raw.split(maxsplit=1)[1].strip()
         tokens = rest.split()
         if not tokens:
@@ -439,7 +436,18 @@ def _execute_intent(p: Program, intent, raw_line: str = "") -> Program:
         print()
         return p
 
-    # LatinMandell depth door (may request nested english exec)
+    # Live two-way visual (opt-in)
+    if lower in ("live", "visual live", "live visual", "livevisual"):
+        if hasattr(p, "live_visual"):
+            out = p.live_visual()
+            _say("Live visual started (localhost only).")
+            _say(out.get("url", ""))
+            _say(out.get("note", ""))
+            _echo_seed(mandel="09[Show] :: live_visual")
+        else:
+            _say("live_visual not available on this Program build.")
+        return p
+
     lm = _handle_latinmandell(p, lower, raw_line)
     if lm is True:
         return p
@@ -728,6 +736,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     print("  Offline · Type tutorial  or  help")
     print("  Try: create an idea called test")
     print("  Depth: explain create · la cresce 2")
+    print("  Live: live  (two-way localhost panel)")
     print()
     p = persist_load(owner) if do_load else open_program(owner)
     if do_load:
