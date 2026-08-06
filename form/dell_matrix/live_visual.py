@@ -2,21 +2,21 @@
 """
 Live two-way visual bridge — localhost only.
 
-Enhanced panel: SVG matrix from node positions, skin colors, more actions,
-node detail, nursery reject, auto-refresh, clearer feedback.
+Full movement inside the matrix for User (Avatar) and AI companion.
+Both positions are drawn on the SVG, both can be moved by commands.
 
 Constraints kept:
 - Offline core (127.0.0.1 only)
 - Growth still only via Nursery + confirm
 - Floor lock untouched
-- Snapshot path remains the default; this is opt-in via `live` / `visual live`
+- Snapshot path remains default
 
-Pure stdlib (http.server). No extra dependencies.
+Pure stdlib.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 import json
 import threading
 import urllib.parse
@@ -24,6 +24,33 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 _HOST = "127.0.0.1"
 _DEFAULT_PORT = 8765
+
+# Simple AI companion state (per live session)
+_AI: Dict[str, Any] = {
+    "name": "AI",
+    "pos": [2, 1],
+    "facing": "N",
+    "label": "AI",
+}
+
+_FACING_DELTA = {
+    "N": (0, 1), "NE": (1, 1), "E": (1, 0), "SE": (1, -1),
+    "S": (0, -1), "SW": (-1, -1), "W": (-1, 0), "NW": (-1, 1),
+}
+_FACING_ORDER = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+
+
+def _ai_step(steps: int = 1) -> Tuple[int, int]:
+    dx, dy = _FACING_DELTA.get(_AI["facing"], (0, 1))
+    _AI["pos"][0] += dx * steps
+    _AI["pos"][1] += dy * steps
+    return tuple(_AI["pos"])
+
+
+def _ai_turn(steps: int = 1) -> str:
+    idx = _FACING_ORDER.index(_AI["facing"]) if _AI["facing"] in _FACING_ORDER else 0
+    _AI["facing"] = _FACING_ORDER[(idx + steps) % 8]
+    return _AI["facing"]
 
 
 def _state_payload(program) -> Dict[str, Any]:
@@ -43,6 +70,16 @@ def _state_payload(program) -> Dict[str, Any]:
         })
     nursery = program.ranked_proposals() if hasattr(program, "ranked_proposals") else []
     avatar = program.avatar_status() if hasattr(program, "avatar_status") else {}
+    # Ensure body pos is exposed
+    body = {}
+    if hasattr(program, "avatar") and hasattr(program.avatar, "body"):
+        b = program.avatar.body
+        body = {
+            "pos": list(b.pos) if hasattr(b, "pos") else [0, 0],
+            "facing": b.facing.name if hasattr(b.facing, "name") else str(b.facing),
+            "posture": b.posture.name.lower() if hasattr(b.posture, "name") else "stand",
+            "locomotion": b.locomotion.name.lower() if hasattr(b.locomotion, "name") else "idle",
+        }
     lat = program.lattice.status() if hasattr(program, "lattice") else {}
     return {
         "ok": True,
@@ -51,6 +88,13 @@ def _state_payload(program) -> Dict[str, Any]:
         "nodes": nodes,
         "nursery": nursery[:20],
         "avatar": avatar,
+        "user": body,
+        "ai": {
+            "name": _AI["name"],
+            "pos": list(_AI["pos"]),
+            "facing": _AI["facing"],
+            "label": _AI["label"],
+        },
         "form": lat.get("form", "cube"),
         "skin": lat.get("skin", "cube"),
         "rings": list(getattr(program.duo, "rings", [])),
@@ -59,10 +103,59 @@ def _state_payload(program) -> Dict[str, Any]:
     }
 
 
+def _handle_ai_command(cmd: str) -> Optional[Dict[str, Any]]:
+    """Handle ai-specific movement commands. Returns None if not an AI cmd."""
+    lower = cmd.lower().strip()
+    if not lower.startswith("ai "):
+        return None
+    rest = lower[3:].strip()
+    if rest in ("walk", "step", "forward"):
+        pos = _ai_step(1)
+        return {"ok": True, "msg": f"AI walked to {pos}"}
+    if rest.startswith("walk ") or rest.startswith("step "):
+        try:
+            n = int(rest.split()[1])
+        except Exception:
+            n = 1
+        pos = _ai_step(n)
+        return {"ok": True, "msg": f"AI walked {n} to {pos}"}
+    if rest in ("turn left", "left"):
+        f = _ai_turn(-1)
+        return {"ok": True, "msg": f"AI turned left → {f}"}
+    if rest in ("turn right", "right"):
+        f = _ai_turn(1)
+        return {"ok": True, "msg": f"AI turned right → {f}"}
+    if rest.startswith("face "):
+        d = rest.split(maxsplit=1)[1].upper()
+        if d in _FACING_DELTA:
+            _AI["facing"] = d
+            return {"ok": True, "msg": f"AI facing {d}"}
+        return {"ok": False, "error": f"unknown facing {d}"}
+    if rest in ("status", "where", "pos"):
+        return {"ok": True, "msg": f"AI at {_AI['pos']} facing {_AI['facing']}"}
+    if rest.startswith("goto ") or rest.startswith("move "):
+        parts = rest.split()
+        try:
+            x, y = int(parts[1]), int(parts[2])
+            _AI["pos"] = [x, y]
+            return {"ok": True, "msg": f"AI moved to {[x, y]}"}
+        except Exception:
+            return {"ok": False, "error": "usage: ai goto X Y"}
+    return {"ok": False, "error": f"unknown ai command: {rest}"}
+
+
 def _run_command(program, cmd: str) -> Dict[str, Any]:
     cmd = (cmd or "").strip()
     if not cmd:
         return {"ok": False, "error": "empty command"}
+
+    # AI movement first
+    ai_res = _handle_ai_command(cmd)
+    if ai_res is not None:
+        ai_res["command"] = cmd
+        ai_res["state"] = _state_payload(program)
+        return ai_res
+
     try:
         from form.mandell.seed import looks_like_seed
         from form.mandell.executor import execute_seed
@@ -70,6 +163,7 @@ def _run_command(program, cmd: str) -> Dict[str, Any]:
         from form.repl import _execute_intent, _apply_seed_result
     except Exception as e:
         return {"ok": False, "error": f"import: {e}"}
+
     try:
         if looks_like_seed(cmd):
             result = execute_seed(program, cmd)
@@ -153,7 +247,7 @@ _LIVE_HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>DellMatrix Live</title>
 <style>
-:root{color-scheme:dark;--bg:#0a0b0e;--card:#151820;--line:#2a2f3a;--text:#e8eaed;--muted:#9aa3b2;--accent:#5b8def;--ok:#3cb371;--warn:#e6a817}
+:root{color-scheme:dark;--bg:#0a0b0e;--card:#151820;--line:#2a2f3a;--text:#e8eaed;--muted:#9aa3b2;--accent:#5b8def;--ok:#3cb371;--warn:#e6a817;--ai:#e879f9;--user:#38bdf8}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
 header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 h1{margin:0;font-size:16px}.meta{color:var(--muted);font-size:12px}
@@ -165,6 +259,7 @@ h2{margin:0 0 8px;font-size:11px;color:var(--muted);text-transform:uppercase;let
 button{background:#1c2230;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;cursor:pointer;min-height:34px}
 button:hover{border-color:var(--accent)}button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 button.ok{border-color:var(--ok)}button.warn{border-color:var(--warn)}
+button.user{border-color:var(--user)}button.ai{border-color:var(--ai)}
 #cmd{width:100%;background:#0f1115;border:1px solid var(--line);border-radius:8px;color:#7dd3a0;padding:9px;font-family:ui-monospace,monospace;font-size:13px}
 #log{font-size:11px;color:var(--muted);min-height:28px;margin-top:6px;white-space:pre-wrap}
 #svg-wrap{width:100%;overflow:auto;background:#0f1115;border-radius:10px;border:1px solid var(--line)}
@@ -173,13 +268,12 @@ svg{display:block;width:100%;height:auto}
 .detail .k{color:var(--muted);font-size:10px;margin-top:6px}.detail .v{font-size:12px;word-break:break-word}
 .proposal{border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px}
 .aff{color:var(--accent);font-size:10px}
-.chip{display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;margin-right:4px}
 </style>
 </head>
 <body>
 <header>
   <div><h1>DellMatrix Live</h1><div class="meta" id="meta">connecting…</div></div>
-  <div class="meta">localhost · two-way · Floor locked · <label><input type="checkbox" id="auto" checked> auto 2s</label></div>
+  <div class="meta">localhost · User + AI movement · Floor locked · <label><input type="checkbox" id="auto" checked> auto 2s</label></div>
 </header>
 <div class="layout">
   <section class="card">
@@ -197,15 +291,31 @@ svg{display:block;width:100%;height:auto}
       <button data-cmd="flower">Flower</button>
       <button data-cmd="lattice">Lattice</button>
     </div>
+    <h2>User movement</h2>
     <div class="btn-row">
-      <button data-cmd="enhance on">Enhance ON</button>
+      <button class="user" data-cmd="walk forward">Walk</button>
+      <button class="user" data-cmd="turn left">← Turn</button>
+      <button class="user" data-cmd="turn right">Turn →</button>
+      <button class="user" data-cmd="face north">Face N</button>
+      <button class="user" data-cmd="sit down">Sit</button>
+      <button class="user" data-cmd="stand up">Stand</button>
+    </div>
+    <h2>AI movement</h2>
+    <div class="btn-row">
+      <button class="ai" data-cmd="ai walk">AI Walk</button>
+      <button class="ai" data-cmd="ai turn left">AI ←</button>
+      <button class="ai" data-cmd="ai turn right">AI →</button>
+      <button class="ai" data-cmd="ai face N">AI Face N</button>
+      <button class="ai" data-cmd="ai status">AI Pos</button>
+    </div>
+    <div class="btn-row">
+      <button data-cmd="enhance on">Enhance</button>
       <button data-cmd="pulse">Pulse</button>
-      <button data-cmd="walk forward">Walk</button>
       <button data-cmd="smile">Smile</button>
       <button data-cmd="save">Save</button>
       <button data-cmd="status">Status</button>
     </div>
-    <input id="cmd" placeholder="any command…"/>
+    <input id="cmd" placeholder="any command… (ai walk 2 · ai goto 3 4)"/>
     <div class="btn-row" style="margin-top:6px">
       <button class="primary" id="send">Send</button>
       <button id="refresh">Refresh</button>
@@ -214,7 +324,7 @@ svg{display:block;width:100%;height:auto}
   </section>
   <section class="card">
     <h2>Matrix</h2>
-    <div id="svg-wrap"><svg id="matrix" viewBox="0 0 640 400"></svg></div>
+    <div id="svg-wrap"><svg id="matrix" viewBox="0 0 640 420"></svg></div>
     <div class="detail" id="detail" style="margin-top:10px">
       <h2 style="margin:0">Selected</h2>
       <div class="k">label</div><div class="v" id="d-label">—</div>
@@ -226,47 +336,68 @@ svg{display:block;width:100%;height:auto}
   <section class="card">
     <h2>Nursery</h2>
     <div id="nursery"></div>
-    <h2 style="margin-top:12px">Avatar</h2>
+    <h2 style="margin-top:12px">User</h2>
+    <div id="user-pos" class="meta">—</div>
+    <h2 style="margin-top:12px">AI</h2>
+    <div id="ai-pos" class="meta">—</div>
+    <h2 style="margin-top:12px">Avatar look</h2>
     <div id="avatar" class="meta">—</div>
     <h2 style="margin-top:12px">Rings</h2>
     <div id="rings" class="meta">—</div>
   </section>
 </div>
 <script>
-const SKIN = {cube:'#5b8def',sphere:'#7c5cbf',seed:'#3cb371',flower:'#e6a817',building:'#c47c48',words:'#888',circle:'#2aa7a0',core:'#d97706'};
-const log = t => document.getElementById('log').textContent = t;
-let lastState = null;
+const SKIN={cube:'#5b8def',sphere:'#7c5cbf',seed:'#3cb371',flower:'#e6a817',building:'#c47c48',words:'#888',circle:'#2aa7a0',core:'#d97706'};
+const log=t=>document.getElementById('log').textContent=t;
+let lastState=null;
 async function getState(){const r=await fetch('/state');return r.json()}
 async function sendCmd(cmd){
   log('→ '+cmd);
   const r=await fetch('/cmd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd})});
   const data=await r.json();
-  if(data.ok){log('✓ '+cmd);render(data.state||await getState())}
+  if(data.ok){log('✓ '+(data.msg||cmd));render(data.state||await getState())}
   else{log('✗ '+(data.error||'failed'));if(data.state)render(data.state)}
 }
 function render(s){
   if(!s)return; lastState=s;
-  document.getElementById('meta').textContent=`owner=${s.owner||'?'} · ideas=${s.ideas??0} · form=${s.form||'?'} · skin=${s.skin||'?'} · hist=${s.history_len??0}`;
-  // SVG matrix
+  document.getElementById('meta').textContent=`owner=${s.owner||'?'} · ideas=${s.ideas??0} · form=${s.form||'?'} · hist=${s.history_len??0}`;
   const svg=document.getElementById('matrix');
-  const W=640,H=400,cx=W/2,cy=H/2,scale=55;
-  let maxR=1;
+  const W=640,H=420,cx=W/2,cy=H/2,scale=48;
+  let maxR=2;
   (s.nodes||[]).forEach(n=>{const r=Math.hypot(n.x,n.y);if(r>maxR)maxR=r});
-  if(maxR<1)maxR=1;
+  const user=s.user||{}; const ai=s.ai||{};
+  if(user.pos){const r=Math.hypot(user.pos[0]||0,user.pos[1]||0);if(r>maxR)maxR=r}
+  if(ai.pos){const r=Math.hypot(ai.pos[0]||0,ai.pos[1]||0);if(r>maxR)maxR=r}
+  if(maxR<2)maxR=2;
+  const map=(x,y)=>[cx+(x/maxR)*scale*3.2, cy-(y/maxR)*scale*3.2];
   let els=`<rect width="100%" height="100%" fill="#0f1115" rx="8"/>`;
-  els+=`<text x="12" y="20" fill="#5c6575" font-size="11">form=${s.form||'?'} · Floor locked</text>`;
+  els+=`<text x="12" y="18" fill="#5c6575" font-size="11">form=${s.form||'?'} · User+AI movement</text>`;
+  // nodes
   (s.nodes||[]).forEach(n=>{
-    const x=cx+(n.x/maxR)*scale*3, y=cy-(n.y/maxR)*scale*3;
+    const [x,y]=map(n.x,n.y);
     const col=SKIN[n.skin]||'#5b8def';
-    const r=n.sandboxed?12:16;
+    const r=n.sandboxed?11:15;
     if(['sphere','circle','seed','flower','core'].includes(n.skin))
       els+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" opacity="0.9" data-id="${n.id}" style="cursor:pointer"/>`;
     else
-      els+=`<rect x="${x-r}" y="${y-r}" width="${r*2}" height="${r*2}" rx="4" fill="${col}" opacity="0.9" data-id="${n.id}" style="cursor:pointer"/>`;
-    els+=`<text x="${x}" y="${y+r+12}" text-anchor="middle" class="node-label">${(n.label||'').slice(0,14)}</text>`;
-    if(n.score>0)els+=`<text x="${x}" y="${y+4}" text-anchor="middle" fill="#0f1115" font-size="10" font-weight="600">${n.score.toFixed(1)}</text>`;
+      els+=`<rect x="${x-r}" y="${y-r}" width="${r*2}" height="${r*2}" rx="3" fill="${col}" opacity="0.9" data-id="${n.id}" style="cursor:pointer"/>`;
+    els+=`<text x="${x}" y="${y+r+11}" text-anchor="middle" class="node-label">${(n.label||'').slice(0,12)}</text>`;
   });
-  if(!(s.nodes||[]).length)els+=`<text x="${cx}" y="${cy}" text-anchor="middle" fill="#9aa3b2" font-size="14">No ideas yet</text>`;
+  // User marker
+  if(user.pos){
+    const [ux,uy]=map(user.pos[0]||0,user.pos[1]||0);
+    els+=`<circle cx="${ux}" cy="${uy}" r="10" fill="#38bdf8" stroke="#fff" stroke-width="2"/>`;
+    els+=`<text x="${ux}" y="${uy-14}" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="600">YOU</text>`;
+    els+=`<text x="${ux}" y="${uy+4}" text-anchor="middle" fill="#0f1115" font-size="9">${(user.facing||'N').slice(0,2)}</text>`;
+  }
+  // AI marker
+  if(ai.pos){
+    const [ax,ay]=map(ai.pos[0]||0,ai.pos[1]||0);
+    els+=`<circle cx="${ax}" cy="${ay}" r="10" fill="#e879f9" stroke="#fff" stroke-width="2"/>`;
+    els+=`<text x="${ax}" y="${ay-14}" text-anchor="middle" fill="#e879f9" font-size="11" font-weight="600">AI</text>`;
+    els+=`<text x="${ax}" y="${ay+4}" text-anchor="middle" fill="#0f1115" font-size="9">${(ai.facing||'N').slice(0,2)}</text>`;
+  }
+  if(!(s.nodes||[]).length && !user.pos)els+=`<text x="${cx}" y="${cy}" text-anchor="middle" fill="#9aa3b2" font-size="14">No ideas yet</text>`;
   svg.innerHTML=els;
   svg.querySelectorAll('[data-id]').forEach(el=>{
     el.addEventListener('click',()=>{
@@ -281,21 +412,20 @@ function render(s){
     });
   });
   // Nursery
-  const nur=document.getElementById('nursery');
-  nur.innerHTML='';
+  const nur=document.getElementById('nursery');nur.innerHTML='';
   (s.nursery||[]).forEach(p=>{
     const d=document.createElement('div');d.className='proposal';
-    d.innerHTML=`<div class="aff">aff ${(p.affinity||0).toFixed(3)} · ${p.kind||''}</div>
-      <div>${p.label||''}</div>
-      <div style="margin-top:4px">
-        <button data-c="${p.id||''}">Confirm</button>
-        <button data-r="${p.id||''}" class="warn">Reject</button>
-      </div>`;
+    d.innerHTML=`<div class="aff">aff ${(p.affinity||0).toFixed(3)} · ${p.kind||''}</div><div>${p.label||''}</div>
+      <div style="margin-top:4px"><button data-c="${p.id||''}">Confirm</button> <button data-r="${p.id||''}" class="warn">Reject</button></div>`;
     nur.appendChild(d);
   });
   if(!(s.nursery||[]).length)nur.innerHTML='<span class="meta">Nursery empty</span>';
   nur.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>sendCmd('confirm '+b.getAttribute('data-c')));
   nur.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>sendCmd('reject '+b.getAttribute('data-r')));
+  // positions
+  const u=s.user||{}; const a=s.ai||{};
+  document.getElementById('user-pos').textContent=`pos ${JSON.stringify(u.pos||[0,0])} · face ${u.facing||'?'} · ${u.posture||''} ${u.locomotion||''}`;
+  document.getElementById('ai-pos').textContent=`pos ${JSON.stringify(a.pos||[0,0])} · face ${a.facing||'?'} · ${a.label||'AI'}`;
   const av=s.avatar||{};
   document.getElementById('avatar').textContent=(av.look||'')+'  '+(av.describe||'—');
   document.getElementById('rings').textContent=(s.rings||[]).join(' → ')||'—';
@@ -305,11 +435,7 @@ document.getElementById('cmd').addEventListener('keydown',e=>{if(e.key==='Enter'
 document.getElementById('refresh').onclick=async()=>{render(await getState());log('refreshed')};
 document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>sendCmd(b.getAttribute('data-cmd')));
 getState().then(render).catch(e=>log('connect failed: '+e));
-setInterval(async()=>{
-  if(document.getElementById('auto').checked){
-    try{render(await getState())}catch(e){}
-  }
-},2000);
+setInterval(async()=>{if(document.getElementById('auto').checked){try{render(await getState())}catch(e){}}},2000);
 </script>
 </body>
 </html>
@@ -338,8 +464,8 @@ def start_live(program, port: int = _DEFAULT_PORT, background: bool = True) -> D
         "url": url,
         "host": _HOST,
         "port": port,
-        "note": "Open the URL in a browser. Commands execute on this live Program. Offline localhost only.",
-        "stop": "Process exit stops the server (daemon thread).",
+        "note": "Open the URL. User (Avatar) + AI both move on the matrix. Offline localhost only.",
+        "stop": "Process exit stops the server.",
     }
 
 
@@ -351,10 +477,11 @@ def smoke() -> bool:
         p.place("a", "Alpha", words="test")
         st = _state_payload(p)
         assert st["ideas"] >= 1
-        print("[PASS] state payload")
-        out = _run_command(p, "status")
+        assert "user" in st and "ai" in st
+        print("[PASS] state + user/ai")
+        out = _run_command(p, "ai walk")
         assert out.get("ok") is True
-        print("[PASS] run command")
+        print("[PASS] ai walk")
         print("=== RESULT: PASS ===")
         return True
     except Exception as e:
