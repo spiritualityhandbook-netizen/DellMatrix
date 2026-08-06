@@ -101,6 +101,7 @@ class Program:
             ("Avatar", "entity", 2, "Avatar"),
             ("HarmonicLattice", "lattice", 15, "Lattice"),
             ("KeyLedger", "memory", 10, "Keep"),
+            ("LiveVisual", "tool", 9, "LiveVisual"),
         ):
             self.matrix.snap(
                 SnapCandidate(
@@ -196,7 +197,6 @@ class Program:
             )
         except Exception:
             pass
-        # Permanent key — Existence rule
         try:
             self.keys.remember(label or id, meta={"id": id}, payload=kwargs.get("words") or label)
         except Exception:
@@ -279,6 +279,12 @@ class Program:
             form=self.lattice.perception.form.value,
             skin=self.lattice.perception.skin_name(),
         )
+
+    def live_visual(self, port: int = 8765) -> Dict[str, Any]:
+        """Start localhost two-way visual bridge. Opt-in. Snapshot remains default."""
+        from form.dell_matrix.live_visual import start_live
+        self.note_seed(9, "Show", "live_visual")
+        return start_live(self, port=port, background=True)
 
     @staticmethod
     def load(owner: str = "Operator", path: Optional[str] = None) -> "Program":
