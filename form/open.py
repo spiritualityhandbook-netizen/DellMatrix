@@ -718,7 +718,15 @@ class Program:
             return render_body(self.body_style, facing)
 
     def force_tick(self) -> Dict[str, Any]:
+        """One force pulse + Nature of Code physics (gravity wells + friction on idea nodes)."""
         report = self.forces.tick(self.nodes_payload(), owner=self.owner)
+        # Auto-wired Nature of Code physics — idea nodes move under real forces
+        try:
+            from form.dell_matrix.nature_physics import program_force_tick_nature
+            nature = program_force_tick_nature(self)
+            report["nature"] = nature
+        except Exception as e:
+            report["nature"] = {"ok": False, "error": str(e)}
         self.note_seed(25, "Pulse", "force_tick")
         return report
 
