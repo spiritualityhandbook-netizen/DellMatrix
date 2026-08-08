@@ -1,12 +1,18 @@
-# Introduction — The Nature of Code
+Introduction — The Nature of Code
 
-Source: https://natureofcode.com/
+Source: https://natureofcode.com/introduction/
 
-Core idea: simulation of natural systems through code. Vectors, forces, oscillation, particles, autonomous agents, physics libraries, cellular automata, fractals, evolutionary computing, neural networks, neuroevolution.
+Over a decade ago, Daniel Shiffman self-published The Nature of Code as an
+online resource and print book exploring emergent and evolutionary properties of
+nature via code (Processing / p5.js). This online edition is a reboot centered
+on JavaScript and p5.js; it remains a programming-first exploration of
+algorithms for motion, life, complexity, and intelligence.
 
-Key framing: nature as computation; code as a way to understand and recreate the dynamics of the living world.
+Key points:
+- Purpose: simulate natural phenomena via algorithmic techniques.
+- Audience: readers with at least one semester of programming basics (variables,
+  conditionals, loops, objects, arrays).
+- Format: examples use p5.js; many examples embed an interactive sketch with
+  code snippets and explanations.
 
-Seeds for English Brain:
-- Nature of Code introduction frames simulation of natural systems through code.
-- The book walks from vectors and forces up through agents, fractals, and neural networks.
-- It treats nature as computable and code as a laboratory for understanding living dynamics.
+Next chapter link: https://natureofcode.com/random/ (Chapter 0: Randomness)
