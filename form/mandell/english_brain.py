@@ -477,8 +477,7 @@ EXPAND_FAMILIES: List[Dict[str, Any]] = [
 ]
 
 # Small learned normals to cover common misses
-_LEARNED["what are my preferences"] = "prefs"
-_LEARNED["rain please"] = "weather rain"
+
 
 
 @dataclass
@@ -509,6 +508,10 @@ class ExpandReport:
 _LEARNED: Dict[str, str] = {}
 _MASTERY: Dict[str, float] = {}  # family action → rate 0..1
 _CYCLE_COUNT: int = 0
+
+# Seed a couple learned normalizations to close common misses
+_LEARNED["what are my preferences"] = "prefs"
+_LEARNED["rain please"] = "weather rain"
 
 
 def strip_politeness(text: str) -> str:
