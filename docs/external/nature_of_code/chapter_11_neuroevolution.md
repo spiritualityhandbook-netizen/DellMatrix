@@ -1,10 +1,22 @@
-# Chapter 11 — Neuroevolution
+Chapter 11 — Neuroevolution (notes)
 
 Source: https://natureofcode.com/neuroevolution/
 
-Key concepts: evolving neural network weights/topology with genetic algorithms, NEAT-style ideas, agents that learn controllers without labeled data, combining chapters 5 + 9 + 10.
+Summary:
+Chapter 11 combines neural networks with evolutionary algorithms. Instead of
+(or in addition to) gradient-based training, the weights and sometimes topology
+of networks are evolved using selection, crossover, and mutation. This is
+useful when fitness is easy to evaluate but gradients are hard to compute
+(e.g., game agents, robotics).
 
-Seeds:
-- Neuroevolution chapter evolves neural controllers instead of hand-coding behavior.
-- Genetic algorithms optimize network weights (and sometimes topology) for agent fitness.
-- Combines autonomous agents, evolutionary computing and neural networks into learning creatures.
+Key points:
+- Genome encodes network weights (and optionally architecture).
+- Fitness comes from agent performance in an environment.
+- Generations of networks improve via evolutionary operators.
+- Can be combined with novelty search or other open-ended evolution techniques.
+
+Integration:
+- Seeds for english_brain around evolving controllers.
+- Possible future demo of simple neuroevolution for a DellMatrix agent.
+
+End of core Nature of Code chapters.

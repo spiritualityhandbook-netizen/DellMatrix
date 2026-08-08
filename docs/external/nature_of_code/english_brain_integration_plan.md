@@ -1,30 +1,19 @@
-English Brain integration plan — Nature of Code
+English Brain Integration Plan — Nature of Code
 
-Goal
-----
-Integrate Nature of Code chapter summaries into `form/mandell/english_brain.py` as paraphrase seeds, enabling page-by-page chapter queries to be learned and grounded by the English Brain enhance loop.
+Goal: Turn chapter notes into high-quality paraphrase seeds that expand
+`form/mandell/english_brain.py` so the program understands and can generate
+natural language around vectors, forces, particles, agents, CA, fractals,
+evolution, and neural concepts.
 
-Page-by-page implementation plan
---------------------------------
-1. Confirm all chapter summary notes are available under `docs/external/nature_of_code/`.
-2. Add a new chapter knowledge paraphrase pattern in `form/mandell/english_brain.py`:
-   - map questions like "what is X", "tell me about X", "explain X", "describe X" to canonical chapter forms.
-3. Add chapter seed families to `EXPAND_FAMILIES` for each page:
-   - `chapter introduction`
-   - `chapter randomness`
-   - `chapter vectors`
-   - `chapter forces`
-   - `chapter oscillation`
-   - `chapter particle systems`
-   - `chapter autonomous agents`
-   - `chapter physics libraries`
-   - `chapter cellular automata`
-   - `chapter fractals`
-   - `chapter evolutionary computing`
-   - `chapter neural networks`
-   - `chapter neuroevolution`
-4. Seed each family with 3–5 short paraphrase sentences drawn from the chapter notes.
-5. Run English Brain enhance / smoke after integration.
-6. Document any new Dell or lattice hooks in NBD_LOG.
+Steps already prepared in docs:
+1. Each chapter file under docs/external/nature_of_code/ contains summary +
+   integration ideas.
+2. For every chapter produce 8–15 one-line paraphrase seeds.
+3. Append them under a keyed section in english_brain data structures
+   (e.g. nature_of_code_chapter_N).
+4. Keep Floor/Nursery laws; all new ideas start as proposals.
+5. After seed addition, run english_expand or the 150-loop to measure mastery.
 
-Keep all seeds offline-capable and Floor-locked.
+Status: chapter notes 0–11 + appendix + resources are now present and synced.
+Next concrete action: extract seeds from the notes and plant them via the
+live program or a small offline script, then confirm in Nursery.
