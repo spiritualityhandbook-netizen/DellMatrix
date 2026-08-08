@@ -1,0 +1,3 @@
+Summary of Nature of Code related video (IoM5zUI8oFc)
+
+High-level: overview / walkthrough material supporting the book chapters on vectors, forces, and early simulation techniques. Used as supplementary reference for English Brain seeds and visual force examples in the Dual Lattice.
