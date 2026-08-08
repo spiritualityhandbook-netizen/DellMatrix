@@ -49,9 +49,18 @@ Automated: `python -m form.accept` and `python -m form.smoke_all`
 
 ---
 
+## Visual (current)
+
+| Path | Command | Notes |
+|------|---------|--------|
+| Offline snapshot | `visual` | Default acceptance step · copy-paste commands |
+| Live two-way | `live` | Opt-in · localhost only · cones · AI · workshops |
+| Looking | `look` | Directional vision offline + live |
+| Pages | `zoom` / `page` / `unzoom` | Idea cell detail |
+
 ## Not claimed
 
-- Live two-way visual (panel is offline snapshot)  
+- Remote multiplayer / cloud visual  
 - Worldwide multi-language bridge (ES+FR foundation complete; more on request)  
 - Scientific Voynich decode (honesty gate)  
 - Personal business CRM as core product  

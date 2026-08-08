@@ -124,6 +124,7 @@ def serialize(program: Program) -> Dict[str, Any]:
         "enhance_on": program.enhance.on,
         "sandbox_on": program.sandbox.on,
         "network_url": program.network_url or "",
+        "internet": program.internet.to_dict() if getattr(program, "internet", None) and hasattr(program.internet, "to_dict") else {"on": False},
         "ambient": {"master_on": amb.master_on, "enabled": dict(amb.enabled)},
         "resonance": {
             "scores": dict(program.enhance.state.scores),
@@ -155,6 +156,25 @@ def serialize(program: Program) -> Dict[str, Any]:
         },
         "duo_generation": program.duo.generation,
         "avatar": _serialize_avatar(program),
+        "companion": program.companion.to_dict() if hasattr(program, "companion") else {},
+        "inspire": program.inspire.to_dict() if hasattr(program, "inspire") and hasattr(program.inspire, "to_dict") else {},
+        "self_knowledge": program.self_knowledge.to_dict() if hasattr(program, "self_knowledge") and hasattr(program.self_knowledge, "to_dict") else {},
+        "ux": {
+            "mode": getattr(program, "ux_mode", "builder"),
+            "skin_filter": getattr(program, "skin_filter", None),
+            "persona_lens": getattr(program, "persona_lens", None),
+            "grid_snap": bool(getattr(program, "grid_snap", False)),
+            "active_workshop": getattr(program, "active_workshop", None),
+            "click_mode": getattr(program, "click_mode", "inspect"),
+            "camera_follow": bool(getattr(program, "camera_follow", True)),
+            "show_nursery_ghosts": bool(getattr(program, "show_nursery_ghosts", True)),
+            "user_trail": list(getattr(program, "user_trail", []) or [])[-16:],
+            "active_view": getattr(program, "active_view", "growth"),
+            "body_style": getattr(program, "body_style", "stick"),
+            "auto_confirm_grow": bool(getattr(program, "auto_confirm_grow", False)),
+        },
+        "forces": program.forces.to_dict() if hasattr(program, "forces") else {},
+        "bimo": program.bimo.to_dict() if hasattr(program, "bimo") else {},
         "nursery": _serialize_nursery(program),
         "lattice": _serialize_lattice(program),
         "history": list(getattr(program, "history", []) or [])[-24:],
@@ -331,6 +351,11 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
         p.sandbox.turn_off()
 
     p.network_url = data.get("network_url") or ""
+    try:
+        from form.dell_matrix.internet_gate import InternetGate
+        p.internet = InternetGate.from_dict(data.get("internet") or {})
+    except Exception:
+        pass
 
     amb = data.get("ambient", {})
     if amb.get("master_on"):
@@ -381,6 +406,61 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     _restore_avatar(p, data)
     _restore_nursery(p, data)
     _restore_lattice(p, data)
+
+    try:
+        from form.dell_matrix.companion import AICompanion
+        p.companion = AICompanion.from_dict(data.get("companion") or {})
+    except Exception:
+        pass
+
+    try:
+        from form.dell_matrix.inspire_pack import InspireState
+        p.inspire = InspireState.from_dict(data.get("inspire") or {})
+    except Exception:
+        pass
+
+    try:
+        from form.dell_matrix.self_model import SelfKnowledge
+        p.self_knowledge = SelfKnowledge.from_dict(data.get("self_knowledge") or {})
+    except Exception:
+        pass
+
+    ux = data.get("ux") or {}
+    if ux:
+        try:
+            from form.dell_matrix.actions_registry import normalize_mode
+            p.ux_mode = normalize_mode(ux.get("mode", "builder"))
+        except Exception:
+            p.ux_mode = ux.get("mode") or "builder"
+        p.skin_filter = ux.get("skin_filter")
+        p.persona_lens = ux.get("persona_lens")
+        p.grid_snap = bool(ux.get("grid_snap", False))
+        p.active_workshop = ux.get("active_workshop")
+        p.click_mode = ux.get("click_mode") or "inspect"
+        p.camera_follow = bool(ux.get("camera_follow", True))
+        p.show_nursery_ghosts = bool(ux.get("show_nursery_ghosts", True))
+        trail = ux.get("user_trail") or []
+        p.user_trail = [
+            [float(t[0]), float(t[1])]
+            for t in trail
+            if isinstance(t, (list, tuple)) and len(t) >= 2
+        ][-16:]
+        p.active_view = ux.get("active_view") or "growth"
+        p.body_style = ux.get("body_style") or "stick"
+        p.auto_confirm_grow = bool(ux.get("auto_confirm_grow", False))
+
+    try:
+        from form.dell_matrix.forces import ForceField
+        p.forces = ForceField.from_dict(data.get("forces") or {})
+    except Exception:
+        pass
+
+    try:
+        from form.dell_matrix.personas import BIMOBody, PersonaMatrix
+        p.bimo = BIMOBody.from_dict(data.get("bimo") or {})
+        p.persona_matrix = PersonaMatrix(active=getattr(p, "persona_lens", None))
+    except Exception:
+        pass
 
     hist = data.get("history") or []
     if isinstance(hist, list):

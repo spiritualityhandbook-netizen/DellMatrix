@@ -90,44 +90,33 @@ class Perception:
 
 
 def flower_centers(rings: int = 2, radius: float = 1.0) -> List[Tuple[float, float]]:
-    """
-    Flower of Life center points in 2D.
-    Ring 0: origin
-    Ring 1: 6 centers at 60° around origin
-    Ring 2+: continue hexagonal packing
-    """
-    centers: List[Tuple[float, float]] = [(0.0, 0.0)]
-    if rings < 1:
-        return centers
-    # ring 1
-    for k in range(6):
-        ang = math.radians(60 * k)
-        centers.append((radius * math.cos(ang), radius * math.sin(ang)))
-    # further rings: hexagonal lattice points with axial coords
-    for r in range(2, rings + 1):
-        for i in range(r):
-            # walk hex ring
-            pass
-        # six corners + edges
-        for corner in range(6):
-            ang0 = math.radians(60 * corner)
-            # from corner along edge to next
-            ang1 = math.radians(60 * ((corner + 1) % 6))
-            c0 = (r * radius * math.cos(ang0), r * radius * math.sin(ang0))
-            c1 = (r * radius * math.cos(ang1), r * radius * math.sin(ang1))
-            centers.append(c0)
-            for e in range(1, r):
-                t = e / r
-                centers.append((c0[0] * (1 - t) + c1[0] * t, c0[1] * (1 - t) + c1[1] * t))
-    # dedupe roughly
-    out: List[Tuple[float, float]] = []
-    seen = set()
-    for x, y in centers:
-        key = (round(x, 5), round(y, 5))
-        if key not in seen:
-            seen.add(key)
-            out.append((x, y))
-    return out
+    """Flower of Life centers — delegated to sacred_geometry (enhanced FoL)."""
+    try:
+        from form.dell_matrix.sacred_geometry import flower_centers as _fc
+        return _fc(rings=rings, radius=radius)
+    except Exception:
+        # inline fallback
+        centers: List[Tuple[float, float]] = [(0.0, 0.0)]
+        if rings < 1:
+            return centers
+        for r in range(1, rings + 1):
+            for corner in range(6):
+                ang0 = math.radians(60 * corner)
+                ang1 = math.radians(60 * ((corner + 1) % 6))
+                c0 = (r * radius * math.cos(ang0), r * radius * math.sin(ang0))
+                c1 = (r * radius * math.cos(ang1), r * radius * math.sin(ang1))
+                centers.append(c0)
+                for e in range(1, r):
+                    t = e / r
+                    centers.append((c0[0] * (1 - t) + c1[0] * t, c0[1] * (1 - t) + c1[1] * t))
+        out: List[Tuple[float, float]] = []
+        seen = set()
+        for x, y in centers:
+            key = (round(x, 5), round(y, 5))
+            if key not in seen:
+                seen.add(key)
+                out.append((x, y))
+        return out
 
 
 def flower_to_lattice_coords(
@@ -160,6 +149,9 @@ def shared_lattice_principle() -> str:
         "Core mode is radial shells from origin on the same points.\n"
         "Flower of Life places equal circles on a triangular packing\n"
         "  that still snaps to the same coordinate family.\n"
+        "Vesica/Verita: two circles meet — strength is truth-of-overlap.\n"
+        "Voynich rings: Seed→Token→Body→Lens→Evolve (organizational only).\n"
+        "Fractals: Rule 90 / bounded orbit — pattern tools, not proof claims.\n"
         "Snap/overlay never destroys the structural lattice."
     )
 

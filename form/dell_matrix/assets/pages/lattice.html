@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>DellMatrix · Main Lattice</title>
+<!-- page:lattice --><!-- pageenh:l-mark -->
+<link rel="stylesheet" href="/css/app.css"/>
+<style>
+.lat-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px}
+@media(max-width:900px){.lat-layout{grid-template-columns:1fr}}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.filters input,.filters select{background:#070b12;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:7px 9px;font-size:12px}
+.filters input{min-width:160px;flex:1}
+.list-scroll{max-height:min(60vh,520px);overflow:auto}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="page">
+    <div class="sync-strip" id="sync-strip" aria-live="polite"><span class="dot"></span> <span id="sync-text">syncing…</span></div>
+
+    <div class="page-head">
+      <div>
+        <h1>Main Lattice</h1>
+        <p class="lede" id="lede">Full idea map — skins, edges, vision cone, YOU marker. Pan · wheel zoom · click select.</p>
+      </div>
+      <div class="toolbar">
+        <a class="nav" href="/walk"><button type="button">Open Walk</button></a>
+        <button type="button" id="btn-home">Home (0,0)</button>
+        <button type="button" id="btn-look" class="sm">Look</button>
+        <button type="button" id="btn-nearest">Nearest</button>
+        <button type="button" id="btn-refresh">Refresh</button>
+        <button type="button" class="primary" id="btn-walk-sel" disabled>Walk to selected</button>
+        <button type="button" class="sm" data-cmd="page">Idea page</button>
+        <button type="button" class="sm" data-cmd="self">Self</button>
+      </div>
+    </div>
+    <div id="legend" class="row" style="margin-bottom:10px"></div>
+    <div class="filters">
+      <input id="q" placeholder="Filter label, id, skin, words…"/>
+      <select id="skin">
+        <option value="">All skins</option>
+        <option>cube</option><option>sphere</option><option>seed</option>
+        <option>flower</option><option>building</option><option>words</option>
+        <option>circle</option><option>core</option>
+      </select>
+      <select id="sort">
+        <option value="score">Sort: score</option>
+        <option value="dist">Sort: distance</option>
+        <option value="label">Sort: label</option>
+        <option value="xy">Sort: x,y</option>
+      </select>
+      <span class="pill" id="count">0</span>
+      <span class="pill ok" id="health">—</span>
+      <span class="pill" id="form-pill">form</span>
+    </div>
+    <div class="lat-layout">
+      <div class="lat-map"><canvas id="map" width="800" height="520"></canvas></div>
+      <div>
+        <div class="stat" id="sel" style="margin-bottom:8px">Select a node…</div>
+        <div class="list list-scroll" id="list"></div>
+        <div class="row" style="margin-top:8px">
+          <button type="button" class="sm" id="btn-read" disabled title="Refresh page card">Read</button>
+          <button type="button" class="sm" id="btn-zoom" disabled>Zoom</button>
+          <button type="button" class="sm" id="btn-center" title="Pan camera to you">Center on me</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3 id="page-title">Page</h3>
+      <div class="d" id="page-meta"></div>
+      <pre id="page-body" class="mono-out" style="max-height:200px">Select a node to read its page.</pre>
+    </div>
+  
+    <nav class="row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)" aria-label="All pages" data-navhub="lattice">
+      <a href="/"><button type="button" class="sm" title="Menu">Menu</button></a>
+      <a href="/walk"><button type="button" class="sm" title="Walk">Walk</button></a>
+      <a href="/lattice"><button type="button" class="sm" title="Lattice">Lattice</button></a>
+      <a href="/nursery"><button type="button" class="sm" title="Nursery">Nursery</button></a>
+      <a href="/program"><button type="button" class="sm" title="Program">Program</button></a>
+      <a href="/personas"><button type="button" class="sm" title="Personas">Personas</button></a>
+      <a href="/forces"><button type="button" class="sm" title="Forces">Forces</button></a>
+      <a href="/geometry"><button type="button" class="sm" title="Geometry">Geometry</button></a>
+      <a href="/matrices"><button type="button" class="sm" title="Matrices">Matrices</button></a>
+      <a href="/workshops"><button type="button" class="sm" title="Workshops">Workshops</button></a>
+      <a href="/inspire"><button type="button" class="sm" title="Inspire">Inspire</button></a>
+      <a href="/console"><button type="button" class="sm" title="Console">Console</button></a>
+    </nav>
+</div>
+</div>
+<script src="/js/core.js"></script>
+<script>
+(function(){
+  const shell = DM.mountShell({ page: 'lattice' });
+  let STATE=null, SEL=null;
+  const cam={x:0,y:0,scale:8,drag:false,lx:0,ly:0};
+  const $=id=>document.getElementById(id);
+
+  function dist(n,c){ return Math.hypot((n.x||0)-(c[0]||0),(n.y||0)-(c[1]||0)); }
+  function filtered(){
+    if(!STATE) return [];
+    const q=$('q').value.toLowerCase().trim();
+    const skin=$('skin').value;
+    const sort=$('sort').value;
+    const center=(STATE.fp&&STATE.fp.center)||[0,0,0];
+    let nodes=(STATE.nodes||[]).slice();
+    if(skin) nodes=nodes.filter(n=>(n.skin||'')===skin);
+    if(q) nodes=nodes.filter(n=>{
+      const blob=[n.id,n.label,n.skin,n.words,n.detail,(n.goals||[]).join(' ')].join(' ').toLowerCase();
+      return blob.includes(q);
+    });
+    if(sort==='score') nodes.sort((a,b)=>(b.score||0)-(a.score||0));
+    else if(sort==='label') nodes.sort((a,b)=>String(a.label||'').localeCompare(String(b.label||'')));
+    else if(sort==='dist') nodes.sort((a,b)=>dist(a,center)-dist(b,center));
+    else nodes.sort((a,b)=>(a.x||0)-(b.x||0)||(a.y||0)-(b.y||0));
+    return nodes;
+  }
+
+  function select(n){
+    SEL=n;
+    $('btn-walk-sel').disabled=!n;
+    $('btn-read').disabled=!n;
+    $('btn-zoom').disabled=!n;
+    if(!n){ $('sel').textContent='Select a node…'; return; }
+    $('sel').innerHTML=`<b>${DM.esc(n.label||n.id)}</b><br>${DM.esc(n.skin||'')} · score ${n.score??0} · (${n.x},${n.y})`;
+    $('page-title').textContent=n.label||n.id;
+    $('page-meta').textContent=`${n.skin||''} · score ${n.score??0} · (${n.x},${n.y}) · stage ${n.stage||'—'} · id ${n.id}`;
+    const goals=(n.goals||[]).join('\n- ');
+    $('page-body').textContent=
+      (n.detail?('DETAIL\n'+n.detail+'\n\n'):'')+
+      (goals?('GOALS\n- '+goals+'\n\n'):'')+
+      (n.words?('WORDS\n'+n.words+'\n\n'):'')+
+      `MANDELL\n15[Map] :: idea ${n.id}`;
+    paint();
+  }
+
+  function paint(){
+    if(!STATE) return;
+    const nodes=filtered();
+    const center=(STATE.fp&&STATE.fp.center)||[0,0,0];
+    const pil=STATE.pillars||{};
+    $('count').textContent=`${nodes.length} / ${STATE.ideas||(STATE.nodes||[]).length}`;
+    $('health').textContent=`${pil.label||'—'} · ${pil.average!=null?Number(pil.average).toFixed(2):'—'}`;
+    $('health').className='pill '+(pil.healthy?'ok':'warn');
+    if($('form-pill')) $('form-pill').textContent='form '+(STATE.form||'?');
+    const counts={};
+    (STATE.nodes||[]).forEach(n=>{ const k=n.skin||'?'; counts[k]=(counts[k]||0)+1; });
+    $('legend').innerHTML=Object.keys(counts).sort().map(k=>
+      `<span class="pill" style="border-color:${DM.SKIN[k]||'#5b9dff'}">${DM.esc(k)} ${counts[k]}</span>`
+    ).join(' ');
+    $('lede').textContent=`owner ${STATE.owner||'?'} · form ${STATE.form||'?'} · you @ (${center.join(',')}) · edges ${STATE.edges_shown||0}/${STATE.edges_total||(STATE.edges||[]).length}`;
+
+    const list=$('list'); list.innerHTML='';
+    nodes.slice(0,200).forEach(n=>{
+      const el=document.createElement('button');
+      el.type='button';
+      el.className='list-item'+(SEL&&String(SEL.id)===String(n.id)?' on':'');
+      const col=DM.SKIN[n.skin]||'#5b9dff';
+      el.innerHTML=`<div class="t"><span class="skin-dot" style="background:${col};color:${col}"></span>${DM.esc(n.label||n.id)}</div>
+        <div class="m">${DM.esc(n.skin||'')} · score ${n.score??0} · (${n.x},${n.y}) · d ${dist(n,center).toFixed(1)}</div>`;
+      el.onclick=()=>select(n);
+      list.appendChild(el);
+    });
+    if(!nodes.length) list.innerHTML='<div class="empty">No nodes match — clear filter or grow/confirm ideas</div>';
+
+    const user=(STATE.user)||{};
+    const meFacing=user.facing||(STATE.fp&&STATE.fp.yaw)||'N';
+    DM.drawLatticeMap($('map'), {
+      nodes,
+      allNodes: STATE.nodes||[],
+      edges: STATE.edges||[],
+      me: center,
+      meFacing,
+      ai: STATE.ai,
+      vision: STATE.user_vision,
+      selectedId: SEL && SEL.id,
+      cam,
+      form: STATE.form||'cube',
+    });
+  }
+
+  function hit(mx,my){
+    if(!STATE) return null;
+    const canvas=$('map');
+    const cx=canvas.width/2-cam.x*cam.scale, cy=canvas.height/2+cam.y*cam.scale, sc=cam.scale;
+    let best=null, bestD=14;
+    filtered().forEach(n=>{
+      const x=cx+(n.x||0)*sc, y=cy-(n.y||0)*sc;
+      const d=Math.hypot(x-mx,y-my);
+      if(d<bestD){ bestD=d; best=n; }
+    });
+    return best;
+  }
+
+  async function load(){
+    STATE=await DM.getState();
+    document.title=`DellMatrix · Lattice · ${STATE.ideas??0}`;
+    shell.setMeta(`lattice · ideas=${STATE.ideas??0} · form=${STATE.form||'?'}`);
+    shell.setFoot(STATE);
+    try{ var _sx=document.getElementById('sync-text'); if(_sx&&DM.formatSyncLine){ var _st=(typeof s!=='undefined'?s:(typeof STATE!=='undefined'?STATE:null)); if(_st) _sx.textContent=DM.formatSyncLine(_st); } }catch(_e){}
+    /* syncux:sync-strip-lattice */
+
+    if(STATE.fp&&STATE.fp.center){ cam.x=STATE.fp.center[0]||0; cam.y=STATE.fp.center[1]||0; }
+    paint();
+  }
+
+  $('q').oninput=paint; $('skin').onchange=paint; $('sort').onchange=paint;
+  $('btn-refresh').onclick=load;
+  if($('btn-look')) $('btn-look').onclick=async()=>{ await DM.sendCmd('look'); load(); };
+  $('btn-home').onclick=async()=>{ await DM.sendCmd('home'); load(); };
+  $('btn-nearest').onclick=async()=>{ await DM.sendCmd('nearest'); load(); };
+  $('btn-center').onclick=()=>{ if(STATE&&STATE.fp&&STATE.fp.center){ cam.x=STATE.fp.center[0]||0; cam.y=STATE.fp.center[1]||0; paint(); } };
+  $('btn-walk-sel').onclick=async()=>{ if(!SEL) return; await DM.sendCmd(`goto ${Math.round(SEL.x||0)} ${Math.round(SEL.y||0)}`); DM.toast('opening Walk'); location.href='/walk'; };
+  $('btn-read').onclick=()=>{ if(SEL) select(SEL); };
+  $('btn-zoom').onclick=async()=>{ if(SEL) await DM.sendCmd('zoom '+SEL.id); };
+
+  window.addEventListener('keydown',e=>{
+    if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')) return;
+    if(e.key==='r'||e.key==='R'){ e.preventDefault(); load(); }
+    if(e.key==='h'||e.key==='H'){ e.preventDefault(); $('btn-home').click(); }
+  });
+
+  const canvas=$('map');
+  canvas.addEventListener('mousedown',e=>{ cam.drag=true; cam.lx=e.clientX; cam.ly=e.clientY; });
+  window.addEventListener('mouseup',()=>cam.drag=false);
+  canvas.addEventListener('mousemove',e=>{
+    if(!cam.drag) return;
+    cam.x-=(e.clientX-cam.lx)/cam.scale; cam.y+=(e.clientY-cam.ly)/cam.scale;
+    cam.lx=e.clientX; cam.ly=e.clientY; paint();
+  });
+  canvas.addEventListener('wheel',e=>{ e.preventDefault(); cam.scale=Math.max(2,Math.min(40,cam.scale*(e.deltaY>0?0.9:1.1))); paint(); },{passive:false});
+  canvas.addEventListener('click',e=>{
+    const rect=canvas.getBoundingClientRect();
+    const n=hit((e.clientX-rect.left)*(canvas.width/rect.width),(e.clientY-rect.top)*(canvas.height/rect.height));
+    if(n) select(n);
+  });
+
+  load();
+  setInterval(()=>{ if(document.visibilityState==='visible') load().catch(()=>{}); }, 5000);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') load().catch(()=>{}); });
+})();
+</script>
+<!-- btnpath:titles:lattice -->
+<!-- syncux:empty-lattice -->
+</body>
+</html>

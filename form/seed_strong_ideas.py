@@ -4,6 +4,9 @@ Plant strong foundation ideas (detail + goals) into a profile session.
 
 Default owner: Worldwide (not Ace personal lore).
 Does not touch Main auto-evolve.
+
+Full worldwide catalog → DEV:
+  python -m form.worldwide.plant_to_dev
 """
 
 from __future__ import annotations

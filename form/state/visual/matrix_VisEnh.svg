@@ -1,0 +1,101 @@
+<svg id="matrix-svg" xmlns="http://www.w3.org/2000/svg" width="720" height="520" viewBox="0 0 720 520">
+<rect width="100%" height="100%" fill="#0f1115" rx="12"/>
+<text x="16" y="26" fill="#9aa3b2" font-family="system-ui,sans-serif" font-size="13">Dell Matrix · VisEnh</text>
+<text x="16" y="44" fill="#5c6575" font-family="system-ui,sans-serif" font-size="11">form=flower · Floor: Alpha · Delta · Omega · Omni · snapshot</text>
+<circle cx="360.0" cy="260.0" r="70.0" fill="none" stroke="#2a4a3a" stroke-width="1" opacity="0.45" stroke-dasharray="4 3"/>
+<circle cx="360.0" cy="260.0" r="140.0" fill="none" stroke="#2a4a3a" stroke-width="1" opacity="0.45" stroke-dasharray="4 3"/>
+<circle cx="360.0" cy="260.0" r="210.0" fill="none" stroke="#2a4a3a" stroke-width="1" opacity="0.45" stroke-dasharray="4 3"/>
+<circle cx="360.0" cy="260.0" r="280.0" fill="none" stroke="#2a4a3a" stroke-width="1" opacity="0.45" stroke-dasharray="4 3"/>
+<circle cx="360.0" cy="260.0" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="360.0" cy="260.0" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="430.0" cy="260.0" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="430.0" cy="260.0" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="395.0" cy="199.4" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="395.0" cy="199.4" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="325.0" cy="199.4" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="325.0" cy="199.4" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="290.0" cy="260.0" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="290.0" cy="260.0" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="325.0" cy="320.6" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="325.0" cy="320.6" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="395.0" cy="320.6" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="395.0" cy="320.6" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="500.0" cy="260.0" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="500.0" cy="260.0" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="465.0" cy="199.4" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="465.0" cy="199.4" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="430.0" cy="138.8" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="430.0" cy="138.8" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="360.0" cy="138.8" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="360.0" cy="138.8" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="290.0" cy="138.8" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="290.0" cy="138.8" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="255.0" cy="199.4" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="255.0" cy="199.4" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="220.0" cy="260.0" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="220.0" cy="260.0" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="255.0" cy="320.6" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="255.0" cy="320.6" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="290.0" cy="381.2" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="290.0" cy="381.2" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="360.0" cy="381.2" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="360.0" cy="381.2" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="430.0" cy="381.2" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="430.0" cy="381.2" r="3" fill="#e6a817" opacity="0.45"/>
+<circle cx="465.0" cy="320.6" r="66.5" fill="none" stroke="#e6a817" opacity="0.28" stroke-width="1.2"/>
+<circle cx="465.0" cy="320.6" r="3" fill="#e6a817" opacity="0.45"/>
+<polygon points="360.0,190.0 675.4,-30.8 636.2,-78.2 589.9,-118.8 537.8,-151.5 481.1,-175.5 421.3,-190.1 360.0,-195.0 298.7,-190.1 238.9,-175.5 182.2,-151.5 130.1,-118.8 83.8,-78.2 44.6,-30.8" fill="#38bdf8" opacity="0.12" stroke="#38bdf8" stroke-width="1" stroke-opacity="0.45"/>
+<line x1="360.0" y1="260.0" x2="360.0" y2="120.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="360.0" y1="260.0" x2="500.0" y2="190.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="360.0" y1="260.0" x2="290.0" y2="190.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="360.0" y1="120.0" x2="360.0" y2="260.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="360.0" y1="120.0" x2="500.0" y2="190.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="360.0" y1="120.0" x2="290.0" y2="190.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="500.0" y1="190.0" x2="360.0" y2="260.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="500.0" y1="190.0" x2="360.0" y2="120.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="500.0" y1="190.0" x2="290.0" y2="190.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="290.0" y1="190.0" x2="360.0" y2="260.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="290.0" y1="190.0" x2="360.0" y2="120.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<line x1="290.0" y1="190.0" x2="500.0" y2="190.0" stroke="#3d5a80" stroke-width="1.5" opacity="0.7"/>
+<g class="node" data-id="welcome" style="cursor:pointer">
+<rect class="node-shape" x="348.0" y="244.0" width="24.0" height="32.0" fill="#888888" rx="2" opacity="0.9"/>
+<line x1="353.6" y1="253.6" x2="366.4" y2="253.6" stroke="#0f1115" stroke-width="1.2" opacity="0.5"/>
+<text x="360.0" y="290.0" text-anchor="middle" fill="#e8eaed" font-family="system-ui,sans-serif" font-size="12">Welcome</text>
+</g>
+<g class="node" data-id="a" style="cursor:pointer">
+<circle class="node-shape" cx="360.0" cy="120.0" r="16.0" fill="#e6a817" opacity="0.9" stroke="#fff" stroke-width="2.5"/>
+<text x="360.0" y="150.0" text-anchor="middle" fill="#e8eaed" font-family="system-ui,sans-serif" font-size="12">Alpha</text>
+</g>
+<g class="node" data-id="b" style="cursor:pointer">
+<rect class="node-shape" x="484.0" y="170.8" width="32.0" height="38.4" fill="#c47c48" rx="2" opacity="0.9"/>
+<text x="500.0" y="220.0" text-anchor="middle" fill="#e8eaed" font-family="system-ui,sans-serif" font-size="12">Beta</text>
+</g>
+<g class="node" data-id="c" style="cursor:pointer">
+<circle class="node-shape" cx="290.0" cy="190.0" r="16.0" fill="#e6a817" opacity="0.9"/>
+<text x="290.0" y="220.0" text-anchor="middle" fill="#e8eaed" font-family="system-ui,sans-serif" font-size="12">Gamma</text>
+</g>
+<circle cx="220.0" cy="472.0" r="10" fill="none" stroke="#3cb371" stroke-dasharray="3 3" opacity="0.55"/>
+<text x="220.0" y="494.0" text-anchor="middle" fill="#5c6575" font-size="9" font-family="system-ui,sans-serif">EnhanceL</text>
+<circle cx="260.0" cy="472.0" r="10" fill="none" stroke="#3cb371" stroke-dasharray="3 3" opacity="0.55"/>
+<text x="260.0" y="494.0" text-anchor="middle" fill="#5c6575" font-size="9" font-family="system-ui,sans-serif">EnhanceL</text>
+<circle cx="300.0" cy="472.0" r="10" fill="none" stroke="#3cb371" stroke-dasharray="3 3" opacity="0.55"/>
+<text x="300.0" y="494.0" text-anchor="middle" fill="#5c6575" font-size="9" font-family="system-ui,sans-serif">EnhanceL</text>
+<circle cx="340.0" cy="472.0" r="10" fill="none" stroke="#3cb371" stroke-dasharray="3 3" opacity="0.55"/>
+<text x="340.0" y="494.0" text-anchor="middle" fill="#5c6575" font-size="9" font-family="system-ui,sans-serif">EnhanceL</text>
+<circle cx="380.0" cy="472.0" r="10" fill="none" stroke="#3cb371" stroke-dasharray="3 3" opacity="0.55"/>
+<text x="380.0" y="494.0" text-anchor="middle" fill="#5c6575" font-size="9" font-family="system-ui,sans-serif">EnhanceL</text>
+<circle cx="420.0" cy="472.0" r="10" fill="none" stroke="#3cb371" stroke-dasharray="3 3" opacity="0.55"/>
+<text x="420.0" y="494.0" text-anchor="middle" fill="#5c6575" font-size="9" font-family="system-ui,sans-serif">EnhanceL</text>
+<circle cx="460.0" cy="472.0" r="10" fill="none" stroke="#3cb371" stroke-dasharray="3 3" opacity="0.55"/>
+<text x="460.0" y="494.0" text-anchor="middle" fill="#5c6575" font-size="9" font-family="system-ui,sans-serif">EnhanceL</text>
+<circle cx="500.0" cy="472.0" r="10" fill="none" stroke="#3cb371" stroke-dasharray="3 3" opacity="0.55"/>
+<text x="500.0" y="494.0" text-anchor="middle" fill="#5c6575" font-size="9" font-family="system-ui,sans-serif">EnhanceL</text>
+<circle cx="360.0" cy="190.0" r="9.0" fill="#38bdf8" stroke="#fff" stroke-width="2"/>
+<text x="360.0" y="175.0" text-anchor="middle" fill="#38bdf8" font-family="system-ui,sans-serif" font-size="11" font-weight="600">YOU (·_·)</text>
+<text x="360.0" y="211.0" text-anchor="middle" fill="#9aa3b2" font-family="system-ui,sans-serif" font-size="9">stand · walk</text>
+<line x1="360.0" y1="190.0" x2="360.0" y2="174.0" stroke="#38bdf8" stroke-width="2.5"/>
+<circle cx="500.0" cy="190.0" r="9.0" fill="#e879f9" stroke="#fff" stroke-width="2"/>
+<text x="500.0" y="175.0" text-anchor="middle" fill="#e879f9" font-family="system-ui,sans-serif" font-size="11" font-weight="600">AI</text>
+<text x="500.0" y="211.0" text-anchor="middle" fill="#9aa3b2" font-family="system-ui,sans-serif" font-size="9">idle</text>
+<line x1="500.0" y1="190.0" x2="500.0" y2="174.0" stroke="#e879f9" stroke-width="2.5"/>
+</svg>

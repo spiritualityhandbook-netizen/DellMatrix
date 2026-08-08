@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>DellMatrix · Workshops</title>
+<link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+<div id="app">
+  <div class="page">
+    <div class="sync-strip" id="sync-strip" aria-live="polite"><span class="dot"></span> <span id="sync-text">syncing…</span></div>
+
+    <div class="page-head">
+      <div>
+        <h1>Workshops</h1>
+        <p class="lede">Every workshop is a closed workbench — enter, run its commands (each ends usefully), leave when done.</p>
+      </div>
+      <div class="toolbar">
+        <button type="button" data-cmd="workshops" class="primary">List</button>
+        <button type="button" data-cmd="workshop matrix">Matrix</button>
+        <button type="button" data-cmd="workshop perspective">Perspective</button>
+        <button type="button" data-cmd="workshop mandel">Mandel</button>
+        <button type="button" data-cmd="workshop persona">Persona</button>
+        <button type="button" data-cmd="workshop forces">Forces</button>
+        <button type="button" data-cmd="workshop bimo">BIMO</button>
+        <button type="button" data-cmd="workshop psalms">Psalms</button>
+        <button type="button" data-cmd="workshop leave">Leave</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:12px" id="pills"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Active</h3>
+        <div class="stat" id="active">—</div>
+      </div>
+      <div class="card">
+        <h3>Roster</h3>
+        <div class="list" id="list"></div>
+      </div>
+      <div class="card" style="grid-column:1/-1">
+        <h3>Workbench output</h3>
+        <pre id="out" class="mono-out">—</pre>
+      </div>
+    </div>
+
+    <nav class="row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)" aria-label="All pages" data-navhub="workshops">
+      <a href="/"><button type="button" class="sm">Menu</button></a>
+      <a href="/walk"><button type="button" class="sm">Walk</button></a>
+      <a href="/lattice"><button type="button" class="sm">Lattice</button></a>
+      <a href="/nursery"><button type="button" class="sm">Nursery</button></a>
+      <a href="/program"><button type="button" class="sm">Program</button></a>
+      <a href="/personas"><button type="button" class="sm">Personas</button></a>
+      <a href="/forces"><button type="button" class="sm">Forces</button></a>
+      <a href="/geometry"><button type="button" class="sm">Geometry</button></a>
+      <a href="/matrices"><button type="button" class="sm">Matrices</button></a>
+      <a href="/workshops"><button type="button" class="sm primary">Workshops</button></a>
+      <a href="/inspire"><button type="button" class="sm">Inspire</button></a>
+      <a href="/console"><button type="button" class="sm">Console</button></a>
+    </nav>
+  </div>
+</div>
+<script src="/js/core.js"></script>
+<script>
+(function(){
+  const shell = DM.mountShell({ page: 'workshops' });
+  const $ = id => document.getElementById(id);
+
+  async function paint(){
+    try{
+      const s = await DM.getState();
+      const ws = s.workshop;
+      const all = s.workshops || [];
+      shell.setMeta(`workshops · active=${ws?(ws.id||ws.name):'—'}`);
+      shell.setFoot(s);
+      try{ var _sx=$('sync-text'); if(_sx&&DM.formatSyncLine) _sx.textContent=DM.formatSyncLine(s); }catch(_e){}
+      $('pills').innerHTML = `<span class="pill live">${all.length} rooms</span>`+
+        (ws?`<span class="pill ok">${DM.esc(ws.name||ws.id)}</span>`:`<span class="pill">none active</span>`);
+      $('active').innerHTML = ws
+        ? `<b>${DM.esc(ws.name||ws.id)}</b><br>${DM.esc(ws.description||'')}<br>cmds: ${(ws.commands||[]).length}`
+        : 'No workshop open — click one above.';
+      $('list').innerHTML = all.length
+        ? all.map(w=>`<button type="button" class="list-item" data-cmd="workshop ${DM.esc(w.id)}"><div class="t">${DM.esc(w.name||w.id)}</div><div class="s">${DM.esc(w.description||'')}</div></button>`).join('')
+        : '<div class="empty">Loading…</div>';
+      document.querySelectorAll('#list [data-cmd]').forEach(b=>{
+        b.onclick = async ()=>{
+          const r = await DM.sendCmd(b.getAttribute('data-cmd'));
+          $('out').textContent = (r.msg||r.error||'').slice(0,4000);
+          paint();
+        };
+      });
+    }catch(e){ shell.setMeta('offline'); }
+  }
+
+  document.querySelectorAll('.toolbar [data-cmd]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const r = await DM.sendCmd(btn.getAttribute('data-cmd'));
+      $('out').textContent = (r.msg||r.error||'').slice(0,4000);
+      paint();
+    });
+  });
+
+  paint();
+  setInterval(paint, 4000);
+})();
+</script>
+</body>
+</html>

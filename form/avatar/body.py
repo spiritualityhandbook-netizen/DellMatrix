@@ -79,9 +79,38 @@ class Avatar:
         return loco.name.lower()
 
     def step(self, steps: int = 1) -> Coord:
+        # Movement always stands you up — no sliding while sitting/bending
+        if self.body.posture in (Posture.SIT, Posture.BEND):
+            self.body.posture = Posture.STAND
         if self.body.locomotion == Locomotion.IDLE:
             self.body.locomotion = Locomotion.WALK
         dx, dy = self.body.facing.delta
+        x, y = self.body.pos
+        self.body.pos = (x + dx * steps, y + dy * steps)
+        return self.body.pos
+
+    def backstep(self, steps: int = 1) -> Coord:
+        """Move opposite facing without turning around (facing preserved)."""
+        if self.body.posture in (Posture.SIT, Posture.BEND):
+            self.body.posture = Posture.STAND
+        if self.body.locomotion == Locomotion.IDLE:
+            self.body.locomotion = Locomotion.WALK
+        dx, dy = self.body.facing.delta
+        x, y = self.body.pos
+        self.body.pos = (x - dx * steps, y - dy * steps)
+        return self.body.pos
+
+    def strafe(self, side: int = 1, steps: int = 1) -> Coord:
+        """Strafe relative to facing. side +1 = right, -1 = left (90°)."""
+        if self.body.posture in (Posture.SIT, Posture.BEND):
+            self.body.posture = Posture.STAND
+        if self.body.locomotion == Locomotion.IDLE:
+            self.body.locomotion = Locomotion.WALK
+        order = list(Facing)
+        idx = order.index(self.body.facing)
+        # +2 = 90° clockwise (right), -2 = left
+        rel = order[(idx + (2 if side >= 0 else -2)) % 8]
+        dx, dy = rel.delta
         x, y = self.body.pos
         self.body.pos = (x + dx * steps, y + dy * steps)
         return self.body.pos

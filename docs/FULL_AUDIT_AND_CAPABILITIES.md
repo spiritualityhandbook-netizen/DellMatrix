@@ -29,8 +29,7 @@ python launch.py
 Default owner: `Operator`. Banner · `render()` · `you>`  
 Commands: `tutorial` · `help` · `help more` · `acceptance` · `quit`
 
-**Visual now:** terminal ASCII box.  
-**Horizon:** optional splash + side panel (not claimed).
+**Visual now:** terminal render · offline snapshot (`visual`) · opt-in live (`live`) with cones, AI companion, workshops.
 
 ---
 
@@ -148,7 +147,7 @@ create → grow → confirm → sphere → save → load → visual
 
 | Item | Status |
 |------|--------|
-| Live two-way visual | Horizon |
+| Live two-way visual | **Shipped (opt-in localhost)** · see `docs/LIVE_VISUAL.md` |
 | Languages beyond ES+FR | On request |
 | trading / llm | SIDE |
 | preform / src | LEGACY |

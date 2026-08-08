@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>DellMatrix · Program</title>
+<link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+<div id="app">
+  <div class="page">
+    <div class="sync-strip" id="sync-strip" aria-live="polite"><span class="dot"></span> <span id="sync-text">syncing…</span></div>
+
+    <div class="page-head">
+      <div>
+        <h1>Program</h1>
+        <p class="lede">Status, pillars, evolve, pulse, save — program health under Floor lock. Keys: <kbd>Ctrl+S</kbd> save</p>
+      </div>
+      <div class="toolbar">
+        <button title="status" type="button" data-cmd="status">Status</button>
+        <button title="audit" type="button" data-cmd="audit">Audit</button>
+        <button title="evolve" type="button" data-cmd="evolve">Evolve</button>
+        <button title="pulse" type="button" data-cmd="pulse">Pulse</button>
+        <button title="force tick" type="button" data-cmd="force tick">Force tick</button>
+        <button type="button" class="primary" data-cmd="save" title="Persist v7 session">Save</button>
+        <button title="workshops" type="button" data-cmd="workshops">Workshops</button>
+        <button title="workshop matrix" type="button" data-cmd="workshop matrix">Matrix WS</button>
+        <button title="guide" type="button" data-cmd="guide">Guide</button>
+        <button title="look" type="button" data-cmd="look">Look</button>
+        <button title="mode depth" type="button" data-cmd="mode depth">Depth mode</button>
+      </div>
+    </div>
+    <div class="row" style="margin-bottom:12px" id="pills"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Snapshot</h3>
+        <div class="stat" id="snap">—</div>
+      </div>
+      <div class="card">
+        <h3>Pillars</h3>
+        <div id="pillars"></div>
+      </div>
+      <div class="card">
+        <h3>Form</h3>
+        <div class="row">
+          <button title="cube" type="button" data-cmd="cube">Cube</button>
+          <button title="sphere" type="button" data-cmd="sphere">Sphere</button>
+          <button title="core" type="button" data-cmd="core">Core</button>
+          <button title="flower" type="button" data-cmd="flower">Flower</button>
+          <button title="toggle" type="button" data-cmd="toggle">Dual</button>
+        </div>
+        <div class="stat" id="form" style="margin-top:10px">—</div>
+      </div>
+      <div class="card">
+        <h3>Position</h3>
+        <div class="stat" id="pos">—</div>
+        <div class="row" style="margin-top:8px">
+          <button title="home" type="button" class="sm" data-cmd="home">Home</button>
+          <button title="nearest" type="button" class="sm" data-cmd="nearest">Nearest</button>
+          <a href="/walk"><button type="button" class="sm primary">Walk</button></a>
+          <a href="/lattice"><button type="button" class="sm">Lattice</button></a>
+          <a href="/nursery"><button type="button" class="sm">Nursery</button></a>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>Last command output</h3>
+      <pre id="out" class="mono-out">—</pre>
+      <button type="button" class="sm" id="btn-clear-out" style="margin-top:8px">Clear output</button>
+    </div>
+  
+    <nav class="row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)" aria-label="All pages" data-navhub="program">
+      <a href="/"><button type="button" class="sm" title="Menu">Menu</button></a>
+      <a href="/walk"><button type="button" class="sm" title="Walk">Walk</button></a>
+      <a href="/lattice"><button type="button" class="sm" title="Lattice">Lattice</button></a>
+      <a href="/nursery"><button type="button" class="sm" title="Nursery">Nursery</button></a>
+      <a href="/program"><button type="button" class="sm" title="Program">Program</button></a>
+      <a href="/personas"><button type="button" class="sm" title="Personas">Personas</button></a>
+      <a href="/forces"><button type="button" class="sm" title="Forces">Forces</button></a>
+      <a href="/geometry"><button type="button" class="sm" title="Geometry">Geometry</button></a>
+      <a href="/matrices"><button type="button" class="sm" title="Matrices">Matrices</button></a>
+      <a href="/console"><button type="button" class="sm" title="Console">Console</button></a>
+    </nav><!-- btnpath:navhub:program -->
+</div>
+</div>
+<script src="/js/core.js"></script>
+<script>
+(function(){
+  const shell=DM.mountShell({page:'program'});
+  const $=id=>document.getElementById(id);
+
+  async function paint(){
+    const s=await DM.getState();
+    const fp=s.fp||{}, pil=s.pillars||{}, fr=s.forces||{}, c=fp.center||[0,0,0];
+    document.title=`DellMatrix · Program · ${s.owner||'?'}`;
+    shell.setMeta(`program · ${s.owner||'?'} · gen ${s.generation??0}`);
+    shell.setFoot(s);
+    try{ var _sx=document.getElementById('sync-text'); if(_sx&&DM.formatSyncLine){ var _st=(typeof s!=='undefined'?s:(typeof STATE!=='undefined'?STATE:null)); if(_st) _sx.textContent=DM.formatSyncLine(_st); } }catch(_e){}
+    /* syncux:sync-strip-program */
+
+    $('pills').innerHTML=`
+      <span class="pill live">live</span>
+      <span class="pill">${DM.esc(s.owner||'?')}</span>
+      <span class="pill">${s.ideas??0} ideas</span>
+      <span class="pill">gen ${s.generation??0}</span>
+      <span class="pill ${pil.healthy?'ok':'warn'}">${DM.esc(pil.label||'—')}</span>
+      <span class="pill">nursery ${(s.nursery||[]).length}</span>
+    `;
+    $('snap').innerHTML=`
+      <b>Owner</b> ${DM.esc(s.owner||'?')}<br>
+      <b>Ideas</b> ${s.ideas??0} · <b>Nursery</b> ${(s.nursery||[]).length}<br>
+      <b>Generation</b> ${s.generation??0}<br>
+      <b>View</b> ${DM.esc(s.view_mode||'first_person')}<br>
+      <b>UX mode</b> ${DM.esc(s.ux_mode||'builder')}<br>
+      <b>Pillars</b> ${DM.esc(pil.label||'—')} avg ${pil.average!=null?Number(pil.average).toFixed(3):'—'}
+        <span class="pill ${pil.healthy?'ok':'warn'}">${pil.healthy?'healthy':'check'}</span><br>
+      <b>Forces</b> ${DM.esc(((fr.active)||[]).join(', ')||'—')}<br>
+      <b>Persona</b> ${DM.esc(s.persona_lens||'—')}<br>
+      <b>BIMO</b> ${DM.esc((s.bimo&&s.bimo.pilot)||'—')} · ${DM.esc((s.bimo&&s.bimo.mode)||'')}<br>
+      <b>Workshop</b> ${DM.esc(s.active_workshop||'—')}<br>
+      <b>Matrices</b> ${DM.esc(DM.short(s.matrices_summary||'',100))}
+    `;
+    $('pillars').innerHTML=DM.pillarBars(pil);
+    $('form').innerHTML=`form <b>${DM.esc(s.form||'?')}</b> · skin <b>${DM.esc(s.skin||'?')}</b> · dual <b>${DM.esc(fp.dual||'—')}</b>`;
+    $('pos').innerHTML=`center <b>(${c.join(',')})</b> · face <b>${DM.esc(fp.yaw||'N')}</b> · look <b>${DM.esc(fp.pitch||'level')}</b><br>
+      <span style="color:#7ddea8">${DM.esc(fp.mandel||'')}</span>`;
+  }
+
+  document.querySelectorAll('[data-cmd]').forEach(b=>{
+    b.onclick=async()=>{
+      const r=await DM.sendCmd(b.getAttribute('data-cmd'));
+      $('out').textContent=r&&(r.msg||r.error)||'—';
+      await paint();
+    };
+  });
+  $('btn-clear-out').onclick=()=>{ $('out').textContent='—'; };
+  window.addEventListener('keydown',e=>{
+    if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;
+    if(e.key==='s'&&(e.ctrlKey||e.metaKey)){
+      e.preventDefault();
+      const btn=document.querySelector('[data-cmd="save"]');
+      if(btn) btn.click();
+    }
+  });
+  paint();
+  setInterval(()=>{ if(document.visibilityState==='visible') paint().catch(()=>{}); }, 4000);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') paint().catch(()=>{}); });
+})();
+</script>
+<!-- btnpath:titles:program -->
+<!-- syncux:empty-program -->
+<!-- syncux:kbdhelp-program -->
+</body>
+</html>

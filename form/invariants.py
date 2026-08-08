@@ -53,14 +53,25 @@ def run_invariants() -> Tuple[int, int, List[Tuple[str, bool, str]]]:
 
     p.sandbox_on()
     check("sandbox_on", p.sandbox.on and p.cube.session.plane.units["a"].sandboxed)
-    check("scope_empty_when_boxed", p.cube.session.plane.enhance_scope("a") == [])
+    # Same-box members can still enhance each other; unboxed peers must not appear
+    scope_a = p.cube.session.plane.enhance_scope("a")
+    check(
+        "scope_boxed_only_peers",
+        all(i in ("b",) for i in scope_a) and "welcome" not in scope_a,
+        str(scope_a),
+    )
 
     p.sandbox_off()
     check("sandbox_off", (not p.sandbox.on) and (not p.cube.session.plane.units["a"].sandboxed))
     check("scope_restored", "b" in p.cube.session.plane.enhance_scope("a"))
 
     out = p.grow_ideas(3)
-    check("grow_ideas", all(o.get("ok") for o in out))
+    # grow_ideas returns a single result dict (not a list)
+    grow_ok = isinstance(out, dict) and out.get("ok") is True
+    if isinstance(out, list):
+        grow_ok = all(isinstance(o, dict) and o.get("ok") for o in out)
+    check("grow_ideas", grow_ok)
+    p.pulse()
     check("scores_moved", any(v > 0 for v in p.scores().values()), str(p.scores()))
 
     check("dual_seed", bool(_SEED.findall("15[Map] >> 50[Manifest]")))

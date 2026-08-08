@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>DellMatrix · Matrix Walk</title>
+<style>
+:root{
+  --bg:#05070b;--panel:#0d121a;--line:#243044;--text:#eef2f7;--muted:#8b97ab;
+  --accent:#5b9dff;--accent2:#38bdf8;--ok:#34d399;--warn:#fbbf24;--danger:#f87171;
+  --wall:#152033;--wall2:#1a2940;--grid:rgba(100,160,255,.14);--glow:rgba(91,157,255,.35);
+  --font:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden}
+button,input,select{font:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:#162032;color:var(--text);border-radius:10px;padding:8px 10px;min-height:36px}
+button:hover{border-color:var(--accent);background:#1c2a42}
+button:active{transform:translateY(1px)}
+/* enhance:focus-visible */
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:linear-gradient(180deg,#4f8fff,#3b6fd9);border-color:#6aa4ff;color:#fff}
+button.ghost{background:transparent}
+button.on{box-shadow:0 0 0 1px var(--accent) inset;border-color:var(--accent);background:#1a2f4d}
+button.busy{opacity:.7}
+kbd{font:11px var(--mono);background:#182233;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--muted)}
+
+.app{display:grid;grid-template-rows:48px 1fr 32px;height:100vh}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#101826,#0a0e16);z-index:5}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand h1{margin:0;font-size:14px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.brand .sub{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end}
+.main{display:grid;grid-template-columns:260px minmax(0,1fr) 300px;min-height:0;position:relative}
+@media(max-width:1100px){
+  .main{grid-template-columns:1fr}
+  .side{display:none}
+  .side.open{display:block;position:absolute;z-index:30;inset:0;background:var(--panel)}
+}
+.side{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:12px;min-height:0}
+.side.right{border-right:0;border-left:1px solid var(--line)}
+.side h2{margin:14px 0 8px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.side h2:first-child{margin-top:0}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.stat{font-size:12px;color:var(--muted);line-height:1.45}
+.stat b{color:var(--text);font-weight:600}
+.card{background:#0a1018;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
+.card h3{margin:0 0 4px;font-size:13px}
+.card .d{font-size:11px;color:var(--muted);line-height:1.4}
+.card.hot{border-color:var(--accent);box-shadow:0 0 0 1px #5b9dff33,0 8px 24px #0006}
+.card button{margin-top:6px;min-height:30px;padding:5px 8px;font-size:11px}
+.cmdbar{display:flex;gap:6px;margin-top:8px}
+#cmd{flex:1;background:#070b12;border:1px solid var(--line);border-radius:10px;color:#7ddea8;padding:9px 10px;font:12px var(--mono)}
+#log{margin-top:8px;font-size:11px;color:var(--muted);white-space:pre-wrap;min-height:16px;max-height:120px;overflow:auto}
+.bot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 12px;border-top:1px solid var(--line);background:#0a0e16;font-size:11px;color:var(--muted)}
+.bot .mandel{color:#7ddea8;font-family:var(--mono)}
+.conn{display:inline-flex;align-items:center;gap:6px}
+.dot-live{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.dot-live.off{background:var(--danger);box-shadow:0 0 8px var(--danger)}
+
+/* WORLD */
+.world-wrap{position:relative;min-height:0;overflow:hidden;background:#02040a}
+.world{position:absolute;inset:0;perspective:720px;perspective-origin:50% 46%;overflow:hidden}
+.world.step .room{animation:stepIn .28s ease}
+@keyframes stepIn{0%{transform:translateZ(-40px);filter:brightness(.7)}100%{transform:translateZ(0);filter:brightness(1)}}
+.world.turn .room{animation:turnYaw .24s ease}
+@keyframes turnYaw{0%{filter:blur(2px);opacity:.7}100%{filter:blur(0);opacity:1}}
+.room{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .25s ease}
+.sky{position:absolute;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 30%, #1a2a44 0%, transparent 55%),linear-gradient(180deg,#0a1424 0%, #05070b 55%, #030508 100%);pointer-events:none}
+.floor{position:absolute;left:-25%;right:-25%;bottom:-5%;height:62%;transform:rotateX(68deg);transform-origin:center bottom;background-color:#0b1520;background-image:linear-gradient(var(--grid) 1px, transparent 1px),linear-gradient(90deg, var(--grid) 1px, transparent 1px),linear-gradient(180deg, transparent, rgba(0,0,0,.65));background-size:64px 64px, 64px 64px, 100% 100%;border-top:1px solid rgba(120,170,255,.25);box-shadow:0 -20px 60px #0008}
+.ceil{position:absolute;left:-25%;right:-25%;top:-8%;height:48%;transform:rotateX(-68deg);transform-origin:center top;background-color:#0a121c;background-image:linear-gradient(rgba(100,140,200,.1) 1px, transparent 1px),linear-gradient(90deg, rgba(100,140,200,.1) 1px, transparent 1px);background-size:72px 72px;border-bottom:1px solid rgba(120,170,255,.2);opacity:.95}
+.wall{position:absolute;top:8%;bottom:18%;width:42%;background:linear-gradient(90deg, var(--wall), var(--wall2));border:1px solid rgba(120,170,255,.28);box-shadow:inset 0 0 40px #0008;overflow:hidden;cursor:pointer;transition:filter .15s, border-color .15s, transform .2s}
+.wall:hover{filter:brightness(1.12);border-color:var(--accent2)}
+.wall.left{left:0;transform:rotateY(42deg) translateZ(0);transform-origin:left center;background:linear-gradient(90deg, #0c1420 0%, #172640 55%, #1a2c48 100%),linear-gradient(rgba(100,160,255,.08) 1px, transparent 1px),linear-gradient(90deg, rgba(100,160,255,.08) 1px, transparent 1px);background-size:auto, 48px 48px, 48px 48px}
+.wall.right{right:0;transform:rotateY(-42deg);transform-origin:right center;background:linear-gradient(270deg, #0c1420 0%, #172640 55%, #1a2c48 100%),linear-gradient(rgba(100,160,255,.08) 1px, transparent 1px),linear-gradient(90deg, rgba(100,160,255,.08) 1px, transparent 1px);background-size:auto, 48px 48px, 48px 48px}
+.wall.far{left:18%;right:18%;top:14%;bottom:28%;width:auto;transform:translateZ(20px);background:linear-gradient(180deg, #1a3050 0%, #142438 40%, #101c30 100%);border:2px solid rgba(140,190,255,.45);box-shadow:0 0 40px rgba(80,140,255,.15), inset 0 0 60px #0005;border-radius:4px}
+.wall.empty{opacity:.88;border-style:dashed}
+.wall.has-data{border-color:rgba(160,210,255,.7);box-shadow:0 0 50px rgba(80,160,255,.2), inset 0 0 40px rgba(60,120,200,.12)}
+.wall-content{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;pointer-events:none}
+.wall .label{position:absolute;top:8px;left:10px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.wall .coord{position:absolute;top:8px;right:10px;font:10px var(--mono);color:#6d7f9c}
+.wall .title{font-size:clamp(13px,2vw,20px);font-weight:700;max-width:92%;text-shadow:0 2px 16px #000a;line-height:1.25}
+.wall .meta{margin-top:8px;font-size:11px;color:var(--muted);max-width:90%;line-height:1.4}
+.wall .void{font-size:36px;opacity:.2;font-weight:200}
+.wall .dot{width:12px;height:12px;border-radius:50%;margin-bottom:10px;box-shadow:0 0 14px currentColor}
+.plane-card{position:absolute;left:50%;transform:translateX(-50%);width:min(46%,320px);padding:10px 12px;border-radius:12px;background:#0c1522ee;border:1px solid rgba(120,170,255,.35);cursor:pointer;z-index:5;text-align:center;transition:transform .15s, border-color .15s}
+.plane-card:hover{border-color:var(--accent2);transform:translateX(-50%) scale(1.03)}
+.plane-card.up{top:6%}.plane-card.down{bottom:10%}
+.plane-card .t{font-size:12px;font-weight:650}
+.plane-card .d{font-size:10px;color:var(--muted);margin-top:2px}
+.you{position:absolute;left:50%;bottom:22%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;border:2px solid rgba(56,189,248,.6);box-shadow:0 0 30px rgba(56,189,248,.25), inset 0 0 20px rgba(56,189,248,.1);z-index:6;pointer-events:none;animation:breathe 2.6s ease-in-out infinite}
+.you:after{content:"YOU";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:10px;font-weight:700;color:#7dd3fc;letter-spacing:.12em}
+@keyframes breathe{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
+.cross{position:absolute;left:50%;top:46%;width:14px;height:14px;margin:-7px 0 0 -7px;z-index:7;opacity:.45;pointer-events:none}
+.cross:before,.cross:after{content:"";position:absolute;background:#eef2f7aa}
+.cross:before{left:6px;top:0;width:2px;height:14px}.cross:after{left:0;top:6px;width:14px;height:2px}
+.minimap{position:absolute;right:12px;top:12px;width:120px;height:120px;background:#070c14cc;border:1px solid var(--line);border-radius:12px;z-index:8;overflow:hidden;backdrop-filter:blur(6px);cursor:pointer}
+.minimap:hover{border-color:var(--accent)}
+.minimap canvas{width:100%;height:100%;display:block}
+.minimap .cap{position:absolute;left:6px;bottom:4px;font-size:9px;color:var(--muted)}
+.hud-help{position:absolute;left:12px;bottom:12px;z-index:8;font-size:10px;color:var(--muted);background:#070c14aa;border:1px solid var(--line);border-radius:10px;padding:8px 10px;line-height:1.5;max-width:220px}
+.toast{position:absolute;left:50%;top:14%;transform:translateX(-50%);background:#0c1522f0;border:1px solid var(--accent);border-radius:999px;padding:8px 16px;font-size:12px;z-index:12;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;max-width:80%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1}
+.cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cap-grid button{font-size:11px;min-height:34px;padding:6px}
+.form-sphere .wall.far{border-radius:50%}
+.form-sphere .wall.left,.form-sphere .wall.right{border-radius:20%}
+.form-flower .wall.far{border-color:rgba(230,180,40,.55)}
+.form-flower .floor{--grid:rgba(200,160,40,.14)}
+
+/* PAGE OVERLAYS */
+.overlay{position:fixed;inset:0;background:#000b;z-index:50;display:none;align-items:stretch;justify-content:center;padding:18px}
+.overlay.show{display:flex}
+.sheet{width:min(1100px,100%);margin:auto;max-height:92vh;display:flex;flex-direction:column;background:#0e1520;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 24px 80px #000a}
+.sheet head,.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:#101826}
+.sheet-head h2{margin:0;font-size:16px}
+.sheet-head .sub{font-size:11px;color:var(--muted)}
+.sheet-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sheet-body{flex:1;min-height:0;overflow:auto;padding:14px 16px}
+.sheet-foot{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--line);background:#0a1018}
+.modal-sm{width:min(620px,100%);max-height:80vh;overflow:auto;background:#0e1520;border:1px solid var(--line);border-radius:16px;padding:18px;margin:auto}
+.modal-sm h2{margin:0 0 8px;font-size:18px}
+.modal-sm .d{color:var(--muted);font-size:12px;margin-bottom:10px}
+.modal-sm pre{white-space:pre-wrap;font:12px var(--mono);background:#080c14;padding:10px;border-radius:10px;border:1px solid var(--line);max-height:50vh;overflow:auto}
+
+/* LATTICE PAGE */
+.lat-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;min-height:60vh}
+@media(max-width:800px){.lat-layout{grid-template-columns:1fr}}
+.lat-map{position:relative;background:#070c14;border:1px solid var(--line);border-radius:12px;min-height:420px;overflow:hidden}
+.lat-map canvas{width:100%;height:100%;display:block;cursor:crosshair}
+.lat-list{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto}
+.lat-item{text-align:left;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#0a1018;cursor:pointer}
+.lat-item:hover,.lat-item.on{border-color:var(--accent);background:#122038}
+.lat-item .t{font-size:12px;font-weight:650}
+.lat-item .m{font-size:10px;color:var(--muted);margin-top:2px}
+.lat-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.lat-filters input,.lat-filters select{background:#070b12;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:7px 9px;font-size:12px}
+.lat-filters input{min-width:160px;flex:1}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.pill.ok{color:var(--ok);border-color:#1f6b4a}
+.pill.warn{color:var(--warn);border-color:#6b5a1f}
+
+/* RESULTS */
+#results-body{white-space:pre-wrap;font:12px var(--mono);line-height:1.45;background:#080c14;border:1px solid var(--line);border-radius:10px;padding:12px;min-height:120px}
+.flash{animation:flashOk .45s ease}
+/* enhance:form-flash */
+body.form-flash .world{filter:brightness(1.15) saturate(1.2); transition:filter .35s}
+
+/* enhance:loading-bar */
+.loading-bar{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));z-index:100;transition:width .2s,opacity .3s;opacity:0;pointer-events:none}
+.loading-bar.on{opacity:1}
+
+/* enhance:offline-banner */
+.offline-banner{display:none;position:fixed;top:48px;left:50%;transform:translateX(-50%);z-index:60;background:#3b1515ee;border:1px solid var(--danger);color:#fecaca;padding:8px 14px;border-radius:999px;font-size:12px}
+.offline-banner.show{display:block}
+
+/* enhance:pillar-meters */
+.pbar{display:flex;align-items:center;gap:6px;margin:3px 0;font-size:10px;color:var(--muted)}
+.pbar .n{width:62px;text-transform:capitalize}
+.pbar .t{flex:1;height:6px;background:#0a1018;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.pbar .f{height:100%;background:linear-gradient(90deg,var(--accent),var(--ok));border-radius:4px}
+
+@keyframes flashOk{0%{box-shadow:0 0 0 0 rgba(91,157,255,.5)}100%{box-shadow:0 0 0 0 transparent}}
+/* enhance:cap-titles */
+
+/* enhance:compact-caps */
+.cap-grid button{letter-spacing:.01em}
+@media(max-height:700px){
+  .side h2{margin:8px 0 4px}
+  .card{padding:8px;margin-bottom:6px}
+  .hud-help{display:none}
+}
+</style>
+</head>
+<body>
+<div class="offline-banner" id="offline-banner">Offline — live server unreachable</div>
+<div class="loading-bar" id="loading-bar"></div>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>DellMatrix · Matrix Walk</h1>
+      <div class="sub" id="meta">connecting…</div>
+    </div>
+    <div class="top-actions">
+      <button type="button" data-c="cube" data-form="cube" title="Form: cube">Cube</button>
+      <button type="button" data-c="sphere" data-form="sphere" title="Form: sphere">Sphere</button>
+      <button type="button" data-c="flower" data-form="flower" title="Form: flower">Flower</button>
+      <button type="button" data-c="toggle" title="Dual form toggle">Dual</button>
+      <button type="button" data-c="look" title="Look level / survey">Look</button>
+      <button type="button" data-c="status" title="Program status">Status</button>
+      <button type="button" class="primary" id="btn-lattice" title="Open main lattice page">Lattice</button>
+      <button type="button" id="btn-panels" class="ghost" title="Toggle side panels">Panels</button>
+      <span class="sub conn"><span class="dot-live" id="live-dot"></span><span id="live-txt">live</span></span>
+    </div>
+  </header>
+
+  <div class="main" id="main">
+    <aside class="side" id="side-left">
+      <h2>Navigate</h2>
+      <div class="row">
+        <button type="button" data-c="fp forward" title="W">Step in</button>
+        <button type="button" data-c="fp back" title="S">Step back</button>
+        <button type="button" data-c="fp turn left" title="A">←</button>
+        <button type="button" data-c="fp turn right" title="D">→</button>
+        <button type="button" data-c="fp up" title="R">Up</button>
+        <button type="button" data-c="fp down" title="F">Down</button>
+        <button type="button" data-c="strafe left" title="Shift+A">Strafe L</button>
+        <button type="button" data-c="strafe right" title="Shift+D">Strafe R</button>
+      </div>
+      <div class="stat" id="nav-stat" title="Click to copy center" style="cursor:pointer">—</div>
+
+      <h2>This cell</h2>
+      <div id="here"></div>
+
+      <h2>Capabilities</h2>
+      <div class="cap-grid">
+        <button type="button" data-c="grow ideas 1" data-panel="1" title="Grow ideas ×1 into nursery">Grow</button>
+        <button type="button" data-c="proposals" data-panel="1" title="List nursery proposals">Nursery</button>
+        <button type="button" data-c="confirm all" data-panel="1" title="Accept all pending nursery proposals">Confirm all</button>
+        <button type="button" data-c="pulse" data-panel="1" title="Enhance pulse">Pulse</button>
+        <button type="button" data-c="evolve" data-panel="1" title="Evolve program generation">Evolve</button>
+        <button type="button" data-c="forces" data-panel="1" title="Force field status">Forces</button>
+        <button type="button" data-c="force tick" data-panel="1">Force tick</button>
+        <button type="button" data-c="personas" data-panel="1" title="Persona roster">Personas</button>
+        <button type="button" data-c="bimo fuse" data-panel="1">BIMO fuse</button>
+        <button type="button" data-c="verita" data-panel="1">Verita</button>
+        <button type="button" data-c="voynich" data-panel="1">Voynich</button>
+        <button type="button" data-c="geometry" data-panel="1">Geometry</button>
+        <button type="button" data-c="audit" data-panel="1" title="6-pillar health audit">Audit</button>
+        <button type="button" data-c="matrices" data-panel="1" title="List all matrices">Matrices</button>
+        <button type="button" data-c="save" data-panel="1" title="Persist program state">Save</button>
+      </div>
+
+      <h2>Command</h2>
+      <div class="cmdbar">
+        <input id="cmd" placeholder="Mandell / English…" autocomplete="off" spellcheck="false"/>
+        <button type="button" class="primary" id="send">Go</button>
+      </div>
+      <div id="log" aria-live="polite"></div><!-- enhance:aria-live -->
+      <h2>Recent</h2>
+      <div id="hist-list" class="stat" style="max-height:90px;overflow:auto"></div>
+      <!-- enhance:cmd-history -->
+      <h2>Recent</h2>
+      <div id="hist-list" class="stat" style="max-height:90px;overflow:auto"></div>
+      <!-- enhance:cmd-history -->
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="ghost" id="btn-results" style="font-size:11px">Open last result</button>
+        <button type="button" class="ghost" id="btn-help" style="font-size:11px">Keys</button>
+      </div>
+    </aside>
+
+    <section class="world-wrap">
+      <div class="world" id="world">
+        <div class="sky"></div>
+        <div class="room" id="room">
+          <div class="ceil" id="ceil"></div>
+          <div class="floor" id="floor"></div>
+          <div class="wall left" id="wall-left" data-face="left" data-nav="strafe left"></div>
+          <div class="wall right" id="wall-right" data-face="right" data-nav="strafe right"></div>
+          <div class="wall far" id="wall-far" data-face="front" data-nav="fp forward"></div>
+          <div class="plane-card up" id="card-up" data-face="up" data-nav="fp up"></div>
+          <div class="plane-card down" id="card-down" data-face="down" data-nav="fp down"></div>
+        </div>
+        <div class="you"></div>
+        <div class="cross"></div>
+        <div class="minimap" id="minimap" title="Click to open Main Lattice">
+          <canvas id="map" width="120" height="120"></canvas>
+          <div class="cap">lattice map · click open /* enhance:mmap-label */</div>
+        </div>
+        <div class="walk-trail" id="walk-trail" style="position:absolute;left:12px;top:12px;z-index:8;font:10px var(--mono);color:#7ddea8;background:#070c14aa;border:1px solid var(--line);border-radius:10px;padding:6px 8px;max-width:200px"></div>
+        <div class="hud-help" id="hud-help">
+          <kbd>WASD</kbd> move · <kbd>R/F</kbd> up/down<br>
+          <kbd>Q/E</kbd> look · <kbd>Enter</kbd> read page<br>
+          <kbd>L</kbd> lattice · walls click to enter
+        </div>
+        <div class="toast" id="toast"></div>
+      </div>
+    </section>
+
+    <aside class="side right" id="side-right">
+      <h2>Looking ahead</h2>
+      <div id="look"></div>
+      <h2>Forces here</h2>
+      <div id="forces"></div>
+      <h2>Resonance</h2>
+      <div id="res"></div>
+      <h2>Program</h2>
+      <div class="stat" id="prog"></div>
+      <div id="pillars-bar" style="margin-top:8px"></div>
+    </aside>
+  </div>
+
+  <footer class="bot">
+    <div id="bot-left">DellMatrix · Floor locked · Nursery law</div>
+    <div class="mandel" id="bot-mandel">15[Map] :: …</div>
+  </footer>
+</div>
+
+<!-- Idea page modal -->
+<div class="overlay" id="page-modal" role="dialog" aria-modal="true">
+  <div class="modal-sm">
+    <h2 id="m-title">Page</h2>
+    <div class="d" id="m-meta"></div>
+    <pre id="m-body"></pre>
+    <div class="row" style="margin-top:12px">
+      <button type="button" class="primary" data-close="page-modal">Close</button>
+      <button type="button" id="m-zoom">Zoom in Program</button>
+      <button type="button" id="m-goto">Goto cell</button>
+    </div>
+  </div>
+</div>
+
+<!-- Command results -->
+<div class="overlay" id="results-modal" role="dialog" aria-modal="true">
+  <div class="modal-sm" style="width:min(720px,100%)">
+    <h2 id="r-title">Result</h2>
+    <div class="d" id="r-meta"></div>
+    <div id="results-body"></div>
+    <div class="row" style="margin-top:12px">
+      <button type="button" class="primary" data-close="results-modal">Close</button>
+      <button type="button" id="r-copy">Copy</button>
+      <button type="button" id="r-rerun">Run again</button>
+      <button type="button" id="r-lattice">Open lattice</button>
+      <!-- enhance:result-actions -->
+    </div>
+  </div>
+</div>
+
+<!-- MAIN LATTICE PAGE -->
+<div class="overlay" id="lattice-modal" role="dialog" aria-modal="true">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div>
+        <h2>Main Lattice</h2>
+        <div class="sub" id="lat-meta">All ideas on the floor · click a node to open its page or walk there</div>
+      </div>
+      <div class="sheet-tools">
+        <span class="pill" id="lat-count">0 ideas</span>
+        <span class="pill ok" id="lat-health">—</span>
+        <button type="button" data-close="lattice-modal">Close</button>
+      </div>
+    </div>
+    <div class="sheet-body">
+      <div id="lat-legend" class="stat" style="margin-bottom:8px"></div>
+      <div class="lat-filters">
+        <input id="lat-q" placeholder="Filter by label, id, skin, words…" />
+        <select id="lat-skin">
+          <option value="">All skins</option>
+          <option>cube</option><option>sphere</option><option>seed</option>
+          <option>flower</option><option>building</option><option>words</option>
+          <option>circle</option><option>core</option>
+        </select>
+        <select id="lat-sort">
+          <option value="score">Sort: score</option>
+          <option value="label">Sort: label</option>
+          <option value="dist">Sort: distance</option>
+          <option value="xy">Sort: x,y</option>
+        </select>
+        <button type="button" id="lat-refresh">Refresh</button>
+        <button type="button" data-c="status" data-panel="1">Status</button>
+        <button type="button" data-c="audit" data-panel="1">Audit</button>
+        <button type="button" data-c="matrices" data-panel="1">Matrices</button>
+      </div>
+      <div class="lat-layout">
+        <div class="lat-map">
+          <canvas id="lat-canvas" width="800" height="520"></canvas>
+        </div>
+        <div>
+          <div class="stat" style="margin-bottom:8px" id="lat-sel">Select a node…</div>
+          <div class="lat-list" id="lat-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="primary" id="lat-open-page" disabled>Read page</button>
+      <button type="button" id="lat-zoom" disabled>Zoom</button>
+      <button type="button" id="lat-goto" disabled>Walk to cell</button>
+      <button type="button" id="lat-center-me">Center on me</button>
+      <span class="stat" id="lat-hint">Scroll zoom · drag pan · click select · double-click open page · Walk to cell · /* enhance:lat-dbl */</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+const SKIN={cube:'#5b9dff',sphere:'#a78bfa',seed:'#34d399',flower:'#fbbf24',building:'#d4a574',words:'#94a3b8',circle:'#2dd4bf',core:'#fb923c'};
+let STATE=null, lastForm=null, OPEN_ID=null, OPEN_NODE=null, animLock=false, busy=false, lastResult={title:'', body:'', cmd:''};
+let LAT_SEL=null, latCam={x:0,y:0,scale:8,drag:false,lx:0,ly:0};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const short = (s,n) => { s=String(s??''); return s.length>n ? s.slice(0,n-1)+'…' : s; };
+
+function log(t){
+  const el=$('log');
+  if(!el) return;
+  const line = String(t);
+  el.textContent = line + (el.textContent ? '\n'+el.textContent.split('\n').slice(0,12).join('\n') : '');
+}
+function toast(t){
+  const el=$('toast');
+  if(!el) return;
+  el.textContent=short(t,80);
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.classList.remove('show'), 1100);
+}
+function setOffline(off){
+  const b=$('offline-banner'); if(b) b.classList.toggle('show', !!off);
+}
+function setLoading(on){
+  const b=$('loading-bar'); if(!b) return;
+  b.classList.toggle('on', !!on);
+  b.style.width = on ? '70%' : '100%';
+  if(!on) setTimeout(()=>{ b.style.width='0'; b.classList.remove('on'); }, 220);
+}
+function setLive(ok){
+  setOffline(!ok);
+
+  const d=$('live-dot'), t=$('live-txt');
+  if(d) d.classList.toggle('off', !ok);
+  if(t) t.textContent = ok ? 'live' : 'offline';
+}
+function showOverlay(id, on){
+  const el=$(id);
+  if(!el) return;
+  el.classList.toggle('show', !!on);
+}
+function showResults(title, body, cmd){
+  lastResult={title:title||'Result', body:String(body||''), cmd:cmd||''};
+  $('r-title').textContent=lastResult.title;
+  $('r-meta').textContent = (cmd?('cmd: '+cmd+' · '):'') + new Date().toLocaleTimeString();
+  $('results-body').textContent = lastResult.body || '(empty)';
+  showOverlay('results-modal', true);
+}
+function shouldPanel(msg, force){
+  if(force) return true;
+  if(!msg) return false;
+  return msg.length > 90 || msg.indexOf('\n') >= 0;
+}
+
+async function getState(){
+  const r = await fetch('/state', {cache:'no-store'});
+  if(!r.ok) throw new Error('state '+r.status);
+  return r.json();
+}
+
+async function sendCmd(cmd, opts){
+  opts = opts || {};
+  cmd = String(cmd||'').trim();
+  if(!cmd) return null;
+  if(animLock && opts.anim) return null;
+  if(busy && !opts.force) return null;
+  busy = true; setLoading(true);
+  log('→ '+cmd);
+  if(opts.anim){
+    animLock=true;
+    $('world').classList.add(opts.anim);
+  }
+  // flash clicked control if provided
+  if(opts.el){ opts.el.classList.add('busy'); }
+  try{
+    const r = await fetch('/cmd',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({cmd})
+    });
+    let data;
+    try{ data = await r.json(); }
+    catch(e){ data = {ok:false, error:'bad JSON from server'}; }
+    setLive(true);
+    if(data.ok){
+      const st = data.state || await getState();
+      let msg = data.msg || data.error || '';
+      if(!msg || !String(msg).trim()){
+        // synthesize usable feedback when backend returns ok with empty msg
+        const fp=st.fp||{}, c=fp.center||[0,0,0];
+        msg = `✓ ${cmd}\ncenter (${c.join(',')}) face ${fp.yaw||'N'} form ${st.form||'?'} ideas ${st.ideas??0}\n${fp.mandel||''}`;
+      }
+      log('✓ '+short(msg,160));
+      toast(msg);
+      render(st);
+      if(shouldPanel(msg, opts.panel) || opts.panel){
+        showResults(cmd, msg, cmd);
+      }
+      // refresh lattice if open
+      if($('lattice-modal').classList.contains('show')) fillLattice(st);
+      return data;
+    } else {
+      const err = data.error || 'failed';
+      log('✗ '+err);
+      toast('✗ '+err);
+      if(data.state) render(data.state);
+      showResults('Error · '+cmd, err, cmd);
+      return data;
+    }
+  } catch(e){
+    setLive(false);
+    log('✗ '+e);
+    toast('offline: '+e);
+    showResults('Network error', String(e), cmd);
+    return null;
+  } finally {
+    busy=false; setLoading(false);
+    if(opts.el) opts.el.classList.remove('busy');
+    if(opts.anim){
+      setTimeout(()=>{
+        const w=$('world');
+        if(w) w.classList.remove('step','turn');
+        animLock=false;
+      }, 280);
+    }
+  }
+}
+
+function pageCard(pg, compact){
+  if(!pg) return '';
+  if(pg.empty){
+    return `<div class="card"><h3>${esc(pg.title||'Void cell')}</h3>
+      <div class="d">${esc(pg.body||'')}</div>
+      <div class="d" style="color:#7ddea8;margin-top:4px">${esc(pg.mandel||'')}</div></div>`;
+  }
+  const goals=(pg.goals||[]).slice(0,3).join(' · ');
+  const id = pg.id ? String(pg.id) : '';
+  return `<div class="card ${pg.at_center?'hot':''}">
+    <h3>${esc(pg.title||pg.label||'')}</h3>
+    <div class="d">${esc(pg.skin||'')} · res ${pg.resonance??pg.score??'—'} · shell ${pg.shell??'—'}</div>
+    <div class="d">${esc(short(pg.detail||pg.words||'', compact?90:160))}</div>
+    ${goals?`<div class="d">goals: ${esc(goals)}</div>`:''}
+    <div class="d" style="color:#7ddea8">${esc(pg.mandel||'')}</div>
+    ${id?`<button type="button" data-open="${esc(id)}">Read page</button>
+      <button type="button" data-c="zoom ${esc(id)}">Zoom</button>
+      <button type="button" data-goto="${esc(id)}">Walk</button>`:''}
+  </div>`;
+}
+
+function fillWall(el, face, name){
+  if(!el) return;
+  const pg = (face&&face.page)||{};
+  const empty = !face || face.empty;
+  const coord = (face&&face.coord)?face.coord.join(','):'';
+  const col = SKIN[pg.skin] || face.color || '#5b9dff';
+  const mandel = face.mandel || pg.mandel || '';
+  /* enhance:wall-distance */
+  const shell = (face&&face.page&&face.page.shell!=null)?face.page.shell:(pg.shell!=null?pg.shell:'');
+  el.classList.toggle('empty', !!empty);
+  el.classList.toggle('has-data', !empty);
+  if(empty){
+    el.innerHTML = `<div class="wall-content">
+      <span class="label">${name}</span><span class="coord">(${esc(coord)})</span>
+      <div class="void">◇</div>
+      <div class="title" style="opacity:.55">void cell</div>
+      <div class="meta">click → (${esc(coord)})${shell!==''?` · shell ${shell}`:''}<br><span style="color:#7ddea8">${esc(mandel)}</span></div>
+    </div>`;
+  } else {
+    el.innerHTML = `<div class="wall-content">
+      <span class="label">${name}</span><span class="coord">(${esc(coord)})</span>
+      <div class="dot" style="color:${col};background:${col}"></div>
+      <div class="title">${esc(pg.title||pg.label||'—')}</div>
+      <div class="meta">${esc(pg.skin||'')} · res ${pg.resonance??'—'}<br>${esc(short(pg.detail||pg.words||'',70))}<br><span style="color:#7ddea8">${esc(mandel)}</span></div>
+    </div>`;
+  }
+}
+
+function fillPlaneCard(el, face, label){
+  if(!el) return;
+  const pg=(face&&face.page)||{};
+  const coord=(face&&face.coord)?face.coord.join(','):'';
+  if(!face || face.empty){
+    el.innerHTML = `<div class="t">${label} · void</div><div class="d">(${esc(coord)}) · click to enter</div>`;
+  } else {
+    el.innerHTML = `<div class="t">${label} · ${esc(pg.title||pg.label||'')}</div><div class="d">${esc(pg.skin||'')} · (${esc(coord)})</div>`;
+  }
+}
+
+function drawMinimap(fp, nodes){
+  const c=$('map'); if(!c) return;
+  const ctx=c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#070c14'; ctx.fillRect(0,0,W,H);
+  const center=fp.center||[0,0,0];
+  const scale=10, cx=W/2, cy=H/2;
+  ctx.strokeStyle='rgba(100,140,200,.15)';
+  ctx.beginPath();
+  for(let i=-6;i<=6;i++){
+    ctx.moveTo(cx+i*scale,0); ctx.lineTo(cx+i*scale,H);
+    ctx.moveTo(0,cy+i*scale); ctx.lineTo(W,cy+i*scale);
+  }
+  ctx.stroke();
+  (nodes||[]).forEach(n=>{
+    const x=cx+((n.x||0)-center[0])*scale;
+    const y=cy-((n.y||0)-center[1])*scale;
+    if(x<-4||y<-4||x>W+4||y>H+4) return;
+    ctx.fillStyle=SKIN[n.skin]||'#5b9dff';
+    ctx.fillRect(x-2,y-2,4,4);
+  });
+  ctx.fillStyle='#38bdf8';
+  ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.fill();
+  const yaw=fp.yaw||'N';
+  const dir={N:[0,-1],S:[0,1],E:[1,0],W:[-1,0],NE:[1,-1],NW:[-1,-1],SE:[1,1],SW:[-1,1]}[yaw]||[0,-1];
+  ctx.strokeStyle='#7dd3fc'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+dir[0]*12, cy+dir[1]*12); ctx.stroke();
+  ctx.lineWidth=1;
+}
+
+function openPage(id, s){
+  s = s || STATE;
+  const nodes=(s&&s.nodes)||[];
+  const n=nodes.find(x=>String(x.id)===String(id));
+  OPEN_ID=id;
+  OPEN_NODE=n||null;
+  if(!n){
+    // try fp pages
+    const pages=[].concat(
+      ((s&&s.fp&&s.fp.here&&s.fp.here.pages)||[]),
+      ((s&&s.fp&&s.fp.looking&&s.fp.looking.pages)||[])
+    );
+    const pg=pages.find(p=>String(p.id)===String(id));
+    if(pg){
+      $('m-title').textContent=pg.title||pg.label||id;
+      $('m-meta').textContent=`${pg.skin||''} · res ${pg.resonance??pg.score??'—'} · id ${id}`;
+      $('m-body').textContent =
+        (pg.detail?('DETAIL\n'+pg.detail+'\n\n'):'')+
+        ((pg.goals&&pg.goals.length)?('GOALS\n- '+pg.goals.join('\n- ')+'\n\n'):'')+
+        (pg.words?('WORDS\n'+pg.words+'\n\n'):'')+
+        (pg.body?('BODY\n'+pg.body+'\n\n'):'')+
+        `MANDELL\n${pg.mandel||('15[Map] :: idea '+id)}`;
+    } else {
+      $('m-title').textContent='Page';
+      $('m-meta').textContent=String(id);
+      $('m-body').textContent='(not found in state nodes — try Lattice or Status)';
+    }
+  } else {
+    $('m-title').textContent=n.label||id;
+    $('m-meta').textContent=`${n.skin||''} · score ${n.score??0} · (${n.x},${n.y}) · stage ${n.stage||'—'} · id ${n.id}`;
+    const goals=(n.goals||[]).join('\n- ');
+    $('m-body').textContent =
+      (n.detail?('DETAIL\n'+n.detail+'\n\n'):'')+
+      (goals?('GOALS\n- '+goals+'\n\n'):'')+
+      (n.words?('WORDS\n'+n.words+'\n\n'):'')+
+      `MANDELL\n15[Map] :: idea ${n.id}`;
+  }
+  showOverlay('page-modal', true);
+}
+
+function renderHist(s){
+  const el=$('hist-list'); if(!el) return;
+  const h=(s&&s.cmd_history)||[];
+  if(!h.length){ el.innerHTML='<span class="d">no commands yet</span>'; return; }
+  el.innerHTML = h.slice().reverse().slice(0,10).map(c=>
+    `<button type="button" class="ghost" style="font-size:10px;min-height:26px;padding:3px 6px;margin:2px" data-c="${esc(c)}">${esc(short(c,28))}</button>`
+  ).join(' ');
+}
+function renderPillars(s){
+  const el=$('pillars-bar'); if(!el) return;
+  const pil=s.pillars||{};
+  const keys=['standing','spect','tonea','spirea','mandetail','omegate'];
+  el.innerHTML = keys.map(k=>{
+    const v=Number(pil[k]||0);
+    const pct=Math.max(0,Math.min(100, Math.round(v*100)));
+    return `<div class="pbar"><span class="n">${esc(k)}</span><div class="t"><div class="f" style="width:${pct}%"></div></div><span>${pct}%</span></div>`;
+  }).join('');
+}
+function drawTrail(s){
+  const el=$('walk-trail'); if(!el) return;
+  const trail=(s.user_trail||[]).slice(-8);
+  const fp=s.fp||{};
+  const c=fp.center||[0,0,0];
+  const lines = trail.map(t=>{
+    if(Array.isArray(t)) return `(${t[0]},${t[1]})`;
+    if(t&&typeof t==='object') return `(${t.x??t[0]??'?'},${t.y??t[1]??'?'})`;
+    return String(t);
+  });
+  el.innerHTML = `<b style="color:#eef2f7">path</b> @ (${c.join(',')}) face ${esc(fp.yaw||'N')}<br>${lines.length?lines.join(' → '):'start walking'}`;
+}
+function highlightForms(form){
+  document.querySelectorAll('[data-form]').forEach(b=>{
+    b.classList.toggle('on', b.getAttribute('data-form')===(form||''));
+  });
+}
+
+function render(s){
+  if(!s) return;
+  STATE=s;
+  const fp=s.fp||{};
+  const c=fp.center||[0,0,0];
+  const form=s.form||fp.form||'cube';
+  document.body.className='form-'+(form||'cube');
+  if(lastForm && lastForm!==form){
+    document.body.classList.add('form-flash');
+    setTimeout(()=>document.body.classList.remove('form-flash'), 350);
+  }
+  lastForm=form;
+  highlightForms(form);
+
+  $('meta').textContent = `owner=${s.owner||'?'} · ideas=${s.ideas??0} · form=${form} · gen=${s.generation??0} · ${(s.pillars||{}).label||'—'}`;
+  $('nav-stat').innerHTML = `<b>Center</b> (${c.join(',')}) · face <b>${esc(fp.yaw||'N')}</b> · look <b>${esc(fp.pitch||'level')}</b><br>
+    <span style="color:#7ddea8">${esc(fp.mandel||'')}</span><br>
+    cell <b>${esc(fp.cell_kind||'cube')}</b> · dual <b>${esc(fp.dual||'—')}</b> · infinite ${fp.infinite?'yes':'no'}`;
+  $('bot-mandel').textContent = fp.mandel || '15[Map] :: …';
+  $('bot-left').textContent = `Floor locked · ideas ${s.ideas??0} · nursery ${(s.nursery||[]).length} · gen ${s.generation??0} · ${s.view_mode||'first_person'}`; /* enhance:bot-ideas */
+
+  const faces=fp.faces||{};
+  fillWall($('wall-far'), faces.front, 'front · next cube');
+  fillWall($('wall-left'), faces.left, 'left');
+  fillWall($('wall-right'), faces.right, 'right');
+  fillPlaneCard($('card-up'), faces.up, 'UP');
+  fillPlaneCard($('card-down'), faces.down, 'DOWN');
+
+  const room=$('room');
+  if(fp.pitch==='up') room.style.transform='rotateX(12deg)';
+  else if(fp.pitch==='down') room.style.transform='rotateX(-10deg)';
+  else room.style.transform='rotateX(0)';
+
+  const here=$('here'); here.innerHTML='';
+  ((fp.here&&fp.here.pages)||[]).forEach(pg=>{ here.innerHTML += pageCard(pg,false); });
+  if(!here.innerHTML) here.innerHTML='<div class="card"><h3>Void cell</h3><div class="d">Empty centerpoint — walk, grow, or open lattice.</div><button type="button" data-c="grow ideas 1" data-panel="1">Grow here</button> <button type="button" id="void-lat">Lattice</button></div>'; /* enhance:void-cta */
+    const vl=$('void-lat'); if(vl) vl.onclick=()=>openLattice();
+
+  const look=$('look'); look.innerHTML='';
+  const lp=(fp.looking&&fp.looking.pages)||[];
+  if(!lp.length) look.innerHTML='<div class="d">Nothing ranked ahead — turn or step</div>';
+  lp.slice(0,8).forEach(pg=>{ look.innerHTML += pageCard(pg,true); });
+
+  const ff=$('forces'); ff.innerHTML='';
+  (fp.forces_reach||[]).forEach(f=>{
+    ff.innerHTML += `<div class="card"><h3>${esc(f.force)}</h3><div class="d">${f.intensity} · ${esc(f.note||'')}</div></div>`;
+  });
+  if(!(fp.forces_reach||[]).length) ff.innerHTML='<div class="d">No forces reaching this cell</div>';
+
+  const res=$('res'); res.innerHTML='';
+  (fp.resonance_top||[]).forEach((r,i)=>{
+    res.innerHTML += `<div class="card"><h3>${i+1}. ${esc(r.label)}</h3>
+      <div class="d">res ${r.resonance} · d ${r.dist} · ${esc(r.skin||'')}</div>
+      ${r.id?`<button type="button" data-open="${esc(r.id)}">Read</button>
+        <button type="button" data-c="zoom ${esc(r.id)}">Zoom</button>
+        <button type="button" data-goto="${esc(r.id)}">Walk</button>`:''}</div>`;
+  });
+
+  const pil=s.pillars||{};
+  const fr=s.forces||{};
+  $('prog').innerHTML = `<b>Pillars</b> ${esc(pil.label||'—')} avg ${pil.average!=null?Number(pil.average).toFixed(3):'—'}
+    <span class="pill ${pil.healthy?'ok':'warn'}">${pil.healthy?'healthy':'check'}</span><br>
+    <b>Forces</b> ${esc(((fr.active)||[]).join(', ')||'—')}<br>
+    <b>Workshop</b> ${esc((s.workshop&&s.workshop.name)||'—')}<br>
+    <b>Persona</b> ${esc(s.persona_lens||'—')}<br>
+    <b>BIMO</b> ${esc((s.bimo&&s.bimo.pilot)||'—')} · ${esc((s.bimo&&s.bimo.mode)||'')}<br>
+    <b>Matrices</b> ${esc(s.matrices_summary||'')}`;
+
+  drawMinimap(fp, s.nodes||[]);
+}
+
+/* ===== MAIN LATTICE PAGE ===== */
+function nodeDist(n, center){
+  const dx=(n.x||0)-(center[0]||0), dy=(n.y||0)-(center[1]||0);
+  return Math.hypot(dx,dy);
+}
+
+function filteredNodes(s){
+  s=s||STATE;
+  if(!s) return [];
+  const q=($('lat-q').value||'').toLowerCase().trim();
+  const skin=$('lat-skin').value||'';
+  const sort=$('lat-sort').value||'score';
+  const center=(s.fp&&s.fp.center)||[0,0,0];
+  let nodes=(s.nodes||[]).slice();
+  if(skin) nodes=nodes.filter(n=>(n.skin||'')===skin);
+  if(q) nodes=nodes.filter(n=>{
+    const blob=[n.id,n.label,n.skin,n.words,n.detail,(n.goals||[]).join(' ')].join(' ').toLowerCase();
+    return blob.indexOf(q)>=0;
+  });
+  if(sort==='score') nodes.sort((a,b)=>(b.score||0)-(a.score||0));
+  else if(sort==='label') nodes.sort((a,b)=>String(a.label||'').localeCompare(String(b.label||'')));
+  else if(sort==='dist') nodes.sort((a,b)=>nodeDist(a,center)-nodeDist(b,center));
+  else if(sort==='xy') nodes.sort((a,b)=>(a.x||0)-(b.x||0)||(a.y||0)-(b.y||0));
+  return nodes;
+}
+
+function fillLatLegend(s){
+  const el=$('lat-legend'); if(!el) return;
+  const counts={};
+  (s.nodes||[]).forEach(n=>{ const k=n.skin||'?'; counts[k]=(counts[k]||0)+1; });
+  el.innerHTML = Object.keys(counts).sort().map(k=>
+    `<span class="pill" style="border-color:${SKIN[k]||'#5b9dff'};margin:2px">${esc(k)} ${counts[k]}</span>`
+  ).join(' ') + ' /* enhance:lat-legend */';
+}
+function fillLattice(s){
+  fillLatLegend(s);
+  s=s||STATE;
+  if(!s) return;
+  const nodes=filteredNodes(s);
+  const center=(s.fp&&s.fp.center)||[0,0,0];
+  $('lat-count').textContent = `${nodes.length} / ${s.ideas|| (s.nodes||[]).length} ideas`;
+  const pil=s.pillars||{};
+  $('lat-health').textContent = `${pil.label||'—'} · avg ${pil.average!=null?Number(pil.average).toFixed(2):'—'}`;
+  $('lat-health').className = 'pill '+(pil.healthy?'ok':'warn');
+  const et = s.edges_total!=null ? `${s.edges_shown||0}/${s.edges_total} edges` : `${(s.edges||[]).length} edges`;
+  $('lat-meta').textContent = `owner ${s.owner||'?'} · form ${s.form||'?'} · you @ (${center.join(',')}) · face ${s.fp&&s.fp.yaw||'N'} · ${et}`;
+
+  const list=$('lat-list');
+  list.innerHTML='';
+  nodes.slice(0,200).forEach(n=>{
+    const on = LAT_SEL && String(LAT_SEL.id)===String(n.id);
+    const d=nodeDist(n,center).toFixed(1);
+    const el=document.createElement('button');
+    el.type='button';
+    el.className='lat-item'+(on?' on':'');
+    el.innerHTML=`<div class="t">${esc(n.label||n.id)}</div>
+      <div class="m">${esc(n.skin||'')} · score ${n.score??0} · (${n.x},${n.y}) · d ${d} · ${esc(n.stage||'')}</div>`;
+    el.addEventListener('click',()=>selectLatticeNode(n));
+    list.appendChild(el);
+  });
+  if(!nodes.length) list.innerHTML='<div class="d">No nodes match filter</div>';
+  drawLatticeMap(s, nodes);
+  updateLatButtons();
+}
+
+function selectLatticeNode(n){
+  LAT_SEL=n;
+  $('lat-sel').innerHTML = n
+    ? `<b>${esc(n.label||n.id)}</b><br>${esc(n.skin||'')} · score ${n.score??0}<br>(${n.x}, ${n.y}) · ${esc(short(n.detail||n.words||'',120))}`
+    : 'Select a node…';
+  updateLatButtons();
+  fillLattice(STATE);
+}
+
+function updateLatButtons(){
+  const en=!!LAT_SEL;
+  ['lat-open-page','lat-zoom','lat-goto'].forEach(id=>{ const b=$(id); if(b) b.disabled=!en; });
+}
+
+function drawLatticeMap(s, nodes){
+  const canvas=$('lat-canvas'); if(!canvas) return;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  const W=Math.max(400, Math.floor(rect.width||800));
+  const H=Math.max(360, Math.floor(rect.height||520));
+  if(canvas.width!==W || canvas.height!==H){ canvas.width=W; canvas.height=H; }
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#070c14'; ctx.fillRect(0,0,W,H);
+
+  const cx=W/2 - latCam.x*latCam.scale;
+  const cy=H/2 + latCam.y*latCam.scale;
+  const sc=latCam.scale;
+
+  // grid
+  ctx.strokeStyle='rgba(100,140,200,.12)';
+  ctx.beginPath();
+  const step=Math.max(1, Math.round(40/sc));
+  for(let x=-80;x<=80;x+=step){
+    const px=cx+x*sc;
+    ctx.moveTo(px,0); ctx.lineTo(px,H);
+  }
+  for(let y=-80;y<=80;y+=step){
+    const py=cy-y*sc;
+    ctx.moveTo(0,py); ctx.lineTo(W,py);
+  }
+  ctx.stroke();
+
+  // axes
+  ctx.strokeStyle='rgba(91,157,255,.25)';
+  ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.moveTo(cx,0); ctx.lineTo(cx,H); ctx.stroke();
+
+  // edges light
+  (s.edges||[]).slice(0,400).forEach(e=>{
+    const a=(s.nodes||[]).find(n=>String(n.id)===String(e.a||e.source||e.from));
+    const b=(s.nodes||[]).find(n=>String(n.id)===String(e.b||e.target||e.to));
+    if(!a||!b) return;
+    ctx.strokeStyle='rgba(100,140,200,.08)';
+    ctx.beginPath();
+    ctx.moveTo(cx+(a.x||0)*sc, cy-(a.y||0)*sc);
+    ctx.lineTo(cx+(b.x||0)*sc, cy-(b.y||0)*sc);
+    ctx.stroke();
+  });
+
+  // nodes
+  (nodes||[]).forEach(n=>{
+    const x=cx+(n.x||0)*sc, y=cy-(n.y||0)*sc;
+    if(x<-10||y<-10||x>W+10||y>H+10) return;
+    const sel=LAT_SEL && String(LAT_SEL.id)===String(n.id);
+    const r=sel?6:3.5;
+    ctx.fillStyle=SKIN[n.skin]||'#5b9dff';
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    if(sel){
+      ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(x,y,r+3,0,Math.PI*2); ctx.stroke();
+      ctx.lineWidth=1;
+      ctx.fillStyle='#eef2f7';
+      ctx.font='11px sans-serif';
+      ctx.fillText(String(n.label||n.id).slice(0,28), x+8, y-6);
+    }
+  });
+
+  // you
+  const me=(s.fp&&s.fp.center)||[0,0,0];
+  const mx=cx+me[0]*sc, my=cy-me[1]*sc;
+  ctx.fillStyle='#38bdf8';
+  ctx.beginPath(); ctx.arc(mx,my,5,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#7dd3fc';
+  ctx.beginPath(); ctx.arc(mx,my,9,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle='#7dd3fc'; ctx.font='10px sans-serif';
+  ctx.fillText('YOU', mx+10, my+4);
+}
+
+function hitLatticeNode(mx, my){
+  const s=STATE; if(!s) return null;
+  const canvas=$('lat-canvas');
+  const W=canvas.width, H=canvas.height;
+  const cx=W/2 - latCam.x*latCam.scale;
+  const cy=H/2 + latCam.y*latCam.scale;
+  const sc=latCam.scale;
+  let best=null, bestD=14;
+  filteredNodes(s).forEach(n=>{
+    const x=cx+(n.x||0)*sc, y=cy-(n.y||0)*sc;
+    const d=Math.hypot(x-mx,y-my);
+    if(d<bestD){ bestD=d; best=n; }
+  });
+  return best;
+}
+
+function openLattice(){
+  if(STATE && STATE.fp && STATE.fp.center){
+    latCam.x=STATE.fp.center[0]||0;
+    latCam.y=STATE.fp.center[1]||0;
+  }
+  showOverlay('lattice-modal', true);
+  fillLattice(STATE);
+  // size canvas after show
+  requestAnimationFrame(()=>fillLattice(STATE));
+}
+
+async function gotoNode(n){
+  if(!n) return;
+  const x=Math.round(n.x||0), y=Math.round(n.y||0);
+  // fp goto uses H V [F] — map plane x,y to H,V (see first_person)
+  await sendCmd(`goto ${x} ${y}`, {panel:false});
+}
+
+/* ===== EVENT DELEGATION (all buttons work, static + dynamic) ===== */
+document.addEventListener('click', function(e){
+  const t = e.target.closest('[data-c], [data-open], [data-goto], [data-nav], [data-close], button, .minimap');
+  if(!t) return;
+
+  // close overlays
+  const closeId = t.getAttribute && t.getAttribute('data-close');
+  if(closeId){ e.preventDefault(); showOverlay(closeId, false); return; }
+  // click backdrop
+  if(t.classList && t.classList.contains('overlay')){
+    // only if direct target is overlay
+    if(e.target===t) showOverlay(t.id, false);
+    return;
+  }
+
+  if(t.id==='minimap' || t.closest && t.closest('#minimap')===t){
+    // handled by minimap listener
+  }
+
+  const nav = t.getAttribute && t.getAttribute('data-nav');
+  if(nav){
+    e.preventDefault();
+    const anim = /forward|back|up|down|strafe/.test(nav) ? 'step' : (/turn/.test(nav)?'turn':null);
+    sendCmd(nav, {anim, el:t});
+    return;
+  }
+
+  const openId = t.getAttribute && t.getAttribute('data-open');
+  if(openId){
+    e.preventDefault();
+    openPage(openId, STATE);
+    return;
+  }
+
+  const gotoId = t.getAttribute && t.getAttribute('data-goto');
+  if(gotoId){
+    e.preventDefault();
+    const n=(STATE&&STATE.nodes||[]).find(x=>String(x.id)===String(gotoId));
+    if(n) gotoNode(n);
+    else sendCmd('zoom '+gotoId, {panel:true, el:t});
+    return;
+  }
+
+  const cmd = t.getAttribute && t.getAttribute('data-c');
+  if(cmd){
+    e.preventDefault();
+    const anim = /forward|back|up|down|strafe/.test(cmd) ? 'step' : (/turn/.test(cmd)?'turn':null);
+    const panel = t.getAttribute('data-panel')==='1' || /personas|verita|voynich|geometry|audit|matrices|status|proposals|forces|bimo|evolve|grow|pulse|save|confirm/i.test(cmd);
+    sendCmd(cmd, {anim, panel, el:t});
+    return;
+  }
+}, true);
+
+// Named controls
+$('send').addEventListener('click', ()=>{
+  const c=$('cmd').value.trim();
+  if(c){ sendCmd(c, {panel:true}); $('cmd').select(); }
+});
+$('cmd').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); $('send').click(); }
+});
+$('m-zoom').addEventListener('click', ()=>{
+  if(OPEN_ID) sendCmd('zoom '+OPEN_ID, {panel:true});
+  showOverlay('page-modal', false);
+});
+$('m-goto').addEventListener('click', ()=>{
+  if(OPEN_NODE) gotoNode(OPEN_NODE);
+  else if(OPEN_ID) sendCmd('zoom '+OPEN_ID, {panel:true});
+  showOverlay('page-modal', false);
+});
+$('nav-stat').addEventListener('click', async ()=>{
+  const c=(STATE&&STATE.fp&&STATE.fp.center)||[0,0,0];
+  const t=`(${c.join(',')})`;
+  try{ await navigator.clipboard.writeText(t); toast('copied '+t); }
+  catch(e){ toast(t); }
+});
+$('nav-stat').addEventListener('click', async ()=>{
+  const c=(STATE&&STATE.fp&&STATE.fp.center)||[0,0,0];
+  const t=`(${c.join(',')})`;
+  try{ await navigator.clipboard.writeText(t); toast('copied '+t); }
+  catch(e){ toast(t); }
+});
+$('nav-stat').addEventListener('click', async ()=>{
+  const c=(STATE&&STATE.fp&&STATE.fp.center)||[0,0,0];
+  const t=`(${c.join(',')})`;
+  try{ await navigator.clipboard.writeText(t); toast('copied '+t); }
+  catch(e){ toast(t); }
+});
+$('nav-stat').addEventListener('click', async ()=>{
+  const c=(STATE&&STATE.fp&&STATE.fp.center)||[0,0,0];
+  const t=`(${c.join(',')})`;
+  try{ await navigator.clipboard.writeText(t); toast('copied '+t); }
+  catch(e){ toast(t); }
+});
+$('nav-stat').addEventListener('click', async ()=>{
+  const c=(STATE&&STATE.fp&&STATE.fp.center)||[0,0,0];
+  const t=`(${c.join(',')})`;
+  try{ await navigator.clipboard.writeText(t); toast('copied '+t); }
+  catch(e){ toast(t); }
+});
+$('btn-lattice').addEventListener('click', openLattice);
+$('minimap').addEventListener('click', openLattice);
+$('btn-results').addEventListener('click', ()=> showResults(lastResult.title||'Last result', lastResult.body||'(none yet)', lastResult.cmd));
+$('btn-help').addEventListener('click', ()=> showResults('Keyboard',
+  'W/S  step in / back\nA/D  turn left / right\nShift+A/D  strafe\nR/F  up / down\nQ/E  look up / down\nSpace look level\nEnter open page at center\nL lattice · G grow · N nursery · P pulse\nEsc   close overlays\n\nClick walls to enter neighbor cells.\nClick minimap for Main Lattice.\nCapability buttons open a result sheet when they return text.',
+  'help'));
+$('btn-panels').addEventListener('click', ()=>{
+  $('side-left').classList.toggle('open');
+  $('side-right').classList.toggle('open');
+});
+$('r-rerun').addEventListener('click', ()=>{ if(lastResult.cmd){ showOverlay('results-modal', false); sendCmd(lastResult.cmd, {panel:true}); }});
+$('r-lattice').addEventListener('click', ()=>{ showOverlay('results-modal', false); openLattice(); });
+$('r-copy').addEventListener('click', async ()=>{
+  try{ await navigator.clipboard.writeText(lastResult.body||''); toast('copied'); }
+  catch(e){ toast('copy failed'); }
+});
+
+// Lattice tools
+$('lat-q').addEventListener('input', ()=>fillLattice(STATE));
+$('lat-skin').addEventListener('change', ()=>fillLattice(STATE));
+$('lat-sort').addEventListener('change', ()=>fillLattice(STATE));
+$('lat-refresh').addEventListener('click', async ()=>{
+  try{ render(await getState()); fillLattice(STATE); toast('lattice refreshed'); }
+  catch(e){ toast('refresh failed'); }
+});
+$('lat-open-page').addEventListener('click', ()=>{ if(LAT_SEL) openPage(LAT_SEL.id, STATE); });
+$('lat-zoom').addEventListener('click', ()=>{ if(LAT_SEL) sendCmd('zoom '+LAT_SEL.id, {panel:true}); });
+$('lat-goto').addEventListener('click', ()=>{ if(LAT_SEL){ gotoNode(LAT_SEL); } });
+$('lat-center-me').addEventListener('click', ()=>{
+  if(STATE&&STATE.fp&&STATE.fp.center){
+    latCam.x=STATE.fp.center[0]||0;
+    latCam.y=STATE.fp.center[1]||0;
+    fillLattice(STATE);
+  }
+});
+
+// Lattice canvas interaction
+(function(){
+  const canvas=$('lat-canvas');
+  canvas.addEventListener('mousedown', e=>{
+    latCam.drag=true; latCam.lx=e.clientX; latCam.ly=e.clientY;
+  });
+  window.addEventListener('mouseup', ()=>{ latCam.drag=false; });
+  canvas.addEventListener('mousemove', e=>{
+    if(!latCam.drag) return;
+    const dx=e.clientX-latCam.lx, dy=e.clientY-latCam.ly;
+    latCam.lx=e.clientX; latCam.ly=e.clientY;
+    latCam.x -= dx/latCam.scale;
+    latCam.y += dy/latCam.scale;
+    fillLattice(STATE);
+  });
+  canvas.addEventListener('wheel', e=>{
+    e.preventDefault();
+    const f = e.deltaY>0 ? 0.9 : 1.1;
+    latCam.scale = Math.max(2, Math.min(40, latCam.scale*f));
+    fillLattice(STATE);
+  }, {passive:false});
+  canvas.addEventListener('click', e=>{
+    if(Math.abs(e.movementX)+Math.abs(e.movementY)>4) return;
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(canvas.width/rect.width);
+    const my=(e.clientY-rect.top)*(canvas.height/rect.height);
+    const n=hitLatticeNode(mx,my);
+    if(n) selectLatticeNode(n);
+  });
+  canvas.addEventListener('dblclick', e=>{
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(canvas.width/rect.width);
+    const my=(e.clientY-rect.top)*(canvas.height/rect.height);
+    const n=hitLatticeNode(mx,my);
+    if(n){ selectLatticeNode(n); openPage(n.id, STATE); }
+  });
+})();
+
+// Keyboard
+window.addEventListener('keydown', e=>{
+  if(document.activeElement===$('cmd') || document.activeElement===$('lat-q')) return;
+  if(e.key==='Escape'){
+    /* enhance:esc-stack — close topmost first */
+    const stack=['page-modal','results-modal','lattice-modal'];
+    for(const id of stack){
+      if($(id) && $(id).classList.contains('show')){ showOverlay(id,false); return; }
+    }
+    return;
+  }
+  // don't steal keys when typing in inputs
+  if(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')) return;
+  if($('lattice-modal').classList.contains('show') && e.key.toLowerCase()!=='l' && e.key!=='Escape'){
+    // allow L toggle still
+  }
+  const k=e.key.toLowerCase();
+  const go=(cmd,anim)=>{ e.preventDefault(); sendCmd(cmd,{anim}); };
+  if(k==='w') go('fp forward','step');
+  else if(k==='s') go('fp back','step');
+  else if(k==='a') go(e.shiftKey?'strafe left':'fp turn left', e.shiftKey?'step':'turn');
+  else if(k==='d') go(e.shiftKey?'strafe right':'fp turn right', e.shiftKey?'step':'turn');
+  else if(k==='r') go('fp up','step');
+  else if(k==='f' && !e.ctrlKey && !e.metaKey) go('fp down','step');
+  else if(k==='q') go('fp look up');
+  else if(k==='e') go('fp look down');
+  else if(k===' ') { e.preventDefault(); go('fp look'); }
+  else if(k==='l'){ e.preventDefault(); openLattice(); }
+  else if(k==='g'){ e.preventDefault(); sendCmd('grow ideas 1',{panel:true}); }
+  else if(k==='n'){ e.preventDefault(); sendCmd('proposals',{panel:true}); }
+  else if(k==='p' && !e.ctrlKey && !e.metaKey){ e.preventDefault(); sendCmd('pulse',{panel:true}); }
+  /* enhance:hotkeys-gnp */
+  else if(k==='enter'){
+    const pages=(STATE&&STATE.fp&&STATE.fp.here&&STATE.fp.here.pages)||[];
+    const withId=pages.find(p=>p.id);
+    if(withId) openPage(withId.id, STATE);
+    else toast('No idea page in this cell');
+  }
+});
+
+// boot
+async function boot(){
+  try{
+    const s=await getState();
+    render(s);
+    setLive(true);
+    log('ready · Matrix Walk · Lattice page · all controls wired');
+    toast('ready');
+  }catch(e){
+    setLive(false);
+    log('connect failed: '+e);
+  }
+}
+boot();
+/* enhance:smart-poll */
+let pollMs=3000;
+async function pollTick(){
+  try{
+    if(!animLock && !busy){
+      const s=await getState();
+      render(s);
+      setLive(true);
+      if($('lattice-modal').classList.contains('show')) fillLattice(s);
+      pollMs = $('lattice-modal').classList.contains('show') ? 4000 : 2800;
+    }
+  }catch(e){ setLive(false); pollMs=5000; }
+  setTimeout(pollTick, pollMs);
+}
+setTimeout(pollTick, 2800);
+})();
+</script>
+</body>
+</html>

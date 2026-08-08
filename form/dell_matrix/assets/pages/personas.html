@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>DellMatrix · Personas & BIMO</title>
+<link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+<div id="app">
+  <div class="page">
+    <div class="sync-strip" id="sync-strip" aria-live="polite"><span class="dot"></span> <span id="sync-text">syncing…</span></div>
+
+    <div class="page-head">
+      <div>
+        <h1>Personas & BIMO</h1>
+        <p class="lede">Roster, persona matrix, and BIMO fusion cockpit. Lenses soft-filter what is seen. Keys: set lens · BIMO fuse</p>
+      </div>
+      <div class="toolbar">
+        <button title="personas" type="button" class="primary" data-cmd="personas">Roster</button>
+        <button title="matrix personas" type="button" data-cmd="matrix personas">Persona matrix</button>
+        <button title="bimo" type="button" data-cmd="bimo">BIMO status</button>
+        <button type="button" data-cmd="bimo fuse" title="Fuse docked personas">BIMO fuse</button>
+        <button title="bimo defaults" type="button" data-cmd="bimo defaults">Dock defaults</button>
+        <button title="bimo clear" type="button" data-cmd="bimo clear">Clear BIMO</button>
+        <button title="bimo pilot manny" type="button" data-cmd="bimo pilot manny">Pilot Manny</button>
+        <a href="/program"><button type="button" class="sm">Program</button></a>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Live snapshot</h3>
+        <div class="stat" id="snap">—</div>
+      </div>
+      <div class="card">
+        <h3>Quick lens</h3>
+        <div class="cmdbar">
+          <input id="persona" class="field" placeholder="persona name for lens…"/>
+          <button type="button" id="btn-lens">Set lens</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button title="persona manny" type="button" class="sm" data-cmd="persona manny">Manny</button>
+          <button title="persona melody" type="button" class="sm" data-cmd="persona melody">Melody</button>
+          <button title="persona aetheris" type="button" class="sm" data-cmd="persona aetheris">Aetheris</button>
+          <button title="persona clear" type="button" class="sm" data-cmd="persona clear">Clear lens</button>
+        </div>
+        <div class="stat" style="margin-top:8px" id="lens">—</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>Output</h3>
+      <pre id="out" class="mono-out">Command output appears here…</pre>
+    </div>
+  
+    <nav class="row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)" aria-label="All pages" data-navhub="personas">
+      <a href="/"><button type="button" class="sm" title="Menu">Menu</button></a>
+      <a href="/walk"><button type="button" class="sm" title="Walk">Walk</button></a>
+      <a href="/lattice"><button type="button" class="sm" title="Lattice">Lattice</button></a>
+      <a href="/nursery"><button type="button" class="sm" title="Nursery">Nursery</button></a>
+      <a href="/program"><button type="button" class="sm" title="Program">Program</button></a>
+      <a href="/personas"><button type="button" class="sm" title="Personas">Personas</button></a>
+      <a href="/forces"><button type="button" class="sm" title="Forces">Forces</button></a>
+      <a href="/geometry"><button type="button" class="sm" title="Geometry">Geometry</button></a>
+      <a href="/matrices"><button type="button" class="sm" title="Matrices">Matrices</button></a>
+      <a href="/console"><button type="button" class="sm" title="Console">Console</button></a>
+    </nav><!-- btnpath:navhub:personas -->
+</div>
+</div>
+<script src="/js/core.js"></script>
+<script>
+(function(){
+  const shell=DM.mountShell({page:'personas'});
+  const $=id=>document.getElementById(id);
+
+  async function paint(){
+    const s=await DM.getState();
+    document.title='DellMatrix · Personas';
+    shell.setMeta(`personas · count ${s.personas_count??'?'} · lens ${s.persona_lens||'—'}`);
+    shell.setFoot(s);
+    try{ var _sx=document.getElementById('sync-text'); if(_sx&&DM.formatSyncLine){ var _st=(typeof s!=='undefined'?s:(typeof STATE!=='undefined'?STATE:null)); if(_st) _sx.textContent=DM.formatSyncLine(_st); } }catch(_e){}
+    /* syncux:sync-strip-personas */
+
+    const b=s.bimo||{}, pm=s.persona_matrix||{};
+    $('snap').innerHTML=`
+      <b>Lens</b> ${DM.esc(s.persona_lens||'—')}<br>
+      <b>Personas count</b> ${s.personas_count??'—'}<br>
+      <b>BIMO mode</b> ${DM.esc(b.mode||'—')} · pilot <b>${DM.esc(b.pilot||'—')}</b><br>
+      <b>Filled slots</b> ${b.filled_count??'—'} · empty ${DM.esc((b.empty_slots||[]).join(', ')||'—')}<br>
+      <b>Matrix</b> ${DM.esc(JSON.stringify(pm).slice(0,180))}
+    `;
+    $('lens').textContent='current lens: '+(s.persona_lens||'clear');
+  }
+  async function run(cmd){
+    const r=await DM.sendCmd(cmd);
+    $('out').textContent=r&&(r.msg||r.error)||'—';
+    await paint();
+  }
+  document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>run(b.getAttribute('data-cmd')));
+  $('btn-lens').onclick=()=>{
+    const n=$('persona').value.trim();
+    if(!n){ DM.toast('enter persona name'); return; }
+    run('persona '+n);
+  };
+  $('persona').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('btn-lens').click(); }});
+  paint();
+  run('personas');
+  setInterval(()=>{ if(document.visibilityState==='visible') paint().catch(()=>{}); }, 5000);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') paint().catch(()=>{}); });
+})();
+</script>
+<!-- btnpath:titles:personas -->
+<!-- syncux:empty-personas -->
+<!-- syncux:kbdhelp-personas -->
+</body>
+</html>

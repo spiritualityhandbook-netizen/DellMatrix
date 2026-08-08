@@ -56,6 +56,26 @@ SAMPLES: List[str] = [
     "replay",
     "shell",
     "lang list",
+    # natural English expansions
+    "look",
+    "look around",
+    "evolve",
+    "audit",
+    "matrices",
+    "forces",
+    "force tick",
+    "entities",
+    "personas",
+    "guide",
+    "rooms",
+    "backstep",
+    "jog",
+    "strafe left",
+    "unzoom",
+    "weather rain",
+    "english expand 50",
+    "english status",
+    "english help",
 ]
 
 

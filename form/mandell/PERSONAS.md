@@ -1,19 +1,37 @@
-# Persona roster (optional layer)
+# Persona roster + BIMO (live form/)
 
-Pedagogical / processing lenses — **not** a second runtime and **not** required for offline acceptance.
+Runtime: `form/dell_matrix/personas.py`  
+Commands: `personas` · `matrix personas` · `bimo` · `persona <name>`
 
-| Persona | Lens | Live surface |
-|---------|------|----------------|
-| **Manny** | Surgical logic, constraints, sequencing | executor · Floor · Nursery confirm |
-| **Melody** | Pattern, harmonic intuition, expansion | lattice perception · LatinMandell depth |
-| **Mathelody** | Fusion of Manny + Melody | Architect judgment in docs / planning |
-| **Translator** | Surface language → Mandel | phrases · polyglot · morpheme |
-| **Della** | Quality / safety gate | honesty · CORE_SCOPE · confirm |
-| **Mansplainer** | State → plain English | render · status · START_HERE |
+## Full roster (11)
+
+| Persona | Category | Role |
+|---------|----------|------|
+| Manny | PragLog | Surgical logic, constraints |
+| Melody | EvoLog | Pattern, growth, expansion |
+| Aetheris | AutoLog | Morphology, coherence |
+| Mathelody | AgentLog | TruFusion apex (Manny+Melody+Aetheris) |
+| The_Ancient | Ancient_Psalms | Structural operators only |
+| Translator | LangLog | English → Mandel bridge |
+| Della | DellLog | Quality / Floor / Nursery gate |
+| Mansplainer | LangLog | State → plain English |
+| Dell | DellLog | Executor / Dells runner |
+| Oracle | AutoLog | Pattern watch / pillars |
+| BIMO | AgentLog | Fusion body (holds all slots) |
+
+## BIMO
+
+Multi-agent fusion body with dock slots. Default dock fills all 11.
+
+```text
+you> bimo defaults
+you> bimo fuse
+you> bimo pilot mathelody
+you> matrix personas
+```
 
 ## Law
 
 Personas describe *how* to think about a step.  
-Dells + Floor + Program remain the executable spine.
-
+Dells + Floor + Program remain the executable spine.  
 Voynich/codex work under these lenses stays **interpretive** — see `VOYNICH_HONESTY.md`.

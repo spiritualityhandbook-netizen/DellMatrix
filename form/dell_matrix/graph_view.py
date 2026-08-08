@@ -124,10 +124,23 @@ def build_view(plane: Plane, scores: Optional[Dict[str, float]] = None) -> Graph
         if u.sandboxed and u.sandbox_id:
             edges.append(ViewEdge(source=uid, target=u.sandbox_id, kind="sandbox"))
 
-    connected_ids = [n.id for n in nodes if n.connected]
-    for i, a in enumerate(connected_ids):
-        for b in connected_ids[i + 1 :]:
-            edges.append(ViewEdge(source=a, target=b, kind="vesica"))
+    # Verita / vesica edges from real proximity (not all-pairs spam)
+    try:
+        from form.dell_matrix.sacred_geometry import verita_between_nodes
+        node_dicts = [n.to_dict() for n in nodes if n.connected]
+        for ve in verita_between_nodes(node_dicts, max_dist=3.5, min_verita=0.2):
+            edges.append(ViewEdge(
+                source=str(ve["source"]),
+                target=str(ve["target"]),
+                kind="vesica",
+            ))
+            # stash verita on a side channel via kind suffix for consumers that care
+            # (ViewEdge is simple; live visual re-computes strength from geometry)
+    except Exception:
+        connected_ids = [n.id for n in nodes if n.connected]
+        for i, a in enumerate(connected_ids):
+            for b in connected_ids[i + 1 :]:
+                edges.append(ViewEdge(source=a, target=b, kind="vesica"))
 
     sandboxes = {sid: list(sb.member_ids) for sid, sb in plane.sandboxes.items()}
     return GraphView(

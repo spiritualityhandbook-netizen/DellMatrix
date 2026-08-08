@@ -32,6 +32,26 @@ def main() -> None:
     from form.dell_matrix.perception import smoke as perception_smoke
     from form.dell_matrix.network_main import smoke as net_smoke
     from form.dell_matrix.graph_view import smoke as graph_smoke
+    from form.dell_matrix.personas import smoke as personas_smoke
+    from form.dell_matrix.view_rooms import smoke as rooms_smoke
+    from form.dell_matrix.forces import smoke as forces_smoke
+    from form.dell_matrix.pillars import smoke as pillars_smoke
+    from form.dell_matrix.workshops import smoke as workshops_smoke
+    from form.dell_matrix.matrices_hub import smoke as hub_smoke
+    from form.dell_matrix.ascii_bodies import smoke as bodies_smoke
+    from form.mandell.english_brain import smoke as english_smoke
+    from form.mandell.english_brain_150_loop import smoke as english_150_smoke
+    from form.dell_matrix.sacred_geometry import smoke as geometry_smoke
+    from form.dell_matrix.first_person import smoke as fp_smoke
+    from form.dell_matrix.inspire_pack import smoke as inspire_smoke
+    from form.dell_matrix.self_model import smoke as self_model_smoke
+    from form.dell_matrix.program_evolve_150_loop import smoke as evolve_150_smoke
+    from form.dell_matrix.program_strength import smoke as strength_smoke
+    from form.dell_matrix.needs import smoke as needs_smoke
+    from form.dell_matrix.function_150_loop import smoke as function_150_smoke
+    from form.dell_matrix.internet_gate import smoke as internet_smoke
+    from form.dell_matrix.code_evolution import smoke as ce_smoke
+    from form.idea_create import smoke as idea_create_smoke
     from form.persist import smoke as persist_smoke
     from form.open import smoke as open_smoke
     from form.dual_output import smoke as dual_smoke
@@ -52,6 +72,26 @@ def main() -> None:
         ("perception", perception_smoke),
         ("network_main", net_smoke),
         ("graph_view", graph_smoke),
+        ("personas", personas_smoke),
+        ("view_rooms", rooms_smoke),
+        ("forces", forces_smoke),
+        ("pillars", pillars_smoke),
+        ("workshops", workshops_smoke),
+        ("matrices_hub", hub_smoke),
+        ("ascii_bodies", bodies_smoke),
+        ("english_brain", english_smoke),
+        ("english_brain_150", english_150_smoke),
+        ("sacred_geometry", geometry_smoke),
+        ("first_person", fp_smoke),
+        ("inspire_pack", inspire_smoke),
+        ("self_model", self_model_smoke),
+        ("program_evolve_150", evolve_150_smoke),
+        ("program_strength", strength_smoke),
+        ("needs", needs_smoke),
+        ("function_150", function_150_smoke),
+        ("internet_gate", internet_smoke),
+        ("code_evolution", ce_smoke),
+        ("idea_create", idea_create_smoke),
         ("persist_v7", persist_smoke),
         ("open", open_smoke),
         ("dual_output", dual_smoke),

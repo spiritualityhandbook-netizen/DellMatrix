@@ -17,6 +17,9 @@
 | `form/mandell/POLYGLOT.md` | EN/LA/ES/FR + LatinMandell |
 | `docs/AUDIT_MATRIX_TIERS.md` | Tier audit |
 | `docs/FULL_AUDIT_AND_CAPABILITIES.md` | Capabilities |
+| `docs/FULL_PROGRAM_AUDIT_150.md` | Full program audit + 150-loop enhance map |
+| `docs/PAGE_ENHANCE_150.md` | Menu + page-by-page 150-loop |
+| `docs/BUTTON_PATH_ENHANCE_150.md` | Every button + every path 150-loop |
 | `form/NBD_LOG.md` | Execution log |
 | `form/CORE_SCOPE.md` | Core vs side |
 | `README.md` | Repo front |
@@ -29,6 +32,9 @@
 | `form.seed_strong_ideas` | Plant Code Evolution + True Lore + law seeds |
 | `form.dell_matrix.decision_shells` | Ternary/fuzzy soft gates |
 | `form.dell_matrix.live_visual` | Live two-way panel (movement + vision) |
+| `form.dell_matrix.button_path_enhance_loop` | ×150 every button + path coverage |
+| `form.dell_matrix.page_enhance_loop` | ×150 menu + pages polish |
+| `form.dell_matrix.sync_ux_150_loop` | ×150 page-by-page sync · function · usability |
 | `form.mandell.latinmandell` | Depth / explain |
 
 **Profiles:** `python launch.py` · `Ace` · `Worldwide` · `Friend`  
