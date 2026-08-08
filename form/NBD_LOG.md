@@ -2,6 +2,24 @@
 
 Bare NBD holds steady until reported friction or named surface.
 
+## 2026-08-08 — Nature of Code book + external ingest (DEV push)
+
+Surface: `docs/external/nature_of_code/` + reference + English Brain integration plan
+
+Implemented and pushed (not talk):
+
+1. Full Nature of Code (Daniel Shiffman) chapter notes 0–11 + introduction + appendix + resources
+2. GROK_AI_DIRECTIVE for continued ingestion/integration
+3. english_brain_integration_plan.md for Mandell English Brain seeds
+4. Supporting video summaries (Nature of Code related)
+5. nature_of_code_reference.md
+
+Synced from local zips; no .venv, no __pycache__, no duplicates. Live visual / movement / vision / isometric already on main from prior days.
+
+Law held: Floor · Nursery quarantine · offline core · GitHub-only source of truth.
+
+NBD after this entry: steady.
+
 ## 2026-08-06 — Live visual full stack (DEV push)
 
 Surface: `form/dell_matrix/live_visual.py`
