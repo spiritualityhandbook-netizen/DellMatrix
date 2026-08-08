@@ -1,0 +1,25 @@
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.tmp
+*.swp
+.DS_Store
+node_modules/
+
+# Runtime state / snapshots (generated) — keep local only
+form/state/
+form/state/*
+form/state/visual/
+
+# Visual artifacts
+*.html
+*.svg
+
+# Editor / OS
+.vscode/
+.idea/
