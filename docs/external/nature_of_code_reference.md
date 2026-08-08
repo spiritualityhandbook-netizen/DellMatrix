@@ -8,5 +8,6 @@ Notes:
 - Recommended for algorithmic/agentic design, physics simulations, and generative systems.
 
 Next steps:
-- Chapter notes live under docs/external/nature_of_code/
-- Integrate seeds into form/mandell/english_brain.py per english_brain_integration_plan.md
+- Ingest chapters of the book into DellMatrix content seeds (paraphrases, concept map).
+- Map relevant algorithms (forces, steering, noise, cellular automata) into `form/mandell/english_brain.py` as canonical phrases and examples.
+- Chapter notes 0–11 + integration plan already live under docs/external/nature_of_code/.
