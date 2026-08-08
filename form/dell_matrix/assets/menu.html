@@ -1,1 +1,105 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>DellMatrix · Main Menu</title>
+<link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+<div id="app">
+  <div class="menu-wrap">
+    <div class="menu-hero">
+      <h1>DellMatrix</h1>
+      <p>Main menu — open each surface on its own page. Matrix Walk is first-person cube-to-cube; Lattice is the full idea map; other pages grow the program under Floor &amp; Nursery law. Offline core · live is localhost only.</p>
+      <div class="sync-strip" id="sync-strip" aria-live="polite"><span class="dot"></span> <span id="sync-text">syncing…</span></div>
+      <div class="menu-stats" id="stats"></div>
+      <p class="lede" style="margin-top:10px;font-size:12px">Shortcuts — Keys: Shortcuts — Keys:<!-- pageenh:m-lede --> <kbd>1</kbd> Walk · <kbd>2</kbd> Lattice · <kbd>3</kbd> Nursery · <kbd>4</kbd> Program · <kbd>5</kbd> Personas · <kbd>6</kbd> Forces · <kbd>7</kbd> Geometry · <kbd>8</kbd> Matrices · <kbd>9</kbd> Console · <kbd>N</kbd> Nature · <kbd>0</kbd> Menu · <kbd>?</kbd> help</p>
+    </div>
+    <div class="menu-grid" id="grid" role="navigation" aria-label="Main surfaces"></div>
+  </div>
+</div>
+<script src="/js/core.js"></script>
+<script>
+(function(){
+  const shell = DM.mountShell({ page: 'menu' });
+
+  const CARDS = [
+    { href:'/walk', primary:true, ico:'▣', title:'Matrix Walk', desc:'First-person cube/sphere walk. Step centerpoint to centerpoint, plant ideas, open wall pages. WASD · Q look · E follow.' },
+    { href:'/lattice', ico:'▦', title:'Main Lattice', desc:'Full idea map — filter, pan, zoom, skin shapes, vision cone, walk to any cell.' },
+    { href:'/nursery', ico:'🌱', title:'Nursery', desc:'Confirm or reject under Nursery law — growth never skips quarantine.' },
+    { href:'/program', ico:'◎', title:'Program', desc:'Owner status, pillars, generation, save, evolve, pulse, workshop.' },
+    { href:'/personas', ico:'◐', title:'Personas & BIMO', desc:'Persona roster, matrix slots, BIMO fuse / pilot / dock. Lenses soft-filter vision.' },
+    { href:'/forces', ico:'≋', title:'Forces', desc:'Growth, water, breath and weather — tick the force field.' },
+    { href:'/geometry', ico:'❀', title:'Geometry', desc:'Flower of Life, Verita, Voynich rings (structural only), fractals.' },
+    { href:'/matrices', ico:'⊞', title:'Matrices', desc:'Hub of all matrices — core, growth, lens, safety, visual, workbench.' },
+    { href:'/workshops', ico:'⚒', title:'Workshops', desc:'Closed workbenches — matrix, perspective, mandel, persona, forces, BIMO, psalms.' },
+    { href:'/inspire', ico:'✦', title:'Inspire Pack', desc:'Attend · multilook · slopes · prefs · glyph · script — offline pedagogy end-pages.' },
+    { href:'/nature', ico:'∞', title:'Nature of Code', desc:'Shiffman cores live — Walker, Forces, Oscillation, Particles, Agents, CA. Canvas + Python host.' },
+    { href:'/console', ico:'>_', title:'Console', desc:'Mandell / English / plant / find — history and full result sheet.' },
+  ];
+
+  document.getElementById('grid').innerHTML = CARDS.map((c,i) => `
+    <a class="menu-card ${c.primary?'primary-card':''}" href="${c.href}" data-key="${i+1}">
+      <div class="ico">${c.ico}</div>
+      <h2>${DM.esc(c.title)}</h2>
+      <p>${DM.esc(c.desc)}</p>
+      <div class="go">${c.primary?'Start here · ':''}Open → <kbd>${i+1}</kbd></div>
+    </a>
+  `).join('');
+
+  async function refresh(){
+    try{
+      const s = await DM.getState();
+      const fp = s.fp || {};
+      const pil = s.pillars || {};
+      const c = fp.center || [0,0,0];
+      document.title = 'DellMatrix · '+(s.owner||'Operator')+' · Menu';
+      shell.setMeta(`owner=${s.owner||'?'} · ideas=${s.ideas??0} · form=${s.form||'?'} · gen=${s.generation??0}`);
+      shell.setFoot(s);
+    try{ var _sx=document.getElementById('sync-text'); if(_sx&&DM.formatSyncLine){ var _st=(typeof s!=='undefined'?s:(typeof STATE!=='undefined'?STATE:null)); if(_st) _sx.textContent=DM.formatSyncLine(_st); } }catch(_e){}
+    /* syncux:sync-strip-menu */
+
+      document.getElementById('stats').innerHTML = `
+        <span class="pill live">live</span>
+        <span class="pill">${DM.esc(s.owner||'?')}</span>
+        <span class="pill">${s.ideas??0} ideas</span>
+        <span class="pill">gen ${s.generation??0}</span>
+        <span class="pill">form ${DM.esc(s.form||'?')}</span>
+        <span class="pill">mode ${DM.esc(s.ux_mode||'builder')}</span>
+        <span class="pill">mode ${DM.esc(s.ux_mode||'builder')}</span>
+        <span class="pill ${pil.healthy?'ok':'warn'}">${DM.esc(pil.label||'—')}</span>
+        <span class="pill">@ (${c.join(',')})</span>
+        <span class="pill">nursery ${(s.nursery||[]).length}</span>
+        <span class="pill">AI ${DM.esc((s.ai&&s.ai.mode)||'—')}</span>
+        <span class="pill">AI ${DM.esc((s.ai&&s.ai.mode)||'—')}</span>
+        <span class="pill">Floor locked</span>
+      `;
+    }catch(e){
+      shell.setMeta('offline');
+      document.getElementById('stats').innerHTML = `<span class="pill warn">offline</span>`;
+      setTimeout(refresh, 2000);
+    }
+  }
+  refresh();
+  setInterval(()=>{ if(document.visibilityState==='visible') refresh(); }, 3500);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') refresh(); });
+  const hero=document.querySelector('.menu-hero');
+  if(hero) hero.addEventListener('dblclick', refresh);
+
+  window.addEventListener('keydown', e=>{
+    if(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;
+    const map={ '1':'/walk','2':'/lattice','3':'/nursery','4':'/program','5':'/personas',
+      '6':'/forces','7':'/geometry','8':'/matrices','9':'/console','n':'/nature','N':'/nature','0':'/' };
+    if(map[e.key]){ e.preventDefault(); location.href=map[e.key]; }
+    if(e.key==='?'||e.key==='/'){ e.preventDefault(); DM.toast('1 Walk · 2 Lattice · 3 Nursery · 0 Menu'); }
+/* pageenh:m-kbd-help */
+
+    if(e.key==='?'||e.key==='/'){ e.preventDefault(); DM.toast('1 Walk · 2 Lattice · 3 Nursery · 0 Menu'); }
+  });
+})();
+</script>
+<!-- btnpath:titles:menu -->
+<!-- syncux:empty-menu -->
+</body>
+</html>
