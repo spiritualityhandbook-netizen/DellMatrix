@@ -1,10 +1,16 @@
-# Chapter 0 — Randomness
+Chapter 0 — Randomness (notes)
 
 Source: https://natureofcode.com/random/
 
-Key concepts: uniform vs Gaussian random, random walk, noise (Perlin), probability distributions, stochastic processes as foundation for later natural simulations.
+Summary:
+Chapter 0 surveys randomness, random walks, distributions, and Perlin noise.
+It introduces the `Walker` pattern (object with position and step behavior),
+randomGaussian(), accept-reject sampling, and Perlin noise (`noise()` / `noiseDetail`).
+Examples: random walk variants, Gaussian distributions, Perlin-noise-driven walkers,
+and exercises for nonuniform distributions.
 
-Seeds:
-- Randomness chapter covers uniform, Gaussian, and Perlin noise as building blocks.
-- Random walks and probability distributions form the base for natural system simulation.
-- Noise functions create coherent variation instead of pure chance.
+Ideas to map into DellMatrix:
+- Paraphrase seeds describing randomness vs Perlin noise (for `english_brain`).
+- Example pseudocode and short explanations to seed `form/mandell/english_brain.py`.
+
+Next: https://natureofcode.com/vectors/ (Chapter 1: Vectors)

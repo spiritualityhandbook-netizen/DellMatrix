@@ -1,10 +1,16 @@
-# Chapter 1 — Vectors
+Chapter 1 — Vectors (notes)
 
 Source: https://natureofcode.com/vectors/
 
-Key concepts: vector magnitude, direction, addition/subtraction, multiplication (scaling), normalization, unit vectors, vector as position and velocity.
+Summary:
+Chapter 1 introduces Euclidean vectors (magnitude + direction) as the basic
+building block for motion simulation. It motivates vectors with navigational and
+physical examples, covers vector arithmetic for position/velocity/acceleration,
+and shows how forces relate to vectors (force -> acceleration via mass).
 
-Seeds:
-- Vectors chapter treats position and velocity as vector quantities with magnitude and direction.
-- Vector math (add, scale, normalize) is the language of motion in the simulations.
-- Unit vectors give pure direction independent of length.
+Key concepts to extract:
+- Vector representation and common operations (add, scale, normalize).
+- Using vectors for position, velocity, and acceleration.
+- Mapping forces to changes in acceleration and implementing simple physics loops.
+
+Next: https://natureofcode.com/forces/ (Chapter 2)
