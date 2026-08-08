@@ -1,18 +1,17 @@
-Chapter 2 — Forces (notes)
+Chapter 2 — Forces
 
 Source: https://natureofcode.com/forces/
 
 Summary:
-Chapter 2 covers forces and their relationship to acceleration and motion.
-Key points:
-- Forces are vectors; Newton’s laws relate force, mass, and acceleration (F = ma).
-- Build a simple physics engine: maintain position, velocity, acceleration; apply forces as vectors to change acceleration.
-- Examples: gravity, wind, friction; how to add forces each frame and update kinematics.
-- Implement `applyForce(force)` which divides force by mass and adds to acceleration.
-- Use damping or friction to simulate resistive forces; simple collisions discussed.
+Newton F=MA, force accumulation, friction, drag, gravitational attraction,
+n-body. applyForce adds to acceleration; clear acc each frame.
 
-Ideas for DellMatrix:
-- Add concise paraphrase seeds summarizing `F=ma` and `applyForce()` examples into `form/mandell/english_brain.py`.
-- Create a small JS demo scaffold for visualizing forces in the UI (could be added under `form/dell_matrix/assets/examples`).
+Key concepts (usable):
+- apply_force(force) → acc += force/mass
+- gravity_force, wind_force, apply_friction
+- Full inverse-square n-body → documented, optional later
 
-Next: Chapter 3 (Oscillation) — https://natureofcode.com/oscillation/
+Implemented in DellMatrix:
+- `form/dell_matrix/nature_code.py` → Mover.apply_force, gravity_force, wind_force, apply_friction
+
+Next: https://natureofcode.com/oscillation/ (Chapter 3)

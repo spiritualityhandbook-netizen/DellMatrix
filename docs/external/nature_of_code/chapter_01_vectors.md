@@ -1,16 +1,17 @@
-Chapter 1 — Vectors (notes)
+Chapter 1 — Vectors
 
 Source: https://natureofcode.com/vectors/
 
 Summary:
-Chapter 1 introduces Euclidean vectors (magnitude + direction) as the basic
-building block for motion simulation. It motivates vectors with navigational and
-physical examples, covers vector arithmetic for position/velocity/acceleration,
-and shows how forces relate to vectors (force -> acceleration via mass).
+Euclidean vectors (magnitude + direction) as building block for motion.
+position, velocity, acceleration. add / sub / mult / normalize / limit.
 
-Key concepts to extract:
-- Vector representation and common operations (add, scale, normalize).
-- Using vectors for position, velocity, and acceleration.
-- Mapping forces to changes in acceleration and implementing simple physics loops.
+Key concepts (usable):
+- Vec2 with mag, normalize, limit, heading
+- Motion loop: vel.add(acc); pos.add(vel); acc.clear
+
+Implemented in DellMatrix:
+- `form/dell_matrix/nature_code.py` → Vec2, Mover base
+- Maps to FlowShell direction + grade-as-magnitude
 
 Next: https://natureofcode.com/forces/ (Chapter 2)

@@ -1,16 +1,20 @@
-Chapter 0 — Randomness (notes)
+Chapter 0 — Randomness
 
 Source: https://natureofcode.com/random/
 
 Summary:
-Chapter 0 surveys randomness, random walks, distributions, and Perlin noise.
-It introduces the `Walker` pattern (object with position and step behavior),
-randomGaussian(), accept-reject sampling, and Perlin noise (`noise()` / `noiseDetail`).
-Examples: random walk variants, Gaussian distributions, Perlin-noise-driven walkers,
-and exercises for nonuniform distributions.
+Random walks, distributions, and Perlin noise. Walker object with position +
+step(). Uniform vs nonuniform probability, Gaussian (randomGaussian),
+accept-reject sampling, Perlin noise for smooth organic motion.
 
-Ideas to map into DellMatrix:
-- Paraphrase seeds describing randomness vs Perlin noise (for `english_brain`).
-- Example pseudocode and short explanations to seed `form/mandell/english_brain.py`.
+Key concepts (usable):
+- Walker: pos + step_random / step_biased / step_gaussian
+- gaussian(mean, std)
+- accept_reject() for custom distributions
+- Perlin-style smooth noise → later bind; host has no built-in noise (document)
+
+Implemented in DellMatrix:
+- `form/dell_matrix/nature_code.py` → Walker, gaussian, accept_reject
+- Maps to ProbabilisticShell + FlowShell movement
 
 Next: https://natureofcode.com/vectors/ (Chapter 1: Vectors)
