@@ -3,77 +3,41 @@
 **Source:** Daniel Shiffman, *The Nature of Code* (https://natureofcode.com/)  
 **Repo notes:** `docs/external/nature_of_code/`  
 **Runnable cores:** `form/dell_matrix/nature_code.py`  
-**Law:** Only concepts that fit and are usable. Boolean host intact. PROJECTED_NOT_FACT on full p5.js / visual runtime.
+**Visual canvas:** `form/dell_matrix/assets/pages/nature_code.html`  
+**Law:** Usable concepts implemented. Boolean host intact.
 
 ---
 
-## Fit rule
+## Visual status — COMPLETE for Ch0–5 + CA
 
-| Criterion | Action |
-|-----------|--------|
-| Pure algorithm, no canvas required | Implement in Python |
-| Maps to existing decision shells / FlowShell | Bind or reuse |
-| Needs full graphics / physics library | Document only + PROJECTED |
-| Strengthens continuous fuel / multi-directional flow | Prefer |
-
----
-
-## Chapter → Implementation
-
-### Ch0 Randomness — **IMPLEMENTED**
-- Walker (random step, biased step)
-- Gaussian sample
-- Accept-reject sample
-- Maps to: ProbabilisticShell, FlowShell movement noise
-
-### Ch1 Vectors — **IMPLEMENTED**
-- Vec2 (add, sub, mult, mag, normalize, limit)
-- Position / velocity / acceleration loop
-- Maps to: FlowShell direction + grade as magnitude
-
-### Ch2 Forces — **IMPLEMENTED (core)**
-- apply_force → acceleration
-- Simple gravity / wind as force vectors
-- Friction sketch (oppose velocity)
-- Full n-body / drag coefficients → documented, not full sim
-
-### Ch3 Oscillation — **PARTIAL**
-- Angular step / simple harmonic grade oscillation helper
-- Full spring/pendulum visual → PROJECTED
-
-### Ch4 Particle Systems — **IMPLEMENTED (core)**
-- Particle (lifespan, update, is_dead)
-- Emitter (add, run, cull dead)
-- Maps to: multiple shells as a system; GrowthResidue aggregation
-
-### Ch5 Autonomous Agents — **IMPLEMENTED (core)**
-- seek / flee steering
-- Agent with max_speed / max_force
-- Maps to: look() / move() + prefer_open decision surface
-- Full flocking / flow-field / path-following → next growth (documented)
-
-### Ch6 Physics Libraries — **DOC ONLY**
-- External engines (Box2D-style) → PROJECTED_NOT_FACT in host
-
-### Ch7 Cellular Automata — **DOC + seed**
-- 1D elementary CA step (usable)
-- Full 2D Game of Life grid → optional next
-
-### Ch8 Fractals — **DOC + seed**
-- Recursive depth / branch factor as GrowthResidue pattern
-- Full L-system / Mandelbrot visual → PROJECTED
-
-### Ch9 Evolutionary Computing — **DOC + seed**
-- Fitness → selection weight (maps to grade / ResourceShell)
-- Full GA population → next growth
-
-### Ch10–11 Neural / Neuroevolution — **DOC ONLY**
-- Graded decision already exists (OpenShell)
-- Full net + NEAT-style → PROJECTED_NOT_FACT
+| Chapter | Python core | Canvas visual |
+|---------|-------------|---------------|
+| Ch0 Randomness | Walker, gaussian, accept_reject | Live biased walker + trail |
+| Ch1 Vectors | Vec2 full ops | Inside Forces movers |
+| Ch2 Forces | apply_force, gravity, wind, friction | Live multi-mass movers |
+| Ch3 Oscillation | oscillate() | Live harmonic orbits |
+| Ch4 Particles | Particle + Emitter | Live emitter follow pointer |
+| Ch5 Agents | seek / flee | Live seek-mouse agents |
+| Ch7 CA | ca1d_step | Live Rule 90 scroll |
+| Ch6 / 8–11 | Documented seeds | Next growth / PROJECTED |
 
 ---
 
-## Runnable entry
+## How to open the canvas
+
+With live host running:
+
+```text
+/nature_code
+```
+
+or open the page file under assets/pages when serving static assets.
+
+Keys on the page: `1`–`6` switch mode · `R` reset · pointer = agent/particle target.
+
+---
+
+## Runnable Python
 
 ```bash
 python -m form.dell_matrix.nature_code
@@ -81,10 +45,10 @@ python -m form.dell_matrix.nature_code
 
 ## Relation to Code Evolution
 
-- Randomness / probability → ProbabilisticShell
+- Randomness → ProbabilisticShell
 - Direction + magnitude → FlowShell / look / move
-- Forces on grade → continuous fuel, not forced Boolean cut
+- Forces on grade → continuous fuel
 - Particles / agents → multiple open surfaces + aggregate_looks
-- Evolution → GrowthResidue permanent fuel (never closed)
+- Canvas = eyes; nature_code.py = brain; decision_shells = judgment
 
 **True · Dense · Placed · Runnable · Labeled · Finishable**

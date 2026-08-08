@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>DellMatrix · Nature of Code</title>
+<link rel="stylesheet" href="/css/app.css"/>
+<style>
+  .noc-wrap { display:flex; flex-direction:column; gap:10px; }
+  #noc-canvas {
+    width:100%; max-width:720px; height:420px;
+    background:#0a0e16; border:1px solid var(--line,#243044);
+    border-radius:8px; display:block; touch-action:none;
+  }
+  .noc-modes { display:flex; flex-wrap:wrap; gap:6px; }
+  .noc-modes button.active { outline:2px solid #6af; }
+  .noc-hint { font-size:13px; opacity:0.85; }
+  .noc-stats { font-family:ui-monospace,monospace; font-size:12px; opacity:0.9; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="page">
+    <div class="page-head">
+      <div>
+        <h1>Nature of Code</h1>
+        <p class="lede">Visual canvas · Ch0–5 cores + CA · click/tap target for Agents · keys 1–6 switch mode</p>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="sm" id="btn-reset">Reset</button>
+        <a href="/forces"><button type="button" class="sm">Forces</button></a>
+        <a href="/geometry"><button type="button" class="sm">Geometry</button></a>
+      </div>
+    </div>
+
+    <div class="noc-wrap card">
+      <div class="noc-modes" id="modes">
+        <button type="button" data-mode="walker" class="active">0 Walker</button>
+        <button type="button" data-mode="forces">1–2 Forces</button>
+        <button type="button" data-mode="oscillation">3 Oscillation</button>
+        <button type="button" data-mode="particles">4 Particles</button>
+        <button type="button" data-mode="agents">5 Agents</button>
+        <button type="button" data-mode="ca">7 CA</button>
+      </div>
+      <canvas id="noc-canvas" width="720" height="420"></canvas>
+      <div class="noc-hint" id="hint">Random walk · trail on canvas</div>
+      <div class="noc-stats" id="stats">—</div>
+    </div>
+
+    <nav class="row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)" aria-label="All pages">
+      <a href="/"><button type="button" class="sm">Menu</button></a>
+      <a href="/walk"><button type="button" class="sm">Walk</button></a>
+      <a href="/lattice"><button type="button" class="sm">Lattice</button></a>
+      <a href="/forces"><button type="button" class="sm">Forces</button></a>
+      <a href="/geometry"><button type="button" class="sm">Geometry</button></a>
+      <a href="/console"><button type="button" class="sm">Console</button></a>
+    </nav>
+  </div>
+</div>
+
+<script>
+(function () {
+  const canvas = document.getElementById('noc-canvas');
+  const ctx = canvas.getContext('2d');
+  const hint = document.getElementById('hint');
+  const stats = document.getElementById('stats');
+  let mode = 'walker';
+  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+
+  // ---------- Vec2 ----------
+  class Vec2 {
+    constructor(x = 0, y = 0) { this.x = x; this.y = y; }
+    copy() { return new Vec2(this.x, this.y); }
+    add(v) { this.x += v.x; this.y += v.y; return this; }
+    sub(v) { this.x -= v.x; this.y -= v.y; return this; }
+    mult(s) { this.x *= s; this.y *= s; return this; }
+    div(s) { if (s) { this.x /= s; this.y /= s; } return this; }
+    mag() { return Math.hypot(this.x, this.y); }
+    magSq() { return this.x * this.x + this.y * this.y; }
+    normalize() { const m = this.mag(); if (m > 0) this.div(m); return this; }
+    setMag(m) { return this.normalize().mult(m); }
+    limit(max) { if (this.magSq() > max * max) this.setMag(max); return this; }
+    static sub(a, b) { return new Vec2(a.x - b.x, a.y - b.y); }
+    static random2D() {
+      const a = Math.random() * Math.PI * 2;
+      return new Vec2(Math.cos(a), Math.sin(a));
+    }
+  }
+
+  // ---------- Ch0 Walker ----------
+  class Walker {
+    constructor() {
+      this.pos = new Vec2(canvas.width / 2, canvas.height / 2);
+      this.trail = [];
+    }
+    step() {
+      const r = Math.random();
+      if (r < 0.4) this.pos.x += 2;
+      else if (r < 0.6) this.pos.x -= 2;
+      else if (r < 0.8) this.pos.y += 2;
+      else this.pos.y -= 2;
+      this.pos.x = Math.max(0, Math.min(canvas.width, this.pos.x));
+      this.pos.y = Math.max(0, Math.min(canvas.height, this.pos.y));
+      this.trail.push({ x: this.pos.x, y: this.pos.y });
+      if (this.trail.length > 2000) this.trail.shift();
+    }
+    draw() {
+      ctx.fillStyle = 'rgba(100,180,255,0.35)';
+      for (const p of this.trail) {
+        ctx.fillRect(p.x, p.y, 2, 2);
+      }
+      ctx.fillStyle = '#9cf';
+      ctx.beginPath();
+      ctx.arc(this.pos.x, this.pos.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // ---------- Ch1–2 Mover + forces ----------
+  class Mover {
+    constructor(x, y, mass) {
+      this.pos = new Vec2(x, y);
+      this.vel = new Vec2();
+      this.acc = new Vec2();
+      this.mass = mass || 1;
+      this.r = 4 + this.mass * 4;
+    }
+    applyForce(f) {
+      const a = f.copy().div(this.mass);
+      this.acc.add(a);
+    }
+    update() {
+      this.vel.add(this.acc);
+      this.vel.limit(12);
+      this.pos.add(this.vel);
+      this.acc.mult(0);
+      if (this.pos.x < this.r) { this.pos.x = this.r; this.vel.x *= -0.9; }
+      if (this.pos.x > canvas.width - this.r) { this.pos.x = canvas.width - this.r; this.vel.x *= -0.9; }
+      if (this.pos.y < this.r) { this.pos.y = this.r; this.vel.y *= -0.9; }
+      if (this.pos.y > canvas.height - this.r) { this.pos.y = canvas.height - this.r; this.vel.y *= -0.9; }
+    }
+    draw() {
+      ctx.fillStyle = '#7f8';
+      ctx.beginPath();
+      ctx.arc(this.pos.x, this.pos.y, this.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // ---------- Ch4 Particle ----------
+  class Particle {
+    constructor(x, y) {
+      this.pos = new Vec2(x, y);
+      this.vel = new Vec2((Math.random() - 0.5) * 2, Math.random() * -2 - 0.5);
+      this.acc = new Vec2();
+      this.life = 255;
+    }
+    applyForce(f) { this.acc.add(f); }
+    update() {
+      this.vel.add(this.acc);
+      this.pos.add(this.vel);
+      this.acc.mult(0);
+      this.life -= 3;
+    }
+    dead() { return this.life <= 0; }
+    draw() {
+      ctx.fillStyle = `rgba(255,160,80,${this.life / 255})`;
+      ctx.beginPath();
+      ctx.arc(this.pos.x, this.pos.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  class Emitter {
+    constructor(x, y) {
+      this.origin = new Vec2(x, y);
+      this.particles = [];
+    }
+    emit() {
+      this.particles.push(new Particle(this.origin.x, this.origin.y));
+    }
+    applyForce(f) {
+      for (const p of this.particles) p.applyForce(f.copy());
+    }
+    run() {
+      this.emit();
+      this.applyForce(new Vec2(0, 0.05));
+      for (const p of this.particles) { p.update(); p.draw(); }
+      this.particles = this.particles.filter(p => !p.dead());
+    }
+  }
+
+  // ---------- Ch5 Agent ----------
+  class Agent {
+    constructor(x, y) {
+      this.pos = new Vec2(x, y);
+      this.vel = Vec2.random2D().mult(2);
+      this.acc = new Vec2();
+      this.maxSpeed = 3.5;
+      this.maxForce = 0.15;
+    }
+    seek(target) {
+      const desired = Vec2.sub(target, this.pos).setMag(this.maxSpeed);
+      const steer = Vec2.sub(desired, this.vel).limit(this.maxForce);
+      return steer;
+    }
+    flee(target) {
+      const desired = Vec2.sub(this.pos, target).setMag(this.maxSpeed);
+      const steer = Vec2.sub(desired, this.vel).limit(this.maxForce);
+      return steer;
+    }
+    applyForce(f) { this.acc.add(f); }
+    update() {
+      this.vel.add(this.acc).limit(this.maxSpeed);
+      this.pos.add(this.vel);
+      this.acc.mult(0);
+      if (this.pos.x < 0) this.pos.x = canvas.width;
+      if (this.pos.x > canvas.width) this.pos.x = 0;
+      if (this.pos.y < 0) this.pos.y = canvas.height;
+      if (this.pos.y > canvas.height) this.pos.y = 0;
+    }
+    draw() {
+      const a = Math.atan2(this.vel.y, this.vel.x);
+      ctx.save();
+      ctx.translate(this.pos.x, this.pos.y);
+      ctx.rotate(a);
+      ctx.fillStyle = '#6f6';
+      ctx.beginPath();
+      ctx.moveTo(10, 0);
+      ctx.lineTo(-8, 6);
+      ctx.lineTo(-8, -6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // ---------- Ch3 oscillation ----------
+  let oscAngle = 0;
+
+  // ---------- Ch7 CA ----------
+  let caCells = null;
+  let caRule = 90;
+  let caY = 0;
+  function caInit() {
+    const n = Math.floor(canvas.width / 3);
+    caCells = new Array(n).fill(0);
+    caCells[Math.floor(n / 2)] = 1;
+    caY = 0;
+    ctx.fillStyle = '#0a0e16';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  function caStep() {
+    if (!caCells) return;
+    const n = caCells.length;
+    const next = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      const left = caCells[(i - 1 + n) % n];
+      const c = caCells[i];
+      const right = caCells[(i + 1) % n];
+      const idx = (left << 2) | (c << 1) | right;
+      next[i] = (caRule & (1 << idx)) ? 1 : 0;
+    }
+    for (let i = 0; i < n; i++) {
+      if (caCells[i]) {
+        ctx.fillStyle = '#8cf';
+        ctx.fillRect(i * 3, caY, 3, 3);
+      }
+    }
+    caCells = next;
+    caY += 3;
+    if (caY > canvas.height) caInit();
+  }
+
+  // ---------- state ----------
+  let walker, movers, emitter, agents;
+
+  function reset() {
+    walker = new Walker();
+    movers = [
+      new Mover(canvas.width * 0.3, 40, 1),
+      new Mover(canvas.width * 0.5, 40, 2),
+      new Mover(canvas.width * 0.7, 40, 3),
+    ];
+    emitter = new Emitter(canvas.width / 2, canvas.height - 20);
+    agents = [
+      new Agent(100, 100),
+      new Agent(200, 150),
+      new Agent(300, 200),
+      new Agent(400, 120),
+    ];
+    oscAngle = 0;
+    caInit();
+    if (mode !== 'ca') {
+      ctx.fillStyle = '#0a0e16';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  const hints = {
+    walker: 'Ch0 Random Walker · biased steps · trail',
+    forces: 'Ch1–2 Vectors + Forces · gravity + wind · mass scales size',
+    oscillation: 'Ch3 Oscillation · simple harmonic orbits',
+    particles: 'Ch4 Particle system · emitter + gravity + lifespan fade',
+    agents: 'Ch5 Agents · seek mouse/tap · triangles',
+    ca: 'Ch7 Elementary CA · Rule 90 · scrolls down',
+  };
+
+  function setMode(m) {
+    mode = m;
+    hint.textContent = hints[m] || m;
+    document.querySelectorAll('#modes button').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-mode') === m);
+    });
+    reset();
+  }
+
+  document.querySelectorAll('#modes button').forEach(b => {
+    b.onclick = () => setMode(b.getAttribute('data-mode'));
+  });
+  document.getElementById('btn-reset').onclick = () => reset();
+
+  function pointer(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const src = e.touches ? e.touches[0] : e;
+    mouse.x = (src.clientX - rect.left) * scaleX;
+    mouse.y = (src.clientY - rect.top) * scaleY;
+  }
+  canvas.addEventListener('mousemove', pointer);
+  canvas.addEventListener('touchmove', e => { e.preventDefault(); pointer(e); }, { passive: false });
+  canvas.addEventListener('click', pointer);
+
+  window.addEventListener('keydown', e => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    const map = { '1': 'walker', '2': 'forces', '3': 'oscillation', '4': 'particles', '5': 'agents', '6': 'ca' };
+    if (map[e.key]) setMode(map[e.key]);
+    if (e.key === 'r') reset();
+  });
+
+  function frame() {
+    if (mode !== 'ca') {
+      ctx.fillStyle = 'rgba(10,14,22,0.25)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    if (mode === 'walker') {
+      walker.step();
+      walker.draw();
+      stats.textContent = `pos (${walker.pos.x|0}, ${walker.pos.y|0}) · trail ${walker.trail.length}`;
+    } else if (mode === 'forces') {
+      const gravity = new Vec2(0, 0.2);
+      const wind = new Vec2(0.05, 0);
+      for (const m of movers) {
+        m.applyForce(gravity.copy().mult(m.mass));
+        m.applyForce(wind.copy());
+        // friction
+        if (m.vel.magSq() > 0) {
+          const fr = m.vel.copy().normalize().mult(-0.05);
+          m.applyForce(fr);
+        }
+        m.update();
+        m.draw();
+      }
+      stats.textContent = `movers ${movers.length} · gravity + wind + friction`;
+    } else if (mode === 'oscillation') {
+      oscAngle += 0.04;
+      const cx = canvas.width / 2, cy = canvas.height / 2;
+      for (let i = 0; i < 5; i++) {
+        const amp = 40 + i * 25;
+        const x = cx + Math.cos(oscAngle + i) * amp;
+        const y = cy + Math.sin(oscAngle * 1.3 + i) * (amp * 0.6);
+        ctx.fillStyle = `hsl(${180 + i * 30},70%,60%)`;
+        ctx.beginPath();
+        ctx.arc(x, y, 8 - i, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      stats.textContent = `angle ${oscAngle.toFixed(2)}`;
+    } else if (mode === 'particles') {
+      emitter.origin.x = mouse.x;
+      emitter.origin.y = Math.min(canvas.height - 10, mouse.y);
+      emitter.run();
+      stats.textContent = `particles ${emitter.particles.length}`;
+    } else if (mode === 'agents') {
+      const target = new Vec2(mouse.x, mouse.y);
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.beginPath();
+      ctx.arc(target.x, target.y, 12, 0, Math.PI * 2);
+      ctx.stroke();
+      for (const a of agents) {
+        a.applyForce(a.seek(target));
+        a.update();
+        a.draw();
+      }
+      stats.textContent = `agents ${agents.length} · seek target`;
+    } else if (mode === 'ca') {
+      caStep();
+      stats.textContent = `rule ${caRule} · y ${caY}`;
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  reset();
+  setMode('walker');
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

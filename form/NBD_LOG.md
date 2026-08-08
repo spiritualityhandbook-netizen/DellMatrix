@@ -1,20 +1,18 @@
 # NBD Log
 
-## 2026-08-08 — Nature of Code usable implementation (Ch0–5 cores)
+## 2026-08-08 — Nature of Code VISUAL canvas complete
 
 | Item | Result |
 |------|--------|
-| Docs | `docs/NATURE_OF_CODE_IMPLEMENTATION.md` map |
-| Runnable | `form/dell_matrix/nature_code.py` (Vec2, Walker, Mover, Particle, Emitter, Agent, CA1D) |
-| Chapters enriched | 0, 1, 2, 4, 5 notes updated with Implemented lines |
-| Fit rule | Only concepts that run without canvas; full visual/flocking/NEAT = PROJECTED |
+| Canvas page | `form/dell_matrix/assets/pages/nature_code.html` |
+| Modes | Walker · Forces · Oscillation · Particles · Agents · CA |
+| Input | Pointer target · keys 1–6 · R reset |
+| Python cores | Still in `nature_code.py` |
+| Docs | Implementation map updated |
 | Boolean host | Intact |
 | Floor / Nursery | Untouched |
 | Push | This commit |
 
-```bash
-python -m form.dell_matrix.nature_code
-python -m form.dell_matrix.decision_shells
-```
+Open with live host: `/nature_code`
 
-Prior: Code Evolution multi-directional layer (look/move/multi_look/aggregate_looks)
+Prior: Nature of Code Python cores Ch0–5 · Code Evolution multi-directional layer
