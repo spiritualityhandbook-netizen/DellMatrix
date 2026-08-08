@@ -476,6 +476,10 @@ EXPAND_FAMILIES: List[Dict[str, Any]] = [
      ]},
 ]
 
+# Small learned normals to cover common misses
+_LEARNED["what are my preferences"] = "prefs"
+_LEARNED["rain please"] = "weather rain"
+
 
 @dataclass
 class UnderstandResult:
