@@ -1,33 +1,29 @@
 # NBD Log
 
-## 2026-08-08 — All remaining high-value Nature stack
+## 2026-08-08 — Video Lupe5 Phase1–5 synchronized
 
-| Item | Result |
-|------|--------|
-| Auto-wire force_tick | `Program.force_tick` → ForceField + nature physics |
-| Ch3 Oscillation | `AngularMover` + breath-phase drive in NatureBridge |
-| Breath sync | `nature_physics` reads BreathForce.phase |
-| Act-on-seen | `form/dell_matrix/act_on_seen.py` |
-| Neuroevo | `form/dell_matrix/neuroevo.py` |
-| English seeds | `form/mandell/nature_english.py` |
-| HV API | `form/dell_matrix/high_value_api.py` (`open_wired`) |
-| Docs closer | `docs/DOC_GAP_CLOSER.md` |
-| Law | Boolean host · Floor · Nursery · offline intact |
+| Source | Core | Module |
+|--------|------|--------|
+| 3Blue1Brown EOLA (Phase 5 + full series) | Mat2 · det · compose · eigen · span | `form/dell_matrix/linear_algebra.py` |
+| Veritasium logistic map | bifurcation · chaos → growth/weather | `form/dell_matrix/logistic_map.py` |
+| Quanta P vs NP / math breakthroughs | honesty seeds only | `docs/external/VIDEO_LUPE5_ANALYSIS.md` |
+| Euler / functions / matrix spotting | transform API on plane | `program.la_transform` via HV API |
+| Prior Nature stack | force_tick · act-on-seen · neuroevo | intact |
 
 ```python
 from form.dell_matrix.high_value_api import open_wired
 p = open_wired("Operator")
-p.place("a", "Alpha", x=0, y=2)
-print(p.force_tick()["nature"]["nature_applied"])
-print(p.list_seen())
-print(p.act_on_seen("inspect", 0))
-print(p.neuroevo(3))
+p.place("a", "Alpha", x=1, y=0)
+print(p.la_transform("rotate", 0.25))
+print(p.logistic_tick(3.7))
+print(p.force_tick()["nature"])
 ```
 
 ```bash
-python -m form.dell_matrix.nature_code
-python -m form.dell_matrix.neuroevo
-python -m form.dell_matrix.act_on_seen
+python -m form.dell_matrix.linear_algebra
+python -m form.dell_matrix.logistic_map
 python -m form.dell_matrix.high_value_api
-python -m form.mandell.nature_english
 ```
+
+Analysis: `docs/external/VIDEO_LUPE5_ANALYSIS.md`  
+Law: Boolean host · Floor · Nursery · offline · PROJECTED_NOT_FACT on complexity claims.
