@@ -4,6 +4,7 @@ Nature Forces — ported from src/forces/nature_forces.js into form/.
 
 Modular matrices: water · growth · breath · gravity · time · weather · space
 Forces snap into the main matrix, affect growth/resonance, and evolve with use.
+Every tick starts with body_pulse (organ sense) so circulation knows the body.
 """
 
 from __future__ import annotations
@@ -16,6 +17,14 @@ import time
 FORCE_TYPES = ("water", "growth", "breath", "gravity", "time", "weather", "space")
 
 _STAGES = ["seed", "sprout", "stem", "branch", "leaf", "fruit"]
+
+
+def _body_pulse_safe() -> Dict[str, Any]:
+    try:
+        from form.dell_matrix.matrix_body import body_pulse
+        return body_pulse()
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}", "missing": [], "decisions": []}
 
 
 @dataclass
@@ -308,9 +317,28 @@ class ForceField:
         return True
 
     def tick(self, nodes: Optional[List[Dict[str, Any]]] = None, owner: str = "Operator") -> Dict[str, Any]:
-        """One evolution pulse across active forces."""
+        """One evolution pulse. Body senses organs first, then forces circulate."""
         nodes = nodes or []
-        report: Dict[str, Any] = {"ok": True, "forces": []}
+        body = _body_pulse_safe()
+        report: Dict[str, Any] = {
+            "ok": True,
+            "forces": [],
+            "body": {
+                "present": body.get("present"),
+                "missing": body.get("missing"),
+                "top_decision": (body.get("decisions") or [{}])[0],
+            },
+        }
+        # Weather responds to body health
+        missing = body.get("missing") or []
+        if len(missing) >= 8:
+            self.weather.set_condition("fog")
+        elif len(missing) >= 4:
+            self.weather.set_condition("rain")
+        else:
+            if self.weather.condition == "fog":
+                self.weather.set_condition("clear")
+
         if "time" in self.active:
             report["time"] = self.time.advance()
             report["forces"].append("time")
@@ -318,13 +346,21 @@ class ForceField:
             report["breath"] = self.breath.heartbeat(len(nodes))
             report["forces"].append("breath")
         if "growth" in self.active:
-            # ensure plants for unscored new ideas
             known = {p["idea"] for p in self.growth.plants}
             for n in nodes[:8]:
                 lab = str(n.get("label") or "")
                 if lab and lab not in known:
                     self.growth.plant(lab, owner)
                     known.add(lab)
+            # plant body restore labels when vital missing
+            for d in (body.get("decisions") or [])[:3]:
+                act = str(d.get("action") or "")
+                if act.startswith("densify_or_restore:"):
+                    organ = act.split(":", 1)[-1]
+                    lab = f"Restore {organ}"
+                    if lab not in known:
+                        self.growth.plant(lab, owner)
+                        known.add(lab)
             report["growth"] = self.growth.grow_all()
             report["forces"].append("growth")
         if "water" in self.active and nodes:
@@ -339,6 +375,7 @@ class ForceField:
         if "weather" in self.active:
             report["weather"] = self.weather.condition
             report["forces"].append("weather")
+        report["law"] = "body pulse first · forces circulate · weather tracks organ health"
         return report
 
     def status(self) -> Dict[str, Any]:
@@ -403,7 +440,8 @@ def smoke() -> bool:
     ff.breath.heartbeat(2)
     report = ff.tick([{"id": "a", "label": "Test", "score": 1.0}])
     ok = m is not None and report.get("ok") and len(ff.list_forces()) == 7
-    print(f"[{'PASS' if ok else 'FAIL'}] 7 forces + tick")
+    ok = ok and "body" in report
+    print(f"[{'PASS' if ok else 'FAIL'}] 7 forces + tick + body")
     return ok
 
 
