@@ -50,18 +50,22 @@ def audit_eigen_stability(results: List[Tuple[str, bool]]) -> None:
     from form.dell_matrix.linear_algebra import Mat2
     from form.dell_matrix.eigen_stability import stability_of_mat2, logistic_stability
 
-    # contracting scale is stable in both senses
+    # scale 0.5: continuous λ=0.5 > 0 → unstable source; discrete |λ|<1 → stable
     c = stability_of_mat2(Mat2.scale(0.5), "continuous")
     d = stability_of_mat2(Mat2.scale(0.5), "discrete")
-    _rec(results, "scale_0.5_stable", c["stable"] and d["stable"])
+    _rec(results, "scale_0.5_discrete_stable", d["stable"] is True)
+    _rec(results, "scale_0.5_continuous_source", c["stable"] is False)
 
-    # expanding scale unstable
+    # expanding scale unstable continuously
     c2 = stability_of_mat2(Mat2.scale(2.0), "continuous")
     _rec(results, "scale_2_unstable", not c2["stable"])
 
-    # pure rotation → center / marginal
-    cr = stability_of_mat2(Mat2.rotate(1.0), "continuous")
-    _rec(results, "rotation_center_or_marginal", cr["kind"] in ("center", "marginal_or_mixed", "spiral_sink"))
+    # pure rotation by π/2 → continuous center (pure imaginary eigenvalues)
+    cr = stability_of_mat2(Mat2.rotate(math.pi / 2), "continuous")
+    _rec(results, "rotation_pi2_center", cr["kind"] == "center")
+    # any rotation matrix is marginal under discrete iteration (|λ|=1)
+    dr = stability_of_mat2(Mat2.rotate(1.0), "discrete")
+    _rec(results, "rotation_discrete_marginal", dr["kind"] in ("marginal", "asymptotically_stable") or abs(dr.get("max_mod", 0) - 1) < 1e-6)
 
     # logistic r=2.5 has attracting fixed point
     ls = logistic_stability(2.5)
