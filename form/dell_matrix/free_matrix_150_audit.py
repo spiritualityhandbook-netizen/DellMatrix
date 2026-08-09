@@ -2,31 +2,15 @@
 """
 Free Matrix 150 enhancement audit — SUS standard.
 
-Rotates 150 checks across:
-  perspectives · dynamic switch · spatial audio · free_matrix API
-  one-process wiring · awake/auto_growth import · vision · first_person
-  organ atlas · verita · floor_spirit · delta · body
-
   python -m form.dell_matrix.free_matrix_150_audit
   python -m form.dell_matrix.free_matrix_150_audit --cycles 150
-
-Every FAIL is listed. Goal: 150/150 PASS under offline smoke constraints
-(network optional; import + logic required).
 """
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Tuple
 import importlib
-import traceback
 
 Check = Tuple[str, Callable[[], bool]]
-
-
-def _try(fn: Callable[[], bool]) -> bool:
-    try:
-        return bool(fn())
-    except Exception:
-        return False
 
 
 def _import(name: str) -> bool:
@@ -43,7 +27,6 @@ def _build_checks() -> List[Check]:
     def add(name: str, fn: Callable[[], bool]) -> None:
         C.append((name, fn))
 
-    # --- imports (modules on repo) ---
     mods = [
         "form.dell_matrix.perspective_views",
         "form.dell_matrix.dynamic_view_switch",
@@ -69,14 +52,12 @@ def _build_checks() -> List[Check]:
     for m in mods:
         add(f"import:{m.split('.')[-1]}", lambda m=m: _import(m))
 
-    # --- perspective unit ---
     add("perspective.smoke", lambda: importlib.import_module("form.dell_matrix.perspective_views").smoke())
     add("dynamic_switch.smoke", lambda: importlib.import_module("form.dell_matrix.dynamic_view_switch").smoke())
     add("spatial_audio.smoke", lambda: importlib.import_module("form.dell_matrix.spatial_audio").smoke())
 
-    # --- mode law ---
     def modes_ok():
-        from form.dell_matrix.perspective_views import MODES, ROLE_DEFAULT_MODE, PRIVILEGED
+        from form.dell_matrix.perspective_views import MODES, PRIVILEGED
         return set(MODES) == {"first", "third", "parts", "whole"} and "user" in PRIVILEGED and "architect" in PRIVILEGED
     add("modes.law", modes_ok)
 
@@ -85,7 +66,6 @@ def _build_checks() -> List[Check]:
         return ROLE_DEFAULT_MODE.get("ai_first") == "first" and ROLE_DEFAULT_MODE.get("architect") == "whole"
     add("roles.defaults", role_defaults)
 
-    # --- spatial math ---
     def pan_gain():
         from form.dell_matrix.spatial_audio import pan_from_bearing, gain_from_distance, ear_from_pan
         return pan_from_bearing(90) >= 0.9 and gain_from_distance(0.5) == 1.0 and ear_from_pan(-0.5) == "L"
@@ -101,7 +81,6 @@ def _build_checks() -> List[Check]:
         return "L" in ears and "R" in ears
     add("audio.sides", spatialize_sides)
 
-    # --- dynamic switch sequence ---
     def switch_cycle():
         from form.dell_matrix.dynamic_view_switch import DynamicViewSwitch
         from form.dell_matrix.perspective_views import MODES
@@ -153,7 +132,6 @@ def _build_checks() -> List[Check]:
         return s.hotkey(p, "1").get("to") == "first" and s.hotkey(p, "w").get("to") == "whole"
     add("switch.hotkeys", hotkeys)
 
-    # --- verita / floor / delta offline ---
     def verita_solo():
         from form.dell_matrix.verita import verita_of_one
         v = verita_of_one("Restore floor skeleton", words="vital densify coherent offline body growth organ")
@@ -170,17 +148,23 @@ def _build_checks() -> List[Check]:
 
     def delta_bands():
         from form.dell_matrix.delta_pressure import measure_pressure
-        m = measure_pressure(0.5, ["lattice", "plane"], 1, 0, [])
-        return m.get("band") in ("calm", "standstill", "elevated", "high", "critical") or "band" in m
+        m = measure_pressure(
+            c_now=0.5,
+            missing=["lattice", "plane"],
+            residue_count=1,
+            handicaps=[],
+            projections=[],
+        )
+        return "band" in m or "magnitude" in m
     add("delta.measure", delta_bands)
 
     def organ_atlas():
         from form.dell_matrix.organ_atlas import ORGAN_ATLAS, atlas_summary
         s = atlas_summary()
-        return len(ORGAN_ATLAS) >= 20 and s.get("total", 0) >= 20
+        n = s.get("organs", s.get("total", 0))
+        return len(ORGAN_ATLAS) >= 20 and n >= 20
     add("organ.atlas", organ_atlas)
 
-    # --- internet gate structure offline ---
     def net_structure():
         from form.dell_matrix.internet_gate import InternetGate
         g = InternetGate()
@@ -190,7 +174,10 @@ def _build_checks() -> List[Check]:
     def auto_structure():
         from form.dell_matrix.auto_growth import AutoGrowth
         ag = AutoGrowth(auto=True, internet=False)
-        out = ag.step(extra_ideas=[{"label": "Restore floor", "words": "vital densify coherent body", "source": "t"}], place_on_confirm=False)
+        out = ag.step(
+            extra_ideas=[{"label": "Restore floor", "words": "vital densify coherent body", "source": "t"}],
+            place_on_confirm=False,
+        )
         return out.get("ok") is True and isinstance(out.get("confirmed_labels"), list)
     add("auto.step_offline", auto_structure)
 
@@ -202,7 +189,6 @@ def _build_checks() -> List[Check]:
         return out.get("ok") is True
     add("awake.manual_step", awake_structure)
 
-    # pad to 150 with rotating structural health stamps
     spine = [
         "form.dell_matrix.free_matrix",
         "form.dell_matrix.perspective_views",
@@ -271,7 +257,6 @@ def run(cycles: int = 150) -> Dict[str, Any]:
 
 
 def smoke() -> bool:
-    # short path
     out = run(cycles=40)
     return out["passed"] >= 30
 
@@ -281,9 +266,6 @@ if __name__ == "__main__":
     cycles = 150
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    for a in sys.argv[1:]:
-        if a.isdigit():
-            cycles = int(a)
     if "--cycles" in sys.argv:
         i = sys.argv.index("--cycles")
         if i + 1 < len(sys.argv):
