@@ -2,11 +2,11 @@
 """High-value surface helpers bound onto Program without rewriting open.py wholesale."""
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 
 def wire_program_methods(program) -> None:
-    """Attach act_on_seen / neuroevo / nature / LA / logistic callables if missing."""
+    """Attach act_on_seen / neuroevo / nature / LA / logistic / fourier / stability."""
     if not hasattr(program, "act_on_seen"):
         def _act(action: str = "inspect", index: int = 0, extra: str = ""):
             from form.dell_matrix.act_on_seen import act_on_seen as fn
@@ -42,6 +42,21 @@ def wire_program_methods(program) -> None:
             from form.dell_matrix.logistic_map import logistic_status
             return logistic_status()
         program.logistic_status = _ls  # type: ignore
+    if not hasattr(program, "fourier_analyze"):
+        def _fa(samples: Sequence[float], top: int = 5):
+            from form.dell_matrix.fourier import analyze_samples
+            return analyze_samples(samples, top=top)
+        program.fourier_analyze = _fa  # type: ignore
+    if not hasattr(program, "fourier_demo"):
+        def _fd():
+            from form.dell_matrix.fourier import program_fourier_demo
+            return program_fourier_demo(program)
+        program.fourier_demo = _fd  # type: ignore
+    if not hasattr(program, "eigen_stability"):
+        def _es(kind: str = "rotate", amount: float = 0.1):
+            from form.dell_matrix.eigen_stability import analyze_transform_stability
+            return analyze_transform_stability(kind, amount)
+        program.eigen_stability = _es  # type: ignore
 
 
 def open_wired(owner: str = "Operator"):
@@ -62,13 +77,17 @@ def smoke() -> bool:
     p = open_wired("HVSmoke")
     p.place("a", "Alpha", x=1, y=0)
     ok = hasattr(p, "act_on_seen") and hasattr(p, "neuroevo") and hasattr(p, "la_transform")
+    ok = ok and hasattr(p, "fourier_analyze") and hasattr(p, "eigen_stability")
     r = p.force_tick()
     ok = ok and isinstance(r.get("nature"), dict)
     tr = p.la_transform("rotate", 0.2)
     ok = ok and tr.get("ok")
     lg = p.logistic_tick(3.5)
     ok = ok and "regime" in lg
-    print(f"[{'PASS' if ok else 'FAIL'}] wired + force_tick + la + logistic")
+    from form.dell_matrix.fourier import make_sine
+    fa = p.fourier_analyze(make_sine(32, 2.0), top=2)
+    ok = ok and fa.get("ok")
+    print(f"[{'PASS' if ok else 'FAIL'}] wired + force_tick + la + logistic + fourier")
     return ok
 
 
