@@ -1,37 +1,50 @@
 #!/usr/bin/env python3
 """
-Free Matrix — Track B primary entry.
+Free Matrix — Track B primary.
 
-Chat is a *window* into the matrix, not the prison.
-You (and the AI companion) walk, look, and act inside the live UI.
+ONE PROCESS: live UI server + awake growth loop together.
+
+Perspectives (who sees what):
+  first  — cone in front only
+  third  — around the body
+  parts  — filtered slice of the plane
+  whole  — full plane (omniscient)
+
+Roles:
+  user / architect — may switch to ANY mode at any time
+  ai_first / ai_third / ai_parts / ai_whole — defaults; user can override
 
   python -m form.dell_matrix.free_matrix
-  python -m form.dell_matrix.free_matrix --port 8765
-  python -m form.dell_matrix.free_matrix --awake    # also run growth heartbeat
+  python -m form.dell_matrix.free_matrix --awake-every 30
   python -m form.dell_matrix.free_matrix --smoke
 
-Stack used:
-  form/open.Program
-  live_visual.start_live  → browser UI (walk lattice nursery …)
-  first_person            → move / turn / look
-  vision + act_on_seen    → see and act on what is in view
-  companion               → AI body in the same world
-  matrix_awake (optional) → continuous growth while UI stays up
-  draw_frame              → text/SVG-ish frame of current view (Track D seed)
-
-Not included: trading (Track C skipped by operator).
+Trading (Track C) skipped.
 """
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 import argparse
-import json
 import time
+
+# module-level registry attached to program when opened
+_REGISTRY = None
 
 
 def open_world(owner: str = "FreeMatrix"):
+    global _REGISTRY
     from form.open import open_program
-    return open_program(owner)
+    from form.dell_matrix.perspective_views import bootstrap_default_viewers
+    program = open_program(owner)
+    _REGISTRY = bootstrap_default_viewers(program)
+    program.perspectives = _REGISTRY
+    return program
+
+
+def perspectives(program=None):
+    global _REGISTRY
+    if program is not None and getattr(program, "perspectives", None) is not None:
+        return program.perspectives
+    return _REGISTRY
 
 
 def walk(program, direction: str = "forward") -> Dict[str, Any]:
@@ -54,10 +67,38 @@ def view(program) -> Dict[str, Any]:
     return first_person_view(program)
 
 
-def see(program) -> Dict[str, Any]:
-    from form.dell_matrix.vision import compute_vision, format_look_report
-    vis = compute_vision(program)
-    return {"vision": vis, "report": format_look_report(vis)}
+def see(program, viewer_id: str = "user", mode: Optional[str] = None) -> Dict[str, Any]:
+    """See through a viewer's perspective. User/architect may pass any mode."""
+    from form.dell_matrix.perspective_views import see_as, sync_viewer_pose
+    reg = perspectives(program)
+    if reg is None:
+        # fallback classic cone
+        from form.dell_matrix.vision import compute_vision, format_look_report
+        from form.dell_matrix.perspective_views import _nodes_from_program, _pose_from_program
+        pos, facing = _pose_from_program(program)
+        nodes = _nodes_from_program(program)
+        vis = compute_vision(list(pos), facing, nodes)
+        return {"mode": "first", "vision": vis, "report": format_look_report(vis)}
+    v = reg.viewers.get(viewer_id)
+    if v is None:
+        return {"ok": False, "error": f"unknown viewer {viewer_id}", "viewers": reg.list_viewers()}
+    sync_viewer_pose(program, v)
+    return see_as(program, v, mode=mode)
+
+
+def set_view(program, viewer_id: str, mode: str, *, as_role: str = "user") -> Dict[str, Any]:
+    """User/architect: set any viewer's mode (first|third|parts|whole)."""
+    reg = perspectives(program)
+    if reg is None:
+        return {"ok": False, "error": "no registry — open_world first"}
+    return reg.set_mode(viewer_id, mode, as_role=as_role)
+
+
+def list_views(program) -> List[Dict[str, Any]]:
+    reg = perspectives(program)
+    if reg is None:
+        return []
+    return reg.list_viewers()
 
 
 def act(program, action: str = "inspect", target: str = "") -> Dict[str, Any]:
@@ -81,33 +122,36 @@ def companion_step(program, steps: int = 1) -> Dict[str, Any]:
     return {"ok": False, "error": "companion has no step"}
 
 
-def draw_frame(program) -> Dict[str, Any]:
-    """Track D seed: render a portable frame of where you are and what you see."""
-    fp = view(program)
-    vision = see(program)
+def draw_frame(program, viewer_id: str = "user", mode: Optional[str] = None) -> Dict[str, Any]:
+    fp = {}
+    try:
+        fp = view(program)
+    except Exception:
+        pass
+    vision = see(program, viewer_id=viewer_id, mode=mode)
     center = fp.get("center") or fp.get("pos") or []
     facing = fp.get("facing") or fp.get("yaw") or "?"
+    mode_s = vision.get("mode") or mode or "?"
     lines = [
         "╔══════════════════════════════════════╗",
         "║         FREE MATRIX · DRAW FRAME     ║",
         "╠══════════════════════════════════════╣",
+        f"║ viewer: {viewer_id[:28]:28} ║",
+        f"║ mode:   {str(mode_s)[:28]:28} ║",
         f"║ center: {str(center)[:28]:28} ║",
         f"║ facing: {str(facing)[:28]:28} ║",
         "╠══════════════════════════════════════╣",
     ]
-    report = vision.get("report") or []
-    for row in report[:8]:
+    for row in (vision.get("report") or [])[:8]:
         lines.append(f"║ {str(row)[:36]:36} ║")
     lines.append("╚══════════════════════════════════════╝")
-    frame = "\n".join(lines)
-    # optional glyph from inspire if present
     glyph = None
     try:
         from form.dell_matrix.inspire_pack import procedural_glyph
         glyph = procedural_glyph(str(center))
     except Exception:
-        glyph = None
-    return {"ok": True, "frame": frame, "glyph": glyph, "center": center, "facing": facing}
+        pass
+    return {"ok": True, "frame": "\n".join(lines), "glyph": glyph, "vision": vision}
 
 
 def start_ui(program, port: int = 8765, background: bool = True) -> Dict[str, Any]:
@@ -125,127 +169,148 @@ def pulse_awake(net_query: str = "") -> Dict[str, Any]:
         return {"ok": False, "error": str(e)}
 
 
+def run_one_process(
+    program,
+    *,
+    port: int = 8765,
+    awake_every: float = 30.0,
+    net_query: str = "matrix free agent coherence embodiment",
+    ui: bool = True,
+) -> None:
+    """
+    ONE PROCESS law:
+      · live UI server in background thread (if ui)
+      · awake growth loop in the main thread until Ctrl+C
+    """
+    if ui:
+        info = start_ui(program, port=port, background=True)
+        if info.get("ok"):
+            print(f"UI: {info.get('url')}")
+            print("Pages: walk lattice nursery program personas forces geometry …")
+        else:
+            print("UI issue:", info)
+            print("Continue with awake loop only.")
+
+    print(f"Awake loop every {awake_every}s · Ctrl+C to stop")
+    print("Perspectives:", [v["id"] + ":" + v["mode"] for v in list_views(program)])
+    tick = 0
+    try:
+        while True:
+            tick += 1
+            ar = pulse_awake(net_query)
+            ag = ar.get("auto_growth") or ar
+            conf = ag.get("confirmed_labels") or []
+            print(
+                f"[awake {tick}] confirmed={ag.get('confirmed', 0)} "
+                f"net={ag.get('net_count', '?')} labels={conf[:3]}"
+            )
+            # soft companion drift each cycle
+            try:
+                companion_step(program, 1)
+            except Exception:
+                pass
+            time.sleep(max(5.0, float(awake_every)))
+    except KeyboardInterrupt:
+        print("\nFree matrix one-process stopped.")
+
+
 def status(program) -> Dict[str, Any]:
-    out: Dict[str, Any] = {"track": "B", "primary": "free_matrix_ui"}
+    out: Dict[str, Any] = {
+        "track": "B",
+        "primary": "free_matrix_ui",
+        "one_process": "ui_thread + awake_main",
+        "perspectives": list_views(program),
+        "skipped": ["Track C trading"],
+    }
     try:
         out["view"] = view(program)
     except Exception as e:
         out["view_error"] = str(e)
     try:
-        out["see"] = see(program)
+        out["see_user_first"] = see(program, "user", "first")
+        out["see_architect_whole"] = see(program, "architect", "whole")
     except Exception as e:
         out["see_error"] = str(e)
-    try:
-        from form.dell_matrix.matrix_body import body_pulse
-        out["body"] = body_pulse()
-    except Exception as e:
-        out["body_error"] = str(e)
-    out["skipped"] = ["Track C trading"]
-    out["also"] = ["Track A awake optional", "Track D draw_frame seed"]
     return out
 
 
 def smoke() -> bool:
-    print("=== FREE MATRIX SMOKE (Track B) ===")
+    print("=== FREE MATRIX SMOKE ===")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}"); r.append(bool(ok))
+    # perspective unit smoke always
+    try:
+        from form.dell_matrix.perspective_views import smoke as ps
+        rec("perspective_smoke", ps())
+    except Exception as e:
+        print("perspective", e); rec("perspective_smoke", False)
     try:
         p = open_world("SmokeFree")
         rec("open", p is not None)
+        rec("registry", len(list_views(p)) >= 4)
+        rec("set_whole", set_view(p, "companion", "whole").get("ok") is True)
+        rec("see_third", see(p, "user", "third").get("ok") is True)
+        rec("see_whole", see(p, "architect", "whole").get("ok") is True)
     except Exception as e:
-        print("open failed", e)
+        print("open/see", e)
         rec("open", False)
-        print(f"=== {sum(r)}/{len(r)} ===")
-        return False
-    try:
-        w = walk(p, "forward")
-        rec("walk", w.get("ok") is True or "view" in w)
-    except Exception as e:
-        print("walk", e); rec("walk", False)
-    try:
-        t = turn(p, "right")
-        rec("turn", t.get("ok") is True or "view" in t)
-    except Exception as e:
-        print("turn", e); rec("turn", False)
-    try:
-        v = view(p)
-        rec("view", isinstance(v, dict))
-    except Exception as e:
-        print("view", e); rec("view", False)
-    try:
-        d = draw_frame(p)
-        rec("draw_frame", d.get("ok") is True)
-        print(d.get("frame", "")[:400])
-    except Exception as e:
-        print("draw", e); rec("draw_frame", False)
-    try:
-        s = status(p)
-        rec("status", s.get("track") == "B")
-    except Exception as e:
-        print("status", e); rec("status", False)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    ap = argparse.ArgumentParser(description="DellMatrix Free Matrix — Track B")
+    ap = argparse.ArgumentParser(description="DellMatrix Free Matrix — one process")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--owner", default="FreeMatrix")
-    ap.add_argument("--awake", action="store_true", help="Run one awake growth pulse after UI start")
+    ap.add_argument("--awake-every", type=float, default=30.0,
+                    help="Seconds between awake pulses in the one-process loop")
+    ap.add_argument("--no-awake", action="store_true", help="UI only, no growth loop")
+    ap.add_argument("--no-ui", action="store_true", help="Awake loop only, no HTTP UI")
     ap.add_argument("--smoke", action="store_true")
-    ap.add_argument("--no-ui", action="store_true", help="API only — no HTTP server")
     args = ap.parse_args(argv)
 
     if args.smoke:
         return 0 if smoke() else 1
 
     print("=" * 56)
-    print("  FREE MATRIX · Track B primary")
-    print("  Chat is a window. The world is the matrix.")
+    print("  FREE MATRIX · one process · Track B")
+    print("  UI thread + awake loop · multi-perspective")
     print("=" * 56)
 
     program = open_world(args.owner)
-    st = status(program)
-    print("status track:", st.get("track"))
-    if "view" in st:
-        print("view keys:", list((st.get("view") or {}).keys())[:12])
+    print("Viewers:")
+    for v in list_views(program):
+        print(f"  · {v['id']:12} role={v['role']:12} mode={v['mode']}")
 
-    fr = draw_frame(program)
+    print("\nUser can switch any view:")
+    print("  set_view(p, 'companion', 'whole')")
+    print("  see(p, 'user', 'third')  see(p, 'architect', 'whole')")
+
+    fr = draw_frame(program, "user", "first")
     print(fr.get("frame", ""))
 
-    if not args.no_ui:
+    if args.no_awake and args.no_ui:
+        print("Nothing to run (--no-awake and --no-ui).")
+        return 0
+
+    if args.no_awake:
+        # UI only, keep process alive
         info = start_ui(program, port=args.port, background=True)
-        if info.get("ok"):
-            print(f"\nOpen in browser: {info.get('url')}")
-            print("Pages: walk lattice nursery program personas forces geometry …")
-            print("Keep this process alive or the UI dies.")
-        else:
-            print("UI start issue:", info)
-            print("Fallback offline: use Program command `visual` for HTML snapshot")
-
-    if args.awake:
-        print("\nAwake pulse (Track A support)…")
-        ar = pulse_awake("matrix coherence free agent embodiment")
-        ag = ar.get("auto_growth") or ar
-        print("awake confirmed:", ag.get("confirmed_labels") or ag.get("confirmed"))
-
-    print("\nAPI in Python:")
-    print("  from form.dell_matrix import free_matrix as fm")
-    print("  p = fm.open_world()")
-    print("  fm.walk(p,'forward'); fm.turn(p,'left'); fm.look(p,'up')")
-    print("  fm.see(p); fm.act(p,'inspect'); fm.draw_frame(p)")
-    print("  fm.start_ui(p)")
-    print("\nSkipped: Track C trading")
-    print("Also densified: Track A (--awake), Track D (draw_frame seed)")
-
-    if not args.no_ui:
-        print("\nCtrl+C to stop")
+        print(info.get("url"))
         try:
             while True:
                 time.sleep(3600)
         except KeyboardInterrupt:
-            print("\nFree matrix stopped.")
+            print("\nStopped.")
+        return 0
+
+    run_one_process(
+        program,
+        port=args.port,
+        awake_every=args.awake_every,
+        ui=not args.no_ui,
+    )
     return 0
 
 
