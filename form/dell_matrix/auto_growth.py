@@ -8,10 +8,10 @@ Auto Growth — matrix grows itself continuously.
   · Nursery handled automatically (auto-confirm / auto-reject)
   · Confirmed ideas enter growth ledger (and plane when available)
 
-Auto mode does what is best for continuous growth under Floor law:
-  reject fog · confirm strong aligned · prioritize vital restore seeds
-
+Auto mode: reject fog · confirm strong aligned · prioritize vital restore seeds
 No human nursery click required when auto=True.
+
+SOURCE OF TRUTH: GitHub repo spiritualityhandbook-netizen/DellMatrix
 """
 from __future__ import annotations
 
@@ -22,10 +22,13 @@ import os
 import time
 
 _STATE = os.path.join(os.path.dirname(__file__), "..", "state")
-os.makedirs(_STATE, exist_ok=True)
+try:
+    os.makedirs(_STATE, exist_ok=True)
+except OSError:
+    _STATE = os.environ.get("DELLMATRIX_STATE", "/tmp/dellmatrix_state")
+    os.makedirs(_STATE, exist_ok=True)
 LEDGER_PATH = os.path.join(_STATE, "auto_growth_ledger.json")
 
-# Auto-confirm thresholds
 MIN_VERITA = 0.45
 MIN_COMBINED = 0.40
 
@@ -43,8 +46,11 @@ def _load_ledger() -> List[Dict[str, Any]]:
 
 def _save_ledger(rows: List[Dict[str, Any]]) -> None:
     rows = rows[-200:]
-    with open(LEDGER_PATH, "w", encoding="utf-8") as f:
-        json.dump(rows, f, indent=2)
+    try:
+        with open(LEDGER_PATH, "w", encoding="utf-8") as f:
+            json.dump(rows, f, indent=2)
+    except OSError:
+        pass  # never crash growth on ledger IO
 
 
 @dataclass
@@ -108,13 +114,11 @@ class AutoGrowth:
             return False
         if judge.get("grade") in ("fog", "weak"):
             return False
-        # under critical pressure still allow restore-aligned confirms only
         if delta_band == "critical":
             return "restore" in (judge.get("reason") or "") or float(judge.get("combined") or 0) >= 0.55
         return True
 
     def _nursery_auto(self, label: str, words: str, judge: Dict[str, Any], source: str) -> Dict[str, Any]:
-        """Add to nursery and auto confirm/reject — matrix handles nursery itself."""
         try:
             from form.dell_matrix.nursery import Nursery
             n = Nursery.load()
@@ -141,7 +145,6 @@ class AutoGrowth:
                 "nursery": n.summary(),
             }
         except Exception as e:
-            # ledger-only fallback if nursery import fails
             status = "ledger_only_confirm" if judge.get("floor_accept") else "ledger_only_reject"
             if "confirm" in status:
                 self.confirmed_total += 1
@@ -155,7 +158,6 @@ class AutoGrowth:
         _save_ledger(rows)
 
     def _try_plane_place(self, label: str, words: str) -> Dict[str, Any]:
-        """Best-effort place into live plane if Program surface exists."""
         try:
             from form.open import open_program
             p = open_program("AutoGrow")
@@ -178,7 +180,6 @@ class AutoGrowth:
             else:
                 net.turn_on()
             q = self.next_query(query)
-            # bias queries toward vital gaps when body reports them
             try:
                 from form.dell_matrix.matrix_body import body_pulse
                 body = body_pulse()
@@ -220,12 +221,10 @@ class AutoGrowth:
 
         self.last_report["delta_band"] = delta.get("band", "elevated")
 
-        # harvest
         ideas = self.harvest_net(query)
         for ex in (extra_ideas or []):
             ideas.append(ex)
 
-        # always seed a restore idea when vital missing
         missing = body.get("missing") or []
         if missing:
             ideas.insert(0, {
@@ -244,22 +243,25 @@ class AutoGrowth:
             judge = self._judge(label, words)
             nursery = self._nursery_auto(label, words, judge, str(idea.get("source") or "auto"))
             plane = {"ok": False}
-            if nursery.get("status") in ("auto_confirmed", "ledger_only_confirm") and place_on_confirm:
-                plane = self._try_plane_place(label, words)
+            status = nursery.get("status") or ""
+            # ALWAYS record confirms (independent of plane place)
+            if status in ("auto_confirmed", "ledger_only_confirm"):
+                confirmed_labels.append(label)
+                if place_on_confirm:
+                    plane = self._try_plane_place(label, words)
                 self._commit_ledger({
                     "label": label,
                     "words": words[:200],
                     "source": idea.get("source"),
                     "judge": judge,
-                    "nursery": nursery.get("status"),
+                    "nursery": status,
                     "plane": plane.get("ok"),
                 })
-                confirmed_labels.append(label)
             results.append({
                 "label": label[:60],
                 "source": idea.get("source"),
                 "judge": judge,
-                "nursery": nursery.get("status"),
+                "nursery": status,
                 "plane": plane.get("ok"),
             })
 
@@ -283,6 +285,7 @@ class AutoGrowth:
                 "auto: net far-wide → Verita+Floor judge → nursery self-handle → "
                 "confirm strong · reject fog · ledger · plane when available"
             ),
+            "repo": "github.com/spiritualityhandbook-netizen/DellMatrix",
         }
         self.last_report = {**self.last_report, **report}
         return report
@@ -308,8 +311,7 @@ def smoke() -> bool:
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}"); r.append(ok)
-
-    ag = AutoGrowth(auto=True, internet=False)  # offline smoke: extra ideas only
+    ag = AutoGrowth(auto=True, internet=False)
     out = ag.step(
         extra_ideas=[
             {"label": "Restore floor skeleton", "words": "vital organ densify coherent offline body grow", "source": "test"},
@@ -319,8 +321,7 @@ def smoke() -> bool:
     )
     rec("step_ok", out.get("ok") is True)
     rec("processed", out.get("processed", 0) >= 1)
-    statuses = [x.get("nursery") for x in out.get("results") or []]
-    rec("has_confirm_or_reject", any(s and "auto_" in str(s) for s in statuses) or out.get("processed", 0) >= 1)
+    rec("confirmed_labels_tracked", isinstance(out.get("confirmed_labels"), list))
     print(f"confirmed_total={ag.confirmed_total} rejected_total={ag.rejected_total}")
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
@@ -330,7 +331,6 @@ if __name__ == "__main__":
     import sys
     if "--smoke" in sys.argv:
         sys.exit(0 if smoke() else 1)
-    # live auto tick with network if available
     AUTO.auto = True
     AUTO.internet = True
     rep = AUTO.step(query="coherent autonomous systems architecture")
@@ -342,4 +342,5 @@ if __name__ == "__main__":
         "confirmed_labels": rep.get("confirmed_labels"),
         "delta_band": rep.get("delta_band"),
         "law": rep.get("law"),
+        "repo": rep.get("repo"),
     }, indent=2))
