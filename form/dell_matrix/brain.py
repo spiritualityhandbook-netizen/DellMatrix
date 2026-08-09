@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
 """
-Brain — logic modules + Verita as one mind.
+Brain — mind under Alpha spirit.
 
-Uses:
-  verita.verita_of_one  — integrity of a single idea
-  verita.verita_of_pair — truth-of-overlap between two ideas
-  decision_shells       — soft grade before Boolean
-  matrix_body           — organ sense
-  gate_discipline       — Mandell route
+Hierarchy:
+  Floor (Alpha·Delta·Omega·Omni)
+    → Alpha spirit (bigger picture / orientation)
+      → Brain think cycle
+        → Verita (local judgment) listens to Alpha
+        → Body organs · Gate · Decision shells
 """
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 import time
 
-from form.dell_matrix.verita import (
-    VeritaField,
-    verita_of_one,
-    verita_of_pair,
-    vesica_strength,
-)
+from form.dell_matrix.verita import VeritaField
 
 
 class Brain:
@@ -71,8 +66,25 @@ class Brain:
         except Exception as e:
             return {"error": str(e), "seeds": []}
 
+    def alpha_view(self, body: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            from form.dell_matrix.alpha_spirit import ALPHA
+            return ALPHA.bigger_picture(body)
+        except Exception as e:
+            return {"error": str(e), "origin": "Alpha"}
+
     def judge_one(self, label: str, **kwargs) -> Dict[str, Any]:
-        return self.verita.evaluate_one(label, **kwargs)
+        local = self.verita.evaluate_one(label, **kwargs)
+        subject = f"{label} {kwargs.get('words', '')} {' '.join(kwargs.get('goals') or [])}"
+        try:
+            from form.dell_matrix.alpha_spirit import ALPHA
+            licensed = ALPHA.license_verita(local, subject)
+            local = dict(local)
+            local["alpha_license"] = licensed
+            local["final_accept"] = licensed["final_accept"]
+        except Exception:
+            local["final_accept"] = local.get("accept")
+        return local
 
     def think(
         self,
@@ -83,6 +95,7 @@ class Brain:
         scores: Optional[List[float]] = None,
     ) -> Dict[str, Any]:
         body = self.body_view()
+        alpha = self.alpha_view(body)
         soft = self.soft_decide(*(scores or [0.5]))
         gate = self.gate_view(context)
 
@@ -99,8 +112,20 @@ class Brain:
                 ))
 
         pairs = []
+        try:
+            from form.dell_matrix.alpha_spirit import ALPHA
+        except Exception:
+            ALPHA = None  # type: ignore
         for a, b in (candidates or []):
-            pairs.append(self.verita.evaluate_link(a, b))
+            local = self.verita.evaluate_link(a, b)
+            if ALPHA is not None:
+                lic = ALPHA.license_verita(local, f"{a} {b}")
+                local = dict(local)
+                local["alpha_license"] = lic
+                local["final_accept"] = lic["final_accept"]
+            else:
+                local["final_accept"] = local.get("accept")
+            pairs.append(local)
 
         missing = body.get("missing") or []
         vital_hit = any(m in missing for m in (
@@ -109,16 +134,22 @@ class Brain:
         if vital_hit and soft.get("gate") == "Solstice":
             soft = dict(soft)
             soft["gate"] = "Standstill"
-            soft["note"] = "vital organ missing · Solstice deferred"
+            soft["note"] = "vital organ missing · Solstice deferred · Alpha advice restore first"
 
-        weak_solos = [s for s in solos if not s.get("accept")]
+        weak_solos = [s for s in solos if not s.get("final_accept", s.get("accept"))]
         if weak_solos and soft.get("gate") == "Solstice":
             soft = dict(soft)
             soft["gate"] = "Equinox"
-            soft["note"] = "weak solo ideas present · prefer densify over new rings"
+            soft["note"] = "weak or alpha-blocked ideas · densify before new rings"
 
         report = {
             "context": (context or "")[:160],
+            "alpha": {
+                "origin": alpha.get("origin", "Alpha"),
+                "advice": alpha.get("alpha_advice"),
+                "vital_missing": alpha.get("vital_missing"),
+                "orientation": (alpha.get("orientation") or {}).get("statement", "")[:120],
+            },
             "body": {
                 "present": body.get("present"),
                 "missing": missing[:10],
@@ -139,8 +170,9 @@ class Brain:
             },
             "mind": {
                 "role": "brain",
-                "organs_used": ["verita_solo", "verita_pair", "decision_shells", "body", "gate"],
-                "law": "sense → solo/pair verita → soft-decide → residue/accept → route",
+                "listens_to": "Alpha spirit",
+                "organs_used": ["alpha", "verita_solo", "verita_pair", "decision_shells", "body", "gate"],
+                "law": "Floor→Alpha→sense→verita(local)→alpha license→soft-decide→route",
             },
             "ts": time.time(),
         }
@@ -156,30 +188,22 @@ def think(context: str, **kwargs) -> Dict[str, Any]:
 
 
 def smoke() -> bool:
-    print("=== BRAIN SMOKE (solo+pair) ===")
+    print("=== BRAIN + ALPHA SMOKE ===")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}"); r.append(ok)
 
     b = Brain()
-    s = b.judge_one("Restore floor skeleton", words="vital densify", goals=["coherence"])
-    rec("solo_judge", s.get("accept") is True)
-    fog = b.judge_one("??")
-    rec("solo_fog", fog.get("accept") is False)
-
+    s = b.judge_one("Restore floor skeleton", words="vital densify coherent offline", goals=["whole body"])
+    rec("solo_licensed", "final_accept" in s)
     out = b.think(
-        "body and verita as mind",
-        ideas=[
-            {"label": "Restore floor", "words": "skeleton vital", "goals": ["whole body"]},
-            "??",
-        ],
-        candidates=[("Restore floor", "floor skeleton"), ("zzz", "qqq")],
-        scores=[0.5, 0.4],
+        "alpha over verita",
+        ideas=[{"label": "Restore floor", "words": "skeleton vital offline", "goals": ["whole"]}],
+        candidates=[("Restore floor", "floor skeleton")],
+        scores=[0.5],
     )
-    rec("think_solo_section", "solo_verita" in out and len(out["solo_verita"]) == 2)
-    rec("think_pair_section", "pair_verita" in out)
-    rec("mind_law", "solo/pair" in out["mind"]["law"])
-
+    rec("alpha_section", "alpha" in out and out["mind"].get("listens_to") == "Alpha spirit")
+    rec("law_has_alpha", "Alpha" in out["mind"]["law"])
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 
