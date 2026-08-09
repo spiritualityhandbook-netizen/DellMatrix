@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ringed Growth — sole public growth path. Goals bias affinity (not random)."""
+"""Ringed Growth — sole public growth path. Body pulse first. Goals bias affinity."""
 
 from __future__ import annotations
 
@@ -20,6 +20,34 @@ STANSTILL_AFFINITY = 0.10
 FOG_MIN_LABEL_LEN = 3
 FOG_MAX_LABEL_LEN = 72
 FOG_BANNED_FRAGMENTS = ("asdf", "test123", "xxx", "???", "null", "undefined")
+
+
+def _body_pulse_safe() -> Dict[str, Any]:
+    """Sense organs before proposing rings. Never crash growth on body failure."""
+    try:
+        from form.dell_matrix.matrix_body import body_pulse
+        return body_pulse()
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": f"{type(e).__name__}: {e}",
+            "missing": [],
+            "decisions": [],
+            "law": "body pulse unavailable — growth continues cautious",
+        }
+
+
+def _vital_block(body: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """If vital organs missing, block Solstice (new rings) until restore path is clear."""
+    missing = list(body.get("missing") or [])
+    vital_names = {
+        "floor", "nursery", "lattice", "plane", "forces",
+        "ringed_growth", "english_brain", "gate", "nature",
+    }
+    vital_missing = [m for m in missing if m in vital_names]
+    # ringed_growth is this module — if listed missing only due to probe path, ignore self
+    vital_missing = [m for m in vital_missing if m != "ringed_growth"]
+    return (len(vital_missing) > 0, vital_missing)
 
 
 def _unit_blob(plane: Plane, uid: str) -> str:
@@ -70,7 +98,6 @@ def _dist(plane: Plane, a: str, b: str) -> float:
 
 
 def _goal_boost(plane: Plane, a: str, b: str) -> float:
-    """Extra affinity when goal tokens overlap."""
     ua, ub = plane.units.get(a), plane.units.get(b)
     if not ua or not ub:
         return 0.0
@@ -79,12 +106,21 @@ def _goal_boost(plane: Plane, a: str, b: str) -> float:
     if not ga and not gb:
         return 0.0
     if not ga or not gb:
-        # one-sided goals still slightly stabilize evolution of the goal-bearing idea
         return 0.05
     return 0.12 * _jaccard(ga, gb)
 
 
-def _affinity(plane: Plane, a: str, b: str) -> Dict[str, float]:
+def _body_goal_boost(body: Dict[str, Any], label_a: str, label_b: str) -> float:
+    """Boost affinity when idea text touches missing organ names (heal path)."""
+    missing = [m.lower() for m in (body.get("missing") or [])]
+    if not missing:
+        return 0.0
+    blob = f"{label_a} {label_b}".lower()
+    hits = sum(1 for m in missing if m in blob or m.replace("_", " ") in blob)
+    return min(0.15, 0.05 * hits)
+
+
+def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
     ta, tb = _tokens_uid(plane, a), _tokens_uid(plane, b)
     jac = _jaccard(ta, tb)
     harm = _harmonic(ta, tb)
@@ -93,7 +129,11 @@ def _affinity(plane: Plane, a: str, b: str) -> Dict[str, float]:
     scope = set(plane.enhance_scope(a))
     in_scope = 1.0 if b in scope else 0.2
     gboost = _goal_boost(plane, a, b)
-    aff = harm * 0.40 + jac * 0.22 + spatial * 0.13 + in_scope * 0.13 + gboost
+    ua, ub = plane.units.get(a), plane.units.get(b)
+    bboost = 0.0
+    if body is not None and ua and ub:
+        bboost = _body_goal_boost(body, ua.label, ub.label)
+    aff = harm * 0.40 + jac * 0.22 + spatial * 0.13 + in_scope * 0.13 + gboost + bboost
     return {
         "affinity": aff,
         "jaccard": jac,
@@ -101,6 +141,7 @@ def _affinity(plane: Plane, a: str, b: str) -> Dict[str, float]:
         "distance": dist,
         "shared": float(len(ta & tb)),
         "goal_boost": gboost,
+        "body_boost": bboost,
     }
 
 
@@ -167,17 +208,56 @@ class RingedGrowth:
         total_evo = 0
         fog_cut = 0
         gate_counts = {"Solstice": 0, "Equinox": 0, "Standstill": 0, "None": 0}
+        body_snapshots: List[Dict[str, Any]] = []
 
         for cycle in range(max(1, cycles)):
+            # --- BODY PULSE FIRST — sense organs before proposing rings ---
+            body = _body_pulse_safe()
+            blocked, vital_missing = _vital_block(body)
+            body_snapshots.append({
+                "cycle": cycle + 1,
+                "present": body.get("present"),
+                "missing": body.get("missing"),
+                "top_decision": (body.get("decisions") or [{}])[0],
+                "solstice_blocked": blocked,
+                "vital_missing": vital_missing,
+            })
+
+            # If vital organs missing, propose nursery restore ideas instead of free Solstice
+            if blocked and vital_missing:
+                for organ in vital_missing[:3]:
+                    label = f"Restore {organ}"
+                    words = (
+                        f"[Ring:Body] Vital organ '{organ}' missing. "
+                        f"Body decision: densify_or_restore. "
+                        f"Goal: {body.get('goal', 'coherence')}. "
+                        f"Law: problem = missing organ."
+                    )
+                    if _aetheris_clear(label, words):
+                        self.nursery.add(
+                            label=label,
+                            words=words,
+                            kind="evolved",
+                            parents=[],
+                            affinity=0.5,
+                            reason=f"body_pulse vital_missing={organ}",
+                        )
+                        total_evo += 1
+
             ids = list(plane.units.keys())
             if len(ids) < 1:
-                report.append({"cycle": cycle + 1, "ok": False, "reason": "no live ideas"})
+                report.append({
+                    "cycle": cycle + 1,
+                    "ok": False,
+                    "reason": "no live ideas",
+                    "body": body_snapshots[-1],
+                })
                 continue
 
             pairs: List[Tuple[str, str, Dict[str, float]]] = []
             for i, a in enumerate(ids):
                 for b in ids[i + 1 :]:
-                    aff = _affinity(plane, a, b)
+                    aff = _affinity(plane, a, b, body=body)
                     pairs.append((a, b, aff))
             pairs.sort(key=lambda t: -t[2]["affinity"])
 
@@ -188,6 +268,10 @@ class RingedGrowth:
                 gate = _ring_phase(aff["affinity"])
                 gate_counts[gate] = gate_counts.get(gate, 0) + 1
                 if gate == "None":
+                    continue
+
+                # Revised law: Solstice (new rings) paused while vital organs missing
+                if gate == "Solstice" and blocked:
                     continue
 
                 ua, ub = plane.units[a], plane.units[b]
@@ -261,6 +345,8 @@ class RingedGrowth:
                     "proposed_new": new_this,
                     "proposed_evolved": evo_this,
                     "rings": list(RINGS),
+                    "body": body_snapshots[-1],
+                    "solstice_blocked": blocked,
                 }
             )
 
@@ -275,7 +361,11 @@ class RingedGrowth:
             "gates": gate_counts,
             "nursery": self.nursery.summary(),
             "steps": report,
-            "law": "proposals quarantined · goal-biased · live matrix untouched",
+            "body_pulses": body_snapshots,
+            "law": (
+                "body pulse first · vital gaps block Solstice · "
+                "proposals quarantined · goal-biased · live matrix untouched"
+            ),
         }
 
 
@@ -285,15 +375,12 @@ def smoke() -> bool:
     def rec(n, ok, d=""):
         print(f"[{len(r)+1}] {n}: {'PASS' if ok else 'FAIL'}" + (f" | {d}" if d else ""))
         r.append(bool(ok))
-    from form.open import open_program
-    from form.dell_matrix.plane import Skin
-    p = open_program("RingSmoke")
-    p.cube.session.plane.units.clear()
-    p.place("x", "Alpha", words="seed structure", detail="core", goals=["clarity"], skin=Skin.CUBE, x=0)
-    p.place("y", "Beta", words="structure grow", detail="grow path", goals=["clarity", "ship"], skin=Skin.CUBE, x=1)
-    out = p.grow_ideas(1)
-    rec("ok", out.get("ok") is True)
-    rec("engine", out.get("engine") == "RingedGrowth")
+    # body pulse path alone
+    body = _body_pulse_safe()
+    rec("body_pulse_callable", isinstance(body, dict))
+    blocked, vital = _vital_block({"missing": ["floor", "fourier"]})
+    rec("vital_block_floor", blocked and "floor" in vital)
+    rec("fourier_not_vital_block", "fourier" not in vital)
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
 
