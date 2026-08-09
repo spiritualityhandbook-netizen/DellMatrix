@@ -2,143 +2,34 @@
 """
 Brain — logic modules + Verita as one mind.
 
-Parts:
-  Verita     = truth-of-overlap (vesica coherence), not mysticism
-  Residue    = structural signal when claimed links don't hold
-  Decision   = soft shells (grade / ternary / gate) before Boolean cut
-  Body       = organ sense (missing part → decide + why)
-  Gate       = Mandell seed → route → English
-  Resonance  = peer enhancement scores
-  Conscience = incorporation / invariant style checks when available
-
-Think cycle:
-  sense body → verita-score candidate links → soft-decide → residue or accept → route
-
-Offline · Boolean host intact · PROJECTED_NOT_FACT on hardware senses.
+Uses:
+  verita.verita_of_one  — integrity of a single idea
+  verita.verita_of_pair — truth-of-overlap between two ideas
+  decision_shells       — soft grade before Boolean
+  matrix_body           — organ sense
+  gate_discipline       — Mandell route
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
-import math
 import time
 
+from form.dell_matrix.verita import (
+    VeritaField,
+    verita_of_one,
+    verita_of_pair,
+    vesica_strength,
+)
 
-# ---------------------------------------------------------------------------
-# Verita — structural coherence (vesica strength)
-# ---------------------------------------------------------------------------
-
-def vesica_strength(r1: float, r2: float, distance: float) -> Dict[str, Any]:
-    """
-    Classic vesica: how much two equal-ish circles overlap.
-    strength 1 = contained, 0 = separate, in-between = true vesica link.
-    """
-    r1, r2 = max(1e-9, float(r1)), max(1e-9, float(r2))
-    d = max(0.0, float(distance))
-    ssum, diff = r1 + r2, abs(r1 - r2)
-    if d >= ssum:
-        return {"strength": 0.0, "type": "separate", "distance": d}
-    if d <= diff:
-        return {"strength": 1.0, "type": "contained", "distance": d}
-    strength = 1.0 - (d - diff) / (ssum - diff)
-    return {"strength": round(strength, 4), "type": "vesica", "distance": d}
-
-
-def verita_of_pair(
-    label_a: str,
-    label_b: str,
-    *,
-    tokens_a: Optional[set] = None,
-    tokens_b: Optional[set] = None,
-    distance: float = 1.0,
-    radius: float = 1.0,
-) -> Dict[str, Any]:
-    """
-    Verita score for a proposed link between two ideas.
-    Combines geometric vesica + token overlap (language coherence).
-    """
-    import re
-    tok_re = re.compile(r"[a-z0-9_]{3,}", re.I)
-    ta = tokens_a if tokens_a is not None else {m.group(0).lower() for m in tok_re.finditer(label_a or "")}
-    tb = tokens_b if tokens_b is not None else {m.group(0).lower() for m in tok_re.finditer(label_b or "")}
-    inter = len(ta & tb)
-    union = len(ta | tb) or 1
-    jaccard = inter / union
-    geo = vesica_strength(radius, radius, distance)
-    # Verita = truth-of-overlap: language share + geometric share
-    score = 0.55 * jaccard + 0.45 * geo["strength"]
-    accept = score >= 0.18  # soft threshold (Standstill-ish)
-    return {
-        "score": round(score, 4),
-        "jaccard": round(jaccard, 4),
-        "vesica": geo,
-        "accept": accept,
-        "type": "verita",
-        "note": "structural coherence only · not paranormal",
-    }
-
-
-@dataclass
-class ResidueMark:
-    location: str
-    kind: str
-    detail: str
-    score: float
-    ts: float = field(default_factory=time.time)
-
-
-class VeritaField:
-    """Tracks accepted links and residue from rejected/mismatched claims."""
-
-    def __init__(self) -> None:
-        self.links: List[Dict[str, Any]] = []
-        self.residue: List[ResidueMark] = []
-
-    def evaluate_link(self, a: str, b: str, **kwargs) -> Dict[str, Any]:
-        v = verita_of_pair(a, b, **kwargs)
-        if v["accept"]:
-            self.links.append({"a": a, "b": b, **v, "ts": time.time()})
-        else:
-            self.residue.append(ResidueMark(
-                location=f"{a}|{b}",
-                kind="verita_mismatch",
-                detail=f"score={v['score']} below accept",
-                score=v["score"],
-            ))
-        v["residue_count"] = len(self.residue)
-        v["link_count"] = len(self.links)
-        return v
-
-    def residue_summary(self) -> Dict[str, Any]:
-        return {
-            "count": len(self.residue),
-            "tail": [
-                {"location": r.location, "kind": r.kind, "score": r.score}
-                for r in self.residue[-8:]
-            ],
-            "law": "residue = structural signal from Verita mismatch",
-        }
-
-
-# ---------------------------------------------------------------------------
-# Brain — one mind
-# ---------------------------------------------------------------------------
 
 class Brain:
-    """
-    Unify logic organs into a think cycle.
-
-    brain.think(context) →
-      body pulse → verita on candidates → soft decision → residue/accept → gate route
-    """
-
     def __init__(self) -> None:
         self.verita = VeritaField()
         self.history: List[Dict[str, Any]] = []
 
     def soft_decide(self, *scores: float) -> Dict[str, Any]:
         try:
-            from form.dell_matrix.decision_shells import decide, prefer_open, OpenShell
+            from form.dell_matrix.decision_shells import decide, prefer_open
             d = decide(*scores, mode="avg")
             open_s = prefer_open(d["score"], label="brain")
             return {
@@ -160,8 +51,11 @@ class Brain:
                 gate = "Standstill"
             else:
                 gate = "None"
-            return {"score": score, "ternary": "pos" if score > 0.66 else "zero" if score >= 0.33 else "neg",
-                    "gate": gate, "open_grade": score, "collapsed": False, "shell": "inline"}
+            tern = "pos" if score > 0.66 else "zero" if score >= 0.33 else "neg"
+            return {
+                "score": score, "ternary": tern, "gate": gate,
+                "open_grade": score, "collapsed": False, "shell": "inline",
+            }
 
     def body_view(self) -> Dict[str, Any]:
         try:
@@ -177,41 +71,63 @@ class Brain:
         except Exception as e:
             return {"error": str(e), "seeds": []}
 
+    def judge_one(self, label: str, **kwargs) -> Dict[str, Any]:
+        return self.verita.evaluate_one(label, **kwargs)
+
     def think(
         self,
         context: str,
         *,
+        ideas: Optional[List[Dict[str, Any]]] = None,
         candidates: Optional[List[Tuple[str, str]]] = None,
         scores: Optional[List[float]] = None,
     ) -> Dict[str, Any]:
-        """
-        Full brain cycle — readable report of mind state.
-        """
         body = self.body_view()
         soft = self.soft_decide(*(scores or [0.5]))
         gate = self.gate_view(context)
 
-        verita_results = []
-        for a, b in (candidates or []):
-            verita_results.append(self.verita.evaluate_link(a, b))
+        solos = []
+        for idea in (ideas or []):
+            if isinstance(idea, str):
+                solos.append(self.judge_one(idea))
+            elif isinstance(idea, dict):
+                solos.append(self.judge_one(
+                    str(idea.get("label") or ""),
+                    words=str(idea.get("words") or ""),
+                    goals=list(idea.get("goals") or []),
+                    detail=str(idea.get("detail") or ""),
+                ))
 
-        # If body has vital missing, soft-gate cannot be Solstice freely
+        pairs = []
+        for a, b in (candidates or []):
+            pairs.append(self.verita.evaluate_link(a, b))
+
         missing = body.get("missing") or []
-        vital_hit = any(m in missing for m in ("floor", "nursery", "lattice", "gate", "nature"))
+        vital_hit = any(m in missing for m in (
+            "floor", "nursery", "lattice", "gate", "nature", "verita", "brain",
+        ))
         if vital_hit and soft.get("gate") == "Solstice":
             soft = dict(soft)
             soft["gate"] = "Standstill"
-            soft["note"] = "vital organ missing · Solstice deferred to Standstill"
+            soft["note"] = "vital organ missing · Solstice deferred"
+
+        weak_solos = [s for s in solos if not s.get("accept")]
+        if weak_solos and soft.get("gate") == "Solstice":
+            soft = dict(soft)
+            soft["gate"] = "Equinox"
+            soft["note"] = "weak solo ideas present · prefer densify over new rings"
 
         report = {
             "context": (context or "")[:160],
             "body": {
                 "present": body.get("present"),
-                "missing": missing[:8],
+                "missing": missing[:10],
                 "top_decision": (body.get("decisions") or [{}])[0],
             },
-            "verita": verita_results,
+            "solo_verita": solos,
+            "pair_verita": pairs,
             "verita_field": {
+                "solos_ok": len(self.verita.solos),
                 "links": len(self.verita.links),
                 "residue": self.verita.residue_summary(),
             },
@@ -223,8 +139,8 @@ class Brain:
             },
             "mind": {
                 "role": "brain",
-                "organs_used": ["verita", "decision_shells", "body", "gate"],
-                "law": "sense → verita → soft-decide → residue/accept → route",
+                "organs_used": ["verita_solo", "verita_pair", "decision_shells", "body", "gate"],
+                "law": "sense → solo/pair verita → soft-decide → residue/accept → route",
             },
             "ts": time.time(),
         }
@@ -240,31 +156,29 @@ def think(context: str, **kwargs) -> Dict[str, Any]:
 
 
 def smoke() -> bool:
-    print("=== BRAIN SMOKE ===")
+    print("=== BRAIN SMOKE (solo+pair) ===")
     r = []
     def rec(n, ok):
         print(f"[{'PASS' if ok else 'FAIL'}] {n}"); r.append(ok)
 
-    v = vesica_strength(1, 1, 0.5)
-    rec("vesica_overlap", v["type"] == "vesica" and v["strength"] > 0)
-    v2 = vesica_strength(1, 1, 3)
-    rec("vesica_separate", v2["type"] == "separate")
-
-    vf = VeritaField()
-    ok_link = vf.evaluate_link("Alpha structure grow", "structure clarity grow")
-    rec("verita_accept_or_score", "score" in ok_link)
-    bad = vf.evaluate_link("zzz", "qqq", distance=5.0)
-    rec("verita_residue_path", isinstance(bad["score"], float))
-
     b = Brain()
+    s = b.judge_one("Restore floor skeleton", words="vital densify", goals=["coherence"])
+    rec("solo_judge", s.get("accept") is True)
+    fog = b.judge_one("??")
+    rec("solo_fog", fog.get("accept") is False)
+
     out = b.think(
-        "unify logic and verita as brain",
-        candidates=[("Restore floor", "floor skeleton"), ("noise", "zzzz")],
-        scores=[0.4, 0.6],
+        "body and verita as mind",
+        ideas=[
+            {"label": "Restore floor", "words": "skeleton vital", "goals": ["whole body"]},
+            "??",
+        ],
+        candidates=[("Restore floor", "floor skeleton"), ("zzz", "qqq")],
+        scores=[0.5, 0.4],
     )
-    rec("think_runs", out.get("mind", {}).get("role") == "brain")
-    rec("decision_present", "gate" in out.get("decision", {}))
-    rec("body_section", "missing" in out.get("body", {}))
+    rec("think_solo_section", "solo_verita" in out and len(out["solo_verita"]) == 2)
+    rec("think_pair_section", "pair_verita" in out)
+    rec("mind_law", "solo/pair" in out["mind"]["law"])
 
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
