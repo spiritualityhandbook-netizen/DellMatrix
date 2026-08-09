@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 
 def wire_program_methods(program) -> None:
-    """Attach act_on_seen / neuroevo / nature_status callables if missing."""
+    """Attach act_on_seen / neuroevo / nature / LA / logistic callables if missing."""
     if not hasattr(program, "act_on_seen"):
         def _act(action: str = "inspect", index: int = 0, extra: str = ""):
             from form.dell_matrix.act_on_seen import act_on_seen as fn
@@ -27,6 +27,21 @@ def wire_program_methods(program) -> None:
             from form.dell_matrix.nature_code import nature_status
             return nature_status()
         program.nature_status = _ns  # type: ignore
+    if not hasattr(program, "la_transform"):
+        def _la(kind: str = "rotate", amount: float = 0.1):
+            from form.dell_matrix.linear_algebra import program_transform
+            return program_transform(program, kind=kind, amount=amount)
+        program.la_transform = _la  # type: ignore
+    if not hasattr(program, "logistic_tick"):
+        def _log(r: Optional[float] = None):
+            from form.dell_matrix.logistic_map import logistic_tick
+            return logistic_tick(program, r=r)
+        program.logistic_tick = _log  # type: ignore
+    if not hasattr(program, "logistic_status"):
+        def _ls():
+            from form.dell_matrix.logistic_map import logistic_status
+            return logistic_status()
+        program.logistic_status = _ls  # type: ignore
 
 
 def open_wired(owner: str = "Operator"):
@@ -45,11 +60,15 @@ def open_wired(owner: str = "Operator"):
 def smoke() -> bool:
     print("=== HIGH_VALUE_API SMOKE ===")
     p = open_wired("HVSmoke")
-    p.place("a", "Alpha", x=0, y=2)
-    ok = hasattr(p, "act_on_seen") and hasattr(p, "neuroevo")
+    p.place("a", "Alpha", x=1, y=0)
+    ok = hasattr(p, "act_on_seen") and hasattr(p, "neuroevo") and hasattr(p, "la_transform")
     r = p.force_tick()
     ok = ok and isinstance(r.get("nature"), dict)
-    print(f"[{'PASS' if ok else 'FAIL'}] wired + force_tick nature")
+    tr = p.la_transform("rotate", 0.2)
+    ok = ok and tr.get("ok")
+    lg = p.logistic_tick(3.5)
+    ok = ok and "regime" in lg
+    print(f"[{'PASS' if ok else 'FAIL'}] wired + force_tick + la + logistic")
     return ok
 
 
