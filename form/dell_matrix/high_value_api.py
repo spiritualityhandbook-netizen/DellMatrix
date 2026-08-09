@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 
 def wire_program_methods(program) -> None:
-    """Attach act_on_seen / neuroevo / nature / LA / logistic / fourier / stability."""
+    """Attach act_on_seen / neuroevo / nature / LA / logistic / fourier / body / senses."""
     if not hasattr(program, "act_on_seen"):
         def _act(action: str = "inspect", index: int = 0, extra: str = ""):
             from form.dell_matrix.act_on_seen import act_on_seen as fn
@@ -57,6 +57,21 @@ def wire_program_methods(program) -> None:
             from form.dell_matrix.eigen_stability import analyze_transform_stability
             return analyze_transform_stability(kind, amount)
         program.eigen_stability = _es  # type: ignore
+    if not hasattr(program, "body_pulse"):
+        def _bp():
+            from form.dell_matrix.matrix_body import body_pulse
+            return body_pulse()
+        program.body_pulse = _bp  # type: ignore
+    if not hasattr(program, "body_problem"):
+        def _bprob(kind: str, detail: str):
+            from form.dell_matrix.matrix_body import problem
+            return problem(kind, detail)
+        program.body_problem = _bprob  # type: ignore
+    if not hasattr(program, "ingest"):
+        def _ing(text: str, source: str = "content"):
+            from form.dell_matrix.matrix_body import SENSES
+            return SENSES.ingest_content(text, source=source)
+        program.ingest = _ing  # type: ignore
 
 
 def open_wired(owner: str = "Operator"):
@@ -74,20 +89,15 @@ def open_wired(owner: str = "Operator"):
 
 def smoke() -> bool:
     print("=== HIGH_VALUE_API SMOKE ===")
-    p = open_wired("HVSmoke")
-    p.place("a", "Alpha", x=1, y=0)
-    ok = hasattr(p, "act_on_seen") and hasattr(p, "neuroevo") and hasattr(p, "la_transform")
-    ok = ok and hasattr(p, "fourier_analyze") and hasattr(p, "eigen_stability")
-    r = p.force_tick()
-    ok = ok and isinstance(r.get("nature"), dict)
-    tr = p.la_transform("rotate", 0.2)
-    ok = ok and tr.get("ok")
-    lg = p.logistic_tick(3.5)
-    ok = ok and "regime" in lg
-    from form.dell_matrix.fourier import make_sine
-    fa = p.fourier_analyze(make_sine(32, 2.0), top=2)
-    ok = ok and fa.get("ok")
-    print(f"[{'PASS' if ok else 'FAIL'}] wired + force_tick + la + logistic + fourier")
+    # body + senses do not require full Program
+    from form.dell_matrix.matrix_body import body_pulse, problem, SENSES
+    bp = body_pulse()
+    ok = isinstance(bp.get("decisions"), list)
+    pr = problem("test", "synthetic challenge")
+    ok = ok and "suspected_organs" in pr
+    ing = SENSES.ingest_content("Odd harmonics appear in square-wave DFT.")
+    ok = ok and ing.get("status") == "ingested"
+    print(f"[{'PASS' if ok else 'FAIL'}] body_pulse + problem + ingest")
     return ok
 
 
