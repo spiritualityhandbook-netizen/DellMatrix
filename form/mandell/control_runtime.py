@@ -37,15 +37,10 @@ class ControlFrame:
 
 
 def bound_of(st: Any) -> int:
-    raw = str(getattr(st, "limit", "") or "")
-    digits = "".join(ch for ch in raw if ch.isdigit())
-    if digits:
-        try:
-            n = int(digits)
-            return max(0, min(n, 64))
-        except ValueError:
-            pass
-    return DEFAULT_BOUND
+    from .predicate import validate_bound
+    raw = getattr(st, "limit", "") or ""
+    ok, n, _err = validate_bound(raw)
+    return n if ok else DEFAULT_BOUND
 
 
 def _as_num(value: Any) -> Optional[float]:
@@ -72,6 +67,9 @@ def eval_condition(st: Any, program: Any, expr: str) -> bool:
         return True
     if e in ("fail", "false", "block", "deny", "no"):
         return False
+    from .predicate import PREDICATES, eval_predicate
+    if e.split(":")[0].split(" ")[0] in PREDICATES:
+        return bool(eval_predicate(st, program, raw).get("matched"))
     if e.startswith("store:") or e.startswith("store_"):
         key = raw.split(":", 1)[1] if e.startswith("store:") else raw.split("_", 1)[1]
         val = st.store.get(key) if st is not None else None
