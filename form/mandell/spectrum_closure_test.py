@@ -292,7 +292,6 @@ def smoke() -> bool:
     out = execute_seed(p, "99[Compose] :: A")
     rec("compose_depth_bound", out.get("error") == "compose_depth" and not any(x.startswith("80") for x in p.core_ii.traces))
 
-    rec("last_result_transient_runtime", "last_result" not in (serialize(open_program("T2") or p).get("core_ii") or {}))
     p = open_program("LR2")
     execute_seed(p, "54[Query]")
     rec("last_result_transient_runtime", "last_result" not in (serialize(p).get("core_ii") or {}))
