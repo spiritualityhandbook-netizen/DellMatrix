@@ -38,6 +38,7 @@ CHAINLINK_DVS = {
 }
 MANDELLMOJI = {"Chain": "⛓️‍💥", "Chainlink": "⛓️"}
 CELLS: Dict[str, str] = {}
+CELL_DEPTH = 8
 
 @dataclass
 class SeedAtom:
@@ -240,18 +241,43 @@ def seed_from_dell_chain(dells: List[int], label: str = "", flows: Optional[List
 
 
 def define_cell(name: str, seed_text: str) -> Seed:
-    """Mandellacell — reusable named seed."""
-    s = parse_seed(seed_text)
+    text = seed_text or ""
+    if "{{" in text or text.startswith("__cell__:"):
+        CELLS[str(name)] = text
+        return Seed(ok=True, raw=text)
+    s = parse_seed(text)
     if s.ok:
-        CELLS[str(name)] = seed_text
+        CELLS[str(name)] = text
     return s
 
 
-def expand_cell(name: str) -> Seed:
+def link_cell(name: str, target: str) -> None:
+    CELLS[str(name)] = "__cell__:" + str(target)
+
+
+def expand_cell(name: str, seen=None, depth: int = 0) -> Seed:
     raw = CELLS.get(str(name))
-    if not raw:
+    if raw is None:
         return Seed(ok=False, error=f"unknown cell {name}", raw="")
-    return parse_seed(raw)
+    if depth > CELL_DEPTH:
+        return Seed(ok=False, error="cell_depth", raw=str(name))
+    seen = set(seen or [])
+    key = str(name)
+    if key in seen:
+        return Seed(ok=False, error="cell_cycle", raw=key)
+    seen.add(key)
+    if raw.startswith("__cell__:"):
+        return expand_cell(raw.split(":", 1)[1], seen, depth + 1)
+    def _sub(m):
+        inner = expand_cell(m.group(1), seen, depth + 1)
+        if not inner.ok:
+            raise ValueError(inner.error or "cell_expand")
+        return inner.as_mandel()
+    try:
+        raw2 = re.sub(r"\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}", _sub, raw)
+    except ValueError as e:
+        return Seed(ok=False, error=str(e), raw=raw)
+    return parse_seed(raw2)
 
 
 def compression_report(verbose: str, compressed: str) -> Dict[str, Any]:
