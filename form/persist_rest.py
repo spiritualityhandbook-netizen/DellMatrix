@@ -133,7 +133,7 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
             skin = Skin(u.get("skin", "cube"))
         except ValueError:
             skin = Skin.CUBE
-        plane.place(uid, u.get("label", uid), words=u.get("words", ""), detail=u.get("detail", "") or "", goals=list(u.get("goals") or []), skin=skin, x=float(u.get("x", 0)), y=float(u.get("y", 0)))
+        plane.place(uid, u.get("label", uid), words=u.get("words", ""), detail=u.get("detail", "") or "", goals=list(u.get("goals") or []), skin=skin, x=float(u.get("x", 0)), y=float(u.get("y", 0)), parents=list(u.get("parents") or []), origin=str(u.get("origin") or "placed"), lineage_version=int(u.get("lineage_version") or 1), restore=True)
         unit = plane.units[uid]
         unit.sandboxed = bool(u.get("sandboxed", False))
         unit.sandbox_id = u.get("sandbox_id")
