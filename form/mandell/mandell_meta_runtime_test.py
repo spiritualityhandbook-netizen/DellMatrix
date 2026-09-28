@@ -100,9 +100,10 @@ def smoke() -> bool:
     rec("omni_clears_resolved_circuit", "cell_cycle:Z" not in omni_scan().get("open_circuits"))
     rec("omni_read_only", scan.get("owned_nodes") == [])
     plan = plan_cycle(["cell_cycle:Z", "docs"], resolved="docs")
-    rec("planning_recalculate", plan["chosen"] != "docs")
-    rec("planning_resolution_changes_route", plan["chosen"] != "docs")
-    rec("planning_dependency_changes_route", plan_cycle(["cell_graph"], resolved=None)["chosen"] == "cell_graph")
+    rec("planning_recalculate", plan.get("error") == "string_list_scoring_forbidden")
+    rec("planning_resolution_changes_route", plan.get("error") == "string_list_scoring_forbidden")
+    rec("planning_dependency_changes_route", plan_cycle(["cell_graph"], resolved=None).get("error") == "string_list_scoring_forbidden")
+    rec("plan_cycle_string_list_rejected", plan.get("error") == "string_list_scoring_forbidden")
 
     rec("latin_coverage_00_99", all(explain_dell(n)["ok"] for n in range(100)))
     rec("latin_compound", bool(explain("create grow").get("roots")))
