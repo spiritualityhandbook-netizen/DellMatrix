@@ -189,3 +189,6 @@ def serialize(program: Program) -> Dict[str, Any]:
         "mandell_language": __import__("form.mandell.language", fromlist=["dump_language"]).dump_language(),
         "core_ii": serialize_core_ii(program),
     }
+
+
+from form.persist_rest import save, checkpoint, list_checkpoints, load, smoke, main
