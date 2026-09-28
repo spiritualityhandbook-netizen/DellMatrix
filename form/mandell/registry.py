@@ -1,9 +1,16 @@
-"""True Dell registry — numbered operators + manors."""
+"""True Dell registry — numbered operators + manors.
+
+Namespaces
+  CORE_I   00-50  locked action spine
+  CORE_II  51-99  instruction architecture (formalized)
+  ADDRESS  100-999 reserved until DVS promotion
+"""
 
 from __future__ import annotations
 from typing import Dict, Any, Optional
 
-# Primaries 00–26 locked · Extensions 27–50 formalized
+from .core_ii import CORE_II
+
 DELLS: Dict[int, Dict[str, str]] = {
     0: {"name": "Nova", "manor": "Origin / fresh start"},
     1: {"name": "Initiate", "manor": "Root command / entry"},
@@ -58,20 +65,43 @@ DELLS: Dict[int, Dict[str, str]] = {
     50: {"name": "Manifest", "manor": "Make real / bring into form"},
 }
 
+for _n, _row in CORE_II.items():
+    DELLS[_n] = {"name": _row["name"], "manor": _row["manor"]}
+
+CORE_I_MAX = 50
+CORE_II_MAX = 99
+ADDRESS_MAX = 999
+
 NAMED = {
     "Bindell": 14,
     "Formadell": 8,
     "Evoludell": 4,
-    "Harmonidell": 5,
+    "Harmonidell": 151,
     "Mirrordell": 18,
 }
 
 
+def namespace_of(n: int) -> str:
+    if 0 <= n <= CORE_I_MAX:
+        return "CORE_I"
+    if CORE_I_MAX < n <= CORE_II_MAX:
+        return "CORE_II"
+    if CORE_II_MAX < n <= ADDRESS_MAX:
+        return "ADDRESS_RESERVED"
+    return "OUT_OF_RANGE"
+
+
 def get_dell(n: int) -> Optional[Dict[str, Any]]:
     d = DELLS.get(n)
-    if not d:
-        return None
-    return {"dell": n, **d}
+    if d:
+        return {"dell": n, **d, "namespace": namespace_of(n)}
+    if CORE_II_MAX < n <= ADDRESS_MAX:
+        try:
+            from .address_space import get_reserved
+            return get_reserved(n)
+        except Exception:
+            return None
+    return None
 
 
 def lookup(name_or_num) -> Optional[Dict[str, Any]]:
@@ -85,4 +115,15 @@ def lookup(name_or_num) -> Optional[Dict[str, Any]]:
     for n, d in DELLS.items():
         if d["name"].lower() == s.lower():
             return get_dell(n)
+    try:
+        from .address_space import RESERVED_DOMAIN
+        for n, d in RESERVED_DOMAIN.items():
+            if d["name"].lower() == s.lower():
+                return get_dell(n)
+    except Exception:
+        pass
     return None
+
+
+def active_core_count() -> int:
+    return sum(1 for n in DELLS if n <= CORE_II_MAX)
