@@ -22,8 +22,10 @@ A practical **bridge language**:
 | Layer | Module | Role |
 |-------|--------|------|
 | Floor | `floor.py` | Alpha · Delta · Omega · Omni |
-| Dells | `registry.py` | Operators 00–50 |
+| Dells | `registry.py` | Operators 00–50 + Core II 51–99 |
 | Seeds | `seed.py` | `08[Create] > 15[Map] :: name` |
+| ManifestSet | `seed.py` | `08[Create•Map•Keep]` Chain |
+| Chainlink | `seed.py` | `08[A•B] > 12[X•Y]` → (A>X)•(B>Y) |
 | Phrases | `phrases.py` | Stable English → seed dictionary |
 | Patterns | `patterns.py` | Math/nature teachable forms |
 | Bridge | `bridge.py` | EN ↔ Mandell |
@@ -58,4 +60,34 @@ See `POLYGLOT.md` and `latinmandell.py`.
 3. Compose with flow — don’t invent chaos  
 4. Math/nature patterns are first-class and teachable  
 5. **LatinMandell is core** — morphology and custom function are Origin tools  
-6. Both humans and the runtime must be able to read the seed  
+6. Both humans and the runtime must be able to read the seed
+7. Number = Dell family · Bracket = Manifest domain · `•` = ManifestSet separator
+8. Emoji is display alias · ASCII grammar is executable truth
+9. Chain and Chainlink are grammar operators (no new Dell number without DVS)
+10. FlowSet longest match first: `>>>` `>>` `>` `:>` `<:` `<:>` `::` `:` `<<[Delta]`
+11. LatinMandell resolves Morphology > Context > Canonical
+12. Existing seeds stay valid
+
+---
+
+## Chain and Chainlink
+
+```
+08[Create•Map•Keep]
+=> 08[Create] > 08[Map] > 08[Keep]
+
+08[Create•Map] > 12[Test•Keep]
+=> (Create>Test)•(Map>Keep)
+```
+
+Mandellmoji (display only): Chain ⛓️‍💥 · Chainlink ⛓️
+
+Separator is `•` (U+2022). Not `,`. Not `_`.
+
+---
+
+## Compression cells
+
+- **Mandellacell** — reusable named seed (`define_cell` / `expand_cell`)
+- **DeltaDirective** — send only new work against a verified HEAD
+- **EvidenceCell** — HEAD · SHA · tests · failures · unresolved
