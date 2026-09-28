@@ -15,10 +15,7 @@ _ATOM = re.compile(r"(\d{1,3})\[([^\]]*)\]")
 
 
 def graph_hash(graph: Dict[str, Any]) -> str:
-    payload = {
-        "nodes": [(n["dell"], n["manifest"], n.get("payload") or "") for n in graph.get("nodes") or []],
-        "edges": [(e.get("from"), e.get("to"), e.get("flow")) for e in graph.get("edges") or []],
-    }
+    payload = {"nodes": [(n["dell"], n["manifest"], n.get("payload") or "") for n in graph.get("nodes") or []], "edges": [(e.get("from"), e.get("to"), e.get("flow")) for e in graph.get("edges") or []]}
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
 
@@ -120,19 +117,18 @@ def expand_graph(g: Dict[str, Any]) -> Dict[str, Any]:
 
 def freeze_program(program: Any) -> Dict[str, Any]:
     from form.persist import serialize
-    from .language import attach_language
     d = serialize(program)
     d.pop("saved", None)
-    return attach_language(d)
+    return d
 
 
 def clone_program(program: Any) -> Any:
+    from form.persist import save, load
     fd, path = tempfile.mkstemp(suffix=".json")
     os.close(fd)
     try:
-        from .language import save_program_language, load_program_language
-        save_program_language(program, path)
-        return load_program_language(getattr(program, "owner", "CHEAT"), path)
+        save(program, path)
+        return load(getattr(program, "owner", "CHEAT"), path)
     finally:
         try:
             os.remove(path)
