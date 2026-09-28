@@ -30,13 +30,20 @@ class CoreIIState:
     deps: List[tuple] = field(default_factory=list)
     last_assert: str = ""
     last_guard: str = "ALLOW"
+    frames: List[Dict[str, Any]] = field(default_factory=list)
+    last_frame: Dict[str, Any] = field(default_factory=dict)
+    last_control: Dict[str, Any] = field(default_factory=dict)
+    flow_taken: List[str] = field(default_factory=list)
+    flow_blocked: List[str] = field(default_factory=list)
+    control_steps: int = 0
     def snap(self) -> Dict[str, Any]:
         return {"scope": self.scope, "selected": list(self.selected), "store": dict(self.store),
                 "groups": {k: list(v) for k, v in self.groups.items()}, "defs": dict(self.defs),
                 "aliases": dict(self.aliases), "compositions": dict(self.compositions),
                 "staged": len(self.staged), "try_depth": self.try_depth, "context": self.context,
                 "route": self.route, "branch": dict(self.branch), "last_assert": self.last_assert,
-                "last_guard": self.last_guard}
+                "last_guard": self.last_guard, "last_frame": dict(self.last_frame),
+                "control_steps": self.control_steps}
 
 def attach(program: Any) -> CoreIIState:
     st = getattr(program, "core_ii", None)
@@ -89,17 +96,57 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
         elif n == 59:
             st.route = lab or "primary"; messages.append(f"Route -> {st.route}")
         elif n == 60:
-            cond,_,rest=lab.partition(":"); st.branch={"cond":cond or "pass","rest":rest,"taken":cond or "pass"}
-            messages.append(f"Branch cond={st.branch['cond']} rest={rest or '(none)'}")
+            from .control_runtime import ControlFrame, eval_condition
+            taken = eval_condition(st, program, lab or "true")
+            st.branch = {"cond": lab or "true", "taken": taken, "path": "true" if taken else "false"}
+            frame = ControlFrame(id=f"br{len(st.frames)}", kind="branch", condition=lab or "true", status="taken" if taken else "skipped")
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"Branch cond={lab or 'true'} taken={taken} unchosen_not_run")
         elif n == 61:
-            messages.append(f"Join route={st.route} branch={st.branch.get('cond','')}")
+            from .control_runtime import ControlFrame
+            policy = (lab or "all").lower()
+            incoming = list((st.last_frame or {}).get("results") or [])
+            fails = [r for r in incoming if not r.get("ok", True)]
+            if policy in ("any",):
+                join_ok = (not incoming) or any(r.get("ok", True) for r in incoming)
+            else:
+                join_ok = not fails
+            frame = ControlFrame(id=f"jn{len(st.frames)}", kind="join", condition=policy, status="ok" if join_ok else "fail", policy=policy, results=incoming)
+            if not join_ok:
+                ok = False
+                err = "join_fail"
+                frame.error = err
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"Join policy={policy} ok={join_ok} incoming={len(incoming)} fails={len(fails)}")
         elif n == 62:
-            st.parallel=[p.strip() for p in lab.split(",") if p.strip()] or ["a","b"]; messages.append(f"Parallel n={len(st.parallel)}")
-        elif n == 63: messages.append(f"Sequence {lab or 'ordered'}")
-        elif n == 64: messages.append(f"Until {lab or 'condition'}")
-        elif n == 65: messages.append(f"While {lab or 'condition'}")
+            from .control_runtime import ControlFrame
+            st.parallel = [p.strip() for p in lab.split(",") if p.strip()] or ["a", "b"]
+            frame = ControlFrame(id=f"pr{len(st.frames)}", kind="parallel", status="pending")
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"Parallel n={len(st.parallel)} offline_deterministic")
+        elif n == 63:
+            from .control_runtime import ControlFrame
+            frame = ControlFrame(id=f"sq{len(st.frames)}", kind="sequence", status="pending")
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"Sequence {lab or 'ordered'}")
+        elif n == 64:
+            from .control_runtime import ControlFrame, eval_condition, bound_of
+            pred = eval_condition(st, program, lab or "false")
+            frame = ControlFrame(id=f"un{len(st.frames)}", kind="until", condition=lab or "false", status="ready" if not pred else "zero")
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"Until cond={lab or 'false'} already={pred} bound={bound_of(st)}")
+        elif n == 65:
+            from .control_runtime import ControlFrame, eval_condition, bound_of
+            pred = eval_condition(st, program, lab or "true")
+            frame = ControlFrame(id=f"wh{len(st.frames)}", kind="while", condition=lab or "true", status="ready" if pred else "zero")
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"While cond={lab or 'true'} already={pred} bound={bound_of(st)}")
         elif n == 66:
-            ids=st.selected or _ids(program); messages.append(f"ForEach n={len(ids)} op={lab or 'identity'}")
+            from .control_runtime import ControlFrame
+            ids = list(st.selected or _ids(program))
+            frame = ControlFrame(id=f"fe{len(st.frames)}", kind="foreach", status="pending", body=list(range(len(ids))))
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"ForEach n={len(ids)} op={lab or 'identity'} empty_ok={len(ids)==0}")
         elif n == 67:
             ids=st.selected or _ids(program); messages.append(f"Any {any(_pred(lab,i) for i in ids) if ids else False} n={len(ids)}")
         elif n == 68:
