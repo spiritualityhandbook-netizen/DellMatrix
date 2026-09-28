@@ -91,18 +91,18 @@ def eval_condition(st: Any, program: Any, expr: str) -> bool:
         val = _as_num(_lookup(st, key.strip())) or 0.0
         return val >= thr
     if e.startswith("any"):
-        from .core_ii_exec import _ids, _pred
-        ids = (st.selected if st and st.selected else _ids(program))
+        from .core_ii_exec import _pred
+        ids = list(st.selected or []) if st is not None else []
         needle = raw[3:].lstrip(": ").strip()
         return any(_pred(needle, i) for i in ids) if ids else False
     if e.startswith("all"):
-        from .core_ii_exec import _ids, _pred
-        ids = (st.selected if st and st.selected else _ids(program))
+        from .core_ii_exec import _pred
+        ids = list(st.selected or []) if st is not None else []
         needle = raw[3:].lstrip(": ").strip()
         return all(_pred(needle, i) for i in ids) if ids else True
     if e.startswith("none"):
-        from .core_ii_exec import _ids, _pred
-        ids = (st.selected if st and st.selected else _ids(program))
+        from .core_ii_exec import _pred
+        ids = list(st.selected or []) if st is not None else []
         needle = raw[4:].lstrip(": ").strip()
         return not any(_pred(needle, i) for i in ids)
     return False
