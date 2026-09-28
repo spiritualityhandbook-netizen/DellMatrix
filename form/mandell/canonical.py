@@ -61,7 +61,14 @@ def parse_directive_v2(text: str) -> Dict[str, Any]:
         if body.startswith("/*") or body.startswith("*") or body.startswith("*/"):
             comments.append({"text": body, "span": [start, end], "line": li})
             continue
-        if body.startswith("::") or body in {">", ">>"}:
+        if body.startswith("::") and nodes:
+            extra = body[2:].strip()
+            nodes[-1]["payload"] = ((nodes[-1].get("payload") or "") + ("\n" if nodes[-1].get("payload") else "") + extra).strip()
+            nodes[-1]["source_span"][1] = end
+            continue
+        if body in {">", ">>", ">>>", ":", ":>", "<:", "<:>", "<<[Delta]"}:
+            if nodes:
+                nodes[-1].setdefault("out_flow", body)
             continue
         matches = list(_ATOM.finditer(body))
         if not matches:
@@ -79,6 +86,7 @@ def parse_directive_v2(text: str) -> Dict[str, Any]:
     g["tests"] = [n for n in nodes if n["dell"] == 12]
     g["assertions"] = [n for n in nodes if n["dell"] == 91]
     g["exit"] = [n for n in nodes if n["dell"] == 20]
+    g["flows"] = [n.get("out_flow") or ">" for n in nodes[:-1]]
     return g
 
 
@@ -112,18 +120,19 @@ def expand_graph(g: Dict[str, Any]) -> Dict[str, Any]:
 
 def freeze_program(program: Any) -> Dict[str, Any]:
     from form.persist import serialize
+    from .language import attach_language
     d = serialize(program)
     d.pop("saved", None)
-    return d
+    return attach_language(d)
 
 
 def clone_program(program: Any) -> Any:
-    from form.persist import save, load
     fd, path = tempfile.mkstemp(suffix=".json")
     os.close(fd)
     try:
-        save(program, path)
-        return load(getattr(program, "owner", "CHEAT"), path)
+        from .language import save_program_language, load_program_language
+        save_program_language(program, path)
+        return load_program_language(getattr(program, "owner", "CHEAT"), path)
     finally:
         try:
             os.remove(path)
@@ -147,23 +156,8 @@ def cheat_project(program: Any, actions: List[str], temp: str = "hot") -> Dict[s
         out = execute_seed(cur, act)
         after_units = _units_of(cur)
         after_store = dict(getattr(cur.core_ii, "store", {}) or {})
-        delta = {
-            "units_added": sorted(set(after_units) - set(before_units)),
-            "units_removed": sorted(set(before_units) - set(after_units)),
-            "store_delta": after_store,
-            "selection_delta": list(getattr(cur.core_ii, "selected", []) or []),
-            "trace": list(out.get("chain_ran") or []),
-        }
-        steps.append({
-            "iteration": i,
-            "candidate_action": act,
-            "predicted_delta": delta,
-            "candidate_next_state": {"units": after_units, "store": after_store, "ok": out.get("ok"), "error": out.get("error") or ""},
-            "assumptions": [f"from_iter:{i-1}"],
-            "uncertainty": round(0.25 * i, 2),
-            "label": "PROJECTED_NOT_FACT",
-            "projected_failure": bool(out.get("error")),
-        })
+        delta = {"units_added": sorted(set(after_units) - set(before_units)), "units_removed": sorted(set(before_units) - set(after_units)), "store_delta": after_store, "selection_delta": list(getattr(cur.core_ii, "selected", []) or []), "trace": list(out.get("chain_ran") or [])}
+        steps.append({"iteration": i, "candidate_action": act, "predicted_delta": delta, "candidate_next_state": {"units": after_units, "store": after_store, "ok": out.get("ok"), "error": out.get("error") or ""}, "assumptions": [f"from_iter:{i-1}"], "uncertainty": round(0.25 * i, 2), "label": "PROJECTED_NOT_FACT", "projected_failure": bool(out.get("error"))})
         if out.get("error") and not out.get("ok"):
             break
     return {"ok": True, "steps": steps, "origin": origin, "origin_unchanged": freeze_program(program) == origin, "label": "PROJECTED_NOT_FACT"}
@@ -178,16 +172,7 @@ def measured_route(evidence: Dict[str, Any]) -> Dict[str, Any]:
     touched = list(evidence.get("code_localities") or [])
     locked_touch = int(evidence.get("locked_domains_touched") or 0)
     dependents = int(evidence.get("dependents") or 0)
-    factors = {
-        "closures": float(len(ready)),
-        "resonance": float(len(deps)),
-        "reuse": float(len(set(evidence.get("shared") or []))),
-        "future_work_avoided": float(len(downstream)),
-        "verification_confidence": (len(covered) / len(contracts)) if contracts else 0.0,
-        "movement": float(max(1, len(set(touched)))),
-        "rework_risk": float(max(1, dependents)),
-        "scope_interference": float(locked_touch + 1),
-    }
+    factors = {"closures": float(len(ready)), "resonance": float(len(deps)), "reuse": float(len(set(evidence.get("shared") or []))), "future_work_avoided": float(len(downstream)), "verification_confidence": (len(covered) / len(contracts)) if contracts else 0.0, "movement": float(max(1, len(set(touched)))), "rework_risk": float(max(1, dependents)), "scope_interference": float(locked_touch + 1)}
     den = factors["movement"] * factors["rework_risk"] * factors["scope_interference"]
     num = factors["closures"] * factors["resonance"] * factors["reuse"] * factors["future_work_avoided"] * factors["verification_confidence"]
     return {"ok": True, "factors": factors, "value": num / den, "trace": factors}
