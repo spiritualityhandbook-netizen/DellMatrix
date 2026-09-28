@@ -36,6 +36,7 @@ class CoreIIState:
     flow_taken: List[str] = field(default_factory=list)
     flow_blocked: List[str] = field(default_factory=list)
     control_steps: int = 0
+    last_result: Dict[str, Any] = field(default_factory=dict)
     def snap(self) -> Dict[str, Any]:
         return {"scope": self.scope, "selected": list(self.selected), "store": dict(self.store),
                 "groups": {k: list(v) for k, v in self.groups.items()}, "defs": dict(self.defs),
@@ -70,31 +71,11 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             except Exception: pass
     def shot(): st.snapshots.append(st.snap())
     try:
-        if n == 51:
-            ids = _ids(program); st.selected = [i for i in ids if _pred(lab, i)] or list(ids)
-            messages.append(f"Select scope={st.scope} n={len(st.selected)}")
-        elif n == 52:
-            before = list(st.selected or _ids(program)); st.selected = [i for i in before if _pred(lab, i)]
-            messages.append(f"Filter {len(before)}->{len(st.selected)} cond={lab or '*'}")
+        from .query_ops import QUERY_DELLS, apply_query
+        if n in QUERY_DELLS:
+            ok, err = apply_query(n, st, program, lab, term, messages, _ids, _pred, shot)
         elif n == 53:
             st.scope = lab or "plane"; messages.append(f"Scope -> {st.scope}")
-        elif n == 54:
-            ids = st.selected or _ids(program); messages.append(f"Query scope={st.scope} hits={len(ids)} q={lab or '*'}")
-        elif n == 55:
-            key,_,val = lab.partition("="); key=(key or "value").strip(); shot(); st.store[key]=val.strip() if val else "1"
-            messages.append(f"Set {key}={st.store[key]}")
-        elif n == 56:
-            key = lab or (list(st.store)[-1] if st.store else ""); messages.append(f"Get {key}={st.store.get(key)!r}")
-        elif n == 57:
-            parts=[p for p in lab.replace(","," ").split() if p]; a=parts[0] if parts else "a"; b=parts[1] if len(parts)>1 else "b"
-            va,vb=st.store.get(a,a),st.store.get(b,b); rel="==" if str(va)==str(vb) else "!="
-            messages.append(f"Compare {a}={va!r} {rel} {b}={vb!r}")
-        elif n == 58:
-            pat=lab.lower(); ids=st.selected or _ids(program)
-            st.selected=[i for i in ids if pat in str(i).lower()] if pat else list(ids)
-            messages.append(f"Match pattern={pat or '*'} hits={len(st.selected)}")
-        elif n == 59:
-            st.route = lab or "primary"; messages.append(f"Route -> {st.route}")
         elif n == 60:
             from .control_runtime import ControlFrame, eval_condition
             taken = eval_condition(st, program, lab or "true")
@@ -147,36 +128,6 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             frame = ControlFrame(id=f"fe{len(st.frames)}", kind="foreach", status="pending", body=list(range(len(ids))))
             st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
             messages.append(f"ForEach n={len(ids)} op={lab or 'identity'} empty_ok={len(ids)==0}")
-        elif n == 67:
-            ids=st.selected or _ids(program); messages.append(f"Any {any(_pred(lab,i) for i in ids) if ids else False} n={len(ids)}")
-        elif n == 68:
-            ids=st.selected or _ids(program); messages.append(f"All {all(_pred(lab,i) for i in ids) if ids else True} n={len(ids)}")
-        elif n == 69:
-            ids=st.selected or _ids(program); messages.append(f"None {not any(_pred(lab,i) for i in ids)} n={len(ids)}")
-        elif n == 70:
-            ids=st.selected or _ids(program); messages.append(f"Count {len(ids)}")
-        elif n == 71: messages.append(f"Measure {lab or 'selected'}={len(st.selected or _ids(program))}")
-        elif n == 72: st.limit=lab or "max"; messages.append(f"Limit {st.limit}")
-        elif n == 73: messages.append(f"Threshold {lab or 'boundary'}")
-        elif n == 74:
-            key,_,val=lab.partition("=")
-            try: w=float(val) if val else 1.0
-            except ValueError: w=1.0
-            st.weights[(key or "target").strip()]=w; messages.append(f"Weight {key or 'target'}={w}")
-        elif n == 75:
-            ssum=sum(st.weights.values()) or 1.0; st.weights={k:v/ssum for k,v in st.weights.items()}
-            messages.append(f"Normalize n={len(st.weights)}")
-        elif n == 76:
-            from .manifest_resolver import resolve_manifest
-            try: num=int(lab.split()[0]) if lab[:1].isdigit() else n
-            except Exception: num=n
-            res=resolve_manifest(num, term, lab)
-            messages.append(f"Resolve dell={res.dell} req={res.requested}->{res.resolved} conf={res.confidence:.2f} {res.reason}")
-        elif n == 77: messages.append(f"Infer {lab or 'evidence'} PROJECTED_NOT_FACT")
-        elif n == 78:
-            a,_,b=lab.partition(">"); st.causes.append((a.strip(),b.strip())); messages.append(f"Cause {a.strip() or '?'}->{b.strip() or '?'}")
-        elif n == 79:
-            a,_,b=lab.partition(">"); st.deps.append((a.strip(),b.strip())); messages.append(f"Depend {a.strip() or '?'} requires {b.strip() or '?'}")
         elif n == 80: st.context=lab or st.scope; messages.append(f"Context -> {st.context}")
         elif n == 81:
             target=lab or (st.selected[0] if st.selected else ""); st.refs[target or "ref"]=target
@@ -250,5 +201,10 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
     except Exception as exc:
         ok=False; err=str(exc); st.last_error=err; messages.append(f"Core II fail {n}: {err}")
     if not ok: st.last_error = err or st.last_error
+    if getattr(st, "last_result", None):
+        cell = {}
+        for k, v in st.last_result.items():
+            cell[k] = list(v) if isinstance(v, tuple) else v
+        st.store["_last_result"] = cell
     mark()
-    return {"ok": ok, "error": err, "dell": n, "core_ii": st.snap()}
+    return {"ok": ok, "error": err, "dell": n, "core_ii": st.snap(), "result": dict(st.last_result or {})}
