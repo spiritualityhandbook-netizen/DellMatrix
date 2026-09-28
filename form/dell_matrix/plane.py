@@ -107,8 +107,13 @@ class Plane:
         manifest: Optional[Manifest] = None,
         parents: Optional[List[str]] = None,
         origin: str = "placed",
-        lineage_version: int = 1,
+        lineage_version: Optional[int] = None,
+        restore: bool = False,
     ) -> Unit:
+        from form.dell_matrix.lineage import assign_lineage
+        rec = assign_lineage(self.units, parents, origin=origin, lineage_version=lineage_version, child_id=id, restore=restore or (lineage_version is not None))
+        if not rec.get("ok"):
+            raise ValueError(rec.get("error") or "invalid_lineage")
         g = [str(x).strip() for x in (goals or []) if str(x).strip()]
         u = Unit(
             id=id,
@@ -120,12 +125,16 @@ class Plane:
             x=x,
             y=y,
             manifest=manifest.to_dict() if manifest else None,
-            parents=[str(p) for p in (parents or []) if str(p).strip()],
-            origin=str(origin or "placed"),
-            lineage_version=int(lineage_version or 1),
+            parents=list(rec["parents"]),
+            origin=str(rec["origin"]),
+            lineage_version=int(rec["lineage_version"]),
         )
         self.units[id] = u
         return u
+
+    def inspect_lineage(self, unit_id: str) -> Dict[str, Any]:
+        from form.dell_matrix.lineage import inspect_lineage
+        return inspect_lineage(self, unit_id)
 
     def remove(self, id: str) -> bool:
         if id not in self.units:
