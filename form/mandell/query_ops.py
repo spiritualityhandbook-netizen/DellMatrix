@@ -113,7 +113,6 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
         cmpd = eval_predicate(st, program, expr)
         hit = bool(cmpd.get("matched"))
         st.last_result = result_cell(value=hit, matched=hit, source="threshold", predicate=cmpd.get("predicate") or "gte", error=cmpd.get("error") or "", trace="73")
-        st.store["_threshold"] = "1" if hit else "0"
         messages.append(f"Threshold {expr} matched={hit}")
     elif n == 74:
         key, _, val = lab.partition("=")
