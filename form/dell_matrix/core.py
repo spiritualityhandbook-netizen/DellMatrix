@@ -89,11 +89,18 @@ class DellMatrix:
         req = required if required is not None else REQUIRED_FOR_OPEN
         names = self.snap_names()
         missing = [n for n in req if n not in names]
-        ok = list(FLOOR) == ["Alpha", "Delta", "Omega", "Omni"] and len(DELLS) == 51 and len(missing) == 0
+        # CORE_I 00-50 is the locked open spine. CORE_II 51-99 is also in DELLS.
+        core_i_count = sum(1 for n in DELLS if 0 <= int(n) <= 50)
+        ok = (
+            list(FLOOR) == ["Alpha", "Delta", "Omega", "Omni"]
+            and core_i_count == 51
+            and len(missing) == 0
+        )
         return {
             "ok": ok,
             "floor": list(FLOOR),
             "dell_count": len(DELLS),
+            "core_i_count": core_i_count,
             "snap_count": len(names),
             "missing": missing,
             "present": sorted(names),
