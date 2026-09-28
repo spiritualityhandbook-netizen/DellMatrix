@@ -178,9 +178,6 @@ def omni_scan(extra_open: Optional[List[str]] = None) -> Dict[str, Any]:
 
 
 def plan_cycle(open_circuits: List[str], resolved: Optional[str] = None) -> Dict[str, Any]:
-    from .language import plan_from_evidence, harvest_evidence
-    rows = harvest_evidence()
-    if open_circuits:
-        extra = [{"locality": loc, "authority": "scan", "contracts": [{"id": loc, "tested": True, "ready": True}], "edges": [], "shared": [], "downstream": [], "code_localities": [loc], "dependents": 1, "locked_domains_touched": 0} for loc in open_circuits]
-        rows = extra + rows
+    from .language import plan_from_evidence
+    rows = [{"locality": loc, "authority": "scan", "contracts": [{"id": loc, "tested": True, "ready": True}], "edges": [loc], "shared": [loc], "downstream": [loc], "code_localities": [loc], "dependents": 1, "locked_domains_touched": 0} for loc in open_circuits]
     return plan_from_evidence(rows, resolved=resolved)
