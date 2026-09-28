@@ -8,6 +8,7 @@ PREDICATES = (
     "eq", "ne", "lt", "lte", "gt", "gte",
     "contains", "starts", "ends",
     "exists", "empty", "truthy", "falsey",
+    "any", "all", "none",
 )
 
 MAX_BOUND = 64
@@ -51,6 +52,9 @@ def resolve_value(st: Any, program: Any, token: str) -> Dict[str, Any]:
         return {"kind": "context_ref", "type": "literal", "value": getattr(st, "context", "") or "", "source": "context_ref"}
     if low in ("selected", "selected_ref"):
         return {"kind": "selected_ref", "type": "literal", "value": list(getattr(st, "selected", None) or []), "source": "selected_ref"}
+    if low in ("last_result", "result", "threshold"):
+        lr = getattr(st, "last_result", None) or {}
+        return {"kind": "last_result", "type": "boolean", "value": bool(lr.get("matched")), "source": "last_result"}
     if low.startswith("store:") or low.startswith("store_"):
         key = raw.split(":", 1)[1] if low.startswith("store:") else raw.split("_", 1)[1]
         store = getattr(st, "store", {}) or {}
@@ -161,6 +165,21 @@ def eval_predicate(st: Any, program: Any, expr: str) -> Dict[str, Any]:
         return result
     result["predicate"] = name
     parts = [p for p in rest.replace(",", " ").split() if p]
+    if name in ("any", "all", "none"):
+        ids = list(getattr(st, "selected", None) or [])
+        needle = rest.lower()
+        def _hit(i):
+            u = str(i).lower()
+            return True if not needle else needle in u or u.startswith(needle.replace(" ", "_"))
+        if name == "any":
+            result["matched"] = any(_hit(i) for i in ids) if ids else False
+        elif name == "all":
+            result["matched"] = all(_hit(i) for i in ids) if ids else True
+        else:
+            result["matched"] = not any(_hit(i) for i in ids)
+        result["value"] = list(ids)
+        result["count"] = len(ids)
+        return result
     if name in ("exists", "empty", "truthy", "falsey"):
         token = resolve_value(st, program, parts[0] if parts else rest)
         if name == "exists":
