@@ -2,6 +2,8 @@
 """Core II + chain smoke. Offline. No Form Program required."""
 from __future__ import annotations
 
+import inspect
+
 from .registry import get_dell, namespace_of, active_core_count
 from .seed import parse_seed
 from .manifest_resolver import resolve_manifest
@@ -10,6 +12,7 @@ from .address_space import RESERVED_DOMAIN, family_of, OLD_TO_NEW
 from .core_ii_exec import CoreIIState, execute_core_ii, attach
 from .chain_exec import execute_chain
 from .executor import execute_seed
+from . import executor_leaf
 
 
 class _P:
@@ -114,7 +117,18 @@ def smoke() -> bool:
 
     rec("dvs_formalized", dvs_floor()["core_ii_status"] == "FORMALIZED")
 
+    leaf_src = inspect.getsource(executor_leaf.execute_seed)
+    rec("leaf_not_placeholder", "CORE_I_LEAF_NOT_RESTORED" not in leaf_src)
+    rec("leaf_has_00", "primary == 0" in leaf_src)
+    rec("leaf_has_12", "primary == 12" in leaf_src)
+    rec("leaf_has_50", "primary == 50" in leaf_src)
+    missing = [n for n in range(0, 51) if f"primary == {n}" not in leaf_src]
+    rec("leaf_has_00_50_branches", missing == [])
+    rec("front_door_still_dispatches", "execute_chain" in inspect.getsource(execute_seed))
+
     print(f"=== {sum(r)}/{len(r)} ===")
+    if missing:
+        print("missing CORE_I branches:", missing)
     return all(r)
 
 
