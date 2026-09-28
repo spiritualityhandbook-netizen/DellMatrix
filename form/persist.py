@@ -115,6 +115,9 @@ def serialize(program: Program) -> Dict[str, Any]:
             "y": u.y,
             "sandboxed": u.sandboxed,
             "sandbox_id": u.sandbox_id,
+            "parents": list(getattr(u, "parents", []) or []),
+            "origin": getattr(u, "origin", "placed") or "placed",
+            "lineage_version": int(getattr(u, "lineage_version", 1) or 1),
         }
         for uid, u in plane.units.items()
     }
@@ -192,3 +195,8 @@ def serialize(program: Program) -> Dict[str, Any]:
 
 
 from form.persist_rest import save, checkpoint, list_checkpoints, load, smoke, main
+
+try:
+    from form.dell_matrix import lineage_bind  # noqa: F401
+except Exception:
+    pass
