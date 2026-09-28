@@ -195,8 +195,3 @@ def serialize(program: Program) -> Dict[str, Any]:
 
 
 from form.persist_rest import save, checkpoint, list_checkpoints, load, smoke, main
-
-try:
-    from form.dell_matrix import lineage_bind  # noqa: F401
-except Exception:
-    pass
