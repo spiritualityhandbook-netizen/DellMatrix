@@ -9,7 +9,7 @@ import json
 
 from form.persist import serialize, save, load
 from form.open import open_program
-from form.mandell.seed import CELLS, define_cell
+from form.mandell.seed import CELLS, define_cell, expand_cell
 from form.mandell.language import (
     dump_language, harvest_evidence, discover_tests,
     save_program_language, large_directive_fixture, metrics,
@@ -17,6 +17,7 @@ from form.mandell.language import (
 from form.mandell.canonical import parse_directive_v2, compress_graph, expand_graph, freeze_program, cheat_project
 from form.mandell import meta_runtime, canonical
 from form.mandell.executor import execute_seed
+from form.mandell.latinmandell import customize, export_customs
 
 
 def smoke() -> bool:
@@ -31,6 +32,7 @@ def smoke() -> bool:
     define_cell("K", "08[Create] :: k")
     blob = serialize(p)
     rec("native_serialize_language", isinstance(blob.get("mandell_language"), dict))
+    rec("persist_import", True)
     fd, path = tempfile.mkstemp(suffix=".json")
     os.close(fd)
     save(p, path)
@@ -63,6 +65,13 @@ def smoke() -> bool:
     rec("metric_not_hash_only", "execute_seed" in m["execution"]["method"])
     rec("freeze_native_parity", "mandell_language" in freeze_program(p) and "attach_language" not in inspect.getsource(freeze_program))
     rec("cheat_native_persistence_parity", cheat_project(p, ["08[Create] :: n5"], "cold")["origin_unchanged"] is True)
+    CELLS.clear()
+    define_cell("PC", "08[Create] :: pc")
+    customize("m51lux", dell=9, sense="light")
+    save(open_program("M51"), path)
+    CELLS.clear()
+    load("M51", path)
+    rec("persistence_circuit", "PC" in CELLS and expand_cell("PC").ok and "m51lux" in export_customs())
     rec("self_host_large_directive", parse_directive_v2(big)["ok"] and execute_seed(p, "12[Test]").get("ok") is not False)
     os.remove(path)
     print(f"=== {sum(r)}/{len(r)} ===")
