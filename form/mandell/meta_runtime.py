@@ -63,22 +63,14 @@ def parse_directive(text: str) -> Dict[str, Any]:
     return _parse(text)
 
 
-def compress_directive(ast: Dict[str, Any]) -> Dict[str, Any]:
-    if not ast.get("ok"):
-        return {"ok": False, "error": ast.get("error"), "nodes": []}
-    nodes = []
-    seen = set()
-    for n in ast["nodes"]:
-        key = (n["dell"], n["manifest"], n["payload"])
-        if key in seen and n["dell"] in (80, 97):
-            continue
-        seen.add(key)
-        nodes.append(n)
-    return {"ok": True, "nodes": nodes, "locks": ast.get("locks") or [], "guards": ast.get("guards") or [], "tests": ast.get("tests") or [], "exit": ast.get("exit") or [], "semantic_hash": _hash([(n["dell"], n["manifest"], n["payload"]) for n in nodes]), "source_nodes": len(ast["nodes"]), "compressed_nodes": len(nodes)}
+def compress_directive(ast):
+    from .canonical import compress_graph
+    return compress_graph(ast)
 
 
-def expand_directive(ast: Dict[str, Any]) -> Dict[str, Any]:
-    return parse_directive("\n".join(f"{n['dell']:02d}[{n['manifest']}] :: {n['payload']}" if n.get("payload") else f"{n['dell']:02d}[{n['manifest']}]" for n in ast.get("nodes") or []))
+def expand_directive(ast):
+    from .canonical import expand_graph
+    return expand_graph(ast)
 
 
 def directive_delta(base: Dict[str, Any], nxt: Dict[str, Any]) -> Dict[str, Any]:
@@ -177,7 +169,11 @@ def omni_scan(extra_open: Optional[List[str]] = None) -> Dict[str, Any]:
     return {"floor": list(FLOOR), "cells": sorted(CELLS), "moji": list(MOJI_REGISTRY), "flows": list(FLOW_OPS), "open_circuits": sorted(set(open_c)), "owned_nodes": []}
 
 
-def plan_cycle(open_circuits: List[str], resolved: Optional[str] = None) -> Dict[str, Any]:
-    from .language import plan_from_evidence
-    rows = [{"locality": loc, "authority": "scan", "contracts": [{"id": loc, "tested": True, "ready": True}], "edges": [loc], "shared": [loc], "downstream": [loc], "code_localities": [loc], "dependents": 1, "locked_domains_touched": 0} for loc in open_circuits]
-    return plan_from_evidence(rows, resolved=resolved)
+def plan_cycle(items, resolved=None):
+    from .language import harvest_evidence, plan_from_evidence
+    if items and all(isinstance(x, str) for x in items):
+        return {"ok": False, "error": "string_list_scoring_forbidden", "chosen": "none", "routes": []}
+    rows = items if items and isinstance(items[0], dict) else harvest_evidence()
+    out = plan_from_evidence(rows, resolved=resolved)
+    out["ok"] = True
+    return out
