@@ -9,7 +9,7 @@ import json
 import os
 import re
 
-from .seed import CELLS, BULLET, MANDELLMOJI, FLOW_OPS, define_cell, parse_seed
+from .seed import CELLS, BULLET, MANDELLMOJI, FLOW_OPS, define_cell, parse_seed, expand_cell as seed_expand_cell
 from .registry import DELLS
 from .floor import FLOOR, assert_floor_intact
 
@@ -36,29 +36,10 @@ def cell_define(name: str, source: str) -> Dict[str, Any]:
 
 
 def cell_expand(name: str, seen=None, depth: int = 0) -> Dict[str, Any]:
-    if depth > CELL_DEPTH:
-        return {"ok": False, "error": "cell_depth", "atoms": [], "flows": []}
-    raw = CELLS.get(str(name))
-    if raw is None:
-        return {"ok": False, "error": f"unknown cell {name}", "atoms": [], "flows": []}
-    seen = set(seen or [])
-    if name in seen:
-        return {"ok": False, "error": "cell_cycle", "atoms": [], "flows": []}
-    seen.add(name)
-    if raw.startswith("__cell__:"):
-        return cell_expand(raw.split(":", 1)[1], seen, depth + 1)
-    s = parse_seed(raw)
+    s = seed_expand_cell(name)
     if not s.ok:
         return {"ok": False, "error": s.error, "atoms": [], "flows": []}
-    return {
-        "ok": True,
-        "name": name,
-        "source": raw,
-        "atoms": [(a.dell, a.term) for a in s.atoms],
-        "flows": list(s.flows),
-        "semantic_hash": _hash([(a.dell, a.term) for a in s.atoms] + list(s.flows)),
-        "dependencies": [k for k in seen if k != name],
-    }
+    return {"ok": True, "name": name, "source": CELLS.get(str(name), ""), "atoms": [(a.dell, a.term) for a in s.atoms], "flows": list(s.flows), "semantic_hash": _hash([(a.dell, a.term) for a in s.atoms] + list(s.flows)), "dependencies": []}
 
 
 def persist_cell_graph(path: Optional[str] = None) -> str:
@@ -176,47 +157,19 @@ def tokenless(text: str) -> Dict[str, Any]:
     return proof
 
 
-def _apply(state: Dict[str, Any], seed_text: str) -> Tuple[Dict[str, Any], str]:
-    s = parse_seed(seed_text)
-    if not s.ok:
-        return state, s.error or "invalid_action"
-    nxt = copy.deepcopy(state)
-    for a in s.atoms:
-        if a.dell == 8:
-            uid = (s.label or a.term or "idea").replace(" ", "_")
-            nxt.setdefault("units", {})[uid] = uid
-        elif a.dell == 55:
-            k, _, v = (s.label or "").partition("=")
-            if k:
-                nxt.setdefault("store", {})[k] = v
-        elif a.dell == 86:
-            key = s.label or ""
-            if key not in nxt.get("store", {}) and key not in nxt.get("units", {}):
-                return state, "delete_missing"
-            nxt.get("store", {}).pop(key, None)
-            nxt.get("units", {}).pop(key, None)
-        elif a.dell == 51:
-            nxt["selected"] = list(nxt.get("units", {}))
-        else:
-            nxt.setdefault("trace", []).append(a.dell)
-    nxt["trace"] = list(nxt.get("trace") or []) + [a.dell for a in s.atoms]
-    return nxt, ""
-
-
 def cheat_from_state(state: Dict[str, Any], actions: List[str], temp: str = "hot") -> Dict[str, Any]:
-    horizon = {"cold": 1, "warm": 2, "hot": 3}.get((temp or "hot").lower(), 3)
-    steps = actions[:horizon]
-    out = []
-    cur = copy.deepcopy(state)
+    from form.open import open_program
+    from .canonical import cheat_project
     origin = copy.deepcopy(state)
-    for i, act in enumerate(steps, 1):
-        nxt, err = _apply(cur, act)
-        if err:
-            return {"ok": False, "error": err, "steps": out, "origin": origin}
-        pred = {"added_units": sorted(set(nxt.get("units", {})) - set(cur.get("units", {}))), "store": nxt.get("store")}
-        out.append({"iteration": i, "candidate_action": act, "predicted_delta": pred, "candidate_next_state": nxt, "assumptions": [f"from_iter:{i-1}"], "uncertainty": round(0.25 * i, 2), "label": "PROJECTED_NOT_FACT"})
-        cur = nxt
-    return {"ok": True, "steps": out, "origin": origin, "final_projected": cur, "origin_unchanged": origin == state}
+    program = state if hasattr(state, "core_ii") else open_program("CHEAT_SANDBOX")
+    res = cheat_project(program, actions, temp)
+    steps = []
+    for step in res.get("steps") or []:
+        nxt = step.get("candidate_next_state") or {}
+        steps.append({"iteration": step["iteration"], "candidate_action": step["candidate_action"], "predicted_delta": step.get("predicted_delta"), "candidate_next_state": {"units": nxt.get("units") or {}, "store": nxt.get("store") or {}}, "assumptions": step.get("assumptions"), "uncertainty": step.get("uncertainty"), "label": "PROJECTED_NOT_FACT"})
+        if nxt.get("error") and not nxt.get("ok"):
+            return {"ok": False, "error": nxt.get("error"), "steps": steps, "origin": origin}
+    return {"ok": True, "steps": steps, "origin": origin, "final_projected": steps[-1]["candidate_next_state"] if steps else origin, "origin_unchanged": origin == state}
 
 
 def route_value(c: Dict[str, float]) -> Dict[str, Any]:
