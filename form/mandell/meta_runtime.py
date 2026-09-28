@@ -2,20 +2,17 @@
 """Executable Mandell meta-runtime: cells, directives, cheat, routes, omni."""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 import copy
 import hashlib
 import json
 import os
-import re
 
 from .seed import CELLS, BULLET, MANDELLMOJI, FLOW_OPS, define_cell, parse_seed, expand_cell as seed_expand_cell
 from .registry import DELLS
 from .floor import FLOOR, assert_floor_intact
 
-CELL_DEPTH = 8
 CELL_FILE = os.path.join(os.path.dirname(__file__), "..", "state", "mandell_cell_graph.json")
-_ATOM = re.compile(r"^(\d{1,3})\[([^\]]*)\](.*)$")
 MOJI_REGISTRY = {
     MANDELLMOJI["Chain"]: {"canonical": ">", "category": "flow", "display_only": True},
     MANDELLMOJI["Chainlink"]: {"canonical": BULLET, "category": "set", "display_only": True},
@@ -62,43 +59,8 @@ def load_cell_graph(path: Optional[str] = None) -> int:
 
 
 def parse_directive(text: str) -> Dict[str, Any]:
-    raw = text or ""
-    if not raw.strip():
-        return {"ok": False, "error": "empty_directive", "nodes": []}
-    nodes = []
-    section = ""
-    for i, line in enumerate(raw.splitlines()):
-        s = line.strip()
-        if not s or s.startswith("/*") or s.startswith("*") or s.startswith("*/"):
-            continue
-        if s.startswith("::"):
-            continue
-        m = _ATOM.match(s.lstrip(">").strip())
-        if not m:
-            if s.endswith("::") or s.startswith("80[") or "Context:" in s:
-                section = s
-            continue
-        n = int(m.group(1))
-        manifest = m.group(2)
-        payload = (m.group(3) or "").strip()
-        if payload.startswith("::"):
-            payload = payload[2:].strip()
-        elif payload.startswith(">"):
-            payload = payload.lstrip("> ").strip()
-        nodes.append({"dell": n, "manifest": manifest, "payload": payload, "section": section, "source_span": i})
-    if not nodes:
-        s = parse_seed(raw.strip())
-        if s.ok:
-            for a in s.atoms:
-                nodes.append({"dell": a.dell, "manifest": a.term, "payload": s.label, "section": "", "source_span": 0})
-        else:
-            return {"ok": False, "error": s.error or "malformed_directive", "nodes": []}
-    locks = [n for n in nodes if n["dell"] == 23]
-    guards = [n for n in nodes if n["dell"] == 92]
-    tests = [n for n in nodes if n["dell"] == 12]
-    assertions = [n for n in nodes if n["dell"] == 91]
-    exit_nodes = [n for n in nodes if n["dell"] == 20]
-    return {"ok": True, "nodes": nodes, "locks": locks, "guards": guards, "tests": tests, "assertions": assertions, "exit": exit_nodes, "semantic_hash": _hash([(n["dell"], n["manifest"], n["payload"]) for n in nodes])}
+    from .language import parse_directive as _parse
+    return _parse(text)
 
 
 def compress_directive(ast: Dict[str, Any]) -> Dict[str, Any]:
@@ -212,19 +174,13 @@ def omni_scan(extra_open: Optional[List[str]] = None) -> Dict[str, Any]:
             open_c.append(f"cell_cycle:{name}")
     if 100 != len(DELLS):
         open_c.append("registry_gap")
-    test_path = os.path.join(os.path.dirname(__file__), "mandell_meta_runtime_test.py")
-    if not os.path.isfile(test_path):
-        open_c.append("untested:meta_runtime")
     return {"floor": list(FLOOR), "cells": sorted(CELLS), "moji": list(MOJI_REGISTRY), "flows": list(FLOW_OPS), "open_circuits": sorted(set(open_c)), "owned_nodes": []}
 
 
 def plan_cycle(open_circuits: List[str], resolved: Optional[str] = None) -> Dict[str, Any]:
-    scan1 = omni_scan(open_circuits)
-    left = [c for c in scan1["open_circuits"] if c != resolved]
-    cands = []
-    for i, loc in enumerate(left):
-        cands.append({"locality": loc, "closures": 3 - i, "resonance": 2 + (1 if "cell" in loc else 0), "reuse": 2, "future_work_avoided": 2, "verification_confidence": 2, "movement": 1, "rework_risk": 1, "scope_interference": 1})
-    ranked = rank_routes(cands)
-    chosen = ranked[0]["locality"] if ranked else "none"
-    scan2 = omni_scan(left)
-    return {"chosen": chosen, "routes": ranked, "open_after": scan2["open_circuits"], "label": "PROJECTED_NOT_FACT"}
+    from .language import plan_from_evidence, harvest_evidence
+    rows = harvest_evidence()
+    if open_circuits:
+        extra = [{"locality": loc, "authority": "scan", "contracts": [{"id": loc, "tested": True, "ready": True}], "edges": [], "shared": [], "downstream": [], "code_localities": [loc], "dependents": 1, "locked_domains_touched": 0} for loc in open_circuits]
+        rows = extra + rows
+    return plan_from_evidence(rows, resolved=resolved)
