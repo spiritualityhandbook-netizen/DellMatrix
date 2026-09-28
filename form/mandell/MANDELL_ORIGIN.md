@@ -120,5 +120,6 @@ Runtime locality is closed at 51-99. 100-999 stay reserved.
 - Abstraction 97-99 stores definitions; Compose runs the normal executor
 - `last_result`, frames, flow traces, tx, snapshots, staged, and limit are transient
 - Store/defs/aliases/compositions/groups/refs/causes/deps/weights are durable
+- Composition expansion bound is `72[Limit]` or 8; cycles fail before execution
 
 Grammar truth is Unicode-aware. The ManifestSet separator is `•` (U+2022). Emoji is display alias only.
