@@ -67,7 +67,7 @@ def serialize_core_ii(program: Any) -> Dict[str, Any]:
         "present": True,
         "scope": str(st.scope or "plane"),
         "selected": [str(x) for x in list(st.selected or [])],
-        "store": _json_safe(dict(st.store or {})),
+        "store": _json_safe({k: v for k, v in dict(st.store or {}).items() if k != "_last_result"}),
         "groups": {str(k): [str(x) for x in list(v or [])] for k, v in dict(st.groups or {}).items()},
         "defs": {str(k): str(v) for k, v in dict(st.defs or {}).items()},
         "aliases": {str(k): str(v) for k, v in dict(st.aliases or {}).items()},
