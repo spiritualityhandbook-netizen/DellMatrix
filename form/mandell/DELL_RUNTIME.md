@@ -1,63 +1,74 @@
 # Dell runtime coverage
 
-Registry names all 00–50. Executor density below.
+Authoritative namespaces on Form:
 
-## Dense (real behavior)
+- CORE_I `00-50` — locked action spine. Executor leaf path.
+- CORE_II `51-99` — instruction architecture. `core_ii_exec.py` + `chain_exec.py`.
+- ADDRESS `100-999` — reserved. Not production-active.
 
-| Dell | Name | Behavior |
-|------|------|----------|
-| 00 | Nova | edge note, floor locked |
-| 01 | Initiate | owner init |
-| 02 | Persona | avatar status |
-| 03 | Logic | live constraints |
-| 04 | Transform | turn/sit/stand/jump/toggle |
-| 05 | Tone | expression |
-| 06 | Cycle | grow N + rings |
-| 07 | Link | place link idea |
-| 08 | Create | place idea |
-| 09 | Show | render / visual / lattice |
-| 10 | Keep | save session |
-| 11 | Architect | schema snapshot |
-| 12 | Test | structural checks |
-| 13 | Loop | RingedGrowth |
-| 14 | Bind | place bind idea |
-| 15 | Map | form + place |
-| 16 | Decay | score decay |
-| 17 | Shadow | parallel non-live |
-| 18 | Mirror | list live ideas |
-| 19 | Drive | walk/run/stop |
-| 20 | Alpha | finalize surface |
-| 21 | Merge | place merge |
-| 22 | Split | two child ideas |
-| 23 | Lock | sandbox on |
-| 24 | Unlock | sandbox off |
-| 25 | Pulse | enhance / pulse |
-| 26 | Temp | cold/warm/hot |
-| 27 | Checkpoint | snapshot |
-| 28 | Rollback | load |
-| 29 | Compress | short idea |
-| 30 | Expand | unfold idea |
-| 31 | Simulate | dry-run status |
-| 32 | Pause | idle / enhance off |
-| 33 | Resume | walk + enhance |
-| 34 | Stamp | time mark |
-| 35 | Discover | status/nursery/shell |
-| 36 | Inject | place seed |
-| 37 | Stream | chunked history |
-| 38 | Distill | summarize idea |
-| 39 | Schema | validate shape |
-| 40 | TokenCount | session weight |
-| 41 | Sanitize | strip secrets |
-| 42 | Retry | re-run last seed |
-| 43 | Fallback | safe path |
-| 44 | Bridge | external posture |
-| 45 | Translate | EN ↔ Mandell |
-| 46 | Rank | nursery affinity |
-| 47 | Embed | visual |
-| 48 | Macro | history macro / replay |
-| 49 | Profile | benchmark snapshot |
-| 50 | Manifest | acceptance / place |
+Multi-atom seeds execute every atom in order. CORE_I atoms use the existing leaf executor. CORE_II atoms use `execute_core_ii`. Registering a number is not completion.
 
-## Residual
+## CORE_I 00-50
 
-Further densify **on demand only** — coverage is production-usable for Origin path.
+Behavior table unchanged. Single-atom CORE_I seeds take the original `execute_seed` leaf path (`_leaf=True` or one atom `<51`).
+
+## CORE_II 51-99 — FORMALIZED runtime
+
+| Dell | Name | Runtime |
+|------|------|---------|
+| 51 | Select | scope selection set |
+| 52 | Filter | reduce selected |
+| 53 | Scope | set execution boundary |
+| 54 | Query | read selected/store |
+| 55 | Set | assign store key |
+| 56 | Get | read store key |
+| 57 | Compare | structured compare |
+| 58 | Match | pattern filter |
+| 59 | Route | set route |
+| 60 | Branch | record conditional |
+| 61 | Join | rejoin marker |
+| 62 | Parallel | declare concurrent set |
+| 63 | Sequence | declare order |
+| 64 | Until | condition marker |
+| 65 | While | condition marker |
+| 66 | ForEach | iterate selected |
+| 67 | Any | existential |
+| 68 | All | universal |
+| 69 | None | absence |
+| 70 | Count | cardinality |
+| 71 | Measure | quantify selected |
+| 72 | Limit | bound |
+| 73 | Threshold | boundary marker |
+| 74 | Weight | relative influence |
+| 75 | Normalize | scale weights |
+| 76 | Resolve | manifest resolver |
+| 77 | Infer | labeled PROJECTED_NOT_FACT |
+| 78 | Cause | causal edge |
+| 79 | Depend | dependency edge |
+| 80 | Context | semantic frame |
+| 81 | Reference | address without copy |
+| 82 | Group | collect |
+| 83 | Ungroup | inverse of group |
+| 84 | Copy | duplicate, original intact |
+| 85 | Move | relocate, identity preserved |
+| 86 | Delete | controlled remove |
+| 87 | Replace | atomic swap |
+| 88 | Patch | partial update |
+| 89 | Diff | change-set snapshot |
+| 90 | Trace | provenance log |
+| 91 | Assert | invariant |
+| 92 | Guard | block/allow |
+| 93 | Try | snapshot + depth |
+| 94 | Catch | consume last_error |
+| 95 | Commit | stage snap |
+| 96 | Revert | restore snapshot |
+| 97 | Define | reusable definition |
+| 98 | Alias | name bind |
+| 99 | Compose | reusable chain body |
+
+Status: FORMALIZED executable state on `program.core_ii`.
+Not a 15-layer full-operator claim. Persistence/UI/hardware still open.
+
+## ADDRESS 100-999
+
+Reserved. See `address_space.py`. Do not execute as active operators.
