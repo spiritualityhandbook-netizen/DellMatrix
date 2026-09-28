@@ -2,15 +2,19 @@
 
 Authoritative namespaces on Form:
 
-- CORE_I `00-50` — locked action spine. Executor leaf path.
+- CORE_I `00-50` — locked action spine. Executor leaf path (`execute_seed(..., _leaf=True)`).
 - CORE_II `51-99` — instruction architecture. `core_ii_exec.py` + `chain_exec.py`.
 - ADDRESS `100-999` — reserved. Not production-active.
 
-Multi-atom seeds execute every atom in order. CORE_I atoms use the existing leaf executor. CORE_II atoms use `execute_core_ii`. Registering a number is not completion.
+Front door: `form.mandell.executor.execute_seed`.
+If the seed has more than one atom, or the primary Dell is 51-99, `execute_seed` dispatches to `execute_chain`.
+`execute_chain` runs every atom in order. CORE_I atoms use the leaf executor. CORE_II atoms use `execute_core_ii`.
+Registering a number is not completion. Branch presence is not completion.
 
 ## CORE_I 00-50
 
-Behavior table unchanged. Single-atom CORE_I seeds take the original `execute_seed` leaf path (`_leaf=True` or one atom `<51`).
+Single-atom CORE_I seeds take the original `execute_seed` leaf path.
+Multi-atom seeds that include CORE_I still execute those CORE_I atoms via `_leaf=True`.
 
 ## CORE_II 51-99 — FORMALIZED runtime
 
@@ -68,6 +72,7 @@ Behavior table unchanged. Single-atom CORE_I seeds take the original `execute_se
 
 Status: FORMALIZED executable state on `program.core_ii`.
 Not a 15-layer full-operator claim. Persistence/UI/hardware still open.
+Until/While/Parallel/Branch are real control records, not a full scheduler.
 
 ## ADDRESS 100-999
 

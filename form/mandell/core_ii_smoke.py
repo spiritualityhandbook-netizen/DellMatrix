@@ -9,6 +9,7 @@ from .core_ii import CORE_II, dvs_floor
 from .address_space import RESERVED_DOMAIN, family_of, OLD_TO_NEW
 from .core_ii_exec import CoreIIState, execute_core_ii, attach
 from .chain_exec import execute_chain
+from .executor import execute_seed
 
 
 class _P:
@@ -102,6 +103,14 @@ def smoke() -> bool:
     execute_core_ii(p7, 98, "Alias", "Done=Complete", [])
     execute_core_ii(p7, 99, "Compose", "Complete=35>18>39>12", [])
     rec("higher_order", "Complete" in p7.core_ii.defs and "Done" in p7.core_ii.aliases and "Complete" in p7.core_ii.compositions)
+
+    p8 = _P()
+    dispatched = execute_seed(p8, "53[Scope] > 51[Select] > 70[Count] :: nursery")
+    rec("executor_front_door_chain", dispatched.get("chain_ran") == [53, 51, 70])
+
+    p9 = _P()
+    single = execute_seed(p9, "51[Select] :: nursery")
+    rec("executor_front_door_single_core_ii", single.get("chain_ran") == [51])
 
     rec("dvs_formalized", dvs_floor()["core_ii_status"] == "FORMALIZED")
 
