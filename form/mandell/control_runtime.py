@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 DEFAULT_BOUND = 8
+MAX_DEPTH = 4
+CONTROL_HEADS = {60, 62, 63, 64, 65, 66}
 
 
 @dataclass
@@ -70,8 +72,8 @@ def eval_condition(st: Any, program: Any, expr: str) -> bool:
         return True
     if e in ("fail", "false", "block", "deny", "no"):
         return False
-    if e.startswith("store:"):
-        key = raw.split(":", 1)[1]
+    if e.startswith("store:") or e.startswith("store_"):
+        key = raw.split(":", 1)[1] if e.startswith("store:") else raw.split("_", 1)[1]
         val = st.store.get(key) if st is not None else None
         return bool(val) and str(val).lower() not in ("0", "false", "off", "")
     for op in ("lte", "gte", "eq", "ne", "lt", "gt"):
@@ -129,19 +131,39 @@ def _compare(left: Any, right: Any, op: str) -> bool:
     return False
 
 
-def find_join(atoms: List[Any], start: int) -> int:
-    for i in range(start, len(atoms)):
-        if int(getattr(atoms[i], "dell", -1)) == 61:
-            return i
-    return len(atoms)
+def find_join(atoms: List[Any], start: int, end: Optional[int] = None) -> int:
+    depth = 0
+    last = len(atoms) if end is None else end
+    for i in range(start, last):
+        n = int(getattr(atoms[i], "dell", -1))
+        if n in CONTROL_HEADS:
+            depth += 1
+        elif n == 61:
+            if depth == 0:
+                return i
+            depth -= 1
+    return last
 
 
-def find_else(atoms: List[Any], start: int, end: int) -> int:
+def find_else(atoms: List[Any], start: int, end: int) -> tuple:
+    depth = 0
+    found = None
+    count = 0
     for i in range(start, end):
-        atom = atoms[i]
-        if int(getattr(atom, "dell", -1)) == 59:
-            return i
-    return end
+        n = int(getattr(atoms[i], "dell", -1))
+        if n in CONTROL_HEADS:
+            depth += 1
+        elif n == 61:
+            depth = max(0, depth - 1)
+        elif n == 59 and depth == 0:
+            count += 1
+            if found is None:
+                found = i
+    if count > 1:
+        return ("multi", found if found is not None else end)
+    if found is None:
+        return ("none", end)
+    return ("one", found)
 
 
 FLOW_CONTRACT = {

@@ -91,3 +91,18 @@ Separator is `•` (U+2022). Not `,`. Not `_`.
 - **Mandellacell** — reusable named seed (`define_cell` / `expand_cell`)
 - **DeltaDirective** — send only new work against a verified HEAD
 - **EvidenceCell** — HEAD · SHA · tests · failures · unresolved
+
+---
+
+## Control 60-66
+
+```
+60[true] > TRUE_BODY > 59[Else] > FALSE_BODY > 61[Join]
+```
+
+- Missing `59[Else]` is a valid single-arm branch
+- Two `59[Else]` markers in one branch fail explicitly
+- Nesting is allowed for Branch, Parallel, Sequence, Until, While, ForEach
+- Depth cap is 4; loop cap is `72[Limit]` or 8
+- Parallel is deterministic same-process collection, not threads
+- Control frames / flow traces are runtime-only and are not persisted in v7
