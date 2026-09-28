@@ -16,7 +16,7 @@ def smoke() -> bool:
         r.append(bool(ok))
 
     def lr(p):
-        return getattr(p.core_ii, "last_result", None) or p.core_ii.store.get("_last_result") or {}
+        return getattr(p.core_ii, "last_result", None) or {}
 
     p = open_program("Sel")
     execute_seed(p, "51[Select] :: zzznomatch")
@@ -143,7 +143,7 @@ def smoke() -> bool:
     execute_seed(p, "58[Match] :: welcome")
     execute_seed(p, "67[Any] :: welcome")
     execute_seed(p, "73[Threshold] :: gte:count 1")
-    out = execute_seed(p, "60[store__threshold] > 80[TrueArm] > 61[Join]")
+    out = execute_seed(p, "60[last_result] > 80[TrueArm] > 61[Join]")
     rec("predicate_pipeline", p.core_ii.context == "TrueArm")
     rec("control_consumes_same_predicate_engine", 80 in out.get("chain_ran", []))
 
