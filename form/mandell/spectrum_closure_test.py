@@ -127,7 +127,7 @@ def smoke() -> bool:
     execute_seed(p, "58[Match] :: welcome")
     execute_seed(p, "67[Any] :: welcome")
     execute_seed(p, "73[Threshold] :: gte:count 1")
-    execute_seed(p, "60[store__threshold] > 80[TrueArm] > 91[true]")
+    execute_seed(p, "60[last_result] > 80[TrueArm] > 91[true]")
     rec("predicate_circuit_end_to_end", p.core_ii.last_assert == "PASS")
 
     p = open_program("Obj")
@@ -155,6 +155,146 @@ def smoke() -> bool:
     execute_seed(p, "54[Query]")
     rec("last_result_present_runtime", bool(p.core_ii.last_result))
     rec("store_user_durable_not_auto_derived", "_last_result" not in p.core_ii.store)
+
+    from form.mandell.control_runtime import eval_condition
+    from form.mandell.predicate import eval_predicate
+    p = open_program("PredAuth")
+    execute_seed(p, "51[Select]")
+    rec("single_predicate_authority", eval_condition(p.core_ii, p, "any:welcome") == bool(eval_predicate(p.core_ii, p, "any:welcome").get("matched")))
+
+    p = open_program("NoLeak2")
+    execute_seed(p, "73[Threshold] :: gte:count 0")
+    rec("no_derived_store_leak", "_threshold" not in p.core_ii.store and "_last_result" not in p.core_ii.store)
+
+    p = open_program("CopyMut")
+    execute_seed(p, "80[Context] :: copy")
+    p.core_ii.store["k"] = ["a"]
+    execute_seed(p, "84[Copy] :: k")
+    p.core_ii.store["copy_k"].append("b")
+    rec("copy_mutable_independence", p.core_ii.store["k"] == ["a"] and p.core_ii.store["copy_k"] == ["a", "b"])
+
+    p = open_program("FailCk")
+    execute_seed(p, "55[Set] :: k=1")
+    snaps = len(p.core_ii.snapshots)
+    execute_seed(p, "86[Delete] :: missing")
+    rec("failed_mutation_no_checkpoint", len(p.core_ii.snapshots) == snaps)
+
+    p = open_program("DiffImm")
+    execute_seed(p, "55[Set] :: a=1")
+    execute_seed(p, "55[Set] :: b=1")
+    execute_seed(p, "88[Patch] :: b=2")
+    execute_seed(p, "89[Diff]")
+    rec("diff_immediate_baseline", p.core_ii.last_diff.get("changed") == ["b"] and p.core_ii.last_diff.get("baseline") == "immediate")
+
+    p = open_program("DiffTx")
+    execute_seed(p, "55[Set] :: a=1")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "88[Patch] :: a=2")
+    execute_seed(p, "89[Diff]")
+    rec("diff_transaction_baseline", p.core_ii.last_diff.get("baseline") == "transaction" and "a" in p.core_ii.last_diff.get("changed"))
+
+    p = open_program("DiffClean")
+    execute_seed(p, "55[Set] :: a=1")
+    execute_seed(p, "88[Patch] :: a=2")
+    execute_seed(p, "55[Set] :: b=1")
+    execute_seed(p, "88[Patch] :: b=2")
+    execute_seed(p, "89[Diff]")
+    rec("diff_no_snapshot_contamination", p.core_ii.last_diff.get("changed") == ["b"])
+
+    p = open_program("TxOC")
+    execute_seed(p, "55[Set] :: k=1")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "88[Patch] :: k=2")
+    execute_seed(p, "95[Commit]")
+    rec("tx_open_commit", p.core_ii.store.get("k") == "2" and p.core_ii.tx[-1]["status"] == "committed")
+
+    p = open_program("TxOR")
+    execute_seed(p, "55[Set] :: k=1")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "88[Patch] :: k=2")
+    execute_seed(p, "96[Revert]")
+    rec("tx_open_revert", p.core_ii.store.get("k") == "1" and p.core_ii.tx[-1]["status"] == "reverted")
+
+    p = open_program("TxFC")
+    execute_seed(p, "55[Set] :: k=1")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "91[false]")
+    rec("tx_failure_sets_failed", p.core_ii.tx[-1]["status"] == "failed")
+    execute_seed(p, "94[Catch]")
+    rec("tx_failure_catch", p.core_ii.tx[-1]["status"] == "caught")
+
+    p = open_program("TxNext")
+    execute_seed(p, "55[Set] :: k=1")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "88[Patch] :: k=bad")
+    execute_seed(p, "91[false]")
+    execute_seed(p, "94[Catch]")
+    execute_seed(p, "96[Revert]")
+    rec("tx_catch_next_transition", p.core_ii.store.get("k") == "1" and p.core_ii.tx[-1]["status"] == "reverted")
+
+    p = open_program("TxNestR")
+    execute_seed(p, "55[Set] :: k=1")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "88[Patch] :: k=outer")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "88[Patch] :: k=inner")
+    execute_seed(p, "96[Revert]")
+    rec("tx_nested_inner_revert", p.core_ii.store.get("k") == "outer" and sum(1 for f in p.core_ii.tx if f.get("status") == "open") == 1)
+
+    p = open_program("TxNestC")
+    execute_seed(p, "55[Set] :: k=1")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "88[Patch] :: k=outer")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "88[Patch] :: k=inner")
+    execute_seed(p, "95[Commit]")
+    rec("tx_nested_inner_commit", p.core_ii.store.get("k") == "inner" and p.core_ii.tx[-1]["status"] == "committed" and p.core_ii.tx[0]["status"] == "open")
+
+    p = open_program("TxRef")
+    execute_seed(p, "55[Set] :: k=1")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "95[Commit]")
+    out = execute_seed(p, "96[Revert]")
+    rec("tx_committed_revert_refused", out.get("error") == "unrelated_revert")
+
+    p = open_program("TxHist")
+    execute_seed(p, "93[Try]")
+    execute_seed(p, "95[Commit]")
+    rec("tx_history_lifecycle", len(p.core_ii.tx) == 1 and p.core_ii.tx[0]["status"] == "committed" and p.core_ii.try_depth == 0)
+
+    p = open_program("CycD")
+    out = execute_seed(p, "99[Compose] :: Loop=Loop")
+    rec("compose_direct_cycle", out.get("error") == "compose_cycle")
+
+    p = open_program("CycI")
+    execute_seed(p, "80[Context] :: cyc")
+    p.core_ii.compositions["A"] = "B"
+    p.core_ii.compositions["B"] = "A"
+    out = execute_seed(p, "99[Compose] :: A")
+    rec("compose_indirect_cycle", out.get("error") == "compose_cycle")
+
+    p = open_program("CycA")
+    execute_seed(p, "99[Compose] :: Path=80")
+    execute_seed(p, "98[Alias] :: X=Path")
+    out = execute_seed(p, "99[Compose] :: Path=X")
+    rec("compose_alias_cycle", out.get("error") == "compose_cycle")
+
+    p = open_program("CycN")
+    execute_seed(p, "99[Compose] :: Leaf=80")
+    execute_seed(p, "99[Compose] :: Wrap=Leaf")
+    rec("compose_valid_nested", "Wrap" in p.core_ii.compositions and any(tr.startswith("80") for tr in p.core_ii.traces))
+
+    p = open_program("CycB")
+    execute_seed(p, "72[Limit] :: 1")
+    p.core_ii.compositions["C"] = "80"
+    p.core_ii.compositions["B"] = "C"
+    p.core_ii.compositions["A"] = "B"
+    out = execute_seed(p, "99[Compose] :: A")
+    rec("compose_depth_bound", out.get("error") == "compose_depth" and not any(x.startswith("80") for x in p.core_ii.traces))
+
+    rec("last_result_transient_runtime", "last_result" not in (serialize(open_program("T2") or p).get("core_ii") or {}))
+    p = open_program("LR2")
+    execute_seed(p, "54[Query]")
     rec("last_result_transient_runtime", "last_result" not in (serialize(p).get("core_ii") or {}))
 
     print(f"=== {sum(r)}/{len(r)} ===")
