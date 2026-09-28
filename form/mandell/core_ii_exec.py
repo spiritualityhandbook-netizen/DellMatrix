@@ -37,6 +37,7 @@ class CoreIIState:
     flow_blocked: List[str] = field(default_factory=list)
     control_steps: int = 0
     last_result: Dict[str, Any] = field(default_factory=dict)
+    tx: List[Dict[str, Any]] = field(default_factory=list)
     def snap(self) -> Dict[str, Any]:
         return {"scope": self.scope, "selected": list(self.selected), "store": dict(self.store),
                 "groups": {k: list(v) for k, v in self.groups.items()}, "defs": dict(self.defs),
@@ -128,83 +129,13 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             frame = ControlFrame(id=f"fe{len(st.frames)}", kind="foreach", status="pending", body=list(range(len(ids))))
             st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
             messages.append(f"ForEach n={len(ids)} op={lab or 'identity'} empty_ok={len(ids)==0}")
-        elif n == 80: st.context=lab or st.scope; messages.append(f"Context -> {st.context}")
-        elif n == 81:
-            target=lab or (st.selected[0] if st.selected else ""); st.refs[target or "ref"]=target
-            messages.append(f"Reference {target or '(none)'}")
-        elif n == 82:
-            name=lab or "group"; st.groups[name]=list(st.selected or _ids(program)); messages.append(f"Group {name} n={len(st.groups[name])}")
-        elif n == 83:
-            name=lab or (list(st.groups)[-1] if st.groups else ""); members=st.groups.pop(name, [])
-            messages.append(f"Ungroup {name} released={len(members)}")
-        elif n == 84:
-            src=lab or (st.selected[0] if st.selected else "object"); st.store[f"copy_{src}"]=st.store.get(src, src)
-            messages.append(f"Copy {src} original_intact")
-        elif n == 85:
-            src,_,dest=lab.partition(">"); src,dest=src.strip(),dest.strip()
-            if src in st.store and dest: st.store[dest]=st.store.pop(src)
-            messages.append(f"Move {src}->{dest or '(none)'} identity_preserved")
-        elif n == 86:
-            key=lab
-            if key in st.store: shot(); st.store.pop(key, None); messages.append(f"Delete store[{key}]")
-            elif key in st.groups: shot(); st.groups.pop(key, None); messages.append(f"Delete group[{key}]")
-            else: ok=False; err=f"delete_missing:{key or 'empty'}"; messages.append(f"Delete miss {key or '(empty)'}")
-        elif n == 87:
-            old,_,new=lab.partition(">"); old,new=old.strip(),new.strip(); shot()
-            if old in st.store: st.store[new or old]=st.store.pop(old)
-            messages.append(f"Replace {old}->{new}")
-        elif n == 88:
-            key,_,val=lab.partition("="); key=key.strip()
-            if key in st.store: shot(); st.store[key]=val; messages.append(f"Patch {key}={val}")
-            else: ok=False; err=f"patch_miss:{key}"; messages.append(f"Patch miss {key}")
-        elif n == 89:
-            st.last_diff={"label":lab,"selected":list(st.selected),"store_keys":list(st.store)}
-            messages.append(f"Diff keys={list(st.last_diff)}")
-        elif n == 90:
-            messages.append(f"Trace last {min(8,len(st.traces))}:")
-            for t in st.traces[-8:]: messages.append(f"  · {t}")
-            if not st.traces: messages.append("  (empty)")
-        elif n == 91:
-            passed=bool(st.selected or _ids(program) or st.store or lab=="true")
-            if lab.lower() in ("fail","false"): passed=False
-            st.last_assert="PASS" if passed else "FAIL"; messages.append(f"Assert {st.last_assert} {lab or 'nonempty'}")
-            if not passed: ok=False; err="assert_fail"
-        elif n == 92:
-            allow=lab.lower() not in ("block","deny","false"); st.last_guard="ALLOW" if allow else "BLOCK"
-            messages.append(f"Guard {st.last_guard} {lab or 'default'}")
-            if not allow: ok=False; err="guard_block"
-        elif n == 93:
-            st.try_depth += 1; shot(); messages.append(f"Try depth={st.try_depth} {lab}")
-        elif n == 94:
-            messages.append(f"Catch {st.last_error or lab or '(no error)'}"); st.last_error=""
-        elif n == 95:
-            st.staged.append({"op":"commit","label":lab,"snap":st.snap()}); messages.append(f"Commit staged={len(st.staged)}")
-        elif n == 96:
-            if st.snapshots:
-                prev=st.snapshots.pop()
-                st.scope=prev.get("scope", st.scope)
-                st.store=dict(prev["store"]) if "store" in prev else dict(st.store)
-                st.selected=list(prev["selected"]) if "selected" in prev else list(st.selected)
-                if st.try_depth: st.try_depth -= 1
-                messages.append(f"Revert restored snapshots={len(st.snapshots)}")
-            elif st.staged:
-                st.staged.pop(); messages.append(f"Revert staged now={len(st.staged)}")
-            else: messages.append("Revert nothing")
-        elif n == 97:
-            name,_,meaning=lab.partition("="); st.defs[(name or "def").strip()]=meaning or lab; messages.append(f"Define {name or 'def'}")
-        elif n == 98:
-            name,_,target=lab.partition("="); st.aliases[(name or "alias").strip()]=target or lab; messages.append(f"Alias {name or 'alias'}->{target or lab}")
-        elif n == 99:
-            name,_,body=lab.partition("="); st.compositions[(name or "compose").strip()]=body or lab; messages.append(f"Compose {name or 'compose'}={body or lab}")
+        elif 80 <= n <= 99:
+            from .spectrum_ops import apply_spectrum
+            ok, err = apply_spectrum(n, st, program, lab, term, messages, _ids, shot)
         else:
             ok=False; err=f"unmapped:{n}"; messages.append(f"Core II Dell {n} unmapped")
     except Exception as exc:
         ok=False; err=str(exc); st.last_error=err; messages.append(f"Core II fail {n}: {err}")
     if not ok: st.last_error = err or st.last_error
-    if getattr(st, "last_result", None):
-        cell = {}
-        for k, v in st.last_result.items():
-            cell[k] = list(v) if isinstance(v, tuple) else v
-        st.store["_last_result"] = cell
     mark()
     return {"ok": ok, "error": err, "dell": n, "core_ii": st.snap(), "result": dict(st.last_result or {})}
