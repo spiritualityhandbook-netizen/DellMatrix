@@ -1,16 +1,43 @@
 # Core II runtime
 
-Status: **FORMALIZED**. Not full maturity. Certified only against the closed 51-99 contracts.
+Status: **FORMALIZED**. Certification is the passing 51-99 contract suite on the same HEAD.
 
 ## Persistence
 
 Durable: scope selected store groups defs aliases compositions weights context route refs causes deps last_assert last_guard
 
-Transient: last_result frames last_frame last_control flow_taken flow_blocked tx snapshots staged try_depth traces limit
+Transient: last_result last_diff frames last_frame last_control flow_taken flow_blocked tx snapshots staged try_depth traces limit
 
-Limit is a session bound for loops. It is not world state.
+Limit is a session bound for loops and composition expansion. It is not world state.
 
-Snapshots and staged lists are transaction runtime only.
+`last_result` is never written into store. `73[Threshold]` does not write `_threshold`. Durable threshold values require explicit `55[Set]`.
+
+## Diff baseline
+
+- Inside an active transaction: checkpoint of that transaction
+- Otherwise: prestate of the last successful 84-88 mutation
+- Unrelated older snapshots are not used
+
+## Transaction model
+
+States: OPEN · FAILED · CAUGHT · COMMITTED · REVERTED
+
+Legal transitions:
+- OPEN → COMMITTED
+- OPEN → FAILED → CAUGHT
+- OPEN → REVERTED
+- FAILED → CAUGHT
+- FAILED → REVERTED
+- CAUGHT → COMMITTED
+- CAUGHT → REVERTED
+
+COMMITTED and REVERTED are immutable. `try_depth` counts only active frames. Terminal frames stay in history for trace and do not change execution.
+
+Catch next action is explicit: revert restores the checkpoint; commit accepts current durable state.
+
+## Composition bound
+
+Expansion bound is `72[Limit]` when valid, else 8. Direct, indirect, and alias cycles fail with `compose_cycle` before execution. Depth overflow fails with `compose_depth` and does not run the body.
 
 ## Semantic boundaries
 
@@ -27,10 +54,6 @@ Snapshots and staged lists are transaction runtime only.
 | 53 Scope | 36 Inject | semantic frame vs injection |
 | 85 Move | 19 Drive | ownership transfer vs drive |
 | 70 Count | 40 TokenCount | selection cardinality vs token count |
-
-## Transaction law
-
-93 opens a checkpointed frame. 95 accepts in-place mutations. 96 restores an open frame only. A committed frame rejects unrelated revert.
 
 ## Nursery
 
