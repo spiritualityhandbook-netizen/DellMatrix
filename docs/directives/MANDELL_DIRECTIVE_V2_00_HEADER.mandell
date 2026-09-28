@@ -1,0 +1,28 @@
+00[Nova] > 01[Initiate] > 23[Lock] > 34[Stamp] > 11[Architect] > 39[Schema] > 03[Logic] > 35[Discover] > 18[Mirror] > 45[Translate] > 76[Resolve] > 12[Test] > 49[Profile] > 10[Keep] > 50[Manifest] :: MANDELL_DIRECTIVE_V2
+
+34[Stamp] > 10[Keep] > 23[Lock] :: BASELINE_PARENT_9FC9DD2D51D626FDD3FC0954F721880359B70ADD
+
+03[Logic] > 39[Schema] > 12[Test] > 50[Manifest] :: NEVER_REPORT_DESIRED_STATE_AS_IMPLEMENTED_STATE
+03[Logic] > 39[Schema] > 12[Test] > 50[Manifest] :: NEVER_REPORT_BRANCH_PRESENCE_AS_FULL_OPERATOR_COMPLETION
+03[Logic] > 39[Schema] > 12[Test] > 50[Manifest] :: NEVER_REPORT_DOCUMENTATION_CLAIM_AS_RUNTIME_PROOF
+03[Logic] > 39[Schema] > 12[Test] > 50[Manifest] :: FORM_FRONT_DOOR_AUTHORITATIVE
+03[Logic] > 23[Lock] > 50[Manifest] :: SRC_AND_PREFORM_LEGACY_FROZEN
+17[Shadow] > 23[Lock] > 50[Manifest] :: USER_DESIGN_DISTINCT_FROM_CURRENT_FACTS
+
+40[TokenCount] > 12[Test] > 50[Manifest] :: CORE_I_COUNT_51
+40[TokenCount] > 12[Test] > 50[Manifest] :: CORE_II_COUNT_49
+40[TokenCount] > 12[Test] > 50[Manifest] :: CORE_LANGUAGE_COUNT_100
+34[Stamp] > 40[TokenCount] > 12[Test] :: CORE_I_RANGE_00_50
+34[Stamp] > 40[TokenCount] > 12[Test] :: CORE_II_RANGE_51_99
+34[Stamp] > 40[TokenCount] > 12[Test] :: ADDRESS_RANGE_100_999
+
+03[Logic] > 39[Schema] > 12[Test] :: NUMBER_IS_SEMANTIC_FAMILY
+03[Logic] > 39[Schema] > 12[Test] :: BRACKET_TERM_IS_MANIFEST_MODIFIER
+03[Logic] > 12[Test] > 43[Fallback] > 76[Resolve] :: UNKNOWN_MANIFEST_FALLS_BACK_TO_CANONICAL
+45[Translate] > 76[Resolve] > 39[Schema] > 12[Test] :: LATIN_MORPHOLOGY_THEN_CONTEXT_THEN_CANONICAL
+
+97[Define] > 39[Schema] > 12[Test] :: DVS_EQUALS_F_TIMES_C_TIMES_X_TIMES_H_TIMES_M_TIMES_T_MINUS_O
+03[Logic] > 46[Rank] > 12[Test] :: LOW_DVS_BECOMES_MANIFEST_OR_MACRO_NOT_NEW_NUMBER
+
+53[Scope] > 11[Architect] > 39[Schema] > 50[Manifest] :: AGENT_HAS_GITHUB_DELLMATRIX_FORM_AUTHORITY
+90[Trace] > 18[Mirror] > 12[Test] > 50[Manifest] :: EVIDENCE_BEFORE_ASSERTION
