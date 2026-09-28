@@ -3,6 +3,7 @@
 
 Multi-atom seeds and Core II (51-99) run through chain_exec so every atom executes.
 Single-atom CORE_I (00-50) uses the original leaf implementation in executor_leaf.py.
+Closable Core I recovery/measure/external contracts run through core_i_ops.
 """
 from __future__ import annotations
 
@@ -15,6 +16,13 @@ def execute_seed(program: Any, seed_text: str, _leaf: bool = False) -> Dict[str,
     s = parse_seed(seed_text)
     if not s.ok:
         return {"ok": False, "error": s.error, "messages": [f"Seed error: {s.error}"]}
+
+    from .core_i_ops import HANDLED, apply_core_i
+    primary = s.primary_dell()
+    if primary in HANDLED and len(s.atoms) == 1:
+        handled = apply_core_i(program, seed_text, s)
+        if handled is not None:
+            return handled
 
     if not _leaf:
         primary = s.primary_dell()
