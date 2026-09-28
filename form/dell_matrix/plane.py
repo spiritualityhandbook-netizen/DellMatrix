@@ -57,6 +57,9 @@ class Unit:
     sandboxed: bool = False
     sandbox_id: Optional[str] = None
     manifest: Optional[Dict[str, Any]] = None
+    parents: List[str] = field(default_factory=list)
+    origin: str = "placed"
+    lineage_version: int = 1
 
     def display(self) -> str:
         box = f"[box:{self.sandbox_id}]" if self.sandboxed else "[connected]"
@@ -102,6 +105,9 @@ class Plane:
         x: float = 0.0,
         y: float = 0.0,
         manifest: Optional[Manifest] = None,
+        parents: Optional[List[str]] = None,
+        origin: str = "placed",
+        lineage_version: int = 1,
     ) -> Unit:
         g = [str(x).strip() for x in (goals or []) if str(x).strip()]
         u = Unit(
@@ -114,6 +120,9 @@ class Plane:
             x=x,
             y=y,
             manifest=manifest.to_dict() if manifest else None,
+            parents=[str(p) for p in (parents or []) if str(p).strip()],
+            origin=str(origin or "placed"),
+            lineage_version=int(lineage_version or 1),
         )
         self.units[id] = u
         return u
@@ -176,9 +185,7 @@ class Plane:
         u.sandboxed = False
         u.sandbox_id = None
         if sid and sid in self.sandboxes:
-            self.sandboxes[sid].member_ids = [
-                m for m in self.sandboxes[sid].member_ids if m != unit_id
-            ]
+            self.sandboxes[sid].member_ids = [m for m in self.sandboxes[sid].member_ids if m != unit_id]
         return True
 
     def set_perspective(self, p: Perspective) -> None:
@@ -221,14 +228,7 @@ class Plane:
         a, b = self.units.get(left_id), self.units.get(right_id)
         if not a or not b:
             return {"ok": False}
-        return {
-            "ok": True,
-            "left": a.label,
-            "right": b.label,
-            "middle": f"relation({a.label}⊗{b.label})",
-            "distance": math.hypot(a.x - b.x, a.y - b.y),
-            "note": "Flower/Vesica — shared middle from two centers",
-        }
+        return {"ok": True, "left": a.label, "right": b.label, "middle": f"relation({a.label}⊗{b.label})", "distance": math.hypot(a.x - b.x, a.y - b.y), "note": "Flower/Vesica — shared middle from two centers"}
 
     def _layout_hint(self, u: Unit) -> str:
         if self.perspective == Perspective.CIRCLE:
@@ -243,11 +243,7 @@ class Plane:
 
     def render(self, scores: Optional[Dict[str, float]] = None) -> str:
         scores = scores or {}
-        lines = [
-            f"+- DellMatrix PLANE L{self.level} · perspective={self.perspective.value} -+",
-            f"| Floor: {' · '.join(FLOOR)} (LOCKED)",
-            f"| zoom={'overview' if not self.zoom_target else self.zoom_target}  units={len(self.units)}",
-        ]
+        lines = [f"+- DellMatrix PLANE L{self.level} · perspective={self.perspective.value} -+", f"| Floor: {' · '.join(FLOOR)} (LOCKED)", f"| zoom={'overview' if not self.zoom_target else self.zoom_target}  units={len(self.units)}"]
         if self.zoom_target and self.zoom_target in self.units:
             u = self.units[self.zoom_target]
             lines.append(f"| —— PAGE / CELL ——")
@@ -259,6 +255,8 @@ class Plane:
                 lines.append(f"| detail: {u.detail[:120]}")
             if u.goals:
                 lines.append(f"| goals: {' · '.join(u.goals)[:120]}")
+            if u.parents:
+                lines.append(f"| parents: {' · '.join(u.parents)[:120]}")
             lines.append(f"| words:")
             text = u.words or "(empty)"
             for chunk in text.split("\n"):
@@ -266,14 +264,7 @@ class Plane:
             lines.append(f"| enhance → {self.enhance_scope(u.id)}")
             lines.append(f"| neighbors → {self.neighbors(u.id)}")
         else:
-            mode = {
-                Perspective.PAGE: "top-down page (cells)",
-                Perspective.CIRCLE: "circular plane",
-                Perspective.FLOWER: "flower / vesica",
-                Perspective.SPHERE: "expanded sphere field",
-                Perspective.CUBE: "cube-based grid",
-                Perspective.TABLE: "table plane",
-            }.get(self.perspective, self.perspective.value)
+            mode = {Perspective.PAGE: "top-down page (cells)", Perspective.CIRCLE: "circular plane", Perspective.FLOWER: "flower / vesica", Perspective.SPHERE: "expanded sphere field", Perspective.CUBE: "cube-based grid", Perspective.TABLE: "table plane"}.get(self.perspective, self.perspective.value)
             lines.append(f"| view: {mode}")
             for u in sorted(self.units.values(), key=lambda z: (z.y, z.x, z.id)):
                 sc = scores.get(u.id)
@@ -290,32 +281,23 @@ class Plane:
         return "\n".join(lines)
 
     def status(self) -> Dict[str, Any]:
-        return {
-            "level": self.level,
-            "perspective": self.perspective.value,
-            "zoom": self.zoom_target,
-            "unit_count": len(self.units),
-            "units": {i: u.display() for i, u in self.units.items()},
-            "sandboxes": {i: sb.member_ids for i, sb in self.sandboxes.items()},
-            "floor": list(FLOOR),
-        }
+        return {"level": self.level, "perspective": self.perspective.value, "zoom": self.zoom_target, "unit_count": len(self.units), "units": {i: u.display() for i, u in self.units.items()}, "sandboxes": {i: sb.member_ids for i, sb in self.sandboxes.items()}, "floor": list(FLOOR)}
 
 
 def smoke() -> bool:
     print("=== PLANE L3 SMOKE ===")
     r = []
-
     def rec(n, ok, d=""):
         print(f"[{len(r)+1}] {n}: {'PASS' if ok else 'FAIL'}" + (f" | {d}" if d else ""))
         r.append(bool(ok))
-
     p = Plane()
     p.place("a", "A", words="line1", detail="about A", goals=["ship clarity"], skin=Skin.CUBE)
-    p.place("b", "B", skin=Skin.CIRCLE, x=1)
+    p.place("b", "B", skin=Skin.CIRCLE, x=1, parents=["a"], origin="confirmed")
     rec("level 3", p.level == 3)
     rec("place", "a" in p.units)
     rec("detail", p.units["a"].detail == "about A")
     rec("goals", p.units["a"].goals == ["ship clarity"])
+    rec("lineage", p.units["b"].parents == ["a"] and p.units["b"].origin == "confirmed")
     rec("neighbors", "b" in p.neighbors("a"))
     p.zoom_in("a")
     txt = p.render(scores={"a": 1.5})
