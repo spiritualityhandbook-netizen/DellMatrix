@@ -62,7 +62,7 @@ See `POLYGLOT.md` and `latinmandell.py`.
 5. **LatinMandell is core** — morphology and custom function are Origin tools  
 6. Both humans and the runtime must be able to read the seed
 7. Number = Dell family · Bracket = Manifest domain · `•` = ManifestSet separator
-8. Emoji is display alias · ASCII grammar is executable truth
+8. Emoji is display alias · Unicode-aware canonical grammar is executable truth
 9. Chain and Chainlink are grammar operators (no new Dell number without DVS)
 10. FlowSet longest match first: `>>>` `>>` `>` `:>` `<:` `<:>` `::` `:` `<<[Delta]`
 11. LatinMandell resolves Morphology > Context > Canonical
@@ -106,3 +106,19 @@ Separator is `•` (U+2022). Not `,`. Not `_`.
 - Depth cap is 4; loop cap is `72[Limit]` or 8
 - Parallel is deterministic same-process collection, not threads
 - Control frames / flow traces are runtime-only and are not persisted in v7
+
+---
+
+## Core II 51-99
+
+Runtime locality is closed at 51-99. 100-999 stay reserved.
+
+- Query/reason 51-59 and 67-79 share `predicate.py`
+- Control 60-66 consumes the same predicate engine
+- Object/audit 80-90 mutate typed state
+- Transaction 93-96 uses an explicit frame: id · checkpoint · staged · status · error · depth
+- Abstraction 97-99 stores definitions; Compose runs the normal executor
+- `last_result`, frames, flow traces, tx, snapshots, staged, and limit are transient
+- Store/defs/aliases/compositions/groups/refs/causes/deps/weights are durable
+
+Grammar truth is Unicode-aware. The ManifestSet separator is `•` (U+2022). Emoji is display alias only.
