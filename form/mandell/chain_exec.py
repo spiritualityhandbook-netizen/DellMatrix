@@ -11,9 +11,12 @@ from __future__ import annotations
 from typing import Any, Dict, List, Tuple
 
 from .control_runtime import (
+    CONTROL_HEADS,
     FLOW_CONTRACT,
+    MAX_DEPTH,
     bound_of,
     eval_condition,
+    find_else,
     find_join,
 )
 from .core_ii_exec import attach, execute_core_ii
@@ -107,190 +110,201 @@ def _apply_flow(st: Any, flow: str, prev_ok: bool, prev_atom: Any, next_atom: An
     return "run"
 
 
-def _run_body(program: Any, seed: Any, atoms: List[Any], start: int, end: int, messages: List[str]) -> Tuple[Any, List[Dict[str, Any]]]:
-    results: List[Dict[str, Any]] = []
+def _payload_cond(atom: Any, seed: Any, n: int) -> str:
+    raw_term = getattr(atom, "term", "") or ""
+    canon = str((get_dell(n) or {}).get("name", "")).lower()
+    if raw_term and raw_term.lower() != canon:
+        return raw_term
+    return seed.label or ""
+
+
+def execute_range(program, seed, atoms, start, end, depth, messages, ran, skipped, state):
+    results = []
+    st = attach(program)
     i = start
+    last_ok = True
     while i < end:
         atom = atoms[i]
-        program, out = _run_atom(program, atom, seed, messages)
-        results.append({"dell": int(atom.dell), "ok": bool(out.get("ok", True)), "error": out.get("error") or ""})
-        i += 1
-    return program, results
-
-
-def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
-    messages: List[str] = [f"Mandell: {seed.as_mandel()}", f"English: {seed.as_english()}"]
-    messages.append(f"Chain atoms={len(seed.atoms)} label={seed.label or ''}")
-    ran: List[int] = []
-    skipped: List[int] = []
-    blocked = False
-    over = False
-    new_program = None
-    ok = True
-    last_error = ""
-    last_ok = True
-
-    st = attach(program)
-    atoms = list(seed.atoms)
-    i = 0
-    while i < len(atoms):
-        atom = atoms[i]
         n = int(atom.dell)
-        if i > 0:
+        if i > start:
             action = _apply_flow(st, _flow_at(seed, i - 1), last_ok, atoms[i - 1], atom, messages)
             if action == "skip":
                 skipped.append(n)
+                results.append({"dell": n, "ok": False, "error": "flow_thru_block"})
                 last_ok = False
                 i += 1
                 continue
             if action == "over":
-                over = True
-        if over and n != 61:
-            skipped.append(n)
-            messages.append(f"skipped by FlowOver {n}")
-            i += 1
-            continue
-        if blocked and n not in (61, 94, 96):
-            skipped.append(n)
-            messages.append("skipped after join/guard block")
-            i += 1
-            continue
-
-        if n in (60, 62, 63, 64, 65, 66):
-            program, head = _run_atom(program, atom, seed, messages)
-            ran.append(n)
-            if head.get("new_program") is not None:
-                new_program = head["new_program"]
-                program = new_program
+                while i < end and int(atoms[i].dell) != 61:
+                    skipped.append(int(atoms[i].dell))
+                    messages.append(f"skipped by FlowOver {int(atoms[i].dell)}")
+                    i += 1
+                continue
+        if n in CONTROL_HEADS:
+            if depth >= MAX_DEPTH:
+                messages.append(f"control depth bound {MAX_DEPTH}")
+                state["ok"] = False
+                state["error"] = "depth_bound"
+                results.append({"dell": n, "ok": False, "error": "depth_bound"})
+                return program, results
+            program, chunk = _run_control(program, seed, atoms, i, end, depth, messages, ran, skipped, state)
+            results.extend(chunk)
+            last_ok = all(r.get("ok", True) for r in chunk) if chunk else True
+            join_at = find_join(atoms, i + 1, end)
+            i = join_at + 1 if join_at < end and int(getattr(atoms[join_at], "dell", -1)) == 61 else join_at
             st = attach(program)
-            join_at = find_join(atoms, i + 1)
-            body_atoms = atoms[i + 1:join_at]
-            kind = {60: "branch", 62: "parallel", 63: "sequence", 64: "until", 65: "while", 66: "foreach"}[n]
-            raw_term = getattr(atom, "term", "") or ""
-            canon = str((get_dell(n) or {}).get("name", "")).lower()
-            cond = raw_term if raw_term.lower() != canon else (seed.label or "")
-            results: List[Dict[str, Any]] = []
-            iterations = 0
-            status = "ok"
-            err = ""
-
-            if n == 60:
-                taken = eval_condition(st, program, cond or "true")
-                messages.append(f"control Branch taken={taken}")
-                if taken:
-                    program, results = _run_body(program, seed, atoms, i + 1, join_at, messages)
-                    ran.extend(int(a.dell) for a in body_atoms)
-                else:
-                    skipped.extend(int(a.dell) for a in body_atoms)
-                    messages.append("unchosen branch not executed")
-                    status = "skipped"
-            elif n == 62:
-                program, results = _run_body(program, seed, atoms, i + 1, join_at, messages)
-                ran.extend(int(a.dell) for a in body_atoms)
-                for r in results:
-                    if not r.get("ok", True):
-                        messages.append(f"parallel fail captured dell={r.get('dell')} err={r.get('error')}")
-            elif n == 63:
-                program, results = _run_body(program, seed, atoms, i + 1, join_at, messages)
-                ran.extend(int(a.dell) for a in body_atoms)
-            elif n in (64, 65):
-                limit = bound_of(st)
-                pred0 = eval_condition(st, program, cond)
-                if n == 64 and pred0:
-                    status = "zero"
-                    messages.append("Until already true — zero iterations")
-                elif n == 65 and not pred0:
-                    status = "zero"
-                    messages.append("While already false — zero iterations")
-                else:
-                    while iterations < limit:
-                        if n == 64 and eval_condition(st, program, cond):
-                            break
-                        if n == 65 and not eval_condition(st, program, cond):
-                            break
-                        program, chunk = _run_body(program, seed, atoms, i + 1, join_at, messages)
-                        results.extend(chunk)
-                        iterations += 1
-                        st.control_steps += 1
-                    else:
-                        if n == 64 and not eval_condition(st, program, cond):
-                            status = "bounded"
-                            err = "bound_reached"
-                            ok = False
-                            last_error = err
-                            messages.append(f"Until bound={limit} reached")
-                        if n == 65 and eval_condition(st, program, cond):
-                            status = "bounded"
-                            err = "bound_reached"
-                            ok = False
-                            last_error = err
-                            messages.append(f"While bound={limit} reached")
-                    ran.extend(int(a.dell) for a in body_atoms)
-            elif n == 66:
-                members = list(st.selected or [])
-                prev_ctx = st.context
-                if not members:
-                    status = "empty"
-                    messages.append("ForEach empty selection valid")
-                for mid in members:
-                    st.context = str(mid)
-                    st.route = str(mid)
-                    messages.append(f"ForEach member={mid}")
-                    program, chunk = _run_body(program, seed, atoms, i + 1, join_at, messages)
-                    for item in chunk:
-                        item["member"] = str(mid)
-                    results.extend(chunk)
-                    iterations += 1
-                if members:
-                    ran.extend(int(a.dell) for a in body_atoms)
-                st.context = prev_ctx
-
-            st.last_frame = {
-                "kind": kind,
-                "condition": cond,
-                "status": status,
-                "iterations": iterations,
-                "results": results,
-                "error": err,
-            }
-            st.last_control = dict(st.last_frame)
-            st.frames.append(dict(st.last_frame))
-            last_ok = status not in ("bounded", "fail")
-            i = join_at
             continue
-
         program, out = _run_atom(program, atom, seed, messages)
         if out.get("skipped"):
             skipped.append(n)
         else:
             ran.append(n)
         if out.get("new_program") is not None:
-            new_program = out["new_program"]
-            program = new_program
+            program = out["new_program"]
+            state["new_program"] = program
         last_ok = bool(out.get("ok", True))
+        results.append({"dell": n, "ok": last_ok, "error": out.get("error") or ""})
         if not last_ok:
-            ok = False
-            last_error = out.get("error") or last_error
-            if n in (91, 92) and out.get("error") in ("assert_fail", "guard_block"):
-                if _flow_at(seed, i) == ">>":
-                    blocked = True
-            if n == 61 and out.get("error") == "join_fail":
-                blocked = True
-        if n == 61:
-            over = False
-            blocked = blocked and out.get("error") == "join_fail"
+            state["ok"] = False
+            state["error"] = out.get("error") or state.get("error") or ""
         i += 1
+    return program, results
 
+
+def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skipped, state):
+    atom = atoms[head]
+    n = int(atom.dell)
+    program, head_out = _run_atom(program, atom, seed, messages)
+    ran.append(n)
+    st = attach(program)
+    join_at = find_join(atoms, head + 1, limit)
+    kind = {60: "branch", 62: "parallel", 63: "sequence", 64: "until", 65: "while", 66: "foreach"}[n]
+    cond = _payload_cond(atom, seed, n)
+    results = []
+    iterations = 0
+    status = "ok"
+    err = ""
+    if n == 60:
+        else_kind, else_at = find_else(atoms, head + 1, join_at)
+        if else_kind == "multi":
+            status = "fail"
+            err = "multiple_else"
+            state["ok"] = False
+            state["error"] = err
+            messages.append("Branch multiple else — fail explicit")
+            for j in range(head + 1, join_at):
+                skipped.append(int(atoms[j].dell))
+        else:
+            taken = eval_condition(st, program, cond or "true")
+            true_end = else_at if else_kind == "one" else join_at
+            false_start = else_at + 1 if else_kind == "one" else join_at
+            messages.append(f"control Branch taken={taken} else={else_kind}")
+            if taken:
+                program, results = execute_range(program, seed, atoms, head + 1, true_end, depth + 1, messages, ran, skipped, state)
+                for j in range(false_start, join_at):
+                    skipped.append(int(atoms[j].dell))
+                if else_kind == "one":
+                    skipped.append(59)
+            else:
+                for j in range(head + 1, true_end):
+                    skipped.append(int(atoms[j].dell))
+                if else_kind == "one":
+                    skipped.append(59)
+                    program, results = execute_range(program, seed, atoms, false_start, join_at, depth + 1, messages, ran, skipped, state)
+                else:
+                    status = "skipped"
+                    messages.append("unchosen branch not executed")
+    elif n == 62:
+        program, results = execute_range(program, seed, atoms, head + 1, join_at, depth + 1, messages, ran, skipped, state)
+        for r in results:
+            if not r.get("ok", True):
+                messages.append(f"parallel fail captured dell={r.get('dell')} err={r.get('error')}")
+    elif n == 63:
+        program, results = execute_range(program, seed, atoms, head + 1, join_at, depth + 1, messages, ran, skipped, state)
+    elif n in (64, 65):
+        loop_limit = bound_of(st)
+        pred0 = eval_condition(st, program, cond)
+        if n == 64 and pred0:
+            status = "zero"
+            messages.append("Until already true — zero iterations")
+        elif n == 65 and not pred0:
+            status = "zero"
+            messages.append("While already false — zero iterations")
+        else:
+            while iterations < loop_limit:
+                if n == 64 and eval_condition(st, program, cond):
+                    messages.append("Until early exit")
+                    break
+                if n == 65 and not eval_condition(st, program, cond):
+                    messages.append("While early exit")
+                    break
+                program, chunk = execute_range(program, seed, atoms, head + 1, join_at, depth + 1, messages, ran, skipped, state)
+                results.extend(chunk)
+                iterations += 1
+                st.control_steps += 1
+                st = attach(program)
+                if n == 64 and eval_condition(st, program, cond):
+                    messages.append("Until condition true after body")
+                    break
+                if n == 65 and not eval_condition(st, program, cond):
+                    messages.append("While condition false after body")
+                    break
+            else:
+                still = eval_condition(st, program, cond)
+                if n == 64 and not still:
+                    status = "bounded"
+                    err = "bound_reached"
+                    state["ok"] = False
+                    state["error"] = err
+                    messages.append(f"Until bound={loop_limit} reached")
+                if n == 65 and still:
+                    status = "bounded"
+                    err = "bound_reached"
+                    state["ok"] = False
+                    state["error"] = err
+                    messages.append(f"While bound={loop_limit} reached")
+    elif n == 66:
+        members = list(st.selected or [])
+        prev_ctx = st.context
+        prev_route = st.route
+        if not members:
+            status = "empty"
+            messages.append("ForEach empty selection valid")
+        for mid in members:
+            st.context = str(mid)
+            st.route = str(mid)
+            messages.append(f"ForEach member={mid}")
+            program, chunk = execute_range(program, seed, atoms, head + 1, join_at, depth + 1, messages, ran, skipped, state)
+            for item in chunk:
+                item["member"] = str(mid)
+            results.extend(chunk)
+            iterations += 1
+            st = attach(program)
+        st.context = prev_ctx
+        st.route = prev_route
+    if join_at < limit and int(getattr(atoms[join_at], "dell", -1)) == 61:
+        program, jout = _run_atom(program, atoms[join_at], seed, messages)
+        ran.append(61)
+        results.append({"dell": 61, "ok": bool(jout.get("ok", True)), "error": jout.get("error") or "", "owned_by": kind})
+    st = attach(program)
+    st.last_frame = {"kind": kind, "condition": cond, "status": status, "iterations": iterations, "results": results, "error": err, "depth": depth}
+    st.last_control = dict(st.last_frame)
+    st.frames.append(dict(st.last_frame))
+    return program, results
+
+
+def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
+    messages = [f"Mandell: {seed.as_mandel()}", f"English: {seed.as_english()}"]
+    messages.append(f"Chain atoms={len(seed.atoms)} label={seed.label or ''}")
+    ran = []
+    skipped = []
+    state = {"ok": True, "error": "", "new_program": None}
+    attach(program)
+    program, _results = execute_range(program, seed, list(seed.atoms), 0, len(seed.atoms), 0, messages, ran, skipped, state)
+    new_program = state.get("new_program")
+    if new_program is not None:
+        program = new_program
+    ok = bool(state.get("ok", True))
+    last_error = state.get("error") or ""
     st = getattr(program, "core_ii", None)
-    return {
-        "ok": ok,
-        "error": last_error,
-        "seed": seed.as_mandel(),
-        "english": seed.as_english(),
-        "primary": seed.primary_dell(),
-        "messages": messages,
-        "new_program": new_program,
-        "chain_ran": ran,
-        "chain_skipped": skipped,
-        "core_ii": st.snap() if st is not None else {},
-    }
+    return {"ok": ok, "error": last_error, "seed": seed.as_mandel(), "english": seed.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "core_ii": st.snap() if st is not None else {}}
