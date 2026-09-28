@@ -123,3 +123,5 @@ Runtime locality is closed at 51-99. 100-999 stay reserved.
 - Composition expansion bound is `72[Limit]` or 8; cycles fail before execution
 
 Grammar truth is Unicode-aware. The ManifestSet separator is `•` (U+2022). Emoji is display alias only.
+
+See `UNIFIED_RUNTIME.md` for the 00-99 execution map.
