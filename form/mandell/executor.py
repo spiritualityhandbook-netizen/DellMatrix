@@ -4,6 +4,7 @@
 Multi-atom seeds and Core II (51-99) run through chain_exec so every atom executes.
 Single-atom CORE_I (00-50) uses the original leaf implementation in executor_leaf.py.
 Closable Core I recovery/measure/external contracts run through core_i_ops.
+Dell 21/22 live-unit transforms use live_identity lineage.
 """
 from __future__ import annotations
 
@@ -23,6 +24,36 @@ def execute_seed(program: Any, seed_text: str, _leaf: bool = False) -> Dict[str,
         handled = apply_core_i(program, seed_text, s)
         if handled is not None:
             return handled
+
+    if primary in (21, 22):
+        from .live_identity import merge_live, split_live
+        rec = merge_live(program, s.label or "") if primary == 21 else split_live(program, s.label or "")
+        messages = [f"Mandell: {s.as_mandel()}", f"English: {s.as_english()}"]
+        if not rec.get("ok"):
+            messages.append(f"{'Merge' if primary == 21 else 'Split'} failed: {rec.get('error')}")
+            return {
+                "ok": False,
+                "error": rec.get("error") or "missing_source",
+                "seed": s.as_mandel(),
+                "english": s.as_english(),
+                "primary": primary,
+                "messages": messages,
+                "new_program": None,
+            }
+        if primary == 21:
+            messages.append(f"Merged → {rec['id']} parents={rec['parents']}")
+        else:
+            messages.append(f"Split → {' + '.join(rec['created'])}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(primary, "Merge" if primary == 21 else "Split", rec.get("id") or rec.get("source") or "")
+        return {
+            "ok": True,
+            "seed": s.as_mandel(),
+            "english": s.as_english(),
+            "primary": primary,
+            "messages": messages,
+            "new_program": None,
+        }
 
     if not _leaf:
         primary = s.primary_dell()
