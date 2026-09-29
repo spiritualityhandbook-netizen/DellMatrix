@@ -78,9 +78,12 @@ def smoke() -> bool:
     rec("welcome", "welcome" in b.session.plane.units)
     rec("welcome goals", len(b.session.plane.units["welcome"].goals) >= 1)
     b.place_idea("job", "Work", detail="ops", goals=["finish route"], words="field", skin=Skin.BUILDING, x=1)
+    child = b.place_idea("task", "Task", words="child", parents=["job"], origin="confirmed")
     path = b.write_pack()
     loaded = BlankCube.from_pack(path)
     rec("pack goals", loaded.session.plane.units["job"].goals == ["finish route"])
+    lu = loaded.session.plane.units["task"]
+    rec("blank_cube_pack_lineage_roundtrip", lu.parents == ["job"] and lu.origin == "confirmed" and int(lu.lineage_version) == int(child.lineage_version))
     rec("floor", b.status()["floor"] == list(FLOOR))
     print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
     return all(r)
