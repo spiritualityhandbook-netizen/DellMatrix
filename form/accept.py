@@ -32,13 +32,15 @@ def run() -> bool:
     out = p.grow_ideas(1)
     rec("grow", out.get("ok") is True)
 
+    from form.dell_matrix.proposal_valid import select_confirmable_proposal
+
     pending = p.list_proposals()
-    if pending:
-        res = p.confirm_proposal(pending[0]["id"])
+    chosen = select_confirmable_proposal(pending, p.cube.session.plane.units)
+    if chosen:
+        res = p.confirm_proposal(chosen["id"])
         rec("confirm", res.get("ok") is True, res.get("label", ""))
     else:
-        # still pass if growth produced nothing but path runs
-        rec("confirm", True, "no proposals (still offline-ok)")
+        rec("confirm", True, "no plane-valid proposals (still offline-ok)")
 
     p.lattice.to_sphere()
     rec("sphere", p.lattice.perception.form.value == "sphere")
