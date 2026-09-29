@@ -34,6 +34,14 @@ from form.dell_matrix.self_model import (
     probe_capability, close_gaps, evolve_with_understanding, inventory,
 )
 
+# Named gate semantics (Director DD). FULL = mastery contract of the full 150-cycle run; SMOKE = explicitly
+# requested short-run readiness check. No other threshold fork.
+FULL_MASTERY_TARGET = 0.75
+FULL_PROBE_RATE_TARGET = 0.85
+SMOKE_READINESS_TARGET = 0.4
+SMOKE_PROBE_RATE_TARGET = 0.75
+SMOKE_CYCLES = 12
+
 PHASES = [
     ("identity", ["floor", "status", "matrices", "audit"]),
     ("perception", ["look", "multilook", "page", "lattice", "geometry"]),
@@ -49,8 +57,10 @@ def _caps_by_ids(ids: List[str]) -> List[Dict[str, Any]]:
     return [by[i] for i in ids if i in by]
 
 
-def run_loop(cycles: int = 150, owner: str = "Evolve150") -> Dict[str, Any]:
-    print("=== PROGRAM SELF-UNDERSTAND + EVOLVE 150 ===")
+def run_loop(cycles: int = 150, owner: str = "Evolve150", mode: str = "full") -> Dict[str, Any]:
+    if mode not in ("full", "smoke"):
+        raise ValueError(f"unknown mode {mode!r} (full|smoke)")
+    print(f"=== PROGRAM SELF-UNDERSTAND + EVOLVE 150 ({mode.upper()}) ===")
     p = open_program(owner)
     if not hasattr(p, "self_knowledge") or p.self_knowledge is None:
         p.self_knowledge = SelfKnowledge()
@@ -153,25 +163,33 @@ def run_loop(cycles: int = 150, owner: str = "Evolve150") -> Dict[str, Any]:
     pil = (inv.get("pillars") or {}).get("average") or 0
     gen = inv.get("generation") or 0
 
-    # pass gates: learned itself + evolved + warm
-    passed = (
-        probe_rate >= 0.85
-        and mastery >= 0.75
-        and gen > base_gen
-        and evolves >= cycles
-        and len(cold) <= 3
-        and pil >= 0.65
-        and inv.get("matrix_count", 0) >= 15
-    )
+    # pass gates for the requested mode: learned itself + evolved + warm (FULL) / readiness (SMOKE)
+    if mode == "full":
+        passed = (
+            probe_rate >= FULL_PROBE_RATE_TARGET
+            and mastery >= FULL_MASTERY_TARGET
+            and gen > base_gen
+            and evolves >= cycles
+            and len(cold) <= 3
+            and pil >= 0.65
+            and inv.get("matrix_count", 0) >= 15
+        )
+    else:
+        passed = (
+            probe_rate >= SMOKE_PROBE_RATE_TARGET
+            and gen > base_gen
+            and mastery >= SMOKE_READINESS_TARGET
+        )
 
     print(
-        f"\n=== RESULT: probes={probe_rate:.1%} mastery={mastery:.3f} "
+        f"\n=== RESULT[{mode.upper()}]: probes={probe_rate:.1%} mastery={mastery:.3f} "
         f"gen {base_gen}→{gen} pillars={pil} cold={len(cold)} · "
         f"{'PASS' if passed else 'FAIL'} ==="
     )
 
     return {
         "ok": passed,
+        "mode": mode,
         "probe_rate": probe_rate,
         "mastery": mastery,
         "generation_start": base_gen,
@@ -189,13 +207,9 @@ def run_loop(cycles: int = 150, owner: str = "Evolve150") -> Dict[str, Any]:
 
 
 def smoke() -> bool:
-    # short path for suite
-    out = run_loop(cycles=12, owner="EvolveSmoke")
-    return bool(
-        out["probe_rate"] >= 0.75
-        and out["generation_end"] > out["generation_start"]
-        and out["mastery"] >= 0.4
-    )
+    # short path for suite: explicitly requests the SMOKE readiness contract; status == inner verdict
+    out = run_loop(cycles=SMOKE_CYCLES, owner="EvolveSmoke", mode="smoke")
+    return out["ok"] is True
 
 
 if __name__ == "__main__":

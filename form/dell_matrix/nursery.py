@@ -16,13 +16,33 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 import re
 
 _STATE_DIR = os.path.join(os.path.dirname(__file__), "..", "state")
 os.makedirs(_STATE_DIR, exist_ok=True)
+# Legacy ownerless file (pre per-owner nursery). Stranded: no Program reads, writes, or migrates it.
 NURSERY_PATH = os.path.join(_STATE_DIR, "nursery.json")
+
+
+class NurseryConflictError(RuntimeError):
+    """The owner's nursery file changed on disk since this instance loaded/saved it (lost update refused)."""
+
+
+def owner_nursery_path(owner: str) -> str:
+    """Per-owner nursery file: nursery_<_safe_owner(owner)>.json (existing persist._safe_owner, no new sanitizer)."""
+    from form.persist import _safe_owner
+    return os.path.join(_STATE_DIR, f"nursery_{_safe_owner(owner)}.json")
+
+
+def _disk_sig(path: str) -> Optional[str]:
+    try:
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except FileNotFoundError:
+        return None
 
 
 def _ts() -> str:
@@ -55,6 +75,9 @@ class Nursery:
     """Quarantine for unconfirmed growth."""
 
     proposals: Dict[str, Proposal] = field(default_factory=dict)
+    path: Optional[str] = None
+    # Optimistic version of the owner file as last seen by this instance (sha256 of bytes; None = absent).
+    _seen: Optional[str] = field(default=None, repr=False, compare=False)
 
     def add(
         self,
@@ -79,7 +102,11 @@ class Nursery:
             reason=reason[:160],
         )
         self.proposals[pid] = p
-        self.save()
+        try:
+            self.save()
+        except Exception:
+            self.proposals.pop(pid, None)
+            raise
         return p
 
     def pending(self) -> List[Proposal]:
@@ -90,7 +117,11 @@ class Nursery:
         if not p or p.status != "pending":
             return None
         p.status = "confirmed"
-        self.save()
+        try:
+            self.save()
+        except Exception:
+            p.status = "pending"
+            raise
         return p
 
     def reject(self, pid: str) -> Optional[Proposal]:
@@ -98,14 +129,22 @@ class Nursery:
         if not p or p.status != "pending":
             return None
         p.status = "rejected"
-        self.save()
+        try:
+            self.save()
+        except Exception:
+            p.status = "pending"
+            raise
         return p
 
     def clear_rejected(self) -> int:
-        before = len(self.proposals)
+        before = dict(self.proposals)
         self.proposals = {k: v for k, v in self.proposals.items() if v.status != "rejected"}
-        self.save()
-        return before - len(self.proposals)
+        try:
+            self.save()
+        except Exception:
+            self.proposals = before
+            raise
+        return len(before) - len(self.proposals)
 
     def summary(self) -> Dict[str, Any]:
         pending = self.pending()
@@ -117,18 +156,32 @@ class Nursery:
         }
 
     def save(self) -> None:
-        data = {k: v.to_dict() for k, v in self.proposals.items()}
-        with open(NURSERY_PATH, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+        """Whole-file write of this owner's nursery. Refuses (NurseryConflictError) if the file changed on
+        disk since this instance last loaded/saved it, instead of silently overwriting another instance."""
+        if not self.path:
+            raise ValueError("Nursery has no owner path; construct it with Nursery.load(owner_nursery_path(owner))")
+        current = _disk_sig(self.path)
+        if current != self._seen:
+            raise NurseryConflictError(
+                f"nursery file changed on disk since load: {os.path.basename(self.path)} (lost update refused)"
+            )
+        text = json.dumps({k: v.to_dict() for k, v in self.proposals.items()}, indent=2)
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write(text)
+        self._seen = hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     @classmethod
-    def load(cls) -> "Nursery":
-        n = cls()
-        if not os.path.isfile(NURSERY_PATH):
+    def load(cls, path: Optional[str] = None) -> "Nursery":
+        """Load the nursery owned by ``path``. No path -> empty ownerless in-memory nursery (save refuses).
+        The legacy ownerless NURSERY_PATH is never read implicitly."""
+        n = cls(path=path)
+        if not path or not os.path.isfile(path):
             return n
         try:
-            with open(NURSERY_PATH, encoding="utf-8") as f:
-                raw = json.load(f)
+            with open(path, "rb") as f:
+                blob = f.read()
+            n._seen = hashlib.sha256(blob).hexdigest()
+            raw = json.loads(blob.decode("utf-8"))
             for k, v in raw.items():
                 n.proposals[k] = Proposal(**v)
         except Exception:

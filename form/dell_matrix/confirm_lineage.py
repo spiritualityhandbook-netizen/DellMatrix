@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from form.dell_matrix.lineage import assign_lineage
+from form.dell_matrix.nursery import NurseryConflictError
 from form.dell_matrix.plane import Skin
 
 
@@ -31,17 +32,36 @@ def _detail(prop, units) -> str:
 
 
 def confirm_proposal(program, pid: str) -> Dict[str, Any]:
-    prop = program.nursery.confirm(pid)
-    if not prop:
+    """Canonical confirmation authority (the only caller of Nursery.confirm).
+
+    Order: SELECT PENDING > VALIDATE/ASSIGN LINEAGE > PLACE > COMMIT CONFIRMATION + PERSIST (Nursery.confirm)
+    > RETURN SUCCESS. Any failure before the commit leaves the proposal pending (memory and disk), so it
+    stays retryable and rejectable. A placement exception propagates without committing.
+    """
+    nursery = program.nursery
+    prop = nursery.proposals.get(pid)
+    if not prop or prop.status != "pending":
         return {"ok": False, "reason": "not found or not pending"}
     units = program.cube.session.plane.units
     rec = assign_lineage(units, getattr(prop, "parents", None), origin="confirmed", child_id=prop.id)
     if not rec.get("ok"):
         return {"ok": False, "reason": rec.get("error") or "invalid_lineage", "missing": rec.get("missing")}
-    program.place(
-        prop.id, prop.label, words=prop.words, detail=_detail(prop, units), goals=_goals(prop, units),
-        skin=Skin.SEED, parents=list(rec["parents"]), origin=rec["origin"], lineage_version=int(rec["lineage_version"]),
-    )
+    existed = prop.id in units
+    try:
+        program.place(
+            prop.id, prop.label, words=prop.words, detail=_detail(prop, units), goals=_goals(prop, units),
+            skin=Skin.SEED, parents=list(rec["parents"]), origin=rec["origin"], lineage_version=int(rec["lineage_version"]),
+        )
+    except Exception:
+        if not existed:
+            units.pop(prop.id, None)
+        raise
+    try:
+        nursery.confirm(pid)  # COMMIT CONFIRMATION + PERSIST (reverts to pending itself if persisting fails)
+    except NurseryConflictError as e:
+        if not existed:
+            units.pop(prop.id, None)
+        return {"ok": False, "reason": "nursery_conflict", "error": str(e)}
     try:
         text = " ".join([str(prop.label or ""), str(getattr(prop, "words", "") or ""), str(getattr(prop, "detail", "") or "")])
         aff = float(getattr(prop, "affinity", 1.0) or 1.0)

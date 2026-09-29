@@ -69,6 +69,8 @@ class AutoGrowth:
     confirmed_total: int = 0
     rejected_total: int = 0
     last_report: Dict[str, Any] = field(default_factory=dict)
+    # Program owner whose canonical confirmation authority AUTO uses (persisted live Program).
+    owner: str = "AutoGrow"
 
     def next_query(self, override: str = "") -> str:
         if override.strip():
@@ -119,10 +121,13 @@ class AutoGrowth:
         return True
 
     def _nursery_auto(self, label: str, words: str, judge: Dict[str, Any], source: str) -> Dict[str, Any]:
+        """AUTO PROPOSE > Program.confirm_proposal (VALIDATE > PLACE > Nursery.confirm > PERSIST) > {ok:True}
+        > COUNT SUCCESS. AUTO never mutates confirmation status itself; failures and errors count nothing.
+        A confirmed result changes the owner Program's semantic state, so that Program is saved."""
         try:
-            from form.dell_matrix.nursery import Nursery
-            n = Nursery.load()
-            prop = n.add(
+            from form.persist import load, save
+            p = self._load_owner_program(load)
+            prop = p.nursery.add(
                 label=label,
                 words=words,
                 kind="auto",
@@ -130,43 +135,49 @@ class AutoGrowth:
                 reason=f"auto:{source}:{judge.get('reason', '')}"[:160],
             )
             if self._should_auto_confirm(judge, self.last_report.get("delta_band", "elevated")):
-                n.confirm(prop.id)
-                self.confirmed_total += 1
-                status = "auto_confirmed"
+                res = p.confirm_proposal(prop.id)
+                if res.get("ok") is True:
+                    save(p)
+                    self.confirmed_total += 1
+                    status = "auto_confirmed"
+                else:
+                    status = "auto_confirm_failed"
             else:
-                n.reject(prop.id)
-                self.rejected_total += 1
-                status = "auto_rejected"
+                res = p.reject_proposal(prop.id)
+                if res.get("ok") is True:
+                    self.rejected_total += 1
+                    status = "auto_rejected"
+                else:
+                    status = "auto_reject_failed"
             return {
                 "id": prop.id,
                 "status": status,
                 "label": label[:72],
                 "affinity": prop.affinity,
-                "nursery": n.summary(),
+                "reason": res.get("reason"),
+                "nursery": p.nursery.summary(),
             }
         except Exception as e:
-            status = "ledger_only_confirm" if judge.get("floor_accept") else "ledger_only_reject"
-            if "confirm" in status:
-                self.confirmed_total += 1
-            else:
-                self.rejected_total += 1
-            return {"id": None, "status": status, "label": label[:72], "error": str(e)}
+            return {"id": None, "status": "auto_error", "label": label[:72], "error": str(e)}
+
+    def _load_owner_program(self, load):
+        """Load the persisted live owner Program without replacing this process's global Mandell language
+        state (persist.load restores cells/customs process-wide)."""
+        from form.mandell.seed import CELLS
+        from form.mandell.latinmandell import export_customs, import_customs, clear_customs
+        cells, customs = dict(CELLS), export_customs()
+        try:
+            return load(self.owner)
+        finally:
+            CELLS.clear()
+            CELLS.update(cells)
+            clear_customs()
+            import_customs(customs)
 
     def _commit_ledger(self, item: Dict[str, Any]) -> None:
         rows = _load_ledger()
         rows.append({**item, "ts": time.time()})
         _save_ledger(rows)
-
-    def _try_plane_place(self, label: str, words: str) -> Dict[str, Any]:
-        try:
-            from form.open import open_program
-            p = open_program("AutoGrow")
-            if hasattr(p, "place"):
-                p.place(label[:24].replace(" ", "_").lower(), label, words=words[:200])
-                return {"ok": True, "surface": "program.place"}
-        except Exception as e:
-            return {"ok": False, "reason": str(e)}
-        return {"ok": False, "reason": "no_place"}
 
     def harvest_net(self, query: str = "") -> List[Dict[str, Any]]:
         ideas: List[Dict[str, Any]] = []
@@ -244,11 +255,11 @@ class AutoGrowth:
             nursery = self._nursery_auto(label, words, judge, str(idea.get("source") or "auto"))
             plane = {"ok": False}
             status = nursery.get("status") or ""
-            # ALWAYS record confirms (independent of plane place)
-            if status in ("auto_confirmed", "ledger_only_confirm"):
+            # Only canonical confirmations are recorded; placement already happened inside
+            # Program.confirm_proposal and the owner Program was saved (place_on_confirm kept for API compat).
+            if status == "auto_confirmed":
                 confirmed_labels.append(label)
-                if place_on_confirm:
-                    plane = self._try_plane_place(label, words)
+                plane = {"ok": True, "surface": "Program.confirm_proposal", "id": nursery.get("id")}
                 self._commit_ledger({
                     "label": label,
                     "words": words[:200],

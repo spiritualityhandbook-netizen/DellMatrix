@@ -118,8 +118,85 @@ def smoke() -> bool:
     rec("no_post_load_stamp_required", True)
     rec("no_silent_lineage_corruption", assign_lineage({}, ["me"], "x", child_id="me")["ok"] is False)
     os.remove(path)
+    auto_contract(rec)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
+
+
+def _hash(path):
+    import hashlib
+    if not path or not os.path.isfile(path):
+        return "ABSENT"
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def auto_contract(rec) -> None:
+    """DC: AUTO PROPOSE > Program.confirm_proposal > VALIDATE > PLACE > Nursery.confirm > PERSIST > {ok:True}
+    > COUNT SUCCESS. No direct Nursery.confirm, failures/errors count nothing, restart keeps the result."""
+    import sys
+    import form.persist as persist_mod
+    import form.dell_matrix.auto_growth as ag
+    import form.dell_matrix.confirm_lineage as cl
+    from form.dell_matrix import nursery as nmod
+    owner = f"AutoT{os.getpid()}"
+    judge = {"floor_accept": True, "verita_score": 0.9, "combined": 0.9, "grade": "clear", "reason": "probe"}
+    a = ag.AutoGrowth(auto=True, internet=False)
+    a.owner = owner
+    legacy_h = _hash(nmod.NURSERY_PATH)
+    calls = {"authority": 0, "direct": 0}
+    orig_auth, orig_nconfirm = cl.confirm_proposal, nmod.Nursery.confirm
+
+    def authority(program, pid):
+        calls["authority"] += 1
+        return orig_auth(program, pid)
+
+    def nconfirm(self, pid):
+        if sys._getframe(1).f_globals.get("__name__") != "form.dell_matrix.confirm_lineage":
+            calls["direct"] += 1
+        return orig_nconfirm(self, pid)
+
+    cl.confirm_proposal, nmod.Nursery.confirm = authority, nconfirm
+    try:
+        res = a._nursery_auto("Auto canonical probe", "w", judge, "probe")
+    finally:
+        cl.confirm_proposal, nmod.Nursery.confirm = orig_auth, orig_nconfirm
+    pid = res.get("id")
+    rec("auto_confirms_only_via_program_authority",
+        res.get("status") == "auto_confirmed" and calls["authority"] == 1 and calls["direct"] == 0, f"{res} {calls}")
+    rec("auto_success_counted_exactly_once", a.confirmed_total == 1)
+    q = load(owner)
+    qu = q.cube.session.plane.units.get(pid) if pid else None
+    rec("auto_restart_retains_live_confirmed_result",
+        qu is not None and qu.origin == "confirmed" and q.nursery.proposals.get(pid) is not None
+        and q.nursery.proposals[pid].status == "confirmed")
+    cl.confirm_proposal = lambda program, pid_: {"ok": False, "reason": "injected"}
+    try:
+        res2 = a._nursery_auto("Auto failing probe", "w", judge, "probe")
+    finally:
+        cl.confirm_proposal = orig_auth
+    pid2 = res2.get("id")
+    q2 = open_program(owner)
+    rec("auto_confirm_failure_not_counted",
+        res2.get("status") != "auto_confirmed" and a.confirmed_total == 1
+        and (pid2 is None or (q2.nursery.proposals.get(pid2) is not None and q2.nursery.proposals[pid2].status == "pending")))
+
+    def boom(*_a, **_k):
+        raise RuntimeError("injected")
+
+    orig_load, orig_nload = persist_mod.load, nmod.Nursery.load
+    persist_mod.load, nmod.Nursery.load = boom, classmethod(lambda cls, *a_, **k_: boom())
+    try:
+        res3 = a._nursery_auto("Auto error probe", "w", judge, "probe")
+    finally:
+        persist_mod.load, nmod.Nursery.load = orig_load, orig_nload
+    rec("auto_error_counts_nothing_rnt6",
+        "confirm" not in str(res3.get("status")) and a.confirmed_total == 1 and a.rejected_total == 0, str(res3))
+    rec("auto_no_legacy_global_nursery_write", _hash(nmod.NURSERY_PATH) == legacy_h)
+    from form.persist import _path
+    for path in (getattr(q.nursery, "path", None), _path(owner)):
+        if path and os.path.basename(path).startswith(("nursery_AutoT", "program_AutoT")) and os.path.exists(path):
+            os.remove(path)
 
 
 if __name__ == "__main__":

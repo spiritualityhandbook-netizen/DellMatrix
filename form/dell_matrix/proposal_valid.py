@@ -37,7 +37,7 @@ def select_confirmable_proposal(pending: List[Any], units: Iterable[str]) -> Opt
         return None
 
     def key(p: Any):
-        if isinstance(prop if False else p, dict):
+        if isinstance(p, dict):
             aff = float(p.get("affinity") or 0)
             pid = str(p.get("id") or "")
         else:

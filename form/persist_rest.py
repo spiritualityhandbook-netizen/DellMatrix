@@ -12,7 +12,6 @@ from form.mandell.latinmandell import import_customs, clear_customs
 from form.dell_matrix.plane import Perspective, Skin
 from form.dell_matrix.resonance import ResonanceState
 from form.dell_matrix.main_field import MainContribution, PullRecord
-from form.dell_matrix.nursery import Proposal
 from form.dell_matrix.harmonic_lattice import HarmonicLattice, OverlayMode, Perspective as LatPerspective
 from form.dell_matrix.perception import Form
 from form.avatar import Facing, Posture, Locomotion, Reach, Expression
@@ -26,11 +25,6 @@ def save(program: Program, path: Optional[str] = None) -> str:
     data = serialize(program)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
-    program.nursery.proposals = {
-        k: Proposal(**v) if isinstance(v, dict) else v
-        for k, v in data.get("nursery", {}).items()
-    }
-    program.nursery.save()
     return path
 
 
@@ -73,18 +67,6 @@ def _restore_avatar(p: Program, data: Dict[str, Any]) -> None:
     except Exception:
         p.face.current = Expression.NEUTRAL
     p.face.custom_face = av.get("custom_face")
-
-
-def _restore_nursery(p: Program, data: Dict[str, Any]) -> None:
-    raw = data.get("nursery") or {}
-    p.nursery.proposals = {}
-    for k, v in raw.items():
-        try:
-            if isinstance(v, dict):
-                p.nursery.proposals[k] = Proposal(**v)
-        except Exception:
-            continue
-    p.nursery.save()
 
 
 def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
@@ -185,7 +167,9 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     while p.duo.generation < target_gen:
         p.duo.evolve("28[Rollback] :: persist load")
     _restore_avatar(p, data)
-    _restore_nursery(p, data)
+    # Nursery decisions are NOT restored from the serialized "nursery" field (kept in the file format for
+    # back-compat only). p.nursery is the owner's live nursery file loaded by Program; restore never
+    # creates pending/confirmed/rejected transitions and never writes any nursery file.
     _restore_lattice(p, data)
     try:
         from form.dell_matrix.companion import AICompanion

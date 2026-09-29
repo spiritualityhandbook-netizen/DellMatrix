@@ -2,6 +2,10 @@
 """Mandell language activation gate. No product track."""
 from __future__ import annotations
 
+import os
+import shutil
+import tempfile
+
 from form.mandell.floor import FLOOR, NOVA_MODE, assert_floor_intact
 from form.mandell.registry import DELLS
 from form.mandell.seed import BULLET, FLOW_OPS, MANDELLMOJI, parse_seed, define_cell, expand_cell, CELLS
@@ -58,9 +62,13 @@ def smoke() -> bool:
     define_cell("Complete", "35[Discover] > 18[Mirror] > 12[Test]")
     rec("cell_define", "Complete" in CELLS)
     rec("cell_expand", [a.dell for a in expand_cell("Complete").atoms] == [35, 18, 12])
-    path = persist_cells("/tmp/dm/cells.json")
-    CELLS.clear()
-    rec("cell_persistence", load_cells(path) >= 1 and "Complete" in CELLS)
+    tmpd = tempfile.mkdtemp(prefix="dm_cells_")
+    try:
+        path = persist_cells(os.path.join(tmpd, "cells.json"))
+        CELLS.clear()
+        rec("cell_persistence", load_cells(path) >= 1 and "Complete" in CELLS)
+    finally:
+        shutil.rmtree(tmpd, ignore_errors=True)
     verbose = "08[Create] > 08[Map] > 08[Keep]"
     compressed = "08[Create" + BULLET + "Map" + BULLET + "Keep]"
     tr = tokenless_report(verbose, compressed)
