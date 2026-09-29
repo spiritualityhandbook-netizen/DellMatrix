@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
 import math
 import re
@@ -198,7 +198,7 @@ def _parent_goals(plane: Plane, ids: List[str]) -> List[str]:
 
 @dataclass
 class RingedGrowth:
-    nursery: Nursery = field(default_factory=Nursery.load)
+    nursery: Nursery
     max_new: int = 10
     max_evolved: int = 8
 

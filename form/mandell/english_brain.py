@@ -856,7 +856,6 @@ def enhance_150_loop(seed: int = 42) -> ExpandReport:
       cycles 51–100 — stress suffixes / questions / program surface
       cycles 101–150 — re-test mastery lock + force-teach remaining misses
     """
-    global _CYCLE_COUNT
     report = ExpandReport(cycles=150)
     # phase A
     a = expand_loop(50, seed=seed)

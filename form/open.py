@@ -156,7 +156,8 @@ class Program:
         self.avatar = Avatar(name=self.owner)
         self.face = FaceController()
         self.kaomoji = build_default_registry()
-        self.nursery = Nursery.load()
+        from form.dell_matrix.nursery import owner_nursery_path
+        self.nursery = Nursery.load(owner_nursery_path(self.owner))
         self.growth = RingedGrowth(nursery=self.nursery)
         self.lattice = HarmonicLattice(size=SIZE_CHROMATIC)
         if not hasattr(self, "keys") or self.keys is None:
@@ -1229,7 +1230,6 @@ class Program:
 
     def save(self, path: Optional[str] = None) -> str:
         from form.persist import save as persist_save
-        self.nursery.save()
         self.note_seed(10, "Keep")
         return persist_save(self, path)
 

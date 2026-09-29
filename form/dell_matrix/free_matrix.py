@@ -41,7 +41,6 @@ def open_world(owner: str = "FreeMatrix"):
 
 
 def perspectives(program=None):
-    global _REGISTRY
     if program is not None and getattr(program, "perspectives", None) is not None:
         return program.perspectives
     return _REGISTRY

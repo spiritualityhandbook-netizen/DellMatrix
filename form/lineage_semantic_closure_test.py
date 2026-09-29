@@ -2,6 +2,7 @@
 """Accept isolation, Dell 21/22 provenance, 84 classification, lineage graph."""
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 
@@ -11,7 +12,6 @@ from form.dell_matrix.plane import Plane
 from form.mandell.executor import execute_seed
 from form.open import open_program
 from form.persist import load, save
-from form.dell_matrix.confirm_lineage import confirm_proposal
 
 
 def _tmp():
@@ -101,26 +101,94 @@ def test_copy_and_confirm_fail(r) -> None:
     before = set(p.cube.session.plane.units)
     out = execute_seed(p, "84[Copy] :: x")
     _rec(r, "Dell84DoesNotCreatePlaneUnit", out.get("ok") is True and set(p.cube.session.plane.units) == before)
-    p.place("live", "Live")
-    class Fake:
-        id = "bogus"
-        label = "Bogus"
-        words = ""
-        detail = ""
-        goals = []
-        parents = ["nope"]
-        affinity = 1.0
-        kind = "new"
-    class N:
-        def confirm(self, pid):
-            return Fake()
-    p.nursery = N()
-    cres = confirm_proposal(p, "bogus")
-    _rec(r, "confirm_missing_parent_fails_explicitly", cres.get("ok") is False and cres.get("reason") == "missing_parent")
+    _atomic_confirm_semantics(r)
     plane = Plane()
     plane.place("legacy", "L", parents=["absent"], origin="confirmed", lineage_version=3, restore=True)
     insp = plane.inspect_lineage("legacy")
     _rec(r, "restore_missing_parent_remains_inspectable", "absent" in (insp.get("missing_parents") or []))
+
+
+def _atomic_confirm_semantics(r) -> None:
+    """U04 semantic contract on a REAL owner nursery (no stub): RNT-1/N1, RNT-2/N3, F1..F8."""
+    owner = f"U04Sem{os.getpid()}"
+    p = _fresh(owner)
+    npath = getattr(p.nursery, "path", None)
+    own_file = bool(npath) and os.path.basename(npath).startswith("nursery_")
+    if own_file and os.path.exists(npath):
+        os.remove(npath)
+        p = _fresh(owner)
+    try:
+        def fresh(pid):
+            pr = open_program(owner).nursery.proposals.get(pid)
+            return pr.status if pr else "ABSENT"
+
+        def disk(pid):
+            path = getattr(p.nursery, "path", None)
+            if not path or not os.path.isfile(path):
+                return "ABSENT"
+            with open(path, encoding="utf-8") as f:
+                return (json.load(f).get(pid) or {}).get("status", "ABSENT")
+
+        p.place("live", "Live")
+        bad = p.nursery.add("Bad", parents=["absent"])
+        rej = p.nursery.add("RejMe", parents=["absent2"])
+        units0 = set(p.cube.session.plane.units)
+        c0 = p.nursery.summary()["confirmed"]
+        cls = type(p.nursery)
+        orig_save = cls.save
+        writes = {"n": 0}
+
+        def spy(self):
+            writes["n"] += 1
+            return orig_save(self)
+
+        cls.save = spy
+        try:
+            out = p.confirm_proposal(bad.id)
+        finally:
+            cls.save = orig_save
+        _rec(r, "F1_validation_failure_explicit", out.get("ok") is False and out.get("reason") == "missing_parent", str(out))
+        _rec(r, "N1_zero_nursery_writes_on_failure", writes["n"] == 0, f"writes={writes['n']}")
+        _rec(r, "F2_pending_in_memory_after_failure", p.nursery.proposals[bad.id].status == "pending")
+        _rec(r, "F3_pending_on_fresh_load_after_failure", fresh(bad.id) == "pending" and disk(bad.id) == "pending")
+        _rec(r, "F4_plane_unchanged_after_failure", set(p.cube.session.plane.units) == units0)
+        _rec(r, "F5_zero_confirmation_persistence", p.nursery.summary()["confirmed"] == c0 and disk(bad.id) != "confirmed")
+        p.confirm_proposal(rej.id)
+        rr = p.reject_proposal(rej.id)
+        _rec(r, "F8_reject_possible_after_pre_commit_failure", rr.get("ok") is True and fresh(rej.id) == "rejected")
+        p.place("absent", "Absent")
+        ok = p.confirm_proposal(bad.id)
+        u = p.cube.session.plane.units.get(bad.id)
+        _rec(r, "F6_retry_succeeds_once_dependency_valid",
+             ok.get("ok") is True and u is not None and list(u.parents) == ["absent"] and u.origin == "confirmed", str(ok))
+        _rec(r, "F6b_confirmation_persisted_after_success", fresh(bad.id) == "confirmed")
+        nu = len(p.cube.session.plane.units)
+        again = p.confirm_proposal(bad.id)
+        _rec(r, "F7_exactly_one_semantic_confirmation",
+             again.get("ok") is False and len(p.cube.session.plane.units) == nu and p.nursery.summary()["confirmed"] == c0 + 1)
+        good = p.nursery.add("Good", parents=["live"])
+        real_place = p.place
+
+        def boom(*a, **k):
+            raise RuntimeError("injected placement failure")
+
+        p.place = boom
+        raised = False
+        try:
+            p.confirm_proposal(good.id)
+        except RuntimeError:
+            raised = True
+        finally:
+            p.place = real_place
+        _rec(r, "N3_placement_exception_does_not_commit",
+             raised and p.nursery.proposals[good.id].status == "pending" and fresh(good.id) == "pending"
+             and good.id not in p.cube.session.plane.units)
+        again2 = p.confirm_proposal(good.id)
+        _rec(r, "N3b_retry_after_placement_exception", again2.get("ok") is True and fresh(good.id) == "confirmed")
+    finally:
+        path = getattr(p.nursery, "path", None)
+        if path and os.path.basename(path).startswith("nursery_") and os.path.exists(path):
+            os.remove(path)
 
 
 def test_graph(r) -> None:

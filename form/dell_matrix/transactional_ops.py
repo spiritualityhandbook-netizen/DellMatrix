@@ -276,41 +276,6 @@ class TxManager:
         self.current = Transaction(mode=m)
         return self.current
 
-    def stage_nursery_confirm(self, label: str, words: str = "") -> Dict[str, Any]:
-        """Stage nursery add+confirm. Deferred until commit unless eager mode."""
-        tx = self.current or self.begin()
-        box: Dict[str, Any] = {"label": label, "words": words, "pid": None}
-
-        def apply() -> Dict[str, Any]:
-            from form.dell_matrix.nursery import Nursery
-            n = Nursery.load()
-            p = n.add(label=label, words=words, kind="tx", reason="transactional")
-            n.confirm(p.id)
-            box["pid"] = p.id
-            box["done"] = True
-            return {"ok": True, "id": p.id, "detail": "confirmed"}
-
-        def undo() -> Dict[str, Any]:
-            pid = box.get("pid")
-            if not pid:
-                return {"ok": True, "detail": "nothing_to_undo"}
-            from form.dell_matrix.nursery import Nursery
-            n = Nursery.load()
-            if pid in n.proposals:
-                n.proposals[pid].status = "rejected"
-                n.save()
-                return {"ok": True, "detail": f"rejected:{pid}"}
-            return {"ok": True, "detail": "pid_missing_already_clean"}
-
-        st = tx.stage("nursery_confirm", box, apply=apply, undo=undo)
-        return {
-            "staged": True,
-            "mode": tx.mode,
-            "applied_now": st.applied,
-            "label": label,
-            "tx": tx.id,
-        }
-
     def stage_view_mode(self, program, viewer_id: str, mode: str) -> Dict[str, Any]:
         tx = self.current or self.begin()
         prev_holder: Dict[str, Any] = {"prev": None}

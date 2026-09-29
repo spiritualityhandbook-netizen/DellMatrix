@@ -2,6 +2,10 @@
 """Mandell meta-runtime machinery tests."""
 from __future__ import annotations
 
+import os
+import shutil
+import tempfile
+
 from form.mandell.seed import CELLS, BULLET
 from form.mandell.meta_runtime import (
     cell_define, cell_expand, persist_cell_graph, load_cell_graph,
@@ -41,10 +45,14 @@ def smoke() -> bool:
     rec("cell_flow_preservation", cell_expand("Flow").get("flows") == [">>"])
     cell_define("Set", "08[Create" + BULLET + "Map" + BULLET + "Keep]")
     rec("cell_manifestset_preservation", cell_expand("Set").get("atoms") == [(8, "Create"), (8, "Map"), (8, "Keep")])
-    path = persist_cell_graph("/tmp/dm/cell_graph.json")
-    CELLS.clear()
-    load_cell_graph(path)
-    rec("cell_persistence_graph", cell_expand("Flow").get("flows") == [">>"])
+    tmpd = tempfile.mkdtemp(prefix="dm_cell_graph_")
+    try:
+        path = persist_cell_graph(os.path.join(tmpd, "cell_graph.json"))
+        CELLS.clear()
+        load_cell_graph(path)
+        rec("cell_persistence_graph", cell_expand("Flow").get("flows") == [">>"])
+    finally:
+        shutil.rmtree(tmpd, ignore_errors=True)
 
     rec("directive_single_line", parse_directive("35[Discover] > 12[Test]").get("ok") is True)
     multi = parse_directive("02[Persona:Architect]\n53[Scope:Meta]\n91[Assert:X]\n92[Guard:NO_UI]\n12[Test:T]\n20[Alpha]")

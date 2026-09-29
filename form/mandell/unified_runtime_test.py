@@ -2,6 +2,10 @@
 """00-99 unified runtime integration. Separate from unit contract suites."""
 from __future__ import annotations
 
+import os
+import shutil
+import tempfile
+
 from form.open import open_program
 from form.mandell.executor import execute_seed
 from form.mandell.registry import DELLS
@@ -156,15 +160,19 @@ def smoke() -> bool:
     execute_seed(p, "55[Set] :: k=7")
     execute_seed(p, "82[Group] :: g")
     execute_seed(p, "70[Count]")
-    path = "/tmp/dm/unified_rt.json"
-    save(p, path)
-    q = load("Pers", path)
-    rec("cross_core_save_load", "persist_unit" in list(q.cube.session.plane.units) and q.core_ii.store.get("k") == "7" and "g" in q.core_ii.groups)
-    rec("transient_not_loaded", "last_result" not in (serialize(q).get("core_ii") or {}))
-    rec("load_reestablishes_runtime", execute_seed(q, "56[Get] :: k").get("ok") is not False and (q.core_ii.last_result or {}).get("value") == "7")
-    save(q, path)
-    q2 = load("Pers", path)
-    rec("save_load_save_stable", q2.core_ii.store.get("k") == "7")
+    tmpd = tempfile.mkdtemp(prefix="dm_unified_rt_")
+    try:
+        path = os.path.join(tmpd, "unified_rt.json")
+        save(p, path)
+        q = load("Pers", path)
+        rec("cross_core_save_load", "persist_unit" in list(q.cube.session.plane.units) and q.core_ii.store.get("k") == "7" and "g" in q.core_ii.groups)
+        rec("transient_not_loaded", "last_result" not in (serialize(q).get("core_ii") or {}))
+        rec("load_reestablishes_runtime", execute_seed(q, "56[Get] :: k").get("ok") is not False and (q.core_ii.last_result or {}).get("value") == "7")
+        save(q, path)
+        q2 = load("Pers", path)
+        rec("save_load_save_stable", q2.core_ii.store.get("k") == "7")
+    finally:
+        shutil.rmtree(tmpd, ignore_errors=True)
 
     p = open_program("F1")
     out = execute_seed(p, "99[Compose] :: Bad=not_a_dell >> 08[Create]")

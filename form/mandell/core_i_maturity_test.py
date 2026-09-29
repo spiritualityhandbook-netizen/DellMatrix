@@ -2,6 +2,10 @@
 """Core I locally closable clusters: recovery, inverse, measure, external contracts."""
 from __future__ import annotations
 
+import os
+import shutil
+import tempfile
+
 from form.open import open_program
 from form.mandell.executor import execute_seed
 from form.persist import load, save
@@ -48,9 +52,13 @@ def smoke() -> bool:
     execute_seed(p, "08[Create] :: later")
     out = execute_seed(p, "28[Rollback]")
     q = out.get("new_program")
-    path = "/tmp/dm/corei_rb.json"
-    save(q, path)
-    loaded = load("SavR", path)
+    tmpd = tempfile.mkdtemp(prefix="dm_corei_rb_")
+    try:
+        path = os.path.join(tmpd, "corei_rb.json")
+        save(q, path)
+        loaded = load("SavR", path)
+    finally:
+        shutil.rmtree(tmpd, ignore_errors=True)
     rec("save_after_rollback", "saved" in loaded.cube.session.plane.units and "later" not in loaded.cube.session.plane.units)
     p = open_program("LdCp")
     execute_seed(p, "08[Create] :: parked")
