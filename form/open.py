@@ -1097,22 +1097,8 @@ class Program:
             return sorted(props, key=lambda p: -float(p.get("affinity", 0)))
 
     def confirm_proposal(self, pid: str) -> Dict[str, Any]:
-        prop = self.nursery.confirm(pid)
-        if not prop:
-            return {"ok": False, "reason": "not found or not pending"}
-        self.place(prop.id, prop.label, words=prop.words, skin=Skin.SEED)
-        try:
-            text = " ".join([
-                str(prop.label or ""),
-                str(getattr(prop, "words", "") or ""),
-                str(getattr(prop, "detail", "") or ""),
-            ])
-            aff = float(getattr(prop, "affinity", 1.0) or 1.0)
-            self.inspire.prefs.observe_confirm(text, aff)
-        except Exception:
-            pass
-        self.note_seed(50, "Manifest", prop.label)
-        return {"ok": True, "id": prop.id, "label": prop.label, "kind": prop.kind}
+        from form.dell_matrix.confirm_lineage import confirm_proposal as _confirm_proposal
+        return _confirm_proposal(self, pid)
 
     def reject_proposal(self, pid: str) -> Dict[str, Any]:
         prop = self.nursery.reject(pid)
