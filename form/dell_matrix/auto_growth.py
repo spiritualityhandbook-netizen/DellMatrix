@@ -161,18 +161,9 @@ class AutoGrowth:
             return {"id": None, "status": "auto_error", "label": label[:72], "error": str(e)}
 
     def _load_owner_program(self, load):
-        """Load the persisted live owner Program without replacing this process's global Mandell language
-        state (persist.load restores cells/customs process-wide)."""
-        from form.mandell.seed import CELLS
-        from form.mandell.latinmandell import export_customs, import_customs, clear_customs
-        cells, customs = dict(CELLS), export_customs()
-        try:
-            return load(self.owner)
-        finally:
-            CELLS.clear()
-            CELLS.update(cells)
-            clear_customs()
-            import_customs(customs)
+        """AutoGrow is an owner (D4): load its persisted Program WITHOUT binding it (activate=False). The caller's
+        bound owner and working language stay untouched, and save(p) persists AutoGrow's own language."""
+        return load(self.owner, activate=False)
 
     def _commit_ledger(self, item: Dict[str, Any]) -> None:
         rows = _load_ledger()

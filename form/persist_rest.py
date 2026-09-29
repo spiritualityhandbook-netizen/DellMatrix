@@ -8,7 +8,7 @@ import os
 import sys
 
 from form.mandell.floor import FLOOR, assert_floor_intact
-from form.mandell.latinmandell import import_customs, clear_customs
+from form.mandell.language import bind, empty_language, parse_language
 from form.dell_matrix.plane import Perspective, Skin
 from form.dell_matrix.resonance import ResonanceState
 from form.dell_matrix.main_field import MainContribution, PullRecord
@@ -97,16 +97,59 @@ def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
         p.lattice = HarmonicLattice(size=12)
 
 
-def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
+class ProgramLoadError(ValueError):
+    """Program file content is missing/invalid or its owner binding is inconsistent; raised before any swap."""
+
+
+def _validate_program_data(data: Any, owner: str) -> str:
+    """VALIDATE the program envelope (language is validated by parse_language). Returns the resolved owner."""
+    if not isinstance(data, dict):
+        raise ProgramLoadError("program file is not a JSON object")
+    if data.get("floor") != list(FLOOR):
+        raise RuntimeError("Floor mismatch — refuse load")
+    plane = data.get("plane")
+    if not isinstance(plane, dict) or not isinstance(plane.get("units", {}), dict):
+        raise ProgramLoadError("program data missing or invalid: 'plane' (with 'units') must be an object")
+    file_owner = data.get("owner")
+    if file_owner is not None and (not isinstance(file_owner, str) or not file_owner):
+        raise ProgramLoadError("program data invalid: 'owner' must be a non-empty string")
+    return file_owner or owner
+
+
+def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = True) -> Program:
+    """READ > VALIDATE COMPLETE INPUT > PREPARE language > PREPARE Program > ASSERT OWNER/BINDING > SWAP > RETURN.
+
+    Every step before the swap only builds private objects: a failure raises and leaves the bound owner, the
+    working copy (CELLS/customs) and every existing Program unchanged. The swap is bind(p) (skipped with
+    activate=False, e.g. AUTO loading AutoGrow). The Program's owner is the file's owner (Q-016 resolution);
+    its nursery and language are that owner's and nothing of the previously bound owner is combined into it.
+    A missing file yields a fresh owner: empty cells + default customs (D2), never the active owner's language.
+    load() writes no file."""
     assert_floor_intact()
     path = path or _path(owner)
     if not os.path.isfile(path):
-        return open_program(owner)
+        p = open_program(owner)
+        p.language = empty_language()
+        if activate:
+            bind(p)
+        return p
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    if data.get("floor") != list(FLOOR):
-        raise RuntimeError("Floor mismatch — refuse load")
-    p = open_program(data.get("owner") or owner)
+    resolved = _validate_program_data(data, owner)
+    lang = parse_language(data)
+    p = _prepare_program(resolved, data)
+    p.language = lang
+    from form.dell_matrix.nursery import owner_nursery_path
+    if p.owner != resolved or getattr(p.nursery, "path", None) != owner_nursery_path(resolved):
+        raise ProgramLoadError(f"owner binding mismatch: prepared {p.owner!r} for file owner {resolved!r}")
+    if activate:
+        bind(p)
+    return p
+
+
+def _prepare_program(owner: str, data: Dict[str, Any]) -> Program:
+    """PREPARE a private Program from validated data. Touches no process language state."""
+    p = open_program(owner)
     plane = p.cube.session.plane
     plane.units.clear()
     plane.sandboxes.clear()
@@ -219,13 +262,6 @@ def load(owner: str = "Operator", path: Optional[str] = None) -> Program:
     hist = data.get("history") or []
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]
-    clear_customs()
-    import_customs(data.get("latinmandell_customs") or {})
-    try:
-        from form.mandell.language import restore_language
-        restore_language(data)
-    except Exception:
-        pass
     restore_core_ii(p, data)
     return p
 
@@ -253,8 +289,9 @@ def smoke() -> bool:
     from form.mandell.latinmandell import customize, root_of, clear_customs as cc
     from form.mandell.seed import CELLS, define_cell, expand_cell
     from form.avatar import Expression
-    cc()
     p = open_program("PersistV7")
+    bind(p)  # owner-bound language: edits below belong to PersistV7, whatever owner was bound before
+    cc()
     p.place("biz", "Business", words="CRM", detail="field ops", goals=["reliability"], skin=Skin.BUILDING, x=1)
     p.avatar.step(3)
     p.face.set(Expression.JOY)
@@ -285,7 +322,21 @@ def smoke() -> bool:
     return all(r)
 
 
-def main() -> None:
-    if "--smoke" in sys.argv:
-        sys.exit(0 if smoke() else 1)
-    print("Persist v7 — detail/goals + customs + session")
+USAGE = "usage: python -m form.persist --smoke   (persist v7 session smoke; the module is otherwise a library)"
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    """Explicit module entry: `--smoke` runs the smoke (exit 0/1); no argument prints usage (exit 0, no work);
+    anything else is a usage error (exit 2)."""
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args == ["--smoke"]:
+        return 0 if smoke() else 1
+    if not args:
+        print(USAGE)
+        return 0
+    print(f"{USAGE}\nerror: unrecognized arguments: {' '.join(args)}", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

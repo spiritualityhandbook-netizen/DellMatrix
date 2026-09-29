@@ -66,6 +66,7 @@ def smoke() -> bool:
     os.remove(path)
     owner_isolation(rec)
     lost_update_explicit(rec)
+    regress_cli_contract(rec)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 
@@ -210,6 +211,76 @@ def lost_update_explicit(rec) -> None:
             and t1.nursery.proposals[bump.id].status == "pending")
     finally:
         _cleanup([path])
+
+
+def regress_cli_contract(rec) -> None:
+    """RH-I R1 (D1): strict regress CLI, NULL M1-M7. Every argument is validated before any entry runs."""
+    import contextlib
+    import io
+    import re
+    import shutil
+    import subprocess
+    import sys
+    import form.regress as rg
+    calls = []
+    orig = rg.run
+    rg.run = lambda **kw: (calls.append(kw), True)[1]
+    try:
+        def main(argv):
+            del calls[:]
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                rc = rg.main(list(argv))
+            return rc, list(calls), out.getvalue() + err.getvalue()
+
+        bad = [["--twcie"], ["bogus"], ["-twice"], ["--TWICE"], [""], ["--order", "rev", "extra"], ["--"],
+               ["--tw"], ["--ord", "rev"], ["--twice", "--", "x"]]
+        for argv in bad:
+            rc, ran, _ = main(argv)
+            rec(f"M1_reject_before_run{argv}", rc == 2 and not ran, f"rc={rc} ran={ran}")
+        rc, ran, _ = main(["--order=rev"])
+        rec("M2_order_eq_rev_runs_reverse", rc == 0 and ran == [{"order": "rev", "twice": False}], f"{rc} {ran}")
+        for argv in (["--help"], ["-h"], ["--twice", "--help"]):
+            rc, ran, out = main(argv)
+            rec(f"M3_help_usage_no_run{argv}", rc == 0 and not ran and "usage:" in out and "GREEN" not in out, f"{rc} {ran}")
+        for argv, want in (([], "(order=fwd)"), (["--twice"], "(order=fwd, twice)"),
+                           (["--order", "rev", "--twice"], "(order=rev, twice)"), (["--order=rev"], "(order=rev)")):
+            rc, ran, out = main(argv)
+            m = re.search(r"REGRESS FINAL: GREEN (\(order=(fwd|rev)(, twice)?\))", out)
+            rec(f"M4_final_echoes_mode{argv}", rc == 0 and bool(m) and m.group(1) == want, out[-120:])
+        for argv in (["--order", "fwd", "--order", "rev"], ["--twice", "--twice"], ["--order=rev", "--order", "rev"]):
+            rc, ran, _ = main(argv)
+            rec(f"M5_repeat_or_conflict_rejected{argv}", rc == 2 and not ran, f"{rc} {ran}")
+        for argv in (["--order"], ["--order", "REV"], ["--order", "--twice"], ["--order="]):
+            rc, ran, _ = main(argv)
+            rec(f"M6_bad_order_value_rejected{argv}", rc == 2 and not ran, f"{rc} {ran}")
+    finally:
+        rg.run = orig
+    # Fresh interpreter, real parser, run() stubbed (a broken --help must never recurse into the whole list).
+    probe = ("import sys, form.regress as rg; rg.run = lambda **kw: print('RUN_CALLED') or True; "
+             "sys.exit(rg.main(sys.argv[1:]))")
+    for argv, want in ((["--help"], 0), (["--twcie"], 2)):
+        r = subprocess.run([sys.executable, "-B", "-c", probe, *argv], capture_output=True, text=True,
+                           cwd=os.getcwd(), timeout=120)
+        out = r.stdout + r.stderr
+        rec(f"M1_M3_fresh_process{argv}", r.returncode == want and "usage:" in out and "RUN_CALLED" not in out
+            and "GREEN" not in out and "Traceback" not in out, f"rc={r.returncode}")
+    # M7: through the REAL runner, a state-coupled entry is GREEN once and RED under --twice.
+    tmp = tempfile.mkdtemp(prefix="dm_m7_")
+    try:
+        os.makedirs(os.path.join(tmp, "form"))
+        open(os.path.join(tmp, "form", "__init__.py"), "w").close()
+        with open(os.path.join(tmp, "form", "zz_coupled_probe.py"), "w", encoding="utf-8") as f:
+            f.write("import os\n\ndef smoke():\n    first = not os.path.exists('coupled.marker')\n"
+                    "    open('coupled.marker', 'w').close()\n    print('%d/1' % int(first))\n    return first\n")
+        entries = ["form.zz_coupled_probe"]
+        with contextlib.redirect_stdout(io.StringIO()):
+            once = rg.run(entries=entries, intended=entries, src=tmp)
+            twice = rg.run(entries=entries, intended=entries, src=tmp, twice=True)
+        rec("M7_coupled_entry_green_once_red_twice", once is True and twice is False, f"{once} {twice}")
+        rec("M7_runner_never_writes_src", not os.path.exists(os.path.join(tmp, "coupled.marker")))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 if __name__ == "__main__":
