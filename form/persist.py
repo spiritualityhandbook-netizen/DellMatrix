@@ -11,7 +11,6 @@ from datetime import datetime, timezone
 
 try:
     from form.mandell.floor import FLOOR, assert_floor_intact
-    from form.mandell.latinmandell import export_customs, import_customs, clear_customs
     from form.dell_matrix.plane import Perspective, Skin
     from form.dell_matrix.resonance import ResonanceState
     from form.dell_matrix.main_field import MainContribution, PullRecord
@@ -25,7 +24,6 @@ except ImportError:
     if ROOT not in sys.path:
         sys.path.insert(0, ROOT)
     from form.mandell.floor import FLOOR, assert_floor_intact
-    from form.mandell.latinmandell import export_customs, import_customs, clear_customs
     from form.dell_matrix.plane import Perspective, Skin
     from form.dell_matrix.resonance import ResonanceState
     from form.dell_matrix.main_field import MainContribution, PullRecord
@@ -103,6 +101,8 @@ def _serialize_lattice(program: Program) -> Dict[str, Any]:
 
 def serialize(program: Program) -> Dict[str, Any]:
     assert_floor_intact()
+    from form.mandell.language import dump_language, language_of
+    lang = language_of(program)
     plane = program.cube.session.plane
     units = {
         uid: {
@@ -188,10 +188,27 @@ def serialize(program: Program) -> Dict[str, Any]:
         "nursery": _serialize_nursery(program),
         "lattice": _serialize_lattice(program),
         "history": list(getattr(program, "history", []) or [])[-24:],
-        "latinmandell_customs": export_customs(),
-        "mandell_language": __import__("form.mandell.language", fromlist=["dump_language"]).dump_language(),
+        # One language source per owner (form.mandell.language.language_of): both keys carry the same customs.
+        "latinmandell_customs": {k: dict(v) for k, v in lang["customs"].items()},
+        "mandell_language": dump_language(lang),
         "core_ii": serialize_core_ii(program),
     }
 
 
-from form.persist_rest import save, checkpoint, list_checkpoints, load, smoke, main
+# save/load/checkpoint/smoke/main live in form.persist_rest, which imports this module. They are re-exported
+# lazily (PEP 562) so that either import order works (no form.persist <-> form.persist_rest import cycle).
+_REST_EXPORTS = ("save", "checkpoint", "list_checkpoints", "load", "smoke", "main")
+
+
+def __getattr__(name: str) -> Any:
+    if name in _REST_EXPORTS:
+        from form import persist_rest
+        value = getattr(persist_rest, name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module 'form.persist' has no attribute {name!r}")
+
+
+if __name__ == "__main__":
+    from form.persist_rest import main as _main
+    sys.exit(_main())

@@ -148,6 +148,8 @@ class Program:
     action_stack: List[Dict[str, Any]] = field(default_factory=list)
     # Grow mode: when True, grow_ideas auto-confirms all pending nursery proposals
     auto_confirm_grow: bool = False
+    # Owner-bound Mandell language {cells, customs}; None = never loaded/bound (form.mandell.language.bind)
+    language: Optional[Dict[str, Any]] = field(default=None, repr=False, compare=False)
 
     def __post_init__(self):
         assert_floor_intact()

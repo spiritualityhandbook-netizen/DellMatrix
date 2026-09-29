@@ -119,6 +119,7 @@ def smoke() -> bool:
     rec("no_silent_lineage_corruption", assign_lineage({}, ["me"], "x", child_id="me")["ok"] is False)
     os.remove(path)
     auto_contract(rec)
+    auto_language_contract(rec)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 
@@ -197,6 +198,103 @@ def auto_contract(rec) -> None:
     for path in (getattr(q.nursery, "path", None), _path(owner)):
         if path and os.path.basename(path).startswith(("nursery_AutoT", "program_AutoT")) and os.path.exists(path):
             os.remove(path)
+
+
+def auto_language_contract(rec) -> None:
+    """RH-I R4 (D4): AUTO owns AutoGrow's language; it never binds, reads or serializes the caller's language.
+    Attack matrix rows 7 (A>AUTO>A), 8 (AutoGrow custom > restart > AUTO retained), 15 (AUTO failure)."""
+    import json
+    import subprocess
+    import sys
+    import form.dell_matrix.auto_growth as ag
+    import form.dell_matrix.confirm_lineage as cl
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.mandell import language as L
+    from form.mandell.seed import CELLS, define_cell
+    from form.mandell.latinmandell import customize, clear_customs, export_customs
+    from form.persist import _path
+    sfx = os.getpid()
+    A, G, S = f"AlA{sfx}", f"AlGrow{sfx}", f"AlSess{sfx}"
+    judge = {"floor_accept": True, "verita_score": 0.9, "combined": 0.9, "grade": "clear", "reason": "probe"}
+
+    def file_lang(owner):
+        with open(_path(owner), encoding="utf-8") as f:
+            lang = L.parse_language(json.load(f))
+        return set(lang["cells"]), set(lang["customs"])
+
+    def live():
+        return set(CELLS), set(export_customs())
+
+    try:
+        # AutoGrow's own language (defined while AutoGrow is the explicitly bound owner), then a session owner A.
+        g = open_program(G)
+        L.bind(g)
+        CELLS.clear()
+        clear_customs()
+        define_cell("AGcell", "08[Create] :: autogrow own")
+        customize("agrowlux", dell=9, sense="autogrow own")
+        save(g)
+        pa = open_program(A)
+        L.bind(pa)
+        CELLS.clear()
+        clear_customs()
+        define_cell("SessCell", "08[Create] :: session")
+        customize("sesslux", dell=9, sense="session")
+        save(pa)
+        pa = load(A)
+        before_live, before_file = live(), _hash(_path(A))
+        a = ag.AutoGrowth(auto=True, internet=False)
+        a.owner = G
+        # 7 A > AUTO > A
+        res = a._nursery_auto("Autolang probe", "w", judge, "probe")
+        rec("L07_auto_confirms_under_own_owner", res.get("status") == "auto_confirmed", str(res))
+        rec("L07_A_AUTO_A_working_copy_and_binding_unchanged", live() == before_live and L.bound_program() is pa)
+        rec("L07_A_file_untouched_by_AUTO", _hash(_path(A)) == before_file)
+        rec("L07_AutoGrow_file_has_only_its_own_language", file_lang(G) == ({"AGcell"}, {"agrowlux"}))
+        # 8 AutoGrow custom > restart > AUTO (fresh process, a different session owner bound): retained, no leak
+        code = ("import json, sys; import form.dell_matrix.auto_growth as ag; from form.persist import load; "
+                "from form.mandell.seed import CELLS; from form.mandell import language as L; "
+                f"s = load({S!r}); a = ag.AutoGrowth(auto=True, internet=False); a.owner = {G!r}; "
+                "j = {'floor_accept': True, 'verita_score': 0.9, 'combined': 0.9, 'grade': 'clear', 'reason': 'p'}; "
+                "r = a._nursery_auto('Autolang restart probe', 'w', j, 'probe'); "
+                "print(json.dumps([r.get('status'), L.bound_owner(), sorted(CELLS)]))")
+        out = subprocess.run([sys.executable, "-B", "-c", code], capture_output=True, text=True, cwd=os.getcwd())
+        try:
+            status, bound, cells = json.loads(out.stdout.strip().splitlines()[-1])
+        except Exception:
+            status, bound, cells = None, None, None
+        rec("L08_restart_AUTO_confirms_session_binding_kept", status == "auto_confirmed" and bound == S and cells == [],
+            out.stderr[-200:])
+        rec("L08_restart_AutoGrow_language_retained_no_session_leak", file_lang(G) == ({"AGcell"}, {"agrowlux"}))
+        # 15 AUTO failure (confirm refused; owner load error): A unchanged, AutoGrow file unchanged, nothing counted
+        g_h, total = _hash(_path(G)), a.confirmed_total
+        orig = cl.confirm_proposal
+        cl.confirm_proposal = lambda program, pid_: {"ok": False, "reason": "injected"}
+        try:
+            r2 = a._nursery_auto("Autolang failing probe", "w", judge, "probe")
+        finally:
+            cl.confirm_proposal = orig
+        rec("L15_auto_confirm_failure_A_unchanged",
+            r2.get("status") != "auto_confirmed" and live() == before_live and L.bound_program() is pa
+            and _hash(_path(G)) == g_h and a.confirmed_total == total, str(r2))
+        orig_lo = ag.AutoGrowth._load_owner_program
+
+        def boom(self, load_):
+            raise RuntimeError("injected owner load failure")
+
+        ag.AutoGrowth._load_owner_program = boom
+        try:
+            r3 = a._nursery_auto("Autolang error probe", "w", judge, "probe")
+        finally:
+            ag.AutoGrowth._load_owner_program = orig_lo
+        rec("L15_auto_load_failure_A_unchanged_nothing_counted",
+            "confirm" not in str(r3.get("status")) and live() == before_live and L.bound_program() is pa
+            and _hash(_path(G)) == g_h and a.confirmed_total == total, str(r3))
+    finally:
+        for o in (A, G, S):
+            for path in (_path(o), owner_nursery_path(o)):
+                if os.path.exists(path):
+                    os.remove(path)
 
 
 if __name__ == "__main__":

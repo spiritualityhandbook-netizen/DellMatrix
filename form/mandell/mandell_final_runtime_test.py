@@ -12,7 +12,7 @@ from form.open import open_program
 from form.mandell.seed import CELLS, define_cell, expand_cell
 from form.mandell.language import (
     dump_language, harvest_evidence, discover_tests,
-    save_program_language, large_directive_fixture, metrics,
+    save_program_language, large_directive_fixture, metrics, bind,
 )
 from form.mandell.canonical import parse_directive_v2, compress_graph, expand_graph, freeze_program, cheat_project
 from form.mandell import meta_runtime, canonical
@@ -65,10 +65,12 @@ def smoke() -> bool:
     rec("metric_not_hash_only", "execute_seed" in m["execution"]["method"])
     rec("freeze_native_parity", "mandell_language" in freeze_program(p) and "attach_language" not in inspect.getsource(freeze_program))
     rec("cheat_native_persistence_parity", cheat_project(p, ["08[Create] :: n5"], "cold")["origin_unchanged"] is True)
+    m51 = open_program("M51")
+    bind(m51)  # owner-bound language (D3): the language defined below is M51's, not the bound M5's
     CELLS.clear()
     define_cell("PC", "08[Create] :: pc")
     customize("m51lux", dell=9, sense="light")
-    save(open_program("M51"), path)
+    save(m51, path)
     CELLS.clear()
     load("M51", path)
     rec("persistence_circuit", "PC" in CELLS and expand_cell("PC").ok and "m51lux" in export_customs())

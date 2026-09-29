@@ -13,25 +13,125 @@ LANGUAGE_VERSION = "4"
 LANGUAGE_KEY = "mandell_language"
 
 
-def dump_language() -> Dict[str, Any]:
+def dump_language(lang: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Serialized language block. ``lang`` = an owner's language {cells, customs}; default = the working copy."""
+    lang = lang if lang is not None else _working_copy()
     return {
         "version": LANGUAGE_VERSION,
-        "cells": dict(CELLS),
-        "latin_customs": export_customs(),
+        "cells": dict(lang["cells"]),
+        "latin_customs": {k: dict(v) for k, v in lang["customs"].items()},
         "language_configuration": {"parser": "parse_directive_v2", "cell_authority": "seed.expand_cell"},
     }
 
 
-def restore_language(data: Optional[Dict[str, Any]]) -> None:
-    blob = (data or {}).get(LANGUAGE_KEY) or data or {}
-    if not isinstance(blob, dict):
-        return
-    cells = blob.get("cells") or {}
+# Owner-bound language (Director D2/D3/D5/D6). seed.CELLS and latinmandell._CUSTOM are the WORKING COPY of the
+# language of exactly ONE bound Program (its owner), not unowned process-global semantics. Every other Program
+# keeps its own language in Program.language. _BINDING is the single authority for which Program the working
+# copy represents; only bind() changes it.
+#   bind(p)        : write the working copy back into the outgoing bound Program (memory only, never a file),
+#                    install p's language, bind p. bind(outgoing) later restores the outgoing owner's language.
+#   language_of(p) : what save(p) persists. p's OWNER bound (p itself or another instance of the same owner)
+#                    -> the working copy (the language is owned per owner; D5: open-then-save of the same owner
+#                    replaces that owner's persisted language). Else p's own language (p.language) if it has one.
+#                    Never-loaded (unbound) p with no binding -> p adopts the unowned working copy and becomes
+#                    bound. Another owner bound -> empty cells + default customs (never that owner's language).
+#   parse_language : pure validation of a serialized program's language; raises LanguageLoadError, mutates nothing.
+class LanguageLoadError(ValueError):
+    """Serialized language is malformed; raised before any language or binding change."""
+
+
+_BINDING: Dict[str, Any] = {"program": None}
+
+
+def empty_language(customs: Optional[Dict[str, Dict[str, Any]]] = None) -> Dict[str, Any]:
+    return {"cells": {}, "customs": {k: dict(v) for k, v in (customs or {}).items()}}
+
+
+def _copy(lang: Dict[str, Any]) -> Dict[str, Any]:
+    return {"cells": dict(lang["cells"]), "customs": {k: dict(v) for k, v in lang["customs"].items()}}
+
+
+def _working_copy() -> Dict[str, Any]:
+    return {"cells": dict(CELLS), "customs": export_customs()}
+
+
+def _install(lang: Dict[str, Any]) -> None:
     CELLS.clear()
-    CELLS.update({str(k): str(v) for k, v in cells.items()})
-    if blob.get("latin_customs"):
-        clear_customs()
-        import_customs(blob.get("latin_customs") or {})
+    CELLS.update(lang["cells"])
+    clear_customs()
+    import_customs(lang["customs"])
+
+
+def bound_program() -> Any:
+    return _BINDING["program"]
+
+
+def bound_owner() -> Optional[str]:
+    p = _BINDING["program"]
+    return None if p is None else p.owner
+
+
+def bind(program: Any) -> None:
+    """Bind ``program``: its language becomes the working copy (isolated switch; nothing is written to disk)."""
+    cur = _BINDING["program"]
+    if cur is program:
+        return
+    lang = program.language
+    if lang is None:
+        lang = _working_copy() if cur is None or cur.owner == program.owner else empty_language()
+    lang = _copy(lang)
+    if cur is not None:
+        cur.language = _working_copy()
+    _install(lang)
+    program.language = lang
+    _BINDING["program"] = program
+
+
+def language_of(program: Any) -> Dict[str, Any]:
+    """The language save(program) persists (see the block comment above)."""
+    cur = _BINDING["program"]
+    if cur is program:
+        program.language = _working_copy()
+        return program.language
+    if cur is not None and cur.owner == program.owner:
+        return _working_copy()
+    if program.language is not None:
+        return program.language
+    if cur is None:
+        bind(program)
+        return program.language
+    return empty_language()
+
+
+def _customs_ok(c: Any) -> bool:
+    return isinstance(c, dict) and all(isinstance(k, str) and isinstance(v, dict) for k, v in c.items())
+
+
+def parse_language(data: Any) -> Dict[str, Any]:
+    """Validate the COMPLETE serialized language of a program file and return {cells, customs}. Pure.
+
+    Single customs source: mandell_language.latin_customs when non-empty, else the legacy top-level
+    latinmandell_customs (serialize writes both from the same language). Missing mandell_language (legacy
+    file): cells EMPTY + legacy/default customs (D2), never the active owner's language."""
+    if not isinstance(data, dict):
+        raise LanguageLoadError("program data is not an object")
+    legacy = data.get("latinmandell_customs", {})
+    legacy = {} if legacy is None else legacy
+    if not _customs_ok(legacy):
+        raise LanguageLoadError("latinmandell_customs is not an object of objects")
+    if LANGUAGE_KEY not in data:
+        return empty_language(legacy)
+    blob = data[LANGUAGE_KEY]
+    if not isinstance(blob, dict):
+        raise LanguageLoadError(f"{LANGUAGE_KEY} is not an object")
+    cells = blob.get("cells", {})
+    if not isinstance(cells, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in cells.items()):
+        raise LanguageLoadError(f"{LANGUAGE_KEY}.cells is not an object of strings")
+    primary = blob.get("latin_customs", {})
+    primary = {} if primary is None else primary
+    if not _customs_ok(primary):
+        raise LanguageLoadError(f"{LANGUAGE_KEY}.latin_customs is not an object of objects")
+    return {"cells": dict(cells), "customs": {k: dict(v) for k, v in (primary or legacy).items()}}
 
 
 def attach_language(state: Dict[str, Any]) -> Dict[str, Any]:

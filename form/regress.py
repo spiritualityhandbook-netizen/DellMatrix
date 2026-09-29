@@ -4,6 +4,7 @@
     python -m form.regress              # forward
     python -m form.regress --order rev  # reverse order
     python -m form.regress --twice      # run the list twice on the same state (exposes state coupling)
+    python -m form.regress --help       # usage only (exit 0, no entry runs); any bad argument exits 2 unrun
 
 Each entry "module[:function]" (default function: smoke) runs in its own process:
     python -B -c "r = getattr(importlib.import_module(M), F)(); print(<per-run token> if r is True ...); sys.exit(...)"
@@ -17,6 +18,7 @@ executed GREEN. Anything else is RED (exit 1).
 """
 from __future__ import annotations
 
+import argparse
 import os
 import re
 import secrets
@@ -176,17 +178,41 @@ def run(entries: Optional[List[str]] = None, intended: Optional[Iterable[str]] =
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+class _Once(argparse.Action):
+    """Store an option at most once: a repeated or conflicting --order/--twice is a usage error."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        seen = namespace.__dict__.setdefault("_given", set())
+        if self.dest in seen:
+            parser.error(f"{option_string} given more than once (repeated or conflicting)")
+        seen.add(self.dest)
+        setattr(namespace, self.dest, True if self.nargs == 0 else values)
+
+
+def _parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(prog="python -m form.regress", allow_abbrev=False,
+                                 description="Canonical regression runner (one list, one process per entry).")
+    ap.add_argument("--order", choices=("fwd", "rev"), default="fwd", action=_Once,
+                    help="entry order (fwd|rev); --order rev and --order=rev are equivalent")
+    ap.add_argument("--twice", nargs=0, default=False, action=_Once,
+                    help="run the list twice on the same state (exposes state coupling)")
+    return ap
+
+
 def main(argv: Optional[List[str]] = None) -> int:
+    """Strict CLI: every argument is validated BEFORE any entry runs. --help/-h prints usage and exits 0 with
+    zero entries run and no verdict; any unknown, malformed, abbreviated, repeated or extra token exits 2."""
     a = list(sys.argv[1:] if argv is None else argv)
-    order = "fwd"
-    if "--order" in a:
-        i = a.index("--order")
-        order = a[i + 1] if i + 1 < len(a) else ""
-        if order not in ("fwd", "rev"):
-            print(f"REGRESS: bad --order {order!r} (fwd|rev) -> RED")
-            return 1
-    ok = run(order=order, twice="--twice" in a)
-    print(f"REGRESS FINAL: {'GREEN' if ok else 'RED'} (order={order}{', twice' if '--twice' in a else ''})")
+    ap = _parser()
+    if "--" in a:
+        print(ap.format_usage().rstrip() + "\nerror: '--' is not accepted", file=sys.stderr)
+        return 2
+    try:
+        ns = ap.parse_args(a)
+    except SystemExit as e:
+        return 0 if e.code in (0, None) else 2
+    ok = run(order=ns.order, twice=ns.twice)
+    print(f"REGRESS FINAL: {'GREEN' if ok else 'RED'} (order={ns.order}{', twice' if ns.twice else ''})")
     return 0 if ok else 1
 
 
