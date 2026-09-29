@@ -1692,6 +1692,9 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     print("  Live: live  · look  · zoom <id>  · mode builder|depth")
     print()
     p = persist_load(owner) if do_load else open_program(owner)
+    if not do_load:
+        from form.mandell.language import bind
+        bind(p)  # Q-022: explicit owner binding BEFORE any customize, so customize > save > --load restores it
     if do_load:
         _say(f"Loaded session for {owner}.")
     print(p.render())

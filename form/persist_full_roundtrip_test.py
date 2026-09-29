@@ -10,6 +10,7 @@ import tempfile
 from form.open import open_program
 from form.persist import serialize, save, load, checkpoint
 from form.persist_rest import DURABLE_KEYS, durable
+from form.mandell.language import bind
 from form.mandell.seed import CELLS, define_cell, expand_cell
 from form.mandell.latinmandell import customize, clear_customs, root_of
 from form.mandell.executor import execute_seed
@@ -33,6 +34,7 @@ def smoke() -> bool:
 
     rec("persist_import", True)
     p = open_program("RT")
+    bind(p)  # Q-022: explicit owner binding before language edits (no adoption)
     p.place("u1", "UnitOne", words="w", detail="d1", goals=["g1"], skin=Skin.CUBE, x=2, y=3)
     p.place("u2", "UnitTwo", words="w2", x=4)
     plane = p.cube.session.plane
@@ -101,6 +103,10 @@ def smoke() -> bool:
     restore_contract(rec)
     language_owner_contract(rec)
     persist_entry_contract(rec)
+    lifecycle_contract(rec)
+    for _p in _TMP_PATHS:
+        if os.path.exists(_p):
+            os.remove(_p)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 
@@ -425,6 +431,178 @@ def persist_entry_contract(rec) -> None:
     rec("R5_entry_unknown_arg_exit2", rc == 2 and "Traceback" not in out, out[-160:])
     rc, out = run("-m", "form.persist_rest")
     rec("R5_rest_entry_same_contract", rc == 0 and "usage:" in out and "Traceback" not in out, out[-160:])
+
+
+def _fresh(code):
+    """Run ``code`` in a fresh interpreter (nothing bound yet); return the JSON printed on its last line."""
+    import subprocess
+    import sys
+    out = subprocess.run([sys.executable, "-B", "-c", code], capture_output=True, text=True, cwd=os.getcwd(), timeout=300)
+    try:
+        return json.loads(out.stdout.strip().splitlines()[-1]), out.stderr[-300:]
+    except Exception:
+        return None, (out.stdout[-200:] + out.stderr[-300:])
+
+
+_ANON = ("import json; from form.mandell.seed import CELLS, define_cell; from form.mandell.latinmandell import customize, "
+         "export_customs; from form.mandell import language as L; from form.open import open_program; "
+         "from form.persist import load, save, serialize, _path; "
+         "define_cell('AnonCell', '08[Create] :: anonymous'); customize('anonlux', dell=9, sense='anonymous'); ")
+
+
+def lifecycle_contract(rec) -> None:
+    """LLH-I L1-L5 (Q-022 no adoption, Q-023 reads never bind, Q-024 clone keeps the caller's binding, strong
+    _BINDING kept, attach_language gone). Unbound cases run in fresh processes (nothing bound yet)."""
+    import gc
+    import glob
+    import subprocess
+    import sys
+    import weakref
+    from form.mandell import language as L
+    from form.mandell.canonical import clone_program, freeze_program, cheat_project
+    from form.mandell import core_i_recovery
+    from form.mandell.latinmandell import export_customs
+    from form.persist import _path, _STATE_DIR
+    from form.dell_matrix.nursery import owner_nursery_path
+    sfx = os.getpid()
+    A, X, F, R, G, Q = (f"LcA{sfx}", f"LcX{sfx}", f"LcF{sfx}", f"LcR{sfx}", f"LcG{sfx}", f"LcQ{sfx}")
+    owners = [A, X, F, R, G, Q]
+    try:
+        # owners A and X with their OWN language (defined while explicitly bound)
+        for o, cell, lux in ((A, "CellA", "aluxlc"), (X, "CellX", "xluxlc")):
+            p = open_program(o)
+            L.bind(p)
+            CELLS.clear()
+            clear_customs()
+            define_cell(cell, "08[Create] :: " + cell)
+            customize(lux, dell=9, sense="own " + o)
+            save(p)
+        # L1 NO_ADOPT: anonymous edits > serialize/save/freeze/checkpoint/bind of never-loaded A: A inherits nothing
+        got, err = _fresh(_ANON + "from form.mandell.canonical import freeze_program; "
+                          f"p = open_program({F!r}); d = serialize(p); b1 = L.bound_owner(); fz = freeze_program(p); "
+                          "b2 = L.bound_owner(); save(p); b3 = L.bound_owner(); "
+                          f"f = json.load(open(_path({F!r}))); L.bind(p); "
+                          "print(json.dumps([sorted(d['mandell_language']['cells']), "
+                          "sorted(d['mandell_language']['latin_customs']), "
+                          "sorted(fz['mandell_language']['cells']), sorted(f['mandell_language']['cells']), "
+                          "sorted(f['mandell_language']['latin_customs']), sorted(f['latinmandell_customs']), [b1, b2, b3], "
+                          "sorted(p.language['cells']), sorted(CELLS), sorted(export_customs()), L.bound_owner()]))")
+        rec("LC_NO_ADOPT_serialize_freeze_save_inherit_nothing_and_never_bind",
+            got == [[], [], [], [], [], [], [None, None, None], [], [], [], F], f"{got} {err}")
+        # LOAD: anonymous edits > load persisted owner > only the persisted language
+        got, err = _fresh(_ANON + f"p = load({A!r}); "
+                          "print(json.dumps([sorted(CELLS), sorted(export_customs()), L.bound_owner()]))")
+        rec("LC_LOAD_pre_bind_anon_then_load_persisted_only", got == [["CellA"], ["aluxlc"], A], f"{got} {err}")
+        # MISSING LANGUAGE: anonymous edits > load fresh owner (no file) / legacy file without mandell_language
+        with open(_path(A), encoding="utf-8") as f:
+            legacy = json.load(f)
+        legacy.pop("mandell_language")
+        legacy["owner"] = G
+        legacy["latinmandell_customs"] = {"legacylc": {"label": "legacylc", "dell": 9, "sense": "legacy"}}
+        with open(_path(G), "w", encoding="utf-8") as f:
+            json.dump(legacy, f)
+        got, err = _fresh(_ANON + f"p = load({Q!r}); a = [sorted(CELLS), sorted(export_customs()), L.bound_owner()]; "
+                          f"q = load({G!r}); "
+                          "print(json.dumps([a, [sorted(CELLS), sorted(export_customs()), L.bound_owner()]]))")
+        rec("LC_MISSING_LANGUAGE_empty_cells_legacy_default_customs",
+            got == [[[], [], Q], [[], ["legacylc"], G]] and not os.path.exists(_path(Q)), f"{got} {err}")
+        # READ INVARIANCE, unbound: every read op leaves the process UNBOUND
+        got, err = _fresh(_ANON + "from form.mandell.canonical import freeze_program, cheat_project, clone_program; "
+                          "from form.mandell import core_i_recovery, language as LG; from form.persist import checkpoint; "
+                          f"p = open_program({F!r}); seen = {{}}; "
+                          "ops = {'serialize': lambda: serialize(p), 'freeze': lambda: freeze_program(p), "
+                          "'checkpoint': lambda: checkpoint(p), 'core_i_checkpoint': lambda: core_i_recovery.checkpoint(p), "
+                          "'metrics_default': lambda: LG.metrics(), 'metrics_program': lambda: LG.metrics(p), "
+                          "'harvest_evidence': lambda: LG.harvest_evidence(), 'bound_owner': lambda: L.bound_owner(), "
+                          "'clone': lambda: clone_program(p), "
+                          "'cheat_project': lambda: cheat_project(p, ['08[Create] :: z'], 'cold')}\n"
+                          "for k, f in ops.items():\n    f(); seen[k] = L.bound_program() is None\n"
+                          "print(json.dumps(seen))")
+        rec("LC_READ_INVARIANCE_unbound_stays_unbound", bool(got) and all(got.values()) and len(got) == 10, f"{got} {err}")
+        # READ INVARIANCE, bound A / bound X: BOUND_BEFORE is BOUND_AFTER (identity) for every read op
+        from form.persist import checkpoint as p_checkpoint
+        pa = load(A)
+        pf = open_program(F)
+        for bound_label, target in (("A", pa), ("X", None)):
+            if target is None:
+                target = load(X)
+            before = L.bound_program()
+            bad = []
+            for name, op in (("serialize", lambda: serialize(pa)), ("serialize_other", lambda: serialize(pf)),
+                             ("save_prep_other", lambda: save(pf, _tmp_path())), ("freeze", lambda: freeze_program(pa)),
+                             ("freeze_other", lambda: freeze_program(pf)), ("checkpoint", lambda: p_checkpoint(pf)),
+                             ("core_i_checkpoint", lambda: core_i_recovery.checkpoint(pf)),
+                             ("metrics_default", lambda: L.metrics()), ("metrics_other", lambda: L.metrics(pf)),
+                             ("harvest_evidence", lambda: L.harvest_evidence())):
+                op()
+                if L.bound_program() is not before:
+                    bad.append(name)
+            rec(f"LC_READ_INVARIANCE_bound_{bound_label}_identity_kept", not bad and before is target, str(bad))
+        # CLONE (Q-024): bind A > clone A: A; bind X > clone A: X; unbound > clone: unbound; bind(clone) valid
+        pa = load(A)
+        c1 = clone_program(pa)
+        rec("LC_CLONE_bound_A_stays_A", L.bound_program() is pa and c1 is not pa and c1.owner == A
+            and set(c1.language["cells"]) == {"CellA"} and set(c1.language["customs"]) == {"aluxlc"})
+        px = load(X)
+        c2 = clone_program(pa)
+        rec("LC_CLONE_bound_X_stays_X_contents_are_A", L.bound_program() is px and set(c2.language["cells"]) == {"CellA"}
+            and set(CELLS) == {"CellX"})
+        res = cheat_project(pa, ["08[Create] :: z"], "cold")
+        rec("LC_CLONE_cheat_project_keeps_binding", L.bound_program() is px and res.get("origin_unchanged") is True)
+        L.bind(c2)
+        rec("LC_CLONE_explicit_bind_clone_valid", L.bound_program() is c2 and set(CELLS) == {"CellA"}
+            and set(export_customs()) == {"aluxlc"})
+        got, err = _fresh("import json; from form.mandell import language as L; from form.persist import load; "
+                          "from form.mandell.canonical import clone_program; from form.open import open_program; "
+                          f"p = open_program({A!r}); c = clone_program(p); a = L.bound_program() is None; "
+                          f"q = load({A!r}, activate=False); c2 = clone_program(q); b = L.bound_program() is None; "
+                          "print(json.dumps([a, b, sorted(c2.language['cells'])]))")
+        rec("LC_CLONE_unbound_stays_unbound", got == [True, True, ["CellA"]], f"{got} {err}")
+        # STRONG REFERENCE (kept, RH-I lifetime semantics): bound owner alive without external refs; released on rebind
+        pr = open_program(R)
+        L.bind(pr)
+        wr = weakref.ref(pr)
+        del pr
+        gc.collect()
+        alive_bound = wr() is not None and L.bound_program() is wr()
+        L.bind(load(X))
+        gc.collect()
+        rec("LC_STRONG_REFERENCE_bound_alive_released_on_rebind", alive_bound and wr() is None)
+        # ATTACH (L5): the symbol is gone and nothing in form/ defines or calls it
+        needle = "attach_" + "language("  # split so this file is not a hit
+        refs = [pth for pth in glob.glob(os.path.join(os.path.dirname(L.__file__), "..", "**", "*.py"), recursive=True)
+                if needle in open(pth, encoding="utf-8").read()]
+        rec("LC_ATTACH_language_symbol_absent", not hasattr(L, "attach_language") and not refs, str(refs))
+        # REPL (L2): fresh > explicit bind > customize > save > restart --load > restored
+        env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+        s1 = subprocess.run([sys.executable, "-B", "-m", "form.repl", "--owner", R],
+                            input="customize zetallh dell 9 sense llh probe\nsave\nquit\n", capture_output=True,
+                            text=True, cwd=os.getcwd(), env=env, timeout=300)
+        try:
+            with open(_path(R), encoding="utf-8") as f:
+                saved = sorted(L.parse_language(json.load(f))["customs"])
+        except Exception as e:
+            saved = [f"ERR {e}"]
+        s2 = subprocess.run([sys.executable, "-B", "-m", "form.repl", "--owner", R, "--load"],
+                            input="customs\nquit\n", capture_output=True, text=True, cwd=os.getcwd(), env=env, timeout=300)
+        rec("LC_REPL_bind_customize_save_restart_restored",
+            s1.returncode == 0 and saved == ["zetallh"] and "zetallh" in s2.stdout and s2.returncode == 0,
+            f"rc={s1.returncode}/{s2.returncode} saved={saved} {s1.stderr[-160:]}")
+    finally:
+        for o in owners:
+            for path in [_path(o), owner_nursery_path(o)] + glob.glob(os.path.join(_STATE_DIR, f"program_{o}_cp*.json")):
+                if os.path.exists(path):
+                    os.remove(path)
+
+
+def _tmp_path():
+    fd, path = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+    _TMP_PATHS.append(path)
+    return path
+
+
+_TMP_PATHS = []
 
 
 if __name__ == "__main__":

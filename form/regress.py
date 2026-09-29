@@ -57,6 +57,7 @@ LIST = [
 ]
 
 TIMEOUT_S = 900
+COPY_MARKER = ".dm_regress_copy"  # written into every private copy; run() refuses a copy as its src
 _NM = re.compile(r"(\d+)\s*/\s*(\d+)")
 _SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv"}
 
@@ -100,6 +101,7 @@ def _copy_tree(src: str) -> str:
 
     work = os.path.join(dst, "src")
     shutil.copytree(src, work, ignore=ignore, symlinks=True)
+    open(os.path.join(work, COPY_MARKER), "w").close()  # every regression copy is identifiable
     return dst
 
 
@@ -162,7 +164,13 @@ def run_pass(entries: List[str], intended: Iterable[str], cwd: str, label: str =
 
 def run(entries: Optional[List[str]] = None, intended: Optional[Iterable[str]] = None,
         src: str = ROOT, order: str = "fwd", twice: bool = False) -> bool:
-    """Run entries (default LIST) against a private copy of ``src``. intended defaults to LIST + discovered."""
+    """Run entries (default LIST) against a private copy of ``src``. intended defaults to LIST + discovered.
+
+    Recursion guard: a src that is itself a regression copy (COPY_MARKER present) is refused RED before anything
+    is copied or run, whatever the entries, env or caller (self-entry, stubbed/re-spawned CLI, nested run())."""
+    if os.path.exists(os.path.join(src, COPY_MARKER)):
+        print(f"REGRESS: src {src} is a regression copy ({COPY_MARKER}); nested run refused -> RED", flush=True)
+        return False
     entries = list(LIST if entries is None else entries)
     intended = list(intended_entries(src) if intended is None else intended)
     if order == "rev":

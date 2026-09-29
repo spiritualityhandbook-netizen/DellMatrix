@@ -11,7 +11,7 @@ from form.mandell.seed import CELLS, define_cell, expand_cell, BULLET
 from form.mandell import meta_runtime, language, canonical
 from form.mandell.language import (
     dump_language, save_program_language, load_program_language,
-    parse_directive, harvest_evidence, plan_from_evidence, LANGUAGE_VERSION,
+    parse_directive, harvest_evidence, plan_from_evidence, LANGUAGE_VERSION, bind,
 )
 from form.mandell.canonical import parse_directive_v2, compress_graph, expand_graph, cheat_project, freeze_program
 from form.mandell.activation import GREEK, explain_dell
@@ -51,6 +51,7 @@ def smoke() -> bool:
     rec("architect_status_roundtrip", expand_graph(compress_graph(parse_directive_v2("02[Persona:Architect]\n90[Trace:SHA]\n20[Alpha]")))["ok"])
     rec("m3_style_roundtrip", expand_graph(compress_graph(parse_directive_v2("97[Define:Objective]\n23[Lock:Floor]\n92[Guard:NO_UI]\n20[Alpha]")))["ok"])
     p = open_program("M4")
+    bind(p)  # Q-022: M4 owns the language defined below by explicit binding (no first-serialize adoption)
     fr = freeze_program(p)
     rec("freeze_schema", "plane" in fr and "core_ii" in fr and "mandell_language" in fr)
     origin = freeze_program(p)

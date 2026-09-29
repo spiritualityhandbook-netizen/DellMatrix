@@ -128,7 +128,8 @@ def clone_program(program: Any) -> Any:
     os.close(fd)
     try:
         save(program, path)
-        return load(getattr(program, "owner", "CHEAT"), path)
+        # Q-024: a clone is a private copy; it never takes the caller's binding (A, X or none stays as it was).
+        return load(getattr(program, "owner", "CHEAT"), path, activate=False)
     finally:
         try:
             os.remove(path)

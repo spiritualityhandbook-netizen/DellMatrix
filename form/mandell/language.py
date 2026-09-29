@@ -30,11 +30,15 @@ def dump_language(lang: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
 # copy represents; only bind() changes it.
 #   bind(p)        : write the working copy back into the outgoing bound Program (memory only, never a file),
 #                    install p's language, bind p. bind(outgoing) later restores the outgoing owner's language.
-#   language_of(p) : what save(p) persists. p's OWNER bound (p itself or another instance of the same owner)
-#                    -> the working copy (the language is owned per owner; D5: open-then-save of the same owner
-#                    replaces that owner's persisted language). Else p's own language (p.language) if it has one.
-#                    Never-loaded (unbound) p with no binding -> p adopts the unowned working copy and becomes
-#                    bound. Another owner bound -> empty cells + default customs (never that owner's language).
+#   language_of(p) : what save(p) persists; a pure READ (Q-023: serialize, save preparation, checkpoint,
+#                    freeze, metrics and inspection never bind, so BOUND_BEFORE == BOUND_AFTER). p's OWNER bound
+#                    (p itself or another instance of the same owner) -> the working copy (the language is owned
+#                    per owner; D5: open-then-save of the same owner replaces that owner's persisted language).
+#                    Else p's own language (p.language) if it has one. Else empty cells + default customs.
+#   No adoption (Q-022): edits made while NO owner is bound are anonymous; they never become an owner's language
+#                    (not by serialize/save, not by bind, not by load). An owner's language comes only from its
+#                    persisted file (load), from edits made while it is explicitly bound, or from a same-owner
+#                    instance. The REPL binds its Program before any customize (form/repl.py run()).
 #   parse_language : pure validation of a serialized program's language; raises LanguageLoadError, mutates nothing.
 class LanguageLoadError(ValueError):
     """Serialized language is malformed; raised before any language or binding change."""
@@ -78,7 +82,7 @@ def bind(program: Any) -> None:
         return
     lang = program.language
     if lang is None:
-        lang = _working_copy() if cur is None or cur.owner == program.owner else empty_language()
+        lang = _working_copy() if cur is not None and cur.owner == program.owner else empty_language()
     lang = _copy(lang)
     if cur is not None:
         cur.language = _working_copy()
@@ -90,15 +94,9 @@ def bind(program: Any) -> None:
 def language_of(program: Any) -> Dict[str, Any]:
     """The language save(program) persists (see the block comment above)."""
     cur = _BINDING["program"]
-    if cur is program:
-        program.language = _working_copy()
-        return program.language
     if cur is not None and cur.owner == program.owner:
         return _working_copy()
     if program.language is not None:
-        return program.language
-    if cur is None:
-        bind(program)
         return program.language
     return empty_language()
 
@@ -132,15 +130,6 @@ def parse_language(data: Any) -> Dict[str, Any]:
     if not _customs_ok(primary):
         raise LanguageLoadError(f"{LANGUAGE_KEY}.latin_customs is not an object of objects")
     return {"cells": dict(cells), "customs": {k: dict(v) for k, v in (primary or legacy).items()}}
-
-
-def attach_language(state: Dict[str, Any]) -> Dict[str, Any]:
-    out = dict(state)
-    out[LANGUAGE_KEY] = dump_language()
-    out.pop("cheat_projections", None)
-    out.pop("omni_report", None)
-    out.pop("route_candidates", None)
-    return out
 
 
 def save_program_language(program: Any, path: str) -> str:
