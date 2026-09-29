@@ -29,6 +29,7 @@ def smoke() -> bool:
         r.append(bool(ok))
 
     p = open_program("M5")
+    bind(p)  # Q-022: explicit owner binding before language edits (no adoption)
     define_cell("K", "08[Create] :: k")
     blob = serialize(p)
     rec("native_serialize_language", isinstance(blob.get("mandell_language"), dict))

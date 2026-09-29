@@ -67,6 +67,7 @@ def smoke() -> bool:
     owner_isolation(rec)
     lost_update_explicit(rec)
     regress_cli_contract(rec)
+    regress_guard_contract(rec)
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 
@@ -281,6 +282,61 @@ def regress_cli_contract(rec) -> None:
         rec("M7_runner_never_writes_src", not os.path.exists(os.path.join(tmp, "coupled.marker")))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def regress_guard_contract(rec) -> None:
+    """LLH-I L6: every regression copy is identifiable (COPY_MARKER) and run() refuses a copy as src BEFORE copying
+    or running anything, whatever the entries (default or explicit) and whatever the environment. Probes here are
+    harmless (a marker-writing module), so a broken guard turns this RED without recursing."""
+    import contextlib
+    import glob
+    import io
+    import shutil
+    import form.regress as rg
+    tmpdir = tempfile.gettempdir()
+    leaked_before = set(glob.glob(os.path.join(tmpdir, "dm_regress_*")))
+    src = tempfile.mkdtemp(prefix="dm_guard_src_")
+    try:
+        os.makedirs(os.path.join(src, "form"))
+        open(os.path.join(src, "form", "__init__.py"), "w").close()
+        ran_flag = src + ".ran"  # absolute path baked into the probe: proves whether any entry executed
+        with open(os.path.join(src, "form", "zz_guard_probe.py"), "w", encoding="utf-8") as f:
+            f.write(f"def smoke():\n    open({ran_flag!r}, 'w').close()\n    print('1/1')\n    return True\n")
+        dst = rg._copy_tree(src)
+        try:
+            rec("L6_regress_copy_identifiable", os.path.isfile(os.path.join(dst, "src", rg.COPY_MARKER))
+                and not os.path.exists(os.path.join(src, rg.COPY_MARKER)))
+        finally:
+            shutil.rmtree(dst, ignore_errors=True)
+        entries = ["form.zz_guard_probe"]
+        with contextlib.redirect_stdout(io.StringIO()):
+            plain = rg.run(entries=entries, intended=entries, src=src)
+        rec("L6_non_copy_src_runs", plain is True and os.path.exists(ran_flag))
+        if os.path.exists(ran_flag):
+            os.remove(ran_flag)
+        open(os.path.join(src, rg.COPY_MARKER), "w").close()  # src now looks like a regression copy
+        saved = {k: os.environ.pop(k) for k in list(os.environ) if k.startswith("DM_REGRESS")}
+        try:
+            for label, kw in (("explicit_entries", {"entries": entries, "intended": entries}),
+                              ("explicit_twice", {"entries": entries, "intended": entries, "twice": True})):
+                out = io.StringIO()
+                with contextlib.redirect_stdout(out):
+                    res = rg.run(src=src, **kw)
+                rec(f"L6_copy_src_refused_env_independent[{label}]",
+                    res is False and not os.path.exists(ran_flag) and "regression copy" in out.getvalue(),
+                    out.getvalue()[-120:])
+        finally:
+            os.environ.update(saved)
+        if os.path.isfile(os.path.join(rg.ROOT, rg.COPY_MARKER)):  # this suite is running inside a regression copy
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                res = rg.run(entries=entries, intended=entries)
+            rec("L6_nested_run_inside_copy_refused_default_src", res is False and "regression copy" in out.getvalue())
+        rec("L6_no_leaked_regress_copies", set(glob.glob(os.path.join(tmpdir, "dm_regress_*"))) <= leaked_before)
+    finally:
+        shutil.rmtree(src, ignore_errors=True)
+        if os.path.exists(src + ".ran"):
+            os.remove(src + ".ran")
 
 
 if __name__ == "__main__":
