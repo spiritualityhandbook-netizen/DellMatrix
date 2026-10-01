@@ -147,8 +147,9 @@ def select_for_context(
     i.e. exact_phrase DESC, ordered DESC, coverage DESC, jaccard DESC,
     proposal ID ASC (stable final tie-break).
     
-    Eligibility unchanged: confirmed AND on-plane. Scoring never weakens
-    eligibility; no-match still yields an empty selection.
+    Eligibility: confirmed AND on-plane AND dependency-valid (DCC-XV).
+    Dependency filtering runs before Relevance V2 scoring; scoring never
+    weakens eligibility; no-match still yields an empty selection.
     """
     context = (context or "").strip()
     ctx_tokens = _tokens(context)
@@ -163,8 +164,24 @@ def select_for_context(
         if pid not in program.cube.session.plane.units:
             continue
         eligible.append((pid, prop))
-    
+
+    # DCC-XV: dependency validity gates eligibility. A derived unit is
+    # dependency-valid only when every required transitive ancestor exists
+    # on the plane, is confirmed, and has valid lineage. Historical lineage
+    # is untouched; this filters current-state qualification before
+    # Relevance V2 ever sees the candidate.
+    from form.mandell.dependency_validity import (
+        DEPENDENCY_VERSION, dependency_exclusions, is_dependency_valid,
+    )
+    dep_excluded_ids = [
+        pid for pid, _ in eligible if not is_dependency_valid(program, pid)
+    ]
+    dep_exclusions = dependency_exclusions(program, dep_excluded_ids)
+    eligible = [(pid, prop) for pid, prop in eligible
+                if is_dependency_valid(program, pid)]
+
     eligible_count = len(eligible)
+    dependency_valid_count = eligible_count
     
     if not ctx_tokens or not eligible:
         return {
@@ -172,7 +189,10 @@ def select_for_context(
             "normalized_context": ctx_norm,
             "operation": operation,
             "selector_version": 2,
+            "dependency_version": DEPENDENCY_VERSION,
             "eligible_count": eligible_count,
+            "dependency_valid_count": dependency_valid_count,
+            "dependency_exclusions": dep_exclusions,
             "selected": [],
             "reason": "no context tokens" if not ctx_tokens else "no eligible knowledge",
         }
@@ -229,7 +249,10 @@ def select_for_context(
         "normalized_context": ctx_norm,
         "operation": operation,
         "selector_version": 2,
+        "dependency_version": DEPENDENCY_VERSION,
         "eligible_count": eligible_count,
+        "dependency_valid_count": dependency_valid_count,
+        "dependency_exclusions": dep_exclusions,
         "selected": selected,
         "reason": reason,
     }

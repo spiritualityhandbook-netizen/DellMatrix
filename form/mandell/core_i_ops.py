@@ -115,6 +115,43 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 )
                 messages.append(f"  parents: {rec['parent_ids'] or '—'}")
                 messages.append(f"  roots: {rec['root_ids'] or '—'}")
+        elif lab.startswith("trace_dependency "):
+            # DCC-XV: answer "is this knowledge dependency-valid right now,
+            # and if not, why?" — historical lineage alongside current
+            # dependency status. Dependency is not truth, relevance, or
+            # conflict; it is current qualification of required ancestry.
+            from form.mandell.dependency_validity import (
+                DEPENDENCY_VERSION, inspect_dependency,
+            )
+            from form.mandell.knowledge_lineage import lineage_record
+            target = lab[len("trace_dependency "):].strip()
+            lin = lineage_record(program, target)
+            dep = inspect_dependency(program, target)
+            program.last_discover = {
+                "source": "trace_dependency",
+                "unit_id": target,
+                "dependency_version": DEPENDENCY_VERSION,
+                "dependency_status": dep["dependency_status"],
+                "dependency_reason": dep["dependency_reason"],
+                "direct_parent_ids": dep["direct_parent_ids"],
+                "ancestor_ids": dep["ancestor_ids"],
+                "invalid_dependency_ids": dep["invalid_dependency_ids"],
+                "missing_dependency_ids": dep["missing_dependency_ids"],
+                "origin_kind": lin["origin_kind"],
+                "origin": lin["origin"],
+                "parent_ids": dep["direct_parent_ids"],
+                "root_ids": dep["historical_root_ids"],
+                "depth": lin["depth"],
+                "lineage_status": lin["status"],
+            }
+            if dep["dependency_status"] == "valid":
+                messages.append(f"Dependency {target}: valid "
+                                f"(origin={lin['origin_kind']}, depth={lin['depth']})")
+            else:
+                messages.append(f"Dependency {target}: {dep['dependency_status']} "
+                                f"({dep['dependency_reason']})")
+                messages.append(f"  historical parents: {dep['direct_parent_ids'] or '—'}")
+                messages.append(f"  historical roots: {dep['historical_root_ids'] or '—'}")
         elif "nursery" in lab:
             pending = program.list_proposals()
             program.last_discover = {"ids": [p.get("id") for p in pending], "count": len(pending), "source": "nursery"}
@@ -289,6 +326,9 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                         "action": "grow_contextual", "context": context,
                         "ok": False, "error": f"scope validation failed for {sid}",
                         "consumer": "grow_ideas", "dell": 37,
+                        "dependency_version": selection.get("dependency_version"),
+                        "dependency_valid_count": selection.get("dependency_valid_count"),
+                        "dependency_exclusions": selection.get("dependency_exclusions", []),
                     }
                     messages.append(f"Contextual grow refused: scope invalid for {sid}")
                     return {**base, "ok": False, "error": f"scope validation failed: {sid}"}
@@ -334,6 +374,9 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                     "quarantined_ids": quarantined_ids,
                     "routable_selected_ids": routable_ids,
                     "lineage_version": LINEAGE_VERSION,
+                    "dependency_version": selection.get("dependency_version"),
+                    "dependency_valid_count": selection.get("dependency_valid_count"),
+                    "dependency_exclusions": selection.get("dependency_exclusions", []),
                     "ok": False,
                     "error": f"lineage construction failed: {type(e).__name__}: {e}",
                     "consumer": "grow_ideas", "dell": 37,
@@ -372,6 +415,9 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                     "selected_root_ids": sel_root_ids,
                     "root_count": len(sel_root_ids),
                     "lineage_groups": lin_groups,
+                    "dependency_version": selection.get("dependency_version"),
+                    "dependency_valid_count": selection.get("dependency_valid_count"),
+                    "dependency_exclusions": selection.get("dependency_exclusions", []),
                     "ok": False,
                     "error": f"consumer failed: {type(e).__name__}: {e}",
                     "consumer": "grow_ideas", "dell": 37,
@@ -433,6 +479,9 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 "selected_root_ids": sel_root_ids,
                 "root_count": len(sel_root_ids),
                 "lineage_groups": lin_groups,
+                "dependency_version": selection.get("dependency_version"),
+                "dependency_valid_count": selection.get("dependency_valid_count"),
+                "dependency_exclusions": selection.get("dependency_exclusions", []),
                 "contributions": contributions,
                 "consumer_scope_ids": consumer_scope_ids,
                 "scope_mode": scope_mode,
@@ -446,6 +495,8 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             messages.append(f"  Reason: {selection['reason']}")
             messages.append(f"  Conflicts: {len(conflicts)}, Quarantined: {quarantined_ids}, Routable: {len(routable_ids)}")
             messages.append(f"  Lineage roots: {len(sel_root_ids)} independent roots over {len(selected_ids)} selected")
+            if selection.get("dependency_exclusions"):
+                messages.append(f"  Dependency exclusions: {len(selection['dependency_exclusions'])}")
             messages.append(f"  Scope mode: {scope_mode}, Consumer scope IDs: {consumer_scope_ids}")
             for s in selection["selected"][:3]:
                 messages.append(f"    {s['id']}: {s['label']} (score={s['score']})")
