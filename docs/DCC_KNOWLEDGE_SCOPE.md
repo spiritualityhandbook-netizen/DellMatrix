@@ -874,3 +874,119 @@ policy is DEFERRED. No destructive pruning is invented here.
 - revision != rewrite — superseding knowledge never rewrites
   historical outcomes; they keep the revision that participated.
 - AUTONOMY = NO.
+
+## PAC-I: Persistence Authority Convergence I (2026-10-01)
+
+One authoritative durable state path for live checkpoint/state operations
+where coherent persistence is already required:
+
+    Dell 27 > canonical checkpoint op (form/mandell/core_i_recovery.py) >
+    Persistence V2 (form/dell_matrix/atomic_write.py) >
+    Checkpoint Generation V1 (form/mandell/checkpoint_generation.py) >
+    atomic durable generation
+
+### Authority singularity
+
+Before PAC-I, the live Dell 27 path (`core_i_recovery.checkpoint`) performed
+two bare writes (checkpoint member + `*_cp_latest.json` pointer) with no temp
+file, no fsync, no atomic replace, and no generation boundary — outside
+Persistence V2 and outside Checkpoint Generation V1, which had zero live
+write-callers. After PAC-I, `core_i_recovery.checkpoint` delegates to
+`checkpoint_generation.commit_checkpoint`; `core_i_recovery.load_checkpoint`
+delegates to `checkpoint_generation.load_checkpoint`. There is no second live
+durable checkpoint authority. Legacy timestamped checkpoints (pre-generation
+format) remain READ-ONLY compatibility: they are loadable when no generation
+exists, never written.
+
+### Live Dell 27 delegation
+
+`apply_core_i` Dell 27 arm calls the canonical checkpoint operation, stores
+the returned generation ID on `program.last_checkpoint`, reports
+`Checkpoint written: generation <id>`, and returns the generation ID in the
+result (`result["generation_id"]`). Dell 28 routes its default rollback
+through the canonical generation loader (`load_checkpoint`); an explicit
+generation ID loads that generation. Evidence strings in the semantic router
+describe Generation V1 / Persistence V2 members / the atomic CURRENT pointer,
+and rollback evidence describes fingerprint-validated generation load with no
+hybrid construction.
+
+### Generation observability
+
+- Every committed checkpoint returns its generation ID (`g<16 hex>`).
+- The atomic CURRENT pointer names the authoritative generation;
+  `current_generation_id(owner)` reads it.
+- `program.last_checkpoint` holds the generation ID of the program's latest
+  committed checkpoint (in-memory; see symmetry classifications below).
+- `list_checkpoints` returns generation dictionaries
+  (`generation_id`, `created_at`, `previous_generation_id`, `current`).
+
+### CURRENT commit boundary
+
+The atomic replace of the CURRENT pointer is the commit boundary:
+- crash before commit -> previous generation authoritative; uncommitted
+  members/pointer inert, never trusted;
+- crash after commit -> new complete generation authoritative;
+- committed member missing or fingerprint-mismatched -> deterministic
+  recovery of the previous generation (explicit `recovered_from`);
+- current AND previous invalid -> explicit `CheckpointLoadError`; no
+  fabricated recovery, no hybrid generation ever constructed.
+
+### `_last_result` invariant (LE-05 closure)
+
+Core-II `_last_result` is runtime query/predicate state. It is filtered from
+persistence (`form/persist_core_ii.py`), never restored on load, and durable
+correctness does not depend on its restoration (PAC-I test L proves canonical
+fields round-trip identically with a poisoned/absent `_last_result`).
+Classification: EPHEMERAL_BY_DESIGN. It is not persisted merely for symmetry.
+
+### Save/load symmetry classifications (LE-06 closure)
+
+Not persisted, by design:
+- `action_stack` — session-scoped/UI reversal stack (see undo law below).
+- `last_nurture` — ephemeral; persisting it risks reintroducing stale
+  provenance contamination (DCC-XX-C1).
+- `last_checkpoint` — derivable from canonical generation metadata
+  (`current_generation_id`).
+- `last_core_i` — ephemeral result state.
+- Core-II `_last_result` — ephemeral by design (see invariant above).
+
+Durable-required: plane units, nursery (proposals, dispositions, lineage,
+dependency evidence), program history, DuoBeta ledger, outcome ledger V1,
+Core-II constructive state. No durable-required missing field was found;
+classifications are enforced by PAC-I test L.
+
+### Undo authority law (LE-07 closure)
+
+`undo_last` (form/dell_matrix/needs.py; callers: REPL, live_visual) is a
+SESSION/UI reversal convenience. It is explicitly NONCANONICAL as a history
+authority:
+- place-undo delegates to the canonical one-way removal authority
+  `plane.remove(uid)` (never `del plane.units[uid]` again); lattice-cell
+  hygiene follows; the undo is evidenced in `program.history` via `note_seed`.
+- edit-undo restores prior field values and evidences via `note_seed`.
+- A unit owned by DCC-XVI revision/supersession authority (superseded, has a
+  successor, or sits in a multi-node revision chain) is REFUSED
+  (`reason: revision_authority`) — undo can never bypass supersession to
+  delete authoritative knowledge.
+- Result carries `via: plane.remove` for delegated removals.
+
+### Selfgrow sidecar classification (LE-16 closure)
+
+`form/duobeta/selfgrow.py` writes `form/state/selfgrow_state.json` and
+`form/state/selfgrow_ledger.json` with bare writes. Classification:
+NONCANONICAL / EXPERIMENTAL sidecars. Entry is the CLI (`form/grow.py`);
+no canonical load/restore path (program load, nursery load, checkpoint
+generation, Dell 27/28) reads them; no authoritative state depends on them.
+They are isolated and labeled in source, NOT migrated into canonical
+persistence merely for uniformity. PAC-I test N enforces: no canonical module
+references the sidecar paths.
+
+### Separations (PAC-I)
+
+- generation != file — a checkpoint is a certified generation, not a file.
+- commit boundary != write order — only the CURRENT pointer swap commits.
+- canonical != convenient — undo is convenience, never history authority.
+- ephemeral != lost — ephemeral fields are classified, not accidentally
+  dropped; durable-required fields are proven round-tripped.
+- experimental != canonical — sidecar uniformity is not a reason to migrate.
+- AUTONOMY = NO.

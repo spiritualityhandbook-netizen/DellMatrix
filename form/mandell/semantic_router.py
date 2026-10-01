@@ -227,9 +227,10 @@ CORRESPONDENCE: Dict[Tuple[str, int], _Correspondence] = {
         dell_name="Checkpoint",
         evidence=(
             "Intent('checkpoint') = save restore point. Dell 27 arm "
-            "(core_i_ops.py) writes checkpoint file via core_i_recovery — "
-            "STATE-CHANGING (file write). Verified live: checkpoint file "
-            "written."
+            "(core_i_ops.py) delegates to core_i_recovery.checkpoint, which "
+            "commits a Checkpoint Generation V1 generation (Persistence V2 "
+            "atomic members + atomic CURRENT pointer) — STATE-CHANGING "
+            "(durable generation). Verified live: generation committed."
         ),
         build_seed=_seed_checkpoint,
     ),
@@ -275,8 +276,10 @@ CORRESPONDENCE: Dict[Tuple[str, int], _Correspondence] = {
         dell_name="Rollback",
         evidence=(
             "Intent('load') = restore checkpoint. Dell 28 arm "
-            "(core_i_ops.py) restores via core_i_recovery, returns "
-            "new_program — CONTROL (revert). Fails safe with "
+            "(core_i_ops.py) restores via core_i_recovery.rollback, which "
+            "loads the committed Generation V1 generation (fingerprint-"
+            "validated, never hybrid; legacy timestamp files still readable) "
+            "— CONTROL (revert). Fails safe with "
             "'rollback_missing' if no checkpoint. Verified live: restored."
         ),
         build_seed=_seed_rollback,

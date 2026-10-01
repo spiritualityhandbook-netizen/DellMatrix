@@ -41,6 +41,13 @@ except ImportError:
 
 _DATA = os.path.join(os.path.dirname(__file__), "..", "state")
 os.makedirs(_DATA, exist_ok=True)
+# PAC-I classification: NONCANONICAL / EXPERIMENTAL sidecars.
+# selfgrow is a CLI/experimental tool (entry: form/grow.py __main__); these
+# files hold its curriculum/watch telemetry only. They are NEVER read by any
+# canonical load/restore path (program load, nursery load, checkpoint
+# generation, Dell 27/28) and no authoritative state depends on them.
+# ISOLATED by design — do not migrate into canonical persistence merely for
+# uniformity. Bare-write corruption risk is accepted for experimental tooling.
 LEDGER_PATH = os.path.join(_DATA, "selfgrow_ledger.json")
 STATE_PATH = os.path.join(_DATA, "selfgrow_state.json")
 
