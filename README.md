@@ -77,6 +77,8 @@ Acceptance path (offline, no AI):
 form/mandell/     ← ORIGIN
 form/dell_matrix/ ← matrix, growth, nursery, lattice, visual
 form/avatar/      ← body + face
+form/duobeta/     ← generation ledger (live)
+form/worldwide/   ← live via code evolution
 form/open.py      ← one program
 form/repl.py      ← front door
 form/trading/     ← SIDE (not core)

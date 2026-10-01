@@ -17,7 +17,7 @@ from form.dell_matrix.perception import Form
 from form.avatar import Facing, Posture, Locomotion, Reach, Expression
 from form.open import Program, open_program
 from form.persist_core_ii import restore_core_ii
-from form.persist import serialize, _path, _cp_path, _safe_owner, _STATE_DIR
+from form.persist import serialize, _path, _cp_path, _safe_owner, _STATE_DIR, VERSION
 
 
 def save(program: Program, path: Optional[str] = None) -> str:
@@ -101,10 +101,43 @@ class ProgramLoadError(ValueError):
     """Program file content is missing/invalid or its owner binding is inconsistent; raised before any swap."""
 
 
+def _validate_envelope_version(data: Dict[str, Any]) -> None:
+    """Explicit envelope-version contract (RTPH-I R4).
+
+    Raises ProgramLoadError LOUDLY on unknown-future or wrong-typed versions. This runs inside
+    _validate_program_data, i.e. before any semantic swap: a failed validation changes no binding,
+    no CELLS/customs, no Program, and rewrites no file (load() never writes).
+
+    Policy:
+      version == VERSION (7)             → current format: ACCEPT.
+      version missing, or int < VERSION  → legacy envelope: ACCEPT explicitly.
+          No migration semantics are invented: the file is read by the current reader, and any
+          resave stamps the current version. (v6 was the last pre-7 shipped format, pre-lattice;
+          the reader degrades gracefully on absent keys. Versions < 6 were never shipped by this
+          writer.) This leniency is deliberate and tested — not an accidentally ignored field.
+      version > VERSION                  → REJECT: unknown future schemas must never be silently misread.
+      version present but not an int     → REJECT (covers "7", null/None, bool, float, ...).
+          bool is rejected explicitly: isinstance(True, int) is True in Python.
+    """
+    if "version" not in data:
+        return  # legacy envelope: accepted explicitly, no migration invented
+    v = data["version"]
+    if isinstance(v, bool) or not isinstance(v, int):
+        raise ProgramLoadError(f"program file has non-integer envelope version {v!r}: refusing load")
+    if v == VERSION:
+        return  # current format
+    if v < VERSION:
+        return  # legacy envelope: accepted explicitly, no migration invented
+    raise ProgramLoadError(
+        f"program file envelope version {v} is newer than supported {VERSION}: refusing load"
+    )
+
+
 def _validate_program_data(data: Any, owner: str) -> str:
     """VALIDATE the program envelope (language is validated by parse_language). Returns the resolved owner."""
     if not isinstance(data, dict):
         raise ProgramLoadError("program file is not a JSON object")
+    _validate_envelope_version(data)
     if data.get("floor") != list(FLOOR):
         raise RuntimeError("Floor mismatch — refuse load")
     plane = data.get("plane")

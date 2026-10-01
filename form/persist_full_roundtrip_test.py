@@ -8,7 +8,7 @@ import os
 import tempfile
 
 from form.open import open_program
-from form.persist import serialize, save, load, checkpoint
+from form.persist import serialize, save, load, checkpoint, VERSION
 from form.persist_rest import DURABLE_KEYS, durable
 from form.mandell.language import bind
 from form.mandell.seed import CELLS, define_cell, expand_cell
@@ -58,6 +58,7 @@ def smoke() -> bool:
     execute_seed(p, "55[Set] :: rk=7")
     before = serialize(p)
     rec("serialize_load_domain_parity", set(DURABLE_KEYS) <= set(before.keys()))
+    rec("envelope_version_stamped_current", before.get("version") == VERSION)
     rec("mandell_language_version", (before.get("mandell_language") or {}).get("version") == "4")
     rec("mandell_cells_present", "L1" in ((before.get("mandell_language") or {}).get("cells") or {}))
     path = _tmp()
@@ -103,6 +104,7 @@ def smoke() -> bool:
     restore_contract(rec)
     language_owner_contract(rec)
     persist_entry_contract(rec)
+    version_contract(rec)
     lifecycle_contract(rec)
     for _p in _TMP_PATHS:
         if os.path.exists(_p):
@@ -593,6 +595,88 @@ def lifecycle_contract(rec) -> None:
             for path in [_path(o), owner_nursery_path(o)] + glob.glob(os.path.join(_STATE_DIR, f"program_{o}_cp*.json")):
                 if os.path.exists(path):
                     os.remove(path)
+
+
+def version_contract(rec) -> None:
+    """RTPH-I R4: explicit envelope-version contract.
+
+    Matrix: 7 / missing / 5 / 6 → ACCEPT (legacy acceptance is explicit, no migration invented);
+    8 / "7" / null / true → REJECT LOUDLY before any semantic swap.
+    Every rejection asserts the hard invariant: no binding change, no CELLS/custom change,
+    no Program mutation, no file rewrite.
+    """
+    from form import persist_rest
+    from form.mandell import language as L
+    from form.mandell.latinmandell import export_customs
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    sfx = os.getpid()
+    A = f"VerA{sfx}"
+    p = open_program(A)
+    L.bind(p)
+    CELLS.clear()
+    clear_customs()
+    define_cell("VerCell", "08[Create] :: vercell")
+    customize("verlux", dell=9, sense="version probe")
+    save(p)
+    a_path = _path(A)
+    with open(a_path, encoding="utf-8") as f:
+        good = json.load(f)
+    rec("version_writer_stamps_current", good.get("version") == VERSION)
+
+    _MISSING = object()
+    probes = [
+        ("v7", 7, True),
+        ("missing", _MISSING, True),
+        ("v5", 5, True),
+        ("v6", 6, True),
+        ("v8", 8, False),
+        ("str7", "7", False),
+        ("null", None, False),
+        ("true", True, False),
+    ]
+    tmps = []
+    try:
+        for name, ver, accept in probes:
+            pa = load(A)  # re-anchor before every probe
+            anchor = (set(CELLS), set(export_customs()), L.bound_program(), L.bound_owner())
+            d = json.loads(json.dumps(good))
+            if ver is _MISSING:
+                d.pop("version", None)
+            else:
+                d["version"] = ver
+            probe_path = _tmp()
+            tmps.append(probe_path)
+            with open(probe_path, "w", encoding="utf-8") as f:
+                json.dump(d, f)
+            h = _sha(probe_path)
+            try:
+                q = load(A, probe_path)
+                outcome = "accepted"
+            except persist_rest.ProgramLoadError as e:
+                outcome = "rejected"
+                q = None
+            if accept:
+                rec(f"version_{name}_accepted",
+                    outcome == "accepted" and q is not None and "VerCell" in set(q.language["cells"]),
+                    outcome)
+                if ver is _MISSING or (isinstance(ver, int) and not isinstance(ver, bool) and ver < VERSION):
+                    save(q, probe_path)
+                    with open(probe_path, encoding="utf-8") as f:
+                        d2 = json.load(f)
+                    rec(f"version_{name}_resave_stamps_current", d2.get("version") == VERSION, str(d2.get("version")))
+            else:
+                after = (set(CELLS), set(export_customs()), L.bound_program(), L.bound_owner())
+                rec(f"version_{name}_rejected_loud_no_mutation",
+                    outcome == "rejected" and after == anchor and _sha(probe_path) == h,
+                    outcome)
+    finally:
+        for path in tmps:
+            if os.path.exists(path):
+                os.remove(path)
+        for path in (a_path, owner_nursery_path(A)):
+            if path and os.path.exists(path):
+                os.remove(path)
 
 
 def _tmp_path():

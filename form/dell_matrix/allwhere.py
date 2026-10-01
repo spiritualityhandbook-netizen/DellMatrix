@@ -686,7 +686,7 @@ class AllwhereGame:
         return {"tick": self.tick, "events": events, "status": self.status_card(), "completed": self.completed}
 
 
-def new_game(name: str = "Ace", interests: Optional[List[str]] = None, seed: int = 42) -> AllwhereGame:
+def new_game(name: str = "Operator", interests: Optional[List[str]] = None, seed: int = 42) -> AllwhereGame:
     rng = random.Random(seed)
     interests = interests or ["art", "travel", "lore"]
     world = build_world(rng)
@@ -695,7 +695,7 @@ def new_game(name: str = "Ace", interests: Optional[List[str]] = None, seed: int
 
 
 def run_to_completion(
-    name: str = "Ace",
+    name: str = "Operator",
     interests: Optional[List[str]] = None,
     seed: int = 42,
     max_ticks: int = 24,
@@ -772,7 +772,7 @@ if __name__ == "__main__":
     import argparse
     import json
     ap = argparse.ArgumentParser(description="Allwhere — DellMatrix first arc")
-    ap.add_argument("--name", default="Ace")
+    ap.add_argument("--name", default="Operator")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--interests", default="art,travel,lore")
