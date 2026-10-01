@@ -236,6 +236,14 @@ def execute_program(program: Any, flow_program: FlowProgram) -> FlowReceipt:
         if receipt.new_program is not None:
             cur = receipt.new_program
         step_ok = bool(receipt.ok and receipt.routed)
+        # DCC-VI: log to program history for TRACE capability.
+        # Uses existing note_seed authority; does not change Dell behavior.
+        if hasattr(cur, "note_seed"):
+            try:
+                label = node.mandel.split("::", 1)[1].strip() if "::" in node.mandel else ""
+                cur.note_seed(node.dell, node.term, label)
+            except Exception:
+                pass
         steps.append(StepResult(
             index=i + 1, mandel=node.mandel, action=node.action, dell=node.dell,
             arguments=dict(node.args), ok=step_ok,

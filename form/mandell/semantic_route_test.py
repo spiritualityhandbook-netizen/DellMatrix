@@ -249,7 +249,7 @@ def smoke() -> int:
         ("save", 10), ("grow", 13), ("discover", 35),
         ("measure", 40), ("test", 12), ("architect", 11), ("simulate", 31),
         ("checkpoint", 27), ("stamp", 34), ("cycle", 6), ("form", 15),
-        ("load", 28), ("retry", 42),
+        ("load", 28), ("retry", 42), ("nurture", 37),
     }
     rec(
         "correspondence_documented",

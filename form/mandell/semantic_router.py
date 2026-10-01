@@ -126,6 +126,12 @@ def _seed_retry(intent: Any, parsed: Any) -> str:
     return "42[Retry]"
 
 
+# DCC-VI seed builder: arguments flow through Mandell, not around it.
+def _seed_nurture(intent: Any, parsed: Any) -> str:
+    label = (parsed.label or "").strip()
+    return f"37[Nurture] :: {label}" if label else "37[Nurture]"
+
+
 # Verified semantic correspondences.
 # Each entry documents WHY the routing is safe (not just name similarity).
 CORRESPONDENCE: Dict[Tuple[str, int], _Correspondence] = {
@@ -285,6 +291,22 @@ CORRESPONDENCE: Dict[Tuple[str, int], _Correspondence] = {
             "Verified live: Retry ran."
         ),
         build_seed=_seed_retry,
+    ),
+    # DCC-VI: nurture = nursery mutations via Dell 37 (SAFE_ADAPTER).
+    # Dell 37 arm (core_i_ops.py) calls existing Nursery.add/confirm/reject
+    # methods — real, tested runtime authority. Not a new state system.
+    ("nurture", 37): _Correspondence(
+        action="nurture",
+        dell=37,
+        dell_name="Nurture",
+        evidence=(
+            "Intent('nurture') = nursery proposal operations. Dell 37 arm "
+            "(core_i_ops.py) adapts existing Nursery.add/confirm/reject — "
+            "real methods with save/rollback safety. Label carries the "
+            "operation (add <label> / confirm <pid> / reject <pid>). "
+            "Verified live: proposals added/confirmed/rejected."
+        ),
+        build_seed=_seed_nurture,
     ),
 }
 
