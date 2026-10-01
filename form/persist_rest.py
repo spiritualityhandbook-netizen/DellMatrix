@@ -392,6 +392,36 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     hist = data.get("history") or []
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]
+    # DCC-XX: restore the durable execution-outcome ledger. Shape-checked;
+    # a malformed section never poisons the load (empty ledger instead).
+    # Records are historical evidence: never reinterpreted, never rewritten.
+    try:
+        from form.mandell.outcome_ledger import validate_record_shape
+        ledger = data.get("outcome_ledger") or {}
+        seq = ledger.get("outcome_seq", 0)
+        try:
+            p.outcome_seq = max(0, int(seq))
+        except (TypeError, ValueError):
+            p.outcome_seq = 0
+        raw_records = ledger.get("records") or {}
+        restored: Dict[str, Dict[str, Any]] = {}
+        if isinstance(raw_records, dict):
+            for oid, rec in raw_records.items():
+                if isinstance(oid, str) and validate_record_shape(rec):
+                    restored[oid] = dict(rec)
+        p.outcome_records = restored
+        # The durable sequence must never fall behind the restored records.
+        max_seq = p.outcome_seq
+        for rec in restored.values():
+            try:
+                s = int(rec.get("outcome_seq", 0) or 0)
+            except (TypeError, ValueError):
+                s = 0
+            if s > max_seq:
+                max_seq = s
+        p.outcome_seq = max_seq
+    except Exception:
+        pass
     restore_core_ii(p, data)
     return p
 
@@ -402,7 +432,7 @@ DURABLE_KEYS = (
     "resonance", "main", "plane", "duo_generation", "duo_ledger", "avatar",
     "companion", "inspire", "self_knowledge", "ux", "forces", "bimo",
     "nursery", "lattice", "history", "latinmandell_customs",
-    "mandell_language", "core_ii",
+    "mandell_language", "core_ii", "outcome_ledger",
 )
 
 

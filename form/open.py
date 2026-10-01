@@ -119,6 +119,15 @@ class Program:
     keys: KeyLedger = field(default_factory=KeyLedger)
     history: List[str] = field(default_factory=list)
     history_max: int = 24
+    # DCC-XX: durable execution-outcome evidence (Outcome Record V1).
+    # outcome_id -> outcome record; outcome_seq is the per-owner durable
+    # sequence counter used for stable outcome identity. Persisted via
+    # the program payload; sealed into checkpoint generations. This is
+    # OBSERVATION, never truth: no outcome ever mutates knowledge truth,
+    # verification, disposition, revision, or dependency authority.
+    outcome_records: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict, repr=False, compare=False)
+    outcome_seq: int = field(default=0, repr=False, compare=False)
     # UX / entity layer (Phases A–E)
     companion: AICompanion = field(default_factory=AICompanion)
     ux_mode: str = "builder"  # beginner | builder | depth

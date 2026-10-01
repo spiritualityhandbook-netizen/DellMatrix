@@ -170,6 +170,22 @@ def translate(english: str) -> Intent:
     if m:
         return Intent("discover", 35, "Discover", {},
                       f"35[Discover] :: trace_conflict {m.group(1)}", text)
+    # DCC-XX: outcome trace — one exact outcome by stable ID; list recent
+    # outcomes; outcomes involving a specific knowledge ID.
+    m = re.search(r"\btrace\s+outcome\s+(\S+)", raw_lower)
+    if m:
+        return Intent("discover", 35, "Discover", {},
+                      f"35[Discover] :: trace_outcome {m.group(1)}", text)
+    if re.search(r"\blist\s+outcomes\b", raw_lower):
+        return Intent("discover", 35, "Discover", {},
+                      "35[Discover] :: list_outcomes", text)
+    if re.search(r"\bshow\s+last\s+outcome\b", raw_lower):
+        return Intent("discover", 35, "Discover", {},
+                      "35[Discover] :: list_outcomes", text)
+    m = re.search(r"\boutcomes\s+for\s+idea\s+(\S+)", raw_lower)
+    if m:
+        return Intent("discover", 35, "Discover", {},
+                      f"35[Discover] :: outcomes_for_idea {m.group(1)}", text)
     if re.search(r"\btrace\b", raw_lower):
         return Intent("discover", 35, "Discover", {}, "35[Discover] :: trace", text)
     # DCC-VII: query accepted/promoted knowledge.

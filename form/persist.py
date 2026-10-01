@@ -198,6 +198,18 @@ def serialize(program: Program) -> Dict[str, Any]:
         "latinmandell_customs": {k: dict(v) for k, v in lang["customs"].items()},
         "mandell_language": dump_language(lang),
         "core_ii": serialize_core_ii(program),
+        # DCC-XX: durable execution-outcome ledger (Outcome Record V1).
+        # Execution evidence -> program authority. Sealed into checkpoint
+        # generations via the program member. OBSERVATION, never truth.
+        "outcome_ledger": {
+            "outcome_version": 1,
+            "outcome_seq": int(getattr(program, "outcome_seq", 0) or 0),
+            "records": {
+                oid: dict(rec)
+                for oid, rec in (getattr(program, "outcome_records", None) or {}).items()
+                if isinstance(rec, dict)
+            },
+        },
     }
 
 

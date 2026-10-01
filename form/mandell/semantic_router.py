@@ -311,13 +311,46 @@ CORRESPONDENCE: Dict[Tuple[str, int], _Correspondence] = {
 }
 
 
-def route_intent(program: Any, intent: Any, raw_line: str = "") -> RouteReceipt:
+def route_intent(program: Any, intent: Any, raw_line: str = "",
+                 composition: Optional[Dict[str, Any]] = None) -> RouteReceipt:
     """Route a Mandell Intent through the Dell execution authority.
 
     Returns a RouteReceipt that honestly reports what happened. If the
     Intent's Mandell composition does not parse, or the (action, dell)
     pair has no verified correspondence, NOTHING executes.
+
+    DCC-XX: after the receipt is built, an Outcome Record V1 is captured
+    into the program's durable outcome ledger (post-hoc observation;
+    routing behavior untouched). ``composition`` optionally carries flow
+    context (``{"flow_program": ..., "node_index": ...}``) for node-level
+    outcomes inside composed programs.
+
+    DCC-XX-C1 freshness gate: ``program.last_nurture`` is a single-slot
+    attribute shared across calls. The slot's identity is snapshotted
+    before execution; provenance is attributed to the outcome only when
+    the executed call replaced the slot (handlers always assign a fresh
+    dict). Stale evidence from a previous call can never contaminate a
+    later outcome.
     """
+    nurture_before = getattr(program, "last_nurture", None)
+    receipt = _route_intent_impl(program, intent, raw_line)
+    # DCC-XX-C1: attribute the arm's receipt only to the call that
+    # produced it. Identity comparison: every arm handler assigns a
+    # fresh dict to program.last_nurture when it runs.
+    nurture_after = getattr(program, "last_nurture", None)
+    nurture_fresh = (nurture_after is not nurture_before
+                     and isinstance(nurture_after, dict))
+    # DCC-XX capture: post-hoc, never raises, never alters routing.
+    try:
+        from .outcome_ledger import capture_outcome
+        capture_outcome(program, receipt, composition,
+                        nurture_fresh=nurture_fresh)
+    except Exception:
+        pass
+    return receipt
+
+
+def _route_intent_impl(program: Any, intent: Any, raw_line: str = "") -> RouteReceipt:
     from .seed import parse_seed
     from .executor import execute_seed
 
