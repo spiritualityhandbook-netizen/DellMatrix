@@ -99,6 +99,7 @@ Lattice / Perception / Looking
   growth | duobeta     DuoBeta living-growth status
   ledger [N]           growth history (last N entries)
   audit                 6-pillar health
+  discover [nursery]    inspect ideas/nursery via Dell 35
   matrices              inventory of all matrices
   english expand [N]    grow English understanding (default 50 cycles)
   english status|help   mastery / how to talk naturally
@@ -203,6 +204,23 @@ def _echo_seed(english: str = "", mandel: str = "") -> None:
         hit = match_phrase(english)
         if hit and hit.get("mandel"):
             _say(f"Mandell: {hit['mandel']}")
+
+
+def _print_route_receipt(receipt) -> None:
+    """Print a DCC-II execution receipt (honest: reports actual routing)."""
+    _say(f"INPUT: {receipt.input}")
+    _say(f"MANDELL: {receipt.mandell or '—'}")
+    _say(f"ROUTE: {receipt.route}")
+    if receipt.routed:
+        _say(f"DELL: {receipt.dell} (executed via Dell authority)")
+        for m in receipt.messages:
+            _say(f"  {m}")
+        _say(f"RESULT: ok={receipt.ok}")
+        _say(f"STATE: {receipt.state_note}")
+    else:
+        _say("DELL: none — not executed")
+        _say(f"RESULT: {receipt.error or 'not routed'}")
+        _say(f"STATE: {receipt.state_note}")
 
 
 def _handle_latinmandell(p: Program, lower: str, raw: str):
@@ -1521,20 +1539,13 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             _echo_seed(raw_line, intent.mandel or "")
 
     elif action == "grow":
-        n = int(args.get("cycles", 1))
-        out = p.grow_ideas(n)
-        _say("Ringed growth complete.")
-        _say(f"Proposed {out.get('proposed_new', 0)} new + {out.get('proposed_evolved', 0)} evolved.")
-        _say(f"Nursery pending: {out.get('nursery', {}).get('pending', 0)}")
-        ac = (out or {}).get("auto_confirm") or {}
-        if ac.get("on"):
-            _say(f"Auto-confirm grow ON · confirmed {ac.get('confirmed', 0)} · failed {ac.get('failed', 0)}")
-            for lab in (ac.get("labels") or [])[:12]:
-                _say(f'  + {lab}')
-            _say(f"Ideas now: {out.get('ideas_now', len(p.cube.session.plane.units))} · nursery now: {out.get('nursery_pending', len(p.list_proposals()))}")
-        else:
-            _say(f"Auto-confirm grow OFF · ideas live unchanged until confirm")
-        _echo_seed(mandel="13[Loop] > 04[Transform] :: grow")
+        # DCC-II: route through the Mandell->Dell semantic boundary.
+        # The Intent's Mandell composition selects the Dell; execution goes
+        # through the existing Dell authority (execute_seed), not a duplicate.
+        from form.mandell.semantic_router import route_intent
+        receipt = route_intent(p, intent, raw_line)
+        _print_route_receipt(receipt)
+        return p
 
     elif action == "show":
         print()
@@ -1684,11 +1695,18 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _say("Sandbox OFF.")
 
     elif action == "save":
-        path = p.save()
-        ns = p.nursery.summary()
-        _say("Session saved.")
-        _say(f"ideas={len(p.cube.session.plane.units)} nursery={ns['pending']} lattice_cells={len(p.lattice.cells)}")
-        _say(f"file={path}")
+        # DCC-II: route through the Mandell->Dell semantic boundary (Dell 10).
+        from form.mandell.semantic_router import route_intent
+        receipt = route_intent(p, intent, raw_line)
+        _print_route_receipt(receipt)
+        return p
+
+    elif action == "discover":
+        # DCC-II: read-only inspection routed through Dell 35.
+        from form.mandell.semantic_router import route_intent
+        receipt = route_intent(p, intent, raw_line)
+        _print_route_receipt(receipt)
+        return p
 
     elif action == "load":
         p2 = persist_load(p.owner)

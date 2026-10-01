@@ -100,6 +100,11 @@ PHRASES: List[Tuple[str, str, str]] = [
      "35[Discover] :: ledger", "ledger"),
     (r"^(?:audit|pillars|health\s+check|six\s+pillars)$",
      "35[Discover] :: audit", "audit"),
+    # DCC-II: discover/inventory routes through Dell 35 (read-only inspection)
+    (r"^(?:discover|inventory|show\s+inventory|what\s+do\s+i\s+have)$",
+     "35[Discover] :: inventory", "discover"),
+    (r"^(?:discover\s+nursery|nursery\s+pending|show\s+nursery)$",
+     "35[Discover] :: nursery", "discover"),
     (r"^(?:matrices|list\s+matrices|matrix\s+list)$",
      "35[Discover] :: matrices", "matrices"),
     (r"^(?:forces|force\s+status|nature\s+forces)$",

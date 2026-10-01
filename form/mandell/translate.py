@@ -57,6 +57,7 @@ _HINT_ACTION = {
     "evolve": "evolve",
     "growth": "growth",
     "ledger": "ledger",
+    "discover": "discover",
     "audit": "audit",
     "matrices": "matrices",
     "forces": "forces",
