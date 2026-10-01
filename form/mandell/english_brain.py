@@ -68,7 +68,7 @@ VERB_MAP: Dict[str, str] = {
     "check": "status", "inspect": "look", "peek": "look", "glance": "look",
     # save / load
     "save": "save", "keep": "save", "persist": "save", "store": "save",
-    "remember": "save", "bookmark": "save", "checkpoint": "save",
+    "remember": "save", "bookmark": "save",
     "load": "load", "reload": "load", "restore": "load", "resume": "load",
     "reopen": "load", "recover": "load",
     # movement
@@ -136,7 +136,7 @@ PARAPHRASE_TO_CANONICAL: List[Tuple[str, str]] = [
     (r"^(?:open\s+(?:the\s+)?ui|open\s+browser\s+panel|offline\s+panel)$", "visual"),
     (r"^(?:live\s+mode|open\s+live|start\s+live\s+visual)$", "live"),
     # save / load
-    (r"^(?:save\s+(?:my\s+)?work|write\s+session|checkpoint\s+now|don'?t\s+forget)$", "save"),
+    (r"^(?:save\s+(?:my\s+)?work|write\s+session|don'?t\s+forget)$", "save"),
     (r"^(?:bring\s+back|pick\s+up\s+where\s+i\s+left\s+off|restore\s+work)$", "load"),
     # movement natural
     (r"^(?:step\s+forward|move\s+ahead|go\s+on|take\s+a\s+step)(?:\s+(\d+))?$", "walk forward"),

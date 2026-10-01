@@ -30,10 +30,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 @dataclass
 class RouteReceipt:
-    """Honest execution receipt for a routing attempt."""
+    """Honest execution receipt for a routing attempt (v2)."""
 
     input: str                    # raw user input
     mandell: str                  # Mandell composition from the Intent
+    semantic: str                 # semantic operation (action term)
+    arguments: Dict[str, Any]     # typed arguments through Mandell
     action: str                   # Intent action
     dell: Optional[int]           # primary Dell address parsed from composition
     routed: bool                  # whether a Dell was actually executed
@@ -43,6 +45,7 @@ class RouteReceipt:
     messages: List[str] = field(default_factory=list)
     state_note: str = ""
     error: str = ""
+    new_program: Any = None       # restored program (Dell 28 rollback only)
 
 
 @dataclass
@@ -69,6 +72,58 @@ def _seed_grow(intent: Any, parsed: Any) -> str:
 def _seed_discover(intent: Any, parsed: Any) -> str:
     label = (parsed.label or "inventory").strip() or "inventory"
     return f"35[Discover] :: {label}"
+
+
+# DCC-III seed builders (arguments flow through Mandell, not around it).
+def _seed_measure(intent: Any, parsed: Any) -> str:
+    return "40[TokenCount]"
+
+
+def _seed_test(intent: Any, parsed: Any) -> str:
+    return "12[Test]"
+
+
+def _seed_architect(intent: Any, parsed: Any) -> str:
+    return "11[Architect]"
+
+
+def _seed_simulate(intent: Any, parsed: Any) -> str:
+    return "31[Simulate]"
+
+
+def _seed_checkpoint(intent: Any, parsed: Any) -> str:
+    return "27[Checkpoint]"
+
+
+def _seed_stamp(intent: Any, parsed: Any) -> str:
+    mark = str((intent.args or {}).get("mark", "")).strip()[:48] or "mark"
+    # Sanitize: Mandell label must be safe.
+    mark = "".join(c for c in mark if c.isalnum() or c in "-_ ").strip() or "mark"
+    return f"34[Stamp] :: {mark}"
+
+
+def _seed_cycle(intent: Any, parsed: Any) -> str:
+    try:
+        n = int((intent.args or {}).get("count", 1))
+    except (TypeError, ValueError):
+        n = 1
+    n = max(1, min(n, 5))  # Dell 6 caps at 5
+    return f"06[Cycle] :: {n}"
+
+
+def _seed_form(intent: Any, parsed: Any) -> str:
+    form_name = str((intent.args or {}).get("form", "")).strip().lower()
+    if form_name not in ("cube", "sphere", "core", "flower"):
+        form_name = "cube"  # safe default; Dell 15 ignores invalid
+    return f"15[Map] :: {form_name}"
+
+
+def _seed_rollback(intent: Any, parsed: Any) -> str:
+    return "28[Rollback]"
+
+
+def _seed_retry(intent: Any, parsed: Any) -> str:
+    return "42[Retry]"
 
 
 # Verified semantic correspondences.
@@ -113,6 +168,124 @@ CORRESPONDENCE: Dict[Tuple[str, int], _Correspondence] = {
         ),
         build_seed=_seed_discover,
     ),
+    # DCC-III: expanded semantic vocabulary (all EXACT, verified live).
+    ("measure", 40): _Correspondence(
+        action="measure",
+        dell=40,
+        dell_name="TokenCount",
+        evidence=(
+            "Intent('measure') = compute session weight. Dell 40 arm "
+            "(core_i_ops.py) computes approx units from ideas/history/cells/"
+            "pending — read-only, no mutation. Verified live: returns "
+            "TokenCount with breakdown."
+        ),
+        build_seed=_seed_measure,
+    ),
+    ("test", 12): _Correspondence(
+        action="test",
+        dell=12,
+        dell_name="Test",
+        evidence=(
+            "Intent('test') = self-check systems. Dell 12 arm "
+            "(executor_leaf.py) runs 5 checks (floor, lattice, growth, "
+            "nursery, ideas) — read-only except note_seed logging. "
+            "Verified live: 5/5 PASS."
+        ),
+        build_seed=_seed_test,
+    ),
+    ("architect", 11): _Correspondence(
+        action="architect",
+        dell=11,
+        dell_name="Architect",
+        evidence=(
+            "Intent('architect') = show schema. Dell 11 arm "
+            "(executor_leaf.py) displays owner, ideas, lattice size/form, "
+            "cells — read-only. Verified live: schema displayed."
+        ),
+        build_seed=_seed_architect,
+    ),
+    ("simulate", 31): _Correspondence(
+        action="simulate",
+        dell=31,
+        dell_name="Simulate",
+        evidence=(
+            "Intent('simulate') = dry-run preview. Dell 31 arm "
+            "(executor_leaf.py) shows status explicitly as 'no mutation' — "
+            "read-only. Verified live: dry-run output, no state change."
+        ),
+        build_seed=_seed_simulate,
+    ),
+    ("checkpoint", 27): _Correspondence(
+        action="checkpoint",
+        dell=27,
+        dell_name="Checkpoint",
+        evidence=(
+            "Intent('checkpoint') = save restore point. Dell 27 arm "
+            "(core_i_ops.py) writes checkpoint file via core_i_recovery — "
+            "STATE-CHANGING (file write). Verified live: checkpoint file "
+            "written."
+        ),
+        build_seed=_seed_checkpoint,
+    ),
+    ("stamp", 34): _Correspondence(
+        action="stamp",
+        dell=34,
+        dell_name="Stamp",
+        evidence=(
+            "Intent('stamp') = mark moment with label. Dell 34 arm "
+            "(core_i_ops.py) sets program.last_stamp — STATE-CHANGING. "
+            "Mark carried through Mandell label. Verified live: stamp set."
+        ),
+        build_seed=_seed_stamp,
+    ),
+    ("cycle", 6): _Correspondence(
+        action="cycle",
+        dell=6,
+        dell_name="Cycle",
+        evidence=(
+            "Intent('cycle') = run N growth cycles. Dell 6 arm "
+            "(executor_leaf.py) calls program.grow_ideas(n) with n from "
+            "label (1-5) and displays DuoBeta rings — STATE-CHANGING with "
+            "DuoBeta interaction. Count through Mandell. Verified live: "
+            "Cycle x2 with rings."
+        ),
+        build_seed=_seed_cycle,
+    ),
+    ("form", 15): _Correspondence(
+        action="form",
+        dell=15,
+        dell_name="Map",
+        evidence=(
+            "Intent('form') = change lattice form. Dell 15 arm "
+            "(executor_leaf.py) calls to_cube/to_sphere/to_core/to_flower — "
+            "STATE-CHANGING. Form name through Mandell label. Verified "
+            "live: Form → sphere."
+        ),
+        build_seed=_seed_form,
+    ),
+    ("load", 28): _Correspondence(
+        action="load",
+        dell=28,
+        dell_name="Rollback",
+        evidence=(
+            "Intent('load') = restore checkpoint. Dell 28 arm "
+            "(core_i_ops.py) restores via core_i_recovery, returns "
+            "new_program — CONTROL (revert). Fails safe with "
+            "'rollback_missing' if no checkpoint. Verified live: restored."
+        ),
+        build_seed=_seed_rollback,
+    ),
+    ("retry", 42): _Correspondence(
+        action="retry",
+        dell=42,
+        dell_name="Retry",
+        evidence=(
+            "Intent('retry') = replay last operation. Dell 42 arm "
+            "(executor_leaf.py) replays from history — CONTROL. "
+            "Verified live: Retry ran."
+        ),
+        build_seed=_seed_retry,
+    ),
 }
 
 
@@ -128,11 +301,16 @@ def route_intent(program: Any, intent: Any, raw_line: str = "") -> RouteReceipt:
 
     mandell = (getattr(intent, "mandel", "") or "").strip()
     action = (getattr(intent, "action", "") or "").strip()
+    # DCC-III: semantic operation and typed arguments (through Mandell).
+    semantic = f"{action}[{getattr(intent, 'term', '') or '?'}]"
+    arguments = dict(getattr(intent, "args", None) or {})
 
     def _no_route(dell: Optional[int], error: str) -> RouteReceipt:
         return RouteReceipt(
             input=raw_line or "",
             mandell=mandell,
+            semantic=semantic,
+            arguments=arguments,
             action=action,
             dell=dell,
             routed=False,
@@ -142,6 +320,7 @@ def route_intent(program: Any, intent: Any, raw_line: str = "") -> RouteReceipt:
             messages=[],
             state_note="no state change (not routed)",
             error=error,
+            new_program=None,
         )
 
     if not mandell:
@@ -168,6 +347,8 @@ def route_intent(program: Any, intent: Any, raw_line: str = "") -> RouteReceipt:
         return RouteReceipt(
             input=raw_line or "",
             mandell=mandell,
+            semantic=semantic,
+            arguments=arguments,
             action=action,
             dell=dell,
             routed=False,
@@ -177,6 +358,7 @@ def route_intent(program: Any, intent: Any, raw_line: str = "") -> RouteReceipt:
             messages=[],
             state_note="no state change (execution raised)",
             error=f"Dell execution raised: {exc}",
+            new_program=None,
         )
 
     messages = list(result.get("messages") or [])
@@ -184,12 +366,15 @@ def route_intent(program: Any, intent: Any, raw_line: str = "") -> RouteReceipt:
     # State note derived from the Dell's own messages (actual evidence).
     state_note = "; ".join(
         m for m in messages
-        if any(k in m for k in ("ideas=", "nursery=", "file=", "Nursery pending", "Ringed growth"))
+        if any(k in m for k in ("ideas=", "nursery=", "file=", "Nursery pending", "Ringed growth",
+                                "Checkpoint", "Stamp:", "Form →", "Cycle x", "TokenCount", "PASS", "restored"))
     ) or ("executed" if ok else "failed")
 
     return RouteReceipt(
         input=raw_line or "",
         mandell=mandell,
+        semantic=semantic,
+        arguments=arguments,
         action=action,
         dell=dell,
         routed=True,
@@ -199,4 +384,5 @@ def route_intent(program: Any, intent: Any, raw_line: str = "") -> RouteReceipt:
         messages=messages,
         state_note=state_note,
         error="" if ok else (result.get("error") or "Dell execution failed"),
+        new_program=result.get("new_program"),
     )

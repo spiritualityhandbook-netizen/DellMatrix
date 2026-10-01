@@ -58,6 +58,16 @@ _HINT_ACTION = {
     "growth": "growth",
     "ledger": "ledger",
     "discover": "discover",
+    # DCC-III: expanded semantic vocabulary
+    "measure": "measure",
+    "test": "test",
+    "architect": "architect",
+    "simulate": "simulate",
+    "checkpoint": "checkpoint",
+    "stamp": "stamp",
+    "cycle": "cycle",
+    "form": "form",
+    "retry": "retry",
     "audit": "audit",
     "matrices": "matrices",
     "forces": "forces",
@@ -75,10 +85,10 @@ _HINT_ACTION = {
     "english_status": "english_status",
     "english_expand": "english_expand",
     "english_help": "english_help",
-    "form_cube": "form_cube",
-    "form_sphere": "form_sphere",
-    "form_core": "form_core",
-    "form_flower": "form_flower",
+    "form_cube": "form",
+    "form_sphere": "form",
+    "form_core": "form",
+    "form_flower": "form",
     "toggle_form": "toggle_form",
     "lattice": "lattice",
     "fp_forward": "fp_forward",
@@ -173,12 +183,28 @@ def translate(english: str) -> Intent:
             args = {"cycles": n}
         elif action == "grow" and hit.get("label") and str(hit["label"]).isdigit():
             args = {"cycles": int(hit["label"])}
+        elif action == "form":
+            # DCC-III: extract form name from hint (form_sphere) or mandel.
+            form_name = "cube"
+            if "_" in hint:
+                form_name = hint.split("_", 1)[1]
+            elif hit.get("mandel"):
+                m = re.search(r"15\[Map\] :: (\w+)", hit["mandel"])
+                if m:
+                    form_name = m.group(1)
+            args = {"form": form_name}
+        # DCC-III: derive Dell term from mandel for honest semantic reporting.
+        # The hint is for action routing; the term is the Dell's canonical name.
+        dell_term = hint
+        m_term = re.search(r"\[\s*([A-Za-z]+)\s*\]", hit.get("mandel", ""))
+        if m_term:
+            dell_term = m_term.group(1)
         return Intent(
             action=action,
             mandel=hit["mandel"],
             english=text,
             args=args,
-            term=hint,
+            term=dell_term,
         )
 
     # 2) Fallbacks (same spirit as before)
@@ -239,6 +265,34 @@ def translate(english: str) -> Intent:
         return Intent("evolve", 13, "Loop", {}, "13[Loop] :: evolve", text)
     if re.search(r"\bgrow\b", lower) or re.search(r"\bevolve\s+ideas?\b", lower):
         return Intent("grow", 13, "Loop", {"cycles": 1}, "13[Loop] > 04[Transform] :: grow", text)
+    # DCC-III: expanded semantic vocabulary (all route through Dell authority).
+    # Note: stamp/cycle/form (with args) checked before bare nouns to avoid
+    # substring matches (e.g. "test" in "test-mark").
+    m = re.search(r"\b(stamp|mark)\s+(.+)$", lower)
+    if m:
+        mark = m.group(2).strip()[:48] or "mark"
+        return Intent("stamp", 34, "Stamp", {"mark": mark}, f"34[Stamp] :: {mark}", text)
+    if re.search(r"\b(measure|session\s+weight|how\s+heavy)\b", lower):
+        return Intent("measure", 40, "TokenCount", {}, "40[TokenCount]", text)
+    if re.search(r"\b(self[\s-]?test|check\s+systems|\btest\b)", lower):
+        return Intent("test", 12, "Test", {}, "12[Test]", text)
+    if re.search(r"\b(architect|show\s+schema)\b", lower):
+        return Intent("architect", 11, "Architect", {}, "11[Architect]", text)
+    if re.search(r"\b(simulate|dry[\s-]?run|what\s+would\s+happen)\b", lower):
+        return Intent("simulate", 31, "Simulate", {}, "31[Simulate]", text)
+    if re.search(r"\b(checkpoint|save\s+a\s+checkpoint|make\s+a\s+checkpoint)\b", lower):
+        return Intent("checkpoint", 27, "Checkpoint", {}, "27[Checkpoint]", text)
+    m = re.search(r"\b(cycle|run\s+cycles?)\b\s*(\d+)?", lower)
+    if m:
+        n = int(m.group(2)) if m.group(2) else 1
+        n = max(1, min(n, 5))  # Dell 6 caps at 5
+        return Intent("cycle", 6, "Cycle", {"count": n}, f"06[Cycle] :: {n}", text)
+    m = re.search(r"\bform\s+(cube|sphere|core|flower)\b", lower)
+    if m:
+        form_name = m.group(1)
+        return Intent("form", 15, "Map", {"form": form_name}, f"15[Map] :: {form_name}", text)
+    if re.search(r"\b(retry|repeat\s+last)\b", lower):
+        return Intent("retry", 42, "Retry", {}, "42[Retry]", text)
     if re.search(r"\b(show|display)\b", lower):
         return Intent("show", 9, "Show", {}, "09[Show]", text)
     if re.search(r"\b(visual|workspace)\b", lower):

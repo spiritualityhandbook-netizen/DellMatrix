@@ -207,9 +207,13 @@ def _echo_seed(english: str = "", mandel: str = "") -> None:
 
 
 def _print_route_receipt(receipt) -> None:
-    """Print a DCC-II execution receipt (honest: reports actual routing)."""
+    """Print a DCC-III execution receipt v2 (honest: reports actual routing)."""
     _say(f"INPUT: {receipt.input}")
     _say(f"MANDELL: {receipt.mandell or '—'}")
+    _say(f"SEMANTIC: {receipt.semantic or '—'}")
+    if receipt.arguments:
+        args_str = ", ".join(f"{k}={v}" for k, v in receipt.arguments.items())
+        _say(f"ARGUMENTS: {args_str}")
     _say(f"ROUTE: {receipt.route}")
     if receipt.routed:
         _say(f"DELL: {receipt.dell} (executed via Dell authority)")
@@ -217,6 +221,8 @@ def _print_route_receipt(receipt) -> None:
             _say(f"  {m}")
         _say(f"RESULT: ok={receipt.ok}")
         _say(f"STATE: {receipt.state_note}")
+        if receipt.new_program is not None:
+            _say("PROGRAM: restored from checkpoint (session replaced)")
     else:
         _say("DELL: none — not executed")
         _say(f"RESULT: {receipt.error or 'not routed'}")
@@ -1545,6 +1551,17 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         from form.mandell.semantic_router import route_intent
         receipt = route_intent(p, intent, raw_line)
         _print_route_receipt(receipt)
+        return p
+
+    # DCC-III: expanded semantic vocabulary — all route through Dell authority.
+    elif action in ("measure", "test", "architect", "simulate", "checkpoint",
+                    "stamp", "cycle", "form", "load", "retry"):
+        from form.mandell.semantic_router import route_intent
+        receipt = route_intent(p, intent, raw_line)
+        _print_route_receipt(receipt)
+        # Dell 28 (rollback) returns a restored program; swap it in.
+        if receipt.new_program is not None:
+            return receipt.new_program
         return p
 
     elif action == "show":
