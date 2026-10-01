@@ -1792,6 +1792,25 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         if line.lower().startswith("say "):
             line = line[4:].strip()
 
+        # DCC-IV: composed Mandell program (flow operators) -> flow executor.
+        # Must come before looks_like_seed, which would send it to execute_seed.
+        if ">" in line or ":" in line:
+            try:
+                from form.mandell.flow_executor import (
+                    parse_program, execute_program, format_receipt,
+                )
+                fp = parse_program(line)
+                if len(fp.nodes) > 1:
+                    receipt = execute_program(p, fp)
+                    print()
+                    print(format_receipt(receipt))
+                    print()
+                    if receipt.final_program is not None:
+                        p = receipt.final_program
+                    continue
+            except ValueError:
+                pass  # Not a valid flow program; fall through.
+
         if looks_like_seed(line):
             result = execute_seed(p, line)
             p = _apply_seed_result(p, result)
