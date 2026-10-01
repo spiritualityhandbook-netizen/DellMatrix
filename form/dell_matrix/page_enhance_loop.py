@@ -217,11 +217,6 @@ def _checks() -> List[Dict[str, Any]]:
 
 # ─── enhancement catalog (150 entries; many are page-targeted) ─────────────
 
-def _enh(i: int) -> Tuple[str, Callable[[], str]]:
-    """Return (name, fn) for enhancement index i (0-based)."""
-    # We'll build ENHANCEMENTS list explicitly below for clarity
-    raise NotImplementedError
-
 
 def _mk() -> List[Tuple[str, Callable[[], str]]]:
     E: List[Tuple[str, Callable[[], str]]] = []

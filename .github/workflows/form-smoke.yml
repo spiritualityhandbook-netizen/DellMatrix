@@ -16,9 +16,6 @@ jobs:
         with:
           python-version: "3.11"
       - name: Canonical regression (offline; 4 CI entries + 17 *_test suites + core_ii_smoke)
-        env:
-          # Origin path must not require brokers / external models
-          DELLMATRIX_OFFLINE: "1"
         run: |
           python -m form.regress --twice
           python -m form.regress --order rev

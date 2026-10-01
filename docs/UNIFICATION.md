@@ -1,5 +1,10 @@
 # Unification — One Era
 
+> **HISTORICAL / FROZEN** — This document describes the JavaScript-era (`src/`) unification
+> architecture. `src/` is frozen legacy (see `form/LEGACY.md`); the current front door is the
+> Form runtime (Python): `form/open.py` + `form/repl.py`. The technical content below is
+> preserved as history, not current authority.
+
 ## Problem
 Two eras lived in one repo:
 - New: foundation + dual lattice + snap-ins

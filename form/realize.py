@@ -16,7 +16,9 @@ import sys
 
 from form.open import open_program
 from form.dell_matrix.plane import Skin
-from form.dell_matrix.ambient_gate import _INBOX
+from form.dell_matrix.ambient_gate import _DIRS
+from form.dell_matrix.main_field import sync_planes
+from form.persist_rest import checkpoint
 
 
 def realize(owner: str = "Operator") -> dict:
@@ -25,9 +27,9 @@ def realize(owner: str = "Operator") -> dict:
 
     p = open_program(owner)
 
-    # core ideas
-    p.place("biz", "Business", words="Ultimate Stain and Seal — routes CRM", skin=Skin.BUILDING, x=1.0)
-    p.place("music", "Music", words="Bombs Away Ep4", skin=Skin.SEED, x=-1.0)
+    # core ideas (neutral demonstration content — no personal/project seed material)
+    p.place("biz", "Business", words="Demonstration idea — neutral sample content", skin=Skin.BUILDING, x=1.0)
+    p.place("music", "Music", words="Demonstration melody — neutral sample content", skin=Skin.SEED, x=-1.0)
     p.place("cube", "HarmonicCube", words="holdable perspective core", skin=Skin.CUBE, y=1.0)
 
     # resonance
@@ -35,25 +37,26 @@ def realize(owner: str = "Operator") -> dict:
     pulse1 = p.pulse()
     pulse2 = p.pulse()
 
-    # sandbox demo
-    p.box(["cube"], "sandbox_A")
+    # sandbox demo (current plane authority)
+    p.cube.session.plane.box(["cube"], "sandbox_A")
 
-    # shared main
-    push = p.push_main()
+    # shared main (current MainField authority: sync two ideas into the shared third space)
+    push = sync_planes(p.cube.session, p.cube.session, p.main, "biz", "music")
 
-    # ambient: seed inbox + intake
-    os.makedirs(_INBOX, exist_ok=True)
-    sample = os.path.join(_INBOX, "realize_note.txt")
+    # ambient: seed inbox + intake (uses the current ambient-files authority)
+    inbox = _DIRS["files"]
+    os.makedirs(inbox, exist_ok=True)
+    sample = os.path.join(inbox, "realize_note.txt")
     with open(sample, "w", encoding="utf-8") as f:
         f.write("Note from inbox — ambient files path realized.")
     p.ambient.turn_on()
     p.ambient.enable_source("files")
-    amb = p.ambient_intake(apply=True)
+    amb = p.ambient.intake()
 
     # visual + persist
     vis = p.visual()
     path = p.save()
-    cp = p.checkpoint()
+    cp = checkpoint(p)
     verify = p.matrix.verify()
 
     report = {
@@ -62,7 +65,7 @@ def realize(owner: str = "Operator") -> dict:
         "scores": p.scores(),
         "pulse": {"ok": pulse2.get("ok"), "count": p.enhance.state.pulse_count},
         "shared_push": push,
-        "ambient_placed": amb.get("placed", []),
+        "ambient_items": amb.get("items", []),
         "visual": vis,
         "save": path,
         "checkpoint": cp,
