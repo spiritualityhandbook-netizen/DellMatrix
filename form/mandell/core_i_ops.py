@@ -352,9 +352,11 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
         elif low.startswith("supersede "):
             # DCC-XVI: versioned knowledge supersession through the normal
             # language/runtime path. Format: "supersede <old_id> with <words>".
-            # Atomic: validate -> create successor -> link revisions ->
-            # confirm/promote -> persist -> auditable receipt. Any failure
-            # rolls back to the pre-supersession state.
+            # Atomic: validate -> create successor -> confirm/promote
+            # successor (predecessor stays active) -> prepare complete
+            # revision links -> single durable commit -> auditable receipt.
+            # Any failure before the commit restores the pre-supersession
+            # state; a crash can never expose a half-superseded chain.
             from form.mandell.supersession import (
                 SUPERSESSION_VERSION, SupersedeError, supersede_proposal,
             )

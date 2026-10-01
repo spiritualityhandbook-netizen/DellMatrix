@@ -235,9 +235,34 @@ def _save_nursery(program: Any) -> None:
     program.nursery.save()
 
 
-def _rollback(program: Any, old: Any, old_snap: Dict[str, Any],
-              succ_id: Optional[str]) -> None:
-    """Best-effort rollback to pre-supersession state (narrow boundary)."""
+def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> None:
+    """Rollback for a failure before/within successor confirmation.
+
+    The predecessor was never touched (still active in memory and on
+    disk). The successor never became a confirmed revision, so it is
+    removed (proposal + plane unit) and the nursery is re-saved.
+    """
+    if succ_id is not None:
+        program.nursery.proposals.pop(succ_id, None)
+        try:
+            program.cube.session.plane.remove(succ_id)
+        except Exception:
+            pass
+    # Direct save: the rollback itself must not trip the inject hook.
+    program.nursery.save()
+
+
+def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
+                   succ_id: Optional[str]) -> None:
+    """Rollback for a failure at the final link-commit.
+
+    The successor was created and confirmed solely by this operation but
+    the revision links were never durably committed, so the operation is
+    all-or-nothing: the predecessor's link fields are restored, the
+    successor proposal/plane unit is removed, and the nursery is
+    re-saved. Durable state returns to entirely-old; no half revision
+    chain can survive.
+    """
     for k, v in old_snap.items():
         setattr(old, k, v)
     if succ_id is not None:
@@ -271,12 +296,19 @@ def _supersede_impl(program: Any, old_id: str, words: str,
                     label: Optional[str]) -> Dict[str, Any]:
     """Atomic supersede implementation (see supersede_proposal).
 
-    Lifecycle (all-or-nothing):
+    Lifecycle (all-or-nothing), ordered so a crash can never expose a
+    half-superseded revision chain:
+
       1. validate old unit: exists, confirmed, on-plane, currently active
       2. create successor through the legitimate nursery path (pending)
-      3. establish revision links in memory, then commit (nursery.save)
-      4. confirm/promote successor via the canonical confirm path
-      5. persist + emit auditable receipt
+      3. confirm/promote successor via the canonical confirm path --
+         the predecessor stays ACTIVE in durable storage throughout
+      4. prepare complete revision links in memory, then ONE atomic
+         durable commit (nursery.save). This single save is the
+         durability boundary: before it the predecessor is active;
+         after it the predecessor is superseded AND the successor is
+         confirmed with complete bidirectional links.
+      5. persist + emit auditable receipt (post-commit)
 
     The successor is created as a derivation root (parents=[]): revision
     ancestry is NOT derivation ancestry. A repeated supersession of an
@@ -284,9 +316,10 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     existing relationship — no duplicate successor is ever created.
 
     Raises SupersedeError on validation or injected failure. Any failure
-    before the final commit leaves no half-written lifecycle: the
-    predecessor is restored, the pending successor is removed, and the
-    nursery is re-saved.
+    before the final commit restores the pre-supersession state entirely:
+    the predecessor is untouched (Phase 3) or its link fields are
+    restored (Phase 4), the successor created solely by this operation
+    is removed, and the nursery is re-saved.
     """
     nursery = program.nursery
 
@@ -343,7 +376,29 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     )
     succ_id = succ.id
 
-    # ---- Phase 3: revision links, then commit ----
+    # ---- Phase 3: confirm/promote the successor FIRST ----
+    # The predecessor stays ACTIVE in durable storage for the whole of
+    # this phase. Any failure here (or a crash at any point before the
+    # Phase-4 commit) therefore leaves the predecessor active: a fresh
+    # process can never observe "predecessor superseded" without a
+    # completely established successor.
+    try:
+        if _FAIL_AT == "confirm":
+            raise SupersedeError("injected_failure", "confirm")
+        res = program.confirm_proposal(succ_id)
+        if not res.get("ok"):
+            raise SupersedeError("confirm_failed", str(res.get("reason")))
+    except Exception:
+        _rollback_unconfirmed(program, succ_id)
+        raise
+
+    # ---- Phase 4: complete revision links, then ONE atomic commit ----
+    # This single _save_nursery call is the durability boundary of the
+    # whole operation. Everything before it leaves the predecessor
+    # active on disk; everything after it has the predecessor superseded
+    # with the successor confirmed and both revision links complete.
+    # There is no crash window between "predecessor superseded" and
+    # "successor confirmed" because they are written by the same save.
     old_snap = {
         "lifecycle_state": getattr(old, "lifecycle_state", ACTIVE),
         "supersedes_id": getattr(old, "supersedes_id", None),
@@ -369,18 +424,7 @@ def _supersede_impl(program: Any, old_id: str, words: str,
             raise SupersedeError("injected_failure", "link_write")
         _save_nursery(program)
     except Exception:
-        _rollback(program, old, old_snap, succ_id)
-        raise
-
-    # ---- Phase 4: confirm/promote successor (canonical path) ----
-    try:
-        if _FAIL_AT == "confirm":
-            raise SupersedeError("injected_failure", "confirm")
-        res = program.confirm_proposal(succ_id)
-        if not res.get("ok"):
-            raise SupersedeError("confirm_failed", str(res.get("reason")))
-    except Exception:
-        _rollback(program, old, old_snap, succ_id)
+        _rollback_full(program, old, old_snap, succ_id)
         raise
 
     # ---- Phase 5: auditable receipt ----
