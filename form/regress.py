@@ -59,6 +59,7 @@ LIST = [
     "form.mandell.english_composer_test",
     "form.mandell.dcc_vi_test",
     "form.mandell.dcc_vii_test",
+    "form.mandell.dcc_viii_test",
     "form.mandell.core_ii_smoke",
 ]
 

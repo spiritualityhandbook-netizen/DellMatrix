@@ -160,6 +160,14 @@ def translate(english: str) -> Intent:
         if query:
             return Intent("discover", 35, "Discover", {},
                          f"35[Discover] :: find_idea {query}", text)
+    # DCC-VIII: explicit knowledge consumption.
+    m = re.search(r"\buse\s+idea\s+(\S+)(?:\s+to\s+(\w+))?", raw_lower)
+    if m:
+        pid = m.group(1).strip()
+        target = m.group(2) or "grow"
+        if pid:
+            return Intent("nurture", 37, "Nurture", {},
+                         f"37[Nurture] :: use_idea {pid} to {target}", text)
     m = re.search(r"\badd\s+idea\s+(.+)$", raw_lower)
     if m:
         label = m.group(1).strip()[:80]
