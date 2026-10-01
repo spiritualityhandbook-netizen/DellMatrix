@@ -102,6 +102,53 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             pending = program.list_proposals()
             program.last_discover = {"ids": [p.get("id") for p in pending], "count": len(pending), "source": "nursery"}
             messages.append(f"Nursery pending: {len(pending)}")
+        # DCC-VII: query accepted/promoted knowledge (confirmed proposals in cube).
+        elif lab == "list_confirmed":
+            confirmed = [p for p in program.nursery.proposals.values()
+                        if p.status == "confirmed"]
+            program.last_discover = {
+                "ids": [p.id for p in confirmed],
+                "labels": [p.label for p in confirmed],
+                "count": len(confirmed),
+                "source": "nursery_confirmed",
+            }
+            messages.append(f"Confirmed proposals: {len(confirmed)}")
+            for p in confirmed[:10]:
+                messages.append(f"  {p.id}: {p.label}")
+        elif lab == "count_confirmed":
+            confirmed = [p for p in program.nursery.proposals.values()
+                        if p.status == "confirmed"]
+            promoted = sum(1 for p in confirmed
+                          if p.id in program.cube.session.plane.units)
+            program.last_discover = {
+                "confirmed": len(confirmed),
+                "promoted": promoted,
+                "source": "nursery_confirmed_count",
+            }
+            messages.append(f"Confirmed: {len(confirmed)} (promoted to cube: {promoted})")
+        elif lab.startswith("find_idea"):
+            # Query promoted knowledge in cube by deterministic text match.
+            query = lab[10:].strip()
+            units = program.cube.session.plane.units
+            matches = []
+            if query:
+                q = query.lower()
+                for uid, unit in units.items():
+                    text = f"{uid} {getattr(unit, 'label', '')} {getattr(unit, 'detail', '')}".lower()
+                    if q in text:
+                        matches.append({"id": uid, "label": getattr(unit, "label", uid)})
+            program.last_discover = {
+                "query": query,
+                "matches": matches,
+                "count": len(matches),
+                "source": "cube_idea_search",
+            }
+            if not query:
+                messages.append("find_idea requires a query term")
+            else:
+                messages.append(f"Found {len(matches)} ideas matching '{query}'")
+                for m in matches[:10]:
+                    messages.append(f"  {m['id']}: {m['label']}")
         else:
             ids = list(program.cube.session.plane.units.keys())
             ns = program.nursery.summary()
@@ -113,19 +160,26 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
         return {**base, "ok": True, "error": ""}
     # DCC-VI: Dell 37 Nurture — nursery mutations via existing Nursery authority.
     # SAFE_ADAPTER: Nursery.add/confirm/reject are real, tested methods.
+    # DCC-VII: confirm uses program.confirm_proposal (real promotion to cube).
     if n == 37:
         lab = label.strip()
         low = lab.lower()
         if low.startswith("confirm "):
             pid = lab[8:].strip()
-            result = program.nursery.confirm(pid)
-            if result:
-                program.last_nurture = {"action": "confirm", "pid": pid, "ok": True}
-                messages.append(f"Confirmed proposal: {pid}")
+            # Use canonical promotion authority: places in cube + confirms.
+            if hasattr(program, "confirm_proposal"):
+                result = program.confirm_proposal(pid)
+            else:
+                result = program.nursery.confirm(pid)
+                result = {"ok": bool(result), "id": pid} if result else {"ok": False}
+            if result.get("ok"):
+                program.last_nurture = {"action": "confirm", "pid": pid, "ok": True,
+                                       "promoted": True}
+                messages.append(f"Confirmed and promoted proposal: {pid}")
             else:
                 program.last_nurture = {"action": "confirm", "pid": pid, "ok": False,
-                                       "error": "not found or not pending"}
-                messages.append(f"Confirm failed: {pid} not found or not pending")
+                                       "error": result.get("reason", "not found or not pending")}
+                messages.append(f"Confirm failed: {pid} ({result.get('reason', 'not found')})")
                 return {**base, "ok": False, "error": f"confirm failed: {pid}"}
         elif low.startswith("reject "):
             pid = lab[7:].strip()

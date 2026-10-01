@@ -149,6 +149,17 @@ def translate(english: str) -> Intent:
         return Intent("discover", 35, "Discover", {}, "35[Discover] :: compare_nursery", text)
     if re.search(r"\btrace\b", raw_lower):
         return Intent("discover", 35, "Discover", {}, "35[Discover] :: trace", text)
+    # DCC-VII: query accepted/promoted knowledge.
+    if re.search(r"\blist\s+confirmed\b", raw_lower):
+        return Intent("discover", 35, "Discover", {}, "35[Discover] :: list_confirmed", text)
+    if re.search(r"\bcount\s+confirmed\b", raw_lower):
+        return Intent("discover", 35, "Discover", {}, "35[Discover] :: count_confirmed", text)
+    m = re.search(r"\bfind\s+idea\s+(.+)$", raw_lower)
+    if m:
+        query = m.group(1).strip()[:60]
+        if query:
+            return Intent("discover", 35, "Discover", {},
+                         f"35[Discover] :: find_idea {query}", text)
     m = re.search(r"\badd\s+idea\s+(.+)$", raw_lower)
     if m:
         label = m.group(1).strip()[:80]
