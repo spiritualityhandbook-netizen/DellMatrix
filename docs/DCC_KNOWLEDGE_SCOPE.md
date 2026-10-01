@@ -758,3 +758,106 @@ conflict evidence is retained unchanged.
   across changed conflict IDs.
 - The default with no disposition record remains unresolved DCC-XIII
   quarantine.
+
+## DCC-XX: Execution Outcome Ledger (Outcome Record V1)
+
+Durable, queryable evidence connecting:
+
+    KNOWLEDGE > SELECTION > CONFLICT DISPOSITION > EXECUTION > OBSERVED OUTCOME
+
+without turning outcome into truth.
+
+### LAW: OUTCOME != TRUTH
+
+An operation succeeding does NOT prove its input knowledge true.
+An operation failing does NOT prove its input knowledge false.
+Repeated success does NOT automatically increase truth authority.
+Repeated failure does NOT automatically reject knowledge.
+
+Outcome evidence is OBSERVATION. It may inform future explicit
+mechanisms. DCC-XX MUST NOT autonomously mutate knowledge truth,
+verification status, conflict disposition, revision authority, or
+dependency authority based on outcome. AUTONOMY = NO.
+
+### Outcome Record V1
+
+- `outcome_version`: 1
+- `outcome_id`: `out1:` + sha256(version|owner|seq|operation|
+  knowledge ids+revisions|conflict ids|dispositions|result)[:32].
+  Stable, queryable, not wall-clock based. The per-owner durable
+  sequence counter guarantees distinguishability of repeated
+  identical executions.
+- `result`: `completed` | `failed` | `blocked` | `skipped`
+  (observable result only — never a truth judgment).
+- `knowledge`: frozen provenance per participating unit —
+  (id, revision_number, revision_root_id, lifecycle_state,
+  content_fingerprint). Snapshotted at capture; later revision
+  never rewrites the record.
+- `conflicts`: the routing state that actually applied —
+  (conflict_id, disposition, preferred_ids, permitted_ids,
+  participant_ids). Never reinterpreted later.
+- `composition`: for flow nodes — (flow_program, node_index).
+- `generation_id`: committed checkpoint generation at capture
+  (epoch context, not identity input).
+- Explicit marker: `outcome_is_observation: true`.
+- The schema contains ZERO truth/verification/confidence fields
+  by construction; persisted records are shape-checked against
+  a forbidden-field list on load.
+
+### Capture point
+
+The `route_intent` result boundary (form/mandell/semantic_router.py).
+Every intent-driven execution passes through it — single commands
+and every flow node (the flow executor routes each node through
+`route_intent`). Capture is post-hoc observation; routing behavior
+is untouched. No second executor.
+
+### Granularity
+
+One outcome per `route_intent` call (= per node for flow programs,
+per intent for single executions). This mirrors existing receipt
+authority (RouteReceipt per intent; FlowReceipt aggregates per-node
+steps). There is no separate program-level outcome record:
+program-level aggregation is derivable by grouping on the
+composition reference.
+
+### Relationship to Program.history
+
+History is the lossy operational UX event stream (last 24
+unstructured lines). The outcome ledger is the durable structured
+evidence store. No authority is duplicated — the ledger carries
+fields history never had (stable identity, revision snapshots,
+conflict/disposition snapshots, result status). Trace may reference
+outcome IDs. There are no two competing histories.
+
+### Persistence
+
+The ledger lives in the program payload (execution evidence ->
+program authority), serialized by form/persist.serialize, riding
+Persistence V2 atomic writes and Checkpoint Generation V1 coherence.
+Failed save/commit -> previous generation authoritative. No
+`outcomes.json` sidecar.
+
+### Query
+
+- `trace outcome <outcome_id>` — one exact outcome.
+- `list outcomes` / `show last outcome` — most recent, newest first.
+- `outcomes for idea <id>` — outcomes whose knowledge provenance
+  includes a knowledge ID (exact ID or revision root).
+
+### Retention
+
+Unbounded growth is tolerated (duo_ledger precedent). A pruning
+policy is DEFERRED. No destructive pruning is invented here.
+
+### Boundaries
+
+- outcome != truth — success/failure is observation, not verification.
+- outcome != disposition — outcomes never create or change conflict
+  dispositions.
+- outcome != revision — outcomes never supersede or revise knowledge.
+- clear != rewrite — clearing a disposition never rewrites historical
+  outcomes; they keep the disposition that applied at execution time.
+- revision != rewrite — superseding knowledge never rewrites
+  historical outcomes; they keep the revision that participated.
+- AUTONOMY = NO.

@@ -311,13 +311,31 @@ CORRESPONDENCE: Dict[Tuple[str, int], _Correspondence] = {
 }
 
 
-def route_intent(program: Any, intent: Any, raw_line: str = "") -> RouteReceipt:
+def route_intent(program: Any, intent: Any, raw_line: str = "",
+                 composition: Optional[Dict[str, Any]] = None) -> RouteReceipt:
     """Route a Mandell Intent through the Dell execution authority.
 
     Returns a RouteReceipt that honestly reports what happened. If the
     Intent's Mandell composition does not parse, or the (action, dell)
     pair has no verified correspondence, NOTHING executes.
+
+    DCC-XX: after the receipt is built, an Outcome Record V1 is captured
+    into the program's durable outcome ledger (post-hoc observation;
+    routing behavior untouched). ``composition`` optionally carries flow
+    context (``{"flow_program": ..., "node_index": ...}``) for node-level
+    outcomes inside composed programs.
     """
+    receipt = _route_intent_impl(program, intent, raw_line)
+    # DCC-XX capture: post-hoc, never raises, never alters routing.
+    try:
+        from .outcome_ledger import capture_outcome
+        capture_outcome(program, receipt, composition)
+    except Exception:
+        pass
+    return receipt
+
+
+def _route_intent_impl(program: Any, intent: Any, raw_line: str = "") -> RouteReceipt:
     from .seed import parse_seed
     from .executor import execute_seed
 

@@ -232,7 +232,12 @@ def execute_program(program: Any, flow_program: FlowProgram) -> FlowReceipt:
 
         intent = Intent(action=node.action, dell=node.dell, term=node.term,
                         args=node.args, mandel=node.mandel, english=node.mandel)
-        receipt = route_intent(cur, intent, raw_line=node.mandel)
+        # DCC-XX: pass flow composition context so each node outcome records
+        # which composed program and node index it belongs to. Additive only;
+        # routing behavior unchanged.
+        receipt = route_intent(cur, intent, raw_line=node.mandel,
+                               composition={"flow_program": flow_program.raw,
+                                            "node_index": i})
         if receipt.new_program is not None:
             cur = receipt.new_program
         step_ok = bool(receipt.ok and receipt.routed)

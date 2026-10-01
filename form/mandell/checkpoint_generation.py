@@ -344,6 +344,19 @@ def _read_pointer(owner: str) -> Dict[str, Any]:
     return data
 
 
+def current_generation_id(owner: str) -> Optional[str]:
+    """Best-effort committed generation ID for an owner (epoch context).
+
+    Returns the generation_id from the committed CURRENT pointer, or
+    None when no checkpoint is established. Used by DCC-XX as epoch
+    context on outcome records — never as identity input, never raising.
+    """
+    try:
+        return _read_pointer(owner).get("generation_id")
+    except Exception:
+        return None
+
+
 def _read_manifest(owner: str, generation_id: str) -> Dict[str, Any]:
     data = _read_json_file(_manifest_path(owner, generation_id), "generation manifest")
     if data.get("checkpoint_protocol_version") != CHECKPOINT_PROTOCOL_VERSION:

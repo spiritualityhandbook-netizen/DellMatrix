@@ -215,6 +215,60 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                         f"  {p['unit_id']}: revision={p['lifecycle_state']}, "
                         f"dependency={p['dependency_status']} "
                         f"({'qualifies' if p['currently_qualifies'] else p['qualification_note']})")
+        elif lab.startswith("trace_outcome "):
+            # DCC-XX: answer "what exactly happened in this execution?" --
+            # durable structured observation, never a truth claim.
+            from form.mandell.outcome_ledger import get_outcome
+            target = lab[len("trace_outcome "):].strip()
+            rec = get_outcome(program, target)
+            if rec is None:
+                program.last_discover = {"ok": False, "error": "outcome not found",
+                                         "source": "trace_outcome", "outcome_id": target}
+                messages.append(f"Outcome {target}: not found")
+            else:
+                program.last_discover = {**rec, "source": "trace_outcome"}
+                messages.append(
+                    f"Outcome {rec['outcome_id']}: {rec['operation']} -> {rec['result']} "
+                    f"(seq={rec['outcome_seq']})")
+                if rec["knowledge"]:
+                    messages.append(
+                        "  knowledge: " + ", ".join(
+                            f"{k['id']}#rev{k['revision_number']}" for k in rec["knowledge"]))
+                for c in rec["conflicts"]:
+                    messages.append(
+                        f"  conflict {c['conflict_id']}: {c['disposition']}")
+                if rec["error"]:
+                    messages.append(f"  error: {rec['error'][:120]}")
+        elif lab == "list_outcomes":
+            # DCC-XX: most recent outcomes, newest first.
+            from form.mandell.outcome_ledger import list_outcomes
+            recs = list_outcomes(program, limit=10)
+            program.last_discover = {"outcomes": recs, "count": len(recs),
+                                     "source": "list_outcomes"}
+            if not recs:
+                messages.append("Outcomes: none recorded")
+            else:
+                messages.append(f"Outcomes: {len(recs)} recent")
+                for r in recs:
+                    messages.append(
+                        f"  {r['outcome_id']}: {r['operation']} -> {r['result']} "
+                        f"(seq={r['outcome_seq']})")
+        elif lab.startswith("outcomes_for_idea "):
+            # DCC-XX: outcomes whose knowledge provenance includes an ID.
+            from form.mandell.outcome_ledger import outcomes_for_knowledge
+            target = lab[len("outcomes_for_idea "):].strip()
+            recs = outcomes_for_knowledge(program, target)
+            program.last_discover = {"outcomes": recs, "count": len(recs),
+                                     "source": "outcomes_for_idea",
+                                     "knowledge_id": target}
+            if not recs:
+                messages.append(f"Outcomes for idea {target}: none recorded")
+            else:
+                messages.append(f"Outcomes for idea {target}: {len(recs)}")
+                for r in recs:
+                    messages.append(
+                        f"  {r['outcome_id']}: {r['operation']} -> {r['result']} "
+                        f"(seq={r['outcome_seq']})")
         elif "nursery" in lab:
             pending = program.list_proposals()
             program.last_discover = {"ids": [p.get("id") for p in pending], "count": len(pending), "source": "nursery"}
