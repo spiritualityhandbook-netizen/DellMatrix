@@ -1,4 +1,4 @@
-# Contextual Knowledge: Selection → Scope → Relevance V2 → Dependency V1 → Conflict V1 → Lineage V1 → Supersession V1
+# Contextual Knowledge: Selection → Scope → Relevance V2 → Dependency V1 → Conflict V1 → Disposition V1 → Lineage V1 → Supersession V1
 
 How DellMatrix answers "grow using knowledge about <context>".
 
@@ -17,6 +17,7 @@ lifecycle (DCC-VII/VIII)
 → Relevance V2 ranking (DCC-XII)
 → top-5 selection
 → Conflict V1 detection (DCC-XIII)
+→ operator conflict disposition (DCC-XIX: prefer/coexist routing gate)
 → routable subset
 → enforced consumption scope (DCC-XI)
 → consumer
@@ -653,3 +654,107 @@ and `legacy: false`.
 - COHERENCE != ATOMICITY != DURABILITY != RECOVERY. DCC-XVIII adds
   cross-file generation coherence on top of DCC-XVI logical atomicity
   and DCC-XVII file atomicity.
+
+## DCC-XIX: Explicit Operator Conflict Disposition (Disposition V1)
+
+DCC-XIII quarantines every participant of every detected conflict by
+default. DCC-XIX adds a durable, explicit, operator-assigned routing
+disposition per stable conflict — prefer one participant, or let both
+coexist — without changing detection, truth, revision, dependency,
+relevance, or top-5.
+
+### Stable conflict identity
+
+`conflict_id = "cv1:" + sha256(f"{conflict_version}|{id_a}|{id_b}")[:32]`
+with `id_a`/`id_b` canonically sorted. The identity is a pure function of
+the Conflict V1 protocol version and the two participant IDs: independent
+of discovery order, timestamps, relevance rank, and scores. A changed
+participant (including a new revision) yields a new identity; no
+disposition transfers to it.
+
+### Disposition V1 contract (`CONFLICT_DISPOSITION_VERSION = 1`)
+
+Stored states: `prefer`, `coexist`. No stored record means `unresolved`
+(the DCC-XIII default quarantine). Clearing deletes the record and
+returns the conflict to unresolved. Records carry version, conflict id,
+sorted participant ids, disposition, preferred ids, an operator reason,
+and an `update_seq`; they carry no truth fields. Repeated identical
+assignment is a deterministic no-op; a changed assignment replaces the
+record with an incremented `update_seq`; clearing twice is a
+deterministic no-op.
+
+Assignment is validated before it is stored: the conflict must be
+currently detected, `prefer` names exactly one detected participant,
+`coexist` names none. Anything else is refused explicitly — never stored
+as a malformed record, never widened into a silent default.
+
+### Routing policy (the conflict-routing gate only)
+
+`apply_dispositions` runs over the already-selected Conflict V1 analysis
+set; it never widens top-5 and never changes relevance scores. Per
+conflict: unresolved blocks both participants; prefer X permits only X
+*through that conflict* (X must still independently qualify);
+coexist permits both. A unit routes only if every applicable detected
+conflict permits it. If the preferred participant becomes ineligible
+(superseded, dependency-invalid, off-plane), it does not route and the
+other participant is NOT auto-promoted — each conflict still quarantines
+it. Malformed or inapplicable stored records fail closed to unresolved.
+Stale records (participants no longer jointly detected) are listed and
+inspectable but have no routing effect.
+
+The disposition controls ONLY the conflict-routing gate. It cannot bypass
+revision, dependency, eligibility, relevance, or top-5 requirements.
+
+### Persistence and failure atomicity
+
+Dispositions ride the Nursery Persistence V2 atomic write (reserved key
+`__conflict_dispositions__`) and are therefore sealed inside Checkpoint
+Generation V1 members. A failed `set`/`clear` rolls the in-memory map back
+and reports honestly; the disk keeps the old complete policy. A failed
+checkpoint commit leaves the previous generation authoritative. A crash
+between the in-memory mutation and the save loses the uncommitted
+disposition and nothing else. Legacy nursery files without the section
+load with an empty disposition map.
+
+### Commands and trace
+
+- `resolve conflict <conflict_id> prefer <unit_id>`
+- `resolve conflict <conflict_id> coexist`
+- `clear conflict resolution <conflict_id>`
+- `trace conflict <conflict_id>` — reports the stable id, current detection
+  evidence, current disposition record, participant revision/dependency
+  state, current qualification, and applicability/stale status. It makes
+  no truth claim.
+
+### Receipt evidence (additive)
+
+`conflict_disposition_version`, `conflict_dispositions` (per-conflict:
+disposition, permitted ids, preferred ids, applicability),
+`conflict_policy_exclusions` (per-unit reason, including
+"not preferred; no auto-promotion"),
+`invalid_disposition_ids`, `stale_disposition_ids`. All DCC-XIII
+conflict evidence is retained unchanged.
+
+### Semantic separations
+
+- conflict != truth — detection reports opposition; it never picks a winner.
+- disposition != truth — a routing choice is not a truth claim.
+- prefer != verified — preferring a unit does not verify it.
+- coexist != agreement — coexisting units still conflict; both may route.
+- unresolved != both false — quarantine suspends routing; it asserts nothing.
+- operator decision != autonomous inference — only an explicit operator
+  command creates a disposition; the system never invents one.
+  AUTONOMY = NO.
+- supersession != conflict resolution — a new revision gets a new
+  conflict identity and starts unresolved.
+- relevance score != conflict decision — dispositions never change scores
+  or top-5 order.
+
+### Boundaries
+
+- No automatic fallback winner when the preferred unit becomes ineligible.
+- No policy transfer to successors or to other changed knowledge.
+- No truth scoring, no global preferred knowledge, no policy inheritance
+  across changed conflict IDs.
+- The default with no disposition record remains unresolved DCC-XIII
+  quarantine.

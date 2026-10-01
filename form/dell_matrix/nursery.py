@@ -41,6 +41,13 @@ class NurseryLoadError(ValueError):
     fabricated."""
 
 
+# Reserved nursery-file key for DCC-XIX conflict dispositions. Can never
+# collide with a proposal ID: _slug() output is lowercase alnum plus
+# underscores, stripped of leading/trailing underscores, with a numeric
+# hash suffix -- it can never equal this dunder constant.
+DISPOSITION_SECTION_KEY = "__conflict_dispositions__"
+
+
 def owner_nursery_path(owner: str) -> str:
     """Per-owner nursery file: nursery_<_safe_owner(owner)>.json (existing persist._safe_owner, no new sanitizer)."""
     from form.persist import _safe_owner
@@ -97,6 +104,13 @@ class Nursery:
     path: Optional[str] = None
     # Optimistic version of the owner file as last seen by this instance (sha256 of bytes; None = absent).
     _seen: Optional[str] = field(default=None, repr=False, compare=False)
+    # DCC-XIX: operator-governed conflict dispositions (conflict_id ->
+    # disposition record). Serialized under a reserved key that can never
+    # be a proposal ID (proposal IDs are _slug() output: lowercase
+    # alnum/underscores, never leading/trailing double underscores plus a
+    # hash suffix). Absence of a record means the default unresolved state.
+    conflict_dispositions: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict, repr=False, compare=False)
 
     def add(
         self,
@@ -193,6 +207,15 @@ class Nursery:
                 f"nursery file changed on disk since load: {os.path.basename(self.path)} (lost update refused)"
             )
         payload = {k: v.to_dict() for k, v in self.proposals.items()}
+        # DCC-XIX: the operator's conflict-disposition map rides the same
+        # atomic write as the proposals, so the durable file always holds
+        # one complete policy: the old one or the new one, never a mix.
+        # A validated in-memory record is JSON-safe by construction
+        # (validate_record at the command layer); the section is still
+        # shape-checked on load.
+        payload[DISPOSITION_SECTION_KEY] = {
+            cid: dict(rec) for cid, rec in self.conflict_dispositions.items()
+        }
         blob = atomic_write_json(self.path, payload, _fail_at=_fail_at)
         self._seen = hashlib.sha256(blob).hexdigest()
 
@@ -229,8 +252,25 @@ class Nursery:
                 "(top-level JSON is not an object)"
             )
         staged: Dict[str, Proposal] = {}
+        staged_dispositions: Dict[str, Dict[str, Any]] = {}
         try:
             for k, v in raw.items():
+                # DCC-XIX: the reserved disposition section is staged
+                # separately; it is never mistaken for a proposal.
+                if k == DISPOSITION_SECTION_KEY:
+                    if not isinstance(v, dict):
+                        raise NurseryLoadError(
+                            f"nursery file {os.path.basename(path)} has a malformed "
+                            f"{DISPOSITION_SECTION_KEY} section (not an object)"
+                        )
+                    for cid, rec in v.items():
+                        if not isinstance(cid, str) or not isinstance(rec, dict):
+                            raise NurseryLoadError(
+                                f"nursery file {os.path.basename(path)} has a malformed "
+                                f"disposition record for {cid!r}"
+                            )
+                    staged_dispositions = {cid: dict(rec) for cid, rec in v.items()}
+                    continue
                 if not isinstance(v, dict):
                     raise NurseryLoadError(
                         f"nursery file {os.path.basename(path)} has an invalid proposal record for {k!r}"
@@ -244,5 +284,6 @@ class Nursery:
             ) from exc
         # Only now apply: nothing partial can escape.
         n.proposals = staged
+        n.conflict_dispositions = staged_dispositions
         n._seen = hashlib.sha256(blob).hexdigest()
         return n

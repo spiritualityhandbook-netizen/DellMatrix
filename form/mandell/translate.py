@@ -164,6 +164,12 @@ def translate(english: str) -> Intent:
     if m:
         return Intent("discover", 35, "Discover", {},
                       f"35[Discover] :: trace_revision {m.group(1)}", text)
+    # DCC-XIX: conflict trace — detection evidence + operator disposition
+    # for one stable conflict ID (before bare \btrace\b).
+    m = re.search(r"\btrace\s+conflict\s+(\S+)", raw_lower)
+    if m:
+        return Intent("discover", 35, "Discover", {},
+                      f"35[Discover] :: trace_conflict {m.group(1)}", text)
     if re.search(r"\btrace\b", raw_lower):
         return Intent("discover", 35, "Discover", {}, "35[Discover] :: trace", text)
     # DCC-VII: query accepted/promoted knowledge.
@@ -187,6 +193,27 @@ def translate(english: str) -> Intent:
         if old_id and words:
             return Intent("nurture", 37, "Nurture", {},
                          f"37[Nurture] :: supersede {old_id} with {words}", text)
+    # DCC-XIX: operator-governed conflict disposition — explicit routing
+    # policy for one stable conflict, never a truth claim. Malformed IDs
+    # are accepted here and refused honestly by the handler.
+    m = re.search(r"\bresolve\s+conflict\s+(\S+)\s+prefer\s+(\S+)", raw_lower)
+    if m:
+        cid, fav = m.group(1).strip(), m.group(2).strip()
+        if cid and fav:
+            return Intent("nurture", 37, "Nurture", {},
+                         f"37[Nurture] :: resolve_conflict {cid} prefer {fav}", text)
+    m = re.search(r"\bresolve\s+conflict\s+(\S+)\s+coexist\b", raw_lower)
+    if m:
+        cid = m.group(1).strip()
+        if cid:
+            return Intent("nurture", 37, "Nurture", {},
+                         f"37[Nurture] :: resolve_conflict {cid} coexist", text)
+    m = re.search(r"\bclear\s+conflict\s+resolution\s+(\S+)", raw_lower)
+    if m:
+        cid = m.group(1).strip()
+        if cid:
+            return Intent("nurture", 37, "Nurture", {},
+                         f"37[Nurture] :: clear_conflict_resolution {cid}", text)
     # DCC-VIII: explicit knowledge consumption.
     m = re.search(r"\buse\s+idea\s+(\S+)(?:\s+to\s+(\w+))?", raw_lower)
     if m:

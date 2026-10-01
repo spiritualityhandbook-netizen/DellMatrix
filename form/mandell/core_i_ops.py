@@ -191,6 +191,30 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 if rec["chain"]:
                     messages.append(
                         f"  chain: {' -> '.join(rec['chain'])}")
+        elif lab.startswith("trace_conflict "):
+            # DCC-XIX: answer "what is the current detection evidence and
+            # operator disposition for this stable conflict?" -- routing
+            # governance inspection, never a truth claim.
+            from form.mandell.conflict_disposition import trace_conflict
+            target = lab[len("trace_conflict "):].strip()
+            rec = trace_conflict(program, target)
+            program.last_discover = {**rec, "source": "trace_conflict"}
+            if not rec.get("ok"):
+                messages.append(f"Conflict trace failed: {rec.get('error')}")
+            else:
+                messages.append(
+                    f"Conflict {target}: disposition={rec['disposition']} "
+                    f"({rec['applicability']})")
+                if rec["detection_evidence"]:
+                    ev = rec["detection_evidence"]
+                    messages.append(
+                        f"  participants: {ev['id_a']} <-> {ev['id_b']} "
+                        f"(frame_jaccard={ev['frame_jaccard']})")
+                for p in rec["participants"]:
+                    messages.append(
+                        f"  {p['unit_id']}: revision={p['lifecycle_state']}, "
+                        f"dependency={p['dependency_status']} "
+                        f"({'qualifies' if p['currently_qualifies'] else p['qualification_note']})")
         elif "nursery" in lab:
             pending = program.list_proposals()
             program.last_discover = {"ids": [p.get("id") for p in pending], "count": len(pending), "source": "nursery"}
@@ -391,6 +415,77 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 f"already superseded by {result.get('superseded_by_id')}")
             return {**base, "ok": False,
                     "error": result.get("reason") or "supersede refused"}
+        elif low.startswith("resolve_conflict "):
+            # DCC-XIX: operator-governed conflict disposition. Explicit
+            # routing policy for one stable conflict -- never a truth
+            # claim. Format: "resolve_conflict <conflict_id> prefer <unit_id>"
+            # or "resolve_conflict <conflict_id> coexist".
+            from form.mandell.conflict_disposition import (
+                CONFLICT_DISPOSITION_VERSION, set_disposition,
+            )
+            rest = lab[len("resolve_conflict "):].strip()
+            parts = rest.split()
+            result = None
+            if len(parts) >= 2 and parts[1].lower() == "prefer" and len(parts) >= 3:
+                result = set_disposition(
+                    program, parts[0], "prefer", [parts[2]])
+            elif len(parts) >= 2 and parts[1].lower() == "coexist":
+                result = set_disposition(program, parts[0], "coexist", [])
+            if result is None:
+                program.last_nurture = {
+                    "action": "resolve_conflict", "ok": False,
+                    "error": ("usage: resolve conflict <conflict_id> prefer <unit_id> "
+                              "or resolve conflict <conflict_id> coexist"),
+                    "consumer": "resolve_conflict", "dell": 37,
+                    "conflict_disposition_version": CONFLICT_DISPOSITION_VERSION,
+                }
+                messages.append("Resolve conflict failed: unrecognized form")
+                return {**base, "ok": False,
+                        "error": "usage: resolve conflict <conflict_id> prefer <unit_id> "
+                                 "or resolve conflict <conflict_id> coexist"}
+            program.last_nurture = {
+                "action": "resolve_conflict", "consumer": "resolve_conflict",
+                "dell": 37, **result,
+            }
+            if result.get("ok"):
+                if result.get("noop"):
+                    messages.append(
+                        f"Conflict {result['conflict_id']}: disposition unchanged "
+                        f"({result['disposition']})")
+                else:
+                    messages.append(
+                        f"Conflict {result['conflict_id']}: operator disposition "
+                        f"'{result['disposition']}' recorded (routing only, not truth)")
+                return {**base, "ok": True}
+            messages.append(f"Resolve conflict failed: {result.get('error')}")
+            return {**base, "ok": False,
+                    "error": f"resolve conflict failed: {result.get('error')}"}
+        elif low.startswith("clear_conflict_resolution "):
+            # DCC-XIX: return one conflict to the default unresolved state.
+            # Format: "clear_conflict_resolution <conflict_id>".
+            from form.mandell.conflict_disposition import (
+                CONFLICT_DISPOSITION_VERSION, clear_disposition,
+            )
+            cid = lab[len("clear_conflict_resolution "):].strip().split()
+            cid = cid[0] if cid else ""
+            result = clear_disposition(program, cid)
+            program.last_nurture = {
+                "action": "clear_conflict_resolution",
+                "consumer": "clear_conflict_resolution",
+                "dell": 37, **result,
+            }
+            if result.get("ok"):
+                if result.get("noop"):
+                    messages.append(
+                        f"Conflict {cid}: already unresolved; nothing to clear")
+                else:
+                    messages.append(
+                        f"Conflict {cid}: disposition cleared; default "
+                        f"unresolved quarantine restored")
+                return {**base, "ok": True}
+            messages.append(f"Clear conflict resolution failed: {result.get('error')}")
+            return {**base, "ok": False,
+                    "error": f"clear conflict resolution failed: {result.get('error')}"}
         elif low.startswith("grow_using_knowledge_about "):
             # DCC-IX: Contextual knowledge selection.
             # Format: "grow_using_knowledge_about <context>"
@@ -431,16 +526,23 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             # detected polarity-conflict pair is quarantined; the consumer
             # receives exactly the routable subset (never a silent merge of
             # conflicting claims, never a full-plane fallback).
+            # DCC-XIX: the conflict-routing gate is disposition-aware. An
+            # explicit operator disposition (prefer/coexist) governs a
+            # detected conflict for routing purposes only; absent a
+            # disposition the DCC-XIII unresolved quarantine is preserved.
+            # Disposition never alters relevance scores or widens the set.
             from form.mandell.conflict_router import (
-                CONFLICT_VERSION, detect_conflicts, route_conflicts,
+                CONFLICT_VERSION, detect_conflicts,
             )
+            from form.mandell.conflict_disposition import apply_dispositions
             from form.mandell.knowledge_selector import unit_text
             conflict_items = [
                 {"id": s["id"], "text": unit_text(program, s["id"])}
                 for s in selection["selected"]
             ]
             conflicts = detect_conflicts(conflict_items)
-            routable_ids, quarantined_ids = route_conflicts(selected_ids, conflicts)
+            routable_ids, quarantined_ids, disp_evidence = apply_dispositions(
+                selected_ids, conflicts, program)
 
             # DCC-XIV: lineage/evidence structure (Lineage V1). Descriptive
             # metadata only: provenance is NOT truth. Built on the existing
@@ -465,6 +567,11 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                     "conflict_count": len(conflicts),
                     "quarantined_ids": quarantined_ids,
                     "routable_selected_ids": routable_ids,
+                    "conflict_disposition_version": disp_evidence["conflict_disposition_version"],
+                    "conflict_dispositions": disp_evidence["conflict_dispositions"],
+                    "conflict_policy_exclusions": disp_evidence["conflict_policy_exclusions"],
+                    "stale_disposition_ids": disp_evidence["stale_disposition_ids"],
+                    "invalid_disposition_ids": disp_evidence["invalid_disposition_ids"],
                     "lineage_version": LINEAGE_VERSION,
                     "dependency_version": selection.get("dependency_version"),
                     "dependency_valid_count": selection.get("dependency_valid_count"),
@@ -505,6 +612,11 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                     "conflict_count": len(conflicts),
                     "quarantined_ids": quarantined_ids,
                     "routable_selected_ids": routable_ids,
+                    "conflict_disposition_version": disp_evidence["conflict_disposition_version"],
+                    "conflict_dispositions": disp_evidence["conflict_dispositions"],
+                    "conflict_policy_exclusions": disp_evidence["conflict_policy_exclusions"],
+                    "stale_disposition_ids": disp_evidence["stale_disposition_ids"],
+                    "invalid_disposition_ids": disp_evidence["invalid_disposition_ids"],
                     "lineage_version": LINEAGE_VERSION,
                     "selected_lineage": sel_lineage,
                     "selected_root_ids": sel_root_ids,
@@ -572,6 +684,11 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 "conflict_count": len(conflicts),
                 "quarantined_ids": quarantined_ids,
                 "routable_selected_ids": routable_ids,
+                "conflict_disposition_version": disp_evidence["conflict_disposition_version"],
+                "conflict_dispositions": disp_evidence["conflict_dispositions"],
+                "conflict_policy_exclusions": disp_evidence["conflict_policy_exclusions"],
+                "stale_disposition_ids": disp_evidence["stale_disposition_ids"],
+                "invalid_disposition_ids": disp_evidence["invalid_disposition_ids"],
                 "lineage_version": LINEAGE_VERSION,
                 "selected_lineage": sel_lineage,
                 "selected_root_ids": sel_root_ids,
@@ -595,6 +712,13 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             messages.append(f"  Eligible: {selection['eligible_count']}, Selected: {len(selected_ids)}")
             messages.append(f"  Reason: {selection['reason']}")
             messages.append(f"  Conflicts: {len(conflicts)}, Quarantined: {quarantined_ids}, Routable: {len(routable_ids)}")
+            disp_applied = [d for d in disp_evidence["conflict_dispositions"]
+                            if d["disposition_applicable"]]
+            if disp_applied:
+                messages.append(
+                    "  Dispositions: " + ", ".join(
+                        f"{d['conflict_id'][:12]}...={d['disposition']}"
+                        for d in disp_applied))
             messages.append(f"  Lineage roots: {len(sel_root_ids)} independent roots over {len(selected_ids)} selected")
             if selection.get("dependency_exclusions"):
                 messages.append(f"  Dependency exclusions: {len(selection['dependency_exclusions'])}")
