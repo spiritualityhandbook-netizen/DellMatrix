@@ -70,6 +70,7 @@ LIST = [
     "form.mandell.dcc_xv_cross_process_test",
     "form.mandell.dcc_xvi_test",
     "form.mandell.dcc_xvi_atomicity_test",
+    "form.mandell.dcc_xvii_test",
     "form.mandell.core_ii_smoke",
 ]
 

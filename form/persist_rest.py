@@ -20,19 +20,29 @@ from form.persist_core_ii import restore_core_ii
 from form.persist import serialize, _path, _cp_path, _safe_owner, _STATE_DIR, VERSION
 
 
-def save(program: Program, path: Optional[str] = None) -> str:
+def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str] = None) -> str:
+    """Persist the program via Persistence V2 (crash-safe atomic replacement; DCC-XVII).
+
+    The complete payload is serialized BEFORE the existing target is touched:
+    serialization failure leaves the previous generation intact. After
+    interruption the canonical file holds either the previous complete
+    generation or the new complete generation -- never a partially
+    serialized generation.
+    """
+    from form.dell_matrix.atomic_write import atomic_write_json
+
     path = path or _path(program.owner)
     data = serialize(program)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    atomic_write_json(path, data, _fail_at=_fail_at)
     return path
 
 
-def checkpoint(program: Program) -> str:
+def checkpoint(program: Program, *, _fail_at: Optional[str] = None) -> str:
     cp = _cp_path(program.owner)
-    with open(cp, "w", encoding="utf-8") as f:
-        json.dump(serialize(program), f, indent=2)
-    save(program)
+    from form.dell_matrix.atomic_write import atomic_write_json
+
+    atomic_write_json(cp, serialize(program), _fail_at=_fail_at)
+    save(program, _fail_at=_fail_at)
     return cp
 
 

@@ -468,3 +468,96 @@ committed state; a retry then hits the deterministic
 
 Supersession is not truth, not relevance, not conflict, not dependency.
 Active != verified.
+
+## DCC-XVII: Crash-Safe Persistence (Persistence V2)
+
+Two different atomicities guard the knowledge lifecycle. They must not be
+confused.
+
+### Two separate atomicities
+
+- **DCC-XVI logical transaction atomicity** — the supersession operation
+  is all-or-nothing at the object level: a failure before the final
+  nursery commit rolls back predecessor metadata, the pending successor,
+  and plane placement; a fresh process can never observe a predecessor as
+  superseded unless the corresponding successor revision is completely
+  established (certified by `dcc_xvi_atomicity_test`, 101/101).
+- **DCC-XVII file replacement atomicity** — the physical save of a
+  generation is all-or-nothing at the byte level: a failed or interrupted
+  save leaves a fresh process seeing a complete OLD generation or a
+  complete NEW generation, never a partially serialized generation
+  (certified by `dcc_xvii_test`, 81/81, including literal cross-process
+  SIGKILL and os._exit probes).
+
+DCC-XVI orders the logical operation; DCC-XVII makes the physical commit
+indivisible. Either can fail independently; together they guarantee the
+required success statement: a failed save leaves complete-old or
+complete-new, and a failed load never partially mutates live state.
+
+### Persistence V2 contract (`PERSISTENCE_PROTOCOL_VERSION = 2`)
+
+Every canonical write (`Nursery.save`, program save, checkpoint save)
+goes through `form/dell_matrix/atomic_write.py`:
+
+1. Serialize the complete payload to bytes BEFORE touching the target.
+   A serialization failure leaves the target untouched.
+2. Write to a collision-safe sibling temp
+   (`<canonical>.dmtmp.<pid>.<random8>`, created `O_CREAT | O_EXCL`,
+   mode `0644`), then flush + `os.fsync` the temp.
+3. `os.replace(temp, target)` — one atomic same-filesystem rename. There
+   is no delete-then-rename, no in-place truncation, no partial JSON.
+4. Best-effort parent-directory fsync (`O_DIRECTORY`) so the rename
+   itself is durable; the result is observable, not assumed.
+
+Load is read → decode → validate → privately prepare → bind/swap. Every
+proposal record is built into a private staged dict and applied ONLY
+after all records validate. A truncated, malformed, or schema-invalid
+canonical file raises an explicit error (`NurseryLoadError`) — it never
+silently becomes an empty nursery, and a failed load never partially
+mutates live in-memory state.
+
+Loader precedence: a valid canonical file is the ONLY source of truth.
+There is no backup generation, no backup promotion, no fabricated
+recovery. Valid canonical → load; otherwise explicit failure.
+
+### Documented durability (what fsync does and does not promise)
+
+- `os.fsync` on the temp orders the file's data to the storage device
+  before the rename, and the directory fsync orders the rename itself —
+  on filesystems and platforms where those calls are honored.
+- This is crash-consistency against process death (SIGKILL), OS crash,
+  and power loss **within the documented fsync assumptions**: the
+  storage stack must actually persist what fsync reports as persisted.
+  No claim is made about hardware or firmware that acknowledges writes
+  it has not stored.
+- No database transactions, no distributed consensus, no multi-host
+  coordination, and no lock-based concurrent-writer framework are
+  introduced. Concurrent writers still use the pre-existing nursery
+  optimistic SHA conflict detection; last-writer-wins across processes
+  is unchanged and out of scope.
+
+### Temp files and cleanup
+
+- Temps are process-unique by PID + randomness; two writers never share
+  a temp path.
+- A hard crash (SIGKILL, os._exit) between temp write and replace leaves
+  a stale temp beside the canonical file. Loaders ignore it; it never
+  shadows or merges into canonical state.
+- `sweep_stale_tmps(directory)` removes helper temps whose PID is dead
+  and leaves temps of live writers alone. It is ordinary hygiene, not
+  recovery: sweeping a stale temp changes nothing about the canonical
+  generation.
+- Injected (non-crash) failures clean up their own temp before raising;
+  only literal process death leaves stale temps.
+
+### Boundaries
+
+- Only canonical persisted runtime owner state moved to Persistence V2:
+  nursery owner JSON, program canonical JSON, checkpoint JSON
+  (private clone files inherit the mechanics through the shared save
+  path). Standalone pack export/import and unrelated ledgers/assets are
+  untouched — different persistence semantics, not blindly refactored.
+- Payload JSON shape is unchanged; Persistence V1 files load as-is.
+- ATOMICITY != DURABILITY != RECOVERY. DCC-XVII provides file
+  replacement atomicity with documented fsync durability. It provides no
+  backup, no restore, no repair, and no recovery narrative.
