@@ -28,6 +28,21 @@ form/mandell/semantic_router.py. Every intent-driven execution passes
 through it (single commands and every flow node). Capture is post-hoc
 observation; routing behavior is untouched. No second executor.
 
+Freshness gate (DCC-XX-C1): the arm's structured receipt
+(``program.last_nurture``) is a single-slot attribute shared across
+calls. The ``route_intent`` wrapper snapshots its identity before
+execution and only attributes knowledge/conflict provenance to the
+outcome when the executed call replaced it. A previous successful
+call's evidence can never contaminate a later blocked, failed,
+no-route, or non-knowledge outcome.
+
+Blocked semantics (DCC-XX-C1): a Dell 37 contextual grow whose
+conflict routing quarantined every selected unit (conflicts detected,
+``routable_selected_ids`` empty, ``quarantined_ids`` non-empty) records
+``blocked`` — the routing succeeded but the intended execution did not
+occur. Partial quarantine (some routable) and empty selection remain
+``completed``/``failed`` per the arm's honest receipt.
+
 Identity: ``out1:`` + sha256(version|owner|seq|operation|knowledge
 part|conflict part|result)[:32]. The per-owner durable sequence counter
 guarantees distinguishability of repeated identical executions.
@@ -110,22 +125,25 @@ def outcome_id_for(version: int, owner: str, seq: int, operation: str,
     return f"{OUTCOME_ID_PREFIX}{digest}"
 
 
-def _knowledge_snapshot(program: Any, receipt: Any) -> List[Dict[str, Any]]:
+def _knowledge_snapshot(nurture: Any) -> List[Dict[str, Any]]:
     """Frozen knowledge provenance from the arm's structured receipt.
 
-    Reads program.last_nurture (set synchronously by the Dell 37 arm
-    inside the same route_intent call). Returns [] when knowledge did
+    ``nurture`` is the ``program.last_nurture`` dict attributed to THIS
+    call by the freshness gate (the ``route_intent`` wrapper passes it
+    only when the executed call replaced the slot). Callers must pass
+    None when the evidence is not fresh; returns [] when knowledge did
     not participate. Each entry snapshots (id, revision_number,
     revision_root_id, lifecycle_state, content_fingerprint) at capture
     time — later revision of the knowledge MUST NOT rewrite this.
     """
-    nurture = getattr(program, "last_nurture", None)
     if not isinstance(nurture, dict):
         return []
     details = nurture.get("selected_details") or []
     if not isinstance(details, list):
         return []
-    proposals = getattr(getattr(program, "nursery", None), "proposals", None) or {}
+    # NOTE: content fingerprints need the nursery; the program is not
+    # passed here. Fingerprints are resolved by the caller via
+    # _resolve_fingerprints below.
     out: List[Dict[str, Any]] = []
     for d in details:
         if not isinstance(d, dict):
@@ -142,22 +160,37 @@ def _knowledge_snapshot(program: Any, receipt: Any) -> List[Dict[str, Any]]:
             "revision_number": rev_n,
             "revision_root_id": str(d.get("revision_root_id", uid)),
             "lifecycle_state": str(d.get("lifecycle_state", "active")),
-            "content_fingerprint": _content_fingerprint(proposals.get(uid)),
+            "content_fingerprint": "",
         })
     return out
 
 
-def _conflict_snapshot(program: Any) -> Dict[str, Any]:
+def _resolve_fingerprints(program: Any,
+                          knowledge: List[Dict[str, Any]]) -> None:
+    """Fill content fingerprints in place from the live nursery.
+
+    Fingerprints snapshot proposal content at capture time; later
+    revision never rewrites the record (the record keeps its copy).
+    """
+    proposals = getattr(getattr(program, "nursery", None), "proposals", None) or {}
+    for k in knowledge:
+        k["content_fingerprint"] = _content_fingerprint(proposals.get(k["id"]))
+
+
+def _conflict_snapshot(nurture: Any) -> Dict[str, Any]:
     """Frozen conflict/disposition provenance from the arm's receipt.
 
-    Records the routing state that ACTUALLY APPLIED at execution time:
-    conflict identity, whether unresolved/resolved, disposition applied,
-    policy exclusions. Never reinterpreted later.
+    ``nurture`` is the ``program.last_nurture`` dict attributed to THIS
+    call by the freshness gate. Callers must pass None when the
+    evidence is not fresh. Records the routing state that ACTUALLY
+    APPLIED at execution time: conflict identity, whether
+    unresolved/resolved, disposition applied, policy exclusions. Never
+    reinterpreted later.
     """
-    nurture = getattr(program, "last_nurture", None)
+    empty = {"conflicts": [], "policy_exclusions": [],
+             "quarantined_ids": [], "routable_ids": []}
     if not isinstance(nurture, dict):
-        return {"conflicts": [], "policy_exclusions": [],
-                "quarantined_ids": [], "routable_ids": []}
+        return empty
     conflicts: List[Dict[str, Any]] = []
     disps = nurture.get("conflict_dispositions") or []
     if isinstance(disps, list):
@@ -182,6 +215,35 @@ def _conflict_snapshot(program: Any) -> Dict[str, Any]:
         "quarantined_ids": [str(x) for x in quarantined] if isinstance(quarantined, list) else [],
         "routable_ids": [str(x) for x in routable] if isinstance(routable, list) else [],
     }
+
+
+def _blocked_by_quarantine(nurture: Any, receipt: Any) -> bool:
+    """DCC-XX-C1: detect the all-quarantined Dell 37 grow.
+
+    The arm returns ok=True when routing correctly quarantined every
+    selected unit — routing succeeded, but the intended execution
+    (knowledge-driven growth) did not occur. Recording ``completed``
+    would be false evidence. Returns True only for a fresh Dell 37
+    ``grow_contextual`` receipt with conflicts detected, zero routable
+    IDs, and a non-empty quarantine set. Partial quarantine, empty
+    selection, failed arms, and non-grow operations are unaffected.
+    """
+    if not isinstance(nurture, dict):
+        return False
+    try:
+        if int(getattr(receipt, "dell", -1)) != 37:
+            return False
+    except (TypeError, ValueError):
+        return False
+    if nurture.get("action") != "grow_contextual":
+        return False
+    if not bool(nurture.get("ok")):
+        return False
+    routable = nurture.get("routable_selected_ids") or []
+    quarantined = nurture.get("quarantined_ids") or []
+    conflicts = nurture.get("conflicts") or []
+    return (len(routable) == 0 and len(quarantined) > 0
+            and len(conflicts) > 0)
 
 
 def _generation_epoch(program: Any) -> Optional[str]:
@@ -212,12 +274,18 @@ def _result_of(receipt: Any) -> str:
 
 
 def build_outcome(program: Any, receipt: Any,
-                  composition: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                  composition: Optional[Dict[str, Any]] = None,
+                  nurture_fresh: bool = False) -> Dict[str, Any]:
     """Construct an Outcome Record V1 from a RouteReceipt (pure).
 
     Does not mutate the program. All provenance is snapshotted from
     the arm's structured receipt available at the route_intent boundary.
     Contains zero truth/verification/confidence fields by construction.
+
+    ``nurture_fresh`` is set by the ``route_intent`` wrapper: True only
+    when the executed call replaced ``program.last_nurture``. When
+    False, knowledge/conflict provenance is recorded empty — stale
+    evidence from a previous call can never contaminate this outcome.
     """
     owner = str(getattr(program, "owner", "Operator"))
     seq = int(getattr(program, "outcome_seq", 0) or 0) + 1
@@ -232,8 +300,17 @@ def build_outcome(program: Any, receipt: Any,
     semantic = str(getattr(receipt, "semantic", "") or "")
     result = _result_of(receipt)
 
-    knowledge = _knowledge_snapshot(program, receipt)
-    conflict = _conflict_snapshot(program)
+    # DCC-XX-C1: attribute provenance only to the call that produced
+    # it. A stale last_nurture from a previous call is ignored.
+    nurture = getattr(program, "last_nurture", None) if nurture_fresh else None
+    knowledge = _knowledge_snapshot(nurture)
+    _resolve_fingerprints(program, knowledge)
+    conflict = _conflict_snapshot(nurture)
+
+    # DCC-XX-C1: an all-quarantined Dell 37 grow did not execute its
+    # intended effect; recording completed would be false evidence.
+    if result == RESULT_COMPLETED and _blocked_by_quarantine(nurture, receipt):
+        result = RESULT_BLOCKED
 
     knowledge_part = "|".join(
         f"{k['id']}#{k['revision_number']}#{k['content_fingerprint']}"
@@ -286,7 +363,8 @@ def build_outcome(program: Any, receipt: Any,
 
 
 def capture_outcome(program: Any, receipt: Any,
-                    composition: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+                    composition: Optional[Dict[str, Any]] = None,
+                    nurture_fresh: bool = False) -> Optional[Dict[str, Any]]:
     """Capture an Outcome Record V1 into the program's ledger.
 
     Called once per route_intent call, after the RouteReceipt is built.
@@ -294,6 +372,9 @@ def capture_outcome(program: Any, receipt: Any,
     mutates knowledge truth, verification, disposition, revision, or
     dependency authority. Returns the record, or None if the program
     cannot host a ledger.
+
+    ``nurture_fresh`` (from the route_intent wrapper) gates provenance
+    attribution: only a receipt slot replaced by THIS call is read.
     """
     try:
         records = getattr(program, "outcome_records", None)
@@ -301,7 +382,8 @@ def capture_outcome(program: Any, receipt: Any,
             return None
         if not isinstance(records, dict):
             return None
-        record = build_outcome(program, receipt, composition)
+        record = build_outcome(program, receipt, composition,
+                                nurture_fresh=nurture_fresh)
         # Deterministic: the sequence counter advances exactly once per
         # captured outcome, in the same step as the append.
         program.outcome_seq = int(record["outcome_seq"])

@@ -789,6 +789,19 @@ dependency authority based on outcome. AUTONOMY = NO.
   identical executions.
 - `result`: `completed` | `failed` | `blocked` | `skipped`
   (observable result only — never a truth judgment).
+- **Blocked semantics (DCC-XX-C1):** a Dell 37 contextual grow whose
+  conflict routing quarantined every selected unit (conflicts
+  detected, zero routable IDs, non-empty quarantine) records
+  `blocked` — the routing succeeded but the intended execution did
+  not occur. Recording `completed` would be false evidence. Partial
+  quarantine (some routable) and empty selection keep the arm's
+  honest `completed`/`failed`.
+- **Freshness gate (DCC-XX-C1):** the arm's structured receipt
+  (`program.last_nurture`) is a single slot shared across calls. The
+  `route_intent` wrapper attributes its knowledge/conflict
+  provenance to an outcome only when the executed call replaced the
+  slot. A previous successful call's evidence can never contaminate
+  a later blocked, failed, no-route, or non-knowledge outcome.
 - `knowledge`: frozen provenance per participating unit —
   (id, revision_number, revision_root_id, lifecycle_state,
   content_fingerprint). Snapshotted at capture; later revision

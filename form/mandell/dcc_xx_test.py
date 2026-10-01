@@ -30,7 +30,14 @@ Controls:
   R  outcome cannot mutate conflict disposition
   S  pending/rejected knowledge governed by existing rules
   T  outcome record shape validation (forbidden fields rejected)
-  U  prior layers preserved (XIII/XVI/XVII/XVIII/XIX)
+  U  DCC-XX-C1 blocked semantics (all-quarantined Dell 37 grow ->
+     blocked, never completed; blocked record immutable)
+  V  DCC-XX-C1 stale state (freshness gate: no previous call's
+     evidence contaminates later blocked/failed/no-route/non-
+     knowledge outcomes; blocked carries its own call's evidence)
+  W  DCC-XX-C1 disposition lifecycle (prefer permits only eligible;
+     coexist; clear restores blocking; conflict identity stable)
+  X  DCC-XX-C1 blocked persistence + literal two-process restore
 
 AUTONOMY = NO.
 """
@@ -428,7 +435,7 @@ os._exit(0)
     check("L3 same outcome ID", bvals.get("B_OID") == vals.get("A_OID"))
     check("L4 same seq", bvals.get("B_SEQ") == vals.get("A_SEQ"))
     check("L5 same knowledge", bvals.get("B_KNOW") == vals.get("A_KNOW"))
-    check("L6 same result", bvals.get("B_RESULT") == "completed")
+    check("L6 same result", bvals.get("B_RESULT") == "blocked")
     check("L7 conflict evidence survives", bvals.get("B_CONFLICTS") == "1")
     pa.unlink(missing_ok=True)
     pb.unlink(missing_ok=True)
@@ -617,8 +624,10 @@ def control_t() -> None:
 
 # ---------------------------------------------------------------- CONTROL U
 def control_u() -> None:
-    # Prior layers preserved: a conflict still quarantines by default and
-    # the DCC-XIX disposition gate still governs routing.
+    # DCC-XX-C1 BLOCKED semantics: an unresolved conflict that
+    # quarantines every selected unit means the intended execution did
+    # not occur. The routing succeeded (correct quarantine) but the
+    # outcome must be blocked, never completed.
     p = fresh_owner("DCCXX_U")
     a = add_confirmed(p, "plants_a", "plants require water")
     b = add_confirmed(p, "plants_b", "plants do not require water")
@@ -628,8 +637,226 @@ def control_u() -> None:
     check("U2 XIII quarantine default", last["conflict_count"] >= 1)
     check("U3 routable empty", last["routable_selected_ids"] == [])
     rec = p.outcome_records[last_outcome_id(p)]
-    check("U4 outcome reflects quarantine",
-          rec["result"] == RESULT_COMPLETED and rec["quarantined_ids"] != [])
+    check("U4 outcome is blocked, not completed",
+          rec["result"] == RESULT_BLOCKED)
+    check("U5 blocked keeps quarantine evidence",
+          rec["quarantined_ids"] != [] and len(rec["conflicts"]) >= 1)
+    check("U6 blocked keeps frozen knowledge selection",
+          {a, b} <= {k["id"] for k in rec["knowledge"]})
+    check("U7 conflict disposition unresolved",
+          all(c["disposition"] == "unresolved" for c in rec["conflicts"]))
+    # A later successful operation must not rewrite the blocked record.
+    blocked_oid = last_outcome_id(p)
+    c = add_confirmed(p, "sun_c", "sunlight helps plants grow")
+    r = op(p, "grow using knowledge about sunlight plants")
+    rec_after = p.outcome_records[blocked_oid]
+    check("U8 blocked record immutable",
+          rec_after["result"] == RESULT_BLOCKED
+          and rec_after["quarantined_ids"] == rec["quarantined_ids"])
+
+
+# ---------------------------------------------------------------- CONTROL V
+def control_v() -> None:
+    # DCC-XX-C1 STALE STATE: program.last_nurture is a single slot
+    # shared across calls. The freshness gate must ensure a previous
+    # successful call's evidence never contaminates a later blocked,
+    # failed, no-route, or non-knowledge outcome — and a blocked
+    # outcome carries only its own call's evidence.
+    p = fresh_owner("DCCXX_V")
+    a = add_confirmed(p, "plants_a", "plants require water")
+    # V1: successful grow -> completed with knowledge provenance.
+    r = op(p, "grow using knowledge about plants water")
+    rec_ok = p.outcome_records[last_outcome_id(p)]
+    check("V1 success completed", rec_ok["result"] == RESULT_COMPLETED)
+    check("V2 success has knowledge provenance",
+          any(k["id"] == a for k in rec_ok["knowledge"]))
+    # V3: a non-Dell-37 operation after the success must carry NO stale
+    # knowledge/conflict provenance.
+    r = op(p, "list outcomes")
+    rec_list = p.outcome_records[last_outcome_id(p)]
+    check("V4 non-knowledge op recorded", rec_list["operation"] == "discover")
+    check("V5 no stale knowledge", rec_list["knowledge"] == [])
+    check("V6 no stale conflicts",
+          rec_list["conflicts"] == [] and rec_list["quarantined_ids"] == []
+          and rec_list["routable_ids"] == [])
+    # V7: a failed/no-route operation after the success: no stale provenance.
+    r = op(p, "gibberish nonexistent command xyzzy")
+    rec_bad = p.outcome_records[last_outcome_id(p)]
+    check("V8 failed outcome has no stale knowledge",
+          rec_bad["knowledge"] == [] and rec_bad["conflicts"] == [])
+    # V9: now create the conflict and run the blocked grow. The blocked
+    # outcome must carry THIS call's evidence only.
+    b = add_confirmed(p, "plants_b", "plants do not require water")
+    r = op(p, "grow using knowledge about plants water")
+    rec_blocked = p.outcome_records[last_outcome_id(p)]
+    check("V10 blocked after prior success",
+          rec_blocked["result"] == RESULT_BLOCKED)
+    check("V11 blocked carries current-call conflict evidence",
+          len(rec_blocked["conflicts"]) >= 1
+          and {a, b} <= set(rec_blocked["quarantined_ids"]))
+    check("V12 blocked knowledge is this call's selection",
+          {a, b} <= {k["id"] for k in rec_blocked["knowledge"]})
+    # V13: a non-Dell-37 op after the blocked call: still no contamination
+    # (the slot holds the blocked call's receipt, but it is not fresh).
+    r = op(p, "list outcomes")
+    rec_list2 = p.outcome_records[last_outcome_id(p)]
+    check("V14 post-block non-knowledge op clean",
+          rec_list2["knowledge"] == [] and rec_list2["conflicts"] == [])
+
+
+# ---------------------------------------------------------------- CONTROL W
+def control_w() -> None:
+    # DCC-XX-C1 disposition lifecycle on outcomes: PREFER permits only
+    # independently eligible behavior; COEXIST preserves both;
+    # CLEAR restores unresolved blocking; conflict identity is stable.
+    p = fresh_owner("DCCXX_W")
+    a = add_confirmed(p, "plants_a", "plants require water")
+    b = add_confirmed(p, "plants_b", "plants do not require water")
+    confs = detectable_conflicts(p)
+    cid = conflict_id_for(confs[0]["id_a"], confs[0]["id_b"])
+    ids = sorted([confs[0]["id_a"], confs[0]["id_b"]])
+    # W: PREFER -> execution proceeds on the preferred unit only.
+    r = op(p, f"resolve conflict {cid} prefer {ids[0]}")
+    check("W1 prefer resolve ok", r.ok)
+    r = op(p, "grow using knowledge about plants water")
+    prefer_oid = last_outcome_id(p)
+    rec = p.outcome_records[prefer_oid]
+    c = [x for x in rec["conflicts"] if x["conflict_id"] == cid][0]
+    check("W2 prefer outcome completed", rec["result"] == RESULT_COMPLETED)
+    check("W3 prefer permits only the preferred unit",
+          c["disposition"] == "prefer" and c["permitted_ids"] == [ids[0]]
+          and ids[0] in rec["routable_ids"]
+          and ids[1] not in rec["routable_ids"])
+    # W: COEXIST -> both permitted, execution proceeds.
+    r = op(p, f"resolve conflict {cid} coexist")
+    r = op(p, "grow using knowledge about plants water")
+    rec2 = p.outcome_records[last_outcome_id(p)]
+    c2 = [x for x in rec2["conflicts"] if x["conflict_id"] == cid][0]
+    check("W4 coexist outcome completed", rec2["result"] == RESULT_COMPLETED)
+    check("W5 coexist permits both",
+          c2["disposition"] == "coexist"
+          and set(c2["permitted_ids"]) == set(ids))
+    # W: CLEAR -> unresolved blocking returns.
+    r = op(p, f"clear conflict resolution {cid}")
+    check("W6 clear ok", r.ok)
+    r = op(p, "grow using knowledge about plants water")
+    rec3 = p.outcome_records[last_outcome_id(p)]
+    c3 = [x for x in rec3["conflicts"] if x["conflict_id"] == cid][0]
+    check("W7 clear restores blocked",
+          rec3["result"] == RESULT_BLOCKED
+          and c3["disposition"] == "unresolved")
+    # W: REVISION — conflict identity stable across the lifecycle.
+    check("W8 conflict identity stable",
+          c["conflict_id"] == c2["conflict_id"] == c3["conflict_id"] == cid)
+    # W: historical prefer/coexist outcomes keep their dispositions.
+    hist = p.outcome_records[prefer_oid]
+    hc = [x for x in hist["conflicts"] if x["conflict_id"] == cid][0]
+    check("W9 history not rewritten by clear",
+          hist["result"] == RESULT_COMPLETED and hc["disposition"] == "prefer")
+
+
+# ---------------------------------------------------------------- CONTROL X
+def control_x() -> None:
+    # DCC-XX-C1: blocked status and provenance survive persistence and
+    # a literal cross-process checkpoint restore, exactly.
+    p = fresh_owner("DCCXX_X")
+    a = add_confirmed(p, "plants_a", "plants require water")
+    b = add_confirmed(p, "plants_b", "plants do not require water")
+    r = op(p, "grow using knowledge about plants water")
+    oid = last_outcome_id(p)
+    rec = p.outcome_records[oid]
+    check("X1 blocked before save", rec["result"] == RESULT_BLOCKED)
+    seq_before = p.outcome_seq
+    quarantined_before = list(rec["quarantined_ids"])
+    p.save()
+    from form.persist import load as persist_load
+    p2 = persist_load("DCCXX_X")
+    check("X2 blocked ledger restored", oid in p2.outcome_records)
+    rec2 = p2.outcome_records[oid]
+    check("X3 blocked status survives",
+          rec2["result"] == RESULT_BLOCKED)
+    check("X4 quarantine provenance survives",
+          rec2["quarantined_ids"] == quarantined_before
+          and len(rec2["conflicts"]) == len(rec["conflicts"]))
+    check("X5 seq restored", p2.outcome_seq == seq_before)
+
+    # Literal two-process restore of a blocked outcome.
+    owner = "DCCXX_X2"
+    wipe_owner(owner)
+    OWNERS.append(owner)
+    repo = str(REPO)
+    script_a = f'''
+import sys; sys.path.insert(0, {repo!r})
+from form.open import open_program
+from form.mandell.translate import translate
+from form.mandell.semantic_router import route_intent
+from form.mandell import checkpoint_generation as CG
+import os
+p = open_program({owner!r})
+for label, words in [("plants_a", "plants require water"),
+                     ("plants_b", "plants do not require water")]:
+    pr = p.nursery.add(label, words=words, parents=[])
+    p.confirm_proposal(pr.id)
+r = route_intent(p, translate("grow using knowledge about plants water"), raw_line="x")
+assert r.ok, "route failed"
+oids = list(p.outcome_records.keys())
+assert len(oids) == 1, oids
+rec = p.outcome_records[oids[0]]
+assert rec["result"] == "blocked", rec["result"]
+p.save()
+rc = CG.commit_checkpoint(p)
+assert rc.get("committed"), rc
+print("XA_PID:" + str(os.getpid()), flush=True)
+print("XA_OID:" + oids[0], flush=True)
+print("XA_SEQ:" + str(rec["outcome_seq"]), flush=True)
+print("XA_RESULT:" + rec["result"], flush=True)
+print("XA_QUAR:" + ",".join(sorted(rec["quarantined_ids"])), flush=True)
+os._exit(0)
+'''
+    pa = Path("/tmp/dccxx_xa.py")
+    pa.write_text(script_a)
+    out_a = subprocess.run([sys.executable, str(pa)], capture_output=True, text=True)
+    assert out_a.returncode == 0, f"process A failed: {out_a.stderr[-500:]}"
+    vals = {}
+    for line in out_a.stdout.splitlines():
+        if ":" in line:
+            k, v = line.split(":", 1)
+            vals[k] = v
+    check("X6 process A produced blocked outcome", vals.get("XA_RESULT") == "blocked")
+    script_b = f'''
+import sys; sys.path.insert(0, {repo!r})
+from form.mandell import checkpoint_generation as CG
+from form.mandell.outcome_ledger import get_outcome
+import os
+p2, rc = CG.load_checkpoint({owner!r})
+assert rc.get("generation_id"), rc
+rec = get_outcome(p2, {vals.get("XA_OID", "")!r})
+assert rec is not None, "outcome missing after checkpoint load"
+print("XB_PID:" + str(os.getpid()), flush=True)
+print("XB_OID:" + rec["outcome_id"], flush=True)
+print("XB_SEQ:" + str(rec["outcome_seq"]), flush=True)
+print("XB_RESULT:" + rec["result"], flush=True)
+print("XB_QUAR:" + ",".join(sorted(rec["quarantined_ids"])), flush=True)
+os._exit(0)
+'''
+    pb = Path("/tmp/dccxx_xb.py")
+    pb.write_text(script_b)
+    out_b = subprocess.run([sys.executable, str(pb)], capture_output=True, text=True)
+    assert out_b.returncode == 0, f"process B failed: {out_b.stderr[-500:]}"
+    bvals = {}
+    for line in out_b.stdout.splitlines():
+        if ":" in line:
+            k, v = line.split(":", 1)
+            bvals[k] = v
+    check("X7 distinct PIDs", vals.get("XA_PID") != bvals.get("XB_PID"))
+    check("X8 same outcome ID", bvals.get("XB_OID") == vals.get("XA_OID"))
+    check("X9 same seq", bvals.get("XB_SEQ") == vals.get("XA_SEQ"))
+    check("X10 blocked result exact after restore",
+          bvals.get("XB_RESULT") == "blocked")
+    check("X11 quarantine set exact after restore",
+          bvals.get("XB_QUAR") == vals.get("XA_QUAR"))
+    pa.unlink(missing_ok=True)
+    pb.unlink(missing_ok=True)
 
 
 def main() -> int:
@@ -656,6 +883,9 @@ def main() -> int:
     control_s()
     control_t()
     control_u()
+    control_v()
+    control_w()
+    control_x()
     cleanup()
     total = len(CHECKS)
     failed = [n for n, ok in CHECKS if not ok]
