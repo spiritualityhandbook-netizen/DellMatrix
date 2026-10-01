@@ -248,6 +248,46 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             messages.append(f"  Offspring parented by {pid}: {len(offspring)}")
             for o in offspring[:5]:
                 messages.append(f"    {o['id']}: {o['label']}")
+        elif low.startswith("grow_using_knowledge_about "):
+            # DCC-IX: Contextual knowledge selection.
+            # Format: "grow_using_knowledge_about <context>"
+            from form.mandell.knowledge_selector import select_for_context
+            context = lab[27:].strip()
+            if not context:
+                return {**base, "ok": False, "error": "context required"}
+            
+            # Select relevant knowledge
+            selection = select_for_context(program, context, operation="grow")
+            selected_ids = [s["id"] for s in selection["selected"]]
+            
+            # Record state before
+            before_ids = set(program.nursery.proposals.keys())
+            
+            # Run consumer (growth uses all units; selection identifies relevant ones)
+            growth_result = program.grow_ideas(1)
+            
+            # Find new proposals
+            after_ids = set(program.nursery.proposals.keys())
+            new_count = len(after_ids - before_ids)
+            
+            program.last_nurture = {
+                "action": "grow_contextual",
+                "context": context,
+                "eligible_count": selection["eligible_count"],
+                "selected_ids": selected_ids,
+                "selection_reason": selection["reason"],
+                "selected_details": selection["selected"],
+                "ok": True,
+                "consumer": "grow_ideas",
+                "dell": 37,
+                "new_proposals": new_count,
+            }
+            messages.append(f"Contextual grow: '{context}'")
+            messages.append(f"  Eligible: {selection['eligible_count']}, Selected: {len(selected_ids)}")
+            messages.append(f"  Reason: {selection['reason']}")
+            for s in selection["selected"][:3]:
+                messages.append(f"    {s['id']}: {s['label']} (score={s['score']})")
+            messages.append(f"  New proposals: {new_count}")
         else:
             # Default: add idea with label
             if not lab:

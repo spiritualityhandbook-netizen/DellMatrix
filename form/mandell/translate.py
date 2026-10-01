@@ -168,6 +168,13 @@ def translate(english: str) -> Intent:
         if pid:
             return Intent("nurture", 37, "Nurture", {},
                          f"37[Nurture] :: use_idea {pid} to {target}", text)
+    # DCC-IX: contextual knowledge selection.
+    m = re.search(r"\bgrow\s+using\s+knowledge\s+about\s+(.+)$", raw_lower)
+    if m:
+        context = m.group(1).strip()[:80]
+        if context:
+            return Intent("nurture", 37, "Nurture", {},
+                         f"37[Nurture] :: grow_using_knowledge_about {context}", text)
     m = re.search(r"\badd\s+idea\s+(.+)$", raw_lower)
     if m:
         label = m.group(1).strip()[:80]
