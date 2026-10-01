@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-HANDLED = {27, 28, 34, 35, 40, 44, 47}
+HANDLED = {27, 28, 34, 35, 37, 40, 44, 47}
 
 
 def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, Any]]:
@@ -53,7 +53,52 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
         return {**base, "ok": True, "error": ""}
     if n == 35:
         lab = label.lower()
-        if "nursery" in lab:
+        # DCC-VI: extended read labels for operational capabilities.
+        if lab == "count_nursery":
+            ns = program.nursery.summary()
+            program.last_discover = {
+                "pending": ns.get("pending", 0),
+                "total": ns.get("total", 0),
+                "confirmed": ns.get("confirmed", 0),
+                "rejected": ns.get("rejected", 0),
+                "source": "nursery_summary",
+            }
+            messages.append(f"Nursery: pending={ns.get('pending',0)} total={ns.get('total',0)} "
+                          f"confirmed={ns.get('confirmed',0)} rejected={ns.get('rejected',0)}")
+        elif lab == "list_pending":
+            pending = program.nursery.pending()
+            program.last_discover = {
+                "ids": [p.id for p in pending],
+                "labels": [p.label for p in pending],
+                "count": len(pending),
+                "source": "nursery_pending",
+            }
+            messages.append(f"Pending proposals: {len(pending)}")
+            for p in pending[:10]:
+                messages.append(f"  {p.id}: {p.label}")
+        elif lab == "compare_nursery":
+            ns = program.nursery.summary()
+            pending = ns.get("pending", 0)
+            confirmed = ns.get("confirmed", 0)
+            program.last_discover = {
+                "pending": pending,
+                "confirmed": confirmed,
+                "comparison": "pending>confirmed" if pending > confirmed else (
+                    "confirmed>pending" if confirmed > pending else "equal"),
+                "source": "nursery_compare",
+            }
+            messages.append(f"Nursery compare: pending={pending} confirmed={confirmed}")
+        elif lab == "trace":
+            hist = list(getattr(program, "history", []))
+            program.last_discover = {
+                "history": hist,
+                "count": len(hist),
+                "source": "trace",
+            }
+            messages.append(f"Trace: {len(hist)} operations")
+            for h in hist[-10:]:
+                messages.append(f"  {h}")
+        elif "nursery" in lab:
             pending = program.list_proposals()
             program.last_discover = {"ids": [p.get("id") for p in pending], "count": len(pending), "source": "nursery"}
             messages.append(f"Nursery pending: {len(pending)}")
@@ -65,6 +110,43 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             messages.append(f"{st['look']}  {st['describe']}")
             messages.append(f"ideas={len(ids)} nursery={ns.get('pending', 0)}")
         program.last_core_i = {"dell": 35, "value": program.last_discover, "ok": True}
+        return {**base, "ok": True, "error": ""}
+    # DCC-VI: Dell 37 Nurture — nursery mutations via existing Nursery authority.
+    # SAFE_ADAPTER: Nursery.add/confirm/reject are real, tested methods.
+    if n == 37:
+        lab = label.strip()
+        low = lab.lower()
+        if low.startswith("confirm "):
+            pid = lab[8:].strip()
+            result = program.nursery.confirm(pid)
+            if result:
+                program.last_nurture = {"action": "confirm", "pid": pid, "ok": True}
+                messages.append(f"Confirmed proposal: {pid}")
+            else:
+                program.last_nurture = {"action": "confirm", "pid": pid, "ok": False,
+                                       "error": "not found or not pending"}
+                messages.append(f"Confirm failed: {pid} not found or not pending")
+                return {**base, "ok": False, "error": f"confirm failed: {pid}"}
+        elif low.startswith("reject "):
+            pid = lab[7:].strip()
+            result = program.nursery.reject(pid)
+            if result:
+                program.last_nurture = {"action": "reject", "pid": pid, "ok": True}
+                messages.append(f"Rejected proposal: {pid}")
+            else:
+                program.last_nurture = {"action": "reject", "pid": pid, "ok": False,
+                                       "error": "not found or not pending"}
+                messages.append(f"Reject failed: {pid} not found or not pending")
+                return {**base, "ok": False, "error": f"reject failed: {pid}"}
+        else:
+            # Default: add idea with label
+            if not lab:
+                return {**base, "ok": False, "error": "add idea requires a label"}
+            proposal = program.nursery.add(lab)
+            program.last_nurture = {"action": "add", "pid": proposal.id,
+                                   "label": proposal.label, "ok": True}
+            messages.append(f"Added idea: {proposal.id} ({proposal.label})")
+        program.last_core_i = {"dell": 37, "value": program.last_nurture, "ok": True}
         return {**base, "ok": True, "error": ""}
     if n == 40:
         ideas = len(program.cube.session.plane.units)

@@ -57,6 +57,7 @@ LIST = [
     "form.mandell.semantic_route_test",
     "form.mandell.flow_executor_test",
     "form.mandell.english_composer_test",
+    "form.mandell.dcc_vi_test",
     "form.mandell.core_ii_smoke",
 ]
 

@@ -136,6 +136,38 @@ _HINT_ACTION = {
 
 def translate(english: str) -> Intent:
     text = english.strip()
+    # DCC-VI: operational capabilities on RAW text (before english_brain
+    # rewrites "add idea X" -> "create an idea called X").
+    raw_lower = text.lower().strip()
+    if re.search(r"\brevert\b", raw_lower):
+        return Intent("load", 28, "Rollback", {}, "28[Rollback] :: load", text)
+    if re.search(r"\bcount\s+nursery\b", raw_lower):
+        return Intent("discover", 35, "Discover", {}, "35[Discover] :: count_nursery", text)
+    if re.search(r"\blist\s+pending\b", raw_lower):
+        return Intent("discover", 35, "Discover", {}, "35[Discover] :: list_pending", text)
+    if re.search(r"\bcompare\s+nursery\b", raw_lower):
+        return Intent("discover", 35, "Discover", {}, "35[Discover] :: compare_nursery", text)
+    if re.search(r"\btrace\b", raw_lower):
+        return Intent("discover", 35, "Discover", {}, "35[Discover] :: trace", text)
+    m = re.search(r"\badd\s+idea\s+(.+)$", raw_lower)
+    if m:
+        label = m.group(1).strip()[:80]
+        if not label:
+            return Intent("unknown", None, "", {}, "09[Show] :: unknown", text)
+        m_orig = re.search(r"\badd\s+idea\s+(.+)$", text, re.IGNORECASE)
+        label_orig = m_orig.group(1).strip()[:80] if m_orig else label
+        return Intent("nurture", 37, "Nurture", {"label": label_orig},
+                      f"37[Nurture] :: {label_orig}", text)
+    m = re.search(r"\bconfirm\s+(\S+)$", raw_lower)
+    if m:
+        pid = m.group(1).strip()
+        return Intent("nurture", 37, "Nurture", {"pid": pid, "op": "confirm"},
+                      f"37[Nurture] :: confirm {pid}", text)
+    m = re.search(r"\breject\s+(\S+)$", raw_lower)
+    if m:
+        pid = m.group(1).strip()
+        return Intent("nurture", 37, "Nurture", {"pid": pid, "op": "reject"},
+                      f"37[Nurture] :: reject {pid}", text)
     # English brain: politeness strip + paraphrase + synonym rewrite
     try:
         from form.mandell.english_brain import normalize_english
