@@ -1044,21 +1044,40 @@ class Program:
         self.note_seed(13, "Loop", f"auto_confirm_grow_{'on' if self.auto_confirm_grow else 'off'}")
         return self.auto_confirm_grow
 
-    def grow_ideas(self, cycles: int = 1) -> Dict[str, Any]:
+    def grow_ideas(self, cycles: int = 1, scope_ids=None) -> Dict[str, Any]:
+        """Run RingedGrowth.
+
+        DCC-XI: scope_ids optionally constrains the consumer to exactly
+        the given unit IDs via a read-only ScopedPlaneView. None (default)
+        preserves historical full-plane behavior for baseline growth.
+        """
+        from form.mandell.knowledge_selector import ScopedPlaneView
         if not self.enhance.on:
             self.enhance.turn_on()
-        result = self.growth.run(self.cube.session.plane, cycles=cycles)
+        plane = self.cube.session.plane
+        scope_mode = "full"
+        if scope_ids is not None:
+            # Validate scope at the consumer boundary: every ID must be
+            # a live plane unit. Never silently broaden.
+            missing = [sid for sid in scope_ids if sid not in plane.units]
+            if missing:
+                raise ValueError(f"scope IDs not on plane: {missing}")
+            plane = ScopedPlaneView(plane, scope_ids)
+            scope_mode = "contextual"
+        result = self.growth.run(plane, cycles=cycles)
+        result["scope_mode"] = scope_mode
+        result["scope_ids"] = list(scope_ids) if scope_ids is not None else None
         self.duo.evolve(f"13[Loop] :: RingedGrow x{cycles}")
         # Nature forces grow in parallel (visible stages)
         if hasattr(self, "forces"):
-            for uid, u in list(self.cube.session.plane.units.items())[:12]:
+            for uid, u in list(plane.units.items())[:12]:
                 known = {p["idea"] for p in self.forces.growth.plants}
                 if u.label not in known:
                     self.forces.growth.plant(u.label, self.owner)
             for _ in range(max(1, cycles)):
                 self.forces.growth.grow_all(0.5)
             if "water" in self.forces.active:
-                for u in list(self.cube.session.plane.units.values())[:3]:
+                for u in list(plane.units.values())[:3]:
                     self.forces.water.flow(u.label, self.owner)
             self.forces.time.advance()
             result["forces"] = self.forces.status()
