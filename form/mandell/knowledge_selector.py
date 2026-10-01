@@ -1,24 +1,33 @@
 #!/usr/bin/env python3
-"""DCC-IX: Deterministic contextual knowledge selector.
+"""DCC-IX/XII: Deterministic contextual knowledge selector (Relevance V2).
 
 Selects relevant confirmed knowledge for an operation based on context,
-using the same token/Jaccard semantics as RingedGrowth affinity.
-
-This is a SAFE_ADAPTER: reuses existing repository tokenization semantics,
-does not invent new ranking algorithms.
+using the same token semantics as RingedGrowth affinity plus deterministic
+phrase/order/coverage evidence.
 
 Contract:
   Input: program, context (str), operation (str)
   Output: {
     "context": str,
+    "normalized_context": str,
+    "selector_version": 2,
     "eligible_count": int,
-    "selected": [{"id": str, "label": str, "score": float, "shared": [str]}],
+    "selected": [{
+        "id": str, "label": str,
+        "score": float,            # Jaccard (historical meaning, unchanged)
+        "shared": [str],
+        "coverage": float,         # |shared| / |context tokens|
+        "exact_phrase": 0|1,       # normalized context substring of unit text
+        "ordered": 0|1,            # context tokens as ordered subsequence
+        "rank": int,               # 1-based
+    }],
     "reason": str
   }
 
 Eligibility: confirmed status AND promoted to cube.
-Ranking: Jaccard similarity (desc), then ID (asc) for determinism.
-No match: empty selected list (consumer runs baseline).
+Ranking: exact_phrase DESC, ordered DESC, coverage DESC, jaccard DESC,
+         proposal ID ASC (total deterministic order).
+No match: empty selected list (consumer runs scoped-empty, never fallback).
 """
 from __future__ import annotations
 
@@ -31,6 +40,24 @@ _TOKEN = re.compile(r"[a-z0-9]+")
 def _tokens(text: str) -> Set[str]:
     """Tokenize text the same way RingedGrowth does."""
     return {m.group(0).lower() for m in _TOKEN.finditer(text.lower())}
+
+
+def _token_seq(text: str) -> List[str]:
+    """Ordered token sequence (same normalization as _tokens)."""
+    return [m.group(0).lower() for m in _TOKEN.finditer(text.lower())]
+
+
+def _norm_text(text: str) -> str:
+    """Normalized text for phrase matching: tokens joined by single spaces."""
+    return " ".join(_token_seq(text or ""))
+
+
+def _ordered_subseq(ctx_seq: List[str], unit_seq: List[str]) -> bool:
+    """True if every context token appears in unit_seq in order (gaps allowed)."""
+    if not ctx_seq:
+        return False
+    it = iter(unit_seq)
+    return all(any(tok == want for tok in it) for want in ctx_seq)
 
 
 def _jaccard(a: Set[str], b: Set[str]) -> float:
@@ -98,13 +125,30 @@ def select_for_context(
     min_score: float = 0.0,
     max_selected: int = 5,
 ) -> Dict[str, Any]:
-    """Select confirmed knowledge relevant to context.
+    """Select confirmed knowledge relevant to context (Relevance V2).
     
     Deterministic: same state + context → same selection and ordering.
-    Tie-break: score desc, then ID asc.
+    
+    Relevance V2 scoring contract (all components exposed per selection):
+      jaccard      = |ctx ∩ unit| / |ctx ∪ unit|   (kept as "score", unchanged meaning)
+      coverage     = |ctx ∩ unit| / |ctx|          (fraction of context covered)
+      exact_phrase = 1 if normalized context is a substring of normalized
+                     unit text, else 0
+      ordered      = 1 if context tokens appear as an ordered subsequence
+                     of the unit token sequence, else 0
+    
+    Ranking tuple (total, deterministic):
+      (-exact_phrase, -ordered, -coverage, -jaccard, id) ascending
+    i.e. exact_phrase DESC, ordered DESC, coverage DESC, jaccard DESC,
+    proposal ID ASC (stable final tie-break).
+    
+    Eligibility unchanged: confirmed AND on-plane. Scoring never weakens
+    eligibility; no-match still yields an empty selection.
     """
     context = (context or "").strip()
     ctx_tokens = _tokens(context)
+    ctx_seq = _token_seq(context)
+    ctx_norm = _norm_text(context)
     
     # Eligible: confirmed AND in cube
     eligible = []
@@ -120,40 +164,66 @@ def select_for_context(
     if not ctx_tokens or not eligible:
         return {
             "context": context,
+            "normalized_context": ctx_norm,
             "operation": operation,
+            "selector_version": 2,
             "eligible_count": eligible_count,
             "selected": [],
             "reason": "no context tokens" if not ctx_tokens else "no eligible knowledge",
         }
     
-    # Score each eligible unit
+    # Score each eligible unit (Relevance V2)
     scored = []
     for pid, prop in eligible:
         unit_tokens = _unit_tokens(program, pid)
-        score = _jaccard(ctx_tokens, unit_tokens)
-        if score > min_score:
-            shared = sorted(ctx_tokens & unit_tokens)
-            scored.append({
-                "id": pid,
-                "label": prop.label,
-                "score": round(score, 4),
-                "shared": shared,
-            })
+        jaccard = _jaccard(ctx_tokens, unit_tokens)
+        if jaccard <= min_score:
+            continue
+        shared = sorted(ctx_tokens & unit_tokens)
+        unit = program.cube.session.plane.units.get(pid)
+        unit_text = ""
+        if unit:
+            unit_text = f"{getattr(unit, 'label', '') or ''} " \
+                        f"{getattr(unit, 'detail', '') or ''} " \
+                        f"{getattr(unit, 'words', '') or ''}"
+        unit_norm = _norm_text(unit_text)
+        unit_seq = _token_seq(unit_text)
+        exact_phrase = 1 if (ctx_norm and ctx_norm in unit_norm) else 0
+        ordered = 1 if _ordered_subseq(ctx_seq, unit_seq) else 0
+        coverage = round(len(shared) / len(ctx_tokens), 4) if ctx_tokens else 0.0
+        scored.append({
+            "id": pid,
+            "label": prop.label,
+            "score": round(jaccard, 4),   # historical meaning: Jaccard
+            "shared": shared,
+            "coverage": coverage,
+            "exact_phrase": exact_phrase,
+            "ordered": ordered,
+            "rank_key": (-exact_phrase, -ordered, -coverage, -round(jaccard, 4), pid),
+        })
     
-    # Deterministic ordering: score desc, ID asc
-    scored.sort(key=lambda x: (-x["score"], x["id"]))
+    # Deterministic V2 ordering: exact_phrase DESC, ordered DESC,
+    # coverage DESC, jaccard DESC, ID ASC
+    scored.sort(key=lambda x: x["rank_key"])
     
-    # Limit to max_selected
-    selected = scored[:max_selected]
+    # Limit to max_selected; assign 1-based rank
+    selected = []
+    for i, s in enumerate(scored[:max_selected], start=1):
+        entry = {k: v for k, v in s.items() if k != "rank_key"}
+        entry["rank"] = i
+        selected.append(entry)
     
     if selected:
-        reason = f"jaccard match: {len(selected)} of {eligible_count} eligible"
+        reason = (f"relevance v2: {len(selected)} of {eligible_count} eligible "
+                  f"(exact_phrase, ordered, coverage, jaccard; ID tie-break)")
     else:
         reason = f"no token overlap with {eligible_count} eligible"
     
     return {
         "context": context,
+        "normalized_context": ctx_norm,
         "operation": operation,
+        "selector_version": 2,
         "eligible_count": eligible_count,
         "selected": selected,
         "reason": reason,

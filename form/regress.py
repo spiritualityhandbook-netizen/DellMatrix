@@ -63,6 +63,7 @@ LIST = [
     "form.mandell.dcc_ix_test",
     "form.mandell.dcc_x_test",
     "form.mandell.dcc_xi_test",
+    "form.mandell.dcc_xii_test",
     "form.mandell.core_ii_smoke",
 ]
 
