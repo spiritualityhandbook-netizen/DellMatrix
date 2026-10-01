@@ -56,6 +56,7 @@ LIST = [
     "form.duobeta_live_test",
     "form.mandell.semantic_route_test",
     "form.mandell.flow_executor_test",
+    "form.mandell.english_composer_test",
     "form.mandell.core_ii_smoke",
 ]
 
