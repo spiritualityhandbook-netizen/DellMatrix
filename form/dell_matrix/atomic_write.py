@@ -144,75 +144,115 @@ def atomic_write_json(path: str, payload: Any, *, _fail_at: Optional[str] = None
     except OSError as exc:
         raise AtomicWriteError(f"cannot create directory for {path}: {exc}") from exc
 
+    dir_fsynced = _atomic_replace(path, blob, fail)
+    # Expose the fsync outcome honestly for tests/docs without changing
+    # the return contract.
+    atomic_write_json._last_dir_fsynced = dir_fsynced  # type: ignore[attr-defined]
+    return blob
+
+
+def atomic_write_bytes(path: str, blob: bytes, *, _fail_at: Optional[str] = None) -> bytes:
+    """Atomically replace ``path`` with the exact ``blob`` bytes.
+
+    Same Persistence V2 guarantees as :func:`atomic_write_json` (sibling
+    temp, O_EXCL, fsync, atomic os.replace, best-effort directory fsync) but
+    without serialization: the bytes on disk are byte-identical to ``blob``.
+    Used for generation member copies where the fingerprint must bind the
+    exact sealed bytes. Raises AtomicWriteError WITHOUT replacing the target
+    whenever anything fails before the os.replace boundary.
+    """
+    fail = _fail_at if _fail_at is not None else _FAIL_AT
+    if not isinstance(blob, (bytes, bytearray)):
+        raise AtomicWriteError("atomic_write_bytes requires bytes-like input; target untouched")
+    blob = bytes(blob)
+    if fail == "serialize":
+        raise AtomicWriteError("injected serialization failure (target untouched)")
+
+    directory = os.path.dirname(os.path.abspath(path))
+    try:
+        os.makedirs(directory, exist_ok=True)
+    except OSError as exc:
+        raise AtomicWriteError(f"cannot create directory for {path}: {exc}") from exc
+
+    dir_fsynced = _atomic_replace(path, blob, fail)
+    atomic_write_bytes._last_dir_fsynced = dir_fsynced  # type: ignore[attr-defined]
+    return blob
+
+
+# Auditable record of whether the most recent atomic_write_bytes call managed
+# a parent-directory fsync (False = explicit degradation, save still valid).
+atomic_write_bytes._last_dir_fsynced = False  # type: ignore[attr-defined]
+
+
+def _atomic_replace(path: str, blob: bytes, fail: Optional[str]) -> bool:
+    """Write ``blob`` to a sibling temp and atomically replace ``path``.
+
+    Shared Persistence V2 machinery. Returns whether the parent-directory
+    fsync succeeded (best-effort, honestly reported).
+    """
     tmp = _temp_path_for(path)
     dir_fsynced = False
+    directory = os.path.dirname(os.path.abspath(path))
+    # Phase D: sibling temp, same directory/filesystem.
     try:
-        # Phase D: sibling temp, same directory/filesystem.
-        try:
-            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
-        except OSError as exc:
-            raise AtomicWriteError(f"cannot create temp file for {path}: {exc}") from exc
-        try:
-            with os.fdopen(fd, "wb") as f:
-                if fail == "temp_write":
-                    # Partial write, then hard failure WITHOUT cleanup: this
-                    # simulates a crash mid-write; the temp must never be
-                    # mistaken for canonical state.
-                    f.write(blob[: max(1, len(blob) // 2)])
-                    f.flush()
-                    raise AtomicWriteError("injected temp-write failure (partial temp left)")
-                if fail == "slow_write":
-                    chunk = 65536
-                    for i in range(0, len(blob), chunk):
-                        f.write(blob[i : i + chunk])
-                        f.flush()
-                        import time as _t
-
-                        _t.sleep(0.02)
-                else:
-                    f.write(blob)
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    except OSError as exc:
+        raise AtomicWriteError(f"cannot create temp file for {path}: {exc}") from exc
+    try:
+        with os.fdopen(fd, "wb") as f:
+            if fail == "temp_write":
+                # Partial write, then hard failure WITHOUT cleanup: this
+                # simulates a crash mid-write; the temp must never be
+                # mistaken for canonical state.
+                f.write(blob[: max(1, len(blob) // 2)])
                 f.flush()
-                os.fsync(f.fileno())
-        except BaseException:
-            # Ordinary failure: best-effort cleanup of OUR temp. The injected
-            # "temp_write" path raises above and is intentionally left in place.
-            if fail != "temp_write":
-                try:
-                    os.unlink(tmp)
-                except OSError:
-                    pass
-            raise
+                raise AtomicWriteError("injected temp-write failure (partial temp left)")
+            if fail == "slow_write":
+                chunk = 65536
+                for i in range(0, len(blob), chunk):
+                    f.write(blob[i : i + chunk])
+                    f.flush()
+                    import time as _t
 
-        if fail == "crash_before_replace":
-            os._exit(42)  # noqa: SIO171 - literal process death before replace
-        if fail == "replace":
+                    _t.sleep(0.02)
+            else:
+                f.write(blob)
+            f.flush()
+            os.fsync(f.fileno())
+    except BaseException:
+        # Ordinary failure: best-effort cleanup of OUR temp. The injected
+        # "temp_write" path raises above and is intentionally left in place.
+        if fail != "temp_write":
             try:
                 os.unlink(tmp)
             except OSError:
                 pass
-            raise AtomicWriteError("injected pre-replace failure (canonical untouched)")
+        raise
 
-        # Phase E: atomic same-filesystem replacement. Never delete-then-rename.
+    if fail == "crash_before_replace":
+        os._exit(42)  # noqa: SIO171 - literal process death before replace
+    if fail == "replace":
         try:
-            os.replace(tmp, path)
-        except OSError as exc:
-            try:
-                os.unlink(tmp)
-            except OSError:
-                pass
-            raise AtomicWriteError(f"atomic replace failed; canonical untouched: {exc}") from exc
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise AtomicWriteError("injected pre-replace failure (canonical untouched)")
 
-        if fail == "crash_after_replace":
-            os._exit(42)  # noqa: SIO171 - literal process death after replace
+    # Phase E: atomic same-filesystem replacement. Never delete-then-rename.
+    try:
+        os.replace(tmp, path)
+    except OSError as exc:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise AtomicWriteError(f"atomic replace failed; canonical untouched: {exc}") from exc
 
-        dir_fsynced = _fsync_dir(directory, force_fail=(fail == "dir_fsync_fail"))
-        return blob
-    finally:
-        # Expose the fsync outcome honestly for tests/docs without changing
-        # the return contract: stash on the function object is ugly; instead
-        # the caller-visible contract is "save succeeded". Directory-fsync
-        # degradation is observable via _last_dir_fsynced for audit.
-        atomic_write_json._last_dir_fsynced = dir_fsynced  # type: ignore[attr-defined]
+    if fail == "crash_after_replace":
+        os._exit(42)  # noqa: SIO171 - literal process death after replace
+
+    dir_fsynced = _fsync_dir(directory, force_fail=(fail == "dir_fsync_fail"))
+    return dir_fsynced
 
 
 # Auditable record of whether the most recent atomic_write_json call managed

@@ -159,7 +159,12 @@ class Program:
         self.face = FaceController()
         self.kaomoji = build_default_registry()
         from form.dell_matrix.nursery import owner_nursery_path
-        self.nursery = Nursery.load(owner_nursery_path(self.owner))
+        # Private injection hook for generation-member loads: when open_program
+        # is given a staged Nursery, __post_init__ uses it instead of reading
+        # the owner's live nursery file, so a committed generation can be
+        # staged even if the live file is absent or corrupt.
+        _injected = getattr(self, "_init_nursery", None)
+        self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner))
         self.growth = RingedGrowth(nursery=self.nursery)
         self.lattice = HarmonicLattice(size=SIZE_CHROMATIC)
         if not hasattr(self, "keys") or self.keys is None:
@@ -1365,8 +1370,25 @@ class Program:
         return bool(v.get("in_view_ids") is not None and z.get("ok") and self.active_workshop == "matrix")
 
 
-def open_program(owner: str = "Operator") -> Program:
-    return Program(owner=owner)
+def open_program(owner: str = "Operator", _nursery=None) -> Program:
+    """Open a Program for ``owner``.
+
+    ``_nursery`` is a private injection hook for generation-member staging:
+    the provided Nursery is used instead of the owner's live nursery file,
+    which is never consulted on that path.
+    """
+    if _nursery is None:
+        return Program(owner=owner)
+    prog = Program.__new__(Program)
+    prog._init_nursery = _nursery
+    try:
+        prog.__init__(owner)
+    finally:
+        try:
+            del prog._init_nursery
+        except AttributeError:
+            pass
+    return prog
 
 
 def smoke() -> bool:

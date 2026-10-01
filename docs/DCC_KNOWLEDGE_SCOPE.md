@@ -471,10 +471,10 @@ Active != verified.
 
 ## DCC-XVII: Crash-Safe Persistence (Persistence V2)
 
-Two different atomicities guard the knowledge lifecycle. They must not be
+Three different atomicities guard the knowledge lifecycle. They must not be
 confused.
 
-### Two separate atomicities
+### Three separate atomicities
 
 - **DCC-XVI logical transaction atomicity** — the supersession operation
   is all-or-nothing at the object level: a failure before the final
@@ -488,11 +488,21 @@ confused.
   complete NEW generation, never a partially serialized generation
   (certified by `dcc_xvii_test`, 81/81, including literal cross-process
   SIGKILL and os._exit probes).
+- **DCC-XVIII checkpoint generation coherence** — the logical state is a
+  JOIN of nursery owner JSON and program JSON; the generation protocol
+  seals them as one certified generation and the loader never mixes
+  files from different generations (certified by `dcc_xviii_test`, 89/89,
+  including a literal OS-process crash/recovery matrix).
 
 DCC-XVI orders the logical operation; DCC-XVII makes the physical commit
-indivisible. Either can fail independently; together they guarantee the
-required success statement: a failed save leaves complete-old or
-complete-new, and a failed load never partially mutates live state.
+indivisible; DCC-XVIII makes the multi-file logical checkpoint coherent.
+Each can fail independently; together they guarantee the required success
+statement: every file participating in one committed logical checkpoint
+belongs to the same certified generation; a crash before generation
+commit leaves the previous committed generation authoritative; a crash
+after commit exposes the new complete generation; loading never
+constructs a hybrid from independently valid but generation-mismatched
+files; and a failed load never partially mutates live state.
 
 ### Persistence V2 contract (`PERSISTENCE_PROTOCOL_VERSION = 2`)
 
@@ -561,3 +571,85 @@ recovery. Valid canonical → load; otherwise explicit failure.
 - ATOMICITY != DURABILITY != RECOVERY. DCC-XVII provides file
   replacement atomicity with documented fsync durability. It provides no
   backup, no restore, no repair, and no recovery narrative.
+
+## DCC-XVIII: Coherent Checkpoint Generations (Checkpoint Generation V1)
+
+DCC-XVII guarantees each canonical file is old-complete or new-complete.
+It does NOT guarantee that the files constituting one logical DellMatrix
+state belong to the same committed generation: nursery G2 + program G1
+are two perfect files describing contradictory logical state. The
+authoritative live state is the JOIN of `nursery_<owner>.json` (proposal
+decisions, revision lifecycle, lineage source) and `program_<owner>.json`
+(plane membership, session state); neither is reconstructible from the
+other (the program file's `nursery` field is back-compat only and is
+never restored).
+
+### Checkpoint Generation V1 contract (`CHECKPOINT_PROTOCOL_VERSION = 1`)
+
+The smallest justified commit model (`form/mandell/checkpoint_generation.py`):
+
+1. Save the live nursery + live program (Persistence V2 each).
+2. Seal byte-exact, immutable, generation-specific member copies
+   (`nursery_<ns>.g_<gid>.json`, `program_<ns>.g_<gid>.json`).
+3. Validate member SHA-256 fingerprints over the exact sealed bytes
+   (detection of mismatch/corruption only — not authentication).
+4. Write the generation manifest (V2 atomic) naming the exact member
+   filenames, fingerprints, owner, and previous generation link.
+5. Atomically replace the CURRENT pointer (`current_<ns>.json`) —
+   **the commit boundary**.
+
+A crash before the pointer swap leaves the previous committed generation
+authoritative; a crash after it exposes the new complete generation.
+Member files are never overwritten after sealing. Generation IDs are
+uuid4-derived (stable, unique); wall-clock time is never used for
+uniqueness or recovery order. The owner namespace is collision-safe
+(`safe_owner` + sha256 prefix of the exact owner bytes), so raw owners
+that normalize to the same safe name cannot overwrite each other's
+generations.
+
+### Loader contract
+
+1. Locate the committed generation via the CURRENT pointer.
+   Absent pointer → `CheckpointNotEstablished`: legacy behavior applies
+   (existing legacy loader); the next successful commit establishes
+   Generation V1. Nothing is migrated on read.
+2. Validate the manifest (protocol version, generation identity,
+   `committed: true`, exact owner).
+3. Validate every required member's filename identity + sha256
+   fingerprint.
+4. Parse all members through the existing staged loaders (private
+   staging only).
+5. Build the private staged Program against the exact staged nursery;
+   bind/activate only after the full generation stages successfully.
+   A failed load leaves live in-memory state unchanged.
+
+### Recovery (deterministic, no guessing)
+
+If the committed generation is invalid but the manifest's
+`previous_generation_id` names a previous committed generation, that
+previous generation is fully verified (manifest + every member) and
+loaded instead; the receipt records `recovered_from`. If no usable
+previous generation exists, `CheckpointLoadError` names both generations
+explicitly. Recovery follows the manifest link — never timestamps,
+directory order, or heuristics. Corrupt pointer → explicit failure.
+
+### Retention and receipt
+
+Retention keeps the current + previous committed generations and removes
+older committed and stale uncommitted artifacts only after a successful
+new pointer commit; if the pointer is unreadable, nothing is deleted.
+The receipt carries protocol version, generation id, previous
+generation id, owner, member identities/fingerprints,
+`committed: true`, the retention result, and (on load) `recovered_from`
+and `legacy: false`.
+
+### Boundaries
+
+- Program checkpoint files (`program_<owner>_cp_<stamp>.json`,
+  `_cp_latest.json`) and `core_i_recovery.py` snapshots are explicit
+  checkpoint/rollback artifacts, not normal-load members — out of scope.
+- No new semantic knowledge layer is introduced; fingerprints are
+  mismatch detectors, not truth signals.
+- COHERENCE != ATOMICITY != DURABILITY != RECOVERY. DCC-XVIII adds
+  cross-file generation coherence on top of DCC-XVI logical atomicity
+  and DCC-XVII file atomicity.
