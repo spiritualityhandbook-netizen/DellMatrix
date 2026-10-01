@@ -31,6 +31,16 @@ class NurseryConflictError(RuntimeError):
     """The owner's nursery file changed on disk since this instance loaded/saved it (lost update refused)."""
 
 
+class NurseryLoadError(ValueError):
+    """The owner's canonical nursery file exists but is not a complete valid
+    generation (truncated/malformed JSON or invalid proposal records).
+
+    Raised explicitly and honestly (DCC-XVII): a corrupt canonical file is
+    NEVER silently replaced with an empty nursery. Precedence is
+    valid-canonical -> load, else -> this error. No recovery generation is
+    fabricated."""
+
+
 def owner_nursery_path(owner: str) -> str:
     """Per-owner nursery file: nursery_<_safe_owner(owner)>.json (existing persist._safe_owner, no new sanitizer)."""
     from form.persist import _safe_owner
@@ -164,9 +174,17 @@ class Nursery:
             "rejected": sum(1 for p in self.proposals.values() if p.status == "rejected"),
         }
 
-    def save(self) -> None:
-        """Whole-file write of this owner's nursery. Refuses (NurseryConflictError) if the file changed on
-        disk since this instance last loaded/saved it, instead of silently overwriting another instance."""
+    def save(self, *, _fail_at: Optional[str] = None) -> None:
+        """Whole-file write of this owner's nursery via Persistence V2
+        (crash-safe atomic replacement; DCC-XVII).
+
+        Refuses (NurseryConflictError) if the file changed on disk since this
+        instance last loaded/saved it, instead of silently overwriting another
+        instance. After interruption the canonical file holds either the
+        previous complete generation or the new complete generation.
+        """
+        from form.dell_matrix.atomic_write import atomic_write_json
+
         if not self.path:
             raise ValueError("Nursery has no owner path; construct it with Nursery.load(owner_nursery_path(owner))")
         current = _disk_sig(self.path)
@@ -174,25 +192,57 @@ class Nursery:
             raise NurseryConflictError(
                 f"nursery file changed on disk since load: {os.path.basename(self.path)} (lost update refused)"
             )
-        text = json.dumps({k: v.to_dict() for k, v in self.proposals.items()}, indent=2)
-        with open(self.path, "w", encoding="utf-8") as f:
-            f.write(text)
-        self._seen = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        payload = {k: v.to_dict() for k, v in self.proposals.items()}
+        blob = atomic_write_json(self.path, payload, _fail_at=_fail_at)
+        self._seen = hashlib.sha256(blob).hexdigest()
 
     @classmethod
     def load(cls, path: Optional[str] = None) -> "Nursery":
         """Load the nursery owned by ``path``. No path -> empty ownerless in-memory nursery (save refuses).
-        The legacy ownerless NURSERY_PATH is never read implicitly."""
+        The legacy ownerless NURSERY_PATH is never read implicitly.
+
+        DCC-XVII load contract (Control T): the complete file is read,
+        decoded, parsed and every proposal record validated into PRIVATE
+        staging before anything is applied to the returned Nursery. A corrupt
+        canonical file raises NurseryLoadError explicitly -- it is never
+        silently replaced with an empty nursery and a failed load never
+        leaves a partially mutated nursery behind.
+        """
         n = cls(path=path)
         if not path or not os.path.isfile(path):
             return n
         try:
             with open(path, "rb") as f:
                 blob = f.read()
-            n._seen = hashlib.sha256(blob).hexdigest()
+        except OSError as exc:
+            raise NurseryLoadError(f"cannot read nursery file {path}: {exc}") from exc
+        try:
             raw = json.loads(blob.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError) as exc:
+            raise NurseryLoadError(
+                f"nursery file {os.path.basename(path)} is not a complete valid generation "
+                f"(truncated/malformed JSON, {len(blob)} bytes on disk)"
+            ) from exc
+        if not isinstance(raw, dict):
+            raise NurseryLoadError(
+                f"nursery file {os.path.basename(path)} is not a complete valid generation "
+                "(top-level JSON is not an object)"
+            )
+        staged: Dict[str, Proposal] = {}
+        try:
             for k, v in raw.items():
-                n.proposals[k] = Proposal(**v)
-        except Exception:
-            pass
+                if not isinstance(v, dict):
+                    raise NurseryLoadError(
+                        f"nursery file {os.path.basename(path)} has an invalid proposal record for {k!r}"
+                    )
+                staged[k] = Proposal(**v)
+        except NurseryLoadError:
+            raise
+        except Exception as exc:
+            raise NurseryLoadError(
+                f"nursery file {os.path.basename(path)} has an invalid proposal record: {exc}"
+            ) from exc
+        # Only now apply: nothing partial can escape.
+        n.proposals = staged
+        n._seen = hashlib.sha256(blob).hexdigest()
         return n
