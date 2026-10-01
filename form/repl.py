@@ -1816,6 +1816,35 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             p = _apply_seed_result(p, result)
             continue
 
+        # DCC-V: natural English multi-step instruction -> Mandell program.
+        # Must come after looks_like_seed (Mandell-native takes precedence) and
+        # before translate (single-intent path can't handle composition).
+        # Only triggers on sequencing connectors as whole words.
+        import re as _re
+        if _re.search(r"\b(?:and then|after that|then)\b", line, _re.IGNORECASE):
+            try:
+                from form.mandell.english_composer import (
+                    compose_english, execute_composite, format_composite_receipt,
+                )
+                cr = compose_english(line)
+                if cr.ok:
+                    receipt = execute_composite(p, cr.composite)
+                    print()
+                    print(format_composite_receipt(cr.composite, receipt))
+                    print()
+                    if receipt.final_program is not None:
+                        p = receipt.final_program
+                    continue
+                # Compile failure: report honestly, execute zero Dells.
+                print()
+                print(f"COMPILE FAILURE: {cr.error}")
+                print("Zero Dells executed.")
+                print()
+                continue
+            except Exception as e:
+                print(f"Composition error: {e}")
+                continue
+
         intent = translate(line)
         p = _execute_intent(p, intent, raw_line=line)
 
