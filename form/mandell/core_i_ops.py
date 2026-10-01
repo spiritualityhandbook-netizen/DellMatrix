@@ -260,11 +260,53 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             selection = select_for_context(program, context, operation="grow")
             selected_ids = [s["id"] for s in selection["selected"]]
             
+            # DCC-XI: validate scope at the consumer boundary (defense in
+            # depth). The selector guarantees confirmed+promoted, but the
+            # scope is re-verified here: unknown/pending/rejected can never
+            # enter the consumer scope even if the selector were bypassed.
+            plane = program.cube.session.plane
+            for sid in selected_ids:
+                prop = program.nursery.proposals.get(sid)
+                if not prop or prop.status != "confirmed" or sid not in plane.units:
+                    program.last_nurture = {
+                        "action": "grow_contextual", "context": context,
+                        "ok": False, "error": f"scope validation failed for {sid}",
+                        "consumer": "grow_ideas", "dell": 37,
+                    }
+                    messages.append(f"Contextual grow refused: scope invalid for {sid}")
+                    return {**base, "ok": False, "error": f"scope validation failed: {sid}"}
+            
             # Record state before
             before_ids = set(program.nursery.proposals.keys())
             
-            # Run consumer (growth uses all units; selection identifies relevant ones)
-            growth_result = program.grow_ideas(1)
+            # DCC-XI: scoped consumption with failure atomicity.
+            # The consumer receives EXACTLY the selected IDs via a read-only
+            # view; zero-match yields an empty scope (never silent fallback).
+            # On consumer failure, partial proposals are removed and the
+            # receipt reports failure honestly (no misleading success).
+            try:
+                growth_result = program.grow_ideas(1, scope_ids=selected_ids)
+            except Exception as e:
+                for nid in set(program.nursery.proposals.keys()) - before_ids:
+                    try:
+                        del program.nursery.proposals[nid]
+                    except KeyError:
+                        pass
+                program.last_nurture = {
+                    "action": "grow_contextual", "context": context,
+                    "eligible_count": selection["eligible_count"],
+                    "selected_ids": selected_ids,
+                    "ok": False,
+                    "error": f"consumer failed: {type(e).__name__}: {e}",
+                    "consumer": "grow_ideas", "dell": 37,
+                    "scope_mode": "contextual",
+                }
+                messages.append(f"Contextual grow failed: {e}")
+                return {**base, "ok": False, "error": f"contextual growth failed: {e}"}
+            
+            # Consumer-echoed scope (direct evidence of what was consumed)
+            consumer_scope_ids = growth_result.get("scope_ids")
+            scope_mode = growth_result.get("scope_mode", "contextual")
             
             # Find new proposals
             after_ids = set(program.nursery.proposals.keys())
@@ -301,6 +343,8 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 "selected_details": selection["selected"],
                 "ordering_rule": "score DESC, proposal ID ASC",
                 "contributions": contributions,
+                "consumer_scope_ids": consumer_scope_ids,
+                "scope_mode": scope_mode,
                 "ok": True,
                 "consumer": "grow_ideas",
                 "dell": 37,
@@ -309,6 +353,7 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             messages.append(f"Contextual grow: '{context}'")
             messages.append(f"  Eligible: {selection['eligible_count']}, Selected: {len(selected_ids)}")
             messages.append(f"  Reason: {selection['reason']}")
+            messages.append(f"  Scope mode: {scope_mode}, Consumer scope IDs: {consumer_scope_ids}")
             for s in selection["selected"][:3]:
                 messages.append(f"    {s['id']}: {s['label']} (score={s['score']})")
             messages.append(f"  New proposals: {new_count}")

@@ -53,6 +53,44 @@ def _unit_tokens(program: Any, uid: str) -> Set[str]:
     return _tokens(f"{label} {detail} {words}")
 
 
+class ScopedPlaneView:
+    """Read-only view restricting a plane to a subset of unit IDs.
+
+    DCC-XI: lets RingedGrowth consume exactly the selector-approved
+    subset without modifying the consumer or mutating the plane.
+
+    Safety:
+    - .units exposes ONLY the scoped subset (snapshot dict at construction).
+    - All other attribute access delegates to the real plane
+      (enhance_scope, spatial methods). Delegated methods only affect
+      affinity weighting between scoped pairs; they cannot introduce
+      new units into the pair enumeration (the sole enumeration point
+      is list(plane.units.keys()) inside RingedGrowth.run).
+    - The view is constructed per-call and never persisted; no way to
+      widen or leak scope across calls.
+    """
+
+    def __init__(self, plane: Any, unit_ids: List[str]):
+        self._plane = plane
+        # Snapshot: only IDs present on the real plane, in given order.
+        self._scoped = {uid: plane.units[uid] for uid in unit_ids if uid in plane.units}
+        self._scope_ids = list(self._scoped.keys())
+
+    @property
+    def units(self) -> Dict[str, Any]:
+        return self._scoped
+
+    @property
+    def scope_ids(self) -> List[str]:
+        """The exact unit IDs this view exposes."""
+        return list(self._scope_ids)
+
+    def __getattr__(self, name: str) -> Any:
+        # Delegate enhance_scope and any other plane API to the real plane.
+        # Only called when normal lookup fails, so _plane/_scoped are safe.
+        return getattr(self.__dict__["_plane"], name)
+
+
 def select_for_context(
     program: Any,
     context: str,
