@@ -268,7 +268,29 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             
             # Find new proposals
             after_ids = set(program.nursery.proposals.keys())
-            new_count = len(after_ids - before_ids)
+            new_ids = after_ids - before_ids
+            new_count = len(new_ids)
+            
+            # DCC-X: per-selected-item contribution via offspring parentage.
+            # Technically provable: new proposals list parents; we count
+            # how many new proposals each selected unit parented.
+            contributions = []
+            for s in selection["selected"]:
+                sid = s["id"]
+                parented = []
+                for nid in new_ids:
+                    new_prop = program.nursery.proposals[nid]
+                    parents = getattr(new_prop, "parents", []) or []
+                    if sid in parents:
+                        parented.append({"id": nid, "label": new_prop.label})
+                contributions.append({
+                    "id": sid,
+                    "label": s["label"],
+                    "score": s["score"],
+                    "shared": s["shared"],
+                    "offspring_count": len(parented),
+                    "offspring_ids": [o["id"] for o in parented],
+                })
             
             program.last_nurture = {
                 "action": "grow_contextual",
@@ -277,6 +299,8 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 "selected_ids": selected_ids,
                 "selection_reason": selection["reason"],
                 "selected_details": selection["selected"],
+                "ordering_rule": "score DESC, proposal ID ASC",
+                "contributions": contributions,
                 "ok": True,
                 "consumer": "grow_ideas",
                 "dell": 37,
