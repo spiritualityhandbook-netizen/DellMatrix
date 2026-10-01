@@ -182,7 +182,44 @@ def push_action(program, entry: Dict[str, Any]) -> None:
         st.pop(0)
 
 
+def _revision_owned(program, uid: str) -> bool:
+    """True when DCC-XVI revision/supersession authority owns this unit's history.
+
+    A unit that is superseded, has a successor, or sits in a multi-node
+    revision chain may only change through supersession — never through undo.
+    A lone active rev-1 unit (the normal freshly-placed case) is not owned.
+    """
+    try:
+        from form.mandell.supersession import inspect_revision
+        rev = inspect_revision(program, uid)
+    except Exception:
+        return False
+    if rev.get("lifecycle_state") == "superseded":
+        return True
+    if rev.get("superseded_by_id"):
+        return True
+    chain = rev.get("chain") or []
+    return len(chain) > 1
+
+
+def _clear_lattice_refs(program, uid: str) -> None:
+    """View hygiene: drop lattice cells still pointing at a removed unit."""
+    try:
+        for _key, cell in list(program.lattice.cells.items()):
+            if cell.content == uid:
+                cell.content = None
+                cell.label = ""
+    except Exception:
+        pass
+
+
 def undo_last(program) -> Dict[str, Any]:
+    # PAC-I authority law: undo is a SESSION/UI reversal convenience
+    # (callers: REPL, live_visual). It is explicitly NONCANONICAL as a
+    # history authority: every canonical effect delegates to the designated
+    # authority — plane.remove for removal; revision-owned units are refused,
+    # never bypassed. Evidence of each undo lands in program.history via
+    # note_seed (persisted).
     st = _stack(program)
     if not st:
         return {
@@ -196,22 +233,25 @@ def undo_last(program) -> Dict[str, Any]:
         uid = act.get("id")
         plane = program.cube.session.plane
         if uid and uid in plane.units:
-            # remove unit
-            del plane.units[uid]
-            try:
-                # drop lattice content if any
-                for key, cell in list(program.lattice.cells.items()):
-                    if cell.content == uid:
-                        cell.content = None
-                        cell.label = ""
-            except Exception:
-                pass
+            if _revision_owned(program, uid):
+                return {
+                    "ok": False,
+                    "reason": "revision_authority",
+                    "undid": None,
+                    "hint": "Unit participates in a revision chain; undo cannot bypass supersession.",
+                }
+            # Delegate to the canonical one-way removal authority.
+            removed = plane.remove(uid)
+            _clear_lattice_refs(program, uid)
+            if not removed:
+                return {"ok": False, "reason": f"idea {uid} already gone", "undid": None}
             program.note_seed(24, "Unlock", f"undo_place_{uid}")
             return {
                 "ok": True,
                 "undid": "place",
                 "id": uid,
                 "label": act.get("label"),
+                "via": "plane.remove",
                 "msg": f'Undid place · removed "{act.get("label")}" ({uid})',
             }
         return {"ok": False, "reason": f"idea {uid} already gone", "undid": None}
@@ -220,6 +260,7 @@ def undo_last(program) -> Dict[str, Any]:
         u = program.cube.session.plane.units.get(uid)
         if u is not None:
             u.detail = act.get("old") or ""
+            program.note_seed(24, "Unlock", f"undo_edit_detail_{uid}")
             return {"ok": True, "undid": "edit_detail", "id": uid, "msg": f"Restored detail on {uid}"}
         return {"ok": False, "reason": "unit missing"}
     if kind == "edit_goals":
@@ -227,6 +268,7 @@ def undo_last(program) -> Dict[str, Any]:
         u = program.cube.session.plane.units.get(uid)
         if u is not None:
             u.goals = list(act.get("old") or [])
+            program.note_seed(24, "Unlock", f"undo_edit_goals_{uid}")
             return {"ok": True, "undid": "edit_goals", "id": uid, "msg": f"Restored goals on {uid}"}
         return {"ok": False, "reason": "unit missing"}
     return {"ok": False, "reason": f"cannot undo kind={kind}"}

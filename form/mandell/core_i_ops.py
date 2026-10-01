@@ -33,10 +33,12 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
     if n == 27:
         from .core_i_recovery import checkpoint
         try:
-            cp = checkpoint(program, stamp=label or None)
-            program.last_core_i = {"dell": 27, "path": cp, "ok": True}
-            messages.append(f"Checkpoint written: {cp}")
-            return {**base, "ok": True, "error": ""}
+            # PAC-I: checkpoint() delegates to Checkpoint Generation V1 and
+            # returns the committed generation id (observable generation identity).
+            gen_id = checkpoint(program, stamp=label or None)
+            program.last_core_i = {"dell": 27, "generation_id": gen_id, "ok": True}
+            messages.append(f"Checkpoint written: generation {gen_id}")
+            return {**base, "ok": True, "error": "", "generation_id": gen_id}
         except Exception as exc:
             program.last_core_i = {"dell": 27, "ok": False, "error": str(exc)}
             messages.append(f"Checkpoint fail: {exc}")
