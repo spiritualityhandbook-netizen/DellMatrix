@@ -71,13 +71,18 @@ def _jaccard(a: Set[str], b: Set[str]) -> float:
 
 def _unit_tokens(program: Any, uid: str) -> Set[str]:
     """Get tokens for a cube unit (label + detail)."""
+    return _tokens(unit_text(program, uid))
+
+
+def unit_text(program: Any, uid: str) -> str:
+    """Combined text of a cube unit (label + detail + words)."""
     unit = program.cube.session.plane.units.get(uid)
     if not unit:
-        return set()
+        return ""
     label = getattr(unit, "label", "") or ""
     detail = getattr(unit, "detail", "") or ""
     words = getattr(unit, "words", "") or ""
-    return _tokens(f"{label} {detail} {words}")
+    return f"{label} {detail} {words}"
 
 
 class ScopedPlaneView:

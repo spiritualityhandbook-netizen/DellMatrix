@@ -276,16 +276,33 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                     messages.append(f"Contextual grow refused: scope invalid for {sid}")
                     return {**base, "ok": False, "error": f"scope validation failed: {sid}"}
             
+            # DCC-XIII: conflict-aware routing. Relevance (V2) answers which
+            # knowledge matches the context; conflict routing answers which
+            # selected knowledge can safely be combined. Every unit in >=1
+            # detected polarity-conflict pair is quarantined; the consumer
+            # receives exactly the routable subset (never a silent merge of
+            # conflicting claims, never a full-plane fallback).
+            from form.mandell.conflict_router import (
+                CONFLICT_VERSION, detect_conflicts, route_conflicts,
+            )
+            from form.mandell.knowledge_selector import unit_text
+            conflict_items = [
+                {"id": s["id"], "text": unit_text(program, s["id"])}
+                for s in selection["selected"]
+            ]
+            conflicts = detect_conflicts(conflict_items)
+            routable_ids, quarantined_ids = route_conflicts(selected_ids, conflicts)
+            
             # Record state before
             before_ids = set(program.nursery.proposals.keys())
             
             # DCC-XI: scoped consumption with failure atomicity.
-            # The consumer receives EXACTLY the selected IDs via a read-only
-            # view; zero-match yields an empty scope (never silent fallback).
-            # On consumer failure, partial proposals are removed and the
-            # receipt reports failure honestly (no misleading success).
+            # The consumer receives EXACTLY the routable IDs via a read-only
+            # view; zero-match or all-quarantined yields an empty scope
+            # (never silent fallback). On consumer failure, partial proposals
+            # are removed and the receipt reports failure honestly.
             try:
-                growth_result = program.grow_ideas(1, scope_ids=selected_ids)
+                growth_result = program.grow_ideas(1, scope_ids=routable_ids)
             except Exception as e:
                 for nid in set(program.nursery.proposals.keys()) - before_ids:
                     try:
@@ -296,6 +313,11 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                     "action": "grow_contextual", "context": context,
                     "eligible_count": selection["eligible_count"],
                     "selected_ids": selected_ids,
+                    "conflict_version": CONFLICT_VERSION,
+                    "conflicts": conflicts,
+                    "conflict_count": len(conflicts),
+                    "quarantined_ids": quarantined_ids,
+                    "routable_selected_ids": routable_ids,
                     "ok": False,
                     "error": f"consumer failed: {type(e).__name__}: {e}",
                     "consumer": "grow_ideas", "dell": 37,
@@ -313,11 +335,15 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             new_ids = after_ids - before_ids
             new_count = len(new_ids)
             
-            # DCC-X: per-selected-item contribution via offspring parentage.
+            # DCC-X: per-item contribution via offspring parentage, over the
+            # ROUTABLE set (DCC-XIII): quarantined conflict members never
+            # enter the consumer, so no offspring may be attributed to them.
             # Technically provable: new proposals list parents; we count
-            # how many new proposals each selected unit parented.
+            # how many new proposals each routable unit parented.
+            routable_details = [s for s in selection["selected"]
+                                if s["id"] in set(routable_ids)]
             contributions = []
-            for s in selection["selected"]:
+            for s in routable_details:
                 sid = s["id"]
                 parented = []
                 for nid in new_ids:
@@ -343,6 +369,11 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 "selected_details": selection["selected"],
                 "ordering_rule": "relevance v2: exact_phrase DESC, ordered DESC, coverage DESC, jaccard DESC, proposal ID ASC",
                 "selector_version": 2,
+                "conflict_version": CONFLICT_VERSION,
+                "conflicts": conflicts,
+                "conflict_count": len(conflicts),
+                "quarantined_ids": quarantined_ids,
+                "routable_selected_ids": routable_ids,
                 "contributions": contributions,
                 "consumer_scope_ids": consumer_scope_ids,
                 "scope_mode": scope_mode,
@@ -354,6 +385,7 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             messages.append(f"Contextual grow: '{context}'")
             messages.append(f"  Eligible: {selection['eligible_count']}, Selected: {len(selected_ids)}")
             messages.append(f"  Reason: {selection['reason']}")
+            messages.append(f"  Conflicts: {len(conflicts)}, Quarantined: {quarantined_ids}, Routable: {len(routable_ids)}")
             messages.append(f"  Scope mode: {scope_mode}, Consumer scope IDs: {consumer_scope_ids}")
             for s in selection["selected"][:3]:
                 messages.append(f"    {s['id']}: {s['label']} (score={s['score']})")
