@@ -990,3 +990,70 @@ references the sidecar paths.
   dropped; durable-required fields are proven round-tripped.
 - experimental != canonical — sidecar uniformity is not a reason to migrate.
 - AUTONOMY = NO.
+
+## CAC-I — Capability Accessibility Convergence I (NBD-Ω-003)
+
+One generalized, registry-driven semantic bridge (`form/mandell/operator_bridge.py`).
+No 49-case routing table. No new executor. The bridge resolves identity and
+chooses authority; it never becomes authority.
+
+### Resolution order (Core-I nonregression by construction)
+
+1. CORRESPONDENCE hit → delegate to `route_intent`, byte-for-byte unchanged.
+2. Core-II (51–99) → generalized registry resolution → `execute_chain` >
+   `execute_core_ii` (existing authority).
+3. Core-I without a correspondence entry → legacy no-route refusal (the
+   DCC-II Semantic Safety Law: Core-I stays on the allowlist, never generalized).
+4. Unknown / ambiguous / malformed / blocked → explicit refusal, nothing executes.
+
+### Classification (verified against query_ops / spectrum_ops)
+
+- ACCESSIBLE (45): 51–85 except 86,87,88; 89–98 except 99. Each proven:
+  English/manifest → canonical identity → execute_chain → execute_core_ii →
+  observable CoreIIState/messages. Mutations are scoped to CoreIIState
+  scratch (store/groups/weights/frames), never the knowledge plane.
+- BLOCKED_WITH_REASON (3): 86 Delete, 87 Replace, 88 Patch — destructive
+  session-store mutation; English access deferred pending an
+  operand-confirmation policy. Raw Mandell executes them today.
+- INTENTIONALLY_RAW_ONLY (1): 99 Compose — recursive higher-order program
+  execution from English is a policy boundary, not a technical gap.
+  Raw Mandell only, by design.
+
+Totals: DEFINED 49, EXECUTABLE 49, SEMANTIC_ACCESSIBLE 45, ENGLISH_ACCESSIBLE 45, BLOCKED 4.
+
+### English access
+
+ONE registry-driven matcher over operator names + manifests (160 distinct
+words, 2 collisions: "frame"→[53,80], "require"→[79,91]). Exact word-boundary
+match; highest distinct-word score wins; ties refuse as ambiguous with
+candidate dells. No per-operator handlers.
+
+### Flow convergence
+
+`compose_execute` delegates whole programs to `chain_exec.execute_chain` —
+all nine flows with tested runtime semantics. `flow_executor.py` is NOT
+modified (existing behavior + tests preserved); the bridge offers the
+converged path. Boundaries (existing semantics, documented):
+- `::` binds a program-level label in `parse_seed`; mid-program `::` + flow
+  is not valid Mandell — labels go at the end of the program.
+- `>>>` immediately after a control head (60/62–66) is consumed by the
+  control structure; the flow machinery applies it between flat atoms.
+- Reserved-but-inactive dells (e.g. 999 Omega) inherit chain_exec's
+  skip/ok; truly unknown dells are refused (parse_seed already fails closed).
+
+### Outcome V1 boundary
+
+Bridge executions are observed through the EXISTING
+`outcome_ledger.capture_outcome` (same ledger, same record format — no
+parallel system), with `nurture_fresh=False`. Knowledge/conflict provenance
+is honestly empty: Core-II arms do not populate `last_nurture` (DCC-XX-C1
+rule). The selection itself remains observable in CoreIIState/messages.
+No Outcome V1 field was stretched.
+
+### Separations (CAC-I)
+
+- identity != execution — the bridge resolves; chain_exec executes.
+- accessible != executable — 45 reachable by English; 49 executable by Mandell.
+- refused != failed — refusals route nothing; failures ran and errored.
+- converged != replaced — compose_execute delegates; flow_executor unchanged.
+- observed != proven — Outcome V1 records observation, never truth.
