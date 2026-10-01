@@ -165,6 +165,12 @@ def serialize(program: Program) -> Dict[str, Any]:
             "sandboxes": sandboxes,
         },
         "duo_generation": program.duo.generation,
+        # DCC-I: persist the actual DuoBeta growth ledger so a later load can
+        # restore the real history instead of fabricating synthetic entries.
+        "duo_ledger": [
+            {"gen": int(e.gen), "detail": str(e.detail)[:120], "ts": str(e.ts)}
+            for e in program.duo.ledger
+        ],
         "avatar": _serialize_avatar(program),
         "companion": program.companion.to_dict() if hasattr(program, "companion") else {},
         "inspire": program.inspire.to_dict() if hasattr(program, "inspire") and hasattr(program.inspire, "to_dict") else {},
