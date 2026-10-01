@@ -95,6 +95,9 @@ Lattice / Perception / Looking
   forces | force tick   nature forces field
   weather clear|rain|storm|fog
   evolve                grow program gen + forces + pillars
+  evolve <detail>       grow one generation with your intent recorded
+  growth | duobeta     DuoBeta living-growth status
+  ledger [N]           growth history (last N entries)
   audit                 6-pillar health
   matrices              inventory of all matrices
   english expand [N]    grow English understanding (default 50 cycles)
@@ -556,6 +559,26 @@ def _apply_seed_result(p: Program, result: dict) -> Program:
 
 
 def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = False) -> Program:
+    # DCC-I: program-evolution ("evolve") is documented as growing the program
+    # (DuoBeta generation + forces + pillars), but the english_brain synonym
+    # "evolve"->"grow" reroutes it to idea growth before any handler runs.
+    # Intercept the raw program-evolve intents here so the documented operation
+    # is actually reachable; idea growth stays on "grow".
+    if not _normalized and raw_line:
+        el = raw_line.lower().strip()
+        if el in ("evolve", "evolve program", "grow program", "level up") or (
+            el.startswith("evolve ") and not el.startswith("evolve loop")
+        ):
+            detail = "manual evolve"
+            if el.startswith("evolve "):
+                detail = raw_line.split(None, 1)[1].strip()[:120] or detail
+            out = p.evolve(detail)
+            _say(f"Evolved · generation={out.get('generation')}")
+            _say(f"Ledger: {detail}")
+            pillars = out.get("pillars") or {}
+            _say(f"Pillars {pillars.get('label')} avg={pillars.get('average')}")
+            return p
+
     # Program understanding: re-route natural English → canonical command handlers
     if not _normalized and raw_line:
         try:
@@ -828,11 +851,31 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _say(f"Weather → {c}")
         return p
 
-    if lower in ("evolve", "evolve program", "grow program"):
-        out = p.evolve("manual evolve")
-        _say(f"Evolved · generation={out.get('generation')}")
-        pillars = out.get("pillars") or {}
-        _say(f"Pillars {pillars.get('label')} avg={pillars.get('average')}")
+    # DCC-I: DuoBeta living-growth boundary — inspectable from the REPL
+    if lower in ("growth", "duobeta", "duo status", "show growth"):
+        st = p.duo.status() if hasattr(p, "duo") else {}
+        _say(f"DuoBeta · generation={st.get('generation')} ledger={st.get('ledger_len')}")
+        _say(f"Rings: {' → '.join(st.get('rings') or [])}")
+        _say(f"Mode: {st.get('mode')}")
+        last = (p.duo.ledger or [None])[-1]
+        if last is not None:
+            _say(f"Last: gen {last.gen} · {last.detail}")
+        else:
+            _say("No growth recorded yet — try: evolve <your intent>")
+        return p
+
+    if lower == "ledger" or lower.startswith("ledger "):
+        n = 10
+        rest = lower[len("ledger"):].strip()
+        if rest.isdigit():
+            n = max(1, min(200, int(rest)))
+        entries = list(getattr(p.duo, "ledger", []) or [])[-n:]
+        if not entries:
+            _say("Ledger is empty — try: evolve <your intent>")
+            return p
+        _say(f"Growth ledger · last {len(entries)} of {len(p.duo.ledger)}:")
+        for e in entries:
+            _say(f"  gen {e.gen} · {e.detail} [{e.ts}]")
         return p
 
     # ─── Needs: strong create · edit · undo · history · nbd · ready ───

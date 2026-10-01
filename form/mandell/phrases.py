@@ -93,6 +93,11 @@ PHRASES: List[Tuple[str, str, str]] = [
      "09[Show] :: live", "live"),
     (r"^(?:evolve|evolve\s+program|grow\s+program|level\s+up)$",
      "13[Loop] :: evolve", "evolve"),
+    # DCC-I: DuoBeta living-growth boundary
+    (r"^(?:growth|duobeta|duo\s+status|show\s+growth)$",
+     "35[Discover] :: growth", "growth"),
+    (r"^(?:ledger|growth\s+ledger|show\s+ledger|ledger\s+\d+)$",
+     "35[Discover] :: ledger", "ledger"),
     (r"^(?:audit|pillars|health\s+check|six\s+pillars)$",
      "35[Discover] :: audit", "audit"),
     (r"^(?:matrices|list\s+matrices|matrix\s+list)$",

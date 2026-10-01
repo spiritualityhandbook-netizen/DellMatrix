@@ -53,6 +53,7 @@ LIST = [
     "form.mandell.spectrum_closure_test",
     "form.mandell.unified_runtime_test",
     "form.persist_full_roundtrip_test",
+    "form.duobeta_live_test",
     "form.mandell.core_ii_smoke",
 ]
 

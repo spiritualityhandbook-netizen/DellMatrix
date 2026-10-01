@@ -196,6 +196,53 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     return p
 
 
+def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> None:
+    """Restore the DuoBeta growth ledger faithfully (DCC-I).
+
+    Envelopes written with duo_ledger carry the actual recorded entries; they
+    are restored exactly, in order, with no synthetic entries. Legacy envelopes
+    (no duo_ledger) restore the generation count with a single honest marker
+    entry instead of fabricating per-generation history.
+    """
+    from datetime import datetime, timezone
+    from form.duobeta.growth import GrowthEntry
+
+    # The fresh Program from open_program() already carries one startup entry
+    # ("Open"); the saved ledger is the truth, so reset before restoring.
+    p.duo.ledger.clear()
+    p.duo.generation = 0
+
+    clean: List[GrowthEntry] = []
+    raw = data.get("duo_ledger")
+    if isinstance(raw, list):
+        last = 0
+        for e in raw:
+            if not isinstance(e, dict):
+                continue
+            try:
+                gen = int(e.get("gen", 0))
+            except (TypeError, ValueError):
+                continue
+            if gen <= last:
+                continue
+            clean.append(GrowthEntry(
+                gen=gen,
+                detail=str(e.get("detail", ""))[:120],
+                ts=str(e.get("ts", "")),
+            ))
+            last = gen
+    if clean:
+        p.duo.ledger.extend(clean)
+        p.duo.generation = max(target_gen, clean[-1].gen)
+    elif target_gen > 0:
+        p.duo.ledger.append(GrowthEntry(
+            gen=target_gen,
+            detail="restored from pre-ledger envelope (prior history not recorded)",
+            ts=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        ))
+        p.duo.generation = target_gen
+
+
 def _prepare_program(owner: str, data: Dict[str, Any]) -> Program:
     """PREPARE a private Program from validated data. Touches no process language state."""
     p = open_program(owner)
@@ -256,8 +303,7 @@ def _prepare_program(owner: str, data: Dict[str, Any]) -> Program:
     for pr in data.get("main", {}).get("pulls", []):
         p.main.pulls.append(PullRecord(unit_id=pr.get("unit_id", ""), tag=pr.get("tag", ""), weight=float(pr.get("weight", 0)), ts=pr.get("ts", "")))
     target_gen = int(data.get("duo_generation", 0))
-    while p.duo.generation < target_gen:
-        p.duo.evolve("28[Rollback] :: persist load")
+    _restore_duo_ledger(p, data, target_gen)
     _restore_avatar(p, data)
     # Nursery decisions are NOT restored from the serialized "nursery" field (kept in the file format for
     # back-compat only). p.nursery is the owner's live nursery file loaded by Program; restore never
@@ -318,7 +364,7 @@ def _prepare_program(owner: str, data: Dict[str, Any]) -> Program:
 DURABLE_KEYS = (
     "type", "version", "level", "floor", "owner",
     "enhance_on", "sandbox_on", "network_url", "internet", "ambient",
-    "resonance", "main", "plane", "duo_generation", "avatar",
+    "resonance", "main", "plane", "duo_generation", "duo_ledger", "avatar",
     "companion", "inspire", "self_knowledge", "ux", "forces", "bimo",
     "nursery", "lattice", "history", "latinmandell_customs",
     "mandell_language", "core_ii",
