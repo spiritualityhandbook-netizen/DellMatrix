@@ -147,6 +147,12 @@ def translate(english: str) -> Intent:
         return Intent("discover", 35, "Discover", {}, "35[Discover] :: list_pending", text)
     if re.search(r"\bcompare\s+nursery\b", raw_lower):
         return Intent("discover", 35, "Discover", {}, "35[Discover] :: compare_nursery", text)
+    # DCC-XIV: lineage trace for one knowledge unit (before bare \btrace\b,
+    # which would also match "trace lineage <id>").
+    m = re.search(r"\btrace\s+lineage\s+(\S+)", raw_lower)
+    if m:
+        return Intent("discover", 35, "Discover", {},
+                      f"35[Discover] :: trace_lineage {m.group(1)}", text)
     if re.search(r"\btrace\b", raw_lower):
         return Intent("discover", 35, "Discover", {}, "35[Discover] :: trace", text)
     # DCC-VII: query accepted/promoted knowledge.

@@ -98,6 +98,23 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             messages.append(f"Trace: {len(hist)} operations")
             for h in hist[-10:]:
                 messages.append(f"  {h}")
+        elif lab.startswith("trace_lineage "):
+            # DCC-XIV: answer "where did this knowledge come from?" from
+            # persisted lineage, without raw state inspection.
+            from form.mandell.knowledge_lineage import lineage_record
+            target = lab[len("trace_lineage "):].strip()
+            rec = lineage_record(program, target)
+            program.last_discover = {**rec, "source": "trace_lineage"}
+            if rec["status"] == "unknown_unit":
+                messages.append(f"Lineage: unknown unit '{target}'")
+            else:
+                messages.append(
+                    f"Lineage {target}: {rec['origin_kind']} "
+                    f"(origin={rec['origin']}, depth={rec['depth']}, "
+                    f"status={rec['status']})"
+                )
+                messages.append(f"  parents: {rec['parent_ids'] or '—'}")
+                messages.append(f"  roots: {rec['root_ids'] or '—'}")
         elif "nursery" in lab:
             pending = program.list_proposals()
             program.last_discover = {"ids": [p.get("id") for p in pending], "count": len(pending), "source": "nursery"}
@@ -292,7 +309,39 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             ]
             conflicts = detect_conflicts(conflict_items)
             routable_ids, quarantined_ids = route_conflicts(selected_ids, conflicts)
-            
+
+            # DCC-XIV: lineage/evidence structure (Lineage V1). Descriptive
+            # metadata only: provenance is NOT truth. Built on the existing
+            # lineage authority (parents/origin/lineage_version persisted on
+            # every unit). A lineage failure must fail honestly before any
+            # consumer runs — never widen scope or write stale metadata.
+            from form.mandell.knowledge_lineage import (
+                LINEAGE_VERSION, lineage_groups, selected_lineage,
+                selected_root_ids,
+            )
+            try:
+                sel_lineage = selected_lineage(program, selected_ids)
+                sel_root_ids = selected_root_ids(program, selected_ids)
+                lin_groups = lineage_groups(program, selected_ids)
+            except Exception as e:
+                program.last_nurture = {
+                    "action": "grow_contextual", "context": context,
+                    "eligible_count": selection["eligible_count"],
+                    "selected_ids": selected_ids,
+                    "conflict_version": CONFLICT_VERSION,
+                    "conflicts": conflicts,
+                    "conflict_count": len(conflicts),
+                    "quarantined_ids": quarantined_ids,
+                    "routable_selected_ids": routable_ids,
+                    "lineage_version": LINEAGE_VERSION,
+                    "ok": False,
+                    "error": f"lineage construction failed: {type(e).__name__}: {e}",
+                    "consumer": "grow_ideas", "dell": 37,
+                    "scope_mode": "contextual",
+                }
+                messages.append(f"Contextual grow refused: lineage failed: {e}")
+                return {**base, "ok": False, "error": f"lineage failed: {e}"}
+
             # Record state before
             before_ids = set(program.nursery.proposals.keys())
             
@@ -318,6 +367,11 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                     "conflict_count": len(conflicts),
                     "quarantined_ids": quarantined_ids,
                     "routable_selected_ids": routable_ids,
+                    "lineage_version": LINEAGE_VERSION,
+                    "selected_lineage": sel_lineage,
+                    "selected_root_ids": sel_root_ids,
+                    "root_count": len(sel_root_ids),
+                    "lineage_groups": lin_groups,
                     "ok": False,
                     "error": f"consumer failed: {type(e).__name__}: {e}",
                     "consumer": "grow_ideas", "dell": 37,
@@ -374,6 +428,11 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 "conflict_count": len(conflicts),
                 "quarantined_ids": quarantined_ids,
                 "routable_selected_ids": routable_ids,
+                "lineage_version": LINEAGE_VERSION,
+                "selected_lineage": sel_lineage,
+                "selected_root_ids": sel_root_ids,
+                "root_count": len(sel_root_ids),
+                "lineage_groups": lin_groups,
                 "contributions": contributions,
                 "consumer_scope_ids": consumer_scope_ids,
                 "scope_mode": scope_mode,
@@ -386,6 +445,7 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             messages.append(f"  Eligible: {selection['eligible_count']}, Selected: {len(selected_ids)}")
             messages.append(f"  Reason: {selection['reason']}")
             messages.append(f"  Conflicts: {len(conflicts)}, Quarantined: {quarantined_ids}, Routable: {len(routable_ids)}")
+            messages.append(f"  Lineage roots: {len(sel_root_ids)} independent roots over {len(selected_ids)} selected")
             messages.append(f"  Scope mode: {scope_mode}, Consumer scope IDs: {consumer_scope_ids}")
             for s in selection["selected"][:3]:
                 messages.append(f"    {s['id']}: {s['label']} (score={s['score']})")

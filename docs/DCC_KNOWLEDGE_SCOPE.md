@@ -1,4 +1,4 @@
-# Contextual Knowledge: Selection → Scope → Relevance V2 → Conflict V1
+# Contextual Knowledge: Selection → Scope → Relevance V2 → Conflict V1 → Lineage V1
 
 How DellMatrix answers "grow using knowledge about <context>".
 
@@ -15,6 +15,7 @@ lifecycle (DCC-VII/VIII)
 → enforced consumption scope (DCC-XI)
 → Relevance V2 ranking (DCC-XII)
 → Conflict V1 detection (DCC-XIII)
+→ Lineage V1 evidence (DCC-XIV)
 → routable subset
 → consumer
 → provenance
@@ -141,3 +142,60 @@ Pair enumeration is over sorted IDs; conflict entries are ordered by
 - Paraphrases with disjoint vocabularies are invisible.
 - Asymmetric frame breadth may fall below the 0.5 frame rule (documented
   boundary, not a silent miss — the receipt shows what was checked).
+
+## DCC-XIV: Knowledge Evidence Lineage (Lineage V1)
+
+DellMatrix knows which knowledge matches, which claims conflict, and what
+may enter the consumer. DCC-XIV adds the persisted ancestry structure:
+where each selected claim came from, whether claims share a root, and
+what derivation chain produced them.
+
+Built on the existing lineage authority (`form/dell_matrix/lineage.py`):
+`parents`, `origin`, and `lineage_version` are assigned at creation,
+validated by `assign_lineage` (self-parent, cycle, and missing-parent
+rejected), and survive save/load. No parallel provenance database.
+
+### Lineage V1 contract (`lineage_version: 1`)
+
+Per selected unit, all reconstructible from persisted state:
+
+| Field | Definition |
+|---|---|
+| `unit_id` | the knowledge unit |
+| `origin_kind` | `direct` (no parents) or `derived` (has parents) |
+| `origin` | persisted origin tag (e.g. `placed`, `confirmed`) |
+| `parent_ids` | normalized parents (deduped, stable first-seen order) |
+| `root_ids` | sorted transitive ancestors with no parents; a direct unit is its own root |
+| `depth` | derivation generations = `lineage_version` (1 direct; 1 + max(parent depths) derived) |
+| `status` | `ok` / `cycle` / `missing_parents` / `unknown_unit` |
+
+Malformed lineage is marked, never fabricated: duplicates normalize,
+unknown units and missing parents are reported, cycles flagged. Reads use
+a cycle-guarded traversal; creation rejects invalid lineage outright.
+
+### Lineage groups (descriptive only)
+
+Selected units are grouped by shared root: `{root_id: [member_ids]}`.
+Two units descending from one root are exposed as one lineage group —
+never called "two independent sources." `selected_root_ids` and
+`root_count` are exposed on the receipt. Lineage never enters the V2
+ranking tuple and never resolves a Conflict V1 quarantine.
+
+### Four separate questions
+
+- **RELEVANCE**: how strongly does accepted knowledge text match context?
+- **CONFLICT**: does bounded textual evidence indicate selected claims
+  should not be silently combined?
+- **LINEAGE**: what known ancestry/origin structure does the knowledge
+  have?
+- **TRUTH**: NOT established by any of the above.
+
+Explicitly: multiple roots != truth; same root != falsehood;
+direct != verified; derived != unreliable. There is no external source
+verification in this architecture, and none is claimed.
+
+### Trace
+
+`trace lineage <unit_id>` answers "where did this knowledge come from?"
+from persisted lineage (parents, roots, depth, status) without raw state
+inspection. Plain `trace` behavior is unchanged.
