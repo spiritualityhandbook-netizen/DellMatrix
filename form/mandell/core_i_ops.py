@@ -192,6 +192,62 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                                        "error": "not found or not pending"}
                 messages.append(f"Reject failed: {pid} not found or not pending")
                 return {**base, "ok": False, "error": f"reject failed: {pid}"}
+        elif low.startswith("use_idea "):
+            # DCC-VIII: Explicit knowledge consumption.
+            # Format: "use_idea <pid>" or "use_idea <pid> to grow"
+            rest = lab[9:].strip()
+            # Extract PID (handle "to grow" suffix)
+            if " to " in rest.lower():
+                pid = rest[:rest.lower().index(" to ")].strip()
+            else:
+                pid = rest.split()[0] if rest.split() else ""
+
+            # Validate: must be confirmed knowledge in cube
+            prop = program.nursery.proposals.get(pid)
+            if not prop:
+                program.last_nurture = {"action": "use", "pid": pid, "ok": False,
+                                       "error": "unknown knowledge ID"}
+                messages.append(f"Use failed: unknown ID {pid}")
+                return {**base, "ok": False, "error": f"unknown knowledge ID: {pid}"}
+            if prop.status != "confirmed":
+                program.last_nurture = {"action": "use", "pid": pid, "ok": False,
+                                       "error": f"not confirmed (status={prop.status})"}
+                messages.append(f"Use failed: {pid} is {prop.status}, not confirmed")
+                return {**base, "ok": False, "error": f"knowledge not confirmed: {pid}"}
+            if pid not in program.cube.session.plane.units:
+                program.last_nurture = {"action": "use", "pid": pid, "ok": False,
+                                       "error": "not promoted to cube"}
+                messages.append(f"Use failed: {pid} not in cube")
+                return {**base, "ok": False, "error": f"knowledge not in cube: {pid}"}
+
+            # Record nursery state before growth
+            before_ids = set(program.nursery.proposals.keys())
+
+            # Run existing consumer: grow_ideas
+            growth_result = program.grow_ideas(1)
+
+            # Find offspring parented by this knowledge
+            after_props = program.nursery.proposals
+            offspring = []
+            for new_id in set(after_props.keys()) - before_ids:
+                new_prop = after_props[new_id]
+                parents = getattr(new_prop, "parents", []) or []
+                if pid in parents:
+                    offspring.append({"id": new_id, "label": new_prop.label})
+
+            program.last_nurture = {
+                "action": "use",
+                "pid": pid,
+                "label": prop.label,
+                "ok": True,
+                "consumer": "grow_ideas",
+                "offspring": offspring,
+                "offspring_count": len(offspring),
+            }
+            messages.append(f"Used knowledge {pid} in growth")
+            messages.append(f"  Offspring parented by {pid}: {len(offspring)}")
+            for o in offspring[:5]:
+                messages.append(f"    {o['id']}: {o['label']}")
         else:
             # Default: add idea with label
             if not lab:
