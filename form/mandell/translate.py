@@ -158,6 +158,12 @@ def translate(english: str) -> Intent:
     if m:
         return Intent("discover", 35, "Discover", {},
                       f"35[Discover] :: trace_dependency {m.group(1)}", text)
+    # DCC-XVI: revision trace — which accepted version replaces which
+    # (revision ancestry, not derivation ancestry).
+    m = re.search(r"\btrace\s+revision\s+(\S+)", raw_lower)
+    if m:
+        return Intent("discover", 35, "Discover", {},
+                      f"35[Discover] :: trace_revision {m.group(1)}", text)
     if re.search(r"\btrace\b", raw_lower):
         return Intent("discover", 35, "Discover", {}, "35[Discover] :: trace", text)
     # DCC-VII: query accepted/promoted knowledge.
@@ -171,6 +177,16 @@ def translate(english: str) -> Intent:
         if query:
             return Intent("discover", 35, "Discover", {},
                          f"35[Discover] :: find_idea {query}", text)
+    # DCC-XVI: versioned supersession — one explicit operation:
+    # "supersede idea <old_id> with <new words>". Must precede the
+    # "use idea" pattern (both start with an idea verb + id).
+    m = re.search(r"\bsupersede\s+idea\s+(\S+)\s+with\s+(.+)$", raw_lower)
+    if m:
+        old_id = m.group(1).strip()
+        words = m.group(2).strip()[:240]
+        if old_id and words:
+            return Intent("nurture", 37, "Nurture", {},
+                         f"37[Nurture] :: supersede {old_id} with {words}", text)
     # DCC-VIII: explicit knowledge consumption.
     m = re.search(r"\buse\s+idea\s+(\S+)(?:\s+to\s+(\w+))?", raw_lower)
     if m:

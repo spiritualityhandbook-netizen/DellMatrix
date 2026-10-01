@@ -1,4 +1,4 @@
-# Contextual Knowledge: Selection → Scope → Relevance V2 → Dependency V1 → Conflict V1 → Lineage V1
+# Contextual Knowledge: Selection → Scope → Relevance V2 → Dependency V1 → Conflict V1 → Lineage V1 → Supersession V1
 
 How DellMatrix answers "grow using knowledge about <context>".
 
@@ -10,9 +10,10 @@ without the user's command.
 ## Chain
 
 lifecycle (DCC-VII/VIII)
+→ revision/supersession (DCC-XVI: only active revisions route)
 → lineage (DCC-XIV: persisted ancestry)
 → dependency validity (DCC-XV: current qualification of required ancestry)
-→ eligibility (confirmed + on-plane + dependency-valid)
+→ eligibility (confirmed + on-plane + revision-active + dependency-valid)
 → Relevance V2 ranking (DCC-XII)
 → top-5 selection
 → Conflict V1 detection (DCC-XIII)
@@ -278,15 +279,17 @@ equivalent states produce identical evidence.
 ### Routing order (actual)
 
 1. lifecycle: confirmed proposals
-2. lineage: persisted ancestry (DCC-XIV)
-3. dependency validity: eligibility additionally requires
+2. revision/supersession: only `active` revisions are eligible (DCC-XVI) —
+   before lineage, dependency, and Relevance V2 ever see the candidate
+3. lineage: persisted ancestry (DCC-XIV)
+4. dependency validity: eligibility additionally requires
    dependency-`valid` (DCC-XV) — before Relevance V2 ever scores
-4. Relevance V2 ranking over dependency-valid candidates only
-5. top-5 selection (invalid candidates never consume slots)
-6. Conflict V1 over selected valid candidates only (an invalid unit can
+5. Relevance V2 ranking over revision-active, dependency-valid candidates only
+6. top-5 selection (excluded candidates never consume slots)
+7. Conflict V1 over selected valid candidates only (an excluded unit can
    neither create a conflict nor quarantine a valid unit)
-7. routable subset → enforced consumption scope (DCC-XI)
-8. consumer → provenance
+8. routable subset → enforced consumption scope (DCC-XI)
+9. consumer → provenance
 
 Lineage metadata stays descriptive: groups are built from actual selected
 knowledge only. `trace dependency <unit_id>` answers "is this knowledge
@@ -331,3 +334,137 @@ Dependency validity is not truth, not relevance, not conflict. Invalid
 ancestry propagates deterministically to descendants; dependency-invalid
 knowledge cannot silently enter contextual selection or consumption; and
 every exclusion is explained on the receipt.
+
+## DCC-XVI: Versioned Knowledge Supersession + Revision Lifecycle (Supersession V1)
+
+Confirmed knowledge can be replaced by an explicit newer revision WITHOUT
+deleting or rewriting history. `supersede idea <old_id> with <words>`
+(English) / `37[Nurture] :: supersede <old_id> with <words>` (Mandell label),
+dispatched through Dell 37 like any other nurture operation.
+
+### What supersession is and is not
+
+- The predecessor REMAINS stored: confirmed proposal, plane unit,
+  derivation lineage, all intact and inspectable. Historical != deleted.
+- The successor is created as a derivation ROOT (`parents=[]`): revision
+  ancestry (which version replaces which) is kept SEPARATE from derivation
+  ancestry (Lineage V1). Revision parent != derivation parent.
+- Only the active revision routes contextually. Superseded revisions are
+  excluded with evidence — never silently used, never silently deleted.
+- Confirmation and supersession are separate dimensions: a unit can be
+  confirmed AND superseded (accepted history, inactive revision).
+- **newer != truer.** Recency grants no truth, rank, or authority advantage.
+  Relevance V2 scores text only; the receipt never claims the new revision
+  is true or the old one false. superseded != false.
+- Linear V1 chains only: each revision has at most one predecessor and one
+  successor. No branches, no DAG, no merge.
+- Deterministic repeat: superseding an already-superseded unit is refused
+  with `already_superseded` and returns the existing successor — a duplicate
+  successor is never created.
+
+### Discovery (what the lifecycle actually supports)
+
+- **EXISTING_EXACT**: canonical confirmation (`confirm_proposal` in
+  `form/dell_matrix/confirm_lineage.py`) assigns derivation lineage, places
+  the unit, confirms the nursery proposal — reused unchanged for the
+  successor.
+- **EXISTING_EXACT**: nursery proposals persist per-owner JSON; additive
+  dataclass fields (`lifecycle_state`, `supersedes_id`, `superseded_by_id`,
+  `revision_root_id`, `revision_number`) round-trip through `asdict` /
+  `Nursery.load`, and legacy units (fields absent) default to
+  active / revision 1 / self-rooted. No fabricated history.
+- **EXISTING_EXACT**: `trace lineage` / `trace dependency` extension pattern
+  reused for `trace revision <unit_id>`.
+- **EXISTING_EXACT**: explicit `use idea <pid> to grow` checks only
+  confirmed + on-plane, so explicit naming of a historical (superseded)
+  unit keeps working — the receipt now discloses
+  `lifecycle_state=superseded`.
+- **EXISTING_SAFE**: `Nursery.add` persists-then-rolls-back;
+  `Nursery.confirm` pending→confirmed with save-failure restore.
+- **INSUFFICIENT**: no prior supersession/revision lifecycle existed;
+  removal/deletion cannot represent replacement; the dependency gate did
+  not consider revision state.
+- **OUT_OF_SCOPE**: truth/authority scoring, revision branches/DAG,
+  history rewriting, silent descendant retargeting, new composition
+  system.
+
+### Supersession V1 contract (`supersession_version: 1`)
+
+One inspector, `inspect_revision(program, uid)`, is the single authority
+reused by the operation, selector, trace, receipts, and tests:
+
+| Field | Definition |
+|---|---|
+| `lifecycle_state` | `active` / `superseded` / `malformed` / `unknown` |
+| `supersedes_id` | predecessor revision, if any |
+| `superseded_by_id` | successor revision, if any |
+| `revision_root_id` | first revision of the chain |
+| `revision_number` | 1-based position in the chain |
+| `chain` | ordered revision ids, root → tip |
+| `malformed_reason` | machine-readable cause when `malformed` |
+| `routable` | true only for `active` |
+
+Malformed conditions (deterministic): bad lifecycle value, active unit
+claiming a successor, dangling predecessor/successor links, revision
+cycle, inconsistent declared roots, duplicate revision numbers, broken
+bidirectional links. Malformed units are inspectable and traceable but
+never routable.
+
+`supersede_proposal(program, old_id, words)` is atomic, all-or-nothing:
+
+1. validate (no writes): old exists, confirmed, on-plane, currently active
+2. create successor through the legitimate nursery path (pending)
+3. establish revision links in memory, then commit (`nursery.save`)
+4. confirm/promote the successor via the canonical confirm path
+5. persist + emit the auditable receipt
+
+Any failure before the final commit rolls back predecessor metadata, the
+pending successor proposal, and plane placement, then re-saves. A failure
+at receipt emission (after commit) raises honestly without rolling back
+committed state; a retry then hits the deterministic
+`already_superseded` refusal.
+
+### Routing and dependency interplay
+
+- The revision gate runs FIRST in eligibility: confirmed + on-plane +
+  revision-active, then Dependency V1, then Relevance V2.
+- Dependency V1 ancestors must additionally be revision-active: a
+  superseded ancestor makes descendants `invalid` with reason
+  `superseded_dependency:<ids>`. Historical parents are KEPT — descendants
+  are never silently retargeted to the successor revision.
+- Receipt evidence (additive): `supersession_version`,
+  `active_revision_count`, `supersession_exclusions`
+  (`[{id, lifecycle_state, superseded_by_id, revision_number,
+  revision_root_id, reason}]`); each selection carries
+  `lifecycle_state`, `revision_number`, `revision_root_id`.
+- `trace revision <unit_id>` answers "which accepted version replaces
+  which?" — revision chain, predecessor, successor, number, root — without
+  touching derivation lineage.
+
+### Boundaries
+
+- Baseline `grow_ideas` (full-plane) is unchanged; no supersession fields
+  appear on its receipts.
+- Explicit `use idea <pid> to grow` bypasses the selector as before — the
+  operator's explicit choice, including for superseded units. The receipt
+  discloses the lifecycle state; the boundary is documented, not silently
+  changed.
+- Malformed revision metadata can only exist via direct state
+  manipulation or corrupt restore; normal lifecycle never produces it.
+  Malformed units are excluded from routing with evidence.
+
+### Six separate questions
+
+- **REVISION**: which accepted version replaces which? (DCC-XVI;
+  current-state lifecycle, history preserved)
+- **LINEAGE**: what known ancestry/origin structure does the knowledge
+  have? (historical, immutable)
+- **DEPENDENCY**: do its required ancestors currently qualify?
+  (current-state, recomputed)
+- **RELEVANCE**: how strongly does accepted knowledge text match context?
+- **CONFLICT**: does bounded textual evidence indicate selected claims
+  should not be silently combined?
+- **TRUTH**: NOT established by any of the above.
+
+Supersession is not truth, not relevance, not conflict, not dependency.
+Active != verified.
