@@ -598,14 +598,17 @@ def lifecycle_contract(rec) -> None:
 
 
 def version_contract(rec) -> None:
-    """RTPH-I R4: explicit envelope-version contract.
+    """RTPH-I R4 (+R4C narrowing): explicit envelope-version contract.
 
-    Matrix: 7 / missing / 5 / 6 → ACCEPT (legacy acceptance is explicit, no migration invented);
-    8 / "7" / null / true → REJECT LOUDLY before any semantic swap.
+    Matrix: 7 / missing / 1 / 4 / 5 / 6 → ACCEPT (legacy acceptance is explicit and
+    history-proven: v1..v6 were each emitted by serialize(); no migration invented);
+    8 / -500 / -1 / 0 / "6" / "7" / 6.0 / 7.0 / null / true / false → REJECT LOUDLY
+    before any semantic swap. Version 0 and negatives never existed in repository history.
     Every rejection asserts the hard invariant: no binding change, no CELLS/custom change,
     no Program mutation, no file rewrite.
     """
     from form import persist_rest
+    from form.persist_rest import _LEGACY_VERSIONS
     from form.mandell import language as L
     from form.mandell.latinmandell import export_customs
     from form.persist import _path
@@ -628,12 +631,21 @@ def version_contract(rec) -> None:
     probes = [
         ("v7", 7, True),
         ("missing", _MISSING, True),
+        ("v1", 1, True),
+        ("v4", 4, True),
         ("v5", 5, True),
         ("v6", 6, True),
         ("v8", 8, False),
+        ("neg500", -500, False),
+        ("neg1", -1, False),
+        ("v0", 0, False),
+        ("str6", "6", False),
         ("str7", "7", False),
+        ("float6", 6.0, False),
+        ("float7", 7.0, False),
         ("null", None, False),
         ("true", True, False),
+        ("false", False, False),
     ]
     tmps = []
     try:
@@ -660,7 +672,7 @@ def version_contract(rec) -> None:
                 rec(f"version_{name}_accepted",
                     outcome == "accepted" and q is not None and "VerCell" in set(q.language["cells"]),
                     outcome)
-                if ver is _MISSING or (isinstance(ver, int) and not isinstance(ver, bool) and ver < VERSION):
+                if ver is _MISSING or ver in _LEGACY_VERSIONS:
                     save(q, probe_path)
                     with open(probe_path, encoding="utf-8") as f:
                         d2 = json.load(f)

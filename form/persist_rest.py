@@ -101,22 +101,38 @@ class ProgramLoadError(ValueError):
     """Program file content is missing/invalid or its owner binding is inconsistent; raised before any swap."""
 
 
-def _validate_envelope_version(data: Dict[str, Any]) -> None:
-    """Explicit envelope-version contract (RTPH-I R4).
+# Proven historical envelope versions (RTPH-I-R4C): every value below was written by
+# serialize() into the DellMatrixProgramState envelope at the cited commit. No version 0
+# or negative version was ever emitted by the supported writer.
+#   v1  2e786ce  NBD: Persist (first envelope)
+#   v2  2818dfc  NBD: Surface coherence
+#   v3  b3c72d5  NBD: Persist L3
+#   v4  c13d7c9  Form 1.00 scope lock
+#   v5  747d3e3  SUS code pass
+#   v6  4c3ab5c  Solid session save/load v6 (VERSION = 6)
+#   v7  7768f20  NBD 1: HarmonicLattice (VERSION = 7, current)
+_LEGACY_VERSIONS = frozenset((1, 2, 3, 4, 5, 6))
 
-    Raises ProgramLoadError LOUDLY on unknown-future or wrong-typed versions. This runs inside
+
+def _validate_envelope_version(data: Dict[str, Any]) -> None:
+    """Explicit envelope-version contract (RTPH-I R4, narrowed by RTPH-I-R4C).
+
+    Raises ProgramLoadError LOUDLY on unsupported versions. This runs inside
     _validate_program_data, i.e. before any semantic swap: a failed validation changes no binding,
     no CELLS/customs, no Program, and rewrites no file (load() never writes).
 
     Policy:
-      version == VERSION (7)             → current format: ACCEPT.
-      version missing, or int < VERSION  → legacy envelope: ACCEPT explicitly.
-          No migration semantics are invented: the file is read by the current reader, and any
-          resave stamps the current version. (v6 was the last pre-7 shipped format, pre-lattice;
-          the reader degrades gracefully on absent keys. Versions < 6 were never shipped by this
-          writer.) This leniency is deliberate and tested — not an accidentally ignored field.
-      version > VERSION                  → REJECT: unknown future schemas must never be silently misread.
-      version present but not an int     → REJECT (covers "7", null/None, bool, float, ...).
+      version == VERSION (7)  → current format: ACCEPT.
+      version missing         → legacy envelope: ACCEPT explicitly (deliberate RTPH-I leniency;
+                                no migration invented; resave stamps the current version).
+      version in {1, 2, 3, 4, 5, 6} → legacy envelope: ACCEPT explicitly. Git history proves
+                                each of v1..v6 was emitted by the supported writer
+                                (see _LEGACY_VERSIONS). No migration semantics are invented:
+                                the file is read by the current reader, and any resave stamps
+                                the current version.
+      any other explicit int  → REJECT. Version 0 and negatives never existed; versions > 7
+                                are unknown future schemas that must never be silently misread.
+      version present but not an int → REJECT (covers "7", null/None, bool, float, ...).
           bool is rejected explicitly: isinstance(True, int) is True in Python.
     """
     if "version" not in data:
@@ -126,10 +142,10 @@ def _validate_envelope_version(data: Dict[str, Any]) -> None:
         raise ProgramLoadError(f"program file has non-integer envelope version {v!r}: refusing load")
     if v == VERSION:
         return  # current format
-    if v < VERSION:
-        return  # legacy envelope: accepted explicitly, no migration invented
+    if v in _LEGACY_VERSIONS:
+        return  # legacy envelope: proven historical version, no migration invented
     raise ProgramLoadError(
-        f"program file envelope version {v} is newer than supported {VERSION}: refusing load"
+        f"program file envelope version {v} is not supported (current {VERSION}, legacy 1-6): refusing load"
     )
 
 
