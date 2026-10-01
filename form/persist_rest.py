@@ -192,15 +192,36 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
         if activate:
             bind(p)
         return p
+    return _load_impl(owner, path, None, activate)
+
+
+def _load_impl(owner: str, path: str, nursery, activate: bool) -> Program:
+    """Shared staged-load core: READ > VALIDATE > PREPARE > ASSERT BINDING > SWAP.
+
+    ``nursery`` is None on the live path: Program loads the owner's live
+    nursery file and the Q-016 live binding is asserted. A provided Nursery
+    stages a generation member: the program is built against exactly that
+    staged nursery and no live file is consulted. Every step before the swap
+    only builds private objects; a failure raises and leaves live state
+    untouched.
+    """
+    assert_floor_intact()
+    if not os.path.isfile(path):
+        raise ProgramLoadError(
+            f"program member file missing: {os.path.basename(path)} (refusing to fabricate state)"
+        )
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     resolved = _validate_program_data(data, owner)
     lang = parse_language(data)
-    p = _prepare_program(resolved, data)
+    p = _prepare_program(resolved, data, _nursery=nursery)
     p.language = lang
-    from form.dell_matrix.nursery import owner_nursery_path
-    if p.owner != resolved or getattr(p.nursery, "path", None) != owner_nursery_path(resolved):
-        raise ProgramLoadError(f"owner binding mismatch: prepared {p.owner!r} for file owner {resolved!r}")
+    if nursery is None:
+        from form.dell_matrix.nursery import owner_nursery_path
+        if p.owner != resolved or getattr(p.nursery, "path", None) != owner_nursery_path(resolved):
+            raise ProgramLoadError(f"owner binding mismatch: prepared {p.owner!r} for file owner {resolved!r}")
+    elif p.owner != resolved or p.nursery is not nursery:
+        raise ProgramLoadError("generation member binding mismatch: staged nursery was not used")
     if activate:
         bind(p)
     return p
@@ -253,9 +274,13 @@ def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> No
         p.duo.generation = target_gen
 
 
-def _prepare_program(owner: str, data: Dict[str, Any]) -> Program:
-    """PREPARE a private Program from validated data. Touches no process language state."""
-    p = open_program(owner)
+def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program:
+    """PREPARE a private Program from validated data. Touches no process language state.
+
+    ``_nursery``: when provided, the Program is built against that staged
+    Nursery instead of the owner's live nursery file (generation-member load).
+    """
+    p = open_program(owner, _nursery=_nursery)
     plane = p.cube.session.plane
     plane.units.clear()
     plane.sandboxes.clear()
