@@ -1,4 +1,4 @@
-# Contextual Knowledge: Selection → Scope → Relevance V2 → Conflict V1 → Lineage V1
+# Contextual Knowledge: Selection → Scope → Relevance V2 → Dependency V1 → Conflict V1 → Lineage V1
 
 How DellMatrix answers "grow using knowledge about <context>".
 
@@ -10,15 +10,16 @@ without the user's command.
 ## Chain
 
 lifecycle (DCC-VII/VIII)
-→ contextual selection (DCC-IX)
-→ multi-selection + contribution evidence (DCC-X)
-→ enforced consumption scope (DCC-XI)
+→ lineage (DCC-XIV: persisted ancestry)
+→ dependency validity (DCC-XV: current qualification of required ancestry)
+→ eligibility (confirmed + on-plane + dependency-valid)
 → Relevance V2 ranking (DCC-XII)
+→ top-5 selection
 → Conflict V1 detection (DCC-XIII)
-→ Lineage V1 evidence (DCC-XIV)
 → routable subset
+→ enforced consumption scope (DCC-XI)
 → consumer
-→ provenance
+→ provenance (DCC-X, XIV)
 
 ## DCC-VII / VIII: Foundations
 
@@ -199,3 +200,134 @@ verification in this architecture, and none is claimed.
 `trace lineage <unit_id>` answers "where did this knowledge come from?"
 from persisted lineage (parents, roots, depth, status) without raw state
 inspection. Plain `trace` behavior is unchanged.
+
+## DCC-XV: Dependency Validity + Transitive Invalidation (Dependency V1)
+
+DCC-XIV records where knowledge came from. DCC-XV answers the separate,
+current-state question: do a unit's required ancestors still qualify for
+contextual use? If ancestor A is later removed from the plane (the
+existing legitimate invalidation path: `plane.remove`, exercised via
+undo), descendants B and C keep their correct historical lineage, but
+their dependency chain is no longer valid.
+
+Historical lineage is never rewritten to represent invalidity. Dependency
+inspection is current-state evidence layered on top.
+
+### Discovery (what the lifecycle actually supports)
+
+Post-confirmation state changes possible in-architecture:
+
+- **EXISTING_EXACT**: `plane.remove(uid)` removes a confirmed unit from the
+  plane (undo path); the nursery proposal stays `confirmed`. The ancestor
+  becomes absent → descendants' required ancestry is "missing".
+- **EXISTING_EXACT**: nursery proposals persist to a per-owner JSON file.
+  A restore/legacy fixture may record a confirmed unit's proposal as
+  rejected/pending → descendants' ancestry is "invalid". (Only through
+  restore fixtures; no public transition does this.)
+- **EXISTING_EXACT**: confirmed proposals are terminal — `nursery.reject`
+  and `nursery.confirm` both return `None` for confirmed proposals. There
+  is no public reject/demote/archive for confirmed knowledge.
+- **INSUFFICIENT**: no prior dependency contract existed.
+- **OUT_OF_SCOPE**: external source verification, source-quality scoring,
+  truth scoring, general provenance beyond persisted ancestry.
+
+Revalidation is **NOT_APPLICABLE**: no legitimate operation restores a
+removed unit or re-qualifies an ancestor, so invalidation is one-way.
+Validity is always recomputed from current state, never cached.
+
+### Dependency V1 contract (`dependency_version: 1`)
+
+For each unit, deterministic and reconstructible:
+
+| Field | Definition |
+|---|---|
+| `unit_id` | the knowledge unit |
+| `direct_parent_ids` | historical persisted parents (unit record, else nursery proposal) |
+| `ancestor_ids` | sorted full transitive historical ancestor set |
+| `historical_root_ids` | ancestors with no persisted parents; a direct unit roots itself |
+| `invalid_dependency_ids` | sorted ancestors present but unqualified |
+| `missing_dependency_ids` | sorted ancestors absent from the plane |
+| `dependency_status` | `valid` / `missing` / `invalid` / `malformed` |
+| `dependency_reason` | machine-readable cause (e.g. `missing_ancestors:<ids>`) |
+
+Ancestor qualification (mirrors the accepted-knowledge model):
+
+- exists on the plane (present where required)
+- nursery proposal status == `confirmed`
+- lineage constructible (`ok` or `missing_parents`; cycle/unknown
+  disqualifies the ancestor itself)
+
+Status precedence: `malformed` (unknown unit / cycle — evidence cannot be
+constructed) > `missing` > `invalid` > `valid`. Direct units with no
+parents are vacuously `valid`; no self-dependency is manufactured (their
+own standing remains base eligibility's job).
+
+A lineage `missing_parents` status is a dependency-state signal, not an
+ancestor disqualifier: the absent ancestors are named in
+`missing_dependency_ids`, and the historical parent lists, historical
+roots, depth, and origin never change.
+
+### Traversal contract
+
+Historical ancestry walks persisted parent lists (plane unit, falling
+back to the nursery proposal which survives plane removal), cycle-guarded
+with a seen-set, FIFO order, sorted output. All IDs in
+`missing/invalid_dependency_ids`, exclusions, and traces are sorted —
+equivalent states produce identical evidence.
+
+### Routing order (actual)
+
+1. lifecycle: confirmed proposals
+2. lineage: persisted ancestry (DCC-XIV)
+3. dependency validity: eligibility additionally requires
+   dependency-`valid` (DCC-XV) — before Relevance V2 ever scores
+4. Relevance V2 ranking over dependency-valid candidates only
+5. top-5 selection (invalid candidates never consume slots)
+6. Conflict V1 over selected valid candidates only (an invalid unit can
+   neither create a conflict nor quarantine a valid unit)
+7. routable subset → enforced consumption scope (DCC-XI)
+8. consumer → provenance
+
+Lineage metadata stays descriptive: groups are built from actual selected
+knowledge only. `trace dependency <unit_id>` answers "is this knowledge
+dependency-valid right now, and if not, why?" exposing historical lineage
+(parents, historical roots, origin, depth) alongside current dependency
+status.
+
+### Receipt evidence (additive)
+
+- `dependency_version: 1`
+- `dependency_valid_count`: dependency-valid eligible candidates
+- `dependency_exclusions`: `[{id, dependency_status, dependency_reason,
+  invalid_dependency_ids, missing_dependency_ids}]` — which candidate,
+  why excluded, which dependency caused it
+
+Relevance fields are not overloaded.
+
+### Boundaries
+
+- Baseline `grow_ideas` (full-plane) is unchanged; no dependency fields
+  appear on its receipts.
+- Explicit `use idea <pid> to grow` bypasses the selector as before —
+  the operator's explicit choice. Dependency filtering applies to
+  contextual routing only. If explicit use of dependency-invalid
+  knowledge is requested, the command runs; the boundary is documented,
+  not silently changed.
+- A rejected ancestor can only exist via restore/legacy fixture; normal
+  lifecycle never produces one.
+
+### Five separate questions
+
+- **LINEAGE**: what known ancestry/origin structure does the knowledge
+  have? (historical, immutable)
+- **DEPENDENCY**: do its required ancestors currently qualify?
+  (current-state, recomputed)
+- **RELEVANCE**: how strongly does accepted knowledge text match context?
+- **CONFLICT**: does bounded textual evidence indicate selected claims
+  should not be silently combined?
+- **TRUTH**: NOT established by any of the above.
+
+Dependency validity is not truth, not relevance, not conflict. Invalid
+ancestry propagates deterministically to descendants; dependency-invalid
+knowledge cannot silently enter contextual selection or consumption; and
+every exclusion is explained on the receipt.
