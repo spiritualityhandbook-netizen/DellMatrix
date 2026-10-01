@@ -17,6 +17,9 @@ CURRENT DEPENDENCY VALIDITY (recomputed from live state):
 Ancestor qualification (architecture-derived; mirrors accepted knowledge):
     - exists on the plane (present where required)
     - nursery proposal status == "confirmed" (accepted knowledge model)
+    - revision lifecycle_state == "active" (DCC-XVI: a superseded ancestor
+      no longer qualifies; descendants keep their historical parents and
+      are NOT silently retargeted to the successor revision)
     - lineage constructible (status ok or missing_parents; a cycle or
       unknown lineage disqualifies the ancestor itself)
 
@@ -29,7 +32,10 @@ Dependency V1 statuses:
                 (direct units: vacuously valid; no self-dependency)
     missing   — at least one required ancestor is absent from the plane
     invalid   — at least one required ancestor is present but unqualified
-                (not confirmed, or lineage unconstructible)
+                (not confirmed, superseded revision, or lineage
+                unconstructible). Reason "superseded_dependency:<ids>"
+                when every disqualifying ancestor is a superseded revision;
+                otherwise "unqualified_ancestors:<ids>".
     malformed — the unit's own lineage cannot be constructed
                 (unknown unit / cycle)
 
@@ -147,6 +153,7 @@ def inspect_dependency(program: Any, uid: str) -> Dict[str, Any]:
 
     missing: List[str] = []
     invalid: List[str] = []
+    superseded: List[str] = []
     for aid in ancestor_ids:
         if aid not in units:
             # Absent from the plane: the root-cause "missing" signal.
@@ -155,6 +162,16 @@ def inspect_dependency(program: Any, uid: str) -> Dict[str, Any]:
         if _proposal_status(program, aid) != "confirmed":
             # Present but not accepted knowledge (rejected/pending/unknown).
             invalid.append(aid)
+            continue
+        # DCC-XVI: a superseded (or malformed-revision) ancestor no longer
+        # qualifies as an active dependency. Historical parents are kept;
+        # nothing is silently retargeted to the successor revision.
+        from form.mandell.supersession import inspect_revision as _inspect_rev
+        _rev = _inspect_rev(program, aid)
+        if _rev["lifecycle_state"] != "active":
+            invalid.append(aid)
+            if _rev["lifecycle_state"] == "superseded":
+                superseded.append(aid)
             continue
         # Lineage "missing_parents" is a dependency-state signal, not an
         # ancestor disqualifier: the missing ancestors are already named
@@ -168,7 +185,11 @@ def inspect_dependency(program: Any, uid: str) -> Dict[str, Any]:
     if missing:
         status, reason = "missing", f"missing_ancestors:{','.join(missing)}"
     elif invalid:
-        status, reason = "invalid", f"unqualified_ancestors:{','.join(invalid)}"
+        if superseded and len(superseded) == len(invalid):
+            status = "invalid"
+            reason = f"superseded_dependency:{','.join(sorted(superseded))}"
+        else:
+            status, reason = "invalid", f"unqualified_ancestors:{','.join(invalid)}"
     else:
         status, reason = "valid", "all_required_ancestors_qualify"
 

@@ -8,6 +8,15 @@ from typing import Any, Dict, Optional
 HANDLED = {27, 28, 34, 35, 37, 40, 44, 47}
 
 
+def _rev_state(program: Any, pid: str) -> str:
+    """Lifecycle state for receipts (DCC-XVI explicit-override evidence)."""
+    from form.mandell.supersession import inspect_revision
+    try:
+        return inspect_revision(program, pid)["lifecycle_state"]
+    except Exception:
+        return "unknown"
+
+
 def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, Any]]:
     n = seed.primary_dell()
     if n not in HANDLED:
@@ -152,6 +161,36 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                                 f"({dep['dependency_reason']})")
                 messages.append(f"  historical parents: {dep['direct_parent_ids'] or '—'}")
                 messages.append(f"  historical roots: {dep['historical_root_ids'] or '—'}")
+        elif lab.startswith("trace_revision "):
+            # DCC-XVI: answer "which accepted version replaces which?" —
+            # revision identity and chain, without touching derivation
+            # lineage. Revision ancestry != derivation ancestry.
+            from form.mandell.supersession import inspect_revision
+            target = lab[len("trace_revision "):].strip()
+            rec = inspect_revision(program, target)
+            program.last_discover = {**rec, "source": "trace_revision"}
+            if rec["lifecycle_state"] == "unknown":
+                messages.append(f"Revision: unknown unit '{target}'")
+            elif rec["lifecycle_state"] == "malformed":
+                messages.append(
+                    f"Revision {target}: malformed "
+                    f"({rec['malformed_reason']})")
+                messages.append(
+                    f"  declared predecessor: {rec['supersedes_id'] or '—'}")
+                messages.append(
+                    f"  declared successor: {rec['superseded_by_id'] or '—'}")
+            else:
+                messages.append(
+                    f"Revision {target}: {rec['lifecycle_state']} "
+                    f"(root={rec['revision_root_id']}, "
+                    f"number={rec['revision_number']})")
+                messages.append(
+                    f"  predecessor: {rec['supersedes_id'] or '—'}")
+                messages.append(
+                    f"  successor: {rec['superseded_by_id'] or '—'}")
+                if rec["chain"]:
+                    messages.append(
+                        f"  chain: {' -> '.join(rec['chain'])}")
         elif "nursery" in lab:
             pending = program.list_proposals()
             program.last_discover = {"ids": [p.get("id") for p in pending], "count": len(pending), "source": "nursery"}
@@ -297,11 +336,61 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 "consumer": "grow_ideas",
                 "offspring": offspring,
                 "offspring_count": len(offspring),
+                # DCC-XVI (CONTROL T): explicit use of a superseded unit
+                # remains possible because the operator named the historical
+                # ID explicitly — but the receipt identifies its lifecycle
+                # state so the override is never silent.
+                "lifecycle_state": _rev_state(program, pid),
             }
             messages.append(f"Used knowledge {pid} in growth")
+            if program.last_nurture["lifecycle_state"] == "superseded":
+                messages.append(f"  Note: {pid} is a superseded revision "
+                                f"(explicit historical use)")
             messages.append(f"  Offspring parented by {pid}: {len(offspring)}")
             for o in offspring[:5]:
                 messages.append(f"    {o['id']}: {o['label']}")
+        elif low.startswith("supersede "):
+            # DCC-XVI: versioned knowledge supersession through the normal
+            # language/runtime path. Format: "supersede <old_id> with <words>".
+            # Atomic: validate -> create successor -> confirm/promote
+            # successor (predecessor stays active) -> prepare complete
+            # revision links -> single durable commit -> auditable receipt.
+            # Any failure before the commit restores the pre-supersession
+            # state; a crash can never expose a half-superseded chain.
+            from form.mandell.supersession import (
+                SUPERSESSION_VERSION, SupersedeError, supersede_proposal,
+            )
+            rest = lab[len("supersede "):].strip()
+            cut = rest.lower().find(" with ")
+            if cut >= 0:
+                old_id = rest[:cut].strip()
+                words = rest[cut + len(" with "):].strip()
+            else:
+                old_id, words = rest, ""
+            try:
+                result = supersede_proposal(program, old_id, words)
+            except SupersedeError as e:
+                program.last_nurture = {
+                    "action": "supersede", "ok": False, "old_id": old_id,
+                    "error": str(e), "consumer": "supersede_idea",
+                    "dell": 37, "supersession_version": SUPERSESSION_VERSION,
+                }
+                messages.append(f"Supersede failed: {e}")
+                return {**base, "ok": False, "error": f"supersede failed: {e}"}
+            # supersede_proposal sets program.last_nurture for both success
+            # and the deterministic already-superseded refusal.
+            if result.get("ok"):
+                messages.append(
+                    f"Superseded {result['old_id']} with {result['new_id']}")
+                messages.append(
+                    f"  revision {result['revision_number']} "
+                    f"of root {result['revision_root_id']}")
+                return {**base, "ok": True}
+            messages.append(
+                f"Supersede refused ({result.get('reason')}): {old_id} "
+                f"already superseded by {result.get('superseded_by_id')}")
+            return {**base, "ok": False,
+                    "error": result.get("reason") or "supersede refused"}
         elif low.startswith("grow_using_knowledge_about "):
             # DCC-IX: Contextual knowledge selection.
             # Format: "grow_using_knowledge_about <context>"
@@ -329,6 +418,9 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                         "dependency_version": selection.get("dependency_version"),
                         "dependency_valid_count": selection.get("dependency_valid_count"),
                         "dependency_exclusions": selection.get("dependency_exclusions", []),
+                    "supersession_version": selection.get("supersession_version"),
+                    "active_revision_count": selection.get("active_revision_count"),
+                    "supersession_exclusions": selection.get("supersession_exclusions", []),
                     }
                     messages.append(f"Contextual grow refused: scope invalid for {sid}")
                     return {**base, "ok": False, "error": f"scope validation failed: {sid}"}
@@ -377,6 +469,9 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                     "dependency_version": selection.get("dependency_version"),
                     "dependency_valid_count": selection.get("dependency_valid_count"),
                     "dependency_exclusions": selection.get("dependency_exclusions", []),
+                    "supersession_version": selection.get("supersession_version"),
+                    "active_revision_count": selection.get("active_revision_count"),
+                    "supersession_exclusions": selection.get("supersession_exclusions", []),
                     "ok": False,
                     "error": f"lineage construction failed: {type(e).__name__}: {e}",
                     "consumer": "grow_ideas", "dell": 37,
@@ -418,6 +513,9 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                     "dependency_version": selection.get("dependency_version"),
                     "dependency_valid_count": selection.get("dependency_valid_count"),
                     "dependency_exclusions": selection.get("dependency_exclusions", []),
+                    "supersession_version": selection.get("supersession_version"),
+                    "active_revision_count": selection.get("active_revision_count"),
+                    "supersession_exclusions": selection.get("supersession_exclusions", []),
                     "ok": False,
                     "error": f"consumer failed: {type(e).__name__}: {e}",
                     "consumer": "grow_ideas", "dell": 37,
@@ -482,6 +580,9 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 "dependency_version": selection.get("dependency_version"),
                 "dependency_valid_count": selection.get("dependency_valid_count"),
                 "dependency_exclusions": selection.get("dependency_exclusions", []),
+                    "supersession_version": selection.get("supersession_version"),
+                    "active_revision_count": selection.get("active_revision_count"),
+                    "supersession_exclusions": selection.get("supersession_exclusions", []),
                 "contributions": contributions,
                 "consumer_scope_ids": consumer_scope_ids,
                 "scope_mode": scope_mode,
@@ -497,6 +598,8 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             messages.append(f"  Lineage roots: {len(sel_root_ids)} independent roots over {len(selected_ids)} selected")
             if selection.get("dependency_exclusions"):
                 messages.append(f"  Dependency exclusions: {len(selection['dependency_exclusions'])}")
+            if selection.get("supersession_exclusions"):
+                messages.append(f"  Supersession exclusions: {len(selection['supersession_exclusions'])}")
             messages.append(f"  Scope mode: {scope_mode}, Consumer scope IDs: {consumer_scope_ids}")
             for s in selection["selected"][:3]:
                 messages.append(f"    {s['id']}: {s['label']} (score={s['score']})")

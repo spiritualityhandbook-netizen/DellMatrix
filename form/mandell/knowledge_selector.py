@@ -147,9 +147,10 @@ def select_for_context(
     i.e. exact_phrase DESC, ordered DESC, coverage DESC, jaccard DESC,
     proposal ID ASC (stable final tie-break).
     
-    Eligibility: confirmed AND on-plane AND dependency-valid (DCC-XV).
-    Dependency filtering runs before Relevance V2 scoring; scoring never
-    weakens eligibility; no-match still yields an empty selection.
+    Eligibility: confirmed AND on-plane AND revision-active (DCC-XVI) AND
+    dependency-valid (DCC-XV). Revision filtering runs before dependency
+    filtering and before Relevance V2 scoring; scoring never weakens
+    eligibility; no-match still yields an empty selection.
     """
     context = (context or "").strip()
     ctx_tokens = _tokens(context)
@@ -165,11 +166,29 @@ def select_for_context(
             continue
         eligible.append((pid, prop))
 
+    # DCC-XVI: revision/supersession gates eligibility BEFORE lineage,
+    # dependency, and Relevance V2. Only active revisions may route;
+    # superseded and malformed-revision units are excluded with evidence.
+    # Revision ancestry is not derivation ancestry: this filter never
+    # touches lineage parents.
+    from form.mandell.supersession import (
+        SUPERSESSION_VERSION, inspect_revision, is_revision_active,
+        revision_exclusions,
+    )
+    rev_excluded_ids = [
+        pid for pid, _ in eligible if not is_revision_active(program, pid)
+    ]
+    rev_exclusions = revision_exclusions(program, rev_excluded_ids)
+    eligible = [(pid, prop) for pid, prop in eligible
+                if is_revision_active(program, pid)]
+    active_revision_count = len(eligible)
+
     # DCC-XV: dependency validity gates eligibility. A derived unit is
     # dependency-valid only when every required transitive ancestor exists
-    # on the plane, is confirmed, and has valid lineage. Historical lineage
-    # is untouched; this filters current-state qualification before
-    # Relevance V2 ever sees the candidate.
+    # on the plane, is confirmed, is revision-active, and has valid
+    # lineage. Historical lineage is untouched; this filters
+    # current-state qualification before Relevance V2 ever sees the
+    # candidate.
     from form.mandell.dependency_validity import (
         DEPENDENCY_VERSION, dependency_exclusions, is_dependency_valid,
     )
@@ -189,9 +208,12 @@ def select_for_context(
             "normalized_context": ctx_norm,
             "operation": operation,
             "selector_version": 2,
+            "supersession_version": SUPERSESSION_VERSION,
             "dependency_version": DEPENDENCY_VERSION,
             "eligible_count": eligible_count,
+            "active_revision_count": active_revision_count,
             "dependency_valid_count": dependency_valid_count,
+            "supersession_exclusions": rev_exclusions,
             "dependency_exclusions": dep_exclusions,
             "selected": [],
             "reason": "no context tokens" if not ctx_tokens else "no eligible knowledge",
@@ -216,6 +238,9 @@ def select_for_context(
         exact_phrase = 1 if (ctx_norm and ctx_norm in unit_norm) else 0
         ordered = 1 if _ordered_subseq(ctx_seq, unit_seq) else 0
         coverage = round(len(shared) / len(ctx_tokens), 4) if ctx_tokens else 0.0
+        # DCC-XVI: revision identity on each selection (eligibility
+        # already guarantees active; identity is audit evidence).
+        rev = inspect_revision(program, pid)
         scored.append({
             "id": pid,
             "label": prop.label,
@@ -224,6 +249,9 @@ def select_for_context(
             "coverage": coverage,
             "exact_phrase": exact_phrase,
             "ordered": ordered,
+            "lifecycle_state": rev["lifecycle_state"],
+            "revision_number": rev["revision_number"],
+            "revision_root_id": rev["revision_root_id"],
             "rank_key": (-exact_phrase, -ordered, -coverage, -round(jaccard, 4), pid),
         })
     
@@ -249,9 +277,12 @@ def select_for_context(
         "normalized_context": ctx_norm,
         "operation": operation,
         "selector_version": 2,
+        "supersession_version": SUPERSESSION_VERSION,
         "dependency_version": DEPENDENCY_VERSION,
         "eligible_count": eligible_count,
+        "active_revision_count": active_revision_count,
         "dependency_valid_count": dependency_valid_count,
+        "supersession_exclusions": rev_exclusions,
         "dependency_exclusions": dep_exclusions,
         "selected": selected,
         "reason": reason,

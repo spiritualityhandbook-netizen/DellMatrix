@@ -65,6 +65,15 @@ class Proposal:
     reason: str = ""
     created: str = field(default_factory=_ts)
     status: str = "pending"  # pending | confirmed | rejected
+    # DCC-XVI: versioned supersession (additive; confirmation untouched).
+    # lifecycle_state: "active" | "superseded" — is this accepted revision
+    # currently active for contextual routing? Legacy (None/absent) means
+    # active with no revision history.
+    lifecycle_state: str = "active"
+    supersedes_id: Optional[str] = None      # predecessor this revision replaces
+    superseded_by_id: Optional[str] = None   # successor that replaced this one
+    revision_root_id: Optional[str] = None   # id of revision #1 in this chain
+    revision_number: Optional[int] = None     # 1-based position in revision chain
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
