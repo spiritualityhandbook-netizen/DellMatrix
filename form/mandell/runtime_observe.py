@@ -515,3 +515,45 @@ def circuit_view(program: Any, circuit_id: str) -> Dict[str, Any]:
         "last_verified": c.last_verified,
         "notes": c.notes,
     }
+
+
+# ── KIE-I: Knowledge Influence Chain (read-only explanation) ──────────
+def knowledge_influence_view(
+    program: Any,
+    knowledge_id: str,
+    outcome_id: Optional[str] = None,
+    context: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Read-only explanation of knowledge influence.
+
+    Delegates to form/mandell/knowledge_influence.py. Gains no mutation
+    authority. Reports FACT/DERIVED_FACT/UNKNOWN; never claims causation.
+    """
+    from .knowledge_influence import explain_influence
+    try:
+        return explain_influence(
+            program, knowledge_id,
+            outcome_id=outcome_id, context=context,
+        )
+    except Exception as e:
+        return {"knowledge_id": knowledge_id, "error": str(e)}
+
+
+def why_used_view(program: Any, knowledge_id: str, outcome_id: str) -> Dict[str, Any]:
+    """User-facing: WHY WAS <id> USED in <outcome>? (historical)."""
+    from .knowledge_influence import why_used
+    try:
+        return why_used(program, knowledge_id, outcome_id)
+    except Exception as e:
+        return {"question": f"WHY WAS {knowledge_id} USED?", "error": str(e)}
+
+
+def why_not_used_view(
+    program: Any, knowledge_id: str, context: Optional[str] = None,
+) -> Dict[str, Any]:
+    """User-facing: WHY WAS <id> NOT USED? (current state)."""
+    from .knowledge_influence import why_not_used
+    try:
+        return why_not_used(program, knowledge_id, context=context)
+    except Exception as e:
+        return {"question": f"WHY WAS {knowledge_id} NOT USED?", "error": str(e)}

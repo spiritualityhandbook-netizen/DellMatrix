@@ -826,6 +826,105 @@ def _handle_learn_command(p: Program, raw: str) -> bool:
     return True
 
 
+def _handle_why_command(p: Program, raw: str) -> bool:
+    """KIE-I: Knowledge Influence explanation commands.
+
+    Read-only. Delegates to ROS knowledge_influence_view / why_used_view /
+    why_not_used_view. Never selects, scores, or mutates.
+
+    Commands:
+      why used <knowledge-id> in <outcome-id>
+      why not used <knowledge-id> [for <context>]
+      why influence <knowledge-id> [in <outcome-id>] [for <context>]
+    """
+    from form.mandell import runtime_observe as ro
+
+    lower = raw.strip().lower()
+    if not lower.startswith("why "):
+        return False
+    parts = raw.strip().split()
+
+    def _fmt_chain(chain: dict) -> None:
+        order = ["STORED", "ELIGIBLE", "SELECTED", "ROUTABLE", "USED", "OBSERVED", "LEARNED"]
+        for state in order:
+            s = chain.get(state) or {}
+            status = s.get("status", "?")
+            if status == "FACT":
+                detail = s.get("reason") or s.get("detail") or ""
+                if s.get("eligible") is False:
+                    detail = f"NOT ELIGIBLE: {s.get('reason')}"
+                elif s.get("selected") is True:
+                    detail = f"selected (rank {s.get('rank')})"
+                elif s.get("selected") is False:
+                    detail = f"not selected: {s.get('reason')}"
+                _say(f"  {state}: {detail or 'yes'}")
+            elif status == "DERIVED_FACT":
+                _say(f"  {state}: {s.get('reason', '')} (derived)")
+            else:
+                _say(f"  {state}: UNKNOWN — {s.get('reason', '')}")
+
+    # why used <kid> in <oid>
+    if len(parts) >= 5 and parts[1].lower() == "used" and parts[3].lower() == "in":
+        kid, oid = parts[2], parts[4]
+        res = ro.why_used_view(p, kid, oid)
+        if res.get("error"):
+            _say(f"why used: {res['error']}")
+            return True
+        _say(f"{res.get('question')}")
+        ans = res.get("answer", {})
+        used = ans.get("used", {})
+        _say(f"  recorded as used: {used.get('reason', '')}")
+        _say(f"  outcome: {ans.get('observed_in')}")
+        _say(f"  revision: {ans.get('revision')}")
+        _say(f"  {res.get('epistemic', '')}")
+        return True
+
+    # why not used <kid> [for <context...>]
+    if len(parts) >= 4 and parts[1].lower() == "not" and parts[2].lower() == "used":
+        kid = parts[3]
+        ctx = None
+        if "for" in [w.lower() for w in parts]:
+            fi = [w.lower() for w in parts].index("for")
+            ctx = " ".join(parts[fi + 1:])
+        res = ro.why_not_used_view(p, kid, context=ctx)
+        if res.get("error"):
+            _say(f"why not used: {res['error']}")
+            return True
+        _say(f"{res.get('question')}")
+        for b in res.get("blocking_reasons", []):
+            _say(f"  blocked at {b['state']}: {b['reason']}")
+        if not res.get("blocking_reasons"):
+            _say("  no blocking reasons found (may be eligible)")
+        return True
+
+    # why influence <kid> [in <oid>] [for <context>]
+    if len(parts) >= 3 and parts[1].lower() == "influence":
+        kid = parts[2]
+        oid = None
+        ctx = None
+        low = [w.lower() for w in parts]
+        if "in" in low:
+            ii = low.index("in")
+            if ii + 1 < len(parts):
+                oid = parts[ii + 1]
+        if "for" in low:
+            fi = low.index("for")
+            ctx = " ".join(parts[fi + 1:])
+        res = ro.knowledge_influence_view(p, kid, outcome_id=oid, context=ctx)
+        if res.get("error"):
+            _say(f"why influence: {res['error']}")
+            return True
+        _say(f"knowledge influence for {kid} ({res.get('mode', '?')}):")
+        _fmt_chain(res.get("chain", {}))
+        return True
+
+    _say("why commands (read-only explanation):")
+    _say("  why used <knowledge-id> in <outcome-id>")
+    _say("  why not used <knowledge-id> [for <context>]")
+    _say("  why influence <knowledge-id> [in <outcome-id>] [for <context>]")
+    return True
+
+
 def _handle_macro_rank(p: Program, lower: str, raw: str) -> bool:
     if lower in ("rank", "rank proposals"):
         ranked = p.ranked_proposals() if hasattr(p, "ranked_proposals") else p.list_proposals()
@@ -2131,6 +2230,11 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         # propose → inspect → gate → apply (with confirm) lifecycle.
         # Intercepted before execution; delegates to duobeta_learn.py.
         if _handle_learn_command(p, line):
+            continue
+
+        # KIE-I: Knowledge Influence explanation. Read-only.
+        # why used / why not used / why influence.
+        if _handle_why_command(p, line):
             continue
 
         # DCC-IV: composed Mandell program (flow operators) -> flow executor.
