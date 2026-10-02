@@ -590,6 +590,22 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
         _say(f"  result: {wh.get('result')}")
         return True
 
+    # ODCG-I: correction candidate explanation
+    if lower.startswith("what fixed "):
+        from form.mandell import correction_graph as cg
+        oid = raw.strip()[11:].strip()
+        exp = cg.explain_correction(p, oid)
+        if not exp.get("ok"):
+            _say(f"what fixed: {exp.get('explanation')}")
+            return True
+        _say(f"correction candidates for {oid} (correlation, not proven causation):")
+        _say(f"  {exp.get('explanation')}")
+        for c in exp.get("candidates", [])[:3]:
+            _say(f"  → {c['later_outcome_id']} [{c['confidence']}]")
+        for unk in exp.get("what_we_do_not_know", []):
+            _say(f"  unknown: {unk}")
+        return True
+
     if lower == "health":
         h = ro.runtime_health(owner=getattr(p, "owner", "Operator"))
         _say("runtime health (availability only — not intelligence/truth):")

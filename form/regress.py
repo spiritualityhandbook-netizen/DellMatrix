@@ -91,6 +91,7 @@ LIST = [
     "form.mandell.hic_i_test",
     "form.mandell.ekc_i_test",
     "form.mandell.aec_i_test",
+    "form.mandell.odcg_i_test",
     "form.dell_matrix.program_strength",
     "form.mandell.core_ii_smoke",
 ]

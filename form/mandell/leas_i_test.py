@@ -89,7 +89,7 @@ def smoke() -> bool:
     
     # ── J: dependency validation ───────────────────────────────
     le12 = cl.get_circuit("LE-12")
-    check("J.le12_blocked", le12.state == "BLOCKED")
+    check("J.le12_superseded", le12.state == "SUPERSEDED")
     check("J.le12_dep", "DCC-XXXII-directive" in le12.dependency_ids)
     
     # ── K: NBD integration ─────────────────────────────────────

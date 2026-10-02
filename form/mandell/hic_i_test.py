@@ -44,14 +44,14 @@ def smoke() -> bool:
     
     # ── C: exit gate ───────────────────────────────────────────
     check("C.closed_22", counts.get("CLOSED", 0) == 22)
-    check("C.superseded_1", counts.get("SUPERSEDED", 0) == 1)
+    check("C.superseded_2", counts.get("SUPERSEDED", 0) == 2)
     check("C.historical_1", counts.get("HISTORICAL_ONLY", 0) == 1)
-    check("C.blocked_1", counts.get("BLOCKED", 0) == 1)
+    check("C.blocked_0", counts.get("BLOCKED", 0) == 0)
     check("C.total_25", sum(counts.values()) == 25)
     
-    # ── D: LE-12 remains BLOCKED ───────────────────────────────
+    # ── D: LE-12 SUPERSEDED (ODCG-I) ───────────────────────────
     le12 = cl.get_circuit("LE-12")
-    check("D.le12_blocked", le12.state == "BLOCKED")
+    check("D.le12_superseded", le12.state == "SUPERSEDED")
     check("D.le12_not_closed", le12.state != "CLOSED")
     
     # ── E: historical/superseded non-rankable ──────────────────
