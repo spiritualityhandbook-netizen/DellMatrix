@@ -465,6 +465,14 @@ def test_repl_why_influence():
     check("T5.why_influence", "STORED" in out and "ELIGIBLE" in out)
 
 
+def test_repl_bare_why_teaches_syntax():
+    """CND-I: bare 'why' teaches the syntax instead of dying as Not understood."""
+    p = fresh()
+    out = _repl_dispatch(p, ["why"])
+    check("CND.bare_why_usage", "why used <knowledge-id>" in out
+          and "why influence <knowledge-id>" in out)
+
+
 def test_repl_why_not_used():
     p = fresh()
     kid = make_knowledge(p)
@@ -573,6 +581,7 @@ def main():
         test_learned_temporal_separation,
         test_ekc_explicit_semantics,
         test_repl_why_influence,
+        test_repl_bare_why_teaches_syntax,
         test_repl_why_not_used,
         test_repl_why_used,
         test_repl_why_help,

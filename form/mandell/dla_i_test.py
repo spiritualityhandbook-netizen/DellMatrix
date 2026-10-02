@@ -180,6 +180,24 @@ def test_invalid_proposal_apply():
           and a["reason"] == "unknown_proposal")
 
 
+def test_repl_learn_gate_malformed_no_crash():
+    """CND-I: malformed learn gate input must not crash the REPL handler."""
+    p = fresh()
+    for cmd in ("learn gate", "learn gate abc", "learn gate 12x"):
+        handled, out = _repl_learn(p, cmd)
+        check(f"CND.malformed_gate_{cmd!r}_handled", handled is True)
+        check(f"CND.malformed_gate_{cmd!r}_usage", "usage: learn gate" in out)
+
+
+def test_repl_learn_apply_malformed_no_crash():
+    """CND-I: malformed learn apply input must not crash the REPL handler."""
+    p = fresh()
+    for cmd in ("learn apply abc confirm", "learn apply 12x confirm"):
+        handled, out = _repl_learn(p, cmd)
+        check(f"CND.malformed_apply_{cmd!r}_handled", handled is True)
+        check(f"CND.malformed_apply_{cmd!r}_usage", "usage: learn apply" in out)
+
+
 def test_insufficient_evidence():
     """< MIN_EVIDENCE outcomes → gate rejects insufficient_evidence."""
     p = fresh()
@@ -657,6 +675,8 @@ def main():
         test_unknown_outcome_evidence,
         test_invalid_proposal_gate,
         test_invalid_proposal_apply,
+        test_repl_learn_gate_malformed_no_crash,
+        test_repl_learn_apply_malformed_no_crash,
         test_insufficient_evidence,
         test_mismatched_result,
         test_forbidden_kind,

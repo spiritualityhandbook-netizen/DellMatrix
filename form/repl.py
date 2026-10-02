@@ -56,6 +56,7 @@ Top commands (type help more for full list)
   self evolve | evolve loop 12
   mode beginner|builder|depth
   english expand 150
+  why influence <id> · learn ledger — knowledge (help more: Knowledge / Learning)
   help more
 """.strip()
 
@@ -70,6 +71,16 @@ Ideas / Growth
   distill <words> | macro [n] | replay [n]
   auto confirm on|off   grow mode: auto-confirm all after each grow
   grow mode             show auto_confirm_grow status
+
+Knowledge / Learning
+  proposals | confirm <id> | confirm all | reject all
+  why used <kid> in <oid> · why not used <kid> [for <ctx>]
+  why influence <kid> [in <oid>] [for <ctx>]
+  learn propose <kind> <dell> from <oid> ... · learn inspect <pid>
+  learn gate <pid> · learn apply <pid> confirm · learn ledger
+  learning is stepwise: propose → inspect → gate → apply (confirm required)
+  supersede idea <old-id> with <words> · trace dependency <id>
+  discover [nursery]
 
 Lattice / Perception / Looking
   cube | sphere | core | flower | toggle
@@ -769,6 +780,13 @@ def _handle_learn_command(p: Program, raw: str) -> bool:
     if sub == "gate":
         # learn gate <proposal-id>
         pid = parts[2] if len(parts) > 2 else ""
+        if not pid.isdigit():
+            # CND-I: malformed input must not crash the REPL. Validate before
+            # calling the authority; the authority contract for int(pid) is
+            # unchanged.
+            _say("usage: learn gate <proposal-id>")
+            _say("  gate a PROPOSED learning proposal (see: learn ledger)")
+            return True
         res = dl.gate_proposal(p, pid)
         if not res.get("ok"):
             _say(f"learn gate: {res.get('reason')}")
@@ -796,6 +814,13 @@ def _handle_learn_command(p: Program, raw: str) -> bool:
             _say(f"  proposal status: {status}")
             _say(f"  to apply, run: learn apply {pid} confirm")
             _say("  (only ACCEPTED proposals can be applied)")
+            return True
+        if not pid.isdigit():
+            # CND-I: malformed input must not crash the REPL. Validate before
+            # calling the authority; the authority contract for int(pid) is
+            # unchanged.
+            _say("usage: learn apply <proposal-id> confirm")
+            _say("  apply an ACCEPTED learning proposal (explicit authorization)")
             return True
         res = dl.apply_proposal(p, pid)
         if not res.get("applied"):
@@ -840,6 +865,14 @@ def _handle_why_command(p: Program, raw: str) -> bool:
     from form.mandell import runtime_observe as ro
 
     lower = raw.strip().lower()
+    if lower == "why":
+        # Bare `why`: teach the syntax. No conflict: no other handler or
+        # test claims bare "why" (verified CND-I).
+        _say("why commands (read-only explanation):")
+        _say("  why used <knowledge-id> in <outcome-id>")
+        _say("  why not used <knowledge-id> [for <context>]")
+        _say("  why influence <knowledge-id> [in <outcome-id>] [for <context>]")
+        return True
     if not lower.startswith("why "):
         return False
     parts = raw.strip().split()
@@ -1669,6 +1702,8 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         "distill": "usage: distill <words>",
         "explain": "usage: explain <word>",
         "script": "usage: script look; pulse; status",
+        "supersede": "usage: supersede idea <old-id> with <words>",
+        "trace_dependency": "usage: trace dependency <id>",
     }
     if lower in _bare_usage:
         _say(_bare_usage[lower])
@@ -2136,6 +2171,16 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
 
     elif action == "discover":
         # DCC-II: read-only inspection routed through Dell 35.
+        from form.mandell.semantic_router import route_intent
+        receipt = route_intent(p, intent, raw_line)
+        _print_route_receipt(receipt)
+        return p
+
+    elif action == "nurture":
+        # CND-I: the English intent layer produces "nurture" intents
+        # (use idea / supersede idea / resolve conflict / grow using knowledge).
+        # Route through the canonical semantic router, like save/discover.
+        # Previously these died as 'Not understood action "nurture"'.
         from form.mandell.semantic_router import route_intent
         receipt = route_intent(p, intent, raw_line)
         _print_route_receipt(receipt)
