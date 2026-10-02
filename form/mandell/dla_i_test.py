@@ -6,9 +6,16 @@ Tests the user-operable learning lifecycle wired in NBD-Ω-023:
 
 REALISM CLASSIFICATION:
   UNIT_SYNTHETIC: direct dl.* calls on fresh Program (contract proof)
-  INTEGRATION: dl.* + outcome_ledger + knowledge_selector interaction
+  INTEGRATION: dl.* + outcome_ledger + knowledge_selector interaction;
+               also _handle_learn_command handler tests (handler + duobeta_learn,
+               but not the full run() dispatch loop)
   CROSS_PROCESS: save/load restart between lifecycle stages
-  REAL_USER_PATH: full lifecycle through REPL _handle_learn_command
+  REAL_USER_PATH: full lifecycle through _repl_dispatch (same dispatch order
+                  as run() loop: ROS → learn → execution)
+
+Note: _handle_learn_command direct invocation proves handler integration.
+True REAL_USER_PATH uses _repl_dispatch which replicates the run() loop's
+exact dispatch order.
 
 AUTONOMY=NO: apply requires explicit "confirm"; no auto-apply anywhere.
 """
@@ -103,15 +110,18 @@ def test_insufficient_evidence():
 
 
 def test_mismatched_result():
-    """Preference kind with failed outcomes → gate rejects evidence_mismatch."""
+    """Preference kind with failed outcomes → gate rejects evidence_mismatch.
+    
+    REALISM: INTEGRATION (real execution via observe_seed_execution produces
+    deterministic failed outcomes; gate semantics proven against real Outcome V1).
+    """
     p = fresh()
     oids = failed_oids(p, n=3)
-    # Verify we actually got failed outcomes
+    # Verify precondition: we must have 3 failed outcomes for dell 86.
+    # If this fails, the test FAILS (not vacuously passes).
     recs = [p.outcome_records[oid] for oid in oids]
-    if not all(r.get("result") == "failed" for r in recs):
-        # If Dell 86 doesn't fail in this env, use wrong-kind test differently
-        check("H.mismatched_result", True)  # vacuous pass, env-dependent
-        return
+    check("H.mismatched_precondition",
+          all(r.get("result") == "failed" and r.get("dell") == 86 for r in recs))
     prop = dl.propose(p, "preference", 86, None, oids)
     g = dl.gate_proposal(p, prop["proposal_id"])
     check("H.mismatched_result", g["accepted"] is False
@@ -219,7 +229,10 @@ def test_apply_rejected_proposal():
 
 
 # ══════════════════════════════════════════════════════════════════
-# D. USER CONTROL — REPL surface (INTEGRATION)
+# D. USER CONTROL — REPL handler (INTEGRATION)
+#
+# These test _handle_learn_command directly (handler + duobeta_learn).
+# Classified INTEGRATION, not REAL_USER_PATH (see K.* for dispatch-level proof).
 # ══════════════════════════════════════════════════════════════════
 
 def _repl_learn(p, cmd):
@@ -357,56 +370,102 @@ def test_repl_not_learn_command():
 
 
 # ══════════════════════════════════════════════════════════════════
-# K. REAL USER PATH — full lifecycle through REPL
+# K. REAL USER PATH — full lifecycle through actual REPL dispatch
 # ══════════════════════════════════════════════════════════════════
+
+def _repl_dispatch(p, commands):
+    """Simulate the actual REPL dispatch loop from run().
+    
+    Feeds commands through the same dispatch logic as the interactive
+    run() loop: ROS handler → learn handler → (execution path).
+    This is the strongest practical REAL_USER_PATH proof short of
+    mocking builtin input() for the full run() function.
+    
+    Returns captured output.
+    """
+    from form import repl as repl_mod
+    buf = io.StringIO()
+    old_say = repl_mod._say
+    repl_mod._say = lambda s: buf.write(str(s) + "\n")
+    try:
+        for line in commands:
+            line = line.strip()
+            if not line:
+                continue
+            # Exact dispatch order from run(): ROS → learn → execution
+            if repl_mod._handle_ros_command(p, line):
+                continue
+            if repl_mod._handle_learn_command(p, line):
+                continue
+            # (execution path not needed for learn commands)
+    finally:
+        repl_mod._say = old_say
+    return buf.getvalue()
+
 
 def test_real_user_path_full_lifecycle():
     """REAL_USER_PATH: propose → inspect → gate → apply (confirm) → ledger,
-    all through REPL commands."""
+    all through REPL dispatch (same order as run() loop)."""
     p = fresh()
     oids = completed_oids(p, n=3)
+    oid_str = " ".join(oids)
 
-    # 1. Propose
-    h1, o1 = _repl_learn(p, f"learn propose preference 1 from {' '.join(oids)}")
-    check("K.propose", h1 and "PROPOSED" in o1)
-    # Extract proposal ID from output
+    # Stage proposal via dispatch, capture ID from output
+    out1 = _repl_dispatch(p, [f"learn propose preference 1 from {oid_str}"])
+    assert "PROPOSED" in out1, f"propose failed: {out1}"
     import re
-    m = re.search(r"proposal (\d+) staged", o1)
-    check("K.pid_extracted", m is not None)
+    m = re.search(r"proposal (\d+) staged", out1)
+    assert m, f"no proposal ID in: {out1}"
     pid = m.group(1)
+    # Proposal actually staged in ledger (not just printed)
+    stored = dl.get_proposal(p, pid)
+    check("K.propose", stored is not None and stored["status"] == "PROPOSED")
 
-    # 2. Inspect
-    h2, o2 = _repl_learn(p, f"learn inspect {pid}")
-    check("K.inspect", h2 and "PROPOSED" in o2)
+    # Inspect via dispatch
+    out2 = _repl_dispatch(p, [f"learn inspect {pid}"])
+    check("K.inspect", "PROPOSED" in out2)
 
-    # 3. Gate
-    h3, o3 = _repl_learn(p, f"learn gate {pid}")
-    check("K.gate", h3 and "GATE ACCEPTED" in o3)
+    # Gate via dispatch
+    out3 = _repl_dispatch(p, [f"learn gate {pid}"])
+    check("K.gate", "GATE ACCEPTED" in out3)
 
-    # 4. Apply without confirm → blocked
-    h4, o4 = _repl_learn(p, f"learn apply {pid}")
-    check("K.apply_blocked", h4 and "explicit authorization required" in o4)
+    # Apply without confirm → blocked (AUTONOMY=NO)
+    out4 = _repl_dispatch(p, [f"learn apply {pid}"])
+    check("K.apply_blocked", "explicit authorization required" in out4)
+    # Verify state unchanged
+    stored = dl.get_proposal(p, pid)
+    check("K.apply_blocked_state", stored["status"] == "ACCEPTED")
 
-    # 5. Apply with confirm → applied
-    h5, o5 = _repl_learn(p, f"learn apply {pid} confirm")
-    check("K.apply", h5 and "APPLIED" in o5)
+    # Apply with confirm → applied
+    out5 = _repl_dispatch(p, [f"learn apply {pid} confirm"])
+    check("K.apply", "APPLIED" in out5)
+    stored = dl.get_proposal(p, pid)
+    check("K.apply_state", stored["status"] == "APPLIED")
 
-    # 6. Ledger shows it
-    h6, o6 = _repl_learn(p, "learn ledger")
-    check("K.ledger", h6 and "APPLIED" in o6)
+    # Ledger shows it
+    out6 = _repl_dispatch(p, ["learn ledger"])
+    check("K.ledger", "APPLIED" in out6)
+
+    # ASI consumes it (existing path, unmodified)
+    score = dl.bounded_learned_score(p, 1, None)
+    check("K.asi_consumes", score > 0)
 
 
 def test_real_user_path_rejection():
-    """REAL_USER_PATH: rejection path through REPL."""
+    """REAL_USER_PATH: rejection path through REPL dispatch."""
     p = fresh()
-    h1, o1 = _repl_learn(p, "learn propose preference 1 from bad-oid-1 bad-oid-2")
-    check("K.rej_propose", h1 and "PROPOSED" in o1)
+    out1 = _repl_dispatch(p, ["learn propose preference 1 from bad-oid-1 bad-oid-2"])
     import re
-    pid = re.search(r"proposal (\d+) staged", o1).group(1)
-    h2, o2 = _repl_learn(p, f"learn gate {pid}")
-    check("K.rej_gate", h2 and "GATE REJECTED" in o2)
-    h3, o3 = _repl_learn(p, f"learn apply {pid} confirm")
-    check("K.rej_apply", h3 and "not applied" in o3)
+    m = re.search(r"proposal (\d+) staged", out1)
+    assert m, f"no proposal ID in: {out1}"
+    pid = m.group(1)
+    check("K.rej_propose", "PROPOSED" in out1)
+
+    out2 = _repl_dispatch(p, [f"learn gate {pid}"])
+    check("K.rej_gate", "GATE REJECTED" in out2)
+
+    out3 = _repl_dispatch(p, [f"learn apply {pid} confirm"])
+    check("K.rej_apply", "not applied" in out3)
 
 
 # ══════════════════════════════════════════════════════════════════
