@@ -32,7 +32,7 @@ No match: empty selected list (consumer runs scoped-empty, never fallback).
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
