@@ -449,6 +449,23 @@ def outcomes_for_knowledge(program: Any, knowledge_id: str) -> List[Dict[str, An
     return out
 
 
+def outcomes_for_interaction(program: Any, interaction_id: str) -> List[Dict[str, Any]]:
+    """All outcomes explicitly correlated to an interaction ID (EIC-I/DIVG-I).
+
+    Read-only. Returns outcomes where interaction_id matches exactly.
+    Empty list if none (including legacy UNKNOWN outcomes).
+    Sorted by outcome_seq ascending (chronological).
+    """
+    records = getattr(program, "outcome_records", None) or {}
+    iid = str(interaction_id or "")
+    if not iid:
+        return []
+    out = [dict(r) for r in records.values()
+           if isinstance(r, dict) and r.get("interaction_id") == iid]
+    out.sort(key=lambda r: int(r.get("outcome_seq", 0) or 0))
+    return out
+
+
 def validate_record_shape(rec: Dict[str, Any]) -> bool:
     """Shape check for a persisted outcome record (load-time guard)."""
     if not isinstance(rec, dict):

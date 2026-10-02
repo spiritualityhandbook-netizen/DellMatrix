@@ -177,6 +177,22 @@ def outcomes_for_dell(program: Any, n: Any) -> Dict[str, Any]:
             "dell": addr, "count": len(recs), "outcomes": recs}
 
 
+def outcomes_for_interaction(program: Any, interaction_id: str) -> Dict[str, Any]:
+    """Outcome V1 records for an interaction ID (DIVG-I). Read-only.
+
+    Groups all Outcomes explicitly correlated to one interaction.
+    Honest when none exist (including legacy UNKNOWN).
+    """
+    from .outcome_ledger import outcomes_for_interaction as _ofi
+    iid = str(interaction_id or "").strip()
+    if not iid:
+        return {"ok": False, "status": "unknown_interaction", "outcomes": []}
+    recs = _ofi(program, iid)
+    return {"ok": True,
+            "status": "known" if recs else "not_recorded",
+            "interaction_id": iid, "count": len(recs), "outcomes": recs}
+
+
 def outcomes_by_status(program: Any, status: str) -> Dict[str, Any]:
     """Outcome V1 records filtered by result status."""
     valid = {"completed", "failed", "blocked", "skipped"}
