@@ -81,6 +81,9 @@ class Candidate:
     blocked_reason: Optional[str] = None
     state: str = OPEN
     locality: str = "general"
+    # RCCR-I: True if mapped circuit is OPEN (needs classification).
+    # Such candidates cannot become READY until the circuit is classified.
+    circuit_needs_classification: bool = False
     # J: resonance / urgency / historical recovery (PROJECTION unless noted)
     resonance: float = 0.5                   # PROJECTION 0..1
     urgency: float = 0.0                     # PROJECTION 0..1
@@ -153,9 +156,15 @@ def classify_candidates(candidates: List[Candidate]) -> List[Candidate]:
             c.state = BLOCKED
             c.blocked_reason = f"unmet dependencies: {sorted(blockers)}"
         elif c.state in (OPEN, BLOCKED):
-            # Verified and unblocked → READY (BLOCKED can recover).
-            c.state = READY
-            c.blocked_reason = None
+            # RCCR-I: If the mapped circuit is OPEN (needs classification),
+            # the candidate cannot become READY. It stays OPEN.
+            if c.circuit_needs_classification:
+                c.state = OPEN
+                c.blocked_reason = "circuit OPEN: needs classification"
+            else:
+                # Verified and unblocked → READY (BLOCKED can recover).
+                c.state = READY
+                c.blocked_reason = None
     return candidates
 
 
@@ -526,5 +535,11 @@ def sync_from_ledger(candidates: List[Candidate]) -> List[str]:
                 # Superseded/historical circuits cannot rank; mark CLOSED
                 # to exclude from READY competition (they're resolved, not open).
                 cand.state = CLOSED
+                updated.append(cand.candidate_id)
+            elif circ.state == "OPEN":
+                # RCCR-I: Circuit is OPEN (not yet classified). The candidate
+                # cannot become READY until the circuit is classified.
+                # Mark the flag; classify_candidates() will respect it.
+                cand.circuit_needs_classification = True
                 updated.append(cand.candidate_id)
     return updated
