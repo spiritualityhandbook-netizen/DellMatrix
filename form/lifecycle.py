@@ -65,25 +65,25 @@ def get_presence(p, unit_id: str) -> Dict[str, Any]:
     return lc.get(unit_id, {
         "presence": "active",
         "pinned": False,
-        "created_seq": None,  # Unknown for legacy items
+        "registered_seq": None,  # Unknown for legacy items
     })
 
 
 def set_presence(p, unit_id: str, presence: str = None, pinned: bool = None,
-                created_seq: int = None):
+                registered_seq: int = None):
     """Update presence metadata for a unit."""
     lc = ensure_lifecycle(p)
     meta = lc.get(unit_id, {
         "presence": "active",
         "pinned": False,
-        "created_seq": created_seq,
+        "registered_seq": registered_seq,
     })
     if presence is not None:
         meta["presence"] = presence
     if pinned is not None:
         meta["pinned"] = pinned
-    if created_seq is not None and meta.get("created_seq") is None:
-        meta["created_seq"] = created_seq
+    if registered_seq is not None and meta.get("registered_seq") is None:
+        meta["registered_seq"] = registered_seq
     lc[unit_id] = meta
     return meta
 
@@ -113,6 +113,9 @@ def do_pin(p, ref: str, interaction_id: str) -> Tuple[Any, str]:
     """Pin an idea: protect from fade, ensure active."""
     unit, err = resolve_idea(p, ref)
     if err:
+        # Failed mutation attempt: create Outcome per canonical law
+        # (one public mutation attempt → one Outcome)
+        _make_outcome(p, "pin", ref, ref, interaction_id, False, err)
         return p, err
 
     uid = unit.id
@@ -128,7 +131,7 @@ def do_pin(p, ref: str, interaction_id: str) -> Tuple[Any, str]:
     # PINNED implies ACTIVE: if faded, restore to active
     was_faded = meta["presence"] == "faded"
     set_presence(p, uid, presence="active", pinned=True,
-                 created_seq=p.outcome_seq)
+                 registered_seq=p.outcome_seq)
 
     outcome = _make_outcome(p, "pin", ref, uid, interaction_id, True,
                             f"Pinned: {uid}" + (" (restored from faded)" if was_faded else ""))
@@ -139,6 +142,7 @@ def do_unpin(p, ref: str, interaction_id: str) -> Tuple[Any, str]:
     """Unpin an idea: remove protection. Does NOT fade."""
     unit, err = resolve_idea(p, ref)
     if err:
+        _make_outcome(p, "unpin", ref, ref, interaction_id, False, err)
         return p, err
 
     uid = unit.id
@@ -160,6 +164,7 @@ def do_fade(p, ref: str, interaction_id: str) -> Tuple[Any, str]:
     """Fade an idea: reduce active presence. Refuses if pinned."""
     unit, err = resolve_idea(p, ref)
     if err:
+        _make_outcome(p, "fade", ref, ref, interaction_id, False, err)
         return p, err
 
     uid = unit.id
@@ -177,7 +182,7 @@ def do_fade(p, ref: str, interaction_id: str) -> Tuple[Any, str]:
         oid_str = outcome.get("outcome_id", "?") if outcome else "?"
         return p, f"Already faded: {uid} (Outcome {oid_str})"
 
-    set_presence(p, uid, presence="faded", created_seq=p.outcome_seq)
+    set_presence(p, uid, presence="faded", registered_seq=p.outcome_seq)
     outcome = _make_outcome(p, "fade", ref, uid, interaction_id, True,
                             f"Faded: {uid} (recoverable via unfade)")
     return p, f"Faded: {uid} (use 'unfade {ref}' to restore)"
@@ -187,6 +192,7 @@ def do_unfade(p, ref: str, interaction_id: str) -> Tuple[Any, str]:
     """Unfade an idea: restore to active. Same identity, no reconstruction."""
     unit, err = resolve_idea(p, ref)
     if err:
+        _make_outcome(p, "unfade", ref, ref, interaction_id, False, err)
         return p, err
 
     uid = unit.id
@@ -212,16 +218,16 @@ def do_age(p, ref: str) -> Tuple[Any, str]:
 
     uid = unit.id
     meta = get_presence(p, uid)
-    created = meta.get("created_seq")
+    registered = meta.get("registered_seq")
 
-    if created is None:
+    if registered is None:
         return p, f"Age of '{uid}': UNKNOWN (predates lifecycle tracking)"
 
     current = p.outcome_seq
-    age = current - created
+    age = current - registered
     presence = meta["presence"]
     pinned = "pinned" if meta["pinned"] else "unpinned"
-    return p, f"Age of '{uid}': {age} interactions (created at seq {created}, now {current}); {presence}, {pinned}"
+    return p, f"Lifecycle age of '{uid}': {age} interactions since lifecycle registration (registered at seq {registered}, now {current}); {presence}, {pinned}"
 
 
 def list_ideas(p, show: str = "active") -> str:

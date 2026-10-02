@@ -192,7 +192,7 @@ def test_14_no_inferred_importance():
     p, _ = run_cmd(p, "create an idea called t14_idea", "t14-1")
     meta = get_presence(p, "t14_idea")
     assert "importance" not in meta, "Importance score found!"
-    assert "score" not in str(meta).lower() or "created_seq" in str(meta), "Score inferred!"
+    assert "score" not in str(meta).lower() or "registered_seq" in str(meta), "Score inferred!"
     print("✓ 14: no inferred importance")
 
 
@@ -200,11 +200,11 @@ def test_15_unknown_age():
     """15: Unknown age honest for legacy items."""
     p = make_program()
     p, _ = run_cmd(p, "create an idea called t15_idea", "t15-1")
-    # Manually clear created_seq to simulate legacy (ensure key exists first)
+    # Manually clear registered_seq to simulate legacy (ensure key exists first)
     from form.lifecycle import ensure_lifecycle, set_presence
     ensure_lifecycle(p)
-    set_presence(p, "t15_idea", created_seq=1)
-    p.lifecycle["t15_idea"]["created_seq"] = None
+    set_presence(p, "t15_idea", registered_seq=1)
+    p.lifecycle["t15_idea"]["registered_seq"] = None
     p, out = run_cmd(p, "age t15_idea", "t15-2")
     assert "UNKNOWN" in out, f"Should be UNKNOWN: {out}"
     print("✓ 15: unknown age honest")
@@ -219,11 +219,15 @@ def test_16_malformed_ref():
 
 
 def test_17_unknown_ref():
-    """17: Unknown ref handled."""
+    """17: Unknown ref handled with failure Outcome."""
     p = make_program()
+    n_before = len(p.outcome_records)
     p, out = run_cmd(p, "fade nonexistent_xyz", "t17-1")
     assert "Unknown idea" in out, f"Should be unknown: {out}"
-    print("✓ 17: unknown ref")
+    # Failed mutation attempt must create an Outcome (canonical law)
+    n_after = len(p.outcome_records)
+    assert n_after == n_before + 1, f"Failed mutation should create Outcome: {n_before} -> {n_after}"
+    print("✓ 17: unknown ref (with failure Outcome)")
 
 
 def test_18_protected_refusal():
