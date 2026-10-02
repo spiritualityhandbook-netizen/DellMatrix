@@ -610,6 +610,57 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
                 if le.get("status") == "known" else ""))
         return True
 
+    # ── NBDE-I (NBD-Ω-009): read-only NBD inspection ───
+    # Respects existing `nbd` (G2 next_directives); these are subcommands.
+    if lower == "nbd rank" or lower == "nbd ranking":
+        v = ro.nbd_view(p)
+        if not v.get("ok"):
+            _say(f"nbd: {v.get('error')}")
+            return True
+        _say(f"nbd ranking · {len(v['ranked'])} READY · "
+             f"stale={v['stale']} · AUTONOMY={v['AUTONOMY']}")
+        for r in v["ranked"][:8]:
+            _say(f"  #{r['rank']} {r['candidate_id']}: "
+                 f"NW={r['next_weight']} RV={r['route_value']}")
+        if v.get("batches"):
+            _say("batches (proposals, not mutations):")
+            for b in v["batches"]:
+                _say(f"  {b['batch_id']}: {', '.join(b['members'])}")
+        top = v.get("top_proposal") or {}
+        if top:
+            _say(f"top: {top.get('candidate_id')} — "
+                 f"{top.get('title')}")
+        _say("DIRECTOR_DECISION_REQUIRED=YES · EXECUTION_AUTHORITY=NONE")
+        return True
+
+    if lower.startswith("nbd candidate "):
+        cid = raw.strip()[14:].strip()
+        v = ro.nbd_view(p, candidate_id=cid)
+        if not v.get("ok"):
+            _say(f"nbd: {v.get('error')}")
+            return True
+        c = v["candidate"]
+        _say(f"nbd candidate {c['candidate_id']} · state={c['state']}")
+        _say(f"  title: {c['title']}")
+        _say(f"  target: {c['target_circuit']} · locality: {c['locality']}")
+        if c.get("blocked_reason"):
+            _say(f"  blocked: {c['blocked_reason']}")
+        _say(f"  evidence: {len(c.get('evidence', []))} items")
+        for e in c.get("evidence", [])[:4]:
+            _say(f"    [{e.get('kind')}] {e.get('source')}: "
+                 f"{e.get('detail')[:70]}")
+        return True
+
+    if lower == "nbd evidence":
+        v = ro.nbd_view(p)
+        if not v.get("ok"):
+            _say(f"nbd: {v.get('error')}")
+            return True
+        _say(f"nbd evidence · fingerprint {v.get('fingerprint_hash')} "
+             f"· stale={v['stale']}")
+        _say("  (per-candidate evidence: nbd candidate <id>)")
+        return True
+
     return False
 
 

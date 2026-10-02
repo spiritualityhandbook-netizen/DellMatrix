@@ -423,3 +423,37 @@ def selection_learning_view(program: Any, context: str) -> Dict[str, Any]:
                 sel.get("supersession_exclusions", []),
             "dependency_exclusions": sel.get("dependency_exclusions", []),
             "eligible_count": sel.get("eligible_count", 0)}
+
+
+def nbd_view(program: Any, candidate_id: str = "") -> Dict[str, Any]:
+    """NBDE-I (NBD-Ω-009): read-only inspection of NBD-Ω recommendations.
+
+    Runs the NBD engine (read-only) and returns the ranked proposals,
+    or details for a specific candidate. Creates no outcomes, mutates
+    no state.
+    """
+    from .nbd_engine import nbd_packet, is_stale
+    from .nbd_candidates import build_frontier
+    try:
+        cands = build_frontier(program)
+        pkt = nbd_packet(program, cands)
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+    if candidate_id:
+        cid = candidate_id.strip().lower()
+        for c in pkt["candidates"]:
+            if c["candidate_id"].lower() == cid:
+                return {"ok": True, "candidate": c,
+                        "stale": is_stale(pkt, program)}
+        return {"ok": False, "error": f"unknown candidate {candidate_id!r}"}
+    return {"ok": True,
+            "ranked": pkt["ranked"],
+            "batches": pkt["batches"],
+            "top_proposal": pkt["top_proposal"],
+            "ready_set": pkt["ready_set"],
+            "fingerprint_hash": pkt["fingerprint_hash"],
+            "stale": is_stale(pkt, program),
+            "AUTONOMY": pkt["AUTONOMY"],
+            "DIRECTOR_DECISION_REQUIRED":
+                pkt["DIRECTOR_DECISION_REQUIRED"],
+            "EXECUTION_AUTHORITY": pkt["EXECUTION_AUTHORITY"]}
