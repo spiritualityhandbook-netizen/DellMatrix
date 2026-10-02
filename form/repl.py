@@ -706,6 +706,126 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
     return False
 
 
+def _handle_learn_command(p: Program, raw: str) -> bool:
+    """DLA-I: DuoBeta learning activation user surface.
+
+    Wires the existing duobeta_learn.py lifecycle (extract → propose →
+    gate → apply) to explicit user commands. AUTONOMY=NO: proposal and
+    application are separate; apply requires explicit "confirm" and an
+    ACCEPTED gate. Read-only inspection via existing ROS views.
+
+    Returns True when the line was a learn command (handled).
+    """
+    from form.mandell import duobeta_learn as dl
+
+    lower = raw.strip().lower()
+    parts = raw.strip().split()
+    if not lower.startswith("learn"):
+        return False
+    # "learn", "learned", "learning" (paraphrase stats) are not DLA-I commands.
+    if lower == "learn" or not lower.startswith("learn "):
+        return False
+
+    sub = parts[1].lower() if len(parts) > 1 else ""
+
+    if sub == "propose":
+        # learn propose <kind> <dell> from <oid> [<oid> ...]
+        # kind ∈ {preference, avoidance, blocked_association}
+        if len(parts) < 6 or parts[4].lower() != "from":
+            _say("usage: learn propose <kind> <dell> from <outcome-id> [<outcome-id> ...]")
+            _say("  kind: preference | avoidance | blocked_association")
+            return True
+        kind = parts[2].lower()
+        dell = parts[3]
+        oids = parts[5:]
+        res = dl.propose(p, kind, dell, evidence_outcome_ids=oids)
+        if not res.get("ok"):
+            _say(f"learn propose: failed — {res.get('reason') or res.get('detail')}")
+            return True
+        _say(f"proposal {res['proposal_id']} staged (PROPOSED — not yet gated, not applied)")
+        _say(f"  kind={res['kind']} dell={res['dell']} knowledge={res['knowledge_id']}")
+        _say(f"  evidence: {', '.join(res['evidence_outcome_ids']) or '—'}")
+        _say(f"  next: learn gate {res['proposal_id']}")
+        return True
+
+    if sub == "inspect":
+        # learn inspect <proposal-id>
+        pid = parts[2] if len(parts) > 2 else ""
+        prop = dl.get_proposal(p, pid)
+        if not prop:
+            _say(f"learn inspect: unknown proposal {pid!r}")
+            return True
+        _say(f"proposal {prop['proposal_id']} [{prop['status']}]")
+        _say(f"  kind={prop['kind']} dell={prop['dell']} knowledge={prop['knowledge_id']}")
+        _say(f"  evidence: {', '.join(prop['evidence_outcome_ids']) or '—'}")
+        gate = prop.get("gate") or {}
+        if gate:
+            _say(f"  gate: {'ACCEPTED' if gate.get('accepted') else 'REJECTED'}"
+                 f" — {gate.get('reason')}")
+        if prop.get("reason"):
+            _say(f"  reason: {prop['reason']}")
+        return True
+
+    if sub == "gate":
+        # learn gate <proposal-id>
+        pid = parts[2] if len(parts) > 2 else ""
+        res = dl.gate_proposal(p, pid)
+        if not res.get("ok"):
+            _say(f"learn gate: {res.get('reason')}")
+            return True
+        if res.get("accepted"):
+            _say(f"proposal {res['proposal_id']}: GATE ACCEPTED — {res.get('reason')}")
+            _say(f"  supporting outcomes: {len(res.get('supporting') or [])}")
+            _say(f"  next: learn apply {res['proposal_id']} confirm")
+            _say("  (application requires explicit authorization)")
+        else:
+            _say(f"proposal {res['proposal_id']}: GATE REJECTED — {res.get('reason')}")
+            _say("  (rejected proposals are retained with reason; they are not applied)")
+        return True
+
+    if sub == "apply":
+        # learn apply <proposal-id> confirm
+        # The "confirm" keyword is the explicit authorization. Without it,
+        # nothing is applied.
+        pid = parts[2] if len(parts) > 2 else ""
+        confirmed = len(parts) > 3 and parts[3].lower() == "confirm"
+        if not confirmed:
+            prop = dl.get_proposal(p, pid)
+            status = (prop or {}).get("status", "unknown")
+            _say(f"learn apply {pid}: explicit authorization required.")
+            _say(f"  proposal status: {status}")
+            _say(f"  to apply, run: learn apply {pid} confirm")
+            _say("  (only ACCEPTED proposals can be applied)")
+            return True
+        res = dl.apply_proposal(p, pid)
+        if not res.get("applied"):
+            _say(f"learn apply: not applied — {res.get('reason')}")
+            return True
+        _say(f"proposal {res['proposal_id']}: APPLIED to DuoBeta learned state")
+        _say("  (advisory influence only — not truth, not causation)")
+        return True
+
+    if sub == "ledger":
+        # learn ledger — inspect learned state (read-only, via ROS)
+        from form.mandell import runtime_observe as ro
+        v = ro.learning_ledger_view(p)
+        entries = v.get("entries") or []
+        if not entries:
+            _say("DuoBeta learning ledger: empty (no proposals yet)")
+            return True
+        _say(f"DuoBeta learning ledger ({len(entries)} entries):")
+        for e in entries[-10:]:
+            _say(f"  #{e.get('proposal_id')} [{e.get('status')}] {e.get('kind')}"
+                 f" dell={e.get('dell')} knowledge={e.get('knowledge_id')}")
+        return True
+
+    _say("learn commands: propose | inspect | gate | apply | ledger")
+    _say("  learn propose <kind> <dell> from <outcome-id> ...")
+    _say("  learn inspect <proposal-id> · learn gate <proposal-id>")
+    _say("  learn apply <proposal-id> confirm · learn ledger")
+    return True
+
+
 def _handle_macro_rank(p: Program, lower: str, raw: str) -> bool:
     if lower in ("rank", "rank proposals"):
         ranked = p.ranked_proposals() if hasattr(p, "ranked_proposals") else p.list_proposals()
@@ -2005,6 +2125,12 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         # Bare `trace` is NOT intercepted: translate("trace") routes to
         # Dell 35 Discover (load-bearing in DCC tests).
         if _handle_ros_command(p, line):
+            continue
+
+        # DLA-I: DuoBeta learning activation. Explicit user-initiated
+        # propose → inspect → gate → apply (with confirm) lifecycle.
+        # Intercepted before execution; delegates to duobeta_learn.py.
+        if _handle_learn_command(p, line):
             continue
 
         # DCC-IV: composed Mandell program (flow operators) -> flow executor.
