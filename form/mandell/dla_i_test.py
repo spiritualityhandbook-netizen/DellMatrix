@@ -20,6 +20,7 @@ exact dispatch order.
 AUTONOMY=NO: apply requires explicit "confirm"; no auto-apply anywhere.
 """
 import io
+import os
 import sys
 
 sys.path.insert(0, ".")
@@ -28,6 +29,9 @@ from form.open import Program
 from form.mandell import duobeta_learn as dl
 from form.mandell.execution_observer import observe_seed_execution
 from form.mandell import knowledge_selector as ks
+
+STATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "..", "state")
 
 _passed = 0
 _failed = 0
@@ -44,8 +48,85 @@ def check(name, cond):
         print(f"FAIL: {name}")
 
 
+# ── Isolation: unique owner per call, emptiness VERIFIED (NBD-Ω-030) ──
+_fresh_counter = [0]
+_PID = os.getpid()
+_CREATED_OWNERS = []
+
+
 def fresh() -> Program:
-    return Program()
+    """Isolated Program: unique owner, nursery + learning ledger VERIFIED empty.
+
+    Not "fresh" by name — fresh by verified precondition. Raises (fails loudly)
+    if the nursery or learning ledger is not empty.
+
+    Failure class closed (NBD-Ω-030): helper named fresh() + Program() !=
+    proven isolated state. Program() (default owner) loads persisted ambient
+    state; each call therefore mints a unique owner. Test-owner state files
+    are removed at suite end (_teardown_isolated_owners); default/Ace state
+    is never touched.
+    """
+    _fresh_counter[0] += 1
+    owner = f"dla-i-isolated-{_PID}-{_fresh_counter[0]}"
+    p = Program(owner=owner)
+    if len(p.nursery.proposals) != 0:
+        raise AssertionError(
+            f"isolation violated: owner {owner} nursery has "
+            f"{len(p.nursery.proposals)} proposals")
+    if dl.learning_ledger(p):
+        raise AssertionError(
+            f"isolation violated: owner {owner} learning ledger not empty")
+    _CREATED_OWNERS.append(owner)
+    return p
+
+
+def _teardown_isolated_owners() -> None:
+    """Remove state files created for test owners. Never touches default state."""
+    import pathlib
+    for owner in _CREATED_OWNERS:
+        for f in pathlib.Path(STATE_DIR).glob(f"*{owner}*"):
+            try:
+                if f.is_file():
+                    f.unlink()
+            except OSError:
+                pass
+    _CREATED_OWNERS.clear()
+
+
+# ══════════════════════════════════════════════════════════════════
+# T0: Isolation proof — mechanism-level fixture assertion (NBD-Ω-030)
+# ══════════════════════════════════════════════════════════════════
+
+def test_isolation_proof():
+    """Prove the fixture's isolation contract before trusting results."""
+    p1 = fresh()
+    p2 = fresh()
+    check("T0.distinct_owners", p1.owner != p2.owner)
+    check("T0.p1_nursery_empty", len(p1.nursery.proposals) == 0)
+    check("T0.p2_nursery_empty", len(p2.nursery.proposals) == 0)
+    check("T0.p1_ledger_empty", dl.learning_ledger(p1) == [])
+    check("T0.p2_ledger_empty", dl.learning_ledger(p2) == [])
+    # Contamination in one must not leak into the other
+    pr = p1.nursery.add("dla-iso-probe", words="isolation probe words")
+    check("T0.no_cross_contamination", pr.id not in p2.nursery.proposals)
+    # Control: prove the constructor LOADS persisted owner state — the exact
+    # mechanism that falsified the old fresh()==Program() assumption.
+    # Uses a throwaway owner; its state file is removed afterwards.
+    # (Never touches the default/Ace owner state.)
+    import pathlib
+    from form.dell_matrix.nursery import owner_nursery_path
+    cowner = f"dla-i-control-{_PID}"
+    cpath = pathlib.Path(owner_nursery_path(cowner))
+    if cpath.exists():
+        cpath.unlink()
+    pa = Program(owner=cowner)
+    if len(pa.nursery.proposals) != 0:
+        raise AssertionError("control setup: throwaway owner not empty")
+    pra = pa.nursery.add("dla-control-k", words="control probe")
+    pa.nursery.save()
+    pb = Program(owner=cowner)  # must LOAD the saved proposal
+    check("T0.constructor_loads_persisted", pra.id in pb.nursery.proposals)
+    cpath.unlink(missing_ok=True)
 
 
 def completed_oids(p, n=3, dell_seed="1[Keep]"):
@@ -570,6 +651,8 @@ def test_no_odcg_bridge():
 
 def main():
     tests = [
+        # T0: isolation proof (fixture contract first)
+        test_isolation_proof,
         # H: failure semantics
         test_unknown_outcome_evidence,
         test_invalid_proposal_gate,
@@ -634,9 +717,15 @@ def smoke() -> bool:
     _passed = 0
     _failed = 0
     _failures = []
-    main()
+    try:
+        main()
+    finally:
+        _teardown_isolated_owners()
     return _failed == 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    finally:
+        _teardown_isolated_owners()
