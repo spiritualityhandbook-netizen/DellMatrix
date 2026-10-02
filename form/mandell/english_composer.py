@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .translate import translate, Intent
 from .flow_executor import parse_program, execute_program, FlowReceipt
@@ -179,13 +179,17 @@ def compose_english(english: str) -> ComposeResult:
     return ComposeResult(ok=True, composite=composite)
 
 
-def execute_composite(program: Any, composite: CompositeIntent) -> FlowReceipt:
+def execute_composite(program: Any, composite: CompositeIntent,
+                      interaction_id: Optional[str] = None) -> FlowReceipt:
     """Execute a compiled CompositeIntent via DCC-IV.
 
     The Mandell program was already validated at compose time.
+
+    ``interaction_id`` (EIC-I): forwarded to execute_program for per-node
+    Outcome correlation.
     """
     fp = parse_program(composite.mandell)
-    return execute_program(program, fp)
+    return execute_program(program, fp, interaction_id=interaction_id)
 
 
 def format_composite_receipt(composite: CompositeIntent, receipt: FlowReceipt) -> str:

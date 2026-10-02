@@ -62,19 +62,22 @@ def _identity(seed_text: str):
     return parsed, "chain", (int(primary) if primary is not None else None), "chain"
 
 
-def _capture(program: Any, receipt: _RawReceipt, nurture_before: Any) -> None:
+def _capture(program: Any, receipt: _RawReceipt, nurture_before: Any,
+             interaction_id: Optional[str] = None) -> None:
     """Single Outcome V1 observation via the existing ledger. Never raises."""
     nurture_after = getattr(program, "last_nurture", None)
     nurture_fresh = (nurture_after is not nurture_before
                      and isinstance(nurture_after, dict))
     try:
         from .outcome_ledger import capture_outcome
-        capture_outcome(program, receipt, nurture_fresh=nurture_fresh)
+        capture_outcome(program, receipt, nurture_fresh=nurture_fresh,
+                        interaction_id=interaction_id)
     except Exception:
         pass
 
 
-def observe_seed_execution(program: Any, seed_text: str) -> Dict[str, Any]:
+def observe_seed_execution(program: Any, seed_text: str,
+                          interaction_id: Optional[str] = None) -> Dict[str, Any]:
     """Execute raw Mandell with Outcome V1 observation (EOC-I adapter).
 
     Runs the EXISTING execute_seed front door (all paths: apply_core_i,
@@ -85,6 +88,10 @@ def observe_seed_execution(program: Any, seed_text: str) -> Dict[str, Any]:
     Parse failures are observed as non-execution records (routed=False),
     consistent with the routed contract. Raised exceptions are captured
     as failed and then re-raised (execution semantics preserved).
+
+    ``interaction_id`` (EIC-I): optional explicit correlation to the
+    interaction that caused this execution. None = UNKNOWN. This function
+    ACCEPTS identity; it does not mint it.
     """
     from .seed import parse_seed
 
@@ -99,7 +106,7 @@ def observe_seed_execution(program: Any, seed_text: str) -> Dict[str, Any]:
             action="parse", mandell=raw, dell=None, semantic="parse[?]",
             input=raw, routed=False, ok=False, error=parsed.error or "",
             messages=list(out["messages"]), state_note="not executed (parse failed)",
-        ), nurture_before)
+        ), nurture_before, interaction_id=interaction_id)
         return out
 
     from .executor import execute_seed
@@ -112,7 +119,7 @@ def observe_seed_execution(program: Any, seed_text: str) -> Dict[str, Any]:
             routed=True, ok=False, error=f"execution raised: {exc}",
             messages=[f"execution raised: {exc}"],
             state_note="no state change (execution raised)",
-        ), nurture_before)
+        ), nurture_before, interaction_id=interaction_id)
         raise
 
     if not isinstance(out, dict):
@@ -126,5 +133,5 @@ def observe_seed_execution(program: Any, seed_text: str) -> Dict[str, Any]:
         semantic=f"{action}[{name}]", input=raw,
         routed=True, ok=ok, error=error if not ok else "",
         messages=messages, state_note=state_note,
-    ), nurture_before)
+    ), nurture_before, interaction_id=interaction_id)
     return out

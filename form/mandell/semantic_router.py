@@ -315,7 +315,8 @@ CORRESPONDENCE: Dict[Tuple[str, int], _Correspondence] = {
 
 
 def route_intent(program: Any, intent: Any, raw_line: str = "",
-                 composition: Optional[Dict[str, Any]] = None) -> RouteReceipt:
+                 composition: Optional[Dict[str, Any]] = None,
+                 interaction_id: Optional[str] = None) -> RouteReceipt:
     """Route a Mandell Intent through the Dell execution authority.
 
     Returns a RouteReceipt that honestly reports what happened. If the
@@ -334,6 +335,10 @@ def route_intent(program: Any, intent: Any, raw_line: str = "",
     the executed call replaced the slot (handlers always assign a fresh
     dict). Stale evidence from a previous call can never contaminate a
     later outcome.
+
+    ``interaction_id`` (EIC-I): optional explicit correlation to the
+    interaction that caused this execution. None = UNKNOWN. This function
+    ACCEPTS identity; it does not mint it.
     """
     nurture_before = getattr(program, "last_nurture", None)
     receipt = _route_intent_impl(program, intent, raw_line)
@@ -347,7 +352,8 @@ def route_intent(program: Any, intent: Any, raw_line: str = "",
     try:
         from .outcome_ledger import capture_outcome
         capture_outcome(program, receipt, composition,
-                        nurture_fresh=nurture_fresh)
+                        nurture_fresh=nurture_fresh,
+                        interaction_id=interaction_id)
     except Exception:
         pass
     return receipt

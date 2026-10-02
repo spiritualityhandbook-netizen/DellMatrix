@@ -20,7 +20,7 @@ Each node routes through the verified semantic_router (route_intent).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .seed import parse_seed, _ATOM, _FLOW
 from .semantic_router import CORRESPONDENCE, route_intent
@@ -217,8 +217,13 @@ def parse_program(raw: str) -> FlowProgram:
     return FlowProgram(raw=raw, nodes=nodes, flows=flows)
 
 
-def execute_program(program: Any, flow_program: FlowProgram) -> FlowReceipt:
-    """Execute via the verified semantic router. Flow: > always, >> blocks on fail."""
+def execute_program(program: Any, flow_program: FlowProgram,
+                    interaction_id: Optional[str] = None) -> FlowReceipt:
+    """Execute via the verified semantic router. Flow: > always, >> blocks on fail.
+
+    ``interaction_id`` (EIC-I): optional explicit correlation, forwarded to
+    each node's route_intent call. All nodes share the originating interaction.
+    """
     from form.mandell.translate import Intent
 
     steps: List[StepResult] = []
@@ -246,7 +251,8 @@ def execute_program(program: Any, flow_program: FlowProgram) -> FlowReceipt:
         # routing behavior unchanged.
         receipt = route_intent(cur, intent, raw_line=node.mandel,
                                composition={"flow_program": flow_program.raw,
-                                            "node_index": i})
+                                            "node_index": i},
+                               interaction_id=interaction_id)
         if receipt.new_program is not None:
             cur = receipt.new_program
         step_ok = bool(receipt.ok and receipt.routed)

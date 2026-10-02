@@ -1093,7 +1093,10 @@ def _apply_seed_result(p: Program, result: dict) -> Program:
     return p
 
 
-def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = False) -> Program:
+def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = False,
+                  interaction_id: Optional[str] = None) -> Program:
+    # EIC-I: interaction_id is accepted (not minted) here, forwarded to
+    # route_intent calls. None = UNKNOWN (direct/API callers).
     # DCC-I: program-evolution ("evolve") is documented as growing the program
     # (DuoBeta generation + forces + pillars), but the english_brain synonym
     # "evolve"->"grow" reroutes it to idea growth before any handler runs.
@@ -1126,7 +1129,8 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
                 and path in ("paraphrase", "synonym", "learned", "strip")
                 and n.lower() != raw_line.lower().strip()
             ):
-                return _execute_intent(p, _tr(n), raw_line=n, _normalized=True)
+                return _execute_intent(p, _tr(n), raw_line=n, _normalized=True,
+                                       interaction_id=interaction_id)
         except Exception:
             pass
 
@@ -2093,7 +2097,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         # The Intent's Mandell composition selects the Dell; execution goes
         # through the existing Dell authority (execute_seed), not a duplicate.
         from form.mandell.semantic_router import route_intent
-        receipt = route_intent(p, intent, raw_line)
+        receipt = route_intent(p, intent, raw_line, interaction_id=interaction_id)
         _print_route_receipt(receipt)
         return p
 
@@ -2101,7 +2105,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
     elif action in ("measure", "test", "architect", "simulate", "checkpoint",
                     "stamp", "cycle", "form", "load", "retry"):
         from form.mandell.semantic_router import route_intent
-        receipt = route_intent(p, intent, raw_line)
+        receipt = route_intent(p, intent, raw_line, interaction_id=interaction_id)
         _print_route_receipt(receipt)
         # Dell 28 (rollback) returns a restored program; swap it in.
         if receipt.new_program is not None:
@@ -2258,14 +2262,14 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
     elif action == "save":
         # DCC-II: route through the Mandell->Dell semantic boundary (Dell 10).
         from form.mandell.semantic_router import route_intent
-        receipt = route_intent(p, intent, raw_line)
+        receipt = route_intent(p, intent, raw_line, interaction_id=interaction_id)
         _print_route_receipt(receipt)
         return p
 
     elif action == "discover":
         # DCC-II: read-only inspection routed through Dell 35.
         from form.mandell.semantic_router import route_intent
-        receipt = route_intent(p, intent, raw_line)
+        receipt = route_intent(p, intent, raw_line, interaction_id=interaction_id)
         _print_route_receipt(receipt)
         return p
 
@@ -2275,7 +2279,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         # Route through the canonical semantic router, like save/discover.
         # Previously these died as 'Not understood action "nurture"'.
         from form.mandell.semantic_router import route_intent
-        receipt = route_intent(p, intent, raw_line)
+        receipt = route_intent(p, intent, raw_line, interaction_id=interaction_id)
         _print_route_receipt(receipt)
         return p
 
@@ -2306,7 +2310,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         # (blocked/raw-only) via the bridge fallback inside route_intent;
         # Outcome V1 captured by the wrapper. No new router.
         from form.mandell.semantic_router import route_intent
-        receipt = route_intent(p, intent, raw_line)
+        receipt = route_intent(p, intent, raw_line, interaction_id=interaction_id)
         _print_route_receipt(receipt)
         return p
 
@@ -2356,6 +2360,15 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         if line.lower().startswith("say "):
             line = line[4:].strip()
 
+        # EIC-I: mint interaction identity for this public attempt.
+        # One ID per submitted line, before dispatch. UUIDv4: unique,
+        # opaque, no timestamp leakage. This ID is propagated explicitly
+        # to Outcome-creating paths; zero-Outcome paths simply don't use it.
+        # Minting authority is HERE (public orchestration), not in routing/
+        # execution/observation layers (those ACCEPT identity).
+        import uuid as _uuid
+        interaction_id = str(_uuid.uuid4())
+
         # ROS-I: read-only observability meta-commands. Intercepted here
         # (like quit/exit) before any execution path; each delegates to the
         # canonical read-only functions in form/mandell/runtime_observe.py.
@@ -2384,7 +2397,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                 )
                 fp = parse_program(line)
                 if len(fp.nodes) > 1:
-                    receipt = execute_program(p, fp)
+                    receipt = execute_program(p, fp, interaction_id=interaction_id)
                     print()
                     print(format_receipt(receipt))
                     print()
@@ -2399,7 +2412,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             # wraps the existing execution; it is not a new executor and
             # never alters execution semantics.
             from form.mandell.execution_observer import observe_seed_execution
-            result = observe_seed_execution(p, line)
+            result = observe_seed_execution(p, line, interaction_id=interaction_id)
             p = _apply_seed_result(p, result)
             continue
 
@@ -2415,7 +2428,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                 )
                 cr = compose_english(line)
                 if cr.ok:
-                    receipt = execute_composite(p, cr.composite)
+                    receipt = execute_composite(p, cr.composite, interaction_id=interaction_id)
                     print()
                     print(format_composite_receipt(cr.composite, receipt))
                     print()
@@ -2433,7 +2446,7 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                 continue
 
         intent = translate(line)
-        p = _execute_intent(p, intent, raw_line=line)
+        p = _execute_intent(p, intent, raw_line=line, interaction_id=interaction_id)
 
     print()
 
