@@ -55,7 +55,7 @@ ACTIONS: List[Dict[str, Any]] = [
         {"label": "Core", "cmd": "core", "hint": "Seed shells"},
         {"label": "Flower", "cmd": "flower", "hint": "Flower of Life"},
         {"label": "FoL geometry", "cmd": "flower geometry", "hint": "Centers · vesicas · fruit"},
-        {"label": "Verita edges", "cmd": "verita", "hint": "Vesica truth-of-meet"},
+        {"label": "Verita edges", "cmd": "verita", "hint": "Vesica coherence-of-meet"},
         {"label": "Voynich rings", "cmd": "voynich", "hint": "Structural 5-ring (not decrypt)"},
         {"label": "Fractal Rule90", "cmd": "fractal", "hint": "Sierpinski CA + orbit"},
         {"label": "Geometry", "cmd": "geometry", "hint": "Full sacred-geometry status"},

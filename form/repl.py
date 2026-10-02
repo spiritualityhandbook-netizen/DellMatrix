@@ -426,7 +426,7 @@ def _handle_lattice(p: Program, lower: str, raw: str) -> bool:
 
     if lower in ("vesica", "verita", "veritas", "vesica edges"):
         edges = p.verita_edges() if hasattr(p, "verita_edges") else []
-        _say(f"Verita/Vesica edges: {len(edges)} (truth-of-meet between ideas)")
+        _say(f"Verita/Vesica edges: {len(edges)} (coherence-of-meet between ideas)")
         for e in edges[:10]:
             _say(f"  {e.get('source')} ⇄ {e.get('target')}  verita={e.get('verita')}  [{e.get('type')}] d={e.get('distance')}")
         if not edges:

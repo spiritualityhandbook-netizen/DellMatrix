@@ -53,13 +53,15 @@
 
 ```text
 force tick          → ForceField + Nature physics + oscillation
-act on seen         → list / inspect / zoom / attend / force / nearest
-act inspect 0
-act zoom 0
-act force 0
 neuroevo 5          → evolve force intensities 5 generations
 nature status
 ```
+
+> **Correction (2026-10-02, FCND-I/LE-23):** The `act on seen`,
+> `act inspect`, `act zoom`, `act force` commands documented here were
+> never implemented. They have been removed from this document. Do not
+> use them. The live equivalents are: `list`, `inspect`, `zoom`,
+> `attend`, `force`, `nearest` (see `matrix> help`).
 
 ```python
 from form.open import open_program

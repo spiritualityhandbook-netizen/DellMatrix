@@ -22,9 +22,12 @@ She needs **Python 3** installed.
 
 ```bash
 cd path/to/DellMatrix
-python -m form.smoke_all
 python -m form.repl --owner Sister --load
 ```
+
+> **Note (2026-10-02, FCND-I/LE-19):** `form.smoke_all` was removed as a
+> disconnected dead path. Smoke coverage is provided by the registered
+> regression suite (`form/regress.py`) and CI.
 
 If `--load` has no file yet, just:
 
@@ -46,18 +49,12 @@ matrix> save
 - **Her name** in `--owner` keeps her files separate from yours
 - enhance / sandbox / ambient stay **OFF** until she turns them on
 - Her ideas stay on **her** plane
-- Optional later: `push_main` only shares tags, does not wipe her cube
 
 ## Optional: same Wi‑Fi Main later
 
-Only after she’s comfortable:
+> **Correction (2026-10-02, FCND-I/LE-14):** The `network`, `net_push`,
+> and `push_main` commands previously documented here do not exist.
+> They have been removed. Do not use them.
 
-```bash
-# on one machine
-python -m form.dell_matrix.network_main --serve --port 8765
-```
-
-```text
-matrix> network http://THAT_IP:8765
-matrix> net_push
-```
+Only after she’s comfortable, use whatever current sharing mechanism
+the live system provides (see `matrix> help`).

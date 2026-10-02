@@ -3,7 +3,7 @@
 Sacred geometry + structural pattern layer — form/ only.
 
   Flower of Life  — equal circles on hexagonal centers (Seed · FoL · Fruit of Life)
-  Vesica / Verita — two-circle overlap (vesica piscis) + Veritas strength (truth of meet)
+  Vesica / Verita — two-circle overlap (vesica piscis) + Veritas strength (coherence of meet)
   Voynich rings   — organizational 5-ring metaphor only (NOT decryption)
   Fractals        — Rule 90 · bounded orbit · self-similar shells
 
@@ -98,7 +98,7 @@ def flower_draw_payload(
 
 
 # ---------------------------------------------------------------------------
-# Vesica Piscis + Verita (Veritas = truth-of-meet strength)
+# Vesica Piscis + Verita (Veritas = coherence-of-meet strength)
 # ---------------------------------------------------------------------------
 
 def vesica(
@@ -485,7 +485,7 @@ def geometry_status(
         },
         "principle": (
             "One lattice · Flower circles share centers · "
-            "Vesica/Verita is truth-of-meet · "
+            "Vesica/Verita is coherence-of-meet · "
             "Voynich rings are organizational · "
             "Fractals are deterministic pattern tools"
         ),
