@@ -290,6 +290,34 @@ def test_d():
 
 
 # ── E: dependency dominance ────────────────────────────────────────
+def test_repl_nurture_dispatch():
+    """CND-I: REPL _execute_intent must route nurture intents (not 'Not understood action').
+
+    The English layer produces nurture intents for: use idea / supersede idea /
+    resolve conflict / grow using knowledge. These must reach the canonical
+    semantic router, not die in the REPL dispatcher.
+    """
+    import io
+    from form import repl as repl_mod
+    from form.mandell.translate import translate
+    p = fresh()
+    buf = io.StringIO()
+    old_say = repl_mod._say
+    repl_mod._say = lambda s: buf.write(str(s) + "\n")
+    try:
+        for cmd in ("use idea test123", "supersede idea test123 with new words",
+                    "resolve conflict abc prefer xyz"):
+            intent = translate(cmd)
+            check(f"CND.nurture_intent_{cmd[:12]}", intent.action == "nurture")
+            buf.truncate(0); buf.seek(0)
+            repl_mod._execute_intent(p, intent, raw_line=cmd)
+            out = buf.getvalue()
+            check(f"CND.nurture_dispatched_{cmd[:12]}",
+                  'Not understood action "nurture"' not in out)
+    finally:
+        repl_mod._say = old_say
+
+
 def test_e():
     p = fresh()
     aid = confirm(p, "a_dep", "alpha beta gamma")
@@ -626,6 +654,7 @@ def main() -> int:
     test_b()
     test_c()
     test_d()
+    test_repl_nurture_dispatch()
     test_e()
     test_f()
     test_g()
