@@ -1746,6 +1746,16 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         print()
         _say("Type: help more")
 
+    elif getattr(intent, "dell", None) is not None and 51 <= int(getattr(intent, "dell", 0) or 0) <= 99:
+        # SSI-I: explicit canonical Core-II reference (translate() recognized
+        # `dell NN` / `NN[Name]`) → canonical router. Identity and policy
+        # (blocked/raw-only) via the bridge fallback inside route_intent;
+        # Outcome V1 captured by the wrapper. No new router.
+        from form.mandell.semantic_router import route_intent
+        receipt = route_intent(p, intent, raw_line)
+        _print_route_receipt(receipt)
+        return p
+
     elif action == "unknown":
         q = (args.get("query") or intent.english or raw_line or "").strip()
         _say(f'Not understood: "{q[:60]}"')

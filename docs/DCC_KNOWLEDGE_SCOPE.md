@@ -1057,3 +1057,60 @@ No Outcome V1 field was stretched.
 - refused != failed — refusals route nothing; failures ran and errored.
 - converged != replaced — compose_execute delegates; flow_executor unchanged.
 - observed != proven — Outcome V1 records observation, never truth.
+
+## SSI-I — Semantic Spine Integration I (NBD-Ω-004)
+
+The CAC-I bridge is now part of the canonical user input spine — as a
+resolver, not a router. No second semantic runtime.
+
+### The one boundary
+
+`semantic_router.route_intent` remains the single routing authority. After
+the CORRESPONDENCE miss and before the refusal, `_route_generalized`
+consults `operator_bridge.resolve()` (identity only), executes via the
+existing `chain_exec` authority, and returns a `RouteReceipt`; the existing
+wrapper performs the single Outcome V1 capture. The bridge never routes,
+never captures, never executes in the spine path. `bridge.route()` keeps
+its standalone self-capturing semantics for direct API use; the two paths
+are never nested.
+
+### English access
+
+`translate()` recognizes explicit canonical Core-II references — `dell 74`,
+`74[Weight]`, optionally with `:: label` — placed after all existing
+mappings (precedence preserved) and before the unknown fallback. No loose
+prose aliases: `repl._execute_intent` routes Core-II-addressed intents
+(51–99) to `route_intent`. Blocked (86/87/88) and raw-only (99) surface
+their policy refusals through the spine.
+
+Classification (per-address, tested): CANONICAL_ENGLISH 45, BLOCKED 3,
+MANDELL_ONLY 1 (99). NATURAL_ENGLISH intentionally empty — common-word
+collisions ("set", "branch", "until") make bare-prose triggering unsafe
+without a dedicated UX study; a deliberate non-goal, not an omission.
+
+### Flow executor: SPECIALIZED_SUBSET (not a duplicate authority)
+
+Every node executes via canonical `route_intent`; its value is per-node
+Outcome V1 with composition context and a conservative `>`/`>>` flow
+front-end. SSI-I extended its node language via the canonical bridge
+resolver (not a new router): Core-II nodes now compose with per-node
+outcomes. The other seven symbolic flows still fail closed here and fall
+through to raw Mandell (chain_exec) — symbolic Mandell stays symbolic.
+`english_composer` needed zero changes (it delegates to translate +
+flow_executor).
+
+### Flow access
+
+- RAW_MANDELL: all nine (execute_seed ← looks_like_seed).
+- COMPOSED_MANDELL: `>`/`>>` via DCC-IV (now incl. Core-II nodes).
+- ENGLISH_COMPOSITION: `>` via english_composer.
+- NOT_SAFE_FOR_ENGLISH: `>>>` `:` `::` `:>` `<:` `<:>` `<<[Delta]`.
+
+### Separations (SSI-I)
+
+- resolver != router — the bridge answers "what operator"; route_intent decides.
+- canonical != natural — `dell 74` is canonical English; "count the ideas" is not.
+- composed != raw — flow_executor (per-node evidence, 2 flows) vs execute_seed
+  (full 9 flows, no per-node outcomes). Both documented, both tested.
+- refused != unexecuted-policy — 86/87/88/99 refuse in the spine but execute
+  via raw Mandell by explicit policy.

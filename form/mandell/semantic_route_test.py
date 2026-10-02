@@ -316,7 +316,10 @@ def smoke() -> int:
     i.mandel = "99[Unknown] :: foo"
     i.action = "measure"
     r = route_intent(p, i, raw_line="measure")
-    rec("adv_unsupported_refused", (not r.routed) and "no verified correspondence" in r.error)
+    # SSI-I: the generalized resolver now answers with the precise policy
+    # reason (99 = intentionally raw-only) instead of the generic
+    # no-correspondence refusal. Still refused, still nothing routed.
+    rec("adv_unsupported_refused", (not r.routed) and "intentionally_raw_only" in r.error)
 
     # --- DCC-III: adversarial — malformed arguments fail safe
     i = translate("stamp my-milestone")
