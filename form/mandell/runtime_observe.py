@@ -366,3 +366,31 @@ def runtime_state(program: Any) -> Dict[str, Any]:
         "last_execution": last_execution,
         "ephemeral_note": "action_stack/last_nurture/last_checkpoint/_last_result are EPHEMERAL_BY_DESIGN and not shown",
     }
+
+
+# ── DBEL-I: learning inspection (read-only) ───────────────────────────
+def learning_ledger_view(program: Any) -> Dict[str, Any]:
+    """Read-only view of DuoBeta learning entries. Delegates to canonical
+    DuoBeta state; gains no mutation authority."""
+    from .duobeta_learn import learning_ledger
+    try:
+        entries = learning_ledger(program)
+    except Exception:
+        entries = []
+    return {"ok": True,
+            "status": "known" if entries else "not_recorded",
+            "count": len(entries), "entries": entries}
+
+
+def learned_preferences_view(program: Any) -> Dict[str, Any]:
+    """Read-only view of the derived preference index (separable counters)."""
+    from .duobeta_learn import preference_index
+    try:
+        idx = preference_index(program)
+    except Exception:
+        idx = {}
+    prefs = [{"dell": k[0], "knowledge_id": k[1], **v}
+             for k, v in idx.items()]
+    return {"ok": True,
+            "status": "known" if prefs else "not_recorded",
+            "count": len(prefs), "preferences": prefs}

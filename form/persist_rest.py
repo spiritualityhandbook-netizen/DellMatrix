@@ -260,6 +260,8 @@ def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> No
                 gen=gen,
                 detail=str(e.get("detail", ""))[:120],
                 ts=str(e.get("ts", "")),
+                # DBEL-I: restore learning metadata (additive; {} for legacy).
+                meta=dict(e.get("meta") or {}) if isinstance(e.get("meta"), dict) else {},
             ))
             last = gen
     if clean:

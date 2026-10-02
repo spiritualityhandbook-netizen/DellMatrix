@@ -19,6 +19,10 @@ class GrowthEntry:
     gen: int
     detail: str
     ts: str
+    # DBEL-I: optional structured metadata (additive). Existing entries
+    # carry {}. Learning entries carry kind=learn + proposal lifecycle.
+    # Serialized by persist.py duo_ledger; restored by persist_rest.py.
+    meta: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
