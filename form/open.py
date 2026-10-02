@@ -861,7 +861,7 @@ class Program:
         return flower_draw_payload(rings=rings, radius=1.0, include_vesica=True, include_fruit=True)
 
     def verita_edges(self) -> List[Dict[str, Any]]:
-        """Vesica/Verita truth-of-meet edges between ideas."""
+        """Vesica/Verita coherence-of-meet edges between ideas."""
         from form.dell_matrix.sacred_geometry import verita_between_nodes
         return verita_between_nodes(self.nodes_payload())
 

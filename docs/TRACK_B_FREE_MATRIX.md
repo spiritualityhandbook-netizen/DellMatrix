@@ -11,7 +11,7 @@ Chat is only a **window**. The program is a world you (and the companion) walk, 
 ```bash
 git pull origin main
 python -m form.dell_matrix.free_matrix
-python -m form.dell_matrix.free_matrix --awake      # + growth heartbeat
+python -m form.dell_matrix.free_matrix --awake-every 30  # + growth heartbeat
 python -m form.dell_matrix.free_matrix --smoke
 python -m form.dell_matrix.live_host                 # keep UI process alive
 ```
@@ -53,7 +53,7 @@ fm.pulse_awake()          # Track A support
 | Track | Status |
 |-------|--------|
 | **B Free matrix UI** | **PRIMARY** — `free_matrix.py` |
-| A Always-on agent | Support via `--awake` + `matrix_awake` |
+| A Always-on agent | Support via `--awake-every` + `matrix_awake` |
 | D Draw organ | Seed `draw_frame` (ASCII + optional glyph) |
 | **C Trading** | **SKIPPED** |
 

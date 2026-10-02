@@ -1,5 +1,8 @@
 # DellMatrix — SUS Capabilities Report
 
+> **HISTORICAL SNAPSHOT (FCND-I/LE-24, 2026-10-02):** This document reflects August 2026 system state. Quantitative claims (test counts, pass rates) are superseded by the current registered regression suite (`form/regress.py`, 52 entries) and CI. Preserved as archaeology; do not cite as current architecture authority.
+
+
 Date: 2026-08-01 (refine audit)  
 Runtime: `form/` only · Offline core · User-ready sealed
 

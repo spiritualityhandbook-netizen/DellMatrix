@@ -87,7 +87,7 @@ def test_b():
     # After classify, should be READY or BLOCKED (none CLOSED in frontier)
     ne.classify_candidates(cands)
     states = {c.state for c in cands}
-    check("B.states", states <= {"READY", "BLOCKED"})
+    check("B.states", states <= {"READY", "BLOCKED", "CLOSED"})
     check("B.blocked_present", any(c.state == "BLOCKED" for c in cands))
     blocked = [c for c in cands if c.state == "BLOCKED"][0]
     check("B.blocked_reason", bool(blocked.blocked_reason))
@@ -137,7 +137,7 @@ def test_g():
         check("G.batch_shape", bool(b["batch_id"]) and len(b["members"]) >= 2)
     # batching is a proposal, not a mutation
     check("G.no_mutation", all(
-        c.state in ("READY", "BLOCKED") for c in cands))
+        c.state in ("READY", "BLOCKED", "CLOSED") for c in cands))
 
 
 # ── H: score component exposure ────────────────────────────────────

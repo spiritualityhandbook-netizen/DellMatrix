@@ -21,7 +21,8 @@ you> flower geometry
 ## Vesica / Verita
 
 **Vesica piscis** = almond of two overlapping circles.  
-**Verita (Veritas)** = continuous *truth-of-meet* strength 0..1.
+**Verita (Veritas)** = continuous *coherence-of-meet* strength 0..1.
+(Historical term "truth-of-meet" renamed: coherence != truth.)
 
 - FoL neighbor pairs get vesica midpoints (gold dots on live map)
 - Idea nodes get Verita edges by proximity + score (not all-pairs spam)

@@ -1,5 +1,8 @@
 # DellMatrix — Full Visual / Movement / Perception / UX Audit
 
+> **HISTORICAL SNAPSHOT (FCND-I/LE-24, 2026-10-02):** This document reflects August 2026 system state. Quantitative claims (test counts, pass rates) are superseded by the current registered regression suite (`form/regress.py`, 52 entries) and CI. Preserved as archaeology; do not cite as current architecture authority.
+
+
 **Date:** 2026-08-06  
 **Scope:** Visual, movement, looking, what is seen, menus, pages, perceptions, workshops — for **all entities**  
 **Goal frame:** Upgrade the matrix to be **intuitive, powerful, and user-friendly**  
