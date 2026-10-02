@@ -195,7 +195,9 @@ Learn — DuoBeta learning lifecycle (stepwise, confirm required)
     "explain": """
 Explain — what happened
 
-  outcomes · trace last
+  outcomes · outcomes find <text> · outcome <seq>
+  trace last · trace <seq>
+  outcomes interaction <uuid>
   self | audit | status
 """.strip(),
     "save": """
@@ -617,6 +619,42 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
         return False
 
     if lower == "outcomes" or lower.startswith("outcomes "):
+        # COO-I: subcommands for find/interaction; bare = recent list
+        if lower.startswith("outcomes find "):
+            query = raw.strip()[14:].strip()
+            res = ro.find_outcomes(p, query)
+            if not res.get("ok"):
+                _say(f"outcomes find: {res.get('status')}")
+                return True
+            recs = res["outcomes"]
+            if not recs:
+                _say(f'No outcomes match "{query}".')
+                return True
+            _say(f'Outcomes matching "{query}" ({len(recs)}):')
+            for r in recs:
+                _say(f"  [{r.get('outcome_seq')}] {r.get('operation')}[{r.get('dell')}]"
+                     f" · {r.get('result')} · {str(r.get('input') or '')[:50]}")
+            _say("  inspect via: outcome <seq>  (e.g., outcome 5)")
+            return True
+        if lower.startswith("outcomes interaction "):
+            ref = raw.strip()[21:].strip()
+            # Accept seq or UUID for the interaction ref; resolve to ID
+            # For now, treat ref as interaction_id directly (UUID)
+            # TODO: allow seq-based interaction lookup if needed
+            res = ro.outcomes_for_interaction(p, ref)
+            if not res.get("ok"):
+                _say(f"outcomes interaction: {res.get('status')}")
+                return True
+            recs = res["outcomes"]
+            if not recs:
+                _say(f"No outcomes for interaction {ref[:12]}...")
+                return True
+            _say(f"Interaction {ref[:12]}... → {len(recs)} outcome(s):")
+            for r in recs:
+                _say(f"  [{r.get('outcome_seq')}] {r.get('operation')}[{r.get('dell')}]"
+                     f" · {r.get('result')}")
+            _say("  (same originating interaction; siblings are not causally linked)")
+            return True
         n = 10
         if len(parts) > 1 and parts[1].isdigit():
             n = int(parts[1])
@@ -626,28 +664,39 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
             return True
         _say(f"Latest {len(recs)} outcomes (observation only — not truth):")
         for r in recs:
-            _say(f"  {r.get('outcome_id')} · {r.get('operation')}[{r.get('dell')}]"
+            _say(f"  [{r.get('outcome_seq')}] {r.get('operation')}[{r.get('dell')}]"
                  f" · {r.get('result')}")
+        _say("  inspect via: outcome <seq>  (e.g., outcome 5)")
         return True
 
     if lower.startswith("outcome "):
-        oid = parts[1] if len(parts) > 1 else ""
-        res = ro.outcome_by_id(p, oid)
+        ref = parts[1] if len(parts) > 1 else ""
+        # COO-I: accept seq number or full UUID
+        res = ro.resolve_outcome_ref(p, ref)
         if not res.get("ok"):
             _say(f"outcome: {res.get('status')} — {res.get('detail')}")
             return True
         r = res["outcome"]
-        _say(f"{r.get('outcome_id')} · {r.get('operation')}[{r.get('dell')}]"
-             f" · {r.get('result')}")
+        _say(f"[{r.get('outcome_seq')}] {r.get('outcome_id')}")
+        _say(f"  {r.get('operation')}[{r.get('dell')}] · {r.get('result')}")
         _say(f"  input: {str(r.get('mandell') or r.get('input'))[:80]}")
         _say(f"  semantic: {r.get('semantic')}")
+        iid = r.get("interaction_id")
+        _say(f"  interaction: {iid[:12] + '...' if iid else 'UNKNOWN'}")
         if r.get("error"):
             _say(f"  error: {str(r.get('error'))[:80]}")
         return True
 
     if lower in ("trace last",) or (lower.startswith("trace ") and lower != "trace"):
         arg = raw.strip()[6:].strip()
-        oid = None if arg.lower() == "last" else arg
+        # COO-I: accept "last", seq number, or UUID
+        oid = None
+        if arg.lower() != "last":
+            res = ro.resolve_outcome_ref(p, arg)
+            if not res.get("ok"):
+                _say(f"trace: {res.get('status')} — {res.get('detail')}")
+                return True
+            oid = res["outcome"]["outcome_id"]
         t = ro.execution_trace(p, outcome_id=oid)
         if not t.get("ok"):
             _say(f"trace: {t.get('status')} — {t.get('detail')}")
@@ -661,6 +710,8 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
         _say(f"  flow: {t.get('flow_used') or '—'}")
         wh = t.get("what_happened") or {}
         _say(f"  result: {wh.get('result')}")
+        iid = t.get("interaction_id")
+        _say(f"  interaction: {iid[:12] + '...' if iid and iid != 'UNKNOWN' else 'UNKNOWN'}")
         return True
 
     # ODCG-I: correction candidate explanation
