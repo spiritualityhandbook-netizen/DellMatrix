@@ -128,6 +128,10 @@ class Program:
     outcome_records: Dict[str, Dict[str, Any]] = field(
         default_factory=dict, repr=False, compare=False)
     outcome_seq: int = field(default=0, repr=False, compare=False)
+    # TPP-I: Temporal Presence Projection (NBD-Ω-048).
+    # Presence metadata for ideas: {unit_id: {presence, pinned, created_seq}}.
+    # Persisted via existing Program persistence. Not a second database.
+    lifecycle: Dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
     # UX / entity layer (Phases A–E)
     companion: AICompanion = field(default_factory=AICompanion)
     ux_mode: str = "builder"  # beginner | builder | depth

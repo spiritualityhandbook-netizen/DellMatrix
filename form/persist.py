@@ -212,6 +212,9 @@ def serialize(program: Program) -> Dict[str, Any]:
                 if isinstance(rec, dict)
             },
         },
+        # TPP-I: Temporal Presence Projection (NBD-Ω-048).
+        # Presence metadata for ideas. Uses existing persistence.
+        "lifecycle": dict(getattr(program, "lifecycle", None) or {}),
     }
 
 

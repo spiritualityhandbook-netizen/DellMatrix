@@ -2469,6 +2469,14 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
     if _handle_why_command(p, line):
         return p
 
+    # TPP-I: Temporal Presence Projection (NBD-Ω-048).
+    # User-controlled pin/fade/unfade/age for ideas. Does not modify Dells.
+    from form.lifecycle import handle_lifecycle_command
+    handled, p, msg = handle_lifecycle_command(p, line, interaction_id)
+    if handled:
+        _say(msg)
+        return p
+
     # DCC-IV: composed Mandell program (flow operators) -> flow executor.
     if ">" in line or ":" in line:
         try:
