@@ -76,6 +76,50 @@ def _capture(program: Any, receipt: _RawReceipt, nurture_before: Any,
         pass
 
 
+def observe_specialized_execution(
+    program: Any,
+    *,
+    action: str,
+    input_text: str,
+    ok: bool,
+    error: str = "",
+    messages: Optional[List[str]] = None,
+    semantic: str = "",
+    interaction_id: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """SAOC-I: Observe a specialized execution authority (not via Dell).
+
+    Wraps EXISTING specialized execution (e.g., English Create via
+    parse_and_place/p.place) with Outcome V1 observation, without altering
+    execution semantics. The caller has already executed; this function
+    only captures the observation.
+
+    Does NOT claim Dell execution. If the specialized authority did not
+    use a Dell, dell=None and mandell="". Semantic similarity to a Dell
+    is not execution identity.
+
+    Returns the captured Outcome record, or None if capture failed.
+    Never raises.
+    """
+    try:
+        from .outcome_ledger import capture_outcome
+        receipt = _RawReceipt(
+            action=action or "",
+            mandell="",  # Not fabricated: specialized authority did not use Mandell
+            dell=None,   # Not fabricated: no Dell executed
+            semantic=semantic or f"{action}[specialized]",
+            input=input_text or "",
+            routed=True,  # It did execute via specialized authority
+            ok=bool(ok),
+            error=error or "",
+            messages=list(messages or []),
+            state_note="specialized execution (not via Dell)",
+        )
+        return capture_outcome(program, receipt, interaction_id=interaction_id)
+    except Exception:
+        return None
+
+
 def observe_seed_execution(program: Any, seed_text: str,
                           interaction_id: Optional[str] = None) -> Dict[str, Any]:
     """Execute raw Mandell with Outcome V1 observation (EOC-I adapter).

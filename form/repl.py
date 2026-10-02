@@ -1490,6 +1490,22 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         res = parse_and_place(p, raw)
         for line in format_create_end(res).splitlines():
             _say(line)
+        # SAOC-I: observe specialized Create. Existing execution unchanged;
+        # this only captures Outcome evidence with the public interaction_id.
+        try:
+            from form.mandell.execution_observer import observe_specialized_execution
+            observe_specialized_execution(
+                p,
+                action="place",
+                input_text=raw,
+                ok=bool(res.get("ok", True)),
+                error="" if res.get("ok", True) else str(res.get("error") or ""),
+                messages=[f"Created idea: {res.get('label', '')} id={res.get('id', '')}"],
+                semantic="place[Create:specialized]",
+                interaction_id=interaction_id,
+            )
+        except Exception:
+            pass
         return p
 
     if lower.startswith("set detail "):
@@ -2133,6 +2149,22 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             for line in format_create_end(res).splitlines():
                 _say(line)
             _echo_seed(raw_line, intent.mandel or "")
+            # SAOC-I: observe specialized Create (rich path). Existing execution
+            # unchanged; this only captures Outcome evidence.
+            try:
+                from form.mandell.execution_observer import observe_specialized_execution
+                observe_specialized_execution(
+                    p,
+                    action="place",
+                    input_text=raw,
+                    ok=bool(res.get("ok", True)),
+                    error="" if res.get("ok", True) else str(res.get("error") or ""),
+                    messages=[f"Created idea: {res.get('label', '')} id={res.get('id', '')}"],
+                    semantic="place[Create:specialized]",
+                    interaction_id=interaction_id,
+                )
+            except Exception:
+                pass
         else:
             uid = args.get("id", "idea")
             label = args.get("label", uid)
@@ -2142,6 +2174,20 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             _say(f'Created idea: "{label}"')
             _say("  tip: add detail/goals → set detail <id> … · set goals <id> a; b")
             _echo_seed(raw_line, intent.mandel or "")
+            # SAOC-I: observe specialized Create (simple path).
+            try:
+                from form.mandell.execution_observer import observe_specialized_execution
+                observe_specialized_execution(
+                    p,
+                    action="place",
+                    input_text=raw,
+                    ok=True,
+                    messages=[f'Created idea: "{label}"'],
+                    semantic="place[Create:specialized]",
+                    interaction_id=interaction_id,
+                )
+            except Exception:
+                pass
 
     elif action == "grow":
         # DCC-II: route through the Mandell->Dell semantic boundary.
