@@ -82,6 +82,7 @@ LIST = [
     "form.mandell.ros_i_test",
     "form.mandell.dbel_i_test",
     "form.mandell.asi_i_test",
+    "form.mandell.nbde_i_test",
     "form.mandell.core_ii_smoke",
 ]
 
