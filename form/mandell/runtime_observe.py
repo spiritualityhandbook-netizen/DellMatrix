@@ -193,6 +193,48 @@ def outcomes_for_interaction(program: Any, interaction_id: str) -> Dict[str, Any
             "interaction_id": iid, "count": len(recs), "outcomes": recs}
 
 
+def resolve_outcome_ref(program: Any, ref: str) -> Dict[str, Any]:
+    """Resolve a user-facing outcome reference (COO-I). Read-only.
+
+    Accepts:
+    - integer sequence number (e.g., "5")
+    - full outcome UUID (e.g., "out_abc123...")
+    Returns {"ok": True, "outcome": {...}} or {"ok": False, ...}.
+    Never ambiguous: integers are seq, non-integers are UUIDs.
+    """
+    from .outcome_ledger import get_outcome, get_outcome_by_seq
+    r = str(ref or "").strip()
+    if not r:
+        return {"ok": False, "status": "unknown_ref", "detail": "empty reference"}
+    # Integer → sequence number
+    if r.isdigit():
+        rec = get_outcome_by_seq(program, int(r))
+        if rec:
+            return {"ok": True, "outcome": rec, "ref_kind": "seq"}
+        return {"ok": False, "status": "unknown_seq",
+                "detail": f"no outcome with seq {r}"}
+    # Otherwise → UUID
+    rec = get_outcome(program, r)
+    if rec:
+        return {"ok": True, "outcome": rec, "ref_kind": "uuid"}
+    return {"ok": False, "status": "unknown_outcome",
+            "detail": f"no outcome {r[:20]}..."}
+
+
+def find_outcomes(program: Any, query: str, limit: int = 20) -> Dict[str, Any]:
+    """Deterministic Outcome search (COO-I). Read-only.
+
+    Literal substring over input/Mandell/operation/semantic.
+    """
+    from .outcome_ledger import find_outcomes as _fo
+    q = str(query or "").strip()
+    if not q:
+        return {"ok": False, "status": "empty_query", "outcomes": []}
+    recs = _fo(program, q, limit=limit)
+    return {"ok": True, "status": "known" if recs else "not_recorded",
+            "query": q, "count": len(recs), "outcomes": recs}
+
+
 def outcomes_by_status(program: Any, status: str) -> Dict[str, Any]:
     """Outcome V1 records filtered by result status."""
     valid = {"completed", "failed", "blocked", "skipped"}

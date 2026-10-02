@@ -415,6 +415,53 @@ def get_outcome(program: Any, outcome_id: str) -> Optional[Dict[str, Any]]:
     return dict(rec) if isinstance(rec, dict) else None
 
 
+def get_outcome_by_seq(program: Any, seq: int) -> Optional[Dict[str, Any]]:
+    """Lookup one outcome by its sequence number (COO-I).
+
+    Seq is stable within persisted owner state. Suitable for user-facing
+    selection (friendlier than UUID). Returns None if not found.
+    """
+    records = getattr(program, "outcome_records", None) or {}
+    try:
+        target = int(seq)
+    except (TypeError, ValueError):
+        return None
+    for rec in records.values():
+        if isinstance(rec, dict) and int(rec.get("outcome_seq", -1) or -1) == target:
+            return dict(rec)
+    return None
+
+
+def find_outcomes(program: Any, query: str, limit: int = 20) -> List[Dict[str, Any]]:
+    """Deterministic literal substring search over Outcome input/Mandell (COO-I).
+
+    Case-insensitive. Searches input, mandell, operation, semantic.
+    No fuzzy/semantic matching. Returns newest first by outcome_seq.
+    """
+    records = getattr(program, "outcome_records", None) or {}
+    ql = str(query or "").lower().strip()
+    if not ql:
+        return []
+    out = []
+    for rec in records.values():
+        if not isinstance(rec, dict):
+            continue
+        haystack = " ".join([
+            str(rec.get("input") or ""),
+            str(rec.get("mandell") or ""),
+            str(rec.get("operation") or ""),
+            str(rec.get("semantic") or ""),
+        ]).lower()
+        if ql in haystack:
+            out.append(dict(rec))
+    out.sort(key=lambda r: int(r.get("outcome_seq", 0) or 0), reverse=True)
+    try:
+        n = max(1, min(int(limit), 100))
+    except (TypeError, ValueError):
+        n = 20
+    return out[:n]
+
+
 def list_outcomes(program: Any, limit: int = 10) -> List[Dict[str, Any]]:
     """Most recent outcomes, newest first (by outcome_seq)."""
     records = getattr(program, "outcome_records", None) or {}
