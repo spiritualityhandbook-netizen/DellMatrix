@@ -88,6 +88,7 @@ LIST = [
     "form.mandell.cdpc_i_test",
     "form.mandell.rccr_i_test",
     "form.mandell.iac_i_test",
+    "form.mandell.hic_i_test",
     "form.dell_matrix.program_strength",
     "form.mandell.core_ii_smoke",
 ]

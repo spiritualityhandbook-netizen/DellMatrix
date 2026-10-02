@@ -81,8 +81,11 @@ def smoke() -> bool:
     check("I.no_resurrect_01", cl.is_resurrection("LE-01", "OPEN"))
     check("I.no_resurrect_03", cl.is_resurrection("LE-03", "READY"))
     check("I.no_resurrect_22", cl.is_resurrection("LE-22", "OPEN"))
-    # OPEN -> READY is not resurrection (use LE-04 which is still OPEN)
-    check("I.open_ok", not cl.is_resurrection("LE-25", "READY"))
+    # HIC-I: OPEN=0 — no OPEN circuit remains to exemplify OPEN→READY.
+    # The archaeology-exit gate is proven: zero OPEN original circuits.
+    from collections import Counter as _Counter
+    _open_n = sum(1 for c in cl.build_ledger() if c.state == "OPEN")
+    check("I.open_zero", _open_n == 0)
     
     # ── J: dependency validation ───────────────────────────────
     le12 = cl.get_circuit("LE-12")

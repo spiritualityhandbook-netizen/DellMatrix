@@ -154,9 +154,10 @@ def build_ledger() -> List[Circuit]:
                 closure_cycle="CDPC-I",
                 notes="NBD #1 resolved correctly. Contract documented in cdpc1_program_strength.md."),
         Circuit("LE-25", "Git history secrets scan",
-                OPEN, "security",
-                evidence="docs/SECRETS_SCAN.md is 2026-08-03 snapshot; caveat unaddressed",
-                notes="Historical scan exists; full history scan not done."),
+                CLOSED, "security",
+                evidence="HIC-I: gitleaks 8.18.4 full history scan (521 commits, 53 branches, 1 tag). 1 finding: DOCUMENTATION_EXAMPLE false positive in docs/SECRETS_SCAN.md (describes patterns, not a secret). 0 confirmed, 0 probable. Manual checks: no .env, .pem, .key, AKIA, ghp_, password assignments in history.",
+                closure_cycle="HIC-I",
+                notes="Historical cleanliness proven. No CI secret scan exists (reported separately, not a blocker)."),
 
         # ── HISTORICAL_ONLY ─────────────────────────────────────
         Circuit("LE-09", "MODE_LUPE stale unrevoked law",
