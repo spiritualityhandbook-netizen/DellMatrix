@@ -30,6 +30,12 @@ ALLOWED_KINDS = ("preference", "avoidance", "blocked_association")
 KIND_RESULT = {"preference": "completed", "avoidance": "failed",
                "blocked_association": "blocked"}
 
+# ASI-I (NBD-Ω-008): bound on the learned score's production influence.
+# The score is a LINEAR count (success − failure − blocked); the cap
+# bounds its contribution to selection ordering. Minimum safeguard
+# against reinforcement runaway; no decay math, no stochasticity.
+ASI_LEARNED_CAP = 5
+
 
 def _ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -283,6 +289,37 @@ def suggest_preferred(program: Any, dell: Any,
 
     order = {kid: i for i, kid in enumerate(knowledge_ids)}
     return sorted(knowledge_ids, key=lambda k: (-score(k), order.get(k, 0)))
+
+
+def bounded_learned_score(program: Any, dell: Any,
+                          knowledge_id: str) -> int:
+    """ASI-I (NBD-Ω-008): bounded learned preference score for production.
+
+    Score = clamp(success − failure − blocked, −ASI_LEARNED_CAP,
+                  +ASI_LEARNED_CAP), derived from APPLIED DuoBeta learning
+    entries only. Linear, transparent, separable; no collapsed "heat",
+    no truth claim.
+
+    This is an ADVISORY preference. It is NOT truth, eligibility,
+    revision, dependency satisfaction, conflict resolution, disposition,
+    permission, or execution authority. It may only reorder candidates
+    that have already passed the hard eligibility laws; it can never
+    add, remove, or resurrect a candidate.
+
+    No learning → 0 (cold start: selection order exactly baseline).
+    """
+    try:
+        dell_n = int(dell)
+    except (TypeError, ValueError):
+        return 0
+    idx = preference_index(program)
+    # Key must match preference_index exactly: (dell, knowledge_id as stored).
+    # Do NOT stringify None (DBEL-I stores None for unassociated learning).
+    key = (dell_n, knowledge_id)
+    c = idx.get(key, {})
+    raw = (int(c.get("success", 0)) - int(c.get("failure", 0))
+           - int(c.get("blocked", 0)))
+    return max(-ASI_LEARNED_CAP, min(ASI_LEARNED_CAP, raw))
 
 
 def learning_ledger(program: Any) -> List[Dict[str, Any]]:

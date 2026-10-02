@@ -1254,3 +1254,61 @@ Persistence V2, Generation V1. The certified 37 selector is untouched.
 - blocked != false; failed != bad knowledge; completed != truth.
 - proposed != applied — gate decides; rejection is visible.
 - influence != authority — `suggest_preferred` advises; selectors decide.
+
+## ASI-I — Adaptive Selection Integration I (NBD-Ω-008)
+
+Closes the production learning loop: accepted DuoBeta learning connects to
+the EXISTING canonical knowledge selection authority as a bounded advisory
+signal.
+
+### Integration position (verified from code)
+
+Inside `select_for_context` (`form/mandell/knowledge_selector.py`), AFTER
+the Relevance V2 `rank_key` sort and AFTER the `max_selected` limit, BEFORE
+the ranked `selected` list is returned. Conflict (DCC-XIII) and disposition
+(DCC-XIX) filter the reordered list downstream in `core_i_ops.py` — hard-law
+dominance by construction.
+
+### What the signal is
+
+- `bounded_learned_score(program, 37, knowledge_id)`:
+  `clamp(success − failure − blocked, −5, +5)` from APPLIED DuoBeta
+  learning entries only. Linear, transparent, separable.
+- ADVISORY preference. NOT truth, eligibility, revision, dependency
+  satisfaction, conflict resolution, disposition, permission, or execution
+  authority.
+- Stable re-sort of the already-selected top-N. Relevance V2 order
+  preserved for equal scores. Never adds, removes, or resurrects.
+
+### Bounds (Phase M minimum safeguard)
+
+- Bounded contribution: score clamped to ±5 (`ASI_LEARNED_CAP`).
+- Minimum evidence: DBEL-I gate requires ≥3 supporting outcomes.
+- Stable tie behavior: Python stable sort (deterministic).
+- No exclusion: negative scores reorder downward, never remove.
+- No exponential reinforcement: linear counts only.
+
+### Cold start
+
+No learning → all scores 0 → stable sort → order EXACTLY the Relevance V2
+baseline (structural, not a special case).
+
+### Observability
+
+`select_for_context` returns `baseline_selected_ids`,
+`learned_selected_ids`, `learned_scores`, `learned_preference_applied`
+(read-only; flow into the grow_contextual receipt). ROS-I gains
+`selection_learning_view(program, context)` (read-only).
+
+### Autonomy
+
+Selection READS previously APPLIED preference metadata. Nothing in the
+selection path creates proposals, runs the gate, or applies learning.
+The DBEL-I lifecycle remains explicit and manual. AUTONOMY=NO.
+
+### Separations (ASI-I)
+
+- preference != selection — learning reorders; the authority selects.
+- advisory != mandatory — hard laws always win.
+- applied != automatic — reading APPLIED state is not applying learning.
+- bounded != unbounded — the ±5 cap is structural.

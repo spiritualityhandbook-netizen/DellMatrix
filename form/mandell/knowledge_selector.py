@@ -258,10 +258,29 @@ def select_for_context(
     # Deterministic V2 ordering: exact_phrase DESC, ordered DESC,
     # coverage DESC, jaccard DESC, ID ASC
     scored.sort(key=lambda x: x["rank_key"])
-    
+
+    # ASI-I (NBD-Ω-008): bounded learned preference (advisory).
+    # Stable re-sort of the already-selected top-N by the bounded DuoBeta
+    # learned score (Dell 37 = this contextual selector's Dell).
+    # Position: AFTER revision/dependency/relevance hard laws and AFTER
+    # the max_selected limit; BEFORE conflict/disposition, which filter
+    # the reordered list downstream in core_i_ops (hard-law dominance by
+    # construction). Relevance V2 order is preserved for equal learned
+    # scores (stable sort). Never adds, removes, or resurrects a candidate.
+    # Cold start (no learning): all scores 0 → order exactly baseline.
+    from form.mandell.duobeta_learn import bounded_learned_score
+    top = scored[:max_selected]
+    baseline_selected_ids = [s["id"] for s in top]
+    learned_scores = {
+        s["id"]: bounded_learned_score(program, 37, s["id"]) for s in top
+    }
+    top.sort(key=lambda s: -learned_scores[s["id"]])  # stable
+    learned_selected_ids = [s["id"] for s in top]
+    learned_preference_applied = any(v != 0 for v in learned_scores.values())
+
     # Limit to max_selected; assign 1-based rank
     selected = []
-    for i, s in enumerate(scored[:max_selected], start=1):
+    for i, s in enumerate(top, start=1):
         entry = {k: v for k, v in s.items() if k != "rank_key"}
         entry["rank"] = i
         selected.append(entry)
@@ -286,4 +305,10 @@ def select_for_context(
         "dependency_exclusions": dep_exclusions,
         "selected": selected,
         "reason": reason,
+        # ASI-I observability (read-only evidence; flows into the
+        # grow_contextual receipt / last_nurture for ROS-I inspection).
+        "baseline_selected_ids": baseline_selected_ids,
+        "learned_selected_ids": learned_selected_ids,
+        "learned_scores": learned_scores,
+        "learned_preference_applied": learned_preference_applied,
     }

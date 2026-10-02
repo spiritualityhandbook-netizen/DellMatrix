@@ -394,3 +394,32 @@ def learned_preferences_view(program: Any) -> Dict[str, Any]:
     return {"ok": True,
             "status": "known" if prefs else "not_recorded",
             "count": len(prefs), "preferences": prefs}
+
+
+def selection_learning_view(program: Any, context: str) -> Dict[str, Any]:
+    """ASI-I (NBD-Ω-008): read-only inspection of learned preference
+    influence on knowledge selection.
+
+    Returns whether learning affected the selection, which preference
+    evidence applied (bounded scores), which hard filters ran before
+    learning (revision/dependency exclusions), and the final selected
+    candidate(s) — alongside the Relevance V2 baseline order.
+
+    Pure read: delegates to select_for_context (no mutation authority).
+    """
+    from .knowledge_selector import select_for_context
+    try:
+        sel = select_for_context(program, context, operation="grow")
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+    return {"ok": True,
+            "learned_preference_applied":
+                sel.get("learned_preference_applied", False),
+            "learned_scores": sel.get("learned_scores", {}),
+            "baseline_selected_ids": sel.get("baseline_selected_ids", []),
+            "learned_selected_ids": sel.get("learned_selected_ids", []),
+            "selected_ids": [s["id"] for s in sel.get("selected", [])],
+            "supersession_exclusions":
+                sel.get("supersession_exclusions", []),
+            "dependency_exclusions": sel.get("dependency_exclusions", []),
+            "eligible_count": sel.get("eligible_count", 0)}
