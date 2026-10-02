@@ -393,10 +393,13 @@ def _route_intent_impl(program: Any, intent: Any, raw_line: str = "") -> RouteRe
     dell = parsed.primary_dell()
     corr = CORRESPONDENCE.get((action, dell))
     if corr is None:
-        return _no_route(
-            dell,
-            f"no verified correspondence for ({action!r}, Dell {dell}) — refusing to guess",
-        )
+        # SSI-I: generalized Core-II domain. Canonical identity via the
+        # bridge resolver (operator_bridge.resolve); execution via the
+        # existing chain_exec authority; Outcome V1 capture stays in the
+        # route_intent wrapper (single capture — this path never nests
+        # inside bridge.route(), which self-captures for direct API use).
+        return _route_generalized(program, intent, parsed, action, dell,
+                                  mandell, semantic, arguments, raw_line)
 
     seed = corr.build_seed(intent, parsed)
     try:
@@ -443,4 +446,78 @@ def _route_intent_impl(program: Any, intent: Any, raw_line: str = "") -> RouteRe
         state_note=state_note,
         error="" if ok else (result.get("error") or "Dell execution failed"),
         new_program=result.get("new_program"),
+    )
+
+
+def _route_generalized(program: Any, intent: Any, parsed: Any, action: str,
+                       dell: Optional[int], mandell: str, semantic: str,
+                       arguments: Dict[str, Any], raw_line: str = "") -> RouteReceipt:
+    """SSI-I: generalized-domain fallback inside the canonical router.
+
+    Consulted ONLY after the CORRESPONDENCE miss. Identity comes from the
+    bridge resolver (operator_bridge.resolve); execution from the existing
+    chain_exec authority. Fail-closed: unknown / ambiguous / blocked /
+    Core-I-without-correspondence all refuse here with explicit reasons.
+    Outcome V1 capture stays in the route_intent wrapper.
+    """
+    from .operator_bridge import resolve as bridge_resolve
+    from .seed import parse_seed
+    from .chain_exec import execute_chain
+
+    term = (getattr(intent, "term", "") or "").strip() or None
+    bres = bridge_resolve(action=action or None, dell=dell, term=term)
+    if not bres.ok:
+        # Preserve the historical refusal shape for the pure no-route case;
+        # the bridge gives a more specific reason when it has one.
+        reason = bres.refusal_reason or (
+            f"no verified correspondence for ({action!r}, Dell {dell})"
+            " — refusing to guess"
+        )
+        return RouteReceipt(
+            input=raw_line or "", mandell=mandell, semantic=semantic,
+            arguments=arguments, action=action, dell=dell,
+            routed=False, route="no-route", seed="", ok=False,
+            messages=[], state_note="no state change (not routed)",
+            error=reason, new_program=None,
+        )
+
+    # bres.ok implies CORE_II accessible (resolve never returns ok for
+    # Core-I without correspondence, blocked, or raw-only operators).
+    label = (parsed.label or "").strip()
+    seed_text = f"{bres.dell:02d}[{bres.name}]"
+    if label:
+        seed_text += f" :: {label}"
+    seed = parse_seed(seed_text)
+    if not seed.ok:
+        return RouteReceipt(
+            input=raw_line or "", mandell=mandell, semantic=semantic,
+            arguments=arguments, action=action, dell=bres.dell,
+            routed=False, route="no-route", seed="", ok=False,
+            messages=[], state_note="no state change (not routed)",
+            error=f"Mandell parse failed: {seed.error}", new_program=None,
+        )
+    try:
+        out = execute_chain(program, seed, seed_text)
+    except Exception as exc:  # fail safe: report, do not propagate
+        return RouteReceipt(
+            input=raw_line or "", mandell=seed_text,
+            semantic=f"{action}[{bres.name}]", arguments=arguments,
+            action=action, dell=bres.dell, routed=False,
+            route=f"{action}/{bres.dell} [{bres.name}]", seed=seed_text,
+            ok=False, messages=[],
+            state_note="no state change (execution raised)",
+            error=f"Dell execution raised: {exc}", new_program=None,
+        )
+
+    messages = list(out.get("messages") or [])
+    ok = bool(out.get("ok", False))
+    return RouteReceipt(
+        input=raw_line or "", mandell=seed_text,
+        semantic=f"{action}[{bres.name}]", arguments=arguments,
+        action=action, dell=bres.dell, routed=True,
+        route=f"{action}/{bres.dell} [{bres.name}]",
+        seed=seed_text, ok=ok, messages=messages,
+        state_note="; ".join(messages[-3:]) if messages else ("executed" if ok else "failed"),
+        error="" if ok else (out.get("error") or "Dell execution failed"),
+        new_program=out.get("new_program"),
     )

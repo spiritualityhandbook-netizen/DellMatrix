@@ -103,15 +103,17 @@ def smoke() -> int:
             pass
     rec("fresh_restore", p5r is not None and restored_form == "sphere")
 
-    # --- Unsupported node refuses (Dell with no correspondence)
+    # --- Unsupported node refuses (Dell 99 = intentionally raw-only policy)
+    # SSI-I: node language is CORRESPONDENCE + bridge-resolved Core-II.
+    # 99 resolves but policy-refuses; parse still fails closed.
     try:
         fp = parse_program("99[Unknown] > 40[TokenCount]")
         rec("unsupported_node_refuses", False)
     except ValueError as e:
-        rec("unsupported_node_refuses", "no verified correspondence" in str(e))
+        rec("unsupported_node_refuses", "intentionally_raw_only" in str(e))
 
     # --- Wrong correspondence refuses (can't happen via parser, but test reverse lookup)
-    # The parser only allows Dells in CORRESPONDENCE; this is enforced.
+    # The parser allows CORRESPONDENCE dells + bridge-resolved Core-II; this is enforced.
 
     # --- Malformed flow refuses
     try:

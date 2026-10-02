@@ -201,7 +201,16 @@ def parse_program(raw: str) -> FlowProgram:
         dell = seed.primary_dell()
         action = dell_to_action.get(dell)
         if action is None:
-            raise ValueError(f"Dell {dell} has no verified correspondence: {node_text!r}")
+            # SSI-I: generalized Core-II domain. Consult the canonical
+            # resolver (not a new router). Blocked/raw-only operators
+            # refuse here — parse fails closed, REPL falls through.
+            from .operator_bridge import resolve as _bridge_resolve
+            bres = _bridge_resolve(dell=dell)
+            if not bres.ok:
+                raise ValueError(
+                    f"Dell {dell} not composable: {bres.refusal_reason}: {node_text!r}"
+                )
+            action = bres.name.lower()
         term = getattr(seed.atoms[0], "term", "") or ""
         args = _args_from_label(action, seed.label)
         nodes.append(FlowNode(mandel=node_text, action=action, dell=dell, term=term, args=args))

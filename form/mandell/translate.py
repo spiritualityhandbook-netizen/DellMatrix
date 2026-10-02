@@ -436,6 +436,29 @@ def translate(english: str) -> Intent:
     if re.search(r"\bhelp\b", lower):
         return Intent("help", 9, "Show", {}, "09[Show] :: help", text)
 
+    # SSI-I: explicit canonical Core-II operator references.
+    # `dell 74`, `74[Weight]`, optionally with `:: label`.
+    # No loose prose aliases — canonical wording only. Identity and
+    # policy (blocked/raw-only) are decided downstream by the bridge
+    # resolver inside route_intent; translate only recognizes the reference.
+    m = re.search(r"\bdell\s+([5-9]\d)\b", lower)
+    if not m:
+        m = re.search(r"\b([5-9]\d)\[([A-Za-z]+)\]", text)
+    if m:
+        n = int(m.group(1))
+        from .registry import get_dell as _get_dell
+        rec = _get_dell(n)
+        if rec is not None and str(rec.get("namespace", "")) == "CORE_II":
+            name = str(rec.get("name", ""))
+            label = ""
+            if "::" in text:
+                label = text.split("::", 1)[1].strip()[:120]
+            mandel = f"{n:02d}[{name}]"
+            if label:
+                mandel += f" :: {label}"
+            return Intent(name.lower(), n, name, {"label": label}, mandel, text)
+        # Not a Core-II address: fall through to unknown (never guess).
+
     # Explicit plant/note without create verb (short noun phrases only when intentional)
     # e.g. "plant Garden Gate" already handled as create synonym via english_brain.
     # Never free-hash unknown text into ideas — that destroys usability.
