@@ -207,9 +207,10 @@ Save — persist and continue
   restart with: python3 -m form.repl --load
 """.strip(),
     "recover": """
-Recover — history, undo, retry
+Recover — history, undo, reissue
 
   history [n] · history find <text> · undo · replay [n]
+  reissue <seq> · reissue confirm · reissue cancel
   what next | nbd
 """.strip(),
     "look": """
@@ -2426,6 +2427,153 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
     return p
 
 
+def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program:
+    """IRI-I: Canonical public execution boundary for one input line.
+
+    This is the SAME dispatch sequence run() uses for newly typed input:
+    ROS → learn → why → flow → seed → composite → translate/_execute_intent.
+    Reissue feeds recovered historical source through here with a FRESH
+    interaction_id. All current parsing, routing, eligibility, guards, and
+    special authorities apply. No historical authority is reused.
+    """
+    # ROS-I: read-only observability meta-commands.
+    if _handle_ros_command(p, line):
+        return p
+
+    # DLA-I: DuoBeta learning activation.
+    if _handle_learn_command(p, line):
+        return p
+
+    # KIE-I: Knowledge Influence explanation. Read-only.
+    if _handle_why_command(p, line):
+        return p
+
+    # DCC-IV: composed Mandell program (flow operators) -> flow executor.
+    if ">" in line or ":" in line:
+        try:
+            from form.mandell.flow_executor import (
+                parse_program, execute_program, format_receipt,
+            )
+            fp = parse_program(line)
+            if len(fp.nodes) > 1:
+                receipt = execute_program(p, fp, interaction_id=interaction_id)
+                print()
+                print(format_receipt(receipt))
+                print()
+                if receipt.final_program is not None:
+                    return receipt.final_program
+                return p
+        except ValueError:
+            pass  # Not a valid flow program; fall through.
+
+    if looks_like_seed(line):
+        # EOC-I: raw execution with Outcome V1 observation.
+        from form.mandell.execution_observer import observe_seed_execution
+        result = observe_seed_execution(p, line, interaction_id=interaction_id)
+        return _apply_seed_result(p, result)
+
+    # DCC-V: natural English multi-step instruction -> Mandell program.
+    import re as _re
+    if _re.search(r"\b(?:and then|after that|then)\b", line, _re.IGNORECASE):
+        try:
+            from form.mandell.english_composer import (
+                compose_english, execute_composite, format_composite_receipt,
+            )
+            cr = compose_english(line)
+            if cr.ok:
+                receipt = execute_composite(p, cr.composite, interaction_id=interaction_id)
+                print()
+                print(format_composite_receipt(cr.composite, receipt))
+                print()
+                if receipt.final_program is not None:
+                    return receipt.final_program
+                return p
+            # Compile failure: report honestly, execute zero Dells.
+            print()
+            print(f"COMPILE FAILURE: {cr.error}")
+            print("Zero Dells executed.")
+            print()
+            return p
+        except Exception as e:
+            print(f"Composition error: {e}")
+            return p
+
+    intent = translate(line)
+    return _execute_intent(p, intent, raw_line=line, interaction_id=interaction_id)
+
+
+def _handle_reissue(p: Program, line: str, pending: Optional[str]) -> tuple:
+    """IRI-I: Staged reissue — inspect/show, then explicit confirm.
+
+    Returns (program, new_pending). The pending source is session-only;
+    it is never persisted and never leaves this REPL session.
+
+    - `reissue <ref>`: resolve Outcome via COO-I selectors, verify exact
+      source, SHOW it with a current-state warning. Stages the source.
+      Never executes (R2).
+    - `reissue confirm`: execute the staged source through the canonical
+      public boundary with a FRESH interaction_id. Clears the stage.
+    - `reissue cancel`: discard the staged source.
+    """
+    from form.mandell.runtime_observe import resolve_outcome_ref
+
+    low = line.strip().lower()
+    rest = line.strip()[7:].strip()  # after "reissue"
+
+    # --- confirm: execute staged source ---
+    if low == "reissue confirm":
+        if not pending:
+            _say("Nothing staged. Use: reissue <outcome-ref> first.")
+            return p, None
+        import uuid as _uuid
+        new_id = str(_uuid.uuid4())
+        source = pending
+        _say(f"Reissuing now with new interaction {new_id[:8]}...")
+        try:
+            p = _dispatch_public_line(p, source, new_id)
+        except Exception as e:
+            _say(f"Reissue execution error: {e}")
+        return p, None
+
+    # --- cancel: discard staged ---
+    if low == "reissue cancel":
+        if pending:
+            _say("Staged reissue discarded.")
+        else:
+            _say("Nothing staged.")
+        return p, None
+
+    # --- bare: usage ---
+    if not rest or low == "reissue":
+        _say("usage: reissue <outcome-ref>  — show exact historical source")
+        _say("       reissue confirm        — execute the staged source now")
+        _say("       reissue cancel         — discard the staged source")
+        _say("Find refs via: outcomes · outcome <seq>")
+        return p, pending
+
+    # --- inspect/show: resolve, verify, stage (never execute) ---
+    res = resolve_outcome_ref(p, rest)
+    if not res.get("ok"):
+        _say(f"reissue: {res.get('detail', res.get('status', 'unknown'))}")
+        return p, pending
+
+    rec = res["outcome"]
+    source = rec.get("input", "") or ""
+    # R3/R4: source must be exact public input. Empty/missing → refuse.
+    if not source.strip():
+        _say(f"reissue: outcome [{rec.get('outcome_seq', '?')}] has no exact")
+        _say("public source recorded — not reissuable.")
+        return p, pending
+
+    seq = rec.get("outcome_seq", "?")
+    oid = rec.get("outcome_id", "") or ""
+    _say(f"Reissue candidate from outcome [{seq}] ({oid[:18]}...):")
+    _say(f"  source: {source}")
+    _say("  Runs now against current state; result may differ.")
+    _say("  Type 'reissue confirm' to execute, 'reissue cancel' to discard.")
+    return p, source
+
+
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
     print("  DellMatrix — Mandell Origin")
@@ -2443,6 +2591,9 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     print(p.render())
     print()
 
+    # IRI-I: staged reissue source. Session-only; never persisted.
+    _pending_reissue: Optional[str] = None
+
     while True:
         try:
             line = input("you> ").strip()
@@ -2457,6 +2608,14 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         if line.lower().startswith("say "):
             line = line[4:].strip()
 
+        # IRI-I: staged reissue — inspect/show, then explicit confirm.
+        # Handled here (not in _dispatch_public_line): reissue is session
+        # control, not semantic input. The staged source itself, when
+        # confirmed, goes through _dispatch_public_line below.
+        if line.lower() == "reissue" or line.lower().startswith("reissue "):
+            p, _pending_reissue = _handle_reissue(p, line, _pending_reissue)
+            continue
+
         # EIC-I: mint interaction identity for this public attempt.
         # One ID per submitted line, before dispatch. UUIDv4: unique,
         # opaque, no timestamp leakage. This ID is propagated explicitly
@@ -2466,84 +2625,9 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         import uuid as _uuid
         interaction_id = str(_uuid.uuid4())
 
-        # ROS-I: read-only observability meta-commands. Intercepted here
-        # (like quit/exit) before any execution path; each delegates to the
-        # canonical read-only functions in form/mandell/runtime_observe.py.
-        # Bare `trace` is NOT intercepted: translate("trace") routes to
-        # Dell 35 Discover (load-bearing in DCC tests).
-        if _handle_ros_command(p, line):
-            continue
-
-        # DLA-I: DuoBeta learning activation. Explicit user-initiated
-        # propose → inspect → gate → apply (with confirm) lifecycle.
-        # Intercepted before execution; delegates to duobeta_learn.py.
-        if _handle_learn_command(p, line):
-            continue
-
-        # KIE-I: Knowledge Influence explanation. Read-only.
-        # why used / why not used / why influence.
-        if _handle_why_command(p, line):
-            continue
-
-        # DCC-IV: composed Mandell program (flow operators) -> flow executor.
-        # Must come before looks_like_seed, which would send it to execute_seed.
-        if ">" in line or ":" in line:
-            try:
-                from form.mandell.flow_executor import (
-                    parse_program, execute_program, format_receipt,
-                )
-                fp = parse_program(line)
-                if len(fp.nodes) > 1:
-                    receipt = execute_program(p, fp, interaction_id=interaction_id)
-                    print()
-                    print(format_receipt(receipt))
-                    print()
-                    if receipt.final_program is not None:
-                        p = receipt.final_program
-                    continue
-            except ValueError:
-                pass  # Not a valid flow program; fall through.
-
-        if looks_like_seed(line):
-            # EOC-I: raw execution with Outcome V1 observation. The adapter
-            # wraps the existing execution; it is not a new executor and
-            # never alters execution semantics.
-            from form.mandell.execution_observer import observe_seed_execution
-            result = observe_seed_execution(p, line, interaction_id=interaction_id)
-            p = _apply_seed_result(p, result)
-            continue
-
-        # DCC-V: natural English multi-step instruction -> Mandell program.
-        # Must come after looks_like_seed (Mandell-native takes precedence) and
-        # before translate (single-intent path can't handle composition).
-        # Only triggers on sequencing connectors as whole words.
-        import re as _re
-        if _re.search(r"\b(?:and then|after that|then)\b", line, _re.IGNORECASE):
-            try:
-                from form.mandell.english_composer import (
-                    compose_english, execute_composite, format_composite_receipt,
-                )
-                cr = compose_english(line)
-                if cr.ok:
-                    receipt = execute_composite(p, cr.composite, interaction_id=interaction_id)
-                    print()
-                    print(format_composite_receipt(cr.composite, receipt))
-                    print()
-                    if receipt.final_program is not None:
-                        p = receipt.final_program
-                    continue
-                # Compile failure: report honestly, execute zero Dells.
-                print()
-                print(f"COMPILE FAILURE: {cr.error}")
-                print("Zero Dells executed.")
-                print()
-                continue
-            except Exception as e:
-                print(f"Composition error: {e}")
-                continue
-
-        intent = translate(line)
-        p = _execute_intent(p, intent, raw_line=line, interaction_id=interaction_id)
+        # IRI-I: canonical public execution boundary. Reissue confirm feeds
+        # recovered source through this same function with a fresh ID.
+        p = _dispatch_public_line(p, line, interaction_id)
 
     print()
 
