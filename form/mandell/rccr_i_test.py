@@ -102,10 +102,9 @@ def smoke() -> bool:
     # LE-15 CLOSED → candidate CLOSED
     bsc = [c for c in cands if c.candidate_id == "body-shallow-copy"][0]
     check("I.bsc_closed", bsc.state == "CLOSED")
-    # LE-04 OPEN → candidate OPEN (needs classification), not READY
+    # LE-04 CLOSED (by IAC-I) → candidate CLOSED
     lvc = [c for c in cands if c.candidate_id == "live-visual-convergence"][0]
-    check("I.lvc_open", lvc.state == "OPEN")
-    check("I.lvc_flag", lvc.circuit_needs_classification)
+    check("I.lvc_closed", lvc.state == "CLOSED")
     
     # ── J: OPEN exclusion ────────────────────────────────────────
     ranked = ne.rank_candidates(cands)

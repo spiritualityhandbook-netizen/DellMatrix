@@ -124,9 +124,10 @@ def build_ledger() -> List[Circuit]:
 
         # ── OPEN / READY / BLOCKED ──────────────────────────────
         Circuit("LE-04", "live_visual parallel command authority",
-                OPEN, "visual",
-                evidence="live_visual._run_command ~100 patterns; NBD live-visual-convergence",
-                notes="Larger UX frontier; not yet addressed."),
+                CLOSED, "visual",
+                evidence="IAC-I Phases C-N: 135 command patterns inventoried. Forces extracted to Program.force_growth/water/breath/gravity. All others delegate to Program methods, REPL, ROS, NBDE, or EOC-I. K1 converged in REPL (numeric→ROS, word→latinmandell). K2 proven (one Outcome via EOC-I). Visual surface preserved.",
+                closure_cycle="IAC-I",
+                notes="live_visual is now presentation/dispatch. All unique capabilities preserved."),
         Circuit("LE-10", "attention_rank vs Relevance V2",
                 CLOSED, "knowledge",
                 evidence="RCCR-I Phases C-F: attention_rank serves interactive attend (Program.attend); Relevance V2 serves autonomous selection (Dell 37). No unique input for adapter; would create second ranking authority. No adapter warranted.",

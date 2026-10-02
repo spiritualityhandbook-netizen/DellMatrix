@@ -533,44 +533,29 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
         return {"ok": True, "msg": f"Force tick · {rep.get('forces')}\n  doors: forces | evolve | pulse", "report": rep, "end": "force_tick"}
     if lower.startswith("force ") and lower not in ("force tick",):
         which = lower.split(maxsplit=1)[1].strip()
-        # closed force avenues with real work + end message
+        # IAC-I: delegate to canonical Program force methods (presentation only here)
         try:
             if which in ("growth", "grow"):
-                program.forces.activate("growth")
-                for u in list(program.cube.session.plane.units.values())[:8]:
-                    known = {pl["idea"] for pl in program.forces.growth.plants}
-                    if u.label not in known:
-                        program.forces.growth.plant(u.label, program.owner)
-                program.forces.growth.grow_all(0.6)
-                lines = program.forces.growth.map()[:8]
+                r = program.force_growth()
+                lines = r["lines"]
                 return {"ok": True, "msg": "Force growth\n" + "\n".join(f"  {x}" for x in lines) + "\n  doors: force tick | forces", "end": "force_growth"}
             if which in ("water", "flow"):
-                program.forces.activate("water")
-                for u in list(program.cube.session.plane.units.values())[:3]:
-                    program.forces.water.flow(u.label, program.owner)
-                extra = ""
-                if len(program.forces.water.streams) >= 2:
-                    m = program.forces.water.merge_last_two()
-                    if m:
-                        extra = f"\n  Merged → {m['idea'][:60]}"
+                r = program.force_water()
                 return {
                     "ok": True,
-                    "msg": f"Force water · streams={len(program.forces.water.streams)} pools={len(program.forces.water.pools)}{extra}\n  doors: force tick | forces",
+                    "msg": f"Force water · streams={r['streams']} pools={r['pools']}{r['extra']}\n  doors: force tick | forces",
                     "end": "force_water",
                 }
             if which in ("breath", "heartbeat"):
-                program.forces.activate("breath")
-                r = program.forces.breath.heartbeat(len(program.cube.session.plane.units))
+                r = program.force_breath()
                 return {
                     "ok": True,
-                    "msg": f"Breath cycle {r['inhale']['cycle']} · phase {program.forces.breath.phase}\n  doors: force tick | forces",
+                    "msg": f"Breath cycle {r['cycle']} · phase {r['phase']}\n  doors: force tick | forces",
                     "end": "force_breath",
                 }
             if which in ("gravity",):
-                program.forces.activate("gravity")
-                wells = program.forces.gravity.set_wells_from_scores(program.nodes_payload())
-                labels = ", ".join(w["label"] for w in wells[:8]) or "—"
-                return {"ok": True, "msg": f"Gravity wells: {labels}\n  doors: force tick | forces", "end": "force_gravity"}
+                r = program.force_gravity()
+                return {"ok": True, "msg": f"Gravity wells: {r['labels']}\n  doors: force tick | forces", "end": "force_gravity"}
             return {"ok": False, "error": "usage: force growth|water|breath|gravity  or  force tick", "end": "usage"}
         except Exception as e:
             return {"ok": False, "error": str(e), "end": "error"}

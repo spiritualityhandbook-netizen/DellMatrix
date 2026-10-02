@@ -750,6 +750,51 @@ class Program:
     def force_status(self) -> Dict[str, Any]:
         return self.forces.status()
 
+    def force_growth(self) -> Dict[str, Any]:
+        """IAC-I: Canonical growth-force activation. Extracted from live_visual."""
+        self.forces.activate("growth")
+        for u in list(self.cube.session.plane.units.values())[:8]:
+            known = {pl["idea"] for pl in self.forces.growth.plants}
+            if u.label not in known:
+                self.forces.growth.plant(u.label, self.owner)
+        self.forces.growth.grow_all(0.6)
+        lines = self.forces.growth.map()[:8]
+        self.note_seed(25, "Pulse", "force_growth")
+        return {"ok": True, "lines": lines}
+
+    def force_water(self) -> Dict[str, Any]:
+        """IAC-I: Canonical water-force activation. Extracted from live_visual."""
+        self.forces.activate("water")
+        for u in list(self.cube.session.plane.units.values())[:3]:
+            self.forces.water.flow(u.label, self.owner)
+        extra = ""
+        if len(self.forces.water.streams) >= 2:
+            m = self.forces.water.merge_last_two()
+            if m:
+                extra = f"\n  Merged → {m['idea'][:60]}"
+        self.note_seed(25, "Pulse", "force_water")
+        return {
+            "ok": True,
+            "streams": len(self.forces.water.streams),
+            "pools": len(self.forces.water.pools),
+            "extra": extra,
+        }
+
+    def force_breath(self) -> Dict[str, Any]:
+        """IAC-I: Canonical breath-force activation. Extracted from live_visual."""
+        self.forces.activate("breath")
+        r = self.forces.breath.heartbeat(len(self.cube.session.plane.units))
+        self.note_seed(25, "Pulse", "force_breath")
+        return {"ok": True, "cycle": r['inhale']['cycle'], "phase": self.forces.breath.phase}
+
+    def force_gravity(self) -> Dict[str, Any]:
+        """IAC-I: Canonical gravity-force activation. Extracted from live_visual."""
+        self.forces.activate("gravity")
+        wells = self.forces.gravity.set_wells_from_scores(self.nodes_payload())
+        labels = ", ".join(w["label"] for w in wells[:8]) or "—"
+        self.note_seed(25, "Pulse", "force_gravity")
+        return {"ok": True, "labels": labels}
+
     def set_weather(self, condition: str) -> str:
         c = self.forces.weather.set_condition(condition)
         self.note_seed(25, "Pulse", f"weather_{c}")
