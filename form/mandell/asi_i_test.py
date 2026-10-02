@@ -63,10 +63,82 @@ def check(name: str, cond: bool) -> None:
         print(f"  FAIL: {name}")
 
 
+# ── Isolation: unique owner per call, emptiness VERIFIED (NBD-Ω-030) ──
+# Failure class closed: helper named fresh() + Program() != proven isolated
+# state. Program() (default owner) loads persisted ambient state. An explicit
+# owner is honored (tests N/O/P); otherwise each call mints a unique owner.
+# Nursery and learning ledger are VERIFIED empty — fails loudly otherwise.
+# Test-owner state files are removed at suite end (_teardown_isolated_owners);
+# default/Ace state is never touched.
+_fresh_counter = [0]
+_PID = os.getpid()
+_CREATED_OWNERS = []
+
+
 def fresh(owner: str | None = None) -> Program:
-    if owner:
-        return Program(owner=owner)
-    return Program()
+    """Isolated Program: unique (or given) owner, emptiness VERIFIED.
+
+    Not "fresh" by name — fresh by verified precondition. Raises (fails loudly)
+    if the nursery or learning ledger is not empty.
+    """
+    _fresh_counter[0] += 1
+    if not owner:
+        owner = f"asi-i-isolated-{_PID}-{_fresh_counter[0]}"
+    p = Program(owner=owner)
+    if len(p.nursery.proposals) != 0:
+        raise AssertionError(
+            f"isolation violated: owner {owner} nursery has "
+            f"{len(p.nursery.proposals)} proposals")
+    if dl.learning_ledger(p):
+        raise AssertionError(
+            f"isolation violated: owner {owner} learning ledger not empty")
+    _CREATED_OWNERS.append(owner)
+    return p
+
+
+def _teardown_isolated_owners() -> None:
+    """Remove state files created for test owners. Never touches default state."""
+    import pathlib
+    for owner in _CREATED_OWNERS:
+        for f in pathlib.Path(STATE_DIR).glob(f"*{owner}*"):
+            try:
+                if f.is_file():
+                    f.unlink()
+            except OSError:
+                pass
+    _CREATED_OWNERS.clear()
+
+
+# ── T0: Isolation proof — mechanism-level fixture assertion (NBD-Ω-030) ──
+def test_isolation_proof():
+    """Prove the fixture's isolation contract before trusting results."""
+    p1 = fresh()
+    p2 = fresh()
+    check("T0.distinct_owners", p1.owner != p2.owner)
+    check("T0.p1_nursery_empty", len(p1.nursery.proposals) == 0)
+    check("T0.p2_nursery_empty", len(p2.nursery.proposals) == 0)
+    check("T0.p1_ledger_empty", dl.learning_ledger(p1) == [])
+    check("T0.p2_ledger_empty", dl.learning_ledger(p2) == [])
+    # Contamination in one must not leak into the other
+    pr = p1.nursery.add("asi-iso-probe", words="isolation probe words")
+    check("T0.no_cross_contamination", pr.id not in p2.nursery.proposals)
+    # Control: prove the constructor LOADS persisted owner state — the exact
+    # mechanism that falsified the old fresh()==Program() assumption.
+    # Uses a throwaway owner; its state file is removed afterwards.
+    import pathlib
+    from form.dell_matrix.nursery import owner_nursery_path
+    cowner = f"asi-i-control-{_PID}"
+    cpath = pathlib.Path(owner_nursery_path(cowner))
+    if cpath.exists():
+        cpath.unlink()
+    pa = Program(owner=cowner)
+    if len(pa.nursery.proposals) != 0:
+        raise AssertionError("control setup: throwaway owner not empty")
+    pra = pa.nursery.add("asi-control-k", words="control probe")
+    pa.nursery.save()
+    pb = Program(owner=cowner)  # must LOAD the saved proposal
+    check("T0.constructor_loads_persisted", pra.id in pb.nursery.proposals)
+    cpath.unlink(missing_ok=True)
 
 
 def wipe_owner(owner: str) -> None:
@@ -549,6 +621,7 @@ def test_u():
 
 
 def main() -> int:
+    test_isolation_proof()
     test_a()
     test_b()
     test_c()
@@ -579,8 +652,13 @@ def smoke() -> bool:
         main()
     except Exception:
         return False
+    finally:
+        _teardown_isolated_owners()
     return all(ok for _, ok in CHECKS)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    finally:
+        _teardown_isolated_owners()
