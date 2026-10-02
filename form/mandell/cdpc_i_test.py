@@ -122,9 +122,9 @@ def smoke() -> bool:
     check("N.le20_excluded", "program-strength-registration" not in ranked_ids)
     check("N.le13_excluded", "nbd-log-stamping" not in ranked_ids)
     
-    # ── O: LE-12 remains BLOCKED ─────────────────────────────────
+    # ── O: LE-12 SUPERSEDED (ODCG-I) ─────────────────────────────
     le12 = cl.get_circuit("LE-12")
-    check("O.le12_blocked", le12.state == "BLOCKED")
+    check("O.le12_superseded", le12.state == "SUPERSEDED")
     check("O.le12_not_ranked", "dcc-trace-view" not in ranked_ids)
     
     # ── P: LE-09 remains HISTORICAL_ONLY ──────────────────────────

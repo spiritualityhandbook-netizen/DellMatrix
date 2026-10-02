@@ -208,6 +208,22 @@ def outcomes_for_knowledge_item(program: Any, knowledge_id: str) -> Dict[str, An
             "outcomes": recs}
 
 
+def correction_candidates(program: Any, outcome_id: str = None) -> Dict[str, Any]:
+    """ODCG-I: read-only correction candidate projection.
+
+    If outcome_id given: explain candidates for that outcome.
+    Otherwise: list all correction edges.
+
+    This is observation, not truth. Correlation != causation.
+    """
+    from . import correction_graph as cg
+    if outcome_id:
+        return {"ok": True, **cg.explain_correction(program, str(outcome_id))}
+    edges = cg.correction_edges(program)
+    return {"ok": True, "count": len(edges), "edges": edges,
+            "note": "CORRECTION_CANDIDATE: correlation, not proven causation."}
+
+
 # ── Phase H: runtime health ───────────────────────────────────────────
 def runtime_health(owner: str = "Operator") -> Dict[str, Any]:
     """Component/invariant availability. Read-only.
