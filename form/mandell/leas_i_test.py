@@ -82,7 +82,7 @@ def smoke() -> bool:
     check("I.no_resurrect_03", cl.is_resurrection("LE-03", "READY"))
     check("I.no_resurrect_22", cl.is_resurrection("LE-22", "OPEN"))
     # OPEN -> READY is not resurrection (use LE-04 which is still OPEN)
-    check("I.open_ok", not cl.is_resurrection("LE-04", "READY"))
+    check("I.open_ok", not cl.is_resurrection("LE-25", "READY"))
     
     # ── J: dependency validation ───────────────────────────────
     le12 = cl.get_circuit("LE-12")
