@@ -32,7 +32,7 @@ No match: empty selected list (consumer runs scoped-empty, never fallback).
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
@@ -129,10 +129,18 @@ def select_for_context(
     operation: str = "grow",
     min_score: float = 0.0,
     max_selected: int = 5,
+    explicit_ids: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """Select confirmed knowledge relevant to context (Relevance V2).
     
-    Deterministic: same state + context → same selection and ordering.
+    EKC-I: explicit_ids allows the user to explicitly request specific
+    knowledge items for this execution. Each ID is resolved against hard
+    laws (revision, dependency, eligibility, conflict, disposition).
+    Valid chosen items outrank ASI advisory preference and appear first
+    (deterministic ID order). Invalid choices return explicit resolutions,
+    never silently ignored.
+    
+    Deterministic: same state + context + explicit_ids → same selection.
     
     Relevance V2 scoring contract (all components exposed per selection):
       jaccard      = |ctx ∩ unit| / |ctx ∪ unit|   (kept as "score", unchanged meaning)
@@ -202,6 +210,41 @@ def select_for_context(
     eligible_count = len(eligible)
     dependency_valid_count = eligible_count
     
+    # EKC-I: Resolve explicit user choices against hard laws.
+    # Each requested ID gets an explicit resolution. Valid choices are
+    # collected for priority placement (after hard gates, before ranking).
+    explicit_resolutions = {}
+    explicit_selected_ids = []
+    if explicit_ids:
+        eligible_ids = {pid for pid, _ in eligible}
+        for eid in explicit_ids:
+            # Deduplicate (preserve first occurrence order for determinism)
+            if eid in explicit_resolutions:
+                continue
+            prop = program.nursery.proposals.get(eid)
+            if prop is None:
+                explicit_resolutions[eid] = "NOT_FOUND"
+            elif eid not in eligible_ids:
+                # Determine why: check each hard gate in order
+                if prop.status != "confirmed":
+                    explicit_resolutions[eid] = "INELIGIBLE"
+                elif eid not in program.cube.session.plane.units:
+                    explicit_resolutions[eid] = "INELIGIBLE"
+                elif not is_revision_active(program, eid):
+                    explicit_resolutions[eid] = "SUPERSEDED"
+                elif not is_dependency_valid(program, eid):
+                    explicit_resolutions[eid] = "DEPENDENCY_BLOCKED"
+                else:
+                    explicit_resolutions[eid] = "INELIGIBLE"
+            else:
+                # Passes selector gates. Downstream conflict/disposition
+                # (DCC-XIII/XIX) may still filter; that is reflected in
+                # the Outcome, not the selector resolution.
+                explicit_resolutions[eid] = "SELECTED"
+                explicit_selected_ids.append(eid)
+        # Deterministic order: sort by ID
+        explicit_selected_ids.sort()
+    
     if not ctx_tokens or not eligible:
         return {
             "context": context,
@@ -217,6 +260,11 @@ def select_for_context(
             "dependency_exclusions": dep_exclusions,
             "selected": [],
             "reason": "no context tokens" if not ctx_tokens else "no eligible knowledge",
+            "explicit_choice": {
+                "requested": list(explicit_ids) if explicit_ids else [],
+                "resolutions": explicit_resolutions,
+                "selected_explicit": explicit_selected_ids,
+            },
         }
     
     # Score each eligible unit (Relevance V2)
@@ -224,7 +272,10 @@ def select_for_context(
     for pid, prop in eligible:
         unit_tokens = _unit_tokens(program, pid)
         jaccard = _jaccard(ctx_tokens, unit_tokens)
-        if jaccard <= min_score:
+        # EKC-I: Explicit choices bypass the relevance threshold (but not
+        # hard laws — those were already checked). The user asked for it.
+        is_explicit = pid in explicit_selected_ids
+        if jaccard <= min_score and not is_explicit:
             continue
         shared = sorted(ctx_tokens & unit_tokens)
         unit = program.cube.session.plane.units.get(pid)
@@ -268,21 +319,39 @@ def select_for_context(
     # construction). Relevance V2 order is preserved for equal learned
     # scores (stable sort). Never adds, removes, or resurrects a candidate.
     # Cold start (no learning): all scores 0 → order exactly baseline.
+    # EKC-I: Explicit choices outrank ASI and normal ranking.
+    # Valid chosen items (already validated against hard laws) are placed
+    # first in deterministic ID order. Remaining slots are filled by normal
+    # Relevance V2 ranking. ASI reorders only the non-chosen items.
     from form.mandell.duobeta_learn import bounded_learned_score
-    top = scored[:max_selected]
-    baseline_selected_ids = [s["id"] for s in top]
+    # Separate explicit from automatic
+    explicit_set = set(explicit_selected_ids)
+    explicit_scored = [s for s in scored if s["id"] in explicit_set]
+    # Sort explicit by ID for determinism (already sorted, but ensure)
+    explicit_scored.sort(key=lambda s: s["id"])
+    # Automatic candidates: exclude explicit, take top by Relevance V2
+    auto_scored = [s for s in scored if s["id"] not in explicit_set]
+    remaining_slots = max(0, max_selected - len(explicit_scored))
+    auto_top = auto_scored[:remaining_slots]
+    baseline_selected_ids = [s["id"] for s in auto_top]
     learned_scores = {
-        s["id"]: bounded_learned_score(program, 37, s["id"]) for s in top
+        s["id"]: bounded_learned_score(program, 37, s["id"]) for s in auto_top
     }
-    top.sort(key=lambda s: -learned_scores[s["id"]])  # stable
-    learned_selected_ids = [s["id"] for s in top]
+    auto_top.sort(key=lambda s: -learned_scores[s["id"]])  # stable
+    learned_selected_ids = [s["id"] for s in auto_top]
     learned_preference_applied = any(v != 0 for v in learned_scores.values())
+    # Combine: explicit first, then ASI-ordered automatic
+    top = explicit_scored + auto_top
 
     # Limit to max_selected; assign 1-based rank
     selected = []
     for i, s in enumerate(top, start=1):
         entry = {k: v for k, v in s.items() if k != "rank_key"}
         entry["rank"] = i
+        # Mark provenance: explicit vs automatic
+        entry["selection_provenance"] = (
+            "explicit" if s["id"] in explicit_set else "automatic"
+        )
         selected.append(entry)
     
     if selected:
@@ -311,4 +380,10 @@ def select_for_context(
         "learned_selected_ids": learned_selected_ids,
         "learned_scores": learned_scores,
         "learned_preference_applied": learned_preference_applied,
+        # EKC-I: explicit choice provenance (for Outcome/receipt).
+        "explicit_choice": {
+            "requested": list(explicit_ids) if explicit_ids else [],
+            "resolutions": explicit_resolutions,
+            "selected_explicit": explicit_selected_ids,
+        },
     }
