@@ -522,4 +522,9 @@ def sync_from_ledger(candidates: List[Candidate]) -> List[str]:
                 cand.state = BLOCKED
                 cand.blocked_reason = f"Ledger: {cid} BLOCKED"
                 updated.append(cand.candidate_id)
+            elif circ.state in ("SUPERSEDED", "HISTORICAL_ONLY") and cand.state != "CLOSED":
+                # Superseded/historical circuits cannot rank; mark CLOSED
+                # to exclude from READY competition (they're resolved, not open).
+                cand.state = CLOSED
+                updated.append(cand.candidate_id)
     return updated
