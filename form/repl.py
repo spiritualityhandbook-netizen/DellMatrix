@@ -207,7 +207,7 @@ Save — persist and continue
     "recover": """
 Recover — history, undo, retry
 
-  history [n] · undo · replay [n]
+  history [n] · history find <text> · undo · replay [n]
   what next | nbd
 """.strip(),
     "look": """
@@ -1471,6 +1471,25 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         return p
 
     if lower in ("history", "hist", "notes") or lower.startswith("history "):
+        # IRR-I: history find <text> — deterministic literal search (display only).
+        # No execution, no mutation, no new persistence. User reissues via normal input.
+        if lower == "history find" or lower.startswith("history find "):
+            query = raw_line.strip()[12:].strip() if len(raw_line.strip()) > 12 else ""
+            if not query:
+                _say("usage: history find <text>")
+                _say("  literal substring search over command history (display only)")
+                return p
+            hist = list(getattr(p, "history", []) or [])
+            ql = query.lower()
+            matches = [(i + 1, h) for i, h in enumerate(hist) if ql in h.lower()]
+            if not matches:
+                _say(f'No history matches for "{query}".')
+                return p
+            _say(f"History matches for \"{query}\" ({len(matches)}):")
+            for num, h in matches:
+                _say(f"  {num:2}. {h}")
+            _say("  reissue by retyping the command (explicit action)")
+            return p
         n = 16
         for part in lower.split():
             if part.isdigit():
