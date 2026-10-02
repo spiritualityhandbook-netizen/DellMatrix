@@ -81,8 +81,8 @@ def smoke() -> bool:
     check("I.no_resurrect_01", cl.is_resurrection("LE-01", "OPEN"))
     check("I.no_resurrect_03", cl.is_resurrection("LE-03", "READY"))
     check("I.no_resurrect_22", cl.is_resurrection("LE-22", "OPEN"))
-    # OPEN -> READY is not resurrection
-    check("I.open_ok", not cl.is_resurrection("LE-20", "READY"))
+    # OPEN -> READY is not resurrection (use LE-04 which is still OPEN)
+    check("I.open_ok", not cl.is_resurrection("LE-04", "READY"))
     
     # ── J: dependency validation ───────────────────────────────
     le12 = cl.get_circuit("LE-12")
@@ -145,16 +145,20 @@ def smoke() -> bool:
     check("O.deterministic", r1 == r2)
     
     # ── P: program-strength classification ─────────────────────
+    # CDPC-I: LE-20 is now CLOSED (registered in regress.py).
     le20 = cl.get_circuit("LE-20")
-    check("P.le20_ready", le20.state == "READY")
+    check("P.le20_closed", le20.state == "CLOSED")
+    check("P.le20_cycle", le20.closure_cycle == "CDPC-I")
     repo_root = os.path.dirname(os.path.dirname(
         os.path.dirname(os.path.abspath(__file__))))
     check("P.le20_exists", os.path.exists(
         os.path.join(repo_root, "form", "dell_matrix", "program_strength.py")))
     
     # ── Q: NBD-log classification ──────────────────────────────
+    # CDPC-I: LE-13 is now SUPERSEDED (fingerprint architecture).
     le13 = cl.get_circuit("LE-13")
-    check("Q.le13_open", le13.state == "OPEN")
+    check("Q.le13_superseded", le13.state == "SUPERSEDED")
+    check("Q.le13_by", le13.superseded_by is not None)
     
     passed = sum(1 for _, ok in CHECKS if ok)
     total = len(CHECKS)
