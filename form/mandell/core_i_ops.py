@@ -545,13 +545,28 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
         elif low.startswith("grow_using_knowledge_about "):
             # DCC-IX: Contextual knowledge selection.
             # Format: "grow_using_knowledge_about <context>"
+            # EKC-I: "grow_using_knowledge_about <context> using <id1>,<id2>"
             from form.mandell.knowledge_selector import select_for_context
-            context = lab[27:].strip()
+            rest = lab[27:].strip()
+            if not rest:
+                return {**base, "ok": False, "error": "context required"}
+            # Parse explicit IDs (if " using " present)
+            explicit_ids = None
+            if " using " in rest.lower():
+                # Split on last " using " (context may contain the word)
+                idx = rest.lower().rfind(" using ")
+                context = rest[:idx].strip()
+                ids_part = rest[idx+7:].strip()
+                explicit_ids = [i.strip() for i in ids_part.split(",") if i.strip()]
+            else:
+                context = rest
             if not context:
                 return {**base, "ok": False, "error": "context required"}
             
-            # Select relevant knowledge
-            selection = select_for_context(program, context, operation="grow")
+            # Select relevant knowledge (with explicit choice if provided)
+            selection = select_for_context(
+                program, context, operation="grow", explicit_ids=explicit_ids
+            )
             selected_ids = [s["id"] for s in selection["selected"]]
             
             # DCC-XI: validate scope at the consumer boundary (defense in
@@ -759,6 +774,10 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 "contributions": contributions,
                 "consumer_scope_ids": consumer_scope_ids,
                 "scope_mode": scope_mode,
+                # EKC-I: explicit choice provenance
+                "explicit_choice": selection.get("explicit_choice", {
+                    "requested": [], "resolutions": {}, "selected_explicit": [],
+                }),
                 "ok": True,
                 "consumer": "grow_ideas",
                 "dell": 37,
