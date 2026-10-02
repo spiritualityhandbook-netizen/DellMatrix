@@ -41,23 +41,19 @@ except ImportError:
     from form.persist import load as persist_load
 
 HELP_SHORT = """
-Top commands (type help more for full list)
+Find capability by goal (type help <category> for exact syntax)
 
-  tutorial              guided walkthrough
-  create an idea called test detail: … goals: …
-  grow ideas 2
-  proposals | confirm all | rank
-  look | page | self | what next | ready
-  set detail <id> … · set goals <id> a; b
-  idea <id|label> · undo · history
-  multilook | attend [q] | inspire
-  sphere | lattice | visual | live
-  save | load | status | audit
-  self evolve | evolve loop 12
-  mode beginner|builder|depth
-  english expand 150
-  why influence <id> · learn ledger — knowledge (help more: Knowledge / Learning)
-  help more
+  help create     ideas, growth, proposals — make and develop
+  help knowledge  why, trace, supersede — understand knowledge
+  help learn      DuoBeta learning lifecycle — propose to apply
+  help explain    outcomes, what happened — explanation
+  help save       save, load, continue after restart
+  help recover    history, undo, replay — recover and retry
+  help look       look, page, zoom — inspect
+  help dell       Mandell/Dell execution — run capabilities
+  help system     modes, visual, tutorial — configure
+
+  help more       full command reference (all commands)
 """.strip()
 
 HELP_MORE = """
@@ -166,6 +162,72 @@ System
   save | load | visual | live | status | enhance on/off | pulse
   acceptance
 """.strip()
+
+# CN-II: grouped navigation — intent-based categories with exact verified syntax.
+# Presentation only; each example routes to an existing verified handler.
+HELP_CATEGORIES = {
+    "create": """
+Create — make and develop ideas
+
+  create an idea called <name>
+  grow ideas <n>
+  proposals | confirm <id> | confirm all | reject all
+  rank | lineage <id>
+""".strip(),
+    "knowledge": """
+Knowledge — understand what knowledge does
+
+  why used <kid> in <oid>
+  why not used <kid> [for <ctx>]
+  why influence <kid> [in <oid>] [for <ctx>]
+  trace dependency <id>
+  supersede idea <old-id> with <words>
+  discover [nursery]
+""".strip(),
+    "learn": """
+Learn — DuoBeta learning lifecycle (stepwise, confirm required)
+
+  learn propose <kind> <dell> from <oid> ...
+  learn inspect <pid> · learn gate <pid>
+  learn apply <pid> confirm · learn ledger
+  propose → inspect → gate → apply (confirm required)
+""".strip(),
+    "explain": """
+Explain — what happened
+
+  outcomes · trace last
+  self | audit | status
+""".strip(),
+    "save": """
+Save — persist and continue
+
+  save · load
+  restart with: python3 -m form.repl --load
+""".strip(),
+    "recover": """
+Recover — history, undo, retry
+
+  history [n] · undo · replay [n]
+  what next | nbd
+""".strip(),
+    "look": """
+Look — inspect the space
+
+  look · page · zoom <id|label>
+""".strip(),
+    "dell": """
+Dell — execute capabilities via Mandell seeds
+
+  NN[Name] :: <action>      e.g. 35[Discover] :: trace_dependency <id>
+  use idea <pid>            explicit knowledge choice
+""".strip(),
+    "system": """
+System — configure and orient
+
+  tutorial · mode beginner|builder|depth
+  visual | live · help more
+""".strip(),
+}
 
 _FACING = {
     "n": Facing.N, "north": Facing.N, "s": Facing.S, "south": Facing.S,
@@ -1079,13 +1141,25 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         print()
         print(HELP_SHORT)
         print()
-        _say("Type: help more")
         return p
 
     if lower in ("help more", "help full", "more"):
         print()
         print(HELP_MORE)
         print()
+        return p
+
+    if lower.startswith("help "):
+        # CN-II: grouped navigation — help <category> shows exact syntax.
+        cat = lower[5:].strip()
+        if cat in HELP_CATEGORIES:
+            print()
+            print(HELP_CATEGORIES[cat])
+            print()
+            return p
+        # Unknown category: suggest valid ones (suggest, not auto-execute).
+        _say(f'Unknown help category "{cat}".')
+        _say("  Try: " + " | ".join(f"help {k}" for k in HELP_CATEGORIES))
         return p
 
     # Live two-way visual (opt-in) — first-person centerpoint walk
