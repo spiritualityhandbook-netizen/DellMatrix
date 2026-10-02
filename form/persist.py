@@ -168,7 +168,9 @@ def serialize(program: Program) -> Dict[str, Any]:
         # DCC-I: persist the actual DuoBeta growth ledger so a later load can
         # restore the real history instead of fabricating synthetic entries.
         "duo_ledger": [
-            {"gen": int(e.gen), "detail": str(e.detail)[:120], "ts": str(e.ts)}
+            {"gen": int(e.gen), "detail": str(e.detail)[:120], "ts": str(e.ts),
+             # DBEL-I: structured learning metadata (additive; {} for legacy).
+             "meta": dict(getattr(e, "meta", None) or {})}
             for e in program.duo.ledger
         ],
         "avatar": _serialize_avatar(program),

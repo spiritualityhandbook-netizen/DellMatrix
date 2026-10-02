@@ -1208,3 +1208,49 @@ EPHEMERAL_BY_DESIGN fields never presented as durable.
 - observation != execution — fingerprint-invariant read-only proof.
 - health != intelligence — availability only, disclaimed explicitly.
 - explained != authorized — explain_dell reports policy; grants nothing.
+
+## DBEL-I — DuoBeta Evidence Learning I (NBD-Ω-007)
+
+Connects verified execution evidence to DuoBeta learning without
+autonomous code mutation, truth promotion, or authority bypass.
+
+### Learning law
+
+OBSERVED EXPERIENCE (Outcome V1) > EVIDENCE EXTRACTION >
+DUOBETA PROPOSAL (inspectable, staged) > GATE (deterministic) >
+ACCEPT/REJECT (both persisted, both visible) > DURABLE LEARNING STATE
+(DuoBeta ledger, Persistence V2) > FUTURE SELECTION INFLUENCE
+(`suggest_preferred` query).
+
+### Ledger singularity
+
+The existing DuoBeta ledger (`program.duo.ledger`) is the one ledger.
+`GrowthEntry` gains optional `meta` (additive). Learning entries carry
+kind=learn + proposal lifecycle (PROPOSED → ACCEPTED/REJECTED → APPLIED).
+No parallel ledger. SelfGrow sidecars remain noncanonical.
+
+### Gate (deterministic)
+
+kind allowed; dell in 1–99; ≥3 supporting outcomes; supporting results
+match kind; claimed knowledge in evidence; not duplicate; no forbidden
+targets. REJECTED persists with reason; no silent rejection.
+
+### Heat honesty
+
+No collapsed score exists or is created. Separable counters only:
+success / failure / blocked / last_seen. `suggest_preferred` ranks by
+transparent (success − failure − blocked).
+
+### Application boundary
+
+Accepted learning modifies ONLY the DuoBeta ledger entries and the
+derived in-memory preference index. Never: code, registry, Core-I/II
+semantics, Outcome records, truth, conflicts, revision authority,
+Persistence V2, Generation V1. The certified 37 selector is untouched.
+
+### Separations (DBEL-I)
+
+- learned != true — preference counts, never truth claims.
+- blocked != false; failed != bad knowledge; completed != truth.
+- proposed != applied — gate decides; rejection is visible.
+- influence != authority — `suggest_preferred` advises; selectors decide.
