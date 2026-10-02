@@ -1160,3 +1160,51 @@ receipt format, truth authority, or persistence system.
 - observed != exposed — raw 86/87/88/99 outcomes do not grant English access.
 - one record != per-node records — raw chains are one outcome; per-node
   evidence lives in messages/atom_results, not invented records.
+
+## ROS-I — Runtime Observability Surface I (NBD-Ω-006)
+
+Makes the observable runtime inspectable through one coherent READ-ONLY
+surface. No new execution, truth, or persistence authority.
+
+### The one module
+
+- `form/mandell/runtime_observe.py` — canonical read-only functions:
+  `explain_dell`, `execution_trace`, `latest_outcomes`,
+  `outcomes_for_dell`, `outcomes_by_status`, `outcome_by_id`,
+  `outcomes_for_knowledge_item`, `runtime_health`, `runtime_state`.
+- Every function is a pure read over existing live evidence (registry,
+  Outcome V1 queries, RouteReceipt/BridgeReceipt shape, nursery,
+  checkpoint_generation, DuoBeta). Nothing invented, nothing persisted.
+
+### Observation model
+
+Answers WHAT INPUT WAS UNDERSTOOD / WHAT DID IT RESOLVE TO /
+WHAT EXECUTED / WHAT FLOW WAS USED / WHAT HAPPENED /
+WHAT OUTCOME WAS RECORDED / WHAT STATE/KNOWLEDGE WAS INVOLVED /
+WHAT GENERATION IS CURRENT / WHY WAS SOMETHING BLOCKED —
+as a view over existing evidence, never a new ledger.
+
+### REPL surface (meta-commands, intercepted before execution paths)
+
+- `explain <n>` (numeric Dell only; words fall through to latinmandell)
+- `outcomes [n]`, `outcome <id>`, `health`, `runtime`, `trace last|<id>`
+- Bare `trace` still routes to Dell 35 Discover (load-bearing preserved).
+- Existing `status` untouched.
+
+### live_visual boundary
+
+No ROS-I commands added to live_visual (FPR-Ω C1 parallel authority
+not worsened). K1 recorded: `explain <word|phrase>` (latinmandell) vs
+`explain <n>` (Dell) — same verb, disjoint namespaces.
+
+### Honest unknown
+
+known / not_recorded / not_applicable / ephemeral / blocked /
+unsupported. Empty provenance stays empty. Outcome != truth explicit.
+EPHEMERAL_BY_DESIGN fields never presented as durable.
+
+### Separations (ROS-I)
+
+- observation != execution — fingerprint-invariant read-only proof.
+- health != intelligence — availability only, disclaimed explicitly.
+- explained != authorized — explain_dell reports policy; grants nothing.
