@@ -490,11 +490,6 @@ def test_35_regression_compat():
     print("✓ 35: regression compatibility")
 
 
-if __name__ == "__main__":
-    import sys
-    sys.exit(0 if smoke() else 1)
-
-
 def smoke() -> bool:
     """Regression smoke: run all TPP-I tests, return True if all pass."""
     tests = [
@@ -544,3 +539,7 @@ def smoke() -> bool:
             return False
     print(f"TPP-I smoke: {passed}/{len(tests)} passed")
     return passed == len(tests)
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(0 if smoke() else 1)

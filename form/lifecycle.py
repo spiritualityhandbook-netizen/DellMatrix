@@ -122,7 +122,8 @@ def do_pin(p, ref: str, interaction_id: str) -> Tuple[Any, str]:
         # Already pinned: idempotent, still create Outcome for observability
         outcome = _make_outcome(p, "pin", ref, uid, interaction_id, True,
                                 f"Already pinned: {uid}")
-        return p, f"Already pinned: {uid} (Outcome {outcome.get("outcome_id", "?") if outcome else "?"})"
+        oid_str = outcome.get("outcome_id", "?") if outcome else "?"
+        return p, f"Already pinned: {uid} (Outcome {oid_str})"
 
     # PINNED implies ACTIVE: if faded, restore to active
     was_faded = meta["presence"] == "faded"
@@ -146,7 +147,8 @@ def do_unpin(p, ref: str, interaction_id: str) -> Tuple[Any, str]:
     if not meta["pinned"]:
         outcome = _make_outcome(p, "unpin", ref, uid, interaction_id, True,
                                 f"Already unpinned: {uid}")
-        return p, f"Already unpinned: {uid} (Outcome {outcome.get("outcome_id", "?") if outcome else "?"})"
+        oid_str = outcome.get("outcome_id", "?") if outcome else "?"
+        return p, f"Already unpinned: {uid} (Outcome {oid_str})"
 
     set_presence(p, uid, pinned=False)
     outcome = _make_outcome(p, "unpin", ref, uid, interaction_id, True,
@@ -172,7 +174,8 @@ def do_fade(p, ref: str, interaction_id: str) -> Tuple[Any, str]:
     if meta["presence"] == "faded":
         outcome = _make_outcome(p, "fade", ref, uid, interaction_id, True,
                                 f"Already faded: {uid}")
-        return p, f"Already faded: {uid} (Outcome {outcome.get("outcome_id", "?") if outcome else "?"})"
+        oid_str = outcome.get("outcome_id", "?") if outcome else "?"
+        return p, f"Already faded: {uid} (Outcome {oid_str})"
 
     set_presence(p, uid, presence="faded", created_seq=p.outcome_seq)
     outcome = _make_outcome(p, "fade", ref, uid, interaction_id, True,
@@ -192,7 +195,8 @@ def do_unfade(p, ref: str, interaction_id: str) -> Tuple[Any, str]:
     if meta["presence"] == "active":
         outcome = _make_outcome(p, "unfade", ref, uid, interaction_id, True,
                                 f"Already active: {uid}")
-        return p, f"Already active: {uid} (Outcome {outcome.get("outcome_id", "?") if outcome else "?"})"
+        oid_str = outcome.get("outcome_id", "?") if outcome else "?"
+        return p, f"Already active: {uid} (Outcome {oid_str})"
 
     set_presence(p, uid, presence="active")
     outcome = _make_outcome(p, "unfade", ref, uid, interaction_id, True,
