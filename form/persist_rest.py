@@ -424,6 +424,15 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         p.outcome_seq = max_seq
     except Exception:
         pass
+    # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
+    try:
+        lc_data = data.get("lifecycle")
+        if isinstance(lc_data, dict):
+            p.lifecycle = {str(k): dict(v) for k, v in lc_data.items() if isinstance(v, dict)}
+        else:
+            p.lifecycle = {}
+    except Exception:
+        p.lifecycle = {}
     restore_core_ii(p, data)
     return p
 
