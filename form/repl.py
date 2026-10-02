@@ -507,6 +507,112 @@ def _handle_lattice(p: Program, lower: str, raw: str) -> bool:
     return False
 
 
+def _handle_ros_command(p: Program, raw: str) -> bool:
+    """ROS-I read-only observability meta-commands.
+
+    Returns True when the line was an observability command (handled).
+    Every branch delegates to form/mandell/runtime_observe.py and only
+    formats the result for display. No execution, no mutation, no
+    persistence. Bare `trace` is deliberately NOT handled here.
+    """
+    from form.mandell import runtime_observe as ro
+
+    lower = raw.strip().lower()
+    parts = raw.strip().split()
+
+    def _show_explain(arg: str) -> bool:
+        e = ro.explain_dell(arg)
+        if not e.get("ok"):
+            _say(f"explain: {e.get('status')} — {e.get('detail')}")
+            return True
+        _say(f"Dell {e['address']} [{e['canonical_name']}] — {e['manor']}")
+        _say(f"  class={e['classification']} · semantic={e['semantic_accessibility']}")
+        _say(f"  authority: {e['execution_authority']}")
+        pol = e.get("policy") or {}
+        if pol.get("restriction") != "none":
+            _say(f"  policy: {pol.get('restriction')} — {pol.get('reason')}")
+        _say(f"  flows: {e['flow_compatibility']}")
+        return True
+
+    if lower.startswith("explain "):
+        arg = parts[1] if len(parts) > 1 else ""
+        # Only Dell addresses (numeric) are ROS-I; words/phrases fall through
+        # to the existing latinmandell explainer (and live_visual's explain).
+        import re as _re
+        if _re.fullmatch(r"\d{1,3}", arg):
+            return _show_explain(arg)
+        return False
+
+    if lower == "outcomes" or lower.startswith("outcomes "):
+        n = 10
+        if len(parts) > 1 and parts[1].isdigit():
+            n = int(parts[1])
+        recs = ro.latest_outcomes(p, limit=n)
+        if not recs:
+            _say("No outcomes recorded.")
+            return True
+        _say(f"Latest {len(recs)} outcomes (observation only — not truth):")
+        for r in recs:
+            _say(f"  {r.get('outcome_id')} · {r.get('operation')}[{r.get('dell')}]"
+                 f" · {r.get('result')}")
+        return True
+
+    if lower.startswith("outcome "):
+        oid = parts[1] if len(parts) > 1 else ""
+        res = ro.outcome_by_id(p, oid)
+        if not res.get("ok"):
+            _say(f"outcome: {res.get('status')} — {res.get('detail')}")
+            return True
+        r = res["outcome"]
+        _say(f"{r.get('outcome_id')} · {r.get('operation')}[{r.get('dell')}]"
+             f" · {r.get('result')}")
+        _say(f"  input: {str(r.get('mandell') or r.get('input'))[:80]}")
+        _say(f"  semantic: {r.get('semantic')}")
+        if r.get("error"):
+            _say(f"  error: {str(r.get('error'))[:80]}")
+        return True
+
+    if lower in ("trace last",) or (lower.startswith("trace ") and lower != "trace"):
+        arg = raw.strip()[6:].strip()
+        oid = None if arg.lower() == "last" else arg
+        t = ro.execution_trace(p, outcome_id=oid)
+        if not t.get("ok"):
+            _say(f"trace: {t.get('status')} — {t.get('detail')}")
+            return True
+        _say(f"trace {t.get('outcome_id')} (observation only — not truth)")
+        _say(f"  input: {str(t.get('input_understood'))[:80]}")
+        rt = t.get("resolved_to") or {}
+        _say(f"  resolved: {rt.get('operation')}[{rt.get('dell')}]")
+        atoms = t.get("ordered_atoms") or []
+        _say(f"  atoms: {' > '.join(a.get('mandell', '') for a in atoms) or '—'}")
+        _say(f"  flow: {t.get('flow_used') or '—'}")
+        wh = t.get("what_happened") or {}
+        _say(f"  result: {wh.get('result')}")
+        return True
+
+    if lower == "health":
+        h = ro.runtime_health(owner=getattr(p, "owner", "Operator"))
+        _say("runtime health (availability only — not intelligence/truth):")
+        for name, c in (h.get("components") or {}).items():
+            mark = "ok" if c.get("available") else "MISSING"
+            _say(f"  [{mark}] {name}: {c.get('detail')}")
+        return True
+
+    if lower == "runtime":
+        s = ro.runtime_state(p)
+        _say(f"runtime state · owner={s.get('owner')}")
+        _say(f"  generation: {s.get('current_generation')}")
+        oc = (s.get("outcomes") or {})
+        _say(f"  outcomes: total={oc.get('total')} counts={oc.get('counts')}")
+        le = (s.get("last_execution") or {})
+        _say(f"  last execution: {le.get('status')}"
+             + (f" · {le.get('operation')}[{le.get('dell')}] {le.get('result')}"
+                if le.get("status") == "known" else ""))
+        return True
+
+    return False
+
+
 def _handle_macro_rank(p: Program, lower: str, raw: str) -> bool:
     if lower in ("rank", "rank proposals"):
         ranked = p.ranked_proposals() if hasattr(p, "ranked_proposals") else p.list_proposals()
@@ -1799,6 +1905,14 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             break
         if line.lower().startswith("say "):
             line = line[4:].strip()
+
+        # ROS-I: read-only observability meta-commands. Intercepted here
+        # (like quit/exit) before any execution path; each delegates to the
+        # canonical read-only functions in form/mandell/runtime_observe.py.
+        # Bare `trace` is NOT intercepted: translate("trace") routes to
+        # Dell 35 Discover (load-bearing in DCC tests).
+        if _handle_ros_command(p, line):
+            continue
 
         # DCC-IV: composed Mandell program (flow operators) -> flow executor.
         # Must come before looks_like_seed, which would send it to execute_seed.
