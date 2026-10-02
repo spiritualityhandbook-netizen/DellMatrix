@@ -307,4 +307,6 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     ok = bool(state.get("ok", True))
     last_error = state.get("error") or ""
     st = getattr(program, "core_ii", None)
-    return {"ok": ok, "error": last_error, "seed": seed.as_mandel(), "english": seed.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "core_ii": st.snap() if st is not None else {}}
+    # EOC-I: per-node evidence (additive; existing keys unchanged).
+    atom_results = [dict(r) for r in (_results or []) if isinstance(r, dict)]
+    return {"ok": ok, "error": last_error, "seed": seed.as_mandel(), "english": seed.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "core_ii": st.snap() if st is not None else {}}

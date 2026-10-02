@@ -13,7 +13,6 @@ try:
     from form.mandell.translate import translate
     from form.mandell.seed import looks_like_seed
     from form.mandell.bridge import to_english, to_mandell, bridge
-    from form.mandell.executor import execute_seed
     from form.mandell.patterns import teach, list_patterns
     from form.mandell.polyglot import bridge_lang, list_langs
     from form.mandell.phrases import list_phrases, match_phrase
@@ -31,7 +30,6 @@ except ImportError:
     from form.mandell.translate import translate
     from form.mandell.seed import looks_like_seed
     from form.mandell.bridge import to_english, to_mandell, bridge
-    from form.mandell.executor import execute_seed
     from form.mandell.patterns import teach, list_patterns
     from form.mandell.polyglot import bridge_lang, list_langs
     from form.mandell.phrases import list_phrases, match_phrase
@@ -1822,7 +1820,11 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                 pass  # Not a valid flow program; fall through.
 
         if looks_like_seed(line):
-            result = execute_seed(p, line)
+            # EOC-I: raw execution with Outcome V1 observation. The adapter
+            # wraps the existing execution; it is not a new executor and
+            # never alters execution semantics.
+            from form.mandell.execution_observer import observe_seed_execution
+            result = observe_seed_execution(p, line)
             p = _apply_seed_result(p, result)
             continue
 

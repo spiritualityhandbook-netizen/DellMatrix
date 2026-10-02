@@ -1114,3 +1114,49 @@ flow_executor).
   (full 9 flows, no per-node outcomes). Both documented, both tested.
 - refused != unexecuted-policy — 86/87/88/99 refuse in the spine but execute
   via raw Mandell by explicit policy.
+
+## EOC-I — Execution Observation Convergence I (NBD-Ω-005)
+
+Closes the observation discontinuity: raw Mandell execution is observed
+through the existing Outcome V1 ledger via one observation adapter
+(`form/mandell/execution_observer.py`). No new executor, router, ledger,
+receipt format, truth authority, or persistence system.
+
+### The one boundary
+
+- `observe_seed_execution(program, seed_text)` wraps the existing
+  `execute_seed` front door (all paths: apply_core_i, 21/22 live, leaf,
+  chain). It decides nothing and modifies no operands.
+- One Outcome V1 record per top-level raw execution. Per-node fates ride
+  in the existing messages; `execute_chain` additionally returns
+  `atom_results` (additive) as structured per-node evidence.
+- Parse failures are observed as non-execution records (routed=False),
+  consistent with the routed contract. Raised exceptions are captured
+  as failed and re-raised (execution semantics preserved).
+
+### Capture ownership (double-capture prevention by construction)
+
+- The adapter owns capture ONLY for the top-level raw executions it runs
+  (REPL raw path, live_visual command path).
+- Nested executions (chain Core-I leafs, Dell 99 inner compose, control
+  bodies) call execute_seed/execute_chain directly — never the adapter.
+- route_intent (wrapper) and operator_bridge (self-capture) keep their
+  own capture and never use the adapter.
+- Projections (cheat_project), benchmarks (language.metrics), and replay
+  never use the adapter and are never observed.
+
+### Provenance honesty
+
+- Knowledge/conflict provenance follows the existing DCC-XX-C1 identity
+  rule: recorded only when the call installs a fresh `last_nurture` dict.
+  Raw 37 arms that supply no `selected_details` record `knowledge: []`
+  rather than fabricated provenance; later calls are never contaminated.
+- Generation coherence: raw Dell 27 records carry the committed
+  `generation_id` (same `_generation_epoch` the routed path uses).
+
+### Separations (EOC-I)
+
+- observation != execution — the adapter wraps; it never becomes authority.
+- observed != exposed — raw 86/87/88/99 outcomes do not grant English access.
+- one record != per-node records — raw chains are one outcome; per-node
+  evidence lives in messages/atom_results, not invented records.
