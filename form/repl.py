@@ -1167,6 +1167,27 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             _say(f"Ledger: {detail}")
             pillars = out.get("pillars") or {}
             _say(f"Pillars {pillars.get('label')} avg={pillars.get('average')}")
+            # SAOC-II: observe specialized program evolution. Existing
+            # execution unchanged; this only captures Outcome evidence with
+            # the public interaction_id. Honest: no Dell/Mandell fabricated.
+            try:
+                from form.mandell.execution_observer import observe_specialized_execution
+                ok = bool(out.get("ok", True))
+                observe_specialized_execution(
+                    p,
+                    action="evolve",
+                    input_text=raw_line,
+                    ok=ok,
+                    error="" if ok else str(out.get("error") or out.get("pillars_error") or ""),
+                    messages=[
+                        f"Evolved · generation={out.get('generation')}",
+                        f"Pillars {(out.get('pillars') or {}).get('label')}",
+                    ],
+                    semantic="evolve[program:specialized]",
+                    interaction_id=interaction_id,
+                )
+            except Exception:
+                pass
             return p
 
     # Program understanding: re-route natural English → canonical command handlers

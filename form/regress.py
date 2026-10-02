@@ -97,6 +97,7 @@ LIST = [
     "form.cn_ii_nav_test",
     "form.irr_i_find_test",
     "form.iri_i_test",
+    "form.saoc_ii_test",
     "form.dell_matrix.program_strength",
     "form.mandell.core_ii_smoke",
 ]
