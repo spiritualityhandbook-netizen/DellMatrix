@@ -126,10 +126,14 @@ def execution_trace(program: Any, outcome_id: Optional[str] = None) -> Dict[str,
         parse_status = "not_applicable (input could not be re-parsed)"
 
     knowledge = rec.get("knowledge") or []
+    # EIC-I: expose explicit interaction correlation when present.
+    # None/UNKNOWN for legacy outcomes. Read-only; no new authority.
+    interaction = rec.get("interaction_id")
     return {
         "ok": True,
         "status": "known",
         "outcome_id": rec.get("outcome_id"),
+        "interaction_id": interaction if interaction else "UNKNOWN",
         "input_understood": mandell,
         "resolved_to": {"dell": rec.get("dell"),
                         "operation": rec.get("operation"),

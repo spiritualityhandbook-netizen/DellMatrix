@@ -275,7 +275,8 @@ def _result_of(receipt: Any) -> str:
 
 def build_outcome(program: Any, receipt: Any,
                   composition: Optional[Dict[str, Any]] = None,
-                  nurture_fresh: bool = False) -> Dict[str, Any]:
+                  nurture_fresh: bool = False,
+                  interaction_id: Optional[str] = None) -> Dict[str, Any]:
     """Construct an Outcome Record V1 from a RouteReceipt (pure).
 
     Does not mutate the program. All provenance is snapshotted from
@@ -286,6 +287,11 @@ def build_outcome(program: Any, receipt: Any,
     when the executed call replaced ``program.last_nurture``. When
     False, knowledge/conflict provenance is recorded empty — stale
     evidence from a previous call can never contaminate this outcome.
+
+    ``interaction_id`` (EIC-I): optional explicit correlation to the
+    interaction that caused this execution. None = UNKNOWN (legacy or
+    non-interactive execution). Never fabricated. Does not imply truth,
+    success, causation beyond propagated ancestry, persistence, or ordering.
     """
     owner = str(getattr(program, "owner", "Operator"))
     seq = int(getattr(program, "outcome_seq", 0) or 0) + 1
@@ -353,6 +359,9 @@ def build_outcome(program: Any, receipt: Any,
         "generation_id": _generation_epoch(program),
         # Explicit boundary marker: this record is observation, not truth.
         "outcome_is_observation": True,
+        # EIC-I: explicit interaction correlation. None = UNKNOWN.
+        # Does not imply truth, success, persistence, or ordering.
+        "interaction_id": interaction_id,
     }
     if composition is not None and isinstance(composition, dict):
         record["composition"] = {
@@ -364,7 +373,8 @@ def build_outcome(program: Any, receipt: Any,
 
 def capture_outcome(program: Any, receipt: Any,
                     composition: Optional[Dict[str, Any]] = None,
-                    nurture_fresh: bool = False) -> Optional[Dict[str, Any]]:
+                    nurture_fresh: bool = False,
+                    interaction_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Capture an Outcome Record V1 into the program's ledger.
 
     Called once per route_intent call, after the RouteReceipt is built.
@@ -375,6 +385,9 @@ def capture_outcome(program: Any, receipt: Any,
 
     ``nurture_fresh`` (from the route_intent wrapper) gates provenance
     attribution: only a receipt slot replaced by THIS call is read.
+
+    ``interaction_id`` (EIC-I): optional explicit correlation.
+    None = UNKNOWN.
     """
     try:
         records = getattr(program, "outcome_records", None)
@@ -383,7 +396,8 @@ def capture_outcome(program: Any, receipt: Any,
         if not isinstance(records, dict):
             return None
         record = build_outcome(program, receipt, composition,
-                                nurture_fresh=nurture_fresh)
+                                nurture_fresh=nurture_fresh,
+                                interaction_id=interaction_id)
         # Deterministic: the sequence counter advances exactly once per
         # captured outcome, in the same step as the append.
         program.outcome_seq = int(record["outcome_seq"])
