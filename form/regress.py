@@ -93,6 +93,7 @@ LIST = [
     "form.mandell.aec_i_test",
     "form.mandell.odcg_i_test",
     "form.mandell.dla_i_test",
+    "form.mandell.kie_i_test",
     "form.dell_matrix.program_strength",
     "form.mandell.core_ii_smoke",
 ]
