@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""ASM-I: Adaptive Selection Measurement I — read-only cap counterfactual.
+"""ASM-I/AEC-I: Adaptive Selection Measurement — cap counterfactual diagnostic.
 
-Measures the effect of ASI_LEARNED_CAP values on selection ordering
+Measures the effect of learned-score bounding on selection ordering
 WITHOUT changing production code or persisting any learning.
 
-Method: monkey-patch duobeta_learn.ASI_LEARNED_CAP per evaluation,
+ASM-I: measured ASI_LEARNED_CAP values via monkey-patch.
+AEC-I: compares old hard clamp vs new monotonic saturation.
+
+Method: monkey-patch duobeta_learn transform per evaluation,
 run select_for_context, record ordering. Restore after each run.
 
-NO production cap change. NO learning persisted. NO state mutation.
+NO production change. NO learning persisted. NO state mutation.
 """
 
 import sys
@@ -218,3 +221,61 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ── AEC-I: old vs new comparison ──────────────────────────────────
+def compare_old_vs_new():
+    """Demonstrate elimination of the ASM-I suppression case.
+
+    BEFORE (hard clamp at 5): raw 6/10 → 5/5 → false tie
+    AFTER (saturation): raw 6/10 → 5.66/9.09 → distinct, correct order
+    """
+    import form.mandell.duobeta_learn as dl
+    from form.mandell.knowledge_selector import select_for_context
+    from form.open import Program
+
+    def setup(p):
+        for kid in ["k0", "k1"]:
+            prop = type("obj", (), {"status": "confirmed", "label": "Item alpha", "id": kid})()
+            p.nursery.proposals[kid] = prop
+            unit = type("obj", (), {"label": "Item alpha", "detail": "beta",
+                                   "words": "item alpha beta"})()
+            p.cube.session.plane.units[kid] = unit
+        for kid, n in [("k0", 6), ("k1", 10)]:
+            dl._append_learn_entry(p, "test",
+                {"kind": "learn", "proposal_kind": "preference", "dell": 37,
+                 "knowledge_id": kid, "status": "APPLIED",
+                 "evidence": {"supporting": [f"t{j}" for j in range(n)]},
+                 "gate": {"accepted": True}, "reason": "t",
+                 "proposed_ts": "t", "applied_ts": "t"})
+
+    # OLD: hard clamp
+    orig_sat = dl.saturate_learned_score
+    dl.saturate_learned_score = lambda raw: max(-5, min(5, raw))
+    p = Program()
+    setup(p)
+    r = select_for_context(p, "alpha")
+    old_scores = dict(r["learned_scores"])
+    old_order = [s["id"] for s in r["selected"]]
+
+    # NEW: saturation (restore)
+    dl.saturate_learned_score = orig_sat
+    p = Program()
+    setup(p)
+    r = select_for_context(p, "alpha")
+    new_scores = dict(r["learned_scores"])
+    new_order = [s["id"] for s in r["selected"]]
+
+    print("=" * 60)
+    print("AEC-I: OLD (hard clamp) vs NEW (saturation)")
+    print("=" * 60)
+    print(f"Raw evidence: k0=6, k1=10")
+    print(f"OLD scores: k0={old_scores.get('k0')}, k1={old_scores.get('k1')}")
+    print(f"OLD order: {old_order} (false tie: {old_scores.get('k0') == old_scores.get('k1')})")
+    print(f"NEW scores: k0={new_scores.get('k0'):.4f}, k1={new_scores.get('k1'):.4f}")
+    print(f"NEW order: {new_order} (distinct: {new_scores.get('k0') != new_scores.get('k1')})")
+    print(f"Suppression eliminated: {new_order[0] == 'k1'}")
+
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "--compare":
+    compare_old_vs_new()

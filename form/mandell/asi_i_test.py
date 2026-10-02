@@ -44,6 +44,11 @@ sys.path.insert(0, REPO)
 from form.open import Program  # noqa: E402
 from form.mandell import duobeta_learn as dl  # noqa: E402
 from form.mandell.knowledge_selector import select_for_context  # noqa: E402
+
+
+def _score_eq(actual, expected_raw, tol=1e-9):
+    """AEC-I: compare learned score against saturated expected value."""
+    return abs(actual - dl.saturate_learned_score(expected_raw)) < tol
 from form.mandell.translate import translate  # noqa: E402
 from form.mandell.semantic_router import route_intent  # noqa: E402
 from form.mandell.execution_observer import observe_seed_execution  # noqa: E402
@@ -137,8 +142,8 @@ def test_b():
     ids1, s1 = sel_ids(p, "alpha beta")
     check("B.moved_up", ids1 == [bid, aid])
     check("B.applied_flag", s1["learned_preference_applied"] is True)
-    check("B.score", s1["learned_scores"][bid] == 3
-          and s1["learned_scores"][aid] == 0)
+    check("B.score", _score_eq(s1["learned_scores"][bid], 3)
+          and s1["learned_scores"][aid] == 0.0)
     check("B.baseline_preserved", s1["baseline_selected_ids"] == [aid, bid])
 
     # Execution after learning → Outcome V1 (production path, not suggest_preferred)
@@ -185,7 +190,7 @@ def test_c():
     ids1, s1 = sel_ids(p2, "alpha beta")
     check("C.moved_down", ids1 == [cid, did])
     check("C.still_selected", did in ids1)
-    check("C.negative_bounded", s1["learned_scores"][did] == -3)
+    check("C.negative_bounded", _score_eq(s1["learned_scores"][did], -3))
     # C3: D is NOT false/invalid/conflicted/deleted
     check("C.still_confirmed", p2.nursery.proposals[did].status == "confirmed")
     check("C.on_plane", did in p2.cube.session.plane.units)
@@ -238,7 +243,7 @@ def test_f():
     # Learn preference for C via a context where C IS relevant
     _, _, g, a = learn_preference(p, cid, "quantum xylophone", 3)
     check("F.learned", g["accepted"] and a["applied"])
-    check("F.score", dl.bounded_learned_score(p, 37, cid) == 3)
+    check("F.score", _score_eq(dl.bounded_learned_score(p, 37, cid), 3))
     # Select for "alpha beta": C must NOT appear (irrelevant despite +3)
     ids, s = sel_ids(p, "alpha beta")
     check("F.excluded", cid not in ids)
@@ -369,7 +374,7 @@ def test_n():
     p2 = Program.load(owner)
     ids1, s1 = sel_ids(p2, "alpha beta")
     check("N.order", ids1 == ids0 == [bid, aid])
-    check("N.scores", s1["learned_scores"][bid] == 3)
+    check("N.scores", _score_eq(s1["learned_scores"][bid], 3))
     wipe_owner(owner)
 
 
@@ -480,7 +485,7 @@ def test_s():
     v = ro.selection_learning_view(p, "alpha beta")
     check("S.view_ok", v.get("ok") is True)
     check("S.applied_flag", v.get("learned_preference_applied") is True)
-    check("S.scores", v.get("learned_scores", {}).get(bid) == 3)
+    check("S.scores", _score_eq(v.get("learned_scores", {}).get(bid), 3))
     check("S.baseline", v.get("baseline_selected_ids") == [aid, bid])
     check("S.learned_order", v.get("learned_selected_ids") == [bid, aid])
     check("S.hard_filters", "supersession_exclusions" in v
