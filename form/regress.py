@@ -77,6 +77,8 @@ LIST = [
     "form.mandell.pac_i_test",
     "form.mandell.cac_i_test",
     "form.mandell.ssi_i_test",
+    "form.mandell.eoc_i_test",
+    "form.mandell.pac_i_proofs_test",
     "form.mandell.core_ii_smoke",
 ]
 

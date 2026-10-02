@@ -1375,7 +1375,6 @@ def _run_command(program, cmd: str, _depth: int = 0) -> Dict[str, Any]:
 
     try:
         from form.mandell.seed import looks_like_seed
-        from form.mandell.executor import execute_seed
         from form.mandell.translate import translate
         from form.repl import _execute_intent, _apply_seed_result, capture_output
         from form.avatar import Locomotion
@@ -1390,7 +1389,9 @@ def _run_command(program, cmd: str, _depth: int = 0) -> Dict[str, Any]:
         def _run_fallthrough():
             with contextlib.redirect_stdout(stdout_buf):
                 if looks_like_seed(cmd):
-                    result = execute_seed(program, cmd)
+                    # EOC-I: raw execution with Outcome V1 observation.
+                    from form.mandell.execution_observer import observe_seed_execution
+                    result = observe_seed_execution(program, cmd)
                     _apply_seed_result(program, result)
                     # seed results often carry messages
                     msgs = []
