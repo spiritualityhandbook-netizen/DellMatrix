@@ -181,7 +181,6 @@ def build_frontier(program: Any = None) -> List[Candidate]:
     # ── 7. dead-path cleanup batch (LE-17/18/19) ───────────────────
     out.append(Candidate(
         candidate_id="dead-path-cleanup",
-        state="CLOSED",  # FCND-I 2026-10-02: closed
         title="Dead-path cleanup: gate_core_ii_bind, boot, smoke_all",
         target_circuit="cleanup",
         locality="cleanup",
@@ -207,7 +206,6 @@ def build_frontier(program: Any = None) -> List[Candidate]:
     # ── 8. phantom commands (LE-14/21) ────────────────────────────
     out.append(Candidate(
         candidate_id="phantom-commands",
-        state="CLOSED",  # FCND-I 2026-10-02: closed
         title="Phantom commands: SISTER_SETUP, --awake flag",
         target_circuit="docs/ux",
         locality="cleanup",
@@ -229,7 +227,6 @@ def build_frontier(program: Any = None) -> List[Candidate]:
     # ── 9. terminology/docs (LE-22/23/24) ──────────────────────────
     out.append(Candidate(
         candidate_id="terminology-docs",
-        state="CLOSED",  # FCND-I 2026-10-02: closed
         title="Terminology hazards: truth-of-meet, DOC_GAP_CLOSER, stale audits",
         target_circuit="docs",
         locality="cleanup",
@@ -320,3 +317,20 @@ def build_frontier(program: Any = None) -> List[Candidate]:
     ))
 
     return out
+
+# ── LEAS-I: candidate → circuit mapping ──────────────────────────────
+# Maps NBD candidate IDs to canonical circuit IDs from circuit_ledger.py.
+# This is the ONE mapping table. Do not duplicate circuit state elsewhere.
+CANDIDATE_CIRCUIT_MAP = {
+    "dead-path-cleanup": ["LE-17", "LE-18", "LE-19"],
+    "phantom-commands": ["LE-14", "LE-21"],
+    "terminology-docs": ["LE-22", "LE-23", "LE-24"],
+    "program-strength-registration": ["LE-20"],
+    "nbd-log-stamping": ["LE-13"],
+    "attention-rank-adapter": ["LE-10"],
+    "dcc-trace-view": ["LE-12"],
+    "body-shallow-copy": ["LE-15"],
+    "live-visual-convergence": ["LE-04"],
+    # nbd-dogfood, explicit-knowledge-choice, adaptive-cap-measurement
+    # have no single LE mapping; they are frontier work, not loose-end closure.
+}

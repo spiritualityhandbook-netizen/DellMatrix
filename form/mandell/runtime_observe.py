@@ -457,3 +457,45 @@ def nbd_view(program: Any, candidate_id: str = "") -> Dict[str, Any]:
             "DIRECTOR_DECISION_REQUIRED":
                 pkt["DIRECTOR_DECISION_REQUIRED"],
             "EXECUTION_AUTHORITY": pkt["EXECUTION_AUTHORITY"]}
+
+
+# ── LEAS-I: read-only circuit inspection ─────────────────────────────
+def circuits_view(program: Any) -> Dict[str, Any]:
+    """Read-only view of canonical circuit ledger. No mutation."""
+    from .circuit_ledger import build_ledger
+    ledger = build_ledger()
+    by_state: Dict[str, List[str]] = {}
+    for c in ledger:
+        by_state.setdefault(c.state, []).append(c.circuit_id)
+    return {
+        "total": len(ledger),
+        "by_state": {k: sorted(v) for k, v in by_state.items()},
+        "circuits": [
+            {"circuit_id": c.circuit_id, "title": c.title,
+             "state": c.state, "locality": c.locality,
+             "closure_cycle": c.closure_cycle}
+            for c in ledger
+        ],
+    }
+
+
+def circuit_view(program: Any, circuit_id: str) -> Dict[str, Any]:
+    """Read-only view of a single circuit. No mutation."""
+    from .circuit_ledger import get_circuit
+    c = get_circuit(circuit_id)
+    if c is None:
+        return {"found": False, "circuit_id": circuit_id}
+    return {
+        "found": True,
+        "circuit_id": c.circuit_id,
+        "title": c.title,
+        "state": c.state,
+        "locality": c.locality,
+        "dependency_ids": c.dependency_ids,
+        "evidence": c.evidence,
+        "closure_cycle": c.closure_cycle,
+        "closure_commit": c.closure_commit,
+        "superseded_by": c.superseded_by,
+        "last_verified": c.last_verified,
+        "notes": c.notes,
+    }

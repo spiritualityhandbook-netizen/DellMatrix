@@ -477,3 +477,49 @@ def is_stale(packet: Dict[str, Any], program: Any) -> bool:
         if old.get(k) != new.get(k):
             return True
     return False
+
+
+# ── LEAS-I: canonical ledger integration ─────────────────────────────
+def sync_from_ledger(candidates: List[Candidate]) -> List[str]:
+    """Sync candidate states from the canonical circuit ledger.
+
+    Returns list of candidate_ids whose state was updated.
+    Enforces no-resurrection: CLOSED candidates cannot become OPEN/READY
+    via sync (they're already CLOSED; sync only confirms).
+
+    This is the ONE place where ledger state flows into NBD.
+    Do not duplicate circuit state manually elsewhere.
+    """
+    try:
+        from .circuit_ledger import build_ledger, is_resurrection
+    except ImportError:
+        return []  # Ledger not available; no sync
+    ledger = {c.circuit_id: c for c in build_ledger()}
+    updated = []
+    # Map candidate -> circuit IDs via evidence or candidate_id conventions
+    # For now: candidates carry circuit refs in their evidence; we match
+    # by known mappings. A full mapping table lives in nbd_candidates.py.
+    try:
+        from .nbd_candidates import CANDIDATE_CIRCUIT_MAP
+    except ImportError:
+        CANDIDATE_CIRCUIT_MAP = {}
+    for cand in candidates:
+        circuit_ids = CANDIDATE_CIRCUIT_MAP.get(cand.candidate_id, [])
+        for cid in circuit_ids:
+            circ = ledger.get(cid)
+            if circ is None:
+                continue
+            # Enforce no-resurrection
+            if is_resurrection(cid, circ.state):
+                # Ledger says CLOSED but candidate would reopen — this is
+                # a bug in the map or ledger, not a valid transition.
+                continue
+            # Sync CLOSED state from ledger
+            if circ.state == "CLOSED" and cand.state != "CLOSED":
+                cand.state = CLOSED
+                updated.append(cand.candidate_id)
+            elif circ.state == "BLOCKED" and cand.state == "OPEN":
+                cand.state = BLOCKED
+                cand.blocked_reason = f"Ledger: {cid} BLOCKED"
+                updated.append(cand.candidate_id)
+    return updated

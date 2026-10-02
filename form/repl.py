@@ -661,6 +661,32 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
         _say("  (per-candidate evidence: nbd candidate <id>)")
         return True
 
+    # ── LEAS-I (NBD-Ω-011): read-only circuit inspection ───
+    if lower == "circuits":
+        v = ro.circuits_view(p)
+        _say(f"circuits · {v['total']} total (canonical ledger)")
+        for state in sorted(v["by_state"]):
+            ids = v["by_state"][state]
+            _say(f"  {state}: {len(ids)} ({', '.join(ids[:6])}"
+                 f"{'...' if len(ids) > 6 else ''})")
+        return True
+
+    if lower.startswith("circuit "):
+        cid = raw.strip()[8:].strip().upper()
+        v = ro.circuit_view(p, cid)
+        if not v.get("found"):
+            _say(f"circuit {cid}: not found")
+            return True
+        _say(f"circuit {v['circuit_id']} · state={v['state']} "
+             f"· locality={v['locality']}")
+        _say(f"  title: {v['title']}")
+        _say(f"  evidence: {v['evidence']}")
+        if v.get("closure_cycle"):
+            _say(f"  closed by: {v['closure_cycle']}")
+        if v.get("notes"):
+            _say(f"  notes: {v['notes']}")
+        return True
+
     return False
 
 

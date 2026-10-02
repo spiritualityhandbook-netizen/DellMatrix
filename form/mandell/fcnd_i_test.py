@@ -80,17 +80,24 @@ def smoke() -> bool:
         ["grep", "-rn", "truth-of-meet", "form/", "--include=*.py"],
         cwd=repo, capture_output=True, text=True
     )
+    # circuit_ledger.py legitimately carries the historical LE-22 title;
+    # nbd_candidates.py references the LE in mapping docs. Neither is
+    # active misleading terminology.
     lines = [l for l in result.stdout.strip().split("\n") if l 
-             and "nbd_candidates" not in l and "fcnd_i_test" not in l]
+             and "nbd_candidates" not in l and "fcnd_i_test" not in l
+             and "circuit_ledger" not in l]
     check("E.no_active_truth_of_meet", len(lines) == 0)
     
-    # ── F: NBD closed-state update ─────────────────────────────────
+    # ── F: NBD closed-state update (via canonical ledger) ──────────
     from form.open import Program
     from form.mandell.nbd_candidates import build_frontier
     from form.mandell import nbd_engine as ne
     
     p = Program()
     cands = build_frontier(p)
+    # LEAS-I: state comes from canonical ledger via sync_from_ledger,
+    # not hardcoded on candidates.
+    ne.sync_from_ledger(cands)
     ne.classify_candidates(cands)
     closed = [c for c in cands if c.state == "CLOSED"]
     check("F.three_closed", len(closed) == 3)
