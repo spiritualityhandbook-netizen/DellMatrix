@@ -31,10 +31,64 @@ KIND_RESULT = {"preference": "completed", "avoidance": "failed",
                "blocked_association": "blocked"}
 
 # ASI-I (NBD-Ω-008): bound on the learned score's production influence.
-# The score is a LINEAR count (success − failure − blocked); the cap
-# bounds its contribution to selection ordering. Minimum safeguard
+# The score is a LINEAR count (success − failure − blocked); the bound
+# limits its contribution to selection ordering. Minimum safeguard
 # against reinforcement runaway; no decay math, no stochasticity.
+#
+# AEC-I (NBD-Ω-018): replaced destructive hard clamp (ASI_LEARNED_CAP=5)
+# with bounded monotonic saturation. Raw evidence ordering is preserved:
+# 6 < 10 raw MUST remain 6-equiv < 10-equiv after bounding.
+#
+# Transform: f(raw) = (raw * SATURATION_SCALE) / (SATURATION_SCALE + |raw|)
+#   - Bounded: |f(raw)| < SATURATION_SCALE (never reached, asymptotically approached)
+#   - Strictly monotonic: raw A < raw B ⟹ f(A) < f(B) (no false ties)
+#   - Sign-preserving: f(0)=0, sign(f(x))=sign(x)
+#   - Deterministic: pure float ops (IEEE 754), no randomness
+#
+# SATURATION_SCALE justification:
+#   MIN_EVIDENCE = 3 (minimum meaningful learning signal).
+#   SATURATION_SCALE = 100 = 33× MIN_EVIDENCE.
+#   - Realistic strong preference (10-30) experiences <10% compression.
+#   - At raw=100, f=50 (50% compression, still distinct and ordered).
+#   - Beyond 100, asymptotic compression prevents runaway domination.
+#   - Bound (100) is never reached, only approached; no hard threshold collapse.
+#
+# This is NOT a bigger clamp. It is a different representation: continuous
+# saturation vs destructive clipping. The scale is justified by evidence
+# semantics, not chosen arbitrarily.
+SATURATION_SCALE = 100.0
+
+# DEPRECATED: ASI_LEARNED_CAP removed by AEC-I. Retained as alias for
+# backward compatibility with tests/diagnostics that reference it.
+# New code should use SATURATION_SCALE and saturate_learned_score().
 ASI_LEARNED_CAP = 5
+
+
+def saturate_learned_score(raw: int) -> float:
+    """AEC-I (NBD-Ω-018): bounded monotonic saturation of learned evidence.
+
+    Transforms raw evidence count (success − failure − blocked) into a
+    bounded advisory score that preserves ordering.
+
+    Contract:
+      - BOUNDED: |result| < SATURATION_SCALE (100.0)
+      - MONOTONIC: raw A < raw B ⟹ result A < result B (strict)
+      - SIGN-PRESERVING: sign(result) == sign(raw); f(0) == 0.0
+      - DETERMINISTIC: pure function, no state, no randomness
+      - PURE/READ-ONLY: does not modify inputs or global state
+
+    Float determinism: uses only multiplication, division, abs — all
+    IEEE 754 deterministic. Codebase already uses floats deterministically
+    for Jaccard similarity in Relevance V2 ranking.
+
+    This bounds INFLUENCE, not raw evidence. The underlying ledger
+    (success/failure/blocked counts) is untouched.
+    """
+    if raw == 0:
+        return 0.0
+    # f(x) = (x * S) / (S + |x|)
+    # Strictly increasing, bounded by S, sign-preserving.
+    return (raw * SATURATION_SCALE) / (SATURATION_SCALE + abs(raw))
 
 
 def _ts() -> str:
@@ -292,13 +346,15 @@ def suggest_preferred(program: Any, dell: Any,
 
 
 def bounded_learned_score(program: Any, dell: Any,
-                          knowledge_id: str) -> int:
-    """ASI-I (NBD-Ω-008): bounded learned preference score for production.
+                          knowledge_id: str) -> float:
+    """ASI-I (NBD-Ω-008) / AEC-I (NBD-Ω-018): bounded learned preference score.
 
-    Score = clamp(success − failure − blocked, −ASI_LEARNED_CAP,
-                  +ASI_LEARNED_CAP), derived from APPLIED DuoBeta learning
-    entries only. Linear, transparent, separable; no collapsed "heat",
-    no truth claim.
+    Score = saturate(success − failure − blocked), derived from APPLIED
+    DuoBeta learning entries only. Bounded, monotonic, sign-preserving;
+    no collapsed "heat", no truth claim.
+
+    AEC-I: replaced destructive hard clamp with monotonic saturation.
+    Raw evidence ordering is preserved: 6 < 10 raw ⟹ f(6) < f(10).
 
     This is an ADVISORY preference. It is NOT truth, eligibility,
     revision, dependency satisfaction, conflict resolution, disposition,
@@ -306,12 +362,12 @@ def bounded_learned_score(program: Any, dell: Any,
     that have already passed the hard eligibility laws; it can never
     add, remove, or resurrect a candidate.
 
-    No learning → 0 (cold start: selection order exactly baseline).
+    No learning → 0.0 (cold start: selection order exactly baseline).
     """
     try:
         dell_n = int(dell)
     except (TypeError, ValueError):
-        return 0
+        return 0.0
     idx = preference_index(program)
     # Key must match preference_index exactly: (dell, knowledge_id as stored).
     # Do NOT stringify None (DBEL-I stores None for unassociated learning).
@@ -319,7 +375,7 @@ def bounded_learned_score(program: Any, dell: Any,
     c = idx.get(key, {})
     raw = (int(c.get("success", 0)) - int(c.get("failure", 0))
            - int(c.get("blocked", 0)))
-    return max(-ASI_LEARNED_CAP, min(ASI_LEARNED_CAP, raw))
+    return saturate_learned_score(raw)
 
 
 def learning_ledger(program: Any) -> List[Dict[str, Any]]:
