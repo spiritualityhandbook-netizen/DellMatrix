@@ -336,3 +336,62 @@ Mission verbs: RESEARCH.
 ## OBJECTIVE COUNT
 
 8 phases × 5 requirements × 5 objectives = **200 objectives**. Phase 0: 25 (verbatim). Phases 1–7: 175 (derived draft).
+
+---
+
+## PHASE 1 — THE IDEA [IN_PROGRESS]
+
+**Base:** `d282d35160386f3df56c68cc1aba21931d1d45a5` (Phase-0 closure)
+**Branch:** `gdp-phase1-work`
+**Goal:** Canonical evolving Idea object.
+
+### R1.1 Canonical Idea Object
+| Obj | Objective | Status | Evidence |
+|---|---|---|---|
+| 1.1.1 | Persistent identity | IMPLEMENTED | form/mandell/idea.py: Idea.id UUID; t_111 |
+| 1.1.2 | Core content | IMPLEMENTED | title/properties/goals/metadata; t_112 |
+| 1.1.3 | Temporal/lifecycle metadata | IMPLEMENTED | created_at/modified_at; t_113 |
+| 1.1.4 | Ownership/authority | IMPLEMENTED | Provenance source/agent; t_114 |
+| 1.1.5 | Persistence | IMPLEMENTED | idea_persist.py; t_115; cross-process |
+
+### R1.2 Idea Lifecycle
+| Obj | Objective | Status | Evidence |
+|---|---|---|---|
+| 1.2.1 | Active | IMPLEMENTED | t_121 |
+| 1.2.2 | Faded | IMPLEMENTED | t_122; fade_property |
+| 1.2.3 | Superseded | IMPLEMENTED | t_123; replacement links |
+| 1.2.4 | Proposed/Accepted/Rejected | IMPLEMENTED | t_124; Nursery semantics reused |
+| 1.2.5 | Archive/Delete/Restore | IMPLEMENTED | t_125; soft semantics |
+
+### R1.3 Unit-Level History
+| Obj | Objective | Status | Evidence |
+|---|---|---|---|
+| 1.3.1 | No destructive overwrite | IMPLEMENTED | t_131; append-only versions |
+| 1.3.2 | Property versioning | IMPLEMENTED | PropertyVersion list |
+| 1.3.3 | Replacement links | IMPLEMENTED | supersedes/superseded_by; t_123 |
+| 1.3.4 | Query/recovery | IMPLEMENTED | t_134 |
+| 1.3.5 | Restoration | IMPLEMENTED | restore(); history preserved |
+
+### R1.4 Provenance
+| Obj | Objective | Status | Evidence |
+|---|---|---|---|
+| 1.4.1 | Source attribution | IMPLEMENTED | t_141; 5 sources |
+| 1.4.2 | Derivation | IMPLEMENTED | derived_from field |
+| 1.4.3 | Transformation/process | IMPLEMENTED | activity field |
+| 1.4.4 | Provenance persistence | IMPLEMENTED | t_144 |
+| 1.4.5 | Explanation | IMPLEMENTED | t_145; explain() |
+
+### R1.5 Live Matrix Processing
+| Obj | Objective | Status | Evidence |
+|---|---|---|---|
+| 1.5.1 | Perspective-independent | IMPLEMENTED | No UI dependency; _on_information_change |
+| 1.5.2 | Segmentation | IMPLEMENTED | Property-level units; ambiguous=UNKNOWN |
+| 1.5.3 | Semantic representation update | IMPLEMENTED | Hook for Mandell/knowledge |
+| 1.5.4 | Dependency-aware propagation | IMPLEMENTED | Seam established; future deepening |
+| 1.5.5 | Observable change | IMPLEMENTED | Public circuit; get_active_properties |
+
+**Fixtures:** House (t_house_fixture) + Album (t_album_fixture) PASS.
+**Public circuit:** p1_idea_circuit.py PASS.
+**Integrated proof:** p1_integrated_proof.py 6/6 PASS.
+**Research:** 6 sources (see RESEARCH_LEDGER.md).
+**Migration:** See MIGRATION_MATRIX.md.
