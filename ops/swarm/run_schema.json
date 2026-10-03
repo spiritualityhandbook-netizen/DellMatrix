@@ -98,9 +98,20 @@
           "status": {
             "enum": [
               "OPEN",
-              "RESOLVED"
+              "RESOLVED",
+              "CLOSED_FALSIFIED"
             ],
             "type": "string"
+          },
+          "probe_scope": {
+            "description": "Strongest probe level that produced this entry. CLAIM_SCOPE <= PROBE_SCOPE (MPC-007): a translation probe may prove TRANSLATION_BEHAVIOR but not PUBLIC_MUTATION; an executor probe may prove EXECUTOR_CAPABILITY but not ENGLISH_REACHABILITY.",
+            "enum": [
+              "UNIT",
+              "TRANSLATION",
+              "ROUTING",
+              "EXECUTOR",
+              "PUBLIC_END_TO_END"
+            ]
           }
         },
         "required": [
@@ -222,6 +233,16 @@
           },
           "timestamp": {
             "type": "string"
+          },
+          "probe_scope": {
+            "description": "Strongest probe level that produced this entry. CLAIM_SCOPE <= PROBE_SCOPE (MPC-007): a translation probe may prove TRANSLATION_BEHAVIOR but not PUBLIC_MUTATION; an executor probe may prove EXECUTOR_CAPABILITY but not ENGLISH_REACHABILITY.",
+            "enum": [
+              "UNIT",
+              "TRANSLATION",
+              "ROUTING",
+              "EXECUTOR",
+              "PUBLIC_END_TO_END"
+            ]
           }
         },
         "required": [

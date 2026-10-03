@@ -125,9 +125,11 @@
         "ORACLE",
         "translate.py/english_brain.py"
       ],
-      "resolution": null,
+      "resolution": "MPC-007: re-audited at PUBLIC_END_TO_END (real REPL). (a) resume: FALSIFIED as misroute; Dell33=avatar locomotion (R1 target wrong); AMBIGUOUS authority: router (load,28) correspondence documents checkpoint-restore (verified) vs REPL dead branch + leaf Dell28 + synonym family implying session-restore. HAZARD CONFIRMED: silent unconfirmed destructive revert on innocuous word (ARGUS: uncommitted work destroyed, ok=True). Premature UNI reroute implemented then REVERTED per Phase 4 ambiguity rule. Director semantic decision required. (b) make a macro: AMBIGUOUS; no macro-creation authority exists; Dell48=replay; current fallback creates idea named \"macro\". No reroute implemented. Director semantic decision required.",
       "statement": "English 'resume' routes to 28[Rollback] (destructive-adjacent) instead of 33[Resume]; 'make a macro' routes to 08[Create] instead of 48[Macro] \u2014 English routing conflicts with Dell semantics",
-      "status": "OPEN"
+      "status": "RESOLVED",
+      "probe_scope": "PUBLIC_END_TO_END",
+      "scope_note": "R1 probed at TRANSLATION; MPC-007 re-probed at PUBLIC_END_TO_END"
     },
     {
       "id": "C-R1-008",
@@ -135,9 +137,11 @@
         "ARGUS",
         "MPC-001/MPC-002/MPC-003 packets"
       ],
-      "resolution": null,
+      "resolution": "MPC-007-D1: falsified by NULL+UNI; preserved as DEFENSE_IN_DEPTH_HYGIENE_DEBT",
       "statement": "Safety-guard generality: packets claim conditional destructive English -> UNKNOWN with zero mutation; ARGUS proved Patch (88) bypasses the guard and mutates. Minimal correction = add 'patch' to _DESTRUCTIVE_VERBS (list membership, not new mechanism). NOT repaired this round (read-only); top broken-link candidate.",
-      "status": "OPEN"
+      "status": "CLOSED_FALSIFIED",
+      "probe_scope": "EXECUTOR",
+      "scope_note": "R1 probe was executor-direct (execute_seed on translated Mandell); public-path claim exceeded probe scope; falsified MPC-006/MPC-007"
     },
     {
       "id": "C-R1-009",
@@ -675,5 +679,50 @@
   },
   "tests": [],
   "uni_execution": null,
-  "unknowns": []
+  "unknowns": [],
+  "director_decisions": [
+    {
+      "decision_id": "MPC-007-D1",
+      "date": "2026-10-03",
+      "subject": "C-R1-008",
+      "ruling": "LIVE_ENGLISH_SAFETY_DEFECT = CLOSED / FALSIFIED",
+      "preserved": "_DESTRUCTIVE_VERBS missing Patch = DEFENSE_IN_DEPTH_HYGIENE_DEBT (do not implement now)",
+      "reason": "public English authority blocks Dell88 before execution; R1 generalized a layer-local probe to public-path exploitability",
+      "evidence": "MPC-006: NULL necessity check + UNI independent verification of operator_bridge.BLOCKED_WITH_REASON={86,87,88} and REPL routing"
+    },
+    {
+      "decision_id": "MPC-007-D2-REQUEST",
+      "date": "2026-10-03",
+      "subject": "C-R1-007 semantic decisions required",
+      "ruling": "PENDING_DIRECTOR",
+      "options_resume": [
+        "(a) Keep checkpoint-restore for resume/load (router authority wins); add confirmation/warning before destructive revert",
+        "(b) Remap session-restore family (resume/restore/reload/recover/load) to persist_load; keep revert/rollback -> Dell28"
+      ],
+      "options_macro": [
+        "(i) Implement macro definition as new capability (new work, new authority)",
+        "(ii) Make 'make a macro' honestly return UNKNOWN instead of silently creating a misnamed idea"
+      ],
+      "note": "No implementation until Director rules; premature UNI fix was reverted."
+    }
+  ],
+  "evidence_laws": [
+    {
+      "law": "PUBLIC_PATH_CLAIM requires PUBLIC_PATH_PROOF",
+      "date": "2026-10-03",
+      "statement": "Unit/layer-local execution cannot establish public reachability, public mutation, or public exploitability. CLAIM_SCOPE <= PROBE_SCOPE."
+    },
+    {
+      "law": "CLAIM_SCOPE <= PROBE_SCOPE",
+      "date": "2026-10-03",
+      "ladder": [
+        "UNIT",
+        "TRANSLATION",
+        "ROUTING",
+        "EXECUTOR",
+        "PUBLIC_END_TO_END"
+      ],
+      "statement": "A translation probe may prove TRANSLATION_BEHAVIOR but not PUBLIC_MUTATION. An executor probe may prove EXECUTOR_CAPABILITY but not ENGLISH_REACHABILITY. Only a public end-to-end probe (authority + state transition + observable result captured) may prove public behavior."
+    }
+  ]
 }
