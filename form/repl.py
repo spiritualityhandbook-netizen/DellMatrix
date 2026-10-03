@@ -2260,11 +2260,21 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
     # Checkpoint language ("revert", bare/checkpoint-qualified "restore")
     # keeps Dell28 via _checkpoint_lang above.
     elif action == "load" and not _checkpoint_lang:
-        p2 = persist_load(p.owner)
-        _say("Session loaded.")
-        print()
-        print(p2.render())
-        return p2
+        # ARGUS vector 9: claiming "Session loaded." when no save file exists
+        # would silently replace the live program with a fresh one. Check
+        # first; if nothing was ever saved, say so honestly and preserve the
+        # current program.
+        from form.persist import _path as _persist_path
+        import os as _os
+        if _os.path.isfile(_persist_path(p.owner)):
+            p2 = persist_load(p.owner)
+            _say("Session loaded.")
+            print()
+            print(p2.render())
+            return p2
+        _say("No saved session found — nothing to resume.")
+        _say('  Tip: "save" stores the current session first.')
+        return p
 
     # DCC-III: expanded semantic vocabulary — all route through Dell authority.
     elif action in ("measure", "test", "architect", "simulate", "checkpoint",
