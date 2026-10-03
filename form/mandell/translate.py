@@ -139,6 +139,56 @@ def translate(english: str) -> Intent:
     # DCC-VI: operational capabilities on RAW text (before english_brain
     # rewrites "add idea X" -> "create an idea called X").
     raw_lower = text.lower().strip()
+    # MPC-001 Track C2: SEMANTIC LOSS GUARD (safety critical).
+    # If English contains conditional/qualifying clauses that would be
+    # silently dropped by translation, return UNKNOWN rather than executing
+    # a weakened (especially destructive) instruction.
+    # A destructive operation may not execute after its limiting condition
+    # has been lost in translation.
+    _CONDITIONAL_MARKERS = [
+        r"\bif\b", r"\bunless\b", r"\bwhen\b", r"\bwhile\b", r"\buntil\b",
+        r"\bprovided\b", r"\bassuming\b",
+    ]
+    _DESTRUCTIVE_VERBS = [
+        r"\bdelete\b", r"\bremove\b", r"\bdestroy\b", r"\bclear\b",
+        r"\bmove\b", r"\breplace\b", r"\boverwrite\b",
+    ]
+    has_conditional = any(re.search(p, raw_lower) for p in _CONDITIONAL_MARKERS)
+    is_destructive = any(re.search(p, raw_lower) for p in _DESTRUCTIVE_VERBS)
+    if has_conditional and is_destructive:
+        return Intent("unknown", None, "", {}, "09[Show] :: unknown", text)
+    # MPC-001 Track C1: MULTI-INTENT SEGMENTATION.
+    # If English contains explicit sequencing ("then", "and then"), try to
+    # translate each segment and chain via existing Flow (>).
+    # Reference words ("the copy", "it", "the result") become "last_result"
+    # via existing Ω-056 authority. If any segment fails, return UNKNOWN
+    # rather than a misrouted single operation.
+    _SEQUENCE_MARKERS = [r"\bthen\b", r"\band then\b", r",\s*then\b"]
+    has_sequence = any(re.search(p, raw_lower) for p in _SEQUENCE_MARKERS)
+    if has_sequence:
+        # Split on sequence markers
+        parts = re.split(r"\bthen\b|\band then\b", raw_lower)
+        parts = [p.strip(" ,") for p in parts if p.strip(" ,")]
+        if len(parts) >= 2:
+            # Translate each part (recursive, but guard against infinite recursion)
+            # Replace reference words with last_result
+            _REF_WORDS = [r"\bthe copy\b", r"\bit\b", r"\bthe result\b", r"\bthat\b"]
+            translated = []
+            for part in parts:
+                # Substitute reference words
+                for rw in _REF_WORDS:
+                    part = re.sub(rw, "last_result", part)
+                # Recursive translate (will not re-enter segmentation due to no "then")
+                sub = translate(part)
+                if "unknown" in sub.mandel:
+                    # Segment failed → whole thing is UNKNOWN (safe)
+                    return Intent("unknown", None, "", {}, "09[Show] :: unknown", text)
+                # Extract just the operation (strip Flow suffixes like "> 15[Map]")
+                op = sub.mandel.split(" > ")[0]
+                translated.append(op)
+            # Chain via Flow
+            chained = " > ".join(translated)
+            return Intent("sequence", None, "Sequence", {}, chained, text)
     if re.search(r"\brevert\b", raw_lower):
         return Intent("load", 28, "Rollback", {}, "28[Rollback] :: load", text)
     if re.search(r"\bcount\s+nursery\b", raw_lower):
