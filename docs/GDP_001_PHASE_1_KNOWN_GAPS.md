@@ -2,22 +2,24 @@
 
 ## MF-5: Ideas outside checkpoint/rollback envelope
 
-**Status:** KNOWN GAP, deferred.
+**Status:** RESOLVED in R1/R2 (2026-10-03).
 
-**Issue:** Phase-0 checkpoints seal only `nursery` and `program` members.
-Idea files in `form/state/ideas/` are not snapshotted or restored by
-`rollback()`. A rollback after Idea mutation leaves program/nursery at
-the checkpoint but Ideas at their mutated state — a hybrid.
+**R1 resolution:** Ideas integrated into the existing Phase-0 checkpoint
+authority — no second checkpoint system. `checkpoint_generation.py`
+seals an `ideas` owner-snapshot member; `core_i_recovery.rollback()`
+restores Ideas from the sealed generation.
 
-**Why deferred:** Integrating Ideas into the Phase-0 checkpoint system
-requires modifying `checkpoint_generation.py` (`_MEMBER_KINDS`), which is
-Phase-0 sealed machinery. Doing so risks weakening Phase-0 contracts.
+**R2 resolution (three-member atomicity):** The Phase-0 journaled
+rollback transaction was extended in place from PROGRAM+NURSERY to
+PROGRAM+NURSERY+IDEAS (single journal, single recovery, no duplicate
+authority). Required invariant holds: a reader observes only OLD
+COMPLETE GENERATION or TARGET COMPLETE GENERATION, never a hybrid.
+Recovery also completes the observable individual-idea working set
+(marker-guarded rehydration), so canonical files and read path agree.
 
-**Mitigation:** Idea saves are atomic (via `atomic_write_json`). History
-is append-only and immutable. The hybrid risk is documented, not hidden.
-
-**Future:** Phase 2+ should extend the checkpoint envelope to include
-Ideas, or define an Idea-specific generation system.
+**Legacy semantic (documented, ARGUS A-R2-1):** rolling back to a
+pre-R1 generation with no ideas member stages an empty ideas snapshot
+and clears stale individual files — coherent "ideas cleared" semantic.
 
 ---
 

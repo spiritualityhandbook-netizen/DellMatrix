@@ -384,11 +384,15 @@ Mission verbs: RESEARCH.
 ### R1.5 Live Matrix Processing
 | Obj | Objective | Status | Evidence |
 |---|---|---|---|
-| 1.5.1 | Perspective-independent | IMPLEMENTED | No UI dependency; _on_information_change |
+| 1.5.1 | Perspective-independent | SEAM | State changes without UI; hook present |
 | 1.5.2 | Segmentation | IMPLEMENTED | Property-level units; ambiguous=UNKNOWN |
-| 1.5.3 | Semantic representation update | IMPLEMENTED | Hook for Mandell/knowledge |
-| 1.5.4 | Dependency-aware propagation | IMPLEMENTED | Seam established; future deepening |
+| 1.5.3 | Semantic representation update | SEAM | `_on_information_change` hook is a no-op in Phase 1; later phases deepen |
+| 1.5.4 | Dependency-aware propagation | NOT IMPLEMENTED | Seam only; no propagation machinery in Phase 1 |
 | 1.5.5 | Observable change | IMPLEMENTED | Public circuit; get_active_properties |
+
+**R2 honesty correction (2026-10-03):** 1.5.3/1.5.4 were previously marked
+IMPLEMENTED; the hook is a documented no-op seam. Downgraded to prevent
+certifying unproven capability.
 
 **Fixtures:** House (t_house_fixture) + Album (t_album_fixture) PASS.
 **Public circuit:** p1_idea_circuit.py PASS.
