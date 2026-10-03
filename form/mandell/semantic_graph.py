@@ -49,12 +49,21 @@ from form.mandell.idea_persist import idea_exists, load_idea, save_idea
 # ---------------------------------------------------------------------------
 
 class RelationshipType(str, Enum):
-    """Closed edge-type vocabulary. Every edge has exactly one type."""
+    """Closed edge-type vocabulary. Every edge has exactly one type.
+
+    The five types are the smallest vocabulary that covers the required
+    distinctions: CONTAINS (structural, with invariants) vs RELATED_TO
+    (generic association) vs DEPENDS_ON (drives propagation) vs
+    REFERENCES (directional citation, for evidence-based reference
+    resolution 2.5.4 — distinct from symmetric association) vs
+    DERIVED_FROM (derivation provenance, distinct from runtime
+    dependency). Each earns its place by a distinct consumer or invariant.
+    """
 
     CONTAINS = "contains"          # parent -> child containment (type-level invariants)
     RELATED_TO = "related_to"      # generic semantic association
     DEPENDS_ON = "depends_on"     # dependency: source depends on target's unit (drives propagation)
-    REFERENCES = "references"     # source references target (context resolution)
+    REFERENCES = "references"     # source cites target (directional; 2.5.4 reference resolution)
     DERIVED_FROM = "derived_from" # source derived from target (derivation provenance)
 
 
@@ -65,7 +74,13 @@ class RelationshipStatus(str, Enum):
 
 
 class DerivationKind(str, Enum):
-    """Closed vocabulary of derived-value computations (1.5.4/2.5.5)."""
+    """Closed vocabulary of derived-value computations (1.5.4/2.5.5).
+
+    MIRROR (property-unit sync) and CHILD_COUNT (direct containment
+    measure) are the core kinds. DESCENDANT_COUNT is the recursive
+    counterpart — "how big is this subtree" — completing the
+    containment-measure family; trivial cost, justified by symmetry.
+    """
 
     MIRROR = "mirror"                 # copy of (target, unit) value
     CHILD_COUNT = "child_count"       # active children of subject
@@ -102,7 +117,7 @@ class RelationshipEntry:
     seq: int
     recorded_at: float
     provenance: Provenance
-    cause: str  # e.g. "nest", "reparent", "promote", "remove", "restore"
+    cause: str  # e.g. "nest", "reparent", "promote", "remove"
 
     def props_dict(self) -> Dict[str, Any]:
         return dict(self.props)
@@ -811,6 +826,15 @@ class SemanticGraph:
         )
 
     def save_path(self, path: RootPath) -> RootPath:
+        """Persist a named, provenance-bearing route record.
+
+        Justification (vs computed-only): 2.4.2 requires representing
+        "route requirements" — a requirement is a persistent artifact,
+        not a transient computation. Persisted paths are named, carry
+        provenance, and participate coherently in checkpoint/rollback
+        (they're in the graph file). The STALE mechanism (validate_path)
+        honestly handles graph change instead of hiding it.
+        """
         self._paths.append(path)
         self.save()
         return path
