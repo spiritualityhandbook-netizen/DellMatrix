@@ -190,15 +190,12 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     reader never accepts a hybrid program/nursery pair.
     """
     assert_floor_intact()
-    # Transactional rollback recovery: cheap journal-exists check; only
-    # does work when an interrupted transaction is present.
-    try:
-        from form.mandell.core_i_recovery import recover_rollback_transaction
-        recover_rollback_transaction(owner)
-    except RuntimeError:
-        raise
-    except Exception:
-        pass  # recovery is best-effort; load proceeds on live files
+    # Transactional rollback recovery (Gate R3: FAIL-CLOSED). If a journal
+    # exists, recovery must establish a proven-coherent pair or raise
+    # RollbackRecoveryError. Never suppress; never expose potentially
+    # hybrid state.
+    from form.mandell.core_i_recovery import recover_rollback_transaction
+    recover_rollback_transaction(owner)
     path = path or _path(owner)
     if not os.path.isfile(path):
         p = open_program(owner)

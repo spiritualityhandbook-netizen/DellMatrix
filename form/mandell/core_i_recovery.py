@@ -23,6 +23,12 @@ import os
 from form.persist import _STATE_DIR, _safe_owner, load
 
 
+class RollbackRecoveryError(Exception):
+    """Raised when a rollback transaction journal cannot be recovered
+    to a proven-coherent state. Load must fail closed; never expose
+    potentially hybrid live state."""
+
+
 def _gen_id_from_stamp(stamp: Optional[str]) -> str:
     """Map a caller stamp into the generation-id namespace, or mint a fresh id."""
     from form.mandell.checkpoint_generation import _new_generation_id
@@ -160,42 +166,141 @@ def _write_journal(owner: str, journal: dict, _fail_at: Optional[str] = None) ->
 def recover_rollback_transaction(owner: str) -> Optional[str]:
     """Deterministically recover an interrupted rollback transaction.
 
-    Called before live state is exposed (e.g. at load). Returns:
+    FAIL-CLOSED: Called before live state is exposed (e.g. at load).
+    Either establishes a proven-coherent pair or raises
+    RollbackRecoveryError. Never suppresses, never guesses, never
+    exposes potentially hybrid state.
+
+    Returns:
     - None: no journal; live state is authoritative as-is.
     - "rolled_back": journal was in 'prepared' phase; transaction never
-      staged, old live pair remains authoritative; journal removed.
+      staged; old live pair verified against recorded fingerprints;
+      journal removed.
     - "completed": journal was in 'staged' or 'committed' phase; the
-      staged pair was deterministically committed; journal removed.
+      staged pair was deterministically committed; resulting canonical
+      files verified against recorded target fingerprints; journal removed.
 
-    After this returns, the live program/nursery pair is EITHER the
-    complete old pair OR the complete target pair. NEVER hybrid.
+    Raises RollbackRecoveryError on: corrupt journal JSON, unknown phase,
+    missing required fields, missing staging files when needed,
+    fingerprint mismatch, or I/O failure during recovery.
     """
     jpath = _journal_path(owner)
     if not os.path.isfile(jpath):
         return None
-    with open(jpath, encoding="utf-8") as f:
-        journal = json.load(f)
+
+    # Validate journal JSON.
+    try:
+        with open(jpath, encoding="utf-8") as f:
+            journal = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"rollback journal corrupt/unreadable for owner {owner!r}: {exc}; "
+            f"refusing to expose live state"
+        ) from exc
+    if not isinstance(journal, dict):
+        raise RollbackRecoveryError(
+            f"rollback journal for {owner!r} is not a JSON object; refusing"
+        )
+
     phase = journal.get("phase")
     if phase == "prepared":
-        # Never staged: old live pair is authoritative. Discard journal.
-        os.unlink(jpath)
-        return "rolled_back"
+        return _recover_prepared(owner, jpath, journal)
     if phase in ("staged", "committed"):
-        # Deterministically complete the commit: staging -> live.
-        from form.persist import _path as _live_program_path
-        from form.dell_matrix.nursery import owner_nursery_path
-        for kind, live_fn in (("program", _live_program_path),
-                             ("nursery", owner_nursery_path)):
-            staging = _staging_path(owner, kind)
-            live = live_fn(owner)
-            if os.path.isfile(staging):
-                # Atomic replacement; idempotent if already done.
+        return _recover_staged(owner, jpath, journal)
+    # Unknown phase: refuse to guess; preserve journal for diagnosis.
+    raise RollbackRecoveryError(
+        f"rollback journal for {owner!r} has unknown phase {phase!r}; "
+        f"refusing to recover; journal preserved at {jpath}"
+    )
+
+
+def _validate_journal_fields(owner: str, journal: dict, required: tuple) -> None:
+    missing = [k for k in required if k not in journal]
+    if missing:
+        raise RollbackRecoveryError(
+            f"rollback journal for {owner!r} missing required fields "
+            f"{missing}; refusing to recover"
+        )
+
+
+def _recover_prepared(owner: str, jpath: str, journal: dict) -> str:
+    """'prepared' phase: nothing was staged. Verify live files match the
+    recorded old fingerprints (if recorded), then discard the journal.
+    The old pair remains authoritative."""
+    _validate_journal_fields(owner, journal,
+                             ("old_program_sha256", "old_nursery_sha256"))
+    from form.persist import _path as _live_program_path
+    from form.dell_matrix.nursery import owner_nursery_path
+    live_prog = _live_program_path(owner)
+    live_nurs = owner_nursery_path(owner)
+    # Verify coherence: live files must match recorded old fingerprints.
+    # None means the file did not exist at prepare time.
+    for label, path, recorded in (
+        ("program", live_prog, journal["old_program_sha256"]),
+        ("nursery", live_nurs, journal["old_nursery_sha256"]),
+    ):
+        if recorded is None:
+            continue  # legitimately absent at prepare time
+        if not os.path.isfile(path):
+            raise RollbackRecoveryError(
+                f"rollback recovery: live {label} file missing but journal "
+                f"records old hash {recorded[:16]}; cannot prove old pair; "
+                f"refusing"
+            )
+        actual = _sha256_file(path)
+        if actual != recorded:
+            raise RollbackRecoveryError(
+                f"rollback recovery: live {label} hash {actual[:16]} != "
+                f"recorded old {recorded[:16]}; cannot prove old pair; refusing"
+            )
+    os.unlink(jpath)
+    return "rolled_back"
+
+
+def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
+    """'staged'/'committed' phase: deterministically complete the commit,
+    then verify the canonical files match the recorded target fingerprints.
+    The target pair becomes authoritative only after proof."""
+    _validate_journal_fields(owner, journal,
+                             ("program_sha256", "nursery_sha256"))
+    from form.persist import _path as _live_program_path
+    from form.dell_matrix.nursery import owner_nursery_path
+    for kind, live_fn in (("program", _live_program_path),
+                          ("nursery", owner_nursery_path)):
+        staging = _staging_path(owner, kind)
+        live = live_fn(owner)
+        if os.path.isfile(staging):
+            try:
                 os.replace(staging, live)
-        if os.path.isfile(jpath):
-            os.unlink(jpath)
-        return "completed"
-    # Unknown phase: refuse to guess; leave journal for manual inspection.
-    raise RuntimeError(f"rollback journal has unknown phase {phase!r}; refusing to recover")
+            except OSError as exc:
+                raise RollbackRecoveryError(
+                    f"rollback recovery: failed to commit {kind} staging "
+                    f"for {owner!r}: {exc}; refusing"
+                ) from exc
+        # If no staging file: the rename already happened (idempotent), or
+        # the transaction never staged this member. Either way, the
+        # fingerprint check below proves the final state.
+    # Prove coherence: canonical files must match target fingerprints.
+    live_prog = _live_program_path(owner)
+    live_nurs = owner_nursery_path(owner)
+    for label, path, recorded in (
+        ("program", live_prog, journal["program_sha256"]),
+        ("nursery", live_nurs, journal["nursery_sha256"]),
+    ):
+        if not os.path.isfile(path):
+            raise RollbackRecoveryError(
+                f"rollback recovery: canonical {label} file missing after "
+                f"commit for {owner!r}; cannot prove target pair; refusing"
+            )
+        actual = _sha256_file(path)
+        if actual != recorded:
+            raise RollbackRecoveryError(
+                f"rollback recovery: canonical {label} hash {actual[:16]} != "
+                f"recorded target {recorded[:16]} for {owner!r}; cannot prove "
+                f"target pair; refusing"
+            )
+    os.unlink(jpath)
+    return "completed"
 
 
 def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) -> None:
@@ -256,13 +361,13 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) ->
         )
     live_prog = _live_program_path(owner)
     live_nurs = owner_nursery_path(owner)
-    prog_bytes = json.dumps(program_data, sort_keys=True).encode("utf-8")
-    nurs_bytes = json.dumps(nursery_payload, sort_keys=True).encode("utf-8")
     journal = {
         "phase": "prepared",
         "owner": owner,
-        "program_sha256": hashlib.sha256(prog_bytes).hexdigest(),
-        "nursery_sha256": hashlib.sha256(nurs_bytes).hexdigest(),
+        # Target hashes are filled after staging with the actual staged
+        # file bytes (not canonical JSON).
+        "program_sha256": None,
+        "nursery_sha256": None,
         "old_program_sha256": _sha256_file(live_prog) if os.path.isfile(live_prog) else None,
         "old_nursery_sha256": _sha256_file(live_nurs) if os.path.isfile(live_nurs) else None,
     }
@@ -272,8 +377,13 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) ->
     _check_fail("rollback_stage", _fail_at)
     staging_prog = _staging_path(owner, "program")
     staging_nurs = _staging_path(owner, "nursery")
-    atomic_write_json(staging_prog, program_data)
-    atomic_write_json(staging_nurs, nursery_payload)
+    prog_blob = atomic_write_json(staging_prog, program_data)
+    nurs_blob = atomic_write_json(staging_nurs, nursery_payload)
+    # Record the ACTUAL staged file hashes (not canonical JSON), so
+    # recovery can prove the committed files are byte-identical to what
+    # was staged. atomic_write_json returns the exact bytes written.
+    journal["program_sha256"] = hashlib.sha256(prog_blob).hexdigest()
+    journal["nursery_sha256"] = hashlib.sha256(nurs_blob).hexdigest()
     journal["phase"] = "staged"
     _write_journal(owner, journal, _fail_at=_fail_at)
 

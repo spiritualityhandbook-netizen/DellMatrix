@@ -88,11 +88,18 @@ staging -> live for both files; the commit boundary; journal ->
 > RETURN.
 
 Crash recovery: `recover_rollback_transaction` runs inside every
-`persist_rest.load` before state is exposed. A 'prepared' journal means
-nothing was staged -> old pair authoritative. A 'staged'/'committed'
-journal means the commit is deterministically completed -> target pair
-authoritative. After recovery, a reader sees EITHER the complete old
-pair OR the complete target pair. NEVER a hybrid program/nursery pair.
+`persist_rest.load` before state is exposed. FAIL-CLOSED (Gate R3): recovery
+must establish a proven-coherent pair or raise RollbackRecoveryError; it
+never suppresses exceptions and never exposes potentially hybrid state.
+A 'prepared' journal means nothing was staged -> live files verified
+against recorded old fingerprints -> old pair authoritative. A
+'staged'/'committed' journal means the commit is deterministically
+completed -> canonical files verified against recorded target
+fingerprints (actual staged bytes) -> target pair authoritative. After
+recovery, a reader sees EITHER the complete old pair OR the complete
+target pair. NEVER a hybrid program/nursery pair. Corrupt journal,
+unknown phase, missing fields, missing staging files, or fingerprint
+mismatch -> explicit failure, no live state exposed.
 
 Failure atomicity: all validation and serialization precede all writes.
 A failure before staging leaves live files byte-identical — zero partial

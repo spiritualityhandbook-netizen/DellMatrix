@@ -295,3 +295,44 @@ re-ran against the R2 repair.
    journaled two-file transaction (prepare/stage/commit/cleanup/verify)
    with recovery in every load.
 2. **Vacuous test assertion.** Replaced with fallible single-authority proof.
+
+---
+
+## GATE R3 RE-AUDIT (2026-10-03)
+
+Director issued FINAL_GATE_R3: one persistence blocker — recovery was
+best-effort with broad exception suppression.
+
+### NULL R3
+
+- No second recovery mechanism introduced. The fail-closed repair
+  strengthens the single `recover_rollback_transaction` authority.
+
+### PRISM R3
+
+- "Current state" has exactly one coherent transactional meaning:
+  no journal -> live files authoritative; valid journal -> recovery
+  proves old-complete or target-complete via fingerprints; invalid
+  journal -> explicit failure, no state exposed.
+
+### ORACLE R3
+
+- Fail-closed behavior proven empirically in fresh processes: corrupt
+  journal, unknown phase, missing fields, missing staging, fingerprint
+  mismatch -> `persist_rest.load` raises, never returns a Program.
+
+### ARGUS R3
+
+- Journal corruption, missing staging members, hash mismatch (target
+  and old), repeated recovery, recovery after partial recovery, load
+  with unrecoverable journal — all fail closed. 16/16 adversarial tests.
+
+### MUST_FIX R3 (repaired)
+
+1. **Best-effort recovery.** `persist_rest.load` suppressed recovery
+   exceptions. **Repair:** suppression removed; recovery raises
+   RollbackRecoveryError on any unrecoverable state; load fails closed.
+2. **No fingerprint verification.** Recovery inferred coherence from
+   staging file absence. **Repair:** journal records actual staged
+   byte hashes; recovery verifies canonical files match before
+   declaring success.

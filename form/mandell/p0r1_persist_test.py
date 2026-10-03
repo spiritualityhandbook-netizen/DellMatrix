@@ -576,6 +576,157 @@ def t_r4_serialize_failure_leaves_target_untouched(rec) -> None:
 
 
 # ---------------------------------------------------------------------------
+# GATE R3 — fail-closed transaction recovery adversarial battery
+# ---------------------------------------------------------------------------
+
+def t_r3_fail_closed_recovery(rec) -> None:
+    """R3: recovery must fail closed on corrupt/unrecoverable journals.
+    Load must never expose potentially hybrid state."""
+    from form.mandell.core_i_recovery import (
+        RollbackRecoveryError, _journal_path, _staging_path,
+        recover_rollback_transaction,
+    )
+    import json as _json
+
+    o = _owner()
+    p = _fresh_program(o)
+    p.place("r3_unit", "R3", words="r3")
+    persist_rest.save(p)
+
+    jp = _journal_path(o)
+    def write_journal(obj=None, raw=None):
+        if raw is not None:
+            with open(jp, "w", encoding="utf-8") as f:
+                f.write(raw)
+        else:
+            with open(jp, "w", encoding="utf-8") as f:
+                _json.dump(obj, f)
+
+    def load_fails_closed():
+        """persist_rest.load must raise, not return a Program."""
+        try:
+            persist_rest.load(o, activate=False)
+            return False
+        except (RollbackRecoveryError, Exception):
+            return True
+
+    def recover_raises():
+        try:
+            recover_rollback_transaction(o)
+            return False
+        except RollbackRecoveryError:
+            return True
+        except Exception:
+            return False  # wrong exception type
+
+    # 1. Corrupt journal JSON -> fail closed.
+    write_journal(raw="{not valid json")
+    rec("r3_corrupt_journal_recover_raises", recover_raises(), "")
+    rec("r3_corrupt_journal_load_fails_closed", load_fails_closed(), "")
+    if os.path.exists(jp):
+        os.unlink(jp)
+
+    # 2. Unknown journal phase -> fail closed (journal preserved).
+    write_journal({"phase": "bogus", "owner": o})
+    rec("r3_unknown_phase_recover_raises", recover_raises(), "")
+    rec("r3_unknown_phase_load_fails_closed", load_fails_closed(), "")
+    rec("r3_unknown_phase_journal_preserved", os.path.exists(jp), "")
+    os.unlink(jp)
+
+    # 3. Journal missing required fields -> fail closed.
+    write_journal({"phase": "staged", "owner": o})  # missing hashes
+    rec("r3_missing_fields_recover_raises", recover_raises(), "")
+    rec("r3_missing_fields_load_fails_closed", load_fails_closed(), "")
+    os.unlink(jp)
+
+    # 4. Non-dict journal -> fail closed.
+    write_journal(raw="[1,2,3]")
+    rec("r3_non_dict_journal_raises", recover_raises(), "")
+    os.unlink(jp)
+
+    # 5. Staged with missing program staging file -> fail closed on fingerprint.
+    # (No staging files exist; live files won't match target hashes.)
+    write_journal({
+        "phase": "staged", "owner": o,
+        "program_sha256": "0" * 64, "nursery_sha256": "0" * 64,
+        "old_program_sha256": None, "old_nursery_sha256": None,
+    })
+    rec("r3_missing_staging_recover_raises", recover_raises(), "")
+    rec("r3_missing_staging_load_fails_closed", load_fails_closed(), "")
+    os.unlink(jp)
+
+    # 6. Target fingerprint mismatch -> fail closed.
+    # Create a real staged journal via failed rollback, then corrupt hashes.
+    p2 = _fresh_program(o)
+    p2.place("r3_target", "Target", words="t")
+    persist_rest.save(p2)
+    from form.mandell import core_i_recovery as R
+    g = R.checkpoint(p2, stamp="r3g")
+    try:
+        R.rollback(o, g, _fail_at="rollback_commit_program")
+    except Exception:
+        pass
+    # Corrupt the target hashes in the journal.
+    with open(jp, encoding="utf-8") as f:
+        j = _json.load(f)
+    j["program_sha256"] = "f" * 64
+    write_journal(j)
+    rec("r3_target_mismatch_recover_raises", recover_raises(), "")
+    rec("r3_target_mismatch_load_fails_closed", load_fails_closed(), "")
+    # Cleanup: remove journal and staging files.
+    if os.path.exists(jp):
+        os.unlink(jp)
+    for kind in ("program", "nursery"):
+        sp = _staging_path(o, kind)
+        if os.path.exists(sp):
+            os.unlink(sp)
+
+    # 7. Prepared with old fingerprint mismatch -> fail closed.
+    from form.persist import _path as _live_path
+    live_prog = _live_path(o)
+    old_hash = _sha256(live_prog)
+    # Modify the live file so it doesn't match.
+    with open(live_prog, "a", encoding="utf-8") as f:
+        f.write(" ")
+    write_journal({
+        "phase": "prepared", "owner": o,
+        "program_sha256": None, "nursery_sha256": None,
+        "old_program_sha256": old_hash,
+        "old_nursery_sha256": None,
+    })
+    rec("r3_old_mismatch_recover_raises", recover_raises(), "")
+    rec("r3_old_mismatch_load_fails_closed", load_fails_closed(), "")
+    os.unlink(jp)
+    # Restore live file (remove trailing space).
+    with open(live_prog, "rb+") as f:
+        f.seek(-1, 2)
+        f.truncate()
+
+    # 8. Recovery invoked repeatedly -> idempotent or fail-closed consistently.
+    write_journal({"phase": "prepared", "owner": o,
+                   "program_sha256": None, "nursery_sha256": None,
+                   "old_program_sha256": _sha256(live_prog),
+                   "old_nursery_sha256": None})
+    # Need nursery hash too; get it.
+    from form.dell_matrix.nursery import owner_nursery_path
+    live_nurs = owner_nursery_path(o)
+    with open(jp, encoding="utf-8") as f:
+        j = _json.load(f)
+    j["old_nursery_sha256"] = _sha256(live_nurs) if os.path.exists(live_nurs) else None
+    write_journal(j)
+    r1 = recover_rollback_transaction(o)
+    r2 = recover_rollback_transaction(o)
+    rec("r3_repeated_recovery_idempotent",
+        r1 == "rolled_back" and r2 is None, f"{r1},{r2}")
+
+    # 9. Load while unrecoverable journal exists -> fail closed (already
+    # covered above, but explicit: corrupt journal + load).
+    write_journal(raw="corrupt")
+    rec("r3_load_unrecoverable_fails_closed", load_fails_closed(), "")
+    os.unlink(jp)
+
+
+# ---------------------------------------------------------------------------
 # Performance baseline (Phase-0 §21): recorded, not asserted hard
 # ---------------------------------------------------------------------------
 
@@ -864,6 +1015,7 @@ _TESTS = [
     t_r4_nursery_lost_update_refused,
     t_r4_corrupt_nursery_file_honest,
     t_r4_serialize_failure_leaves_target_untouched,
+    t_r3_fail_closed_recovery,
     t_perf_baseline,
 ]
 
