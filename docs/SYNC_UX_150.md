@@ -57,7 +57,7 @@ Each page, 15 steps:
 
 ```bash
 python3 -u -m form.dell_matrix.sync_ux_150_loop --cycles 150
-python3 -m form.smoke_all
+python3 -m form.regress
 ```
 
 ## Related loops

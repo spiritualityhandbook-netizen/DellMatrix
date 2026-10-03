@@ -43,5 +43,5 @@ Also on live visual menus (mode **builder**+): group **Inspire**.
 
 ```bash
 python -m form.dell_matrix.inspire_pack
-python -m form.smoke_all
+python -m form.regress
 ```

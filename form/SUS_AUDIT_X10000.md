@@ -1,7 +1,7 @@
 # SUS × 10000 — loop stamp
 
 **Seed:** `12[Test] : 18[Mirror] :: 34[Stamp] :: Sus10000`  
-**Loop:** audit → code gaps → invariants → smoke_all → stamp
+**Loop:** audit → code gaps → invariants → regress → stamp
 
 ## Hard gates PASS
 TRUTH · ZERO FLUFF · FLOOR · MANDEL IN/ENGLISH OUT · COMPLETENESS · ACHIEVABILITY
@@ -40,7 +40,7 @@ STANDING · SPECT · TONEA · SPIREA · MANDETAIL · OMEGATE
 ## Command
 ```bash
 python -m form.invariants
-python -m form.smoke_all
+python -m form.regress
 ```
 
 **SUS_10000: READY**  

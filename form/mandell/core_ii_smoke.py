@@ -123,7 +123,12 @@ def smoke() -> bool:
     rec("leaf_has_12", "primary == 12" in leaf_src)
     rec("leaf_has_50", "primary == 50" in leaf_src)
     missing = [n for n in range(0, 51) if f"primary == {n}" not in leaf_src]
-    rec("leaf_has_00_50_branches", missing == [])
+    # MPC-011 E: Dell37's dead Stream leaf branch was intentionally removed.
+    # Core-I HANDLED authority intercepts those Dells on every production
+    # route, so a missing leaf branch is legitimate IFF the Dell is HANDLED.
+    # Any missing NON-handled branch is a regression.
+    from .core_i_ops import HANDLED as _CORE_I_HANDLED
+    rec("leaf_has_00_50_branches", set(missing) <= (set(_CORE_I_HANDLED) & set(range(0, 51))))
     rec("front_door_still_dispatches", "execute_chain" in inspect.getsource(execute_seed))
 
     print(f"=== {sum(r)}/{len(r)} ===")

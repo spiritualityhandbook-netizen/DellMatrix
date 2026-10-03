@@ -1564,20 +1564,20 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         return p
 
     if lower.startswith("set detail "):
-        parts = raw_line.split(maxsplit=2)
-        if len(parts) < 3:
+        rest = raw_line[len("set detail "):].strip().split(None, 1)
+        if len(rest) < 2:
             _say("usage: set detail <id|label> <text>")
             return p
-        out = p.set_idea_detail(parts[1], parts[2])
+        out = p.set_idea_detail(rest[0], rest[1])
         _say(f"Detail → {out.get('label')}: {(out.get('detail') or '')[:100]}" if out.get("ok") else out.get("reason"))
         return p
 
     if lower.startswith("set goals "):
-        parts = raw_line.split(maxsplit=2)
-        if len(parts) < 3:
+        rest = raw_line[len("set goals "):].strip().split(None, 1)
+        if len(rest) < 2:
             _say("usage: set goals <id|label> goal1; goal2")
             return p
-        out = p.set_idea_goals(parts[1], parts[2])
+        out = p.set_idea_goals(rest[0], rest[1])
         if out.get("ok"):
             _say(f"Goals → {out.get('label')}: {', '.join(out.get('goals') or [])}")
         else:
@@ -2676,12 +2676,23 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     print("  Depth: explain create · la cresce 2")
     print("  Live: live  · look  · zoom <id>  · mode builder|depth")
     print()
-    p = persist_load(owner) if do_load else open_program(owner)
+    _session_existed = False
+    if do_load:
+        # M (CA01-MISSING-SESSION): persist.load() intentionally yields a fresh
+        # owner when no file exists, so the receipt must not claim a load that
+        # never happened. Mirrors the in-REPL load guard (~line 2267).
+        from form.persist import _path as _persist_path
+        import os as _os
+        _session_existed = _os.path.isfile(_persist_path(owner))
+        p = persist_load(owner)
+    else:
+        p = open_program(owner)
     if not do_load:
         from form.mandell.language import bind
         bind(p)  # Q-022: explicit owner binding BEFORE any customize, so customize > save > --load restores it
     if do_load:
-        _say(f"Loaded session for {owner}.")
+        _say(f"Loaded session for {owner}." if _session_existed
+             else f"No saved session for {owner}; started fresh.")
     print(p.render())
     print()
 

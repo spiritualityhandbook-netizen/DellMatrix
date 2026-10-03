@@ -40,7 +40,7 @@ All static `data-cmd` / `data-fill` / `data-c` / `data-nav` values including:
 
 ```bash
 python3 -u -m form.dell_matrix.button_path_enhance_loop --cycles 150
-python3 -m form.smoke_all
+python3 -m form.regress
 ```
 
 Authority: `form/dell_matrix/button_path_enhance_loop.py`

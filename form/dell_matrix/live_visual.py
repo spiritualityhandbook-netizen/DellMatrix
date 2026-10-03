@@ -712,19 +712,19 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
         res = parse_and_place(program, line)
         return {"ok": True, "msg": format_create_end(res), "create": res, "end": "create_strong"}
     if lower.startswith("set detail "):
-        rest = raw.split(maxsplit=2)
-        if len(rest) < 3:
+        rest = raw[len("set detail "):].strip().split(None, 1)
+        if len(rest) < 2:
             return {"ok": False, "error": "usage: set detail <id|label> <text>", "end": "usage"}
-        ref, detail = rest[1], rest[2]
+        ref, detail = rest[0], rest[1]
         out = program.set_idea_detail(ref, detail) if hasattr(program, "set_idea_detail") else {"ok": False}
         if not out.get("ok"):
             return {"ok": False, "error": out.get("reason"), "end": "edit_miss"}
         return {"ok": True, "msg": f"Detail set on {out.get('label')} · {(out.get('detail') or '')[:100]}\n  doors: set goals {out.get('id')} … · page · idea {out.get('id')}", "edit": out, "end": "edit_detail"}
     if lower.startswith("set goals "):
-        rest = raw.split(maxsplit=2)
-        if len(rest) < 3:
+        rest = raw[len("set goals "):].strip().split(None, 1)
+        if len(rest) < 2:
             return {"ok": False, "error": "usage: set goals <id|label> goal1; goal2; goal3", "end": "usage"}
-        ref, goals = rest[1], rest[2]
+        ref, goals = rest[0], rest[1]
         out = program.set_idea_goals(ref, goals) if hasattr(program, "set_idea_goals") else {"ok": False}
         if not out.get("ok"):
             return {"ok": False, "error": out.get("reason"), "end": "edit_miss"}

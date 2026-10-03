@@ -26,8 +26,13 @@ def smoke() -> bool:
     from form.mandell import circuit_ledger as cl
     from form.mandell import nbd_engine as ne
     from form.mandell.nbd_candidates import build_frontier
-    
-    p = Program()
+
+    # K (CA01-IAC-STATE-CONTAMINATION): never use the default "Operator" owner
+    # here — this test issues "save", which would overwrite the real default
+    # user's form/state/program_Operator.json. Test-local unique owner instead.
+    import uuid as _uuid
+    _owner = f"iac1_test_{_uuid.uuid4().hex[:8]}"
+    p = Program(owner=_owner)
     
     # ── A: command inventory coverage ──────────────────────────
     # Verify key command groups are handled
@@ -69,7 +74,7 @@ def smoke() -> bool:
     check("F.repl_explain_exists", hasattr(repl, "_handle_ros_command"))
     
     # ── G: K2 raw execution ────────────────────────────────────
-    p2 = Program()
+    p2 = Program(owner=_owner)
     r = _run_command(p2, "15[Map] :: k2_test")
     check("G.raw_exec_ok", r.get("ok") is True)
     from form.mandell import runtime_observe as ro
@@ -83,7 +88,7 @@ def smoke() -> bool:
     check("H.two_commands_two_outcomes", len(outcomes) == 2)
     
     # ── I: no Outcome for read-only inspection ─────────────────
-    p3 = Program()
+    p3 = Program(owner=_owner)
     _run_command(p3, "status")
     _run_command(p3, "proposals")
     outcomes = ro.latest_outcomes(p3)
