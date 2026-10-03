@@ -66,7 +66,7 @@ from form.dell_matrix.nursery import Nursery, NurseryLoadError, owner_nursery_pa
 
 CHECKPOINT_PROTOCOL_VERSION = 1
 
-_MEMBER_KINDS = ("nursery", "program")
+_MEMBER_KINDS = ("nursery", "program", "ideas")
 
 
 class CheckpointError(Exception):
@@ -185,9 +185,18 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
     except Exception as exc:
         raise CheckpointCommitError(f"program save failed; commit aborted: {exc}") from exc
 
+    # MF-5: Snapshot ideas before sealing. The snapshot file becomes
+    # a checkpoint member, integrated with the journaled transaction.
+    from form.mandell.idea_checkpoint import snapshot_ideas, ideas_snapshot_path
+    try:
+        snapshot_ideas(owner)
+    except Exception as exc:
+        raise CheckpointCommitError(f"idea snapshot failed; commit aborted: {exc}") from exc
+
     live = {
         "nursery": owner_nursery_path(owner),
         "program": os.path.join(_STATE_DIR, f"program_{_safe_owner(owner)}.json"),
+        "ideas": ideas_snapshot_path(owner),
     }
     _check_fail("before_members", _fail_at)  # crash here: no G2 member file exists
     fps: Dict[str, str] = {}

@@ -206,7 +206,15 @@ def recover_rollback_transaction(owner: str) -> Optional[str]:
     if phase == "prepared":
         return _recover_prepared(owner, jpath, journal)
     if phase in ("staged", "committed"):
-        return _recover_staged(owner, jpath, journal)
+        result = _recover_staged(owner, jpath, journal)
+        # R2 (ARGUS MF-R2-1): recovery must also complete the observable
+        # working set, not just the canonical files. The transaction proved
+        # TARGET COMPLETE for program+nursery+ideas-snapshot; rehydration
+        # makes the individual idea files agree with the snapshot.
+        # Marker-guarded and idempotent: safe under repeated recovery.
+        from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
+        rehydrate_ideas_from_live(owner)
+        return result
     # Unknown phase: refuse to guess; preserve journal for diagnosis.
     raise RollbackRecoveryError(
         f"rollback journal for {owner!r} has unknown phase {phase!r}; "
@@ -226,18 +234,22 @@ def _validate_journal_fields(owner: str, journal: dict, required: tuple) -> None
 def _recover_prepared(owner: str, jpath: str, journal: dict) -> str:
     """'prepared' phase: nothing was staged. Verify live files match the
     recorded old fingerprints (if recorded), then discard the journal.
-    The old pair remains authoritative."""
+    The old triple remains authoritative."""
     _validate_journal_fields(owner, journal,
-                             ("old_program_sha256", "old_nursery_sha256"))
+                             ("old_program_sha256", "old_nursery_sha256",
+                              "old_ideas_sha256"))
     from form.persist import _path as _live_program_path
     from form.dell_matrix.nursery import owner_nursery_path
+    from form.mandell.idea_checkpoint import ideas_snapshot_path
     live_prog = _live_program_path(owner)
     live_nurs = owner_nursery_path(owner)
+    live_ideas = ideas_snapshot_path(owner)
     # Verify coherence: live files must match recorded old fingerprints.
     # None means the file did not exist at prepare time.
     for label, path, recorded in (
         ("program", live_prog, journal["old_program_sha256"]),
         ("nursery", live_nurs, journal["old_nursery_sha256"]),
+        ("ideas", live_ideas, journal["old_ideas_sha256"]),
     ):
         if recorded is None:
             continue  # legitimately absent at prepare time
@@ -260,13 +272,15 @@ def _recover_prepared(owner: str, jpath: str, journal: dict) -> str:
 def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
     """'staged'/'committed' phase: deterministically complete the commit,
     then verify the canonical files match the recorded target fingerprints.
-    The target pair becomes authoritative only after proof."""
+    The target triple becomes authoritative only after proof."""
     _validate_journal_fields(owner, journal,
-                             ("program_sha256", "nursery_sha256"))
+                             ("program_sha256", "nursery_sha256", "ideas_sha256"))
     from form.persist import _path as _live_program_path
     from form.dell_matrix.nursery import owner_nursery_path
+    from form.mandell.idea_checkpoint import ideas_snapshot_path
     for kind, live_fn in (("program", _live_program_path),
-                          ("nursery", owner_nursery_path)):
+                          ("nursery", owner_nursery_path),
+                          ("ideas", ideas_snapshot_path)):
         staging = _staging_path(owner, kind)
         live = live_fn(owner)
         if os.path.isfile(staging):
@@ -283,9 +297,11 @@ def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
     # Prove coherence: canonical files must match target fingerprints.
     live_prog = _live_program_path(owner)
     live_nurs = owner_nursery_path(owner)
+    live_ideas = ideas_snapshot_path(owner)
     for label, path, recorded in (
         ("program", live_prog, journal["program_sha256"]),
         ("nursery", live_nurs, journal["nursery_sha256"]),
+        ("ideas", live_ideas, journal["ideas_sha256"]),
     ):
         if not os.path.isfile(path):
             raise RollbackRecoveryError(
@@ -303,7 +319,8 @@ def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
     return "completed"
 
 
-def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) -> None:
+def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
+                        _ideas_snapshot_path: Optional[str] = None) -> None:
     """Eagerly converge live working state to the rolled-back program.
 
     DIRECTOR DECISION 2 (gate R1) + FINDING 1 (gate R2): successful rollback
@@ -342,7 +359,7 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) ->
         owner_nursery_path,
     )
 
-    # 1. PREPARE: serialize both payloads BEFORE touching any live file.
+    # 1. PREPARE: serialize all three payloads BEFORE touching any live file.
     _check_fail("rollback_serialize", _fail_at)
     program_data = serialize(program)
     nursery = program.nursery
@@ -352,6 +369,20 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) ->
     nursery_payload[DISPOSITION_SECTION_KEY] = {
         cid: dict(rec) for cid, rec in nursery.conflict_dispositions.items()
     }
+    # R2: Ideas payload. The ideas_snapshot_path_for_rollback is passed
+    # explicitly to avoid guessing. It points to the sealed generation's
+    # ideas member file.
+    ideas_data = None
+    if _ideas_snapshot_path:
+        try:
+            with open(_ideas_snapshot_path, "rb") as f:
+                ideas_blob = f.read()
+            # Validate it's valid JSON with expected structure.
+            ideas_data = json.loads(ideas_blob.decode("utf-8"))
+            if not isinstance(ideas_data, dict) or "ideas" not in ideas_data:
+                raise CheckpointError("rollback: sealed ideas member invalid structure")
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise CheckpointError(f"rollback: sealed ideas member unreadable: {exc}") from exc
     # Pre-flight the nursery conflict guard BEFORE any mutation.
     _check_fail("rollback_nursery_conflict", _fail_at)
     if _disk_sig(nursery.path) != nursery._seen:
@@ -361,6 +392,8 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) ->
         )
     live_prog = _live_program_path(owner)
     live_nurs = owner_nursery_path(owner)
+    from form.mandell.idea_checkpoint import ideas_snapshot_path
+    live_ideas = ideas_snapshot_path(owner)
     journal = {
         "phase": "prepared",
         "owner": owner,
@@ -368,32 +401,45 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) ->
         # file bytes (not canonical JSON).
         "program_sha256": None,
         "nursery_sha256": None,
+        "ideas_sha256": None,
         "old_program_sha256": _sha256_file(live_prog) if os.path.isfile(live_prog) else None,
         "old_nursery_sha256": _sha256_file(live_nurs) if os.path.isfile(live_nurs) else None,
+        "old_ideas_sha256": _sha256_file(live_ideas) if os.path.isfile(live_ideas) else None,
     }
     _write_journal(owner, journal, _fail_at=_fail_at)
 
-    # 2. STAGE: write both payloads to staging files (live untouched).
+    # 2. STAGE: write all three payloads to staging files (live untouched).
     _check_fail("rollback_stage", _fail_at)
     staging_prog = _staging_path(owner, "program")
     staging_nurs = _staging_path(owner, "nursery")
+    staging_ideas = _staging_path(owner, "ideas")
     prog_blob = atomic_write_json(staging_prog, program_data)
     nurs_blob = atomic_write_json(staging_nurs, nursery_payload)
+    # R2: Stage ideas payload. If no ideas snapshot was provided (e.g.,
+    # legacy generation without ideas member), stage an empty snapshot
+    # to maintain the three-member invariant.
+    if ideas_data is not None:
+        ideas_blob = atomic_write_json(staging_ideas, ideas_data)
+    else:
+        ideas_blob = atomic_write_json(staging_ideas, {"owner": owner, "ideas": {}})
     # Record the ACTUAL staged file hashes (not canonical JSON), so
     # recovery can prove the committed files are byte-identical to what
     # was staged. atomic_write_json returns the exact bytes written.
     journal["program_sha256"] = hashlib.sha256(prog_blob).hexdigest()
     journal["nursery_sha256"] = hashlib.sha256(nurs_blob).hexdigest()
+    journal["ideas_sha256"] = hashlib.sha256(ideas_blob).hexdigest()
     journal["phase"] = "staged"
     _write_journal(owner, journal, _fail_at=_fail_at)
 
     # 3. COMMIT: atomic renames (the commit boundary). After the first
     # rename, a crash leaves the journal in 'staged' -> recovery completes
-    # the second rename deterministically. No hybrid is ever exposed.
+    # the remaining renames deterministically. No hybrid is ever exposed.
     _check_fail("rollback_commit_program", _fail_at)
     os.replace(staging_prog, live_prog)
     _check_fail("rollback_commit_nursery", _fail_at)
     os.replace(staging_nurs, live_nurs)
+    _check_fail("rollback_commit_ideas", _fail_at)
+    os.replace(staging_ideas, live_ideas)
     journal["phase"] = "committed"
     _write_journal(owner, journal, _fail_at=_fail_at)
     _check_fail("rollback_cleanup", _fail_at)
@@ -433,6 +479,13 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
     A fresh ``persist_rest.load(owner)`` observes the rolled-back state with
     no subsequent save required.
 
+    R2 legacy semantic (ARGUS A-R2-1, advisory): rolling back to a pre-R1
+    generation whose manifest has no ideas member stages and commits an
+    EMPTY ideas snapshot, and rehydration clears stale individual idea
+    files. The coherent semantic is "ideas cleared", not "ideas preserved".
+    This is destructive but explicit and consistent: the live triple always
+    reflects exactly the selected generation's members.
+
     Returns the restored program (Dell 28 activates it via new_program).
     Raises FileNotFoundError("rollback_missing") when nothing restorable exists.
     Raises CheckpointError/NurseryConflictError on convergence failure, with
@@ -444,10 +497,11 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
         _load_generation,
     )
     target = path
+    receipt = None
     if target is None:
         try:
             # activate=True: same session binding the legacy load path performed.
-            program, _receipt = gen.load_checkpoint(owner, activate=True)
+            program, receipt = gen.load_checkpoint(owner, activate=True)
         except CheckpointError as exc:
             raise FileNotFoundError(f"rollback_missing: {exc}") from exc
     # Legacy explicit file path.
@@ -456,9 +510,25 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
     # Otherwise treat as a generation id.
     else:
         try:
-            program, _receipt = _load_generation(owner, str(target), True, None)
+            program, receipt = _load_generation(owner, str(target), True, None)
         except CheckpointError as exc:
             raise FileNotFoundError(f"rollback_missing: {exc}") from exc
     # Eager convergence: live files reflect the target before we return.
-    _eager_converge_live(program, owner, _fail_at=_fail_at)
+    # R2: The three-member transaction (program+nursery+ideas) is atomic.
+    # The ideas snapshot path is passed for the transaction; the separate
+    # restore_ideas_from_snapshot call is removed (was outside transaction).
+    ideas_snapshot_path = None
+    if receipt and "members" in receipt and "ideas" in receipt["members"]:
+        from form.persist import _STATE_DIR
+        ideas_spec = receipt["members"]["ideas"]
+        ideas_snapshot_path = os.path.join(_STATE_DIR, ideas_spec["file"])
+    _eager_converge_live(program, owner, _fail_at=_fail_at,
+                         _ideas_snapshot_path=ideas_snapshot_path)
+    # R2 (NULL N1/N2): Rehydrate individual idea files from the LIVE
+    # canonical snapshot just committed by the transaction. This is
+    # UNCONDITIONAL: even a legacy rollback (no sealed ideas member,
+    # empty snapshot staged) must clear stale files, giving the coherent
+    # "ideas cleared" semantic. Marker-guarded (see idea_checkpoint).
+    from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
+    rehydrate_ideas_from_live(owner)
     return program
