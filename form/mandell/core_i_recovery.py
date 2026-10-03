@@ -509,12 +509,32 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
         ideas_snapshot_path = os.path.join(_STATE_DIR, ideas_spec["file"])
     _eager_converge_live(program, owner, _fail_at=_fail_at,
                          _ideas_snapshot_path=ideas_snapshot_path)
-    # After the atomic transaction commits, rehydrate individual idea files
-    # from the live snapshot. This is a derived step, not a separate truth.
-    # The snapshot is the transactional canonical member.
-    if ideas_snapshot_path and os.path.isfile(ideas_snapshot_path):
-        from form.mandell.idea_checkpoint import restore_ideas_from_snapshot
-        from form.mandell.idea_checkpoint import ideas_snapshot_path as live_snap_path
-        # The live snapshot was just committed by the transaction; rehydrate.
-        restore_ideas_from_snapshot(owner, live_snap_path(owner))
+    # R2 (NULL N1/N2): Rehydrate individual idea files from the LIVE
+    # canonical snapshot just committed by the transaction. This is
+    # UNCONDITIONAL: even a legacy rollback (no sealed ideas member,
+    # empty snapshot staged) must clear stale files, giving the coherent
+    # "ideas cleared" semantic.
+    #
+    # Rehydration is a derived step (not a second authority) guarded by a
+    # pending marker: a crash mid-rehydration leaves the marker, and the
+    # next reader (load_idea / snapshot_ideas / ensure_ideas_rehydrated)
+    # completes it from the canonical snapshot before observing state.
+    from form.mandell.idea_checkpoint import (
+        restore_ideas_from_snapshot,
+        ensure_ideas_rehydrated,
+        ideas_rehydrate_marker_path,
+        ideas_snapshot_path as live_snap_path,
+    )
+    from form.dell_matrix.atomic_write import atomic_write_json
+    live_snap = live_snap_path(owner)
+    if os.path.isfile(live_snap):
+        marker = ideas_rehydrate_marker_path(owner)
+        atomic_write_json(marker, {"owner": owner, "phase": "pending"})
+        try:
+            restore_ideas_from_snapshot(owner, live_snap)
+        except Exception:
+            # Marker stays: the next reader will retry from the snapshot.
+            raise
+        if os.path.isfile(marker):
+            os.remove(marker)
     return program

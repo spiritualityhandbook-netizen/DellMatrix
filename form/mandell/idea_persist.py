@@ -48,10 +48,16 @@ def save_idea(idea: Idea, owner: Optional[str] = None) -> str:
 def load_idea(idea_id: str, owner: Optional[str] = None) -> Idea:
     """Load an Idea by ID. Fail-closed on corrupt/missing.
 
+    R2: completes any interrupted rehydration (single isfile check) before
+    observing the working set.
+
     Raises:
         FileNotFoundError: if the Idea does not exist.
         ValueError: if the persisted data is corrupt/unreadable.
     """
+    if owner:
+        from form.mandell.idea_checkpoint import ensure_ideas_rehydrated
+        ensure_ideas_rehydrated(owner)
     path = _idea_path(idea_id, owner)
     if not os.path.isfile(path):
         raise FileNotFoundError(f"Idea {idea_id!r} not found")
