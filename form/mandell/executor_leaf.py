@@ -23,6 +23,30 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     primary = s.primary_dell()
     terms = {a.term.lower() for a in s.atoms}
     label = s.label or ""
+    # TOAM-I C3: For Dell 8 with typed args, use the 'name' arg as the label.
+    # This wires the typed representation to the existing Create authority.
+    if primary == 8 and s.atoms:
+        atom_args = getattr(s.atoms[0], "args", None) or {}
+        if atom_args:
+            from form.mandell.signatures import get_signature, has_signature
+            if has_signature(8):
+                sig = get_signature(8)
+                errors = sig.validate(atom_args)
+                if errors:
+                    err_msg = f"TOAM validation failed for 08[Create]: {'; '.join(errors)}"
+                    messages.append(err_msg)
+                    return {"ok": False, "error": errors[0], "messages": messages}
+                # Use typed name; conflict law: if legacy label differs, fail safely
+                typed_name = atom_args.get("name", "")
+                if label and label != typed_name and label != typed_name.replace(" ", "_")[:24]:
+                    # Legacy label is the uid (underscored); typed name is human-readable.
+                    # They refer to the same thing if uid matches. Only fail on true conflict.
+                    err_msg = f"ARGUMENT_CONFLICT for 08[Create]: typed name='{typed_name}' vs legacy label='{label}'"
+                    messages.append(err_msg)
+                    return {"ok": False, "error": "ARGUMENT_CONFLICT", "messages": messages}
+                if typed_name:
+                    label = typed_name
+                    messages.append(f"TOAM: typed name='{typed_name}' wired to Create")
     new_program = None
 
     def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
