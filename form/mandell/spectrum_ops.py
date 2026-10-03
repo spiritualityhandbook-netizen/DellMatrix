@@ -5,6 +5,8 @@ from __future__ import annotations
 import copy
 from typing import Any, Dict, List, Tuple
 
+from .predicate import result_cell
+
 SPECTRUM_DELLS = set(range(80, 100))
 COMPOSE_BOUND = 8
 ACTIVE_TX = ("open", "failed", "caught")
@@ -107,63 +109,111 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
         st.store[dest] = copy.deepcopy(st.store.get(src, src))
         _note_mutation(st, "copy", lab, pre)
         messages.append(f"Copy {src}->{dest} original_intact")
+        # C2: Publish produced value via existing last_result authority.
+        # The dest key is the authoritative produced value.
+        st.last_result = result_cell(value=dest, matched=True, count=1,
+                                     source="copy", predicate=lab or "*",
+                                     trace="84")
     elif n == 85:
         src, _, dest = lab.partition(">")
         src, dest = src.strip(), dest.strip()
         if not src or not dest:
             ok, err = False, "malformed_move"
             messages.append("Move malformed")
+            # C2: Failed producer must not expose a successful result.
+            st.last_result = result_cell(value=None, matched=False, source="move",
+                                         predicate=lab or "*", error="malformed_move",
+                                         trace="85")
         elif src not in st.store:
             ok, err = False, "move_missing"
             messages.append(f"Move miss {src}")
+            st.last_result = result_cell(value=None, matched=False, source="move",
+                                         predicate=lab or "*", error="move_missing",
+                                         trace="85")
         elif dest != src:
             pre = _ckpt(st)
             st.store[dest] = st.store.pop(src)
             _note_mutation(st, "move", lab, pre)
             messages.append(f"Move {src}->{dest} identity_preserved")
+            # C2: Publish produced value. The dest key holds the moved value.
+            st.last_result = result_cell(value=dest, matched=True, count=1,
+                                         source="move", predicate=lab or "*",
+                                         trace="85")
         else:
             messages.append("Move same identity")
+            st.last_result = result_cell(value=src, matched=True, count=1,
+                                         source="move", predicate=lab or "*",
+                                         trace="85")
     elif n == 86:
         key = lab
+        # C2: Delete has NO_AUTHORITATIVE_RESULT.
+        # Deletion produces nothing; there is no value to publish.
+        # We set last_result to explicit non-matched to prevent stale results
+        # from masquerading as this operation's result.
         if key in st.store:
             pre = _ckpt(st)
             shot_fn()
             st.store.pop(key, None)
             _note_mutation(st, "delete", lab, pre)
             messages.append(f"Delete store[{key}]")
+            st.last_result = result_cell(value=None, matched=False, source="delete",
+                                         predicate=key or "*", trace="86")
         elif key in st.groups:
             pre = _ckpt(st)
             shot_fn()
             st.groups.pop(key, None)
             _note_mutation(st, "delete", lab, pre)
             messages.append(f"Delete group[{key}]")
+            st.last_result = result_cell(value=None, matched=False, source="delete",
+                                         predicate=key or "*", trace="86")
         else:
             ok, err = False, f"delete_missing:{key or 'empty'}"
             messages.append(f"Delete miss {key or '(empty)'}")
+            st.last_result = result_cell(value=None, matched=False, source="delete",
+                                         predicate=key or "*",
+                                         error=f"delete_missing:{key or 'empty'}",
+                                         trace="86")
     elif n == 87:
         old, _, new = lab.partition(">")
         old, new = old.strip(), new.strip()
         if old not in st.store:
             ok, err = False, f"replace_missing:{old}"
             messages.append(f"Replace miss {old}")
+            st.last_result = result_cell(value=None, matched=False, source="replace",
+                                         predicate=lab or "*",
+                                         error=f"replace_missing:{old}",
+                                         trace="87")
         else:
             pre = _ckpt(st)
             shot_fn()
-            st.store[new or old] = st.store.pop(old)
+            result_key = new or old
+            st.store[result_key] = st.store.pop(old)
             _note_mutation(st, "replace", lab, pre)
             messages.append(f"Replace {old}->{new}")
+            # C2: Publish produced value. The result_key holds the replaced value.
+            st.last_result = result_cell(value=result_key, matched=True, count=1,
+                                         source="replace", predicate=lab or "*",
+                                         trace="87")
     elif n == 88:
         key, _, val = lab.partition("=")
         key = key.strip()
         if key not in st.store:
             ok, err = False, f"patch_miss:{key}"
             messages.append(f"Patch miss {key}")
+            st.last_result = result_cell(value=None, matched=False, source="patch",
+                                         predicate=lab or "*",
+                                         error=f"patch_miss:{key}",
+                                         trace="88")
         else:
             pre = _ckpt(st)
             shot_fn()
             st.store[key] = val
             _note_mutation(st, "patch", lab, pre)
             messages.append(f"Patch {key}={val}")
+            # C2: Publish produced value. The key was mutated; it is the result.
+            st.last_result = result_cell(value=key, matched=True, count=1,
+                                         source="patch", predicate=lab or "*",
+                                         trace="88")
     elif n == 89:
         frames = _active(_open_tx(st))
         if frames:

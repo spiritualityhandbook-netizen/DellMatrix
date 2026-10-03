@@ -55,9 +55,38 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
                 err_msg = f"TOAM validation failed for {n:02d}[{shown}]: {'; '.join(errors)}"
                 messages.append(err_msg)
                 return program, {"ok": False, "error": errors[0], "messages": messages}
+            # C2: Resolve existing reference kinds in arg values.
+            # Reuses predicate.py reference authority (last_result, store:, selected).
+            # This enables composition: OP_A publishes to last_result, OP_B consumes it.
+            resolved_args = {}
+            st = getattr(program, "core_ii", None)
+            for k, v in atom_args.items():
+                resolved_v = v
+                if st is not None and isinstance(v, str):
+                    low = v.lower().strip()
+                    if low in ("last_result", "result"):
+                        # Resolve from existing st.last_result authority
+                        lr = getattr(st, "last_result", None) or {}
+                        if not lr.get("matched"):
+                            err_msg = f"REFERENCE_FAILED for {n:02d}[{shown}]: last_result not matched (error: {lr.get('error', 'unknown')})"
+                            messages.append(err_msg)
+                            return program, {"ok": False, "error": "REFERENCE_FAILED", "messages": messages}
+                        resolved_v = str(lr.get("value", ""))
+                        messages.append(f"TOAM: resolved '{v}' -> '{resolved_v}' from last_result")
+                    elif low.startswith("store:"):
+                        # Resolve from existing store authority
+                        key = v.split(":", 1)[1]
+                        store = getattr(st, "store", {}) or {}
+                        if key not in store:
+                            err_msg = f"REFERENCE_FAILED for {n:02d}[{shown}]: store key '{key}' not found"
+                            messages.append(err_msg)
+                            return program, {"ok": False, "error": "REFERENCE_FAILED", "messages": messages}
+                        resolved_v = key  # Reference the key itself, not the value
+                        messages.append(f"TOAM: resolved '{v}' -> store key '{key}'")
+                resolved_args[k] = resolved_v
             # Conflict law: if both typed args and legacy lab present with different values,
             # fail safely rather than silently choosing.
-            typed_lab = lower_args_to_lab(n, atom_args)
+            typed_lab = lower_args_to_lab(n, resolved_args)
             if payload and payload != typed_lab:
                 err_msg = f"ARGUMENT_CONFLICT for {n:02d}[{shown}]: typed args lower to '{typed_lab}' but legacy lab is '{payload}'"
                 messages.append(err_msg)
