@@ -87,8 +87,7 @@ Lattice / Perception / Looking
   geometry                              full sacred-geometry status
   look                  directional vision from facing
   zoom <id|label> | page | unzoom
-  alpha <idea> | delta <idea> | omega <idea>   Greek floor: source, change, bound
-  omni | lambda <idea> | sigma                 Greek: full-field, logic, sum
+  alpha | delta | omega | omni | lambda | sigma   Greek floor: semantic observation
   snap on|off           grid snap when form is cube
   lens <skin>|clear     filter vision by skin
   persona <name>|clear  soft persona lens (manny, melody, …)
@@ -219,8 +218,8 @@ Recover — history, undo, reissue
 Look — inspect the space
 
   look · page · zoom <id|label>
-  alpha <idea> · delta <idea> · omega <idea>
-  omni · lambda <idea> · sigma
+  alpha · delta · omega · omni · lambda · sigma
+  (Greek floor operators — semantic observation, no operand)
 """.strip(),
     "dell": """
 Dell — execute capabilities via Mandell seeds
