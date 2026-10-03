@@ -339,7 +339,16 @@ Mission verbs: RESEARCH.
 
 ---
 
-## PHASE 1 — THE IDEA [IN_PROGRESS]
+## PHASE 1 — THE IDEA [CERTIFIED] [MERGED] [CLOSED]
+
+**Merge:** PR #71 merged 2026-10-03T23:06:04Z as `eafa08f07e1bd6e33c093483b6718f007a28b480`
+(parents: `d282d35160386f3df56c68cc1aba21931d1d45a5`, `e8a6d254bc6486f486fce7c48ffe2ad618ffaba9`);
+merge tree `eb7d083a6fa1f5a8b09200bcf608161c2c8a2e77` (equals authorized candidate tree — exact merge).
+**Requirements:** 1.1 CERTIFIED, 1.2 CERTIFIED, 1.3 CERTIFIED, 1.4 CERTIFIED, 1.5 CERTIFIED.
+**Objectives:** 24 IMPLEMENTED; 1.5.4 DEFERRED_TO_PHASE_2_BY_DIRECTOR (approved phase-boundary correction, not a defect).
+**Post-merge (fresh main):** regress 84/84 fwd GREEN, 84/84 rev GREEN; persistence 56/56; Idea suite 32/32;
+R3 authoritative ALL PASS; R4 Live Matrix ALL PASS; exact-head CI (3.10/3.11/smoke) green.
+**Security:** EVALUATION_UNAVAILABLE_QUOTA (no real evaluation succeeded; no new security surface).
 
 **Base:** `d282d35160386f3df56c68cc1aba21931d1d45a5` (Phase-0 closure)
 **Branch:** `gdp-phase1-work`
