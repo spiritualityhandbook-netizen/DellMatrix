@@ -497,7 +497,21 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         else:
             messages.append("Manifest needs :: label.")
     else:
-        d = get_dell(primary) if primary is not None else None
+        # P0-R2 MUST_FIX: reserved/not-active dells must honestly refuse.
+        # Previously this branch answered ok=True "runtime thin" for ANY
+        # unmapped primary (including reserved addresses) AND placed an idea
+        # as a side effect, reachable via the public raw-seed path.
+        if primary is None or primary > 99:
+            return {
+                "ok": False,
+                "seed": s.as_mandel(),
+                "english": s.as_english(),
+                "primary": primary,
+                "messages": [f"Dell {primary}[reserved/not-active] refused: no executor."],
+                "new_program": new_program,
+                "error": f"Dell {primary} reserved/not-active",
+            }
+        d = get_dell(primary)
         name = d["name"] if d else str(primary)
         messages.append(f"Dell {primary:02d}[{name}] recognized — runtime thin.")
         if label:
