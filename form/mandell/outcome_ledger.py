@@ -362,6 +362,28 @@ def build_outcome(program: Any, receipt: Any,
         # EIC-I: explicit interaction correlation. None = UNKNOWN.
         # Does not imply truth, success, persistence, or ordering.
         "interaction_id": interaction_id,
+        # GDP-001 0.3.4: standardized receipt fields. Optional and
+        # backward-compatible: None/[] means the executing path did not
+        # supply them. Never fabricated. Read from both RouteReceipt
+        # (requested_operation/resolved_operation) and BridgeReceipt
+        # (requested_action/resolved_name) naming.
+        "requested_operation": (
+            getattr(receipt, "requested_operation", None)
+            or getattr(receipt, "requested_action", None)
+            or getattr(receipt, "action", None)
+            or None
+        ),
+        "resolved_operation": (
+            getattr(receipt, "resolved_operation", None)
+            or getattr(receipt, "seed", None)
+            or getattr(receipt, "resolved_name", None)
+            or None
+        ),
+        "authority": getattr(receipt, "authority", None) or None,
+        "affected_objects": list(getattr(receipt, "affected_objects", None) or []),
+        "atom_results": [dict(r) for r in (getattr(receipt, "atom_results", None) or [])
+                         if isinstance(r, dict)],
+        "partial_completion": bool(getattr(receipt, "partial", False)),
     }
     if composition is not None and isinstance(composition, dict):
         record["composition"] = {

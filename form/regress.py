@@ -97,6 +97,7 @@ LIST = [
     "form.mandell.cmd_hardening_test",
     "form.mandell.r2_registry_reconciliation_test",
     "form.mandell.r2_semantic_honesty_test",
+    "form.mandell.p0r3_execution_integrity_test",
     "form.mandell.hic_i_test",
     "form.mandell.ekc_i_test",
     "form.mandell.aec_i_test",
