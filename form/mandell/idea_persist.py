@@ -27,9 +27,12 @@ def _idea_dir() -> str:
 
 
 def _idea_path(idea_id: str) -> str:
-    # Safe filename from UUID.
-    safe = "".join(c for c in idea_id if c.isalnum() or c in "-_")
-    return os.path.join(_idea_dir(), f"idea_{safe}.json")
+    # Use a hash of the ID to avoid sanitization collisions.
+    # MF-3 fix: "house!" and "house" must not map to the same file.
+    import hashlib
+    digest = hashlib.sha256(idea_id.encode("utf-8")).hexdigest()[:16]
+    safe = "".join(c for c in idea_id if c.isalnum() or c in "-_")[:32]
+    return os.path.join(_idea_dir(), f"idea_{safe}_{digest}.json")
 
 
 def save_idea(idea: Idea) -> str:

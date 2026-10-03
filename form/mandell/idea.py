@@ -172,18 +172,26 @@ class Idea:
             activity="rename",
             agent="unknown",
         )
+        now = time.time()
+        # A-5 fix: valid_from should be when this title became current,
+        # not creation time. Use last title change or creation.
+        valid_from = self.created_at
+        if self._title_history:
+            # The current title became valid when the last rename happened.
+            # We track this via modified_at of the last title event.
+            valid_from = self._title_history[-1].transaction_time
         old_version = PropertyVersion(
             version_id=str(uuid.uuid4()),
             value=self.title,
             state=LifecycleState.SUPERSEDED,
-            valid_from=self.created_at,
-            valid_to=time.time(),
-            transaction_time=time.time(),
+            valid_from=valid_from,
+            valid_to=now,
+            transaction_time=now,
             provenance=prov,
         )
         self._title_history.append(old_version)
         self.title = new_title
-        self.modified_at = time.time()
+        self.modified_at = now
 
     # ------------------------------------------------------------------
     # Properties (1.1.2, 1.2, 1.3)
@@ -542,16 +550,32 @@ class Idea:
 
     @classmethod
     def from_dict(cls, d: dict) -> "Idea":
-        idea = cls(idea_id=d["id"], title=d["title"])
-        idea.created_at = d["created_at"]
-        idea.modified_at = d["modified_at"]
+        # MF-4 fix: structural validation. Unknown/corrupt state must not
+        # become valid state (Phase-0 contract).
+        if not isinstance(d, dict):
+            raise ValueError("Idea data must be an object")
+        if "id" not in d or "properties" not in d:
+            raise ValueError("Idea data missing required fields")
+        idea = cls(idea_id=d["id"], title=d.get("title", ""))
+        idea.created_at = d.get("created_at", 0)
+        idea.modified_at = d.get("modified_at", idea.created_at)
         idea._idea_state = LifecycleState(d.get("idea_state", "active"))
         idea._idea_state_history = [
             (LifecycleState(h["state"]), h["at"], h["reason"])
             for h in d.get("idea_state_history", [])
         ]
+        seen_version_ids = set()
         for name, vlist in d.get("properties", {}).items():
-            idea._properties[name] = [PropertyVersion.from_dict(v) for v in vlist]
+            if not isinstance(vlist, list):
+                raise ValueError(f"Property {name!r}: versions must be a list")
+            versions = []
+            for v in vlist:
+                pv = PropertyVersion.from_dict(v)
+                if pv.version_id in seen_version_ids:
+                    raise ValueError(f"Duplicate version_id {pv.version_id}")
+                seen_version_ids.add(pv.version_id)
+                versions.append(pv)
+            idea._properties[name] = versions
         idea._title_history = [PropertyVersion.from_dict(v)
                                for v in d.get("title_history", [])]
         return idea
