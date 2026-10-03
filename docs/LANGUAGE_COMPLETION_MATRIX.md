@@ -56,8 +56,8 @@ chains; **see §4 finding re single-seed path**).
 | 18 | Mirror | YES | YES | NO | ACTIVE | YES | YES (5) | PARTIAL | N/A | Reads all plane units; prints only (`:209-216`). |
 | 19 | Drive | YES | YES | PARTIAL | ACTIVE | YES | YES (1) | YES | YES | `avatar.set_locomotion()` + `avatar.step()` (`:217-227`). English: walk/run/jog/backstep/strafe → direct `p.avatar.step()` (`repl.py:2314-2360`) — bypasses router; duplicates the leaf arm. |
 | 20 | Alpha | YES | YES | NO | ACTIVE | YES | YES (4) | PARTIAL | READ-ONLY | Reads units/lattice; prints summary (`:228-234`). |
-| 21 | Merge | YES | YES | NO | ACTIVE | YES | YES (3) | YES | UNKNOWN | **Dead leaf** (`:235-236`); production path `live_identity.merge_live` (`executor.py` intercept, before leaf). Live-identity persistence not audited in R2. |
-| 22 | Split | YES | YES | NO | ACTIVE | YES | YES (3) | YES | UNKNOWN | **Dead leaf** (`:237-246`); production path `live_identity.split_live`. |
+| 21 | Merge | YES | YES | NO | ACTIVE | YES | YES (3) | YES | UNKNOWN | Leaf arms delegate to front-door authority (`executor.py` intercept → `live_identity.merge_live`); single production authority. Post-PRISM-C2: the intercept is `len(atoms)==1`-guarded so multi-atom 21-primary seeds route via chain_exec (per-atom intercept, same authority). |
+| 22 | Split | YES | YES | NO | ACTIVE | YES | YES (3) | YES | UNKNOWN | Leaf arms delegate to front-door authority (`executor.py` intercept → `live_identity.split_live`); single production authority. Same `len(atoms)==1` guard as 21 (PRISM C2). |
 | 23 | Lock | YES | YES | NO | ACTIVE | YES | YES (4) | YES | YES | `program.sandbox_on()` (`:247-249`); sandboxes in plane payload (`persist.py:164`). |
 | 24 | Unlock | YES | YES | NO | ACTIVE | YES | YES (3) | YES | YES | `program.sandbox_off()` (`:250-252`). |
 | 25 | Pulse | YES | YES | PARTIAL | ACTIVE | YES | **NO** | YES | UNKNOWN | `program.enhance_on()` / `program.pulse()` (`:253-260`); enhance persistence not verified. English: enhance_on/pulse → direct handlers (`translate.py:609-613`). **Test gap.** |
@@ -216,8 +216,10 @@ with **no** `place_idea` side effect on that path. This keeps parseability
    execution continues; a Core I leaf exception aborts the chain with no
    receipts for unexecuted atoms (chain_exec audit).
 5. **The raw-seed REPL bypass** (`form/repl.py:2555`) skips english_brain,
-   translate, `_execute_intent`, and the router — it is the only public path
-   that reaches the dishonest leaf else-branch. The router itself is honest
+   translate, `_execute_intent`, and the router. (Note, post-`8b8bfb9`: the
+   leaf else-branch it reaches is now honest — reserved dells refuse
+   `ok=False` with zero mutation. The bypass itself remains: no router
+   allowlist on this path.) The router itself is honest
    by construction (CORRESPONDENCE allowlist + "refusing to guess").
 6. **`english_brain.understand()` is dead in production** (zero callers;
    only tests). The live "English brain" is `normalize_english` only
@@ -246,7 +248,7 @@ with **no** `place_idea` side effect on that path. This keeps parseability
 | EXECUTABLE (ACTIVE + ACTIVE_REFUSAL) | 49 + 2 | 49 + 0 | 0 (RESERVED_NOT_ACTIVE) |
 | PUBLICLY_REACHABLE | 51 | 49 | 0 honest (leaf gap noted) |
 | TESTED (name-pattern method) | 42 YES / 9 gaps | 39 YES / 10 gaps | 0 |
-| SEMANTICALLY_CONSISTENT YES / PARTIAL / NO | 32 / 13 / 6 | 42 / 7 / 0 | N/A |
+| SEMANTICALLY_CONSISTENT YES / PARTIAL / NO | 34 / 13 / 4 | 42 / 7 / 0 | N/A |
 | PERSISTENT YES / PARTIAL / READ-ONLY / N/A / UNKNOWN | 23 / 0 / 9 / 12 / 7 | 0 / 49 / 0 / 0 / 0 | N/A |
 
 **Test gaps (no name-pattern hits; verify before treating as uncovered):**

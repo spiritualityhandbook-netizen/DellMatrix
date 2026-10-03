@@ -25,7 +25,12 @@ def execute_seed(program: Any, seed_text: str, _leaf: bool = False) -> Dict[str,
         if handled is not None:
             return handled
 
-    if primary in (21, 22):
+    # PRISM C2 (GDP-001 P0 audit): guard multi-atom seeds. Without the
+    # len==1 guard, a 21/22-primary multi-atom seed was consumed here and
+    # later atoms were silently dropped (no receipt, no partial flag).
+    # chain_exec routes each atom through this same intercept, so the
+    # authority is unchanged — only the dispatch is corrected.
+    if primary in (21, 22) and len(s.atoms) == 1:
         from .live_identity import merge_live, split_live
         rec = merge_live(program, s.label or "") if primary == 21 else split_live(program, s.label or "")
         messages = [f"Mandell: {s.as_mandel()}", f"English: {s.as_english()}"]
