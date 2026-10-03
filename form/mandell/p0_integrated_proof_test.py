@@ -163,8 +163,10 @@ def smoke() -> bool:
         _cleanup_owner_state()
 
     ok = all(results)
+    # Regress contract: last n/m count must have n == m > 0, no traceback.
+    print(f"=== RESULT: {sum(results)}/{len(results)} PASS ===", flush=True)
     print(('P0 INTEGRATED PROOF: ALL GREEN' if ok
-           else f'P0 INTEGRATED PROOF: {sum(results)}/{len(results)}'), flush=True)
+           else 'P0 INTEGRATED PROOF: FAILED'), flush=True)
     return ok
 
 
