@@ -40,7 +40,7 @@ _ROWS = [
     (84, "Copy", "Duplicate without consuming original", "copy", "create", "object", "Copy Duplicate Clone"),
     (85, "Move", "Relocate ownership/location/state", "move", "mutate", "object", "Move Relocate Transfer"),
     (86, "Delete", "Explicit controlled removal", "delete", "destroy", "object", "Delete Remove Drop"),
-    (87, "Replace", "Atomic substitution old to new", "replace", "mutate", "object", "Replace Swap Substitute"),
+    (87, "Replace", "Atomic key rename old to new", "replace", "mutate", "object", "Replace Rename Key"),
     (88, "Patch", "Partial targeted modification", "patch", "mutate", "object", "Patch Update Amend"),
     (89, "Diff", "Produce exact change-set", "diff", "query", "object", "Diff Delta Changeset"),
     (90, "Trace", "Follow provenance/execution/data path", "trace", "query", "audit", "Trace Follow Provenance"),

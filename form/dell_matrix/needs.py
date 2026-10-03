@@ -30,14 +30,13 @@ def parse_and_place(program, raw: str) -> Dict[str, Any]:
     parsed = parse_create_line(raw)
     label = parsed["label"]
     uid = slug_id(label)
-    # avoid collision
+    # avoid collision (no attempt cap: n strictly increases over a finite unit
+    # set, so the loop always terminates; a cap-break would leave a colliding uid)
     base = uid
     n = 1
     while uid in program.cube.session.plane.units:
         uid = f"{base}_{n}"
         n += 1
-        if n > 50:
-            break
 
     u = program.place(
         uid,
