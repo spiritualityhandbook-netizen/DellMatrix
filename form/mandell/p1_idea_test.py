@@ -321,7 +321,9 @@ _TESTS = [
 ]
 
 
-def main():
+def smoke() -> bool:
+    """Regression entry point."""
+    _RESULTS.clear()
     for t in _TESTS:
         try:
             t()
@@ -329,8 +331,13 @@ def main():
             rec(t.__name__, False, f"{type(e).__name__}: {e}")
     passed = sum(1 for _, ok, _ in _RESULTS if ok)
     total = len(_RESULTS)
-    print(f"\n=== P1-IDEA RESULT: {passed}/{total} PASS ===")
-    return 0 if passed == total else 1
+    print(f"=== P1-IDEA RESULT: {passed}/{total} PASS ===")
+    return passed == total
+
+
+def main():
+    ok = smoke()
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
