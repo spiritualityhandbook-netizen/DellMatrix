@@ -127,3 +127,122 @@ def lookup(name_or_num) -> Optional[Dict[str, Any]]:
 
 def active_core_count() -> int:
     return sum(1 for n in DELLS if n <= CORE_II_MAX)
+
+
+# ---------------------------------------------------------------------------
+# R2 execution standing (GDP-001 Phase 0, Requirement 2, Objective 0.2.1).
+#
+# Reconciliation of the registered Dell set against the real dispatch code,
+# verified 2026-10-03 against the MPC-011-merged base. This table records
+# WHERE each Dell executes; it does not duplicate the executors.
+#
+# Dispatch rules (mirror of form/mandell/executor.py::execute_seed):
+#   n in CORE_I_CLOSABLE        -> form/mandell/core_i_ops.py::apply_core_i
+#   n in (21, 22)               -> form/mandell/live_identity.py
+#                                  (merge_live / split_live)
+#   51 <= n <= 99                -> form/mandell/chain_exec.py::execute_chain
+#                                  -> form/mandell/core_ii_exec.py
+#   0 <= n <= 50 (otherwise)    -> form/mandell/executor_leaf.py::execute_seed
+#   100 <= n <= 999 (reserved)   -> NOT executable; address_space marks
+#                                  RESERVED_NOT_ACTIVE ("not erased and not
+#                                  silently active")
+#
+# Standing vocabulary:
+#   ACTIVE            reachable executor path exists (includes read-only arms
+#                     and arms whose real effect is small; effect size is
+#                     assessed in docs/LANGUAGE_COMPLETION_MATRIX.md, not here)
+#   ACTIVE_REFUSAL    path exists and honestly refuses (ok=False + named
+#                     error); Dell 44 Bridge and Dell 47 Embed (offline origin)
+#   RESERVED_NOT_ACTIVE
+#                     registered only as a historical alias; must not execute
+#   UNREGISTERED      not in the registry at all
+#
+# Historical note: MPC-012 described Dells 27, 28, 34, 35, 40, 44, 47 as
+# "dead leaf branches". They are not dead: since the closable-arms change
+# they execute through core_i_ops.apply_core_i, which the dispatcher checks
+# BEFORE the leaf (even for _leaf=True chain re-entry). The old leaf arms
+# for those Dells are shadowed in every production path.
+# ---------------------------------------------------------------------------
+
+# Must equal form.mandell.core_i_ops.HANDLED (pinned by r2 registry test).
+CORE_I_CLOSABLE = frozenset({27, 28, 34, 35, 37, 40, 44, 47})
+
+# Dells whose production path is live_identity (checked before the leaf).
+CORE_I_LIVE_IDENTITY = frozenset({21, 22})
+
+# Core II dispatch families inside core_ii_exec (checked by r2 registry test
+# against query_ops.QUERY_DELLS and control_runtime.CONTROL_HEADS).
+CORE_II_QUERY_FAMILY = frozenset(
+    {51, 52, 54, 55, 56, 57, 58, 59, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79}
+)
+CORE_II_INLINE = frozenset({53})
+CORE_II_CONTROL = frozenset({60, 61, 62, 63, 64, 65, 66})
+CORE_II_SPECTRUM = frozenset(range(80, 100))
+
+# Dells with an honest built-in refusal (ok=False + named error).
+HONEST_REFUSALS = {
+    44: "bridge_unavailable",
+    47: "embed_unavailable",
+}
+
+
+def execution_standing(n: int) -> Dict[str, Any]:
+    """Reconciled execution standing for a Dell number.
+
+    Returns {"dell", "standing", "dispatch", "evidence"}. Standing is one of
+    ACTIVE / ACTIVE_REFUSAL / RESERVED_NOT_ACTIVE / UNREGISTERED. The
+    dispatch names the executing module path (or "none"); evidence cites
+    the dispatch code that establishes it.
+    """
+    try:
+        n = int(n)
+    except (TypeError, ValueError):
+        return {"dell": n, "standing": "UNREGISTERED",
+                "dispatch": "none",
+                "evidence": "not an integer Dell address"}
+    if 0 <= n <= CORE_I_MAX:
+        if n in CORE_I_CLOSABLE:
+            return {"dell": n,
+                    "standing": "ACTIVE_REFUSAL" if n in HONEST_REFUSALS else "ACTIVE",
+                    "dispatch": "form/mandell/core_i_ops.py::apply_core_i",
+                    "evidence": ("executor.py checks HANDLED before the leaf; "
+                                 + (f"honest refusal '{HONEST_REFUSALS[n]}'"
+                                    if n in HONEST_REFUSALS else
+                                    "real closable arm"))}
+        if n in CORE_I_LIVE_IDENTITY:
+            op = "merge_live" if n == 21 else "split_live"
+            return {"dell": n, "standing": "ACTIVE",
+                    "dispatch": f"form/mandell/live_identity.py::{op}",
+                    "evidence": "executor.py intercepts 21/22 before the leaf"}
+        return {"dell": n, "standing": "ACTIVE",
+                "dispatch": "form/mandell/executor_leaf.py::execute_seed",
+                "evidence": "executor.py single-atom Core I leaf path"}
+    if CORE_I_MAX < n <= CORE_II_MAX:
+        if n in CORE_II_QUERY_FAMILY:
+            fam = "query_ops.apply_query"
+        elif n in CORE_II_INLINE:
+            fam = "core_ii_exec inline (scope)"
+        elif n in CORE_II_CONTROL:
+            fam = "control_runtime frames via chain_exec._run_control"
+        elif n in CORE_II_SPECTRUM:
+            fam = "spectrum_ops.apply_spectrum"
+        else:  # pragma: no cover - guarded by the r2 reconciliation test
+            return {"dell": n, "standing": "ACTIVE",
+                    "dispatch": "form/mandell/core_ii_exec.py::execute_core_ii (unmapped)",
+                    "evidence": "falls to unmapped branch (honest ok=False)"}
+        return {"dell": n, "standing": "ACTIVE",
+                "dispatch": f"form/mandell/chain_exec.py::execute_chain -> {fam}",
+                "evidence": "executor.py routes Core II seeds to chain_exec"}
+    if CORE_II_MAX < n <= ADDRESS_MAX:
+        rec = get_dell(n)
+        if rec is not None:
+            return {"dell": n, "standing": "RESERVED_NOT_ACTIVE",
+                    "dispatch": "none",
+                    "evidence": (f"address_space RESERVED_DOMAIN "
+                                 f"status={rec.get('status')}")}
+        return {"dell": n, "standing": "UNREGISTERED",
+                "dispatch": "none",
+                "evidence": "no registry entry; parse_seed fails 'unknown Dell'"}
+    return {"dell": n, "standing": "UNREGISTERED",
+            "dispatch": "none",
+            "evidence": "out of Dell address range 0-999"}
