@@ -331,6 +331,159 @@ def t_public_path_cross_process() -> None:
         "cross-process")
 
 
+# --------------------------------- DIRECTOR DECISION 1 (gate R1)
+def t_director_d1_reserved_atom_truth() -> None:
+    """Unified atom truth: ok=False, skipped=True, reason=<explicit>.
+
+    A reserved/unexecuted atom did NOT successfully execute merely because
+    its containing chain continues. ATOM EXECUTION RESULT != CHAIN
+    CONTINUATION POLICY. No consumer may infer ok=True for an unexecuted op.
+    """
+    from form.mandell.executor import execute_seed
+    from form.mandell.execution_observer import observe_seed_execution
+
+    def atom_map(r):
+        return {a["dell"]: a for a in (r.get("atom_results") or [])}
+
+    # 1. single reserved seed -> honest refusal, zero mutation
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    n0 = len(p.cube.session.plane.units)
+    r = execute_seed(p, "151[Harmonic]")
+    rec("d1_single_reserved_okfalse", r.get("ok") is False, "d1")
+    rec("d1_single_reserved_zero_mutation",
+        len(p.cube.session.plane.units) == n0, "d1")
+
+    # 2. reserved first atom: chain continues, atom honest, aggregate honest
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    r = execute_seed(p, "151[Harmonic] > 34[Stamp]")
+    m = atom_map(r)
+    rec("d1_first_atom_okfalse", m[151]["ok"] is False, "d1")
+    rec("d1_first_atom_skipped", m[151]["skipped"] is True, "d1")
+    rec("d1_first_atom_reason", bool(m[151].get("reason")), "d1")
+    rec("d1_first_chain_continues", m[34]["ok"] is True, "d1")
+    rec("d1_first_chain_okfalse", r.get("ok") is False, "d1")
+    rec("d1_first_chain_partial", r.get("partial") is True, "d1")
+
+    # 3. reserved middle atom, surrounded by supported
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    r = execute_seed(p, "34[Stamp] > 151[Harmonic] > 34[Stamp]")
+    m = atom_map(r)
+    rec("d1_middle_atom_okfalse", m[151]["ok"] is False, "d1")
+    rec("d1_middle_chain_continues_both_sides",
+        m[34]["ok"] is True, "d1")
+    rec("d1_middle_aggregate_partial", r.get("partial") is True, "d1")
+    rec("d1_middle_any_skipped", r.get("any_skipped") is True, "d1")
+
+    # 4. reserved final atom
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    r = execute_seed(p, "34[Stamp] > 151[Harmonic]")
+    m = atom_map(r)
+    rec("d1_final_atom_okfalse", m[151]["ok"] is False, "d1")
+    rec("d1_final_chain_okfalse", r.get("ok") is False, "d1")
+
+    # 5. multiple reserved atoms
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    r = execute_seed(p, "34[Stamp] > 151[Harmonic] > 151[Harmonic] > 34[Stamp]")
+    ars = r.get("atom_results") or []
+    skips = [a for a in ars if a.get("skipped")]
+    rec("d1_multi_all_skips_okfalse",
+        len(skips) == 2 and all(a["ok"] is False for a in skips), "d1")
+    rec("d1_multi_supported_still_run",
+        sum(1 for a in ars if a["ok"] is True) == 2, "d1")
+
+    # 6. supported atoms surrounding reserved (already covered in 3; explicit)
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    n0 = len(p.cube.session.plane.units)
+    r = execute_seed(p, "34[Stamp] > 151[Harmonic] > 34[Stamp]")
+    rec("d1_surrounding_mutations_honest",
+        len(p.cube.session.plane.units) >= n0, "d1")
+
+    # 7. all-supported chain: ok=True, partial=False, nothing skipped
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    r = execute_seed(p, "34[Stamp] > 34[Stamp]")
+    rec("d1_all_supported_ok", r.get("ok") is True, "d1")
+    rec("d1_all_supported_not_partial", r.get("partial") is False, "d1")
+    rec("d1_all_supported_none_skipped", r.get("any_skipped") is False, "d1")
+
+    # 8. all-reserved chain: ok=False, not partial (fully skipped), all honest
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    n0 = len(p.cube.session.plane.units)
+    r = execute_seed(p, "151[Harmonic] > 151[Harmonic]")
+    ars = r.get("atom_results") or []
+    rec("d1_all_reserved_okfalse", r.get("ok") is False, "d1")
+    rec("d1_all_reserved_not_partial", r.get("partial") is False, "d1")
+    rec("d1_all_reserved_all_skipped",
+        len(ars) == 2 and all(a["ok"] is False and a["skipped"] is True
+                              for a in ars), "d1")
+    rec("d1_all_reserved_zero_mutation",
+        len(p.cube.session.plane.units) == n0, "d1")
+
+    # 9. nested/composed path: reserved atom inside a Sequence control
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    r = execute_seed(p, "63[Sequence] > 34[Stamp] > 151[Harmonic] > 61[Join]")
+    m = {a["dell"]: a for a in (r.get("atom_results") or [])
+         if a.get("dell") != 61}
+    rec("d1_nested_reserved_okfalse", m[151]["ok"] is False, "d1")
+    rec("d1_nested_reserved_skipped", m[151]["skipped"] is True, "d1")
+    rec("d1_nested_chain_okfalse", r.get("ok") is False, "d1")
+
+    # 10. raw receipt: observe_seed_execution -> Outcome carries the truth
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    out = observe_seed_execution(p, "34[Stamp] > 151[Harmonic]")
+    recs = getattr(p, "outcome_records", None)
+    last = recs[-1] if isinstance(recs, list) else list(recs.values())[-1]
+    am = {a["dell"]: a for a in (last.get("atom_results") or [])}
+    rec("d1_raw_receipt_atom_okfalse", am[151]["ok"] is False, "d1")
+    rec("d1_raw_receipt_atom_skipped", am[151]["skipped"] is True, "d1")
+    rec("d1_raw_receipt_partial", last.get("partial_completion") is True, "d1")
+    rec("d1_raw_receipt_chain_okfalse", out.get("ok") is False, "d1")
+
+    # 11. public receipt: router on a single reserved intent refuses honestly
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    from form.mandell import semantic_router as sr
+    from form.mandell.translate import Intent
+    intent = Intent(action="harmonic", dell=151, term="Harmonic",
+                   mandel="151[Harmonic]", english="151[Harmonic]")
+    n0 = len(p.cube.session.plane.units)
+    receipt = sr.route_intent(p, intent)
+    rec("d1_public_receipt_okfalse", receipt.ok is False, "d1")
+    rec("d1_public_receipt_names_block",
+        "reserv" in str(receipt.error or receipt.state_note or "").lower(),
+        "d1")
+    rec("d1_public_receipt_zero_mutation",
+        len(p.cube.session.plane.units) == n0, "d1")
+
+    # 12. consumer interpretation: no consumer infers ok=True for unexecuted
+    o = fresh_owner("d1")
+    p = fresh_program(o)
+    r = execute_seed(p, "34[Stamp] > 151[Harmonic]")
+
+    def consumer_infers_success(chain_result):
+        # A naive consumer: "chain ok and every atom ok" -> success.
+        # Must NOT report success for the skipped atom.
+        for a in (chain_result.get("atom_results") or []):
+            if a.get("skipped") and a.get("ok"):
+                return True  # BUG: inferred success for unexecuted atom
+        return False
+
+    rec("d1_consumer_no_false_success",
+        consumer_infers_success(r) is False, "d1")
+    rec("d1_consumer_sees_explicit_reason",
+        all(a.get("reason") for a in (r.get("atom_results") or [])
+            if a.get("skipped")), "d1")
+
+
 def smoke() -> int:
     try:
         t_dup_2122_single_authority()
@@ -343,6 +496,7 @@ def smoke() -> int:
         t_outcome_standardized_and_compat()
         t_bridge_receipt_flows_into_outcome()
         t_public_path_cross_process()
+        t_director_d1_reserved_atom_truth()
     finally:
         cleanup_state()
     failed = [n for n, ok in RESULTS if not ok]

@@ -136,15 +136,88 @@ def latest_checkpoint(owner: str) -> Optional[str]:
     return named[-1] if named else None
 
 
-def rollback(owner: str, path: Optional[str] = None):
+def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) -> None:
+    """Eagerly converge live working state to the rolled-back program.
+
+    DIRECTOR DECISION 2 (GDP-001 Phase-0 gate R1): successful rollback means
+    current live state already reflects the selected committed generation
+    when rollback returns. Do NOT wait for the next save.
+
+    Conceptual operation:
+      SELECT (caller) > VALIDATE (caller) > RESTORE/COPY INTO LIVE >
+      ESTABLISH INDEPENDENT OWNERSHIP > UPDATE CURRENT STATE > VERIFY > RETURN.
+
+    Never restores by aliasing live mutable state to a sealed member: the
+    validated in-memory program is serialized and atomically written to the
+    live owner files as independent copies. Sealed members are never written
+    (Dell28 anti-corruption invariant preserved).
+
+    Failure atomicity: all validation and serialization precede all writes.
+    A failure before the first write leaves live state byte-identical
+    (zero partial mutation). Each file write is crash-safe atomic
+    (Persistence V2); a failure between the two writes leaves each file
+    internally consistent (old or new, never corrupt).
+    """
+    from form import persist_rest
+    from form.persist import serialize
+    from form.mandell.checkpoint_generation import _check_fail, CheckpointError
+
+    # RESTORE/COPY: serialize both payloads BEFORE touching any live file.
+    _check_fail("rollback_serialize", _fail_at)
+    program_data = serialize(program)
+    nursery = program.nursery
+    if nursery is None or not getattr(nursery, "path", None):
+        raise CheckpointError("rollback: program has no bound nursery; refusing to converge")
+    nursery_payload = {k: v.to_dict() for k, v in nursery.proposals.items()}
+    from form.dell_matrix.nursery import DISPOSITION_SECTION_KEY
+    nursery_payload[DISPOSITION_SECTION_KEY] = {
+        cid: dict(rec) for cid, rec in nursery.conflict_dispositions.items()
+    }
+    # Pre-flight the nursery conflict guard BEFORE the program write, so a
+    # concurrent live-nursery modification fails before any mutation.
+    from form.dell_matrix.nursery import _disk_sig
+    _check_fail("rollback_nursery_conflict", _fail_at)
+    if _disk_sig(nursery.path) != nursery._seen:
+        from form.dell_matrix.nursery import NurseryConflictError
+        raise NurseryConflictError(
+            "rollback: live nursery changed since generation load; "
+            "refusing to overwrite (zero partial mutation)"
+        )
+
+    # ESTABLISH INDEPENDENT OWNERSHIP: atomic writes of independent copies.
+    _check_fail("rollback_write_program", _fail_at)
+    persist_rest.save(program)
+    _check_fail("rollback_write_nursery", _fail_at)
+    nursery.save()
+
+    # UPDATE CURRENT STATE + VERIFY: fresh load must reflect the target.
+    _check_fail("rollback_verify", _fail_at)
+    rever = persist_rest.load(owner, activate=False)
+    want_units = sorted(str(u) for u in program.cube.session.plane.units)
+    got_units = sorted(str(u) for u in rever.cube.session.plane.units)
+    if want_units != got_units:
+        raise CheckpointError(
+            f"rollback verification failed: live units {got_units} != "
+            f"target {want_units}; live state may need repair"
+        )
+
+
+def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] = None):
     """Restore a checkpoint. ``path`` may be:
 
     - None → the current committed generation (CURRENT pointer authority);
     - a generation id → that generation, fingerprint-validated, never hybrid;
     - a legacy ``*.json`` checkpoint path → LEGACY_COMPAT load.
 
+    DIRECTOR DECISION 2: on success, the live working state already reflects
+    the selected committed generation when this returns (eager convergence).
+    A fresh ``persist_rest.load(owner)`` observes the rolled-back state with
+    no subsequent save required.
+
     Returns the restored program (Dell 28 activates it via new_program).
     Raises FileNotFoundError("rollback_missing") when nothing restorable exists.
+    Raises CheckpointError/NurseryConflictError on convergence failure, with
+    zero partial mutation for failures before the first live write.
     """
     from form.mandell import checkpoint_generation as gen
     from form.mandell.checkpoint_generation import (
@@ -156,15 +229,17 @@ def rollback(owner: str, path: Optional[str] = None):
         try:
             # activate=True: same session binding the legacy load path performed.
             program, _receipt = gen.load_checkpoint(owner, activate=True)
-            return program
         except CheckpointError as exc:
             raise FileNotFoundError(f"rollback_missing: {exc}") from exc
     # Legacy explicit file path.
-    if isinstance(target, str) and target.endswith(".json") and os.path.isfile(target):
-        return load(owner, target)
+    elif isinstance(target, str) and target.endswith(".json") and os.path.isfile(target):
+        program = load(owner, target)
     # Otherwise treat as a generation id.
-    try:
-        program, _receipt = _load_generation(owner, str(target), True, None)
-        return program
-    except CheckpointError as exc:
-        raise FileNotFoundError(f"rollback_missing: {exc}") from exc
+    else:
+        try:
+            program, _receipt = _load_generation(owner, str(target), True, None)
+        except CheckpointError as exc:
+            raise FileNotFoundError(f"rollback_missing: {exc}") from exc
+    # Eager convergence: live files reflect the target before we return.
+    _eager_converge_live(program, owner, _fail_at=_fail_at)
+    return program

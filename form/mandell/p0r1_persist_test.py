@@ -585,8 +585,181 @@ def t_perf_baseline(rec) -> None:
     rec("perf_baseline_recorded", True, "")
 
 
+# ---------------------------------------------------------------------------
+# DIRECTOR DECISION 2 (gate R1) -- eager rollback convergence
+# ---------------------------------------------------------------------------
+def t_d2_eager_rollback_convergence(rec) -> None:
+    """Rollback eagerly converges live state; 7 required proof scenarios.
+
+    1. rollback -> inspect live immediately -> correct (no save)
+    2. rollback -> mutate live -> sealed target byte-identical
+    3. rollback -> no save -> fresh process observes correct
+    4. rollback -> save -> reload -> correct
+    5. rollback -> mutate -> save -> reload -> correct
+    6. multiple rollback cycles -> correct
+    7. failed rollback -> zero partial mutation
+    """
+    import json as _json
+
+    owner = _owner()
+    # --- setup in a fresh process: gen1(alpha), gen2(alpha+beta)
+    setup = _DRIVER_PREAMBLE + f"""
+from form.open import open_program
+from form import persist_rest
+from form.mandell import core_i_recovery as R
+p = open_program({owner!r})
+p.place('idea_alpha', 'Alpha')
+persist_rest.save(p)
+g1 = R.checkpoint(p, stamp='g1')
+p.place('idea_beta', 'Beta')
+persist_rest.save(p)
+g2 = R.checkpoint(p, stamp='g2')
+print('G1=' + g1)
+print('G2=' + g2)
+"""
+    r = _run_driver("d2setup", setup)
+    g1 = [l.split("G1=")[1] for l in r.stdout.splitlines() if l.startswith("G1=")][0]
+    rec("d2_setup_two_generations", r.returncode == 0 and bool(g1), r.stderr[-200:] if r.returncode else "")
+
+    live_prog = os.path.join(_STATE_DIR, f"program_{owner}.json")
+    from form.dell_matrix.nursery import owner_nursery_path
+    live_nurs = owner_nursery_path(owner)
+
+    def live_units():
+        d = _json.load(open(live_prog, encoding="utf-8"))
+        try:
+            return sorted(d["plane"]["units"].keys())
+        except KeyError:
+            return []
+
+    # --- rollback to g1 in a fresh process (eager convergence inside rollback)
+    rb = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+rp = R.rollback({owner!r}, {g1!r})
+print('RB_OK')
+"""
+    r = _run_driver("d2rollback", rb)
+    rec("d2_rollback_returns", r.returncode == 0 and "RB_OK" in r.stdout, r.stderr[-200:] if r.returncode else "")
+
+    # 1. inspect live state immediately (no save issued) -> correct
+    u = live_units()
+    rec("d2_p1_live_immediate_correct",
+        "idea_alpha" in str(u) and "idea_beta" not in str(u), str(u)[:120])
+
+    # 3. fresh process observes correct with no intervening save
+    obs = _DRIVER_PREAMBLE + f"""
+from form import persist_rest
+q = persist_rest.load({owner!r}, activate=False)
+print('UNITS=' + ','.join(sorted(str(x) for x in q.cube.session.plane.units)))
+"""
+    r = _run_driver("d2observe", obs)
+    m = [l.split("UNITS=")[1] for l in r.stdout.splitlines() if l.startswith("UNITS=")]
+    rec("d2_p3_fresh_process_correct",
+        bool(m) and "idea_alpha" in m[0] and "idea_beta" not in m[0], (m[0][:120] if m else r.stderr[-200:]))
+
+    # 2. mutate live -> sealed g1 members byte-identical
+    mut = _DRIVER_PREAMBLE + f"""
+from form import persist_rest
+q = persist_rest.load({owner!r}, activate=False)
+q.nursery.add('post_rb_probe', words='d2')
+persist_rest.save(q)
+print('MUT_OK')
+"""
+    # snapshot sealed member hashes for g1 before mutation
+    from form.mandell.checkpoint_generation import _manifest_path
+    man_path = _manifest_path(owner, g1)
+    sealed = {}
+    if os.path.isfile(man_path):
+        man = _json.load(open(man_path, encoding="utf-8"))
+        for kind, spec in man.get("members", {}).items():
+            sealed[spec["file"]] = spec["sha256"]
+    r = _run_driver("d2mutate", mut)
+    ok = r.returncode == 0
+    intact = all(_sha256(os.path.join(_STATE_DIR, f)) == s for f, s in sealed.items())
+    rec("d2_p2_sealed_byte_identical", ok and intact and bool(sealed), "")
+
+    # 4. rollback -> save -> reload -> correct
+    s4 = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+from form import persist_rest
+R.rollback({owner!r}, {g1!r})
+q = persist_rest.load({owner!r}, activate=False)
+persist_rest.save(q)
+z = persist_rest.load({owner!r}, activate=False)
+print('UNITS=' + ','.join(sorted(str(x) for x in z.cube.session.plane.units)))
+"""
+    r = _run_driver("d2s4", s4)
+    m = [l.split("UNITS=")[1] for l in r.stdout.splitlines() if l.startswith("UNITS=")]
+    rec("d2_p4_save_reload_correct",
+        bool(m) and "idea_alpha" in m[0] and "idea_beta" not in m[0], (m[0][:120] if m else r.stderr[-200:]))
+
+    # 5. rollback -> mutate -> save -> reload -> correct
+    s5 = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+from form import persist_rest
+R.rollback({owner!r}, {g1!r})
+q = persist_rest.load({owner!r}, activate=False)
+q.place('idea_gamma', 'Gamma')
+persist_rest.save(q)
+z = persist_rest.load({owner!r}, activate=False)
+print('UNITS=' + ','.join(sorted(str(x) for x in z.cube.session.plane.units)))
+"""
+    r = _run_driver("d2s5", s5)
+    m = [l.split("UNITS=")[1] for l in r.stdout.splitlines() if l.startswith("UNITS=")]
+    rec("d2_p5_mutate_save_reload_correct",
+        bool(m) and "idea_gamma" in m[0] and "idea_beta" not in m[0], (m[0][:120] if m else r.stderr[-200:]))
+
+    # 6. multiple rollback cycles -> correct (g2 -> g1)
+    # derive g2: the generation id from the CURRENT pointer (should be g2,
+    # since g2 was committed last)
+    from form.mandell.checkpoint_generation import _pointer_path
+    g2 = None
+    ptr_path = _pointer_path(owner)
+    if os.path.isfile(ptr_path):
+        ptr = _json.load(open(ptr_path, encoding="utf-8"))
+        if ptr.get("generation_id") != g1:
+            g2 = ptr["generation_id"]
+    rec("d2_p6_have_both_generations", bool(g2), "")
+    if g2:
+        s6b = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+from form import persist_rest
+R.rollback({owner!r}, {g2!r})
+a = sorted(str(x) for x in persist_rest.load({owner!r}, activate=False).cube.session.plane.units)
+R.rollback({owner!r}, {g1!r})
+b = sorted(str(x) for x in persist_rest.load({owner!r}, activate=False).cube.session.plane.units)
+print('A=' + ','.join(a))
+print('B=' + ','.join(b))
+"""
+        r = _run_driver("d2s6", s6b)
+        la = [l.split("A=")[1] for l in r.stdout.splitlines() if l.startswith("A=")]
+        lb = [l.split("B=")[1] for l in r.stdout.splitlines() if l.startswith("B=")]
+        rec("d2_p6_multi_cycle_correct",
+            bool(la) and bool(lb) and "idea_beta" in la[0] and "idea_beta" not in lb[0]
+            and "idea_alpha" in lb[0], (r.stdout[-200:] if not (la and lb) else ""))
+
+    # 7. failed rollback -> zero partial mutation (injected failures)
+    h_prog_before = _sha256(live_prog)
+    h_nurs_before = _sha256(live_nurs)
+    for stage in ("rollback_serialize", "rollback_write_program", "rollback_nursery_conflict"):
+        fs = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+try:
+    R.rollback({owner!r}, {g1!r}, _fail_at={stage!r})
+    print('NO_RAISE')
+except Exception as e:
+    print('RAISED=' + type(e).__name__)
+"""
+        r = _run_driver("d2fail", fs)
+        raised = "RAISED=" in r.stdout and "NO_RAISE" not in r.stdout
+        same = _sha256(live_prog) == h_prog_before and _sha256(live_nurs) == h_nurs_before
+        rec(f"d2_p7_zero_mutation_{stage}", raised and same,
+            r.stdout[-120:] if not (raised and same) else "")
+
+
 _TESTS = [
     t_r1_rollback_repoints_to_live,
+    t_d2_eager_rollback_convergence,
     t_r1_postrollback_mutation_keeps_member_byte_identical,
     t_r1_rollback_then_commit_chain_coherent,
     t_r2_xproc_save_checkpoint_rollback_mutate_save_load,
