@@ -72,22 +72,32 @@ in-memory rolled-back proposals are untouched; the sealed member is
 unreachable for writing from the moment rollback returns, and the
 manifest fingerprint stays valid.
 
-**Eager rollback convergence (Director Decision 2, gate R1).**
-`core_i_recovery.rollback` now eagerly converges live working state:
-after the generation is validated and the program built, the live
-program file and live nursery file are atomically written with the
-target generation's state *before rollback returns*. A fresh
-`persist_rest.load(owner)` observes the rolled-back state with no
-subsequent save required. Operation order: SELECT > VALIDATE >
-RESTORE/COPY (serialize both payloads) > ESTABLISH INDEPENDENT OWNERSHIP
-(atomic writes of independent copies; sealed members never written) >
-UPDATE CURRENT STATE > VERIFY (fresh reload matches) > RETURN.
+**Eager rollback convergence (Director Decision 2, gate R1; Finding 1, gate R2).**
+`core_i_recovery.rollback` eagerly converges live working state with
+pair-atomicity: after the generation is validated and the program built,
+the live program/nursery pair reflects the target generation's state
+*before rollback returns*. A fresh `persist_rest.load(owner)` observes
+the rolled-back state with no subsequent save required.
+
+Transactional model (journaled two-file transaction):
+PREPARE (serialize both payloads, write journal {phase: prepared} with
+old/new fingerprints) > STAGE (write both payloads to staging files;
+journal -> {staged}; live files untouched) > COMMIT (atomic rename
+staging -> live for both files; the commit boundary; journal ->
+{committed}) > CLEANUP (journal removed) > VERIFY (fresh reload matches)
+> RETURN.
+
+Crash recovery: `recover_rollback_transaction` runs inside every
+`persist_rest.load` before state is exposed. A 'prepared' journal means
+nothing was staged -> old pair authoritative. A 'staged'/'committed'
+journal means the commit is deterministically completed -> target pair
+authoritative. After recovery, a reader sees EITHER the complete old
+pair OR the complete target pair. NEVER a hybrid program/nursery pair.
 
 Failure atomicity: all validation and serialization precede all writes.
-A failure before the first live write (validation, serialization,
-nursery-conflict pre-flight) leaves live files byte-identical — zero
-partial mutation. Each file write is crash-safe atomic (Persistence V2).
-The deferred-copy window described below is closed by this decision.
+A failure before staging leaves live files byte-identical — zero partial
+mutation. A failure at/after the staging boundary leaves a journal that
+recovery deterministically completes. Sealed members are never written.
 
 ## 4. Sealing invariants (executable)
 

@@ -56,6 +56,15 @@ def _sha256(path: str) -> str:
     return h.hexdigest()
 
 
+def _sem_hash(path: str) -> str:
+    """Semantic hash: canonical JSON (sort_keys), immune to key-order
+    differences from Python hash randomization across processes."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    return hashlib.sha256(
+        json.dumps(data, sort_keys=True).encode("utf-8")).hexdigest()
+
+
 def _member_path(owner: str, receipt: dict, kind: str) -> str:
     return os.path.join(_STATE_DIR, receipt["members"][kind]["file"])
 
@@ -738,10 +747,51 @@ print('B=' + ','.join(b))
             bool(la) and bool(lb) and "idea_beta" in la[0] and "idea_beta" not in lb[0]
             and "idea_alpha" in lb[0], (r.stdout[-200:] if not (la and lb) else ""))
 
-    # 7. failed rollback -> zero partial mutation (injected failures)
-    h_prog_before = _sha256(live_prog)
-    h_nurs_before = _sha256(live_nurs)
-    for stage in ("rollback_serialize", "rollback_write_program", "rollback_nursery_conflict"):
+    # 7. failed rollback -> transactional outcome (injected failures).
+    # Pre-commit failures (before/during prepare/stage) leave the OLD pair
+    # authoritative (zero partial mutation). Failures at/after the staging
+    # boundary leave a journal that recovery deterministically completes to
+    # the TARGET pair. A reader never sees a hybrid.
+    #
+    # Setup: roll back to g2 so live = OLD pair (alpha+beta); the injected
+    # rollback targets g1 (alpha) = TARGET pair. Distinct states.
+    if g2:
+        setup7 = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+R.rollback({owner!r}, {g2!r})
+print('SETUP7_OK')
+"""
+        r = _run_driver("d2setup7", setup7)
+        rec("d2_p7_setup_old_pair", "SETUP7_OK" in r.stdout,
+            r.stdout[-200:] if "SETUP7_OK" not in r.stdout else "")
+    h_prog_old = _sem_hash(live_prog)
+    h_nurs_old = _sem_hash(live_nurs)
+    # Target pair hashes: capture from a successful rollback to g1 (the
+    # rollback payload is the validated in-memory program re-serialized,
+    # which need not byte-match the sealed member file).
+    cap = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+R.rollback({owner!r}, {g1!r})
+print('CAP_OK')
+"""
+    _run_driver("d2cap", cap)
+    h_prog_target = _sem_hash(live_prog)
+    h_nurs_target = _sem_hash(live_nurs)
+    rec("d2_p7_target_hashes_known", bool(h_prog_target and h_nurs_target), "")
+    rec("d2_p7_old_differs_from_target",
+        h_prog_old != h_prog_target or h_nurs_old != h_nurs_target, "")
+    # Restore the OLD pair (g2) for the injection loop baseline.
+    rst = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+R.rollback({owner!r}, {g2!r})
+print('RST_OK')
+"""
+    _run_driver("d2rst", rst)
+    pre_commit = ("rollback_serialize", "rollback_journal", "rollback_stage",
+                  "rollback_nursery_conflict")
+    post_stage = ("rollback_commit_program", "rollback_commit_nursery",
+                  "rollback_cleanup", "rollback_verify")
+    for stage in pre_commit + post_stage:
         fs = _DRIVER_PREAMBLE + f"""
 from form.mandell import core_i_recovery as R
 try:
@@ -749,12 +799,49 @@ try:
     print('NO_RAISE')
 except Exception as e:
     print('RAISED=' + type(e).__name__)
+# Fresh process observes the recovered state (recovery runs inside load).
+try:
+    from form import persist_rest
+    q = persist_rest.load({owner!r}, activate=False)
+    print('OBS=' + ','.join(sorted(str(x) for x in q.cube.session.plane.units)))
+except Exception as e:
+    print('LOAD_FAIL=' + type(e).__name__ + ':' + str(e)[:150])
 """
         r = _run_driver("d2fail", fs)
         raised = "RAISED=" in r.stdout and "NO_RAISE" not in r.stdout
-        same = _sha256(live_prog) == h_prog_before and _sha256(live_nurs) == h_nurs_before
-        rec(f"d2_p7_zero_mutation_{stage}", raised and same,
-            r.stdout[-120:] if not (raised and same) else "")
+        obs = [l.split("OBS=")[1] for l in r.stdout.splitlines() if l.startswith("OBS=")]
+        # Semantic check: live program file must contain exactly the
+        # expected unit set (old pair has beta, target pair does not).
+        # This proves no hybrid: a torn pair would show a unit mismatch
+        # between the file and the fresh-process observation.
+        def _live_units():
+            d = _json.load(open(live_prog, encoding="utf-8"))
+            try:
+                return set(d["plane"]["units"].keys())
+            except KeyError:
+                return set()
+        lu = _live_units()
+        if stage in pre_commit:
+            good = "idea_beta" in lu and "idea_alpha" in lu
+            obs_ok = bool(obs) and "idea_beta" in obs[0]
+        else:
+            good = "idea_beta" not in lu and "idea_alpha" in lu
+            obs_ok = bool(obs) and "idea_beta" not in obs[0] and "idea_alpha" in obs[0]
+        # File-level and observation-level must agree (no hybrid).
+        good = good and obs_ok
+        rec(f"d2_p7_transactional_{stage}", raised and good and obs_ok,
+            r.stdout[-200:] if not (raised and good and obs_ok) else "")
+        # After each post-stage failure the live pair is the TARGET pair;
+        # restore the OLD pair so the next iteration starts from the same
+        # baseline.
+        if stage in post_stage and g2:
+            rs = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+R.rollback({owner!r}, {g2!r})
+print('RESTORED')
+"""
+            rr = _run_driver("d2restore", rs)
+            assert "RESTORED" in rr.stdout, rr.stdout[-200:]
 
 
 _TESTS = [

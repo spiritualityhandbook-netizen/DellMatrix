@@ -43,8 +43,11 @@ no lost mutations across the process boundary. **SYNC.**
 Save/load/checkpoint/rollback round-trip the Program's units, nursery,
 and history. Post-rollback, the nursery re-points to the live owner
 file (`repoint_to_live`); sealed generation members are byte-identical
-after subsequent mutations; manifest fingerprints validate. 19/19
-cross-process battery + 13/13 integrated proof. **SYNC.**
+after subsequent mutations; manifest fingerprints validate. Gate R2:
+rollback uses a journaled two-file transaction (prepare/stage/commit/
+cleanup/verify) with recovery in every load — a reader never observes a
+hybrid program/nursery pair. 39/39 persistence battery + 13/13 integrated
+proof. **SYNC.**
 
 ## 6. Persistence ↔ Outcome
 

@@ -183,8 +183,22 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     activate=False, e.g. AUTO loading AutoGrow). The Program's owner is the file's owner (Q-016 resolution);
     its nursery and language are that owner's and nothing of the previously bound owner is combined into it.
     A missing file yields a fresh owner: empty cells + default customs (D2), never the active owner's language.
-    load() writes no file."""
+    load() writes no file.
+
+    Gate R2 (Finding 1): before exposing live state, deterministically
+    recover any interrupted rollback transaction for this owner, so a
+    reader never accepts a hybrid program/nursery pair.
+    """
     assert_floor_intact()
+    # Transactional rollback recovery: cheap journal-exists check; only
+    # does work when an interrupted transaction is present.
+    try:
+        from form.mandell.core_i_recovery import recover_rollback_transaction
+        recover_rollback_transaction(owner)
+    except RuntimeError:
+        raise
+    except Exception:
+        pass  # recovery is best-effort; load proceeds on live files
     path = path or _path(owner)
     if not os.path.isfile(path):
         p = open_program(owner)

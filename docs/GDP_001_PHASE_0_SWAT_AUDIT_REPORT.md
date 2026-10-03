@@ -234,3 +234,64 @@ battery green.
 changes are minimal, focused, and do not introduce new failure classes.
 The eager-rollback write window (between the two atomic file writes) is
 documented; each file remains internally consistent.
+
+---
+
+## GATE R2 RE-AUDIT (2026-10-03)
+
+Director issued FINAL_GATE_R2 with two material findings. All auditors
+re-ran against the R2 repair.
+
+### NULL R2
+
+- **No duplicate persistence transaction mechanisms.** `transactional_ops.py`
+  is in-memory apply/undo (Verse-inspired), not file-pair persistence.
+  The rollback journal (`core_i_recovery`) is the single authority for
+  program/nursery pair-atomicity. No unnecessary state machinery found.
+
+### PRISM R2
+
+- **One persistence authority verified** across rollback, load, journal
+  recovery, checkpoint generations, and live state. `persist_rest` owns
+  live files; `checkpoint_generation` owns sealed members; `core_i_recovery`
+  owns rollback with journal; `recover_rollback_transaction` runs inside
+  every load. No competing authority.
+
+### ORACLE R2
+
+- **Transaction behavior independently reproduced.** 8 injection points
+  verified in fresh OS processes: pre-commit failures -> old pair;
+  post-staging failures -> target pair via recovery. Never hybrid.
+- **Repaired delegation test proven fallible.** The new `dup21_leaf_delegates`
+  assertion returns True on current code and False on simulated divergent
+  code (place_idea without delegation). The old `or True` assertion
+  returned True on both, proving vacuity.
+
+### ARGUS R2
+
+- **Journal crash boundaries:** injected at prepare/stage/commit/cleanup/
+  verify; recovery yields old-complete or target-complete. Never hybrid.
+- **Recovery idempotence:** second recovery is no-op (None).
+- **Stale journal:** 'prepared' phase with no staging -> rolled_back, journal
+  discarded.
+- **Unknown phase:** raises RuntimeError, refuses to guess.
+- **Partial rename:** staged journal + one rename -> recovery completes second.
+- **Repeated recovery:** clean state -> None.
+
+### Test-honesty sweep R2
+
+- **Vacuous assertion removed:** `"_front_door" in src and "live_identity"
+  not in src or True` (unconditionally True) replaced with arm-scoped
+  delegation check.
+- **Sweep result:** no other `or True`/`and False` in Phase-0 tests. One
+  `rec(..., True)` is perf measurement-only (labeled). Exception handlers
+  are cleanup-only. No mock-only integration claims. No dead PASS-forcing
+  branches.
+
+### MUST_FIX R2 (all repaired)
+
+1. **Rollback pair-atomicity gap.** Two separate atomic writes did not
+   guarantee the live pair was transactionally atomic. **Repair:**
+   journaled two-file transaction (prepare/stage/commit/cleanup/verify)
+   with recovery in every load.
+2. **Vacuous test assertion.** Replaced with fallible single-authority proof.

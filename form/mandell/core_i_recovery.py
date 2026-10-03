@@ -16,6 +16,7 @@ this module. AUTHORITY SINGULARITY: one durable state path.
 from __future__ import annotations
 
 from typing import Dict, List, Optional
+import hashlib
 import json
 import os
 
@@ -136,61 +137,161 @@ def latest_checkpoint(owner: str) -> Optional[str]:
     return named[-1] if named else None
 
 
+def _journal_path(owner: str) -> str:
+    """Path of the rollback transaction journal for ``owner``."""
+    from form.persist import _STATE_DIR, _safe_owner
+    return os.path.join(_STATE_DIR, f"rollback_{_safe_owner(owner)}.journal.json")
+
+
+def _staging_path(owner: str, kind: str) -> str:
+    """Staging file for a rollback transaction (kind: 'program'|'nursery')."""
+    from form.persist import _STATE_DIR, _safe_owner
+    return os.path.join(_STATE_DIR, f"rollback_{_safe_owner(owner)}.{kind}.staging")
+
+
+def _write_journal(owner: str, journal: dict, _fail_at: Optional[str] = None) -> None:
+    """Atomically write the rollback transaction journal."""
+    from form.dell_matrix.atomic_write import atomic_write_json
+    from form.mandell.checkpoint_generation import _check_fail
+    _check_fail("rollback_journal", _fail_at)
+    atomic_write_json(_journal_path(owner), journal)
+
+
+def recover_rollback_transaction(owner: str) -> Optional[str]:
+    """Deterministically recover an interrupted rollback transaction.
+
+    Called before live state is exposed (e.g. at load). Returns:
+    - None: no journal; live state is authoritative as-is.
+    - "rolled_back": journal was in 'prepared' phase; transaction never
+      staged, old live pair remains authoritative; journal removed.
+    - "completed": journal was in 'staged' or 'committed' phase; the
+      staged pair was deterministically committed; journal removed.
+
+    After this returns, the live program/nursery pair is EITHER the
+    complete old pair OR the complete target pair. NEVER hybrid.
+    """
+    jpath = _journal_path(owner)
+    if not os.path.isfile(jpath):
+        return None
+    with open(jpath, encoding="utf-8") as f:
+        journal = json.load(f)
+    phase = journal.get("phase")
+    if phase == "prepared":
+        # Never staged: old live pair is authoritative. Discard journal.
+        os.unlink(jpath)
+        return "rolled_back"
+    if phase in ("staged", "committed"):
+        # Deterministically complete the commit: staging -> live.
+        from form.persist import _path as _live_program_path
+        from form.dell_matrix.nursery import owner_nursery_path
+        for kind, live_fn in (("program", _live_program_path),
+                             ("nursery", owner_nursery_path)):
+            staging = _staging_path(owner, kind)
+            live = live_fn(owner)
+            if os.path.isfile(staging):
+                # Atomic replacement; idempotent if already done.
+                os.replace(staging, live)
+        if os.path.isfile(jpath):
+            os.unlink(jpath)
+        return "completed"
+    # Unknown phase: refuse to guess; leave journal for manual inspection.
+    raise RuntimeError(f"rollback journal has unknown phase {phase!r}; refusing to recover")
+
+
 def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) -> None:
     """Eagerly converge live working state to the rolled-back program.
 
-    DIRECTOR DECISION 2 (GDP-001 Phase-0 gate R1): successful rollback means
-    current live state already reflects the selected committed generation
-    when rollback returns. Do NOT wait for the next save.
+    DIRECTOR DECISION 2 (gate R1) + FINDING 1 (gate R2): successful rollback
+    means current live state already reflects the selected committed
+    generation when rollback returns, with PAIR-ATOMICITY — a reader must
+    never accept a hybrid program/nursery live state.
 
-    Conceptual operation:
-      SELECT (caller) > VALIDATE (caller) > RESTORE/COPY INTO LIVE >
-      ESTABLISH INDEPENDENT OWNERSHIP > UPDATE CURRENT STATE > VERIFY > RETURN.
+    Transactional model (journaled two-file transaction, Director option B):
 
-    Never restores by aliasing live mutable state to a sealed member: the
-    validated in-memory program is serialized and atomically written to the
-    live owner files as independent copies. Sealed members are never written
-    (Dell28 anti-corruption invariant preserved).
+      1. PREPARE: serialize both payloads; write journal {phase: prepared}
+         with old/new fingerprints. No live file touched.
+      2. STAGE: write both payloads to staging files; journal -> {staged}.
+         Live files untouched.
+      3. COMMIT: atomic rename staging -> live for both files (the commit
+         boundary); journal -> {committed}; journal removed.
+      4. VERIFY: fresh load reflects the target.
 
-    Failure atomicity: all validation and serialization precede all writes.
-    A failure before the first write leaves live state byte-identical
-    (zero partial mutation). Each file write is crash-safe atomic
-    (Persistence V2); a failure between the two writes leaves each file
-    internally consistent (old or new, never corrupt).
+    Crash recovery: `recover_rollback_transaction` (called before live
+    state is exposed) deterministically finishes or rolls back:
+    - 'prepared'  -> old pair authoritative (nothing staged).
+    - 'staged'/'committed' -> complete the renames; target pair authoritative.
+    After recovery, the reader sees EITHER the complete old pair OR the
+    complete target pair. NEVER hybrid.
+
+    Never aliases live state to a sealed member: staged payloads are
+    serialized independent copies. Sealed members are never written
+    (Dell28 invariant preserved).
     """
+    import hashlib
     from form import persist_rest
-    from form.persist import serialize
+    from form.persist import serialize, _path as _live_program_path
     from form.mandell.checkpoint_generation import _check_fail, CheckpointError
+    from form.dell_matrix.atomic_write import atomic_write_json
+    from form.dell_matrix.nursery import (
+        DISPOSITION_SECTION_KEY, _disk_sig, NurseryConflictError,
+        owner_nursery_path,
+    )
 
-    # RESTORE/COPY: serialize both payloads BEFORE touching any live file.
+    # 1. PREPARE: serialize both payloads BEFORE touching any live file.
     _check_fail("rollback_serialize", _fail_at)
     program_data = serialize(program)
     nursery = program.nursery
     if nursery is None or not getattr(nursery, "path", None):
         raise CheckpointError("rollback: program has no bound nursery; refusing to converge")
     nursery_payload = {k: v.to_dict() for k, v in nursery.proposals.items()}
-    from form.dell_matrix.nursery import DISPOSITION_SECTION_KEY
     nursery_payload[DISPOSITION_SECTION_KEY] = {
         cid: dict(rec) for cid, rec in nursery.conflict_dispositions.items()
     }
-    # Pre-flight the nursery conflict guard BEFORE the program write, so a
-    # concurrent live-nursery modification fails before any mutation.
-    from form.dell_matrix.nursery import _disk_sig
+    # Pre-flight the nursery conflict guard BEFORE any mutation.
     _check_fail("rollback_nursery_conflict", _fail_at)
     if _disk_sig(nursery.path) != nursery._seen:
-        from form.dell_matrix.nursery import NurseryConflictError
         raise NurseryConflictError(
             "rollback: live nursery changed since generation load; "
             "refusing to overwrite (zero partial mutation)"
         )
+    live_prog = _live_program_path(owner)
+    live_nurs = owner_nursery_path(owner)
+    prog_bytes = json.dumps(program_data, sort_keys=True).encode("utf-8")
+    nurs_bytes = json.dumps(nursery_payload, sort_keys=True).encode("utf-8")
+    journal = {
+        "phase": "prepared",
+        "owner": owner,
+        "program_sha256": hashlib.sha256(prog_bytes).hexdigest(),
+        "nursery_sha256": hashlib.sha256(nurs_bytes).hexdigest(),
+        "old_program_sha256": _sha256_file(live_prog) if os.path.isfile(live_prog) else None,
+        "old_nursery_sha256": _sha256_file(live_nurs) if os.path.isfile(live_nurs) else None,
+    }
+    _write_journal(owner, journal, _fail_at=_fail_at)
 
-    # ESTABLISH INDEPENDENT OWNERSHIP: atomic writes of independent copies.
-    _check_fail("rollback_write_program", _fail_at)
-    persist_rest.save(program)
-    _check_fail("rollback_write_nursery", _fail_at)
-    nursery.save()
+    # 2. STAGE: write both payloads to staging files (live untouched).
+    _check_fail("rollback_stage", _fail_at)
+    staging_prog = _staging_path(owner, "program")
+    staging_nurs = _staging_path(owner, "nursery")
+    atomic_write_json(staging_prog, program_data)
+    atomic_write_json(staging_nurs, nursery_payload)
+    journal["phase"] = "staged"
+    _write_journal(owner, journal, _fail_at=_fail_at)
 
-    # UPDATE CURRENT STATE + VERIFY: fresh load must reflect the target.
+    # 3. COMMIT: atomic renames (the commit boundary). After the first
+    # rename, a crash leaves the journal in 'staged' -> recovery completes
+    # the second rename deterministically. No hybrid is ever exposed.
+    _check_fail("rollback_commit_program", _fail_at)
+    os.replace(staging_prog, live_prog)
+    _check_fail("rollback_commit_nursery", _fail_at)
+    os.replace(staging_nurs, live_nurs)
+    journal["phase"] = "committed"
+    _write_journal(owner, journal, _fail_at=_fail_at)
+    _check_fail("rollback_cleanup", _fail_at)
+    os.unlink(_journal_path(owner))
+    # Refresh the in-memory nursery's conflict baseline to the new live file.
+    nursery._seen = _disk_sig(live_nurs)
+
+    # 4. VERIFY: fresh load (with recovery) must reflect the target.
     _check_fail("rollback_verify", _fail_at)
     rever = persist_rest.load(owner, activate=False)
     want_units = sorted(str(u) for u in program.cube.session.plane.units)
@@ -200,6 +301,14 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None) ->
             f"rollback verification failed: live units {got_units} != "
             f"target {want_units}; live state may need repair"
         )
+
+
+def _sha256_file(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] = None):

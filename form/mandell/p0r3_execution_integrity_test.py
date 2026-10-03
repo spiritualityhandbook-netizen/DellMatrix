@@ -107,10 +107,17 @@ def t_dup_2122_single_authority() -> None:
         and any("parents=['u1', 'u2']" in m for m in r_front.get("messages", []))
         and any("parents=['u1', 'u2']" in m for m in r_leaf.get("messages", [])),
         "integration")
-    # Leaf no longer contains the divergent place_idea merge/split semantics.
+    # Leaf 21/22 arms must delegate to the single front-door authority, not
+    # reimplement merge/split. This fails if the leaf stops delegating:
+    # the arm region must reference the front door and must not contain
+    # the divergent place_idea implementation.
     import inspect
     src = inspect.getsource(leaf.execute_seed)
-    rec("dup21_leaf_delegates", "_front_door" in src and "live_identity" not in src or True,
+    arm21 = src.split("elif primary == 21:")[1].split("elif primary == 22:")[0]
+    arm22 = src.split("elif primary == 22:")[1].split("elif primary ==")[0]
+    rec("dup21_leaf_delegates",
+        "_front_door" in arm21 and "_front_door" in arm22
+        and "place_idea(" not in arm21 and "place_idea(" not in arm22,
         "unit")
     rec("dup21_no_divergent_place",
         'place_idea(label or "merge")' not in src,
