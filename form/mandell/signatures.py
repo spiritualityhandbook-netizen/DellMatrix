@@ -183,6 +183,76 @@ _register(OperatorSignature(
 # Existing encoding: lab = "key=value"
 
 
+# Dell 51 (Select) — derived from query_ops.py:apply_query (n==51)
+#   ids = ids_fn(program)
+#   st.selected = list(ids) if not lab else [i for i in ids if pred_fn(lab, i)]
+#   st.last_result = result_cell(value=list(st.selected), ...)
+_register(OperatorSignature(
+    dell=51,
+    name="Select",
+    roles=[
+        Role(name="predicate", type="string", required=False,
+             description="Selection predicate (empty selects all)"),
+    ],
+    derived_from="form/mandell/query_ops.py:apply_query:18-21",
+    output="Sets st.selected to matching IDs; publishes to last_result",
+    failures="None established (empty predicate selects all)",
+))
+# Existing encoding: lab = predicate (or "" for all)
+
+# Dell 54 (Query) — derived from query_ops.py:apply_query (n==54)
+#   ids = list(st.selected)
+#   hits = [i for i in ids if pred_fn(lab, i)] if lab else list(ids)
+#   st.last_result = result_cell(value=hits, ...)
+_register(OperatorSignature(
+    dell=54,
+    name="Query",
+    roles=[
+        Role(name="predicate", type="string", required=False,
+             description="Query predicate (empty queries all selected)"),
+    ],
+    derived_from="form/mandell/query_ops.py:apply_query:24-27",
+    output="Publishes matching IDs to last_result; st.selected unchanged",
+    failures="None established (empty result is valid)",
+))
+# Existing encoding: lab = predicate (or "" for all)
+
+# Dell 56 (Get) — derived from query_ops.py:apply_query (n==56)
+#   key = lab or (list(st.store)[-1] if st.store else "")
+#   if key not in st.store: matched=False, error="missing"
+#   else: val = st.store[key]; publishes to last_result
+_register(OperatorSignature(
+    dell=56,
+    name="Get",
+    roles=[
+        Role(name="key", type="string", required=True,
+             description="Store key to retrieve"),
+    ],
+    derived_from="form/mandell/query_ops.py:apply_query:29-38",
+    output="Publishes st.store[key] to last_result; read-only",
+    failures="missing (key not in store; matched=False, no mutation)",
+))
+# Existing encoding: lab = key
+# NOTE: Read-only. Never mutates store.
+
+# Dell 58 (Match) — derived from query_ops.py:apply_query (n==58)
+#   pat = lab.lower()
+#   st.selected = [i for i in ids if pat in str(i).lower()] if pat else list(ids)
+#   st.last_result = result_cell(value=list(st.selected), ...)
+_register(OperatorSignature(
+    dell=58,
+    name="Match",
+    roles=[
+        Role(name="pattern", type="string", required=False,
+             description="Substring pattern (empty matches all)"),
+    ],
+    derived_from="form/mandell/query_ops.py:apply_query:44-47",
+    output="Sets st.selected to pattern matches; publishes to last_result",
+    failures="None established (empty result is valid)",
+))
+# Existing encoding: lab = pattern (or "" for all)
+
+
 def get_signature(dell: int) -> Optional[OperatorSignature]:
     """Get signature for a Dell, or None if not established."""
     return _SIGNATURES.get(dell)
@@ -229,6 +299,18 @@ def lower_args_to_lab(dell: int, args: Dict[str, str]) -> str:
         key = args.get("key", "")
         val = args.get("value", "")
         return f"{key}={val}"
+    elif dell == 51:
+        # Select: lab = predicate (or "" for all)
+        return args.get("predicate", "")
+    elif dell == 54:
+        # Query: lab = predicate (or "" for all)
+        return args.get("predicate", "")
+    elif dell == 56:
+        # Get: lab = key
+        return args.get("key", "")
+    elif dell == 58:
+        # Match: lab = pattern (or "" for all)
+        return args.get("pattern", "")
     else:
         # Dell 8 uses place_idea (different executor); others have no lab contract
         raise ValueError(f"No lab lowering for Dell {dell}")
