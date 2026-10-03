@@ -222,6 +222,17 @@ def _load_impl(owner: str, path: str, nursery, activate: bool) -> Program:
             raise ProgramLoadError(f"owner binding mismatch: prepared {p.owner!r} for file owner {resolved!r}")
     elif p.owner != resolved or p.nursery is not nursery:
         raise ProgramLoadError("generation member binding mismatch: staged nursery was not used")
+    if nursery is not None:
+        # DCC-XVIII repair (GDP-001 Phase 0, R1): the staged nursery is bound
+        # to the SEALED generation member file. Copy-on-rollback + re-point:
+        # re-point the instance to the live owner file NOW, so committed /
+        # sealed state and mutable working state have explicit, non-aliased
+        # ownership. The sealed member is never written through this program
+        # again; the next nursery save() persists the rolled-back working
+        # state to the live file. No live file is written here (load stays
+        # read-pure) and the staged in-memory proposals are untouched.
+        from form.dell_matrix.nursery import owner_nursery_path
+        nursery.repoint_to_live(owner_nursery_path(resolved))
     if activate:
         bind(p)
     return p

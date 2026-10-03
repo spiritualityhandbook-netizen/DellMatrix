@@ -112,6 +112,25 @@ class Nursery:
     conflict_dispositions: Dict[str, Dict[str, Any]] = field(
         default_factory=dict, repr=False, compare=False)
 
+    def repoint_to_live(self, live_path: str) -> None:
+        """Re-point this instance's file ownership to the live owner file.
+
+        DCC-XVIII repair (GDP-001 Phase 0, R1): a nursery staged from a
+        sealed generation member arrives bound to the IMMUTABLE member file.
+        Re-pointing gives committed/sealed state and mutable working state
+        explicit, non-aliased ownership -- the sealed member can never be
+        overwritten through this instance again.
+
+        Only the binding changes: in-memory proposals and conflict
+        dispositions are untouched, and no file is written here. ``_seen``
+        is refreshed to the live file's current signature so the
+        optimistic-concurrency guard keeps working against the live file;
+        the next save() persists this (e.g. rolled-back) working state to
+        the live file.
+        """
+        self.path = live_path
+        self._seen = _disk_sig(live_path)
+
     def add(
         self,
         label: str,
