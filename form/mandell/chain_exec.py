@@ -42,6 +42,28 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
     payload = seed.label or ""
     if raw_term and raw_term.lower() != canon:
         payload = raw_term
+    # TOAM-I C3: Wire typed args into production execution.
+    # If atom has typed args, validate and lower to lab format.
+    atom_args = getattr(atom, "args", None) or {}
+    if atom_args and 51 <= n <= 99:
+        from form.mandell.signatures import get_signature, lower_args_to_lab, has_signature
+        if has_signature(n):
+            sig = get_signature(n)
+            errors = sig.validate(atom_args)
+            if errors:
+                # Validation failure: return canonical failure, ZERO mutation
+                err_msg = f"TOAM validation failed for {n:02d}[{shown}]: {'; '.join(errors)}"
+                messages.append(err_msg)
+                return program, {"ok": False, "error": errors[0], "messages": messages}
+            # Conflict law: if both typed args and legacy lab present with different values,
+            # fail safely rather than silently choosing.
+            typed_lab = lower_args_to_lab(n, atom_args)
+            if payload and payload != typed_lab:
+                err_msg = f"ARGUMENT_CONFLICT for {n:02d}[{shown}]: typed args lower to '{typed_lab}' but legacy lab is '{payload}'"
+                messages.append(err_msg)
+                return program, {"ok": False, "error": "ARGUMENT_CONFLICT", "messages": messages}
+            payload = typed_lab
+            messages.append(f"TOAM: typed args lowered to lab='{payload}'")
     term = shown
     messages.append(f"-- {n:02d}[{term}] ns={ns}")
     if 51 <= n <= 99:
