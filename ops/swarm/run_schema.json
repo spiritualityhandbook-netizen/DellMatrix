@@ -1,0 +1,374 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Machine-readable production run state. AUTONOMY=NO. Process evidence, not semantic truth.",
+  "properties": {
+    "agent_assignments": {
+      "additionalProperties": {
+        "properties": {
+          "invocation": {
+            "type": "string"
+          },
+          "mission": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "mission"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    },
+    "agent_status": {
+      "additionalProperties": {
+        "enum": [
+          "PENDING",
+          "RUNNING",
+          "DELIVERED",
+          "BLOCKED"
+        ],
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "allowed_actions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "base_sha": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": "string"
+    },
+    "base_tree": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": "string"
+    },
+    "candidate_decisions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "candidate_head": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "capability_delta": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ci": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "contradictions": {
+      "items": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "parties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resolution": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "statement": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "OPEN",
+              "RESOLVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "parties",
+          "statement"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "director_authority": {
+      "properties": {
+        "autonomy": {
+          "const": "NO",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "PROCEED",
+            "HOLD",
+            "STOP",
+            "INVESTIGATE",
+            "IMPLEMENT",
+            "MERGE"
+          ],
+          "type": "string"
+        },
+        "directive": {
+          "type": "string"
+        },
+        "scope_note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "directive",
+        "decision",
+        "autonomy"
+      ],
+      "type": "object"
+    },
+    "director_decision": {
+      "properties": {
+        "bounded_directive": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "candidate_head": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "decision": {
+          "enum": [
+            "PROCEED",
+            "HOLD",
+            "STOP",
+            "INVESTIGATE",
+            "IMPLEMENT",
+            "MERGE"
+          ],
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recorded_at": {
+          "type": "string"
+        },
+        "recorded_by": {
+          "type": "string"
+        },
+        "release_condition": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "evidence": {
+      "description": "Append-only. Agents never overwrite each other's entries.",
+      "items": {
+        "properties": {
+          "agent": {
+            "type": "string"
+          },
+          "claim": {
+            "type": "string"
+          },
+          "classification": {
+            "enum": [
+              "VERIFIED",
+              "DERIVED",
+              "PROJECTION",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "sha": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent",
+          "claim",
+          "classification",
+          "source"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "falsifications": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "forbidden_actions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "goal": {
+      "type": "string"
+    },
+    "merge_sha": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "merge_state": {
+      "enum": [
+        "NOT_REQUESTED",
+        "PENDING",
+        "MERGED",
+        "REFUSED"
+      ],
+      "type": "string"
+    },
+    "next_broken_link": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next_directive": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "parent_run_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "phase": {
+      "type": "string"
+    },
+    "post_merge_state": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "run_id": {
+      "description": "e.g. MPC-004-R1",
+      "type": "string"
+    },
+    "termination": {
+      "properties": {
+        "director_decision_required": {
+          "type": "boolean"
+        },
+        "state": {
+          "enum": [
+            "ACTIVE",
+            "COMPLETE",
+            "HOLD",
+            "STOPPED"
+          ],
+          "type": "string"
+        },
+        "terminal_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "state",
+        "director_decision_required"
+      ],
+      "type": "object"
+    },
+    "tests": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "uni_execution": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "unknowns": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "mode": {
+      "enum": [
+        "SWARM",
+        "CORE"
+      ],
+      "description": "Production profile. Persisted; changes reconstruct nothing."
+    },
+    "mode_history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "run_id",
+    "base_sha",
+    "base_tree",
+    "goal",
+    "director_authority",
+    "allowed_actions",
+    "forbidden_actions",
+    "phase",
+    "agent_assignments",
+    "agent_status",
+    "termination",
+    "mode"
+  ],
+  "title": "SwarmProductionRun",
+  "type": "object"
+}

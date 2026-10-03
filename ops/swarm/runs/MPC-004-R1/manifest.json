@@ -1,0 +1,671 @@
+{
+  "agent_assignments": {
+    "ARGUS": {
+      "invocation": "subagent.spawn (in-session)",
+      "mission": "Attack closure claims; find misleading/partial/unreachable/unsafe handlers",
+      "role": "ADVERSARIAL VERIFICATION"
+    },
+    "NULL": {
+      "invocation": "subagent.spawn (in-session)",
+      "mission": "Prove apparent missing capabilities already exist via existing Dells/composition",
+      "role": "NECESSITY FALSIFICATION"
+    },
+    "ORACLE": {
+      "invocation": "subagent.spawn (in-session)",
+      "mission": "Map actual handlers/semantics per 12-dimension template; verify handler inventory count",
+      "role": "RECONNAISSANCE / EVIDENCE"
+    },
+    "PRISM": {
+      "invocation": "subagent.spawn (in-session)",
+      "mission": "Reconcile into one 57-Dell operational matrix; preserve contradictions",
+      "role": "RECONCILIATION / SYNTHESIS"
+    },
+    "UNI": {
+      "invocation": "this runtime",
+      "mission": "Runtime probes + harness operation",
+      "role": "REPOSITORY EXECUTOR / MECHANISM WITNESS"
+    }
+  },
+  "agent_status": {
+    "ARGUS": "DELIVERED",
+    "NULL": "DELIVERED",
+    "ORACLE": "RUNNING",
+    "ORACLE-CORE-I": "DELIVERED",
+    "ORACLE-LEAF16": "DELIVERED",
+    "ORACLE-LEAF25": "DELIVERED",
+    "ORACLE70-79": "DELIVERED",
+    "ORACLE80-89": "DELIVERED",
+    "ORACLE90-99": "DELIVERED",
+    "PRISM": "DELIVERED",
+    "UNI": "RUNNING"
+  },
+  "allowed_actions": [
+    "read-only repository inspection",
+    "run runtime probes",
+    "run tests",
+    "write run evidence to ops/swarm/runs/MPC-004-R1/"
+  ],
+  "base_sha": "53919043224b18e12516bd9e885b9352de33422f",
+  "base_tree": "561a09934aa103608ae09fb25c2bfa5d3e29977b",
+  "candidate_decisions": [
+    "Authorize one-line guard fix: add 'patch' to _DESTRUCTIVE_VERBS (C-R1-008) + regression tests",
+    "Adjudicate Dell inventory taxonomy (99/100/101) for future denominators",
+    "Decide Dell87 Replace semantic (key-rename vs value-substitution)",
+    "Authorize registry corrections (Dell37, 51-99 stale names, 90/94/95 verbs)",
+    "Authorize English route fixes (resume->33, macro->48)"
+  ],
+  "candidate_head": null,
+  "capability_delta": null,
+  "ci": null,
+  "contradictions": [
+    {
+      "id": "C-R1-001",
+      "parties": [
+        "UNI",
+        "ORACLE",
+        "MPC-003 packet"
+      ],
+      "resolution": null,
+      "statement": "Handler count: MPC-003 claims 57 Dell handlers; UNI probe shows 100 executable Dell ids (0-99) across 4 dispatchers | ORACLE independently verified: denominator 99 (1-99) + Dell 0 edge; leaf 21/22 branches dead",
+      "status": "OPEN"
+    },
+    {
+      "id": "C-R1-002",
+      "parties": [
+        "ORACLE",
+        "MPC-003 packet"
+      ],
+      "resolution": "NULL + Oracle independently verified: all 9 Flow operators operational via _apply_flow (chain_exec.py:119-163). MPC-003 matrix corrected to 9/9 OPERATIONALLY_IMPLEMENTED. Flow debt item REMOVED.",
+      "statement": "Flow matrix scope: MPC-003 classified >>,>>>,:>,<:,<:>,<<[Delta] as DEFINED-only, but operator_bridge.compose_execute handles them (cac_i_test: 91[Assert] >> 70[Count] :: false executed, returned semantic assert_fail not parse error). Matrix claim covered only execute_seed/chain_exec path.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "C-R1-003",
+      "parties": [
+        "ORACLE",
+        "registry.py/core_ii.py"
+      ],
+      "resolution": null,
+      "statement": "Registry semantic overstatement: 95 'atomic', 90 'provenance', 94 'error class' \u2014 mechanisms do not implement the registry's verbs",
+      "status": "OPEN"
+    },
+    {
+      "id": "C-R1-004",
+      "parties": [
+        "ORACLE",
+        "registry.py"
+      ],
+      "resolution": null,
+      "statement": "Dell37 registry 'Stream/Chunked out' vs implementation 'Nurture' vs translate '37[Nurture]' \u2014 registry stale; correction is Director authority",
+      "status": "OPEN"
+    },
+    {
+      "id": "C-R1-005",
+      "parties": [
+        "ORACLE",
+        "DIRECTOR"
+      ],
+      "resolution": null,
+      "statement": "Dell87 Replace: mechanism is key-rename; registry/signature language suggests value substitution. Intended semantic is a Director decision (do not choose here).",
+      "status": "OPEN"
+    },
+    {
+      "id": "C-R1-006",
+      "parties": [
+        "NULL",
+        "MPC-003 packet"
+      ],
+      "resolution": null,
+      "statement": "Conditional-execution debt framing: MPC-003 claimed 'faithful predicate encoding contract does not exist'; NULL proved the predicate contract EXISTS (empty: store:X live) and only a per-atom condition slot is missing. Debt item narrowed, not removed.",
+      "status": "OPEN"
+    },
+    {
+      "id": "C-R1-007",
+      "parties": [
+        "ORACLE",
+        "translate.py/english_brain.py"
+      ],
+      "resolution": null,
+      "statement": "English 'resume' routes to 28[Rollback] (destructive-adjacent) instead of 33[Resume]; 'make a macro' routes to 08[Create] instead of 48[Macro] \u2014 English routing conflicts with Dell semantics",
+      "status": "OPEN"
+    },
+    {
+      "id": "C-R1-008",
+      "parties": [
+        "ARGUS",
+        "MPC-001/MPC-002/MPC-003 packets"
+      ],
+      "resolution": null,
+      "statement": "Safety-guard generality: packets claim conditional destructive English -> UNKNOWN with zero mutation; ARGUS proved Patch (88) bypasses the guard and mutates. Minimal correction = add 'patch' to _DESTRUCTIVE_VERBS (list membership, not new mechanism). NOT repaired this round (read-only); top broken-link candidate.",
+      "status": "OPEN"
+    },
+    {
+      "id": "C-R1-009",
+      "parties": [
+        "ORACLE",
+        "gate_discipline.py"
+      ],
+      "resolution": null,
+      "statement": "EXTENDED_DELL_RESERVE legacy names for 51-99 contradict current CORE_II registry semantics \u2014 stale authority in gate_discipline.py",
+      "status": "OPEN"
+    }
+  ],
+  "director_authority": {
+    "autonomy": "NO",
+    "decision": "PROCEED",
+    "directive": "MPC-004 / SWARM-BOOT-001 Phase F",
+    "scope_note": "Read-only audit. No Dell semantic implementation, no English/Flow/Dell21 changes, no merges."
+  },
+  "director_decision": null,
+  "evidence": [
+    {
+      "agent": "UNI",
+      "claim": "TRUE EXECUTABLE INVENTORY is 100 Dells (0-99), not 57. executor_leaf.py dispatches primary==0..50 (503 lines); 21/22 route to live_identity; {27,28,34,35,37,40,44,47} route to core_i_ops; 51-99 route to chain_exec. The '57 handlers' count (MPC-001/002/003) only covered n==/HANDLED/live_identity dispatch and missed 43 executor_leaf Dells.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "form/mandell/executor.py:1-80 + form/mandell/executor_leaf.py (primary==0..50)",
+      "timestamp": "2026-10-03T13:24:04Z"
+    },
+    {
+      "agent": "UNI",
+      "claim": "English reachability broader than dell field: Intent.dell is None for multi-Dell intents, but Intent.mandel carries real Dell numbers. Corpus probe: English reaches Dells 4,8,9,13,15,27,31,32,34,51,56,58,84,85,86,87,88 (e.g. 'create an idea' -> 08[Create]>15[Map]; 'pause' -> 32[Pause]; 'checkpoint now' -> 27[Checkpoint]). Conditional destructive still UNKNOWN.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "form/mandell/translate.py Intent.mandel field; UNI probe corpus 27 phrases",
+      "timestamp": "2026-10-03T13:24:21Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dells 70-79: 0/10 have typed signatures; all legacy-lab only",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "query_ops.py:60-189 + grep signatures.py",
+      "timestamp": "2026-10-03T13:25:03Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Composition defect: atom with :: lab cannot be followed by > in a seed; lab parser consumes >. For 78/79 the lab itself requires >, making >-composition structurally impossible",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "probe: 74[Weight] :: alpha=2 > 74 -> Seed error; 78 :: a>b > 79 -> Seed error",
+      "timestamp": "2026-10-03T13:25:03Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Persistence gap: Dell72 st.limit not in persist_core_ii.py field list; lost on restart while weights/causes/deps survive",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "persist_core_ii.py:10-24,75-84,121; grep 'limit' -> no hits",
+      "timestamp": "2026-10-03T13:25:03Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dell71 'Measure' always returns len(selected) regardless of unit/kind labels; labels decorative",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "query_ops.py:84-93 + probes",
+      "timestamp": "2026-10-03T13:25:03Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Failure-convention inconsistency: 72/74 ok=False on bad input; 75 ok=True+error=zero_set; 73 never fails hard",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "query_ops.py:95-157",
+      "timestamp": "2026-10-03T13:25:03Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dell77 Infer honest by design: projected=True, fact=False, matched=False",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "query_ops.py:151-157 + probe",
+      "timestamp": "2026-10-03T13:25:03Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "78 Cause and 79 Depend are near-duplicates differing only in target list/message; design question for Director",
+      "classification": "DERIVED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "query_ops.py:159-189 shared _relation",
+      "timestamp": "2026-10-03T13:25:03Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dells 80-99 route via core_ii_exec.py:133 -> apply_spectrum -> spectrum_ops.py:232-366 (not query_ops)",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "core_ii_exec.py:133",
+      "timestamp": "2026-10-03T13:25:19Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dells 90-99: 0/10 typed signatures; 0/10 English prose reachability",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:232-366; translate.py",
+      "timestamp": "2026-10-03T13:25:19Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "FALSE-CLOSURE 95 Commit: registry claims 'atomically accept staged mutation'; mechanism stages nothing and isolates nothing \u2014 mark-only checkpoint system, atomicity is name-only",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:275-291",
+      "timestamp": "2026-10-03T13:25:19Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "FALSE-CLOSURE 90 Trace: registry claims provenance-path following; mechanism dumps st.traces buffer (transient, not persisted)",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:232-237; form/persist.py",
+      "timestamp": "2026-10-03T13:25:19Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "94 Catch has no error-class dispatch despite registry 'Handle failure/error class' \u2014 generic catch only",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:263-274",
+      "timestamp": "2026-10-03T13:25:19Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Test gap: Dell92 Guard has no behavioral test (only durability probe); block/deny literal override untested",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "core_ii_persist_test.py:37; no behavioral test found",
+      "timestamp": "2026-10-03T13:25:19Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Recovered: 93-96 form working checkpoint-revert (not atomic tx); 91/92 provide condition-gated failure via eval_condition/predicate machinery \u2014 predicate half of conditional path EXISTS, only English->condition encoding missing",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:239-311",
+      "timestamp": "2026-10-03T13:25:19Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "99 Compose define-mode executes body immediately as side effect; registry omits this",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:334-366",
+      "timestamp": "2026-10-03T13:25:19Z"
+    },
+    {
+      "agent": "UNI",
+      "claim": "Dual-mode continuity implemented: mode persisted in run state; set_mode/assume_obligations/production_laws_for_mode in state_machine.py; 8/8 mode tests + 17/17 harness tests green. No Dell semantics modified.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "ops/swarm/state_machine.py (dual-mode section); ops/swarm/tests/test_modes.py",
+      "timestamp": "2026-10-03T13:26:10Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Inventory corrected: 99 Dells (1-99) executable + Dell 0 edge/locked; '57 handlers' missed 42 leaf-dispatched Dells + 21/22 tuple dispatch. All MPC-003 percentages with denominator 57 invalid.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor_leaf.py:60-503; executor.py:16-66",
+      "timestamp": "2026-10-03T13:26:45Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dead code: executor_leaf.py 21/22 branches shadowed by executor.py:28; unreachable via execute_seed",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor.py:28",
+      "timestamp": "2026-10-03T13:26:45Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Core-I Dells 27,28,34,35,37,40,44,47 single-atom-only by routing design (executor.py:24); no > composition or control blocks \u2014 structural boundary",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor.py:24; probe 27>34 -> chain error",
+      "timestamp": "2026-10-03T13:26:45Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dell37 registry 'Stream' stale; implementation + translate use 'Nurture' (nursery lifecycle). Registry correction = Director authority.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "core_i_ops.py:334-560; translate.py:266-316",
+      "timestamp": "2026-10-03T13:26:45Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "27/28 real tested checkpoint/rollback pair (PAC-I generation ids); 35 broad read-only introspection with rich English; 37 nursery-mutation authority, fail-safe",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "core_i_ops.py; core_i_maturity_test.py:26-33",
+      "timestamp": "2026-10-03T13:26:45Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "44 Bridge and 47 Embed honestly unavailable (offline-origin), tested \u2014 not false closure",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "core_i_ops.py:828-835",
+      "timestamp": "2026-10-03T13:26:45Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dell40 (TokenCount) computes a weighted heuristic, not an actual count; name overstates precision",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "core_i_ops.py:816-827",
+      "timestamp": "2026-10-03T13:26:45Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dells 80-89 route via apply_spectrum (spectrum_ops.py:87-231); 5/10 typed (84-88), 5/10 English (84-88); 80-83,89 never-fail total functions",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:87-231; spectrum_closure_test.py",
+      "timestamp": "2026-10-03T13:26:58Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "DEFECT D-1 (high): untyped Dells accept (...) arg syntax in > chains but SILENTLY DISCARD arguments \u2014 80[Context](context='work') ran ok with default value. Silent semantic loss.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "probe: 80[Context](context='work') -> context='plane'",
+      "timestamp": "2026-10-03T13:26:58Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "DEFECT D-5: legacy :: lab syntax unusable inside > chains (parse error) for ANY Dell; 80-83/89 have no typed signatures so are effectively chain-unreachable except via D-1 silent-drop",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "probe: 55[Set] :: k=1 > 56[Get] :: k -> unexpected at 11",
+      "timestamp": "2026-10-03T13:26:58Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dell87 Replace is KEY-RENAME (store[new]=store.pop(old)), not value substitution; registry 'Atomic substitution' reads as value substitution. Director semantic question.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:176; probe 87(old=A,new=v2) on {A:old} -> {v2:old}",
+      "timestamp": "2026-10-03T13:26:58Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dell89 Diff publishes to volatile last_diff (not last_result, invisible to composition); diff_baseline overwritten per mutation so only latest single delta shown",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:217; probe",
+      "timestamp": "2026-10-03T13:26:58Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dell84 Copy of missing key succeeds storing key name as value (copy_ghost='ghost'); intent UNKNOWN",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "probe 84[Copy](source='ghost')",
+      "timestamp": "2026-10-03T13:26:58Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Dell82 Group with empty selection falls back to grouping ALL program ids via ids_fn",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:95",
+      "timestamp": "2026-10-03T13:26:58Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Prior packets on 84-88 all hold on this base (typed args, composition bridge, English routes, MPC-001 guard intact) \u2014 no contradictions",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "probes on 53919043224b18e12516bd9e885b9352de33422f",
+      "timestamp": "2026-10-03T13:26:58Z"
+    },
+    {
+      "agent": "NULL",
+      "claim": "Conditional execution PARTIALLY FALSIFIED: predicate contract exists (empty: store:X proven live), Branch(60)+eval_condition works (Delete ran/skipped correctly); genuinely missing only a per-atom condition slot (~15-line evolution of _payload_cond). English guard stays.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "predicate.py PREDICATES; chain_exec.py:164,249; live probes",
+      "timestamp": "2026-10-03T13:27:07Z"
+    },
+    {
+      "agent": "NULL",
+      "claim": "Assert(91)/Guard(92) are undocumented conditional primitives the debt list omitted \u2014 debt item should name them",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "spectrum_ops.py:239-256",
+      "timestamp": "2026-10-03T13:27:07Z"
+    },
+    {
+      "agent": "NULL",
+      "claim": "Flow premise FALSIFIED: all 9 operators operational via _apply_flow (chain_exec.py:119-163); proven live (>>,>>>,:>,<:,<:>,<<[Delta]). MPC-003 matrix was audit-scope error. Debt item 5 should be REMOVED.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "chain_exec.py:119-163; seed.py:27; live probes",
+      "timestamp": "2026-10-03T13:27:07Z"
+    },
+    {
+      "agent": "NULL",
+      "claim": "Blanket-typing 43 untyped Dells is ceremony; ~12-15 warranted (55,60,64,65,72,73,74,76,78,79,91,92,97,98,99) for ref-resolution, multi-operand disambiguation, per-atom slots. Rest are no-operand/structural.",
+      "classification": "DERIVED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "chain_exec.py:60-95 ARGUMENT_CONFLICT law",
+      "timestamp": "2026-10-03T13:27:07Z"
+    },
+    {
+      "agent": "NULL",
+      "claim": "Control-block English (62-66) FALSIFIED as necessity: capability exists at Mandell layer; English would add ambiguity for zero new capability. Do not build.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "live: 63[Sequence]>55[Set]>61[Join]; 64[Until] loop",
+      "timestamp": "2026-10-03T13:27:07Z"
+    },
+    {
+      "agent": "NULL",
+      "claim": "Dell21 store-merge: no Dell does it, but the NEED is unfalsified \u2014 no use case demonstrated; Patch(88) + copy-patch composition cover merge-shaped tasks. Do not promote to gap status.",
+      "classification": "DERIVED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "grep spectrum/query/core_ii_exec; live_identity.py:56",
+      "timestamp": "2026-10-03T13:27:07Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Leaf Dells 29-33,36,38,39,41-43,45,46,48-50: 16/16 execute ok=True; 0/16 typed; every branch returns ok unconditionally \u2014 failures are uncaught exceptions, no structured failure contract in leaf layer",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor_leaf.py:277-503",
+      "timestamp": "2026-10-03T13:27:13Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "DEFECT (safety-adjacent): English 'resume' misroutes to 28[Rollback] :: load via english_brain.py:72 ('resume'->'load') instead of 33[Resume] \u2014 user saying resume gets rollback semantics",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "english_brain.py:72; translate('resume')",
+      "timestamp": "2026-10-03T13:27:13Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "DEFECT (security-adjacent): 41 Sanitize regex-redacts only the label string, touches no stored state; 'Strip secrets' overclaims \u2014 false safety impression",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor_leaf.py:394",
+      "timestamp": "2026-10-03T13:27:13Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Name!=semantics in leaf: 29 Compress (creates idea, no compression), 30 Expand (no unfolding), 38 Distill (keyword slugger, no summary), 43 Fallback (prints static text), 49 Profile (status dump, no benchmarking)",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor_leaf.py:277-503",
+      "timestamp": "2026-10-03T13:27:13Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "NULL duplications in leaf: 36 Inject ~= Dell 8 Create; 50 Manifest(label) ~= 8; 29/30/38 ~= 8-with-prefixes; honest distinct-mechanism count ~9 not 16",
+      "classification": "DERIVED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor_leaf.py",
+      "timestamp": "2026-10-03T13:27:13Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "42 Retry genuinely re-executes last history seed via replay_exec with per-item try/except \u2014 best failure handling in range; SAFETY NOTE: indiscriminate, will re-run destructive seeds",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor_leaf.py:406",
+      "timestamp": "2026-10-03T13:27:13Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "48 Macro dual-mode: replay last n seeds OR emits re-parseable composition chain string \u2014 only leaf Dell emitting compositions; inconsistent n defaults (3 vs 5)",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor_leaf.py:451",
+      "timestamp": "2026-10-03T13:27:13Z"
+    },
+    {
+      "agent": "ARGUS",
+      "claim": "Claim '57 handlers' FALSIFIED as completeness: multi-idiom scan finds 101 dispatch ids (0-50 via primary==, 21/22, 51-99 via n==). The 57 exist; '57 is the inventory' is false. All /57 ratios invalid.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "multi-idiom scan form/mandell/*.py (tests excluded)",
+      "timestamp": "2026-10-03T13:27:24Z"
+    },
+    {
+      "agent": "ARGUS",
+      "claim": "SAFETY HOLE (HIGH): guard bypass via Patch \u2014 'patch X to Y if X is empty' -> 88[Patch](key='x', value='y if x is empty') EXECUTED, store mutated. Root cause: _DESTRUCTIVE_VERBS omits 'patch'. Guard holds for 7 listed verbs; general 'zero mutation' claim FALSIFIED.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "translate.py _DESTRUCTIVE_VERBS; live probe store {'x':'original'} -> {'x':'y if x is empty'}",
+      "timestamp": "2026-10-03T13:27:24Z"
+    },
+    {
+      "agent": "ARGUS",
+      "claim": "Composition WEAKENED: (A) case-mismatch store {'A':'DATA'} -> composition wrote phantom key b='a' (silent corruption, worse than arg loss); (B) >-strip truncation proven: 'create an idea called Foo' 2-op segment truncated to 1 op in composition.",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "live probes; translate('copy A then move the copy to B') vs store {'A':'DATA'}",
+      "timestamp": "2026-10-03T13:27:24Z"
+    },
+    {
+      "agent": "ARGUS",
+      "claim": "Claim 57/67/68/69 typed HOLDS (happy paths + closed failures); Dell21 HOLDS with caveats: leaf 21/22 branch is dormant-but-importable (not stale), determinism is state-dependent",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "probes; executor.py vs executor_leaf.py",
+      "timestamp": "2026-10-03T13:27:24Z"
+    },
+    {
+      "agent": "ARGUS",
+      "claim": "No ambient-state contamination in this checkout (no program_operator.json; fresh CoreIIState per probe); no CI-vs-local disagreement found",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "form/state/ inspection",
+      "timestamp": "2026-10-03T13:27:24Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Leaf Dells 0-20,23-26: 25/25 execute; only Dell 8 typed; every branch returns ok=True unconditionally (invalid labels degrade to defaults); 12/25 English-reachable (4,5,6,8,9,10,11,12,13,15,19,25)",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor_leaf.py:60-276",
+      "timestamp": "2026-10-03T13:27:33Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "DEFECT: place() silently overwrites units on uid collision (14[Bind] :: dupkey then 08[Create] :: dupkey replaced the unit) \u2014 no uniqueness guard",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "probe",
+      "timestamp": "2026-10-03T13:27:33Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Stale authority: gate_discipline.py EXTENDED_DELL_RESERVE names for 51-99 (e.g. 51 'Harmonic', 56 'ManifestAct') contradict current CORE_II semantics",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "gate_discipline.py vs core_ii.py registry",
+      "timestamp": "2026-10-03T13:27:33Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "Name!=semantics in base leaf: 0 Nova (no-op), 2 Persona (read-only status, sets nothing), 3 Logic (prints unenforced constraints), 9 Show (placeholder render), 17 Shadow (prints 'not live'), 20 Alpha (advisory only)",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor_leaf.py",
+      "timestamp": "2026-10-03T13:27:33Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": "12 Test contains tautologies (>= 0, hardcoded True) inflating its own score",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "executor_leaf.py:12-branch",
+      "timestamp": "2026-10-03T13:27:33Z"
+    },
+    {
+      "agent": "ORACLE",
+      "claim": ":: label binds to whole seed via rpartition \u2014 '08[Create] :: x > 09[Show]' swallows '> 09[Show]' into the label; correct form is 'A > B :: label'",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "probe",
+      "timestamp": "2026-10-03T13:27:33Z"
+    },
+    {
+      "agent": "PRISM",
+      "claim": "Reconciliation complete: 10 agreements, 9 contradictions (1 resolved, 8 open), unknowns preserved, ~100-Dell operational matrix, 14 false-closure claims, debt recalculated (2 removed, 1 narrowed, 9 added), top broken-link = C-R1-008 Patch guard bypass. Report: prism/PRISM_RECONCILIATION.md",
+      "classification": "VERIFIED",
+      "sha": "53919043224b18e12516bd9e885b9352de33422f",
+      "source": "ops/swarm/runs/MPC-004-R1/prism/PRISM_RECONCILIATION.md",
+      "timestamp": "2026-10-03T13:29:26Z"
+    }
+  ],
+  "falsifications": [],
+  "forbidden_actions": [
+    "merge to main",
+    "Dell semantic reassignment",
+    "Mandell law changes",
+    "Outcome/evidence authority changes",
+    "DuoBeta learning authority changes",
+    "autonomy expansion",
+    "security-boundary changes",
+    "deletion of historical evidence",
+    "modification of the swarm's own authority contract",
+    "production code modification"
+  ],
+  "goal": "FULL DELL OPERATIONAL TRUTH BASELINE: replace UNKNOWN closure baseline with Dell-by-Dell evidence matrix. NO PRODUCTION SEMANTIC CHANGES (read-only).",
+  "merge_sha": null,
+  "merge_state": "NOT_REQUESTED",
+  "mode": "SWARM",
+  "mode_history": [
+    {
+      "decided_by": "DIRECTOR (MPC-004 directive)",
+      "from": null,
+      "to": "SWARM"
+    }
+  ],
+  "next_broken_link": null,
+  "next_directive": null,
+  "parent_run_id": null,
+  "phase": "DIRECTOR_GATE",
+  "post_merge_state": null,
+  "required_gates": [
+    "ORACLE_RECON",
+    "ARGUS_ATTACK",
+    "NULL_FALSIFY",
+    "PRISM_RECONCILE",
+    "DIRECTOR_GATE"
+  ],
+  "run_id": "MPC-004-R1",
+  "termination": {
+    "director_decision_required": true,
+    "state": "ACTIVE",
+    "terminal_reason": null
+  },
+  "tests": [],
+  "uni_execution": null,
+  "unknowns": []
+}
