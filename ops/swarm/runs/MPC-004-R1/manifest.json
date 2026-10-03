@@ -127,7 +127,9 @@
       ],
       "resolution": null,
       "statement": "English 'resume' routes to 28[Rollback] (destructive-adjacent) instead of 33[Resume]; 'make a macro' routes to 08[Create] instead of 48[Macro] \u2014 English routing conflicts with Dell semantics",
-      "status": "OPEN"
+      "status": "OPEN",
+      "probe_scope": "TRANSLATION",
+      "scope_note": "R1 probed translate()/english_brain labels only; never executed the public path. MPC-007 re-audited at PUBLIC_END_TO_END."
     },
     {
       "id": "C-R1-008",
@@ -137,7 +139,9 @@
       ],
       "resolution": "MPC-007-D1: falsified by NULL+UNI; preserved as DEFENSE_IN_DEPTH_HYGIENE_DEBT",
       "statement": "Safety-guard generality: packets claim conditional destructive English -> UNKNOWN with zero mutation; ARGUS proved Patch (88) bypasses the guard and mutates. Minimal correction = add 'patch' to _DESTRUCTIVE_VERBS (list membership, not new mechanism). NOT repaired this round (read-only); top broken-link candidate.",
-      "status": "CLOSED_FALSIFIED"
+      "status": "CLOSED_FALSIFIED",
+      "probe_scope": "EXECUTOR",
+      "scope_note": "R1 probe was executor-direct (execute_seed on translated Mandell); public-path claim exceeded probe scope; falsified MPC-006/MPC-007"
     },
     {
       "id": "C-R1-009",
@@ -692,6 +696,18 @@
       "law": "PUBLIC_PATH_CLAIM requires PUBLIC_PATH_PROOF",
       "date": "2026-10-03",
       "statement": "Unit/layer-local execution cannot establish public reachability, public mutation, or public exploitability. CLAIM_SCOPE <= PROBE_SCOPE."
+    },
+    {
+      "law": "CLAIM_SCOPE <= PROBE_SCOPE",
+      "date": "2026-10-03",
+      "ladder": [
+        "UNIT",
+        "TRANSLATION",
+        "ROUTING",
+        "EXECUTOR",
+        "PUBLIC_END_TO_END"
+      ],
+      "statement": "A translation probe may prove TRANSLATION_BEHAVIOR but not PUBLIC_MUTATION. An executor probe may prove EXECUTOR_CAPABILITY but not ENGLISH_REACHABILITY. Only a public end-to-end probe (authority + state transition + observable result captured) may prove public behavior."
     }
   ]
 }
