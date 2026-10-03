@@ -125,11 +125,11 @@
         "ORACLE",
         "translate.py/english_brain.py"
       ],
-      "resolution": null,
+      "resolution": "MPC-007: re-audited at PUBLIC_END_TO_END (real REPL). (a) resume: FALSIFIED as misroute; Dell33=avatar locomotion (R1 target wrong); AMBIGUOUS authority: router (load,28) correspondence documents checkpoint-restore (verified) vs REPL dead branch + leaf Dell28 + synonym family implying session-restore. HAZARD CONFIRMED: silent unconfirmed destructive revert on innocuous word (ARGUS: uncommitted work destroyed, ok=True). Premature UNI reroute implemented then REVERTED per Phase 4 ambiguity rule. Director semantic decision required. (b) make a macro: AMBIGUOUS; no macro-creation authority exists; Dell48=replay; current fallback creates idea named \"macro\". No reroute implemented. Director semantic decision required.",
       "statement": "English 'resume' routes to 28[Rollback] (destructive-adjacent) instead of 33[Resume]; 'make a macro' routes to 08[Create] instead of 48[Macro] \u2014 English routing conflicts with Dell semantics",
-      "status": "OPEN",
-      "probe_scope": "TRANSLATION",
-      "scope_note": "R1 probed translate()/english_brain labels only; never executed the public path. MPC-007 re-audited at PUBLIC_END_TO_END."
+      "status": "RESOLVED",
+      "probe_scope": "PUBLIC_END_TO_END",
+      "scope_note": "R1 probed at TRANSLATION; MPC-007 re-probed at PUBLIC_END_TO_END"
     },
     {
       "id": "C-R1-008",
@@ -689,6 +689,21 @@
       "preserved": "_DESTRUCTIVE_VERBS missing Patch = DEFENSE_IN_DEPTH_HYGIENE_DEBT (do not implement now)",
       "reason": "public English authority blocks Dell88 before execution; R1 generalized a layer-local probe to public-path exploitability",
       "evidence": "MPC-006: NULL necessity check + UNI independent verification of operator_bridge.BLOCKED_WITH_REASON={86,87,88} and REPL routing"
+    },
+    {
+      "decision_id": "MPC-007-D2-REQUEST",
+      "date": "2026-10-03",
+      "subject": "C-R1-007 semantic decisions required",
+      "ruling": "PENDING_DIRECTOR",
+      "options_resume": [
+        "(a) Keep checkpoint-restore for resume/load (router authority wins); add confirmation/warning before destructive revert",
+        "(b) Remap session-restore family (resume/restore/reload/recover/load) to persist_load; keep revert/rollback -> Dell28"
+      ],
+      "options_macro": [
+        "(i) Implement macro definition as new capability (new work, new authority)",
+        "(ii) Make 'make a macro' honestly return UNKNOWN instead of silently creating a misnamed idea"
+      ],
+      "note": "No implementation until Director rules; premature UNI fix was reverted."
     }
   ],
   "evidence_laws": [
