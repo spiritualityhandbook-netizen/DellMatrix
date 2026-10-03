@@ -246,7 +246,7 @@ Core I — 25 Pulse, 26 Temp, 29 Compress, 30 Expand, 38 Distill, 41 Sanitize,
 93 Try, 94 Catch, 95 Commit, 96 Revert, 97 Define, 98 Alias, 99 Compose
 (the whole transaction/frame family).
 
-**New R2 tests (both registered in the regress LIST by auto-discovery):**
+**New R2 tests (both registered in the regress LIST, `form/regress.py`):**
 - `form/mandell/r2_registry_reconciliation_test.py` — 315/315 GREEN.
   Pins CORE_I_CLOSABLE == core_i_ops.HANDLED, per-Dell dispatch standing,
   leaf-branch presence (and 37's deliberate absence), Core-II family
