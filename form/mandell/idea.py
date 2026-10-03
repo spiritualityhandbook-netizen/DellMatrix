@@ -308,11 +308,19 @@ class Idea:
         self.modified_at = now
 
         # Live Matrix: information arrival triggers eligible processing.
-        consequence = (
-            "ACTIVE established; prior version superseded"
-            if supersedes_id
-            else "ACTIVE established"
-        )
+        # ARGUS MF-R4-1: the consequence must describe the ACTUAL state
+        # established, honoring the state parameter — not always ACTIVE.
+        state_label = state.value.upper() if isinstance(state, LifecycleState) else str(state)
+        if state == LifecycleState.ACTIVE:
+            consequence = (
+                "ACTIVE established; prior version superseded"
+                if supersedes_id
+                else "ACTIVE established"
+            )
+        else:
+            consequence = f"{state_label} version established"
+            if supersedes_id and state != LifecycleState.PROPOSED:
+                consequence += "; prior version superseded"
         self._on_information_change(
             "set_property", name, new_version, consequence, prov,
             superseded_version_id=supersedes_id,
@@ -775,14 +783,40 @@ class Idea:
         idea._title_history = [PropertyVersion.from_dict(v)
                                for v in d.get("title_history", [])]
         # R4: restore the derived processing record. Events are validated
-        # structurally; each must reference this idea.
-        for e in d.get("change_events", []):
-            ev = IdeaChangeEvent.from_dict(e)
+        # structurally; each must reference this idea. ARGUS SF-R4-1: wrap
+        # parsing so corrupt events raise ValueError (the documented
+        # load_idea contract), not KeyError/TypeError. A-R4-1: event_ids
+        # must be unique, mirroring the version_id uniqueness check.
+        raw_events = d.get("change_events", [])
+        if not isinstance(raw_events, list):
+            raise ValueError("Idea change_events must be a list")
+        seen_event_ids = set()
+        # NULL N4-1: cross-reference — event version IDs must exist in the
+        # idea's version universe (properties + title history).
+        version_universe = set(seen_version_ids)
+        version_universe.update(v.version_id for v in idea._title_history)
+        for e in raw_events:
+            try:
+                if not isinstance(e, dict):
+                    raise ValueError("Change event must be an object")
+                ev = IdeaChangeEvent.from_dict(e)
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError(f"Corrupt change event: {exc}") from exc
+            if ev.event_id in seen_event_ids:
+                raise ValueError(f"Duplicate change event_id {ev.event_id}")
+            seen_event_ids.add(ev.event_id)
             if ev.idea_id != idea.id:
                 raise ValueError(
                     f"Change event {ev.event_id} references idea "
                     f"{ev.idea_id!r}, not {idea.id!r}"
                 )
+            for label, vid in (("version_id", ev.version_id),
+                               ("superseded_version_id", ev.superseded_version_id)):
+                if vid is not None and vid not in version_universe:
+                    raise ValueError(
+                        f"Change event {ev.event_id} references unknown "
+                        f"{label} {vid!r}"
+                    )
             idea._change_events.append(ev)
         return idea
 
