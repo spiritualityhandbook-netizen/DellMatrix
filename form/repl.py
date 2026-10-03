@@ -1150,6 +1150,18 @@ def _apply_seed_result(p: Program, result: dict) -> Program:
 
 def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = False,
                   interaction_id: Optional[str] = None) -> Program:
+    # MPC-008: macro-definition capability is not established. A request to
+    # make/create a macro must not masquerade as idea creation (the synonym
+    # layer would rewrite it to "create an idea called macro"). Fail honestly
+    # with no mutation. Literal "create an idea called macro" (contains
+    # "idea") remains legitimate idea creation. Checked on the raw line:
+    # normalization would erase the distinction.
+    if not _normalized and raw_line and re.search(
+            r"\b(make|create)\s+(?:a\s+)?macros?\b", raw_line, re.IGNORECASE) \
+            and not re.search(r"\bidea\b", raw_line, re.IGNORECASE):
+        _say("Macro definition is not supported in this build.")
+        _echo_seed(mandel="09[Show] :: unknown")
+        return p
     # EIC-I: interaction_id is accepted (not minted) here, forwarded to
     # route_intent calls. None = UNKNOWN (direct/API callers).
     # DCC-I: program-evolution ("evolve") is documented as growing the program
@@ -1194,7 +1206,24 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             return p
 
     # Program understanding: re-route natural English → canonical command handlers
+    # MPC-008: checkpoint-restore language must survive synonym normalization
+    # ("restore" -> "load" would otherwise erase the checkpoint reading, and
+    # the recursive call receives only normalized text). "revert" keeps Dell28
+    # (translate.py:198; dcc_vi_test pins revert -> 28[Rollback]). Bare or
+    # checkpoint-qualified "restore" keeps Dell28 ("Restore checkpoint" is
+    # Dell28's canonical English — genuinely ambiguous, not guessed). The
+    # session family (resume/reload/reopen/recover/load, "restore ... session/
+    # work") goes to persist_load per Director ruling: silent checkpoint
+    # rollback on ordinary "resume" destroyed uncommitted work (proven
+    # PUBLIC_END_TO_END).
+    _checkpoint_lang = False
     if not _normalized and raw_line:
+        _rl = raw_line.lower()
+        if re.search(r"\brevert\b", _rl):
+            _checkpoint_lang = True
+        elif re.search(r"\brestore\b", _rl) and not re.search(
+                r"\bsession\b|\bwork\b", _rl):
+            _checkpoint_lang = True
         try:
             from form.mandell.english_brain import normalize_english
             from form.mandell.translate import translate as _tr
@@ -1204,6 +1233,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
                 n
                 and path in ("paraphrase", "synonym", "learned", "strip")
                 and n.lower() != raw_line.lower().strip()
+                and not _checkpoint_lang
             ):
                 return _execute_intent(p, _tr(n), raw_line=n, _normalized=True,
                                        interaction_id=interaction_id)
@@ -2222,6 +2252,19 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         receipt = route_intent(p, intent, raw_line, interaction_id=interaction_id)
         _print_route_receipt(receipt)
         return p
+
+    # MPC-008: session-restore family -> persist_load. Without this branch the
+    # DCC-III vocabulary branch below routes action=="load" to Dell28, so
+    # ordinary English "resume" silently discards uncommitted work through
+    # checkpoint rollback (Director ruling: session/persistence semantics).
+    # Checkpoint language ("revert", bare/checkpoint-qualified "restore")
+    # keeps Dell28 via _checkpoint_lang above.
+    elif action == "load" and not _checkpoint_lang:
+        p2 = persist_load(p.owner)
+        _say("Session loaded.")
+        print()
+        print(p2.render())
+        return p2
 
     # DCC-III: expanded semantic vocabulary — all route through Dell authority.
     elif action in ("measure", "test", "architect", "simulate", "checkpoint",

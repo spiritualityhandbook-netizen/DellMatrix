@@ -225,15 +225,18 @@ def t_spawning_priority_formula():
     assert rec["persona"] == "ORACLE" and rec["actual_cost"] is None
 
 def t_no_dell_semantics_changed():
+    import os
+    # Repo root derived from this file's location (was a hardcoded /tmp path).
+    repo = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     out = subprocess.run(["git", "diff", "--name-only", "HEAD"],
-                         capture_output=True, text=True, cwd="/tmp/mpc004-base")
+                         capture_output=True, text=True, cwd=repo)
     # worktree may have untracked ops/ only; committed diff must be empty or ops-only
     out2 = subprocess.run(["git", "status", "--porcelain"],
-                          capture_output=True, text=True, cwd="/tmp/mpc004-base")
+                          capture_output=True, text=True, cwd=repo)
     changed = [l[3:] for l in out2.stdout.splitlines() if l.strip() and not l.startswith("??")]
     assert all(c.startswith("ops/") for c in changed), f"non-ops change: {changed}"
     out3 = subprocess.run(["git", "diff", "--cached", "--name-only"],
-                          capture_output=True, text=True, cwd="/tmp/mpc004-base")
+                          capture_output=True, text=True, cwd=repo)
     assert all(c.startswith("ops/") or c == "" for c in out3.stdout.splitlines()), "staged non-ops change"
 
 
