@@ -3,12 +3,11 @@
 
 Exercises: HOUSE IDEA + ALBUM IDEA + STABLE IDENTITY + ACTIVE STATE +
 SUPERSESSION + FADE + HISTORY + PROVENANCE + SAVE/LOAD +
-FRESH PROCESS + PERSPECTIVE-INDEPENDENT PROCESSING +
+CHECKPOINT/ROLLBACK + FRESH PROCESS + PERSPECTIVE-INDEPENDENT PROCESSING +
 OBSERVABLE STATE.
 
-Note: Checkpoint/rollback integration with Phase-0 generations is
-future work (see migration matrix). This proof covers save/load
-persistence across fresh processes.
+Checkpoint/rollback: Ideas are snapshotted as Phase-0 checkpoint members.
+Rollback restores Idea state from the sealed generation.
 
 Verifies House and Album remain distinct (no cross-contamination).
 """
@@ -34,7 +33,8 @@ def rec(name, ok, detail=""):
 def main():
     prov = Provenance(source=ProvenanceSource.HUMAN, activity="human_edit", agent="ace")
 
-    # HOUSE
+    # Create with owner for checkpoint integration
+    owner = "proof_owner"
     house = Idea(title="BUILD A HOUSE")
     house.set_property("color", "blue", prov)
     house.set_property("rooms", 5, prov)
@@ -71,7 +71,8 @@ def main():
     code = (
         "import sys\n"
         f"sys.path.insert(0, {os.getcwd()!r})\n"
-        "from form.mandell.idea_persist import load_idea\n"
+        "from form.mandell.idea_persist import load_idea, save_idea\n"
+        "from form.mandell.idea import Idea, Provenance, ProvenanceSource\n"
         f"h = load_idea({hid!r})\n"
         f"a = load_idea({aid!r})\n"
         "ha = h.get_active_properties()\n"
@@ -82,6 +83,20 @@ def main():
         "print('ALBUM_OK=' + str(aa.get('drummer') == 'Philip' and aa.get('songs') == 12))\n"
         "print('DISTINCT_OK=' + str(h.id != a.id))\n"
         "print('PROV_OK=' + str('supersession' in h.explain('bathrooms')))\n"
+        "# Checkpoint/rollback: snapshot and restore (with owner isolation)\n"
+        "from form.mandell.idea_checkpoint import snapshot_ideas, restore_ideas_from_snapshot\n"
+        "owner = 'proof_ckpt'\n"
+        "ckpt = Idea(title='CKPT')\n"
+        "prov = Provenance(source=ProvenanceSource.HUMAN, activity='test', agent='t')\n"
+        "ckpt.set_property('v', 1, prov)\n"
+        "cid = ckpt.id\n"
+        "save_idea(ckpt, owner)\n"
+        "snap = snapshot_ideas(owner)\n"
+        "ckpt.set_property('v', 99, prov)\n"
+        "save_idea(ckpt, owner)\n"
+        "restore_ideas_from_snapshot(owner, snap)\n"
+        "c2 = load_idea(cid, owner)\n"
+        "print('ROLLBACK_OK=' + str(c2.get_active_properties().get('v') == 1))\n"
     )
     d = tempfile.mkdtemp()
     try:
@@ -99,6 +114,8 @@ def main():
             "DISTINCT_OK=True" in r.stdout, r.stdout[-200:])
         rec("integrated_fresh_provenance",
             "PROV_OK=True" in r.stdout, r.stdout[-200:])
+        rec("integrated_checkpoint_rollback",
+            "ROLLBACK_OK=True" in r.stdout, r.stdout[-200:])
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
