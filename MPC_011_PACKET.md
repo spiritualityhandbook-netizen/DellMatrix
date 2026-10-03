@@ -1,4 +1,16 @@
 # MPC_011_PACKET — DELL37 RECONCILIATION + CLAUDE EXTERNAL-AUDIT DIFFERENTIAL
+# (CLOSED per MPC-012 §0: Dell87 refusal + /cmd hardening applied below)
+
+## MPC-011 CLOSE (§0 CORRECTIONS)
+- DELL87 OCCUPIED-DESTINATION REFUSAL: `form/mandell/spectrum_ops.py` — `87 Replace k>z` when `z` exists and `z != k` now returns HONEST FAILURE (`ok=False`, `error=replace_occupied:z`, receipt `Replace refused k->z (occupied)`), ZERO MUTATION (no `_ckpt`, no `shot_fn`, no `_note_mutation`; snapshot delta = 0), NO SILENT DESTRUCTION. No overwrite flag added. Semantic authority remains KEY RENAME.
+  - Test matrix (all via public paths): source exists + destination absent → rename ok; source absent → `replace_missing`; destination occupied → refused; source == destination → no-op ok (unchanged); empty destination → legacy self-rename fallback unchanged; rollback → Dell96 restores after successful rename, nothing pushed on refusal.
+  - Regression: `form/mandell/dell87_refusal_test.py` (15/15 GREEN), registered in `form.regress`.
+  - Note: Dell85's identical occupied-overwrite was NOT changed (directive scoped to Dell87); flagged as follow-up consistency question.
+- LIVE /cmd HARDENING (bounded): `form/dell_matrix/live_visual.py`
+  - `do_POST /cmd` now default-denies unauthorized cross-origin command execution: missing `Origin` (curl/local scripts) → allowed (localhost operation preserved); server's own origin (`http://127.0.0.1:{port}`, `http://localhost:{port}`) → allowed; any other `Origin` → 403. Allowlist bound to the actual bound port after fallback.
+  - Wildcard `Access-Control-Allow-Origin: *` REMOVED from all JSON responses (served UI is strictly same-origin: relative `/cmd`, `/state` fetches).
+  - No authentication system built (per directive: no oversized auth). No browser exploit claimed.
+  - Regression: `form/mandell/cmd_hardening_test.py` (6/6 GREEN), registered in `form.regress`.
 
 ## BASE
 - BASE_SHA: `72008c36236574ed41978d48d740e752975134d3`

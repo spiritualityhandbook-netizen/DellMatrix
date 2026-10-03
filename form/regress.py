@@ -92,6 +92,8 @@ LIST = [
     "form.mandell.set_detail_goals_test",
     "form.mandell.live_response_integrity_test",
     "form.mandell.iac_isolation_test",
+    "form.mandell.dell87_refusal_test",
+    "form.mandell.cmd_hardening_test",
     "form.mandell.hic_i_test",
     "form.mandell.ekc_i_test",
     "form.mandell.aec_i_test",
