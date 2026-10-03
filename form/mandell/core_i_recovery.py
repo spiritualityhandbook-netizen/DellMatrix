@@ -206,7 +206,15 @@ def recover_rollback_transaction(owner: str) -> Optional[str]:
     if phase == "prepared":
         return _recover_prepared(owner, jpath, journal)
     if phase in ("staged", "committed"):
-        return _recover_staged(owner, jpath, journal)
+        result = _recover_staged(owner, jpath, journal)
+        # R2 (ARGUS MF-R2-1): recovery must also complete the observable
+        # working set, not just the canonical files. The transaction proved
+        # TARGET COMPLETE for program+nursery+ideas-snapshot; rehydration
+        # makes the individual idea files agree with the snapshot.
+        # Marker-guarded and idempotent: safe under repeated recovery.
+        from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
+        rehydrate_ideas_from_live(owner)
+        return result
     # Unknown phase: refuse to guess; preserve journal for diagnosis.
     raise RollbackRecoveryError(
         f"rollback journal for {owner!r} has unknown phase {phase!r}; "
@@ -471,6 +479,13 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
     A fresh ``persist_rest.load(owner)`` observes the rolled-back state with
     no subsequent save required.
 
+    R2 legacy semantic (ARGUS A-R2-1, advisory): rolling back to a pre-R1
+    generation whose manifest has no ideas member stages and commits an
+    EMPTY ideas snapshot, and rehydration clears stale individual idea
+    files. The coherent semantic is "ideas cleared", not "ideas preserved".
+    This is destructive but explicit and consistent: the live triple always
+    reflects exactly the selected generation's members.
+
     Returns the restored program (Dell 28 activates it via new_program).
     Raises FileNotFoundError("rollback_missing") when nothing restorable exists.
     Raises CheckpointError/NurseryConflictError on convergence failure, with
@@ -513,28 +528,7 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
     # canonical snapshot just committed by the transaction. This is
     # UNCONDITIONAL: even a legacy rollback (no sealed ideas member,
     # empty snapshot staged) must clear stale files, giving the coherent
-    # "ideas cleared" semantic.
-    #
-    # Rehydration is a derived step (not a second authority) guarded by a
-    # pending marker: a crash mid-rehydration leaves the marker, and the
-    # next reader (load_idea / snapshot_ideas / ensure_ideas_rehydrated)
-    # completes it from the canonical snapshot before observing state.
-    from form.mandell.idea_checkpoint import (
-        restore_ideas_from_snapshot,
-        ensure_ideas_rehydrated,
-        ideas_rehydrate_marker_path,
-        ideas_snapshot_path as live_snap_path,
-    )
-    from form.dell_matrix.atomic_write import atomic_write_json
-    live_snap = live_snap_path(owner)
-    if os.path.isfile(live_snap):
-        marker = ideas_rehydrate_marker_path(owner)
-        atomic_write_json(marker, {"owner": owner, "phase": "pending"})
-        try:
-            restore_ideas_from_snapshot(owner, live_snap)
-        except Exception:
-            # Marker stays: the next reader will retry from the snapshot.
-            raise
-        if os.path.isfile(marker):
-            os.remove(marker)
+    # "ideas cleared" semantic. Marker-guarded (see idea_checkpoint).
+    from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
+    rehydrate_ideas_from_live(owner)
     return program

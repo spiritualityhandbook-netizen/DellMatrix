@@ -47,6 +47,28 @@ def ideas_rehydrate_marker_path(owner: str) -> str:
     return os.path.join(_STATE_DIR, f"ideas_rehydrate_{_safe_owner(owner)}.pending")
 
 
+def rehydrate_ideas_from_live(owner: str) -> None:
+    """Guarded rehydration of individual idea files from the live canonical
+    snapshot (R2, ARGUS MF-R2-1).
+
+    Marker-based and idempotent. A crash mid-rehydration leaves the marker;
+    the next reader completes it via ensure_ideas_rehydrated before
+    observing state. No-op if the live snapshot is absent.
+    """
+    live_snap = ideas_snapshot_path(owner)
+    if not os.path.isfile(live_snap):
+        return
+    marker = ideas_rehydrate_marker_path(owner)
+    atomic_write_json(marker, {"owner": owner, "phase": "pending"})
+    try:
+        restore_ideas_from_snapshot(owner, live_snap)
+    except Exception:
+        # Marker stays: the next reader will retry from the snapshot.
+        raise
+    if os.path.isfile(marker):
+        os.remove(marker)
+
+
 def ensure_ideas_rehydrated(owner: str) -> None:
     """Complete any interrupted rehydration from the live canonical snapshot.
 
