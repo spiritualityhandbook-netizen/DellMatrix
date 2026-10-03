@@ -99,6 +99,7 @@ LIST = [
     "form.iri_i_test",
     "form.saoc_ii_test",
     "form.tpp_i_test",
+    "form.greek_test",
     "form.dell_matrix.program_strength",
     "form.mandell.core_ii_smoke",
 ]
