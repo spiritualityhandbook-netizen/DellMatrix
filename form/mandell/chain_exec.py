@@ -113,7 +113,11 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
     d = get_dell(n)
     name = (d or {}).get("name", str(n))
     messages.append(f"Dell {n}[{name}] reserved/not-active")
-    return program, {"ok": True, "error": "", "skipped": True}
+    # ARGUS 2b: the skip is honest only if the atom record says what happened.
+    # The chain continues (skip semantic preserved — the Director-open
+    # skip-vs-refuse decision is about overall chain ok, not the record),
+    # but the atom is recorded as skipped with its reason, never as ok-clean.
+    return program, {"ok": True, "error": "reserved/not-active", "skipped": True}
 
 
 def _apply_flow(st: Any, flow: str, prev_ok: bool, prev_atom: Any, next_atom: Any, messages: List[str]) -> str:
@@ -214,7 +218,10 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
             program = out["new_program"]
             state["new_program"] = program
         last_ok = bool(out.get("ok", True))
-        results.append({"dell": n, "ok": last_ok, "error": out.get("error") or ""})
+        # ARGUS 2b: record skipped atoms honestly — a skipped atom is not
+        # an executed-ok atom. The skipped flag + reason travel in the record.
+        results.append({"dell": n, "ok": last_ok, "error": out.get("error") or "",
+                        "skipped": bool(out.get("skipped", False))})
         if not last_ok:
             state["ok"] = False
             state["error"] = out.get("error") or state.get("error") or ""

@@ -497,19 +497,29 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         else:
             messages.append("Manifest needs :: label.")
     else:
-        # P0-R2 MUST_FIX: reserved/not-active dells must honestly refuse.
-        # Previously this branch answered ok=True "runtime thin" for ANY
-        # unmapped primary (including reserved addresses) AND placed an idea
-        # as a side effect, reachable via the public raw-seed path.
-        if primary is None or primary > 99:
+        # P0-R2 MUST_FIX + ARGUS 2a: dells this leaf cannot execute must
+        # honestly refuse. Previously this branch answered ok=True
+        # "runtime thin" for ANY unmapped primary AND placed an idea as a
+        # side effect, reachable via the public raw-seed path.
+        # - >99 / None: reserved/not-active (no authority anywhere).
+        # - 51-99: Core-II authority lives in chain_exec/core_ii_exec;
+        #   the leaf has no Core-II executor. Production routes these via
+        #   the front door before the leaf; direct leaf calls refuse.
+        # - 37: production authority is core_i_ops (HANDLED); the leaf has
+        #   no 37 arm (MPC-011 removed the dead Stream branch). Direct leaf
+        #   calls refuse rather than shadow the real authority.
+        # 0-50 with explicit arms execute below (message-only "runtime thin"
+        # for registered-but-armless dells: pre-existing, documented).
+        if primary is None or primary > 50 or primary == 37:
+            name = {37: "Nurture"}.get(primary, "reserved/not-active")
             return {
                 "ok": False,
                 "seed": s.as_mandel(),
                 "english": s.as_english(),
                 "primary": primary,
-                "messages": [f"Dell {primary}[reserved/not-active] refused: no executor."],
+                "messages": [f"Dell {primary}[{name}] refused: no executor on this path."],
                 "new_program": new_program,
-                "error": f"Dell {primary} reserved/not-active",
+                "error": f"Dell {primary} not executable via single-seed leaf",
             }
         d = get_dell(primary)
         name = d["name"] if d else str(primary)

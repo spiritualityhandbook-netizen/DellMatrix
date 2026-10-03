@@ -27,10 +27,14 @@ def _seen_ids(sight: Dict[str, Any]) -> Set[str]:
 
 def _all_nodes(program) -> List[Dict[str, Any]]:
     try:
-        from form.dell_matrix.perspective_views import _nodes_from_program
-        return _nodes_from_program(program)
+        from form.dell_matrix.perspective_views import _probe_nodes
+        nodes, _src, _status = _probe_nodes(program)
+        _all_nodes.last_status = (_src, _status)
+        return nodes
     except Exception:
+        _all_nodes.last_status = ("probe failed", "UNAVAILABLE")
         return []
+_all_nodes.last_status = ("not probed", "UNKNOWN")
 
 
 def predict_unseen(program, sight: Optional[Dict[str, Any]] = None, *, limit: int = 12) -> Dict[str, Any]:
@@ -91,6 +95,10 @@ def predict_unseen(program, sight: Optional[Dict[str, Any]] = None, *, limit: in
         "predicted_unseen": predicted,
         "hypothetical_gaps": hypothetical,
         "count": len(predicted),
+        # ARGUS 5: seen_count over blind state must not read as a verified
+        # observation. Propagate the node probe's epistemic status.
+        "epistemic_status": _all_nodes.last_status[1],
+        "data_source": _all_nodes.last_status[0],
         "law": "predict beyond view · never claim as observed fact",
         "source_idea": "deepmind_world_model_sees",
         "honesty": "PROJECTED_NOT_FACT",
