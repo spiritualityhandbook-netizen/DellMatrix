@@ -332,9 +332,14 @@ class Idea:
     ) -> str:
         """Propose a property value. Does NOT become ACTIVE truth.
 
+        Note on Nursery relationship: Nursery.Proposal governs *idea-level*
+        proposals (new ideas, idea evolution). This method governs
+        *property-level* proposals (suggested values for existing properties).
+        Different granularities; not a competing authority. If a property
+        proposal is accepted, it becomes an ACTIVE version via accept_proposal.
+
         Returns the proposal version_id. The proposal is in PROPOSED state
-        until accepted or rejected. Reuses the versioned property model;
-        a parallel proposal universe is not created.
+        until accepted or rejected.
         """
         prov = provenance or Provenance(
             source=ProvenanceSource.UNKNOWN,

@@ -3,8 +3,12 @@
 
 Exercises: HOUSE IDEA + ALBUM IDEA + STABLE IDENTITY + ACTIVE STATE +
 SUPERSESSION + FADE + HISTORY + PROVENANCE + SAVE/LOAD +
-CHECKPOINT/ROLLBACK + FRESH PROCESS + PERSPECTIVE-INDEPENDENT PROCESSING +
+FRESH PROCESS + PERSPECTIVE-INDEPENDENT PROCESSING +
 OBSERVABLE STATE.
+
+Note: Checkpoint/rollback integration with Phase-0 generations is
+future work (see migration matrix). This proof covers save/load
+persistence across fresh processes.
 
 Verifies House and Album remain distinct (no cross-contamination).
 """
