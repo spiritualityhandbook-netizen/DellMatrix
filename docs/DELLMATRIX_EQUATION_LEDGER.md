@@ -452,20 +452,22 @@ The word "Verita" currently denotes THREE different mechanisms. This firewall is
 | Classification | Count | IDs |
 |---|---|---|
 | ACTIVE_VALIDATED | 6 | EQ-GEO-003, 004, 005, 007, 008, 009 |
-| ACTIVE_UNVALIDATED | 9 | EQ-VER-002, 003, 004, EQ-GEO-001, EQ-RES-001, 002, EQ-GRV-001, EQ-RES-003 (arith. part) |
+| ACTIVE_UNVALIDATED | 8 | EQ-VER-002, 003, 004, EQ-GEO-001, EQ-RES-001, 002, EQ-GRV-001, EQ-RES-003 (arith. part) |
 | DISCONNECTED | 2 | EQ-RES-003 ("vesica" log ref), EQ-GRV-001 (pull behavior) |
 | EXPERIMENTAL | 0 | — |
-| HISTORICAL | 10 | EQ-SMI-001, 002, 003, 004, 005, 006, EQ-GEO-011, 012, 015 |
+| HISTORICAL | 9 | EQ-SMI-001, 002, 003, 004, 005, 006, EQ-GEO-011, 012, 015 |
 | DUPLICATE | 1 | EQ-VER-001 (→ EQ-GEO-001) |
 | CONTRADICTORY | 2 | EQ-GEO-013, EQ-GEO-014 |
 | MATHEMATICALLY_UNJUSTIFIED | 3 | EQ-GEO-002, EQ-GEO-006, EQ-GEO-010 (as-fractal-claim) |
 | RECOVERY_CANDIDATE | 4 | EXT-GEO-001, 002, 003, 004 |
 | UNKNOWN | 3 | EQ-KNG-001, RootPath math, Harmonic-Cube math |
 
-Total ledgered DellMatrix equations: **28** (6 validated, 9 unvalidated-live, 3 unjustified,
-2 contradictory, 1 duplicate, 10 historical, 2 disconnected aspects, 3 unknown —
-EQ-RES-003 and EQ-GRV-001 each carry two aspects).
-External reference entries: 6 (not DellMatrix authority).
+Total ledgered DellMatrix equations: **32** (6 validated, 8 unvalidated-live, 3 unjustified,
+2 contradictory, 1 duplicate, 9 historical, 2 disconnected aspects, 3 unknown —
+EQ-RES-003 and EQ-GRV-001 each carry two aspects; counts are distinct equations,
+aspects listed separately).
+External reference entries: 6 (4 EXT-GEO recovery candidates + Smith/sphere-lens
+formulae; not DellMatrix authority).
 
 **Ruthless-honesty headline:** of the equations that run live today, ZERO carry a full
 mathematical derivation in-repo; 6 are valid standard mathematics (geometry, fractals);
