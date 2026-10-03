@@ -648,8 +648,8 @@ def t_r3_fail_closed_recovery(rec) -> None:
     # (No staging files exist; live files won't match target hashes.)
     write_journal({
         "phase": "staged", "owner": o,
-        "program_sha256": "0" * 64, "nursery_sha256": "0" * 64,
-        "old_program_sha256": None, "old_nursery_sha256": None,
+        "program_sha256": "0" * 64, "nursery_sha256": "0" * 64, "ideas_sha256": "0" * 64,
+        "old_program_sha256": None, "old_nursery_sha256": None, "old_ideas_sha256": None,
     })
     rec("r3_missing_staging_recover_raises", recover_raises(), "")
     rec("r3_missing_staging_load_fails_closed", load_fails_closed(), "")
@@ -692,7 +692,7 @@ def t_r3_fail_closed_recovery(rec) -> None:
         "phase": "prepared", "owner": o,
         "program_sha256": None, "nursery_sha256": None,
         "old_program_sha256": old_hash,
-        "old_nursery_sha256": None,
+        "old_nursery_sha256": None, "old_ideas_sha256": None,
     })
     rec("r3_old_mismatch_recover_raises", recover_raises(), "")
     rec("r3_old_mismatch_load_fails_closed", load_fails_closed(), "")
@@ -704,9 +704,9 @@ def t_r3_fail_closed_recovery(rec) -> None:
 
     # 8. Recovery invoked repeatedly -> idempotent or fail-closed consistently.
     write_journal({"phase": "prepared", "owner": o,
-                   "program_sha256": None, "nursery_sha256": None,
+                   "program_sha256": None, "nursery_sha256": None, "ideas_sha256": None,
                    "old_program_sha256": _sha256(live_prog),
-                   "old_nursery_sha256": None})
+                   "old_nursery_sha256": None, "old_ideas_sha256": None})
     # Need nursery hash too; get it.
     from form.dell_matrix.nursery import owner_nursery_path
     live_nurs = owner_nursery_path(o)
