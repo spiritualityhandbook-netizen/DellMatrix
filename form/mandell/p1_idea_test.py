@@ -105,9 +105,9 @@ def t_122_faded():
     rec("122_faded_not_active",
         "a" not in idea.get_active_properties()
         and idea.get_faded_properties().get("a") == 1, "")
-    # History preserved.
+    # History preserved (immutable: original + faded event).
     hist = idea.get_property_history("a")
-    rec("122_faded_history_preserved", len(hist) == 1, "")
+    rec("122_faded_history_preserved", len(hist) == 2, f"got {len(hist)}")
 
 def t_123_superseded():
     """1.2.3: Replacement preserves old/new/relationship."""
@@ -119,12 +119,10 @@ def t_123_superseded():
     rec("123_superseded",
         len(sup) == 1 and sup[0].value == 2
         and idea.get_active_properties().get("b") == 3, "")
-    # Replacement link.
-    active_v = [v for v in idea.get_property_history("b")
-                if v.state in (LifecycleState.ACTIVE, LifecycleState.ACCEPTED)][0]
+    # Replacement link (via supersedes, immutable).
+    active_v = idea._current_version("b")
     rec("123_replacement_link",
-        active_v.supersedes == sup[0].version_id
-        and sup[0].superseded_by == active_v.version_id, "")
+        active_v is not None and active_v.supersedes == sup[0].version_id, "")
 
 def t_124_proposed_accepted_rejected():
     """1.2.4: PROPOSED != ACCEPTED; REJECTED != ERASED."""
@@ -138,8 +136,10 @@ def t_124_proposed_accepted_rejected():
     pid2 = idea.propose_property("d", "nope", prov)
     idea.reject_proposal("d", pid2, prov)
     hist = idea.get_property_history("d")
+    # Proposal preserved + REJECTED event (immutable).
     rec("124_rejected_preserved_not_erased",
-        len(hist) == 1 and hist[0].state == LifecycleState.REJECTED, "")
+        len(hist) == 2 and hist[0].state == LifecycleState.PROPOSED
+        and hist[1].state == LifecycleState.REJECTED, f"got {len(hist)}")
 
 def t_125_archive_delete_restore():
     """1.2.5: Archive/delete/restore coherent."""
@@ -175,7 +175,8 @@ def t_134_query_recovery():
     idea.fade_property("x", prov)
     rec("134_query_current_empty", idea.get_active_properties().get("x") is None, "")
     rec("134_query_faded", idea.get_faded_properties().get("x") == 2, "")
-    rec("134_query_history", len(idea.get_property_history("x")) == 2, "")
+    # 2 sets + 1 fade event (immutable).
+    rec("134_query_history", len(idea.get_property_history("x")) == 3, "")
 
 
 # ---------------------------------------------------------------------------

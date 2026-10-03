@@ -89,9 +89,14 @@ class Provenance:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class PropertyVersion:
-    """One version of a property. Immutable once created."""
+    """One version of a property. Immutable once created.
+
+    Transitions (supersede, fade, accept) create NEW version records;
+    they never mutate existing ones. This preserves the append-only
+    event-sourced semantics and Phase-0 sealed-history compatibility.
+    """
 
     version_id: str  # UUID
     value: Any
@@ -193,6 +198,9 @@ class Idea:
     ) -> str:
         """Set a property. Previous ACTIVE version is superseded (not destroyed).
 
+        Event-sourced: creates a NEW immutable version. The previous version
+        is linked via `supersedes`; it is not mutated.
+
         Returns the new version_id.
         """
         prov = provenance or Provenance(
@@ -203,15 +211,10 @@ class Idea:
         now = time.time()
         versions = self._properties.setdefault(name, [])
 
-        # Supersede the current ACTIVE version, if any.
+        # Find the current ACTIVE version to supersede (by link, not mutation).
         supersedes_id = None
         for v in reversed(versions):
             if v.state == LifecycleState.ACTIVE:
-                # Mark as superseded (mutate the version's state linkage).
-                # We create a new version record for the supersession to keep
-                # history append-only; here we update the linkage.
-                v.state = LifecycleState.SUPERSEDED
-                v.valid_to = now
                 supersedes_id = v.version_id
                 break
 
@@ -225,12 +228,6 @@ class Idea:
             provenance=prov,
             supersedes=supersedes_id,
         )
-        if supersedes_id:
-            # Link forward.
-            for v in versions:
-                if v.version_id == supersedes_id:
-                    v.superseded_by = new_version.version_id
-                    break
         versions.append(new_version)
         self.modified_at = now
 
@@ -238,8 +235,22 @@ class Idea:
         self._on_information_change(name, new_version)
         return new_version.version_id
 
+    def _current_version(self, name: str) -> Optional[PropertyVersion]:
+        """The current version: latest ACTIVE, or None."""
+        versions = self._properties.get(name, [])
+        # A version is superseded if another version's `supersedes` points to it.
+        superseded_ids = {v.supersedes for v in versions if v.supersedes}
+        for v in reversed(versions):
+            if v.state == LifecycleState.ACTIVE and v.version_id not in superseded_ids:
+                return v
+        return None
+
     def get_property(self, name: str, state: LifecycleState = LifecycleState.ACTIVE) -> Optional[Any]:
         """Get current value of a property in the given state."""
+        if state == LifecycleState.ACTIVE:
+            v = self._current_version(name)
+            return v.value if v else None
+        # For other states, return the latest version in that state.
         versions = self._properties.get(name, [])
         for v in reversed(versions):
             if v.state == state:
@@ -247,13 +258,12 @@ class Idea:
         return None
 
     def get_active_properties(self) -> Dict[str, Any]:
-        """All ACTIVE/ACCEPTED properties (current truth)."""
+        """All ACTIVE properties (current truth). Single truth state."""
         result = {}
-        for name, versions in self._properties.items():
-            for v in reversed(versions):
-                if v.state in (LifecycleState.ACTIVE, LifecycleState.ACCEPTED):
-                    result[name] = v.value
-                    break
+        for name in self._properties:
+            v = self._current_version(name)
+            if v:
+                result[name] = v.value
         return result
 
     def get_property_history(self, name: str) -> List[PropertyVersion]:
@@ -265,36 +275,54 @@ class Idea:
         name: str,
         provenance: Optional[Provenance] = None,
     ) -> bool:
-        """Fade a property: ACTIVE -> FADED. Recoverable, not deleted."""
+        """Fade a property: create a FADED version (immutable event).
+
+        The previous ACTIVE version is preserved; the FADED version
+        links to it via `supersedes`. Recoverable, not deleted.
+        """
         prov = provenance or Provenance(
             source=ProvenanceSource.UNKNOWN,
             activity="fade",
             agent="unknown",
         )
-        versions = self._properties.get(name, [])
-        for v in reversed(versions):
-            if v.state == LifecycleState.ACTIVE:
-                v.state = LifecycleState.FADED
-                v.valid_to = time.time()
-                self.modified_at = time.time()
-                self._on_information_change(name, v)
-                return True
-        return False
+        current = self._current_version(name)
+        if current is None:
+            return False
+        now = time.time()
+        faded = PropertyVersion(
+            version_id=str(uuid.uuid4()),
+            value=current.value,
+            state=LifecycleState.FADED,
+            valid_from=now,
+            valid_to=None,
+            transaction_time=now,
+            provenance=prov,
+            supersedes=current.version_id,
+        )
+        self._properties[name].append(faded)
+        self.modified_at = now
+        self._on_information_change(name, faded)
+        return True
 
     def get_faded_properties(self) -> Dict[str, Any]:
-        """All FADED properties."""
+        """All FADED properties (latest FADED version per property)."""
         result = {}
         for name, versions in self._properties.items():
             for v in reversed(versions):
                 if v.state == LifecycleState.FADED:
-                    result[name] = v.value
+                    # Only if not superseded by a later ACTIVE.
+                    if self._current_version(name) is None:
+                        result[name] = v.value
                     break
         return result
 
     def get_superseded_history(self, name: str) -> List[PropertyVersion]:
-        """Superseded versions of a property (what used to be true)."""
-        return [v for v in self._properties.get(name, [])
-                if v.state == LifecycleState.SUPERSEDED]
+        """Superseded versions: ACTIVE versions that have been superseded by link."""
+        versions = self._properties.get(name, [])
+        superseded_ids = {v.supersedes for v in versions if v.supersedes}
+        return [v for v in versions
+                if v.version_id in superseded_ids
+                and v.state == LifecycleState.ACTIVE]
 
     def propose_property(
         self,
@@ -334,7 +362,12 @@ class Idea:
         version_id: str,
         provenance: Optional[Provenance] = None,
     ) -> bool:
-        """Accept a proposal: PROPOSED -> ACTIVE (superseding current ACTIVE).
+        """Accept a proposal: create an ACTIVE version from the proposal.
+
+        The proposal itself is preserved (PROPOSED state, immutable).
+        The new ACTIVE version records the acceptance in its provenance.
+        This avoids the ACCEPTED/ACTIVE dual-truth: ACTIVE is the single
+        current-truth state.
 
         Returns True if accepted, False if not found or not in PROPOSED state.
         """
@@ -344,28 +377,41 @@ class Idea:
             agent="unknown",
         )
         versions = self._properties.get(name, [])
-        target = None
+        proposal = None
         for v in versions:
             if v.version_id == version_id and v.state == LifecycleState.PROPOSED:
-                target = v
+                proposal = v
                 break
-        if target is None:
+        if proposal is None:
             return False
         now = time.time()
-        # Supersede current ACTIVE.
-        for v in reversed(versions):
-            if v.state == LifecycleState.ACTIVE:
-                v.state = LifecycleState.SUPERSEDED
-                v.valid_to = now
-                target.supersedes = v.version_id
-                v.superseded_by = target.version_id
-                break
-        target.state = LifecycleState.ACCEPTED
-        # ACCEPTED is a form of current truth; also mark ACTIVE for queries.
-        # We keep ACCEPTED as the state to preserve the acceptance history,
-        # but get_active_properties treats ACCEPTED as current.
+        # Find current ACTIVE to supersede (by link).
+        supersedes_id = None
+        current = self._current_version(name)
+        if current:
+            supersedes_id = current.version_id
+        # Create ACTIVE version with acceptance provenance.
+        # The provenance chains: proposal provenance + acceptance activity.
+        accept_prov = Provenance(
+            source=prov.source,
+            activity="proposal_accepted",
+            agent=prov.agent,
+            derived_from=[proposal.version_id],
+            detail=f"Accepted proposal {proposal.version_id[:8]}: {prov.detail}",
+        )
+        active_version = PropertyVersion(
+            version_id=str(uuid.uuid4()),
+            value=proposal.value,
+            state=LifecycleState.ACTIVE,
+            valid_from=now,
+            valid_to=None,
+            transaction_time=now,
+            provenance=accept_prov,
+            supersedes=supersedes_id,
+        )
+        versions.append(active_version)
         self.modified_at = now
-        self._on_information_change(name, target)
+        self._on_information_change(name, active_version)
         return True
 
     def reject_proposal(
@@ -374,14 +420,44 @@ class Idea:
         version_id: str,
         provenance: Optional[Provenance] = None,
     ) -> bool:
-        """Reject a proposal: PROPOSED -> REJECTED. Preserved, not erased."""
+        """Reject a proposal: create a REJECTED version (immutable event).
+
+        The original PROPOSED version is preserved. The REJECTED version
+        records who rejected and why in its provenance.
+        """
+        prov = provenance or Provenance(
+            source=ProvenanceSource.UNKNOWN,
+            activity="proposal_rejected",
+            agent="unknown",
+        )
         versions = self._properties.get(name, [])
+        proposal = None
         for v in versions:
             if v.version_id == version_id and v.state == LifecycleState.PROPOSED:
-                v.state = LifecycleState.REJECTED
-                self.modified_at = time.time()
-                return True
-        return False
+                proposal = v
+                break
+        if proposal is None:
+            return False
+        now = time.time()
+        rejected = PropertyVersion(
+            version_id=str(uuid.uuid4()),
+            value=proposal.value,
+            state=LifecycleState.REJECTED,
+            valid_from=now,
+            valid_to=None,
+            transaction_time=now,
+            provenance=Provenance(
+                source=prov.source,
+                activity="proposal_rejected",
+                agent=prov.agent,
+                derived_from=[proposal.version_id],
+                detail=prov.detail,
+            ),
+            supersedes=proposal.version_id,
+        )
+        versions.append(rejected)
+        self.modified_at = now
+        return True
 
     def get_proposals(self, name: Optional[str] = None) -> Dict[str, List[PropertyVersion]]:
         """Get PROPOSED versions, optionally filtered by property name."""
@@ -448,6 +524,10 @@ class Idea:
             "created_at": self.created_at,
             "modified_at": self.modified_at,
             "idea_state": self._idea_state.value,
+            "idea_state_history": [
+                {"state": s.value, "at": t, "reason": r}
+                for s, t, r in self._idea_state_history
+            ],
             "properties": {
                 name: [v.to_dict() for v in versions]
                 for name, versions in self._properties.items()
@@ -461,6 +541,10 @@ class Idea:
         idea.created_at = d["created_at"]
         idea.modified_at = d["modified_at"]
         idea._idea_state = LifecycleState(d.get("idea_state", "active"))
+        idea._idea_state_history = [
+            (LifecycleState(h["state"]), h["at"], h["reason"])
+            for h in d.get("idea_state_history", [])
+        ]
         for name, vlist in d.get("properties", {}).items():
             idea._properties[name] = [PropertyVersion.from_dict(v) for v in vlist]
         idea._title_history = [PropertyVersion.from_dict(v)
