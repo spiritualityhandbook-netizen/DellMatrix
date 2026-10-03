@@ -233,17 +233,24 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         if hasattr(program, "note_seed"):
             program.note_seed(20, "Alpha", label or "close")
     elif primary == 21:
-        place_idea(label or "merge")
+        # GDP-001 0.3.1: Dell 21/22 have ONE semantic authority — the front
+        # door (executor.execute_seed) via live_identity lineage. The leaf's
+        # previous arms reimplemented merge/split with divergent semantics
+        # (plain place_idea) and were unreachable through the canonical front
+        # door (executor.py intercepts 21/22 before delegating here). They now
+        # delegate so every entry path executes the same authority.
+        from .executor import execute_seed as _front_door
+        _fd = _front_door(program, seed_text)
+        _fd_msgs = [m for m in (_fd.get("messages") or [])
+                    if not (m.startswith("Mandell:") or m.startswith("English:"))]
+        return {**_fd, "messages": messages + _fd_msgs}
     elif primary == 22:
-        source = label
-        if not source and program.cube.session.plane.units:
-            source = list(program.cube.session.plane.units.values())[-1].label
-        base = (source or "split").replace(" ", "_")[:20]
-        place_idea(f"{base}_a", Skin.SEED)
-        place_idea(f"{base}_b", Skin.SEED)
-        messages.append(f"Split → {base}_a + {base}_b")
-        if hasattr(program, "note_seed"):
-            program.note_seed(22, "Split", base)
+        # GDP-001 0.3.1: same single-authority delegation as Dell 21 above.
+        from .executor import execute_seed as _front_door
+        _fd = _front_door(program, seed_text)
+        _fd_msgs = [m for m in (_fd.get("messages") or [])
+                    if not (m.startswith("Mandell:") or m.startswith("English:"))]
+        return {**_fd, "messages": messages + _fd_msgs}
     elif primary == 23:
         program.sandbox_on()
         messages.append("Sandbox ON.")

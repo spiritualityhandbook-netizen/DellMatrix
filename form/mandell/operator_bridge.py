@@ -278,8 +278,18 @@ def _intent(action: str, dell: int, term: str, label: str, raw_line: str):
     mandel = f"{dell:02d}[{term or action}]"
     if label:
         mandel += f" :: {label}"
+    # GDP-001 0.3.2: typed arguments must flow through Mandell the same way
+    # they do on every other dispatch path. args={} silently replaced real
+    # arguments (stamp mark, grow cycles, cycle count, form) with defaults —
+    # the same operation acquired a different meaning via this entry path.
+    # Reuse the flow executor's label->args lowering (single authority).
+    try:
+        from .flow_executor import _args_from_label
+        args = dict(_args_from_label((action or "").strip().lower(), label or ""))
+    except Exception:
+        args = {}
     return Intent(action=action, dell=dell, term=term or action,
-                  args={}, mandel=mandel, english=raw_line or mandel)
+                  args=args, mandel=mandel, english=raw_line or mandel)
 
 
 # --- English access: ONE registry-driven matcher, not 49 handlers ---
