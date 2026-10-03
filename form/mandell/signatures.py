@@ -253,6 +253,70 @@ _register(OperatorSignature(
 # Existing encoding: lab = pattern (or "" for all)
 
 
+# Dell 57 (Compare) — derived from query_ops.py:apply_query (n==57)
+#   head = lab.lower().split(":")[0].split(" ")[0]
+#   expr = lab if head in (...) else ("eq:" + ...)
+#   cmpd = eval_predicate(st, program, expr)
+_register(OperatorSignature(
+    dell=57,
+    name="Compare",
+    roles=[
+        Role(name="expression", type="string", required=True,
+             description="Predicate expression (e.g., 'eq: x 5')"),
+    ],
+    derived_from="form/mandell/query_ops.py:apply_query:39-43",
+    output="Publishes comparison result to last_result",
+    failures="type_mismatch (incompatible types)",
+))
+# Existing encoding: lab = expression
+
+# Dell 67 (Any) — derived from query_ops.py:apply_query (n==67)
+#   ids = list(st.selected)
+#   hit = any(pred_fn(lab, i) for i in ids) if ids else False
+_register(OperatorSignature(
+    dell=67,
+    name="Any",
+    roles=[
+        Role(name="predicate", type="string", required=False,
+             description="Predicate (empty checks non-empty selection)"),
+    ],
+    derived_from="form/mandell/query_ops.py:apply_query:48-51",
+    output="Publishes boolean to last_result",
+    failures="None established",
+))
+# Existing encoding: lab = predicate (or "")
+
+# Dell 68 (All) — derived from query_ops.py:apply_query (n==68)
+#   hit = all(pred_fn(lab, i) for i in ids) if ids else True
+_register(OperatorSignature(
+    dell=68,
+    name="All",
+    roles=[
+        Role(name="predicate", type="string", required=False,
+             description="Predicate (empty checks all)"),
+    ],
+    derived_from="form/mandell/query_ops.py:apply_query:52-55",
+    output="Publishes boolean to last_result",
+    failures="None established",
+))
+# Existing encoding: lab = predicate (or "")
+
+# Dell 69 (None) — derived from query_ops.py:apply_query (n==69)
+#   hit = not any(pred_fn(lab, i) for i in ids)
+_register(OperatorSignature(
+    dell=69,
+    name="None",
+    roles=[
+        Role(name="predicate", type="string", required=False,
+             description="Predicate (empty checks empty selection)"),
+    ],
+    derived_from="form/mandell/query_ops.py:apply_query:56-59",
+    output="Publishes boolean to last_result",
+    failures="None established",
+))
+# Existing encoding: lab = predicate (or "")
+
+
 def get_signature(dell: int) -> Optional[OperatorSignature]:
     """Get signature for a Dell, or None if not established."""
     return _SIGNATURES.get(dell)
@@ -311,6 +375,18 @@ def lower_args_to_lab(dell: int, args: Dict[str, str]) -> str:
     elif dell == 58:
         # Match: lab = pattern (or "" for all)
         return args.get("pattern", "")
+    elif dell == 57:
+        # Compare: lab = expression
+        return args.get("expression", "")
+    elif dell == 67:
+        # Any: lab = predicate (or "")
+        return args.get("predicate", "")
+    elif dell == 68:
+        # All: lab = predicate (or "")
+        return args.get("predicate", "")
+    elif dell == 69:
+        # None: lab = predicate (or "")
+        return args.get("predicate", "")
     else:
         # Dell 8 uses place_idea (different executor); others have no lab contract
         raise ValueError(f"No lab lowering for Dell {dell}")
