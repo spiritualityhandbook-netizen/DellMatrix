@@ -385,7 +385,7 @@ Mission verbs: RESEARCH.
 | Obj | Objective | Status | Evidence |
 |---|---|---|---|
 | 1.5.1 | Perspective-independent | IMPLEMENTED | `set_property` (information arrival) drives all state change; zero UI/Perspective dependency in the model; LIVE MATRIX LAW upheld |
-| 1.5.2 | Segmentation | IMPLEMENTED | Explicit ingestion boundary: `_validate_unit` enforces segmented-unit contract (accepts units, rejects raw/non-units); boundary tested |
+| 1.5.2 | Segmentation | IMPLEMENTED | Explicit ingestion boundary (Option B): `_validate_unit` enforces the segmented-unit shape contract (non-empty string name + JSON-serializable value); content-level segmentation is the caller's upstream responsibility; boundary tested |
 | 1.5.3 | Semantic representation update | IMPLEMENTED | `_on_information_change` is the real processing boundary: every mutation records a deterministic immutable `IdeaChangeEvent` (operation, consequence, provenance, version refs) |
 | 1.5.4 | Dependency-aware propagation | DEFERRED_TO_PHASE_2_BY_DIRECTOR | Director R4 §2: no dependency model in Phase 1; Phase 2 subject |
 | 1.5.5 | Observable change | IMPLEMENTED | `change_events()`/`last_change()`; events persist via to_dict and survive fresh-process load |

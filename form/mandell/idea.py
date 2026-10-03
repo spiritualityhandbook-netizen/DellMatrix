@@ -636,18 +636,20 @@ class Idea:
 
     @staticmethod
     def _validate_unit(name: str, value: Any) -> None:
-        """Enforce the segmented-unit ingestion contract.
+        """Enforce the segmented-unit ingestion contract (1.5.2, Option B).
 
         The canonical Idea boundary consumes SEGMENTED IDEA UNITS, not raw
         information. A unit is (name, value) where:
           - name: non-empty string unit identifier (the segmentation key);
           - value: JSON-serializable payload (persistable as a version).
 
-        Raw/compound information (unstructured text, unparsed payloads) must
-        be segmented upstream before reaching this boundary. This validation
-        proves the boundary exists: it accepts units and rejects non-units
-        with an explicit contract error, rather than silently versioning
-        whatever the caller supplied.
+        This enforces the unit SHAPE contract: it proves the boundary
+        exists by accepting well-formed units and rejecting malformed
+        ones (empty/non-string names, non-serializable values) with an
+        explicit contract error. Content-level segmentation — decomposing
+        raw or compound information into named units — is the CALLER's
+        responsibility upstream; this boundary does not parse raw text
+        and does not claim to.
         """
         if not isinstance(name, str) or not name.strip():
             raise ValueError(
