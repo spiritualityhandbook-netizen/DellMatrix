@@ -231,3 +231,86 @@ def production_laws_for_mode(mode: str) -> dict:
         "evidence_standards": "unchanged",
         "parallelism": "specialist" if mode == "SWARM" else "director+uni",
     }
+
+# ---------------------------------------------------------------------------
+# ADAPTIVE PRODUCTION MODE (MPC-006)
+#
+# ADAPTIVE replaces binary mode selection as the normal operating policy.
+# It selects CORE, TARGETED_SWARM, or FULL_SWARM per task. Explicit CORE
+# and SWARM controls remain available (backward compatible: SWARM ==
+# FULL_SWARM with all five personas).
+#
+# Mode selection is RESOURCE ALLOCATION, not authority. No scalar, score,
+# or metric produced here can authorize anything; authorize_action() is
+# unchanged and still requires recorded human decisions.
+# ---------------------------------------------------------------------------
+
+ADAPTIVE_TEAMS = {
+    # team name -> personas active
+    "CORE": ("DIRECTOR", "UNI"),
+    "TARGETED_SWARM": ("DIRECTOR", "UNI", "ARGUS"),  # +NULL/ORACLE/PRISM on demand
+    "FULL_SWARM": ("DIRECTOR", "UNI", "ORACLE", "ARGUS", "NULL", "PRISM"),
+}
+
+# Selection inputs (all 0.0..1.0 except booleans)
+ADAPTIVE_INPUTS = [
+    "blast_radius", "semantic_uncertainty", "contradiction_debt",
+    "security_relevance", "authority_sensitivity", "recovery_complexity",
+    "cross_system_dependencies", "evidence_weakness",
+    "estimated_information_gain", "estimated_specialist_cost",
+]
+
+
+def select_adaptive_team(inputs: dict, director_override: str | None = None) -> dict:
+    """Select the smallest team capable of meeting the evidence contract.
+
+    Policy (no magic authority scalar — this is staffing, not permission):
+      CORE: small/bounded/well-understood/low-risk.
+      TARGETED_SWARM: default for ordinary production where independent
+        specialist reasoning adds material value.
+      FULL_SWARM: architecture, high uncertainty, high contradiction debt,
+        broad semantic changes, security-sensitive changes, major audits,
+        or Director request.
+    """
+    for k in ADAPTIVE_INPUTS:
+        if k not in inputs:
+            raise TransitionError(f"adaptive selection missing input: {k}")
+    if director_override is not None:
+        if director_override not in ADAPTIVE_TEAMS:
+            raise TransitionError(f"unknown team override: {director_override}")
+        team = director_override
+        rationale = f"director_override={team}"
+    elif (inputs["authority_sensitivity"] >= 0.7
+          or inputs["semantic_uncertainty"] >= 0.7
+          or inputs["contradiction_debt"] >= 0.7
+          or inputs["security_relevance"] >= 0.7
+          or inputs.get("director_requests_full_swarm", False)):
+        team, rationale = "FULL_SWARM", "high uncertainty/debt/sensitivity/security"
+    elif (inputs["estimated_information_gain"] > inputs["estimated_specialist_cost"]
+          or inputs["evidence_weakness"] >= 0.5
+          or inputs["blast_radius"] >= 0.5):
+        team, rationale = "TARGETED_SWARM", "independent reasoning adds material value"
+    else:
+        team, rationale = "CORE", "small/bounded/low-risk: smallest sufficient team"
+    return {
+        "mode": "ADAPTIVE",
+        "team": team,
+        "personas": list(ADAPTIVE_TEAMS[team]),
+        "rationale": rationale,
+        "inputs": {k: inputs[k] for k in ADAPTIVE_INPUTS},
+        "authority_note": "resource allocation only; grants no authority",
+    }
+
+
+def resolve_team(run: dict) -> tuple[str, ...]:
+    """Backward-compatible team resolution. Explicit CORE/SWARM modes keep
+    their legacy meaning; ADAPTIVE delegates to the last selection."""
+    mode = run.get("mode", "SWARM")
+    if mode == "CORE":
+        return ADAPTIVE_TEAMS["CORE"]
+    if mode == "SWARM":
+        return ADAPTIVE_TEAMS["FULL_SWARM"]
+    if mode == "ADAPTIVE":
+        sel = run.get("adaptive_selection") or {}
+        return tuple(sel.get("personas", ADAPTIVE_TEAMS["TARGETED_SWARM"]))
+    raise TransitionError(f"unknown mode: {mode}")
