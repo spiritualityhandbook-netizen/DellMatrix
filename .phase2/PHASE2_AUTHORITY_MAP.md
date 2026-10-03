@@ -20,7 +20,7 @@ WHAT IS THE CURRENT CANONICAL IDEA RELATIONSHIP?
 - RingedGrowth lineage/affinity → TBD (affinity is NOT relationship truth)
 - HarmonicLattice → TBD
 - View/perspective projections (graph_view.py etc.) → DERIVED PROJECTIONS only
-## RootPath — RECOVERED (2026-10-03, git archaeology, /tmp/phase2_exam_rootpath_history.md)
+## RootPath — AUTHORED NEW (2026-10-03, per git archaeology, /tmp/phase2_exam_rootpath_history.md)
 "RootPath" as a literal term has NO historical authority: it is a Phase-0
 ledger neologism (English gloss for "RuPat"). RuPat has two real historical
 meanings: (a) RU→PAT 7-stage ingest pipeline (dead code, 0 callers) — NOT a

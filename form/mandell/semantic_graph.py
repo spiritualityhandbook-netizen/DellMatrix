@@ -615,8 +615,9 @@ class SemanticGraph:
 
     def reparent(self, child_id: str, new_parent_id: str,
                  provenance: Provenance) -> RelationshipEntry:
-        """Atomic reparent: supersede old CONTAINS, activate new CONTAINS.
-        Never yields two active containment parents."""
+        """Atomic reparent: supersede old CONTAINS and activate new CONTAINS
+        in a single atomic append (one save). Never yields two active
+        containment parents; a propagation failure rolls back both entries."""
         self._gate_endpoints(new_parent_id, child_id)
         self._gate_containment(new_parent_id, child_id)  # raises on cycle/self
         old_rel_id = self._active_parent.get(child_id)
