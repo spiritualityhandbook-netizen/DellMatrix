@@ -150,9 +150,11 @@ def test_outcomes():
     observe_seed_execution(p, "70[Count]")          # completed
     observe_seed_execution(p, "86[Delete]")         # failed
     observe_seed_execution(p, "not a seed")         # blocked
-    observe_seed_execution(p, "999[Omega] > 70[Count]")  # completed (skip inside)
+    # DIRECTOR DECISION 1 (gate R1): skip inside -> honest "failed"
+    # (atom ok=False), not "completed".
+    observe_seed_execution(p, "999[Omega] > 70[Count]")  # failed (skip inside)
 
-    for status, want_min in [("completed", 2), ("failed", 1), ("blocked", 1)]:
+    for status, want_min in [("completed", 1), ("failed", 2), ("blocked", 1)]:
         q = ro.outcomes_by_status(p, status)
         check(f"H.{status}", q["ok"] is True and q["count"] >= want_min)
     q = ro.outcomes_by_status(p, "bogus")

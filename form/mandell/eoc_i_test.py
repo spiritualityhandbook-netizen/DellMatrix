@@ -194,8 +194,11 @@ def test_e():
 
     p = fresh(); n0 = len(records(p))
     r = observe_seed_execution(p, "999[Omega] > 70[Count]")
-    check("E4.skipped", r["ok"] is True and 999 in (r.get("chain_skipped") or [])
-          and last_record(p)["result"] == "completed"
+    # DIRECTOR DECISION 1 (gate R1): a skipped atom is ok=False; the chain
+    # continues per policy but the aggregate is honest (ok=False, partial).
+    check("E4.skipped", r["ok"] is False and 999 in (r.get("chain_skipped") or [])
+          and last_record(p)["result"] == "failed"
+          and last_record(p)["partial_completion"] is True
           and len(records(p)) - n0 == 1)
 
     p = fresh(); n0 = len(records(p))

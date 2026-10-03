@@ -233,17 +233,24 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         if hasattr(program, "note_seed"):
             program.note_seed(20, "Alpha", label or "close")
     elif primary == 21:
-        place_idea(label or "merge")
+        # GDP-001 0.3.1: Dell 21/22 have ONE semantic authority — the front
+        # door (executor.execute_seed) via live_identity lineage. The leaf's
+        # previous arms reimplemented merge/split with divergent semantics
+        # (plain place_idea) and were unreachable through the canonical front
+        # door (executor.py intercepts 21/22 before delegating here). They now
+        # delegate so every entry path executes the same authority.
+        from .executor import execute_seed as _front_door
+        _fd = _front_door(program, seed_text)
+        _fd_msgs = [m for m in (_fd.get("messages") or [])
+                    if not (m.startswith("Mandell:") or m.startswith("English:"))]
+        return {**_fd, "messages": messages + _fd_msgs}
     elif primary == 22:
-        source = label
-        if not source and program.cube.session.plane.units:
-            source = list(program.cube.session.plane.units.values())[-1].label
-        base = (source or "split").replace(" ", "_")[:20]
-        place_idea(f"{base}_a", Skin.SEED)
-        place_idea(f"{base}_b", Skin.SEED)
-        messages.append(f"Split → {base}_a + {base}_b")
-        if hasattr(program, "note_seed"):
-            program.note_seed(22, "Split", base)
+        # GDP-001 0.3.1: same single-authority delegation as Dell 21 above.
+        from .executor import execute_seed as _front_door
+        _fd = _front_door(program, seed_text)
+        _fd_msgs = [m for m in (_fd.get("messages") or [])
+                    if not (m.startswith("Mandell:") or m.startswith("English:"))]
+        return {**_fd, "messages": messages + _fd_msgs}
     elif primary == 23:
         program.sandbox_on()
         messages.append("Sandbox ON.")
@@ -490,7 +497,31 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         else:
             messages.append("Manifest needs :: label.")
     else:
-        d = get_dell(primary) if primary is not None else None
+        # P0-R2 MUST_FIX + ARGUS 2a: dells this leaf cannot execute must
+        # honestly refuse. Previously this branch answered ok=True
+        # "runtime thin" for ANY unmapped primary AND placed an idea as a
+        # side effect, reachable via the public raw-seed path.
+        # - >99 / None: reserved/not-active (no authority anywhere).
+        # - 51-99: Core-II authority lives in chain_exec/core_ii_exec;
+        #   the leaf has no Core-II executor. Production routes these via
+        #   the front door before the leaf; direct leaf calls refuse.
+        # - 37: production authority is core_i_ops (HANDLED); the leaf has
+        #   no 37 arm (MPC-011 removed the dead Stream branch). Direct leaf
+        #   calls refuse rather than shadow the real authority.
+        # 0-50 with explicit arms execute below (message-only "runtime thin"
+        # for registered-but-armless dells: pre-existing, documented).
+        if primary is None or primary > 50 or primary == 37:
+            name = {37: "Nurture"}.get(primary, "reserved/not-active")
+            return {
+                "ok": False,
+                "seed": s.as_mandel(),
+                "english": s.as_english(),
+                "primary": primary,
+                "messages": [f"Dell {primary}[{name}] refused: no executor on this path."],
+                "new_program": new_program,
+                "error": f"Dell {primary} not executable via single-seed leaf",
+            }
+        d = get_dell(primary)
         name = d["name"] if d else str(primary)
         messages.append(f"Dell {primary:02d}[{name}] recognized — runtime thin.")
         if label:

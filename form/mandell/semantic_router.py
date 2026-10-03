@@ -46,6 +46,50 @@ class RouteReceipt:
     state_note: str = ""
     error: str = ""
     new_program: Any = None       # restored program (Dell 28 rollback only)
+    # GDP-001 0.3.4: standardized receipt fields. Optional/backward
+    # compatible; "" / [] / None means "unknown", never fabricated.
+    requested_operation: str = ""  # what was asked (intent action / raw input)
+    resolved_operation: str = ""   # what actually executed (canonical seed)
+    authority: str = ""            # which authority executed it
+    affected_objects: List[str] = field(default_factory=list)  # known mutations
+    atom_results: List[Dict[str, Any]] = field(default_factory=list)  # chain
+
+    @property
+    def partial(self) -> bool:
+        """True when a multi-atom execution partially completed.
+
+        Some atoms succeeded and mutated state while others failed —
+        reported explicitly, never silent.
+        """
+        rs = [r for r in self.atom_results if isinstance(r, dict)]
+        oks = [bool(r.get("ok", True)) for r in rs]
+        return bool(rs) and any(oks) and not all(oks)
+
+
+# Canonical execution authority chain, recorded on every receipt.
+_AUTHORITY_ROUTER = "form.mandell.semantic_router.route_intent"
+_AUTHORITY_EXECUTOR = "form.mandell.executor.execute_seed"
+_AUTHORITY_CHAIN = "form.mandell.chain_exec.execute_chain"
+
+
+def _affected_for(action: str, dell: Optional[int]) -> List[str]:
+    """Honestly known mutation targets for correspondence-routed ops.
+
+    Only entries the router can verify from its own evidence. Everything
+    else is [] (unknown), never invented.
+    """
+    key = ((action or "").strip().lower(), dell)
+    return list({
+        ("stamp", 34): ["program.last_stamp"],
+        ("checkpoint", 27): ["program.last_core_i", "generation"],
+        ("rollback", 28): ["program (restored generation)"],
+        ("save", 10): ["program state file"],
+        ("nurture", 37): ["program.last_nurture"],
+        ("grow", 13): ["nursery proposals"],
+        ("discover", 35): ["program.last_discover"],
+        ("cycle", 6): ["duobeta cycles"],
+        ("form", 15): ["lattice form"],
+    }.get(key, []))
 
 
 @dataclass
@@ -385,6 +429,10 @@ def _route_intent_impl(program: Any, intent: Any, raw_line: str = "") -> RouteRe
             state_note="no state change (not routed)",
             error=error,
             new_program=None,
+            requested_operation=action or "",
+            resolved_operation="",
+            authority=_AUTHORITY_ROUTER,
+            affected_objects=[],
         )
 
     if not mandell:
@@ -426,6 +474,10 @@ def _route_intent_impl(program: Any, intent: Any, raw_line: str = "") -> RouteRe
             state_note="no state change (execution raised)",
             error=f"Dell execution raised: {exc}",
             new_program=None,
+            requested_operation=action or "",
+            resolved_operation=seed,
+            authority=f"{_AUTHORITY_ROUTER} -> {_AUTHORITY_EXECUTOR}",
+            affected_objects=[],
         )
 
     messages = list(result.get("messages") or [])
@@ -452,6 +504,10 @@ def _route_intent_impl(program: Any, intent: Any, raw_line: str = "") -> RouteRe
         state_note=state_note,
         error="" if ok else (result.get("error") or "Dell execution failed"),
         new_program=result.get("new_program"),
+        requested_operation=action or "",
+        resolved_operation=seed,
+        authority=f"{_AUTHORITY_ROUTER} -> correspondence[{action}/{dell} {corr.dell_name}] -> {_AUTHORITY_EXECUTOR}",
+        affected_objects=_affected_for(action, dell) if ok else [],
     )
 
 
@@ -485,6 +541,10 @@ def _route_generalized(program: Any, intent: Any, parsed: Any, action: str,
             routed=False, route="no-route", seed="", ok=False,
             messages=[], state_note="no state change (not routed)",
             error=reason, new_program=None,
+            requested_operation=action or "",
+            resolved_operation="",
+            authority=f"{_AUTHORITY_ROUTER} -> operator_bridge.resolve",
+            affected_objects=[],
         )
 
     # bres.ok implies CORE_II accessible (resolve never returns ok for
@@ -513,17 +573,36 @@ def _route_generalized(program: Any, intent: Any, parsed: Any, action: str,
             ok=False, messages=[],
             state_note="no state change (execution raised)",
             error=f"Dell execution raised: {exc}", new_program=None,
+            requested_operation=action or "",
+            resolved_operation=seed_text,
+            authority=f"{_AUTHORITY_ROUTER} -> {_AUTHORITY_CHAIN}",
+            affected_objects=[],
         )
 
     messages = list(out.get("messages") or [])
     ok = bool(out.get("ok", False))
+    atom_results = [dict(r) for r in (out.get("atom_results") or []) if isinstance(r, dict)]
+    # GDP-001 0.3.3: a ">" chain continues past a failed atom, so earlier
+    # atoms may have mutated state. Report that explicitly — never silent
+    # partial success.
+    _oks = [bool(r.get("ok", True)) for r in atom_results]
+    _partial = bool(atom_results) and any(_oks) and not all(_oks)
+    state_note = "; ".join(messages[-3:]) if messages else ("executed" if ok else "failed")
+    if _partial:
+        state_note = (f"PARTIAL CHAIN: {sum(_oks)}/{len(_oks)} atoms completed; "
+                      f"mutations from completed atoms persist; {state_note}")
     return RouteReceipt(
         input=raw_line or "", mandell=seed_text,
         semantic=f"{action}[{bres.name}]", arguments=arguments,
         action=action, dell=bres.dell, routed=True,
         route=f"{action}/{bres.dell} [{bres.name}]",
         seed=seed_text, ok=ok, messages=messages,
-        state_note="; ".join(messages[-3:]) if messages else ("executed" if ok else "failed"),
+        state_note=state_note,
         error="" if ok else (out.get("error") or "Dell execution failed"),
         new_program=out.get("new_program"),
+        requested_operation=action or "",
+        resolved_operation=seed_text,
+        authority=f"{_AUTHORITY_ROUTER} -> generalized[{action}/{bres.dell} {bres.name}] -> {_AUTHORITY_CHAIN}",
+        affected_objects=[],
+        atom_results=atom_results,
     )

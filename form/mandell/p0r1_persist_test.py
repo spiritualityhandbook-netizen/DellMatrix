@@ -1,0 +1,1052 @@
+#!/usr/bin/env python3
+"""GDP-001 Phase 0, Requirement 1: PERSISTENCE INTEGRITY (P0R1).
+
+Executable coverage for the five R1 objectives:
+
+  0.1.1  Dell28 rollback/autosave generation-corruption repair
+         (copy-on-rollback + re-point; sealed member never written).
+  0.1.2  save / load / checkpoint / rollback across fresh OS processes.
+  0.1.3  Generation immutability / sealing invariants as executable assertions.
+  0.1.4  Interruption / failure / corruption honesty (kill -9, crash
+         injection, corrupt/missing members, lost-update refusal).
+  0.1.5  Executable guarantees behind docs/PERSISTENCE_CONTRACT.md.
+
+Isolation: every case uses a unique owner (per-owner state files) and the
+regress harness runs each suite in a private temp copy of the tree with a
+fresh form/state. State files created here are removed at the end.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+import uuid
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+from form.persist import _STATE_DIR, _path  # noqa: E402
+from form.dell_matrix.nursery import (  # noqa: E402
+    Nursery,
+    NurseryConflictError,
+    NurseryLoadError,
+    owner_nursery_path,
+)
+from form.mandell import checkpoint_generation as CG  # noqa: E402
+from form.mandell.core_i_recovery import rollback  # noqa: E402
+from form.open import open_program  # noqa: E402
+from form.mandell.language import bind  # noqa: E402
+from form import persist_rest  # noqa: E402
+
+
+def _owner() -> str:
+    return "P0R1_" + uuid.uuid4().hex[:8]
+
+
+def _sha256(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _sem_hash(path: str) -> str:
+    """Semantic hash: canonical JSON (sort_keys), immune to key-order
+    differences from Python hash randomization across processes."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    return hashlib.sha256(
+        json.dumps(data, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def _member_path(owner: str, receipt: dict, kind: str) -> str:
+    return os.path.join(_STATE_DIR, receipt["members"][kind]["file"])
+
+
+def _fresh_program(owner: str):
+    p = open_program(owner)
+    bind(p)
+    return p
+
+
+def _run_driver(name: str, code: str, *args: str, timeout: int = 180):
+    """Run a driver script in a FRESH OS process rooted at this tree."""
+    d = tempfile.mkdtemp(prefix="p0r1drv_")
+    script = os.path.join(d, name + ".py")
+    with open(script, "w", encoding="utf-8") as f:
+        f.write(code)
+    try:
+        return subprocess.run(
+            [sys.executable, "-B", script, *args],
+            cwd=ROOT, capture_output=True, text=True, timeout=timeout,
+        )
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+_DRIVER_PREAMBLE = "import os, sys\nsys.path.insert(0, os.getcwd())\n"
+
+
+# ---------------------------------------------------------------------------
+# 0.1.1 -- rollback corruption repair
+# ---------------------------------------------------------------------------
+
+def t_r1_rollback_repoints_to_live(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    first = p.nursery.add("r1 idea", words="w")
+    rc = CG.commit_checkpoint(p)
+    member_file = rc["members"]["nursery"]["file"]
+    p2 = rollback(o)
+    live = owner_nursery_path(o)
+    ok = os.path.abspath(p2.nursery.path or "") == os.path.abspath(live)
+    ok = ok and os.path.basename(p2.nursery.path or "") != member_file
+    ok = ok and ".g_" not in os.path.basename(p2.nursery.path or "")
+    ok = ok and first.id in p2.nursery.proposals  # rolled-back content intact
+    rec("r1_rollback_repoints_to_live", ok,
+        f"nursery.path={p2.nursery.path} live={live}")
+
+
+def t_r1_postrollback_mutation_keeps_member_byte_identical(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    first = p.nursery.add("r1 idea", words="w")
+    rc = CG.commit_checkpoint(p)
+    gid = rc["generation_id"]
+    mpath = _member_path(o, rc, "nursery")
+    manifest_sha = rc["members"]["nursery"]["sha256"]
+    p2 = rollback(o)
+    # Two different mutation paths, both autosave.
+    p2.nursery.add("r1 second", words="w2")
+    p2.nursery.confirm(first.id)
+    ok = _sha256(mpath) == manifest_sha
+    # The committed generation still loads, byte-valid.
+    p3, rc3 = CG.load_checkpoint(o, activate=False)
+    ok = ok and rc3["generation_id"] == gid
+    ok = ok and set(p3.nursery.proposals) == {first.id}  # sealed content only
+    # ... while the LIVE working file advanced honestly.
+    live_props = Nursery.load(owner_nursery_path(o)).proposals
+    ok = ok and first.id in live_props and len(live_props) == 2
+    ok = ok and live_props[first.id].status == "confirmed"
+    rec("r1_postrollback_mutation_keeps_member_byte_identical", ok,
+        f"member sha match={_sha256(mpath) == manifest_sha}")
+
+
+def t_r1_rollback_then_commit_chain_coherent(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    p.nursery.add("chain idea", words="w")
+    rc1 = CG.commit_checkpoint(p)
+    p2 = rollback(o)
+    rc2 = CG.commit_checkpoint(p2)
+    ok = rc2["generation_id"] != rc1["generation_id"]
+    ok = ok and rc2["previous_generation_id"] == rc1["generation_id"]
+    q, rcq = CG.load_checkpoint(o, activate=False)
+    ok = ok and rcq["generation_id"] == rc2["generation_id"]
+    # Both retained members still match their manifests.
+    for rcx in (rc1, rc2):
+        man = CG._read_manifest(o, rcx["generation_id"])
+        for kind in ("nursery", "program"):
+            mp = os.path.join(_STATE_DIR, man["members"][kind]["file"])
+            if os.path.isfile(mp):
+                ok = ok and _sha256(mp) == man["members"][kind]["sha256"]
+    rec("r1_rollback_then_commit_chain_coherent", ok, "")
+
+
+# ---------------------------------------------------------------------------
+# 0.1.2 -- cross-process proof
+# ---------------------------------------------------------------------------
+
+_P1 = _DRIVER_PREAMBLE + """
+o = sys.argv[1]
+from form.open import open_program
+from form.mandell.language import bind
+from form.mandell import checkpoint_generation as CG
+from form import persist_rest
+p = open_program(o); bind(p)
+p.place("xunit", "XUnit", words="cross process")
+p.nursery.add("xproc idea", words="xp")
+persist_rest.save(p)
+rc = CG.commit_checkpoint(p)
+print("P1_OK", rc["generation_id"], rc["members"]["nursery"]["sha256"], flush=True)
+"""
+
+_P2 = _DRIVER_PREAMBLE + """
+o = sys.argv[1]
+import os
+from form.mandell.core_i_recovery import rollback
+from form.mandell import checkpoint_generation as CG
+from form import persist_rest
+from form.dell_matrix.nursery import owner_nursery_path
+p2 = rollback(o)
+live = owner_nursery_path(o)
+assert os.path.abspath(p2.nursery.path) == os.path.abspath(live), "sealed alias survived!"
+p2.nursery.add("xproc second", words="xp2")
+persist_rest.save(p2)
+rc2 = CG.commit_checkpoint(p2)
+print("P2_OK", rc2["generation_id"], rc2["previous_generation_id"], flush=True)
+"""
+
+_P3 = _DRIVER_PREAMBLE + """
+o = sys.argv[1]
+from form.mandell import checkpoint_generation as CG
+from form import persist_rest
+p3, rc3 = CG.load_checkpoint(o, activate=False)
+q = persist_rest.load(o)
+units = sorted(p3.cube.session.plane.units)
+props = sorted(p3.nursery.proposals)
+lunits = sorted(q.cube.session.plane.units)
+print("P3_OK", rc3["generation_id"], len(units), len(props), len(lunits), flush=True)
+print("P3_UNITS", ",".join(units), flush=True)
+print("P3_PROPS", ",".join(props), flush=True)
+print("P3_LUNITS", ",".join(lunits), flush=True)
+"""
+
+
+def t_r2_xproc_save_checkpoint_rollback_mutate_save_load(rec) -> None:
+    o = _owner()
+    t0 = time.perf_counter()
+    c1 = _run_driver("p1", _P1, o)
+    t_save_commit = time.perf_counter() - t0
+    ok = c1.returncode == 0 and "P1_OK" in c1.stdout
+    g1 = sha1 = None
+    if ok:
+        _, g1, sha1 = c1.stdout.strip().split()[-3:]
+    else:
+        rec("r2_xproc_full_cycle", False, f"P1 failed rc={c1.returncode}: {c1.stderr[-400:]}")
+        return
+    t0 = time.perf_counter()
+    c2 = _run_driver("p2", _P2, o)
+    t_rollback = time.perf_counter() - t0
+    ok = c2.returncode == 0 and "P2_OK" in c2.stdout
+    g2 = None
+    if ok:
+        g2 = c2.stdout.strip().split()[-2]
+        ok = c2.stdout.strip().split()[-1] == g1  # previous link correct
+    else:
+        rec("r2_xproc_full_cycle", False, f"P2 failed rc={c2.returncode}: {c2.stderr[-400:]}")
+        return
+    # The sealed G1 member survived P2's mutation byte-identical.
+    m1 = os.path.join(_STATE_DIR, f"nursery_{CG._owner_ns(o)}.g_{g1}.json")
+    # (member filename recorded in manifest; resolve robustly)
+    man1 = CG._read_manifest(o, g1)
+    m1 = os.path.join(_STATE_DIR, man1["members"]["nursery"]["file"])
+    ok = ok and _sha256(m1) == sha1
+    t0 = time.perf_counter()
+    c3 = _run_driver("p3", _P3, o)
+    t_load = time.perf_counter() - t0
+    if c3.returncode == 0 and "P3_OK" in c3.stdout:
+        lines = {ln.split(" ", 1)[0]: ln.split(" ", 1)[1].strip()
+                 for ln in c3.stdout.strip().splitlines() if " " in ln}
+        p3ok = lines.get("P3_OK", "").split()
+        ok = ok and p3ok[0] == g2  # latest committed is P2's generation
+        ok = ok and p3ok[1:] == ["2", "2", "2"]  # units / sealed proposals / live units
+        ok = ok and "xunit" in lines.get("P3_UNITS", "").split(",")
+        ok = ok and "xunit" in lines.get("P3_LUNITS", "").split(",")
+        ok = ok and len(lines.get("P3_PROPS", "").split(",")) == 2
+    else:
+        ok = False
+    rec("r2_xproc_full_cycle", ok,
+        f"P1 save+commit {t_save_commit:.2f}s | P2 rollback+mutate {t_rollback:.2f}s | P3 load {t_load:.2f}s"
+        + ("" if ok else f" | c3 rc={c3.returncode}: {c3.stderr[-400:]}"))
+
+
+_PMISS = _DRIVER_PREAMBLE + """
+o = sys.argv[1]
+from form.mandell.core_i_recovery import rollback
+try:
+    rollback(o, None)
+    print("MISS_FAIL no error", flush=True)
+except FileNotFoundError as exc:
+    print("MISS_OK", "rollback_missing" in str(exc), flush=True)
+"""
+
+
+def t_r2_xproc_rollback_missing_honest(rec) -> None:
+    o = _owner()  # never committed
+    c = _run_driver("pmiss", _PMISS, o)
+    rec("r2_xproc_rollback_missing_honest",
+        c.returncode == 0 and "MISS_OK True" in c.stdout,
+        c.stdout.strip()[-80:] + c.stderr.strip()[-200:])
+
+
+# ---------------------------------------------------------------------------
+# 0.1.3 -- sealing invariants (executable)
+# ---------------------------------------------------------------------------
+
+def t_r3_member_immutability_battery(rec) -> None:
+    """INVARIANT: no sealed generation member is ever written after sealing.
+
+    Battery: commit -> (rollback, mutate nursery, save, commit) x3.
+    After every step, every retained member's bytes must match its manifest.
+    """
+    o = _owner()
+    p = _fresh_program(o)
+    p.nursery.add("inv idea", words="w")
+    committed = [CG.commit_checkpoint(p)["generation_id"]]
+    ok = True
+    for i in range(3):
+        q = rollback(o)
+        q.nursery.add(f"inv mutation {i}", words="w")
+        persist_rest.save(q)
+        committed.append(CG.commit_checkpoint(q)["generation_id"])
+        # check every retained generation's members against its manifest
+        for gid in committed:
+            try:
+                man = CG._read_manifest(o, gid)
+            except CG.CheckpointError:
+                continue  # pruned by retention; only retained ones are checked
+            for kind in ("nursery", "program"):
+                mp = os.path.join(_STATE_DIR, man["members"][kind]["file"])
+                if os.path.isfile(mp) and _sha256(mp) != man["members"][kind]["sha256"]:
+                    ok = False
+    # current generation loads cleanly
+    cur, _ = CG.load_checkpoint(o, activate=False)
+    ok = ok and cur is not None
+    rec("r3_member_immutability_battery", ok,
+        f"generations={len(committed)}")
+
+
+def t_r3_no_alias_ownership(rec) -> None:
+    """INVARIANT: after rollback, committed and working state are not aliased."""
+    o = _owner()
+    p = _fresh_program(o)
+    p.nursery.add("alias idea", words="w")
+    rc = CG.commit_checkpoint(p)
+    member_files = {m["file"] for m in rc["members"].values()}
+    q = rollback(o)
+    qp = os.path.abspath(q.nursery.path or "")
+    ok = os.path.basename(qp) not in member_files
+    ok = ok and qp == os.path.abspath(owner_nursery_path(o))
+    # And the program member is never referenced for writing either:
+    # persist.save targets the live program file.
+    ok = ok and os.path.abspath(persist_rest.save(q)) == os.path.abspath(_path(o))
+    rec("r3_no_alias_ownership", ok, f"nursery.path={q.nursery.path}")
+
+
+# ---------------------------------------------------------------------------
+# 0.1.4 -- interruption / failure / corruption honesty
+# ---------------------------------------------------------------------------
+
+_PKILL = _DRIVER_PREAMBLE + """
+o = sys.argv[1]
+from form.open import open_program
+from form.mandell.language import bind
+from form import persist_rest
+p = open_program(o); bind(p)
+for i in range(6000):
+    p.place(f"k{i}", f"Kill{i}", words="x" * 200)
+persist_rest.save(p)
+print("BASELINE_SAVED", flush=True)
+persist_rest.save(p, _fail_at="slow_write")  # SIGKILL lands mid-temp-write
+print("SHOULD_NOT_PRINT", flush=True)
+"""
+
+
+def t_r4_kill9_mid_save_keeps_previous_complete(rec) -> None:
+    o = _owner()
+    d = tempfile.mkdtemp(prefix="p0r1kill_")
+    script = os.path.join(d, "pkill.py")
+    with open(script, "w", encoding="utf-8") as f:
+        f.write(_PKILL)
+    target = _path(o)
+    try:
+        proc = subprocess.Popen([sys.executable, "-B", script, o],
+                                cwd=ROOT, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True)
+        # wait for baseline save
+        baseline_line = proc.stdout.readline().strip()
+        if baseline_line != "BASELINE_SAVED":
+            proc.kill()
+            rec("r4_kill9_mid_save_keeps_previous_complete", False,
+                f"driver never reached baseline: {baseline_line} {proc.stderr.read()[-300:]}")
+            return
+        sha_before = _sha256(target)
+        # wait until the slow temp write is actually in flight, then SIGKILL
+        deadline = time.time() + 30
+        saw_tmp = False
+        while time.time() < deadline:
+            try:
+                names = os.listdir(_STATE_DIR)
+            except OSError:
+                names = []
+            if any(".dmtmp." in n for n in names):
+                saw_tmp = True
+                break
+            if proc.poll() is not None:
+                break
+            time.sleep(0.02)
+        proc.kill()  # SIGKILL
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        rc = proc.returncode
+        ok = rc == -signal.SIGKILL and saw_tmp
+        # The canonical file is still the previous COMPLETE generation.
+        ok = ok and _sha256(target) == sha_before
+        data = json.loads(open(target, encoding="utf-8").read())
+        ok = ok and isinstance(data, dict) and data.get("type") == "DellMatrixProgramState"
+        q = persist_rest.load(o)
+        ok = ok and "k0" in q.cube.session.plane.units
+        # A subsequent normal save works (no wedged state).
+        persist_rest.save(q)
+        ok = ok and "k0" in persist_rest.load(o).cube.session.plane.units
+        rec("r4_kill9_mid_save_keeps_previous_complete", ok,
+            f"rc={rc} saw_tmp={saw_tmp} sha_stable={_sha256(target) == sha_before}")
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+_PCRASH = _DRIVER_PREAMBLE + """
+o = sys.argv[1]
+stage = sys.argv[2]
+from form.open import open_program
+from form.mandell.language import bind
+from form.mandell import checkpoint_generation as CG
+from form import persist_rest
+p = open_program(o); bind(p)
+p.nursery.add("crash idea", words="w")
+rc = CG.commit_checkpoint(p)
+print("G1", rc["generation_id"], flush=True)
+p.place("after_unit", "After", words="after")
+if stage == "pointer":
+    CG.commit_checkpoint(p, _fail_at="crash_pointer")   # dies before pointer swap
+else:
+    persist_rest.save(p, _fail_at="crash_after_replace")  # dies right after replace
+print("SHOULD_NOT_PRINT", flush=True)
+"""
+
+
+def t_r4_crash_before_pointer_swap_previous_authoritative(rec) -> None:
+    o = _owner()
+    c = _run_driver("pcrash", _PCRASH, o, "pointer")
+    g1 = c.stdout.strip().split()[1] if "G1" in c.stdout else None
+    ok = c.returncode == 42 and g1 is not None
+    # The previous committed generation is still authoritative.
+    ok = ok and CG.current_generation_id(o) == g1
+    q, rcq = CG.load_checkpoint(o, activate=False)
+    ok = ok and rcq["generation_id"] == g1
+    rec("r4_crash_before_pointer_swap_previous_authoritative", ok,
+        f"rc={c.returncode} current={CG.current_generation_id(o)}")
+
+
+def t_r4_crash_after_replace_new_generation_honest(rec) -> None:
+    o = _owner()
+    c = _run_driver("pcrash2", _PCRASH, o, "save")
+    ok = c.returncode == 42
+    # The new complete generation is honestly loadable (no torn file).
+    q = persist_rest.load(o)
+    ok = ok and "after_unit" in q.cube.session.plane.units
+    rec("r4_crash_after_replace_new_generation_honest", ok, f"rc={c.returncode}")
+
+
+def t_r4_commit_failure_before_boundary(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    p.nursery.add("commitfail idea", words="w")
+    rc1 = CG.commit_checkpoint(p)
+    p.place("doomed_unit", "Doomed", words="d")
+    try:
+        CG.commit_checkpoint(p, _fail_at="manifest")
+        ok = False
+    except CG.CheckpointCommitError:
+        ok = True
+    ok = ok and CG.current_generation_id(o) == rc1["generation_id"]
+    q, _ = CG.load_checkpoint(o, activate=False)
+    ok = ok and "doomed_unit" not in q.cube.session.plane.units
+    rec("r4_commit_failure_before_boundary", ok, "")
+
+
+def t_r4_corrupt_member_fingerprint_honest(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    p.nursery.add("corrupt idea", words="w")
+    rc = CG.commit_checkpoint(p)
+    mpath = _member_path(o, rc, "nursery")
+    with open(mpath, "ab") as f:
+        f.write(b"X")
+    try:
+        CG.load_checkpoint(o, activate=False)
+        ok = False
+    except CG.CheckpointLoadError as exc:
+        ok = "fingerprint mismatch" in str(exc)
+    rec("r4_corrupt_member_fingerprint_honest", ok, "")
+
+
+def t_r4_missing_member_honest(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    p.nursery.add("missing idea", words="w")
+    rc = CG.commit_checkpoint(p)
+    os.unlink(_member_path(o, rc, "program"))
+    try:
+        CG.load_checkpoint(o, activate=False)
+        ok = False
+    except CG.CheckpointLoadError as exc:
+        ok = "absent member" in str(exc)
+    rec("r4_missing_member_honest", ok, "")
+
+
+def t_r4_corrupt_manifest_honest(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    p.nursery.add("manifest idea", words="w")
+    rc = CG.commit_checkpoint(p)
+    man_path = os.path.join(_STATE_DIR, f"gen_{CG._owner_ns(o)}_{rc['generation_id']}.json")
+    with open(man_path, "wb") as f:
+        f.write(b"{invalid json")
+    try:
+        CG.load_checkpoint(o, activate=False)
+        ok = False
+    except CG.CheckpointLoadError:
+        ok = True
+    rec("r4_corrupt_manifest_honest", ok, "")
+
+
+def t_r4_previous_generation_recovery_deterministic(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    p.nursery.add("rec idea one", words="w")
+    rc1 = CG.commit_checkpoint(p)
+    p.nursery.add("rec idea two", words="w")
+    rc2 = CG.commit_checkpoint(p)
+    # Corrupt the CURRENT generation's nursery member.
+    with open(_member_path(o, rc2, "nursery"), "ab") as f:
+        f.write(b"X")
+    q, rcq = CG.load_checkpoint(o, activate=False)
+    ok = rcq["generation_id"] == rc1["generation_id"]
+    ok = ok and rcq.get("recovered_from") == rc2["generation_id"]
+    ok = ok and len(q.nursery.proposals) == 1
+    rec("r4_previous_generation_recovery_deterministic", ok,
+        f"recovered_from={rcq.get('recovered_from')}")
+
+
+def t_r4_nursery_lost_update_refused(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    p.nursery.add("conflict idea", words="w")
+    live = owner_nursery_path(o)
+    n1 = Nursery.load(live)
+    n2 = Nursery.load(live)
+    n1.add("n1 idea", words="w")
+    try:
+        n2.add("n2 idea", words="w")
+        ok = False
+    except NurseryConflictError:
+        ok = True
+    rec("r4_nursery_lost_update_refused", ok, "")
+
+
+def t_r4_corrupt_nursery_file_honest(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    p.nursery.add("honest idea", words="w")
+    live = owner_nursery_path(o)
+    with open(live, "wb") as f:
+        f.write(b'{"truncated": ')
+    try:
+        n = Nursery.load(live)
+        ok = False  # must never silently return an empty nursery
+    except NurseryLoadError:
+        ok = True
+    rec("r4_corrupt_nursery_file_honest", ok, "")
+
+
+def t_r4_serialize_failure_leaves_target_untouched(rec) -> None:
+    from form.dell_matrix.atomic_write import AtomicWriteError
+    o = _owner()
+    p = _fresh_program(o)
+    p.place("ser_unit", "Ser", words="s")
+    target = persist_rest.save(p)
+    sha_before = _sha256(target)
+    try:
+        persist_rest.save(p, _fail_at="serialize")
+        ok = False
+    except AtomicWriteError:
+        ok = True
+    ok = ok and _sha256(target) == sha_before
+    rec("r4_serialize_failure_leaves_target_untouched", ok, "")
+
+
+# ---------------------------------------------------------------------------
+# GATE R3 — fail-closed transaction recovery adversarial battery
+# ---------------------------------------------------------------------------
+
+def t_r3_fail_closed_recovery(rec) -> None:
+    """R3: recovery must fail closed on corrupt/unrecoverable journals.
+    Load must never expose potentially hybrid state."""
+    from form.mandell.core_i_recovery import (
+        RollbackRecoveryError, _journal_path, _staging_path,
+        recover_rollback_transaction,
+    )
+    import json as _json
+
+    o = _owner()
+    p = _fresh_program(o)
+    p.place("r3_unit", "R3", words="r3")
+    persist_rest.save(p)
+
+    jp = _journal_path(o)
+    def write_journal(obj=None, raw=None):
+        if raw is not None:
+            with open(jp, "w", encoding="utf-8") as f:
+                f.write(raw)
+        else:
+            with open(jp, "w", encoding="utf-8") as f:
+                _json.dump(obj, f)
+
+    def load_fails_closed():
+        """persist_rest.load must raise, not return a Program."""
+        try:
+            persist_rest.load(o, activate=False)
+            return False
+        except (RollbackRecoveryError, Exception):
+            return True
+
+    def recover_raises():
+        try:
+            recover_rollback_transaction(o)
+            return False
+        except RollbackRecoveryError:
+            return True
+        except Exception:
+            return False  # wrong exception type
+
+    # 1. Corrupt journal JSON -> fail closed.
+    write_journal(raw="{not valid json")
+    rec("r3_corrupt_journal_recover_raises", recover_raises(), "")
+    rec("r3_corrupt_journal_load_fails_closed", load_fails_closed(), "")
+    if os.path.exists(jp):
+        os.unlink(jp)
+
+    # 2. Unknown journal phase -> fail closed (journal preserved).
+    write_journal({"phase": "bogus", "owner": o})
+    rec("r3_unknown_phase_recover_raises", recover_raises(), "")
+    rec("r3_unknown_phase_load_fails_closed", load_fails_closed(), "")
+    rec("r3_unknown_phase_journal_preserved", os.path.exists(jp), "")
+    os.unlink(jp)
+
+    # 3. Journal missing required fields -> fail closed.
+    write_journal({"phase": "staged", "owner": o})  # missing hashes
+    rec("r3_missing_fields_recover_raises", recover_raises(), "")
+    rec("r3_missing_fields_load_fails_closed", load_fails_closed(), "")
+    os.unlink(jp)
+
+    # 4. Non-dict journal -> fail closed.
+    write_journal(raw="[1,2,3]")
+    rec("r3_non_dict_journal_raises", recover_raises(), "")
+    os.unlink(jp)
+
+    # 5. Staged with missing program staging file -> fail closed on fingerprint.
+    # (No staging files exist; live files won't match target hashes.)
+    write_journal({
+        "phase": "staged", "owner": o,
+        "program_sha256": "0" * 64, "nursery_sha256": "0" * 64,
+        "old_program_sha256": None, "old_nursery_sha256": None,
+    })
+    rec("r3_missing_staging_recover_raises", recover_raises(), "")
+    rec("r3_missing_staging_load_fails_closed", load_fails_closed(), "")
+    os.unlink(jp)
+
+    # 6. Target fingerprint mismatch -> fail closed.
+    # Create a real staged journal via failed rollback, then corrupt hashes.
+    p2 = _fresh_program(o)
+    p2.place("r3_target", "Target", words="t")
+    persist_rest.save(p2)
+    from form.mandell import core_i_recovery as R
+    g = R.checkpoint(p2, stamp="r3g")
+    try:
+        R.rollback(o, g, _fail_at="rollback_commit_program")
+    except Exception:
+        pass
+    # Corrupt the target hashes in the journal.
+    with open(jp, encoding="utf-8") as f:
+        j = _json.load(f)
+    j["program_sha256"] = "f" * 64
+    write_journal(j)
+    rec("r3_target_mismatch_recover_raises", recover_raises(), "")
+    rec("r3_target_mismatch_load_fails_closed", load_fails_closed(), "")
+    # Cleanup: remove journal and staging files.
+    if os.path.exists(jp):
+        os.unlink(jp)
+    for kind in ("program", "nursery"):
+        sp = _staging_path(o, kind)
+        if os.path.exists(sp):
+            os.unlink(sp)
+
+    # 7. Prepared with old fingerprint mismatch -> fail closed.
+    from form.persist import _path as _live_path
+    live_prog = _live_path(o)
+    old_hash = _sha256(live_prog)
+    # Modify the live file so it doesn't match.
+    with open(live_prog, "a", encoding="utf-8") as f:
+        f.write(" ")
+    write_journal({
+        "phase": "prepared", "owner": o,
+        "program_sha256": None, "nursery_sha256": None,
+        "old_program_sha256": old_hash,
+        "old_nursery_sha256": None,
+    })
+    rec("r3_old_mismatch_recover_raises", recover_raises(), "")
+    rec("r3_old_mismatch_load_fails_closed", load_fails_closed(), "")
+    os.unlink(jp)
+    # Restore live file (remove trailing space).
+    with open(live_prog, "rb+") as f:
+        f.seek(-1, 2)
+        f.truncate()
+
+    # 8. Recovery invoked repeatedly -> idempotent or fail-closed consistently.
+    write_journal({"phase": "prepared", "owner": o,
+                   "program_sha256": None, "nursery_sha256": None,
+                   "old_program_sha256": _sha256(live_prog),
+                   "old_nursery_sha256": None})
+    # Need nursery hash too; get it.
+    from form.dell_matrix.nursery import owner_nursery_path
+    live_nurs = owner_nursery_path(o)
+    with open(jp, encoding="utf-8") as f:
+        j = _json.load(f)
+    j["old_nursery_sha256"] = _sha256(live_nurs) if os.path.exists(live_nurs) else None
+    write_journal(j)
+    r1 = recover_rollback_transaction(o)
+    r2 = recover_rollback_transaction(o)
+    rec("r3_repeated_recovery_idempotent",
+        r1 == "rolled_back" and r2 is None, f"{r1},{r2}")
+
+    # 9. Load while unrecoverable journal exists -> fail closed (already
+    # covered above, but explicit: corrupt journal + load).
+    write_journal(raw="corrupt")
+    rec("r3_load_unrecoverable_fails_closed", load_fails_closed(), "")
+    os.unlink(jp)
+
+
+# ---------------------------------------------------------------------------
+# Performance baseline (Phase-0 §21): recorded, not asserted hard
+# ---------------------------------------------------------------------------
+
+def t_perf_baseline(rec) -> None:
+    o = _owner()
+    p = _fresh_program(o)
+    for i in range(200):
+        p.place(f"b{i}", f"Bench{i}", words="w" * 40)
+        if i % 20 == 0:
+            p.nursery.add(f"bench idea {i}", words="w")
+    t0 = time.perf_counter(); persist_rest.save(p); t_save = time.perf_counter() - t0
+    t0 = time.perf_counter(); persist_rest.load(o); t_load = time.perf_counter() - t0
+    t0 = time.perf_counter(); CG.commit_checkpoint(p); t_commit = time.perf_counter() - t0
+    t0 = time.perf_counter(); rollback(o); t_rb = time.perf_counter() - t0
+    print(f"PERF save={t_save:.3f}s load={t_load:.3f}s commit={t_commit:.3f}s rollback={t_rb:.3f}s")
+    rec("perf_baseline_recorded", True, "")
+
+
+# ---------------------------------------------------------------------------
+# DIRECTOR DECISION 2 (gate R1) -- eager rollback convergence
+# ---------------------------------------------------------------------------
+def t_d2_eager_rollback_convergence(rec) -> None:
+    """Rollback eagerly converges live state; 7 required proof scenarios.
+
+    1. rollback -> inspect live immediately -> correct (no save)
+    2. rollback -> mutate live -> sealed target byte-identical
+    3. rollback -> no save -> fresh process observes correct
+    4. rollback -> save -> reload -> correct
+    5. rollback -> mutate -> save -> reload -> correct
+    6. multiple rollback cycles -> correct
+    7. failed rollback -> zero partial mutation
+    """
+    import json as _json
+
+    owner = _owner()
+    # --- setup in a fresh process: gen1(alpha), gen2(alpha+beta)
+    setup = _DRIVER_PREAMBLE + f"""
+from form.open import open_program
+from form import persist_rest
+from form.mandell import core_i_recovery as R
+p = open_program({owner!r})
+p.place('idea_alpha', 'Alpha')
+persist_rest.save(p)
+g1 = R.checkpoint(p, stamp='g1')
+p.place('idea_beta', 'Beta')
+persist_rest.save(p)
+g2 = R.checkpoint(p, stamp='g2')
+print('G1=' + g1)
+print('G2=' + g2)
+"""
+    r = _run_driver("d2setup", setup)
+    g1 = [l.split("G1=")[1] for l in r.stdout.splitlines() if l.startswith("G1=")][0]
+    rec("d2_setup_two_generations", r.returncode == 0 and bool(g1), r.stderr[-200:] if r.returncode else "")
+
+    live_prog = os.path.join(_STATE_DIR, f"program_{owner}.json")
+    from form.dell_matrix.nursery import owner_nursery_path
+    live_nurs = owner_nursery_path(owner)
+
+    def live_units():
+        d = _json.load(open(live_prog, encoding="utf-8"))
+        try:
+            return sorted(d["plane"]["units"].keys())
+        except KeyError:
+            return []
+
+    # --- rollback to g1 in a fresh process (eager convergence inside rollback)
+    rb = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+rp = R.rollback({owner!r}, {g1!r})
+print('RB_OK')
+"""
+    r = _run_driver("d2rollback", rb)
+    rec("d2_rollback_returns", r.returncode == 0 and "RB_OK" in r.stdout, r.stderr[-200:] if r.returncode else "")
+
+    # 1. inspect live state immediately (no save issued) -> correct
+    u = live_units()
+    rec("d2_p1_live_immediate_correct",
+        "idea_alpha" in str(u) and "idea_beta" not in str(u), str(u)[:120])
+
+    # 3. fresh process observes correct with no intervening save
+    obs = _DRIVER_PREAMBLE + f"""
+from form import persist_rest
+q = persist_rest.load({owner!r}, activate=False)
+print('UNITS=' + ','.join(sorted(str(x) for x in q.cube.session.plane.units)))
+"""
+    r = _run_driver("d2observe", obs)
+    m = [l.split("UNITS=")[1] for l in r.stdout.splitlines() if l.startswith("UNITS=")]
+    rec("d2_p3_fresh_process_correct",
+        bool(m) and "idea_alpha" in m[0] and "idea_beta" not in m[0], (m[0][:120] if m else r.stderr[-200:]))
+
+    # 2. mutate live -> sealed g1 members byte-identical
+    mut = _DRIVER_PREAMBLE + f"""
+from form import persist_rest
+q = persist_rest.load({owner!r}, activate=False)
+q.nursery.add('post_rb_probe', words='d2')
+persist_rest.save(q)
+print('MUT_OK')
+"""
+    # snapshot sealed member hashes for g1 before mutation
+    from form.mandell.checkpoint_generation import _manifest_path
+    man_path = _manifest_path(owner, g1)
+    sealed = {}
+    if os.path.isfile(man_path):
+        man = _json.load(open(man_path, encoding="utf-8"))
+        for kind, spec in man.get("members", {}).items():
+            sealed[spec["file"]] = spec["sha256"]
+    r = _run_driver("d2mutate", mut)
+    ok = r.returncode == 0
+    intact = all(_sha256(os.path.join(_STATE_DIR, f)) == s for f, s in sealed.items())
+    rec("d2_p2_sealed_byte_identical", ok and intact and bool(sealed), "")
+
+    # 4. rollback -> save -> reload -> correct
+    s4 = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+from form import persist_rest
+R.rollback({owner!r}, {g1!r})
+q = persist_rest.load({owner!r}, activate=False)
+persist_rest.save(q)
+z = persist_rest.load({owner!r}, activate=False)
+print('UNITS=' + ','.join(sorted(str(x) for x in z.cube.session.plane.units)))
+"""
+    r = _run_driver("d2s4", s4)
+    m = [l.split("UNITS=")[1] for l in r.stdout.splitlines() if l.startswith("UNITS=")]
+    rec("d2_p4_save_reload_correct",
+        bool(m) and "idea_alpha" in m[0] and "idea_beta" not in m[0], (m[0][:120] if m else r.stderr[-200:]))
+
+    # 5. rollback -> mutate -> save -> reload -> correct
+    s5 = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+from form import persist_rest
+R.rollback({owner!r}, {g1!r})
+q = persist_rest.load({owner!r}, activate=False)
+q.place('idea_gamma', 'Gamma')
+persist_rest.save(q)
+z = persist_rest.load({owner!r}, activate=False)
+print('UNITS=' + ','.join(sorted(str(x) for x in z.cube.session.plane.units)))
+"""
+    r = _run_driver("d2s5", s5)
+    m = [l.split("UNITS=")[1] for l in r.stdout.splitlines() if l.startswith("UNITS=")]
+    rec("d2_p5_mutate_save_reload_correct",
+        bool(m) and "idea_gamma" in m[0] and "idea_beta" not in m[0], (m[0][:120] if m else r.stderr[-200:]))
+
+    # 6. multiple rollback cycles -> correct (g2 -> g1)
+    # derive g2: the generation id from the CURRENT pointer (should be g2,
+    # since g2 was committed last)
+    from form.mandell.checkpoint_generation import _pointer_path
+    g2 = None
+    ptr_path = _pointer_path(owner)
+    if os.path.isfile(ptr_path):
+        ptr = _json.load(open(ptr_path, encoding="utf-8"))
+        if ptr.get("generation_id") != g1:
+            g2 = ptr["generation_id"]
+    rec("d2_p6_have_both_generations", bool(g2), "")
+    if g2:
+        s6b = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+from form import persist_rest
+R.rollback({owner!r}, {g2!r})
+a = sorted(str(x) for x in persist_rest.load({owner!r}, activate=False).cube.session.plane.units)
+R.rollback({owner!r}, {g1!r})
+b = sorted(str(x) for x in persist_rest.load({owner!r}, activate=False).cube.session.plane.units)
+print('A=' + ','.join(a))
+print('B=' + ','.join(b))
+"""
+        r = _run_driver("d2s6", s6b)
+        la = [l.split("A=")[1] for l in r.stdout.splitlines() if l.startswith("A=")]
+        lb = [l.split("B=")[1] for l in r.stdout.splitlines() if l.startswith("B=")]
+        rec("d2_p6_multi_cycle_correct",
+            bool(la) and bool(lb) and "idea_beta" in la[0] and "idea_beta" not in lb[0]
+            and "idea_alpha" in lb[0], (r.stdout[-200:] if not (la and lb) else ""))
+
+    # 7. failed rollback -> transactional outcome (injected failures).
+    # Pre-commit failures (before/during prepare/stage) leave the OLD pair
+    # authoritative (zero partial mutation). Failures at/after the staging
+    # boundary leave a journal that recovery deterministically completes to
+    # the TARGET pair. A reader never sees a hybrid.
+    #
+    # Setup: roll back to g2 so live = OLD pair (alpha+beta); the injected
+    # rollback targets g1 (alpha) = TARGET pair. Distinct states.
+    if g2:
+        setup7 = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+R.rollback({owner!r}, {g2!r})
+print('SETUP7_OK')
+"""
+        r = _run_driver("d2setup7", setup7)
+        rec("d2_p7_setup_old_pair", "SETUP7_OK" in r.stdout,
+            r.stdout[-200:] if "SETUP7_OK" not in r.stdout else "")
+    h_prog_old = _sem_hash(live_prog)
+    h_nurs_old = _sem_hash(live_nurs)
+    # Target pair hashes: capture from a successful rollback to g1 (the
+    # rollback payload is the validated in-memory program re-serialized,
+    # which need not byte-match the sealed member file).
+    cap = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+R.rollback({owner!r}, {g1!r})
+print('CAP_OK')
+"""
+    _run_driver("d2cap", cap)
+    h_prog_target = _sem_hash(live_prog)
+    h_nurs_target = _sem_hash(live_nurs)
+    rec("d2_p7_target_hashes_known", bool(h_prog_target and h_nurs_target), "")
+    rec("d2_p7_old_differs_from_target",
+        h_prog_old != h_prog_target or h_nurs_old != h_nurs_target, "")
+    # Restore the OLD pair (g2) for the injection loop baseline.
+    rst = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+R.rollback({owner!r}, {g2!r})
+print('RST_OK')
+"""
+    _run_driver("d2rst", rst)
+    pre_commit = ("rollback_serialize", "rollback_journal", "rollback_stage",
+                  "rollback_nursery_conflict")
+    post_stage = ("rollback_commit_program", "rollback_commit_nursery",
+                  "rollback_cleanup", "rollback_verify")
+    for stage in pre_commit + post_stage:
+        fs = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+try:
+    R.rollback({owner!r}, {g1!r}, _fail_at={stage!r})
+    print('NO_RAISE')
+except Exception as e:
+    print('RAISED=' + type(e).__name__)
+# Fresh process observes the recovered state (recovery runs inside load).
+try:
+    from form import persist_rest
+    q = persist_rest.load({owner!r}, activate=False)
+    print('OBS=' + ','.join(sorted(str(x) for x in q.cube.session.plane.units)))
+except Exception as e:
+    print('LOAD_FAIL=' + type(e).__name__ + ':' + str(e)[:150])
+"""
+        r = _run_driver("d2fail", fs)
+        raised = "RAISED=" in r.stdout and "NO_RAISE" not in r.stdout
+        obs = [l.split("OBS=")[1] for l in r.stdout.splitlines() if l.startswith("OBS=")]
+        # Semantic check: live program file must contain exactly the
+        # expected unit set (old pair has beta, target pair does not).
+        # This proves no hybrid: a torn pair would show a unit mismatch
+        # between the file and the fresh-process observation.
+        def _live_units():
+            d = _json.load(open(live_prog, encoding="utf-8"))
+            try:
+                return set(d["plane"]["units"].keys())
+            except KeyError:
+                return set()
+        lu = _live_units()
+        if stage in pre_commit:
+            good = "idea_beta" in lu and "idea_alpha" in lu
+            obs_ok = bool(obs) and "idea_beta" in obs[0]
+        else:
+            good = "idea_beta" not in lu and "idea_alpha" in lu
+            obs_ok = bool(obs) and "idea_beta" not in obs[0] and "idea_alpha" in obs[0]
+        # File-level and observation-level must agree (no hybrid).
+        good = good and obs_ok
+        rec(f"d2_p7_transactional_{stage}", raised and good and obs_ok,
+            r.stdout[-200:] if not (raised and good and obs_ok) else "")
+        # After each post-stage failure the live pair is the TARGET pair;
+        # restore the OLD pair so the next iteration starts from the same
+        # baseline.
+        if stage in post_stage and g2:
+            rs = _DRIVER_PREAMBLE + f"""
+from form.mandell import core_i_recovery as R
+R.rollback({owner!r}, {g2!r})
+print('RESTORED')
+"""
+            rr = _run_driver("d2restore", rs)
+            assert "RESTORED" in rr.stdout, rr.stdout[-200:]
+
+
+_TESTS = [
+    t_r1_rollback_repoints_to_live,
+    t_d2_eager_rollback_convergence,
+    t_r1_postrollback_mutation_keeps_member_byte_identical,
+    t_r1_rollback_then_commit_chain_coherent,
+    t_r2_xproc_save_checkpoint_rollback_mutate_save_load,
+    t_r2_xproc_rollback_missing_honest,
+    t_r3_member_immutability_battery,
+    t_r3_no_alias_ownership,
+    t_r4_kill9_mid_save_keeps_previous_complete,
+    t_r4_crash_before_pointer_swap_previous_authoritative,
+    t_r4_crash_after_replace_new_generation_honest,
+    t_r4_commit_failure_before_boundary,
+    t_r4_corrupt_member_fingerprint_honest,
+    t_r4_missing_member_honest,
+    t_r4_corrupt_manifest_honest,
+    t_r4_previous_generation_recovery_deterministic,
+    t_r4_nursery_lost_update_refused,
+    t_r4_corrupt_nursery_file_honest,
+    t_r4_serialize_failure_leaves_target_untouched,
+    t_r3_fail_closed_recovery,
+    t_perf_baseline,
+]
+
+
+def smoke() -> bool:
+    print("=== P0R1 PERSISTENCE INTEGRITY ===")
+    before = set(os.listdir(_STATE_DIR))
+    r = []
+
+    def rec(name, ok, detail=""):
+        print(f"[{len(r) + 1}] {name}: {'PASS' if ok else 'FAIL'}" + (f" | {detail}" if detail and not ok else ""))
+        r.append(bool(ok))
+
+    try:
+        for t in _TESTS:
+            try:
+                t(rec)
+            except Exception as exc:  # noqa: BLE001 -- honest failure, never silent
+                import traceback
+                traceback.print_exc()
+                rec(t.__name__, False, f"raised {type(exc).__name__}: {exc}")
+    finally:
+        # Remove only files this suite created.
+        for name in set(os.listdir(_STATE_DIR)) - before:
+            try:
+                os.unlink(os.path.join(_STATE_DIR, name))
+            except OSError:
+                pass
+    print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
+    return all(r)
+
+
+if __name__ == "__main__":
+    sys.exit(0 if smoke() else 1)

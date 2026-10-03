@@ -113,7 +113,17 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
     d = get_dell(n)
     name = (d or {}).get("name", str(n))
     messages.append(f"Dell {n}[{name}] reserved/not-active")
-    return program, {"ok": True, "error": "", "skipped": True}
+    # DIRECTOR DECISION 1 (GDP-001 Phase-0 gate): unified atom truth.
+    # A reserved/unexecuted atom did NOT successfully execute merely because
+    # its containing chain is allowed to continue. Atom-level truth:
+    #   ok=False, skipped=True, reason=<explicit honest reason>.
+    # ATOM EXECUTION RESULT != CHAIN CONTINUATION POLICY: the chain continues
+    # (execute_range does not abort), but the atom record is honest.
+    # No consumer may infer ok=True for an operation that did not execute.
+    return program, {"ok": False, "skipped": True,
+                     "error": "reserved/not-active",
+                     "reason": f"Dell {n}[{name}] is reserved/not-active; "
+                               f"atom not executed (chain continues per policy)"}
 
 
 def _apply_flow(st: Any, flow: str, prev_ok: bool, prev_atom: Any, next_atom: Any, messages: List[str]) -> str:
@@ -181,7 +191,11 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
             action = _apply_flow(st, _flow_at(seed, i - 1), last_ok, atoms[i - 1], atom, messages)
             if action == "skip":
                 skipped.append(n)
-                results.append({"dell": n, "ok": False, "error": "flow_thru_block"})
+                # DIRECTOR DECISION 1: flow-blocked atoms are unexecuted —
+                # ok=False with explicit reason, consistent with reserved skips.
+                results.append({"dell": n, "ok": False, "error": "flow_thru_block",
+                                "skipped": True,
+                                "reason": f"Dell {n} blocked by FlowThru (previous atom did not succeed); not executed"})
                 last_ok = False
                 i += 1
                 continue
@@ -214,7 +228,12 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
             program = out["new_program"]
             state["new_program"] = program
         last_ok = bool(out.get("ok", True))
-        results.append({"dell": n, "ok": last_ok, "error": out.get("error") or ""})
+        # DIRECTOR DECISION 1: atom record carries unified truth —
+        # ok=False, skipped=True, reason=<explicit> for unexecuted atoms.
+        # The chain continues (no abort); the aggregate reflects the truth.
+        results.append({"dell": n, "ok": last_ok, "error": out.get("error") or "",
+                        "skipped": bool(out.get("skipped", False)),
+                        "reason": out.get("reason") or out.get("error") or ""})
         if not last_ok:
             state["ok"] = False
             state["error"] = out.get("error") or state.get("error") or ""
@@ -360,4 +379,10 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     st = getattr(program, "core_ii", None)
     # EOC-I: per-node evidence (additive; existing keys unchanged).
     atom_results = [dict(r) for r in (_results or []) if isinstance(r, dict)]
-    return {"ok": ok, "error": last_error, "seed": seed.as_mandel(), "english": seed.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "core_ii": st.snap() if st is not None else {}}
+    # DIRECTOR DECISION 1: aggregate chain Outcome must expose
+    # partial/skipped/failure state honestly. partial=True when some atoms
+    # executed and others did not (mirrors RouteReceipt.partial semantics).
+    _oks = [bool(r.get("ok", True)) for r in atom_results]
+    _partial = bool(atom_results) and any(_oks) and not all(_oks)
+    _any_skipped = any(bool(r.get("skipped", False)) for r in atom_results)
+    return {"ok": ok, "error": last_error, "seed": seed.as_mandel(), "english": seed.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": st.snap() if st is not None else {}}

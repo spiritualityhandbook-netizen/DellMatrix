@@ -133,16 +133,22 @@ class SpatialAudio:
         return cues
 
     def cues_for_program(self, program, nodes: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
-        from form.dell_matrix.perspective_views import _pose_from_program, _nodes_from_program
+        # ARGUS 5: propagate epistemic status — a caller must be able to
+        # distinguish "verified empty room" from "could not see anything".
+        from form.dell_matrix.perspective_views import _pose_from_program, _probe_nodes
         pos, facing = _pose_from_program(program)
         if nodes is None:
-            nodes = _nodes_from_program(program)
+            nodes, data_source, epistemic_status = _probe_nodes(program)
+        else:
+            data_source, epistemic_status = "caller-supplied nodes", "PARTIAL"
         cues = self.spatialize(pos, facing, nodes)
         return {
             "ok": True,
             "listener": {"pos": list(pos), "facing": facing},
             "cues": cues,
             "count": len(cues),
+            "epistemic_status": epistemic_status,
+            "data_source": data_source,
             "summary": [
                 f"{c['ear']} {c['label'][:20]} d={c['dist']} pan={c['pan']} gain={c['gain']}"
                 for c in cues[:12]

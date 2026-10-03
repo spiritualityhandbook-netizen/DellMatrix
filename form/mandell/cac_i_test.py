@@ -440,10 +440,11 @@ def control_n_strict():
     out = ob.compose_execute(p, "150[Nope]")
     check("N.unknown-dell", (not out.get("ok")) and (not out.get("routed"))
           and "unknown Dell 150" in out.get("error", ""), out.get("error"))
-    # Reserved-but-inactive dells (e.g. 999 Omega) inherit existing
-    # chain_exec semantics: skipped, ok. Known address, defined behavior.
+    # Reserved-but-inactive dells (e.g. 999 Omega): skipped with honest
+    # atom truth (DIRECTOR DECISION 1, gate R1). The atom did not execute,
+    # so ok=False; the skip is recorded explicitly, not as success.
     out = ob.compose_execute(p, "999[Omega]")
-    check("N.reserved-skip", out.get("ok") and out.get("chain_skipped") == [999],
+    check("N.reserved-skip", out.get("ok") is False and out.get("chain_skipped") == [999],
           f"{out.get('chain_ran')}/{out.get('chain_skipped')}")
 
 

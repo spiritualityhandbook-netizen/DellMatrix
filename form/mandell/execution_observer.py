@@ -43,6 +43,10 @@ class _RawReceipt:
     error: str = ""
     messages: List[str] = field(default_factory=list)
     state_note: str = ""
+    # ARGUS 3.3b: the raw path must not assert "no partial completion" for
+    # executions that were partial. These mirror RouteReceipt's contract.
+    atom_results: List[Dict[str, Any]] = field(default_factory=list)
+    partial: bool = False
 
 
 def _identity(seed_text: str):
@@ -172,10 +176,16 @@ def observe_seed_execution(program: Any, seed_text: str,
     ok = bool(out.get("ok", False))
     error = str(out.get("error") or "")
     state_note = "; ".join(messages[-3:]) if messages else ("executed" if ok else "failed")
+    # ARGUS 3.3b: carry the chain's atom results so the Outcome ledger does
+    # not falsely record atom_results=[] / partial_completion=False.
+    _atom_results = [dict(r) for r in (out.get("atom_results") or []) if isinstance(r, dict)]
+    _oks = [bool(r.get("ok", True)) for r in _atom_results]
+    _partial = bool(out.get("partial", False)) or (bool(_atom_results) and any(_oks) and not all(_oks))
     _capture(program, _RawReceipt(
         action=action, mandell=raw, dell=dell,
         semantic=f"{action}[{name}]", input=raw,
         routed=True, ok=ok, error=error if not ok else "",
         messages=messages, state_note=state_note,
+        atom_results=_atom_results, partial=_partial,
     ), nurture_before, interaction_id=interaction_id)
     return out

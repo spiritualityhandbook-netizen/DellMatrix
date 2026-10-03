@@ -183,8 +183,19 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     activate=False, e.g. AUTO loading AutoGrow). The Program's owner is the file's owner (Q-016 resolution);
     its nursery and language are that owner's and nothing of the previously bound owner is combined into it.
     A missing file yields a fresh owner: empty cells + default customs (D2), never the active owner's language.
-    load() writes no file."""
+    load() writes no file.
+
+    Gate R2 (Finding 1): before exposing live state, deterministically
+    recover any interrupted rollback transaction for this owner, so a
+    reader never accepts a hybrid program/nursery pair.
+    """
     assert_floor_intact()
+    # Transactional rollback recovery (Gate R3: FAIL-CLOSED). If a journal
+    # exists, recovery must establish a proven-coherent pair or raise
+    # RollbackRecoveryError. Never suppress; never expose potentially
+    # hybrid state.
+    from form.mandell.core_i_recovery import recover_rollback_transaction
+    recover_rollback_transaction(owner)
     path = path or _path(owner)
     if not os.path.isfile(path):
         p = open_program(owner)
@@ -222,6 +233,17 @@ def _load_impl(owner: str, path: str, nursery, activate: bool) -> Program:
             raise ProgramLoadError(f"owner binding mismatch: prepared {p.owner!r} for file owner {resolved!r}")
     elif p.owner != resolved or p.nursery is not nursery:
         raise ProgramLoadError("generation member binding mismatch: staged nursery was not used")
+    if nursery is not None:
+        # DCC-XVIII repair (GDP-001 Phase 0, R1): the staged nursery is bound
+        # to the SEALED generation member file. Copy-on-rollback + re-point:
+        # re-point the instance to the live owner file NOW, so committed /
+        # sealed state and mutable working state have explicit, non-aliased
+        # ownership. The sealed member is never written through this program
+        # again; the next nursery save() persists the rolled-back working
+        # state to the live file. No live file is written here (load stays
+        # read-pure) and the staged in-memory proposals are untouched.
+        from form.dell_matrix.nursery import owner_nursery_path
+        nursery.repoint_to_live(owner_nursery_path(resolved))
     if activate:
         bind(p)
     return p
