@@ -40,11 +40,14 @@ def make_idea(title):
     return idea
 
 
+_PASS_COUNT = 0
+
 def check(name, cond):
+    global _PASS_COUNT
     print(("PASS " if cond else "FAIL ") + name)
     if not cond:
         raise AssertionError(name)
-
+    _PASS_COUNT += 1
 
 def main():
     wipe()
@@ -254,9 +257,19 @@ def main():
               any(e.target_id == doomed.id and e.status == RelationshipStatus.ACTIVE
                   for e in g6.by_type(RelationshipType.CONTAINS)))
 
-        print("\nP2 GRAPH CONTRACT TESTS: ALL PASS")
+        print(f"\nP2 GRAPH CONTRACT TESTS: ALL PASS")
+        print(f"P2GRAPH {_PASS_COUNT}/{_PASS_COUNT}")
     finally:
         wipe()
+
+
+def smoke() -> bool:
+    """Regression-runner entry: True iff all contract checks pass."""
+    try:
+        main()
+        return True
+    except Exception:
+        return False
 
 
 if __name__ == "__main__":

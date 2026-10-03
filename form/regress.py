@@ -76,6 +76,7 @@ LIST = [
     "form.mandell.dcc_xx_test",
     "form.mandell.p0r1_persist_test",
     "form.mandell.p1_idea_test",
+    "form.mandell.p2_graph_test",
     "form.mandell.pac_i_test",
     "form.mandell.cac_i_test",
     "form.mandell.ssi_i_test",

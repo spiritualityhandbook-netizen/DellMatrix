@@ -113,39 +113,51 @@ Mission verbs: CREATE, UNDERSTAND, REMEMBER, SUPERSEDE, FADE.
 
 ---
 
-## PHASE 2 — FRACTAL SEMANTIC GRAPH [NOT_STARTED] (DERIVED DRAFT)
+## PHASE 2 — FRACTAL SEMANTIC GRAPH [IN_PROGRESS] (AUTHORIZED 2026-10-03)
 
-Mission verbs: FRACTAL, RELATE.
-### R2.1 Fractal containment model
-| 2.1.1 | Containment: ideas as containers of ideas; children/members on Unit | NOT_STARTED |
-| 2.1.2 | Containment vs lineage separation (parents = derivation, containers = nesting) | NOT_STARTED |
-| 2.1.3 | Nest/unnest operations with provenance | NOT_STARTED |
-| 2.1.4 | Containment persisted per-owner | NOT_STARTED |
-| 2.1.5 | No silent re-parenting | NOT_STARTED |
-### R2.2 Graph relationships
-| 2.2.1 | First-class relationship edges (resonates-with, derived-from, contains) | NOT_STARTED |
-| 2.2.2 | Graph queryable independently of hierarchy | NOT_STARTED |
-| 2.2.3 | Edges carry provenance + evidence | NOT_STARTED |
-| 2.2.4 | Graph persisted per-owner | NOT_STARTED |
-| 2.2.5 | Hierarchy ≠ complete relationship model (law enforced in code) | NOT_STARTED |
-### R2.3 Promotion
-| 2.3.1 | Nested → top-level promotion preserving identity | NOT_STARTED |
-| 2.3.2 | Promotion preserves containment origin, history, evidence, provenance, Nursery origin | NOT_STARTED |
-| 2.3.3 | Demotion (top-level → nested) symmetric | NOT_STARTED |
-| 2.3.4 | Promotion via human acceptance only | NOT_STARTED |
-| 2.3.5 | Full §35 promotion scenario passes end-to-end | NOT_STARTED |
-### R2.4 Multi-representation coherence
-| 2.4.1 | One underlying state; semantic/Mandell/graph/spatial/resonance/visual representations | NOT_STARTED |
-| 2.4.2 | Representations derived, never competing truths | NOT_STARTED |
-| 2.4.3 | Representation registry with derivation proofs | NOT_STARTED |
-| 2.4.4 | Perspective reads representations, never authors truth | NOT_STARTED |
-| 2.4.5 | Inconsistency between representations is a defect, surfaced | NOT_STARTED |
-### R2.5 Graph traversal + query
-| 2.5.1 | Traversal operations with bounded depth | NOT_STARTED |
-| 2.5.2 | Query language/path for relationships | NOT_STARTED |
-| 2.5.3 | Performance: indexed, no full-graph scans for local queries | NOT_STARTED |
-| 2.5.4 | Public-path proofs | NOT_STARTED |
-| 2.5.5 | Integration with Phase-1 history/provenance | NOT_STARTED |
+Mission verbs: CONTAIN, RELATE, PROMOTE, TRAVERSE, PROPAGATE.
+Entry: main 38819e4 (Phase 1 certified/merged/closed).
+Branch: gdp-phase2-work. DO NOT MERGE without Director authorization.
+
+### R2.1 Fractal containment
+| 2.1.1 | Explicit parent/child containment, arbitrary depth | IMPLEMENTED |
+| 2.1.2 | Stable Idea ID through containment ops | IMPLEMENTED |
+| 2.1.3 | Deterministic navigation: parent/children/ancestors/descendants/breadcrumb/root/top-level | IMPLEMENTED |
+| 2.1.4 | Navigation completeness proven (12/12) | IMPLEMENTED |
+| 2.1.5 | Computation independent of UI/navigation (no Perspective imports) | IMPLEMENTED |
+### R2.2 Promotion / reparenting
+| 2.2.1 | Nested→top-level promotion without new ID | IMPLEMENTED |
+| 2.2.2 | Former parent, history, provenance, cross-links preserved | IMPLEMENTED |
+| 2.2.3 | Reparenting preserves full history (atomic single-save) | IMPLEMENTED |
+| 2.2.4 | Promotion without deletion (lifecycle/graph composition defined) | IMPLEMENTED |
+| 2.2.5 | House+Album acceptance scenario 25/25 | IMPLEMENTED |
+### R2.3 Semantic graph
+| 2.3.1 | Typed directed edges (CONTAINS/RELATED_TO/DEPENDS_ON/REFERENCES/DERIVED_FROM) | IMPLEMENTED |
+| 2.3.2 | Containment separate from association (queryable distinctly) | IMPLEMENTED |
+| 2.3.3 | Cross-level links (nested↔top-level) | IMPLEMENTED |
+| 2.3.4 | Smallest justified model: no hyperedges, edges cannot be endpoints | IMPLEMENTED |
+| 2.3.5 | Persistent per-owner, queryable (incoming/outgoing/by_type/neighbors) | IMPLEMENTED |
+### R2.4 RootPath
+| 2.4.1 | Historical meaning: AUTHORED NEW per git archaeology (honestly documented, not "recovered") | IMPLEMENTED |
+| 2.4.2 | Legitimate routes only where supported (BFS over canonical edges) | IMPLEMENTED |
+| 2.4.3 | Hop count as the only computational cost | IMPLEMENTED |
+| 2.4.4 | Distinct from graph truth, Plane position, and Flow | IMPLEMENTED |
+| 2.4.5 | Persisted paths with provenance; STALE detection on graph change | IMPLEMENTED |
+### R2.5 Semantic resolution
+| 2.5.1 | Immediate title processing (observer, session-scoped) | IMPLEMENTED |
+| 2.5.2 | Property-unit updates trigger propagation | IMPLEMENTED |
+| 2.5.3 | Structural categorization only; no fake NLP | IMPLEMENTED |
+| 2.5.4 | Evidence-based reference resolution; UNKNOWN preserved | IMPLEMENTED |
+| 2.5.5 | Bounded dependency propagation (declared only, equality cutoff) | IMPLEMENTED |
+### R1.5.4 (deferred from Phase 1 by Director)
+| 1.5.4 | Dependency-aware propagation: change-local, multi-hop, cycle-safe | IMPLEMENTED |
+
+Evidence: form/mandell/semantic_graph.py (canonical authority); p2_graph_test
+(contract, in regression); p2_acceptance_proof (25/25); p2_adversarial_proof
+(24/24 incl. P6 ARGUS regressions); p2_susx100 (100/100); ORACLE 7/7; ARGUS
+(MUST_FIX+4 SHOULD_FIX fixed); NULL (duplicate-authority CLEAN); PRISM
+(1 material doc contradiction fixed); DELTA pending; 4-member checkpoint
+transaction (program+nursery+ideas+graph) with crash-recovery proofs.
 
 ---
 

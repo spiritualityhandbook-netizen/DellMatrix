@@ -1037,7 +1037,7 @@ def control_p() -> None:
         check("P3 distinct PIDs (literal two-process)", res["distinct_pid"])
         check("P4 B loaded committed G2", res["generation_matches"])
         check("P5 member fingerprints present",
-              set(res["fingerprints"]) == {"nursery", "program", "ideas"} and
+              set(res["fingerprints"]) == {"nursery", "program", "ideas", "graph"} and
               all(len(v) == 64 for v in res["fingerprints"].values()))
         check("P6 no inherited-memory canary", res["no_canary"])
         check("P7 conflict reconstructed in B", res["conflict_reconstructed"])
