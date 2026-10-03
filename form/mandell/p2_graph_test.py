@@ -217,6 +217,10 @@ def main():
             for e in g5._entries
             if e.type == RelationshipType.CONTAINS and e.target_id == studio.id))
         check("persist title index", g5.lookup_by_title("Maison") == house.id)
+        check("roots covers all top-level",
+              house.id in g5.roots()
+              and rooms.id not in g5.roots()  # nested under house
+              and bath.id not in g5.roots())  # nested under rooms
 
         # ---- NULL fixes: session contract, lifecycle, descendant_count -------
         g6 = SemanticGraph.load(OWNER)
