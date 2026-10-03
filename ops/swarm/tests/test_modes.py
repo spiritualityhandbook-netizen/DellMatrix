@@ -141,13 +141,60 @@ MODE_TESTS = [
     ("mode change refused when terminal", t_mode_change_refused_when_terminal),
 ]
 
+
+
+def t_adaptive_selects_smallest_sufficient():
+    from ops.swarm.state_machine import select_adaptive_team, ADAPTIVE_INPUTS
+    low = {k: 0.1 for k in ADAPTIVE_INPUTS}
+    s = select_adaptive_team(low)
+    assert s["team"] == "CORE"
+    assert s["authority_note"].startswith("resource allocation")
+
+def t_adaptive_targeted_default_for_ordinary():
+    from ops.swarm.state_machine import select_adaptive_team, ADAPTIVE_INPUTS
+    mid = {k: 0.1 for k in ADAPTIVE_INPUTS}
+    mid.update(evidence_weakness=0.6, estimated_information_gain=0.8, estimated_specialist_cost=0.2)
+    assert select_adaptive_team(mid)["team"] == "TARGETED_SWARM"
+
+def t_adaptive_full_swarm_high_stakes():
+    from ops.swarm.state_machine import select_adaptive_team, ADAPTIVE_INPUTS
+    for key in ("authority_sensitivity", "semantic_uncertainty", "contradiction_debt", "security_relevance"):
+        hi = {k: 0.1 for k in ADAPTIVE_INPUTS}
+        hi[key] = 0.9
+        assert select_adaptive_team(hi)["team"] == "FULL_SWARM", key
+
+def t_adaptive_requires_all_inputs():
+    from ops.swarm.state_machine import select_adaptive_team, TransitionError
+    try:
+        select_adaptive_team({"blast_radius": 0.1})
+        raise AssertionError("must refuse incomplete inputs")
+    except TransitionError:
+        pass
+
+def t_adaptive_backward_compatible():
+    from ops.swarm.state_machine import resolve_team
+    assert resolve_team({"mode": "CORE"}) == ("DIRECTOR", "UNI")
+    assert "PRISM" in resolve_team({"mode": "SWARM"})
+    r = {"mode": "ADAPTIVE", "adaptive_selection": {"personas": ["DIRECTOR", "UNI", "ARGUS"]}}
+    assert resolve_team(r) == ("DIRECTOR", "UNI", "ARGUS")
+
+
+ADAPTIVE_TESTS = [
+    ("adaptive selects smallest sufficient team", t_adaptive_selects_smallest_sufficient),
+    ("adaptive targeted default for ordinary work", t_adaptive_targeted_default_for_ordinary),
+    ("adaptive full swarm for high stakes", t_adaptive_full_swarm_high_stakes),
+    ("adaptive requires all inputs", t_adaptive_requires_all_inputs),
+    ("adaptive backward compatible", t_adaptive_backward_compatible),
+]
+
+
 if __name__ == "__main__":
     from ops.swarm.tests.test_harness import PASS, FAIL, check
-    for _name, _fn in MODE_TESTS:
+    for _name, _fn in MODE_TESTS + ADAPTIVE_TESTS:
         check(_name, _fn)
-    ok = sum(1 for n, _ in MODE_TESTS if n in PASS)
-    print(f"MODE TESTS: {ok}/{len(MODE_TESTS)} passed")
+    ok = sum(1 for n, _ in MODE_TESTS + ADAPTIVE_TESTS if n in PASS)
+    print(f"MODE TESTS: {ok}/{len(MODE_TESTS)+len(ADAPTIVE_TESTS)} passed")
     for n, e in FAIL:
-        if n in [x for x, _ in MODE_TESTS]:
+        if n in [x for x, _ in MODE_TESTS + ADAPTIVE_TESTS]:
             print(f"  FAIL {n}: {e}")
     sys.exit(1 if any(n in [x for x, _ in MODE_TESTS] for n, _ in FAIL) else 0)
