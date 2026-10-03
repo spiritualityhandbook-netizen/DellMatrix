@@ -341,6 +341,62 @@ def translate(english: str) -> Intent:
     if re.search(r"\b(load|reload|restore)(?:\s+session)?\b", lower):
         return Intent("load", 28, "Rollback", {}, "28[Rollback] :: load", text)
 
+    # Ω-057-C1: English reachability for signed operational semantics (84-88).
+    # Uses raw_lower; must precede Dell19 locomotion fallbacks to distinguish
+    # object relocation ("move A to B") from avatar movement ("move forward").
+    # Dell19 preserved: directional movement still routes to Drive.
+    # Articles stripped; multi-word phrases preserved.
+    # Ω-057-C3: "set" removed from Dell88 pattern. Dell54 owns Set semantics.
+    # Dell88 reachable only via explicit "patch" language.
+    def _strip_article(s: str) -> str:
+        s = s.strip()
+        for art in ("the ", "a ", "an "):
+            if s.startswith(art):
+                return s[len(art):].strip()
+        return s
+    m = re.search(r"\bmove\s+(.+?)\s+to\s+(\S+)\s*$", raw_lower)
+    if m:
+        src = _strip_article(m.group(1))
+        dst = m.group(2).strip()
+        if src and dst and src not in ("forward", "ahead", "left", "right", "up", "down"):
+            return Intent("move", 85, "Move",
+                         {"source": src, "destination": dst},
+                         f'85[Move](source="{src}", destination="{dst}")', text)
+    m = re.search(r"\bcopy\s+(.+?)\s*$", raw_lower)
+    if m:
+        src = _strip_article(m.group(1))
+        # Don't capture trailing clauses ("and rename...")
+        src = re.split(r"\s+and\s+", src)[0].strip()
+        if src:
+            return Intent("copy", 84, "Copy",
+                         {"source": src},
+                         f'84[Copy](source="{src}")', text)
+    m = re.search(r"\bdelete\s+(.+?)\s*$", raw_lower)
+    if m:
+        key = _strip_article(m.group(1))
+        # Don't capture conditionals ("if it's empty")
+        key = re.split(r"\s+if\s+", key)[0].strip()
+        if key:
+            return Intent("delete", 86, "Delete",
+                         {"key": key},
+                         f'86[Delete](key="{key}")', text)
+    m = re.search(r"\breplace\s+(\S+)\s+with\s+(.+)$", raw_lower)
+    if m:
+        old = _strip_article(m.group(1))
+        new = _strip_article(m.group(2).strip()[:60])
+        if old and new:
+            return Intent("replace", 87, "Replace",
+                         {"old": old, "new": new},
+                         f'87[Replace](old="{old}", new="{new}")', text)
+    m = re.search(r"\bpatch\s+(\S+)\s+to\s+(.+)$", raw_lower)
+    if m:
+        key = _strip_article(m.group(1))
+        val = m.group(2).strip()[:60]
+        if key and val:
+            return Intent("patch", 88, "Patch",
+                         {"key": key, "value": val},
+                         f'88[Patch](key="{key}", value="{val}")', text)
+
     if re.search(r"\b(walk|go|move)\s+(forward|ahead)\b", lower) or lower in ("walk", "go forward"):
         return Intent("walk", 19, "Drive", {"steps": 1}, "19[Drive] :: walk", text)
     if re.search(r"\b(backstep|back\s*step|step\s+back)\b", lower) or lower in ("s", "back"):
