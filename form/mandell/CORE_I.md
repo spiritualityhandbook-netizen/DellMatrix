@@ -34,7 +34,7 @@ Message output is not implementation. A `primary == N` arm is not maturity.
 
 ## Message shells (registered + dispatch only)
 
-00 Nova, 01 Initiate, 02 Persona, 03 Logic, 05 Tone, 11 Architect, 12 Test, 17 Shadow, 20 Alpha, 31 Simulate, 36 Inject, 37 Stream, 39 Schema, 42 Retry, 43 Fallback, 48 Macro, 49 Profile, 50 Manifest.
+00 Nova, 01 Initiate, 02 Persona, 03 Logic, 05 Tone, 11 Architect, 12 Test, 17 Shadow, 20 Alpha, 31 Simulate, 36 Inject, 37 Nurture, 39 Schema, 42 Retry, 43 Fallback, 48 Macro, 49 Profile, 50 Manifest.
 
 These are not product features.
 
@@ -43,7 +43,7 @@ These are not product features.
 - 44 Bridge needs a bound provider
 - 47 Embed needs a vector model
 - 17 Shadow is not parallel compute
-- 37 Stream is history replay, not a network stream
+- 37 Nurture is nursery lifecycle (confirm/reject/use/supersede), not a network stream
 - Nursery stays locked for live matrix writes
 
 ## Next 3 localities

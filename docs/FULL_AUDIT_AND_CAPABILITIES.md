@@ -142,7 +142,7 @@ create → grow → confirm → sphere → save → load → visual
 ```
 
 `tutorial` runs it guided.  
-`python -m form.accept` · `python -m form.smoke_all`
+`python -m form.accept` · `python -m form.regress`
 
 ---
 

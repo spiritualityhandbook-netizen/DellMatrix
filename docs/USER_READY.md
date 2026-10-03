@@ -32,7 +32,7 @@ DellMatrix is built for **any user**. Personal business ideas are not product fe
 
 If all four pass → **user-ready**.
 
-Automated: `python -m form.accept` and `python -m form.smoke_all`
+Automated: `python -m form.accept` and `python -m form.regress`
 
 ---
 

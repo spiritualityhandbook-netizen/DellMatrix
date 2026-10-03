@@ -43,6 +43,7 @@ Port only when a user path needs them; prefer thin form/ reimplementation.
 ## Smoke
 
 ```bash
-python3 -m form.smoke_all
-# 29/29 including personas · view_rooms · forces · pillars · workshops · matrices_hub · ascii_bodies
+python3 -m form.regress
+# (pre-FCND-I this block ran form.smoke_all: 29/29 including personas ·
+#  view_rooms · forces · pillars · workshops · matrices_hub · ascii_bodies)
 ```
