@@ -444,10 +444,11 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
         _load_generation,
     )
     target = path
+    receipt = None
     if target is None:
         try:
             # activate=True: same session binding the legacy load path performed.
-            program, _receipt = gen.load_checkpoint(owner, activate=True)
+            program, receipt = gen.load_checkpoint(owner, activate=True)
         except CheckpointError as exc:
             raise FileNotFoundError(f"rollback_missing: {exc}") from exc
     # Legacy explicit file path.
@@ -456,9 +457,18 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
     # Otherwise treat as a generation id.
     else:
         try:
-            program, _receipt = _load_generation(owner, str(target), True, None)
+            program, receipt = _load_generation(owner, str(target), True, None)
         except CheckpointError as exc:
             raise FileNotFoundError(f"rollback_missing: {exc}") from exc
     # Eager convergence: live files reflect the target before we return.
     _eager_converge_live(program, owner, _fail_at=_fail_at)
+    # MF-5: Restore Ideas from the sealed generation. The ideas snapshot
+    # is a checkpoint member; restoring it here ensures no hybrid state.
+    if receipt and "members" in receipt and "ideas" in receipt["members"]:
+        from form.mandell.idea_checkpoint import restore_ideas_from_snapshot
+        from form.persist import _STATE_DIR
+        ideas_spec = receipt["members"]["ideas"]
+        sealed_ideas_path = os.path.join(_STATE_DIR, ideas_spec["file"])
+        if os.path.isfile(sealed_ideas_path):
+            restore_ideas_from_snapshot(owner, sealed_ideas_path)
     return program
