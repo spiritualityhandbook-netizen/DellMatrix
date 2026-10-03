@@ -173,16 +173,25 @@ N/A. Roster: 151 Harmonic, 167, 168, 176, 257, 258, 259, 361, 463, 560, 564,
 698, 775, 777, 778, 782, 821, 822, 850, 865, 869, 870, 872, 874, 880, 881, 889,
 890, 891, 893, 894, 895, 999 Omega.
 
-**Known gap (R2 §4 finding):** in multi-atom chains a reserved Dell is
+**Known gap (R2 §4 finding) — RESOLVED.** In multi-atom chains a reserved Dell is
 honestly skipped (`chain_exec.py:108-111` → `ok=True, skipped=True`,
-"reserved/not-active"). But the **single-seed executor leaf** answers
+"reserved/not-active"). The single-seed executor leaf previously answered
 `ok=True` "recognized — runtime thin" for reserved dells
-(`form/mandell/executor_leaf.py:492-500`) and will `place_idea(label)` as a
-side effect. Reachable today via the public raw-seed path
-(`form/repl.py:2555`). The registry authority (`execution_standing(151)` →
-RESERVED_NOT_ACTIVE) is honest; the leaf is not. **MUST_FIX_BEFORE_GATE.**
-Exact patch for the coordinator (executor files are outside R2's file
-allowlist, so this is handed over, not applied):
+(`form/mandell/executor_leaf.py:492-500`) and would `place_idea(label)` as a
+side effect. **Fixed in integration commit `8b8bfb9`** (GDP-001 P0): the
+final `else:` branch now returns `ok=False, error="Dell NN reserved/not-active"`
+for `primary > 99` with zero mutation and no `place_idea` (verified:
+Dell 151 → ok=False, units_delta=0). The registry authority
+(`execution_standing(151)` → RESERVED_NOT_ACTIVE) and the leaf now agree.
+
+**Recorded deliberate divergence (Director ruling requested at phase gate):**
+chain atoms treat reserved dells as `ok=True, skipped=True` (chain continues,
+atom marked skipped) while single-seed execution refuses `ok=False`. Both
+paths report the same fact (reserved/not-active, zero mutation); only the
+control-flow treatment differs by composition context. Phase 0 documents both
+honestly but does not unify them — unifying is a product-semantic decision
+for Director.
+The original R2 handover patch (kept for the record):
 `form/mandell/executor_leaf.py`, in the final `else:` branch — before the
 `ok=True` return, add:
 `if primary is not None and primary > 99: return {"ok": False, "error": f"Dell {primary:02d} reserved/not-active", ...}`

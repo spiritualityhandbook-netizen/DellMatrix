@@ -99,6 +99,7 @@ LIST = [
     "form.mandell.r2_semantic_honesty_test",
     "form.mandell.p0r3_execution_integrity_test",
     "form.equation_ledger_invariants_test",
+    "form.dell_matrix.perspective_runtime_truth_checks",
     "form.mandell.hic_i_test",
     "form.mandell.ekc_i_test",
     "form.mandell.aec_i_test",
