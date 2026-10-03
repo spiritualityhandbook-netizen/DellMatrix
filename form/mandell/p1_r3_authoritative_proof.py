@@ -92,8 +92,8 @@ print(json.dumps({{"iid": iid, "gen": gen, "members": members, "sealed_fp": seal
 """)
     info = json.loads(out.strip().splitlines()[-1])
     iid, gen_a, sealed_fp_a = info["iid"], info["gen"], info["sealed_fp"]
-    check("p1_receipt_has_three_members",
-          info["members"] == ["ideas", "nursery", "program"],
+    check("p1_receipt_has_four_members",
+          info["members"] == ["graph", "ideas", "nursery", "program"],
           f"members={info['members']}")
     print(f"  genA={gen_a[:12]} iid={iid[:8]} sealed_fp={sealed_fp_a[:16]}")
 

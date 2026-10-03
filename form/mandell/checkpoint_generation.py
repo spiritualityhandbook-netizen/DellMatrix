@@ -66,7 +66,7 @@ from form.dell_matrix.nursery import Nursery, NurseryLoadError, owner_nursery_pa
 
 CHECKPOINT_PROTOCOL_VERSION = 1
 
-_MEMBER_KINDS = ("nursery", "program", "ideas")
+_MEMBER_KINDS = ("nursery", "program", "ideas", "graph")
 
 
 class CheckpointError(Exception):
@@ -193,10 +193,24 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
     except Exception as exc:
         raise CheckpointCommitError(f"idea snapshot failed; commit aborted: {exc}") from exc
 
+    # Phase 2: the canonical semantic graph is the fourth member. Ensure
+    # the live graph file exists (an empty log is valid graph state) so
+    # the member loop below can seal it like every other member.
+    from form.mandell.semantic_graph import graph_path, _GRAPH_FORMAT_VERSION
+    from form.dell_matrix.atomic_write import atomic_write_json as _awj
+    _gpath = graph_path(owner)
+    if not os.path.isfile(_gpath):
+        try:
+            _awj(_gpath, {"format_version": _GRAPH_FORMAT_VERSION,
+                          "owner": owner, "relationships": [], "paths": []})
+        except Exception as exc:
+            raise CheckpointCommitError(f"graph init failed; commit aborted: {exc}") from exc
+
     live = {
         "nursery": owner_nursery_path(owner),
         "program": os.path.join(_STATE_DIR, f"program_{_safe_owner(owner)}.json"),
         "ideas": ideas_snapshot_path(owner),
+        "graph": _gpath,
     }
     _check_fail("before_members", _fail_at)  # crash here: no G2 member file exists
     fps: Dict[str, str] = {}
@@ -381,6 +395,12 @@ def _read_manifest(owner: str, generation_id: str) -> Dict[str, Any]:
         raise CheckpointLoadError(f"manifest members invalid for {generation_id}: refusing load")
     for kind in _MEMBER_KINDS:
         spec = members.get(kind)
+        if spec is None and kind == "graph":
+            # Phase 2: generations sealed before the graph member existed
+            # have no graph member. Tolerated here; rollback treats it as
+            # "graph cleared" (empty log), mirroring the R2 ideas precedent.
+            # The live 4-tuple still reflects exactly the selected generation.
+            continue
         if not isinstance(spec, dict):
             raise CheckpointLoadError(f"manifest member {kind!r} missing for {generation_id}: refusing load")
         fp = spec.get("sha256")
