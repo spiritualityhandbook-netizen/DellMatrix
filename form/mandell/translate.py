@@ -149,13 +149,18 @@ def translate(english: str) -> Intent:
         r"\bif\b", r"\bunless\b", r"\bwhen\b", r"\bwhile\b", r"\buntil\b",
         r"\bprovided\b", r"\bassuming\b",
     ]
+    # MPC-002: Added negation markers (don't, do not, never, not)
+    _NEGATION_MARKERS = [
+        r"\bdon't\b", r"\bdo not\b", r"\bnever\b", r"\bnot\b",
+    ]
     _DESTRUCTIVE_VERBS = [
         r"\bdelete\b", r"\bremove\b", r"\bdestroy\b", r"\bclear\b",
         r"\bmove\b", r"\breplace\b", r"\boverwrite\b",
     ]
     has_conditional = any(re.search(p, raw_lower) for p in _CONDITIONAL_MARKERS)
+    has_negation = any(re.search(p, raw_lower) for p in _NEGATION_MARKERS)
     is_destructive = any(re.search(p, raw_lower) for p in _DESTRUCTIVE_VERBS)
-    if has_conditional and is_destructive:
+    if (has_conditional or has_negation) and is_destructive:
         return Intent("unknown", None, "", {}, "09[Show] :: unknown", text)
     # MPC-001 Track C1: MULTI-INTENT SEGMENTATION.
     # If English contains explicit sequencing ("then", "and then"), try to
@@ -463,6 +468,7 @@ def translate(english: str) -> Intent:
         pl = phrase.lower()
         return any(marker in pl for marker in ambiguous_markers)
     # get <key> → Dell56 (specific object retrieval)
+    # MPC-002: Updated to typed format (validates via new signature)
     m = re.search(r"\bget\s+(.+?)\s*$", raw_lower)
     if m:
         key = _strip_article(m.group(1))
@@ -473,8 +479,9 @@ def translate(english: str) -> Intent:
             if store_key:
                 return Intent("get", 56, "Get",
                              {"key": store_key},
-                             f"56[Get] :: {store_key}", text)
+                             f'56[Get](key="{store_key}")', text)
     # find <key> → Dell56 ONLY for specific object (definite, no ambiguity markers)
+    # MPC-002: Updated to typed format
     m = re.search(r"\bfind\s+(.+?)\s*$", raw_lower)
     if m:
         phrase = m.group(1).strip()
@@ -488,7 +495,29 @@ def translate(english: str) -> Intent:
                 if store_key and len(store_key.split("_")) <= 3:
                     return Intent("find", 56, "Get",
                                  {"key": store_key},
-                                 f"56[Get] :: {store_key}", text)
+                                 f'56[Get](key="{store_key}")', text)
+
+    # MPC-002: Bounded English for retrieval family (51, 58).
+    # Dell51 Select: "select X" → typed predicate
+    # Dell58 Match: "search for X" / "find X matching Y" → typed pattern
+    # Preserves distinctions: select vs query vs match vs get.
+    m = re.search(r"\bselect\s+(.+?)\s*$", raw_lower)
+    if m:
+        pred = _strip_article(m.group(1))
+        if pred and not _is_ambiguous_find(pred):
+            # Use typed format (validates via new signature)
+            safe_pred = pred.replace('"', '')[:60]
+            return Intent("select", 51, "Select",
+                         {"predicate": safe_pred},
+                         f'51[Select](predicate="{safe_pred}")', text)
+    m = re.search(r"\bsearch\s+for\s+(.+?)\s*$", raw_lower)
+    if m:
+        pat = _strip_article(m.group(1))
+        if pat:
+            safe_pat = pat.replace('"', '')[:60]
+            return Intent("match", 58, "Match",
+                         {"pattern": safe_pat},
+                         f'58[Match](pattern="{safe_pat}")', text)
 
     if re.search(r"\b(walk|go|move)\s+(forward|ahead)\b", lower) or lower in ("walk", "go forward"):
         return Intent("walk", 19, "Drive", {"steps": 1}, "19[Drive] :: walk", text)
