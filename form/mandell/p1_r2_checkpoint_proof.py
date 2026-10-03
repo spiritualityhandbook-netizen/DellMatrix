@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """Phase-1 R2: Authoritative checkpoint/rollback proof for Ideas.
 
-Uses the REAL checkpoint generation and rollback path (not shortcuts).
-
-Sequence:
-1. CREATE IDEA, SAVE
-2. CREATE AUTHORITATIVE CHECKPOINT A via commit_checkpoint
-3. Record sealed Idea member fingerprint
-4. MUTATE IDEA, SAVE
-5. ROLLBACK TO A via authoritative rollback()
-6. FRESH PROCESS LOAD: verify identity/state/history/provenance
-7. MUTATE LIVE AFTER ROLLBACK: verify sealed unchanged
+R3 HONESTY CORRECTION (2026-10-03): this module's original claim to use
+the "REAL checkpoint/rollback circuit" was overstated — it invoked
+snapshot_ideas()/restore_ideas_from_snapshot() directly, bypassing the
+production commit_checkpoint/rollback authority. Director inspection
+caught the gap at the R3 gate. The honest authoritative proof is now
+form/mandell/p1_r3_authoritative_proof.py, which enters only through
+production entry points. This R2 module is RETAINED as a snapshot-level
+mechanics check, not as checkpoint/rollback certification.
 """
 
 import os
