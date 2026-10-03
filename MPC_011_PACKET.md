@@ -2,6 +2,7 @@
 # (CLOSED per MPC-012 §0: Dell87 refusal + /cmd hardening applied below)
 
 ## MPC-011 CLOSE (§0 CORRECTIONS)
+- §0 regress: `form.regress --order fwd` **GREEN 76/76, EXIT 0** (2026-10-03, includes `dell87_refusal_test` 15/15 and `cmd_hardening_test` 6/6)
 - DELL87 OCCUPIED-DESTINATION REFUSAL: `form/mandell/spectrum_ops.py` — `87 Replace k>z` when `z` exists and `z != k` now returns HONEST FAILURE (`ok=False`, `error=replace_occupied:z`, receipt `Replace refused k->z (occupied)`), ZERO MUTATION (no `_ckpt`, no `shot_fn`, no `_note_mutation`; snapshot delta = 0), NO SILENT DESTRUCTION. No overwrite flag added. Semantic authority remains KEY RENAME.
   - Test matrix (all via public paths): source exists + destination absent → rename ok; source absent → `replace_missing`; destination occupied → refused; source == destination → no-op ok (unchanged); empty destination → legacy self-rename fallback unchanged; rollback → Dell96 restores after successful rename, nothing pushed on refusal.
   - Regression: `form/mandell/dell87_refusal_test.py` (15/15 GREEN), registered in `form.regress`.
