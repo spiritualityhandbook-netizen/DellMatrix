@@ -50,5 +50,5 @@ Undo last place or detail/goals edit. History shows note ledger + undo stack.
 
 ```bash
 python3 -m form.dell_matrix.needs
-python3 -m form.smoke_all
+python3 -m form.regress
 ```

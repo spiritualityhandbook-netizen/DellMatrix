@@ -2,7 +2,7 @@
 
 ```bash
 python -m form.invariants
-python -m form.smoke_all
+python -m form.regress
 python -m form.repl --owner Ace
 ```
 

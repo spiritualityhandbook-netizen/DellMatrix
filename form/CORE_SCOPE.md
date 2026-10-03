@@ -15,7 +15,7 @@ Required for the Origin loop and offline acceptance:
 - `form/avatar/`
 - `form/duobeta/` (generation ledger as used by Program)
 - `form/worldwide/` (live via code evolution)
-- `form/smoke_all.py`, `form/invariants.py`
+- `form/invariants.py`
 
 Ported matrices (from frozen `src/`, reimplemented — not imported):
 nature forces · personas · view rooms · workshops ×7 · 6-pillar audit · ascii bodies.

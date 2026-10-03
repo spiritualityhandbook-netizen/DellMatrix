@@ -49,7 +49,7 @@ DELLS: Dict[int, Dict[str, str]] = {
     34: {"name": "Stamp", "manor": "Time/order mark"},
     35: {"name": "Discover", "manor": "Scan structure"},
     36: {"name": "Inject", "manor": "Load into scope"},
-    37: {"name": "Stream", "manor": "Chunked out"},
+    37: {"name": "Nurture", "manor": "Nursery lifecycle"},
     38: {"name": "Distill", "manor": "Summarize"},
     39: {"name": "Schema", "manor": "Validate shape"},
     40: {"name": "TokenCount", "manor": "Cost measure"},

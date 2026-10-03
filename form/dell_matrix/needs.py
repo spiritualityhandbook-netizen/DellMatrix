@@ -64,7 +64,13 @@ def parse_and_place(program, raw: str) -> Dict[str, Any]:
         "grade": parsed.get("grade"),
         "missing": parsed.get("missing") or [],
         "hint": parsed.get("hint") or "",
-        "unit": u,
+        "unit": {
+            "id": uid,
+            "label": label,
+            "skin": u.skin.value if hasattr(u.skin, "value") else str(u.skin),
+            "x": u.x,
+            "y": u.y,
+        },
         "report": format_report(parsed),
     }
 

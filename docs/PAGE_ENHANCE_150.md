@@ -47,7 +47,7 @@
 
 ```bash
 python3 -u -m form.dell_matrix.page_enhance_loop --cycles 150
-python3 -m form.smoke_all
+python3 -m form.regress
 ```
 
 Authority: `form/dell_matrix/page_enhance_loop.py` · `form/dell_matrix/assets/`

@@ -15,5 +15,5 @@
 - Consciousness
 
 ```bash
-python -m form.smoke_all
+python -m form.regress
 ```

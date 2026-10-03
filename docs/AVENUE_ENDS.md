@@ -36,6 +36,6 @@ REPL `_say` output is **captured** into `msg` so console / buttons always show a
 ## Check
 
 ```bash
-python3 -m form.smoke_all
+python3 -m form.regress
 # or ad-hoc: every actions_flat("depth") cmd returns non-empty msg/error
 ```

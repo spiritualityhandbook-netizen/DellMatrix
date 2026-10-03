@@ -184,16 +184,27 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                                          error=f"replace_missing:{old}",
                                          trace="87")
         else:
-            pre = _ckpt(st)
-            shot_fn()
             result_key = new or old
-            st.store[result_key] = st.store.pop(old)
-            _note_mutation(st, "replace", lab, pre)
-            messages.append(f"Replace {old}->{new}")
-            # C2: Publish produced value. The result_key holds the replaced value.
-            st.last_result = result_cell(value=result_key, matched=True, count=1,
-                                         source="replace", predicate=lab or "*",
-                                         trace="87")
+            if result_key != old and result_key in st.store:
+                # MPC-012 §0 / MPC-011 J-decision: occupied destination REFUSES
+                # BY DEFAULT. Honest failure, zero mutation, no silent
+                # destruction. No overwrite flag in this round.
+                ok, err = False, f"replace_occupied:{result_key}"
+                messages.append(f"Replace refused {old}->{result_key} (occupied)")
+                st.last_result = result_cell(value=None, matched=False, source="replace",
+                                             predicate=lab or "*",
+                                             error=f"replace_occupied:{result_key}",
+                                             trace="87")
+            else:
+                pre = _ckpt(st)
+                shot_fn()
+                st.store[result_key] = st.store.pop(old)
+                _note_mutation(st, "replace", lab, pre)
+                messages.append(f"Replace {old}->{new}")
+                # C2: Publish produced value. The result_key holds the replaced value.
+                st.last_result = result_cell(value=result_key, matched=True, count=1,
+                                             source="replace", predicate=lab or "*",
+                                             trace="87")
     elif n == 88:
         key, _, val = lab.partition("=")
         key = key.strip()

@@ -712,19 +712,19 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
         res = parse_and_place(program, line)
         return {"ok": True, "msg": format_create_end(res), "create": res, "end": "create_strong"}
     if lower.startswith("set detail "):
-        rest = raw.split(maxsplit=2)
-        if len(rest) < 3:
+        rest = raw[len("set detail "):].strip().split(None, 1)
+        if len(rest) < 2:
             return {"ok": False, "error": "usage: set detail <id|label> <text>", "end": "usage"}
-        ref, detail = rest[1], rest[2]
+        ref, detail = rest[0], rest[1]
         out = program.set_idea_detail(ref, detail) if hasattr(program, "set_idea_detail") else {"ok": False}
         if not out.get("ok"):
             return {"ok": False, "error": out.get("reason"), "end": "edit_miss"}
         return {"ok": True, "msg": f"Detail set on {out.get('label')} · {(out.get('detail') or '')[:100]}\n  doors: set goals {out.get('id')} … · page · idea {out.get('id')}", "edit": out, "end": "edit_detail"}
     if lower.startswith("set goals "):
-        rest = raw.split(maxsplit=2)
-        if len(rest) < 3:
+        rest = raw[len("set goals "):].strip().split(None, 1)
+        if len(rest) < 2:
             return {"ok": False, "error": "usage: set goals <id|label> goal1; goal2; goal3", "end": "usage"}
-        ref, goals = rest[1], rest[2]
+        ref, goals = rest[0], rest[1]
         out = program.set_idea_goals(ref, goals) if hasattr(program, "set_idea_goals") else {"ok": False}
         if not out.get("ok"):
             return {"ok": False, "error": out.get("reason"), "end": "edit_miss"}
@@ -1433,11 +1433,22 @@ def _run_command(program, cmd: str, _depth: int = 0) -> Dict[str, Any]:
 
 def _make_handler(program):
     class LiveHandler(BaseHTTPRequestHandler):
+        # Set by start_live() after bind. Until then, cross-origin is denied
+        # by default. Same-origin UI needs no CORS grant.
+        ALLOWED_ORIGINS = ()
+
+        def _origin_allowed(self):
+            origin = self.headers.get("Origin")
+            if not origin:
+                return True  # non-browser local client (curl/scripts); localhost operation preserved
+            return origin in self.ALLOWED_ORIGINS
+
         def log_message(self, format, *args):
             pass
 
         def _cors(self):
-            self.send_header("Access-Control-Allow-Origin", "*")
+            # No wildcard: the served UI is same-origin (relative /cmd, /state
+            # fetches), so cross-origin reads are not granted.
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
@@ -1520,6 +1531,14 @@ def _make_handler(program):
             if urllib.parse.urlparse(self.path).path != "/cmd":
                 self._json(404, {"ok": False, "error": "not found"})
                 return
+            # MPC-012 §0: default-deny unauthorized cross-origin command
+            # execution. Missing Origin (curl/local scripts) and the server's
+            # own origin (served UI) are allowed; anything else gets 403.
+            # No browser exploit is claimed; this is a bounded hardening.
+            if not self._origin_allowed():
+                self._json(403, {"ok": False, "error": "cross-origin command denied",
+                                 "end": "denied"})
+                return
             length = int(self.headers.get("Content-Length", 0))
             raw = self.rfile.read(length).decode("utf-8") if length else ""
             try:
@@ -1589,6 +1608,12 @@ def start_live(program, port: int = _DEFAULT_PORT, background: bool = True) -> D
             server.serve_forever()
         except Exception:
             pass
+
+    # MPC-012 §0: bind the cross-origin allowlist to the actual bound port
+    # (after fallback). Only the server's own origin may issue browser
+    # cross-origin commands; missing Origin (local non-browser clients) is
+    # still allowed per _origin_allowed.
+    handler.ALLOWED_ORIGINS = (f"http://{_HOST}:{port}", f"http://localhost:{port}")
 
     _LIVE_SERVER = server
     if background:

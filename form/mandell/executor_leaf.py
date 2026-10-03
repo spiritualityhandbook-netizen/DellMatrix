@@ -356,16 +356,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append(f"Injected into scope: {name}")
         if hasattr(program, "note_seed"):
             program.note_seed(36, "Inject", name)
-    elif primary == 37:
-        n = int(label) if label.isdigit() else 8
-        items = program.replay(n) if hasattr(program, "replay") else list(getattr(program, "history", []))[-n:]
-        messages.append(f"Stream last {len(items)} history chunk(s):")
-        for item in items:
-            messages.append(f"  · {item}")
-        if not items:
-            messages.append("  (empty)")
-        if hasattr(program, "note_seed"):
-            program.note_seed(37, "Stream", str(len(items)))
     elif primary == 38:
         source = label
         if not source and program.cube.session.plane.units:
