@@ -348,7 +348,19 @@ class SemanticGraph:
 
     def _validate_whole(self) -> None:
         """Fail closed on any malformed persisted state. No restore-mode skip."""
-        for e in self._entries:
+        # MF-P2-1: endpoint + duplicate-parent checks run over _current
+        # (the fold: latest entry per rel_id), NOT over derived dicts —
+        # _active_parent is a dict, so a check that iterates it can never
+        # observe duplicate keys (dead code). Counting over _entries would
+        # false-positive on superseded history; the fold is the truth.
+        #
+        # Historical (superseded/removed) entries are records of the past;
+        # their endpoints may legitimately be gone (out-of-band idea
+        # deletion). Only ACTIVE edges must be dangle-free.
+        active_contains_per_child: Dict[str, int] = {}
+        for e in self._current.values():
+            if e.status != RelationshipStatus.ACTIVE:
+                continue
             if not idea_exists(e.source_id, self.owner):
                 raise GraphValidationError(
                     f"dangling relationship {e.rel_id}: source {e.source_id} has no idea"
@@ -357,14 +369,16 @@ class SemanticGraph:
                 raise GraphValidationError(
                     f"dangling relationship {e.rel_id}: target {e.target_id} has no idea"
                 )
-        # Containment invariants on the CURRENT fold:
-        seen_child: Set[str] = set()
-        for child_id, rel_id in self._active_parent.items():
-            if child_id in seen_child:
+            if e.type == RelationshipType.CONTAINS:
+                active_contains_per_child[e.target_id] = \
+                    active_contains_per_child.get(e.target_id, 0) + 1
+        for child_id, n in active_contains_per_child.items():
+            if n > 1:
                 raise GraphValidationError(
                     f"two active containment parents for {child_id}"
                 )
-            seen_child.add(child_id)
+        # Containment invariants on the CURRENT fold:
+        for child_id, rel_id in self._active_parent.items():
             e = self._current[rel_id]
             if e.source_id == child_id:
                 raise GraphValidationError(f"self-containment for {child_id}")
@@ -382,17 +396,51 @@ class SemanticGraph:
 
     # -- internal append -----------------------------------------------------
 
-    def _append(self, entry: RelationshipEntry) -> RelationshipEntry:
-        self._entries.append(entry)
-        self._next_seq = max(self._next_seq, entry.seq + 1)
+    def _append(self, entry: RelationshipEntry,
+                after: Optional[Callable[[], None]] = None) -> RelationshipEntry:
+        """Append + fold. If `after` (propagation) is given, it runs BEFORE
+        the save; on failure the in-memory append is rolled back and the
+        exception re-raised — disk never sees the edge (SF-P2-4)."""
+        return self._append_many([entry], after)[0]
+
+    def _append_many(self, entries: List[RelationshipEntry],
+                     after: Optional[Callable[[], None]] = None
+                     ) -> List[RelationshipEntry]:
+        """Atomic multi-append: stage all entries, fold, run after()
+        (propagation), then save ONCE. On failure, roll back all staged
+        entries and re-raise — the graph is unchanged on disk and memory."""
+        n = len(entries)
+        self._entries.extend(entries)
+        for e in entries:
+            self._next_seq = max(self._next_seq, e.seq + 1)
         self._fold()
+        try:
+            if after is not None:
+                after()
+        except Exception:
+            # Propagation never appends graph entries, so ours are last.
+            del self._entries[-n:]
+            self._fold()
+            raise
         self.save()
-        return entry
+        return entries
 
     def _new_entry(self, type: RelationshipType, source_id: str, target_id: str,
                    props: Dict[str, Any], status: RelationshipStatus,
                    provenance: Provenance, cause: str,
                    rel_id: Optional[str] = None) -> RelationshipEntry:
+        # A-P2-4: fail fast on non-JSON-serializable props, BEFORE the
+        # entry is staged — a save-time serialization failure would leave
+        # memory and disk diverged.
+        try:
+            json.dumps(props)
+        except (TypeError, ValueError) as exc:
+            raise GraphInvariantError(
+                f"relationship props must be JSON-serializable: {exc}") from exc
+        # Allocate-and-increment: every entry gets a unique monotonic seq,
+        # even when several are staged together via _append_many (reparent).
+        seq = self._next_seq
+        self._next_seq += 1
         return RelationshipEntry(
             rel_id=rel_id or str(uuid.uuid4()),
             type=type,
@@ -400,7 +448,7 @@ class SemanticGraph:
             target_id=target_id,
             props=tuple(sorted(props.items())),
             status=status,
-            seq=self._next_seq,
+            seq=seq,
             recorded_at=time.time(),
             provenance=provenance,
             cause=cause,
@@ -444,8 +492,14 @@ class SemanticGraph:
     def add_relationship(self, type: RelationshipType, source_id: str,
                          target_id: str, provenance: Provenance,
                          props: Optional[Dict[str, Any]] = None,
-                         cause: str = "relate") -> RelationshipEntry:
-        """Add a typed association. Containment goes through nest()."""
+                         cause: str = "relate",
+                         after: Optional[Callable[[RelationshipEntry], None]] = None
+                         ) -> RelationshipEntry:
+        """Add a typed association. Containment goes through nest().
+
+        `after`, if given, runs atomically after the fold but before the
+        save (a failure rolls the entry back); it receives the new entry.
+        """
         if type == RelationshipType.CONTAINS:
             raise GraphInvariantError("use nest()/reparent()/unnest() for containment")
         if not isinstance(type, RelationshipType):
@@ -456,7 +510,10 @@ class SemanticGraph:
             self._gate_dependency_props(source_id, target_id, props)
         entry = self._new_entry(type, source_id, target_id, props,
                                 RelationshipStatus.ACTIVE, provenance, cause)
-        return self._append(entry)
+        def _run() -> None:
+            if after is not None:
+                after(entry)
+        return self._append(entry, after=_run)
 
     def _gate_dependency_props(self, source_id: str, target_id: str,
                                props: Dict[str, Any]) -> None:
@@ -470,6 +527,10 @@ class SemanticGraph:
             raise GraphInvariantError("DEPENDS_ON requires derived_property")
         if derivation == DerivationKind.MIRROR and "unit" not in props:
             raise GraphInvariantError("mirror derivation requires unit")
+        # A-P2-2: subject_id must reference a real idea.
+        if props.get("subject_id") and not idea_exists(props["subject_id"], self.owner):
+            raise GraphInvariantError(
+                f"DEPENDS_ON subject_id {props['subject_id']} has no idea")
         # Duplicate DEPENDS_ON on the same (source, target, unit/derivation)
         # is semantically invalid (would double-propagate): reject.
         for rel_id in self._by_source.get(source_id, []):
@@ -499,9 +560,11 @@ class SemanticGraph:
             current.props_dict(), RelationshipStatus.REMOVED,
             provenance, cause, rel_id=rel_id,
         )
-        entry = self._append(tombstone)
-        self._propagate_structure(current.source_id)
-        self._propagate_structure(current.target_id)
+        entry = self._append(
+            tombstone,
+            after=lambda: (self._propagate_structure(current.source_id),
+                           self._propagate_structure(current.target_id)),
+        )
         return entry
 
     # -- containment ----------------------------------------------------------
@@ -525,9 +588,11 @@ class SemanticGraph:
             RelationshipType.CONTAINS, parent_id, child_id, {},
             RelationshipStatus.ACTIVE, provenance, "nest",
         )
-        result = self._append(entry)
-        self._propagate_structure(parent_id)
-        self._propagate_structure(child_id)
+        result = self._append(
+            entry,
+            after=lambda: (self._propagate_structure(parent_id),
+                           self._propagate_structure(child_id)),
+        )
         return result
 
     def unnest(self, child_id: str, provenance: Provenance) -> RelationshipEntry:
@@ -541,9 +606,11 @@ class SemanticGraph:
             RelationshipType.CONTAINS, current.source_id, child_id, {},
             RelationshipStatus.SUPERSEDED, provenance, "promote", rel_id=rel_id,
         )
-        result = self._append(superseded)
-        self._propagate_structure(current.source_id)
-        self._propagate_structure(child_id)
+        result = self._append(
+            superseded,
+            after=lambda: (self._propagate_structure(current.source_id),
+                           self._propagate_structure(child_id)),
+        )
         return result
 
     def reparent(self, child_id: str, new_parent_id: str,
@@ -554,12 +621,13 @@ class SemanticGraph:
         self._gate_containment(new_parent_id, child_id)  # raises on cycle/self
         old_rel_id = self._active_parent.get(child_id)
         old_parent_id: Optional[str] = None
+        staged: List[RelationshipEntry] = []
         if old_rel_id is not None:
             old = self._current[old_rel_id]
             old_parent_id = old.source_id
             if old_parent_id == new_parent_id:
                 return old  # idempotent: already parented here
-            self._append(self._new_entry(
+            staged.append(self._new_entry(
                 RelationshipType.CONTAINS, old_parent_id, child_id, {},
                 RelationshipStatus.SUPERSEDED, provenance, "reparent",
                 rel_id=old_rel_id,
@@ -568,11 +636,16 @@ class SemanticGraph:
             RelationshipType.CONTAINS, new_parent_id, child_id, {},
             RelationshipStatus.ACTIVE, provenance, "reparent",
         )
-        result = self._append(new_entry)
-        if old_parent_id is not None:
-            self._propagate_structure(old_parent_id)
-        self._propagate_structure(new_parent_id)
-        self._propagate_structure(child_id)
+        staged.append(new_entry)
+
+        def _prop() -> None:
+            if old_parent_id is not None:
+                self._propagate_structure(old_parent_id)
+            self._propagate_structure(new_parent_id)
+            self._propagate_structure(child_id)
+
+        # Atomic: both entries staged, propagation runs, then ONE save.
+        result = self._append_many(staged, after=_prop)[-1]
         return result
 
     # -- navigation (derived; triggers no semantic computation) ----------------
@@ -786,7 +859,16 @@ class SemanticGraph:
         # The live idea is threaded through: the observer fires BEFORE
         # the caller necessarily saved, so propagation must read the
         # in-memory value, not the possibly-stale file.
-        if event.operation in ("set_property",) and event.property_name:
+        #
+        # SF-P2-3: ANY operation that can change the ACTIVE value of a
+        # property must trigger propagation — not just set_property.
+        # fade_property removes it from active; accept_proposal promotes
+        # a proposal to active; reject_proposal can restore a previous
+        # active. The equality cutoff in _recompute_dependent makes
+        # no-op triggers cheap (no write, no event).
+        if event.property_name and event.operation in (
+                "set_property", "fade_property",
+                "propose_property", "accept_proposal", "reject_proposal"):
             self._propagate_property(idea.id, event.property_name,
                                      live_idea=idea)
 
@@ -833,12 +915,19 @@ class SemanticGraph:
                            derivation: DerivationKind, derived_property: str,
                            unit: Optional[str] = None,
                            subject_id: Optional[str] = None,
-                           provenance: Optional[Provenance] = None) -> RelationshipEntry:
+                           provenance: Optional[Provenance] = None,
+                           force: bool = False) -> RelationshipEntry:
         """Declare that dependent's `derived_property` is computed from
         target (mirror: target's `unit`; counts: subject's containment).
 
-        Performs an INITIAL computation immediately, so the derived value
-        is correct from declaration time — never silently None.
+        Performs an INITIAL computation atomically with the declaration,
+        so the derived value is correct from declaration time — never
+        silently None. A computation failure rolls back the edge.
+
+        SF-P2-2: refuses to silently overwrite existing user data. If the
+        dependent already has an ACTIVE property under `derived_property`
+        whose latest version is not itself a derivation, declaration is
+        rejected unless force=True.
 
         Session contract (explicit): propagation fires for mutations made
         through Idea instances attached to this graph session
@@ -846,6 +935,20 @@ class SemanticGraph:
         propagate; call reconcile(idea_id) afterwards to recompute from
         current persisted state.
         """
+        from form.mandell.idea import LifecycleState
+        if not force:
+            dep_idea = load_idea(dependent_id, self.owner)
+            hist = dep_idea.get_property_history(derived_property)
+            if hist:
+                latest = hist[-1]
+                if (latest.state == LifecycleState.ACTIVE
+                        and latest.provenance.activity != "dependency_propagation"):
+                    raise GraphInvariantError(
+                        f"declare_dependency refuses to overwrite existing "
+                        f"property '{derived_property}' on {dependent_id} "
+                        f"(activity={latest.provenance.activity}); "
+                        f"use force=True to take it over as derived")
+
         props: Dict[str, Any] = {
             "derivation": derivation.value,
             "derived_property": derived_property,
@@ -853,15 +956,19 @@ class SemanticGraph:
         if unit is not None:
             props["unit"] = unit
         if subject_id is not None:
+            if not idea_exists(subject_id, self.owner):
+                raise GraphInvariantError(
+                    f"DEPENDS_ON subject_id {subject_id} has no idea")
             props["subject_id"] = subject_id
         provenance = provenance or Provenance(
             source=ProvenanceSource.SYSTEM, activity="dependency_declared",
             agent="semantic_graph")
+        # The initial computation runs inside the atomic append: if it
+        # fails, the edge is rolled back (never declared-but-uncomputed).
         edge = self.add_relationship(
             RelationshipType.DEPENDS_ON, dependent_id, target_id,
-            provenance, props, cause="declare_dependency")
-        # Initial computation: the derived value is correct immediately.
-        self._recompute_dependent(edge)
+            provenance, props, cause="declare_dependency",
+            after=lambda e: self._recompute_dependent(e))
         return edge
 
     def reconcile(self, idea_id: str) -> int:
@@ -975,6 +1082,15 @@ class SemanticGraph:
             dependent.set_property(props["derived_property"], new_value, prov)
             if save_after:
                 save_idea(dependent, self.owner)
+            # SF-P2-1 multi-hop: this dependent's newly derived value may
+            # feed further dependents (chains a→b→c). Re-enter propagation
+            # for the derived property; the _propagating guard terminates
+            # cycles. Pass the live dependent when the caller hasn't saved
+            # yet so the next hop reads the fresh in-memory value.
+            self._propagate_property(
+                edge.source_id, props["derived_property"],
+                live_idea=None if save_after else dependent,
+            )
         finally:
             self._propagating.discard(key)
 

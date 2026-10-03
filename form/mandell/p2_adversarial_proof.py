@@ -163,6 +163,82 @@ finally:
     shutil.rmtree(d, ignore_errors=True)
 """ % (PROV, BASE))
 
+    # ---- P6: ARGUS regression (MUST_FIX + SHOULD_FIX) ----
+    run_phase("P6-argus", """
+import json, shutil, os
+from form.mandell.idea import Idea, Provenance, ProvenanceSource
+from form.mandell.idea_persist import save_idea, load_idea
+from form.mandell.semantic_graph import (
+    SemanticGraph, RelationshipType, DerivationKind, GraphInvariantError,
+    GraphValidationError, graph_path)
+BASE=%r
+PROV=%s
+for p in [os.path.join(BASE,"ideas_P2A6"), graph_path("P2A6")]:
+    (shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)) if os.path.exists(p) else None
+r={}
+try:
+    a=Idea(title="A"); b=Idea(title="B"); c=Idea(title="C")
+    for i in (a,b,c): save_idea(i,"P2A6")
+    g=SemanticGraph.load("P2A6")
+    # MF-P2-1: two ACTIVE CONTAINS (different rel_ids) must fail closed on load
+    g.nest(b.id, a.id, PROV)
+    data=json.load(open(graph_path("P2A6")))
+    e2=dict(data["relationships"][0]); e2["rel_id"]="x"*32; e2["source_id"]=c.id; e2["seq"]=999
+    data["relationships"].append(e2)
+    json.dump(data, open(graph_path("P2A6"),"w"))
+    try: SemanticGraph.load("P2A6"); r["mf_two_parents_fails_closed"]=False
+    except GraphValidationError: r["mf_two_parents_fails_closed"]=True
+    # restore clean, reload
+    data["relationships"]=data["relationships"][:-1]
+    json.dump(data, open(graph_path("P2A6"),"w"))
+    g=SemanticGraph.load("P2A6")
+    # SF-P2-1: multi-hop propagation a.m -> b.n -> c.o
+    for i,(t,v) in enumerate([(a,"m"),(b,"n"),(c,"o")]): pass
+    a.set_property("m", 7, PROV); save_idea(a,"P2A6")
+    g.attach(a)
+    g.declare_dependency(b.id, a.id, DerivationKind.MIRROR, "n", unit="m", provenance=PROV)
+    g.declare_dependency(c.id, b.id, DerivationKind.MIRROR, "o", unit="n", provenance=PROV)
+    a.set_property("m", 42, PROV); save_idea(a,"P2A6")
+    co=load_idea(c.id,"P2A6").get_active_properties().get("o")
+    r["sf_multihop"]= (co==42)
+    # SF-P2-2: overwrite guard
+    d=Idea(title="D"); d.set_property("keep", "USER", PROV); save_idea(d,"P2A6")
+    try:
+        g.declare_dependency(d.id, a.id, DerivationKind.MIRROR, "keep", unit="m", provenance=PROV)
+        r["sf_overwrite_rejected"]=False
+    except GraphInvariantError: r["sf_overwrite_rejected"]= (load_idea(d.id,"P2A6").get_active_properties()["keep"]=="USER")
+    g.declare_dependency(d.id, a.id, DerivationKind.MIRROR, "keep2", unit="m", provenance=PROV, force=True)
+    r["sf_force_ok"]= (load_idea(d.id,"P2A6").get_active_properties().get("keep2")==42)
+    # SF-P2-3: fade triggers propagation
+    e=Idea(title="E"); e.set_property("w", 1, PROV); save_idea(e,"P2A6")
+    f=Idea(title="F"); save_idea(f,"P2A6"); g.attach(e)
+    g.declare_dependency(f.id, e.id, DerivationKind.MIRROR, "fw", unit="w", provenance=PROV)
+    e.fade_property("w", PROV); save_idea(e,"P2A6")
+    r["sf_fade_propagates"]= (load_idea(f.id,"P2A6").get_active_properties().get("fw") is None)
+    # SF-P2-4: atomicity — corrupt dependent file makes propagation throw;
+    # the nest edge must be rolled back (not on disk, not in memory fold)
+    h=Idea(title="H"); save_idea(h,"P2A6")
+    bad=Idea(title="BAD"); save_idea(bad,"P2A6")
+    g.declare_dependency(bad.id, h.id, DerivationKind.CHILD_COUNT, "cnt", subject_id=h.id, provenance=PROV)
+    import glob
+    for f in glob.glob(os.path.join(BASE,"ideas_P2A6","idea_"+bad.id[:32]+"_*")): os.remove(f)  # corrupt: dependent gone
+    k=Idea(title="K"); save_idea(k,"P2A6")
+    n_before=len(g._entries)
+    try: g.nest(k.id, h.id, PROV); r["sf_atomic_rollback"]=False
+    except Exception: r["sf_atomic_rollback"]= (len(g._entries)==n_before and g.parent(k.id) is None)
+    # Disk must not contain the rolled-back edge. (A full load correctly
+    # fails closed here: the DEPENDS_ON edge's source was deleted
+    # out-of-band, which IS corruption. So inspect the raw file.)
+    raw=json.load(open(graph_path("P2A6")))
+    r["sf_atomic_disk"]= not any(
+        e["type"]=="contains" and e["target_id"]==k.id and e["status"]=="active"
+        for e in raw["relationships"])
+    print("RESULT "+json.dumps(r))
+finally:
+    shutil.rmtree(os.path.join(BASE,"ideas_P2A6"), ignore_errors=True)
+    os.path.exists(graph_path("P2A6")) and os.remove(graph_path("P2A6"))
+""" % (BASE, PROV))
+
     fails = [n for n, ok in RESULTS if not ok]
     npass = sum(1 for _, ok in RESULTS if ok)
     print(f"\nP2 ADVERSARIAL: {npass}/{len(RESULTS)} PASS", flush=True)
