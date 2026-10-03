@@ -136,6 +136,61 @@ class PropertyVersion:
         )
 
 
+@dataclass(frozen=True)
+class IdeaChangeEvent:
+    """Deterministic record that Live Matrix information-change processing
+    occurred (Requirement 1.5).
+
+    This is a DERIVED PROJECTION of a mutation operation, not a second
+    authority: it references canonical PropertyVersion IDs and carries the
+    operation's semantic consequence. The version lists remain the truth;
+    the event is the processing receipt. Immutable and append-only.
+
+    LIVE MATRIX LAW: the event exists because information arrived/changed,
+    never because a Perspective was opened, zoomed, or rendered.
+    """
+    event_id: str  # UUID
+    idea_id: str
+    operation: str  # set_property | fade_property | propose_property |
+                    # accept_proposal | reject_proposal | rename |
+                    # archive | delete | restore
+    property_name: Optional[str]  # None for idea-level lifecycle operations
+    version_id: Optional[str]  # canonical PropertyVersion affected (None for lifecycle)
+    superseded_version_id: Optional[str]  # the version this replaced, if any
+    consequence: str  # semantic/lifecycle consequence, e.g. "ACTIVE established",
+                      # "prior version superseded", "value faded",
+                      # "proposal accepted", "lifecycle ACTIVE->ARCHIVED"
+    timestamp: float
+    provenance: Provenance
+
+    def to_dict(self) -> dict:
+        return {
+            "event_id": self.event_id,
+            "idea_id": self.idea_id,
+            "operation": self.operation,
+            "property_name": self.property_name,
+            "version_id": self.version_id,
+            "superseded_version_id": self.superseded_version_id,
+            "consequence": self.consequence,
+            "timestamp": self.timestamp,
+            "provenance": self.provenance.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "IdeaChangeEvent":
+        return cls(
+            event_id=d["event_id"],
+            idea_id=d["idea_id"],
+            operation=d["operation"],
+            property_name=d.get("property_name"),
+            version_id=d.get("version_id"),
+            superseded_version_id=d.get("superseded_version_id"),
+            consequence=d["consequence"],
+            timestamp=d["timestamp"],
+            provenance=Provenance.from_dict(d["provenance"]),
+        )
+
+
 class Idea:
     """Canonical evolving Idea.
 
@@ -155,6 +210,9 @@ class Idea:
         # Lifecycle state of the Idea itself
         self._idea_state = LifecycleState.ACTIVE
         self._idea_state_history: List[tuple] = []  # (state, timestamp, reason)
+        # Live Matrix processing record (1.5): append-only, immutable events.
+        # Derived projection of mutations; PropertyVersion lists remain truth.
+        self._change_events: List[IdeaChangeEvent] = []
 
     # ------------------------------------------------------------------
     # Identity (1.1.1)
@@ -191,7 +249,10 @@ class Idea:
         )
         self._title_history.append(old_version)
         self.title = new_title
-        self.modified_at = now
+        self._on_information_change(
+            "rename", "title", old_version,
+            "title changed; prior title superseded", prov,
+        )
 
     # ------------------------------------------------------------------
     # Properties (1.1.2, 1.2, 1.3)
@@ -206,11 +267,18 @@ class Idea:
     ) -> str:
         """Set a property. Previous ACTIVE version is superseded (not destroyed).
 
+        INGESTION BOUNDARY (1.5.2): accepts a SEGMENTED IDEA UNIT —
+        (name, value) where name is a unit identifier and value is a
+        JSON-serializable payload. Raw/compound information must be
+        segmented upstream; this boundary validates the unit contract
+        and rejects non-units.
+
         Event-sourced: creates a NEW immutable version. The previous version
         is linked via `supersedes`; it is not mutated.
 
         Returns the new version_id.
         """
+        self._validate_unit(name, value)
         prov = provenance or Provenance(
             source=ProvenanceSource.UNKNOWN,
             activity="set_property",
@@ -240,7 +308,15 @@ class Idea:
         self.modified_at = now
 
         # Live Matrix: information arrival triggers eligible processing.
-        self._on_information_change(name, new_version)
+        consequence = (
+            "ACTIVE established; prior version superseded"
+            if supersedes_id
+            else "ACTIVE established"
+        )
+        self._on_information_change(
+            "set_property", name, new_version, consequence, prov,
+            superseded_version_id=supersedes_id,
+        )
         return new_version.version_id
 
     def _current_version(self, name: str) -> Optional[PropertyVersion]:
@@ -308,8 +384,10 @@ class Idea:
             supersedes=current.version_id,
         )
         self._properties[name].append(faded)
-        self.modified_at = now
-        self._on_information_change(name, faded)
+        self._on_information_change(
+            "fade_property", name, faded, "value faded; prior ACTIVE superseded",
+            prov, superseded_version_id=current.version_id,
+        )
         return True
 
     def get_faded_properties(self) -> Dict[str, Any]:
@@ -348,7 +426,14 @@ class Idea:
 
         Returns the proposal version_id. The proposal is in PROPOSED state
         until accepted or rejected.
+
+        INGESTION BOUNDARY (1.5.2): same segmented-unit contract as
+        set_property — proposals are units awaiting acceptance.
+
+        Returns the proposal version_id. The proposal is in PROPOSED state
+        until accepted or rejected.
         """
+        self._validate_unit(name, value)
         prov = provenance or Provenance(
             source=ProvenanceSource.UNKNOWN,
             activity="propose",
@@ -366,7 +451,9 @@ class Idea:
             provenance=prov,
         )
         versions.append(proposal)
-        self.modified_at = now
+        self._on_information_change(
+            "propose_property", name, proposal, "proposal recorded", prov,
+        )
         return proposal.version_id
 
     def accept_proposal(
@@ -423,8 +510,11 @@ class Idea:
             supersedes=supersedes_id,
         )
         versions.append(active_version)
-        self.modified_at = now
-        self._on_information_change(name, active_version)
+        self._on_information_change(
+            "accept_proposal", name, active_version,
+            "proposal accepted; new ACTIVE established",
+            accept_prov, superseded_version_id=supersedes_id,
+        )
         return True
 
     def reject_proposal(
@@ -469,7 +559,10 @@ class Idea:
             supersedes=proposal.version_id,
         )
         versions.append(rejected)
-        self.modified_at = now
+        self._on_information_change(
+            "reject_proposal", name, rejected, "proposal rejected",
+            rejected.provenance, superseded_version_id=proposal.version_id,
+        )
         return True
 
     def get_proposals(self, name: Optional[str] = None) -> Dict[str, List[PropertyVersion]]:
@@ -489,42 +582,141 @@ class Idea:
 
     def archive(self, reason: str = "") -> None:
         """Archive the Idea. Not active, but preserved and restorable."""
+        prev = self._idea_state
         self._idea_state_history.append((self._idea_state, time.time(), f"archive: {reason}"))
         self._idea_state = LifecycleState.ARCHIVED
-        self.modified_at = time.time()
+        self._on_information_change(
+            "archive", None, None,
+            f"lifecycle {prev.value}->{LifecycleState.ARCHIVED.value}",
+            Provenance(source=ProvenanceSource.HUMAN, activity="archive",
+                       agent="idea", detail=reason),
+        )
 
     def delete(self, reason: str = "") -> None:
         """Soft-delete the Idea. Marked, not destroyed. Recoverable."""
+        prev = self._idea_state
         self._idea_state_history.append((self._idea_state, time.time(), f"delete: {reason}"))
         self._idea_state = LifecycleState.DELETED
-        self.modified_at = time.time()
+        self._on_information_change(
+            "delete", None, None,
+            f"lifecycle {prev.value}->{LifecycleState.DELETED.value}",
+            Provenance(source=ProvenanceSource.HUMAN, activity="delete",
+                       agent="idea", detail=reason),
+        )
 
     def restore(self, reason: str = "") -> None:
         """Restore from archived/deleted/faded. Restoration is history."""
         if self._idea_state not in (LifecycleState.ARCHIVED, LifecycleState.DELETED, LifecycleState.FADED):
             raise ValueError(f"Cannot restore from state {self._idea_state}")
+        prev = self._idea_state
         self._idea_state_history.append((self._idea_state, time.time(), f"restore: {reason}"))
         self._idea_state = LifecycleState.RESTORED
-        self.modified_at = time.time()
+        self._on_information_change(
+            "restore", None, None,
+            f"lifecycle {prev.value}->{LifecycleState.RESTORED.value}",
+            Provenance(source=ProvenanceSource.HUMAN, activity="restore",
+                       agent="idea", detail=reason),
+        )
 
     @property
     def idea_state(self) -> LifecycleState:
         return self._idea_state
 
     # ------------------------------------------------------------------
+    # Ingestion boundary (1.5.2 segmentation contract)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _validate_unit(name: str, value: Any) -> None:
+        """Enforce the segmented-unit ingestion contract.
+
+        The canonical Idea boundary consumes SEGMENTED IDEA UNITS, not raw
+        information. A unit is (name, value) where:
+          - name: non-empty string unit identifier (the segmentation key);
+          - value: JSON-serializable payload (persistable as a version).
+
+        Raw/compound information (unstructured text, unparsed payloads) must
+        be segmented upstream before reaching this boundary. This validation
+        proves the boundary exists: it accepts units and rejects non-units
+        with an explicit contract error, rather than silently versioning
+        whatever the caller supplied.
+        """
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(
+                "ingestion: property name must be a non-empty string unit "
+                f"identifier; got {name!r}"
+            )
+        try:
+            json.dumps(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"ingestion: property value for unit {name!r} must be "
+                f"JSON-serializable; got {type(value).__name__}: {exc}"
+            ) from exc
+
+    # ------------------------------------------------------------------
     # Live Matrix processing (1.5)
     # ------------------------------------------------------------------
 
-    def _on_information_change(self, name: str, version: PropertyVersion) -> None:
-        """Hook: information arrival/change triggers eligible processing.
+    def _on_information_change(
+        self,
+        operation: str,
+        property_name: Optional[str],
+        version: Optional[PropertyVersion],
+        consequence: str,
+        provenance: Provenance,
+        superseded_version_id: Optional[str] = None,
+    ) -> IdeaChangeEvent:
+        """Live Matrix processing boundary (1.5.3).
 
-        LIVE MATRIX LAW: processing is driven by information arrival,
-        not by UI observation. This is the Phase-1 seam; later phases
-        deepen the processing.
+        Every legitimate information/state mutation passes through here.
+        Processing is driven by information arrival, never by Perspective,
+        zoom, fractal navigation, rendering, or UI inspection.
+
+        The boundary performs the SMALLEST REAL Phase-1 computation: it
+        deterministically constructs an immutable IdeaChangeEvent that
+        records the operation, the canonical version it affected, the
+        semantic consequence, and provenance — and appends it to the
+        Idea's processing record. The event references canonical version
+        IDs; it does not duplicate PropertyVersion authority.
+
+        This is the extension point Phase 2 (Fractal Semantic Graph) and
+        Phase 3 (Resonance) will deepen. The Phase-1 core does real work:
+        INFORMATION CHANGE → PROCESSING OCCURS → COMPUTATIONAL RESULT
+        (the event) EXISTS → RESULT IS OBSERVABLE (change_events()).
         """
-        # Phase 1: record the change event. Later phases add dependency
-        # propagation, semantic recomputation, etc.
-        pass
+        event = IdeaChangeEvent(
+            event_id=str(uuid.uuid4()),
+            idea_id=self.id,
+            operation=operation,
+            property_name=property_name,
+            version_id=version.version_id if version else None,
+            superseded_version_id=superseded_version_id,
+            consequence=consequence,
+            timestamp=time.time(),
+            provenance=provenance,
+        )
+        self._change_events.append(event)
+        self.modified_at = event.timestamp
+        return event
+
+    # ------------------------------------------------------------------
+    # Live Matrix observability (1.5.5)
+    # ------------------------------------------------------------------
+
+    def change_events(self) -> List[IdeaChangeEvent]:
+        """All recorded information-change processing events (chronological).
+
+        Each event is a real computation product of the processing boundary:
+        it exists because information arrived/changed, never because a
+        Perspective was opened or rendered. Events persist with the Idea
+        (see to_dict/from_dict) and survive fresh-process load.
+        """
+        return list(self._change_events)
+
+    def last_change(self) -> Optional[IdeaChangeEvent]:
+        """The most recent processing event, or None if no mutation occurred."""
+        return self._change_events[-1] if self._change_events else None
 
     # ------------------------------------------------------------------
     # Persistence (1.1.5)
@@ -546,6 +738,10 @@ class Idea:
                 for name, versions in self._properties.items()
             },
             "title_history": [v.to_dict() for v in self._title_history],
+            # Live Matrix processing record (1.5): derived events, persisted
+            # with the Idea. References canonical version IDs; the version
+            # lists above remain the truth.
+            "change_events": [e.to_dict() for e in self._change_events],
         }
 
     @classmethod
@@ -578,6 +774,16 @@ class Idea:
             idea._properties[name] = versions
         idea._title_history = [PropertyVersion.from_dict(v)
                                for v in d.get("title_history", [])]
+        # R4: restore the derived processing record. Events are validated
+        # structurally; each must reference this idea.
+        for e in d.get("change_events", []):
+            ev = IdeaChangeEvent.from_dict(e)
+            if ev.idea_id != idea.id:
+                raise ValueError(
+                    f"Change event {ev.event_id} references idea "
+                    f"{ev.idea_id!r}, not {idea.id!r}"
+                )
+            idea._change_events.append(ev)
         return idea
 
     def explain(self, name: str) -> str:
