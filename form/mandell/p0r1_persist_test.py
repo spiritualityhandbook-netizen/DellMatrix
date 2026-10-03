@@ -941,6 +941,7 @@ print('RST_OK')
     pre_commit = ("rollback_serialize", "rollback_journal", "rollback_stage",
                   "rollback_nursery_conflict")
     post_stage = ("rollback_commit_program", "rollback_commit_nursery",
+                  "rollback_commit_ideas",
                   "rollback_cleanup", "rollback_verify")
     for stage in pre_commit + post_stage:
         fs = _DRIVER_PREAMBLE + f"""
