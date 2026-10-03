@@ -8,9 +8,9 @@ import re
 
 PHRASES: List[Tuple[str, str, str]] = [
     (r"^(?:create|add|make|new)\s+(?:an?\s+)?(?:idea\s+)?(?:called\s+)?(.+)$",
-     "08[Create] > 15[Map] :: {label}", "place"),
+     '08[Create](name="{name}") > 15[Map] :: {label}', "place"),
     (r"^place\s+(.+)$",
-     "08[Create] > 15[Map] :: {label}", "place"),
+     '08[Create](name="{name}") > 15[Map] :: {label}', "place"),
 
     # bare "evolve" is program evolve (see below); "grow" is idea growth
     (r"^(?:grow)(?:\s+ideas?)?(?:\s+(\d+))?$",
@@ -248,7 +248,9 @@ def match_phrase(english: str) -> Optional[Dict[str, str]]:
                 if g2:
                     label = f"{label}_x_{g2}".strip("_")
         label = label or "item"
-        seed = seed_t.replace("{label}", label.replace(" ", "_")[:40]).replace("{n}", n)
+        # TOAM-I: provide {name} as human-readable (spaces preserved) for args
+        name = label.replace("_", " ")
+        seed = seed_t.replace("{label}", label.replace(" ", "_")[:40]).replace("{n}", n).replace("{name}", name.replace('"', '')[:48])
         return {
             "english": text,
             "mandel": seed,

@@ -380,12 +380,14 @@ def translate(english: str) -> Intent:
         # strip detail/goals from id slug only
         label_only = re.split(r"\bdetail\s*:|\bgoals\s*:", body, maxsplit=1, flags=re.I)[0].strip()
         uid = re.sub(r"[^a-z0-9]+", "_", label_only.lower())[:24] or "idea"
+        # TOAM-I: preserve name argument in Seed (Dell 8 signature requires 'name')
+        safe_name = (label_only or body[:48]).replace('"', '')
         return Intent(
             "place",
             8,
             "Create",
             {"id": uid, "label": label_only or body[:48], "words": body[:120], "raw": text},
-            f"08[Create] > 15[Map] :: {uid}",
+            f'08[Create](name="{safe_name}") > 15[Map] :: {uid}',
             text,
         )
 

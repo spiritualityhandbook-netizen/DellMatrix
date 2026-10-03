@@ -9,6 +9,9 @@ from .manifest import Manifest, manifest_from_dell
 
 BULLET = "\u2022"  # •  ManifestSet separator. Not comma. Not underscore.
 _ATOM = re.compile(r"(\d{1,3})\[([^\]]*)\]")
+# TOAM-I: argument list after atom: (role="value", role2="value2")
+_ARGS = re.compile(r'\(\s*([A-Za-z_][A-Za-z0-9_]*\s*=\s*"[^"]*"\s*(?:,\s*[A-Za-z_][A-Za-z0-9_]*\s*=\s*"[^"]*"\s*)*)\)')
+_ARG_PAIR = re.compile(r'([A-Za-z_][A-Za-z0-9_]*)\s*=\s*"([^"]*)"')
 _MEMBER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 FLOW_OPS = (
     "<<[Delta]",
@@ -48,10 +51,16 @@ class SeedAtom:
     confidence: float = 1.0
     resolve_reason: str = "canonical"
     origin: str = "atom"
+    # TOAM-I: typed role/value arguments. Empty dict = no arguments (backward compat).
+    args: Dict[str, str] = field(default_factory=dict)
     def as_mandel(self) -> str:
         width = 3 if self.dell > 99 else 2
         shown = self.resolved_term or self.term
-        return f"{self.dell:0{width}d}[{shown}]"
+        s = f"{self.dell:0{width}d}[{shown}]"
+        if self.args:
+            pairs = ", ".join(f'{k}="{v}"' for k, v in self.args.items())
+            s += f"({pairs})"
+        return s
     def as_english(self) -> str:
         d = get_dell(self.dell)
         manor = d["manor"] if d else "?"
@@ -130,11 +139,12 @@ def _resolve_term(n: int, term: str, label: str) -> tuple:
     return resolved_term, conf, reason
 
 
-def _atom(n: int, term: str, label: str, origin: str) -> SeedAtom:
+def _atom(n: int, term: str, label: str, origin: str, args: Optional[Dict[str, str]] = None) -> SeedAtom:
     resolved, conf, reason = _resolve_term(n, term, label)
     return SeedAtom(
         dell=n, term=term, resolved_term=resolved,
         confidence=conf, resolve_reason=reason, origin=origin,
+        args=args or {},
     )
 
 
@@ -173,6 +183,14 @@ def parse_seed(text: str) -> Seed:
             proto.append({"dell": n, "members": members})
             last_was_atom = True
             pos = m.end()
+            # TOAM-I: parse optional argument list (role="value", ...)
+            args: Dict[str, str] = {}
+            am = _ARGS.match(body, pos)
+            if am:
+                for pair in _ARG_PAIR.finditer(am.group(1)):
+                    args[pair.group(1)] = pair.group(2)
+                pos = am.end()
+            proto[-1]["args"] = args
             continue
         m2 = _FLOW.match(body, pos)
         if m2:
@@ -211,13 +229,14 @@ def parse_seed(text: str) -> Seed:
     for i, item in enumerate(proto):
         members = item["members"]
         origin = "chain" if len(members) > 1 else "atom"
+        item_args = item.get("args", {})
         for j, term in enumerate(members):
             if atoms:
                 if j == 0 and i > 0:
                     out_flows.append(flows[i - 1])
                 else:
                     out_flows.append(">")
-            atoms.append(_atom(item["dell"], term, label, origin))
+            atoms.append(_atom(item["dell"], term, label, origin, item_args))
     return Seed(atoms=atoms, flows=out_flows, label=label, raw=raw, ok=True)
 
 def looks_like_seed(text: str) -> bool:
