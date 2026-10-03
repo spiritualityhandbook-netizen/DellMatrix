@@ -87,6 +87,8 @@ Lattice / Perception / Looking
   geometry                              full sacred-geometry status
   look                  directional vision from facing
   zoom <id|label> | page | unzoom
+  alpha <idea> | delta <idea> | omega <idea>   Greek floor: source, change, bound
+  omni | lambda <idea> | sigma                 Greek: full-field, logic, sum
   snap on|off           grid snap when form is cube
   lens <skin>|clear     filter vision by skin
   persona <name>|clear  soft persona lens (manny, melody, …)
@@ -217,6 +219,8 @@ Recover — history, undo, reissue
 Look — inspect the space
 
   look · page · zoom <id|label>
+  alpha <idea> · delta <idea> · omega <idea>
+  omni · lambda <idea> · sigma
 """.strip(),
     "dell": """
 Dell — execute capabilities via Mandell seeds
@@ -2473,6 +2477,15 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
     # User-controlled pin/fade/unfade/age for ideas. Does not modify Dells.
     from form.lifecycle import handle_lifecycle_command
     handled, p, msg = handle_lifecycle_command(p, line, interaction_id)
+    if handled:
+        _say(msg)
+        return p
+
+    # GREEK: Mandell floor operators made public (canon).
+    # Alpha (source), Delta (change), Omega (bound), Omni (full-field),
+    # Lambda (logic), Sigma (sum). Read-only observation. Does not modify Dells.
+    from form.greek import handle_greek_command
+    handled, p, msg = handle_greek_command(p, line, interaction_id)
     if handled:
         _say(msg)
         return p
