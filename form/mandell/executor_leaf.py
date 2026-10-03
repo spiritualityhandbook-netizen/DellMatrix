@@ -50,18 +50,22 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     new_program = None
 
     def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
-        uid = name.replace(" ", "_")[:24] or "idea"
+        raw_uid = name.replace(" ", "_")[:24] or "idea"
+        uid = raw_uid
         # avoid collision — mirrors parse_and_place (form/dell_matrix/needs.py):
         # raw-Mandell creation must dedup, never silently overwrite.
+        # (No attempt cap: n strictly increases over a finite unit set, so the
+        # loop always terminates; a cap-break would leave a colliding uid.)
         base = uid
         n = 1
         while uid in program.cube.session.plane.units:
             uid = f"{base}_{n}"
             n += 1
-            if n > 50:
-                break
         program.place(uid, name.replace("_", " "), words=name, skin=skin)
-        messages.append(f'Created idea: "{name}"')
+        if uid == raw_uid:
+            messages.append(f'Created idea: "{name}"')
+        else:
+            messages.append(f'Created idea: "{name}" (id: {uid})')
 
     if primary == 0:
         messages.append("Nova is cheat/edge only — floor stays locked.")
