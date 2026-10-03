@@ -51,6 +51,15 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
 
     def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
         uid = name.replace(" ", "_")[:24] or "idea"
+        # avoid collision — mirrors parse_and_place (form/dell_matrix/needs.py):
+        # raw-Mandell creation must dedup, never silently overwrite.
+        base = uid
+        n = 1
+        while uid in program.cube.session.plane.units:
+            uid = f"{base}_{n}"
+            n += 1
+            if n > 50:
+                break
         program.place(uid, name.replace("_", " "), words=name, skin=skin)
         messages.append(f'Created idea: "{name}"')
 
