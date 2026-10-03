@@ -163,7 +163,74 @@ line-class repairs; all applied and re-verified.
 ## Post-audit state
 
 All MUST_FIX findings across all four auditors are repaired. Full
-regress: **82/82 GREEN (order=fwd)** and **82/82 GREEN (order=rev)** on
+regress: **83/83 GREEN (order=fwd)** and **83/83 GREEN (order=rev)** on
 the post-repair head, including the newly registered
 `p0_integrated_proof_test` (13/13 cross-process). The audit reports
 themselves are delivered evidence in this repository under `docs/`.
+
+---
+
+## Gate R1 reconciliation (2026-10-03) — Director decisions implemented
+
+### Decision 1: unified reserved/skipped atom truth
+
+**Changed semantics:** a reserved/unexecuted chain atom is now
+`ok=False, skipped=True, reason=<explicit>` (was `ok=True, skipped=True`).
+ATOM EXECUTION RESULT != CHAIN CONTINUATION POLICY: the chain continues
+past skipped atoms per its composition policy, but the aggregate is
+honest (`ok=False`, `partial=True` when mixed, `any_skipped=True`).
+FlowThru (`>>`) blocks after skipped atoms, consistent with the existing
+`flow_thru_block` precedent (already `ok=False`).
+
+**Tests:** 36 new assertions in `p0r3_execution_integrity_test`
+(`t_director_d1_reserved_atom_truth`) covering all 12 required
+scenarios: single/first/middle/final/multiple/surrounding/all-supported/
+all-reserved/nested-sequence/raw-receipt/public-receipt/consumer.
+80/80 execution suite green. Three pre-existing tests (`eoc_i`,
+`cac_i`, `ros_i`) asserted the overruled semantics and were updated.
+
+**SWAT re-verification:**
+- ARGUS: adversarial probes confirm no path (direct chain, observer,
+  Outcome ledger) lets a consumer infer `ok=True` for a skipped atom;
+  chain-level `ok` is `False` whenever skips are present. ALL HOLDS.
+- ORACLE: all 12 scenarios empirically verified; atom records carry
+  explicit reasons; aggregate flags correct.
+- PRISM: `partial` semantics consistent across chain result,
+  `_RawReceipt`, and Outcome (`partial_completion`); `RouteReceipt.partial`
+  uses the same `any/not-all` logic.
+- NULL: no parallel mechanisms — existing `_run_atom`/`execute_range`
+  paths modified; `partial`/`any_skipped` are additive result keys.
+
+### Decision 2: eager rollback convergence
+
+**Changed semantics:** `core_i_recovery.rollback` now eagerly writes the
+validated target generation's state to the live program and nursery
+files (atomic, independent copies) before returning. A fresh
+`persist_rest.load(owner)` observes the rolled-back state with no
+subsequent save. Sealed members are never written (Dell28 invariant
+preserved). Failures before the first live write (validation,
+serialization, nursery-conflict pre-flight) leave live files
+byte-identical — zero partial mutation.
+
+**Tests:** 12 new proofs in `p0r1_persist_test`
+(`t_d2_eager_rollback_convergence`) covering all 7 required scenarios,
+several in fresh OS processes: live-immediate, sealed-byte-identical,
+fresh-process-no-save, save-reload, mutate-save-reload, multi-cycle,
+and three injected-failure zero-mutation proofs. 31/31 persistence
+battery green.
+
+**SWAT re-verification:**
+- ARGUS: nursery never points at sealed members post-rollback; sealed
+  members byte-identical after aggressive mutation; concurrent live-
+  nursery modification refused with zero program mutation. ALL HOLDS.
+- ORACLE: all 7 scenarios empirically verified, including cross-process.
+- PRISM: rollback path consistent across `core_i_recovery`,
+  `checkpoint_generation`, `persist_rest`, and `nursery` — single
+  authority, no divergent restore paths.
+- NULL: `_eager_converge_live` reuses `persist_rest.save` and
+  `nursery.save`; no duplicated persistence logic.
+
+**Delta reconsideration:** no new material issues. The two semantic
+changes are minimal, focused, and do not introduce new failure classes.
+The eager-rollback write window (between the two atomic file writes) is
+documented; each file remains internally consistent.

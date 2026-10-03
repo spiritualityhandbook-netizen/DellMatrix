@@ -76,11 +76,16 @@ perspective changes (no shared code paths). **SYNC.**
 
 The refusal contract is uniform: reserved/not-active → `ok=False` +
 named error + zero mutation, on the single-seed path, the direct-leaf
-path, and (as honest skip records) the chain path. The two deliberate
-semantic differences are documented Director-open decisions, not
-accidents: (a) chain-skip (`ok=True, skipped=True`) vs single-seed
-refusal (`ok=False`); (b) rollback converges the live file on next save
-rather than eagerly. **SYNC.**
+path, and the chain path. DIRECTOR DECISION 1 (gate R1, implemented):
+unified atom truth — a reserved/unexecuted atom is `ok=False,
+skipped=True, reason=<explicit>`; ATOM EXECUTION RESULT != CHAIN
+CONTINUATION POLICY (the chain continues per policy but the aggregate
+is honest: `ok=False`, `partial=True`, `any_skipped=True`). No consumer
+can infer `ok=True` for an unexecuted operation, on any path (direct,
+observer, Outcome ledger). DIRECTOR DECISION 2 (gate R1, implemented):
+rollback converges eagerly — live files reflect the target generation
+when rollback returns; sealed members are never written; failures
+before the first live write leave zero partial mutation. **SYNC.**
 
 ## 10. Executor ↔ Tests
 
@@ -114,9 +119,10 @@ orphan claims. **SYNC.**
 
 The twelve subsystems are mutually consistent at the Phase-0 gate.
 Known deferred items (Phase-3 math duplicates, Flow STATED_ONLY laws,
-19 Dell test gaps, SAFE_FUTURE_PHASE cleanups, the two Director-open
-semantic decisions) are documented as deferrals/decisions, not hidden
-inconsistencies.
+19 Dell test gaps, SAFE_FUTURE_PHASE cleanups) are documented as
+deferrals, not hidden inconsistencies. The two Director gate-R1
+decisions (unified atom truth, eager rollback convergence) are
+implemented, tested (80/80 execution, 31/31 persistence), and
+re-verified across all SWAT dimensions.
 
-**Synchronicity: CERTIFIED** — pending Director review of the two
-open semantic decisions (§9a, §9b).
+**Synchronicity: CERTIFIED**

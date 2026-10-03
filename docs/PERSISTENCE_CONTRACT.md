@@ -68,19 +68,26 @@ keeps the current + previous committed generations; older ones are pruned.
 stages the nursery from the sealed member for *reading* the committed
 content, then immediately re-points the instance to the live owner file
 (`Nursery.repoint_to_live`, wired in `persist_rest._load_impl`). The
-in-memory rolled-back proposals are untouched; no live file is written at
-load time (load stays read-pure). The next nursery mutation persists the
-rolled-back working state to the live file through the normal
-conflict-checked save path. Net effect: copy-on-rollback + re-point —
-the sealed member is unreachable for writing from the moment rollback
-returns, and the manifest fingerprint stays valid.
+in-memory rolled-back proposals are untouched; the sealed member is
+unreachable for writing from the moment rollback returns, and the
+manifest fingerprint stays valid.
 
-Known deferred-copy window (documented, not silent): if the process dies
-after rollback but before the first nursery save, the live nursery file
-still holds pre-rollback content; the sealed generation is intact and
-`load_checkpoint` still recovers it. Eager restoration of live files at
-rollback time is a `core_i_recovery.rollback` decision (outside R1 scope);
-the re-point machinery already supports it.
+**Eager rollback convergence (Director Decision 2, gate R1).**
+`core_i_recovery.rollback` now eagerly converges live working state:
+after the generation is validated and the program built, the live
+program file and live nursery file are atomically written with the
+target generation's state *before rollback returns*. A fresh
+`persist_rest.load(owner)` observes the rolled-back state with no
+subsequent save required. Operation order: SELECT > VALIDATE >
+RESTORE/COPY (serialize both payloads) > ESTABLISH INDEPENDENT OWNERSHIP
+(atomic writes of independent copies; sealed members never written) >
+UPDATE CURRENT STATE > VERIFY (fresh reload matches) > RETURN.
+
+Failure atomicity: all validation and serialization precede all writes.
+A failure before the first live write (validation, serialization,
+nursery-conflict pre-flight) leaves live files byte-identical — zero
+partial mutation. Each file write is crash-safe atomic (Persistence V2).
+The deferred-copy window described below is closed by this decision.
 
 ## 4. Sealing invariants (executable)
 
