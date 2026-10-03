@@ -157,19 +157,20 @@ Full DuoBeta assessment, full security assessment, Flow-first precedence, comple
   - Note: first regress pass flagged `core_ii_smoke` 34/35 — its structural check pinned `primary == {n}` for all n in 0..50, which the authorized Dell37 dead-branch removal intentionally breaks. Updated to the true architectural invariant (a missing leaf branch is legitimate IFF the Dell is Core-I HANDLED); second pass 35/35.
 - py_compile + AST parse clean on all touched Python files (CI flake8 E9/F63/F7/F82 gate equivalent; flake8 not installable in this env per PEP 668)
 
-## CI_RESULTS
-- Exact-head CI:
-  - Python 3.10: PASS (runs `37135837108` on `09ddb40`; `37136215171` on `a6eba93`)
-  - Python 3.11: PASS (same runs)
-  - smoke: PASS — 3m57s on `09ddb40` (run `37135837129`), 3m28s on `a6eba93` (run `37136215247`)
-  - github-advanced-security: **EVALUATION_UNAVAILABLE_QUOTA** — run `37135840614`, `SessionModelError`, HTTP 402, `errorCode: "quota"`; AI reviewer never analyzed the diff (standing pattern, never PASS)
-- Head chain: `09ddb40` (all executable changes; CI green) → `a6eba93` (packet CI-results sync only; markdown-only delta; CI re-green). Executable tree identical across both; no executable change after the CI-validated head.
-- Bounded substitute security review of product diff: PASS (no eval/exec/subprocess/socket/network/file-open/secret patterns in added lines; no workflow/dependency/authority changes)
+## CI_RESULTS (final)
+- Exact-head CI on `841dc04f0b9f2f6c9182746484674e1a2f602bac`:
+  - Python 3.10: PASS (run `37139289515`)
+  - Python 3.11: PASS (run `37139289515`)
+  - smoke: PASS, 3m52s (run `37139289463`)
+  - github-advanced-security: **EVALUATION_UNAVAILABLE_QUOTA** (standing pattern: `SessionModelError`, HTTP 402, `errorCode: "quota"`; reviewer never analyzes the diff — never PASS)
+- Executable code frozen at `4d92db93e7aeb1060cb77236a1b5860e5a376417`; all commits after it are packet-markdown only.
+- `form.regress --order fwd`: GREEN 76/76, EXIT 0 (local, 2026-10-03; includes 6 new MPC-011 suites)
+- Bounded substitute security review of §0 product diff: PASS (Origin check is a header comparison; no eval/exec/subprocess/socket/file-open/secret patterns; no workflow/dependency/authority changes)
 
 ## CANDIDATE_HEAD / PR_STATE
-- CANDIDATE_HEAD: `a6eba93` (executable code identical to CI-green `09ddb40`; delta is packet markdown only)
+- CANDIDATE_HEAD: `841dc04f0b9f2f6c9182746484674e1a2f602bac` (exact-head CI green; executable tree frozen at `4d92db9`)
 - PR: https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/69 (base: main `72008c3`, head: `mpc-011-work`)
-- PR_STATE: OPEN, CI green (3.10/3.11/smoke PASS on final head; security gate quota-unavailable). **NOT MERGED — awaiting Director merge authorization (AUTONOMY = NO).**
+- PR_STATE: OPEN, MERGEABLE, CLEAN. **NOT MERGED — awaiting Director merge authorization (AUTONOMY = NO).**
 
 ## RESULT_LEDGER
 - NEW_CURRENT_DEFECTS (all fixed this round): G parser wrong-target mutation; I /cmd false-failure; K direct-test state destruction; M false load receipt; L stale smoke docs (13 files)
