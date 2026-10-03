@@ -576,6 +576,15 @@ class SemanticGraph:
         return result
 
     # -- navigation (derived; triggers no semantic computation) ----------------
+    #
+    # LIFECYCLE/GRAPH COMPOSITION RULE (explicit, per directive):
+    # Graph edges are historical relationship facts. Idea lifecycle
+    # transitions (archive/delete/fade/restore) do NOT create, modify, or
+    # remove graph edges — history is never silently erased, and a
+    # deleted idea's former containment remains queryable as history.
+    # Structural navigation below answers the graph question purely.
+    # Consumers needing "live" views compose with Idea lifecycle state
+    # themselves; live_children() is the provided convenience.
 
     def parent(self, child_id: str) -> Optional[str]:
         rel_id = self._active_parent.get(child_id)
@@ -585,6 +594,20 @@ class SemanticGraph:
         return [self._current[r].target_id
                 for r in self._by_source.get(parent_id, [])
                 if self._current[r].type == RelationshipType.CONTAINS]
+
+    def live_children(self, parent_id: str) -> List[str]:
+        """Children whose Idea lifecycle state is ACTIVE. Structural
+        children() plus lifecycle composition, explicitly."""
+        from form.mandell.idea import LifecycleState
+        out = []
+        for cid in self.children(parent_id):
+            try:
+                idea = load_idea(cid, self.owner)
+            except Exception:
+                continue
+            if idea.idea_state == LifecycleState.ACTIVE:
+                out.append(cid)
+        return out
 
     def ancestors(self, child_id: str) -> List[str]:
         out, node = [], child_id
@@ -622,13 +645,12 @@ class SemanticGraph:
         return idea_id not in self._active_parent
 
     def roots(self) -> List[str]:
+        """All top-level ideas: every known idea with no active containment
+        parent. Consistent with is_top_level()."""
+        from form.mandell.idea_persist import list_idea_ids
         contained = set(self._active_parent)
-        nodes: Set[str] = set()
-        for e in self._current.values():
-            if e.status == RelationshipStatus.ACTIVE:
-                nodes.add(e.source_id)
-                nodes.add(e.target_id)
-        return sorted(n for n in nodes if n not in contained)
+        return sorted(iid for iid in list_idea_ids(self.owner)
+                      if iid not in contained)
 
     # -- queries -----------------------------------------------------------------
 
@@ -813,7 +835,17 @@ class SemanticGraph:
                            subject_id: Optional[str] = None,
                            provenance: Optional[Provenance] = None) -> RelationshipEntry:
         """Declare that dependent's `derived_property` is computed from
-        target (mirror: target's `unit`; counts: subject's containment)."""
+        target (mirror: target's `unit`; counts: subject's containment).
+
+        Performs an INITIAL computation immediately, so the derived value
+        is correct from declaration time — never silently None.
+
+        Session contract (explicit): propagation fires for mutations made
+        through Idea instances attached to this graph session
+        (attach()). Mutations through unattached instances do not
+        propagate; call reconcile(idea_id) afterwards to recompute from
+        current persisted state.
+        """
         props: Dict[str, Any] = {
             "derivation": derivation.value,
             "derived_property": derived_property,
@@ -825,9 +857,30 @@ class SemanticGraph:
         provenance = provenance or Provenance(
             source=ProvenanceSource.SYSTEM, activity="dependency_declared",
             agent="semantic_graph")
-        return self.add_relationship(
+        edge = self.add_relationship(
             RelationshipType.DEPENDS_ON, dependent_id, target_id,
             provenance, props, cause="declare_dependency")
+        # Initial computation: the derived value is correct immediately.
+        self._recompute_dependent(edge)
+        return edge
+
+    def reconcile(self, idea_id: str) -> int:
+        """Recompute every derived value depending on idea_id's current
+        persisted state. For mutations made outside this graph session
+        (unattached instances). Returns the number of dependents updated."""
+        updated = 0
+        for rel_id in list(self._by_target.get(idea_id, [])):
+            e = self._current[rel_id]
+            if e.type != RelationshipType.DEPENDS_ON:
+                continue
+            before = load_idea(e.source_id, self.owner).get_active_properties().get(
+                e.props_dict().get("derived_property"))
+            self._recompute_dependent(e)
+            after = load_idea(e.source_id, self.owner).get_active_properties().get(
+                e.props_dict().get("derived_property"))
+            if before != after:
+                updated += 1
+        return updated
 
     def _propagate_property(self, idea_id: str, property_name: str,
                             live_idea: Optional[Idea] = None) -> None:

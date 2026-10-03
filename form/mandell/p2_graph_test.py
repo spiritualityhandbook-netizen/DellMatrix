@@ -215,6 +215,45 @@ def main():
             if e.type == RelationshipType.CONTAINS and e.target_id == studio.id))
         check("persist title index", g5.lookup_by_title("Maison") == house.id)
 
+        # ---- NULL fixes: session contract, lifecycle, descendant_count -------
+        g6 = SemanticGraph.load(OWNER)
+        # initial computation at declaration (never silently None)
+        d2 = make_idea("Dep2")
+        t2 = make_idea("Tgt2")
+        t2.set_property("v", 42, PROV)
+        save_idea(t2, OWNER)
+        g6.declare_dependency(d2.id, t2.id, DerivationKind.MIRROR, "mv",
+                              unit="v", provenance=PROV)
+        check("declare initial compute",
+              load_idea(d2.id, OWNER).get_active_properties().get("mv") == 42)
+        # out-of-session mutation does not propagate; reconcile() fixes it
+        t2u = load_idea(t2.id, OWNER)  # NOT attached
+        t2u.set_property("v", 43, PROV)
+        save_idea(t2u, OWNER)
+        check("unattached no silent propagate",
+              load_idea(d2.id, OWNER).get_active_properties().get("mv") == 42)
+        n_up = g6.reconcile(t2.id)
+        check("reconcile updates",
+              n_up == 1 and load_idea(d2.id, OWNER).get_active_properties().get("mv") == 43)
+        # descendant_count derivation is reachable
+        g6.declare_dependency(house.id, house.id, DerivationKind.DESCENDANT_COUNT,
+                              "desc_count", subject_id=house.id, provenance=PROV)
+        check("descendant_count",
+              load_idea(house.id, OWNER).get_active_properties().get("desc_count")
+              == len(g6.descendants(house.id)))
+        # lifecycle/graph composition: archived child stays in history,
+        # live_children filters it
+        doomed = make_idea("Doomed")
+        g6.nest(doomed.id, house.id, PROV)
+        dl = load_idea(doomed.id, OWNER)
+        dl.archive("test")
+        save_idea(dl, OWNER)
+        check("archived still structural child", doomed.id in g6.children(house.id))
+        check("archived not live child", doomed.id not in g6.live_children(house.id))
+        check("archived in active_children history",
+              any(e.target_id == doomed.id and e.status == RelationshipStatus.ACTIVE
+                  for e in g6.by_type(RelationshipType.CONTAINS)))
+
         print("\nP2 GRAPH CONTRACT TESTS: ALL PASS")
     finally:
         wipe()
