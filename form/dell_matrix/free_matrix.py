@@ -71,13 +71,19 @@ def see(program, viewer_id: str = "user", mode: Optional[str] = None) -> Dict[st
     from form.dell_matrix.perspective_views import see_as, sync_viewer_pose
     reg = perspectives(program)
     if reg is None:
-        # fallback classic cone
+        # fallback classic cone — honest about what it could (not) verify
         from form.dell_matrix.vision import compute_vision, format_look_report
-        from form.dell_matrix.perspective_views import _nodes_from_program, _pose_from_program
+        from form.dell_matrix.perspective_views import _probe_nodes, _pose_from_program, UNKNOWN, UNAVAILABLE
         pos, facing = _pose_from_program(program)
-        nodes = _nodes_from_program(program)
+        nodes, source, status = _probe_nodes(program)
+        base = {"mode": "first", "epistemic_status": status, "data_source": source}
+        if status in (UNKNOWN, UNAVAILABLE):
+            return {**base, "ok": False,
+                    "error": f"node inventory {status} — cannot verify state",
+                    "report": [f"First view: node inventory {status} — cannot verify state",
+                               f"  data_source: {source}"]}
         vis = compute_vision(list(pos), facing, nodes)
-        return {"mode": "first", "vision": vis, "report": format_look_report(vis)}
+        return {**base, "ok": True, "vision": vis, "report": format_look_report(vis)}
     v = reg.viewers.get(viewer_id)
     if v is None:
         return {"ok": False, "error": f"unknown viewer {viewer_id}", "viewers": reg.list_viewers()}
