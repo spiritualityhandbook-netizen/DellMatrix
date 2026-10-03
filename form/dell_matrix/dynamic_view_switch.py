@@ -95,18 +95,24 @@ class DynamicViewSwitch:
 
         sync_viewer_pose(program, v)
         sight = see_as(program, v, mode=mode)
+        # R5: never propagate a confident count over unverified state —
+        # "count" appears only when the underlying sight verified it.
+        sight_summary: Dict[str, Any] = {
+            "mode": sight.get("mode"),
+            "scope": sight.get("scope"),
+            "epistemic_status": sight.get("epistemic_status"),
+            "data_source": sight.get("data_source"),
+            "report_head": (sight.get("report") or [])[:5],
+        }
+        if "count" in sight:
+            sight_summary["count"] = sight["count"]
         return {
             "ok": True,
             "viewer": vid,
             "from": from_mode,
             "to": mode,
             "transition_ms": self.transition_ms,
-            "sight": {
-                "mode": sight.get("mode"),
-                "scope": sight.get("scope"),
-                "count": sight.get("count") or len((sight.get("vision") or {}).get("nodes") or []),
-                "report_head": (sight.get("report") or [])[:5],
-            },
+            "sight": sight_summary,
             "event": ev.__dict__,
             "law": "user/architect may switch any viewer to any mode",
         }
