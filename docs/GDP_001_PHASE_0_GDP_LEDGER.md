@@ -11,7 +11,21 @@
 
 ---
 
-## PHASE 0 — INTEGRITY & SEMANTIC FOUNDATION [IN_PROGRESS]
+## PHASE 0 — INTEGRITY & SEMANTIC FOUNDATION [CERTIFIED] [MERGED] [CLOSED]
+
+**Merge:** PR #70 merged 2026-10-03T21:00:12Z as `827e4f8bacb0e2eb1438183ecb3cab722c39f7fd`
+(parents: `1c90cecf9e5bbbf6bda055f3157ecada299f6840`, `7319b5e7c4d38d4be72a0af3c8c20d36fdb1eea9`).
+**Requirements:** 0.1 CERTIFIED, 0.2 CERTIFIED, 0.3 CERTIFIED, 0.4 CERTIFIED, 0.5 CERTIFIED.
+**Objectives:** 25/25 CERTIFIED.
+**Post-merge:** fresh-main regress 83/83 GREEN; persistence 55/55; exact-head CI green.
+**R1/R2/R3 findings preserved** as engineering history (see SWAT report).
+
+**Phase-0 permanent contracts (inherited by Phases 1–7):**
+PERSISTENCE MUST FAIL CLOSED. SEALED HISTORY IMMUTABLE. LIVE MUST NOT ALIAS
+SEALED. NO HYBRID MULTI-FILE STATE. UNKNOWN RECOVERY != VALID STATE.
+ATOM TRUTH != CHAIN POLICY. UNEXECUTED != SUCCESS. TEST PASS != CAPABILITY.
+VACUOUS TEST != EVIDENCE. CLAIM <= PROVEN BEHAVIOR. RESERVED FAILS HONESTLY.
+MATH REQUIRES ADMISSION. NO COMPETING AUTHORITY.
 
 **Integration branch:** `gdp-phase0-work` (from baseline 1c90cec). R1–R5 specialist branches merged; R2 MUST_FIX applied. Integrated regress running.
 
