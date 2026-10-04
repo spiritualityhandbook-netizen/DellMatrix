@@ -66,9 +66,20 @@ def _ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _slug(text: str) -> str:
+def _slug(text: str, seed: int = 0) -> str:
+    """Deterministic proposal ID: slugified label prefix + stable digest suffix.
+
+    GDP-001 Phase 3, 3.1.4: the digest is SHA-256 over (seed, text), NOT
+    Python's built-in hash() — hash() of str is salted per process
+    (PYTHONHASHSEED), so pre-Phase-3 IDs were deterministic only WITHIN one
+    process and differed across processes for the same label. With this
+    change, the same (seed, label) yields the same ID in every process.
+    The exact-collision fallback suffix ("_<count>") is deterministic given
+    the same add sequence on an equal starting nursery.
+    """
     s = re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
-    return (s[:28] or "proposal") + "_" + str(abs(hash(text)) % 10000)
+    digest = hashlib.sha256(f"{int(seed)}:{text}".encode("utf-8")).hexdigest()
+    return (s[:28] or "proposal") + "_" + str(int(digest[:8], 16) % 10000)
 
 
 @dataclass
@@ -139,8 +150,12 @@ class Nursery:
         parents: Optional[List[str]] = None,
         affinity: float = 0.0,
         reason: str = "",
+        seed: int = 0,
     ) -> Proposal:
-        pid = _slug(label)
+        """Add a proposal. ID = _slug(label, seed): deterministic given
+        (seed, label, add-sequence) across processes (GDP-001 Phase 3, 3.1.4).
+        Default seed=0 keeps a stable deterministic ID stream."""
+        pid = _slug(label, seed)
         # avoid exact id collision
         if pid in self.proposals:
             pid = pid + "_" + str(len(self.proposals))
