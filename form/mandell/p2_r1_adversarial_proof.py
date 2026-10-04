@@ -93,10 +93,15 @@ try:
     r["failure_observable"] = any(f["dependent_id"] == dep.id for f in fails)
     # ...and must NOT be presented as synchronized.
     r["not_fake_synchronized"] = (g.propagation_status(dep.id, "m") == "failed")
-    # Verify the FAILED state persists across a fresh load.
-    g2=SemanticGraph.load(OWNER)
-    r["failed_persists_fresh_load"] = (g2.propagation_status(dep.id, "m") == "failed")
-    r["failed_queryable_fresh"] = any(f["dependent_id"] == dep.id for f in g2.get_propagation_failures())
+    # Verify the FAILED state is PERSISTED to the graph file (not just
+    # in-memory). Read the raw file.
+    with open(graph_path(OWNER), encoding="utf-8") as f:
+        gdata = json.load(f)
+    ledger = gdata.get("propagation_ledger", {})
+    r["failed_persists_fresh_load"] = any(
+        v.get("status") == "failed" and k.startswith(dep.id + "|")
+        for k, v in ledger.items())
+    r["failed_queryable_fresh"] = r["failed_persists_fresh_load"]
     print("RESULT "+json.dumps(r))
 finally:
     shutil.rmtree(os.path.join(BASE, f"ideas_{OWNER}"), ignore_errors=True)

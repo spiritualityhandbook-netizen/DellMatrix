@@ -285,6 +285,7 @@ class SemanticGraph:
         self._idea_titles: Dict[str, str] = {}            # idea_id -> title
         self._propagating: Set[Tuple[str, str]] = set()   # recursion guard
         self._journal_depth = 0  # nesting depth for journaled propagation
+        self._replaying = False  # True during _replay_journal (suppress clear)
 
     # -- load / save ------------------------------------------------------
 
@@ -340,7 +341,9 @@ class SemanticGraph:
         if not isinstance(ledger, dict):
             raise GraphValidationError("propagation_ledger must be a dict")
         for k, v in ledger.items():
-            if not isinstance(v, dict) or v.get("status") not in ("pending", "failed"):
+            # A6: only "failed" is a valid persisted ledger status.
+            # "pending" is derived from journal presence, never stored.
+            if not isinstance(v, dict) or v.get("status") != "failed":
                 raise GraphValidationError(f"malformed propagation ledger entry {k!r}")
             dep_id, _, prop = k.partition("|")
             self._propagation_ledger[(dep_id, prop)] = v
@@ -434,37 +437,63 @@ class SemanticGraph:
             with open(path, encoding="utf-8") as f:
                 journal = json.load(f)
         except (OSError, json.JSONDecodeError):
-            # Corrupt journal: fail closed (do not guess).
             raise GraphValidationError(f"graph journal unreadable for {self.owner!r}")
+        # A1/A2/A3: validate journal shape upfront — fail closed, not
+        # AttributeError.
+        if not isinstance(journal, dict):
+            raise GraphValidationError("graph journal must be a JSON object")
         if journal.get("owner") != self.owner:
             raise GraphValidationError("graph journal owner mismatch")
         operations = journal.get("operations", [])
+        if not isinstance(operations, list):
+            raise GraphValidationError("graph journal operations must be a list")
         for op in operations:
-            try:
-                if op.get("op") == "ensure_edge":
-                    rel_id = op["entry"]["rel_id"]
-                    if rel_id not in self._current:
-                        entry = RelationshipEntry.from_dict(op["entry"])
-                        self._entries.append(entry)
-                        self._next_seq = max(self._next_seq, entry.seq + 1)
-                elif op.get("op") == "sync_dependent":
-                    self._sync_dependent_by_ids(
-                        op["dependent_id"], op["derived_property"],
-                        op["target_id"], op.get("unit"), op.get("derivation"),
-                        op.get("subject_id"), op.get("edge_rel_id"))
-            except Exception as exc:
-                # Cannot complete this operation (e.g., idea file gone).
-                # Record FAILED explicitly; do not crash the load.
-                dep_id = op.get("dependent_id", "?")
-                prop = op.get("derived_property", "?")
-                self._propagation_ledger[(dep_id, prop)] = {
-                    "status": PropagationStatus.FAILED.value,
-                    "error": f"journal_replay: {type(exc).__name__}: {exc}",
-                    "timestamp": time.time(),
-                    "target_id": op.get("target_id"),
-                }
+            if not isinstance(op, dict):
+                raise GraphValidationError("graph journal op must be a dict")
+            # A4: reject unknown op types (fail closed, not silently dropped).
+            if op.get("op") not in ("ensure_edge", "sync_dependent"):
+                raise GraphValidationError(
+                    f"unknown graph journal op {op.get('op')!r}")
+        self._replaying = True
+        try:
+            for op in operations:
+                try:
+                    if op["op"] == "ensure_edge":
+                        rel_id = op["entry"]["rel_id"]
+                        if rel_id not in self._current:
+                            entry = RelationshipEntry.from_dict(op["entry"])
+                            # A14: enforce seq uniqueness on the replay path.
+                            if any(e.seq == entry.seq for e in self._entries):
+                                raise GraphValidationError(
+                                    f"journal replay: duplicate seq {entry.seq}")
+                            self._entries.append(entry)
+                            self._next_seq = max(self._next_seq, entry.seq + 1)
+                            # A11: fold immediately so the following
+                            # sync_dependent sees the edge in _current.
+                            self._fold()
+                    elif op["op"] == "sync_dependent":
+                        self._sync_dependent_by_ids(
+                            op["dependent_id"], op["derived_property"],
+                            op["target_id"], op.get("unit"), op.get("derivation"),
+                            op.get("subject_id"), op.get("edge_rel_id"))
+                        # NULL-1: successful replay clears any stale FAILED.
+                        ledger_key = (op["dependent_id"], op["derived_property"])
+                        if ledger_key in self._propagation_ledger:
+                            del self._propagation_ledger[ledger_key]
+                except GraphValidationError:
+                    raise
+                except Exception as exc:
+                    dep_id = op.get("dependent_id", "?")
+                    prop = op.get("derived_property", "?")
+                    self._propagation_ledger[(dep_id, prop)] = {
+                        "status": PropagationStatus.FAILED.value,
+                        "error": f"journal_replay: {type(exc).__name__}: {exc}",
+                        "timestamp": time.time(),
+                        "target_id": op.get("target_id"),
+                    }
+        finally:
+            self._replaying = False
         self._fold()
-        # Persist the recovered state, then clear the journal.
         self.save()
         self._clear_journal()
 
@@ -725,6 +754,12 @@ class SemanticGraph:
             after=lambda: (self._propagate_structure(current.source_id),
                            self._propagate_structure(current.target_id)),
         )
+        # PRISM-2: a removed DEPENDS_ON edge must not leave an orphan FAILED
+        # ledger record (unrecoverable, confusing). Clear it.
+        if current.type == RelationshipType.DEPENDS_ON:
+            derived = current.props_dict().get("derived_property")
+            self._propagation_ledger.pop((current.source_id, derived), None)
+            self.save()
         return entry
 
     # -- containment ----------------------------------------------------------
@@ -1197,12 +1232,17 @@ class SemanticGraph:
                 "timestamp": time.time(),
                 "target_id": target_id,
             }
-            # Best-effort persist of the FAILED state; if this save fails,
-            # the journal remains for forward recovery on next load.
+            # A8: persist the FAILED state. If this save SUCCEEDS, the
+            # failure is explicitly recorded → clear journal. If it FAILS,
+            # the journal MUST remain for forward recovery on next load.
+            # (The old `finally` cleared it unconditionally — wrong.)
             try:
                 self.save()
-            finally:
-                self._clear_journal()
+            except Exception:
+                # Journal remains; FAILED is in-memory only for this session.
+                # Next load will replay the journal and re-attempt the sync.
+                raise
+            self._clear_journal()
             raise
         # Success: both committed; clear journal.
         self._clear_journal()
@@ -1221,9 +1261,12 @@ class SemanticGraph:
             props = e.props_dict()
             derived_prop = props.get("derived_property")
             ledger_key = (e.source_id, derived_prop)
-            before = load_idea(e.source_id, self.owner).get_active_properties().get(
-                derived_prop)
+            # PRISM-4: the `before` snapshot load is inside the try so a
+            # missing/corrupt dependent records FAILED instead of crashing
+            # the recovery function.
             try:
+                before = load_idea(e.source_id, self.owner).get_active_properties().get(
+                    derived_prop)
                 self._recompute_dependent(e)
             except Exception as exc:
                 # Record FAILED; do not pretend success.
@@ -1241,8 +1284,11 @@ class SemanticGraph:
                 del self._propagation_ledger[ledger_key]
             self._remove_journal_ops(e.source_id, derived_prop)
             self.save()
-            after = load_idea(e.source_id, self.owner).get_active_properties().get(
-                derived_prop)
+            try:
+                after = load_idea(e.source_id, self.owner).get_active_properties().get(
+                    derived_prop)
+            except Exception:
+                after = None
             if before != after:
                 updated += 1
         return updated
@@ -1382,8 +1428,10 @@ class SemanticGraph:
              "edge_rel_id": e.rel_id}
             for e in affected
         ]
-        self._journal_depth += 1
+        # A9: increment AFTER successful journal write. If _write_journal
+        # throws, depth is never incremented (no leak).
         self._write_journal(journal_ops)
+        self._journal_depth += 1
         try:
             for e in affected:
                 props = e.props_dict()
@@ -1406,17 +1454,23 @@ class SemanticGraph:
             # Persist ledger state, then clear journal on full success.
             # If we raised, the journal remains for recovery replay.
             # Only the outermost call clears (nested multi-hop appends).
+            # Never clear during replay (A12).
             self._journal_depth -= 1
             try:
                 self.save()
             except Exception:
                 pass
-            if self._journal_depth == 0:
+            if self._journal_depth == 0 and not self._replaying:
                 import sys
                 if sys.exc_info()[0] is None:
                     self._clear_journal()
 
     def _propagate_structure(self, subject_id: str) -> None:
+        """Count-derivation propagation (CHILD_COUNT/DESCENDANT_COUNT).
+        R1 (A10): journaled like the MIRROR path. A partial failure (e.g.,
+        dependent #2's save throws after #1 committed) records FAILED
+        explicitly — never a stale derived value presented as synchronized."""
+        affected = []
         for rel_id in list(self._by_target.get(subject_id, [])):
             e = self._current[rel_id]
             if e.type != RelationshipType.DEPENDS_ON:
@@ -1429,9 +1483,7 @@ class SemanticGraph:
             dep_subject = props.get("subject_id") or e.source_id
             if dep_subject != subject_id:
                 continue
-            self._recompute_dependent(e)
-        # Also: dependents whose subject is the dependent itself and whose
-        # containment changed (subject == source).
+            affected.append(e)
         for rel_id in list(self._by_source.get(subject_id, [])):
             e = self._current[rel_id]
             if e.type != RelationshipType.DEPENDS_ON:
@@ -1443,7 +1495,50 @@ class SemanticGraph:
                 continue
             if props.get("subject_id", e.source_id) != subject_id:
                 continue
-            self._recompute_dependent(e)
+            affected.append(e)
+        if not affected:
+            return
+        journal_ops = [
+            {"op": "sync_dependent",
+             "dependent_id": e.source_id,
+             "derived_property": e.props_dict().get("derived_property"),
+             "target_id": e.target_id,
+             "unit": None,
+             "derivation": e.props_dict().get("derivation"),
+             "subject_id": e.props_dict().get("subject_id"),
+             "edge_rel_id": e.rel_id}
+            for e in affected
+        ]
+        self._journal_depth += 1
+        try:
+            self._write_journal(journal_ops)
+        except Exception:
+            self._journal_depth -= 1
+            raise
+        try:
+            for e in affected:
+                props = e.props_dict()
+                ledger_key = (e.source_id, props.get("derived_property"))
+                try:
+                    self._recompute_dependent(e)
+                except Exception as exc:
+                    self._propagation_ledger[ledger_key] = {
+                        "status": PropagationStatus.FAILED.value,
+                        "error": f"{type(exc).__name__}: {exc}",
+                        "timestamp": time.time(),
+                        "target_id": e.target_id,
+                    }
+                    raise
+        finally:
+            self._journal_depth -= 1
+            try:
+                self.save()
+            except Exception:
+                pass
+            if self._journal_depth == 0 and not self._replaying:
+                import sys
+                if sys.exc_info()[0] is None:
+                    self._clear_journal()
 
     def _recompute_dependent(self, edge: RelationshipEntry,
                               live_idea: Optional[Idea] = None) -> None:
