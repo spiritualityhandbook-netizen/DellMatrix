@@ -208,10 +208,19 @@ def _revision_owned(program, uid: str) -> bool:
 
 
 def _clear_lattice_refs(program, uid: str) -> None:
-    """View hygiene: drop lattice cells still pointing at a removed unit."""
+    """View hygiene: drop lattice cells still pointing at a removed unit.
+
+    P4-DIR-01: removes uid from multi-content `members`; updates the
+    legacy `content` primary if it was the removed uid.
+    """
     try:
         for _key, cell in list(program.lattice.cells.items()):
-            if cell.content == uid:
+            if uid in cell.members:
+                cell.members = [m for m in cell.members if m != uid]
+                if cell.content == uid:
+                    cell.content = cell.members[0] if cell.members else None
+                    cell.label = ""
+            elif cell.content == uid:
                 cell.content = None
                 cell.label = ""
     except Exception:

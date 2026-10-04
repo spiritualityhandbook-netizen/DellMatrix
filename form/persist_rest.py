@@ -100,7 +100,7 @@ def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
         p.lattice.origin_note = int(raw.get("origin_note", 0))
         for _key, cell in (raw.get("cells") or {}).items():
             try:
-                p.lattice.put(int(cell.get("h", 0)), int(cell.get("v", 0)), int(cell.get("f", 0)), content=cell.get("content"), label=cell.get("label", ""), tags=list(cell.get("tags") or []))
+                p.lattice.put(int(cell.get("h", 0)), int(cell.get("v", 0)), int(cell.get("f", 0)), content=cell.get("content"), label=cell.get("label", ""), tags=list(cell.get("tags") or []), members=list(cell.get("members") or []))
             except Exception:
                 continue
     except Exception:
@@ -407,6 +407,17 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         p.forces = ForceField.from_dict(data.get("forces") or {})
     except Exception:
         pass
+    # Phase 4: spatial authority state. Missing member -> fresh (declared,
+    # pre-Phase-4 generations). Malformed member -> FAIL CLOSED (never
+    # silent defaults that change meaning).
+    from form.dell_matrix.spatial_authority import (
+        SpatialAuthority, SpatialLoadError)
+    try:
+        p.spatial = SpatialAuthority.from_dict(data.get("spatial"))
+    except SpatialLoadError:
+        raise
+    except Exception as exc:
+        raise SpatialLoadError(f"spatial restore failed: {exc}")
     try:
         from form.dell_matrix.personas import BIMOBody, PersonaMatrix
         p.bimo = BIMOBody.from_dict(data.get("bimo") or {})
@@ -465,7 +476,7 @@ DURABLE_KEYS = (
     "resonance", "main", "plane", "duo_generation", "duo_ledger", "avatar",
     "companion", "inspire", "self_knowledge", "ux", "forces", "bimo",
     "nursery", "lattice", "history", "latinmandell_customs",
-    "mandell_language", "core_ii", "outcome_ledger",
+    "mandell_language", "core_ii", "outcome_ledger", "spatial",
 )
 
 
