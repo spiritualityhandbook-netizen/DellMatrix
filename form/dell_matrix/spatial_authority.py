@@ -599,25 +599,34 @@ class SpatialAuthority:
     def _wells(self, program: Any, plane: Any,
                scores: Dict[str, float]) -> List[Tuple[float, float, float]]:
         """Gravity wells: existing program.forces.gravity wells matched to
-        unit positions (mass = score + 1.0, the admitted convention)."""
+        unit positions (mass = score + 1.0, the admitted convention).
+
+        Phase-3 lifecycle law: faded (non-active) ideas exert NO
+        attraction. Well candidates are filtered through the canonical
+        lifecycle boundary.
+        """
+        from form.dell_matrix import canonical_lifecycle
         wells: List[Tuple[float, float, float]] = []
         try:
             g = program.forces.gravity
             for w in g.wells:
                 wid = w.get("id") if isinstance(w, dict) else getattr(
                     w, "id", None)
-                if wid in plane.units:
+                if wid in plane.units and canonical_lifecycle.is_active(
+                        program, wid):
                     u = plane.units[wid]
                     wells.append((u.x, u.y,
                                   mass_of(scores.get(wid, 0.0)) + 0.5))
         except Exception:
             pass
         if not wells:
-            # fallback: top-3 by score among positioned units (existing
-            # NatureBridge convention, now deterministic)
+            # fallback: top-3 by score among ACTIVE positioned units
+            # (existing NatureBridge convention, now deterministic and
+            # lifecycle-gated)
             ranked = sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))
             for wid, s in ranked[:3]:
-                if wid in plane.units:
+                if wid in plane.units and canonical_lifecycle.is_active(
+                        program, wid):
                     u = plane.units[wid]
                     wells.append((u.x, u.y, mass_of(s) + 0.5))
         return wells
