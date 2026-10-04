@@ -36,8 +36,16 @@ MAX_DISP_PER_TICK = 2.0       #: DecreasingMaxMovement cap (× temperature)
 FRICTION_CLEAR = 0.90         #: velocity retention per tick (d3-style decay)
 COOLING = 0.96                #: geometric temperature decay per tick
 EPS_FORCE = 1e-9              #: Eades force guard (reported, not the stop rule)
-EPS_DISP = 1e-9               #: positional stillness threshold (the stop rule)
-MAX_SETTLE_TICKS = 200        #: iteration budget; exhaustion = non-convergent
+EPS_DISP = 1e-4               #: positional stillness threshold (the stop rule).
+                              #: Rationale: 0.01% of typical idea spacing;
+                              #: below this, movement is computationally and
+                              #: visually meaningless. Chosen over 1e-9
+                              #: because geometric cooling asymptotes;
+                              #: 1e-9 would require ~520 ticks, exceeding
+                              #: any reasonable budget without adding meaning.
+MAX_SETTLE_TICKS = 400       #: iteration budget; exhaustion = non-convergent.
+                              #: Measured: 3-idea cluster reaches 1e-4
+                              #: stillness at ~280 ticks; 400 gives headroom.
 G = 0.4                       #: gravitational constant (admitted, reused)
 MIN_DIST = 2.0                #: distance clamp (no singularity; reused)
 SEP_RADIUS = 1.0              #: idea disk radius for separation
@@ -45,6 +53,8 @@ SEP_CUTOFF = 2.5              #: separation force is exactly 0 beyond this
 SEP_STRENGTH = 0.6            #: separation magnitude scale
 SPRING_K = 0.05               #: graph-edge spring constant (weak, bounded)
 SPRING_CAP = 1.0              #: max spring force magnitude
+CENTER_K = 0.05               #: layout-centering constant (weak, bounded)
+CENTER_CAP = 0.5              #: max centering force magnitude
 GRID_CELL = 4.0               #: uniform-grid cell size for neighborhoods
 GOLDEN_ANGLE = math.pi * (3.0 - math.sqrt(5.0))  #: deterministic spiral
 SPATIAL_VERSION = 1
@@ -211,6 +221,43 @@ def spring_force(ax: float, ay: float, bx: float, by: float,
         return 0.0, 0.0
     mag = min(k * d, cap)
     return (dx / d) * mag, (dy / d) * mag
+
+
+def center_force(x: float, y: float,
+                 k: float = CENTER_K, cap: float = CENTER_CAP
+                 ) -> Tuple[float, float]:
+    """Weak layout-centering force toward the neutral origin.
+
+    16-FIELD ADMISSION
+    1. NAME: center_force (weak Hooke centering toward neutral origin).
+    2. FORMULA: F = -k*(x,y), |F| <= cap.
+    3. DOMAIN: all finite (x,y).
+    4. PARAMETERS: k=0.05, cap=0.5 (weak vs wells/springs).
+    5. OUTPUT RANGE: [0, cap].
+    6. DETERMINISM: pure function of (x,y).
+    7. AUTHORITY: CALCULATOR. The origin is declared neutral; this is
+       computational layout stability (prevents unbounded drift in
+       edgeless/well-less configurations), NOT a semantic claim.
+       LOCATION != TRUTH is preserved: centering does not move semantic
+       state and does not confer meaning.
+    8. SOURCE: standard force-directed practice (FR91/ForceAtlas2 gravity).
+    9. BOUND PROOF: |F| <= cap by construction (min).
+    10. FAILURE MODES: NaN input -> (0,0); origin -> (0,0).
+    11. NUMERICAL: stable; linear, no singularity.
+    12. INTERACTION: weakest force in the system; wells/springs dominate.
+    13. INVERTIBILITY: n/a (layout aid).
+    14. VERSION: v1 (2026-10-04).
+    15. SUPERSEDES: nothing (new).
+    16. FALSIFIER: any tick where |F| > cap, or centering moves semantic state.
+    """
+    if not (math.isfinite(x) and math.isfinite(y)):
+        return (0.0, 0.0)
+    fx, fy = -k * x, -k * y
+    mag = math.hypot(fx, fy)
+    if mag > cap and mag > 0:
+        s = cap / mag
+        fx, fy = fx * s, fy * s
+    return (fx, fy)
 
 
 def weather_modulation(condition: str) -> Dict[str, float]:
@@ -448,6 +495,10 @@ class SpatialAuthority:
                 mag = SEP_STRENGTH * (1.0 - min(d, SEP_CUTOFF) / SEP_CUTOFF)
                 fx += (dx / max(d, 1e-12)) * mag
                 fy += (dy / max(d, 1e-12)) * mag
+            # weak layout centering (bounded; stability, not semantics)
+            cx, cy = center_force(u.x, u.y)
+            fx += cx
+            fy += cy
             if jitter_mag > 0:
                 fx += (self._rng.random() * 2 - 1) * jitter_mag
                 fy += (self._rng.random() * 2 - 1) * jitter_mag

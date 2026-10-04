@@ -772,9 +772,12 @@ class Program:
     def force_status(self) -> Dict[str, Any]:
         return self.forces.status()
 
-    def spatial_settle(self, max_ticks: int = 200) -> Dict[str, Any]:
+    def spatial_settle(self, max_ticks: int = None) -> Dict[str, Any]:
         """Run bounded dynamics to equilibrium or honest non-convergence."""
-        return self.spatial.settle(self, max_ticks=max_ticks)
+        from form.dell_matrix.spatial_authority import MAX_SETTLE_TICKS
+        return self.spatial.settle(
+            self, max_ticks=MAX_SETTLE_TICKS if max_ticks is None
+            else max_ticks)
 
     def spatial_explain(self, idea_id: str) -> Dict[str, Any]:
         """Why an idea occupies its current location (4.1.5)."""

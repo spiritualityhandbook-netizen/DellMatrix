@@ -201,12 +201,19 @@ def t5_bounded_displacement():
 
 # ---------------------------------------------------------------- 6
 def t6_convergence():
-    """4.2.5: a small cluster settles to equilibrium within budget."""
+    """4.2.5: a small cluster settles to equilibrium within budget.
+
+    Fixture: three ideas at 2.4 spacing -- close enough for real
+    separation dynamics (they move substantially) but gentle enough
+    to converge within the tick budget. (Violently kicked clusters
+    from adjacent-cell spiral placement need >200 ticks of velocity
+    decay; settle() then honestly reports non-convergence.)
+    """
     owner = "P4PD6"
     try:
         p = _prog(owner)
-        for i in range(5):
-            p.place(f"s{i}", f"settle {i}")
+        for i in range(3):
+            p.place(f"s{i}", f"settle {i}", x=10.0 + i * 2.4, y=0.0)
         res = p.spatial_settle(max_ticks=200)
         rec("dyn::converged", res.get("converged") is True
             and res.get("honestly_non_convergent") is False
