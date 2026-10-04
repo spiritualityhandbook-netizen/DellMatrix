@@ -241,16 +241,23 @@ def _recover_prepared(owner: str, jpath: str, journal: dict) -> str:
     from form.persist import _path as _live_program_path
     from form.dell_matrix.nursery import owner_nursery_path
     from form.mandell.idea_checkpoint import ideas_snapshot_path
+    from form.mandell.semantic_graph import graph_path as _graph_live_path
     live_prog = _live_program_path(owner)
     live_nurs = owner_nursery_path(owner)
     live_ideas = ideas_snapshot_path(owner)
+    live_graph = _graph_live_path(owner)
     # Verify coherence: live files must match recorded old fingerprints.
     # None means the file did not exist at prepare time.
-    for label, path, recorded in (
+    members = [
         ("program", live_prog, journal["old_program_sha256"]),
         ("nursery", live_nurs, journal["old_nursery_sha256"]),
         ("ideas", live_ideas, journal["old_ideas_sha256"]),
-    ):
+    ]
+    # Phase 2: old (3-member) journals have no graph fields; the graph was
+    # never part of those transactions, so it is correctly left alone.
+    if "old_graph_sha256" in journal:
+        members.append(("graph", live_graph, journal["old_graph_sha256"]))
+    for label, path, recorded in members:
         if recorded is None:
             continue  # legitimately absent at prepare time
         if not os.path.isfile(path):
@@ -278,9 +285,15 @@ def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
     from form.persist import _path as _live_program_path
     from form.dell_matrix.nursery import owner_nursery_path
     from form.mandell.idea_checkpoint import ideas_snapshot_path
-    for kind, live_fn in (("program", _live_program_path),
-                          ("nursery", owner_nursery_path),
-                          ("ideas", ideas_snapshot_path)):
+    from form.mandell.semantic_graph import graph_path as _graph_live_path
+    kinds = (("program", _live_program_path),
+             ("nursery", owner_nursery_path),
+             ("ideas", ideas_snapshot_path))
+    # Phase 2: old (3-member) journals have no graph target hash; the
+    # graph was never staged by those transactions, so it is left alone.
+    if "graph_sha256" in journal:
+        kinds = kinds + (("graph", _graph_live_path),)
+    for kind, live_fn in kinds:
         staging = _staging_path(owner, kind)
         live = live_fn(owner)
         if os.path.isfile(staging):
@@ -298,11 +311,14 @@ def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
     live_prog = _live_program_path(owner)
     live_nurs = owner_nursery_path(owner)
     live_ideas = ideas_snapshot_path(owner)
-    for label, path, recorded in (
+    members = [
         ("program", live_prog, journal["program_sha256"]),
         ("nursery", live_nurs, journal["nursery_sha256"]),
         ("ideas", live_ideas, journal["ideas_sha256"]),
-    ):
+    ]
+    if "graph_sha256" in journal:
+        members.append(("graph", _graph_live_path(owner), journal["graph_sha256"]))
+    for label, path, recorded in members:
         if not os.path.isfile(path):
             raise RollbackRecoveryError(
                 f"rollback recovery: canonical {label} file missing after "
@@ -320,7 +336,8 @@ def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
 
 
 def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
-                        _ideas_snapshot_path: Optional[str] = None) -> None:
+                        _ideas_snapshot_path: Optional[str] = None,
+                        _graph_member_path: Optional[str] = None) -> None:
     """Eagerly converge live working state to the rolled-back program.
 
     DIRECTOR DECISION 2 (gate R1) + FINDING 1 (gate R2): successful rollback
@@ -328,7 +345,8 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     generation when rollback returns, with PAIR-ATOMICITY — a reader must
     never accept a hybrid program/nursery live state.
 
-    Transactional model (journaled two-file transaction, Director option B):
+    Transactional model (journaled multi-file transaction, Director option B,
+    generalized to four members in Phase 2: program+nursery+ideas+graph):
 
       1. PREPARE: serialize both payloads; write journal {phase: prepared}
          with old/new fingerprints. No live file touched.
@@ -383,6 +401,19 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
                 raise CheckpointError("rollback: sealed ideas member invalid structure")
         except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
             raise CheckpointError(f"rollback: sealed ideas member unreadable: {exc}") from exc
+    # Phase 2: graph payload. The sealed graph member is the relationship
+    # log; validated structurally here, fully validated on next graph load.
+    graph_data = None
+    if _graph_member_path:
+        try:
+            with open(_graph_member_path, "rb") as f:
+                graph_blob = f.read()
+            graph_data = json.loads(graph_blob.decode("utf-8"))
+            if not isinstance(graph_data, dict) or not isinstance(
+                    graph_data.get("relationships"), list):
+                raise CheckpointError("rollback: sealed graph member invalid structure")
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise CheckpointError(f"rollback: sealed graph member unreadable: {exc}") from exc
     # Pre-flight the nursery conflict guard BEFORE any mutation.
     _check_fail("rollback_nursery_conflict", _fail_at)
     if _disk_sig(nursery.path) != nursery._seen:
@@ -394,6 +425,8 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     live_nurs = owner_nursery_path(owner)
     from form.mandell.idea_checkpoint import ideas_snapshot_path
     live_ideas = ideas_snapshot_path(owner)
+    from form.mandell.semantic_graph import graph_path as _graph_live_path
+    live_graph = _graph_live_path(owner)
     journal = {
         "phase": "prepared",
         "owner": owner,
@@ -402,17 +435,20 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
         "program_sha256": None,
         "nursery_sha256": None,
         "ideas_sha256": None,
+        "graph_sha256": None,
         "old_program_sha256": _sha256_file(live_prog) if os.path.isfile(live_prog) else None,
         "old_nursery_sha256": _sha256_file(live_nurs) if os.path.isfile(live_nurs) else None,
         "old_ideas_sha256": _sha256_file(live_ideas) if os.path.isfile(live_ideas) else None,
+        "old_graph_sha256": _sha256_file(live_graph) if os.path.isfile(live_graph) else None,
     }
     _write_journal(owner, journal, _fail_at=_fail_at)
 
-    # 2. STAGE: write all three payloads to staging files (live untouched).
+    # 2. STAGE: write all four payloads to staging files (live untouched).
     _check_fail("rollback_stage", _fail_at)
     staging_prog = _staging_path(owner, "program")
     staging_nurs = _staging_path(owner, "nursery")
     staging_ideas = _staging_path(owner, "ideas")
+    staging_graph = _staging_path(owner, "graph")
     prog_blob = atomic_write_json(staging_prog, program_data)
     nurs_blob = atomic_write_json(staging_nurs, nursery_payload)
     # R2: Stage ideas payload. If no ideas snapshot was provided (e.g.,
@@ -422,12 +458,24 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
         ideas_blob = atomic_write_json(staging_ideas, ideas_data)
     else:
         ideas_blob = atomic_write_json(staging_ideas, {"owner": owner, "ideas": {}})
+    # Phase 2: stage the graph payload. A generation without a graph
+    # member (pre-Phase-2) stages an empty graph log: the coherent "graph
+    # cleared" semantic — the live 4-tuple always reflects exactly the
+    # selected generation's members.
+    from form.mandell.semantic_graph import _GRAPH_FORMAT_VERSION
+    if graph_data is not None:
+        graph_blob = atomic_write_json(staging_graph, graph_data)
+    else:
+        graph_blob = atomic_write_json(staging_graph, {
+            "format_version": _GRAPH_FORMAT_VERSION, "owner": owner,
+            "relationships": [], "paths": []})
     # Record the ACTUAL staged file hashes (not canonical JSON), so
     # recovery can prove the committed files are byte-identical to what
     # was staged. atomic_write_json returns the exact bytes written.
     journal["program_sha256"] = hashlib.sha256(prog_blob).hexdigest()
     journal["nursery_sha256"] = hashlib.sha256(nurs_blob).hexdigest()
     journal["ideas_sha256"] = hashlib.sha256(ideas_blob).hexdigest()
+    journal["graph_sha256"] = hashlib.sha256(graph_blob).hexdigest()
     journal["phase"] = "staged"
     _write_journal(owner, journal, _fail_at=_fail_at)
 
@@ -440,6 +488,8 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     os.replace(staging_nurs, live_nurs)
     _check_fail("rollback_commit_ideas", _fail_at)
     os.replace(staging_ideas, live_ideas)
+    _check_fail("rollback_commit_graph", _fail_at)
+    os.replace(staging_graph, live_graph)
     journal["phase"] = "committed"
     _write_journal(owner, journal, _fail_at=_fail_at)
     _check_fail("rollback_cleanup", _fail_at)
@@ -522,8 +572,17 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
         from form.persist import _STATE_DIR
         ideas_spec = receipt["members"]["ideas"]
         ideas_snapshot_path = os.path.join(_STATE_DIR, ideas_spec["file"])
+    # Phase 2: the sealed graph member restores alongside the other three.
+    # A generation without a graph member (pre-Phase-2) converges to an
+    # empty graph log — the coherent "graph cleared" semantic.
+    graph_member_path = None
+    if receipt and "members" in receipt and "graph" in receipt["members"]:
+        from form.persist import _STATE_DIR
+        graph_spec = receipt["members"]["graph"]
+        graph_member_path = os.path.join(_STATE_DIR, graph_spec["file"])
     _eager_converge_live(program, owner, _fail_at=_fail_at,
-                         _ideas_snapshot_path=ideas_snapshot_path)
+                         _ideas_snapshot_path=ideas_snapshot_path,
+                         _graph_member_path=graph_member_path)
     # R2 (NULL N1/N2): Rehydrate individual idea files from the LIVE
     # canonical snapshot just committed by the transaction. This is
     # UNCONDITIONAL: even a legacy rollback (no sealed ideas member,

@@ -512,7 +512,7 @@ def control_s_retention() -> None:
     remaining = {f.name for f in STATE.glob(f"*{o}*")}
     g1_files = [n for n in remaining if "gs00000000000001" in n or "gs00000000000002" in n]
     g34_files = [n for n in remaining if "gs00000000000003" in n or "gs00000000000004" in n]
-    check("S.old_generations_swept", g1_files == [] and len(g34_files) == 8)
+    check("S.old_generations_swept", g1_files == [] and len(g34_files) == 10)
     check("S.current_pointer", json.loads((Path(CG._pointer_path(o))).read_text())["generation_id"]
           == "gs00000000000004")
     # Cleanup provably cannot delete the current generation.

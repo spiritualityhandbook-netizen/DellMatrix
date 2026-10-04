@@ -27,7 +27,7 @@ import time
 import uuid
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 
 class LifecycleState(str, Enum):
@@ -213,6 +213,11 @@ class Idea:
         # Live Matrix processing record (1.5): append-only, immutable events.
         # Derived projection of mutations; PropertyVersion lists remain truth.
         self._change_events: List[IdeaChangeEvent] = []
+        # Phase-2 extension (additive): session-scoped change listeners.
+        # Not persisted; re-subscribed per session (e.g. SemanticGraph.attach).
+        # Listeners are notified AFTER the event is recorded, with
+        # (idea, event). Listener exceptions never break the mutation.
+        self._change_listeners: List[Callable] = []
 
     # ------------------------------------------------------------------
     # Identity (1.1.1)
@@ -708,7 +713,27 @@ class Idea:
         )
         self._change_events.append(event)
         self.modified_at = event.timestamp
+        for listener in list(self._change_listeners):
+            try:
+                listener(self, event)
+            except Exception:
+                pass  # a listener must never break the mutation
         return event
+
+    # ------------------------------------------------------------------
+    # Phase-2 change listeners (additive extension; not persisted)
+    # ------------------------------------------------------------------
+
+    def add_change_listener(self, listener: Callable) -> None:
+        """Subscribe to (idea, event) notifications. Session-scoped,
+        in-memory only; not persisted. Duplicate subscriptions ignored."""
+        if listener not in self._change_listeners:
+            self._change_listeners.append(listener)
+
+    def remove_change_listener(self, listener: Callable) -> None:
+        """Unsubscribe a previously added listener."""
+        if listener in self._change_listeners:
+            self._change_listeners.remove(listener)
 
     # ------------------------------------------------------------------
     # Live Matrix observability (1.5.5)
