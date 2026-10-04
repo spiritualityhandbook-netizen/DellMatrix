@@ -187,24 +187,16 @@ class Program:
             # Recovers from RECORDED INTENT (journal), not inferred visibility.
             # Preserves legitimate historical records without journals.
             #
-            # R3-VERIFICATION-UNBLOCK req. 2: Propagate recovery failures.
-            # Do NOT suppress with broad except. If recovery cannot prove
-            # safe outcome, construction MUST fail closed before exposing
-            # Nursery. Only ImportError (module unavailable) is caught;
-            # RollbackRecoveryError always propagates.
-            try:
-                from form.mandell.core_i_recovery import recover_confirmation_intent
-                from form.mandell.core_i_recovery import recover_supersede_intent
-            except ImportError:
-                # Recovery module unavailable: cannot verify safety.
-                # Fail closed by not proceeding? No - this is a deployment
-                # issue, not a data issue. Log and continue; persist_rest.load
-                # will enforce recovery when module is available.
-                pass
-            else:
-                # Module available: run recovery, propagate failures.
-                recover_confirmation_intent(self.owner)
-                recover_supersede_intent(self.owner)
+            # R3-FINAL-ADMISSION req. 2: If recovery cannot execute, do NOT
+            # expose unverified live Nursery state. Fail closed.
+            # The injected-generation path (above) is preserved; it does not
+            # use the live file and has its own documented contract.
+            from form.mandell.core_i_recovery import recover_confirmation_intent
+            from form.mandell.core_i_recovery import recover_supersede_intent
+            # If ImportError occurs, it propagates (fail closed).
+            # Do NOT catch and continue; unverified state must not be exposed.
+            recover_confirmation_intent(self.owner)
+            recover_supersede_intent(self.owner)
         self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner))
         self.growth = RingedGrowth(nursery=self.nursery)
         self.lattice = HarmonicLattice(size=SIZE_CHROMATIC)

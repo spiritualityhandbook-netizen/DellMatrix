@@ -353,3 +353,22 @@ if __name__ == "__main__":
     n = sum(results)
     print("=== %d/%d ===" % (n, len(results)))
     sys.exit(0 if all(results) else 1)
+
+
+def smoke():
+    """Runner-compatible entry point for form.regress.
+    
+    Returns True if all tests pass, False otherwise.
+    Resets per-run results.
+    """
+    global results
+    results = []
+    try:
+        t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08()
+    except Exception as e:
+        print("SMOKE EXCEPTION: %s" % e)
+        return False
+    n = sum(results)
+    total = len(results)
+    print("%d/%d" % (n, total))
+    return n == total and total > 0

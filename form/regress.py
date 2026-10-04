@@ -71,6 +71,7 @@ LIST = [
     "form.mandell.dcc_xvi_test",
     "form.mandell.dcc_xvi_atomicity_test",
     "form.mandell.dcc_xvii_test",
+    "form.mandell.r3_permanent_regressions:smoke",
     "form.mandell.dcc_xviii_test",
     "form.mandell.dcc_xix_test",
     "form.mandell.dcc_xx_test",
