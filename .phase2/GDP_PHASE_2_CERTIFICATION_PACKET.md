@@ -12,8 +12,8 @@
 
 - **Base (entry):** `38819e45ad36b879b2e28908e94704fa136a0af8` (Phase 1 certified/merged/closed)
 - **Branch:** `gdp-phase2-work`
-- **Head:** `88e450ad637f9b238577832c1dc61ad1b4d1be2e`
-- **Tree:** `747f40fd3732be52bdbb8c7353106104cd1e8dea`
+- **Head:** `12832e524be39b54fd18cbe497be7ee15815ae62` (R1 gate closure; supersedes 88e450a)
+- **Tree:** `4adc538153bb94b9bf3e54691295ef5617005630`
 - **Worktree:** `~/workspace/dellmatrix-gdp-phase1` (clean)
 - **PR:** #72 (open, MERGEABLE, DO NOT MERGE without Director authorization)
 - **CI on exact head:**
@@ -138,6 +138,91 @@ objectives.
 ## 9. Director Decision Required
 
 - [ ] Review Phase-2 implementation
+- [ ] Authorize merge of PR #72 (or request changes)
+- [ ] Authorize Phase 3 start (separate directive)
+
+**DO NOT MERGE without explicit Director authorization.**  
+**DO NOT BEGIN PHASE 3 without explicit Director authorization.**
+
+---
+
+## 10. R1 GATE CLOSURE — PROPAGATION INTEGRITY (2026-10-03)
+
+**Directive:** GDP_002_PHASE_2_DIRECTOR_GATE_R1  
+**R1 Head:** `12832e524be39b54fd18cbe497be7ee15815ae62`  
+**R1 Tree:** `4adc538153bb94b9bf3e54691295ef5617005630`
+
+### R1-1: Silent Propagation Failure — FIXED
+
+**Problem:** Phase-1 Idea listener dispatch catches Exception and passes. `SemanticGraph.attach()` relied on that listener for propagation. A failed propagation could disappear while the source mutation succeeded.
+
+**Fix:**
+- Explicit `PropagationStatus` (FAILED/PENDING) with persisted `_propagation_ledger` in the graph file.
+- `_on_idea_event` catches propagation exceptions, records FAILED with error/timestamp, persists (best effort). Never silent, never a fake success.
+- `propagation_status(dependent_id, prop)` returns "synchronized"/"pending"/"failed" — NEVER "synchronized" when FAILED exists or journal is in-flight.
+- `get_propagation_failures()` returns all FAILED records.
+- `reconcile()` retries FAILED; on success clears the record and journal ops.
+
+**Proof:** `form/mandell/p2_r1_adversarial_proof.py` — 27/27 PASS.
+- Source mutation succeeds → failure observable in ledger → status="failed" (not "synchronized") → FAILED persisted to disk → reconcile converges to correct value and clears FAILED.
+
+### R1-2: Graph/Derived-Idea Disk Atomicity — FIXED
+
+**Problem:** `declare_dependency` saved derived Idea then graph; a graph.save() failure left derived state without its DEPENDS_ON edge.
+
+**Fix:**
+- **Journal-based transactions** (`graph_<owner>.journal.json`): written before any multi-step mutation, replayed deterministically on load if present (crash), deleted on clean completion.
+- **Graph-first ordering** in `declare_dependency`: graph edge saved FIRST (if fails: NEITHER committed, in-memory rollback, journal cleared). Dependent idea saved SECOND (if fails: edge committed, FAILED recorded explicitly, exception to caller).
+- **`_propagate_property`** (MIRROR): journals multi-dependent syncs; per-dependent FAILED on partial failure; nested journal depth tracking for multi-hop.
+- **`_propagate_structure`** (CHILD_COUNT/DESCENDANT_COUNT): journaled (ARGUS A10 fix); does NOT save directly (runs inside `_append`'s after(); `_append` owns persistence).
+- **`_replay_journal`**: validates shape upfront (fail closed), folds after each ensure_edge (A11), checks duplicate seq (A14), rejects unknown ops (A4), suppresses clear during replay via `_replaying` flag (A12), clears stale FAILED on successful replay.
+
+**Proof:** All 6 Director cases pass in `p2_r1_adversarial_proof.py`:
+- A. Dependent write failure → edge committed, FAILED explicit (not silent).
+- B. Graph save failure → NEITHER committed (graph-first).
+- C. Crash between persists → journal replay converges.
+- D. Fresh-process recovery → journal replayed, dependent synced, journal cleared.
+- E. Multi-dependent partial → FAILED marks exactly the failed dependent.
+- F. Multi-hop intermediate failure → chain journaled, FAILED explicit.
+
+### SWAT Results (Targeted)
+
+| Agent | Verdict |
+|-------|---------|
+| **ARGUS** | 8 BROKEN found, all fixed: A10 (structure journal), A11 (fold per edge), A8 (journal clear only on FAILED-persist success), A12 (no clear during replay), A9 (depth leak), A1/A2/A3 (journal validation), A6 (reject pending in ledger), A14 (dup seq check), A4 (reject unknown ops) |
+| **ORACLE** | 5/5 PROVEN independently: COMMITTED, ABORTED, RECOVERED, FAILED_EXPLICIT, RECONCILE_CONVERGES (fresh processes, raw disk evidence) |
+| **NULL** | CLEAN — journal is sole transaction authority; `_recompute_dependent` is sole propagation authority; no conflicts. 3 observations addressed (stale FAILED cleared on replay; PENDING removed from ledger validation). |
+| **PRISM** | 2 CONFUSED fixed: structure path now journaled (was stale-as-synchronized); ledger cleared on edge removal (was orphan FAILED). State transitions verified: no FAILED→synchronized without real recompute. |
+
+### Full Certification (Final Head `12832e5`)
+
+- P2 graph contract: 61/61 PASS
+- P2 R1 adversarial: 27/27 PASS
+- House+Album acceptance: 25/25 PASS
+- P2 adversarial: 24/24 PASS
+- SUSX100: 100/100 clean
+- P0 persistence: 56/56 PASS
+- P1 Idea: 32/32 PASS
+- R3 authoritative: ALL PASS
+- P1 integrated: 7/7 PASS
+- Forward regression: 85/85 GREEN
+- Reverse regression: 85/85 GREEN
+- Performance: within baseline (propagation 108ms/op with journaling vs 56ms before — cost of atomicity, acceptable)
+
+### Flake Status (per Director §4)
+
+- **dcc_xvii**: Did NOT recur during final certification. Retained as documented known instability with prior evidence.
+- **p0r1**: Did NOT recur (56/56 clean). Retained as documented.
+
+### Security
+
+`EVALUATION_UNAVAILABLE_QUOTA` (unchanged).
+
+---
+
+## FINAL DIRECTOR DECISION REQUIRED
+
+- [ ] Review R1 propagation integrity closure
 - [ ] Authorize merge of PR #72 (or request changes)
 - [ ] Authorize Phase 3 start (separate directive)
 
