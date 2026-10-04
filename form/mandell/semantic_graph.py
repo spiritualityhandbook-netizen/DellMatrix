@@ -162,8 +162,15 @@ def validate_journal(data: Any, owner: str) -> dict:
         raise GraphValidationError(
             f"graph journal for {owner!r}: must be a JSON object, "
             f"got {type(data).__name__}")
-    # Envelope: format_version (required, exact match, no default).
+    # Envelope: format_version (required, strict int type, exact value).
+    # R1-F3: bool is a subclass of int in Python (True == 1), so an
+    # explicit type check is required. Float, string, missing, and
+    # unsupported versions are all rejected.
     version = data.get("format_version")
+    if not isinstance(version, int) or isinstance(version, bool):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: format_version must be int, "
+            f"got {type(version).__name__} ({version!r})")
     if version != _JOURNAL_FORMAT_VERSION:
         raise GraphValidationError(
             f"graph journal for {owner!r}: unsupported format_version "
@@ -213,14 +220,18 @@ def _validate_journal_op(op: Any, owner: str, idx: int) -> None:
                 f"field {field!r} must be {ftype.__name__}, "
                 f"got {type(op[field]).__name__}")
     # Operation-specific invariants for safe replay.
+    # R1-F1: ensure_edge entries are validated through the CANONICAL
+    # relationship contract (RelationshipEntry.from_dict) — not a partial
+    # presence check. This runs before the replay idempotence skip, so a
+    # malformed entry cannot hide behind an existing rel_id.
     if op_type == "ensure_edge":
-        entry = op["entry"]
-        # The entry must have the fields needed for idempotent replay.
-        for f in ("rel_id", "seq"):
-            if f not in entry:
-                raise GraphValidationError(
-                    f"graph journal for {owner!r}: operation {idx} "
-                    f"(ensure_edge) entry missing {f!r}")
+        try:
+            RelationshipEntry.from_dict(op["entry"])
+        except GraphValidationError as exc:
+            raise GraphValidationError(
+                f"graph journal for {owner!r}: operation {idx} "
+                f"(ensure_edge) has malformed entry: {exc}"
+            ) from exc
     elif op_type == "sync_dependent":
         # Identifiers must be non-empty (empty IDs cannot be replayed safely).
         for f in ("dependent_id", "derived_property", "target_id", "edge_rel_id"):
@@ -545,6 +556,11 @@ class SemanticGraph:
             "started_at": time.time(),
             "operations": existing_ops + operations,
         }
+        # R1-F2: validate the ENTIRE assembled journal (existing + new)
+        # before the atomic write. Invalid new operations must not be
+        # persisted. On failure the existing journal is preserved (or no
+        # new journal is created).
+        validate_journal(journal, self.owner)
         atomic_write_json(path, journal)
         return path
 
