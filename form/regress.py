@@ -128,6 +128,8 @@ LIST = [
     "form.mandell.p3_r34_geometry_proof",
     # P3 R3.5 — resonance/harmony integration (Stream D)
     "form.mandell.p3_r35_integration_proof",
+    # P3 R3.6 — graph/harmony consumer + wiring world proof (GDP-001 Phase 3).
+    "form.mandell.p3_r36_graph_harmony_proof",
 ]
 
 TIMEOUT_S = 900

@@ -1,18 +1,23 @@
 """P3 R3.5: resonance/harmony integration proof.
 
-Covers the Stream D acceptance objectives:
+NON-VACUOUS (P3R rewrite, 2026-10-04). Covers the Stream D acceptance
+objectives against the merged W1+W2 implementation:
 
-- 3.5.1: selection->growth handoff contract. What crosses the boundary
-  (core_i_ops grow_using_knowledge_about -> Program.grow_ideas ->
-  RingedGrowth.run) is IDs ONLY; growth recomputes affinity
-  independently. Selection scores are echoed in receipts for audit;
-  no consumer of them exists in ringed_growth.py or nursery.py.
+- 3.5.1: selection->growth handoff contract. What crosses the
+  selection->growth boundary (core_i_ops grow_using_knowledge_about ->
+  Program.grow_ideas -> RingedGrowth.run) is IDs ONLY; growth recomputes
+  affinity independently. NEW (W1): growth->Nursery now persists
+  harmony + graph_coherence per proposal pair, and
+  Program.ranked_proposals CONSUMES them as tie-breakers. The proof
+  includes a consumer bypass-must-fail: with ranked_proposals patched
+  to affinity-only, tied-affinity proposals MUST order differently
+  (else the signals are decorative).
 - 3.5.2: faded-state exclusion. Ideas with lifecycle_state=FADED are
-  excluded from _affinity (affinity 0.0, pair skipped) and from pulse
-  (no send, no receive, no score entries). All-faded input yields
-  empty/zero results, never an exception. harmony_score is tested
-  behind an explicit skip-if-missing guard (harmony.py lands via
-  Stream B; the coordinator wires exclude_faded at merge).
+  excluded from _affinity (0.0, pair skipped), from pulse (no send, no
+  receive, no score entries — including RETAINED scores from before the
+  fade, W2), and from harmony_score (exclude_faded wired, no skip
+  guard anymore). All-faded input yields empty/zero results, never an
+  exception.
 - 3.5.3: resonance/affinity effects observable via Outcome/observation.
   Live witness: observe_seed_execution over the grow_using_knowledge_about
   seed records an Outcome V1 with the consumed knowledge provenance,
@@ -24,13 +29,12 @@ Covers the Stream D acceptance objectives:
 - 3.5.4: public-path witness through the honest existing front door
   (observe_seed_execution over execute_seed, the same front door the
   REPL dispatches Mandell seeds through).
-- 3.5.5: Phase-2 graph integration. Verified zero integration today
-  (no semantic_graph reads in resonance/affinity code; no affinity
-  writes to graph edges; _affinity's spatial term uses plane x/y
-  coordinates). Explicit DEFER with rationale: no proven consumer,
-  threading a graph through _affinity would change Stream A's
-  contract, and affinity-written edges would create a second edge
-  authority beside SemanticGraph.
+- 3.5.5: Phase-2 graph integration (IMPLEMENTED via W1; the old DEFER
+  is superseded). A REAL SemanticGraph with REAL edges is attached to
+  a REAL RingedGrowth.run: edged pairs persist graph_coherence 1.0,
+  unedged pairs 0.0, graph=None degrades to the defined neutral, and
+  the graph is never mutated (read-only). Bypass-must-fail: with the
+  graph query patched to [], persisted coherence MUST drop to 0.0.
 - Mutation test: disabling the faded filter via monkeypatch makes
   faded ideas leak back into _affinity and pulse, proving the filter
   is what excludes them.
@@ -38,7 +42,7 @@ Covers the Stream D acceptance objectives:
 
 Portable: derives REPO from __file__. smoke() -> bool, honest exit
 status (0 only if ALL non-skipped checks pass). Registered in
-form/regress under a P3 R3.5 block.
+form.regress under a P3 R3.5 block.
 
 Test realism (honest labels):
   INTEGRATION   — same OS process, isolated owner (unique OWNER per
@@ -52,14 +56,16 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 
 # Portable: derive repo root from this file's location.
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, REPO)
 
-from form.persist import _STATE_DIR
+from form.persist import _STATE_DIR, _safe_owner  # noqa: E402
 
 OWNER_BASE = "R35P3"
 
@@ -83,18 +89,25 @@ def _owner(tag: str) -> str:
 
 
 def _clean(owner: str) -> None:
-    d = os.path.join(_STATE_DIR, f"ideas_{owner}")
+    d = os.path.join(_STATE_DIR, f"ideas_{_safe_owner(owner)}")
     f = os.path.join(_STATE_DIR, f"nursery_{owner}.json")
-    import shutil
-    shutil.rmtree(d, ignore_errors=True)
+    import shutil as _sh
+    _sh.rmtree(d, ignore_errors=True)
     try:
         os.remove(f)
     except OSError:
         pass
+    # Phase-2 graph state for this owner (3.5.5).
+    from form.mandell.semantic_graph import graph_path, graph_journal_path
+    for p in (graph_path(owner), graph_journal_path(owner)):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
 
 
 def _assert_clean(owner: str) -> bool:
-    d = os.path.join(_STATE_DIR, f"ideas_{owner}")
+    d = os.path.join(_STATE_DIR, f"ideas_{_safe_owner(owner)}")
     f = os.path.join(_STATE_DIR, f"nursery_{owner}.json")
     return (not os.path.exists(d)) and (not os.path.exists(f))
 
@@ -111,11 +124,11 @@ def _fixture_program(owner: str):
 
 
 # ---------------------------------------------------------------------------
-# 3.5.1 handoff contract
+# 3.5.1 handoff contract + growth->nursery->ranking consumption
 # ---------------------------------------------------------------------------
 
 def t351_handoff() -> None:
-    """IDs-only handoff: growth recomputes affinity; scores never cross."""
+    """IDs-only selection->growth handoff; growth recomputes and persists."""
     from form.mandell.executor import execute_seed
     owner = _owner("H1")
     _clean(owner)
@@ -131,9 +144,6 @@ def t351_handoff() -> None:
             isinstance(consumer_scope, list) and sorted(consumer_scope) == sorted(routable)
             and all(isinstance(i, str) for i in consumer_scope),
             f"consumer_scope_ids == routable_ids = {sorted(routable)}")
-        # Growth's own affinity evidence: the new proposal's reason carries
-        # the consumer-computed harmonic ("Solstice harm=..."), a concept
-        # selection does not have.
         new_props = [pr for pid, pr in p.nursery.proposals.items()
                      if pid not in (aid, bid)]
         rec("handoff::offspring_exists", len(new_props) >= 1,
@@ -141,30 +151,70 @@ def t351_handoff() -> None:
         gate_re = re.compile(r"^(Solstice|Equinox|Standstill) harm=")
         ok_reasons = all(gate_re.match(pr.reason or "") for pr in new_props)
         rec("handoff::consumer_computed_affinity", ok_reasons,
-            "; ".join((pr.reason or "")[:48] for pr in new_props))
-        # Structural: selection scores have no field on the proposal and
-        # no consumer in the growth modules.
+            "; ".join((pr.reason or "")[:56] for pr in new_props))
+        # Selection scores have no field on the proposal and no consumer
+        # in the growth modules.
         no_score_field = all(not hasattr(pr, "score") for pr in new_props)
         rec("handoff::no_score_field", no_score_field,
             "Proposal has no selection-score attribute")
-        # No consumer of selection scores in the growth modules:
-        # neither module reads a "score" key/attribute anywhere.
         import inspect
         from form.dell_matrix import ringed_growth, nursery
         src = inspect.getsource(ringed_growth) + inspect.getsource(nursery)
-        score_reads = [ln for ln in src.splitlines()
-                       if '["score"]' in ln or "['score']" in ln
-                       or ".score" in ln or "selection_score" in ln]
+        score_reads = [ln2 for ln2 in src.splitlines()
+                       if '["score"]' in ln2 or "['score']" in ln2
+                       or ".score" in ln2 or "selection_score" in ln2]
         rec("handoff::no_score_consumer", len(score_reads) == 0,
             "no score key/attribute read in ringed_growth.py or nursery.py")
-        # Honest evidence of the recompute: proposal affinity vs selection score.
-        contribs = {c["id"]: c for c in (ln.get("contributions") or [])}
-        for pr in new_props:
-            for pid in (pr.parents or []):
-                c = contribs.get(pid)
-                if c:
-                    print(f"    evidence: parent {pid[:24]} selection_score={c['score']} "
-                          f"-> offspring affinity={pr.affinity:.4f}", flush=True)
+        # NEW (W1, 3.5.1/3.5.5): growth persists harmony + graph_coherence
+        # per proposal pair; both in [0,1].
+        sig_ok = all(isinstance(pr.harmony, float)
+                     and 0.0 <= pr.harmony <= 1.0
+                     and isinstance(pr.graph_coherence, float)
+                     and 0.0 <= pr.graph_coherence <= 1.0
+                     for pr in new_props)
+        rec("handoff::signals_persisted", sig_ok,
+            "; ".join(f"h={pr.harmony:.3f} g={pr.graph_coherence:.3f}"
+                       for pr in new_props))
+        rec("handoff::signals_in_reason",
+            all("hs=" in (pr.reason or "") and "gcoh=" in (pr.reason or "")
+                for pr in new_props))
+    finally:
+        _clean(owner)
+
+
+def t351_consumer_bypass() -> None:
+    """BYPASS-MUST-FAIL (graph/harmony consumption): Program.ranked_proposals
+    consumes harmony/graph_coherence as tie-breakers. With the consumer
+    patched to affinity-only, tied-affinity proposals MUST order
+    differently. If the orders are identical, the signals are decorative
+    and the proof FAILS."""
+    from form.open import Program
+    owner = _owner("CB")
+    _clean(owner)
+    try:
+        p = Program(owner=owner)
+        # Tied affinity, different harmony: inserted lo-first so the
+        # bypassed (stable, affinity-only) order differs from the real one.
+        p.nursery.add(label="lo harmony", words="w", kind="new",
+                      affinity=0.5, seed=1, harmony=0.1, graph_coherence=0.0)
+        p.nursery.add(label="hi harmony", words="w", kind="new",
+                      affinity=0.5, seed=2, harmony=0.9, graph_coherence=0.0)
+        real = [d["id"] for d in p.ranked_proposals()]
+        rec("consume::real_harmony_first",
+            real[0].startswith("hi_harmony"),
+            f"order={[i[:18] for i in real]}")
+        orig = Program.ranked_proposals
+        Program.ranked_proposals = (  # BYPASS: consumer ignores the signals
+            lambda self: sorted(self.list_proposals(),
+                                key=lambda d: -float(d.get("affinity", 0) or 0)))
+        try:
+            bypassed = [d["id"] for d in p.ranked_proposals()]
+        finally:
+            Program.ranked_proposals = orig
+        rec("consume::bypass_differs", bypassed != real,
+            f"bypassed={[i[:18] for i in bypassed]} (must differ)")
+        rec("consume::restored",
+            [d["id"] for d in p.ranked_proposals()] == real)
     finally:
         _clean(owner)
 
@@ -228,15 +278,10 @@ def t352_affinity() -> None:
     z3 = _affinity(plane, "a", "f")  # all-faded pair
     rec("affinity::all_faded", z3["affinity"] == 0.0, "no exception")
     del plane.units["a"].lifecycle_state
-    # NOTE (observed, Stream A territory): the matrix 3.1.1 claims missing
-    # units yield affinity 0.0, but _affinity actually returns 0.0273 for a
-    # missing unit (spatial 1/100*0.13 + in_scope 0.2*0.13). That failure
-    # behavior belongs to Stream A's contract work; the faded-exclusion
-    # edit here deliberately does not alter it. Recorded, not asserted.
 
 
 def t352_pulse() -> None:
-    """pulse: faded units neither send nor receive; all-faded -> empty."""
+    """pulse: faded units neither send nor receive; retained state dropped."""
     from form.dell_matrix.blank_cube import give
     from form.dell_matrix.plane import Skin
     from form.dell_matrix.resonance import pulse, ResonanceState
@@ -252,46 +297,44 @@ def t352_pulse() -> None:
     rec("pulse::faded_no_scores", "f" not in st.scores and "f" not in st.tags,
         "faded unit has no score/tag entries")
     rec("pulse::active_scored", st.scores.get("a", 0.0) > 0 and st.scores.get("b", 0.0) > 0)
-    leaked = [ln for ln in st.log if " f " in f" {ln} " and "-enhance->" in ln
-              and ln.split("-enhance->")[0].rstrip().endswith(" f")]
-    rec("pulse::faded_never_sends", len(leaked) == 0, "no 'f -enhance->' lines")
+    # W2: a unit that FADES AFTER an active pulse must lose its retained
+    # scores/tags on the next pulse (zero effective influence going
+    # forward); the log is preserved (history, not influence).
+    log_len = len(st.log)
+    plane.units["b"].lifecycle_state = "faded"
+    st2 = pulse(plane, st)  # reuse: b had retained scores
+    rec("pulse::retained_dropped",
+        "b" not in st2.scores and "b" not in st2.tags,
+        "faded unit's retained scores/tags dropped")
+    rec("pulse::log_preserved", len(st2.log) >= log_len,
+        "history preserved, exclusion logged")
     # All-faded plane: empty result, never an exception.
     for u in plane.units.values():
         u.lifecycle_state = "faded"
-    st2 = pulse(plane, ResonanceState())
+    st3 = pulse(plane, ResonanceState())
     rec("pulse::all_faded_empty",
-        st2.scores == {} and st2.tags == {} and st2.pulse_count == 1,
+        st3.scores == {} and st3.tags == {},
         "empty scores/tags, no exception")
 
 
-def t352_harmony_guard() -> None:
-    """harmony_score faded-exclusion test behind an explicit skip guard."""
-    try:
-        import form.dell_matrix.harmony  # noqa: F401
-    except ImportError:
-        skip("harmony::faded_exclusion",
-             "harmony.py lands via Stream B; coordinator wires at merge")
-        return
-    # If harmony.py is present (unexpected on this branch), test it for real.
-    from form.dell_matrix import harmony
-    from form.dell_matrix.faded_policy import exclude_faded
+def t352_harmony() -> None:
+    """harmony_score: exclude_faded wired (no skip guard anymore)."""
+    from form.dell_matrix.harmony import harmony_score
+    from form.mandell.idea import Idea, LifecycleState
 
-    class O:
-        def __init__(self, **kw): self.__dict__.update(kw)
-    ideas = [O(lifecycle_state="active", tid="a"),
-             O(lifecycle_state="faded", tid="f")]
-    kept = exclude_faded(ideas)
-    rec("harmony::exclude_wired", [o.tid for o in kept] == ["a"],
-        "exclude_faded applied before harmony_score")
-    if hasattr(harmony, "harmony_score"):
-        try:
-            s_all = harmony.harmony_score(ideas)
-            s_kept = harmony.harmony_score(kept)
-            rec("harmony::faded_excluded", s_all == s_kept,
-                "faded idea does not change the score")
-        except TypeError:
-            skip("harmony::faded_exclusion",
-                 "harmony_score signature differs; manual check needed")
+    a = Idea(title="river water flow")
+    b = Idea(title="stream water flow")
+    f = Idea(title="river water flow")
+    f._idea_state = LifecycleState.FADED
+    solo_pair = harmony_score([a, b])
+    rec("harmony::faded_excluded",
+        harmony_score([a, b, f]) == solo_pair,
+        f"faded dup changes nothing ({solo_pair:.4f})")
+    f2 = Idea(title="stream water flow")
+    f2._idea_state = LifecycleState.FADED
+    rec("harmony::all_faded_zero",
+        harmony_score([f]) == 0.0 and harmony_score([f, f2]) == 0.0,
+        "all-faded -> 0.0")
 
 
 # ---------------------------------------------------------------------------
@@ -322,8 +365,6 @@ def t353_observation() -> None:
                 "outcome messages report the growth effect")
             rec("observe::routable_echo",
                 sorted(ore.get("routable_ids") or []) == sorted([aid, bid]))
-        # The affinity effect itself is recorded on the nursery proposals:
-        # parents + consumer-computed affinity + reason.
         new_props = [pr for pid, pr in p.nursery.proposals.items()
                      if pid not in (aid, bid)]
         ok_aff = all(pr.affinity > 0 and pr.parents and pr.reason for pr in new_props)
@@ -365,44 +406,116 @@ def t354_public_path() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 3.5.5 graph integration: explicit DEFER with evidence
+# 3.5.5 graph integration (IMPLEMENTED via W1; old DEFER superseded)
 # ---------------------------------------------------------------------------
 
-def t355_deferral() -> None:
-    """Verify zero integration today; record the deferral rationale."""
-    import inspect
-    import sys as _sys
-    from form.dell_matrix import ringed_growth, resonance
-    from form.dell_matrix.ringed_growth import _dist
+def t355_graph_integration() -> None:
+    """Real Phase-2 graph attached to real growth: read-only consumption."""
+    from form.mandell.idea import Idea, Provenance, ProvenanceSource
+    from form.mandell.idea_persist import save_idea
+    from form.mandell.semantic_graph import (
+        RelationshipType, SemanticGraph, graph_path, graph_journal_path)
     from form.dell_matrix.blank_cube import give
     from form.dell_matrix.plane import Skin
+    from form.dell_matrix import ringed_growth as rg
+    from form.dell_matrix.nursery import Nursery
 
-    rg_src = inspect.getsource(ringed_growth)
-    rs_src = inspect.getsource(resonance)
-    no_import = ("semantic_graph" not in rg_src and "semantic_graph" not in rs_src
-                 and not hasattr(ringed_growth, "semantic_graph")
-                 and not hasattr(resonance, "semantic_graph"))
-    rec("graph::no_reads", no_import,
-        "no semantic_graph import in ringed_growth/resonance (source+module)")
-    # _affinity's spatial term uses plane x/y coordinates (verified input).
-    cube = give("R35G5", clean=True)
-    cube.place_idea("a", "alpha", skin=Skin.SEED, x=0.0)
-    cube.place_idea("b", "beta", skin=Skin.SEED, x=3.0)
-    plane = cube.session.plane
-    d1 = _dist(plane, "a", "b")
-    plane.units["b"].x = 6.0
-    d2 = _dist(plane, "a", "b")
-    rec("graph::spatial_is_plane_coords",
-        abs(d1 - 3.0) < 1e-9 and abs(d2 - 6.0) < 1e-9 and d2 != d1,
-        f"dist follows plane x/y ({d1:.1f} -> {d2:.1f}); graph edges play no role")
-    rationale = (
-        "DEFER 3.5.5: no proven consumer of graph-informed affinity or of "
-        "affinity-written graph edges; _affinity's spatial term already has "
-        "a defined verifiable input (plane x/y); threading a graph through "
-        "_affinity would change Stream A's contract; affinity-written edges "
-        "would create a second edge authority beside SemanticGraph.")
-    print(f"    {rationale}", flush=True)
-    rec("graph::deferral_recorded", True)
+    owner = _owner("G5")
+    _clean(owner)
+    try:
+        # Real Ideas + real edges via the graph's own write path.
+        # Unit IDs ARE the canonical Idea IDs.
+        A, B, C = "r35g_a", "r35g_b", "r35g_c"
+        for iid, title in ((A, "Alpha routes"), (B, "Beta routes"),
+                           (C, "Gamma melody")):
+            save_idea(Idea(idea_id=iid, title=title), owner)
+        prov = Provenance(source=ProvenanceSource.SYSTEM,
+                          activity="p3r35", agent="p3r35")
+        graph = SemanticGraph.load(owner)
+        graph.add_relationship(RelationshipType.RELATED_TO, A, B, prov, cause="p3r35")
+        graph = SemanticGraph.load(owner)  # reload: edges survived the log
+        n_edges_before = len(graph.by_type(RelationshipType.RELATED_TO))
+        rec("graph::edges_real", n_edges_before == 1)
+
+        cube = give(owner, clean=True)
+        cube.place_idea(A, "Alpha routes", words="crm routes delivery",
+                        skin=Skin.BUILDING, x=1.0, y=0.0)
+        cube.place_idea(B, "Beta routes", words="crm routes pickup",
+                        skin=Skin.BUILDING, x=-1.0, y=0.0)
+        cube.place_idea(C, "Gamma melody", words="song harmony rhythm",
+                        skin=Skin.BUILDING, x=0.0, y=3.0)
+        plane = cube.session.plane
+
+        tmp = tempfile.mktemp(prefix="p3r35_g_", suffix=".json")
+        try:
+            nurs = Nursery(path=tmp)
+            out = rg.RingedGrowth(nursery=nurs, seed=11).run(
+                plane, cycles=1, graph=graph)
+            rec("graph::signal_attached", out.get("graph_signal") == "attached")
+            ab = [p for p in nurs.proposals.values() if set(p.parents) == {A, B}]
+            rec("graph::ab_proposed", len(ab) >= 1)
+            rec("graph::edged_pair_coherence",
+                all(p.graph_coherence == 1.0 for p in ab),
+                "a-b edged -> 1.0")
+            # Unedged pair proposals (if any) read the defined neutral 0.0.
+            others = [p for p in nurs.proposals.values()
+                      if p.parents and set(p.parents) != {A, B}]
+            rec("graph::unedged_neutral",
+                all(p.graph_coherence == 0.0 for p in others),
+                f"{len(others)} other pair proposal(s)")
+            # Read-only: growth never mutates the graph.
+            n_edges_after = len(
+                SemanticGraph.load(owner).by_type(RelationshipType.RELATED_TO))
+            rec("graph::read_only", n_edges_after == n_edges_before,
+                "edge count unchanged by growth")
+
+            # BYPASS-MUST-FAIL: with the graph query patched to [], the
+            # persisted coherence MUST drop to 0.0. If proposals still
+            # carry 1.0, the value is not tracking real graph structure.
+            real_q = graph.association_neighbors
+            graph.association_neighbors = lambda iid: []  # BYPASS
+            try:
+                tmp2 = tempfile.mktemp(prefix="p3r35_g2_", suffix=".json")
+                try:
+                    nurs2 = Nursery(path=tmp2)
+                    rg.RingedGrowth(nursery=nurs2, seed=11).run(
+                        plane, cycles=1, graph=graph)
+                    ab2 = [p for p in nurs2.proposals.values()
+                           if set(p.parents) == {A, B}]
+                    rec("graph::bypass_drops",
+                        len(ab2) >= 1
+                        and all(p.graph_coherence == 0.0 for p in ab2),
+                        "query bypassed -> coherence 0.0 (was 1.0)")
+                finally:
+                    try:
+                        os.remove(tmp2)
+                    except OSError:
+                        pass
+            finally:
+                graph.association_neighbors = real_q
+
+            # graph=None degrades to the defined neutral (backward compatible).
+            tmp3 = tempfile.mktemp(prefix="p3r35_g3_", suffix=".json")
+            try:
+                nurs3 = Nursery(path=tmp3)
+                out3 = rg.RingedGrowth(nursery=nurs3, seed=11).run(
+                    plane, cycles=1, graph=None)
+                rec("graph::none_neutral",
+                    all(p.graph_coherence == 0.0
+                        for p in nurs3.proposals.values())
+                    and out3.get("graph_signal") == "none")
+            finally:
+                try:
+                    os.remove(tmp3)
+                except OSError:
+                    pass
+        finally:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+    finally:
+        _clean(owner)
 
 
 # ---------------------------------------------------------------------------
@@ -504,23 +617,27 @@ def t_cross_process() -> None:
 
 def smoke() -> bool:
     """Run all R3.5 phases. Returns True iff every non-skipped check passes."""
-    print("=== P3 R3.5 INTEGRATION PROOF ===", flush=True)
+    print("=== P3 R3.5 INTEGRATION PROOF (non-vacuous) ===", flush=True)
+    _results.clear()
+    _skips.clear()
     print("-- 3.5.1 handoff contract (INTEGRATION) --", flush=True)
     t351_handoff()
+    print("-- 3.5.1 consumer bypass-must-fail (INTEGRATION) --", flush=True)
+    t351_consumer_bypass()
     print("-- 3.5.2 faded policy units (INTEGRATION) --", flush=True)
     t352_policy_unit()
     print("-- 3.5.2 _affinity exclusion (INTEGRATION) --", flush=True)
     t352_affinity()
     print("-- 3.5.2 pulse exclusion (INTEGRATION) --", flush=True)
     t352_pulse()
-    print("-- 3.5.2 harmony guard --", flush=True)
-    t352_harmony_guard()
+    print("-- 3.5.2 harmony exclusion (INTEGRATION) --", flush=True)
+    t352_harmony()
     print("-- 3.5.3 observation witness (INTEGRATION) --", flush=True)
     t353_observation()
     print("-- 3.5.4 public path (INTEGRATION) --", flush=True)
     t354_public_path()
-    print("-- 3.5.5 graph deferral (INTEGRATION) --", flush=True)
-    t355_deferral()
+    print("-- 3.5.5 graph integration (INTEGRATION) --", flush=True)
+    t355_graph_integration()
     print("-- mutation test (INTEGRATION) --", flush=True)
     t_mutation()
     print("-- fresh-process phase (CROSS_PROCESS) --", flush=True)

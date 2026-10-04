@@ -103,6 +103,11 @@ def main():
     return 1
 
 
+def smoke() -> bool:
+    """regress.py entry point: True iff the world proof passes."""
+    return main() == 0
+
+
 def _world():
     # ------------------------------------------------------------------
     # A. Content-bearing fixtures: real Ideas + real graph with edges.

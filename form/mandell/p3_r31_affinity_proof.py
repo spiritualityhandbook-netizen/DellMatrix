@@ -1,353 +1,415 @@
 """P3 R3.1 affinity proof — _affinity contract, serendipity, seeded IDs.
 
-GDP-001 Phase 3, R3.1 (3.1.1-3.1.5). Portable: derives REPO from __file__.
+GDP-001 Phase 3, R3.1 (3.1.1-3.1.5). NON-VACUOUS (P3R rewrite, 2026-10-04):
+  - Content-bearing canonical fixtures: real plane units with overlapping
+    token content ("river"/"stream" sharing water/flow), not empty mocks.
+  - Independently expected results: hand-computed affinity for a small
+    pair IN COMMENTS (every term derived by hand), asserted with
+    tolerance; hand-computed missing-unit value (0.0273) asserted by repr.
+  - Bypass-must-fail tests:
+      * lifecycle: faded_policy.is_faded patched OFF -> a faded pair's
+        affinity MUST leak back above 0 (else the filter is decorative).
+      * consumption: rg._affinity patched to the zeroed dict -> the
+        RingedGrowth.run gate consumer MUST stop proposing (else affinity
+        is not what drives proposals).
+  - True bounds: <= 1.0 with body_boost == 0.0; <= 1.15 theoretical with
+    body_boost (the old "[0,1]" shorthand is withdrawn — see contract).
+  - Permutation: the full output dict is BITWISE identical under argument
+    permutation (verified over seeded random pairs).
+
+Portable: derives REPO from __file__.
 Enforced: smoke() -> bool, sys.exit(0/1), registered in form.regress.
 
-Evidence classes (labeled honestly):
-- UNIT: pure-function checks in this process (serendipity/_harmonic/_slug).
-- INTEGRATION: real _affinity on real idea objects via blank_cube.give
-  (same process), plus the live RingedGrowth.run witness.
-- CROSS_PROCESS: fresh `python3` subprocesses re-derive the same values
-  (affinity dict, serendipity, slug under differing PYTHONHASHSEED).
+Test realism labels (honest):
+  UNIT          — pure-function checks in this process.
+  INTEGRATION   — real _affinity on real plane units (blank cube),
+                  real RingedGrowth.run (same process).
+  CROSS_PROCESS — fresh `python3` subprocesses re-derive the same values
+                  under differing PYTHONHASHSEED.
 
-Each case proves:
-1. _affinity returns the contract dict on healthy inputs (keys/types).
-2. Missing units -> NO exception; fail-closed in effect (affinity ~0.0273,
-   below the lowest ring gate, so no proposal; the matrix's literal
-   "affinity 0.0" shorthand is falsified and documented as such).
-3. Same inputs -> identical outputs, twice (in-process determinism).
-4. Cross-process: same rebuilt inputs -> identical affinity dict.
-5. serendipity in [0,1): bounds, empty->0.0, symmetry, monotonicity.
-6. _harmonic still uses the tension subterm (mutation test detects
-   suppression of _tension).
-7. affinity bounds: >= 0.0; <= 1.0 when body_boost == 0.0; <= 1.15 general
-   (documented invariant, contract docstring in ringed_growth.py).
-8. Seeded IDs: _slug deterministic across processes (was NOT before
-   Phase 3: hash() salt made it process-random); different seeds differ;
-   RingedGrowth.run(seed) yields deterministic proposal IDs end to end.
-9. Live-path witness: real RingedGrowth.run on a real plane records what
-   it did (gates, proposals, nursery IDs).
-
-3.1.4 finding (documented here and in nursery._slug): proposal IDs are now
-deterministic given (seed, label, add-sequence) in every process. Previously
-they were deterministic only within one process because _slug used
-hash(text), which Python salts per process for str.
+3.1.4 finding (in nursery._slug): proposal IDs are deterministic given
+(seed, label, add-sequence) in every process. Pre-Phase-3 they were
+deterministic only within one process because _slug used hash(text),
+which Python salts per process for str.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import random
 import subprocess
 import sys
 import tempfile
 
 # Portable: derive repo root from this file's location.
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-OWNER = "P3R31"  # Isolated namespace
+sys.path.insert(0, REPO)
+
+from form.dell_matrix import ringed_growth as rg  # noqa: E402
+from form.dell_matrix import faded_policy  # noqa: E402
+from form.dell_matrix.blank_cube import give  # noqa: E402
+from form.dell_matrix.plane import Skin  # noqa: E402
+
+OWNER = "P3R31"
+
+_results: dict = {}
 
 
-def _phase(name: str, code: str, env: dict | None = None) -> dict:
-    """Run one phase in a fresh process. Returns {check_name: bool}."""
-    r = subprocess.run(
-        [sys.executable, "-c", code],
-        cwd=REPO, capture_output=True, text=True, timeout=120,
-        env=env)
-    results = {}
-    if r.returncode != 0:
-        results[f"{name}::crashed"] = False
-        results[f"{name}::stderr"] = False
-        return results
-    for line in r.stdout.splitlines():
-        if line.startswith("RESULT "):
-            try:
-                d = json.loads(line[len("RESULT "):])
-                for k, v in d.items():
-                    results[f"{name}::{k}"] = bool(v)
-            except json.JSONDecodeError:
-                results[f"{name}::bad_json"] = False
-    if not results:
-        results[f"{name}::empty_evidence"] = False
-    return results
+def rec(name: str, ok: bool, detail: str = "") -> None:
+    _results[name] = bool(ok)
+    print(f"[{'PASS' if ok else 'FAIL'}] {name}"
+          + (f" | {detail}" if detail else ""), flush=True)
 
 
-BUILD = """
-import sys
-sys.path.insert(0, %(REPO)r)
-from form.dell_matrix.blank_cube import give
-from form.dell_matrix.plane import Skin
-cube = give(%(OWNER)r, clean=True)
-cube.place_idea("alpha", "Alpha routes", words="crm routes delivery", skin=Skin.BUILDING, x=1.0)
-cube.place_idea("beta", "Beta routes", words="crm routes pickup", skin=Skin.BUILDING, x=-1.0)
-cube.place_idea("gamma", "Gamma melody", words="song harmony rhythm", skin=Skin.SEED, x=0.0, y=2.0)
-plane = cube.session.plane
-r = {}
-"""
+def _fixture_plane():
+    """Content-bearing fixtures: two token-overlapping units + one distant.
 
-EMIT = """
-print("RESULT " + json.dumps(r))
-"""
-
-AFFINITY_JSON = """
-import json
-from form.dell_matrix import ringed_growth as rg
-d = rg._affinity(plane, "alpha", "beta")
-r["json"] = json.dumps(d, sort_keys=True)
-"""
-
-
-def _inprocess_cases() -> dict:
-    """UNIT + INTEGRATION evidence, same process."""
-    sys.path.insert(0, REPO)
-    from form.dell_matrix import ringed_growth as rg
-    from form.dell_matrix.nursery import Nursery, _slug
-    from form.dell_matrix.blank_cube import give
-    from form.dell_matrix.plane import Skin
-
-    r = {}
-
-    # --- healthy control on real idea objects (INTEGRATION) ---
+    u1 "river": tokens {river, water, flow} at (0,0).
+    u2 "stream": tokens {stream, water, flow} at (3,4) -> distance 5.
+    u3 "melody": disjoint tokens, far away (negative control).
+    """
     cube = give(OWNER, clean=True)
-    cube.place_idea("alpha", "Alpha routes", words="crm routes delivery",
-                    skin=Skin.BUILDING, x=1.0)
-    cube.place_idea("beta", "Beta routes", words="crm routes pickup",
-                    skin=Skin.BUILDING, x=-1.0)
-    cube.place_idea("gamma", "Gamma melody", words="song harmony rhythm",
-                    skin=Skin.SEED, x=0.0, y=2.0)
-    plane = cube.session.plane
+    cube.place_idea("u1", "river", words="river water flow",
+                    skin=Skin.SEED, x=0.0, y=0.0)
+    cube.place_idea("u2", "stream", words="stream water flow",
+                    skin=Skin.SEED, x=3.0, y=4.0)
+    cube.place_idea("u3", "melody", words="song rhythm tune",
+                    skin=Skin.SEED, x=40.0, y=0.0)
+    return cube.session.plane
 
-    d = rg._affinity(plane, "alpha", "beta")
-    expect_keys = {"affinity", "jaccard", "harmonic", "distance",
-                   "shared", "goal_boost", "body_boost"}
-    r["aff_keys"] = (set(d.keys()) == expect_keys)
-    r["aff_types"] = all(isinstance(v, float) for v in d.values())
-    r["aff_bounds"] = (0.0 <= d["affinity"]
-                       and 0.0 <= d["jaccard"] <= 1.0
-                       and 0.0 <= d["harmonic"] <= 1.0
-                       and d["distance"] >= 0.0)
-    r["aff_healthy_positive"] = (d["affinity"] > 0.0)  # overlapping tokens
 
-    # --- negative controls: missing units -> no exception, fail-closed in effect (INTEGRATION) ---
-    # Matrix premise "affinity 0.0" FALSIFIED by repository reality: the
-    # spatial/in_scope floors contribute ~0.0273. Documented in the _affinity
-    # contract; fail-closed because 0.0273 < STANSTILL_AFFINITY (gate "None").
+def t_hand_computed_affinity() -> None:
+    """3.1.1: every term of _affinity derived BY HAND, then asserted.
+
+    HAND COMPUTATION for (u1, u2):
+      T1 = {river, water, flow}, T2 = {stream, water, flow}
+      jaccard = |{water,flow}| / |{river,stream,water,flow}| = 2/4 = 0.5
+      tension: only sets {river} / {stream} -> bridge = min(1,1) = 1;
+               t = 1 / (1 + |union|) = 1/5 = 0.2
+      harmonic = (2*j*(j+t)) / (2*j + t + 1e-9)
+               = (2*0.5*0.7) / (1.0 + 0.2 + 1e-9)
+               = 0.7 / 1.200000001
+      distance = hypot(3,4) = 5.0 -> spatial = 1/(1+5) = 1/6
+      in_scope = 1.0 (both non-sandboxed; u2 in enhance_scope(u1))
+      goal_boost = 0.0 (no goals); body_boost = 0.0 (body=None)
+      affinity = 0.40*h + 0.22*0.5 + 0.13*(1/6) + 0.13*1.0
+    """
+    plane = _fixture_plane()
+    d = rg._affinity(plane, "u1", "u2")
+
+    h_hand = (2 * 0.5 * (0.5 + 0.2)) / (2 * 0.5 + 0.2 + 1e-9)
+    aff_hand = 0.40 * h_hand + 0.22 * 0.5 + 0.13 * (1.0 / 6.0) + 0.13 * 1.0
+
+    rec("hand::keys", set(d) == {"affinity", "jaccard", "harmonic",
+                                 "distance", "shared", "goal_boost",
+                                 "body_boost"})
+    rec("hand::types", all(isinstance(v, float) for v in d.values()))
+    rec("hand::jaccard", d["jaccard"] == 0.5, f"got {d['jaccard']!r}")
+    rec("hand::harmonic", abs(d["harmonic"] - h_hand) < 1e-12,
+        f"got {d['harmonic']!r} hand={h_hand!r}")
+    rec("hand::distance", d["distance"] == 5.0)
+    rec("hand::shared", d["shared"] == 2.0)
+    rec("hand::boosts_zero", d["goal_boost"] == 0.0 and d["body_boost"] == 0.0)
+    rec("hand::affinity", abs(d["affinity"] - aff_hand) < 1e-9,
+        f"got {d['affinity']!r} hand={aff_hand!r}")
+    # The distant disjoint pair scores strictly lower (ordering, not just range).
+    d_far = rg._affinity(plane, "u1", "u3")
+    rec("hand::ordering", d_far["affinity"] < d["affinity"],
+        f"near={d['affinity']:.4f} far={d_far['affinity']:.4f}")
+
+
+def t_missing_unit() -> None:
+    """3.1.1 failure behavior: HAND-COMPUTED missing-unit value.
+
+    HAND COMPUTATION for a missing unit: tokens empty -> jaccard 0,
+    harmonic 0; distance sentinel 99.0 -> spatial = 1/(1+99) = 0.01;
+    enhance_scope -> [] so in_scope floor 0.2; boosts 0.0.
+      affinity = 0.40*0 + 0.22*0 + 0.13*0.01 + 0.13*0.2 + 0 + 0
+               = 0.0013 + 0.026 = 0.0273   (NOT 0.0)
+    Fail-closed IN EFFECT: 0.0273 < STANSTILL_AFFINITY (0.10), so the
+    gate is "None" and no ring proposal results. No exception raised.
+    """
+    plane = _fixture_plane()
     try:
-        m1 = rg._affinity(plane, "alpha", "missing")
+        m1 = rg._affinity(plane, "u1", "missing")
         m2 = rg._affinity(plane, "missing", "also_missing")
-        r["aff_missing_noexc"] = True
-        r["aff_missing_failclosed"] = (
-            m1["distance"] == 99.0 and m2["distance"] == 99.0
-            and m1["jaccard"] == 0.0 and m1["harmonic"] == 0.0
-            and m1["shared"] == 0.0 and m1["goal_boost"] == 0.0
-            and m1["body_boost"] == 0.0
-            and set(m1.keys()) == expect_keys
-            and rg._ring_phase(m1["affinity"]) == "None"
-            and rg._ring_phase(m2["affinity"]) == "None")
-    except Exception:
-        r["aff_missing_noexc"] = False
-        r["aff_missing_failclosed"] = False
+        noexc = True
+    except Exception as e:  # noqa: BLE001
+        noexc = False
+        m1 = m2 = {}
+        print(f"    raised {e!r}", flush=True)
+    rec("missing::no_exception", noexc)
+    if not noexc:
+        return
+    expect = 0.13 * (1.0 / 100.0) + 0.13 * 0.2
+    rec("missing::hand_value", abs(m1["affinity"] - expect) < 1e-15,
+        f"got {m1['affinity']!r} hand={expect!r}")
+    rec("missing::repr", repr(m1["affinity"]) == "0.0273",
+        f"repr={m1['affinity']!r}")
+    rec("missing::not_zero", m1["affinity"] != 0.0,
+        "the old 'affinity 0.0' shorthand is falsified")
+    rec("missing::fail_closed",
+        m1["distance"] == 99.0 and m1["jaccard"] == 0.0
+        and m1["harmonic"] == 0.0 and m1["shared"] == 0.0
+        and m1["goal_boost"] == 0.0 and m1["body_boost"] == 0.0
+        and rg._ring_phase(m1["affinity"]) == "None"
+        and rg._ring_phase(m2["affinity"]) == "None",
+        f"gate={rg._ring_phase(m1['affinity'])!r}")
 
-    # --- determinism, same inputs twice (INTEGRATION) ---
-    d2 = rg._affinity(plane, "alpha", "beta")
-    r["aff_deterministic"] = (d == d2)
 
-    # --- upper-bound sweep (UNIT over real pairs) ---
+def t_bounds() -> None:
+    """3.1.1 true bounds: <= 1.0 without body boost; <= 1.15 with it."""
+    plane = _fixture_plane()
+    ok = True
     worst = 0.0
-    bound_ok = True
     for a in plane.units:
         for b in plane.units:
             if a == b:
                 continue
-            dd = rg._affinity(plane, a, b)
-            worst = max(worst, dd["affinity"])
-            if dd["affinity"] < 0.0:
-                bound_ok = False
-            # body_boost == 0.0 here (body=None): documented invariant aff <= 1.0
-            if dd["body_boost"] == 0.0 and dd["affinity"] > 1.0 + 1e-9:
-                bound_ok = False
-            if dd["affinity"] > 1.15 + 1e-9:
-                bound_ok = False
-    r["aff_bound_sweep"] = bound_ok
-    r["aff_worst_seen"] = (worst <= 1.15 + 1e-9)
+            d = rg._affinity(plane, a, b)
+            worst = max(worst, d["affinity"])
+            if d["affinity"] < 0.0 or d["affinity"] > 1.0 + 1e-9:
+                ok = False
+    rec("bounds::no_body_le_1", ok, f"worst={worst:.4f}")
 
-    # --- serendipity: bounds, empty, symmetry, monotonicity (UNIT) ---
-    s = rg.serendipity({"a", "b"}, {"b", "c"})
-    r["ser_bounds"] = (0.0 <= s < 1.0)
-    r["ser_empty"] = (rg.serendipity(set(), set()) == 0.0
-                      and rg.serendipity({"a"}, set()) == 0.0)
-    r["ser_symmetric"] = (rg.serendipity({"a", "b", "x"}, {"c", "d", "x"})
-                          == rg.serendipity({"c", "d", "x"}, {"a", "b", "x"}))
-    r["ser_identical_zero"] = (rg.serendipity({"a", "b"}, {"a", "b"}) == 0.0)
-    # monotonicity spot-check: more complementary exclusive tokens -> non-decreasing
-    s1 = rg.serendipity({"x"}, {"y"})
-    s2 = rg.serendipity({"x", "p", "q"}, {"y", "r", "s"})
-    r["ser_monotone"] = (0.0 < s1 <= s2 < 1.0)
+    # Theoretical corner: identical co-located in-scope units, identical
+    # goals, body naming 3 missing organs in the labels:
+    #   0.40*~1 + 0.22*1 + 0.13*1 + 0.13*1 + 0.12 + 0.15 ~= 1.15
+    # (harmonic is 1 - 5e-10 from the 1e-9 epsilon). This CONSTRUCTS a
+    # value above 1.0, falsifying the old "[0,1]" bound.
+    cube = give(OWNER, clean=True)
+    lab, w = "Floor nursery lattice core", "floor nursery lattice core"
+    cube.place_idea("ca", lab, words=w, goals=["floor nursery lattice"],
+                    skin=Skin.BUILDING, x=1.0, y=2.0)
+    cube.place_idea("cb", lab, words=w, goals=["floor nursery lattice"],
+                    skin=Skin.BUILDING, x=1.0, y=2.0)
+    p2 = cube.session.plane
+    body = {"missing": ["floor", "nursery", "lattice"], "present": []}
+    dc = rg._affinity(p2, "ca", "cb", body=body)
+    rec("bounds::corner_above_1", dc["affinity"] > 1.0,
+        f"got {dc['affinity']!r} (old [0,1] bound falsified)")
+    rec("bounds::corner_le_1_15", dc["affinity"] <= 1.15 + 1e-9,
+        f"got {dc['affinity']!r}")
+    rec("bounds::body_boost_capped", dc["body_boost"] == 0.15)
 
-    # --- _harmonic formula consistency after refactor (UNIT) ---
+
+def t_permutation() -> None:
+    """3.1.1: full output dict BITWISE identical under argument permutation."""
+    plane = _fixture_plane()
+    pairs = [("u1", "u2"), ("u1", "u3"), ("u2", "u3")]
+    ok = all(rg._affinity(plane, a, b) == rg._affinity(plane, b, a)
+             for a, b in pairs)
+    rec("perm::fixture_bitwise", ok)
+    # Seeded sweep over random label/word/coordinate content.
+    rng = random.Random(20261004)
+    vocab = ["river", "stream", "water", "flow", "bank", "stone",
+             "bridge", "forest", "meadow", "path", "light", "delta"]
+    pl = give(OWNER, clean=True).session.plane
+    from form.dell_matrix.plane import Unit
+    ids = [f"w{i}" for i in range(6)]
+    for i in ids:
+        pl.units[i] = Unit(
+            id=i, label=" ".join(rng.choice(vocab) for _ in range(3)),
+            words=" ".join(rng.choice(vocab) for _ in range(rng.randint(0, 6))),
+            x=rng.uniform(-5, 5), y=rng.uniform(-5, 5))
+    mism = sum(1 for _ in range(500)
+               for x, y in [rng.sample(ids, 2)]
+               if rg._affinity(pl, x, y) != rg._affinity(pl, y, x))
+    rec("perm::sweep_bitwise", mism == 0, f"mismatches={mism}/500")
+
+
+def t_serendipity() -> None:
+    """3.1.3: serendipity = t/(1+t) in [0,1); the exposed tension subterm."""
+    s = rg.serendipity
+    rec("ser::range", all(0.0 <= v < 1.0 for v in
+                           (s({"a", "b"}, {"b", "c"}),
+                            s({"x"}, {"y", "z", "w"}),
+                            s({"p", "q", "r"}, {"s", "t"}))))
+    rec("ser::empty", s(set(), set()) == 0.0 and s({"a"}, set()) == 0.0)
+    rec("ser::identical_zero", s({"a", "b"}, {"a", "b"}) == 0.0)
+    rec("ser::symmetric",
+        s({"a", "b", "x"}, {"c", "d", "x"}) == s({"c", "d", "x"}, {"a", "b", "x"}))
+    # More complementary exclusive tokens -> non-decreasing.
+    rec("ser::monotone",
+        0.0 < s({"x"}, {"y"}) <= s({"x", "p", "q"}, {"y", "r", "s"}) < 1.0)
+    # serendipity() is the NORMALIZED twin of the raw _tension term that
+    # _harmonic consumes directly (code-verified: _harmonic calls
+    # _tension, not serendipity). Fixture needs BOTH overlap and
+    # exclusive tokens: jac = 1/5, tension = 2/6.
     a, b = {"a", "b", "x"}, {"b", "c", "y"}
-    jac = rg._jaccard(a, b)
-    ten = rg._tension(a, b)
-    expect = 0.0 if (jac <= 0 and ten <= 0) else (2 * jac * (jac + ten)) / (2 * jac + ten + 1e-9)
-    r["harmonic_formula_stable"] = (rg._harmonic(a, b) == expect)
-    r["harmonic_empty"] = (rg._harmonic(set(), set()) == 0.0)
-
-    # --- mutation test: suppress _tension -> _harmonic must change (UNIT) ---
-    base_sets = ({"a", "b", "x"}, {"b", "c", "y"})
-    before = rg._harmonic(*base_sets)
-    orig_tension = rg._tension
+    t = rg._tension(a, b)
+    rec("ser::normalizes_tension", abs(s(a, b) - t / (1.0 + t)) < 1e-15)
+    # _harmonic still consumes the tension subterm (mutation detects
+    # suppression): with tension zeroed, harmonic collapses to jaccard.
+    before = rg._harmonic(a, b)
+    assert before > rg._jaccard(a, b) > 0, "fixture must carry tension"
+    orig = rg._tension
     try:
-        rg._tension = lambda x, y: 0.0  # noqa: E731 -- deliberate suppression
-        after = rg._harmonic(*base_sets)
-        # 1e-9 epsilon in the denominator: compare with tolerance, not ==.
-        r["mutation_detected"] = (before != after
-                                  and abs(after - rg._jaccard(*base_sets)) < 1e-6)
+        rg._tension = lambda x, y: 0.0  # noqa: E731 -- deliberate
+        after = rg._harmonic(a, b)
+        rec("ser::tension_load_bearing",
+            before != after
+            and abs(after - rg._jaccard(a, b)) < 1e-6,
+            f"{before:.4f} -> {after:.4f} (collapses to jaccard)")
     finally:
-        rg._tension = orig_tension
-    r["mutation_restored"] = (rg._harmonic(*base_sets) == before)
-    # honest wiring check: with tension suppressed the harmonic term collapses to jaccard
-    try:
-        rg._tension = lambda x, y: 0.0  # noqa: E731
-        da2 = rg._affinity(plane, "alpha", "gamma")
-        r["mutation_wiring"] = abs(da2["harmonic"] - rg._jaccard(
-            rg._tokens_uid(plane, "alpha"), rg._tokens_uid(plane, "gamma"))) < 1e-9
-    finally:
-        rg._tension = orig_tension
+        rg._tension = orig
+    rec("ser::restored", rg._harmonic(a, b) == before)
 
-    # --- seeded IDs (UNIT + subprocess-comparable) ---
-    r["slug_stable"] = (_slug("Restore floor", seed=7) == _slug("Restore floor", seed=7))
-    r["slug_seed_matters"] = (_slug("Restore floor", seed=7) != _slug("Restore floor", seed=8))
-    r["slug_seed7_value"] = bool(_slug("Restore floor", seed=7))
 
-    # --- Nursery.add end-to-end determinism, isolated temp file ---
-    tmp1 = tempfile.mktemp(prefix="p3r31_n1_", suffix=".json")
-    tmp2 = tempfile.mktemp(prefix="p3r31_n2_", suffix=".json")
+def t_bypass_lifecycle() -> None:
+    """BYPASS-MUST-FAIL (lifecycle): with the faded filter disabled, a
+    faded pair's affinity MUST leak back above 0. If it stays 0.0, the
+    filter is decorative and the proof fails."""
+    plane = _fixture_plane()
+    plane.units["u2"].lifecycle_state = "faded"
     try:
-        n1 = Nursery(path=tmp1)
-        n2 = Nursery(path=tmp2)
-        p1 = n1.add(label="Restore floor", words="w", kind="evolved", seed=7)
-        p2 = n2.add(label="Restore floor", words="w", kind="evolved", seed=7)
-        r["nursery_add_deterministic"] = (p1.id == p2.id)
+        z = rg._affinity(plane, "u1", "u2")["affinity"]
+        rec("lifecycle::faded_zero", z == 0.0, "filter active -> 0.0")
+        orig = faded_policy.is_faded
+        faded_policy.is_faded = lambda obj: False  # BYPASS the filter
+        try:
+            leaked = rg._affinity(plane, "u1", "u2")["affinity"]
+        finally:
+            faded_policy.is_faded = orig
+        rec("lifecycle::bypass_leaks", leaked > 0.0,
+            f"filter disabled -> affinity={leaked:.4f} (must be > 0)")
+        rec("lifecycle::restored",
+            rg._affinity(plane, "u1", "u2")["affinity"] == 0.0)
     finally:
-        for t in (tmp1, tmp2):
+        del plane.units["u2"].lifecycle_state
+
+
+def t_bypass_consumption() -> None:
+    """BYPASS-MUST-FAIL (consumption): RingedGrowth.run's gates consume
+    _affinity. With _affinity patched to the zeroed dict, the run MUST
+    stop proposing. If proposals still appear, affinity is not what
+    drives growth and the proof fails."""
+    plane = _fixture_plane()
+    tmp = tempfile.mktemp(prefix="p3r31_b_", suffix=".json")
+    try:
+        from form.dell_matrix.nursery import Nursery
+        n1 = Nursery(path=tmp)
+        real_out = rg.RingedGrowth(nursery=n1, seed=7).run(plane, cycles=1)
+        n_real = real_out["proposed_new"] + real_out["proposed_evolved"]
+        rec("consume::real_proposes", n_real > 0, f"n={n_real}")
+        if n_real == 0:
+            rec("consume::bypass_stops", False,
+                "fixture yields no proposals; causality untestable")
+            return
+        zeroed = {"affinity": 0.0, "jaccard": 0.0, "harmonic": 0.0,
+                  "distance": 0.0, "shared": 0.0, "goal_boost": 0.0,
+                  "body_boost": 0.0}
+        orig = rg._affinity
+        rg._affinity = lambda plane, a, b, body=None: dict(zeroed)  # BYPASS
+        try:
+            n2 = Nursery(path=tmp + "2")
+            out = rg.RingedGrowth(nursery=n2, seed=7).run(plane, cycles=1)
+            n_byp = out["proposed_new"] + out["proposed_evolved"]
+        finally:
+            rg._affinity = orig
+            try:
+                os.remove(tmp + "2")
+            except OSError:
+                pass
+        rec("consume::bypass_stops", n_byp == 0,
+            f"affinity zeroed -> proposals={n_byp} (must be 0)")
+        rec("consume::causal", n_byp != n_real,
+            "output changed when affinity was bypassed")
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+
+
+def t_seeded_ids() -> None:
+    """3.1.4: _slug deterministic across processes; seed matters."""
+    from form.dell_matrix.nursery import Nursery, _slug
+    rec("slug::stable", _slug("Restore floor", seed=7) == _slug("Restore floor", seed=7))
+    rec("slug::seed_matters",
+        _slug("Restore floor", seed=7) != _slug("Restore floor", seed=8))
+    t1 = tempfile.mktemp(prefix="p3r31_n1_", suffix=".json")
+    t2 = tempfile.mktemp(prefix="p3r31_n2_", suffix=".json")
+    try:
+        p1 = Nursery(path=t1).add(label="Restore floor", words="w",
+                                   kind="evolved", seed=7)
+        p2 = Nursery(path=t2).add(label="Restore floor", words="w",
+                                   kind="evolved", seed=7)
+        rec("slug::nursery_deterministic", p1.id == p2.id, f"id={p1.id[:32]}")
+    finally:
+        for t in (t1, t2):
             try:
                 os.remove(t)
             except OSError:
                 pass
 
-    # --- live-path witness: real RingedGrowth.run (INTEGRATION) ---
-    tmpn = tempfile.mktemp(prefix="p3r31_live_", suffix=".json")
-    witness = {}
-    try:
-        from form.dell_matrix.ringed_growth import RingedGrowth
-        nurs = Nursery(path=tmpn)
-        eng = RingedGrowth(nursery=nurs, seed=7)
-        out = eng.run(plane, cycles=1)
-        witness = {
-            "ok": out.get("ok"),
-            "proposed_new": out.get("proposed_new"),
-            "proposed_evolved": out.get("proposed_evolved"),
-            "gates": out.get("gates"),
-            "ids": sorted(nurs.proposals.keys()),
-        }
-        r["live_run_ok"] = (out.get("ok") is True and isinstance(out.get("steps"), list))
-        # second identical run (fresh nursery, same seed) -> same IDs
-        tmpn2 = tempfile.mktemp(prefix="p3r31_live2_", suffix=".json")
-        try:
-            nurs2 = Nursery(path=tmpn2)
-            eng2 = RingedGrowth(nursery=nurs2, seed=7)
-            eng2.run(plane, cycles=1)
-            r["live_ids_deterministic"] = (sorted(nurs2.proposals.keys())
-                                           == sorted(nurs.proposals.keys()))
-        finally:
-            try:
-                os.remove(tmpn2)
-            except OSError:
-                pass
-    finally:
-        try:
-            os.remove(tmpn)
-        except OSError:
-            pass
-    r["live_witness_recorded"] = bool(witness)
-    print("LIVE WITNESS: " + json.dumps(witness, default=str))
 
-    return r
-
-
-def _cross_process_cases() -> dict:
-    """CROSS_PROCESS evidence: fresh python3 processes re-derive values."""
+def t_cross_process() -> None:
+    """CROSS_PROCESS: fresh interpreters re-derive identical values."""
     sys.path.insert(0, REPO)
-    from form.dell_matrix import ringed_growth as rg
-
-    # baseline affinity json, computed in this process
-    from form.dell_matrix.blank_cube import give
-    from form.dell_matrix.plane import Skin
-    cube = give(OWNER, clean=True)
-    cube.place_idea("alpha", "Alpha routes", words="crm routes delivery",
-                    skin=Skin.BUILDING, x=1.0)
-    cube.place_idea("beta", "Beta routes", words="crm routes pickup",
-                    skin=Skin.BUILDING, x=-1.0)
-    cube.place_idea("gamma", "Gamma melody", words="song harmony rhythm",
-                    skin=Skin.SEED, x=0.0, y=2.0)
-    plane = cube.session.plane
-    import json as _json
-    baseline = _json.dumps(rg._affinity(plane, "alpha", "beta"), sort_keys=True)
-
-    out = {}
-    # same rebuilt inputs in a fresh process -> identical affinity dict
-    code = (BUILD % {"REPO": REPO, "OWNER": OWNER}
-            + AFFINITY_JSON + """
-r["same"] = (r["json"] == %(BASELINE)r)
-r["keys_ok"] = (sorted(json.loads(r["json"]).keys())
-                == ["affinity", "body_boost", "distance", "goal_boost",
-                    "harmonic", "jaccard", "shared"])
-""" + EMIT) % {"BASELINE": baseline}
-    out.update(_phase("xproc-affinity", code,
-                      env=dict(os.environ, PYTHONHASHSEED="random")))
-
-    # slug stability across differing hash seeds
-    slug7 = __import__("form.dell_matrix.nursery", fromlist=["_slug"])._slug(
-        "Restore floor", seed=7)
-    for seed_env, tag in (("1", "seed1"), ("987654", "seed987654")):
-        out.update(_phase(f"xproc-slug-{tag}",
-                          """
-import sys
-sys.path.insert(0, %(REPO)r)
-from form.dell_matrix.nursery import _slug
-r = {}
-r["slug"] = _slug("Restore floor", seed=7)
-r["same"] = (r["slug"] == %(SLUG)r)
-print("RESULT " + __import__("json").dumps(r))
-""" % {"REPO": REPO, "SLUG": slug7},
-                          env=dict(os.environ, PYTHONHASHSEED=seed_env)))
-
-    # serendipity / harmonic in a fresh process
-    s_base = rg.serendipity({"a", "b", "x"}, {"b", "c", "y"})
-    h_base = rg._harmonic({"a", "b", "x"}, {"b", "c", "y"})
-    out.update(_phase("xproc-serendipity",
-                      """
-import sys
-sys.path.insert(0, %(REPO)r)
-from form.dell_matrix import ringed_growth as rg
-import json
-r = {}
-r["same_ser"] = (rg.serendipity({"a", "b", "x"}, {"b", "c", "y"}) == %(S)r)
-r["same_harm"] = (rg._harmonic({"a", "b", "x"}, {"b", "c", "y"}) == %(H)r)
-r["empty_zero"] = (rg.serendipity(set(), set()) == 0.0)
-print("RESULT " + json.dumps(r))
-""" % {"REPO": REPO, "S": s_base, "H": h_base}))
-    return out
+    plane = _fixture_plane()
+    baseline = json.dumps(rg._affinity(plane, "u1", "u2"), sort_keys=True)
+    code = (
+        "import sys, json; sys.path.insert(0, %r);"
+        "from form.dell_matrix.blank_cube import give;"
+        "from form.dell_matrix.plane import Skin;"
+        "from form.dell_matrix import ringed_growth as rg;"
+        "cube = give(%r, clean=True);"
+        "cube.place_idea('u1', 'river', words='river water flow', skin=Skin.SEED, x=0.0, y=0.0);"
+        "cube.place_idea('u2', 'stream', words='stream water flow', skin=Skin.SEED, x=3.0, y=4.0);"
+        "d = rg._affinity(cube.session.plane, 'u1', 'u2');"
+        "print('RESULT ' + json.dumps({"
+        "'same': json.dumps(d, sort_keys=True) == %r,"
+        "'perm': d == rg._affinity(cube.session.plane, 'u2', 'u1')}))"
+    ) % (REPO, OWNER, baseline)
+    r = subprocess.run([sys.executable, "-c", code], cwd=REPO,
+                       capture_output=True, text=True, timeout=120,
+                       env=dict(os.environ, PYTHONHASHSEED="random"))
+    found = {}
+    for line in r.stdout.splitlines():
+        if line.startswith("RESULT "):
+            found = json.loads(line[len("RESULT "):])
+    rec("xproc::affinity_identical", r.returncode == 0 and found.get("same") is True,
+        f"rc={r.returncode}")
+    rec("xproc::perm_bitwise", found.get("perm") is True)
+    # _slug stable across hash seeds.
+    from form.dell_matrix.nursery import _slug
+    slug7 = _slug("Restore floor", seed=7)
+    ok = True
+    for hs in ("1", "987654"):
+        rr = subprocess.run(
+            [sys.executable, "-c",
+             "import sys; sys.path.insert(0, %r);"
+             "from form.dell_matrix.nursery import _slug;"
+             "print('RESULT ' + __import__('json').dumps("
+             "{'same': _slug('Restore floor', seed=7) == %r}))" % (REPO, slug7)],
+            cwd=REPO, capture_output=True, text=True, timeout=120,
+            env=dict(os.environ, PYTHONHASHSEED=hs))
+        good = False
+        for line in rr.stdout.splitlines():
+            if line.startswith("RESULT "):
+                good = json.loads(line[len("RESULT "):]).get("same") is True
+        ok = ok and rr.returncode == 0 and good
+    rec("xproc::slug_hashseed_stable", ok)
 
 
 def smoke() -> bool:
     """Run all P3 R3.1 cases. Returns True iff all pass."""
-    all_results = {}
-    all_results.update({f"unit::{k}": v for k, v in _inprocess_cases().items()})
-    all_results.update(_cross_process_cases())
-
-    fails = [k for k, v in all_results.items() if not v]
-    npass = sum(1 for v in all_results.values() if v)
-    ntotal = len(all_results)
+    print("=== P3 R3.1 AFFINITY PROOF (non-vacuous) ===", flush=True)
+    _results.clear()
+    t_hand_computed_affinity()
+    t_missing_unit()
+    t_bounds()
+    t_permutation()
+    t_serendipity()
+    t_bypass_lifecycle()
+    t_bypass_consumption()
+    t_seeded_ids()
+    t_cross_process()
+    fails = [k for k, v in _results.items() if not v]
+    npass = sum(1 for v in _results.values() if v)
+    ntotal = len(_results)
     print(f"P3 R3.1 affinity: {npass}/{ntotal} PASS", flush=True)
     if fails:
         print(f"FAILURES: {fails}", flush=True)

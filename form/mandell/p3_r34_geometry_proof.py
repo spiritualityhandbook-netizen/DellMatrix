@@ -1,30 +1,37 @@
 """P3 R3.4 geometry proof — vesica authority unification + policy verification.
 
 GDP-001 Phase 3 (Resonance, Harmony & Information Geometry), Stream C.
+NON-VACUOUS (P3R rewrite, 2026-10-04):
 
   3.4.1 (IMPLEMENT): verita.vesica_strength now DELEGATES to
       sacred_geometry.vesica (EQ-GEO-001, live authority). Exactly one
-      canonical overlap implementation; no reimplementation.
+      canonical overlap implementation; no reimplementation. Proven by a
+      424-case delegation sweep (bitwise identical outputs) plus a
+      mutation test: perturbing the canonical MUST diverge the wrapper.
   3.3.1 (PARK — recorded, NOT built): the Verita transformation layer is
-      PARKED. Verified rationale: no mathematical derivation exists (zero
-      "transform" references in verita.py/sacred_geometry.py/brain.py); no
-      proven consumers (no transformation API exists in form/); spatial
-      positions are vacuous (Unit.x/Unit.y default 0.0, Plane.place defaults
-      x=0.0/y=0.0, verita_between_nodes skips dist < 0.01 so default-placed
-      ideas yield no vesica edges). Full record: verita.py module docstring.
-      Building it would be pseudomathematics. This proof asserts the PARK
-      record exists; it does NOT implement the layer.
+      PARKED. This proof asserts the PARK record exists; it does NOT
+      implement the layer.
   3.4.2-3.4.4 (DEFER — recorded, NOT built): Cech nerve, power diagrams,
-      alpha filtration are DEFERRED with explicit rationale (no proven
-      consumers; no such code exists in form/ — grep-verified). Full record:
-      sacred_geometry.py module docstring. This proof asserts the DEFERRED
+      alpha filtration are DEFERRED. This proof asserts the DEFERRED
       record exists and that no implementation has appeared.
   3.4.5 (IMPLEMENT — policy verification): "never display uncomputed
-      geometric regions" is verified by code audit in the policy phase.
-      Result: CLEAN except one latent finding — graph_view.py's exception
-      fallback emits kind="vesica" ViewEdges for all connected pairs without
-      computed verita if verita_between_nodes() raises. Reported, not fixed
-      (display code out of Stream-C scope).
+      geometric regions" is verified by code audit AND by a live
+      failure-injection test.
+
+  BYPASS-MUST-FAIL (geometry failure handling — the Director's explicit
+      test): the proof forces the geometry call to raise and asserts
+      (a) NO fabricated kind="vesica" edges are emitted and (b) an
+      explicit "vesica geometry unavailable" marker is recorded in
+      GraphView.warnings (surfaced in to_dict() and ascii()). If the code
+      fell back to returning fabricated edges, the proof MUST FAIL
+      (exit non-zero). A healthy control (real geometry -> computed
+      vesica edge, no warnings) proves the test is sensitive to the
+      failure path rather than vacuous.
+
+  P3R update: the old graph_view.py exception fallback that fabricated
+      kind="vesica" edges between ALL connected pairs has been REMOVED
+      (W2). The two policy checks that documented it as a defect now
+      assert the fix.
 
 Portable: derives REPO from __file__. Enforced: smoke() -> bool,
 sys.exit(0/1), registered in form.regress (# P3 R3.4 block).
@@ -47,9 +54,13 @@ Phases (each in a fresh OS process):
   mutation          — canonical perturbed via monkeypatch; wrapper output
                       MUST diverge (proves delegation, not reimplementation)
   ledger-invariants — equation_ledger_invariants_test still green
+  failure-honest    — BYPASS-MUST-FAIL: geometry forced to raise ->
+                      no fabricated edges + explicit unavailable marker;
+                      healthy control proves sensitivity
   policy-345        — 3.4.5 grep audit: no speculative-geometry
                       implementations; every vesica-edge emission site
-                      accounted for; every void/negative-space/channel
+                      accounted for (computed paths only — none inside an
+                      exception handler); every void/negative-space/channel
                       mention allowlisted as benign
 """
 
@@ -258,6 +269,60 @@ print("RESULT " + json.dumps(r))
     return ("ledger-invariants", code)
 
 
+def _failure_honest() -> tuple[str, str]:
+    code = ("""
+import json, sys
+sys.path.insert(0, @@REPO@@)
+from form.dell_matrix import graph_view as gv
+from form.dell_matrix import sacred_geometry as sg
+from form.dell_matrix.blank_cube import give
+from form.dell_matrix.plane import Skin
+r = {}
+
+cube = give("R34FH", clean=True)
+cube.place_idea("a", "alpha beta", words="alpha beta", skin=Skin.SEED, x=0.0, y=0.0)
+cube.place_idea("b", "beta gamma", words="beta gamma", skin=Skin.SEED, x=1.0, y=0.0)
+plane = cube.session.plane
+
+# Healthy control: real geometry -> a COMPUTED kind="vesica" edge, no warnings.
+v_ok = gv.build_view(plane)
+r["healthy_computed_vesica"] = any(e.kind == "vesica" for e in v_ok.edges)
+r["healthy_no_warnings"] = (v_ok.warnings == [])
+print("WITNESS healthy kinds=%s warnings=%s" % (
+    [e.kind for e in v_ok.edges], v_ok.warnings))
+
+# BYPASS-MUST-FAIL: force the geometry call to raise. The honest contract:
+# (a) NO fabricated kind="vesica" edges, (b) an explicit unavailable
+# marker in GraphView.warnings. If the code fell back to fabricating
+# edges, no_fabricated_edges would be False and the proof would FAIL.
+orig = sg.verita_between_nodes
+def _boom(*a, **k):
+    raise RuntimeError("simulated geometry outage")
+sg.verita_between_nodes = _boom
+try:
+    v = gv.build_view(plane)
+finally:
+    sg.verita_between_nodes = orig
+fab = [e for e in v.edges if e.kind == "vesica"]
+r["no_fabricated_edges"] = (len(fab) == 0)
+r["unavailable_marker"] = any("vesica geometry unavailable" in w
+                              for w in v.warnings)
+print("WITNESS failed kinds=%s warnings=%s" % (
+    [e.kind for e in v.edges], v.warnings))
+# The marker is explicit in both serializations (not silent).
+d = v.to_dict()
+r["marker_in_dict"] = any("vesica geometry unavailable" in w
+                          for w in d["warnings"])
+r["marker_in_ascii"] = ("vesica geometry unavailable" in v.ascii())
+# Differential: the failure path is observably different from success,
+# proving this test is sensitive to the failure path (not vacuous).
+r["failure_differs_from_healthy"] = (
+    (len(v_ok.edges), list(v_ok.warnings)) != (len(v.edges), list(v.warnings)))
+print("RESULT " + json.dumps(r))
+""".replace("@@REPO@@", repr(REPO)))
+    return ("failure-honest", code)
+
+
 def _policy_345() -> tuple[str, str]:
     code = ("""
 import json, os, subprocess, sys
@@ -288,24 +353,55 @@ print("WITNESS speculative-geometry hits=%d (all must be deferral records)" % le
 for ln in spec:
     print("WITNESS   " + ln[:160])
 
-# Vesica-edge emission sites: every one accounted for.
-edge_sites = _grep("kind.*vesica", "form/dell_matrix", "form/repl.py", "form/open.py")
-expected_files = {"form/dell_matrix/graph_view.py", "form/dell_matrix/sacred_geometry.py"}
-edge_files = {ln.split(":")[0] for ln in edge_sites}
-r["vesica_edge_sites_known"] = (edge_files <= expected_files and len(edge_sites) == 3)
-# The single documented finding: graph_view.py exception fallback emits
-# kind="vesica" edges for all connected pairs with no computed verita.
-finding = [ln for ln in edge_sites if "form/dell_matrix/graph_view.py" in ln]
+# Vesica-edge emission sites, post-W2 fix: kind="vesica" is emitted ONLY on
+# computed paths (graph_view.py try-block, sacred_geometry.py's own edge
+# builder). The fabricated exception fallback is REMOVED. Assert no
+# kind="vesica" emission inside any exception handler.
+def _no_fabrication_in_handlers(path):
+    src = open(os.path.join(REPO, path)).read().splitlines()
+    # line numbers (1-based) of except handlers and of kind="vesica" hits
+    excepts = [i + 1 for i, ln in enumerate(src)
+               if ln.lstrip().startswith("except")]
+    hits = [i + 1 for i, ln in enumerate(src) if 'kind="vesica"' in ln
+            or "kind='vesica'" in ln or '"kind": "vesica"' in ln]
+    # A hit is suspicious if it comes after an except at deeper-or-equal
+    # indent without an intervening def/class (i.e., inside the handler).
+    # Conservative structural check: every hit must precede every except
+    # in graph_view.py (single handler at the end); sacred_geometry.py's
+    # hit is inside verita_between_nodes, whose except (line ~168) is in
+    # the vesica() helper, not on the edge path.
+    return hits, excepts
+
+gv_hits, gv_excepts = _no_fabrication_in_handlers("form/dell_matrix/graph_view.py")
+gv_src_lines = open(os.path.join(REPO, "form/dell_matrix/graph_view.py")).read().splitlines()
+# The geometry-failure handler is the `except` whose body records
+# geometry_warnings; kind="vesica" must be emitted only BEFORE it
+# (i.e., on the computed path inside the try).
+fail_handler = next(
+    i + 1 for i, ln in enumerate(gv_src_lines)
+    if ln.lstrip().startswith("except")
+    and any("geometry_warnings.append" in gv_src_lines[j]
+            for j in range(i, min(i + 12, len(gv_src_lines)))))
+r["graphview_computed_only"] = (
+    len(gv_hits) == 1 and all(h < fail_handler for h in gv_hits))
+print("WITNESS graph_view.py kind=vesica lines=%s fail-handler line=%s" % (
+    gv_hits, fail_handler))
+sg_src = open(os.path.join(REPO, "form/dell_matrix/sacred_geometry.py")).read()
+# sacred_geometry.py's "kind": "vesica" hit must be inside
+# verita_between_nodes (the computed path), not inside an except block.
+sg_lines = sg_src.splitlines()
+sg_hit = next(i + 1 for i, ln in enumerate(sg_lines) if '"kind": "vesica"' in ln)
+sg_def = next(i + 1 for i, ln in enumerate(sg_lines)
+              if ln.startswith("def verita_between_nodes"))
+r["sg_computed_only"] = (sg_hit > sg_def)
+print("WITNESS sacred_geometry.py kind-vesica line=%s def line=%s" % (sg_hit, sg_def))
+# The old fabricated fallback is gone from the except handler: the handler
+# records geometry_warnings and appends no ViewEdge.
 gv_src = open(os.path.join(REPO, "form/dell_matrix/graph_view.py")).read()
-fallback_idx = gv_src.find("except Exception:")
-second_site = gv_src.find('kind="vesica"', gv_src.find('kind="vesica"') + 1)
-r["finding_graphview_fallback"] = (len(finding) == 2 and fallback_idx != -1
-                                   and fallback_idx < second_site)
-print("WITNESS vesica edge emission sites:")
-for ln in edge_sites:
-    print("WITNESS   " + ln[:160])
-print("WITNESS FINDING: graph_view.py fallback emits uncomputed kind=vesica edges "
-      "if verita_between_nodes raises (reported, not fixed — out of scope)")
+handler = gv_src.split("except Exception as exc:")[1]
+r["handler_records_warning"] = ("geometry_warnings.append" in handler)
+r["handler_no_viewedge"] = ("ViewEdge(" not in handler)
+r["warning_text_honest"] = ("vesica geometry unavailable" in handler)
 
 # Void / negative-space / channel mentions: every hit allowlisted as benign.
 void_hits = _grep("void|negative.space|negative_space",
@@ -363,6 +459,7 @@ def smoke() -> bool:
         _live_caller(),
         _mutation(),
         _ledger_invariants(),
+        _failure_honest(),
         _policy_345(),
     ]
 
