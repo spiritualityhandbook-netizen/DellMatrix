@@ -9,11 +9,8 @@ resonance computation: they contribute nothing to pair scoring
 This module is the single policy point. Wired call sites:
   - ``form/dell_matrix/ringed_growth.py::_affinity`` (pair scoring)
   - ``form/dell_matrix/resonance.py::pulse`` (diffusion)
-
-Not wired (explicit): ``form/dell_matrix/harmony.py::harmony_score``
-lands via Stream B; the merge coordinator wires ``exclude_faded``
-there. This module deliberately does NOT create a competing
-harmony.py.
+  - ``form/dell_matrix/harmony.py::harmony_score`` (wired at stream
+    merge by the Phase-3 coordinator, 2026-10-04)
 
 Attribute convention: ``is_faded(obj)`` reads a ``lifecycle_state``
 attribute (nursery proposals carry it as a plain str; other objects

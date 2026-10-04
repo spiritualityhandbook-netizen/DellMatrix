@@ -25,6 +25,8 @@ from __future__ import annotations
 import re
 from typing import Any, Iterable, List, Set
 
+from form.dell_matrix.faded_policy import exclude_faded
+
 _TOKEN = re.compile(r"[a-z0-9]+")
 
 # Weight applied to near-duplicate pairs when computing the redundancy term.
@@ -141,6 +143,8 @@ def harmony_score(idea_set: Iterable[Any]) -> float:
           pair coherence 0.0 against any partner
         - both token sets empty -> pair coherence 0.0 (no content, no
           coherence claimed)
+        - FADED ideas (R3.5.2) are excluded before scoring; all-faded
+          input -> 0.0 (defined, no exception)
         Never raises for well-typed input. Ill-typed input is fail-closed
         to 0.0, never an exception.
 
@@ -164,6 +168,9 @@ def harmony_score(idea_set: Iterable[Any]) -> float:
         items = list(idea_set)
     except TypeError:
         return 0.0
+    # P3 R3.5.2: faded-state exclusion — ideas whose lifecycle state is FADED
+    # do not participate in harmony computation. All-faded -> empty -> 0.0.
+    items = exclude_faded(items)
     n = len(items)
     if n == 0:
         return 0.0
