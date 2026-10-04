@@ -223,3 +223,14 @@ failure behavior, proof, disposition.
 - **Failure behavior:** TBD
 - **Proof:** `p3_r35_integration_proof.py`
 - **Disposition:** IMPLEMENT (minimal honest integration) or DEFER with rationale
+
+---
+
+## Inactive Scratch (excluded from Phase-3 work and evidence)
+
+Per Overseer directive 2026-10-04: leave untouched, record as inactive.
+
+- `~/workspace/dellmatrix-fresh-main15` — untracked DCC-XV cross-process test (DCC-era scratch)
+- `~/workspace/dellmatrix-fresh-main6` — modified `core_i_ops.py` (+56/-8) (DCC-era scratch)
+
+Neither is referenced by any active directive. Excluded from Phase-3 evidence.
