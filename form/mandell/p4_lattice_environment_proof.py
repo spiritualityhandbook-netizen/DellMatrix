@@ -242,8 +242,13 @@ def t5_fog_local_emphasis() -> None:
     _clean(owner)
     try:
         p = _prog(owner)
+        # Clear welcome: at (0,0) it would cause coincidence separation
+        # with our probe. We need a clean isolation test.
+        p.cube.session.plane.units.clear()
         p.place("a", "alpha river", x=-50.0, y=0.0)
-        p.place("b", "beta stream", x=50.0, y=0.0)
+        # b at origin: centering force is zero there, so any movement
+        # must come from the well (which should be gated).
+        p.place("b", "beta stream", x=0.0, y=0.0)
         _set_scores(p, {"a": 10.0, "b": 0.5})
         orig = sa.weather_modulation
         sa.weather_modulation = lambda c: {
@@ -256,10 +261,11 @@ def t5_fog_local_emphasis() -> None:
             d = math.hypot(x1 - x0, y1 - y0)
         finally:
             sa.weather_modulation = orig
-        # Well at distance 100 > radius 10 -> skipped. No separation
-        # (100 >> 2.5), no springs, no jitter -> exactly 0.
+        # Well at distance 50 > radius 10 -> skipped. No separation
+        # (50 >> 2.5), no springs, no jitter, no centering at origin
+        # -> exactly 0.
         rec("weather::distant_well_gated", d == 0.0,
-            f"well@100 radius@10 -> disp={d}")
+            f"well@50 radius@10 -> disp={d}")
     finally:
         _clean(owner)
 
