@@ -614,36 +614,251 @@ except Exception as e:
 
 def t13():
     o = "R3H13"; clean(o)
-    # Behavioral test: _rollback_full must propagate Program save failures.
-    # We verify by checking that persist_rest.save is called without suppression.
-    # A full I/O failure injection is complex; the key proof is that the
-    # 'except Exception: pass' was removed (verified by code inspection in
-    # development). For the permanent regression, we verify the function
-    # exists and is callable (smoke test).
+    # Deterministic behavioral test per Director 11-step method.
+    # Uses phase marker (rollback_started), not save-call counting.
     setup = """
-import sys
-sys.path.insert(0, %r)
-from form.mandell.supersession import _rollback_full
-import inspect
-# Verify _rollback_full calls persist_rest.save without suppression
-src = inspect.getsource(_rollback_full)
-# The save should NOT be wrapped in try/except-pass
-has_bare_save = 'persist_rest.save(program)' in src
-has_suppress = 'except Exception:' in src and 'pass' in src.split('persist_rest.save(program)')[0][-200:]
-# Actually, just verify the function exists and has the save call
-print('HAS_SAVE:' + str(has_bare_save))
-print('PRECONDITIONS_OK')
-""" % (REPO,)
+import sys, os, json, traceback
+REPO_DIR = %r
+OWNER_ID = %r
+sys.path.insert(0, REPO_DIR)
+from form.open import open_program
+from form import persist_rest
+from form.mandell import supersession
+from form.mandell.supersession import supersede_proposal, SupersedeError
+from form.mandell.core_i_recovery import _supersede_journal_path
+
+# Step 1-2: Clean owner, create and confirm predecessor normally
+p = open_program(OWNER_ID)
+pr_old = p.nursery.add('OLD_PROP', words='original content here')
+p.confirm_proposal(pr_old.id)
+# Assert confirmation succeeded (in-memory)
+assert getattr(pr_old, 'status', None) == 'confirmed', f"confirmation failed: {getattr(pr_old, 'status', None)}"
+print('CONFIRMED_OK')
+p.nursery.save()
+persist_rest.save(p)
+old_id = pr_old.id
+npath = os.path.join(REPO_DIR, 'form', 'state', 'nursery_' + OWNER_ID + '.json')
+
+# Step 3-4: Install hooks ONLY AFTER setup. Capture original save.
+orig_save = persist_rest.save
+rollback_started = [False]
+
+# Step 5: Wrap save: delegate until rollback_started, then raise distinctive OSError
+def wrapped_save(prog, *a, **k):
+    if rollback_started[0]:
+        raise OSError("INJECTED_ROLLBACK_SAVE_FAILURE_T13")
+    return orig_save(prog, *a, **k)
+persist_rest.save = wrapped_save
+
+# Step 6: Replace _save_nursery: set marker, raise at final commit boundary
+orig_save_nursery = supersession._save_nursery
+def hook_save_nursery(program):
+    rollback_started[0] = True
+    raise SupersedeError("injected_final_commit", "t13_hook")
+supersession._save_nursery = hook_save_nursery
+
+# Step 7-8: Call supersede_proposal, assert distinctive OSError propagates
+got_oserror = False
+try:
+    result = supersede_proposal(p, old_id, words='successor content here')
+    print('NO_RAISE_UNEXPECTED')
+except OSError as e:
+    if 'INJECTED_ROLLBACK_SAVE_FAILURE_T13' in str(e):
+        got_oserror = True
+        print('PROPAGATED_ROLLBACK_OSERROR')
+    else:
+        print('WRONG_OSERROR:' + str(e)[:60])
+        traceback.print_exc()
+except Exception as e:
+    print('OTHER:' + type(e).__name__ + ':' + str(e)[:60])
+    traceback.print_exc()
+finally:
+    # Step 9: Restore hooks in finally. Do NOT perform another save.
+    persist_rest.save = orig_save
+    supersession._save_nursery = orig_save_nursery
+
+assert got_oserror, "distinctive OSError did not propagate"
+
+# Step 10: Read successor ID from retained intent, assert disk state
+jpath = _supersede_journal_path(OWNER_ID)
+assert os.path.isfile(jpath), "journal was cleared (should be retained)"
+jd = json.load(open(jpath))
+succ_id = jd.get('new_id')  # Journal uses 'new_id', not 'succ_id'
+assert succ_id, "no new_id in journal"
+print('JOURNAL_RETAINED succ=' + succ_id[:12])
+
+# Predecessor must be active (rollback restored it)
+npath = os.path.join(REPO_DIR, 'form', 'state', 'nursery_' + OWNER_ID + '.json')
+nd = json.load(open(npath))
+old_state = None
+old_superseded_by = None
+succ_in_nursery = False
+for pid, pdata in nd.get('proposals', {}).items():
+    if pid == old_id:
+        old_state = pdata.get('lifecycle_state', pdata.get('status'))
+        old_superseded_by = pdata.get('superseded_by_id')
+    if pid == succ_id:
+        succ_in_nursery = True
+print('OLD_STATE:' + str(old_state))
+print('OLD_SUPERSEDED_BY:' + str(old_superseded_by))
+print('SUCC_IN_NURSERY:' + str(succ_in_nursery))
+# Old must NOT be superseded (rollback restored pre-supersession state)
+assert old_superseded_by is None, f"old was superseded: {old_superseded_by}"
+assert not succ_in_nursery, "successor proposal not removed by rollback"
+
+# Durable successor Idea remains (Program rollback save failed)
+from form.persist import _path as _ppath
+ppath = _ppath(OWNER_ID)
+pd = json.load(open(ppath))
+idea_exists = succ_id in pd.get('plane', {}).get('units', {})
+print('IDEA_EXISTS:' + str(idea_exists))
+assert idea_exists, "durable Idea should remain (rollback save failed)"
+
+# Save state for restart test
+with open('/tmp/r3h13_state.json', 'w') as f:
+    json.dump({'owner': OWNER_ID, 'old_id': old_id, 'succ_id': succ_id}, f)
+print('SETUP_DONE')
+""" % (REPO, o)
     rc, out, err = run_script("t13_setup", setup)
-    ok = rc == 0 and "HAS_SAVE:True" in out and "PRECONDITIONS_OK" in out
-    rec("13_rollback_propagates", ok, out[:80])
+    if rc != 0 or "SETUP_DONE" not in out:
+        rec("13_rollback_propagates", False, f"setup failed rc={rc}")
+        print(f"t13 SETUP FAILED: rc={rc}")
+        print(f"STDOUT: {out[:500]}")
+        print(f"STDERR: {err[:500]}")
+        clean(o)
+        try: os.remove('/tmp/r3h13_state.json')
+        except: pass
+        return
+    # Verify all setup assertions passed
+    ok_setup = ("PROPAGATED_ROLLBACK_OSERROR" in out and "JOURNAL_RETAINED" in out and
+                "OLD_SUPERSEDED_BY:None" in out and "SUCC_IN_NURSERY:False" in out and
+                "IDEA_EXISTS:True" in out)
+    if not ok_setup:
+        rec("13_rollback_propagates", False, "setup assertions failed")
+        print(f"t13 SETUP ASSERTIONS FAILED: {out[:300]}")
+        clean(o)
+        try: os.remove('/tmp/r3h13_state.json')
+        except: pass
+        return
+
+    # Step 11: Fresh subprocess, no save, expect RollbackRecoveryError, repeat
+    restart = """
+import sys, os, json
+sys.path.insert(0, %r)
+with open('/tmp/r3h13_state.json') as f:
+    state = json.load(f)
+OWNER_ID = state['owner']
+from form import persist_rest
+from form.mandell.core_i_recovery import _supersede_journal_path, RollbackRecoveryError
+
+jpath = _supersede_journal_path(OWNER_ID)
+
+# First recovery: must raise (Idea remains, cannot heal to old)
+try:
+    p = persist_rest.load(OWNER_ID, activate=False)
+    print('RECOVERY1_NO_RAISE_UNEXPECTED')
+except RollbackRecoveryError:
+    assert os.path.isfile(jpath), "journal lost after recovery1"
+    print('RECOVERY1_RAISED_JRETAINED')
+except Exception as e:
+    print('RECOVERY1_OTHER:' + type(e).__name__)
+
+# Second recovery: must also raise (idempotent fail-closed)
+try:
+    p = persist_rest.load(OWNER_ID, activate=False)
+    print('RECOVERY2_NO_RAISE_UNEXPECTED')
+except RollbackRecoveryError:
+    assert os.path.isfile(jpath), "journal lost after recovery2"
+    print('RECOVERY2_RAISED_JRETAINED')
+except Exception as e:
+    print('RECOVERY2_OTHER:' + type(e).__name__)
+
+print('RESTART_DONE')
+""" % (REPO,)
+    rc2, out2, err2 = run_script("t13_restart", restart)
+    ok_restart = (rc2 == 0 and "RECOVERY1_RAISED_JRETAINED" in out2 and
+                  "RECOVERY2_RAISED_JRETAINED" in out2 and "RESTART_DONE" in out2)
+    ok = ok_setup and ok_restart
+    if ok:
+        print("t13 postconditions verified")
+    rec("13_rollback_propagates", ok, f"setup={ok_setup} restart={ok_restart}")
+    if not ok:
+        print(f"t13 FAILED: rc2={rc2}")
+        print(f"RESTART STDOUT: {out2[:400]}")
+        print(f"RESTART STDERR: {err2[:400]}")
+    try: os.remove('/tmp/r3h13_state.json')
+    except: pass
     clean(o)
 
 # 14. orphan_idea_negative: Orphan Idea (present but proposal not confirmed)
 # must not be cleared as healed. Fail closed, preserve evidence.
+def t14():
+    o = "R3H14"; clean(o)
+    setup = """
+import sys, os, json
+REPO_DIR = %r
+OWNER_ID = %r
+sys.path.insert(0, REPO_DIR)
+from form.open import open_program
+from form import persist_rest
+from form.mandell.core_i_recovery import write_supersede_intent, _supersede_journal_path
+
+# Create old (confirmed) and new (pending) proposals
+p = open_program(OWNER_ID)
+pr_old = p.nursery.add('OLD_PROP', words='original')
+p.confirm_proposal(pr_old.id)
+pr_new = p.nursery.add('NEW_PROP', words='successor')
+p.nursery.save()
+persist_rest.save(p)
+
+# Write supersede intent (old->new)
+write_supersede_intent(OWNER_ID, pr_old.id, pr_new.id)
+
+# Create orphan: add Idea for new to Program file, but new proposal stays pending
+ppath = os.path.join(REPO_DIR, 'form', 'state', 'program_' + OWNER_ID + '.json')
+pd = json.load(open(ppath))
+pd['plane']['units'][pr_new.id] = {'id': pr_new.id, 'label': 'NEW_PROP'}
+json.dump(pd, open(ppath, 'w'))
+print('ORPHAN_CREATED')
+
+# Verify preconditions
+jpath = _supersede_journal_path(OWNER_ID)
+assert os.path.isfile(jpath), "journal not created"
+print('PRECONDITIONS_OK')
+""" % (REPO, o)
+    rc, out, err = run_script("t14_setup", setup)
+    if rc != 0 or "PRECONDITIONS_OK" not in out:
+        rec("14_orphan_idea", False, f"setup failed rc={rc}")
+        print(f"t14 SETUP FAILED: {out[:200]} {err[:200]}")
+        clean(o)
+        return
+
+    # Recovery must raise (orphan Idea is evidence, cannot heal)
+    load = """
+import sys, os
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import _supersede_journal_path, RollbackRecoveryError
+jpath = _supersede_journal_path(%r)
+try:
+    p = persist_rest.load(%r, activate=False)
+    print('NO_RAISE_UNEXPECTED JEXISTS:' + str(os.path.isfile(jpath)))
+except RollbackRecoveryError:
+    print('RAISED_ROLLBACK JEXISTS:' + str(os.path.isfile(jpath)))
+except Exception as e:
+    print('OTHER:' + type(e).__name__)
+""" % (REPO, o, o)
+    rc2, out2, err2 = run_script("t14_load", load)
+    ok = rc2 == 0 and "RAISED_ROLLBACK" in out2 and "JEXISTS:True" in out2
+    if ok:
+        print("t14 postconditions verified")
+    rec("14_orphan_idea", ok, out2[:80])
+    if not ok:
+        print(f"t14 FAILED: rc={rc2}, out={out2[:150]}")
+    clean(o)
 
 if __name__ == "__main__":
-    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12(); t13()
+    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12(); t13(); t14()
     n = sum(results)
     print("=== %d/%d ===" % (n, len(results)))
     sys.exit(0 if all(results) else 1)
