@@ -236,8 +236,9 @@ def _state_dir() -> str:
     return _STATE_DIR
 
 
-def _safe_owner(owner: str) -> str:
-    return "".join(c if (c.isalnum() or c in "-_") else "_" for c in owner)
+# MICRO-GATE: no local sanitizer. Reuse the canonical form.persist._safe_owner
+# (single authority for owner namespace mapping).
+from form.persist import _safe_owner as _safe_owner
 
 
 def graph_path(owner: str) -> str:
@@ -396,7 +397,12 @@ class SemanticGraph:
 
         Nested calls APPEND to the existing journal (for multi-hop chains:
         the outer journal covers a→b, the inner covers b→c; both must
-        survive for complete recovery)."""
+        survive for complete recovery).
+
+        MICRO-GATE: if an existing journal cannot be parsed/validated,
+        DO NOT overwrite it. Raise GraphValidationError (fail closed).
+        UNKNOWN recovery state must not become valid state by silent
+        overwrite."""
         from form.dell_matrix.atomic_write import atomic_write_json
         path = graph_journal_path(self.owner)
         existing_ops: List[Dict[str, Any]] = []
@@ -404,10 +410,26 @@ class SemanticGraph:
             try:
                 with open(path, encoding="utf-8") as f:
                     existing = json.load(f)
-                    if isinstance(existing.get("operations"), list):
-                        existing_ops = existing["operations"]
-            except (OSError, json.JSONDecodeError):
-                pass  # corrupt journal: overwrite (load will fail closed)
+            except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+                raise GraphValidationError(
+                    f"graph journal unreadable for {self.owner!r}: {exc}; "
+                    f"refusing to overwrite unknown recovery state"
+                ) from exc
+            # Validate the existing journal before appending.
+            if not isinstance(existing, dict):
+                raise GraphValidationError(
+                    f"graph journal corrupt for {self.owner!r}: not a dict; "
+                    f"refusing to overwrite")
+            if existing.get("owner") != self.owner:
+                raise GraphValidationError(
+                    f"graph journal owner mismatch for {self.owner!r}; "
+                    f"refusing to overwrite")
+            ops = existing.get("operations")
+            if not isinstance(ops, list):
+                raise GraphValidationError(
+                    f"graph journal corrupt for {self.owner!r}: operations not a list; "
+                    f"refusing to overwrite")
+            existing_ops = ops
         journal = {
             "format_version": 1,
             "owner": self.owner,
@@ -1085,9 +1107,17 @@ class SemanticGraph:
             # explicit persisted FAILED ledger records — queryable via
             # get_propagation_failures(), recoverable via reconcile().
             # No swallowed exception, no fake success receipt.
+            #
+            # MICRO-GATE: GraphValidationError (integrity failure: corrupt
+            # journal, unknown recovery state) is NOT converted to FAILED.
+            # It propagates — the graph is in an unknown state and the
+            # operation must fail closed, not pretend a routine propagation
+            # failure occurred.
             try:
                 self._propagate_property(idea.id, event.property_name,
                                          live_idea=idea)
+            except GraphValidationError:
+                raise
             except Exception as exc:
                 self._record_propagation_failure(
                     idea.id, event.property_name,
@@ -1299,33 +1329,53 @@ class SemanticGraph:
         return updated
 
     def _remove_journal_ops(self, dependent_id: str, derived_property: str) -> None:
-        """Remove completed sync_dependent ops from the journal."""
+        """Remove completed sync_dependent ops from the journal.
+
+        MICRO-GATE: do NOT silently ignore corrupt/unreadable journal.
+        If the journal cannot be parsed/validated, raise GraphValidationError
+        (fail closed) — the caller (reconcile) must not pretend the op was
+        removed."""
         jpath = graph_journal_path(self.owner)
         if not os.path.isfile(jpath):
             return
         try:
             with open(jpath, encoding="utf-8") as f:
                 journal = json.load(f)
-            ops = journal.get("operations", [])
-            filtered = [op for op in ops
-                        if not (op.get("op") == "sync_dependent"
-                                and op.get("dependent_id") == dependent_id
-                                and op.get("derived_property") == derived_property)]
-            if len(filtered) != len(ops):
-                journal["operations"] = filtered
-                from form.dell_matrix.atomic_write import atomic_write_json
-                atomic_write_json(jpath, journal)
-                if not filtered:
-                    self._clear_journal()
-        except (OSError, json.JSONDecodeError):
-            pass
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise GraphValidationError(
+                f"graph journal unreadable for {self.owner!r}: {exc}; "
+                f"cannot remove completed ops from unknown state"
+            ) from exc
+        if not isinstance(journal, dict):
+            raise GraphValidationError(
+                f"graph journal corrupt for {self.owner!r}: not a dict")
+        ops = journal.get("operations")
+        if not isinstance(ops, list):
+            raise GraphValidationError(
+                f"graph journal corrupt for {self.owner!r}: operations not a list")
+        filtered = [op for op in ops
+                    if not (isinstance(op, dict)
+                            and op.get("op") == "sync_dependent"
+                            and op.get("dependent_id") == dependent_id
+                            and op.get("derived_property") == derived_property)]
+        if len(filtered) != len(ops):
+            journal["operations"] = filtered
+            from form.dell_matrix.atomic_write import atomic_write_json
+            atomic_write_json(jpath, journal)
+            if not filtered:
+                self._clear_journal()
 
     def _record_propagation_failure(self, target_id: str, property_name: str,
                                     error: str) -> None:
         """R1-1: record an explicit FAILED propagation state. Called when
-        the listener-path propagation throws. Persists the ledger (best
-        effort); the FAILED state is queryable and recoverable via
-        reconcile(). Never silent, never a fake success."""
+        the listener-path propagation throws.
+
+        MICRO-GATE: a failure to persist FAILED state must not disappear.
+        If self.save() throws, the journal (written by _propagate_property
+        before the failure) REMAINS as the authoritative pending-recovery
+        record — it is not cleared. If no journal exists (e.g., failure
+        outside a journaled batch), raise GraphValidationError (fail closed)
+        so the caller knows the FAILED state is in-memory only."""
         # Find affected dependents to record them individually.
         recorded = False
         for rel_id in list(self._by_target.get(target_id, [])):
@@ -1346,8 +1396,6 @@ class SemanticGraph:
             }
             recorded = True
         if not recorded:
-            # No specific dependent identified; record a generic failure
-            # against the target so the failure is not lost.
             self._propagation_ledger[(target_id, property_name)] = {
                 "status": PropagationStatus.FAILED.value,
                 "error": error,
@@ -1356,8 +1404,19 @@ class SemanticGraph:
             }
         try:
             self.save()
-        except Exception:
-            pass  # journal (if any) covers crash recovery; ledger is in-memory
+        except Exception as exc:
+            # FAILED is in-memory only. If a journal exists, it remains as
+            # the authoritative pending-recovery record (not cleared).
+            # If no journal exists, fail closed with a typed error — do not
+            # let the FAILED state silently disappear.
+            jpath = graph_journal_path(self.owner)
+            if not os.path.isfile(jpath):
+                raise GraphValidationError(
+                    f"failed to persist propagation FAILED state for "
+                    f"{self.owner!r}: {exc}; no journal exists for recovery"
+                ) from exc
+            # Journal exists: it covers recovery. FAILED remains in-memory
+            # for this session; the journal ensures deterministic replay.
 
     def get_propagation_failures(self) -> List[Dict[str, Any]]:
         """All FAILED propagation records. Empty means no known failures
@@ -1371,9 +1430,13 @@ class SemanticGraph:
     def propagation_status(self, dependent_id: str,
                            derived_property: str) -> str:
         """R1-1: queryable propagation state. Returns 'synchronized',
-        'pending', or 'failed'. NEVER returns 'synchronized' when a
-        FAILED record exists or a journaled operation is in-flight —
-        the states cannot be confused."""
+        'pending', 'failed', or 'unknown'. NEVER returns 'synchronized'
+        when a FAILED record exists, a journaled operation is in-flight,
+        or the journal cannot be validated.
+
+        MICRO-GATE: if the journal exists but cannot be read/validated,
+        return 'unknown' (explicit non-success), never 'synchronized'.
+        PENDING != SYNCHRONIZED. UNKNOWN != SYNCHRONIZED."""
         rec = self._propagation_ledger.get((dependent_id, derived_property))
         if rec is not None and rec.get("status") == PropagationStatus.FAILED.value:
             return "failed"
@@ -1384,13 +1447,22 @@ class SemanticGraph:
             try:
                 with open(jpath, encoding="utf-8") as f:
                     journal = json.load(f)
-                for op in journal.get("operations", []):
-                    if (op.get("op") == "sync_dependent"
-                            and op.get("dependent_id") == dependent_id
-                            and op.get("derived_property") == derived_property):
-                        return "pending"
-            except (OSError, json.JSONDecodeError):
-                pass
+            except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+                # Corrupt/unreadable journal: fail closed. Do NOT return
+                # "synchronized" for unknown recovery state.
+                return "unknown"
+            if not isinstance(journal, dict):
+                return "unknown"
+            ops = journal.get("operations", [])
+            if not isinstance(ops, list):
+                return "unknown"
+            for op in ops:
+                if not isinstance(op, dict):
+                    return "unknown"
+                if (op.get("op") == "sync_dependent"
+                        and op.get("dependent_id") == dependent_id
+                        and op.get("derived_property") == derived_property):
+                    return "pending"
         return "synchronized"
 
     def _propagate_property(self, idea_id: str, property_name: str,
