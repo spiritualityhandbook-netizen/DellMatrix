@@ -35,7 +35,8 @@ PLANE_BOUND = 1000.0          #: finite plane half-extent; clamped
 MAX_DISP_PER_TICK = 2.0       #: DecreasingMaxMovement cap (× temperature)
 FRICTION_CLEAR = 0.90         #: velocity retention per tick (d3-style decay)
 COOLING = 0.96                #: geometric temperature decay per tick
-EPS_FORCE = 1e-9              #: Eades stop: max force magnitude below this
+EPS_FORCE = 1e-9              #: Eades force guard (reported, not the stop rule)
+EPS_DISP = 1e-9               #: positional stillness threshold (the stop rule)
 MAX_SETTLE_TICKS = 200        #: iteration budget; exhaustion = non-convergent
 G = 0.4                       #: gravitational constant (admitted, reused)
 MIN_DIST = 2.0                #: distance clamp (no singularity; reused)
@@ -477,7 +478,12 @@ class SpatialAuthority:
                 del self.velocities[uid]
         self.temperature *= COOLING
         self.tick_count += 1
-        converged = max_force < EPS_FORCE
+        # Convergence rule: positional stillness. (The Eades force-
+        # magnitude guard is reported but not the stop rule: persistent
+        # gravity wells exert non-vanishing force at equilibrium, so a
+        # force-epsilon would never trigger. A settled matrix is one
+        # where nothing moves.)
+        converged = max_disp < EPS_DISP
         self._rebuild_lattice(program)
         return self._report(moved, max_disp, max_force, converged,
                             "converged" if converged else "active")
