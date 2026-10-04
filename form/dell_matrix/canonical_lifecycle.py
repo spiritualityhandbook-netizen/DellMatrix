@@ -30,13 +30,16 @@ from form.mandell.idea import LifecycleState
 _T = TypeVar("_T")
 
 # States that permit participation in resonance/affinity/harmony.
-# FADED, SUPERSEDED, DELETED, ARCHIVED, REJECTED are excluded.
+# FADED, DELETED, ARCHIVED, REJECTED are excluded.
+# SUPERSEDED is included: DCC-XVI T.offspring requires that explicit
+# user override ("use idea {id} to grow") works for superseded ideas.
 # UNKNOWN/malformed/unreadable are excluded (fail-closed).
 _ACTIVE_STATES = frozenset({
     LifecycleState.ACTIVE.value,
     LifecycleState.PROPOSED.value,
     LifecycleState.ACCEPTED.value,
     LifecycleState.RESTORED.value,
+    LifecycleState.SUPERSEDED.value,
 })
 
 
