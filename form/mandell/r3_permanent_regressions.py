@@ -551,32 +551,50 @@ p.nursery.save()
 # Do NOT save program (absent)
 write_confirm_intent(OWNER_ID, pid)
 # Persist Nursery as confirmed; Program remains absent
+# Nursery saves proposals directly under their IDs (not under 'proposals' key)
 npath = os.path.join(REPO_DIR, 'form', 'state', 'nursery_' + OWNER_ID + '.json')
 nd = json.load(open(npath))
-for prop_id, prop in nd.get('proposals', {}).items():
-    if prop_id == pid:
-        prop['status'] = 'confirmed'
-        break
+# Assert precondition: proposal exists and is pending
+assert pid in nd, "Proposal not in nursery"
+assert nd[pid].get('status') == 'pending', "Proposal not pending"
+# Confirm it
+nd[pid]['status'] = 'confirmed'
 json.dump(nd, open(npath, 'w'))
+# Assert precondition: Program is absent
+ppath = os.path.join(REPO_DIR, 'form', 'state', 'program_' + OWNER_ID + '.json')
+assert not os.path.exists(ppath), "Program should be absent"
+# Assert precondition: journal records expected OLD fingerprints
+from form.mandell.core_i_recovery import _confirm_journal_path
+jpath = _confirm_journal_path(OWNER_ID)
+jd = json.load(open(jpath))
+assert jd['proposal_id'] == pid, "Journal proposal mismatch"
+assert jd['old_program_sha256'] == 'absent', "Journal should record absent Program"
 print('PID:' + pid)
+print('PRECONDITIONS_OK')
 """ % (REPO, o)
     rc, out, err = run_script("t12_setup", setup)
-    if rc != 0 or "PID:" not in out:
-        rec("12_absent_prog", False, "setup failed")
+    if rc != 0 or "PRECONDITIONS_OK" not in out:
+        rec("12_absent_prog", False, "setup failed or preconditions not met: " + out[:100])
         clean(o); return
     # Recovery must raise (not clear as no_change)
+    # After recovery, assert: journal preserved, hybrid NOT exposed
     load = """
-import sys, os
+import sys, os, json
 sys.path.insert(0, %r)
 from form import persist_rest
 from form.mandell.core_i_recovery import _confirm_journal_path, RollbackRecoveryError
+jpath = _confirm_journal_path(%r)
 try:
     p = persist_rest.load(%r, activate=False)
-    jexists = os.path.isfile(_confirm_journal_path(%r))
-    # If no raise, check if hybrid was exposed
+    jexists = os.path.isfile(jpath)
     print('NO_RAISE JEXISTS:' + str(jexists))
-except RollbackRecoveryError:
-    print('RAISED_ROLLBACK')
+    # If no raise, verify hybrid was NOT exposed
+    # (proposal should not be confirmed without Idea)
+except RollbackRecoveryError as e:
+    jexists = os.path.isfile(jpath)
+    print('RAISED_ROLLBACK JEXISTS:' + str(jexists))
+    # Assert journal preserved (not deleted)
+    assert jexists, "Journal should be preserved on fail-closed"
 except Exception as e:
     print('RAISED_OTHER:' + type(e).__name__)
 """ % (REPO, o, o)
