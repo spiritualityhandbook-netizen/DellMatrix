@@ -201,9 +201,14 @@ def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = Non
         identical co-located in-scope ideas naming missing organs.
         harmonic <= 1.0, jaccard <= 1.0, spatial <= 1.0 (equality at
         distance 0). Not symmetric in the in_scope term (uses enhance_scope(a)).
-    (6) Failure behavior: missing units -> returns the full dict with
-        affinity 0.0, jaccard 0.0, harmonic 0.0, distance 99.0, shared 0.0,
-        goal_boost 0.0, body_boost 0.0 (fail-closed, no exception).
+    (6) Failure behavior: missing units -> returns the full dict WITHOUT
+        raising (fail-closed, no exception), with distance 99.0 and the
+        token/goal/body terms 0.0. NOTE (falsifies the Phase-3 matrix's
+        "affinity 0.0" shorthand): the spatial floor (1/(1+99) = 0.01 x 0.13)
+        and the in_scope floor (0.2 x 0.13) still contribute, so affinity is
+        ~0.0273, not 0.0. Fail-closed IN EFFECT: 0.0273 < STANSTILL_AFFINITY
+        (0.10), so the "None" gate fires and no ring proposal results.
+        Verified by form/mandell/p3_r31_affinity_proof.py.
     (7) Determinism: pure function of (plane state, a, b, body). Same inputs
         -> identical dict in every process (no RNG, no wall clock, no hash()
         of str). NOTE: token order plays no role (set-based); dict key order
