@@ -98,7 +98,14 @@ def is_active(program: Any, unit_id: str) -> bool:
 
 
 def is_faded(program: Any, unit_id: str) -> bool:
-    """True iff canonical lifecycle for (program, unit_id) is FADED."""
+    """True iff canonical lifecycle for (program, unit_id) is FADED.
+
+    NOTE: inspect_revision currently overwrites faded states with
+    MALFORMED, so this helper is not reachable for faded records in
+    practice. It is retained for API completeness. For exclusion
+    decisions, use `not is_active(...)` which correctly handles all
+    non-active states including faded.
+    """
     return resolve_lifecycle(program, unit_id) == LifecycleState.FADED.value
 
 

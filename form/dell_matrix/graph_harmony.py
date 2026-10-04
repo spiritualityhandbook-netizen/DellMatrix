@@ -56,14 +56,26 @@ class _UnitIdeaView:
       title                <- unit.label
       properties           <- unit.words, unit.detail, unit.goals (joined)
 
-    Lifecycle is resolved canonically at the ID level via
+    Lifecycle: resolved canonically at the ID level via
     canonical_lifecycle (owner-aware boundary), not via dynamic Unit
-    attributes. This adapter carries tokens only.
+    attributes. When the caller passes verified_state="active" (unit
+    already passed the canonical gate), this adapter reports it so
+    harmony_score's exclude_inactive_ideas does not filter it out.
+    When verified_state is None, reports unknown -> fail-closed.
     """
 
-    def __init__(self, unit: Any):
+    def __init__(self, unit: Any, verified_state: Optional[str] = None):
         self.title = getattr(unit, "label", "") or ""
         self._unit = unit
+        # Verified canonical state (or None -> unknown -> fail-closed).
+        # This is the caller's attestation that the unit passed the
+        # owner-aware boundary, not a dynamic Unit attribute read.
+        self._verified_state = verified_state
+
+    @property
+    def idea_state(self) -> Optional[str]:
+        """Verified lifecycle state, or None (unknown -> fail-closed)."""
+        return self._verified_state
 
     def get_active_properties(self) -> Dict[str, str]:
         u = self._unit
@@ -78,9 +90,17 @@ class _UnitIdeaView:
         return props
 
 
-def unit_idea_view(unit: Any) -> _UnitIdeaView:
-    """Wrap a plane unit so harmony_score can tokenize it honestly."""
-    return _UnitIdeaView(unit)
+def unit_idea_view(unit: Any, verified_state: Optional[str] = None) -> _UnitIdeaView:
+    """Wrap a plane unit so harmony_score can tokenize it honestly.
+
+    verified_state: when the caller has already resolved the unit's
+    canonical lifecycle via the owner-aware boundary (e.g. pairs that
+    passed the _affinity canonical gate in RingedGrowth.run), pass
+    "active" here. The view then reports the verified state instead
+    of "unknown". When None (no canonical context), the view reports
+    unknown -> fail-closed in harmony_score.
+    """
+    return _UnitIdeaView(unit, verified_state=verified_state)
 
 
 # ---------------------------------------------------------------------------

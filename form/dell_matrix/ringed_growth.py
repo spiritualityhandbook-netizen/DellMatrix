@@ -492,12 +492,17 @@ class RingedGrowth:
                     else "Goals: (parents had none — prefer adding goals on live ideas). "
                 )
                 # P3 R3.6: harmony over the proposal pair set (canonical
-                # harmony_score via the unit->idea adapter; faded pairs
-                # already gated to "None" above, and harmony_score excludes
-                # faded ideas anyway). Persisted on the proposal below and
-                # consumed by Program.ranked_proposals (tie-break).
+                # harmony_score via the unit->idea adapter). Pairs reaching
+                # here passed the canonical _affinity gate above (faded ->
+                # "None" -> skipped), so when program is provided the units
+                # are verified active; pass verified_state to prevent
+                # harmony_score's fail-closed filter from excluding them.
+                # Without program (no canonical context), views report
+                # unknown -> fail-closed (honest).
+                _vstate = "active" if program is not None else None
                 pair_harmony = harmony_score(
-                    [unit_idea_view(ua), unit_idea_view(ub)])
+                    [unit_idea_view(ua, verified_state=_vstate),
+                     unit_idea_view(ub, verified_state=_vstate)])
                 # P3 R3.6: graph signal over the pair's canonical Idea IDs
                 # (read-only; 0.0 neutral when no graph attached or no
                 # edges). The graph is historical truth: faded/deleted
