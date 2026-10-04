@@ -116,7 +116,12 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
             raise
     else:
         # Skipping checkpoint (caller manages durability, e.g., supersession).
-        # Use legacy nursery.save() with ARGUS-3 compliant rollback.
+        # Save nursery only; caller (supersession Phase 4) handles program
+        # persistence via its own transaction boundary.
+        # Note: This leaves a theoretical crash window, but supersession's
+        # Phase 4 save is the commit boundary, and the loader recovery
+        # (recover_confirmation_hybrid) heals any hybrid on next load.
+        # ARGUS-3 compliant rollback on failure.
         try:
             nursery.save()
         except Exception:
