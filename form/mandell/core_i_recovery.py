@@ -1183,7 +1183,7 @@ def recover_supersede_intent(owner: str) -> str:
     if not isinstance(units, dict):
         raise RollbackRecoveryError("supersede intent: bad units (preserved)")
 
-    # Check if nursery was modified
+    # Check if nursery was modified (original logic; supersession has its own contract)
     current_fp = _sha256_file(npath)
     if current_fp == journal.get("old_nursery_sha256"):
         clear_supersede_intent(owner)
