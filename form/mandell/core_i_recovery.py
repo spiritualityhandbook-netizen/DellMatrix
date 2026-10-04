@@ -1280,7 +1280,14 @@ def recover_supersede_intent(owner: str) -> str:
         (isinstance(new_prop, dict) and new_prop.get("status") == "pending")
     )
     if new_absent_or_pending and old_active_valid:
-        # Operation never completed. Restore complete OLD outcome.
+        # Operation never completed. But verify no successor Idea remains.
+        # If Idea exists, this is evidence that must be preserved, not cleared.
+        if new_id in units:
+            raise RollbackRecoveryError(
+                "supersede intent: successor Idea present but proposal not confirmed "
+                "(journal preserved). Cannot clear as healed."
+            )
+        # No Idea, old active, new absent/pending → true OLD state.
         clear_supersede_intent(owner)
         return "healed_to_old"
 

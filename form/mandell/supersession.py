@@ -294,11 +294,10 @@ def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
     program.nursery.save()
     # Also persist Program: plane.remove modified in-memory state.
     # Without this, durable Program retains the successor Idea.
-    try:
-        from form import persist_rest
-        persist_rest.save(program)
-    except Exception:
-        pass
+    # Propagate failure: if Program save fails, the rollback is incomplete.
+    # Do not suppress; the caller must handle it.
+    from form import persist_rest
+    persist_rest.save(program)
 
 
 def supersede_proposal(program: Any, old_id: str, words: str,
