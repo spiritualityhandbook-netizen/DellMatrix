@@ -32,11 +32,18 @@ def _detail(prop, units) -> str:
 
 
 def confirm_proposal(program, pid: str) -> Dict[str, Any]:
-    """Canonical confirmation authority (the only caller of Nursery.confirm).
+    """Canonical confirmation authority (transactional).
 
-    Order: SELECT PENDING > VALIDATE/ASSIGN LINEAGE > PLACE > COMMIT CONFIRMATION + PERSIST (Nursery.confirm)
-    > RETURN SUCCESS. Any failure before the commit leaves the proposal pending (memory and disk), so it
-    stays retryable and rejectable. A placement exception propagates without committing.
+    Uses the checkpoint generation transaction (DCC-XVIII) to atomically
+    commit Program + Nursery state. The logical transition is:
+
+    OLD: proposal=PENDING, Idea absent from accepted Plane
+    NEW: proposal=CONFIRMED, Idea present in accepted Program state
+
+    Externally observable durable state is either OLD complete or NEW
+    complete, never a hybrid. Any failure before the commit boundary
+    leaves the proposal pending (memory and disk), so it stays retryable
+    and rejectable.
     """
     nursery = program.nursery
     prop = nursery.proposals.get(pid)
@@ -56,12 +63,23 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
         if not existed:
             units.pop(prop.id, None)
         raise
+    # Stage the nursery confirmation in memory (do NOT save yet).
+    # The checkpoint transaction will persist both Program and Nursery atomically.
+    prop.status = "confirmed"
     try:
-        nursery.confirm(pid)  # COMMIT CONFIRMATION + PERSIST (reverts to pending itself if persisting fails)
-    except NurseryConflictError as e:
+        from form.mandell.checkpoint_generation import commit_checkpoint
+        commit_checkpoint(program)
+    except Exception as exc:
+        # Transaction failed: revert in-memory state to OLD.
+        # Proposal stays pending (retryable), Idea removed if newly placed.
+        prop.status = "pending"
         if not existed:
             units.pop(prop.id, None)
-        return {"ok": False, "reason": "nursery_conflict", "error": str(e)}
+        # Check if it's a nursery conflict (optimistic concurrency)
+        from form.dell_matrix.nursery import NurseryConflictError
+        if isinstance(exc, NurseryConflictError) or "conflict" in str(exc).lower():
+            return {"ok": False, "reason": "nursery_conflict", "error": str(exc)}
+        raise
     try:
         text = " ".join([str(prop.label or ""), str(getattr(prop, "words", "") or ""), str(getattr(prop, "detail", "") or "")])
         aff = float(getattr(prop, "affinity", 1.0) or 1.0)

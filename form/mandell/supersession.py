@@ -82,7 +82,23 @@ def inspect_revision(program: Any, uid: str) -> Dict[str, Any]:
             "routable": False,
         }
 
-    state = getattr(prop, "lifecycle_state", None) or ACTIVE
+    # ARGUS-2 FIX (approved): Fail closed on explicit None/empty lifecycle_state.
+    # Distinguish "attribute missing" (legacy → ACTIVE via compatibility policy)
+    # from "attribute present but None/empty/whitespace" (malformed → fail closed).
+    # Do not generalize "missing value" into ACTIVE.
+    _MISSING = object()
+    _raw_state = getattr(prop, "lifecycle_state", _MISSING)
+    if _raw_state is _MISSING:
+        # Attribute genuinely absent: proven legacy object → documented ACTIVE compatibility
+        state = ACTIVE
+    elif _raw_state is None:
+        # Present None → MALFORMED (fail closed)
+        state = None
+    elif isinstance(_raw_state, str) and _raw_state.strip() == "":
+        # Present empty/whitespace-only → MALFORMED (fail closed)
+        state = None
+    else:
+        state = _raw_state
     supersedes = getattr(prop, "supersedes_id", None)
     superseded_by = getattr(prop, "superseded_by_id", None)
     root = getattr(prop, "revision_root_id", None) or uid
@@ -92,7 +108,9 @@ def inspect_revision(program: Any, uid: str) -> Dict[str, Any]:
 
     malformed: Optional[str] = None
 
-    if state not in (ACTIVE, SUPERSEDED):
+    if state is None:
+        malformed = "bad_lifecycle_state:empty_or_none"
+    elif state not in (ACTIVE, SUPERSEDED):
         malformed = f"bad_lifecycle_state:{state}"
     elif superseded_by is not None and state == ACTIVE:
         # Claims a successor while still active: inconsistent link state.
