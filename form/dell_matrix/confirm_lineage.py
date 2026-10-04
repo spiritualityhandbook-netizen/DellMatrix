@@ -96,7 +96,7 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
         except Exception:
             # F1: Intent-write failure must restore newly placed memory.
             # The Idea was placed in-memory but no journal exists to enable
-            # recovery. Remove it to avoid exposing unrecoverable hybrid.
+            # recovery. Remove it to prevent exposing unrecoverable hybrid.
             if not existed:
                 _remove_newly_placed()
             raise
