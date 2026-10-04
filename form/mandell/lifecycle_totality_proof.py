@@ -142,3 +142,8 @@ def test_lifecycle_totality():
 
 if __name__ == "__main__":
     sys.exit(test_lifecycle_totality())
+
+
+def smoke() -> bool:
+    """Entry point for regression runner."""
+    return test_lifecycle_totality() == 0

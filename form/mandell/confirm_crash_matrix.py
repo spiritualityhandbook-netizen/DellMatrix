@@ -586,3 +586,8 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def smoke() -> bool:
+    """Entry point for regression runner."""
+    return main() == 0
