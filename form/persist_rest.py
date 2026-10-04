@@ -196,14 +196,14 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     # hybrid state.
     from form.mandell.core_i_recovery import recover_rollback_transaction
     recover_rollback_transaction(owner)
-    # Confirmation-hybrid recovery (GDP_ARGUS_CONFIRMATION_CONVERGENCE_R2).
-    # Heals crashed confirmations (nursery=confirmed, Idea absent) to OLD
-    # by reverting proposal to pending. The checkpoint pointer provides
-    # atomicity only for checkpoint-aware readers; the production loader
-    # reads live files directly, so this recovery ensures the loader never
-    # exposes a hybrid. See recover_confirmation_hybrid docstring.
-    from form.mandell.core_i_recovery import recover_confirmation_hybrid
-    recover_confirmation_hybrid(owner)
+    # Confirmation-intent recovery (GDP_R3_IDEA_PRESERVATION_ADDENDUM).
+    # Recovers from RECORDED INTENT (journal), not inferred visibility.
+    # A confirmed proposal without a Plane Idea is NOT healed unless a
+    # journal records an in-progress confirmation for that proposal.
+    # This preserves legitimate historical records (faded, superseded).
+    # The old visibility-based recover_confirmation_hybrid is deprecated.
+    from form.mandell.core_i_recovery import recover_confirmation_intent
+    recover_confirmation_intent(owner)
     path = path or _path(owner)
     if not os.path.isfile(path):
         p = open_program(owner)

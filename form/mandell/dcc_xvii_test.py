@@ -547,7 +547,9 @@ def control_m_supersession_integration() -> None:
         "orig = AW.atomic_write_json; state = {'n': 0}\n"
         "def wrapper(path, payload, *, _fail_at=None):\n"
         "    state['n'] += 1\n"
-        "    return orig(path, payload, _fail_at='crash_after_replace' if state['n'] == 3 else _fail_at)\n"
+        "    # R3: 5 writes total (create nursery, journal, Phase3 nursery,\n"
+        "    # Phase3 program, Phase4 nursery). Crash on 5th (Phase 4 post-replace).\n"
+        "    return orig(path, payload, _fail_at='crash_after_replace' if state['n'] == 5 else _fail_at)\n"
         "AW.atomic_write_json = wrapper\n"
         "S.supersede_proposal(p, old.id, 'mu2 revision two alpha')\n"
     )

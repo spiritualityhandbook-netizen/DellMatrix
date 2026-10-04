@@ -615,13 +615,13 @@ def recover_confirmation_hybrid(owner: str) -> int:
     Raises:
         RollbackRecoveryError: If the nursery or program file is unreadable
             or malformed (fail closed, never expose potentially hybrid state).
-    """
-    # Skip for DCC test owners: they test the checkpoint infrastructure
-    # directly with crash injection, and the recovery interferes with
-    # their expected post-crash states. Production owners always recover.
-    if owner.startswith("DCCXVII_") or owner.startswith("DCC_"):
-        return 0
 
+    Note (R3): This visibility-based heuristic is DEPRECATED. It cannot
+    distinguish a crashed confirmation from a legitimate historical record
+    (e.g., faded Idea). Use recover_confirmation_intent() which recovers
+    from the recorded journal instead. This function is retained for
+    backward compatibility during migration.
+    """
     from form.persist import _path, _STATE_DIR
     from form.dell_matrix.nursery import owner_nursery_path
     from form.dell_matrix.atomic_write import atomic_write_json
@@ -689,3 +689,186 @@ def recover_confirmation_hybrid(owner: str) -> int:
             ) from exc
 
     return healed
+
+
+# ---------------------------------------------------------------------------
+# Confirmation intent journal (GDP_R3_IDEA_PRESERVATION_ADDENDUM)
+# ---------------------------------------------------------------------------
+# R2 used visibility-based healing ("confirmed without Idea = crash").
+# R3 corrects this: absence from Plane does NOT prove acceptance never
+# committed. Historical records (faded, superseded) may legitimately lack
+# Plane Ideas. Recovery must use RECORDED INTENT, not inferred visibility.
+#
+# Protocol:
+#   1. Before any file writes, journal records: operation, proposal_id,
+#      owner, phase="prepared", old fingerprints.
+#   2. Perform file writes (nursery, program).
+#   3. On success, delete journal (phase="committed" implied by deletion).
+#   4. On recovery, if journal exists: check the RECORDED proposal only.
+#      Do not scan all proposals. Historical records without journals
+#      are never touched.
+
+CONFIRM_JOURNAL_VERSION = 1
+
+
+def _confirm_journal_path(owner: str) -> str:
+    """Path of the confirmation intent journal for ``owner``."""
+    from form.persist import _STATE_DIR, _safe_owner
+    return os.path.join(_STATE_DIR, f"confirm_{_safe_owner(owner)}.journal.json")
+
+
+def _sha256_file(path: str) -> str:
+    """SHA256 hex digest of file bytes, or empty string if missing."""
+    import hashlib
+    try:
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return ""
+
+
+def write_confirm_intent(owner: str, proposal_id: str) -> None:
+    """Record intent to confirm before any durable writes.
+
+    Must be called BEFORE modifying nursery/program files. The journal
+    enables crash recovery to distinguish "crashed confirmation" from
+    "legitimate historical record".
+    """
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_json
+
+    journal = {
+        "journal_version": CONFIRM_JOURNAL_VERSION,
+        "operation": "confirm_proposal",
+        "owner": owner,
+        "proposal_id": proposal_id,
+        "phase": "prepared",
+        "old_nursery_sha256": _sha256_file(owner_nursery_path(owner)),
+        "old_program_sha256": _sha256_file(_path(owner)),
+    }
+    atomic_write_json(_confirm_journal_path(owner), journal)
+
+
+def clear_confirm_intent(owner: str) -> None:
+    """Delete the confirmation journal after successful commit."""
+    try:
+        os.unlink(_confirm_journal_path(owner))
+    except OSError:
+        pass
+
+
+def recover_confirmation_intent(owner: str) -> str:
+    """Recover from recorded confirmation intent (not inferred visibility).
+
+    Returns:
+        "none": No journal; nothing to recover.
+        "already_complete": Journal existed but both files already reflect
+            the confirmed state; journal cleared.
+        "healed_to_old": Journal existed, nursery was modified but program
+            lacks the Idea; proposal reverted to pending, journal cleared.
+        "no_change": Journal existed but nursery still matches OLD (nothing
+            was written); journal cleared.
+
+    Raises:
+        RollbackRecoveryError: Journal is corrupt or unreadable (fail closed).
+    """
+    jpath = _confirm_journal_path(owner)
+    if not os.path.isfile(jpath):
+        return "none"
+
+    # Read and validate journal.
+    try:
+        with open(jpath, encoding="utf-8") as f:
+            journal = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"confirmation intent: corrupt journal: {exc}"
+        ) from exc
+
+    if not isinstance(journal, dict):
+        raise RollbackRecoveryError("confirmation intent: journal is not a dict")
+    if journal.get("journal_version") != CONFIRM_JOURNAL_VERSION:
+        raise RollbackRecoveryError(
+            f"confirmation intent: unsupported version {journal.get('journal_version')}"
+        )
+    proposal_id = journal.get("proposal_id")
+    if not proposal_id:
+        raise RollbackRecoveryError("confirmation intent: missing proposal_id")
+
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_json
+
+    npath = owner_nursery_path(owner)
+    ppath = _path(owner)
+
+    # If files are missing, nothing to heal; clear journal.
+    if not os.path.isfile(npath) or not os.path.isfile(ppath):
+        clear_confirm_intent(owner)
+        return "no_change"
+
+    # Check if nursery was modified (compare to OLD fingerprint).
+    current_nursery_fp = _sha256_file(npath)
+    old_nursery_fp = journal.get("old_nursery_sha256", "")
+
+    if current_nursery_fp == old_nursery_fp:
+        # Nursery never modified → operation didn't start writing.
+        clear_confirm_intent(owner)
+        return "no_change"
+
+    # Nursery was modified. Read the RECORDED proposal (not all proposals).
+    try:
+        with open(npath, encoding="utf-8") as f:
+            ndata = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"confirmation intent: unreadable nursery: {exc}"
+        ) from exc
+
+    prop = ndata.get(proposal_id)
+    if not isinstance(prop, dict):
+        # Proposal not in nursery; nothing to heal for this intent.
+        clear_confirm_intent(owner)
+        return "no_change"
+
+    if prop.get("status") != "confirmed":
+        # Not confirmed; no hybrid for this proposal.
+        clear_confirm_intent(owner)
+        return "no_change"
+
+    # Proposal is confirmed. Check if Idea exists in program.
+    try:
+        with open(ppath, encoding="utf-8") as f:
+            pdata = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"confirmation intent: unreadable program: {exc}"
+        ) from exc
+
+    unit_ids = set()
+    try:
+        units = pdata.get("plane", {}).get("units", {})
+        if isinstance(units, dict):
+            unit_ids = set(units.keys())
+    except (AttributeError, TypeError):
+        raise RollbackRecoveryError(
+            "confirmation intent: malformed program plane"
+        )
+
+    if proposal_id in unit_ids:
+        # Both files reflect NEW state → operation completed.
+        clear_confirm_intent(owner)
+        return "already_complete"
+
+    # Hybrid: nursery confirmed, program lacks Idea, AND we have a journal
+    # recording intent for THIS proposal. Heal to OLD.
+    prop["status"] = "pending"
+    try:
+        atomic_write_json(npath, ndata)
+    except Exception as exc:
+        raise RollbackRecoveryError(
+            f"confirmation intent: failed to heal nursery: {exc}"
+        ) from exc
+    clear_confirm_intent(owner)
+    return "healed_to_old"

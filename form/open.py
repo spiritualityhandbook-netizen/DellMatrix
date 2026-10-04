@@ -183,23 +183,18 @@ class Program:
         # staged even if the live file is absent or corrupt.
         _injected = getattr(self, "_init_nursery", None)
         if _injected is None:
-            # SWAT R2 VIOLATION 2 FIX: Run confirmation-hybrid recovery before
-            # loading the live nursery. The production loader
-            # (persist_rest.load) runs recovery, but the Program constructor
-            # (used by REPL without --load) bypassed it, exposing unhealed
-            # hybrids. This ensures all production readers honor the
-            # commit/recovery boundary.
-            # Skip for DCC test owners (they test infrastructure directly).
-            if not self.owner.startswith("DCCXVII_") and not self.owner.startswith("DCC_"):
-                try:
-                    from form.mandell.core_i_recovery import recover_confirmation_hybrid
-                    recover_confirmation_hybrid(self.owner)
-                except Exception:
-                    # Recovery failures are fail-closed (raise); but if the
-                    # recovery module is unavailable during early init, don't
-                    # break construction. The persist_rest.load path will
-                    # still enforce recovery.
-                    pass
+            # R3: Run confirmation-intent recovery before loading live nursery.
+            # Recovers from RECORDED INTENT (journal), not inferred visibility.
+            # Preserves legitimate historical records without journals.
+            try:
+                from form.mandell.core_i_recovery import recover_confirmation_intent
+                recover_confirmation_intent(self.owner)
+            except Exception:
+                # Recovery failures are fail-closed (raise); but if the
+                # recovery module is unavailable during early init, don't
+                # break construction. The persist_rest.load path will
+                # still enforce recovery.
+                pass
         self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner))
         self.growth = RingedGrowth(nursery=self.nursery)
         self.lattice = HarmonicLattice(size=SIZE_CHROMATIC)
