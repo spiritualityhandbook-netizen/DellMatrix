@@ -182,24 +182,26 @@ class Program:
         # the owner's live nursery file, so a committed generation can be
         # staged even if the live file is absent or corrupt.
         _injected = getattr(self, "_init_nursery", None)
-        # SWAT BREAK 1 FIX: Even with injected Nursery, check for journals.
+        # SWAT BREAK 1 FIX: Only when a Nursery is INJECTED, check for journals.
         # If a confirmation or supersession journal exists, the live state
         # is uncertain. The injected object bypasses file-based recovery,
         # which would expose unhealed hybrids. Fail closed.
-        from form.mandell.core_i_recovery import _confirm_journal_path, _supersede_journal_path
-        import os as _os
-        if _os.path.isfile(_confirm_journal_path(self.owner)):
-            from form.mandell.core_i_recovery import RollbackRecoveryError
-            raise RollbackRecoveryError(
-                "Program: confirmation journal exists for owner; "
-                "injected Nursery bypasses recovery (fail closed)"
-            )
-        if _os.path.isfile(_supersede_journal_path(self.owner)):
-            from form.mandell.core_i_recovery import RollbackRecoveryError
-            raise RollbackRecoveryError(
-                "Program: supersession journal exists for owner; "
-                "injected Nursery bypasses recovery (fail closed)"
-            )
+        # Ordinary construction (no injection) MUST run recovery; do not block it.
+        if _injected is not None:
+            from form.mandell.core_i_recovery import _confirm_journal_path, _supersede_journal_path
+            import os as _os
+            if _os.path.isfile(_confirm_journal_path(self.owner)):
+                from form.mandell.core_i_recovery import RollbackRecoveryError
+                raise RollbackRecoveryError(
+                    "Program: confirmation journal exists for owner; "
+                    "injected Nursery bypasses recovery (fail closed)"
+                )
+            if _os.path.isfile(_supersede_journal_path(self.owner)):
+                from form.mandell.core_i_recovery import RollbackRecoveryError
+                raise RollbackRecoveryError(
+                    "Program: supersession journal exists for owner; "
+                    "injected Nursery bypasses recovery (fail closed)"
+                )
         if _injected is None:
             # R3: Run confirmation-intent recovery before loading live nursery.
             # Recovers from RECORDED INTENT (journal), not inferred visibility.
