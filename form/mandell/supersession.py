@@ -443,6 +443,15 @@ def _supersede_impl(program: Any, old_id: str, words: str,
         if _FAIL_AT == "link_write":
             raise SupersedeError("injected_failure", "link_write")
         _save_nursery(program)
+        # SWAT R2 VIOLATION 1 FIX: Persist the program file as well.
+        # The successor Idea exists in memory (from Phase 3 place()) but
+        # must be durable. Otherwise the loader recovery
+        # (recover_confirmation_hybrid) sees "confirmed without Idea" and
+        # heals the legitimate successor to pending, corrupting the chain.
+        # The invariant "confirmed => Idea present on disk" must hold for
+        # all producers, not just confirm_proposal.
+        from form import persist_rest
+        persist_rest.save(program)
     except Exception:
         _rollback_full(program, old, old_snap, succ_id)
         raise
