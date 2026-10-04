@@ -119,6 +119,8 @@ LIST = [
     "form.greek_test",
     "form.dell_matrix.program_strength",
     "form.mandell.core_ii_smoke",
+    # P3 R3.5 — resonance/harmony integration (Stream D)
+    "form.mandell.p3_r35_integration_proof",
 ]
 
 TIMEOUT_S = 900

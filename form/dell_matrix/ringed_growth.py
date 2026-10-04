@@ -10,6 +10,7 @@ import re
 
 from form.dell_matrix.nursery import Nursery
 from form.dell_matrix.plane import Plane
+from form.dell_matrix import faded_policy  # P3 R3.5.2: faded-state exclusion
 
 RINGS = ("Seed", "Token", "Body", "Lens", "Evolve")
 _TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
@@ -121,6 +122,20 @@ def _body_goal_boost(body: Dict[str, Any], label_a: str, label_b: str) -> float:
 
 
 def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
+    # P3 R3.5.2: faded-state exclusion (logic only; contract untouched).
+    # A faded unit contributes nothing to pair scoring: affinity is 0.0
+    # and RingedGrowth.run's gate maps 0.0 to "None" (pair skipped).
+    # Fail-closed: same dict shape, zeroed, no exception.
+    if faded_policy.is_faded(plane.units.get(a)) or faded_policy.is_faded(plane.units.get(b)):
+        return {
+            "affinity": 0.0,
+            "jaccard": 0.0,
+            "harmonic": 0.0,
+            "distance": 0.0,
+            "shared": 0.0,
+            "goal_boost": 0.0,
+            "body_boost": 0.0,
+        }
     ta, tb = _tokens_uid(plane, a), _tokens_uid(plane, b)
     jac = _jaccard(ta, tb)
     harm = _harmonic(ta, tb)

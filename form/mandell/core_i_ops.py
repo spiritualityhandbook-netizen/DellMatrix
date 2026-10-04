@@ -666,6 +666,31 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             # view; zero-match or all-quarantined yields an empty scope
             # (never silent fallback). On consumer failure, partial proposals
             # are removed and the receipt reports failure honestly.
+            # P3 R3.5.1 — SELECTION → GROWTH HANDOFF CONTRACT (honest).
+            #
+            # What flows across this boundary: routable_ids — a list of ID
+            # strings ONLY. The consumer (Program.grow_ideas →
+            # RingedGrowth.run over a read-only ScopedPlaneView restricted
+            # to exactly these IDs) enumerates pairs from those IDs and
+            # recomputes affinity independently: _affinity derives its
+            # harmonic/jaccard/spatial/goal/body terms from unit text,
+            # goals, and plane coordinates. Selection never passes scores.
+            #
+            # What does NOT flow: selection scores. The Relevance V2
+            # score (jaccard), coverage, exact_phrase, ordered, and
+            # learned_scores are echoed in receipts/last_nurture for
+            # audit only. Verified: no consumer in ringed_growth.py or
+            # nursery.py reads a selection score (neither module
+            # references one); the nursery Proposal records only the
+            # consumer-computed affinity and reason (e.g. "Solstice
+            # harm=0.43 goals=0.00").
+            #
+            # Why wiring scores is NOT justified: there is no consumer of
+            # such scores in growth, and _affinity already owns the
+            # jaccard term, computed deterministically from the same unit
+            # text. Injecting selection scores would create a second
+            # authority for that term. IDs-only stands unless a real
+            # consumer appears.
             try:
                 growth_result = program.grow_ideas(1, scope_ids=routable_ids)
             except Exception as e:
