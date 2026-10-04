@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Ringed Growth — sole public growth path. Body pulse first. Goals bias affinity."""
+"""Ringed Growth — sole public growth path. Body pulse first. Goals bias affinity.
+
+CONCEPT SEPARATION (GDP-001 Phase 3, 3.1.2): this module's ``_affinity`` is
+PAIR SCORING for growth — a deterministic composite that ranks idea pairs for
+ring proposals. ``form.dell_matrix.resonance.pulse`` is a DIFFERENT concept:
+pulse/DIFFUSION over the resonance graph (score accumulation across the
+enhance-scope graph over time). Keep both; do not merge pulse into affinity
+or affinity into pulse.
+"""
 
 from __future__ import annotations
 
@@ -78,13 +86,56 @@ def _jaccard(a: Set[str], b: Set[str]) -> float:
     return inter / union if union else 0.0
 
 
+def _tension(a: Set[str], b: Set[str]) -> float:
+    """Exclusive-token bridge tension between two token sets (raw, unnormalized).
+
+    tension = min(|a-b|, |b-a|) / (1 + |a ∪ b|)  — high when the pair shares
+    little but each side contributes complementary exclusive tokens.
+    """
+    if not a and not b:
+        return 0.0
+    only_a, only_b = a - b, b - a
+    bridge = min(len(only_a), len(only_b))
+    return bridge / (1.0 + len(a | b))
+
+
+def serendipity(a: Set[str], b: Set[str]) -> float:
+    """Serendipity (exposed tension term of _harmonic) — mathematical admission contract.
+
+    (1) Name: serendipity — normalized exclusive-token bridge tension.
+    (2) Inputs: a, b — two token sets (Set[str]); each token a lowercase
+        alphanumeric/underscore word token of length >= 3.
+    (3) Output: float in [0, 1). 0.0 when both sets empty or no complementary
+        exclusive tokens; approaches 1.0 as bridge tension grows.
+    (4) Formula: let t = min(|a-b|, |b-a|) / (1 + |a ∪ b|) (raw tension);
+        serendipity(a, b) = t / (1 + t).
+    (5) Invariants: symmetric — serendipity(a, b) == serendipity(b, a);
+        monotone non-decreasing in raw tension t; serendipity(a, a) == 0.0
+        (identical sets have no exclusive bridge); empty inputs -> 0.0.
+    (6) Failure behavior: empty sets -> 0.0 (fail-closed, no exception).
+        Never raises on well-typed inputs.
+    (7) Determinism: pure function of the two input sets; same sets ->
+        same output in every process (no randomness, no wall clock).
+    (8) Canonical owner: form/dell_matrix/ringed_growth.py::serendipity
+        (GDP-001 Phase 3, 3.1.3). Real caller: _harmonic (weight 0.40 into
+        _affinity) <- RingedGrowth.run <- Program.grow_ideas.
+    """
+    t = _tension(a, b)
+    return t / (1.0 + t)
+
+
 def _harmonic(a: Set[str], b: Set[str]) -> float:
+    """Jaccard-tension combiner (NOT musical harmony). Documented, name kept
+    for caller stability (GDP-001 Phase 3, 3.1.3: name unchanged by rule).
+
+    Returns ~1.0 for identical sets, ~0.0 for disjoint sets with no
+    complementary exclusive bridge. Internally delegates the tension subterm
+    to serendipity/_tension; formula unchanged since introduction.
+    """
     if not a and not b:
         return 0.0
     jac = _jaccard(a, b)
-    only_a, only_b = a - b, b - a
-    bridge = min(len(only_a), len(only_b))
-    tension = bridge / (1.0 + len(a | b))
+    tension = _tension(a, b)
     if jac <= 0 and tension <= 0:
         return 0.0
     return (2 * jac * (jac + tension)) / (2 * jac + tension + 1e-9)
@@ -121,6 +172,46 @@ def _body_goal_boost(body: Dict[str, Any], label_a: str, label_b: str) -> float:
 
 
 def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
+    """Pair affinity for growth — mathematical admission contract (GDP-001 Phase 3, 3.1.1).
+
+    (1) Name: _affinity — deterministic composite pair score driving ring
+        proposals (Solstice / Equinox / Standstill gates).
+    (2) Inputs: plane (Plane) — live matrix plane; a, b (str) — idea unit IDs
+        present in plane.units; body (Optional[Dict]) — body-pulse snapshot
+        (from _body_pulse_safe); when None the body_boost term is 0.0.
+    (3) Output: dict with keys affinity, jaccard, harmonic, distance, shared,
+        goal_boost, body_boost. Types: all float. Ranges: affinity >= 0.0
+        (see invariants for the upper bound); jaccard, harmonic in [0,1];
+        distance >= 0.0 (99.0 sentinel when a unit is missing); shared >= 0.0;
+        goal_boost, body_boost >= 0.0.
+    (4) Formula: affinity = 0.40*harmonic + 0.22*jaccard + 0.13*spatial
+        + 0.13*in_scope + goal_boost + body_boost, where
+        harmonic = _harmonic(token_sets) (Jaccard-tension combiner),
+        jaccard = |ta ∩ tb| / |ta ∪ tb|,
+        spatial = 1 / (1 + euclidean_distance(a, b)),
+        in_scope = 1.0 if b in enhance_scope(a) else 0.2,
+        goal_boost = 0.12 * jaccard(goal token sets) when both ideas have
+        goals (0.05 when exactly one has goals, else 0.0),
+        body_boost = min(0.15, 0.05 * missing-organ hits in labels) when a
+        body snapshot with missing organs is supplied, else 0.0.
+    (5) Invariants: all terms non-negative, so affinity >= 0.0 always.
+        0.40+0.22+0.13+0.13 = 0.88 <= 1.0 and goal_boost <= 0.12, therefore
+        affinity <= 1.0 whenever body_boost == 0.0. With body_boost active
+        (<= 0.15), affinity <= 1.15 in the theoretical corner case of
+        identical co-located in-scope ideas naming missing organs.
+        harmonic <= 1.0, jaccard <= 1.0, spatial <= 1.0 (equality at
+        distance 0). Not symmetric in the in_scope term (uses enhance_scope(a)).
+    (6) Failure behavior: missing units -> returns the full dict with
+        affinity 0.0, jaccard 0.0, harmonic 0.0, distance 99.0, shared 0.0,
+        goal_boost 0.0, body_boost 0.0 (fail-closed, no exception).
+    (7) Determinism: pure function of (plane state, a, b, body). Same inputs
+        -> identical dict in every process (no RNG, no wall clock, no hash()
+        of str). NOTE: token order plays no role (set-based); dict key order
+        is fixed by construction.
+    (8) Canonical owner: form/dell_matrix/ringed_growth.py::_affinity (live
+        authority). Real caller: RingedGrowth.run() <- Program.grow_ideas
+        <- REPL growth commands.
+    """
     ta, tb = _tokens_uid(plane, a), _tokens_uid(plane, b)
     jac = _jaccard(ta, tb)
     harm = _harmonic(ta, tb)
@@ -201,6 +292,12 @@ class RingedGrowth:
     nursery: Nursery
     max_new: int = 10
     max_evolved: int = 8
+    # GDP-001 Phase 3, 3.1.4: deterministic growth-ID seed. Nursery proposal
+    # IDs are _slug(label, seed) — a stable digest of (seed, label), so the
+    # same seed + same label sequence -> the same IDs in every process.
+    # Default 0 preserves a deterministic (not random) ID stream; callers
+    # that need distinct ID namespaces pass their own seed.
+    seed: int = 0
 
     def run(self, plane: Plane, cycles: int = 1) -> Dict[str, Any]:
         report: List[Dict[str, Any]] = []
@@ -241,6 +338,7 @@ class RingedGrowth:
                             parents=[],
                             affinity=0.5,
                             reason=f"body_pulse vital_missing={organ}",
+                            seed=self.seed,
                         )
                         total_evo += 1
 
@@ -305,6 +403,7 @@ class RingedGrowth:
                         parents=[a, b],
                         affinity=aff["affinity"],
                         reason=f"Solstice harm={aff['harmonic']:.2f} goals={aff.get('goal_boost', 0):.2f}",
+                        seed=self.seed,
                     )
                     new_this += 1
                     total_new += 1
@@ -332,6 +431,7 @@ class RingedGrowth:
                         parents=[primary],
                         affinity=aff["affinity"],
                         reason=f"{gate} harm={aff['harmonic']:.2f} goals={aff.get('goal_boost', 0):.2f}",
+                        seed=self.seed,
                     )
                     evo_this += 1
                     total_evo += 1

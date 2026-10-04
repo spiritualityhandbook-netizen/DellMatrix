@@ -8,6 +8,14 @@ Verita — structural truth checks.
 
 Not paranormal. Structural signal only.
 Residue marks weak solos and rejected pairs.
+
+RESONANCE vs VERITA FIREWALL (GDP-001 Phase 3, 3.1.5): Verita = solo
+integrity + pair coherence scoring (vesica overlap). Resonance
+(form.dell_matrix.resonance) = pulse/diffusion over the resonance graph +
+pair affinity for growth. They are PARALLEL mechanisms with distinct
+contracts. Merging them is prohibited (established architectural decision:
+Verita/Smith ancestry must not be merged with other mechanisms merely for
+sharing imagery or a name).
 """
 from __future__ import annotations
 
