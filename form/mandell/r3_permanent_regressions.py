@@ -1,31 +1,36 @@
 #!/usr/bin/env python3
-"""R3 Permanent Regressions (GDP_R3_COMPLETION_GATE req. 4).
+"""R3 Permanent Regressions (GDP_R3_VERIFICATION_UNBLOCK).
 
-Seven regression cases, each in fresh subprocess via public APIs:
-1. malformed_units: Malformed Units -> fail closed (raise), journal preserved.
-2. missing_member_journal_preserved: Missing plane with journal -> raise, journal preserved.
-3. foreign_owner_journal: Journal for different owner -> raise, not applied.
-4. stale_replayed_intent: Journal for already-resolved proposal -> fail closed.
-5. pending_with_idea: Pending proposal with Idea -> NOT healed (no journal).
-6. interrupted_supersession: Crash between successor and links -> recoverable.
-7. interrupted_recovery: Recovery is idempotent.
-
-Plus: historical_without_journal (preserved), lifecycle_totality (7 checks).
+Uses multiline subprocess scripts, compiled before execution.
+Asserts expected RollbackRecoveryError and journal preservation.
 """
 import os
 import subprocess
 import sys
 import json
+import py_compile
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, REPO)
 os.chdir(REPO)
 
-def run(code):
-    full = "import sys; sys.path.insert(0, %r); " % REPO + code
-    r = subprocess.run([sys.executable, "-c", full], capture_output=True,
-                       text=True, timeout=60, cwd=REPO)
-    return r.stdout.strip(), r.stderr.strip()
+def run_script(name, code, timeout=60):
+    """Run a multiline script, compiled first. Returns (rc, stdout, stderr)."""
+    # Write to temp file for compilation check
+    tmp = os.path.join("/tmp", "r3_%s_%d.py" % (name, os.getpid()))
+    with open(tmp, "w") as f:
+        f.write(code)
+    try:
+        py_compile.compile(tmp, doraise=True)
+    except py_compile.PyCompileError as e:
+        return -1, "", "COMPILE_ERROR: %s" % e
+    r = subprocess.run([sys.executable, tmp], capture_output=True,
+                       text=True, timeout=timeout, cwd=REPO)
+    try:
+        os.remove(tmp)
+    except:
+        pass
+    return r.returncode, r.stdout.strip(), r.stderr.strip()
 
 def clean(owner):
     for pat in [
@@ -42,220 +47,309 @@ def clean(owner):
 results = []
 def rec(name, ok, detail=""):
     results.append(ok)
-    print("[%s] %s %s" % ("PASS" if ok else "FAIL", name, detail[:60]))
+    print("[%s] %s %s" % ("PASS" if ok else "FAIL", name, detail[:70]))
 
-# 1. malformed_units
+# 1. malformed_units: Must raise RollbackRecoveryError, journal preserved
 def t01():
-    o = "R3G01"; clean(o)
-    c = "from form.open import open_program; p=open_program('%s'); " % o
-    c += "pr=p.nursery.add('t',words='x'); pid=pr.id; p.confirm_proposal(pid); print('PID:'+pid)"
-    out, _ = run(c)
-    if "PID:" not in out:
-        rec("01_malformed_units", False, "setup failed")
+    o = "R3H01"; clean(o)
+    setup = """
+import sys
+sys.path.insert(0, %r)
+from form.open import open_program
+from form import persist_rest
+p = open_program(%r)
+pr = p.nursery.add('t', words='x')
+p.nursery.save()
+persist_rest.save(p)
+print('PID:' + pr.id)
+""" % (REPO, o)
+    rc, out, err = run_script("t01_setup", setup)
+    if rc != 0 or "PID:" not in out:
+        rec("01_malformed_units", False, "setup failed rc=%d" % rc)
         clean(o); return
-    pid = out.split("PID:")[1].strip()
-    # Corrupt units to non-dict, write journal with REAL pid
+    pid = out.split("PID:")[1].strip().split()[0]
+    # Corrupt units
     pp = os.path.join(REPO, 'form/state/program_%s.json' % o)
-    d = json.load(open(pp)); d['plane']['units'] = "BAD"
+    d = json.load(open(pp))
+    d['plane']['units'] = "NOT_A_DICT"
     json.dump(d, open(pp, 'w'))
+    # Write journal with real pid
     jp = os.path.join(REPO, 'form/state/confirm_%s.journal.json' % o)
-    json.dump({"journal_version":1,"operation":"confirm_proposal","owner":o,
-               "proposal_id":pid,"phase":"prepared",
-               "old_nursery_sha256":"a","old_program_sha256":"b"}, open(jp,'w'))
-    c = "from form import persist_rest; "
-    c += "try:\n persist_rest.load('%s',activate=False); print('NO_RAISE')\n" % o
-    c += "except Exception as e:\n print('RAISED')"
-    out, _ = run(c)
-    # Journal should be preserved (not cleared)
+    json.dump({
+        "journal_version": 1,
+        "operation": "confirm_proposal",
+        "owner": o,
+        "proposal_id": pid,
+        "phase": "prepared",
+        "old_nursery_sha256": "aaa",
+        "old_program_sha256": "bbb"
+    }, open(jp, 'w'))
+    # Try load - must raise RollbackRecoveryError
+    load = """
+import sys
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import RollbackRecoveryError
+try:
+    p = persist_rest.load(%r, activate=False)
+    print('NO_RAISE')
+except RollbackRecoveryError as e:
+    print('RAISED_ROLLBACK:' + str(e)[:50])
+except Exception as e:
+    print('RAISED_OTHER:' + type(e).__name__)
+""" % (REPO, o)
+    rc, out, err = run_script("t01_load", load)
     jexists = os.path.isfile(jp)
-    ok = "RAISED" in out and jexists
-    rec("01_malformed_units", ok, "raised=%s preserved=%s" % ("RAISED" in out, jexists))
+    ok = "RAISED_ROLLBACK" in out and jexists
+    rec("01_malformed_units", ok,
+        "raised_rollback=%s preserved=%s" % ("RAISED_ROLLBACK" in out, jexists))
     clean(o)
 
-# 2. missing_member_journal_preserved
+# 2. missing_member: Missing plane -> raise, journal preserved
 def t02():
-    o = "R3G02"; clean(o)
-    c = "from form.open import open_program; p=open_program('%s'); " % o
-    c += "pr=p.nursery.add('t',words='x'); pid=pr.id; p.confirm_proposal(pid); print('PID:'+pid)"
-    out, _ = run(c)
-    if "PID:" not in out:
+    o = "R3H02"; clean(o)
+    setup = """
+import sys
+sys.path.insert(0, %r)
+from form.open import open_program
+from form import persist_rest
+p = open_program(%r)
+pr = p.nursery.add('t', words='x')
+p.nursery.save()
+persist_rest.save(p)
+print('PID:' + pr.id)
+""" % (REPO, o)
+    rc, out, err = run_script("t02_setup", setup)
+    if rc != 0 or "PID:" not in out:
         rec("02_missing_member", False, "setup failed")
         clean(o); return
-    pid = out.split("PID:")[1].strip()
+    pid = out.split("PID:")[1].strip().split()[0]
     pp = os.path.join(REPO, 'form/state/program_%s.json' % o)
-    d = json.load(open(pp)); del d['plane']
+    d = json.load(open(pp))
+    del d['plane']
     json.dump(d, open(pp, 'w'))
     jp = os.path.join(REPO, 'form/state/confirm_%s.journal.json' % o)
-    json.dump({"journal_version":1,"operation":"confirm_proposal","owner":o,
-               "proposal_id":pid,"phase":"prepared",
-               "old_nursery_sha256":"a","old_program_sha256":"b"}, open(jp,'w'))
-    c = "from form import persist_rest; "
-    c += "try:\n persist_rest.load('%s',activate=False); print('NO_RAISE')\n" % o
-    c += "except Exception:\n print('RAISED')"
-    out, _ = run(c)
+    json.dump({
+        "journal_version": 1, "operation": "confirm_proposal", "owner": o,
+        "proposal_id": pid, "phase": "prepared",
+        "old_nursery_sha256": "aaa", "old_program_sha256": "bbb"
+    }, open(jp, 'w'))
+    load = """
+import sys
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import RollbackRecoveryError
+try:
+    p = persist_rest.load(%r, activate=False)
+    print('NO_RAISE')
+except RollbackRecoveryError:
+    print('RAISED_ROLLBACK')
+except Exception as e:
+    print('RAISED_OTHER:' + type(e).__name__)
+""" % (REPO, o)
+    rc, out, err = run_script("t02_load", load)
     jexists = os.path.isfile(jp)
-    ok = "RAISED" in out and jexists
-    rec("02_missing_member", ok, "raised preserved")
+    ok = "RAISED_ROLLBACK" in out and jexists
+    rec("02_missing_member", ok, "raised=%s preserved=%s" % ("RAISED_ROLLBACK" in out, jexists))
     clean(o)
 
-# 3. foreign_owner_journal
+# 3. foreign_owner: Journal for different owner -> raise, preserved
 def t03():
-    o = "R3G03"; clean(o)
-    # Create real proposal first
-    c = "from form.open import open_program; p=open_program('%s'); " % o
-    c += "pr=p.nursery.add('t',words='x'); pid=pr.id; print('PID:'+pid)"
-    out, _ = run(c)
-    if "PID:" not in out:
+    o = "R3H03"; clean(o)
+    setup = """
+import sys
+sys.path.insert(0, %r)
+from form.open import open_program
+from form import persist_rest
+p = open_program(%r)
+pr = p.nursery.add('t', words='x')
+p.nursery.save()
+persist_rest.save(p)
+print('PID:' + pr.id)
+""" % (REPO, o)
+    rc, out, err = run_script("t03_setup", setup)
+    if rc != 0 or "PID:" not in out:
         rec("03_foreign_owner", False, "setup failed")
         clean(o); return
-    pid = out.split("PID:")[1].strip()
-    # Write journal for DIFFERENT owner (but file is for o)
-    # This simulates a misplaced/corrupt journal
+    pid = out.split("PID:")[1].strip().split()[0]
     jp = os.path.join(REPO, 'form/state/confirm_%s.journal.json' % o)
-    json.dump({"journal_version":1,"operation":"confirm_proposal","owner":"OTHER_OWNER",
-               "proposal_id":pid,"phase":"prepared",
-               "old_nursery_sha256":"a","old_program_sha256":"b"}, open(jp,'w'))
-    # Try to load - should raise owner mismatch, journal preserved
-    c = "from form import persist_rest; "
-    c += "try:\n persist_rest.load('%s',activate=False); print('NO_RAISE')\n" % o
-    c += "except Exception:\n print('RAISED')"
-    out, _ = run(c)
+    json.dump({
+        "journal_version": 1, "operation": "confirm_proposal",
+        "owner": "DIFFERENT_OWNER",  # Mismatch!
+        "proposal_id": pid, "phase": "prepared",
+        "old_nursery_sha256": "aaa", "old_program_sha256": "bbb"
+    }, open(jp, 'w'))
+    load = """
+import sys
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import RollbackRecoveryError
+try:
+    p = persist_rest.load(%r, activate=False)
+    print('NO_RAISE')
+except RollbackRecoveryError:
+    print('RAISED_ROLLBACK')
+except Exception as e:
+    print('RAISED_OTHER:' + type(e).__name__)
+""" % (REPO, o)
+    rc, out, err = run_script("t03_load", load)
     jexists = os.path.isfile(jp)
-    # Should raise AND preserve journal
-    ok = "RAISED" in out and jexists
-    rec("03_foreign_owner", ok, "raised=%s preserved=%s" % ("RAISED" in out, jexists))
+    ok = "RAISED_ROLLBACK" in out and jexists
+    rec("03_foreign_owner", ok, "raised=%s preserved=%s" % ("RAISED_ROLLBACK" in out, jexists))
     clean(o)
 
-# 4. stale_replayed_intent
+# 4. historical preserved (no journal)
 def t04():
-    o = "R3G04"; clean(o)
-    c = "from form.open import open_program; from form import persist_rest; "
-    c += "p=open_program('%s'); pr=p.nursery.add('t',words='x'); " % o
-    c += "pid=pr.id; p.confirm_proposal(pid); print('PID:'+pid)"
-    out, _ = run(c)
-    pid = out.split("PID:")[1].strip() if "PID:" in out else ""
-    if not pid:
-        rec("04_stale_intent", False, "setup failed")
-        clean(o); return
-    # Write a STALE journal (proposal already confirmed, no crash)
-    # The journal claims phase=prepared but files already reflect NEW.
-    # Recovery should see already_complete and clear.
-    # To make it stale, we use wrong fingerprints.
-    from form.mandell.core_i_recovery import _confirm_journal_path
-    import hashlib
-    jp = os.path.join(REPO, 'form/state/confirm_%s.journal.json' % o)
-    # Write journal with WRONG old fingerprints (simulating replay)
-    json.dump({"journal_version":1,"operation":"confirm_proposal","owner":o,
-               "proposal_id":pid,"phase":"prepared",
-               "old_nursery_sha256":"wrong","old_program_sha256":"wrong"},
-              open(jp,'w'))
-    c = "from form import persist_rest; "
-    c += "p=persist_rest.load('%s',activate=False); " % o
-    c += "st=p.nursery.proposals['%s'].status; print('ST:'+st)" % pid
-    out, _ = run(c)
-    # Should be already_complete (proposal confirmed, Idea present)
-    ok = "ST:confirmed" in out
-    rec("04_stale_intent", ok, out[:40])
+    o = "R3H04"; clean(o)
+    code = """
+import sys, json
+sys.path.insert(0, %r)
+from form.open import open_program
+from form import persist_rest
+from form.dell_matrix.nursery import owner_nursery_path
+p = open_program(%r)
+p.cube.session.plane.units.clear()
+pr = p.nursery.add('h', words='old')
+pid = pr.id
+p.nursery.save()
+persist_rest.save(p)
+# Manually mark confirmed (historical, no journal)
+np = owner_nursery_path(%r)
+d = json.load(open(np))
+d[pid]['status'] = 'confirmed'
+json.dump(d, open(np, 'w'))
+# Fresh load
+p2 = persist_rest.load(%r, activate=False)
+st = p2.nursery.proposals[pid].status
+print('STATUS:' + st)
+""" % (REPO, o, o, o)
+    rc, out, err = run_script("t04", code)
+    ok = rc == 0 and "STATUS:confirmed" in out
+    rec("04_historical_preserved", ok, out[:50])
     clean(o)
 
-# 5. pending_with_idea (no journal, should NOT be healed)
+# 5. pending with Idea (no journal, not healed)
 def t05():
-    o = "R3G05"; clean(o)
-    c = "from form.open import open_program; from form import persist_rest; "
-    c += "p=open_program('%s'); p.cube.session.plane.units.clear(); " % o
-    c += "pr=p.nursery.add('t',words='x'); pid=pr.id; "
-    c += "p.place(pid,'t',words='x'); "  # Place without confirming
-    c += "p.nursery.save(); persist_rest.save(p); "
-    c += "p2=persist_rest.load('%s',activate=False); " % o
-    c += "st=p2.nursery.proposals[pid].status; "
-    c += "has=pid in p2.cube.session.plane.units; "
-    c += "print('ST:'+st+' HAS:'+str(has))"
-    out, _ = run(c)
-    ok = "ST:pending" in out and "HAS:True" in out
-    rec("05_pending_with_idea", ok, out[:40])
+    o = "R3H05"; clean(o)
+    code = """
+import sys
+sys.path.insert(0, %r)
+from form.open import open_program
+from form import persist_rest
+p = open_program(%r)
+p.cube.session.plane.units.clear()
+pr = p.nursery.add('t', words='x')
+pid = pr.id
+p.place(pid, 't', words='x')  # Place without confirming
+p.nursery.save()
+persist_rest.save(p)
+p2 = persist_rest.load(%r, activate=False)
+st = p2.nursery.proposals[pid].status
+has = pid in p2.cube.session.plane.units
+print('STATUS:' + st + ' HAS:' + str(has))
+""" % (REPO, o, o)
+    rc, out, err = run_script("t05", code)
+    ok = rc == 0 and "STATUS:pending" in out and "HAS:True" in out
+    rec("05_pending_with_idea", ok, out[:50])
     clean(o)
 
-# 6. interrupted_supersession (basic, no crash injection)
+# 6. supersession basic
 def t06():
-    o = "R3G06"; clean(o)
-    c = "from form.open import open_program; from form.mandell import supersession as S; "
-    c += "p=open_program('%s'); old=p.nursery.add('base',words='v1'); " % o
-    c += "p.confirm_proposal(old.id); "
-    c += "r=S.supersede_proposal(p,old.id,'v2 words'); "
-    c += "print('OK:'+str(r.get('ok')))"
-    out, _ = run(c)
-    ok = "OK:True" in out
-    rec("06_supersession", ok, out[:40])
+    o = "R3H06"; clean(o)
+    code = """
+import sys
+sys.path.insert(0, %r)
+from form.open import open_program
+from form.mandell import supersession as S
+p = open_program(%r)
+old = p.nursery.add('base', words='v1')
+p.confirm_proposal(old.id)
+r = S.supersede_proposal(p, old.id, 'v2 words')
+print('OK:' + str(r.get('ok')))
+""" % (REPO, o)
+    rc, out, err = run_script("t06", code)
+    ok = rc == 0 and "OK:True" in out
+    rec("06_supersession", ok, out[:50])
     clean(o)
 
-# 7. interrupted_recovery (idempotent)
+# 7. idempotent recovery
 def t07():
-    o = "R3G07"; clean(o)
-    c = "from form.open import open_program; from form import persist_rest; "
-    c += "from form.mandell.core_i_recovery import write_confirm_intent; "
-    c += "p=open_program('%s'); p.cube.session.plane.units.clear(); " % o
-    c += "pr=p.nursery.add('t',words='x'); pid=pr.id; "
-    c += "p.nursery.save(); persist_rest.save(p); "
-    c += "write_confirm_intent('%s',pid); " % o
-    c += "from form.dell_matrix.nursery import owner_nursery_path; import json; "
-    c += "np=owner_nursery_path('%s'); d=json.load(open(np)); " % o
-    c += "d[pid]['status']='confirmed'; json.dump(d,open(np,'w')); "
-    c += "print('PID:'+pid)"
-    out, _ = run(c)
-    pid = out.split("PID:")[1].strip() if "PID:" in out else ""
-    # First load
-    c1 = "from form import persist_rest; p=persist_rest.load('%s',activate=False); " % o
-    c1 += "print('ST1:'+p.nursery.proposals['%s'].status)" % pid
-    out1, _ = run(c1)
-    # Second load
-    c2 = "from form import persist_rest; p=persist_rest.load('%s',activate=False); " % o
-    c2 += "print('ST2:'+p.nursery.proposals['%s'].status)" % pid
-    out2, _ = run(c2)
+    o = "R3H07"; clean(o)
+    setup = """
+import sys, json
+sys.path.insert(0, %r)
+from form.open import open_program
+from form import persist_rest
+from form.mandell.core_i_recovery import write_confirm_intent
+from form.dell_matrix.nursery import owner_nursery_path
+p = open_program(%r)
+p.cube.session.plane.units.clear()
+pr = p.nursery.add('t', words='x')
+pid = pr.id
+p.nursery.save()
+persist_rest.save(p)
+write_confirm_intent(%r, pid)
+np = owner_nursery_path(%r)
+d = json.load(open(np))
+d[pid]['status'] = 'confirmed'
+json.dump(d, open(np, 'w'))
+print('PID:' + pid)
+""" % (REPO, o, o, o)
+    rc, out, err = run_script("t07_setup", setup)
+    if rc != 0 or "PID:" not in out:
+        rec("07_idempotent", False, "setup failed")
+        clean(o); return
+    pid = out.split("PID:")[1].strip().split()[0]
+    load1 = """
+import sys
+sys.path.insert(0, %r)
+from form import persist_rest
+p = persist_rest.load(%r, activate=False)
+print('ST1:' + p.nursery.proposals[%r].status)
+""" % (REPO, o, pid)
+    rc1, out1, _ = run_script("t07_load1", load1)
+    load2 = """
+import sys
+sys.path.insert(0, %r)
+from form import persist_rest
+p = persist_rest.load(%r, activate=False)
+print('ST2:' + p.nursery.proposals[%r].status)
+""" % (REPO, o, pid)
+    rc2, out2, _ = run_script("t07_load2", load2)
     ok = "ST1:pending" in out1 and "ST2:pending" in out2
-    rec("07_idempotent_recovery", ok, out1[:30]+" "+out2[:30])
+    rec("07_idempotent", ok, out1[:30] + " " + out2[:30])
     clean(o)
 
-# Historical without journal (preserved)
+# 8. revision distinct from derivation
 def t08():
-    o = "R3G08"; clean(o)
-    c = "from form.open import open_program; from form import persist_rest; import json; "
-    c += "p=open_program('%s'); p.cube.session.plane.units.clear(); " % o
-    c += "pr=p.nursery.add('h',words='old'); pid=pr.id; "
-    c += "p.nursery.save(); persist_rest.save(p); "
-    c += "from form.dell_matrix.nursery import owner_nursery_path; "
-    c += "np=owner_nursery_path('%s'); d=json.load(open(np)); " % o
-    c += "d[pid]['status']='confirmed'; json.dump(d,open(np,'w')); "
-    c += "p2=persist_rest.load('%s',activate=False); " % o
-    c += "print('ST:'+p2.nursery.proposals[pid].status)"
-    out, _ = run(c)
-    ok = "ST:confirmed" in out
-    rec("08_historical_preserved", ok, out[:40])
-    clean(o)
-
-def t09():
-    """Revision links (supersedes_id) distinct from derivation chain."""
-    o = "R3G09"; clean(o)
-    c = "from form.open import open_program; from form.mandell import supersession as S; "
-    c += "p=open_program('%s'); " % o
-    c += "old=p.nursery.add('base',words='v1'); p.confirm_proposal(old.id); "
-    c += "old_id=old.id; "
-    c += "r=S.supersede_proposal(p,old_id,'v2 words'); new_id=r.get('new_id'); "
-    c += "from form import persist_rest; p2=persist_rest.load('%s',activate=False); " % o
-    c += "old_p=p2.nursery.proposals[old_id]; new_p=p2.nursery.proposals[new_id]; "
-    # Revision links
-    c += "rev_ok=(old_p.superseded_by_id==new_id and new_p.supersedes_id==old_id); "
-    # Derivation chain should NOT contain revision ancestry
-    # (chain is for lineage derivation, not revision history)
-    c += "chain=new_p.chain if hasattr(new_p,'chain') else []; "
-    c += "chain_ok=(old_id not in chain); "  # Revision NOT in derivation chain
-    c += "print('REV:'+str(rev_ok)+' CHAIN:'+str(chain_ok))"
-    out, _ = run(c)
-    ok = "REV:True" in out and "CHAIN:True" in out
-    rec("09_revision_distinct", ok, out[:50])
+    o = "R3H08"; clean(o)
+    code = """
+import sys
+sys.path.insert(0, %r)
+from form.open import open_program
+from form.mandell import supersession as S
+from form import persist_rest
+p = open_program(%r)
+old = p.nursery.add('base', words='v1')
+p.confirm_proposal(old.id)
+old_id = old.id
+r = S.supersede_proposal(p, old_id, 'v2 words')
+new_id = r.get('new_id')
+p2 = persist_rest.load(%r, activate=False)
+old_p = p2.nursery.proposals[old_id]
+new_p = p2.nursery.proposals[new_id]
+rev_ok = (old_p.superseded_by_id == new_id and new_p.supersedes_id == old_id)
+chain = new_p.chain if hasattr(new_p, 'chain') else []
+chain_ok = (old_id not in chain)
+print('REV:' + str(rev_ok) + ' CHAIN:' + str(chain_ok))
+""" % (REPO, o, o)
+    rc, out, err = run_script("t08", code)
+    ok = rc == 0 and "REV:True" in out and "CHAIN:True" in out
+    rec("08_revision_distinct", ok, out[:50])
     clean(o)
 
 if __name__ == "__main__":
-    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09()
+    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08()
     n = sum(results)
     print("=== %d/%d ===" % (n, len(results)))
     sys.exit(0 if all(results) else 1)

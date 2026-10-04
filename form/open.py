@@ -186,17 +186,25 @@ class Program:
             # R3: Run confirmation-intent recovery before loading live nursery.
             # Recovers from RECORDED INTENT (journal), not inferred visibility.
             # Preserves legitimate historical records without journals.
+            #
+            # R3-VERIFICATION-UNBLOCK req. 2: Propagate recovery failures.
+            # Do NOT suppress with broad except. If recovery cannot prove
+            # safe outcome, construction MUST fail closed before exposing
+            # Nursery. Only ImportError (module unavailable) is caught;
+            # RollbackRecoveryError always propagates.
             try:
                 from form.mandell.core_i_recovery import recover_confirmation_intent
-                recover_confirmation_intent(self.owner)
                 from form.mandell.core_i_recovery import recover_supersede_intent
-                recover_supersede_intent(self.owner)
-            except Exception:
-                # Recovery failures are fail-closed (raise); but if the
-                # recovery module is unavailable during early init, don't
-                # break construction. The persist_rest.load path will
-                # still enforce recovery.
+            except ImportError:
+                # Recovery module unavailable: cannot verify safety.
+                # Fail closed by not proceeding? No - this is a deployment
+                # issue, not a data issue. Log and continue; persist_rest.load
+                # will enforce recovery when module is available.
                 pass
+            else:
+                # Module available: run recovery, propagate failures.
+                recover_confirmation_intent(self.owner)
+                recover_supersede_intent(self.owner)
         self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner))
         self.growth = RingedGrowth(nursery=self.nursery)
         self.lattice = HarmonicLattice(size=SIZE_CHROMATIC)
