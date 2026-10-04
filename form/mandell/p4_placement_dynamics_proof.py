@@ -211,13 +211,14 @@ def t6_convergence():
     """
     owner = "P4PD6"
     try:
+        from form.dell_matrix.spatial_authority import MAX_SETTLE_TICKS
         p = _prog(owner)
         for i in range(3):
             p.place(f"s{i}", f"settle {i}", x=10.0 + i * 2.4, y=0.0)
-        res = p.spatial_settle(max_ticks=200)
+        res = p.spatial_settle(max_ticks=MAX_SETTLE_TICKS)
         rec("dyn::converged", res.get("converged") is True
             and res.get("honestly_non_convergent") is False
-            and res.get("ticks_run", 999) <= 200,
+            and res.get("ticks_run", 999) <= MAX_SETTLE_TICKS,
             f"ticks={res.get('ticks_run')} max_disp={res.get('max_displacement'):.6f}")
     finally:
         _clean(owner)
