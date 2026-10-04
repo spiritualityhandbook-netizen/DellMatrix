@@ -681,7 +681,9 @@ def smoke():
     n = sum(results)
     total = len(results)
     print("%d/%d" % (n, total))
-    return n == total and total == len(TEST_CASES)
+    # F8: t15 records an additional harness control result, so total may
+    # exceed len(TEST_CASES). The requirement is that all recorded tests pass.
+    return n == total and total >= len(TEST_CASES)
 
 
 def t12():
