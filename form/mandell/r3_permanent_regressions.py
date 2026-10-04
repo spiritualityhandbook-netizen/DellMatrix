@@ -513,14 +513,22 @@ def smoke():
     
     Returns True if all tests pass, False otherwise.
     Resets per-run results.
+    Ensures cleanup even if tests crash (for --twice isolation).
     """
     global results
     results = []
+    # Clean up any leftover state from previous runs (for --twice)
+    for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11"]:
+        clean(o)
     try:
         t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11()
     except Exception as e:
         print("SMOKE EXCEPTION: %s" % e)
         return False
+    finally:
+        # Ensure cleanup even on crash (for --twice second pass)
+        for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11"]:
+            clean(o)
     n = sum(results)
     total = len(results)
     print("%d/%d" % (n, total))
