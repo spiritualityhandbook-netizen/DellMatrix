@@ -250,3 +250,21 @@ Per Overseer directive 2026-10-04: leave untouched, record as inactive.
 - `~/workspace/dellmatrix-fresh-main6` — modified `core_i_ops.py` (+56/-8) (DCC-era scratch)
 
 Neither is referenced by any active directive. Excluded from Phase-3 evidence.
+
+---
+
+## Security Evaluation Status
+
+**EVALUATION_UNAVAILABLE_QUOTA** — GitHub Copilot code scanning unavailable.
+
+Evidence: "Code scanning AI findings on PR #74" workflow (run 37199530444,
+2026-10-04 11:40 UTC) failed with SessionModelError 402 — GitHub Copilot
+monthly quota exceeded. Quota exhausted between ~07:55 and 11:40 UTC
+(PR #73's scan succeeded earlier the same day).
+
+This is a tool/external quota exhaustion, NOT a code defect. It is
+non-blocking for required CI (build 3.10, build 3.11, smoke all GREEN).
+No AI review findings will be produced for PR #74 until quota resets.
+
+Recorded as EVALUATION_UNAVAILABLE_QUOTA per Overseer directive 2026-10-04.
+Never record as PASS. Kept separate from required CI status.
