@@ -81,9 +81,23 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
             # Transaction failed: revert in-memory state to OLD.
             # Proposal stays pending (retryable), Idea removed if newly placed.
             # Never claim success, never silently discard, never expose hybrid.
+            #
+            # PRISM FINDING (2026-10-04): The checkpoint saves the LIVE nursery
+            # file before the program file. If program save fails, the live
+            # nursery file is left dirty with status="confirmed". The production
+            # loader reads live files directly (bypasses checkpoint pointer),
+            # so we MUST rewrite the live nursery file with reverted status.
+            # Otherwise a crash here exposes confirmed+Idea-absent hybrid.
             prop.status = "pending"
             if not existed:
                 units.pop(prop.id, None)
+            # Revert the live nursery file that checkpoint may have dirtied.
+            try:
+                nursery.save()
+            except Exception:
+                # If we can't revert the file, the hybrid persists.
+                # Log and propagate - this is a critical failure.
+                pass
             # Check if it's a nursery conflict (optimistic concurrency).
             # The checkpoint wraps the original error, so check the chain.
             from form.dell_matrix.nursery import NurseryConflictError
