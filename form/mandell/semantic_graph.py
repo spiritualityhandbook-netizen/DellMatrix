@@ -612,6 +612,11 @@ class SemanticGraph:
             self._fold()
             raise
         self.save()
+        # Success: clear any journal written by after() (e.g.,
+        # _propagate_structure). The journal is for crash recovery;
+        # on clean success it must not remain.
+        if self._journal_depth == 0:
+            self._clear_journal()
         return entries
 
     def _new_entry(self, type: RelationshipType, source_id: str, target_id: str,
@@ -1530,15 +1535,15 @@ class SemanticGraph:
                     }
                     raise
         finally:
+            # Do NOT save here: _propagate_structure is always called from
+            # _append's after() callback, and _append owns persistence.
+            # Saving here would persist uncommitted entries on the failure
+            # path (before _append rolls back). The FAILED ledger is
+            # persisted by _append's save on success; on rollback the
+            # operation failed and the caller sees the exception.
+            # The journal is left for the outer _append to clear on success,
+            # or for replay on crash.
             self._journal_depth -= 1
-            try:
-                self.save()
-            except Exception:
-                pass
-            if self._journal_depth == 0 and not self._replaying:
-                import sys
-                if sys.exc_info()[0] is None:
-                    self._clear_journal()
 
     def _recompute_dependent(self, edge: RelationshipEntry,
                               live_idea: Optional[Idea] = None) -> None:
