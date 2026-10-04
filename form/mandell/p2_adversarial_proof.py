@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 
-REPO_ROOT = os.path.expanduser("~/workspace/dellmatrix-gdp-phase1")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BASE = os.path.join(REPO_ROOT, "form", "state")
 OWNER = "P2ADV"
 PREAMBLE = "import os, sys\nsys.path.insert(0, %r)\n" % REPO_ROOT

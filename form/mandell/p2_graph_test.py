@@ -11,7 +11,7 @@ import shutil
 import sys
 import time
 
-sys.path.insert(0, os.path.expanduser("~/workspace/dellmatrix-gdp-phase1"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from form.mandell.idea import Idea, Provenance, ProvenanceSource
 from form.mandell.idea_persist import save_idea, load_idea, idea_exists
@@ -20,7 +20,8 @@ from form.mandell.semantic_graph import (
     GraphInvariantError, GraphValidationError, GraphError, graph_path,
 )
 
-BASE = os.path.expanduser("~/workspace/dellmatrix-gdp-phase1/form/state")
+from form.persist import _STATE_DIR as _PERSIST_STATE_DIR
+BASE = _PERSIST_STATE_DIR
 OWNER = "P2GRAPH_TEST"
 PROV = Provenance(source=ProvenanceSource.HUMAN, activity="p2_test", agent="p2")
 
