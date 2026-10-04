@@ -48,18 +48,19 @@ def rec(name, ok, detail=""):
 def t01():
     o = "R3G01"; clean(o)
     c = "from form.open import open_program; p=open_program('%s'); " % o
-    c += "pr=p.nursery.add('t',words='x'); p.confirm_proposal(pr.id); print('setup_ok')"
+    c += "pr=p.nursery.add('t',words='x'); pid=pr.id; p.confirm_proposal(pid); print('PID:'+pid)"
     out, _ = run(c)
-    if "setup_ok" not in out:
+    if "PID:" not in out:
         rec("01_malformed_units", False, "setup failed")
         clean(o); return
-    # Corrupt units to non-dict, write journal
+    pid = out.split("PID:")[1].strip()
+    # Corrupt units to non-dict, write journal with REAL pid
     pp = os.path.join(REPO, 'form/state/program_%s.json' % o)
     d = json.load(open(pp)); d['plane']['units'] = "BAD"
     json.dump(d, open(pp, 'w'))
     jp = os.path.join(REPO, 'form/state/confirm_%s.journal.json' % o)
     json.dump({"journal_version":1,"operation":"confirm_proposal","owner":o,
-               "proposal_id":"x","phase":"prepared",
+               "proposal_id":pid,"phase":"prepared",
                "old_nursery_sha256":"a","old_program_sha256":"b"}, open(jp,'w'))
     c = "from form import persist_rest; "
     c += "try:\n persist_rest.load('%s',activate=False); print('NO_RAISE')\n" % o
@@ -75,17 +76,18 @@ def t01():
 def t02():
     o = "R3G02"; clean(o)
     c = "from form.open import open_program; p=open_program('%s'); " % o
-    c += "pr=p.nursery.add('t',words='x'); p.confirm_proposal(pr.id); print('setup_ok')"
+    c += "pr=p.nursery.add('t',words='x'); pid=pr.id; p.confirm_proposal(pid); print('PID:'+pid)"
     out, _ = run(c)
-    if "setup_ok" not in out:
+    if "PID:" not in out:
         rec("02_missing_member", False, "setup failed")
         clean(o); return
+    pid = out.split("PID:")[1].strip()
     pp = os.path.join(REPO, 'form/state/program_%s.json' % o)
     d = json.load(open(pp)); del d['plane']
     json.dump(d, open(pp, 'w'))
     jp = os.path.join(REPO, 'form/state/confirm_%s.journal.json' % o)
     json.dump({"journal_version":1,"operation":"confirm_proposal","owner":o,
-               "proposal_id":"x","phase":"prepared",
+               "proposal_id":pid,"phase":"prepared",
                "old_nursery_sha256":"a","old_program_sha256":"b"}, open(jp,'w'))
     c = "from form import persist_rest; "
     c += "try:\n persist_rest.load('%s',activate=False); print('NO_RAISE')\n" % o
@@ -99,20 +101,29 @@ def t02():
 # 3. foreign_owner_journal
 def t03():
     o = "R3G03"; clean(o)
-    # Write journal for DIFFERENT owner
-    jp = os.path.join(REPO, 'form/state/confirm_%s.journal.json' % o)
-    json.dump({"journal_version":1,"operation":"confirm_proposal","owner":"OTHER",
-               "proposal_id":"x","phase":"prepared",
-               "old_nursery_sha256":"a","old_program_sha256":"b"}, open(jp,'w'))
+    # Create real proposal first
     c = "from form.open import open_program; p=open_program('%s'); " % o
-    c += "pr=p.nursery.add('t',words='x'); print('setup_ok')"
-    out, err = run(c)
-    # Should raise (owner mismatch) or ignore? Per contract: raise.
-    # Actually, open_program calls recovery which should raise.
-    ok = "setup_ok" not in out  # If it raised, setup_ok not printed
-    # Journal should be preserved
+    c += "pr=p.nursery.add('t',words='x'); pid=pr.id; print('PID:'+pid)"
+    out, _ = run(c)
+    if "PID:" not in out:
+        rec("03_foreign_owner", False, "setup failed")
+        clean(o); return
+    pid = out.split("PID:")[1].strip()
+    # Write journal for DIFFERENT owner (but file is for o)
+    # This simulates a misplaced/corrupt journal
+    jp = os.path.join(REPO, 'form/state/confirm_%s.journal.json' % o)
+    json.dump({"journal_version":1,"operation":"confirm_proposal","owner":"OTHER_OWNER",
+               "proposal_id":pid,"phase":"prepared",
+               "old_nursery_sha256":"a","old_program_sha256":"b"}, open(jp,'w'))
+    # Try to load - should raise owner mismatch, journal preserved
+    c = "from form import persist_rest; "
+    c += "try:\n persist_rest.load('%s',activate=False); print('NO_RAISE')\n" % o
+    c += "except Exception:\n print('RAISED')"
+    out, _ = run(c)
     jexists = os.path.isfile(jp)
-    rec("03_foreign_owner", ok and jexists, "rejected preserved")
+    # Should raise AND preserve journal
+    ok = "RAISED" in out and jexists
+    rec("03_foreign_owner", ok, "raised=%s preserved=%s" % ("RAISED" in out, jexists))
     clean(o)
 
 # 4. stale_replayed_intent
@@ -221,8 +232,30 @@ def t08():
     rec("08_historical_preserved", ok, out[:40])
     clean(o)
 
+def t09():
+    """Revision links (supersedes_id) distinct from derivation chain."""
+    o = "R3G09"; clean(o)
+    c = "from form.open import open_program; from form.mandell import supersession as S; "
+    c += "p=open_program('%s'); " % o
+    c += "old=p.nursery.add('base',words='v1'); p.confirm_proposal(old.id); "
+    c += "old_id=old.id; "
+    c += "r=S.supersede_proposal(p,old_id,'v2 words'); new_id=r.get('new_id'); "
+    c += "from form import persist_rest; p2=persist_rest.load('%s',activate=False); " % o
+    c += "old_p=p2.nursery.proposals[old_id]; new_p=p2.nursery.proposals[new_id]; "
+    # Revision links
+    c += "rev_ok=(old_p.superseded_by_id==new_id and new_p.supersedes_id==old_id); "
+    # Derivation chain should NOT contain revision ancestry
+    # (chain is for lineage derivation, not revision history)
+    c += "chain=new_p.chain if hasattr(new_p,'chain') else []; "
+    c += "chain_ok=(old_id not in chain); "  # Revision NOT in derivation chain
+    c += "print('REV:'+str(rev_ok)+' CHAIN:'+str(chain_ok))"
+    out, _ = run(c)
+    ok = "REV:True" in out and "CHAIN:True" in out
+    rec("09_revision_distinct", ok, out[:50])
+    clean(o)
+
 if __name__ == "__main__":
-    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08()
+    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09()
     n = sum(results)
     print("=== %d/%d ===" % (n, len(results)))
     sys.exit(0 if all(results) else 1)

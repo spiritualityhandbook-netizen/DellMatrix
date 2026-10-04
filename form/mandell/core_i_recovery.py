@@ -952,6 +952,18 @@ def recover_confirmation_intent(owner: str) -> str:
     # --- Hybrid: nursery confirmed, program lacks Idea, journal proves intent ---
     # Heal to OLD by reverting proposal to pending.
     # This is the ONLY case where we mutate.
+    #
+    # R3-COMPLETE-EXISTING-CONTRACT req. 1: When claiming OLD, compare the
+    # recorded Program fingerprint. The heal is only valid if the Program
+    # was never modified (still matches OLD). If Program was modified,
+    # we cannot prove OLD coherence; fail closed.
+    current_program_fp = _sha256_file(ppath)
+    if current_program_fp != old_program_fp:
+        raise RollbackRecoveryError(
+            f"confirmation intent: program modified (fp mismatch), cannot prove OLD "
+            f"(journal preserved). Expected {old_program_fp[:8]}, got {current_program_fp[:8]}"
+        )
+    # Program matches OLD. Safe to revert nursery.
     prop["status"] = "pending"
     try:
         atomic_write_json(npath, ndata)
@@ -1122,11 +1134,13 @@ def recover_supersede_intent(owner: str) -> str:
         isinstance(old_prop, dict)
         and old_prop.get("lifecycle_state") == "superseded"
     )
+    # R3-COMPLETE-EXISTING-CONTRACT req. 2: Revision links use
+    # supersedes_id/superseded_by_id. Do NOT check chain (derivation).
     links_ok = (
         isinstance(old_prop, dict)
         and old_prop.get("superseded_by_id") == new_id
         and isinstance(new_prop, dict)
-        and old_id in (new_prop.get("chain") or [])
+        and new_prop.get("supersedes_id") == old_id
     )
 
     if new_ok and old_ok and links_ok:
@@ -1134,16 +1148,18 @@ def recover_supersede_intent(owner: str) -> str:
         return "already_complete"
 
     # If successor and predecessor are both in correct states but links
-    # are incomplete, repair the links (idempotent).
+    # are incomplete, repair ONLY the revision links (not derivation chain).
+    # R3-COMPLETE-EXISTING-CONTRACT req. 2: Supersession uses supersedes_id
+    # and superseded_by_id, with revision root and number. Do NOT add
+    # revision ancestry to derivation chain. The two relationship types
+    # remain distinct.
     if new_ok and old_ok and not links_ok:
-        # Repair bidirectional links
+        # Repair ONLY revision links (superseded_by_id, supersedes_id).
+        # Do NOT touch chain (derivation lineage).
         if isinstance(old_prop, dict):
             old_prop["superseded_by_id"] = new_id
         if isinstance(new_prop, dict):
-            chain = new_prop.get("chain") or []
-            if old_id not in chain:
-                chain = [old_id] + list(chain)
-                new_prop["chain"] = chain
+            new_prop["supersedes_id"] = old_id
         try:
             atomic_write_json(npath, ndata)
         except Exception as exc:
