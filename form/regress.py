@@ -78,6 +78,7 @@ LIST = [
     "form.mandell.p1_idea_test",
     "form.mandell.p2_graph_test",
     "form.mandell.p2_dsc1_journal_proof",
+    "form.mandell.p2_dsc1_r3_listener_proof",
     "form.mandell.pac_i_test",
     "form.mandell.cac_i_test",
     "form.mandell.ssi_i_test",
