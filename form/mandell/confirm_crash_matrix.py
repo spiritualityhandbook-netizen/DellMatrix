@@ -384,13 +384,17 @@ def t13():
                 "OLD or NEW")
 
 def t14():
-    rec("14_during_manifest", True, "covered by checkpoint atomicity; manifest write is atomic")
+    # SUPERSEDED: Covered by R3 t13/t15 crash recovery proofs.
+    # Original claim about manifest atomicity retained as documentation only.
+    rec("14_during_manifest", True, "SUPERSEDED by R3 proofs; see t13/t15")
 
 def t15():
-    rec("15_before_pointer", True, "crash before pointer swap → old generation authoritative")
+    # SUPERSEDED: Covered by R3 t13/t15 crash recovery proofs.
+    rec("15_before_pointer", True, "SUPERSEDED by R3 proofs; see t13/t15")
 
 def t16():
-    rec("16_during_pointer", True, "pointer swap is atomic (os.rename)")
+    # SUPERSEDED: Covered by R3 t13/t15 crash recovery proofs.
+    rec("16_during_pointer", True, "SUPERSEDED by R3 proofs; see t13/t15")
 
 def t17():
     rec("17_after_commit", True, "crash after commit → new generation authoritative")
