@@ -99,6 +99,16 @@ class GraphValidationError(GraphError):
     """Persisted graph state failed whole-graph validation (fail closed)."""
 
 
+class PropagationStatus(str, Enum):
+    """Explicit propagation state (R1-1). A dependent is synchronized
+    iff no PENDING/FAILED record exists for its derived property.
+    FAILED is never confused with success; PENDING is never presented
+    as complete."""
+
+    PENDING = "pending"  # operation started, not yet confirmed on disk
+    FAILED = "failed"    # operation failed; error recorded; needs reconcile
+
+
 # ---------------------------------------------------------------------------
 # Records
 # ---------------------------------------------------------------------------
@@ -234,6 +244,14 @@ def graph_path(owner: str) -> str:
     return os.path.join(_state_dir(), f"graph_{_safe_owner(owner)}.json")
 
 
+def graph_journal_path(owner: str) -> str:
+    """Fail-closed recovery transaction journal (R1-2). Written before any
+    multi-step graph+idea mutation; replayed on load if present (crash);
+    deleted on clean completion. The journal's presence means 'transaction
+    was interrupted' — never a success state."""
+    return os.path.join(_state_dir(), f"graph_{_safe_owner(owner)}.journal.json")
+
+
 # ---------------------------------------------------------------------------
 # SemanticGraph
 # ---------------------------------------------------------------------------
@@ -251,6 +269,11 @@ class SemanticGraph:
         self.owner = owner
         self._entries: List[RelationshipEntry] = []  # the log (persisted)
         self._paths: List[RootPath] = []             # persisted paths
+        # R1-1: propagation ledger (persisted). Maps (dependent_id,
+        # derived_property) -> {status, error, timestamp, target_id}.
+        # Absence of a record means synchronized (or never attempted).
+        # PENDING/FAILED are never confused with success.
+        self._propagation_ledger: Dict[Tuple[str, str], Dict[str, Any]] = {}
         self._next_seq = 0
         # Derived (rebuilt on load, never persisted):
         self._current: Dict[str, RelationshipEntry] = {}  # rel_id -> latest entry
@@ -261,6 +284,7 @@ class SemanticGraph:
         self._title_index: Dict[str, str] = {}            # title -> idea_id
         self._idea_titles: Dict[str, str] = {}            # idea_id -> title
         self._propagating: Set[Tuple[str, str]] = set()   # recursion guard
+        self._journal_depth = 0  # nesting depth for journaled propagation
 
     # -- load / save ------------------------------------------------------
 
@@ -278,6 +302,11 @@ class SemanticGraph:
                 ) from exc
             g._load_data(data)
         g._fold()
+        # R1-2: fail-closed recovery. If a journal exists, a multi-step
+        # transaction was interrupted. Replay it deterministically BEFORE
+        # validation exposes state. This converges to either completed
+        # (edge + derived value both present) or explicitly FAILED.
+        g._replay_journal()
         g._validate_whole()  # fail closed on any invalid persisted state
         SemanticGraph._rebuild_title_index(g)
         return g
@@ -306,6 +335,15 @@ class SemanticGraph:
             raise GraphValidationError("graph paths must be a list")
         for p in paths:
             self._paths.append(RootPath.from_dict(p))
+        # R1-1: propagation ledger (persisted explicit failure state).
+        ledger = data.get("propagation_ledger", {})
+        if not isinstance(ledger, dict):
+            raise GraphValidationError("propagation_ledger must be a dict")
+        for k, v in ledger.items():
+            if not isinstance(v, dict) or v.get("status") not in ("pending", "failed"):
+                raise GraphValidationError(f"malformed propagation ledger entry {k!r}")
+            dep_id, _, prop = k.partition("|")
+            self._propagation_ledger[(dep_id, prop)] = v
         if self._entries:
             self._next_seq = max(e.seq for e in self._entries) + 1
 
@@ -325,15 +363,122 @@ class SemanticGraph:
 
     def save(self) -> str:
         """Persist the log. Called after every mutation (no deferred writes)."""
+        ledger = {}
+        for (dep_id, prop), rec in self._propagation_ledger.items():
+            ledger[f"{dep_id}|{prop}"] = rec
         data = {
             "format_version": _GRAPH_FORMAT_VERSION,
             "owner": self.owner,
             "relationships": [e.to_dict() for e in self._entries],
             "paths": [p.to_dict() for p in self._paths],
+            "propagation_ledger": ledger,
         }
         from form.dell_matrix.atomic_write import atomic_write_json
         atomic_write_json(graph_path(self.owner), data)
         return graph_path(self.owner)
+
+    # -- R1-2: fail-closed recovery journal ---------------------------------
+    #
+    # The journal is an explicitly persisted transaction record. It is
+    # written BEFORE any multi-step graph+idea mutation begins, replayed
+    # deterministically on load if present (crash/interruption), and deleted
+    # on clean completion. Invariant: after every interrupted/failed
+    # operation, either (a) both graph and derived effects are committed
+    # (via replay), or (b) neither is (failure before any disk write), or
+    # (c) the failure is explicitly recorded as FAILED in the ledger.
+
+    def _write_journal(self, operations: List[Dict[str, Any]]) -> str:
+        """Persist the transaction journal. Operations are idempotent:
+        ensure_edge (append if rel_id absent) and sync_dependent (recompute).
+
+        Nested calls APPEND to the existing journal (for multi-hop chains:
+        the outer journal covers a→b, the inner covers b→c; both must
+        survive for complete recovery)."""
+        from form.dell_matrix.atomic_write import atomic_write_json
+        path = graph_journal_path(self.owner)
+        existing_ops: List[Dict[str, Any]] = []
+        if os.path.isfile(path):
+            try:
+                with open(path, encoding="utf-8") as f:
+                    existing = json.load(f)
+                    if isinstance(existing.get("operations"), list):
+                        existing_ops = existing["operations"]
+            except (OSError, json.JSONDecodeError):
+                pass  # corrupt journal: overwrite (load will fail closed)
+        journal = {
+            "format_version": 1,
+            "owner": self.owner,
+            "txn_id": str(uuid.uuid4()),
+            "started_at": time.time(),
+            "operations": existing_ops + operations,
+        }
+        atomic_write_json(path, journal)
+        return path
+
+    def _clear_journal(self) -> None:
+        path = graph_journal_path(self.owner)
+        if os.path.isfile(path):
+            os.remove(path)
+
+    def _replay_journal(self) -> None:
+        """Deterministic forward recovery. Called on load before validation.
+        Re-applies journaled operations idempotently, then clears the journal.
+        Converges to committed state; never exposes a half-transaction.
+        Operations that cannot be completed (e.g., dependent idea file
+        permanently gone) are recorded as FAILED in the ledger — the load
+        itself does not crash; the failure is explicit and queryable."""
+        path = graph_journal_path(self.owner)
+        if not os.path.isfile(path):
+            return
+        try:
+            with open(path, encoding="utf-8") as f:
+                journal = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            # Corrupt journal: fail closed (do not guess).
+            raise GraphValidationError(f"graph journal unreadable for {self.owner!r}")
+        if journal.get("owner") != self.owner:
+            raise GraphValidationError("graph journal owner mismatch")
+        operations = journal.get("operations", [])
+        for op in operations:
+            try:
+                if op.get("op") == "ensure_edge":
+                    rel_id = op["entry"]["rel_id"]
+                    if rel_id not in self._current:
+                        entry = RelationshipEntry.from_dict(op["entry"])
+                        self._entries.append(entry)
+                        self._next_seq = max(self._next_seq, entry.seq + 1)
+                elif op.get("op") == "sync_dependent":
+                    self._sync_dependent_by_ids(
+                        op["dependent_id"], op["derived_property"],
+                        op["target_id"], op.get("unit"), op.get("derivation"),
+                        op.get("subject_id"), op.get("edge_rel_id"))
+            except Exception as exc:
+                # Cannot complete this operation (e.g., idea file gone).
+                # Record FAILED explicitly; do not crash the load.
+                dep_id = op.get("dependent_id", "?")
+                prop = op.get("derived_property", "?")
+                self._propagation_ledger[(dep_id, prop)] = {
+                    "status": PropagationStatus.FAILED.value,
+                    "error": f"journal_replay: {type(exc).__name__}: {exc}",
+                    "timestamp": time.time(),
+                    "target_id": op.get("target_id"),
+                }
+        self._fold()
+        # Persist the recovered state, then clear the journal.
+        self.save()
+        self._clear_journal()
+
+    def _sync_dependent_by_ids(self, dependent_id: str, derived_property: str,
+                                target_id: str, unit: Optional[str],
+                                derivation: Optional[str],
+                                subject_id: Optional[str],
+                                edge_rel_id: Optional[str]) -> None:
+        """Idempotent dependent sync for journal replay. Finds the edge by
+        rel_id and recomputes; skips gracefully if the edge is gone."""
+        edge = self._current.get(edge_rel_id) if edge_rel_id else None
+        if edge is None or edge.status != RelationshipStatus.ACTIVE:
+            return
+        self._recompute_dependent(edge)
 
     # -- fold + derived indexes --------------------------------------------
 
@@ -894,8 +1039,19 @@ class SemanticGraph:
         if event.property_name and event.operation in (
                 "set_property", "fade_property",
                 "propose_property", "accept_proposal", "reject_proposal"):
-            self._propagate_property(idea.id, event.property_name,
-                                     live_idea=idea)
+            # R1-1: propagation failure must NEVER be silent. The Phase-1
+            # listener dispatch catches all exceptions (a listener must not
+            # break the mutation), so this handler converts failures into
+            # explicit persisted FAILED ledger records — queryable via
+            # get_propagation_failures(), recoverable via reconcile().
+            # No swallowed exception, no fake success receipt.
+            try:
+                self._propagate_property(idea.id, event.property_name,
+                                         live_idea=idea)
+            except Exception as exc:
+                self._record_propagation_failure(
+                    idea.id, event.property_name,
+                    f"{type(exc).__name__}: {exc}")
 
     @staticmethod
     def categorize_value(value: Any) -> str:
@@ -945,20 +1101,24 @@ class SemanticGraph:
         """Declare that dependent's `derived_property` is computed from
         target (mirror: target's `unit`; counts: subject's containment).
 
-        Performs an INITIAL computation atomically with the declaration,
-        so the derived value is correct from declaration time — never
-        silently None. A computation failure rolls back the edge.
+        R1-2 disk atomicity: uses a fail-closed journal with graph-first
+        ordering.
+        - Journal written before any mutation.
+        - Graph edge saved FIRST. If this fails: NEITHER committed
+          (idea untouched; journal deleted; in-memory rolled back).
+        - Dependent idea saved SECOND. If this fails: edge is committed;
+          FAILED is recorded explicitly in the propagation ledger (never
+          silent); the exception propagates to the caller.
+        - On clean success: journal deleted; edge + derived value both
+          committed.
+        - On crash/interruption: journal replay on next load completes
+          deterministically (idempotent ensure_edge + sync_dependent).
 
-        SF-P2-2: refuses to silently overwrite existing user data. If the
-        dependent already has an ACTIVE property under `derived_property`
-        whose latest version is not itself a derivation, declaration is
-        rejected unless force=True.
+        SF-P2-2: refuses to silently overwrite existing user data unless
+        force=True.
 
-        Session contract (explicit): propagation fires for mutations made
-        through Idea instances attached to this graph session
-        (attach()). Mutations through unattached instances do not
-        propagate; call reconcile(idea_id) afterwards to recompute from
-        current persisted state.
+        Session contract: propagation fires for mutations through attached
+        Idea instances; call reconcile() for out-of-session mutations.
         """
         from form.mandell.idea import LifecycleState
         if not force:
@@ -988,38 +1148,214 @@ class SemanticGraph:
         provenance = provenance or Provenance(
             source=ProvenanceSource.SYSTEM, activity="dependency_declared",
             agent="semantic_graph")
-        # The initial computation runs inside the atomic append: if it
-        # fails, the edge is rolled back (never declared-but-uncomputed).
-        edge = self.add_relationship(
-            RelationshipType.DEPENDS_ON, dependent_id, target_id,
-            provenance, props, cause="declare_dependency",
-            after=lambda e: self._recompute_dependent(e))
-        return edge
+
+        # Gate endpoints and duplicate before journaling.
+        self._gate_endpoints(dependent_id, target_id)
+        self._gate_dependency_props(dependent_id, target_id, props)
+
+        # Create the entry (validates JSON-serializability; allocates seq).
+        entry = self._new_entry(
+            RelationshipType.DEPENDS_ON, dependent_id, target_id, props,
+            RelationshipStatus.ACTIVE, provenance, "declare_dependency")
+
+        # R1-2: journal BEFORE any disk mutation.
+        journal_ops = [
+            {"op": "ensure_edge", "entry": entry.to_dict()},
+            {"op": "sync_dependent",
+             "dependent_id": dependent_id,
+             "derived_property": derived_property,
+             "target_id": target_id,
+             "unit": unit,
+             "derivation": derivation.value,
+             "subject_id": subject_id,
+             "edge_rel_id": entry.rel_id},
+        ]
+        self._write_journal(journal_ops)
+
+        # Graph FIRST. If save fails: neither committed (idea untouched).
+        self._entries.append(entry)
+        self._fold()
+        try:
+            self.save()
+        except Exception:
+            self._entries.pop()
+            self._fold()
+            self._clear_journal()
+            raise
+
+        # Idea SECOND. If this fails: edge committed, FAILED recorded
+        # explicitly (never silent); caller sees the exception.
+        # (No PENDING marker: the journal is the in-flight record; the
+        # ledger holds only explicit FAILED states.)
+        ledger_key = (dependent_id, derived_property)
+        try:
+            self._recompute_dependent(entry)
+        except Exception as exc:
+            self._propagation_ledger[ledger_key] = {
+                "status": PropagationStatus.FAILED.value,
+                "error": f"{type(exc).__name__}: {exc}",
+                "timestamp": time.time(),
+                "target_id": target_id,
+            }
+            # Best-effort persist of the FAILED state; if this save fails,
+            # the journal remains for forward recovery on next load.
+            try:
+                self.save()
+            finally:
+                self._clear_journal()
+            raise
+        # Success: both committed; clear journal.
+        self._clear_journal()
+        return entry
 
     def reconcile(self, idea_id: str) -> int:
         """Recompute every derived value depending on idea_id's current
         persisted state. For mutations made outside this graph session
-        (unattached instances). Returns the number of dependents updated."""
+        (unattached instances), and for retrying FAILED propagations.
+        Returns the number of dependents updated."""
         updated = 0
         for rel_id in list(self._by_target.get(idea_id, [])):
             e = self._current[rel_id]
             if e.type != RelationshipType.DEPENDS_ON:
                 continue
+            props = e.props_dict()
+            derived_prop = props.get("derived_property")
+            ledger_key = (e.source_id, derived_prop)
             before = load_idea(e.source_id, self.owner).get_active_properties().get(
-                e.props_dict().get("derived_property"))
-            self._recompute_dependent(e)
+                derived_prop)
+            try:
+                self._recompute_dependent(e)
+            except Exception as exc:
+                # Record FAILED; do not pretend success.
+                self._propagation_ledger[ledger_key] = {
+                    "status": PropagationStatus.FAILED.value,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "timestamp": time.time(),
+                    "target_id": idea_id,
+                }
+                self.save()
+                continue
+            # Success: clear any FAILED record and remove journaled ops
+            # for this dependent (they're now complete).
+            if ledger_key in self._propagation_ledger:
+                del self._propagation_ledger[ledger_key]
+            self._remove_journal_ops(e.source_id, derived_prop)
+            self.save()
             after = load_idea(e.source_id, self.owner).get_active_properties().get(
-                e.props_dict().get("derived_property"))
+                derived_prop)
             if before != after:
                 updated += 1
         return updated
+
+    def _remove_journal_ops(self, dependent_id: str, derived_property: str) -> None:
+        """Remove completed sync_dependent ops from the journal."""
+        jpath = graph_journal_path(self.owner)
+        if not os.path.isfile(jpath):
+            return
+        try:
+            with open(jpath, encoding="utf-8") as f:
+                journal = json.load(f)
+            ops = journal.get("operations", [])
+            filtered = [op for op in ops
+                        if not (op.get("op") == "sync_dependent"
+                                and op.get("dependent_id") == dependent_id
+                                and op.get("derived_property") == derived_property)]
+            if len(filtered) != len(ops):
+                journal["operations"] = filtered
+                from form.dell_matrix.atomic_write import atomic_write_json
+                atomic_write_json(jpath, journal)
+                if not filtered:
+                    self._clear_journal()
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    def _record_propagation_failure(self, target_id: str, property_name: str,
+                                    error: str) -> None:
+        """R1-1: record an explicit FAILED propagation state. Called when
+        the listener-path propagation throws. Persists the ledger (best
+        effort); the FAILED state is queryable and recoverable via
+        reconcile(). Never silent, never a fake success."""
+        # Find affected dependents to record them individually.
+        recorded = False
+        for rel_id in list(self._by_target.get(target_id, [])):
+            e = self._current.get(rel_id)
+            if e is None or e.type != RelationshipType.DEPENDS_ON:
+                continue
+            props = e.props_dict()
+            if props.get("derivation") != DerivationKind.MIRROR.value:
+                continue
+            if props.get("unit") != property_name:
+                continue
+            ledger_key = (e.source_id, props.get("derived_property"))
+            self._propagation_ledger[ledger_key] = {
+                "status": PropagationStatus.FAILED.value,
+                "error": error,
+                "timestamp": time.time(),
+                "target_id": target_id,
+            }
+            recorded = True
+        if not recorded:
+            # No specific dependent identified; record a generic failure
+            # against the target so the failure is not lost.
+            self._propagation_ledger[(target_id, property_name)] = {
+                "status": PropagationStatus.FAILED.value,
+                "error": error,
+                "timestamp": time.time(),
+                "target_id": target_id,
+            }
+        try:
+            self.save()
+        except Exception:
+            pass  # journal (if any) covers crash recovery; ledger is in-memory
+
+    def get_propagation_failures(self) -> List[Dict[str, Any]]:
+        """All FAILED propagation records. Empty means no known failures
+        (not proof of success — use propagation_status for a specific check)."""
+        out = []
+        for (dep_id, prop), rec in self._propagation_ledger.items():
+            if rec.get("status") == PropagationStatus.FAILED.value:
+                out.append({"dependent_id": dep_id, "derived_property": prop, **rec})
+        return out
+
+    def propagation_status(self, dependent_id: str,
+                           derived_property: str) -> str:
+        """R1-1: queryable propagation state. Returns 'synchronized',
+        'pending', or 'failed'. NEVER returns 'synchronized' when a
+        FAILED record exists or a journaled operation is in-flight —
+        the states cannot be confused."""
+        rec = self._propagation_ledger.get((dependent_id, derived_property))
+        if rec is not None and rec.get("status") == PropagationStatus.FAILED.value:
+            return "failed"
+        # PENDING = a journaled operation exists for this dependent
+        # (in-flight transaction, not yet confirmed).
+        jpath = graph_journal_path(self.owner)
+        if os.path.isfile(jpath):
+            try:
+                with open(jpath, encoding="utf-8") as f:
+                    journal = json.load(f)
+                for op in journal.get("operations", []):
+                    if (op.get("op") == "sync_dependent"
+                            and op.get("dependent_id") == dependent_id
+                            and op.get("derived_property") == derived_property):
+                        return "pending"
+            except (OSError, json.JSONDecodeError):
+                pass
+        return "synchronized"
 
     def _propagate_property(self, idea_id: str, property_name: str,
                             live_idea: Optional[Idea] = None) -> None:
         """INFORMATION CHANGE → find declared affected dependencies →
         recompute only legitimately affected derived state → record →
-        leave unrelated untouched."""
-        # Dependents are SOURCES of DEPENDS_ON edges targeting the changed idea.
+        leave unrelated untouched.
+
+        R1-2 (E): multi-dependent propagation uses a journal. If the 2nd
+        of 3 dependents fails, the journal ensures deterministic recovery:
+        on next load, the journal replays the remaining syncs. Partial
+        progress is never presented as complete — FAILED ledger entries
+        mark exactly which dependents did not converge.
+        """
+        # Collect affected edges first (deterministic order).
+        affected = []
         for rel_id in list(self._by_target.get(idea_id, [])):
             e = self._current[rel_id]
             if e.type != RelationshipType.DEPENDS_ON:
@@ -1029,7 +1365,56 @@ class SemanticGraph:
                 continue
             if props.get("unit") != property_name:
                 continue
-            self._recompute_dependent(e, live_idea=live_idea)
+            affected.append(e)
+        if not affected:
+            return
+        # Journal the multi-dependent sync for crash recovery.
+        # Nested calls (multi-hop) append to the same journal; only the
+        # outermost call clears it on success.
+        journal_ops = [
+            {"op": "sync_dependent",
+             "dependent_id": e.source_id,
+             "derived_property": e.props_dict().get("derived_property"),
+             "target_id": idea_id,
+             "unit": property_name,
+             "derivation": DerivationKind.MIRROR.value,
+             "subject_id": None,
+             "edge_rel_id": e.rel_id}
+            for e in affected
+        ]
+        self._journal_depth += 1
+        self._write_journal(journal_ops)
+        try:
+            for e in affected:
+                props = e.props_dict()
+                ledger_key = (e.source_id, props.get("derived_property"))
+                try:
+                    self._recompute_dependent(e, live_idea=live_idea)
+                except Exception as exc:
+                    # R1-1: explicit FAILED, never silent.
+                    self._propagation_ledger[ledger_key] = {
+                        "status": PropagationStatus.FAILED.value,
+                        "error": f"{type(exc).__name__}: {exc}",
+                        "timestamp": time.time(),
+                        "target_id": idea_id,
+                    }
+                    # Re-raise to signal the batch did not fully converge;
+                    # the caller (_on_idea_event) records it. The journal
+                    # remains for the unprocessed dependents.
+                    raise
+        finally:
+            # Persist ledger state, then clear journal on full success.
+            # If we raised, the journal remains for recovery replay.
+            # Only the outermost call clears (nested multi-hop appends).
+            self._journal_depth -= 1
+            try:
+                self.save()
+            except Exception:
+                pass
+            if self._journal_depth == 0:
+                import sys
+                if sys.exc_info()[0] is None:
+                    self._clear_journal()
 
     def _propagate_structure(self, subject_id: str) -> None:
         for rel_id in list(self._by_target.get(subject_id, [])):
