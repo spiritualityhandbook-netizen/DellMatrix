@@ -12,8 +12,8 @@
 
 - **Base (entry):** `38819e45ad36b879b2e28908e94704fa136a0af8` (Phase 1 certified/merged/closed)
 - **Branch:** `gdp-phase2-work`
-- **Head:** `12832e524be39b54fd18cbe497be7ee15815ae62` (R1 gate closure; supersedes 88e450a)
-- **Tree:** `4adc538153bb94b9bf3e54691295ef5617005630`
+- **Head:** `f701120642a88e6ab72e7b4c50f4d1adf6f64bab` (R1 gate closure + flake8 fix; supersedes 12832e5)
+- **Tree:** `70a4032ff67640301034b8ef588b8e7b375eb72a`
 - **Worktree:** `~/workspace/dellmatrix-gdp-phase1` (clean)
 - **PR:** #72 (open, MERGEABLE, DO NOT MERGE without Director authorization)
 - **CI on exact head:**
@@ -149,8 +149,9 @@ objectives.
 ## 10. R1 GATE CLOSURE — PROPAGATION INTEGRITY (2026-10-03)
 
 **Directive:** GDP_002_PHASE_2_DIRECTOR_GATE_R1  
-**R1 Head:** `12832e524be39b54fd18cbe497be7ee15815ae62`  
-**R1 Tree:** `4adc538153bb94b9bf3e54691295ef5617005630`
+**R1 Head:** `f701120642a88e6ab72e7b4c50f4d1adf6f64bab`  
+**R1 Tree:** `70a4032ff67640301034b8ef588b8e7b375eb72a`  
+**CI (exact head f701120):** Python package (3.10/3.11) SUCCESS, Form smoke SUCCESS
 
 ### R1-1: Silent Propagation Failure — FIXED
 
