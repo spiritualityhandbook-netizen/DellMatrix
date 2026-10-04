@@ -518,10 +518,10 @@ def smoke():
     global results
     results = []
     # Clean up any leftover state from previous runs (for --twice)
-    for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11", "R3H12", "R3H13"]:
+    for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11", "R3H12", "R3H13", "R3H14"]:
         clean(o)
     try:
-        t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12(); t13()
+        t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12(); t13(); t14()
     except Exception as e:
         print("SMOKE EXCEPTION: %s" % e)
         return False
