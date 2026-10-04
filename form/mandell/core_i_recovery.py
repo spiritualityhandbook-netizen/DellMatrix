@@ -1107,6 +1107,45 @@ def clear_supersede_intent(owner: str) -> None:
         pass
 
 
+def _validate_revision_identity(old_prop: dict, new_prop: dict) -> None:
+    """Validate revision identity using canonical semantics.
+
+    Both proposals must carry matching revision_root_id, and the
+    successor's revision_number must be exactly predecessor's + 1.
+
+    Raises RollbackRecoveryError on any contradiction or missing
+    identity. Journal is preserved by caller.
+    """
+    old_root = old_prop.get("revision_root_id")
+    new_root = new_prop.get("revision_root_id")
+    old_num = old_prop.get("revision_number")
+    new_num = new_prop.get("revision_number")
+    if old_root is None or new_root is None:
+        raise RollbackRecoveryError(
+            "supersede intent: missing revision root (preserved). "
+            "Cannot validate complete outcome."
+        )
+    if old_root != new_root:
+        raise RollbackRecoveryError(
+            f"supersede intent: revision root mismatch ({old_root} vs {new_root}) "
+            "(preserved)."
+        )
+    if old_num is None or new_num is None:
+        raise RollbackRecoveryError(
+            "supersede intent: missing revision number (preserved)."
+        )
+    try:
+        if int(new_num) != int(old_num) + 1:
+            raise RollbackRecoveryError(
+                f"supersede intent: revision number not sequential "
+                f"({old_num} -> {new_num}) (preserved)."
+            )
+    except (ValueError, TypeError):
+        raise RollbackRecoveryError(
+            "supersede intent: invalid revision number (preserved)."
+        )
+
+
 def recover_supersede_intent(owner: str) -> str:
     """Recover from recorded supersession intent.
 
@@ -1222,38 +1261,7 @@ def recover_supersede_intent(owner: str) -> str:
 
     if new_ok and old_ok and links_ok:
         # Validate revision identity before accepting complete NEW.
-        # - Root identity must match between old and new
-        # - New revision number must be old number + 1
-        # If journal lacks info to prove this, fail closed (do not guess).
-        old_root = old_prop.get("revision_root_id")
-        new_root = new_prop.get("revision_root_id")
-        old_num = old_prop.get("revision_number")
-        new_num = new_prop.get("revision_number")
-        # Both must have revision identity to validate
-        if old_root is None or new_root is None:
-            raise RollbackRecoveryError(
-                "supersede intent: missing revision root (preserved). "
-                "Cannot validate complete outcome."
-            )
-        if old_root != new_root:
-            raise RollbackRecoveryError(
-                f"supersede intent: revision root mismatch ({old_root} vs {new_root}) "
-                "(preserved)."
-            )
-        if old_num is None or new_num is None:
-            raise RollbackRecoveryError(
-                "supersede intent: missing revision number (preserved)."
-            )
-        try:
-            if int(new_num) != int(old_num) + 1:
-                raise RollbackRecoveryError(
-                    f"supersede intent: revision number not sequential "
-                    f"({old_num} -> {new_num}) (preserved)."
-                )
-        except (ValueError, TypeError):
-            raise RollbackRecoveryError(
-                "supersede intent: invalid revision number (preserved)."
-            )
+        _validate_revision_identity(old_prop, new_prop)
         clear_supersede_intent(owner)
         return "already_complete"
 
@@ -1290,15 +1298,9 @@ def recover_supersede_intent(owner: str) -> str:
     # revision ancestry to derivation chain. The two relationship types
     # remain distinct.
     if new_ok and old_ok and not links_ok:
-        # Validate revision identity before repairing links.
-        # Do not repair if revision identity is contradictory.
-        old_root = old_prop.get("revision_root_id")
-        new_root = new_prop.get("revision_root_id")
-        if old_root is not None and new_root is not None and old_root != new_root:
-            raise RollbackRecoveryError(
-                f"supersede intent: cannot repair links with revision root mismatch "
-                f"({old_root} vs {new_root}) (preserved)."
-            )
+        # Validate full revision identity before repairing links.
+        # Do not repair if identity is contradictory or missing.
+        _validate_revision_identity(old_prop, new_prop)
         # Repair ONLY revision links (superseded_by_id, supersedes_id).
         # Do NOT touch chain (derivation lineage).
         if isinstance(old_prop, dict):
@@ -1311,6 +1313,10 @@ def recover_supersede_intent(owner: str) -> str:
             raise RollbackRecoveryError(
                 f"supersede intent: link repair failed (preserved): {exc}"
             ) from exc
+        # Verify the repaired outcome before clearing intent
+        _validate_revision_identity(
+            ndata.get(old_id, {}), ndata.get(new_id, {})
+        )
         clear_supersede_intent(owner)
         return "already_complete"
 
