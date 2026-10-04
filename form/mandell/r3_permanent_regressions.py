@@ -518,10 +518,10 @@ def smoke():
     global results
     results = []
     # Clean up any leftover state from previous runs (for --twice)
-    for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11", "R3H12", "R3H13", "R3H14"]:
+    for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11", "R3H12", "R3H13", "R3H14", "R3H15"]:
         clean(o)
     try:
-        t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12(); t13(); t14()
+        t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12(); t13(); t14(); t15()
     except Exception as e:
         print("SMOKE EXCEPTION: %s" % e)
         return False
@@ -839,8 +839,93 @@ except Exception as e:
         print(f"t14 FAILED: rc={rc2}, out={out2[:150]}")
     clean(o)
 
+# 15. revision_identity_negative: Conflicting revision root/number
+# must fail closed, not accept as already_complete. Journal preserved.
+def t15():
+    o = "R3H15"; clean(o)
+    setup = """
+import sys, os, json
+REPO_DIR = %r
+OWNER_ID = %r
+sys.path.insert(0, REPO_DIR)
+from form.open import open_program
+from form import persist_rest
+from form.mandell.core_i_recovery import write_supersede_intent, _supersede_journal_path
+
+p = open_program(OWNER_ID)
+pr_old = p.nursery.add('OLD_PROP', words='original')
+p.confirm_proposal(pr_old.id)
+pr_new = p.nursery.add('NEW_PROP', words='successor')
+p.nursery.save()
+persist_rest.save(p)
+write_supersede_intent(OWNER_ID, pr_old.id, pr_new.id)
+
+# Create otherwise-valid completed relationship, then corrupt revision
+npath = os.path.join(REPO_DIR, 'form', 'state', 'nursery_' + OWNER_ID + '.json')
+nd = json.load(open(npath))
+nd[pr_old.id]['lifecycle_state'] = 'superseded'
+nd[pr_old.id]['superseded_by_id'] = pr_new.id
+nd[pr_old.id]['revision_root_id'] = 'root1'
+nd[pr_old.id]['revision_number'] = 1
+nd[pr_new.id]['status'] = 'confirmed'
+nd[pr_new.id]['supersedes_id'] = pr_old.id
+nd[pr_new.id]['revision_root_id'] = 'root2'  # CORRUPT: mismatch
+nd[pr_new.id]['revision_number'] = 2
+json.dump(nd, open(npath, 'w'))
+ppath = os.path.join(REPO_DIR, 'form', 'state', 'program_' + OWNER_ID + '.json')
+pd = json.load(open(ppath))
+pd['plane']['units'][pr_new.id] = {'id': pr_new.id}
+json.dump(pd, open(ppath, 'w'))
+print('CORRUPT_CREATED')
+jpath = _supersede_journal_path(OWNER_ID)
+assert os.path.isfile(jpath)
+print('PRECONDITIONS_OK')
+""" % (REPO, o)
+    rc, out, err = run_script("t15_setup", setup)
+    if rc != 0 or "PRECONDITIONS_OK" not in out:
+        rec("15_revision_identity", False, "setup failed")
+        print(f"t15 SETUP FAILED: {out[:200]}")
+        clean(o)
+        return
+    # Restart through public entrypoint, expect rejection
+    load = """
+import sys, os
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import _supersede_journal_path, RollbackRecoveryError
+jpath = _supersede_journal_path(%r)
+try:
+    p = persist_rest.load(%r, activate=False)
+    print('NO_RAISE_UNEXPECTED')
+except RollbackRecoveryError as e:
+    msg = str(e)
+    if 'revision root mismatch' in msg or 'revision' in msg.lower():
+        print('RAISED_REVISION_MISMATCH JEXISTS:' + str(os.path.isfile(jpath)))
+    else:
+        print('RAISED_OTHER:' + msg[:60])
+except Exception as e:
+    print('OTHER:' + type(e).__name__)
+# Repeat recovery - must also raise
+try:
+    p = persist_rest.load(%r, activate=False)
+    print('REPEAT_NO_RAISE')
+except RollbackRecoveryError:
+    print('REPEAT_RAISED JEXISTS:' + str(os.path.isfile(jpath)))
+except Exception as e:
+    print('REPEAT_OTHER:' + type(e).__name__)
+""" % (REPO, o, o, o)
+    rc2, out2, err2 = run_script("t15_load", load)
+    ok = (rc2 == 0 and "RAISED_REVISION_MISMATCH" in out2 and "JEXISTS:True" in out2 and
+          "REPEAT_RAISED" in out2)
+    if ok:
+        print("t15 postconditions verified")
+    rec("15_revision_identity", ok, out2[:100])
+    if not ok:
+        print(f"t15 FAILED: {out2[:200]}")
+    clean(o)
+
 if __name__ == "__main__":
-    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12(); t13(); t14()
+    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12(); t13(); t14(); t15()
     n = sum(results)
     print("=== %d/%d ===" % (n, len(results)))
     sys.exit(0 if all(results) else 1)
