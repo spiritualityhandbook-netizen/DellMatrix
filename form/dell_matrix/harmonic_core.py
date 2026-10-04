@@ -2,8 +2,11 @@
 """
 Practical Harmonic Core slice for Origin.
 
-Implements only what scores high on:
-  practicality × Origin-relatedness × leverage × safety
+Honest description (R3.2.2): this module contains pulse ratio constants
+(Subkey 4 : Core 1 : Relay 0.25), a lattice size policy (12 | 14), the
+KeyLedger (permanent-key bookkeeping with radial soft-forget of cell
+payloads), and radial soft-forget helpers. It is not a harmonic engine
+and computes nothing musical; the "harmonic" name is historical.
 
 Includes:
   - pulse ratio constants (Subkey 4 : Core 1 : Relay 0.25)

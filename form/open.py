@@ -1173,6 +1173,60 @@ class Program:
     def list_proposals(self) -> List[Dict[str, Any]]:
         return [p.to_dict() for p in self.nursery.pending()]
 
+    def harmony_of(self, ideas) -> float:
+        """Harmony of an idea set (GDP-001 Phase 3, R3.2.5 public path).
+
+        Thin public wrapper over the canonical metric
+        form.dell_matrix.harmony.harmony_score: "the degree to which a set
+        of ideas forms a coherent, non-redundant whole", in [0, 1].
+
+        Accepts an iterable of Idea objects, plane unit ID strings
+        (resolved against this program's cube plane; unit tokens come
+        from the unit's real label/words/detail/goals), or a mix.
+        Unknown unit IDs fail closed to 0.0 (never raises), matching the
+        module's degenerate-input contract. Stateless: computes from
+        current content, writes nothing.
+        """
+        from form.dell_matrix.harmony import harmony_score
+
+        class _PlaneUnitView:
+            """Adapter: exposes a plane unit through the idea token interface."""
+
+            def __init__(self, unit):
+                self.title = getattr(unit, "label", "") or ""
+                self._unit = unit
+
+            def get_active_properties(self):
+                u = self._unit
+                props = {}
+                for name in ("words", "detail"):
+                    v = getattr(u, name, "")
+                    if v:
+                        props[name] = v
+                goals = getattr(u, "goals", None) or []
+                if goals:
+                    props["goals"] = " ".join(str(g) for g in goals)
+                return props
+
+        if ideas is None or isinstance(ideas, (str, bytes)):
+            return 0.0
+        try:
+            items = list(ideas)
+        except TypeError:
+            return 0.0
+        plane = self.cube.session.plane
+        resolved = []
+        for it in items:
+            if isinstance(it, str):
+                unit = plane.units.get(it)
+                if unit is None:
+                    return 0.0
+                resolved.append(_PlaneUnitView(unit))
+            else:
+                resolved.append(it)
+        return harmony_score(resolved)
+
+
     def ranked_proposals(self) -> List[Dict[str, Any]]:
         props = self.list_proposals()
         try:
