@@ -113,11 +113,12 @@ Mission verbs: CREATE, UNDERSTAND, REMEMBER, SUPERSEDE, FADE.
 
 ---
 
-## PHASE 2 — FRACTAL SEMANTIC GRAPH [IN_PROGRESS] (AUTHORIZED 2026-10-03)
+## PHASE 2 — FRACTAL SEMANTIC GRAPH [CERTIFIED / MERGED / CLOSED] (2026-10-03)
 
 Mission verbs: CONTAIN, RELATE, PROMOTE, TRAVERSE, PROPAGATE.
 Entry: main 38819e4 (Phase 1 certified/merged/closed).
-Branch: gdp-phase2-work. DO NOT MERGE without Director authorization.
+Merged: PR #72 → main 0ea81c5 (2026-10-03 20:21:54 -0500).
+25 objectives + 1.5.4 IMPLEMENTED. R1 + micro-gate closures certified.
 
 ### R2.1 Fractal containment
 | 2.1.1 | Explicit parent/child containment, arbitrary depth | IMPLEMENTED |
