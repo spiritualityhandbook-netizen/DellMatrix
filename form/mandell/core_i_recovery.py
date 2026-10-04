@@ -1313,10 +1313,43 @@ def recover_supersede_intent(owner: str) -> str:
             raise RollbackRecoveryError(
                 f"supersede intent: link repair failed (preserved): {exc}"
             ) from exc
-        # Verify the repaired outcome before clearing intent
-        _validate_revision_identity(
-            ndata.get(old_id, {}), ndata.get(new_id, {})
-        )
+        # Reread durable Nursery (not ndata in memory) and validate
+        # saved identities and reciprocal links against Program/journal
+        # before clearing intent. Checking ndata proves memory, not persistence.
+        try:
+            with open(npath, encoding="utf-8") as f:
+                durable_nd = json.load(f)
+            with open(ppath, encoding="utf-8") as f:
+                durable_pd = json.load(f)
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"supersede intent: reread after repair failed (preserved): {exc}"
+            ) from exc
+        durable_old = durable_nd.get(old_id)
+        durable_new = durable_nd.get(new_id)
+        if not isinstance(durable_old, dict) or not isinstance(durable_new, dict):
+            raise RollbackRecoveryError(
+                "supersede intent: repaired members missing from durable Nursery "
+                "(preserved)."
+            )
+        # Validate reciprocal links in durable state
+        if durable_old.get("superseded_by_id") != new_id:
+            raise RollbackRecoveryError(
+                "supersede intent: durable old link not repaired (preserved)."
+            )
+        if durable_new.get("supersedes_id") != old_id:
+            raise RollbackRecoveryError(
+                "supersede intent: durable new link not repaired (preserved)."
+            )
+        # Validate revision identity in durable state
+        _validate_revision_identity(durable_old, durable_new)
+        # Validate successor Idea still present in durable Program
+        durable_units = durable_pd.get("plane", {}).get("units", {})
+        if new_id not in durable_units:
+            raise RollbackRecoveryError(
+                "supersede intent: successor Idea missing from durable Program "
+                "after repair (preserved)."
+            )
         clear_supersede_intent(owner)
         return "already_complete"
 

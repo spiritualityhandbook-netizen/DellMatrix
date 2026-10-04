@@ -508,6 +508,27 @@ except Exception as e:
     clean(o)
 
 
+# Single source of truth: (owner, callable) pairs.
+# Used for smoke execution, direct execution, expected count,
+# initial cleanup, and finally cleanup. No duplicated lists.
+TEST_CASES = [
+    ("R3H01", lambda: t01()),
+    ("R3H02", lambda: t02()),
+    ("R3H03", lambda: t03()),
+    ("R3H04", lambda: t04()),
+    ("R3H05", lambda: t05()),
+    ("R3H06", lambda: t06()),
+    ("R3H07", lambda: t07()),
+    ("R3H08", lambda: t08()),
+    ("R3H09", lambda: t09()),
+    ("R3H10", lambda: t10()),
+    ("R3H11", lambda: t11()),
+    ("R3H12", lambda: t12()),
+    ("R3H13", lambda: t13()),
+    ("R3H14", lambda: t14()),
+    ("R3H15", lambda: t15()),
+]
+
 def smoke():
     """Runner-compatible entry point for form.regress.
     
@@ -518,21 +539,26 @@ def smoke():
     global results
     results = []
     # Clean up any leftover state from previous runs (for --twice)
-    for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11", "R3H12", "R3H13", "R3H14", "R3H15"]:
-        clean(o)
+    for owner, _ in TEST_CASES:
+        clean(owner)
+    executed = []
     try:
-        t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12(); t13(); t14(); t15()
+        for owner, fn in TEST_CASES:
+            fn()
+            executed.append(owner)
     except Exception as e:
         print("SMOKE EXCEPTION: %s" % e)
         return False
     finally:
         # Ensure cleanup even on crash (for --twice second pass)
-        for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11", "R3H12", "R3H13"]:
-            clean(o)
+        for owner, _ in TEST_CASES:
+            clean(owner)
+    # Assert every case actually executed
+    assert len(executed) == len(TEST_CASES), f"executed {len(executed)}, expected {len(TEST_CASES)}"
     n = sum(results)
     total = len(results)
     print("%d/%d" % (n, total))
-    return n == total and total > 0
+    return n == total and total == len(TEST_CASES)
 
 
 def t12():
@@ -925,9 +951,18 @@ except Exception as e:
     clean(o)
 
 if __name__ == "__main__":
-    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12(); t13(); t14(); t15()
+    for owner, fn in TEST_CASES:
+        clean(owner)
+    executed = []
+    for owner, fn in TEST_CASES:
+        fn()
+        executed.append(owner)
+    assert len(executed) == len(TEST_CASES), "not all cases executed"
+    for owner, _ in TEST_CASES:
+        clean(owner)
     n = sum(results)
     print("=== %d/%d ===" % (n, len(results)))
+    assert n == len(TEST_CASES), f"expected {len(TEST_CASES)} results, got {n}"
     sys.exit(0 if all(results) else 1)
 
 # 10. negative_control_A: Nursery unchanged, Program modified (Idea added)
