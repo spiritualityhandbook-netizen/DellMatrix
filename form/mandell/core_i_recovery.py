@@ -869,12 +869,9 @@ def recover_confirmation_intent(owner: str) -> str:
     # The journal records "absent" for legitimately missing files at journal time.
     # But we must verify BOTH members against recorded evidence before clearing.
     # Do NOT use one-member shortcuts.
-    # 
+    #
     # If a file is missing and the journal did NOT record "absent" for it,
     # the file was deleted/corrupted → fail closed.
-    # If the journal recorded "absent", continue to verify both members below.
-    # The _sha256_file helper returns "absent" for missing files, so the
-    # fingerprint comparison will handle it correctly.
     if not os.path.isfile(npath) and old_nursery_fp != "absent":
         raise RollbackRecoveryError(
             f"confirmation intent: nursery file missing (journal preserved): {npath}"
@@ -883,36 +880,64 @@ def recover_confirmation_intent(owner: str) -> str:
         raise RollbackRecoveryError(
             f"confirmation intent: program file missing (journal preserved): {ppath}"
         )
-    # If we reach here, missing files were recorded as "absent".
-    # Continue to verify BOTH members below. Do not clear yet.
 
-    # --- Read and validate BOTH files before any mutation ---
-    try:
-        with open(npath, encoding="utf-8") as f:
-            ndata = json.load(f)
-    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
-        raise RollbackRecoveryError(
-            f"confirmation intent: unreadable nursery (journal preserved): {exc}"
-        ) from exc
-    if not isinstance(ndata, dict):
-        raise RollbackRecoveryError(
-            "confirmation intent: nursery is not a dict (journal preserved)"
-        )
+    # --- Compute BOTH fingerprints FIRST, including explicit absence ---
+    # _sha256_file returns "absent" for missing files.
+    # Handle proven unchanged OLD before attempting to open missing files.
+    current_nursery_fp = _sha256_file(npath)
+    current_program_fp = _sha256_file(ppath)
 
-    try:
-        with open(ppath, encoding="utf-8") as f:
-            pdata = json.load(f)
-    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
-        raise RollbackRecoveryError(
-            f"confirmation intent: unreadable program (journal preserved): {exc}"
-        ) from exc
-    if not isinstance(pdata, dict):
-        raise RollbackRecoveryError(
-            "confirmation intent: program is not a dict (journal preserved)"
-        )
+    if current_nursery_fp == old_nursery_fp and current_program_fp == old_program_fp:
+        # Both members unchanged, including legitimate absence ("absent"=="absent").
+        # Operation never wrote. Safe to clear.
+        clear_confirm_intent(owner)
+        return "no_change"
 
-    # --- Validate Program structure strictly ---
+    # --- Read and validate PRESENT members ---
+    # Do not interpret malformed content as absence.
+    # Only open files that exist; absent files were already handled above.
+    if os.path.isfile(npath):
+        try:
+            with open(npath, encoding="utf-8") as f:
+                ndata = json.load(f)
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            raise RollbackRecoveryError(
+                f"confirmation intent: unreadable nursery (journal preserved): {exc}"
+            ) from exc
+        if not isinstance(ndata, dict):
+            raise RollbackRecoveryError(
+                "confirmation intent: nursery is not a dict (journal preserved)"
+            )
+    else:
+        ndata = None  # Absent; was recorded as "absent" in journal
+
+    if os.path.isfile(ppath):
+        try:
+            with open(ppath, encoding="utf-8") as f:
+                pdata = json.load(f)
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            raise RollbackRecoveryError(
+                f"confirmation intent: unreadable program (journal preserved): {exc}"
+            ) from exc
+        if not isinstance(pdata, dict):
+            raise RollbackRecoveryError(
+                "confirmation intent: program is not a dict (journal preserved)"
+            )
+    else:
+        pdata = None  # Absent; was recorded as "absent" in journal
+
+    # --- Validate Program structure strictly (if present) ---
     # Do NOT interpret malformed Units as empty valid Plane.
+    # If pdata is None (absent), skip validation; the fingerprint check already handled it.
+    # For changed companion + absent member, we fail closed below (cannot prove outcome).
+    if pdata is None:
+        # Program absent. If we reach here, the fingerprint check did NOT clear as no_change,
+        # meaning at least one member changed. Changed companion + absent member → fail closed
+        # unless the journal proves a coherent outcome. For now, fail closed.
+        raise RollbackRecoveryError(
+            "confirmation intent: program absent but nursery changed (journal preserved). "
+            "Cannot prove safe outcome."
+        )
     plane = pdata.get("plane")
     if plane is None:
         raise RollbackRecoveryError(
@@ -933,28 +958,11 @@ def recover_confirmation_intent(owner: str) -> str:
         )
     unit_ids = set(units.keys())
 
-    # --- Check BOTH fingerprints ---
-    # GDP_R3_CLOSE_STALE_INTENT_ESCAPE req. 1: Neither unchanged Nursery nor
-    # pending status proves Program stayed OLD. Before clearing intent,
-    # establish the recorded complete outcome. Both fingerprints must match
-    # OLD to claim no_change.
-    current_nursery_fp = _sha256_file(npath)
-    current_program_fp = _sha256_file(ppath)
-    old_program_fp = journal.get("old_program_sha256")
-    
-    if current_nursery_fp == old_nursery_fp and current_program_fp == old_program_fp:
-        # Both files unmodified. Operation never wrote. Safe to clear.
-        clear_confirm_intent(owner)
-        return "no_change"
-    
-    if current_nursery_fp == old_nursery_fp and current_program_fp != old_program_fp:
-        # Nursery unchanged but Program modified! This is an incomplete
-        # transition (Program was written but Nursery was not, or vice versa).
-        # Do NOT return no_change. Preserve evidence and fail closed.
-        raise RollbackRecoveryError(
-            f"confirmation intent: nursery unchanged but program modified "
-            f"(journal preserved). Cannot prove safe outcome."
-        )
+    # Fingerprints already computed and checked above for no_change.
+    # If we reach here, at least one member changed.
+    # Continue with proposal status verification below.
+    # (The nursery-unchanged-but-program-modified check is handled by the
+    #  specific proposal status logic that follows.)
 
     # --- Nursery was modified. Examine the RECORDED proposal ---
     prop = ndata.get(proposal_id)
