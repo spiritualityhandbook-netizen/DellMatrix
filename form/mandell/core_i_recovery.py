@@ -902,14 +902,28 @@ def recover_confirmation_intent(owner: str) -> str:
         )
     unit_ids = set(units.keys())
 
-    # --- Check nursery fingerprint ---
+    # --- Check BOTH fingerprints ---
+    # GDP_R3_CLOSE_STALE_INTENT_ESCAPE req. 1: Neither unchanged Nursery nor
+    # pending status proves Program stayed OLD. Before clearing intent,
+    # establish the recorded complete outcome. Both fingerprints must match
+    # OLD to claim no_change.
     current_nursery_fp = _sha256_file(npath)
-    if current_nursery_fp == old_nursery_fp:
-        # Nursery never modified. But we must also verify program coherence
-        # before clearing. If program is coherent, safe to clear.
-        # (Program was validated above.)
+    current_program_fp = _sha256_file(ppath)
+    old_program_fp = journal.get("old_program_sha256")
+    
+    if current_nursery_fp == old_nursery_fp and current_program_fp == old_program_fp:
+        # Both files unmodified. Operation never wrote. Safe to clear.
         clear_confirm_intent(owner)
         return "no_change"
+    
+    if current_nursery_fp == old_nursery_fp and current_program_fp != old_program_fp:
+        # Nursery unchanged but Program modified! This is an incomplete
+        # transition (Program was written but Nursery was not, or vice versa).
+        # Do NOT return no_change. Preserve evidence and fail closed.
+        raise RollbackRecoveryError(
+            f"confirmation intent: nursery unchanged but program modified "
+            f"(journal preserved). Cannot prove safe outcome."
+        )
 
     # --- Nursery was modified. Examine the RECORDED proposal ---
     prop = ndata.get(proposal_id)
@@ -928,15 +942,24 @@ def recover_confirmation_intent(owner: str) -> str:
     status = prop.get("status")
     if status != "confirmed":
         # Proposal exists but is not confirmed.
-        # SWAT BREAK 2 FIX: If the proposal is still pending (untouched by
-        # the journaled operation), the journal is STALE. The operation
-        # never wrote; the fingerprint difference is from an unrelated
-        # concurrent write. Clear the journal as no_change, do NOT raise.
-        # This prevents permanent DoS from stale journals.
+        # GDP_R3_CLOSE_STALE_INTENT_ESCAPE req. 1: Pending status alone does
+        # NOT prove Program stayed OLD. Must check if the specific Idea was
+        # written.
         if status == "pending":
-            # Verify the proposal was not modified by the operation.
-            # The operation would have set it to "confirmed". Since it's
-            # still pending, the operation did not touch it.
+            # If the Idea IS in the program, the operation partially completed
+            # (wrote Program but not Nursery). This is an incomplete transition,
+            # NOT a stale journal. Fail closed; do NOT clear.
+            if proposal_id in unit_ids:
+                raise RollbackRecoveryError(
+                    f"confirmation intent: proposal {proposal_id} pending but "
+                    f"Idea present in program (journal preserved). Incomplete transition."
+                )
+            # Idea NOT in program. The operation did not write the Program.
+            # The nursery fingerprint difference (if any) is from unrelated
+            # concurrent writes. The journal is stale. Safe to clear.
+            # Note: We do NOT require program fp == OLD, because unrelated
+            # writes (other Ideas, timestamps) may have changed it. The
+            # absence of the specific Idea proves the operation didn't complete.
             clear_confirm_intent(owner)
             return "no_change"
         # Status is neither confirmed nor pending (e.g., rejected, etc.).

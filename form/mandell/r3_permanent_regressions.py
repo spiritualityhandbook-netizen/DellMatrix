@@ -395,8 +395,124 @@ except Exception as e:
     rec("09_stale_concurrent", ok, out[:60])
     clean(o)
 
+def t10():
+    o = "R3H10"; clean(o)
+    setup = """
+import sys, json
+sys.path.insert(0, %r)
+from form.open import open_program
+from form import persist_rest
+from form.mandell.core_i_recovery import write_confirm_intent
+p = open_program(%r)
+pr = p.nursery.add('t', words='x')
+pid = pr.id
+p.nursery.save()
+persist_rest.save(p)
+# Write journal (pending, no Idea)
+write_confirm_intent(%r, pid)
+# Manually add Idea to Program WITHOUT updating Nursery
+# (simulates partial write: Program modified, Nursery unchanged)
+from form.persist import _path
+pp = _path(%r)
+d = json.load(open(pp))
+# Add a fake Idea directly
+d['plane']['units'][pid] = {'id': pid, 'label': 't', 'fake': True}
+json.dump(d, open(pp, 'w'))
+print('PID:' + pid)
+""" % (REPO, o, o, o)
+    rc, out, err = run_script("t10_setup", setup)
+    if rc != 0 or "PID:" not in out:
+        rec("10_negA", False, "setup failed")
+        clean(o); return
+    pid = out.split("PID:")[1].strip().split()[0]
+    # Recovery must NOT return no_change (Program was modified)
+    # It should either heal (if it can prove) or raise (fail closed)
+    # It must NOT silently discard the journal
+    load = """
+import sys, os
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import _confirm_journal_path, RollbackRecoveryError
+try:
+    p = persist_rest.load(%r, activate=False)
+    jexists = os.path.isfile(_confirm_journal_path(%r))
+    # If it didn't raise, journal must NOT have been cleared as no_change
+    # (because Program was modified)
+    print('NO_RAISE JEXISTS:' + str(jexists))
+except RollbackRecoveryError:
+    print('RAISED_ROLLBACK')
+except Exception as e:
+    print('RAISED_OTHER:' + type(e).__name__)
+""" % (REPO, o, o)
+    rc, out, err = run_script("t10_load", load)
+    # PASS if it raised (fail closed) OR if journal was NOT cleared as no_change
+    # FAIL if it returned no_change and cleared journal while Program modified
+    ok = "RAISED_ROLLBACK" in out or ("NO_RAISE" in out and "JEXISTS:True" in out)
+    # Actually, the correct behavior: Program modified + proposal pending
+    # = incomplete transition. Should raise (cannot prove safe).
+    ok = "RAISED_ROLLBACK" in out
+    rec("10_negA_program_modified", ok, out[:60])
+    clean(o)
+
+# 11. negative_control_B: Nursery has unrelated write, Program modified
+# Same as A, but Nursery also has an unrelated legitimate write.
+def t11():
+    o = "R3H11"; clean(o)
+    setup = """
+import sys, json
+sys.path.insert(0, %r)
+from form.open import open_program
+from form import persist_rest
+from form.mandell.core_i_recovery import write_confirm_intent
+p = open_program(%r)
+pr = p.nursery.add('A', words='x')
+pid_a = pr.id
+p.nursery.save()
+persist_rest.save(p)
+write_confirm_intent(%r, pid_a)
+# Unrelated legitimate write: add B to Nursery
+pr_b = p.nursery.add('B', words='y')
+p.nursery.save()
+# Partial write: add Idea for A to Program (but A still pending in Nursery)
+from form.persist import _path
+pp = _path(%r)
+d = json.load(open(pp))
+d['plane']['units'][pid_a] = {'id': pid_a, 'label': 'A', 'fake': True}
+json.dump(d, open(pp, 'w'))
+persist_rest.save(p)  # Save program with Idea
+print('PID_A:' + pid_a)
+""" % (REPO, o, o, o)
+    rc, out, err = run_script("t11_setup", setup)
+    if rc != 0 or "PID_A:" not in out:
+        rec("11_negB", False, "setup failed")
+        clean(o); return
+    # Recovery must NOT clear journal as no_change
+    load = """
+import sys, os
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import _confirm_journal_path, RollbackRecoveryError
+try:
+    p = persist_rest.load(%r, activate=False)
+    jexists = os.path.isfile(_confirm_journal_path(%r))
+    print('NO_RAISE JEXISTS:' + str(jexists))
+except RollbackRecoveryError:
+    print('RAISED_ROLLBACK')
+except Exception as e:
+    print('RAISED_OTHER:' + type(e).__name__)
+""" % (REPO, o, o)
+    rc, out, err = run_script("t11_load", load)
+    ok = "RAISED_ROLLBACK" in out
+    rec("11_negB_both_modified", ok, out[:60])
+    clean(o)
+
 if __name__ == "__main__":
-    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t09()
+    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11()
     n = sum(results)
     print("=== %d/%d ===" % (n, len(results)))
     sys.exit(0 if all(results) else 1)
+
+# 10. negative_control_A: Nursery unchanged, Program modified (Idea added)
+# Journal records pending proposal, Program without Idea.
+# Then Program is persisted WITH the Idea, Nursery unchanged.
+# Recovery must NOT return no_change and discard journal.
