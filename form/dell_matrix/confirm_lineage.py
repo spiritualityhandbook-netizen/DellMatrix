@@ -32,12 +32,25 @@ def _detail(prop, units) -> str:
 
 
 def confirm_proposal(program, pid: str) -> Dict[str, Any]:
-    """Canonical confirmation authority (the only caller of Nursery.confirm).
+    """Canonical confirmation authority (transactional).
 
-    Order: SELECT PENDING > VALIDATE/ASSIGN LINEAGE > PLACE > COMMIT CONFIRMATION + PERSIST (Nursery.confirm)
-    > RETURN SUCCESS. Any failure before the commit leaves the proposal pending (memory and disk), so it
-    stays retryable and rejectable. A placement exception propagates without committing.
+    Uses the checkpoint generation transaction (DCC-XVIII) to atomically
+    commit Program + Nursery state. The logical transition is:
+
+    OLD: proposal=PENDING, Idea absent from accepted Plane
+    NEW: proposal=CONFIRMED, Idea present in accepted Program state
+
+    Externally observable durable state is either OLD complete or NEW
+    complete, never a hybrid. Any failure before the commit boundary
+    leaves the proposal pending (memory and disk), so it stays retryable
+    and rejectable.
+
+    Internal: Set confirm_lineage._SKIP_CHECKPOINT = True to bypass the
+    checkpoint (caller manages durability). Used by supersede_proposal
+    which has its own transaction boundary.
     """
+    # Check for skip flag (set by supersede_proposal)
+    _skip = getattr(confirm_proposal, '_SKIP_CHECKPOINT', False)
     nursery = program.nursery
     prop = nursery.proposals.get(pid)
     if not prop or prop.status != "pending":
@@ -56,12 +69,47 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
         if not existed:
             units.pop(prop.id, None)
         raise
-    try:
-        nursery.confirm(pid)  # COMMIT CONFIRMATION + PERSIST (reverts to pending itself if persisting fails)
-    except NurseryConflictError as e:
-        if not existed:
-            units.pop(prop.id, None)
-        return {"ok": False, "reason": "nursery_conflict", "error": str(e)}
+    # Stage the nursery confirmation in memory (do NOT save yet).
+    # The checkpoint transaction will persist both Program and Nursery atomically.
+    # ARGUS-3: All persistence failures must preserve/restore pre-operation state.
+    prop.status = "confirmed"
+    if not _skip:
+        try:
+            from form.mandell.checkpoint_generation import commit_checkpoint
+            commit_checkpoint(program)
+        except Exception as exc:
+            # Transaction failed: revert in-memory state to OLD.
+            # Proposal stays pending (retryable), Idea removed if newly placed.
+            # Never claim success, never silently discard, never expose hybrid.
+            prop.status = "pending"
+            if not existed:
+                units.pop(prop.id, None)
+            # Check if it's a nursery conflict (optimistic concurrency).
+            # The checkpoint wraps the original error, so check the chain.
+            from form.dell_matrix.nursery import NurseryConflictError
+            def _is_conflict(e):
+                if isinstance(e, NurseryConflictError):
+                    return True
+                if "conflict" in str(e).lower():
+                    return True
+                # Check wrapped cause (checkpoint wraps nursery errors)
+                cause = getattr(e, '__cause__', None)
+                if cause is not None and cause is not e:
+                    return _is_conflict(cause)
+                return False
+            if _is_conflict(exc):
+                return {"ok": False, "reason": "nursery_conflict", "error": str(exc)}
+            raise
+    else:
+        # Skipping checkpoint (caller manages durability, e.g., supersession).
+        # Use legacy nursery.save() with ARGUS-3 compliant rollback.
+        try:
+            nursery.save()
+        except Exception:
+            prop.status = "pending"
+            if not existed:
+                units.pop(prop.id, None)
+            raise
     try:
         text = " ".join([str(prop.label or ""), str(getattr(prop, "words", "") or ""), str(getattr(prop, "detail", "") or "")])
         aff = float(getattr(prop, "affinity", 1.0) or 1.0)

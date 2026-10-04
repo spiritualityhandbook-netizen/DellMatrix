@@ -82,7 +82,19 @@ def inspect_revision(program: Any, uid: str) -> Dict[str, Any]:
             "routable": False,
         }
 
-    state = getattr(prop, "lifecycle_state", None) or ACTIVE
+    # ARGUS-2 FIX (approved): Fail closed on explicit None/empty lifecycle_state.
+    # Distinguish "attribute missing" (legacy → ACTIVE via compatibility policy)
+    # from "attribute present but None/empty/whitespace" (malformed → fail closed).
+    _MISSING = object()
+    _raw_state = getattr(prop, "lifecycle_state", _MISSING)
+    if _raw_state is _MISSING:
+        state = ACTIVE
+    elif _raw_state is None:
+        state = None
+    elif isinstance(_raw_state, str) and _raw_state.strip() == "":
+        state = None
+    else:
+        state = _raw_state
     supersedes = getattr(prop, "supersedes_id", None)
     superseded_by = getattr(prop, "superseded_by_id", None)
     root = getattr(prop, "revision_root_id", None) or uid
@@ -385,7 +397,15 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     try:
         if _FAIL_AT == "confirm":
             raise SupersedeError("injected_failure", "confirm")
-        res = program.confirm_proposal(succ_id)
+        # Set skip flag: supersession has its own transaction boundary
+        # (Phase 4 save). Avoid nested checkpoint commits.
+        from form.dell_matrix import confirm_lineage as _cl
+        _orig_skip = getattr(_cl.confirm_proposal, '_SKIP_CHECKPOINT', False)
+        _cl.confirm_proposal._SKIP_CHECKPOINT = True
+        try:
+            res = program.confirm_proposal(succ_id)
+        finally:
+            _cl.confirm_proposal._SKIP_CHECKPOINT = _orig_skip
         if not res.get("ok"):
             raise SupersedeError("confirm_failed", str(res.get("reason")))
     except Exception:
