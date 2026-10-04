@@ -437,9 +437,12 @@ class SpatialAuthority:
                 if d >= SEP_CUTOFF:
                     continue
                 if d < 1e-12:
-                    # deterministic coincidence direction
-                    ang = (hash((min(uid, oid), max(uid, oid)))
-                           % 360) * math.pi / 180.0
+                    # deterministic coincidence direction (NOT hash():
+                    # string hash is per-process randomized). Golden-angle
+                    # indexed by a stable integer key of the pair.
+                    key = sum(ord(c) for c in min(uid, oid)) * 31 + sum(
+                        ord(c) for c in max(uid, oid))
+                    ang = (key % 360) * math.pi / 180.0
                     dx, dy = math.cos(ang), math.sin(ang)
                     d = 1.0
                 mag = SEP_STRENGTH * (1.0 - min(d, SEP_CUTOFF) / SEP_CUTOFF)
