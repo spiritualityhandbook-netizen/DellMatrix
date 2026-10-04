@@ -229,3 +229,42 @@ objectives.
 
 **DO NOT MERGE without explicit Director authorization.**  
 **DO NOT BEGIN PHASE 3 without explicit Director authorization.**
+
+---
+
+## 11. FINAL MICRO-GATE — JOURNAL FAIL-CLOSED (2026-10-03)
+
+**Directive:** GDP_002_PHASE_2_FINAL_MICRO_GATE  
+**Micro-gate Head:** `34faafbea98767d53635d6fd8e0df9d401e7a958`  
+**Micro-gate Tree:** `acae7ab4a7635fa96ce7287faa23adacdd9bd5ef`
+
+### 1. Recovery Journal Fail-Closed
+
+**`_write_journal()`:** If existing journal cannot be parsed/validated, raises `GraphValidationError` — DOES NOT overwrite. Unknown recovery state never becomes valid by silent overwrite.
+
+**`propagation_status()`:** If journal exists but cannot be read/validated, returns `"unknown"` (explicit non-success) — NEVER `"synchronized"`. States: "synchronized" | "pending" | "failed" | "unknown". PENDING != SYNCHRONIZED. UNKNOWN != SYNCHRONIZED. FAILED != SYNCHRONIZED.
+
+**`_remove_journal_ops()`:** Raises `GraphValidationError` on corrupt/unreadable journal — no silent ignore.
+
+**`_record_propagation_failure()`:** If `save()` fails and no journal exists for recovery, raises `GraphValidationError` (fail closed). If journal exists, it remains as authoritative pending-recovery (not cleared).
+
+**`_on_idea_event()`:** `GraphValidationError` (integrity failure) propagates — NOT converted to FAILED. The graph is in unknown state; the operation must fail closed.
+
+### 2. Owner Sanitizer — Single Authority
+
+Deleted `form/mandell/semantic_graph._safe_owner`. Now reuses `form.persist._safe_owner` (single canonical authority). Proven: empty → "operator", special chars → same namespace, no second sanitizer.
+
+### 3. Micro-Gate Proofs
+
+`form/mandell/p2_microgate_proof.py` — 11/11 PASS:
+- Corrupt journal before propagation → `_write_journal` raises, not overwritten
+- Corrupt journal via `propagation_status` → "unknown", never "synchronized"
+- Fresh-process load with corrupt journal → `GraphValidationError` (fail closed)
+- Sanitizer: no local, same function, empty/special owners in same namespace
+
+### Permanent Laws (restated)
+
+- PERSISTENCE MUST FAIL CLOSED.
+- UNKNOWN RECOVERY STATE MUST NOT BECOME VALID STATE.
+- PENDING != SYNCHRONIZED.
+- FAILED != SYNCHRONIZED.
