@@ -199,6 +199,51 @@ r["p7_recomputed"] = (dep_after.get_property("m") == 100)''') + TEARDOWN)
     return ("valid-control", code)
 
 
+def _live_listener_corrupt() -> tuple[str, str]:
+    """R2-F2: live listener with corrupt journal.
+
+    Behavior (Director-observed, now permanent):
+    - Corrupt journal present.
+    - Source mutation via live path returns normally (no exception to caller).
+    - Source becomes 100 (mutation succeeded; no rollback invented).
+    - Dependent remains 42 (propagation failed closed, not applied).
+    - Status is "unknown" (explicit non-success).
+    - Journal bytes intact.
+    - Fresh-process load rejects.
+
+    The integrity exception does NOT reach the mutation caller (listener
+    dispatch catches); it is recorded as FAILED/unknown, not silent.
+    """
+    code = (SETUP % {"REPO": REPO, "OWNER": OWNER} + """
+# Write a corrupt journal.
+with open(jpath, "w") as f:
+    f.write("{corrupt")
+with open(jpath) as f:
+    corrupt_bytes = f.read()
+# Live mutation: source set_property triggers listener -> propagation.
+# The listener must not crash the mutation; propagation fails closed.
+try:
+    src.set_property("v", 100, PROV)
+    save_idea(src, OWNER)
+    r["live_no_crash"] = True
+except Exception:
+    r["live_no_crash"] = False
+# Source mutation succeeded (no rollback).
+src_after = load_idea(src.id, OWNER)
+r["live_source_100"] = (src_after.get_property("v") == 100)
+# Dependent NOT updated (propagation failed closed).
+dep_after = load_idea(dep.id, OWNER)
+r["live_dependent_42"] = (dep_after.get_property("m") != 100)
+# Status is unknown (not synchronized).
+r["live_status_unknown"] = (g.propagation_status(dep.id, "m") == "unknown")
+r["live_status_nonsync"] = (g.propagation_status(dep.id, "m") != "synchronized")
+# Journal bytes intact.
+with open(jpath) as f:
+    r["live_bytes_intact"] = (f.read() == corrupt_bytes)
+""" + FRESH_LOAD % {"REPO": REPO, "OWNER": OWNER} + TEARDOWN)
+    return ("live-listener-corrupt", code)
+
+
 def smoke() -> bool:
     """Run all DSC1_J01 R1 cases. Returns True iff all pass."""
     cases = [
@@ -244,6 +289,32 @@ def smoke() -> bool:
                                         "edge_rel_id": "e"}]})),
         _outgoing_case(),
         _valid_control(),
+        _live_listener_corrupt(),
+        # R2-F1: raw entry type coercions (no from_dict hiding).
+        _invalid_case("entry-relid-list",
+            json.dumps({"format_version": 1, "owner": OWNER, "operations": [
+                {"op": "ensure_edge", "entry": {
+                    "rel_id": [], "type": "depends_on",
+                    "source_id": "s", "target_id": "t", "props": {},
+                    "status": "active", "seq": 1, "recorded_at": 1.0,
+                    "provenance": {"source": "human", "activity": "x", "agent": "y"},
+                    "cause": ""}}]})),
+        _invalid_case("entry-seq-bool",
+            json.dumps({"format_version": 1, "owner": OWNER, "operations": [
+                {"op": "ensure_edge", "entry": {
+                    "rel_id": "r1", "type": "depends_on",
+                    "source_id": "s", "target_id": "t", "props": {},
+                    "status": "active", "seq": True, "recorded_at": 1.0,
+                    "provenance": {"source": "human", "activity": "x", "agent": "y"},
+                    "cause": ""}}]})),
+        _invalid_case("entry-seq-string",
+            json.dumps({"format_version": 1, "owner": OWNER, "operations": [
+                {"op": "ensure_edge", "entry": {
+                    "rel_id": "r1", "type": "depends_on",
+                    "source_id": "s", "target_id": "t", "props": {},
+                    "status": "active", "seq": "2", "recorded_at": 1.0,
+                    "provenance": {"source": "human", "activity": "x", "agent": "y"},
+                    "cause": ""}}]})),
     ]
 
     all_results = {}

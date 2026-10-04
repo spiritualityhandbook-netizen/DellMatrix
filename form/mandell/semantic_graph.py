@@ -197,6 +197,76 @@ def validate_journal(data: Any, owner: str) -> dict:
     return data
 
 
+def _validate_raw_entry(entry: Any, owner: str, idx: int) -> None:
+    """R2: strict raw-type schema for journal-embedded relationship entries.
+
+    from_dict() coerces (str([])->"[]", int(True)->1, float("2")->2.0),
+    but replay uses RAW fields: rel_id as a dict key (unhashable list
+    crashes), seq for ordering. Validation must reject malformed raw
+    types before coercion can hide them, before the idempotence skip,
+    before reporting success, and before deleting evidence.
+
+    Requires exact types (no bool-as-int, no str-as-int, no list-as-str).
+    """
+    if not isinstance(entry, dict):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: operation {idx} "
+            f"(ensure_edge) entry must be a dict, "
+            f"got {type(entry).__name__}")
+
+    def _req_str(field: str, non_empty: bool = True) -> None:
+        v = entry.get(field)
+        # bool is not str, but be explicit; list/dict/int rejected.
+        if not isinstance(v, str) or isinstance(v, bool):
+            raise GraphValidationError(
+                f"graph journal for {owner!r}: operation {idx} "
+                f"(ensure_edge) entry field {field!r} must be str, "
+                f"got {type(v).__name__}")
+        if non_empty and not v:
+            raise GraphValidationError(
+                f"graph journal for {owner!r}: operation {idx} "
+                f"(ensure_edge) entry field {field!r} must be non-empty")
+
+    def _req_int(field: str) -> None:
+        v = entry.get(field)
+        # Reject bool (True == 1) and str ("2") — no coercion.
+        if not isinstance(v, int) or isinstance(v, bool):
+            raise GraphValidationError(
+                f"graph journal for {owner!r}: operation {idx} "
+                f"(ensure_edge) entry field {field!r} must be int, "
+                f"got {type(v).__name__}")
+
+    _req_str("rel_id")
+    _req_str("type")
+    _req_str("source_id")
+    _req_str("target_id")
+    _req_str("status")
+    _req_str("cause", non_empty=False)
+    _req_int("seq")
+
+    # props must be a dict (replay may iterate it).
+    if not isinstance(entry.get("props"), dict):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: operation {idx} "
+            f"(ensure_edge) entry field 'props' must be dict, "
+            f"got {type(entry.get('props')).__name__}")
+
+    # recorded_at must be numeric (not bool, not str).
+    ra = entry.get("recorded_at")
+    if not isinstance(ra, (int, float)) or isinstance(ra, bool):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: operation {idx} "
+            f"(ensure_edge) entry field 'recorded_at' must be numeric, "
+            f"got {type(ra).__name__}")
+
+    # provenance must be a dict (from_dict will validate its contents).
+    if not isinstance(entry.get("provenance"), dict):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: operation {idx} "
+            f"(ensure_edge) entry field 'provenance' must be dict, "
+            f"got {type(entry.get('provenance')).__name__}")
+
+
 def _validate_journal_op(op: Any, owner: str, idx: int) -> None:
     """Validate a single journal operation. Raises GraphValidationError."""
     if not isinstance(op, dict):
@@ -220,11 +290,13 @@ def _validate_journal_op(op: Any, owner: str, idx: int) -> None:
                 f"field {field!r} must be {ftype.__name__}, "
                 f"got {type(op[field]).__name__}")
     # Operation-specific invariants for safe replay.
-    # R1-F1: ensure_edge entries are validated through the CANONICAL
-    # relationship contract (RelationshipEntry.from_dict) — not a partial
-    # presence check. This runs before the replay idempotence skip, so a
-    # malformed entry cannot hide behind an existing rel_id.
+    # R2: strict raw-type schema for ensure_edge entries. from_dict()
+    # coerces (str([]) -> "[]", int(True) -> 1), but replay uses RAW
+    # fields (rel_id as dict key -> unhashable list crashes). Validation
+    # and execution must agree: reject malformed raw types BEFORE
+    # from_dict coercion can hide them.
     if op_type == "ensure_edge":
+        _validate_raw_entry(op["entry"], owner, idx)
         try:
             RelationshipEntry.from_dict(op["entry"])
         except GraphValidationError as exc:
