@@ -518,16 +518,16 @@ def smoke():
     global results
     results = []
     # Clean up any leftover state from previous runs (for --twice)
-    for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11"]:
+    for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11", "R3H12"]:
         clean(o)
     try:
-        t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11()
+        t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12()
     except Exception as e:
         print("SMOKE EXCEPTION: %s" % e)
         return False
     finally:
         # Ensure cleanup even on crash (for --twice second pass)
-        for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11"]:
+        for o in ["R3H01", "R3H02", "R3H03", "R3H04", "R3H05", "R3H06", "R3H07", "R3H08", "R3H09", "R3H10", "R3H11", "R3H12"]:
             clean(o)
     n = sum(results)
     total = len(results)
@@ -535,8 +535,59 @@ def smoke():
     return n == total and total > 0
 
 
+def t12():
+    o = "R3H12"; clean(o)
+    setup = """
+import sys, json, os
+REPO_DIR = %r
+OWNER_ID = %r
+sys.path.insert(0, REPO_DIR)
+from form.open import open_program
+from form.mandell.core_i_recovery import write_confirm_intent
+p = open_program(OWNER_ID)
+pr = p.nursery.add('test', words='x')
+pid = pr.id
+p.nursery.save()
+# Do NOT save program (absent)
+write_confirm_intent(OWNER_ID, pid)
+# Persist Nursery as confirmed; Program remains absent
+npath = os.path.join(REPO_DIR, 'form', 'state', 'nursery_' + OWNER_ID + '.json')
+nd = json.load(open(npath))
+for prop_id, prop in nd.get('proposals', {}).items():
+    if prop_id == pid:
+        prop['status'] = 'confirmed'
+        break
+json.dump(nd, open(npath, 'w'))
+print('PID:' + pid)
+""" % (REPO, o)
+    rc, out, err = run_script("t12_setup", setup)
+    if rc != 0 or "PID:" not in out:
+        rec("12_absent_prog", False, "setup failed")
+        clean(o); return
+    # Recovery must raise (not clear as no_change)
+    load = """
+import sys, os
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import _confirm_journal_path, RollbackRecoveryError
+try:
+    p = persist_rest.load(%r, activate=False)
+    jexists = os.path.isfile(_confirm_journal_path(%r))
+    # If no raise, check if hybrid was exposed
+    print('NO_RAISE JEXISTS:' + str(jexists))
+except RollbackRecoveryError:
+    print('RAISED_ROLLBACK')
+except Exception as e:
+    print('RAISED_OTHER:' + type(e).__name__)
+""" % (REPO, o, o)
+    rc, out, err = run_script("t12_load", load)
+    # PASS if raised (fail closed). FAIL if cleared as no_change.
+    ok = "RAISED_ROLLBACK" in out
+    rec("12_absent_prog_confirmed", ok, out[:60])
+    clean(o)
+
 if __name__ == "__main__":
-    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11()
+    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11(); t12()
     n = sum(results)
     print("=== %d/%d ===" % (n, len(results)))
     sys.exit(0 if all(results) else 1)
@@ -545,3 +596,7 @@ if __name__ == "__main__":
 # Journal records pending proposal, Program without Idea.
 # Then Program is persisted WITH the Idea, Nursery unchanged.
 # Recovery must NOT return no_change and discard journal.
+
+# 12. absent_program_confirmed: Director's escape reproduction
+# Originally absent Program; Nursery becomes confirmed.
+# Recovery must NOT return no_change; must fail closed.

@@ -510,6 +510,14 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
 
 
 def _sha256_file(path: str) -> str:
+    """SHA256 hex digest of file bytes.
+    
+    Returns "absent" if file does not exist (legitimate absence).
+    Raises OSError if file exists but is unreadable.
+    """
+    import os
+    if not os.path.exists(path):
+        return "absent"
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
@@ -857,27 +865,26 @@ def recover_confirmation_intent(owner: str) -> str:
     ppath = _path(owner)
 
     # --- Files must exist and be readable; otherwise fail closed ---
-    # Do NOT clear journal merely because files are missing.
-    # However, if the journal records "absent" (file didn't exist at journal time)
-    # and the file still doesn't exist, the operation never wrote → safe to clear.
-    if not os.path.isfile(npath):
-        if old_nursery_fp == "absent":
-            # Nursery didn't exist at journal time, still doesn't exist.
-            # Operation never wrote. Safe to clear.
-            clear_confirm_intent(owner)
-            return "no_change"
+    # If a member file is missing, we cannot assume the operation never wrote.
+    # The journal records "absent" for legitimately missing files at journal time.
+    # But we must verify BOTH members against recorded evidence before clearing.
+    # Do NOT use one-member shortcuts.
+    # 
+    # If a file is missing and the journal did NOT record "absent" for it,
+    # the file was deleted/corrupted → fail closed.
+    # If the journal recorded "absent", continue to verify both members below.
+    # The _sha256_file helper returns "absent" for missing files, so the
+    # fingerprint comparison will handle it correctly.
+    if not os.path.isfile(npath) and old_nursery_fp != "absent":
         raise RollbackRecoveryError(
             f"confirmation intent: nursery file missing (journal preserved): {npath}"
         )
-    if not os.path.isfile(ppath):
-        if old_program_fp == "absent":
-            # Program didn't exist at journal time, still doesn't exist.
-            # Operation never wrote. Safe to clear.
-            clear_confirm_intent(owner)
-            return "no_change"
+    if not os.path.isfile(ppath) and old_program_fp != "absent":
         raise RollbackRecoveryError(
             f"confirmation intent: program file missing (journal preserved): {ppath}"
         )
+    # If we reach here, missing files were recorded as "absent".
+    # Continue to verify BOTH members below. Do not clear yet.
 
     # --- Read and validate BOTH files before any mutation ---
     try:
