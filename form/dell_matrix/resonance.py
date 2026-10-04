@@ -10,6 +10,22 @@ L3: pulse history, optional decay, clear, richer harmonize.
 Run:
   python -m form.dell_matrix.resonance --smoke
   python -m form.dell_matrix.resonance --demo
+
+CONCEPT SEPARATION (GDP-001 Phase 3, 3.1.2): this module's ``pulse`` is
+DIFFUSION over the resonance graph — score/tag accumulation propagated
+across enhance-scope edges over time. ``ringed_growth._affinity`` is a
+DIFFERENT concept: one-shot PAIR SCORING (deterministic composite of
+harmonic/Jaccard/spatial/scope/goal terms) used to rank idea pairs for
+growth-ring proposals. Keep both; do not merge pulse into affinity or
+affinity into pulse.
+
+RESONANCE vs VERITA FIREWALL (GDP-001 Phase 3, 3.1.5): Resonance =
+pulse/diffusion over the resonance graph + pair affinity for growth.
+Verita (form.dell_matrix.verita) = solo integrity + pair coherence scoring
+(vesica overlap). They are PARALLEL mechanisms with distinct contracts.
+Merging them is prohibited (established architectural decision: Verita/Smith
+ancestry must not be merged with other mechanisms merely for sharing
+imagery or a name).
 """
 
 from __future__ import annotations
@@ -24,6 +40,7 @@ try:
     from form.mandell.floor import FLOOR, assert_floor_intact
     from form.dell_matrix.plane import Plane, Skin
     from form.dell_matrix.blank_cube import give
+    from form.dell_matrix import faded_policy  # P3 R3.5.2: faded-state exclusion
 except ImportError:
     import os
 
@@ -31,6 +48,7 @@ except ImportError:
     from form.mandell.floor import FLOOR, assert_floor_intact
     from form.dell_matrix.plane import Plane, Skin
     from form.dell_matrix.blank_cube import give
+    from form.dell_matrix import faded_policy  # P3 R3.5.2: faded-state exclusion
 
 
 @dataclass
@@ -65,17 +83,55 @@ def pulse(
     *,
     amount: float = 0.25,
     tag_amount: float = 0.15,
+    program: Any = None,
 ) -> ResonanceState:
+    """Diffuse resonance scores/tags across enhance-scope edges (one step).
+
+    Canonical lifecycle (P3 closeout): faded-state exclusion uses the
+    owner-aware canonical boundary (form.dell_matrix.canonical_lifecycle),
+    NOT dynamic Unit attributes. When program is provided, units with
+    inactive/unreadable canonical lifecycle are excluded (fail-closed).
+    Faded units have zero effective influence: they neither send nor
+    receive, get no new entries, and retained scores/tags from before
+    fading are dropped at pulse time. History preserved (pulse counted,
+    exclusion logged).
+    the exclusion is recorded in ``state.log``; ``state.log`` is never
+    pruned here (use ``clear`` to reset). All-faded input yields empty
+    scores/tags, never an exception.
+    """
     assert_floor_intact()
     state = state or ResonanceState()
     ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
 
+    # P3 Canonical Lifecycle: faded-state exclusion via owner-aware boundary.
+    # When program is provided, resolve (program, unit_id) canonically;
+    # inactive/unreadable -> excluded (fail-closed). Without program,
+    # no exclusion is possible (documented limitation).
+    if program is not None:
+        from form.dell_matrix import canonical_lifecycle
+        faded_ids = {uid for uid in plane.units
+                     if not canonical_lifecycle.is_active(program, uid)}
+    else:
+        faded_ids = set()
+    # Reused state may retain scores/tags for units that faded AFTER
+    # their last active pulse. Drop those retained entries so faded
+    # units exert zero effective influence going forward; keep the log
+    # (history is preserved, not rewritten).
+    for uid in set(state.scores) | set(state.tags):
+        if uid in faded_ids:
+            state.scores.pop(uid, None)
+            state.tags.pop(uid, None)
+            state.log.append(f"{ts} {uid}: faded, retained scores/tags excluded")
     for uid in plane.units:
+        if uid in faded_ids:
+            continue
         state.scores.setdefault(uid, 0.0)
         state.tags.setdefault(uid, {})
 
     for uid, u in plane.units.items():
-        peers = plane.enhance_scope(uid)
+        if uid in faded_ids:
+            continue
+        peers = [p for p in plane.enhance_scope(uid) if p not in faded_ids]
         toks = _tokens(u.label, u.words)
         if not peers:
             state.log.append(f"{ts} {uid}: no peers")
@@ -120,6 +176,18 @@ def harmonize_pair(
     *,
     amount: float = 0.5,
 ) -> Dict[str, Any]:
+    """Resonance-state write for one pair of plane units (not a harmony metric).
+
+    Honest description (R3.2.2): bumps both units' resonance scores by
+    ``amount`` and records cross-tags in ``state`` when the units are in
+    mutual enhance scope; fails closed ({"ok": False, ...}) for missing
+    units or units outside mutual scope. This is a state-mutating
+    resonance operation owned by the pulse/diffusion subsystem
+    (live caller: EnhanceGate.harmonize <- idea_grow.py), NOT the R3.2
+    set-coherence metric harmony_score (form/dell_matrix/harmony.py),
+    which is stateless and operates on idea sets. Name kept for
+    compatibility; behavior unchanged.
+    """
     assert_floor_intact()
     state = state or ResonanceState()
     a, b = plane.units.get(a_id), plane.units.get(b_id)

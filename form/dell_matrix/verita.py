@@ -8,6 +8,32 @@ Verita — structural truth checks.
 
 Not paranormal. Structural signal only.
 Residue marks weak solos and rejected pairs.
+
+RESONANCE vs VERITA FIREWALL (GDP-001 Phase 3, 3.1.5): Verita = solo
+integrity + pair coherence scoring (vesica overlap). Resonance
+(form.dell_matrix.resonance) = pulse/diffusion over the resonance graph +
+pair affinity for growth. They are PARALLEL mechanisms with distinct
+contracts. Merging them is prohibited (established architectural decision:
+Verita/Smith ancestry must not be merged with other mechanisms merely for
+sharing imagery or a name).
+
+PARKED (GDP-001 Phase 3, objective 3.3.1 — DECISION, do not build):
+  A "Verita transformation layer" (a spatial transformation of ideas in a
+  Verita space) is PARKED, not implemented. Verified rationale (2026-10-04):
+  1. No mathematical derivation exists: zero "transform" references in
+     verita.py / sacred_geometry.py / brain.py (grep-verified).
+  2. No proven consumers: no transformation API exists anywhere in form/
+     (grep for cech|nerve|power diagram|alpha filtration across form/ = empty;
+     no module calls a transformation entry point because none exists).
+  3. Spatial positions are vacuous for this purpose: Unit.x/Unit.y default to
+     0.0 and Plane.place() defaults x=0.0, y=0.0 (plane.py); ideas placed
+     through the default path all sit at the origin, and
+     verita_between_nodes() skips pairs with dist < 0.01, so default-placed
+     ideas yield NO vesica edges at all. Non-zero positions exist only via
+     explicit plane.move() / place(x=, y=) / nature-physics ticks, and no
+     Verita consumer transforms them.
+  Building the layer would be pseudomathematics (per acceptance matrix).
+  Revisit only with a derivation + proven consumers + non-vacuous positions.
 """
 from __future__ import annotations
 
@@ -15,6 +41,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set
 import re
 import time
+
+from form.dell_matrix import sacred_geometry
 
 _TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
 _FOG = ("asdf", "test123", "xxx", "???", "null", "undefined", "lorem", "TODO_ONLY")
@@ -29,15 +57,47 @@ def tokens(text: str) -> Set[str]:
 # ---------------------------------------------------------------------------
 
 def vesica_strength(r1: float, r2: float, distance: float) -> Dict[str, Any]:
-    r1, r2 = max(1e-9, float(r1)), max(1e-9, float(r2))
+    """Pair-overlap strength, delegated to the canonical implementation.
+
+    GDP-001 Phase 3 (3.4.1): this function is a thin compatibility wrapper.
+    The ONE canonical overlap implementation is
+    ``form.dell_matrix.sacred_geometry.vesica`` (EQ-GEO-001, live authority).
+    All numerics come from it; nothing is reimplemented here. The 3-key shape
+    ({strength, type, distance}) is preserved for existing callers
+    (verita_of_pair, equation_ledger_invariants_test).
+
+    Defined input policy (unchanged from the pre-delegation wrapper):
+      - r1, r2 are coerced with float() then clamped to >= 1e-9.
+      - distance is coerced with float() then clamped to >= 0.0.
+      - NaN is therefore absorbed by the clamps (max(1e-9, nan) -> 1e-9,
+        max(0.0, nan) -> 0.0): no NaN propagates, no exception.
+      - Non-numeric inputs raise from float() (TypeError/ValueError), as before.
+    The wrapper is placed at distance d on the x-axis:
+    sacred_geometry.vesica(0, 0, r1, d, 0, r2).
+
+    Documented raw-canonical behavior (NOT changed by this wrapper; the
+    canonical function is out of scope for 3.4.1 — documented, not fixed):
+      - negative radii passed DIRECTLY to sacred_geometry.vesica can
+        misclassify (e.g. dist >= r1+r2 with a negative sum -> "separate");
+      - NaN passed DIRECTLY to sacred_geometry.vesica propagates into the
+        output dict (no raise);
+      - zero radii passed DIRECTLY give "separate" for d > 0 and
+        "coincident" for d == 0.
+    This wrapper's clamps keep those cases defined at the wrapper boundary.
+
+    Behavioral delta vs the pre-delegation formula (one case, documented):
+      - d < 1e-12 now reports type "coincident" (canonical) where the old
+        code reported "contained"; strength is 1.0 in both. No live caller
+        hits this (verita_of_pair defaults distance=1.0; brain passes the
+        default through).
+      - "distance" in the vesica branch is rounded to 4dp by the canonical
+        function (was full precision). "strength" is bit-identical.
+    """
+    r1 = max(1e-9, float(r1))
+    r2 = max(1e-9, float(r2))
     d = max(0.0, float(distance))
-    ssum, diff = r1 + r2, abs(r1 - r2)
-    if d >= ssum:
-        return {"strength": 0.0, "type": "separate", "distance": d}
-    if d <= diff:
-        return {"strength": 1.0, "type": "contained", "distance": d}
-    strength = 1.0 - (d - diff) / (ssum - diff)
-    return {"strength": round(strength, 4), "type": "vesica", "distance": d}
+    v = sacred_geometry.vesica(0.0, 0.0, r1, d, 0.0, r2)
+    return {"strength": v["strength"], "type": v["type"], "distance": v["distance"]}
 
 
 # ---------------------------------------------------------------------------

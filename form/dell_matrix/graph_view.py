@@ -67,6 +67,12 @@ class GraphView:
     edges: List[ViewEdge] = field(default_factory=list)
     sandboxes: Dict[str, List[str]] = field(default_factory=dict)
     floor: List[str] = field(default_factory=lambda: list(FLOOR))
+    # Honest geometry-failure record (GDP-001 Phase 3, R3.5.2 repair):
+    # vesica-edge computation is optional; when it fails, the failure is
+    # recorded here and edges stay as successfully computed (possibly
+    # empty). Fabricating edges was removed; a missing geometry is never
+    # papered over with all-pairs edges.
+    warnings: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -78,6 +84,7 @@ class GraphView:
             "nodes": [n.to_dict() for n in self.nodes],
             "edges": [e.to_dict() for e in self.edges],
             "sandboxes": self.sandboxes,
+            "warnings": list(self.warnings),
         }
 
     def ascii(self) -> str:
@@ -95,6 +102,8 @@ class GraphView:
             lines.append(f"|  {e.source} -{e.kind}-> {e.target}")
         if self.sandboxes:
             lines.append(f"| BOXES {self.sandboxes}")
+        for w in self.warnings:
+            lines.append(f"| WARN {w}")
         lines.append("+" + "-" * 48 + "+")
         return "\n".join(lines)
 
@@ -125,6 +134,7 @@ def build_view(plane: Plane, scores: Optional[Dict[str, float]] = None) -> Graph
             edges.append(ViewEdge(source=uid, target=u.sandbox_id, kind="sandbox"))
 
     # Verita / vesica edges from real proximity (not all-pairs spam)
+    geometry_warnings: List[str] = []
     try:
         from form.dell_matrix.sacred_geometry import verita_between_nodes
         node_dicts = [n.to_dict() for n in nodes if n.connected]
@@ -136,11 +146,13 @@ def build_view(plane: Plane, scores: Optional[Dict[str, float]] = None) -> Graph
             ))
             # stash verita on a side channel via kind suffix for consumers that care
             # (ViewEdge is simple; live visual re-computes strength from geometry)
-    except Exception:
-        connected_ids = [n.id for n in nodes if n.connected]
-        for i, a in enumerate(connected_ids):
-            for b in connected_ids[i + 1 :]:
-                edges.append(ViewEdge(source=a, target=b, kind="vesica"))
+    except Exception as exc:
+        # Honest failure: leave edges as successfully computed (possibly
+        # empty) and record the unavailable geometry explicitly. Never
+        # synthesize vesica edges between unmeasured pairs.
+        geometry_warnings.append(
+            f"vesica geometry unavailable: {type(exc).__name__}: {exc}"
+        )
 
     sandboxes = {sid: list(sb.member_ids) for sid, sb in plane.sandboxes.items()}
     return GraphView(
@@ -149,6 +161,7 @@ def build_view(plane: Plane, scores: Optional[Dict[str, float]] = None) -> Graph
         nodes=nodes,
         edges=edges,
         sandboxes=sandboxes,
+        warnings=geometry_warnings,
     )
 
 

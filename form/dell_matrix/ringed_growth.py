@@ -1,5 +1,23 @@
 #!/usr/bin/env python3
-"""Ringed Growth — sole public growth path. Body pulse first. Goals bias affinity."""
+"""Ringed Growth — sole public growth path. Body pulse first. Goals bias affinity.
+
+CONCEPT SEPARATION (GDP-001 Phase 3, 3.1.2): this module's ``_affinity`` is
+PAIR SCORING for growth — a deterministic composite that ranks idea pairs for
+ring proposals. ``form.dell_matrix.resonance.pulse`` is a DIFFERENT concept:
+pulse/DIFFUSION over the resonance graph (score accumulation across the
+enhance-scope graph over time). Keep both; do not merge pulse into affinity
+or affinity into pulse.
+
+PHASE-3 R3.6 (2026-10-04): Phase-2 graph integration is NO LONGER
+deferred. RingedGrowth.run accepts an optional attached SemanticGraph and
+computes form.dell_matrix.graph_harmony.graph_coherence over each proposal
+pair (read-only, existing graph queries only, canonical Idea IDs); the
+value is persisted on the Nursery proposal and reported. Harmony
+(form.dell_matrix.harmony.harmony_score) is computed over each proposal
+pair, persisted on the proposal, and consumed by
+Program.ranked_proposals as a tie-breaker. The graph is never mutated by
+growth: it remains historical relationship truth, consumed read-only.
+"""
 
 from __future__ import annotations
 
@@ -10,6 +28,12 @@ import re
 
 from form.dell_matrix.nursery import Nursery
 from form.dell_matrix.plane import Plane
+from form.dell_matrix import faded_policy  # P3 R3.5.2: faded-state exclusion
+from form.dell_matrix.harmony import harmony_score  # P3 R3.6: canonical harmony authority
+from form.dell_matrix.graph_harmony import (  # P3 R3.6: graph consumer (read-only)
+    unit_idea_view,
+    graph_coherence,
+)
 
 RINGS = ("Seed", "Token", "Body", "Lens", "Evolve")
 _TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
@@ -78,13 +102,75 @@ def _jaccard(a: Set[str], b: Set[str]) -> float:
     return inter / union if union else 0.0
 
 
+def _tension(a: Set[str], b: Set[str]) -> float:
+    """Exclusive-token bridge tension between two token sets (raw, unnormalized).
+
+    tension = min(|a-b|, |b-a|) / (1 + |a ∪ b|)  — high when the pair shares
+    little but each side contributes complementary exclusive tokens.
+    """
+    if not a and not b:
+        return 0.0
+    only_a, only_b = a - b, b - a
+    bridge = min(len(only_a), len(only_b))
+    return bridge / (1.0 + len(a | b))
+
+
+def serendipity(a: Set[str], b: Set[str]) -> float:
+    """Serendipity (exposed tension term of _harmonic) — mathematical admission contract.
+
+    (1) Name: serendipity — normalized exclusive-token bridge tension.
+    (2) Inputs: a, b — two token sets (Set[str]); each token a lowercase
+        alphanumeric/underscore word token of length >= 3.
+    (3) Output: float in [0, 1/3). 0.0 when both sets empty or no complementary
+        exclusive tokens; bounded above by 1/3 (raw tension t < 0.5 since
+        min(|a-b|,|b-a|) <= |a∪b|/2, so t/(1+t) < (0.5)/(1.5) = 1/3).
+    (4) Formula: let t = min(|a-b|, |b-a|) / (1 + |a ∪ b|) (raw tension);
+        serendipity(a, b) = t / (1 + t).
+    (5) Invariants: symmetric — serendipity(a, b) == serendipity(b, a);
+        monotone non-decreasing in raw tension t; serendipity(a, a) == 0.0
+        (identical sets have no exclusive bridge); empty inputs -> 0.0.
+    (6) Failure behavior: empty sets -> 0.0 (fail-closed, no exception).
+        Never raises on well-typed inputs.
+    (7) Determinism: pure function of the two input sets; same sets ->
+        same output in every process (no randomness, no wall clock).
+    (8) Canonical owner: form/dell_matrix/ringed_growth.py::serendipity
+        (GDP-001 Phase 3, 3.1.3). Callers (P3R reconciliation, code-verified
+        2026-10-04): NO production call site uses the name ``serendipity``
+        yet. The tension *concept* reaches _affinity through the raw term:
+        _tension -> _harmonic (weight 0.40 into _affinity) -> RingedGrowth.run
+        -> Program.grow_ideas. _harmonic calls _tension directly (raw,
+        unnormalized); serendipity() is the publicly exposed NORMALIZED
+        form t/(1+t) of that same term — the exposed tension subterm, kept
+        for explicit consumers and proofs (the R3.1 proof invokes it
+        directly). An earlier docstring line claiming "_harmonic" as the
+        real caller was imprecise and is withdrawn.
+    """
+    t = _tension(a, b)
+    return t / (1.0 + t)
+
+
 def _harmonic(a: Set[str], b: Set[str]) -> float:
+    """Jaccard-tension combiner (NOT musical harmony). Documented, name kept
+    for caller stability (GDP-001 Phase 3, 3.1.3: name unchanged by rule).
+
+    Returns ~1.0 for identical sets, ~0.0 for disjoint sets with no
+    complementary exclusive bridge. Internally delegates the tension subterm
+    to serendipity/_tension; formula unchanged since introduction.
+
+    Blend detail (R3.2.2 honest note): Jaccard token overlap (jac) with a
+    "tension" term measuring complementary exclusive tokens:
+    bridge = min(|a-b|, |b-a|) normalized by union size. Returns
+    (2*jac*(jac+tension)) / (2*jac + tension + eps), 0.0 when both inputs
+    are empty or neither overlap nor tension exists. Name is historical;
+    it is a token-set similarity, not a harmonic. Implementation note
+    (P3R): _harmonic calls _tension (raw, unnormalized) DIRECTLY;
+    serendipity() is the exposed normalized twin t/(1+t) of that same
+    term, not an intermediate on this path.
+    """
     if not a and not b:
         return 0.0
     jac = _jaccard(a, b)
-    only_a, only_b = a - b, b - a
-    bridge = min(len(only_a), len(only_b))
-    tension = bridge / (1.0 + len(a | b))
+    tension = _tension(a, b)
     if jac <= 0 and tension <= 0:
         return 0.0
     return (2 * jac * (jac + tension)) / (2 * jac + tension + 1e-9)
@@ -120,7 +206,91 @@ def _body_goal_boost(body: Dict[str, Any], label_a: str, label_b: str) -> float:
     return min(0.15, 0.05 * hits)
 
 
-def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
+def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = None,
+             program: Any = None) -> Dict[str, float]:
+    """Pair affinity for growth — mathematical admission contract (GDP-001 Phase 3, 3.1.1).
+
+    (1) Name: _affinity — deterministic composite pair score driving ring
+        proposals (Solstice / Equinox / Standstill gates).
+    (2) Inputs: plane (Plane) — live matrix plane; a, b (str) — idea unit IDs
+        present in plane.units; body (Optional[Dict]) — body-pulse snapshot
+        (from _body_pulse_safe); when None the body_boost term is 0.0.
+    (3) Output: dict with keys affinity, jaccard, harmonic, distance, shared,
+        goal_boost, body_boost. Types: all float. TRUE BOUND (P3R,
+        reconciled 2026-10-04; the old "affinity in [0,1]" shorthand is
+        withdrawn because it contradicted the body boost): affinity in
+        [0, 1.15]. affinity >= 0.0 always (all terms non-negative).
+        0.40+0.22+0.13+0.13 = 0.88 <= 1.0 and goal_boost <= 0.12, therefore
+        affinity <= 1.0 whenever body_boost == 0.0. With body_boost active
+        (<= 0.15), affinity <= 1.15 in the theoretical corner case of
+        identical co-located in-scope ideas naming missing organs
+        (0.88 + 0.12 + 0.15; approached within ~1e-9 of the harmonic
+        epsilon). jaccard, harmonic in [0,1]; distance >= 0.0 (99.0
+        sentinel when a unit is missing); shared >= 0.0; goal_boost,
+        body_boost >= 0.0.
+    (4) Formula: affinity = 0.40*harmonic + 0.22*jaccard + 0.13*spatial
+        + 0.13*in_scope + goal_boost + body_boost, where
+        harmonic = _harmonic(token_sets) (Jaccard-tension combiner),
+        jaccard = |ta ∩ tb| / |ta ∪ tb|,
+        spatial = 1 / (1 + euclidean_distance(a, b)),
+        in_scope = 1.0 if b in enhance_scope(a) else 0.2,
+        goal_boost = 0.12 * jaccard(goal token sets) when both ideas have
+        goals (0.05 when exactly one has goals, else 0.0),
+        body_boost = min(0.15, 0.05 * missing-organ hits in labels) when a
+        body snapshot with missing organs is supplied, else 0.0.
+    (5) Invariants: all terms non-negative, so affinity >= 0.0 always.
+        0.40+0.22+0.13+0.13 = 0.88 <= 1.0 and goal_boost <= 0.12, therefore
+        affinity <= 1.0 whenever body_boost == 0.0. With body_boost active
+        (<= 0.15), affinity <= 1.15 in the theoretical corner case of
+        identical co-located in-scope ideas naming missing organs.
+        harmonic <= 1.0, jaccard <= 1.0, spatial <= 1.0 (equality at
+        distance 0). PERMUTATION GUARANTEE (P3R, verified empirically
+        2026-10-04: 0 mismatches over thousands of random ordered pairs):
+        the full output dict is BITWISE identical under argument
+        permutation — _affinity(plane, a, b) == _affinity(plane, b, a)
+        field-for-field. The in_scope term formally reads enhance_scope(a),
+        but scope membership is mutual in all reachable plane states, so no
+        asymmetry is observable. (Sandbox-exotic states could in principle
+        break mutuality; none are reachable through the public place/box
+        paths, and any such state would surface in the permutation check.)
+    (6) Failure behavior: missing units -> returns the full dict WITHOUT
+        raising (fail-closed, no exception), with distance 99.0 and the
+        token/goal/body terms 0.0. NOTE (falsifies the Phase-3 matrix's
+        "affinity 0.0" shorthand): the spatial floor (1/(1+99) = 0.01 x 0.13)
+        and the in_scope floor (0.2 x 0.13) still contribute, so affinity is
+        ~0.0273, not 0.0. Fail-closed IN EFFECT: 0.0273 < STANSTILL_AFFINITY
+        (0.10), so the "None" gate fires and no ring proposal results.
+        FADED units (R3.5.2): if either unit is faded, returns the full dict
+        with all values 0.0 (no exception); the 0.0 affinity gates to "None".
+        Verified by form/mandell/p3_r31_affinity_proof.py.
+    (7) Determinism: pure function of (plane state, a, b, body). Same inputs
+        -> identical dict in every process (no RNG, no wall clock, no hash()
+        of str). NOTE: token order plays no role (set-based); dict key order
+        is fixed by construction.
+    (8) Canonical owner: form/dell_matrix/ringed_growth.py::_affinity (live
+        authority). Real caller: RingedGrowth.run() <- Program.grow_ideas
+        <- REPL growth commands.
+    """
+    # P3 Canonical Lifecycle: faded-state exclusion via owner-aware boundary.
+    # Resolves (program, unit_id) through inspect_revision — NOT via dynamic
+    # Unit attributes. If program is provided, inactive/unreadable units are
+    # excluded (fail-closed). If program is None, the check is skipped
+    # (documented limitation; callers with program context must pass it).
+    # A faded unit contributes nothing to pair scoring: affinity is 0.0
+    # and RingedGrowth.run's gate maps 0.0 to "None" (pair skipped).
+    # Fail-closed: same dict shape, zeroed, no exception.
+    if program is not None:
+        from form.dell_matrix import canonical_lifecycle
+        if not canonical_lifecycle.is_active(program, a) or not canonical_lifecycle.is_active(program, b):
+            return {
+                "affinity": 0.0,
+                "jaccard": 0.0,
+                "harmonic": 0.0,
+            "distance": 0.0,
+            "shared": 0.0,
+            "goal_boost": 0.0,
+            "body_boost": 0.0,
+        }
     ta, tb = _tokens_uid(plane, a), _tokens_uid(plane, b)
     jac = _jaccard(ta, tb)
     harm = _harmonic(ta, tb)
@@ -196,19 +366,53 @@ def _parent_goals(plane: Plane, ids: List[str]) -> List[str]:
     return out[:8]
 
 
+def _signal_stats(vals: List[float]) -> Dict[str, float]:
+    """Mean/min/max over per-proposal signal values (harmony, graph
+    coherence). Empty -> defined zeros; never raises."""
+    if not vals:
+        return {"n": 0, "mean": 0.0, "min": 0.0, "max": 0.0}
+    return {
+        "n": len(vals),
+        "mean": sum(vals) / len(vals),
+        "min": min(vals),
+        "max": max(vals),
+    }
+
+
 @dataclass
 class RingedGrowth:
     nursery: Nursery
     max_new: int = 10
     max_evolved: int = 8
+    # GDP-001 Phase 3, 3.1.4: deterministic growth-ID seed. Nursery proposal
+    # IDs are _slug(label, seed) — a stable digest of (seed, label), so the
+    # same seed + same label sequence -> the same IDs in every process.
+    # Default 0 preserves a deterministic (not random) ID stream; callers
+    # that need distinct ID namespaces pass their own seed.
+    seed: int = 0
 
-    def run(self, plane: Plane, cycles: int = 1) -> Dict[str, Any]:
+    def run(self, plane: Plane, cycles: int = 1,
+            graph: Optional[Any] = None,
+            program: Any = None) -> Dict[str, Any]:
+        """Run growth cycles over the plane's live units.
+
+        graph: optional attached Phase-2 SemanticGraph (P3 R3.6). When
+        provided, each proposal pair's graph_coherence (read-only, via
+        existing graph queries, canonical Idea IDs) is computed and
+        persisted on the proposal; None (default) keeps historical
+        behavior with the defined neutral 0.0. The graph is never
+        mutated here. Backward compatible: existing callers pass no
+        graph.
+        """
         report: List[Dict[str, Any]] = []
         total_new = 0
         total_evo = 0
         fog_cut = 0
         gate_counts = {"Solstice": 0, "Equinox": 0, "Standstill": 0, "None": 0}
         body_snapshots: List[Dict[str, Any]] = []
+        # P3 R3.6: per-proposal harmony + graph-coherence signals.
+        harmony_vals: List[float] = []
+        gcoh_vals: List[float] = []
 
         for cycle in range(max(1, cycles)):
             # --- BODY PULSE FIRST — sense organs before proposing rings ---
@@ -241,6 +445,9 @@ class RingedGrowth:
                             parents=[],
                             affinity=0.5,
                             reason=f"body_pulse vital_missing={organ}",
+                            seed=self.seed,
+                            # P3 R3.6: non-pair proposal — harmony/graph
+                            # neutral 0.0 (no scored pair exists).
                         )
                         total_evo += 1
 
@@ -257,7 +464,7 @@ class RingedGrowth:
             pairs: List[Tuple[str, str, Dict[str, float]]] = []
             for i, a in enumerate(ids):
                 for b in ids[i + 1 :]:
-                    aff = _affinity(plane, a, b, body=body)
+                    aff = _affinity(plane, a, b, body=body, program=program)
                     pairs.append((a, b, aff))
             pairs.sort(key=lambda t: -t[2]["affinity"])
 
@@ -284,6 +491,27 @@ class RingedGrowth:
                     if parent_goals
                     else "Goals: (parents had none — prefer adding goals on live ideas). "
                 )
+                # P3 R3.6: harmony over the proposal pair set (canonical
+                # harmony_score via the unit->idea adapter). Pairs reaching
+                # here passed the canonical _affinity gate above (faded ->
+                # "None" -> skipped), so when program is provided the units
+                # are verified active; pass verified_state to prevent
+                # harmony_score's fail-closed filter from excluding them.
+                # Without program (no canonical context), views report
+                # unknown -> fail-closed (honest).
+                _vstate = "active" if program is not None else None
+                pair_harmony = harmony_score(
+                    [unit_idea_view(ua, verified_state=_vstate),
+                     unit_idea_view(ub, verified_state=_vstate)])
+                # P3 R3.6: graph signal over the pair's canonical Idea IDs
+                # (read-only; 0.0 neutral when no graph attached or no
+                # edges). The graph is historical truth: faded/deleted
+                # ideas' edges remain queryable history, so the signal is
+                # NOT faded-filtered here.
+                pair_gcoh = (graph_coherence(graph, (a, b))
+                             if graph is not None else 0.0)
+                harmony_vals.append(pair_harmony)
+                gcoh_vals.append(pair_gcoh)
 
                 if gate == "Solstice" and new_this < self.max_new:
                     label = _combine_label(ua.label, ub.label)
@@ -304,7 +532,10 @@ class RingedGrowth:
                         kind="new",
                         parents=[a, b],
                         affinity=aff["affinity"],
-                        reason=f"Solstice harm={aff['harmonic']:.2f} goals={aff.get('goal_boost', 0):.2f}",
+                        reason=f"Solstice harm={aff['harmonic']:.2f} goals={aff.get('goal_boost', 0):.2f} hs={pair_harmony:.2f} gcoh={pair_gcoh:.2f}",
+                        seed=self.seed,
+                        harmony=pair_harmony,
+                        graph_coherence=pair_gcoh,
                     )
                     new_this += 1
                     total_new += 1
@@ -331,7 +562,10 @@ class RingedGrowth:
                         kind="evolved",
                         parents=[primary],
                         affinity=aff["affinity"],
-                        reason=f"{gate} harm={aff['harmonic']:.2f} goals={aff.get('goal_boost', 0):.2f}",
+                        reason=f"{gate} harm={aff['harmonic']:.2f} goals={aff.get('goal_boost', 0):.2f} hs={pair_harmony:.2f} gcoh={pair_gcoh:.2f}",
+                        seed=self.seed,
+                        harmony=pair_harmony,
+                        graph_coherence=pair_gcoh,
                     )
                     evo_this += 1
                     total_evo += 1
@@ -362,6 +596,11 @@ class RingedGrowth:
             "nursery": self.nursery.summary(),
             "steps": report,
             "body_pulses": body_snapshots,
+            # P3 R3.6: per-proposal signal evidence (persisted on each
+            # proposal; consumed by Program.ranked_proposals).
+            "harmony": _signal_stats(harmony_vals),
+            "graph_coherence": _signal_stats(gcoh_vals),
+            "graph_signal": "attached" if graph is not None else "none",
             "law": (
                 "body pulse first · vital gaps block Solstice · "
                 "proposals quarantined · goal-biased · live matrix untouched"

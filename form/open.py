@@ -1127,8 +1127,23 @@ class Program:
                 raise ValueError(f"scope IDs not on plane: {missing}")
             plane = ScopedPlaneView(plane, scope_ids)
             scope_mode = "contextual"
-        result = self.growth.run(plane, cycles=cycles)
+        # P3 R3.6: attach the owner's Phase-2 graph as a read-only signal
+        # for RingedGrowth (graph_coherence over proposal pairs). Best
+        # effort: a missing/unreadable/corrupt graph degrades to the
+        # defined neutral (no graph signal), reported honestly — growth
+        # must not crash on unrelated graph state.
+        graph = None
+        graph_state = "none"
+        try:
+            from form.mandell.semantic_graph import SemanticGraph
+            graph = SemanticGraph.load(self.owner)
+            graph_state = "attached"
+        except Exception:
+            graph = None
+            graph_state = "unavailable"
+        result = self.growth.run(plane, cycles=cycles, graph=graph, program=self)
         result["scope_mode"] = scope_mode
+        result["graph_signal"] = graph_state
         result["scope_ids"] = list(scope_ids) if scope_ids is not None else None
         self.duo.evolve(f"13[Loop] :: RingedGrow x{cycles}")
         # Nature forces grow in parallel (visible stages)
@@ -1173,13 +1188,104 @@ class Program:
     def list_proposals(self) -> List[Dict[str, Any]]:
         return [p.to_dict() for p in self.nursery.pending()]
 
+    def harmony_of(self, ideas) -> float:
+        """Harmony of an idea set (GDP-001 Phase 3, R3.2.5 public path).
+
+        Thin public wrapper over the canonical metric
+        form.dell_matrix.harmony.harmony_score: "the degree to which a set
+        of ideas forms a coherent, non-redundant whole", in [0, 1].
+
+        Accepts an iterable of Idea objects, plane unit ID strings
+        (resolved against this program's cube plane; unit tokens come
+        from the unit's real label/words/detail/goals), or a mix.
+
+        Canonical lifecycle (P3 closeout): Unit IDs are resolved through
+        the owner-aware canonical boundary
+        (form.dell_matrix.canonical_lifecycle). Only units with active
+        canonical lifecycle participate; faded/superseded/unknown units
+        are excluded (fail-closed). Unknown unit IDs fail closed to 0.0
+        (never raises). Stateless: computes from current content, writes
+        nothing.
+        """
+        from form.dell_matrix.harmony import harmony_score
+        from form.dell_matrix import canonical_lifecycle
+
+        class _PlaneUnitView:
+            """Adapter: exposes a plane unit through the idea token interface.
+
+            Token sources only. Lifecycle was resolved canonically at the
+            ID level (is_active check above); this adapter reports "active"
+            because the unit passed the canonical boundary. This is not
+            dynamic injection — it's the verified result.
+            """
+
+            def __init__(self, unit):
+                self.title = getattr(unit, "label", "") or ""
+                self._unit = unit
+                # Canonical verification already passed at ID resolution.
+                self.idea_state = "active"
+
+            def get_active_properties(self):
+                u = self._unit
+                props = {}
+                for name in ("words", "detail"):
+                    v = getattr(u, name, "")
+                    if v:
+                        props[name] = v
+                goals = getattr(u, "goals", None) or []
+                if goals:
+                    props["goals"] = " ".join(str(g) for g in goals)
+                return props
+
+        if ideas is None or isinstance(ideas, (str, bytes)):
+            return 0.0
+        try:
+            items = list(ideas)
+        except TypeError:
+            return 0.0
+        plane = self.cube.session.plane
+        resolved = []
+        for it in items:
+            if isinstance(it, str):
+                # Canonical lifecycle boundary: resolve (program, unit_id)
+                # via inspect_revision. Inactive/unreadable -> excluded.
+                # Unknown unit ID -> fail closed to 0.0 (entire result).
+                unit = plane.units.get(it)
+                if unit is None:
+                    return 0.0
+                if not canonical_lifecycle.is_active(self, it):
+                    continue
+                resolved.append(_PlaneUnitView(unit))
+            else:
+                resolved.append(it)
+        return harmony_score(resolved)
+
+
     def ranked_proposals(self) -> List[Dict[str, Any]]:
         props = self.list_proposals()
+        # P3 R3.6: harmony + graph coherence, persisted on each proposal by
+        # RingedGrowth.run, are consumed here as tie-breakers — this is the
+        # real consumer that reads the scores (repl, visual, and the
+        # executor leaf all render this ordering). Preference blending is
+        # untouched: harmony only orders proposals the preference model
+        # scores equally (blended ties), then graph coherence.
+        def _rank_key(p: Dict[str, Any]):
+            return (
+                -float(p.get("blended", p.get("affinity", 0)) or 0),
+                -float(p.get("harmony", 0) or 0),
+                -float(p.get("graph_coherence", 0) or 0),
+            )
         try:
             # Preference blend ≠ pure affinity imitation (NVIDIA-inspired)
-            return self.inspire.prefs.rank_proposals(props)
+            ranked = self.inspire.prefs.rank_proposals(props)
+            ranked.sort(key=_rank_key)  # stable: keeps pref order, breaks ties
+            return ranked
         except Exception:
-            return sorted(props, key=lambda p: -float(p.get("affinity", 0)))
+            return sorted(props, key=lambda p: (
+                -float(p.get("affinity", 0) or 0),
+                -float(p.get("harmony", 0) or 0),
+                -float(p.get("graph_coherence", 0) or 0),
+            ))
 
     def confirm_proposal(self, pid: str) -> Dict[str, Any]:
         from form.dell_matrix.confirm_lineage import confirm_proposal as _confirm_proposal

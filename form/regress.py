@@ -79,6 +79,10 @@ LIST = [
     "form.mandell.p2_graph_test",
     "form.mandell.p2_dsc1_journal_proof",
     "form.mandell.p2_dsc1_r3_listener_proof",
+    # P3 R3.1 — affinity/resonance reconciliation proof (GDP-001 Phase 3).
+    "form.mandell.p3_r31_affinity_proof",
+    # P3 R3.2 (Harmony): GDP-001 Phase 3, stream B.
+    "form.mandell.p3_r32_harmony_proof",
     "form.mandell.pac_i_test",
     "form.mandell.cac_i_test",
     "form.mandell.ssi_i_test",
@@ -119,6 +123,13 @@ LIST = [
     "form.greek_test",
     "form.dell_matrix.program_strength",
     "form.mandell.core_ii_smoke",
+    # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
+    # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
+    "form.mandell.p3_r34_geometry_proof",
+    # P3 R3.5 — resonance/harmony integration (Stream D)
+    "form.mandell.p3_r35_integration_proof",
+    # P3 R3.6 — graph/harmony consumer + wiring world proof (GDP-001 Phase 3).
+    "form.mandell.p3_r36_graph_harmony_proof",
 ]
 
 TIMEOUT_S = 900

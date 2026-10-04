@@ -66,9 +66,20 @@ def _ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _slug(text: str) -> str:
+def _slug(text: str, seed: int = 0) -> str:
+    """Deterministic proposal ID: slugified label prefix + stable digest suffix.
+
+    GDP-001 Phase 3, 3.1.4: the digest is SHA-256 over (seed, text), NOT
+    Python's built-in hash() — hash() of str is salted per process
+    (PYTHONHASHSEED), so pre-Phase-3 IDs were deterministic only WITHIN one
+    process and differed across processes for the same label. With this
+    change, the same (seed, label) yields the same ID in every process.
+    The exact-collision fallback suffix ("_<count>") is deterministic given
+    the same add sequence on an equal starting nursery.
+    """
     s = re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
-    return (s[:28] or "proposal") + "_" + str(abs(hash(text)) % 10000)
+    digest = hashlib.sha256(f"{int(seed)}:{text}".encode("utf-8")).hexdigest()
+    return (s[:28] or "proposal") + "_" + str(int(digest[:8], 16) % 10000)
 
 
 @dataclass
@@ -82,6 +93,18 @@ class Proposal:
     reason: str = ""
     created: str = field(default_factory=_ts)
     status: str = "pending"  # pending | confirmed | rejected
+    # P3 R3.6: harmony + graph coherence written by RingedGrowth.run.
+    # harmony: harmony_score over the scored proposal pair (the two units
+    #   whose _affinity produced the proposal), in [0, 1]; 0.0 neutral for
+    #   non-pair proposals (e.g. body-restore) or when no pair content
+    #   exists.
+    # graph_coherence: graph_coherence() over the scored pair's canonical
+    #   Idea IDs from the attached Phase-2 graph, in [0, 1]; 0.0 = no
+    #   graph evidence (neutral), never fabricated. Both default 0.0 so
+    #   pre-R3.6 nursery files load unchanged (Proposal(**record) fills
+    #   defaults for missing keys).
+    harmony: float = 0.0
+    graph_coherence: float = 0.0
     # DCC-XVI: versioned supersession (additive; confirmation untouched).
     # lifecycle_state: "active" | "superseded" — is this accepted revision
     # currently active for contextual routing? Legacy (None/absent) means
@@ -139,8 +162,22 @@ class Nursery:
         parents: Optional[List[str]] = None,
         affinity: float = 0.0,
         reason: str = "",
+        seed: int = 0,
+        harmony: float = 0.0,
+        graph_coherence: float = 0.0,
     ) -> Proposal:
-        pid = _slug(label)
+        """Add a proposal. ID = _slug(label, seed): deterministic given
+        (seed, label, add-sequence) across processes (GDP-001 Phase 3, 3.1.4).
+        Default seed=0 keeps a stable deterministic ID stream.
+
+        P3 R3.6: harmony (harmony_score over the scored proposal pair,
+        [0,1]) and graph_coherence (Phase-2 graph signal over the scored
+        pair's canonical Idea IDs, [0,1]; 0.0 = no graph evidence) are
+        persisted on the proposal. Program.ranked_proposals consumes them
+        as tie-breakers, so the scores are read by a real consumer, not
+        merely stored.
+        """
+        pid = _slug(label, seed)
         # avoid exact id collision
         if pid in self.proposals:
             pid = pid + "_" + str(len(self.proposals))
@@ -152,6 +189,8 @@ class Nursery:
             parents=parents or [],
             affinity=float(affinity),
             reason=reason[:160],
+            harmony=float(harmony),
+            graph_coherence=float(graph_coherence),
         )
         self.proposals[pid] = p
         try:
