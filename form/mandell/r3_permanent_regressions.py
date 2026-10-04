@@ -511,6 +511,128 @@ except Exception as e:
 # Single source of truth: (owner, callable) pairs.
 # Used for smoke execution, direct execution, expected count,
 # initial cleanup, and finally cleanup. No duplicated lists.
+def t16():
+    # F2: Complete and failed compensation via real save wrappers.
+    # When commit_checkpoint fails after both live saves, the handler
+    # must revert BOTH Nursery and Program files. If compensation
+    # succeeds, journal is cleared. If compensation fails, journal is
+    # preserved for recovery. Existing Idea values must not change.
+    o = "R3H16"
+    clean(o)
+    # Use .replace for REPO/OWNER to avoid % formatting issues
+    setup_template = """
+import sys, os, json, hashlib
+REPO_DIR = __REPO__
+OWNER_ID = __OWNER__
+sys.path.insert(0, REPO_DIR)
+from form.open import open_program
+from form import persist_rest
+from form.dell_matrix import confirm_lineage
+from form.mandell.core_i_recovery import _confirm_journal_path
+
+def fp_bytes(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+# Setup: create proposal, capture baseline
+p = open_program(OWNER_ID)
+pr = p.nursery.add('F2_TEST', words='test content')
+pid = pr.id
+p.nursery.save()
+persist_rest.save(p)
+
+npath = os.path.join(REPO_DIR, 'form', 'state', 'nursery_' + OWNER_ID + '.json')
+from form.persist import _path as _ppath
+ppath = _ppath(OWNER_ID)
+baseline_nursery = fp_bytes(npath)
+baseline_program = fp_bytes(ppath)
+
+# Test 1: Complete compensation (both saves succeed)
+from form.mandell import checkpoint_generation as cg
+orig_commit = cg.commit_checkpoint
+def failing_commit(program, _fail_at=None):
+    program.nursery.save()
+    persist_rest.save(program)
+    raise OSError("INJECTED_COMMIT_FAILURE")
+cg.commit_checkpoint = failing_commit
+
+try:
+    p.confirm_proposal(pid)
+    print('NO_RAISE_UNEXPECTED')
+except OSError as e:
+    if 'INJECTED_COMMIT_FAILURE' in str(e):
+        print('RAISED_EXPECTED')
+    else:
+        print('OTHER_OSERROR:' + str(e)[:50])
+except Exception as e:
+    print('OTHER:' + type(e).__name__)
+finally:
+    cg.commit_checkpoint = orig_commit
+
+jpath = _confirm_journal_path(OWNER_ID)
+nursery_ok = fp_bytes(npath) == baseline_nursery
+program_ok = fp_bytes(ppath) == baseline_program
+journal_cleared = not os.path.isfile(jpath)
+print('COMPLETE_COMPENSATION: nursery=%s program=%s journal_cleared=%s' % (
+    nursery_ok, program_ok, journal_cleared))
+
+# Test 2: Failed compensation (Program save fails during revert)
+p2 = open_program(OWNER_ID)
+pr2 = p2.nursery.proposals.get(pid)
+if pr2:
+    pr2.status = 'pending'
+    p2.nursery.save()
+    persist_rest.save(p2)
+
+import builtins
+orig_open = builtins.open
+write_failed = [False]
+def failing_open(path, mode='r', *a, **k):
+    if 'w' in mode and 'program_' in str(path) and write_failed[0]:
+        raise OSError("INJECTED_WRITE_FAILURE")
+    return orig_open(path, mode, *a, **k)
+
+def failing_commit2(program, _fail_at=None):
+    program.nursery.save()
+    persist_rest.save(program)
+    write_failed[0] = True
+    raise OSError("INJECTED_COMMIT_FAILURE_2")
+
+cg.commit_checkpoint = failing_commit2
+builtins.open = failing_open
+try:
+    p2.confirm_proposal(pid)
+    print('NO_RAISE_UNEXPECTED_2')
+except OSError:
+    print('RAISED_EXPECTED_2')
+except Exception as e:
+    print('OTHER_2:' + type(e).__name__)
+finally:
+    cg.commit_checkpoint = orig_commit
+    builtins.open = orig_open
+    write_failed[0] = False
+
+jpath2 = _confirm_journal_path(OWNER_ID)
+journal_preserved = os.path.isfile(jpath2)
+print('FAILED_COMPENSATION: journal_preserved=%s' % journal_preserved)
+print('SETUP_DONE')
+"""
+    setup = setup_template.replace("__REPO__", repr(REPO)).replace("__OWNER__", repr(o))
+    rc, out, err = run_script("t16_setup", setup)
+    if rc != 0 or "SETUP_DONE" not in out:
+        rec("16_f2_compensation", False, "setup failed: %s" % out[:200])
+        print("STDOUT:", out[:400])
+        print("STDERR:", err[:400])
+        clean(o)
+        return
+    complete_ok = "COMPLETE_COMPENSATION: nursery=True program=True journal_cleared=True" in out
+    failed_ok = "FAILED_COMPENSATION: journal_preserved=True" in out
+    ok = complete_ok and failed_ok
+    rec("16_f2_compensation", ok, "complete=%s failed=%s" % (complete_ok, failed_ok))
+    if not ok:
+        print("T16 OUT:", out[:600])
+    clean(o)
+
 TEST_CASES = [
     ("R3H01", lambda: t01()),
     ("R3H02", lambda: t02()),
@@ -527,6 +649,7 @@ TEST_CASES = [
     ("R3H13", lambda: t13()),
     ("R3H14", lambda: t14()),
     ("R3H15", lambda: t15()),
+    ("R3H16", lambda: t16()),
 ]
 
 def smoke():
@@ -947,7 +1070,7 @@ from form.mandell.core_i_recovery import _supersede_journal_path, RollbackRecove
 
 def fp_bytes(path):
     with open(path, "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest()[:16]
+        return hashlib.sha256(f.read()).hexdigest()
 
 def fail(msg):
     print(json.dumps({"case": case["case_id"], "ok": False, "error": msg}))
@@ -959,10 +1082,19 @@ from form.persist import _path as _ppath
 ppath = _ppath(OWNER_ID)
 
 def assert_baseline_unchanged():
-    # Journal must be retained; member bytes verified via fingerprints
-    # in setup (byte-level equality too fragile for JSON serialization)
+    # F8: Rejection must not serialize anything. Compare full SHA-256
+    # hashes of Nursery, Program and journal bytes against the setup
+    # baseline after EACH invalid recovery attempt. Fail if any differ.
     if not os.path.isfile(jpath):
         fail("journal not retained")
+    for key, path in (("nursery", npath), ("program", ppath),
+                      ("journal", jpath)):
+        if not os.path.isfile(path):
+            fail("baseline member missing: " + key)
+        current = fp_bytes(path)
+        if current != BASELINE[key]:
+            fail("baseline bytes changed: %s expected=%s got=%s" %
+                 (key, BASELINE[key][:16], current[:16]))
 
 def do_recover():
     if ENTRYPOINT == "constructor":
@@ -1040,6 +1172,36 @@ def _t15_run_child(child_code, case):
         return False, result.get("error", "child ok=false")
     return True, result
 
+_T15_HARNESS_CONTROL_CHILD = """
+import sys, os, json, hashlib
+case = json.loads(sys.argv[1])
+REPO_DIR = case["repo"]
+OWNER_ID = case["owner"]
+sys.path.insert(0, REPO_DIR)
+from form.mandell.core_i_recovery import _supersede_journal_path
+
+def fp_bytes(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+jpath = _supersede_journal_path(OWNER_ID)
+baseline = fp_bytes(jpath)
+# Harness control: change one byte of the journal
+with open(jpath, "rb") as f:
+    data = bytearray(f.read())
+data[0] = (data[0] + 1) % 256
+with open(jpath, "wb") as f:
+    f.write(data)
+current = fp_bytes(jpath)
+# The full-hash comparison MUST detect this one-byte change
+if current == baseline:
+    print(json.dumps({"case": case["case_id"], "ok": False,
+                      "error": "harness control: one-byte change NOT detected"}))
+else:
+    print(json.dumps({"case": case["case_id"], "ok": True,
+                      "note": "harness control: one-byte change detected"}))
+"""
+
 def t15():
     import itertools
     branches = ["complete", "repair"]
@@ -1048,6 +1210,28 @@ def t15():
     entrypoints = ["load", "constructor"]
     # Compile children once
     py_compile.compile(__file__, doraise=True)
+    # Harness control: prove the full-hash baseline assertion can fail.
+    # Deliberately change one byte of the journal; the comparison must
+    # detect it. If this control fails, the F8 evidence is vacuous.
+    hcase = {"case_id": "t15/harness_control", "repo": REPO,
+             "owner": "R3H15_HARNESS_CONTROL"}
+    clean("R3H15_HARNESS_CONTROL")
+    ok, detail = _t15_run_child(_T15_SETUP_CHILD, {
+        "case_id": "t15/harness_control", "repo": REPO,
+        "owner": "R3H15_HARNESS_CONTROL",
+        "branch": "complete", "mutation": "valid"})
+    if not ok:
+        print("HARNESS CONTROL SETUP FAILED: %s" % detail)
+        clean("R3H15_HARNESS_CONTROL")
+        rec("15_harness_control", False, "setup failed: %s" % detail)
+    else:
+        ok2, detail2 = _t15_run_child(_T15_HARNESS_CONTROL_CHILD, hcase)
+        clean("R3H15_HARNESS_CONTROL")
+        if ok2:
+            print("t15 harness control passed: one-byte change detected")
+        else:
+            print("HARNESS CONTROL FAILED: %s" % detail2)
+        rec("15_harness_control", ok2, str(detail2)[:80])
     rows = list(itertools.product(branches, mutations, entrypoints))
     passed = 0
     for branch, mutation, entrypoint in rows:

@@ -2,6 +2,7 @@
 """Native confirm-proposal lineage body. Called by Program.confirm_proposal."""
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List
 
 from form.dell_matrix.lineage import assign_lineage
@@ -60,6 +61,17 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
     if not rec.get("ok"):
         return {"ok": False, "reason": rec.get("error") or "invalid_lineage", "missing": rec.get("missing")}
     existed = prop.id in units
+    def _remove_newly_placed():
+        """Remove a newly placed Idea from all in-memory structures.
+        F2: program.place() adds units entry AND spatial.velocities entry.
+        Both must be removed for complete compensation."""
+        units.pop(prop.id, None)
+        try:
+            spatial = program.cube.session.spatial
+            if hasattr(spatial, 'velocities'):
+                spatial.velocities.pop(prop.id, None)
+        except Exception:
+            pass
     try:
         program.place(
             prop.id, prop.label, words=prop.words, detail=_detail(prop, units), goals=_goals(prop, units),
@@ -67,7 +79,7 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
         )
     except Exception:
         if not existed:
-            units.pop(prop.id, None)
+            _remove_newly_placed()
         raise
     # R3: Record intent BEFORE any durable writes. The journal enables
     # recovery to distinguish "crashed confirmation" from "legitimate
@@ -86,13 +98,33 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
             # The Idea was placed in-memory but no journal exists to enable
             # recovery. Remove it to avoid exposing unrecoverable hybrid.
             if not existed:
-                units.pop(prop.id, None)
+                _remove_newly_placed()
             raise
     # Stage the nursery confirmation in memory (do NOT save yet).
     # The checkpoint transaction will persist both Program and Nursery atomically.
     # ARGUS-3: All persistence failures must preserve/restore pre-operation state.
     prop.status = "confirmed"
     if not _skip:
+        # F2: Capture baseline file bytes before commit. If commit fails
+        # after partial saves, restore these bytes directly. This is more
+        # robust than trying to surgically revert all in-memory side
+        # effects of program.place() (units, velocities, placements,
+        # lattice, history, keys).
+        _baseline_program_bytes = None
+        _baseline_nursery_bytes = None
+        try:
+            from form.persist import _path as _ppath
+            from form.dell_matrix.nursery import owner_nursery_path
+            _p_path = _ppath(program.owner)
+            _n_path = owner_nursery_path(program.owner)
+            if os.path.isfile(_p_path):
+                with open(_p_path, 'rb') as f:
+                    _baseline_program_bytes = f.read()
+            if os.path.isfile(_n_path):
+                with open(_n_path, 'rb') as f:
+                    _baseline_nursery_bytes = f.read()
+        except Exception:
+            pass
         try:
             from form.mandell.checkpoint_generation import commit_checkpoint
             commit_checkpoint(program)
@@ -116,17 +148,28 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
             # dies before clearing, recovery will use the journal.
             prop.status = "pending"
             if not existed:
-                units.pop(prop.id, None)
-            # Revert the live nursery file that checkpoint may have dirtied.
-            # F2: Must also revert Program file. A Nursery-only revert leaves
-            # durable Program with Idea but no journal for recovery.
+                _remove_newly_placed()
+            # Revert the live files that checkpoint may have dirtied.
+            # F2: Restore baseline bytes directly for complete compensation.
+            # A Nursery-only revert leaves durable Program with Idea but no
+            # journal for recovery.
             reverted = False
             try:
-                nursery.save()
-                # Revert Program: remove the Idea if newly placed
-                if not existed:
+                # Restore Program file from baseline bytes (complete revert)
+                if _baseline_program_bytes is not None:
+                    with open(_p_path, 'wb') as f:
+                        f.write(_baseline_program_bytes)
+                elif not existed:
+                    # No baseline (new file): save reverted in-memory state
                     from form import persist_rest
                     persist_rest.save(program)
+                # Restore Nursery file from baseline, then apply status revert
+                # (baseline has pending, which is what we want)
+                if _baseline_nursery_bytes is not None:
+                    with open(_n_path, 'wb') as f:
+                        f.write(_baseline_nursery_bytes)
+                else:
+                    nursery.save()
                 reverted = True
             except Exception:
                 # If we can't revert both files, leave journal for recovery.
@@ -167,7 +210,7 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
         except Exception:
             prop.status = "pending"
             if not existed:
-                units.pop(prop.id, None)
+                _remove_newly_placed()
             # Leave journal for recovery (do not clear).
             raise
     try:

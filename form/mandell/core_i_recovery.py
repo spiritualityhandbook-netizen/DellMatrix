@@ -818,7 +818,9 @@ def recover_confirmation_intent(owner: str) -> str:
         raise RollbackRecoveryError(
             "confirmation intent: journal is not a dict (preserved)"
         )
-    if journal.get("journal_version") != CONFIRM_JOURNAL_VERSION:
+    # F4: Strict version check - exclude bool (True == 1)
+    _cjv = journal.get("journal_version")
+    if not isinstance(_cjv, int) or isinstance(_cjv, bool) or _cjv != CONFIRM_JOURNAL_VERSION:
         raise RollbackRecoveryError(
             f"confirmation intent: unsupported version {journal.get('journal_version')} (preserved)"
         )
@@ -910,15 +912,16 @@ def recover_confirmation_intent(owner: str) -> str:
             if not isinstance(_pd, dict):
                 raise RollbackRecoveryError(
                     "confirmation intent: program malformed (journal preserved)")
+            # F5: Present Program must have dict plane AND dict units.
+            # None is malformed, not valid. Only "absent" file is legitimate absence.
             _plane = _pd.get("plane")
-            if _plane is not None and not isinstance(_plane, dict):
+            if not isinstance(_plane, dict):
                 raise RollbackRecoveryError(
-                    "confirmation intent: plane malformed (journal preserved)")
-            if isinstance(_plane, dict):
-                _units = _plane.get("units")
-                if _units is not None and not isinstance(_units, dict):
-                    raise RollbackRecoveryError(
-                        "confirmation intent: units malformed (journal preserved)")
+                    "confirmation intent: plane must be dict (journal preserved)")
+            _units = _plane.get("units")
+            if not isinstance(_units, dict):
+                raise RollbackRecoveryError(
+                    "confirmation intent: units must be dict (journal preserved)")
         except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
             raise RollbackRecoveryError(
                 f"confirmation intent: program unreadable (journal preserved): {exc}"
@@ -1145,46 +1148,34 @@ def clear_supersede_intent(owner: str) -> None:
 def _validate_revision_identity(old_prop: dict, new_prop: dict, old_id: str) -> None:
     """Validate revision identity using canonical semantics.
 
-    Both proposals must carry matching revision_root_id, and the
-    successor's revision_number must be exactly predecessor's + 1.
+    The successor's root must equal the old's canonical root, defined as:
+    - old's revision_root_id if present, else old's own ID (first revision)
 
-    The root must be the old's actual revision root (its revision_root_id,
-    or its own ID if first revision). Pairwise agreement on an unrelated
-    root is insufficient.
+    The successor's number must be old's number + 1 (old defaults to 1).
 
-    Raises RollbackRecoveryError on any contradiction or missing
-    identity. Journal is preserved by caller.
+    Raises RollbackRecoveryError on any contradiction. Journal preserved.
     """
     old_root = old_prop.get("revision_root_id")
     new_root = new_prop.get("revision_root_id")
-    # Canonical: root defaults to the proposal's own ID
+    # Canonical old root: recorded root, or own ID if first revision
     canonical_old_root = old_root if old_root is not None else old_id
-    if new_root is None:
+    if not isinstance(new_root, str) or not new_root:
         raise RollbackRecoveryError(
-            "supersede intent: missing revision root (preserved). "
-            "Cannot validate complete outcome."
+            "supersede intent: missing revision root (preserved)."
         )
     if new_root != canonical_old_root:
         raise RollbackRecoveryError(
             f"supersede intent: revision root {new_root} does not match "
             f"canonical old root {canonical_old_root} (preserved)."
         )
-    # Old must also have explicit root OR be first revision (root == own ID)
-    # If old_root is None, that's OK (first revision), but new must match old_id
-    if old_root is not None and old_root != canonical_old_root:
-        raise RollbackRecoveryError(
-            "supersede intent: old revision root inconsistent (preserved)."
-        )
     old_num = old_prop.get("revision_number")
     new_num = new_prop.get("revision_number")
-    # Canonical: number defaults to 1
     canonical_old_num = old_num if old_num is not None else 1
     if new_num is None:
         raise RollbackRecoveryError(
             "supersede intent: missing revision number (preserved)."
         )
     try:
-        # Strict type check: bool is not a valid number
         if isinstance(new_num, bool) or isinstance(canonical_old_num, bool):
             raise RollbackRecoveryError(
                 "supersede intent: bool revision number (preserved).")
@@ -1248,15 +1239,19 @@ def recover_supersede_intent(owner: str) -> str:
         raise RollbackRecoveryError("supersede intent: bad old_id (preserved)")
     if not isinstance(new_id, str) or not new_id:
         raise RollbackRecoveryError("supersede intent: bad new_id (preserved)")
-    # F4: Validate fingerprint fields are proper SHA-256 hex if present
+    # F4: Validate fingerprint fields are present with valid values.
+    # Legitimate values: 64-char hex SHA-256 (file existed) or "absent"
+    # (file didn't exist, via _sha256_file_absent). Missing/None/empty
+    # fail closed - do not accept incomplete schema.
     import re
     _sha256_re = re.compile(r'^[0-9a-f]{64}$')
     for fp_key in ("old_nursery_sha256", "old_program_sha256"):
         fp_val = journal.get(fp_key)
-        if fp_val is not None:
-            if not isinstance(fp_val, str) or not _sha256_re.match(fp_val):
-                raise RollbackRecoveryError(
-                    f"supersede intent: bad {fp_key} (preserved)")
+        if fp_val == "absent":
+            continue  # Legitimate explicit absence
+        if not isinstance(fp_val, str) or not _sha256_re.match(fp_val):
+            raise RollbackRecoveryError(
+                f"supersede intent: missing or invalid {fp_key} (preserved)")
 
     from form.persist import _path
     from form.dell_matrix.nursery import owner_nursery_path

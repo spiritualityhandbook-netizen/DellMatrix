@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""27-Case Confirmation Crash Matrix (GDP_ARGUS_CONFIRMATION_CONVERGENCE_R2).
+"""Confirmation Crash Matrix (GDP_ARGUS_CONFIRMATION_CONVERGENCE_R2).
 
 Proves the confirmation transaction satisfies:
 - OLD = proposal pending, Idea absent
@@ -9,12 +9,11 @@ Proves the confirmation transaction satisfies:
 Uses abrupt subprocess termination (os._exit) between durable stages,
 then restarts through the production loader (persist_rest.load).
 
-Cases 1-5: Normal
-Cases 6-9: Failure before durable transition → OLD
-Cases 10-17: Interruption (crash) → OLD or NEW, never hybrid
-Cases 18-24: Failure-of-failure → fail closed
-Cases 25-27: Agreement
-Causal mutants: must be detected
+F9 (2026-10-04): Only cases with real assertions are executed and
+counted. Cases t14,t15,t16,t20,t21,t22,t23,m02,m03,m04,m05 were removed
+from pass counts (they unconditionally recorded True). See CLAIM_MAP
+for their disposition: some are UNPROVEN obligations, others are
+covered by real tests elsewhere.
 """
 import os
 import subprocess
@@ -384,20 +383,66 @@ def t13():
                 "OLD or NEW")
 
 def t14():
-    # SUPERSEDED: Covered by R3 t13/t15 crash recovery proofs.
-    # Original claim about manifest atomicity retained as documentation only.
-    rec("14_during_manifest", True, "SUPERSEDED by R3 proofs; see t13/t15")
+    # REMOVED FROM PASS COUNTS (F9): This case asserted nothing; it
+    # unconditionally recorded True. The original manifest-atomicity claim
+    # is documented only. See CLAIM_MAP below.
+    # Original claim: crash during manifest → OLD or NEW, never hybrid
+    # Replacement: R3 t13 (rollback I/O failure) covers recovery paths.
+    # Status: UNPROVEN for manifest-specific stage.
+    pass
 
 def t15():
-    # SUPERSEDED: Covered by R3 t13/t15 crash recovery proofs.
-    rec("15_before_pointer", True, "SUPERSEDED by R3 proofs; see t13/t15")
+    # REMOVED FROM PASS COUNTS (F9): Unconditional True, no assertion.
+    # Original claim: crash before pointer → OLD or NEW, never hybrid
+    # Replacement: R3 t15 matrix covers revision identity recovery.
+    # Status: UNPROVEN for pointer-specific stage.
+    pass
 
 def t16():
-    # SUPERSEDED: Covered by R3 t13/t15 crash recovery proofs.
-    rec("16_during_pointer", True, "SUPERSEDED by R3 proofs; see t13/t15")
+    # REMOVED FROM PASS COUNTS (F9): Unconditional True, no assertion.
+    # Original claim: crash during pointer → OLD or NEW, never hybrid
+    # Replacement: none. Status: UNPROVEN.
+    pass
 
 def t17():
-    rec("17_after_commit", True, "crash after commit → new generation authoritative")
+    # Crash after commit: confirm fully, then abrupt termination,
+    # restart via production loader, verify NEW is authoritative.
+    owner = "M17"
+    clean(owner)
+    code_setup = f\"\"\"
+import sys, os; sys.path.insert(0, '{REPO}')
+from form.open import open_program
+p = open_program('{owner}')
+p.cube.session.plane.units.clear()
+pr = p.nursery.add('M17', words='test')
+pid = pr.id
+p.confirm_proposal(pid)
+print(pid, flush=True)
+os._exit(42)
+\"\"\"
+    r = run_subprocess(code_setup)
+    pid = r.stdout.strip().split('\\n')[0] if r.stdout.strip() else ''
+    # Process must have terminated via os._exit (rc != 0 expected, but
+    # the key assertion is the fresh view after restart)
+    status, has_idea = fresh_view(owner, pid)
+    ok = (status == "confirmed" and has_idea)
+    rec(\"17_after_commit\", ok, f\"status={status}, has_idea={has_idea}\")
+
+# F9 CLAIM_MAP: superseded/unproven cases removed from pass counts.
+# Maps original claim → replacement evidence or UNPROVEN status.
+CLAIM_MAP = {
+    "14_during_manifest": "UNPROVEN (manifest stage); R3 t13 covers rollback I/O",
+    "15_before_pointer": "UNPROVEN (pointer stage); R3 t15 covers revision recovery",
+    "16_during_pointer": "UNPROVEN (pointer stage); no replacement",
+    "20_missing_fields": "UNPROVEN; confirmation schema now strict (F4) but no crash test",
+    "21_unsupported_version": "UNPROVEN; strict version check implemented (F4) but no crash test",
+    "22_fingerprint_mismatch": "UNPROVEN; fingerprint validation implemented (F4) but no crash test",
+    "23_missing_staging": "UNPROVEN; no replacement",
+    "mutant_no_nursery_save": "covered by t09 (nursery save failure raises)",
+    "mutant_naive_sequential": "covered by t11 (crash after nursery save)",
+    "mutant_swallow_recovery": "covered by t19/t24 (recovery errors propagate)",
+    "mutant_malformed_to_success": "covered by t19/t24 (fail closed)",
+}
 
 # =====================================================================
 # Cases 18-24: Failure-of-failure → fail closed
@@ -445,16 +490,24 @@ except Exception as e:
     rec("19_corrupt_nursery_failclosed", ok, r.stdout.strip())
 
 def t20():
-    rec("20_missing_fields", True, "no journal for confirmation; N/A with reason")
+    # REMOVED FROM PASS COUNTS (F9): Was unconditional True ("N/A").
+    # Claim: confirmation with missing journal fields → fail closed.
+    # Status: UNPROVEN as crash case. See CLAIM_MAP.
 
 def t21():
-    rec("21_unsupported_version", True, "no versioned journal for confirmation; N/A with reason")
+    # REMOVED FROM PASS COUNTS (F9): Was unconditional True ("N/A").
+    # Claim: confirmation with unsupported journal version → fail closed.
+    # Status: UNPROVEN as crash case. See CLAIM_MAP.
 
 def t22():
-    rec("22_fingerprint_mismatch", True, "no fingerprints for confirmation; N/A with reason")
+    # REMOVED FROM PASS COUNTS (F9): Was unconditional True ("N/A").
+    # Claim: confirmation with fingerprint mismatch → fail closed.
+    # Status: UNPROVEN as crash case. See CLAIM_MAP.
 
 def t23():
-    rec("23_missing_staging", True, "no staging for confirmation; N/A with reason")
+    # REMOVED FROM PASS COUNTS (F9): Was unconditional True ("N/A").
+    # Claim: confirmation with missing staging → fail closed.
+    # Status: UNPROVEN as crash case. See CLAIM_MAP.
 
 def t24():
     # Unreadable program file → fail closed
@@ -582,31 +635,42 @@ finally:
 """
     r = run_subprocess(code)
     out = r.stdout.strip()
-    # Mutant detected if it raised (fail closed) OR if recovery healed it
-    # We check the fresh view for hybrid
-    # (pid extraction is tricky here; simplified check)
+    # F9: Actually assert the mutant was detected (raised or failed),
+    # not unconditional True.
     detected = "raised" in out or "True" not in out
-    rec("mutant_no_program_save", True, f"mutant executed: {out[:50]} (detection via fail-closed)")
+    rec("mutant_no_program_save", detected, f"mutant executed: {out[:50]}")
 
 def m02():
-    rec("mutant_no_nursery_save", True, "nursery save failure raises; covered by t09")
+    # REMOVED FROM PASS COUNTS (F9): Was unconditional True.
+    # Claim: nursery save failure raises. Covered by t09.
+    # See CLAIM_MAP.
 
 def m03():
-    rec("mutant_naive_sequential", True, "naive sequential without recovery would fail t11; recovery heals")
+    # REMOVED FROM PASS COUNTS (F9): Was unconditional True.
+    # Claim: naive sequential without recovery would fail t11.
+    # Covered by t11 crash test. See CLAIM_MAP.
 
 def m04():
-    rec("mutant_swallow_recovery", True, "recovery errors propagate as RollbackRecoveryError; t19/t24 verify")
+    # REMOVED FROM PASS COUNTS (F9): Was unconditional True.
+    # Claim: recovery errors propagate as RollbackRecoveryError.
+    # Covered by t19/t24. See CLAIM_MAP.
 
 def m05():
-    rec("mutant_malformed_to_success", True, "malformed never defaults to success; recovery fails closed")
+    # REMOVED FROM PASS COUNTS (F9): Was unconditional True.
+    # Claim: malformed never defaults to success.
+    # Covered by t19/t24 fail-closed tests. See CLAIM_MAP.
 
 
 def main():
-    print("=== 27-Case Confirmation Crash Matrix ===", flush=True)
+    print("=== Confirmation Crash Matrix (F9: only real assertions counted) ===", flush=True)
+    print("Removed from counts (see CLAIM_MAP): t14,t15,t16,t20,t21,t22,t23,m02,m03,m04,m05", flush=True)
+    # F9: Only cases with real assertions are executed and counted.
+    # Removed cases (t14,t15,t16,t20,t21,t22,t23,m02,m03,m04,m05) are
+    # documentation-only; see CLAIM_MAP for their disposition.
     for fn in [t01, t02, t03, t04, t05, t06, t07, t08, t09,
-               t10, t11, t12, t13, t14, t15, t16, t17,
-               t18, t19, t20, t21, t22, t23, t24,
-               t25, t26, t27, m01, m02, m03, m04, m05]:
+               t10, t11, t12, t13, t17,
+               t18, t19, t24,
+               t25, t26, t27, m01]:
         try:
             fn()
         except Exception as e:
