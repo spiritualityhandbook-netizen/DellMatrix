@@ -718,13 +718,19 @@ def _confirm_journal_path(owner: str) -> str:
 
 
 def _sha256_file(path: str) -> str:
-    """SHA256 hex digest of file bytes, or empty string if missing."""
-    import hashlib
-    try:
-        with open(path, "rb") as f:
-            return hashlib.sha256(f.read()).hexdigest()
-    except OSError:
-        return ""
+    """SHA256 hex digest of file bytes.
+    
+    Returns:
+        - Hex digest if file exists and is readable
+        - "absent" if file does not exist (legitimate pre-operation absence)
+        - Raises OSError if file exists but is unreadable (corrupt storage)
+    """
+    import hashlib, os
+    if not os.path.exists(path):
+        return "absent"
+    # File exists; if unreadable, let the exception propagate (don't mask I/O errors)
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
 
 
 def write_confirm_intent(owner: str, proposal_id: str) -> None:
@@ -822,31 +828,26 @@ def recover_confirmation_intent(owner: str) -> str:
             f"confirmation intent: unexpected phase {journal.get('phase')} (preserved)"
         )
     proposal_id = journal.get("proposal_id")
-    # Validate required fields. If missing, the journal is corrupt (not a valid
-    # transaction record). Quarantine it (preserve for forensics) and treat
-    # as no journal, rather than blocking all operation.
-    # This handles pre-existing corrupt journals from buggy tests.
-    def _quarantine_corrupt(reason):
-        import shutil, time
-        qdir = os.path.join(os.path.dirname(jpath), "quarantine")
-        os.makedirs(qdir, exist_ok=True)
-        qname = f"{os.path.basename(jpath)}.{int(time.time())}.corrupt"
-        qpath = os.path.join(qdir, qname)
-        try:
-            shutil.move(jpath, qpath)
-            print(f"Quarantined corrupt journal to {qpath}: {reason}", file=sys.stderr)
-        except Exception:
-            pass  # If move fails, just proceed
-        return "no_change"
-    
+    # Validate required fields. Malformed transaction evidence is FAIL-CLOSED:
+    # preserve the journal and refuse unverified live state.
+    # "absent" is a valid value for fingerprints (legitimate pre-operation absence).
+    # Empty string or missing field is malformed.
     if not proposal_id or not isinstance(proposal_id, str):
-        return _quarantine_corrupt("missing proposal_id")
+        raise RollbackRecoveryError(
+            "confirmation intent: missing or invalid proposal_id (journal preserved)"
+        )
     old_nursery_fp = journal.get("old_nursery_sha256")
     old_program_fp = journal.get("old_program_sha256")
-    if not old_nursery_fp or not isinstance(old_nursery_fp, str):
-        return _quarantine_corrupt("missing old_nursery_sha256")
-    if not old_program_fp or not isinstance(old_program_fp, str):
-        return _quarantine_corrupt("missing old_program_sha256")
+    # "absent" is valid (file didn't exist at journal time).
+    # Empty string, None, or non-string is malformed.
+    if not isinstance(old_nursery_fp, str) or old_nursery_fp == "":
+        raise RollbackRecoveryError(
+            "confirmation intent: missing or invalid old_nursery_sha256 (journal preserved)"
+        )
+    if not isinstance(old_program_fp, str) or old_program_fp == "":
+        raise RollbackRecoveryError(
+            "confirmation intent: missing or invalid old_program_sha256 (journal preserved)"
+        )
 
     from form.persist import _path
     from form.dell_matrix.nursery import owner_nursery_path
@@ -857,11 +858,23 @@ def recover_confirmation_intent(owner: str) -> str:
 
     # --- Files must exist and be readable; otherwise fail closed ---
     # Do NOT clear journal merely because files are missing.
+    # However, if the journal records "absent" (file didn't exist at journal time)
+    # and the file still doesn't exist, the operation never wrote → safe to clear.
     if not os.path.isfile(npath):
+        if old_nursery_fp == "absent":
+            # Nursery didn't exist at journal time, still doesn't exist.
+            # Operation never wrote. Safe to clear.
+            clear_confirm_intent(owner)
+            return "no_change"
         raise RollbackRecoveryError(
             f"confirmation intent: nursery file missing (journal preserved): {npath}"
         )
     if not os.path.isfile(ppath):
+        if old_program_fp == "absent":
+            # Program didn't exist at journal time, still doesn't exist.
+            # Operation never wrote. Safe to clear.
+            clear_confirm_intent(owner)
+            return "no_change"
         raise RollbackRecoveryError(
             f"confirmation intent: program file missing (journal preserved): {ppath}"
         )
