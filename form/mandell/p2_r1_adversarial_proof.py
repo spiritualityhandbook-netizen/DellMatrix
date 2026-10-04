@@ -31,7 +31,6 @@ RESULTS = []
 
 
 def run_phase(name, code):
-    global RESULTS
     print(f"--- {name} ---", flush=True)
     r = subprocess.run(
         [sys.executable, "-c", code],
