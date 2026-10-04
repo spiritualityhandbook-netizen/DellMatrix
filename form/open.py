@@ -1127,8 +1127,23 @@ class Program:
                 raise ValueError(f"scope IDs not on plane: {missing}")
             plane = ScopedPlaneView(plane, scope_ids)
             scope_mode = "contextual"
-        result = self.growth.run(plane, cycles=cycles)
+        # P3 R3.6: attach the owner's Phase-2 graph as a read-only signal
+        # for RingedGrowth (graph_coherence over proposal pairs). Best
+        # effort: a missing/unreadable/corrupt graph degrades to the
+        # defined neutral (no graph signal), reported honestly — growth
+        # must not crash on unrelated graph state.
+        graph = None
+        graph_state = "none"
+        try:
+            from form.mandell.semantic_graph import SemanticGraph
+            graph = SemanticGraph.load(self.owner)
+            graph_state = "attached"
+        except Exception:
+            graph = None
+            graph_state = "unavailable"
+        result = self.growth.run(plane, cycles=cycles, graph=graph)
         result["scope_mode"] = scope_mode
+        result["graph_signal"] = graph_state
         result["scope_ids"] = list(scope_ids) if scope_ids is not None else None
         self.duo.evolve(f"13[Loop] :: RingedGrow x{cycles}")
         # Nature forces grow in parallel (visible stages)
@@ -1245,11 +1260,29 @@ class Program:
 
     def ranked_proposals(self) -> List[Dict[str, Any]]:
         props = self.list_proposals()
+        # P3 R3.6: harmony + graph coherence, persisted on each proposal by
+        # RingedGrowth.run, are consumed here as tie-breakers — this is the
+        # real consumer that reads the scores (repl, visual, and the
+        # executor leaf all render this ordering). Preference blending is
+        # untouched: harmony only orders proposals the preference model
+        # scores equally (blended ties), then graph coherence.
+        def _rank_key(p: Dict[str, Any]):
+            return (
+                -float(p.get("blended", p.get("affinity", 0)) or 0),
+                -float(p.get("harmony", 0) or 0),
+                -float(p.get("graph_coherence", 0) or 0),
+            )
         try:
             # Preference blend ≠ pure affinity imitation (NVIDIA-inspired)
-            return self.inspire.prefs.rank_proposals(props)
+            ranked = self.inspire.prefs.rank_proposals(props)
+            ranked.sort(key=_rank_key)  # stable: keeps pref order, breaks ties
+            return ranked
         except Exception:
-            return sorted(props, key=lambda p: -float(p.get("affinity", 0)))
+            return sorted(props, key=lambda p: (
+                -float(p.get("affinity", 0) or 0),
+                -float(p.get("harmony", 0) or 0),
+                -float(p.get("graph_coherence", 0) or 0),
+            ))
 
     def confirm_proposal(self, pid: str) -> Dict[str, Any]:
         from form.dell_matrix.confirm_lineage import confirm_proposal as _confirm_proposal
