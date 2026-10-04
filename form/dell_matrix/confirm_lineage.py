@@ -72,8 +72,14 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
     # R3: Record intent BEFORE any durable writes. The journal enables
     # recovery to distinguish "crashed confirmation" from "legitimate
     # historical record". Recovery uses recorded intent, not visibility.
+    # R3-COMPLETION-GATE: Skip journal if supersession is managing the
+    # transaction (it uses its own enclosing journal). Do not publish
+    # independent successor acceptance and clear recovery evidence before
+    # the supersession outcome is recoverable.
     from form.mandell.core_i_recovery import write_confirm_intent, clear_confirm_intent
-    write_confirm_intent(program.owner, prop.id)
+    _skip_journal = getattr(confirm_proposal, '_SKIP_JOURNAL', False)
+    if not _skip_journal:
+        write_confirm_intent(program.owner, prop.id)
     # Stage the nursery confirmation in memory (do NOT save yet).
     # The checkpoint transaction will persist both Program and Nursery atomically.
     # ARGUS-3: All persistence failures must preserve/restore pre-operation state.
@@ -82,8 +88,9 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
         try:
             from form.mandell.checkpoint_generation import commit_checkpoint
             commit_checkpoint(program)
-            # Success: clear the intent journal.
-            clear_confirm_intent(program.owner)
+            # Success: clear the intent journal (unless supersession manages it).
+            if not _skip_journal:
+                clear_confirm_intent(program.owner)
         except Exception as exc:
             # Transaction failed: revert in-memory state to OLD.
             # Proposal stays pending (retryable), Idea removed if newly placed.
@@ -111,7 +118,8 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
                 # If we can't revert the file, leave journal for recovery.
                 pass
             if reverted:
-                clear_confirm_intent(program.owner)
+                if not _skip_journal:
+                    clear_confirm_intent(program.owner)
             # Check if it's a nursery conflict (optimistic concurrency).
             # The checkpoint wraps the original error, so check the chain.
             from form.dell_matrix.nursery import NurseryConflictError
@@ -140,7 +148,8 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
             nursery.save()
             from form import persist_rest
             persist_rest.save(program)
-            clear_confirm_intent(program.owner)
+            if not _skip_journal:
+                clear_confirm_intent(program.owner)
         except Exception:
             prop.status = "pending"
             if not existed:

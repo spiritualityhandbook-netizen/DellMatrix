@@ -189,6 +189,8 @@ class Program:
             try:
                 from form.mandell.core_i_recovery import recover_confirmation_intent
                 recover_confirmation_intent(self.owner)
+                from form.mandell.core_i_recovery import recover_supersede_intent
+                recover_supersede_intent(self.owner)
             except Exception:
                 # Recovery failures are fail-closed (raise); but if the
                 # recovery module is unavailable during early init, don't

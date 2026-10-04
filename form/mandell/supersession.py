@@ -394,22 +394,41 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     # Phase-4 commit) therefore leaves the predecessor active: a fresh
     # process can never observe "predecessor superseded" without a
     # completely established successor.
+    #
+    # R3-COMPLETION-GATE: Write supersession intent journal BEFORE any
+    # writes. This is the ENCLOSING transaction. Do not publish independent
+    # successor acceptance and clear its recovery evidence before the
+    # supersession outcome is recoverable.
+    from form.mandell.core_i_recovery import (
+        write_supersede_intent, clear_supersede_intent
+    )
+    write_supersede_intent(program.owner, old_id, succ_id)
     try:
         if _FAIL_AT == "confirm":
             raise SupersedeError("injected_failure", "confirm")
-        # Set skip flag: supersession has its own transaction boundary
-        # (Phase 4 save). Avoid nested checkpoint commits.
+        # Set skip flags: supersession has its own transaction boundary.
+        # _SKIP_CHECKPOINT avoids nested checkpoint commits.
+        # _SKIP_JOURNAL prevents confirm_proposal from writing/clearing
+        # its own journal; the supersession journal is the authority.
         from form.dell_matrix import confirm_lineage as _cl
         _orig_skip = getattr(_cl.confirm_proposal, '_SKIP_CHECKPOINT', False)
+        _orig_skip_j = getattr(_cl.confirm_proposal, '_SKIP_JOURNAL', False)
         _cl.confirm_proposal._SKIP_CHECKPOINT = True
+        _cl.confirm_proposal._SKIP_JOURNAL = True
         try:
             res = program.confirm_proposal(succ_id)
         finally:
             _cl.confirm_proposal._SKIP_CHECKPOINT = _orig_skip
+            _cl.confirm_proposal._SKIP_JOURNAL = _orig_skip_j
         if not res.get("ok"):
             raise SupersedeError("confirm_failed", str(res.get("reason")))
     except Exception:
         _rollback_unconfirmed(program, succ_id)
+        # Clear supersession journal on failure (operation aborted)
+        try:
+            clear_supersede_intent(program.owner)
+        except:
+            pass
         raise
 
     # ---- Phase 4: complete revision links, then ONE atomic commit ----
@@ -446,8 +465,15 @@ def _supersede_impl(program: Any, old_id: str, words: str,
         # R3: Phase 3 (confirm_proposal with skip) already saved both nursery
         # and program files with the successor Idea durable. Phase 4 only
         # updates predecessor links in the nursery. No program save needed.
+        # R3-COMPLETION-GATE: Clear supersession journal ONLY after the
+        # complete transition is durable. The successor's acceptance is
+        # now recoverable as part of the supersession outcome.
+        clear_supersede_intent(program.owner)
     except Exception:
         _rollback_full(program, old, old_snap, succ_id)
+        # Preserve journal for crash recovery (do not clear on failure).
+        # If the process survives, the caller can retry. If it crashes,
+        # recovery will use the journal.
         raise
 
     # ---- Phase 5: auditable receipt ----

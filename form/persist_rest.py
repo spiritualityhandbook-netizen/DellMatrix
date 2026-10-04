@@ -198,12 +198,13 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     recover_rollback_transaction(owner)
     # Confirmation-intent recovery (GDP_R3_IDEA_PRESERVATION_ADDENDUM).
     # Recovers from RECORDED INTENT (journal), not inferred visibility.
-    # A confirmed proposal without a Plane Idea is NOT healed unless a
-    # journal records an in-progress confirmation for that proposal.
-    # This preserves legitimate historical records (faded, superseded).
-    # The old visibility-based recover_confirmation_hybrid is deprecated.
     from form.mandell.core_i_recovery import recover_confirmation_intent
     recover_confirmation_intent(owner)
+    # Supersession-intent recovery (GDP_R3_COMPLETION_GATE req. 3).
+    # Recovers the complete supersession transition (successor, predecessor,
+    # links) from the enclosing journal.
+    from form.mandell.core_i_recovery import recover_supersede_intent
+    recover_supersede_intent(owner)
     path = path or _path(owner)
     if not os.path.isfile(path):
         p = open_program(owner)
