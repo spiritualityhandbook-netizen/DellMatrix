@@ -421,3 +421,45 @@ it is not a failed objective.
 **Integrated proof:** p1_integrated_proof.py 6/6 PASS.
 **Research:** 6 sources (see RESEARCH_LEDGER.md).
 **Migration:** See MIGRATION_MATRIX.md.
+
+---
+
+## DSC1_J01 — GRAPH JOURNAL INTEGRITY REPAIR [CERTIFIED / MERGED / CLOSED] (2026-10-04)
+
+**Authority:** OVERSEER > DIRECTOR > UNI
+**PR:** #73 → main `07e79e587c470d554fdf8d64ea6f3b6946ab56ac` (2026-10-04)
+**Certified head:** `97bbe8ac9169c66128b68eb5b18ac60886e6c752`
+**Certified tree:** `b788f98f27936c68ebfb1c076e6e2b16c4d469a4` (merge tree matches exactly)
+**Base:** `62adb2176feb97fee22b7a3c831a596acbbcbcbd`
+
+**Defect:** Graph recovery journals could be malformed yet treated as valid —
+status reported "synchronized" for invalid recovery state; journals with
+missing operations or unsupported versions were accepted and deleted;
+`from_dict()` coercion hid raw-type malformations from validation while
+replay used raw fields.
+
+**Repair (single canonical validator):**
+- `validate_journal()` + `_validate_journal_op()` + `_validate_raw_entry()`
+  in `form/mandell/semantic_graph.py` — one authority for all journal paths
+  (`_write_journal`, `_replay_journal`, `propagation_status`,
+  `_remove_journal_ops`).
+- Strict envelope (format_version int, exact owner, operations list),
+  recognized op types, required fields, non-empty identifiers, complete
+  embedded entries via `RelationshipEntry.from_dict`, strict raw types
+  (no bool/float/str/list coercion), assembled-journal validation before
+  atomic write.
+- Invalid journals → explicit non-success ("unknown" status,
+  `GraphValidationError` on load); bytes preserved, never deleted.
+
+**Gates:** R1 (4 findings), R2 (2 findings), R3 micro-gate (instrumented
+live-listener proof with causal controls), R3 closeout (decoding-witness).
+All closed. Blind SWAT CLEAN at each round.
+
+**Evidence:**
+- `p2_dsc1_journal_proof`: 200/200 PASS (registered in `form.regress`)
+- `p2_dsc1_r3_listener_proof`: 30/30 PASS (registered in `form.regress`)
+- Forward/reverse regression: 87/87 GREEN (×2 each)
+- Exact-head CI: Python package + Form smoke SUCCESS
+- Post-merge fresh-main validation: 200/200, 30/30, 87/87 fwd+rev GREEN
+
+**Security:** EVALUATION_UNAVAILABLE_QUOTA.
