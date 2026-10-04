@@ -100,6 +100,8 @@ Lattice / Perception / Looking
   rooms | view <room>   view-rooms (growth water force network …)
   forces | force tick   nature forces field
   weather clear|rain|storm|fog
+  spatial tick|settle [N]|explain <id>|status
+                        canonical spatial authority (Phase 4)
   evolve                grow program gen + forces + pillars
   evolve <detail>       grow one generation with your intent recorded
   growth | duobeta     DuoBeta living-growth status
@@ -1468,6 +1470,37 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _say(f"Force tick · active {', '.join(rep.get('forces') or [])}")
         if rep.get("breath"):
             _say(f"  breath cycle {rep['breath'].get('inhale', {}).get('cycle')}")
+        return p
+
+    # Phase 4: canonical spatial authority — public REPL surface
+    if lower in ("spatial tick", "tick spatial"):
+        rep = p.force_tick()["spatial"]
+        _say(f"Spatial tick {rep.get('tick')} · moved {rep.get('moved')} · "
+             f"max_disp {rep.get('max_displacement', 0):.4f} · "
+             f"state {rep.get('state')}")
+        return p
+    if lower.startswith("spatial settle"):
+        parts = lower.split()
+        n = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 200
+        s = p.spatial_settle(n)
+        _say(f"Settle · ticks {s['ticks_run']} · "
+             f"converged {s['converged']} · "
+             f"honestly_non_convergent {s['honestly_non_convergent']}")
+        return p
+    if lower.startswith("spatial explain "):
+        iid = lower.split(maxsplit=2)[2].strip()
+        e = p.spatial_explain(iid)
+        if not e.get("present"):
+            _say(f"No placement record for '{iid}'")
+        else:
+            pl = e["placement"]
+            _say(f"{iid} @ ({e['x']:.2f}, {e['y']:.2f}) · "
+                 f"cause {pl.get('cause')} · anchors {pl.get('anchors')}")
+        return p
+    if lower in ("spatial status", "spatial"):
+        s = p.spatial
+        _say(f"Spatial · tick {s.tick_count} · temp {s.temperature:.4f} · "
+             f"tracked {len(s.velocities)} · placements {len(s.placements)}")
         return p
 
     if lower.startswith("force "):
