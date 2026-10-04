@@ -262,6 +262,13 @@ def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> None:
             pass
     # Direct save: the rollback itself must not trip the inject hook.
     program.nursery.save()
+    # Also save Program: the plane.remove above modified in-memory state.
+    # Without this, durable Program retains the successor Idea (rollback gap).
+    try:
+        from form import persist_rest
+        persist_rest.save(program)
+    except Exception:
+        pass  # Best effort; nursery save is the critical part
 
 
 def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
@@ -285,6 +292,13 @@ def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
             pass
     # Direct save: the rollback itself must not trip the inject hook.
     program.nursery.save()
+    # Also persist Program: plane.remove modified in-memory state.
+    # Without this, durable Program retains the successor Idea.
+    try:
+        from form import persist_rest
+        persist_rest.save(program)
+    except Exception:
+        pass
 
 
 def supersede_proposal(program: Any, old_id: str, words: str,

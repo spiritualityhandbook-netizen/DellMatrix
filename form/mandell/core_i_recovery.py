@@ -1183,9 +1183,13 @@ def recover_supersede_intent(owner: str) -> str:
     if not isinstance(units, dict):
         raise RollbackRecoveryError("supersede intent: bad units (preserved)")
 
-    # Check if nursery was modified (original logic; supersession has its own contract)
-    current_fp = _sha256_file(npath)
-    if current_fp == journal.get("old_nursery_sha256"):
+    # Check if BOTH members were modified.
+    # Must verify Program as well as Nursery before claiming no_change.
+    # Do not clear intent merely because a proposal is absent/pending.
+    current_nursery_fp = _sha256_file(npath)
+    current_program_fp = _sha256_file(ppath)
+    if (current_nursery_fp == journal.get("old_nursery_sha256") and
+        current_program_fp == journal.get("old_program_sha256")):
         clear_supersede_intent(owner)
         return "no_change"
 
@@ -1221,14 +1225,28 @@ def recover_supersede_intent(owner: str) -> str:
         return "already_complete"
 
     # Before link commit: predecessor active, successor confirmed with durable Idea.
-    # This is a permitted intermediate state. Accept as-is, clear journal.
-    # The successor remains unlinked; this is allowed by the contract.
-    old_active = (
+    # This is a permitted intermediate state ONLY if:
+    # - Predecessor lifecycle is valid "active" (not None; None is malformed)
+    # - Successor is confirmed with durable Idea
+    # - NEITHER proposal carries supersession links (no superseded_by_id, no supersedes_id)
+    # If links exist (one-way or contradictory) → fail closed, preserve evidence.
+    old_active_valid = (
         isinstance(old_prop, dict)
-        and old_prop.get("lifecycle_state") in ("active", None)
+        and old_prop.get("lifecycle_state") == "active"
+        # Explicit None is malformed, not legacy. Must be "active".
     )
-    if new_ok and old_active:
-        # Valid partial completion. Clear journal, leave unlinked.
+    # Check for any supersession links (incomplete relationship)
+    old_has_link = isinstance(old_prop, dict) and old_prop.get("superseded_by_id") is not None
+    new_has_link = isinstance(new_prop, dict) and new_prop.get("supersedes_id") is not None
+    if new_ok and old_active_valid:
+        if old_has_link or new_has_link:
+            # Contradictory: active predecessor but links present → fail closed
+            raise RollbackRecoveryError(
+                "supersede intent: active predecessor with supersession links "
+                "(journal preserved). Contradictory state."
+            )
+        # Valid pre-commit: no links, predecessor active, successor confirmed.
+        # Accept as-is, clear journal.
         clear_supersede_intent(owner)
         return "already_complete"
 
@@ -1261,7 +1279,7 @@ def recover_supersede_intent(owner: str) -> str:
         new_prop is None or
         (isinstance(new_prop, dict) and new_prop.get("status") == "pending")
     )
-    if new_absent_or_pending and old_active:
+    if new_absent_or_pending and old_active_valid:
         # Operation never completed. Restore complete OLD outcome.
         clear_supersede_intent(owner)
         return "healed_to_old"
