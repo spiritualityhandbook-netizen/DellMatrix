@@ -927,11 +927,20 @@ def recover_confirmation_intent(owner: str) -> str:
 
     status = prop.get("status")
     if status != "confirmed":
-        # Proposal exists but is not confirmed. Could be:
-        # (a) Operation never confirmed it (stale journal), or
-        # (b) It was reverted by someone else.
-        # If nursery matches OLD fingerprint, we'd have returned above.
-        # Since it doesn't match, something changed it. Preserve journal.
+        # Proposal exists but is not confirmed.
+        # SWAT BREAK 2 FIX: If the proposal is still pending (untouched by
+        # the journaled operation), the journal is STALE. The operation
+        # never wrote; the fingerprint difference is from an unrelated
+        # concurrent write. Clear the journal as no_change, do NOT raise.
+        # This prevents permanent DoS from stale journals.
+        if status == "pending":
+            # Verify the proposal was not modified by the operation.
+            # The operation would have set it to "confirmed". Since it's
+            # still pending, the operation did not touch it.
+            clear_confirm_intent(owner)
+            return "no_change"
+        # Status is neither confirmed nor pending (e.g., rejected, etc.).
+        # Cannot prove safe outcome; preserve journal and fail closed.
         raise RollbackRecoveryError(
             f"confirmation intent: proposal {proposal_id} status={status}, not confirmed (journal preserved)"
         )
