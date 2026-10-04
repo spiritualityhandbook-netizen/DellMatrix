@@ -110,6 +110,210 @@ class PropagationStatus(str, Enum):
 
 
 # ---------------------------------------------------------------------------
+# DSC1_J01: canonical journal validator (single authority)
+# ---------------------------------------------------------------------------
+#
+# Every graph-journal reader, writer, appender, remover, recovery path, and
+# status query MUST use validate_journal(). There is no second validator.
+#
+# The validator enforces:
+# - Required envelope fields (format_version, owner, operations).
+# - Supported format version (exactly _JOURNAL_FORMAT_VERSION; no default).
+# - Exact owner match (no foreign journals).
+# - Operations is a list (no missing -> default []).
+# - Recognized operation types only.
+# - Required per-operation fields, types, and identifiers.
+# - Operation-specific invariants for safe replay.
+#
+# Invalid, unreadable, foreign, or unsupported journals are explicit
+# non-success. Their bytes are preserved; never overwritten, appended to,
+# discarded, or deleted as successful recovery.
+
+_JOURNAL_FORMAT_VERSION = 1
+
+_JOURNAL_OP_TYPES = ("ensure_edge", "sync_dependent")
+
+# Required fields per operation type. Each maps field name -> expected type
+# (or tuple of types). Missing fields are errors, not defaults.
+_JOURNAL_OP_SCHEMA = {
+    "ensure_edge": {
+        "op": str,
+        "entry": dict,  # full RelationshipEntry dict; validated on replay
+    },
+    "sync_dependent": {
+        "op": str,
+        "dependent_id": str,
+        "derived_property": str,
+        "target_id": str,
+        "edge_rel_id": str,
+        # Optional: unit, derivation, subject_id (may be None)
+    },
+}
+
+
+def validate_journal(data: Any, owner: str) -> dict:
+    """Canonical journal validator (DSC1_J01 single authority).
+
+    Returns the validated journal dict (not a copy; the caller's parsed JSON).
+    Raises GraphValidationError on any invalid, unreadable, foreign, or
+    unsupported journal. Never returns a default or partial result.
+    """
+    if not isinstance(data, dict):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: must be a JSON object, "
+            f"got {type(data).__name__}")
+    # Envelope: format_version (required, strict int type, exact value).
+    # R1-F3: bool is a subclass of int in Python (True == 1), so an
+    # explicit type check is required. Float, string, missing, and
+    # unsupported versions are all rejected.
+    version = data.get("format_version")
+    if not isinstance(version, int) or isinstance(version, bool):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: format_version must be int, "
+            f"got {type(version).__name__} ({version!r})")
+    if version != _JOURNAL_FORMAT_VERSION:
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: unsupported format_version "
+            f"{version!r} (supported: {_JOURNAL_FORMAT_VERSION})")
+    # Envelope: owner (required, exact match).
+    jowner = data.get("owner")
+    if jowner != owner:
+        raise GraphValidationError(
+            f"graph journal owner mismatch: journal owner {jowner!r} != "
+            f"expected {owner!r}")
+    # Envelope: operations (required, must be a list; missing is an error,
+    # not an empty transaction).
+    if "operations" not in data:
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: missing required 'operations' field")
+    operations = data["operations"]
+    if not isinstance(operations, list):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: 'operations' must be a list, "
+            f"got {type(operations).__name__}")
+    # Per-operation validation.
+    for idx, op in enumerate(operations):
+        _validate_journal_op(op, owner, idx)
+    return data
+
+
+def _validate_raw_entry(entry: Any, owner: str, idx: int) -> None:
+    """R2: strict raw-type schema for journal-embedded relationship entries.
+
+    from_dict() coerces (str([])->"[]", int(True)->1, float("2")->2.0),
+    but replay uses RAW fields: rel_id as a dict key (unhashable list
+    crashes), seq for ordering. Validation must reject malformed raw
+    types before coercion can hide them, before the idempotence skip,
+    before reporting success, and before deleting evidence.
+
+    Requires exact types (no bool-as-int, no str-as-int, no list-as-str).
+    """
+    if not isinstance(entry, dict):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: operation {idx} "
+            f"(ensure_edge) entry must be a dict, "
+            f"got {type(entry).__name__}")
+
+    def _req_str(field: str, non_empty: bool = True) -> None:
+        v = entry.get(field)
+        # bool is not str, but be explicit; list/dict/int rejected.
+        if not isinstance(v, str) or isinstance(v, bool):
+            raise GraphValidationError(
+                f"graph journal for {owner!r}: operation {idx} "
+                f"(ensure_edge) entry field {field!r} must be str, "
+                f"got {type(v).__name__}")
+        if non_empty and not v:
+            raise GraphValidationError(
+                f"graph journal for {owner!r}: operation {idx} "
+                f"(ensure_edge) entry field {field!r} must be non-empty")
+
+    def _req_int(field: str) -> None:
+        v = entry.get(field)
+        # Reject bool (True == 1) and str ("2") — no coercion.
+        if not isinstance(v, int) or isinstance(v, bool):
+            raise GraphValidationError(
+                f"graph journal for {owner!r}: operation {idx} "
+                f"(ensure_edge) entry field {field!r} must be int, "
+                f"got {type(v).__name__}")
+
+    _req_str("rel_id")
+    _req_str("type")
+    _req_str("source_id")
+    _req_str("target_id")
+    _req_str("status")
+    _req_str("cause", non_empty=False)
+    _req_int("seq")
+
+    # props must be a dict (replay may iterate it).
+    if not isinstance(entry.get("props"), dict):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: operation {idx} "
+            f"(ensure_edge) entry field 'props' must be dict, "
+            f"got {type(entry.get('props')).__name__}")
+
+    # recorded_at must be numeric (not bool, not str).
+    ra = entry.get("recorded_at")
+    if not isinstance(ra, (int, float)) or isinstance(ra, bool):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: operation {idx} "
+            f"(ensure_edge) entry field 'recorded_at' must be numeric, "
+            f"got {type(ra).__name__}")
+
+    # provenance must be a dict (from_dict will validate its contents).
+    if not isinstance(entry.get("provenance"), dict):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: operation {idx} "
+            f"(ensure_edge) entry field 'provenance' must be dict, "
+            f"got {type(entry.get('provenance')).__name__}")
+
+
+def _validate_journal_op(op: Any, owner: str, idx: int) -> None:
+    """Validate a single journal operation. Raises GraphValidationError."""
+    if not isinstance(op, dict):
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: operation {idx} must be a dict, "
+            f"got {type(op).__name__}")
+    op_type = op.get("op")
+    if op_type not in _JOURNAL_OP_TYPES:
+        raise GraphValidationError(
+            f"graph journal for {owner!r}: operation {idx} has unknown "
+            f"type {op_type!r} (supported: {_JOURNAL_OP_TYPES})")
+    schema = _JOURNAL_OP_SCHEMA[op_type]
+    for field, ftype in schema.items():
+        if field not in op:
+            raise GraphValidationError(
+                f"graph journal for {owner!r}: operation {idx} ({op_type}) "
+                f"missing required field {field!r}")
+        if not isinstance(op[field], ftype):
+            raise GraphValidationError(
+                f"graph journal for {owner!r}: operation {idx} ({op_type}) "
+                f"field {field!r} must be {ftype.__name__}, "
+                f"got {type(op[field]).__name__}")
+    # Operation-specific invariants for safe replay.
+    # R2: strict raw-type schema for ensure_edge entries. from_dict()
+    # coerces (str([]) -> "[]", int(True) -> 1), but replay uses RAW
+    # fields (rel_id as dict key -> unhashable list crashes). Validation
+    # and execution must agree: reject malformed raw types BEFORE
+    # from_dict coercion can hide them.
+    if op_type == "ensure_edge":
+        _validate_raw_entry(op["entry"], owner, idx)
+        try:
+            RelationshipEntry.from_dict(op["entry"])
+        except GraphValidationError as exc:
+            raise GraphValidationError(
+                f"graph journal for {owner!r}: operation {idx} "
+                f"(ensure_edge) has malformed entry: {exc}"
+            ) from exc
+    elif op_type == "sync_dependent":
+        # Identifiers must be non-empty (empty IDs cannot be replayed safely).
+        for f in ("dependent_id", "derived_property", "target_id", "edge_rel_id"):
+            if not op[f]:
+                raise GraphValidationError(
+                    f"graph journal for {owner!r}: operation {idx} "
+                    f"(sync_dependent) field {f!r} must be non-empty")
+
+
+# ---------------------------------------------------------------------------
 # Records
 # ---------------------------------------------------------------------------
 
@@ -399,10 +603,9 @@ class SemanticGraph:
         the outer journal covers a→b, the inner covers b→c; both must
         survive for complete recovery).
 
-        MICRO-GATE: if an existing journal cannot be parsed/validated,
-        DO NOT overwrite it. Raise GraphValidationError (fail closed).
-        UNKNOWN recovery state must not become valid state by silent
-        overwrite."""
+        DSC1_J01: uses the canonical validate_journal(). If an existing
+        journal cannot be parsed/validated, DO NOT overwrite it. Raise
+        GraphValidationError (fail closed)."""
         from form.dell_matrix.atomic_write import atomic_write_json
         path = graph_journal_path(self.owner)
         existing_ops: List[Dict[str, Any]] = []
@@ -415,28 +618,21 @@ class SemanticGraph:
                     f"graph journal unreadable for {self.owner!r}: {exc}; "
                     f"refusing to overwrite unknown recovery state"
                 ) from exc
-            # Validate the existing journal before appending.
-            if not isinstance(existing, dict):
-                raise GraphValidationError(
-                    f"graph journal corrupt for {self.owner!r}: not a dict; "
-                    f"refusing to overwrite")
-            if existing.get("owner") != self.owner:
-                raise GraphValidationError(
-                    f"graph journal owner mismatch for {self.owner!r}; "
-                    f"refusing to overwrite")
-            ops = existing.get("operations")
-            if not isinstance(ops, list):
-                raise GraphValidationError(
-                    f"graph journal corrupt for {self.owner!r}: operations not a list; "
-                    f"refusing to overwrite")
-            existing_ops = ops
+            # DSC1_J01: canonical validation (single authority).
+            validate_journal(existing, self.owner)
+            existing_ops = existing["operations"]
         journal = {
-            "format_version": 1,
+            "format_version": _JOURNAL_FORMAT_VERSION,
             "owner": self.owner,
             "txn_id": str(uuid.uuid4()),
             "started_at": time.time(),
             "operations": existing_ops + operations,
         }
+        # R1-F2: validate the ENTIRE assembled journal (existing + new)
+        # before the atomic write. Invalid new operations must not be
+        # persisted. On failure the existing journal is preserved (or no
+        # new journal is created).
+        validate_journal(journal, self.owner)
         atomic_write_json(path, journal)
         return path
 
@@ -451,31 +647,26 @@ class SemanticGraph:
         Converges to committed state; never exposes a half-transaction.
         Operations that cannot be completed (e.g., dependent idea file
         permanently gone) are recorded as FAILED in the ledger — the load
-        itself does not crash; the failure is explicit and queryable."""
+        itself does not crash; the failure is explicit and queryable.
+
+        DSC1_J01: uses the canonical validate_journal() (single authority).
+        Invalid journals raise GraphValidationError; their bytes are preserved
+        (never deleted as successful recovery)."""
         path = graph_journal_path(self.owner)
         if not os.path.isfile(path):
             return
         try:
             with open(path, encoding="utf-8") as f:
                 journal = json.load(f)
-        except (OSError, json.JSONDecodeError):
-            raise GraphValidationError(f"graph journal unreadable for {self.owner!r}")
-        # A1/A2/A3: validate journal shape upfront — fail closed, not
-        # AttributeError.
-        if not isinstance(journal, dict):
-            raise GraphValidationError("graph journal must be a JSON object")
-        if journal.get("owner") != self.owner:
-            raise GraphValidationError("graph journal owner mismatch")
-        operations = journal.get("operations", [])
-        if not isinstance(operations, list):
-            raise GraphValidationError("graph journal operations must be a list")
-        for op in operations:
-            if not isinstance(op, dict):
-                raise GraphValidationError("graph journal op must be a dict")
-            # A4: reject unknown op types (fail closed, not silently dropped).
-            if op.get("op") not in ("ensure_edge", "sync_dependent"):
-                raise GraphValidationError(
-                    f"unknown graph journal op {op.get('op')!r}")
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise GraphValidationError(
+                f"graph journal unreadable for {self.owner!r}: {exc}"
+            ) from exc
+        # DSC1_J01: canonical validation. Rejects: non-dict, wrong version,
+        # foreign owner, missing/non-list operations, unknown op types,
+        # missing/invalid op fields. Bytes preserved on failure.
+        validate_journal(journal, self.owner)
+        operations = journal["operations"]
         self._replaying = True
         try:
             for op in operations:
@@ -1331,10 +1522,9 @@ class SemanticGraph:
     def _remove_journal_ops(self, dependent_id: str, derived_property: str) -> None:
         """Remove completed sync_dependent ops from the journal.
 
-        MICRO-GATE: do NOT silently ignore corrupt/unreadable journal.
-        If the journal cannot be parsed/validated, raise GraphValidationError
-        (fail closed) — the caller (reconcile) must not pretend the op was
-        removed."""
+        DSC1_J01: uses the canonical validate_journal(). Do NOT silently
+        ignore corrupt/unreadable journal. If the journal cannot be
+        parsed/validated, raise GraphValidationError (fail closed)."""
         jpath = graph_journal_path(self.owner)
         if not os.path.isfile(jpath):
             return
@@ -1346,13 +1536,9 @@ class SemanticGraph:
                 f"graph journal unreadable for {self.owner!r}: {exc}; "
                 f"cannot remove completed ops from unknown state"
             ) from exc
-        if not isinstance(journal, dict):
-            raise GraphValidationError(
-                f"graph journal corrupt for {self.owner!r}: not a dict")
-        ops = journal.get("operations")
-        if not isinstance(ops, list):
-            raise GraphValidationError(
-                f"graph journal corrupt for {self.owner!r}: operations not a list")
+        # DSC1_J01: canonical validation (single authority).
+        validate_journal(journal, self.owner)
+        ops = journal["operations"]
         filtered = [op for op in ops
                     if not (isinstance(op, dict)
                             and op.get("op") == "sync_dependent"
@@ -1429,14 +1615,13 @@ class SemanticGraph:
 
     def propagation_status(self, dependent_id: str,
                            derived_property: str) -> str:
-        """R1-1: queryable propagation state. Returns 'synchronized',
-        'pending', 'failed', or 'unknown'. NEVER returns 'synchronized'
-        when a FAILED record exists, a journaled operation is in-flight,
-        or the journal cannot be validated.
+        """Queryable propagation state. Returns 'synchronized', 'pending',
+        'failed', or 'unknown'. NEVER returns 'synchronized' when a FAILED
+        record exists, a journaled operation is in-flight, or the journal
+        cannot be validated.
 
-        MICRO-GATE: if the journal exists but cannot be read/validated,
-        return 'unknown' (explicit non-success), never 'synchronized'.
-        PENDING != SYNCHRONIZED. UNKNOWN != SYNCHRONIZED."""
+        DSC1_J01: uses the canonical validate_journal(). Invalid journals
+        yield 'unknown' (explicit non-success), never 'synchronized'."""
         rec = self._propagation_ledger.get((dependent_id, derived_property))
         if rec is not None and rec.get("status") == PropagationStatus.FAILED.value:
             return "failed"
@@ -1448,17 +1633,13 @@ class SemanticGraph:
                 with open(jpath, encoding="utf-8") as f:
                     journal = json.load(f)
             except (OSError, json.JSONDecodeError, UnicodeDecodeError):
-                # Corrupt/unreadable journal: fail closed. Do NOT return
-                # "synchronized" for unknown recovery state.
                 return "unknown"
-            if not isinstance(journal, dict):
+            # DSC1_J01: canonical validation. Any invalid journal -> "unknown".
+            try:
+                validate_journal(journal, self.owner)
+            except GraphValidationError:
                 return "unknown"
-            ops = journal.get("operations", [])
-            if not isinstance(ops, list):
-                return "unknown"
-            for op in ops:
-                if not isinstance(op, dict):
-                    return "unknown"
+            for op in journal["operations"]:
                 if (op.get("op") == "sync_dependent"
                         and op.get("dependent_id") == dependent_id
                         and op.get("derived_property") == derived_property):
