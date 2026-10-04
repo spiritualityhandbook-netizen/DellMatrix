@@ -348,27 +348,55 @@ print('REV:' + str(rev_ok) + ' CHAIN:' + str(chain_ok))
     rec("08_revision_distinct", ok, out[:50])
     clean(o)
 
+def t09():
+    """Stale journal + concurrent write -> clear, not DoS."""
+    o = "R3H09"; clean(o)
+    setup = """
+import sys, json
+sys.path.insert(0, %r)
+from form.open import open_program
+from form import persist_rest
+from form.mandell.core_i_recovery import write_confirm_intent
+p = open_program(%r)
+pr = p.nursery.add('A', words='x')
+pid_a = pr.id
+p.nursery.save()
+persist_rest.save(p)
+# Write journal for A (simulating crash before write)
+write_confirm_intent(%r, pid_a)
+# Concurrent legitimate write: add B
+pr_b = p.nursery.add('B', words='y')
+p.nursery.save()
+persist_rest.save(p)
+print('PID_A:' + pid_a)
+""" % (REPO, o, o)
+    rc, out, err = run_script("t09_setup", setup)
+    if rc != 0 or "PID_A:" not in out:
+        rec("09_stale_concurrent", False, "setup failed")
+        clean(o); return
+    pid_a = out.split("PID_A:")[1].strip().split()[0]
+    # Fresh load should clear stale journal (A still pending), not raise
+    load = """
+import sys, os
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import _confirm_journal_path
+try:
+    p = persist_rest.load(%r, activate=False)
+    st = p.nursery.proposals[%r].status
+    jexists = os.path.isfile(_confirm_journal_path(%r))
+    print('STATUS:' + st + ' JEXISTS:' + str(jexists))
+except Exception as e:
+    print('RAISED:' + type(e).__name__)
+""" % (REPO, o, pid_a, o)
+    rc, out, err = run_script("t09_load", load)
+    # Should NOT raise, A should still be pending, journal cleared
+    ok = "STATUS:pending" in out and "JEXISTS:False" in out and "RAISED" not in out
+    rec("09_stale_concurrent", ok, out[:60])
+    clean(o)
+
 if __name__ == "__main__":
-    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08()
+    t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t09()
     n = sum(results)
     print("=== %d/%d ===" % (n, len(results)))
     sys.exit(0 if all(results) else 1)
-
-
-def smoke():
-    """Runner-compatible entry point for form.regress.
-    
-    Returns True if all tests pass, False otherwise.
-    Resets per-run results.
-    """
-    global results
-    results = []
-    try:
-        t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08()
-    except Exception as e:
-        print("SMOKE EXCEPTION: %s" % e)
-        return False
-    n = sum(results)
-    total = len(results)
-    print("%d/%d" % (n, total))
-    return n == total and total > 0
