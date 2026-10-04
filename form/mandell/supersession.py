@@ -264,11 +264,9 @@ def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> None:
     program.nursery.save()
     # Also save Program: the plane.remove above modified in-memory state.
     # Without this, durable Program retains the successor Idea (rollback gap).
-    try:
-        from form import persist_rest
-        persist_rest.save(program)
-    except Exception:
-        pass  # Best effort; nursery save is the critical part
+    # Propagate failure: incomplete rollback must not be silently accepted.
+    from form import persist_rest
+    persist_rest.save(program)
 
 
 def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
