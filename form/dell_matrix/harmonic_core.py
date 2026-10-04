@@ -186,6 +186,11 @@ def apply_radial_soft_forget(lattice, ledger: KeyLedger, *,
             sh = 0
         if sh >= outer_shell and content is not None:
             cell.content = None
+            # P4-DIR-01: soft-forget clears lossless membership too;
+            # members is the occupancy truth, content is the legacy primary.
+            # Both must agree that the cell is forgotten.
+            if hasattr(cell, "members"):
+                cell.members = []
             if key:
                 ledger.soft_forget(key)
             forgotten += 1

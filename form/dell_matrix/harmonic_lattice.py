@@ -208,7 +208,7 @@ class HarmonicLattice:
                 "label": cell.label if cell else "",
                 "shell": self.perception.shell(*coord),
                 "skin": self.perception.skin_name(),
-                "has_content": cell is not None and cell.content is not None,
+                "has_content": cell is not None and cell.member_count > 0,
                 # P4-DIR-01: honest collision representation
                 "members": list(cell.members) if cell else [],
                 "member_count": cell.member_count if cell else 0,
