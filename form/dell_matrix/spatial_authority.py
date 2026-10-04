@@ -335,7 +335,14 @@ class SpatialAuthority:
         """
         plane = program.cube.session.plane
         if x is not None and y is not None:
-            fx, fy = self._finite_or_origin(float(x), float(y))
+            # Explicit coordinates: non-finite (NaN/inf) is REJECTED
+            # (fail-closed). Silently mapping to origin would be dishonest.
+            fx0, fy0 = float(x), float(y)
+            if not (math.isfinite(fx0) and math.isfinite(fy0)):
+                raise ValueError(
+                    f"explicit placement for {idea_id!r}: non-finite "
+                    f"coordinates ({fx0}, {fy0}) rejected")
+            fx, fy = self._finite_or_origin(fx0, fy0)
             cause, anchors = "explicit", []
         else:
             anchors = self._placed_graph_neighbors(program, idea_id)
@@ -418,8 +425,13 @@ class SpatialAuthority:
 
     @staticmethod
     def _finite_or_origin(x: float, y: float) -> Tuple[float, float]:
+        # Explicit coordinates: must be finite (NaN/inf -> origin is
+        # DISHONEST; caller validates). Finite but out-of-bounds ->
+        # clamped to the finite plane (documented, not silent: the
+        # plane is bounded by design).
         if math.isfinite(x) and math.isfinite(y):
-            return x, y
+            return (max(-PLANE_BOUND, min(PLANE_BOUND, x)),
+                    max(-PLANE_BOUND, min(PLANE_BOUND, y)))
         return MATRIX_ORIGIN
 
     # ------------------------------------------------------------------
@@ -696,12 +708,15 @@ class SpatialAuthority:
             return "unknown"
 
     def to_dict(self) -> Dict[str, Any]:
+        # RNG state: persist the FULL Mersenne Twister state (625 words:
+        # 624 state + index). A partial state diverges after restore.
+        _rs = self._rng.getstate()
         return {
             "version": SPATIAL_VERSION,
             "tick": int(self.tick_count),
             "temperature": float(self.temperature),
             "rng_seed": int(self.rng_seed),
-            "rng_state": self._rng.getstate()[1][:16],
+            "rng_state": [int(n) for n in _rs[1]],
             "velocities": {k: [float(v[0]), float(v[1])]
                            for k, v in self.velocities.items()},
             "placements": {k: dict(v) for k, v in self.placements.items()},
@@ -741,12 +756,13 @@ class SpatialAuthority:
                                if isinstance(v, dict)}
             inst._rng = random.Random(inst.rng_seed)
             rs = data.get("rng_state")
-            if isinstance(rs, (list, tuple)) and len(rs) == 16:
+            # Full MT state is 625 ints (624 words + index). Accept only
+            # the full state; partial states are rejected (fail-closed)
+            # rather than silently diverging.
+            if isinstance(rs, (list, tuple)) and len(rs) == 625:
                 try:
-                    st = list(inst._rng.getstate())
-                    st[1] = tuple(int(n) for n in rs) + \
-                        inst._rng.getstate()[1][16:]
-                    inst._rng.setstate(tuple(st))
+                    full = tuple(int(n) for n in rs)
+                    inst._rng.setstate((3, full, None))
                 except Exception:
                     pass  # seed alone still deterministic
         except SpatialLoadError:

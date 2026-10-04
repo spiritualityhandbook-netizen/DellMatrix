@@ -1003,18 +1003,25 @@ class Program:
         # from the caller (user authority) is honored; otherwise the
         # authority computes placement (barycentric-from-neighbors or
         # neutral spiral). The raw (0,0) default is never used silently.
+        # Explicit coordinates (including explicit 0.0) are always honored;
+        # only absent coordinates go to the authority. The old silent
+        # (0,0)-redirect is removed: it dishonestly overrode explicit user
+        # intent.
         plane = self.cube.session.plane
         x = kwargs.get("x", None)
         y = kwargs.get("y", None)
-        if x is None and y is None:
+        if x is None or y is None:
             # Ask the authority for a deterministic placement. It reuses
             # the _next_open_xy spiral contract when no graph information
             # applies, and records the explanation.
             spot = self.spatial.place(self, id, label)
             kwargs["x"], kwargs["y"] = spot["x"], spot["y"]
-        elif (float(kwargs.get("x", 0) or 0) == 0.0 and float(kwargs.get("y", 0) or 0) == 0.0
-              and any(abs(u.x) < 0.01 and abs(u.y) < 0.01 for u in plane.units.values())):
-            spot = self.spatial.place(self, id, label)
+        else:
+            # Explicit coordinates: honored exactly, but still recorded
+            # by the authority (explanation with cause="explicit") so
+            # every placement is traceable.
+            spot = self.spatial.place(self, id, label,
+                                      x=float(x), y=float(y))
             kwargs["x"], kwargs["y"] = spot["x"], spot["y"]
         u = self.cube.place_idea(id, label, **kwargs)
         # strong idea fields
