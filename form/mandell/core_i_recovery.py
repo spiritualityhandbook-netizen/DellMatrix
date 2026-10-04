@@ -889,6 +889,41 @@ def recover_confirmation_intent(owner: str) -> str:
     current_nursery_fp = _sha256_file_absent(npath)
     current_program_fp = _sha256_file_absent(ppath)
 
+    # F5: Validate present members BEFORE fingerprint comparison.
+    # Malformed present files must not be accepted as no_change merely
+    # because their bytes match. Structure validation comes first.
+    if os.path.isfile(npath):
+        try:
+            with open(npath, encoding="utf-8") as f:
+                _nd = json.load(f)
+            if not isinstance(_nd, dict):
+                raise RollbackRecoveryError(
+                    "confirmation intent: nursery malformed (journal preserved)")
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            raise RollbackRecoveryError(
+                f"confirmation intent: nursery unreadable (journal preserved): {exc}"
+            ) from exc
+    if os.path.isfile(ppath):
+        try:
+            with open(ppath, encoding="utf-8") as f:
+                _pd = json.load(f)
+            if not isinstance(_pd, dict):
+                raise RollbackRecoveryError(
+                    "confirmation intent: program malformed (journal preserved)")
+            _plane = _pd.get("plane")
+            if _plane is not None and not isinstance(_plane, dict):
+                raise RollbackRecoveryError(
+                    "confirmation intent: plane malformed (journal preserved)")
+            if isinstance(_plane, dict):
+                _units = _plane.get("units")
+                if _units is not None and not isinstance(_units, dict):
+                    raise RollbackRecoveryError(
+                        "confirmation intent: units malformed (journal preserved)")
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            raise RollbackRecoveryError(
+                f"confirmation intent: program unreadable (journal preserved): {exc}"
+            ) from exc
+
     if current_nursery_fp == old_nursery_fp and current_program_fp == old_program_fp:
         # Both members unchanged, including legitimate absence ("absent"=="absent").
         # Operation never wrote. Safe to clear.
@@ -1107,38 +1142,56 @@ def clear_supersede_intent(owner: str) -> None:
         pass
 
 
-def _validate_revision_identity(old_prop: dict, new_prop: dict) -> None:
+def _validate_revision_identity(old_prop: dict, new_prop: dict, old_id: str) -> None:
     """Validate revision identity using canonical semantics.
 
     Both proposals must carry matching revision_root_id, and the
     successor's revision_number must be exactly predecessor's + 1.
+
+    The root must be the old's actual revision root (its revision_root_id,
+    or its own ID if first revision). Pairwise agreement on an unrelated
+    root is insufficient.
 
     Raises RollbackRecoveryError on any contradiction or missing
     identity. Journal is preserved by caller.
     """
     old_root = old_prop.get("revision_root_id")
     new_root = new_prop.get("revision_root_id")
-    old_num = old_prop.get("revision_number")
-    new_num = new_prop.get("revision_number")
-    if old_root is None or new_root is None:
+    # Canonical: root defaults to the proposal's own ID
+    canonical_old_root = old_root if old_root is not None else old_id
+    if new_root is None:
         raise RollbackRecoveryError(
             "supersede intent: missing revision root (preserved). "
             "Cannot validate complete outcome."
         )
-    if old_root != new_root:
+    if new_root != canonical_old_root:
         raise RollbackRecoveryError(
-            f"supersede intent: revision root mismatch ({old_root} vs {new_root}) "
-            "(preserved)."
+            f"supersede intent: revision root {new_root} does not match "
+            f"canonical old root {canonical_old_root} (preserved)."
         )
-    if old_num is None or new_num is None:
+    # Old must also have explicit root OR be first revision (root == own ID)
+    # If old_root is None, that's OK (first revision), but new must match old_id
+    if old_root is not None and old_root != canonical_old_root:
+        raise RollbackRecoveryError(
+            "supersede intent: old revision root inconsistent (preserved)."
+        )
+    old_num = old_prop.get("revision_number")
+    new_num = new_prop.get("revision_number")
+    # Canonical: number defaults to 1
+    canonical_old_num = old_num if old_num is not None else 1
+    if new_num is None:
         raise RollbackRecoveryError(
             "supersede intent: missing revision number (preserved)."
         )
     try:
-        if int(new_num) != int(old_num) + 1:
+        # Strict type check: bool is not a valid number
+        if isinstance(new_num, bool) or isinstance(canonical_old_num, bool):
+            raise RollbackRecoveryError(
+                "supersede intent: bool revision number (preserved).")
+        if int(new_num) != int(canonical_old_num) + 1:
             raise RollbackRecoveryError(
                 f"supersede intent: revision number not sequential "
-                f"({old_num} -> {new_num}) (preserved)."
+                f"({canonical_old_num} -> {new_num}) (preserved)."
             )
     except (ValueError, TypeError):
         raise RollbackRecoveryError(
@@ -1178,7 +1231,9 @@ def recover_supersede_intent(owner: str) -> str:
 
     if not isinstance(journal, dict):
         raise RollbackRecoveryError("supersede intent: not a dict (preserved)")
-    if journal.get("journal_version") != SUPERSEDE_JOURNAL_VERSION:
+    # F4: Strict version check - exclude bool (True == 1 in Python)
+    jv = journal.get("journal_version")
+    if not isinstance(jv, int) or isinstance(jv, bool) or jv != SUPERSEDE_JOURNAL_VERSION:
         raise RollbackRecoveryError("supersede intent: bad version (preserved)")
     if journal.get("owner") != owner:
         raise RollbackRecoveryError("supersede intent: owner mismatch (preserved)")
@@ -1189,8 +1244,19 @@ def recover_supersede_intent(owner: str) -> str:
 
     old_id = journal.get("old_id")
     new_id = journal.get("new_id")
-    if not old_id or not new_id:
-        raise RollbackRecoveryError("supersede intent: missing ids (preserved)")
+    if not isinstance(old_id, str) or not old_id:
+        raise RollbackRecoveryError("supersede intent: bad old_id (preserved)")
+    if not isinstance(new_id, str) or not new_id:
+        raise RollbackRecoveryError("supersede intent: bad new_id (preserved)")
+    # F4: Validate fingerprint fields are proper SHA-256 hex if present
+    import re
+    _sha256_re = re.compile(r'^[0-9a-f]{64}$')
+    for fp_key in ("old_nursery_sha256", "old_program_sha256"):
+        fp_val = journal.get(fp_key)
+        if fp_val is not None:
+            if not isinstance(fp_val, str) or not _sha256_re.match(fp_val):
+                raise RollbackRecoveryError(
+                    f"supersede intent: bad {fp_key} (preserved)")
 
     from form.persist import _path
     from form.dell_matrix.nursery import owner_nursery_path
@@ -1261,7 +1327,7 @@ def recover_supersede_intent(owner: str) -> str:
 
     if new_ok and old_ok and links_ok:
         # Validate revision identity before accepting complete NEW.
-        _validate_revision_identity(old_prop, new_prop)
+        _validate_revision_identity(old_prop, new_prop, old_id)
         clear_supersede_intent(owner)
         return "already_complete"
 
@@ -1300,7 +1366,7 @@ def recover_supersede_intent(owner: str) -> str:
     if new_ok and old_ok and not links_ok:
         # Validate full revision identity before repairing links.
         # Do not repair if identity is contradictory or missing.
-        _validate_revision_identity(old_prop, new_prop)
+        _validate_revision_identity(old_prop, new_prop, old_id)
         # Repair ONLY revision links (superseded_by_id, supersedes_id).
         # Do NOT touch chain (derivation lineage).
         if isinstance(old_prop, dict):
@@ -1342,7 +1408,7 @@ def recover_supersede_intent(owner: str) -> str:
                 "supersede intent: durable new link not repaired (preserved)."
             )
         # Validate revision identity in durable state
-        _validate_revision_identity(durable_old, durable_new)
+        _validate_revision_identity(durable_old, durable_new, old_id)
         # Validate successor Idea still present in durable Program
         durable_units = durable_pd.get("plane", {}).get("units", {})
         if new_id not in durable_units:
@@ -1368,7 +1434,19 @@ def recover_supersede_intent(owner: str) -> str:
                 "supersede intent: successor Idea present but proposal not confirmed "
                 "(journal preserved). Cannot clear as healed."
             )
-        # No Idea, old active, new absent/pending → true OLD state.
+        # F7: Reject contradictory links. If old has successor link or new
+        # has predecessor link, this is not a clean OLD state. Fail closed.
+        if isinstance(old_prop, dict) and old_prop.get("superseded_by_id") is not None:
+            raise RollbackRecoveryError(
+                "supersede intent: old has successor link but is active "
+                "(journal preserved). Contradictory state."
+            )
+        if isinstance(new_prop, dict) and new_prop.get("supersedes_id") is not None:
+            raise RollbackRecoveryError(
+                "supersede intent: pending new has predecessor link "
+                "(journal preserved). Contradictory state."
+            )
+        # No Idea, no links, old active, new absent/pending → true OLD state.
         clear_supersede_intent(owner)
         return "healed_to_old"
 

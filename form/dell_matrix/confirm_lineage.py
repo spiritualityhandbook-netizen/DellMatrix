@@ -79,7 +79,15 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
     from form.mandell.core_i_recovery import write_confirm_intent, clear_confirm_intent
     _skip_journal = getattr(confirm_proposal, '_SKIP_JOURNAL', False)
     if not _skip_journal:
-        write_confirm_intent(program.owner, prop.id)
+        try:
+            write_confirm_intent(program.owner, prop.id)
+        except Exception:
+            # F1: Intent-write failure must restore newly placed memory.
+            # The Idea was placed in-memory but no journal exists to enable
+            # recovery. Remove it to avoid exposing unrecoverable hybrid.
+            if not existed:
+                units.pop(prop.id, None)
+            raise
     # Stage the nursery confirmation in memory (do NOT save yet).
     # The checkpoint transaction will persist both Program and Nursery atomically.
     # ARGUS-3: All persistence failures must preserve/restore pre-operation state.
@@ -110,12 +118,18 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
             if not existed:
                 units.pop(prop.id, None)
             # Revert the live nursery file that checkpoint may have dirtied.
+            # F2: Must also revert Program file. A Nursery-only revert leaves
+            # durable Program with Idea but no journal for recovery.
             reverted = False
             try:
                 nursery.save()
+                # Revert Program: remove the Idea if newly placed
+                if not existed:
+                    from form import persist_rest
+                    persist_rest.save(program)
                 reverted = True
             except Exception:
-                # If we can't revert the file, leave journal for recovery.
+                # If we can't revert both files, leave journal for recovery.
                 pass
             if reverted:
                 if not _skip_journal:
