@@ -7,6 +7,11 @@ ring proposals. ``form.dell_matrix.resonance.pulse`` is a DIFFERENT concept:
 pulse/DIFFUSION over the resonance graph (score accumulation across the
 enhance-scope graph over time). Keep both; do not merge pulse into affinity
 or affinity into pulse.
+
+PHASE-3 DEFERRAL (3.5.5): Phase-2 graph integration is DEFERRED. The
+Phase-2 graph module has zero imports in ``form.dell_matrix/``; no proven
+consumer exists for graph→affinity or affinity→graph edges. Revisit with
+a defined use case.
 """
 
 from __future__ import annotations
@@ -231,6 +236,10 @@ def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = Non
     # A faded unit contributes nothing to pair scoring: affinity is 0.0
     # and RingedGrowth.run's gate maps 0.0 to "None" (pair skipped).
     # Fail-closed: same dict shape, zeroed, no exception.
+    # NOTE (P3 blind review MINOR-1): Plane.Unit objects do not currently
+    # carry lifecycle_state/idea_state, so this check is a no-op for plane
+    # Units until Units carry lifecycle state. The exclusion is fully active
+    # for objects that do carry the state (e.g. Idea in harmony_score).
     if faded_policy.is_faded(plane.units.get(a)) or faded_policy.is_faded(plane.units.get(b)):
         return {
             "affinity": 0.0,
