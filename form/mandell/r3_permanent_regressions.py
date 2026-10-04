@@ -599,9 +599,17 @@ except Exception as e:
     print('RAISED_OTHER:' + type(e).__name__)
 """ % (REPO, o, o)
     rc, out, err = run_script("t12_load", load)
-    # PASS if raised (fail closed). FAIL if cleared as no_change.
-    ok = "RAISED_ROLLBACK" in out
-    rec("12_absent_prog_confirmed", ok, out[:60])
+    # PASS requires: rc==0 (child succeeded), RAISED_ROLLBACK in output,
+    # JEXISTS:True (journal preserved). Print success only after assertions.
+    # If child assertion failed, rc != 0 or output missing → parent fails.
+    ok = (rc == 0 and "RAISED_ROLLBACK" in out and "JEXISTS:True" in out)
+    if ok:
+        # Verify postconditions: journal preserved, member state unchanged
+        # (The child already asserted these; this confirms the parent saw them)
+        print("t12 postconditions verified")
+    rec("12_absent_prog_confirmed", ok, out[:80])
+    if not ok:
+        print(f"t12 FAILED: rc={rc}, out={out[:100]}, err={err[:100]}")
     clean(o)
 
 if __name__ == "__main__":

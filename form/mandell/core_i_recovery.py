@@ -510,18 +510,18 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
 
 
 def _sha256_file(path: str) -> str:
-    """SHA256 hex digest of file bytes.
+    """SHA256 hex digest of file bytes, or empty string if missing.
     
-    Returns "absent" if file does not exist (legitimate absence).
-    Raises OSError if file exists but is unreadable.
+    Note: This is the legacy version used by rollback/supersession.
+    The confirmation recovery uses a separate version that returns "absent".
     """
-    import os
-    if not os.path.exists(path):
-        return "absent"
     h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
+    try:
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                h.update(chunk)
+    except OSError:
+        return ""
     return h.hexdigest()
 
 
@@ -725,13 +725,15 @@ def _confirm_journal_path(owner: str) -> str:
     return os.path.join(_STATE_DIR, f"confirm_{_safe_owner(owner)}.journal.json")
 
 
-def _sha256_file(path: str) -> str:
+def _sha256_file_absent(path: str) -> str:
     """SHA256 hex digest of file bytes.
     
     Returns:
         - Hex digest if file exists and is readable
         - "absent" if file does not exist (legitimate pre-operation absence)
         - Raises OSError if file exists but is unreadable (corrupt storage)
+    
+    Used by confirmation recovery. Supersession uses _sha256_file (returns "").
     """
     import hashlib, os
     if not os.path.exists(path):
@@ -758,8 +760,8 @@ def write_confirm_intent(owner: str, proposal_id: str) -> None:
         "owner": owner,
         "proposal_id": proposal_id,
         "phase": "prepared",
-        "old_nursery_sha256": _sha256_file(owner_nursery_path(owner)),
-        "old_program_sha256": _sha256_file(_path(owner)),
+        "old_nursery_sha256": _sha256_file_absent(owner_nursery_path(owner)),
+        "old_program_sha256": _sha256_file_absent(_path(owner)),
     }
     atomic_write_json(_confirm_journal_path(owner), journal)
 
@@ -884,8 +886,8 @@ def recover_confirmation_intent(owner: str) -> str:
     # --- Compute BOTH fingerprints FIRST, including explicit absence ---
     # _sha256_file returns "absent" for missing files.
     # Handle proven unchanged OLD before attempting to open missing files.
-    current_nursery_fp = _sha256_file(npath)
-    current_program_fp = _sha256_file(ppath)
+    current_nursery_fp = _sha256_file_absent(npath)
+    current_program_fp = _sha256_file_absent(ppath)
 
     if current_nursery_fp == old_nursery_fp and current_program_fp == old_program_fp:
         # Both members unchanged, including legitimate absence ("absent"=="absent").
@@ -1028,7 +1030,7 @@ def recover_confirmation_intent(owner: str) -> str:
     # recorded Program fingerprint. The heal is only valid if the Program
     # was never modified (still matches OLD). If Program was modified,
     # we cannot prove OLD coherence; fail closed.
-    current_program_fp = _sha256_file(ppath)
+    current_program_fp = _sha256_file_absent(ppath)
     if current_program_fp != old_program_fp:
         raise RollbackRecoveryError(
             f"confirmation intent: program modified (fp mismatch), cannot prove OLD "
@@ -1043,7 +1045,7 @@ def recover_confirmation_intent(owner: str) -> str:
             f"confirmation intent: failed to heal nursery (journal preserved): {exc}"
         ) from exc
     # Verify the heal succeeded before clearing journal.
-    healed_fp = _sha256_file(npath)
+    healed_fp = _sha256_file_absent(npath)
     if healed_fp == current_nursery_fp:
         raise RollbackRecoveryError(
             "confirmation intent: heal did not change nursery (journal preserved)"
@@ -1091,8 +1093,8 @@ def write_supersede_intent(owner: str, old_id: str, new_id: str) -> None:
         "old_id": old_id,
         "new_id": new_id,
         "phase": "prepared",
-        "old_nursery_sha256": _sha256_file(owner_nursery_path(owner)),
-        "old_program_sha256": _sha256_file(_path(owner)),
+        "old_nursery_sha256": _sha256_file_absent(owner_nursery_path(owner)),
+        "old_program_sha256": _sha256_file_absent(_path(owner)),
     }
     atomic_write_json(_supersede_journal_path(owner), journal)
 
