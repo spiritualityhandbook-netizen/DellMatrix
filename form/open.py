@@ -1190,11 +1190,27 @@ class Program:
         from form.dell_matrix.harmony import harmony_score
 
         class _PlaneUnitView:
-            """Adapter: exposes a plane unit through the idea token interface."""
+            """Adapter: exposes a plane unit through the idea token interface.
+
+            Lifecycle passthrough (GDP-001 Phase 3, R3.5.2 repair): the
+            canonical faded check (form.dell_matrix.faded_policy.is_faded)
+            reads ``lifecycle_state`` / ``idea_state``. The adapter
+            forwards them live from the wrapped unit so faded units are
+            excluded by harmony_score exactly as direct idea objects are.
+            Without this passthrough faded units leaked into scoring.
+            """
 
             def __init__(self, unit):
                 self.title = getattr(unit, "label", "") or ""
                 self._unit = unit
+
+            @property
+            def lifecycle_state(self):
+                return getattr(self._unit, "lifecycle_state", None)
+
+            @property
+            def idea_state(self):
+                return getattr(self._unit, "idea_state", None)
 
             def get_active_properties(self):
                 u = self._unit

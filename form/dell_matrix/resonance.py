@@ -84,6 +84,19 @@ def pulse(
     amount: float = 0.25,
     tag_amount: float = 0.15,
 ) -> ResonanceState:
+    """Diffuse resonance scores/tags across enhance-scope edges (one step).
+
+    Faded-state policy (P3 R3.5.2, repaired consolidated): faded units
+    have zero effective influence. They neither send nor receive, they
+    get no new score/tag entries, and — because ``state`` is routinely
+    reused across pulses — any scores/tags they RETAINED from before
+    they faded are dropped at pulse time so they cannot influence
+    future diffusion or downstream consumers (e.g. score_of, status,
+    graph views). History is preserved: the pulse is still counted and
+    the exclusion is recorded in ``state.log``; ``state.log`` is never
+    pruned here (use ``clear`` to reset). All-faded input yields empty
+    scores/tags, never an exception.
+    """
     assert_floor_intact()
     state = state or ResonanceState()
     ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
@@ -94,6 +107,15 @@ def pulse(
     # result, never an exception.
     faded_ids = {uid for uid, u in plane.units.items()
                  if faded_policy.is_faded(u)}
+    # Reused state may retain scores/tags for units that faded AFTER
+    # their last active pulse. Drop those retained entries so faded
+    # units exert zero effective influence going forward; keep the log
+    # (history is preserved, not rewritten).
+    for uid in set(state.scores) | set(state.tags):
+        if uid in faded_ids:
+            state.scores.pop(uid, None)
+            state.tags.pop(uid, None)
+            state.log.append(f"{ts} {uid}: faded, retained scores/tags excluded")
     for uid in plane.units:
         if uid in faded_ids:
             continue

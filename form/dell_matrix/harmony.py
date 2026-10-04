@@ -130,7 +130,15 @@ def harmony_score(idea_set: Iterable[Any]) -> float:
     (5) INVARIANTS
         - 0.0 <= harmony_score(S) <= 1.0 for all inputs.
         - Symmetric: permuting the input order never changes the result
-          (all terms are symmetric pair sums).
+          mathematically (all terms are symmetric pair sums over the
+          token-set multiset). PERMUTATION GUARANTEE, tested 2026-10-04:
+          bitwise identical for n <= 2 (the single-pair / solo paths run
+          one deterministic computation); for n >= 3 the pair sums
+          accumulate in input order, so a permutation can change the
+          last ulp of the float sum (observed: ~63% of random 3-6 idea
+          sets had a permutation differing bitwise). Do NOT rely on
+          bitwise equality for n >= 3; rely on mathematical equality
+          (equal up to float rounding) and the [0, 1] range.
         - harmony({x}) = 1.0 iff x has non-empty tokens.
         - harmony(S) = 0.0 if every pair is disjoint (C = 0).
         - harmony(S) = 0.0 if every pair is identical (C = R = 1).
