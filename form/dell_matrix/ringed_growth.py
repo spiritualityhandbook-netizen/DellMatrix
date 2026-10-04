@@ -79,6 +79,15 @@ def _jaccard(a: Set[str], b: Set[str]) -> float:
 
 
 def _harmonic(a: Set[str], b: Set[str]) -> float:
+    """Jaccard-tension combiner (not musical).
+
+    Blends Jaccard token overlap (jac) with a "tension" term measuring
+    complementary exclusive tokens: bridge = min(|a-b|, |b-a|) normalized
+    by union size. Returns (2*jac*(jac+tension)) / (2*jac + tension + eps),
+    0.0 when both inputs are empty or neither overlap nor tension exists.
+    Name is historical; it is a token-set similarity, not a harmonic.
+    Renamed-by-docstring only per R3.2.2 (Stream A refactors around it).
+    """
     if not a and not b:
         return 0.0
     jac = _jaccard(a, b)

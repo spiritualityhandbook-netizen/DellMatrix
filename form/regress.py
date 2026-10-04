@@ -79,6 +79,8 @@ LIST = [
     "form.mandell.p2_graph_test",
     "form.mandell.p2_dsc1_journal_proof",
     "form.mandell.p2_dsc1_r3_listener_proof",
+    # P3 R3.2 (Harmony): GDP-001 Phase 3, stream B.
+    "form.mandell.p3_r32_harmony_proof",
     "form.mandell.pac_i_test",
     "form.mandell.cac_i_test",
     "form.mandell.ssi_i_test",

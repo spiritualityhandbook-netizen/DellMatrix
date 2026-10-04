@@ -21,6 +21,10 @@ P(\mathrm{Vector}) \;\rightleftharpoons\; R(\mathrm{Core}) \;\rightleftharpoons\
 
 ## API
 
+> REMOVED (GDP-001 Phase 3, R3.2.2): `form/mandell/harmonic_link.py` was dead
+> code (zero live callers, verified 2026-10-04) and has been removed. The
+> snippet below is historical and no longer importable.
+
 ```python
 from form.mandell.harmonic_link import evaluate_harmonic_link, tokenize_manifests
 

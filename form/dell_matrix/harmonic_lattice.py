@@ -63,6 +63,17 @@ class SnapModule:
 
 @dataclass
 class HarmonicLattice:
+    """3D coordinate cell store with musical-note overlay labels.
+
+    Honest description (R3.2.2): this is a dict of (h, v, f) integer
+    coordinates -> Cell(content, label, tags). The "harmonic" name is
+    historical: note_at() maps coordinates to chromatic note names
+    (C, C#, ...) as a visualization overlay, and OverlayMode selects how
+    cells are labeled (note names, raw coordinates, or cell labels).
+    It does not compute harmony in the R3.2 sense (set coherence); see
+    form/dell_matrix/harmony.py for that. Name kept for compatibility;
+    behavior unchanged.
+    """
     size: int = 12
     overlay: OverlayMode = OverlayMode.HARMONIC
     perspective: Perspective = Perspective.TOP

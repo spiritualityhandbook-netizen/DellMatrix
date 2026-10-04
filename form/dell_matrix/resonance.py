@@ -120,6 +120,18 @@ def harmonize_pair(
     *,
     amount: float = 0.5,
 ) -> Dict[str, Any]:
+    """Resonance-state write for one pair of plane units (not a harmony metric).
+
+    Honest description (R3.2.2): bumps both units' resonance scores by
+    ``amount`` and records cross-tags in ``state`` when the units are in
+    mutual enhance scope; fails closed ({"ok": False, ...}) for missing
+    units or units outside mutual scope. This is a state-mutating
+    resonance operation owned by the pulse/diffusion subsystem
+    (live caller: EnhanceGate.harmonize <- idea_grow.py), NOT the R3.2
+    set-coherence metric harmony_score (form/dell_matrix/harmony.py),
+    which is stateless and operates on idea sets. Name kept for
+    compatibility; behavior unchanged.
+    """
     assert_floor_intact()
     state = state or ResonanceState()
     a, b = plane.units.get(a_id), plane.units.get(b_id)
