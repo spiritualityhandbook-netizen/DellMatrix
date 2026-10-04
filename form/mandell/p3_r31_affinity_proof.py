@@ -258,26 +258,43 @@ def t_serendipity() -> None:
 
 
 def t_bypass_lifecycle() -> None:
-    """BYPASS-MUST-FAIL (lifecycle): with the faded filter disabled, a
-    faded pair's affinity MUST leak back above 0. If it stays 0.0, the
-    filter is decorative and the proof fails."""
+    """BYPASS-MUST-FAIL (lifecycle): with the canonical faded filter
+    disabled, a faded pair's affinity MUST leak back above 0. If it stays
+    0.0, the filter is decorative and the proof fails.
+
+    Uses the canonical lifecycle boundary (form.dell_matrix.
+    canonical_lifecycle): lifecycle is resolved via (program, unit_id)
+    through inspect_revision, NOT via dynamic Unit attributes.
+    """
+    from form.dell_matrix.nursery import Proposal
+    from form.dell_matrix import canonical_lifecycle
+    from types import SimpleNamespace
+
     plane = _fixture_plane()
-    plane.units["u2"].lifecycle_state = "faded"
+    # Canonical setup: program with nursery proposals; u2's proposal is FADED.
+    prog = SimpleNamespace(
+        nursery=SimpleNamespace(proposals={
+            "u1": Proposal(id="u1", label="river", words="river water flow",
+                           kind="new", lifecycle_state="active"),
+            "u2": Proposal(id="u2", label="stream", words="stream water flow",
+                           kind="new", lifecycle_state="faded"),
+        })
+    )
     try:
-        z = rg._affinity(plane, "u1", "u2")["affinity"]
+        z = rg._affinity(plane, "u1", "u2", program=prog)["affinity"]
         rec("lifecycle::faded_zero", z == 0.0, "filter active -> 0.0")
-        orig = faded_policy.is_faded
-        faded_policy.is_faded = lambda obj: False  # BYPASS the filter
+        orig = canonical_lifecycle.is_active
+        canonical_lifecycle.is_active = lambda p, uid: True  # BYPASS the filter
         try:
-            leaked = rg._affinity(plane, "u1", "u2")["affinity"]
+            leaked = rg._affinity(plane, "u1", "u2", program=prog)["affinity"]
         finally:
-            faded_policy.is_faded = orig
+            canonical_lifecycle.is_active = orig
         rec("lifecycle::bypass_leaks", leaked > 0.0,
             f"filter disabled -> affinity={leaked:.4f} (must be > 0)")
         rec("lifecycle::restored",
-            rg._affinity(plane, "u1", "u2")["affinity"] == 0.0)
+            rg._affinity(plane, "u1", "u2", program=prog)["affinity"] == 0.0)
     finally:
-        del plane.units["u2"].lifecycle_state
+        pass
 
 
 def t_bypass_consumption() -> None:
@@ -301,7 +318,7 @@ def t_bypass_consumption() -> None:
                   "distance": 0.0, "shared": 0.0, "goal_boost": 0.0,
                   "body_boost": 0.0}
         orig = rg._affinity
-        rg._affinity = lambda plane, a, b, body=None: dict(zeroed)  # BYPASS
+        rg._affinity = lambda plane, a, b, body=None, program=None: dict(zeroed)  # BYPASS
         try:
             n2 = Nursery(path=tmp + "2")
             out = rg.RingedGrowth(nursery=n2, seed=7).run(plane, cycles=1)

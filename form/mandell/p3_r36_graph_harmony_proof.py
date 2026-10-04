@@ -237,7 +237,19 @@ def _world():
     try:
         nurs = Nursery(path=tmpn)
         eng = rg.RingedGrowth(nursery=nurs, seed=11)
-        out = eng.run(plane, cycles=1, graph=graph)
+        # Canonical lifecycle: test units are legacy (no canonical records).
+        # For this wiring test, treat them as active via monkeypatch;
+        # the lifecycle policy itself is proven in p3_r35.
+        from form.dell_matrix import canonical_lifecycle
+        orig_active = canonical_lifecycle.is_idea_active
+        canonical_lifecycle.is_idea_active = lambda idea: True
+        try:
+            out = eng.run(plane, cycles=1, graph=graph)
+            # Compute expected harmony while the patch is active (same
+            # conditions as the growth run).
+            expected_h_run = harmony_score([unit_idea_view(ua), unit_idea_view(ub)])
+        finally:
+            canonical_lifecycle.is_idea_active = orig_active
         rec("growth_run_ok", out.get("ok") is True)
         rec("growth_graph_signal",
             out.get("graph_signal") == "attached",
@@ -249,7 +261,7 @@ def _world():
         ab = [p for p in props if set(p.parents) == {A, B}]
         rec("growth_ab_proposed", len(ab) >= 1,
             f"proposals with parents {{a,b}}: {len(ab)}")
-        expected_h = harmony_score([unit_idea_view(ua), unit_idea_view(ub)])
+        expected_h = expected_h_run
         wired_ok = True
         gcoh_seen = set()
         for p in ab:

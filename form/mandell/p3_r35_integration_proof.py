@@ -254,19 +254,29 @@ def t352_affinity() -> None:
     from form.dell_matrix.blank_cube import give
     from form.dell_matrix.plane import Skin
     from form.dell_matrix.ringed_growth import _affinity
+    from form.dell_matrix.nursery import Proposal
+    from types import SimpleNamespace
 
     cube = give("R35FA", clean=True)
     cube.place_idea("a", "river flow water current", skin=Skin.SEED, x=0.0)
     cube.place_idea("b", "river bank water shore", skin=Skin.SEED, x=1.0)
     cube.place_idea("f", "river faded old silt", skin=Skin.SEED, x=2.0)
     plane = cube.session.plane
-    plane.units["f"].lifecycle_state = "faded"
+    # Canonical: f is FADED via nursery proposal (not dynamic attributes).
+    prog = SimpleNamespace(nursery=SimpleNamespace(proposals={
+        "a": Proposal(id="a", label="a", words="river flow water current",
+                      kind="new", lifecycle_state="active"),
+        "b": Proposal(id="b", label="b", words="river bank water shore",
+                      kind="new", lifecycle_state="active"),
+        "f": Proposal(id="f", label="f", words="river faded old silt",
+                      kind="new", lifecycle_state="faded"),
+    }))
 
-    base = _affinity(plane, "a", "b")
+    base = _affinity(plane, "a", "b", program=prog)
     rec("affinity::active_pair_live", base["affinity"] > 0.0,
         f"affinity={base['affinity']:.4f}")
-    z1 = _affinity(plane, "a", "f")
-    z2 = _affinity(plane, "f", "a")
+    z1 = _affinity(plane, "a", "f", program=prog)
+    z2 = _affinity(plane, "f", "a", program=prog)
     expected_keys = {"affinity", "jaccard", "harmonic", "distance",
                      "shared", "goal_boost", "body_boost"}
     rec("affinity::faded_zero_shape",
@@ -274,26 +284,39 @@ def t352_affinity() -> None:
         and z1["affinity"] == 0.0 and z2["affinity"] == 0.0
         and all(v == 0.0 for v in z1.values()),
         "same dict shape, all zeroed")
-    plane.units["a"].lifecycle_state = "faded"
-    z3 = _affinity(plane, "a", "f")  # all-faded pair
+    prog.nursery.proposals["a"].lifecycle_state = "faded"
+    z3 = _affinity(plane, "a", "f", program=prog)  # all-faded pair
     rec("affinity::all_faded", z3["affinity"] == 0.0, "no exception")
-    del plane.units["a"].lifecycle_state
 
 
 def t352_pulse() -> None:
-    """pulse: faded units neither send nor receive; retained state dropped."""
+    """pulse: faded units neither send nor receive; retained state dropped.
+
+    Uses the canonical lifecycle boundary: (program, unit_id) resolved
+    via inspect_revision, not dynamic Unit attributes.
+    """
     from form.dell_matrix.blank_cube import give
     from form.dell_matrix.plane import Skin
     from form.dell_matrix.resonance import pulse, ResonanceState
+    from form.dell_matrix.nursery import Proposal
+    from types import SimpleNamespace
 
     cube = give("R35FP", clean=True)
     cube.place_idea("a", "river flow", skin=Skin.SEED, x=0.0)
     cube.place_idea("b", "river bank", skin=Skin.SEED, x=1.0)
     cube.place_idea("f", "river faded silt", skin=Skin.SEED, x=2.0)
     plane = cube.session.plane
-    plane.units["f"].lifecycle_state = "faded"
+    # Canonical: f is FADED via nursery proposal.
+    prog = SimpleNamespace(nursery=SimpleNamespace(proposals={
+        "a": Proposal(id="a", label="a", words="river flow",
+                      kind="new", lifecycle_state="active"),
+        "b": Proposal(id="b", label="b", words="river bank",
+                      kind="new", lifecycle_state="active"),
+        "f": Proposal(id="f", label="f", words="river faded silt",
+                      kind="new", lifecycle_state="faded"),
+    }))
 
-    st = pulse(plane, ResonanceState())
+    st = pulse(plane, ResonanceState(), program=prog)
     rec("pulse::faded_no_scores", "f" not in st.scores and "f" not in st.tags,
         "faded unit has no score/tag entries")
     rec("pulse::active_scored", st.scores.get("a", 0.0) > 0 and st.scores.get("b", 0.0) > 0)
@@ -301,17 +324,17 @@ def t352_pulse() -> None:
     # scores/tags on the next pulse (zero effective influence going
     # forward); the log is preserved (history, not influence).
     log_len = len(st.log)
-    plane.units["b"].lifecycle_state = "faded"
-    st2 = pulse(plane, st)  # reuse: b had retained scores
+    prog.nursery.proposals["b"].lifecycle_state = "faded"
+    st2 = pulse(plane, st, program=prog)  # reuse: b had retained scores
     rec("pulse::retained_dropped",
         "b" not in st2.scores and "b" not in st2.tags,
         "faded unit's retained scores/tags dropped")
     rec("pulse::log_preserved", len(st2.log) >= log_len,
         "history preserved, exclusion logged")
     # All-faded plane: empty result, never an exception.
-    for u in plane.units.values():
-        u.lifecycle_state = "faded"
-    st3 = pulse(plane, ResonanceState())
+    for pid in prog.nursery.proposals:
+        prog.nursery.proposals[pid].lifecycle_state = "faded"
+    st3 = pulse(plane, ResonanceState(), program=prog)
     rec("pulse::all_faded_empty",
         st3.scores == {} and st3.tags == {},
         "empty scores/tags, no exception")
@@ -523,33 +546,42 @@ def t355_graph_integration() -> None:
 # ---------------------------------------------------------------------------
 
 def t_mutation() -> None:
-    """Disable the faded filter -> faded ideas leak back in (filter is causal)."""
-    from form.dell_matrix import faded_policy
+    """Disable the canonical faded filter -> faded ideas leak back in
+    (filter is causal). Uses the canonical lifecycle boundary."""
+    from form.dell_matrix import canonical_lifecycle
     from form.dell_matrix.blank_cube import give
     from form.dell_matrix.plane import Skin
     from form.dell_matrix.ringed_growth import _affinity
     from form.dell_matrix.resonance import pulse, ResonanceState
+    from form.dell_matrix.nursery import Proposal
+    from types import SimpleNamespace
 
     cube = give("R35MU", clean=True)
     cube.place_idea("a", "river flow water current", skin=Skin.SEED, x=0.0)
     cube.place_idea("f", "river faded old silt", skin=Skin.SEED, x=1.0)
     plane = cube.session.plane
-    plane.units["f"].lifecycle_state = "faded"
+    # Canonical: f is FADED via nursery proposal.
+    prog = SimpleNamespace(nursery=SimpleNamespace(proposals={
+        "a": Proposal(id="a", label="a", words="river flow water current",
+                      kind="new", lifecycle_state="active"),
+        "f": Proposal(id="f", label="f", words="river faded old silt",
+                      kind="new", lifecycle_state="faded"),
+    }))
 
-    orig = faded_policy.is_faded
+    orig = canonical_lifecycle.is_active
     try:
-        faded_policy.is_faded = lambda obj: False  # disable the filter
-        leaked_aff = _affinity(plane, "a", "f")["affinity"]
+        canonical_lifecycle.is_active = lambda p, uid: True  # disable filter
+        leaked_aff = _affinity(plane, "a", "f", program=prog)["affinity"]
         rec("mutation::affinity_leaks", leaked_aff > 0.0,
             f"filter disabled -> affinity={leaked_aff:.4f} (was 0.0)")
-        st = pulse(plane, ResonanceState())
+        st = pulse(plane, ResonanceState(), program=prog)
         rec("mutation::pulse_leaks", st.scores.get("f", 0.0) > 0.0,
             f"filter disabled -> faded score={st.scores.get('f', 0.0):.4f}")
     finally:
-        faded_policy.is_faded = orig  # restore
+        canonical_lifecycle.is_active = orig  # restore
     rec("mutation::restored_excludes",
-        _affinity(plane, "a", "f")["affinity"] == 0.0
-        and "f" not in pulse(plane, ResonanceState()).scores,
+        _affinity(plane, "a", "f", program=prog)["affinity"] == 0.0
+        and "f" not in pulse(plane, ResonanceState(), program=prog).scores,
         "filter restored -> exclusion holds again")
 
 
@@ -575,20 +607,30 @@ r["policy_enum"] = is_faded(O(lifecycle_state=LifecycleState.FADED)) is True
 r["policy_str"] = is_faded(O(lifecycle_state="faded")) is True
 r["policy_neg"] = is_faded(O()) is False
 
+from form.dell_matrix.nursery import Proposal
+from types import SimpleNamespace
 cube = give("R35CH", clean=True)
 cube.place_idea("a", "river flow water", skin=Skin.SEED, x=0.0)
 cube.place_idea("b", "river bank shore", skin=Skin.SEED, x=1.0)
 cube.place_idea("f", "river faded silt", skin=Skin.SEED, x=2.0)
 plane = cube.session.plane
-plane.units["f"].lifecycle_state = LifecycleState.FADED  # enum form
-r["affinity_zero"] = (_affinity(plane, "a", "f")["affinity"] == 0.0)
-st = pulse(plane, ResonanceState())
+# Canonical: f is FADED via nursery proposal.
+prog = SimpleNamespace(nursery=SimpleNamespace(proposals={
+    "a": Proposal(id="a", label="a", words="river flow water",
+                  kind="new", lifecycle_state="active"),
+    "b": Proposal(id="b", label="b", words="river bank shore",
+                  kind="new", lifecycle_state="active"),
+    "f": Proposal(id="f", label="f", words="river faded silt",
+                  kind="new", lifecycle_state="faded"),
+}))
+r["affinity_zero"] = (_affinity(plane, "a", "f", program=prog)["affinity"] == 0.0)
+st = pulse(plane, ResonanceState(), program=prog)
 r["pulse_excludes"] = ("f" not in st.scores and st.scores.get("a", 0.0) > 0
                        and st.scores.get("b", 0.0) > 0)
 # All-faded: empty, no exception.
-for u in plane.units.values():
-    u.lifecycle_state = "faded"
-st2 = pulse(plane, ResonanceState())
+for pid in prog.nursery.proposals:
+    prog.nursery.proposals[pid].lifecycle_state = "faded"
+st2 = pulse(plane, ResonanceState(), program=prog)
 r["all_faded_empty"] = (st2.scores == {} and st2.tags == {})
 print("RESULT " + json.dumps(r))
 """
