@@ -473,13 +473,14 @@ write_confirm_intent(%r, pid_a)
 # Unrelated legitimate write: add B to Nursery
 pr_b = p.nursery.add('B', words='y')
 p.nursery.save()
-# Partial write: add Idea for A to Program (but A still pending in Nursery)
+# Partial write: add Idea for A to Program file directly
+# (simulating a crash where Program was written but Nursery update was lost)
+# Do NOT call persist_rest.save(p) after this; that would overwrite the edit.
 from form.persist import _path
 pp = _path(%r)
 d = json.load(open(pp))
 d['plane']['units'][pid_a] = {'id': pid_a, 'label': 'A', 'fake': True}
 json.dump(d, open(pp, 'w'))
-persist_rest.save(p)  # Save program with Idea
 print('PID_A:' + pid_a)
 """ % (REPO, o, o, o)
     rc, out, err = run_script("t11_setup", setup)
@@ -505,6 +506,26 @@ except Exception as e:
     ok = "RAISED_ROLLBACK" in out
     rec("11_negB_both_modified", ok, out[:60])
     clean(o)
+
+
+def smoke():
+    """Runner-compatible entry point for form.regress.
+    
+    Returns True if all tests pass, False otherwise.
+    Resets per-run results.
+    """
+    global results
+    results = []
+    try:
+        t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11()
+    except Exception as e:
+        print("SMOKE EXCEPTION: %s" % e)
+        return False
+    n = sum(results)
+    total = len(results)
+    print("%d/%d" % (n, total))
+    return n == total and total > 0
+
 
 if __name__ == "__main__":
     t01(); t02(); t03(); t04(); t05(); t06(); t07(); t08(); t09(); t10(); t11()
