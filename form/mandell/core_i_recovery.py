@@ -591,3 +591,95 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
     from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
     rehydrate_ideas_from_live(owner)
     return program
+
+
+# ---------------------------------------------------------------------------
+# Confirmation-hybrid recovery (GDP_ARGUS_CONFIRMATION_CONVERGENCE_R2)
+# ---------------------------------------------------------------------------
+
+def recover_confirmation_hybrid(owner: str) -> int:
+    """Heal crashed confirmations: nursery=confirmed but Idea absent.
+
+    FAIL-CLOSED recovery, called before live state is exposed (e.g. at load).
+    Detects the hybrid left by a crash between nursery.save() and
+    program.save() during confirm_proposal, and heals to OLD by reverting
+    the proposal status to "pending".
+
+    This is the production-reader counterpart to the checkpoint transaction.
+    The checkpoint pointer provides atomicity only for checkpoint-aware
+    readers; the production loader reads live files directly. This recovery
+    ensures the loader never exposes a hybrid.
+
+    Returns the number of healed proposals (0 = no hybrid found).
+
+    Raises:
+        RollbackRecoveryError: If the nursery or program file is unreadable
+            or malformed (fail closed, never expose potentially hybrid state).
+    """
+    from form.persist import _path, _STATE_DIR
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_json
+
+    npath = owner_nursery_path(owner)
+    ppath = _path(owner)
+
+    # If either file is missing, no hybrid is possible.
+    if not os.path.isfile(npath) or not os.path.isfile(ppath):
+        return 0
+
+    # Read live nursery file.
+    try:
+        with open(npath, encoding="utf-8") as f:
+            ndata = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"confirmation recovery: unreadable nursery file: {exc}"
+        ) from exc
+
+    # Read live program file, extract plane unit IDs.
+    try:
+        with open(ppath, encoding="utf-8") as f:
+            pdata = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"confirmation recovery: unreadable program file: {exc}"
+        ) from exc
+
+    # Extract unit IDs from program plane.
+    unit_ids = set()
+    try:
+        plane = pdata.get("plane", {})
+        units = plane.get("units", {})
+        if isinstance(units, dict):
+            unit_ids = set(units.keys())
+    except (AttributeError, TypeError):
+        # Malformed program structure: fail closed.
+        raise RollbackRecoveryError(
+            "confirmation recovery: malformed program plane structure"
+        )
+
+    # Find confirmed proposals without corresponding Ideas.
+    healed = 0
+    for pid, prop in ndata.items():
+        # Skip non-proposal keys (e.g., __conflict_dispositions__).
+        if not isinstance(prop, dict):
+            continue
+        if pid.startswith("__"):
+            continue
+        status = prop.get("status")
+        if status == "confirmed" and pid not in unit_ids:
+            # Hybrid detected: confirmed proposal without Idea.
+            # Heal to OLD by reverting to pending.
+            prop["status"] = "pending"
+            healed += 1
+
+    # Write back if any healed (atomic).
+    if healed > 0:
+        try:
+            atomic_write_json(npath, ndata)
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"confirmation recovery: failed to write healed nursery: {exc}"
+            ) from exc
+
+    return healed
