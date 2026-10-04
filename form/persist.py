@@ -87,6 +87,8 @@ def _serialize_lattice(program: Program) -> Dict[str, Any]:
             "label": cell.label,
             "tags": list(cell.tags),
             "content": cell.content if isinstance(cell.content, (str, int, float, bool, type(None))) else str(cell.content),
+            # P4-DIR-01: persist lossless membership
+            "members": list(cell.members),
         }
     return {
         "size": lat.size,

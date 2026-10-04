@@ -100,7 +100,7 @@ def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
         p.lattice.origin_note = int(raw.get("origin_note", 0))
         for _key, cell in (raw.get("cells") or {}).items():
             try:
-                p.lattice.put(int(cell.get("h", 0)), int(cell.get("v", 0)), int(cell.get("f", 0)), content=cell.get("content"), label=cell.get("label", ""), tags=list(cell.get("tags") or []))
+                p.lattice.put(int(cell.get("h", 0)), int(cell.get("v", 0)), int(cell.get("f", 0)), content=cell.get("content"), label=cell.get("label", ""), tags=list(cell.get("tags") or []), members=list(cell.get("members") or []))
             except Exception:
                 continue
     except Exception:

@@ -45,10 +45,25 @@ class Cell:
     content: Any = None
     label: str = ""
     tags: List[str] = field(default_factory=list)
+    # Phase 4 P4-DIR-01: lossless derived membership. When multiple Ideas
+    # quantize to the same integer cell, `members` holds ALL unit IDs
+    # (sorted, deterministic). `content` retains the first-sorted ID as
+    # the legacy primary occupant for backward-compatible rendering;
+    # `members` is the complete truth. A cell with members == [] is empty.
+    members: List[str] = field(default_factory=list)
 
     @property
     def coords(self) -> Tuple[int, int, int]:
         return (self.h, self.v, self.f)
+
+    @property
+    def member_count(self) -> int:
+        return len(self.members)
+
+    @property
+    def is_collision(self) -> bool:
+        """True iff multiple Ideas share this quantized cell."""
+        return len(self.members) > 1
 
 
 @dataclass
@@ -95,8 +110,14 @@ class HarmonicLattice:
     def put(
         self, h: int, v: int, f: int = 0, *,
         content: Any = None, label: str = "", tags: Optional[List[str]] = None,
+        members: Optional[List[str]] = None,
     ) -> Cell:
-        cell = Cell(h=h, v=v, f=f, content=content, label=label, tags=list(tags or []))
+        # members defaults to [content] when content is a string ID,
+        # preserving the single-occupant invariant for manual puts.
+        _members = list(members) if members is not None else (
+            [content] if isinstance(content, str) else [])
+        cell = Cell(h=h, v=v, f=f, content=content, label=label,
+                    tags=list(tags or []), members=_members)
         self.cells[(h, v, f)] = cell
         return cell
 
@@ -104,20 +125,32 @@ class HarmonicLattice:
         return self.cells.get((h, v, f))
 
     def rebuild_from_plane(self, plane: Any) -> int:
-        """DERIVED projection (Phase 4, 4.4.1): rebuild cells from Plane.
+        """DERIVED projection (Phase 4, 4.4.1; P4-DIR-01 lossless).
 
         The lattice is not an independent spatial truth. This is the only
-        sanctioned way lattice cells reflect idea positions: deterministic
-        (sorted unit ids; first-sorted wins integer-cell collisions),
-        complete (every positioned unit appears), and drift-free by
-        construction. Returns the number of cells written.
+        sanctioned way lattice cells reflect idea positions.
+
+        LOSSLESS (P4-DIR-01): multiple Ideas whose coordinates quantize to
+        the same integer cell are ALL represented via the cell's `members`
+        list (sorted unit IDs, deterministic). No Idea silently disappears.
+        `content` retains the first-sorted ID as the legacy primary
+        occupant; `members` is the complete membership.
+
+        Deterministic: sorted unit IDs; insertion order independent.
+        Complete: every positioned unit with finite coordinates appears
+        in exactly one cell's members. Drift-free by construction
+        (full rebuild, not incremental patch).
+
+        Returns the number of cells written.
         """
         self.cells = {}
         try:
             units = plane.units
         except AttributeError:
             return 0
-        n = 0
+        # Bucket unit IDs by quantized key (sorted for determinism).
+        buckets: Dict[Tuple[int, int, int], List[str]] = {}
+        labels: Dict[str, str] = {}
         for uid in sorted(units):
             u = units[uid]
             try:
@@ -128,13 +161,39 @@ class HarmonicLattice:
             if not (_math.isfinite(x) and _math.isfinite(y)):
                 continue
             key = (int(round(x)), int(round(y)), 0)
-            if key in self.cells:
-                continue  # first-sorted wins; deterministic, no silent loss
-            label = getattr(u, "label", "") or ""
-            self.cells[key] = Cell(h=key[0], v=key[1], f=0,
-                                   content=uid, label=label, tags=["idea"])
-            n += 1
-        return n
+            buckets.setdefault(key, []).append(uid)
+            labels[uid] = getattr(u, "label", "") or ""
+        for key in sorted(buckets):
+            members = buckets[key]  # already sorted (uids iterated sorted)
+            primary = members[0]
+            label = labels[primary]
+            if len(members) > 1:
+                label = f"{label} (+{len(members) - 1})"
+            self.cells[key] = Cell(
+                h=key[0], v=key[1], f=0, content=primary, label=label,
+                tags=["idea"] + (["collision"] if len(members) > 1 else []),
+                members=members,
+            )
+        return len(self.cells)
+
+    def members_at(self, h: int, v: int, f: int = 0) -> List[str]:
+        """All unit IDs whose positions quantize to (h, v, f).
+
+        Lossless membership query (P4-DIR-01). Returns [] for empty cells.
+        """
+        cell = self.cells.get((h, v, f))
+        return list(cell.members) if cell else []
+
+    def all_members(self) -> List[str]:
+        """Every unit ID represented in the lattice (sorted, deduplicated).
+
+        Completeness check: this must equal the sorted set of positioned
+        unit IDs from Plane.
+        """
+        seen = set()
+        for cell in self.cells.values():
+            seen.update(cell.members)
+        return sorted(seen)
 
     def chord_neighbors(self, h: int, v: int, f: int = 0) -> List[Tuple[int, int, int]]:
         return [(h, v, f), (h + 1, v, f), (h, v + 1, f)]
@@ -150,6 +209,10 @@ class HarmonicLattice:
                 "shell": self.perception.shell(*coord),
                 "skin": self.perception.skin_name(),
                 "has_content": cell is not None and cell.content is not None,
+                # P4-DIR-01: honest collision representation
+                "members": list(cell.members) if cell else [],
+                "member_count": cell.member_count if cell else 0,
+                "is_collision": cell.is_collision if cell else False,
             })
         return out
 
