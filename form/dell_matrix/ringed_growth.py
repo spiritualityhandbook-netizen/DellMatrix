@@ -121,8 +121,9 @@ def serendipity(a: Set[str], b: Set[str]) -> float:
     (1) Name: serendipity — normalized exclusive-token bridge tension.
     (2) Inputs: a, b — two token sets (Set[str]); each token a lowercase
         alphanumeric/underscore word token of length >= 3.
-    (3) Output: float in [0, 1). 0.0 when both sets empty or no complementary
-        exclusive tokens; approaches 1.0 as bridge tension grows.
+    (3) Output: float in [0, 1/3). 0.0 when both sets empty or no complementary
+        exclusive tokens; bounded above by 1/3 (raw tension t < 0.5 since
+        min(|a-b|,|b-a|) <= |a∪b|/2, so t/(1+t) < (0.5)/(1.5) = 1/3).
     (4) Formula: let t = min(|a-b|, |b-a|) / (1 + |a ∪ b|) (raw tension);
         serendipity(a, b) = t / (1 + t).
     (5) Invariants: symmetric — serendipity(a, b) == serendipity(b, a);
@@ -205,7 +206,8 @@ def _body_goal_boost(body: Dict[str, Any], label_a: str, label_b: str) -> float:
     return min(0.15, 0.05 * hits)
 
 
-def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
+def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = None,
+             program: Any = None) -> Dict[str, float]:
     """Pair affinity for growth — mathematical admission contract (GDP-001 Phase 3, 3.1.1).
 
     (1) Name: _affinity — deterministic composite pair score driving ring
@@ -269,19 +271,21 @@ def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = Non
         authority). Real caller: RingedGrowth.run() <- Program.grow_ideas
         <- REPL growth commands.
     """
-    # P3 R3.5.2: faded-state exclusion (logic only; contract untouched).
+    # P3 Canonical Lifecycle: faded-state exclusion via owner-aware boundary.
+    # Resolves (program, unit_id) through inspect_revision — NOT via dynamic
+    # Unit attributes. If program is provided, inactive/unreadable units are
+    # excluded (fail-closed). If program is None, the check is skipped
+    # (documented limitation; callers with program context must pass it).
     # A faded unit contributes nothing to pair scoring: affinity is 0.0
     # and RingedGrowth.run's gate maps 0.0 to "None" (pair skipped).
     # Fail-closed: same dict shape, zeroed, no exception.
-    # NOTE (P3 blind review MINOR-1): Plane.Unit objects do not currently
-    # carry lifecycle_state/idea_state, so this check is a no-op for plane
-    # Units until Units carry lifecycle state. The exclusion is fully active
-    # for objects that do carry the state (e.g. Idea in harmony_score).
-    if faded_policy.is_faded(plane.units.get(a)) or faded_policy.is_faded(plane.units.get(b)):
-        return {
-            "affinity": 0.0,
-            "jaccard": 0.0,
-            "harmonic": 0.0,
+    if program is not None:
+        from form.dell_matrix import canonical_lifecycle
+        if not canonical_lifecycle.is_active(program, a) or not canonical_lifecycle.is_active(program, b):
+            return {
+                "affinity": 0.0,
+                "jaccard": 0.0,
+                "harmonic": 0.0,
             "distance": 0.0,
             "shared": 0.0,
             "goal_boost": 0.0,
@@ -388,7 +392,8 @@ class RingedGrowth:
     seed: int = 0
 
     def run(self, plane: Plane, cycles: int = 1,
-            graph: Optional[Any] = None) -> Dict[str, Any]:
+            graph: Optional[Any] = None,
+            program: Any = None) -> Dict[str, Any]:
         """Run growth cycles over the plane's live units.
 
         graph: optional attached Phase-2 SemanticGraph (P3 R3.6). When
@@ -459,7 +464,7 @@ class RingedGrowth:
             pairs: List[Tuple[str, str, Dict[str, float]]] = []
             for i, a in enumerate(ids):
                 for b in ids[i + 1 :]:
-                    aff = _affinity(plane, a, b, body=body)
+                    aff = _affinity(plane, a, b, body=body, program=program)
                     pairs.append((a, b, aff))
             pairs.sort(key=lambda t: -t[2]["affinity"])
 

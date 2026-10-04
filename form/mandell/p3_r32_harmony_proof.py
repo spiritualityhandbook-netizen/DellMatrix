@@ -161,12 +161,12 @@ def t_bypass_faded_filter() -> None:
     rec("faded::excluded", filtered == solo == 1.0,
         f"filtered={filtered!r} solo={solo!r}")
 
-    orig = harmony_mod.exclude_faded
-    harmony_mod.exclude_faded = lambda ideas: list(ideas)  # BYPASS
+    orig = harmony_mod.exclude_inactive_ideas
+    harmony_mod.exclude_inactive_ideas = lambda ideas: list(ideas)  # BYPASS
     try:
         bypassed = harmony_score([RIVER, dup_faded])
     finally:
-        harmony_mod.exclude_faded = orig
+        harmony_mod.exclude_inactive_ideas = orig
     rec("faded::bypass_leaks", bypassed != filtered,
         f"filter disabled -> score={bypassed!r} (was {filtered!r})")
     rec("faded::bypass_value", bypassed == 0.0,
@@ -176,11 +176,11 @@ def t_bypass_faded_filter() -> None:
     # All-faded input: filtered -> 0.0 (defined); bypassed -> leaks > 0.
     all_faded = [_faded(_mk("river water flow")), _faded(_mk("stream water flow"))]
     rec("faded::all_faded_zero", harmony_score(all_faded) == 0.0)
-    harmony_mod.exclude_faded = lambda ideas: list(ideas)  # BYPASS
+    harmony_mod.exclude_inactive_ideas = lambda ideas: list(ideas)  # BYPASS
     try:
         leaked_all = harmony_score(all_faded)
     finally:
-        harmony_mod.exclude_faded = orig
+        harmony_mod.exclude_inactive_ideas = orig
     rec("faded::all_faded_bypass_leaks", leaked_all > 0.0,
         f"filter disabled -> score={leaked_all:.4f} (must be > 0)")
 
@@ -265,12 +265,18 @@ def t_public_path() -> None:
     rec("pub::unit_ids", via_units == 0.4375, f"{via_units!r}")
     rec("pub::unknown_id_fail_closed", prog.harmony_of(["no-such-unit"]) == 0.0)
     rec("pub::none_fail_closed", prog.harmony_of(None) == 0.0)
-    # W2 lifecycle passthrough: two faded units -> 0.0 (was 0.454 before
-    # the adapter forwarded lifecycle state).
+    # Canonical lifecycle: two faded units -> 0.0 via owner-aware boundary.
+    # Uses nursery proposals (canonical records), NOT dynamic Unit attributes.
     prog.cube.place_idea("f1", "river water flow", words="current")
     prog.cube.place_idea("f2", "river water flow", words="current")
-    prog.cube.session.plane.units["f1"].lifecycle_state = "faded"
-    prog.cube.session.plane.units["f2"].lifecycle_state = "faded"
+    # Create canonical faded records via nursery proposals
+    from form.dell_matrix.nursery import Proposal
+    prog.nursery.proposals["f1"] = Proposal(
+        id="f1", label="river water flow", words="current",
+        kind="new", lifecycle_state="faded")
+    prog.nursery.proposals["f2"] = Proposal(
+        id="f2", label="river water flow", words="current",
+        kind="new", lifecycle_state="faded")
     rec("pub::faded_units_zero", prog.harmony_of(["f1", "f2"]) == 0.0)
 
 

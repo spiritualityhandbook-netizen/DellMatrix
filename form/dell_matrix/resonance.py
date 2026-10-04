@@ -83,16 +83,18 @@ def pulse(
     *,
     amount: float = 0.25,
     tag_amount: float = 0.15,
+    program: Any = None,
 ) -> ResonanceState:
     """Diffuse resonance scores/tags across enhance-scope edges (one step).
 
-    Faded-state policy (P3 R3.5.2, repaired consolidated): faded units
-    have zero effective influence. They neither send nor receive, they
-    get no new score/tag entries, and — because ``state`` is routinely
-    reused across pulses — any scores/tags they RETAINED from before
-    they faded are dropped at pulse time so they cannot influence
-    future diffusion or downstream consumers (e.g. score_of, status,
-    graph views). History is preserved: the pulse is still counted and
+    Canonical lifecycle (P3 closeout): faded-state exclusion uses the
+    owner-aware canonical boundary (form.dell_matrix.canonical_lifecycle),
+    NOT dynamic Unit attributes. When program is provided, units with
+    inactive/unreadable canonical lifecycle are excluded (fail-closed).
+    Faded units have zero effective influence: they neither send nor
+    receive, get no new entries, and retained scores/tags from before
+    fading are dropped at pulse time. History preserved (pulse counted,
+    exclusion logged).
     the exclusion is recorded in ``state.log``; ``state.log`` is never
     pruned here (use ``clear`` to reset). All-faded input yields empty
     scores/tags, never an exception.
@@ -101,12 +103,16 @@ def pulse(
     state = state or ResonanceState()
     ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
 
-    # P3 R3.5.2: faded-state exclusion (logic only). Faded units are
-    # excluded from propagation: they neither send nor receive. They get
-    # no score/tag entries at all. All-faded input yields an empty
-    # result, never an exception.
-    faded_ids = {uid for uid, u in plane.units.items()
-                 if faded_policy.is_faded(u)}
+    # P3 Canonical Lifecycle: faded-state exclusion via owner-aware boundary.
+    # When program is provided, resolve (program, unit_id) canonically;
+    # inactive/unreadable -> excluded (fail-closed). Without program,
+    # no exclusion is possible (documented limitation).
+    if program is not None:
+        from form.dell_matrix import canonical_lifecycle
+        faded_ids = {uid for uid in plane.units
+                     if not canonical_lifecycle.is_active(program, uid)}
+    else:
+        faded_ids = set()
     # Reused state may retain scores/tags for units that faded AFTER
     # their last active pulse. Drop those retained entries so faded
     # units exert zero effective influence going forward; keep the log

@@ -25,7 +25,7 @@ from __future__ import annotations
 import re
 from typing import Any, Iterable, List, Set
 
-from form.dell_matrix.faded_policy import exclude_faded
+from form.dell_matrix.canonical_lifecycle import exclude_inactive_ideas
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
@@ -176,9 +176,11 @@ def harmony_score(idea_set: Iterable[Any]) -> float:
         items = list(idea_set)
     except TypeError:
         return 0.0
-    # P3 R3.5.2: faded-state exclusion — ideas whose lifecycle state is FADED
-    # do not participate in harmony computation. All-faded -> empty -> 0.0.
-    items = exclude_faded(items)
+    # P3 Canonical Lifecycle: exclude Ideas whose canonical lifecycle is not
+    # active. Fail-closed: unreadable/unknown lifecycle -> excluded.
+    # Uses canonical_lifecycle.exclude_inactive_ideas (owner-aware boundary
+    # for Idea objects; for plane Unit IDs use resolve_lifecycle with program).
+    items = exclude_inactive_ideas(items)
     n = len(items)
     if n == 0:
         return 0.0

@@ -1141,7 +1141,7 @@ class Program:
         except Exception:
             graph = None
             graph_state = "unavailable"
-        result = self.growth.run(plane, cycles=cycles, graph=graph)
+        result = self.growth.run(plane, cycles=cycles, graph=graph, program=self)
         result["scope_mode"] = scope_mode
         result["graph_signal"] = graph_state
         result["scope_ids"] = list(scope_ids) if scope_ids is not None else None
@@ -1198,34 +1198,32 @@ class Program:
         Accepts an iterable of Idea objects, plane unit ID strings
         (resolved against this program's cube plane; unit tokens come
         from the unit's real label/words/detail/goals), or a mix.
-        Unknown unit IDs fail closed to 0.0 (never raises), matching the
-        module's degenerate-input contract. Stateless: computes from
-        current content, writes nothing.
+
+        Canonical lifecycle (P3 closeout): Unit IDs are resolved through
+        the owner-aware canonical boundary
+        (form.dell_matrix.canonical_lifecycle). Only units with active
+        canonical lifecycle participate; faded/superseded/unknown units
+        are excluded (fail-closed). Unknown unit IDs fail closed to 0.0
+        (never raises). Stateless: computes from current content, writes
+        nothing.
         """
         from form.dell_matrix.harmony import harmony_score
+        from form.dell_matrix import canonical_lifecycle
 
         class _PlaneUnitView:
             """Adapter: exposes a plane unit through the idea token interface.
 
-            Lifecycle passthrough (GDP-001 Phase 3, R3.5.2 repair): the
-            canonical faded check (form.dell_matrix.faded_policy.is_faded)
-            reads ``lifecycle_state`` / ``idea_state``. The adapter
-            forwards them live from the wrapped unit so faded units are
-            excluded by harmony_score exactly as direct idea objects are.
-            Without this passthrough faded units leaked into scoring.
+            Token sources only. Lifecycle was resolved canonically at the
+            ID level (is_active check above); this adapter reports "active"
+            because the unit passed the canonical boundary. This is not
+            dynamic injection — it's the verified result.
             """
 
             def __init__(self, unit):
                 self.title = getattr(unit, "label", "") or ""
                 self._unit = unit
-
-            @property
-            def lifecycle_state(self):
-                return getattr(self._unit, "lifecycle_state", None)
-
-            @property
-            def idea_state(self):
-                return getattr(self._unit, "idea_state", None)
+                # Canonical verification already passed at ID resolution.
+                self.idea_state = "active"
 
             def get_active_properties(self):
                 u = self._unit
@@ -1249,9 +1247,14 @@ class Program:
         resolved = []
         for it in items:
             if isinstance(it, str):
+                # Canonical lifecycle boundary: resolve (program, unit_id)
+                # via inspect_revision. Inactive/unreadable -> excluded.
+                # Unknown unit ID -> fail closed to 0.0 (entire result).
                 unit = plane.units.get(it)
                 if unit is None:
                     return 0.0
+                if not canonical_lifecycle.is_active(self, it):
+                    continue
                 resolved.append(_PlaneUnitView(unit))
             else:
                 resolved.append(it)
