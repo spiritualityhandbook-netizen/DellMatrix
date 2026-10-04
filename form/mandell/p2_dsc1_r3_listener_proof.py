@@ -44,8 +44,8 @@ def _phase(name: str, code: str) -> dict:
                 d = json.loads(line[len("RESULT "):])
                 for k, v in d.items():
                     # Only collect assertion keys, not raw measurements.
-                    # Raw: n_callback, n_propagate, n_rejection, dep_val,
-                    #      w_mutation_time (used by CHECKS, not a verdict).
+                    # Raw: n_callback, n_propagate, n_rejection, n_decoding,
+                    #      dep_val, w_mutation_time (used by CHECKS, not a verdict).
                     if k.startswith("n_") or k in ("dep_val", "w_mutation_time"):
                         continue
                     results[f"{name}::{k}"] = bool(v)
@@ -83,7 +83,7 @@ edge = g.declare_dependency(dep.id, src.id, DerivationKind.MIRROR, "m", unit="v"
 dep = load_idea(dep.id, OWNER)
 jpath = graph_journal_path(OWNER)
 r = {}
-W = {"callback_entry": [], "propagate_attempt": [], "rejection": []}
+W = {"callback_entry": [], "propagate_attempt": [], "rejection": [], "decoding_reject": []}
 
 # --- Observer 1: wrap _on_idea_event (installed BEFORE attach) ---
 _orig_on_event = g._on_idea_event
@@ -110,7 +110,20 @@ def _obs_validate(data, owner):
         W["rejection"].append(("validate_journal", str(e)[:50]))
         raise
 sg.validate_journal = _obs_validate
-# Also patch the reference in the graph module namespace used by methods.
+
+# --- Observer 4 (R3 closeout): wrap _write_journal to witness DECODING ---
+# Delegate unchanged; record when GraphValidationError has a
+# json.JSONDecodeError cause; re-raise unchanged.
+_orig_write_journal = g._write_journal
+def _obs_write_journal(operations):
+    try:
+        return _orig_write_journal(operations)
+    except GraphValidationError as e:
+        cause = e.__cause__
+        if isinstance(cause, json.JSONDecodeError):
+            W["decoding_reject"].append(str(cause)[:50])
+        raise
+g._write_journal = _obs_write_journal
 # (Methods call the module-global validate_journal.)
 
 # --- Attach AFTER observers installed ---
@@ -127,6 +140,7 @@ sg.validate_journal = _obs_validate
 r["n_callback"] = len(W["callback_entry"])
 r["n_propagate"] = len(W["propagate_attempt"])
 r["n_rejection"] = len(W["rejection"])
+r["n_decoding"] = len(W["decoding_reject"])
 r["w_mutation_time"] = any(p == "v" for _, p, _ in W["callback_entry"])
 # Invariants.
 src_after = load_idea(src.id, OWNER)
@@ -155,6 +169,7 @@ r["status_sync"] = (g.propagation_status(dep.id, "m") == "synchronized")
 r["witness_callback"] = (r["n_callback"] > 0)
 r["witness_propagate"] = (r["n_propagate"] > 0)
 r["witness_no_reject"] = (r["n_rejection"] == 0)
+r["witness_no_decoding"] = (r["n_decoding"] == 0)
 """,
     }
     return ("r3-healthy", code)
@@ -191,8 +206,8 @@ r["fresh_reject"] = ("REJECTED" in pr.stdout)
 # Witnesses: callback entered, propagation attempted, decoding rejected.
 r["witness_callback"] = (r["n_callback"] > 0)
 r["witness_propagate"] = (r["n_propagate"] > 0)
-# Truncated JSON fails at json.load (decoding), before schema validation.
-# The rejection is witnessed via the unreadable-journal path.
+# R3 closeout: exactly one decoding rejection for truncated JSON.
+r["witness_decoding"] = (r["n_decoding"] == 1)
 r["witness_mutation_time"] = r["w_mutation_time"]
 """,
     }
@@ -232,6 +247,8 @@ r["fresh_reject"] = ("REJECTED" in pr.stdout)
 r["witness_schema_reject"] = (r["n_rejection"] > 0)
 r["witness_callback"] = (r["n_callback"] > 0)
 r["witness_propagate"] = (r["n_propagate"] > 0)
+# R3 closeout: no decoding rejection for parseable-invalid (it's valid JSON).
+r["witness_no_decoding"] = (r["n_decoding"] == 0)
 """,
     }
     return ("r3-parseable-invalid", code)
