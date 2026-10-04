@@ -310,6 +310,102 @@ def t10_causal_mutant():
         _clean(owner)
 
 
+def t11_members_content_sync():
+    """P4-DIR-01 followup (Prism F5a): members/content/has_content agree.
+
+    - content == members[0] (first-sorted primary) when members nonempty
+    - content is None iff members is empty
+    - pull_chord has_content == (member_count > 0)
+    - after removing all members, cell is honestly empty
+    """
+    owner = "P4LC11"
+    try:
+        p = _prog(owner)
+        p.place("w1", "one", x=20.0, y=20.0)
+        p.place("w2", "two", x=20.0, y=20.0)
+        cell = p.lattice.get(20, 20)
+        sync1 = (cell.content == cell.members[0]
+                 and cell.member_count == 2
+                 and cell.is_collision)
+        chord = None
+        for c in p.lattice.pull_chord(20, 20):
+            if c["coords"] == (20, 20, 0):
+                chord = c
+                break
+        sync2 = (chord is not None
+                 and chord["has_content"] is True
+                 and chord["member_count"] == 2
+                 and sorted(chord["members"]) == ["w1", "w2"])
+        rec("sync::members_content_agree", sync1 and sync2,
+            f"content={cell.content} members={cell.members} "
+            f"has_content={chord['has_content'] if chord else None}")
+        # empty cell: honest has_content=False
+        chord_e = None
+        for c in p.lattice.pull_chord(999, 999):
+            if c["coords"] == (999, 999, 0):
+                chord_e = c
+                break
+        sync3 = (chord_e is not None
+                 and chord_e["has_content"] is False
+                 and chord_e["member_count"] == 0
+                 and chord_e["members"] == [])
+        rec("sync::empty_honest", sync3,
+            f"empty cell has_content={chord_e['has_content'] if chord_e else None}")
+    finally:
+        _clean(owner)
+
+
+def t12_soft_forget_clears_members():
+    """P4-DIR-01 followup (Prism F5b): soft-forget clears members+content.
+
+    apply_radial_soft_forget on a far-shell colliding cell must leave
+    members == [] and content is None (no contradictory state), and
+    pull_chord must then report has_content=False.
+    """
+    owner = "P4LC12"
+    try:
+        from form.dell_matrix.harmonic_core import apply_radial_soft_forget
+
+        class _Ledger:
+            def remember(self, *a, **k):
+                pass
+
+            def soft_forget(self, *a, **k):
+                pass
+
+            def status(self):
+                return {"stub": True}
+
+        p = _prog(owner)
+        # far from origin so shell >= outer_shell
+        p.place("f1", "far one", x=500.0, y=500.0)
+        p.place("f2", "far two", x=500.0, y=500.0)
+        lat = p.lattice
+        key = (500, 500, 0)
+        cell = lat.get(500, 500)
+        pre = (cell is not None and sorted(cell.members) == ["f1", "f2"])
+        res = apply_radial_soft_forget(lat, _Ledger(), outer_shell=1)
+        cell2 = lat.get(500, 500)
+        post = (cell2 is not None
+                and cell2.content is None
+                and cell2.members == []
+                and cell2.member_count == 0)
+        chord = None
+        for c in lat.pull_chord(500, 500):
+            if c["coords"] == (500, 500, 0):
+                chord = c
+                break
+        honest = (chord is not None and chord["has_content"] is False
+                  and chord["members"] == [])
+        rec("softforget::clears_both", pre and post and honest,
+            f"pre={pre} post(members={cell2.members if cell2 else None},"
+            f"content={cell2.content if cell2 else None}) "
+            f"has_content={chord['has_content'] if chord else None} "
+            f"forgotten={res.get('soft_forgotten')}")
+    finally:
+        _clean(owner)
+
+
 def main():
     print("=== P4 LATTICE-COLLISION PROOF (P4-DIR-01) ===", flush=True)
     t1_identical_coords()
@@ -322,6 +418,8 @@ def main():
     t8_idempotent()
     t9_no_semantic_side_effects()
     t10_causal_mutant()
+    t11_members_content_sync()
+    t12_soft_forget_clears_members()
     n = len(CHECKS)
     print(f"P4 LATTICE-COLLISION: {n - len(FAILED)}/{n} pass; "
           f"failed={FAILED}", flush=True)
