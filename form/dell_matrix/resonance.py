@@ -40,6 +40,7 @@ try:
     from form.mandell.floor import FLOOR, assert_floor_intact
     from form.dell_matrix.plane import Plane, Skin
     from form.dell_matrix.blank_cube import give
+    from form.dell_matrix import faded_policy  # P3 R3.5.2: faded-state exclusion
 except ImportError:
     import os
 
@@ -47,6 +48,7 @@ except ImportError:
     from form.mandell.floor import FLOOR, assert_floor_intact
     from form.dell_matrix.plane import Plane, Skin
     from form.dell_matrix.blank_cube import give
+    from form.dell_matrix import faded_policy  # P3 R3.5.2: faded-state exclusion
 
 
 @dataclass
@@ -86,12 +88,22 @@ def pulse(
     state = state or ResonanceState()
     ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
 
+    # P3 R3.5.2: faded-state exclusion (logic only). Faded units are
+    # excluded from propagation: they neither send nor receive. They get
+    # no score/tag entries at all. All-faded input yields an empty
+    # result, never an exception.
+    faded_ids = {uid for uid, u in plane.units.items()
+                 if faded_policy.is_faded(u)}
     for uid in plane.units:
+        if uid in faded_ids:
+            continue
         state.scores.setdefault(uid, 0.0)
         state.tags.setdefault(uid, {})
 
     for uid, u in plane.units.items():
-        peers = plane.enhance_scope(uid)
+        if uid in faded_ids:
+            continue
+        peers = [p for p in plane.enhance_scope(uid) if p not in faded_ids]
         toks = _tokens(u.label, u.words)
         if not peers:
             state.log.append(f"{ts} {uid}: no peers")

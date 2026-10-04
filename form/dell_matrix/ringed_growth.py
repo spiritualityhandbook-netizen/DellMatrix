@@ -18,6 +18,7 @@ import re
 
 from form.dell_matrix.nursery import Nursery
 from form.dell_matrix.plane import Plane
+from form.dell_matrix import faded_policy  # P3 R3.5.2: faded-state exclusion
 
 RINGS = ("Seed", "Token", "Body", "Lens", "Evolve")
 _TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
@@ -215,6 +216,8 @@ def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = Non
         and the in_scope floor (0.2 x 0.13) still contribute, so affinity is
         ~0.0273, not 0.0. Fail-closed IN EFFECT: 0.0273 < STANSTILL_AFFINITY
         (0.10), so the "None" gate fires and no ring proposal results.
+        FADED units (R3.5.2): if either unit is faded, returns the full dict
+        with all values 0.0 (no exception); the 0.0 affinity gates to "None".
         Verified by form/mandell/p3_r31_affinity_proof.py.
     (7) Determinism: pure function of (plane state, a, b, body). Same inputs
         -> identical dict in every process (no RNG, no wall clock, no hash()
@@ -224,6 +227,20 @@ def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = Non
         authority). Real caller: RingedGrowth.run() <- Program.grow_ideas
         <- REPL growth commands.
     """
+    # P3 R3.5.2: faded-state exclusion (logic only; contract untouched).
+    # A faded unit contributes nothing to pair scoring: affinity is 0.0
+    # and RingedGrowth.run's gate maps 0.0 to "None" (pair skipped).
+    # Fail-closed: same dict shape, zeroed, no exception.
+    if faded_policy.is_faded(plane.units.get(a)) or faded_policy.is_faded(plane.units.get(b)):
+        return {
+            "affinity": 0.0,
+            "jaccard": 0.0,
+            "harmonic": 0.0,
+            "distance": 0.0,
+            "shared": 0.0,
+            "goal_boost": 0.0,
+            "body_boost": 0.0,
+        }
     ta, tb = _tokens_uid(plane, a), _tokens_uid(plane, b)
     jac = _jaccard(ta, tb)
     harm = _harmonic(ta, tb)

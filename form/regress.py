@@ -126,6 +126,8 @@ LIST = [
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",
+    # P3 R3.5 — resonance/harmony integration (Stream D)
+    "form.mandell.p3_r35_integration_proof",
 ]
 
 TIMEOUT_S = 900
