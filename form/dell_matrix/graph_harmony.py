@@ -55,11 +55,24 @@ class _UnitIdeaView:
     Token sources (identical to Program.harmony_of's adapter):
       title                <- unit.label
       properties           <- unit.words, unit.detail, unit.goals (joined)
+
+    Lifecycle passthrough (P3 consolidated repair, blind MINOR-1):
+    mirrors Program.harmony_of's _PlaneUnitView — forwards lifecycle_state
+    and idea_state live from the wrapped unit so faded_policy.is_faded
+    excludes faded units from harmony computation.
     """
 
     def __init__(self, unit: Any):
         self.title = getattr(unit, "label", "") or ""
         self._unit = unit
+
+    @property
+    def lifecycle_state(self):
+        return getattr(self._unit, "lifecycle_state", None)
+
+    @property
+    def idea_state(self):
+        return getattr(self._unit, "idea_state", None)
 
     def get_active_properties(self) -> Dict[str, str]:
         u = self._unit
