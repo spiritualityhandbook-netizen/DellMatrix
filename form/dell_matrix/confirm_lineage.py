@@ -31,7 +31,7 @@ def _detail(prop, units) -> str:
     return ""
 
 
-def confirm_proposal(program, pid: str) -> Dict[str, Any]:
+def confirm_proposal(program, pid: str, _skip_checkpoint: bool = False) -> Dict[str, Any]:
     """Canonical confirmation authority (transactional).
 
     Uses the checkpoint generation transaction (DCC-XVIII) to atomically
@@ -44,6 +44,10 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
     complete, never a hybrid. Any failure before the commit boundary
     leaves the proposal pending (memory and disk), so it stays retryable
     and rejectable.
+
+    _skip_checkpoint: Internal use only. When True, skips the checkpoint
+    commit (caller manages durability). Used by supersede_proposal which
+    has its own transaction boundary.
     """
     nursery = program.nursery
     prop = nursery.proposals.get(pid)
@@ -66,20 +70,31 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
     # Stage the nursery confirmation in memory (do NOT save yet).
     # The checkpoint transaction will persist both Program and Nursery atomically.
     prop.status = "confirmed"
-    try:
-        from form.mandell.checkpoint_generation import commit_checkpoint
-        commit_checkpoint(program)
-    except Exception as exc:
-        # Transaction failed: revert in-memory state to OLD.
-        # Proposal stays pending (retryable), Idea removed if newly placed.
-        prop.status = "pending"
-        if not existed:
-            units.pop(prop.id, None)
-        # Check if it's a nursery conflict (optimistic concurrency)
-        from form.dell_matrix.nursery import NurseryConflictError
-        if isinstance(exc, NurseryConflictError) or "conflict" in str(exc).lower():
-            return {"ok": False, "reason": "nursery_conflict", "error": str(exc)}
-        raise
+    if not _skip_checkpoint:
+        try:
+            from form.mandell.checkpoint_generation import commit_checkpoint
+            commit_checkpoint(program)
+        except Exception as exc:
+            # Transaction failed: revert in-memory state to OLD.
+            # Proposal stays pending (retryable), Idea removed if newly placed.
+            prop.status = "pending"
+            if not existed:
+                units.pop(prop.id, None)
+            # Check if it's a nursery conflict (optimistic concurrency)
+            from form.dell_matrix.nursery import NurseryConflictError
+            if isinstance(exc, NurseryConflictError) or "conflict" in str(exc).lower():
+                return {"ok": False, "reason": "nursery_conflict", "error": str(exc)}
+            raise
+    else:
+        # Skipping checkpoint (caller manages durability, e.g., supersession).
+        # Fall back to legacy nursery.save() for backward compatibility.
+        try:
+            nursery.save()
+        except Exception:
+            prop.status = "pending"
+            if not existed:
+                units.pop(prop.id, None)
+            raise
     try:
         text = " ".join([str(prop.label or ""), str(getattr(prop, "words", "") or ""), str(getattr(prop, "detail", "") or "")])
         aff = float(getattr(prop, "affinity", 1.0) or 1.0)

@@ -1331,9 +1331,9 @@ class Program:
                 -float(p.get("graph_coherence", 0) or 0),
             ))
 
-    def confirm_proposal(self, pid: str) -> Dict[str, Any]:
+    def confirm_proposal(self, pid: str, _skip_checkpoint: bool = False) -> Dict[str, Any]:
         from form.dell_matrix.confirm_lineage import confirm_proposal as _confirm_proposal
-        return _confirm_proposal(self, pid)
+        return _confirm_proposal(self, pid, _skip_checkpoint=_skip_checkpoint)
 
     def reject_proposal(self, pid: str) -> Dict[str, Any]:
         prop = self.nursery.reject(pid)

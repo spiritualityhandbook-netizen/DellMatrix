@@ -403,7 +403,9 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     try:
         if _FAIL_AT == "confirm":
             raise SupersedeError("injected_failure", "confirm")
-        res = program.confirm_proposal(succ_id)
+        # Use _skip_checkpoint=True: supersession has its own transaction
+        # boundary (Phase 4 save). Avoid nested checkpoint commits.
+        res = program.confirm_proposal(succ_id, _skip_checkpoint=True)
         if not res.get("ok"):
             raise SupersedeError("confirm_failed", str(res.get("reason")))
     except Exception:
