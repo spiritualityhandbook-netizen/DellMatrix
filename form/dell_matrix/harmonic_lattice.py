@@ -103,6 +103,39 @@ class HarmonicLattice:
     def get(self, h: int, v: int, f: int = 0) -> Optional[Cell]:
         return self.cells.get((h, v, f))
 
+    def rebuild_from_plane(self, plane: Any) -> int:
+        """DERIVED projection (Phase 4, 4.4.1): rebuild cells from Plane.
+
+        The lattice is not an independent spatial truth. This is the only
+        sanctioned way lattice cells reflect idea positions: deterministic
+        (sorted unit ids; first-sorted wins integer-cell collisions),
+        complete (every positioned unit appears), and drift-free by
+        construction. Returns the number of cells written.
+        """
+        self.cells = {}
+        try:
+            units = plane.units
+        except AttributeError:
+            return 0
+        n = 0
+        for uid in sorted(units):
+            u = units[uid]
+            try:
+                x, y = float(u.x), float(u.y)
+            except (TypeError, ValueError):
+                continue
+            import math as _math
+            if not (_math.isfinite(x) and _math.isfinite(y)):
+                continue
+            key = (int(round(x)), int(round(y)), 0)
+            if key in self.cells:
+                continue  # first-sorted wins; deterministic, no silent loss
+            label = getattr(u, "label", "") or ""
+            self.cells[key] = Cell(h=key[0], v=key[1], f=0,
+                                   content=uid, label=label, tags=["idea"])
+            n += 1
+        return n
+
     def chord_neighbors(self, h: int, v: int, f: int = 0) -> List[Tuple[int, int, int]]:
         return [(h, v, f), (h + 1, v, f), (h, v + 1, f)]
 

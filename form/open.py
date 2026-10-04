@@ -32,6 +32,7 @@ try:
     from form.dell_matrix.actions_registry import normalize_mode, actions_for_mode
     from form.dell_matrix.workshops import list_workshops, get_workshop
     from form.dell_matrix.forces import ForceField
+    from form.dell_matrix.spatial_authority import SpatialAuthority
     from form.dell_matrix.personas import (
         get_persona, list_personas, persona_guidance, normalize_persona_id,
         BIMOBody, PersonaMatrix, render_roster, list_categories, PERSONAS,
@@ -77,6 +78,7 @@ except ImportError:
     from form.dell_matrix.actions_registry import normalize_mode, actions_for_mode
     from form.dell_matrix.workshops import list_workshops, get_workshop
     from form.dell_matrix.forces import ForceField
+    from form.dell_matrix.spatial_authority import SpatialAuthority
     from form.dell_matrix.personas import (
         get_persona, list_personas, persona_guidance, normalize_persona_id,
         BIMOBody, PersonaMatrix, render_roster, list_categories, PERSONAS,
@@ -145,6 +147,9 @@ class Program:
     user_trail: List[List[float]] = field(default_factory=list)
     # src/ matrices ported into form/
     forces: ForceField = field(default_factory=ForceField)
+    # Phase 4: canonical spatial authority (sole decider of post-placement
+    # Idea positions; Plane remains the position store).
+    spatial: SpatialAuthority = field(default_factory=SpatialAuthority)
     active_view: str = "growth"  # view room id
     body_style: str = "stick"  # ascii body: stick|block|shadow|robot
     bimo: BIMOBody = field(default_factory=BIMOBody)
@@ -739,20 +744,41 @@ class Program:
             return render_body(self.body_style, facing)
 
     def force_tick(self) -> Dict[str, Any]:
-        """One force pulse + Nature of Code physics (gravity wells + friction on idea nodes)."""
+        """One force pulse + canonical spatial dynamics (Phase 4).
+
+        ForceField.tick keeps bookkeeping (breath, growth, water, wells,
+        weather). Position integration is decided SOLELY by the canonical
+        spatial authority (bounded, damped, deterministic, lifecycle-gated).
+        The legacy NatureBridge writer is retired; its admitted math
+        (attract with min-dist clamp) lives on as a calculator inside the
+        authority.
+        """
         report = self.forces.tick(self.nodes_payload(), owner=self.owner)
-        # Auto-wired Nature of Code physics — idea nodes move under real forces
+        # Canonical spatial dynamics (Phase 4 authority).
         try:
-            from form.dell_matrix.nature_physics import program_force_tick_nature
-            nature = program_force_tick_nature(self)
-            report["nature"] = nature
+            spatial = self.spatial.tick(self)
+            report["spatial"] = spatial
         except Exception as e:
-            report["nature"] = {"ok": False, "error": str(e)}
+            report["spatial"] = {"ok": False, "error": str(e)}
+        # Legacy nature-physics path: retired as an independent writer.
+        # Kept as a no-op record so callers/tests observing the key do not
+        # break; it must not move units.
+        report["nature"] = {"ok": True, "retired": True,
+                            "note": "position integration moved to "
+                                    "SpatialAuthority.tick (Phase 4)"}
         self.note_seed(25, "Pulse", "force_tick")
         return report
 
     def force_status(self) -> Dict[str, Any]:
         return self.forces.status()
+
+    def spatial_settle(self, max_ticks: int = 200) -> Dict[str, Any]:
+        """Run bounded dynamics to equilibrium or honest non-convergence."""
+        return self.spatial.settle(self, max_ticks=max_ticks)
+
+    def spatial_explain(self, idea_id: str) -> Dict[str, Any]:
+        """Why an idea occupies its current location (4.1.5)."""
+        return self.spatial.explain(self, idea_id)
 
     def force_growth(self) -> Dict[str, Any]:
         """IAC-I: Canonical growth-force activation. Extracted from live_visual."""
@@ -969,15 +995,24 @@ class Program:
         return out
 
     def place(self, id: str, label: str, **kwargs):
-        # Auto-spread when x/y omitted or stacked at origin — keeps entities visually distinct
+        # Phase 4: coordinate selection is decided by the canonical spatial
+        # authority (deterministic placement + explanation). Explicit x/y
+        # from the caller (user authority) is honored; otherwise the
+        # authority computes placement (barycentric-from-neighbors or
+        # neutral spiral). The raw (0,0) default is never used silently.
         plane = self.cube.session.plane
         x = kwargs.get("x", None)
         y = kwargs.get("y", None)
         if x is None and y is None:
-            kwargs["x"], kwargs["y"] = self._next_open_xy()
+            # Ask the authority for a deterministic placement. It reuses
+            # the _next_open_xy spiral contract when no graph information
+            # applies, and records the explanation.
+            spot = self.spatial.place(self, id, label)
+            kwargs["x"], kwargs["y"] = spot["x"], spot["y"]
         elif (float(kwargs.get("x", 0) or 0) == 0.0 and float(kwargs.get("y", 0) or 0) == 0.0
               and any(abs(u.x) < 0.01 and abs(u.y) < 0.01 for u in plane.units.values())):
-            kwargs["x"], kwargs["y"] = self._next_open_xy()
+            spot = self.spatial.place(self, id, label)
+            kwargs["x"], kwargs["y"] = spot["x"], spot["y"]
         u = self.cube.place_idea(id, label, **kwargs)
         # strong idea fields
         if "detail" in kwargs and kwargs.get("detail") is not None:
@@ -986,13 +1021,12 @@ class Program:
             g = kwargs.get("goals")
             u.goals = list(g) if isinstance(g, (list, tuple)) else [str(g)]
         self.sandbox.maybe_auto_box(self.cube.session.plane, id)
+        # Phase 4: the lattice is a DERIVED projection, not an independent
+        # truth. Rebuild it deterministically from Plane (replaces the old
+        # lossy one-way mirror, which drifted silently).
         try:
-            h = int(round(getattr(u, "x", 0) or 0))
-            v = int(round(getattr(u, "y", 0) or 0))
-            self.lattice.put(
-                h, v, 0, content=id, label=label,
-                tags=["idea"] + ([kwargs.get("words")] if kwargs.get("words") else []),
-            )
+            if hasattr(self.lattice, "rebuild_from_plane"):
+                self.lattice.rebuild_from_plane(self.cube.session.plane)
         except Exception:
             pass
         try:

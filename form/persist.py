@@ -192,6 +192,7 @@ def serialize(program: Program) -> Dict[str, Any]:
             "auto_confirm_grow": bool(getattr(program, "auto_confirm_grow", False)),
         },
         "forces": program.forces.to_dict() if hasattr(program, "forces") else {},
+        "spatial": program.spatial.to_dict() if hasattr(program, "spatial") else {},
         "bimo": program.bimo.to_dict() if hasattr(program, "bimo") else {},
         "nursery": _serialize_nursery(program),
         "lattice": _serialize_lattice(program),
