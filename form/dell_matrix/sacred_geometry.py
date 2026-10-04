@@ -8,6 +8,19 @@ Sacred geometry + structural pattern layer — form/ only.
   Fractals        — Rule 90 · bounded orbit · self-similar shells
 
 Law: geometry is perception/structure. Voynich stays interpretive.
+
+DEFERRED (GDP-001 Phase 3 — explicit record, not silent; do not build):
+  3.4.2 Čech nerve as higher-order relationship model — DEFERRED. No proven
+      consumers; no nerve construction exists anywhere in form/
+      (grep "cech|nerve" across form/ = empty).
+  3.4.3 Power diagrams for weighted ideas — DEFERRED. No proven consumers;
+      weighted-idea volumes have no spatial substrate (Unit.x/Unit.y default
+      0.0; ideas placed by default all sit at the origin).
+  3.4.4 Alpha filtration for void lifecycle — DEFERRED. No proven consumers;
+      no filtration / void-lifecycle code exists anywhere in form/
+      (grep "alpha filtration|persistence diagram" across form/ = empty).
+  None of the three are implemented. Revisit only with proven consumers and
+  a mathematical derivation admitted under the admission contract.
 """
 
 from __future__ import annotations
