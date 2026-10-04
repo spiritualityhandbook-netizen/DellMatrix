@@ -1220,6 +1220,18 @@ def recover_supersede_intent(owner: str) -> str:
         clear_supersede_intent(owner)
         return "already_complete"
 
+    # Before link commit: predecessor active, successor confirmed with durable Idea.
+    # This is a permitted intermediate state. Accept as-is, clear journal.
+    # The successor remains unlinked; this is allowed by the contract.
+    old_active = (
+        isinstance(old_prop, dict)
+        and old_prop.get("lifecycle_state") in ("active", None)
+    )
+    if new_ok and old_active:
+        # Valid partial completion. Clear journal, leave unlinked.
+        clear_supersede_intent(owner)
+        return "already_complete"
+
     # If successor and predecessor are both in correct states but links
     # are incomplete, repair ONLY the revision links (not derivation chain).
     # R3-COMPLETE-EXISTING-CONTRACT req. 2: Supersession uses supersedes_id
@@ -1243,6 +1255,17 @@ def recover_supersede_intent(owner: str) -> str:
         return "already_complete"
 
     # Incomplete: heal to OLD.
+    # Aborted persistence: new may not exist or is pending, old is active.
+    # This is the OLD state; clear journal.
+    new_absent_or_pending = (
+        new_prop is None or
+        (isinstance(new_prop, dict) and new_prop.get("status") == "pending")
+    )
+    if new_absent_or_pending and old_active:
+        # Operation never completed. Restore complete OLD outcome.
+        clear_supersede_intent(owner)
+        return "healed_to_old"
+
     # This requires restoring the old proposal to active and removing
     # the new proposal's confirmation. We use the OLD fingerprint to
     # verify, but we don't have the full OLD content. Instead, we revert
