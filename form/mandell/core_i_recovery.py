@@ -1498,6 +1498,53 @@ def recover_supersede_intent(owner: str) -> str:
             raise RollbackRecoveryError(
                 f"supersede intent: heal failed (preserved): {exc}"
             ) from exc
+        # F7: Reread durable Nursery and verify the heal before clearing.
+        # Do not clear intent based on in-memory state alone.
+        try:
+            with open(npath, encoding="utf-8") as f:
+                durable_nd = json.load(f)
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"supersede intent: reread after heal failed (preserved): {exc}"
+            ) from exc
+        durable_old = durable_nd.get(old_id)
+        durable_new = durable_nd.get(new_id)
+        # Verify old is active in durable state
+        if not isinstance(durable_old, dict):
+            raise RollbackRecoveryError(
+                "supersede intent: old missing from durable Nursery after heal "
+                "(preserved).")
+        if durable_old.get("lifecycle_state") != "active":
+            raise RollbackRecoveryError(
+                "supersede intent: old not active in durable Nursery after heal "
+                "(preserved).")
+        if durable_old.get("superseded_by_id") is not None:
+            raise RollbackRecoveryError(
+                "supersede intent: old still has successor link after heal "
+                "(preserved).")
+        # Verify new is pending or absent in durable state
+        if isinstance(durable_new, dict):
+            if durable_new.get("status") != "pending":
+                raise RollbackRecoveryError(
+                    "supersede intent: new not pending in durable Nursery after heal "
+                    "(preserved).")
+            if durable_new.get("supersedes_id") is not None:
+                raise RollbackRecoveryError(
+                    "supersede intent: new still has predecessor link after heal "
+                    "(preserved).")
+        # Verify no successor Idea in durable Program
+        try:
+            with open(ppath, encoding="utf-8") as f:
+                durable_pd = json.load(f)
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"supersede intent: reread Program after heal failed (preserved): {exc}"
+            ) from exc
+        durable_units = durable_pd.get("plane", {}).get("units", {})
+        if new_id in durable_units:
+            raise RollbackRecoveryError(
+                "supersede intent: successor Idea present in durable Program "
+                "after heal (preserved).")
         clear_supersede_intent(owner)
         return "healed_to_old"
 
