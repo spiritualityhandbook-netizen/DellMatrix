@@ -1517,21 +1517,24 @@ class Program:
                 "pid": pid,
                 "producer": _producer,
             }
-        # Director 2026-10-05: revalidate at the ACTUAL mutation boundary.
-        # A check before delegation is not a commit-time check: recompute
-        # the canonical hash immediately before mutating; stale data fails.
-        commit_hash = self.acceptance_data_hash(pid, _operation)
-        if commit_hash != data_hash:
-            policy._audit.append({
-                "action": "deny",
-                "via": "commit_time_stale",
-                "producer": _producer,
-                "pid": pid,
-            })
+        # Director 2026-10-05 (final): live validation at the EXECUTION
+        # boundary. The initial check above gates entry; this final check
+        # validates live permission (revocation, source chain) and reviewed
+        # data immediately before the protected mutation. A full policy
+        # check — not just a hash comparison — so revocation between
+        # authorization and execution denies with no accepted transition.
+        live_hash = self.acceptance_data_hash(pid, _operation)
+        live = policy.check(_producer, pid, _review_context,
+                            proposal_version=live_hash,
+                            operation=_operation)
+        if not live.get("allowed"):
+            # No mutation has occurred; proposal remains pending and
+            # retryable. Staged work (none yet) needs no recovery.
             return {
                 "ok": False,
                 "reason": "acceptance_policy_denied",
-                "detail": "Proposal data changed between check and commit.",
+                "detail": live.get("detail") or
+                          "Live validation failed at execution boundary.",
                 "pid": pid,
                 "producer": _producer,
             }

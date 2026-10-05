@@ -323,6 +323,70 @@ def test_valid_supersede_derivation():
     check("valid_derivation_ok", res.get("ok") is True, str(res.get("reason")))
 
 
+
+
+def test_revoke_between_auth_and_execution():
+    """Revocation injected between auth and execution denies; no transition."""
+    clean()
+    p = open_program(OWNER)
+    pr = p.nursery.add("ExecRev", words="w")
+    issued = p.make_review_context(pr.id, "test")
+    approval_id = issued["approval_id"]
+    # Wrap check to revoke after the first (initial) check passes
+    policy = p.acceptance_policy
+    orig_check = policy.check
+    calls = {"n": 0}
+    def injecting_check(producer, pid, review_context=None,
+                        proposal_version=None, operation="confirm"):
+        calls["n"] += 1
+        res = orig_check(producer, pid, review_context,
+                         proposal_version, operation)
+        if calls["n"] == 1 and res.get("allowed"):
+            # First check passed; revoke before the live execution check
+            policy.revoke_approval(approval_id)
+        return res
+    policy.check = injecting_check
+    try:
+        r = p.confirm_proposal(pr.id, _producer="test", _review_context=issued)
+    finally:
+        policy.check = orig_check
+    check("exec_revoke_denied", r.get("ok") is False,
+          str(r.get("reason")))
+    check("exec_revoke_no_transition",
+          p.nursery.proposals[pr.id].status == "pending",
+          "proposal must remain pending")
+    check("exec_revoke_two_checks", calls["n"] >= 2,
+          f"expected live re-validation, got {calls['n']} checks")
+
+
+def test_mutate_between_auth_and_execution():
+    """Content change injected between auth and execution denies."""
+    clean()
+    p = open_program(OWNER)
+    pr = p.nursery.add("ExecMut", words="original")
+    issued = p.make_review_context(pr.id, "test")
+    policy = p.acceptance_policy
+    orig_check = policy.check
+    calls = {"n": 0}
+    def injecting_check(producer, pid, review_context=None,
+                        proposal_version=None, operation="confirm"):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            # Mutate after the first check
+            p.nursery.proposals[pid].words = "tampered"
+        return orig_check(producer, pid, review_context,
+                          proposal_version, operation)
+    policy.check = injecting_check
+    try:
+        r = p.confirm_proposal(pr.id, _producer="test", _review_context=issued)
+    finally:
+        policy.check = orig_check
+    check("exec_mutate_denied", r.get("ok") is False,
+          str(r.get("reason")))
+    check("exec_mutate_no_transition",
+          p.nursery.proposals[pr.id].status == "pending")
+
+
 def smoke():
     print("=== WO-5.1 ADVERSARIAL ACCEPTANCE ===")
     for fn in [test_forged_dict, test_stale_content, test_stale_parents,
@@ -333,7 +397,9 @@ def smoke():
                test_derive_changed_successor_data,
                test_parent_revocation_invalidates_child,
                test_optin_revocation_invalidates_child,
-               test_valid_supersede_derivation]:
+               test_valid_supersede_derivation,
+               test_revoke_between_auth_and_execution,
+               test_mutate_between_auth_and_execution]:
         try:
             fn()
         except Exception as e:
