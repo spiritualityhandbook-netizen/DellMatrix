@@ -93,7 +93,10 @@ def fresh_owner(owner: str):
     wipe_owner(owner)
     if owner not in OWNERS:
         OWNERS.append(owner)
-    return open_program(owner)
+    p = open_program(owner)
+    # DCC-XVII tests persistence, not authorization.
+    p.acceptance_policy.grant_opt_in("dccxvii", scope="dcc_xvii_test")
+    return p
 
 
 def npath(owner: str) -> Path:
@@ -114,7 +117,7 @@ def control_a_normal_save() -> None:
     o = "DCCXVII_A"
     p = fresh_owner(o)
     pr = p.nursery.add("alpha base", words="alpha beta gamma")
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="dccxvii")
     p.nursery.save()
     persist_rest.save(p)
     np, pp = npath(o), Path(persist_rest._path(p.owner))
@@ -136,7 +139,7 @@ def control_b_serialize_failure() -> None:
     o = "DCCXVII_B"
     p = fresh_owner(o)
     pr = p.nursery.add("beta base", words="beta gamma")
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="dccxvii")
     p.nursery.save()
     np = npath(o)
     g1 = read_bytes(np)
@@ -184,7 +187,7 @@ def control_g_repeated_saves() -> None:
     gens = []
     for i in range(1, 5):
         pr = p.nursery.add(f"gen{i} idea", words=f"generation {i} alpha")
-        p.confirm_proposal(pr.id)
+        p.confirm_proposal(pr.id, _producer="dccxvii")
         p.nursery.save()
         gens.append(read_bytes(np))
         n2 = Nursery.load(str(np))
@@ -381,7 +384,7 @@ def control_r_determinism() -> None:
     p = fresh_owner(o)
     for i in range(5):
         pr = p.nursery.add(f"det idea {i}", words=f"deterministic {i}")
-        p.confirm_proposal(pr.id)
+        p.confirm_proposal(pr.id, _producer="dccxvii")
     p.nursery.save()
     np = npath(o)
     b1 = read_bytes(np)
@@ -397,7 +400,7 @@ def control_s_byte_preservation() -> None:
     o = "DCCXVII_S"
     p = fresh_owner(o)
     pr = p.nursery.add("sigma base", words="sigma tau")
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="dccxvii")
     p.nursery.save()
     persist_rest.save(p)
     np, pp = npath(o), Path(persist_rest._path(p.owner))
@@ -505,12 +508,12 @@ def control_m_supersession_integration() -> None:
     # M1: persistence interruption at the commit -> OLD COMPLETE, byte-identical
     p = fresh_owner(o)
     old = p.nursery.add("mu base", words="mu revision alpha")
-    p.confirm_proposal(old.id)
+    p.confirm_proposal(old.id, _producer="dccxvii")
     p.nursery.save()
     pre = read_bytes(npath(o))
     restore = _fail_nth_save(3, "replace")  # commit is the 3rd save (add=1st, confirm=2nd)
     try:
-        S.supersede_proposal(p, old.id, "mu revision two alpha")
+        S.supersede_proposal(p, old.id, "mu revision two alpha", _producer="dccxvii")
         outcome = "no_raise"
     except AtomicWriteError:
         outcome = "AtomicWriteError"
@@ -617,20 +620,21 @@ def snap(extra):
 if SCEN in ("normal", "serialize_fail", "temp_write_fail", "crash_before_replace",
             "crash_after_replace", "corrupt_canonical", "repeated", "program_crash_before_replace"):
     p = open_program(OWNER)
+    p.acceptance_policy.grant_opt_in("dccxvii", scope="dcc_xvii_test")
     pr = p.nursery.add("cross base", words="cross alpha")
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="dccxvii")
     p.nursery.save()
     g1 = open(npath(), "rb").read()
     if SCEN == "repeated":
         for i in range(2, 5):
             q = p.nursery.add(f"cross gen{i}", words=f"cross alpha {i}")
-            p.confirm_proposal(q.id)
+            p.confirm_proposal(q.id, _producer="dccxvii")
             p.nursery.save()
         snap({"note": "repeated"})
         raise SystemExit(0)
     if SCEN == "normal":
         q = p.nursery.add("cross two", words="cross beta")
-        p.confirm_proposal(q.id)
+        p.confirm_proposal(q.id, _producer="dccxvii")
         p.nursery.save()
         snap({})
         raise SystemExit(0)
@@ -662,7 +666,7 @@ if SCEN == "sigkill_mid_write":
     from form.dell_matrix.nursery import Proposal
     p = open_program(OWNER)
     pr = p.nursery.add("sigkill base", words="sigkill alpha")
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="dccxvii")
     p.nursery.save()
     g1 = open(npath(), "rb").read()
     for i in range(4000):
@@ -846,12 +850,12 @@ def control_n_lineage_dependency() -> None:
         "p = open_program(OWNER)\n"
         "p.acceptance_policy.grant_opt_in('test', scope='test')\n"
         "a = p.nursery.add('n root', words='n root alpha')\n"
-        "p.confirm_proposal(a.id)\n"
+        "p.confirm_proposal(a.id, _producer='test')\n"
         "b = p.nursery.add('n child', words='n child alpha', parents=[a.id])\n"
-        "p.confirm_proposal(b.id)\n"
+        "p.confirm_proposal(b.id, _producer='test')\n"
         "c = p.nursery.add('n grandchild', words='n grandchild alpha', parents=[b.id])\n"
-        "p.confirm_proposal(c.id)\n"
-        "r = S.supersede_proposal(p, a.id, 'n root revised alpha')\n"
+        "p.confirm_proposal(c.id, _producer='test')\n"
+        "r = S.supersede_proposal(p, a.id, 'n root revised alpha', _producer='test')\n"
         "assert r['ok']\n"
         "p.nursery.save(); persist_rest.save(p)\n"
         "ids = {'a': a.id, 'b': b.id, 'c': c.id, 'a2': r['new_id']}\n"
@@ -913,22 +917,22 @@ def control_o_contextual_routing() -> None:
     def build(p):
         from form.mandell import supersession as S
         rv_old = p.nursery.add("river delta sediment flow", words="river delta sediment flow")
-        p.confirm_proposal(rv_old.id)
-        r = S.supersede_proposal(p, rv_old.id, "river delta sediment flow revised")
+        p.confirm_proposal(rv_old.id, _producer="dccxvii")
+        r = S.supersede_proposal(p, rv_old.id, "river delta sediment flow revised", _producer="dccxvii")
         rv_new = r["new_id"]
         dep_ok = p.nursery.add("river tributary mapping", words="river tributary mapping",
                                parents=[rv_new])
-        p.confirm_proposal(dep_ok.id)
+        p.confirm_proposal(dep_ok.id, _producer="dccxvii")
         dep_bad = p.nursery.add("river ancient course", words="river ancient course",
                                 parents=["ghost_parent_xyz"])
-        p.confirm_proposal(dep_bad.id)
+        p.confirm_proposal(dep_bad.id, _producer="dccxvii")
         cf1 = p.nursery.add("river flow increases erosion", words="river flow increases erosion")
         cf2 = p.nursery.add("river flow does not increase erosion",
                             words="river flow does not increase erosion")
-        p.confirm_proposal(cf1.id)
-        p.confirm_proposal(cf2.id)
+        p.confirm_proposal(cf1.id, _producer="dccxvii")
+        p.confirm_proposal(cf2.id, _producer="dccxvii")
         plain = p.nursery.add("river basin rainfall", words="river basin rainfall")
-        p.confirm_proposal(plain.id)
+        p.confirm_proposal(plain.id, _producer="dccxvii")
         return {"rv_old": rv_old.id, "rv_new": rv_new, "dep_ok": dep_ok.id,
                 "dep_bad": dep_bad.id, "cf1": cf1.id, "cf2": cf2.id, "plain": plain.id}
 
