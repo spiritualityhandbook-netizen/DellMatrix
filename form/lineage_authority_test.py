@@ -148,9 +148,9 @@ def auto_contract(rec) -> None:
     calls = {"authority": 0, "direct": 0}
     orig_auth, orig_nconfirm = cl.confirm_proposal, nmod.Nursery.confirm
 
-    def authority(program, pid):
+    def authority(program, pid, _auth=None):
         calls["authority"] += 1
-        return orig_auth(program, pid)
+        return orig_auth(program, pid, _auth=_auth)
 
     def nconfirm(self, pid):
         if sys._getframe(1).f_globals.get("__name__") != "form.dell_matrix.confirm_lineage":
