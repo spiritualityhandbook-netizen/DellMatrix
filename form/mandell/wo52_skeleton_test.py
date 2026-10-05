@@ -96,6 +96,7 @@ def test_walking_skeleton():
     print(f"10. Save/restart: identity preserved, participating")
 
     print("\nWO-5.2 walking skeleton: ALL CHECKS PASSED")
+    print("10/10")
     return True
 
 

@@ -99,6 +99,7 @@ def test_bounded_learning():
 
     p.learning_record = True
     print("\nWO-5.4 bounded learning: ALL CHECKS PASSED")
+    print("6/6")
     return True
 
 

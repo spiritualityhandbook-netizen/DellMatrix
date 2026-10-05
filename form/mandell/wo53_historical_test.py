@@ -78,6 +78,7 @@ def test_historical_participation():
     print(f"5. Derivation parents preserved: C -> A (not retargeted to B)")
 
     print("\nWO-5.3 historical participation: ALL CHECKS PASSED")
+    print("5/5")
     return True
 
 
