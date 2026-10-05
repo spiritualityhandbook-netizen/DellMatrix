@@ -401,7 +401,9 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             before_ids = set(program.nursery.proposals.keys())
 
             # Run existing consumer: grow_ideas
-            growth_result = program.grow_ideas(1)
+            # WO-5.3: Explicit historical use — include superseded.
+            # The user explicitly requested "use idea {pid} to grow".
+            growth_result = program.grow_ideas(1, include_superseded=True)
 
             # Find offspring parented by this knowledge
             after_props = program.nursery.proposals

@@ -1206,12 +1206,16 @@ class Program:
         self.note_seed(13, "Loop", f"auto_confirm_grow_{'on' if self.auto_confirm_grow else 'off'}")
         return self.auto_confirm_grow
 
-    def grow_ideas(self, cycles: int = 1, scope_ids=None) -> Dict[str, Any]:
+    def grow_ideas(self, cycles: int = 1, scope_ids=None,
+                   include_superseded: bool = False) -> Dict[str, Any]:
         """Run RingedGrowth.
 
         DCC-XI: scope_ids optionally constrains the consumer to exactly
         the given unit IDs via a read-only ScopedPlaneView. None (default)
         preserves historical full-plane behavior for baseline growth.
+
+        WO-5.3: include_superseded=True enables explicit historical use.
+        Ordinary growth (default) excludes SUPERSEDED.
         """
         from form.mandell.knowledge_selector import ScopedPlaneView
         if not self.enhance.on:
@@ -1240,7 +1244,8 @@ class Program:
         except Exception:
             graph = None
             graph_state = "unavailable"
-        result = self.growth.run(plane, cycles=cycles, graph=graph, program=self)
+        result = self.growth.run(plane, cycles=cycles, graph=graph, program=self,
+                                 include_superseded=include_superseded)
         result["scope_mode"] = scope_mode
         result["graph_signal"] = graph_state
         result["scope_ids"] = list(scope_ids) if scope_ids is not None else None
