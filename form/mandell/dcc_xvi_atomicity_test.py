@@ -183,6 +183,7 @@ EXP = __EXP__
 res = json.load(open(RES))
 aid, succ_id = res["aid"], res.get("succ_id")
 p = load(OWNER)
+p.acceptance_policy.grant_opt_in("test", scope="test")
 checks = []
 def check(name, cond):
     checks.append((name, bool(cond)))
