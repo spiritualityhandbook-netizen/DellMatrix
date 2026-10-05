@@ -113,7 +113,7 @@ def op(p, text: str):
 
 def add_confirmed(p, label: str, words: str) -> str:
     pr = p.nursery.add(label, words=words, parents=[])
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
     return pr.id
 
 
