@@ -177,7 +177,7 @@ def test_outcomes():
     # J: knowledge provenance (positive + honest negative).
     p2 = fresh()
     pr = p2.nursery.add("ros_k", words="ros knowledge probe", parents=[])
-    p2.confirm_proposal(pr.id)
+    p2.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
     from form.mandell.translate import translate
     from form.mandell.semantic_router import route_intent
     route_intent(p2, translate("grow using knowledge about ros knowledge"), raw_line="x")

@@ -59,7 +59,7 @@ def fresh() -> Program:
 
 def make_knowledge(p, label="kie-idea", words="test knowledge about growth"):
     pr = p.nursery.add(label, words=words)
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
     return pr.id
 
 
@@ -206,9 +206,9 @@ def test_dependency_blocked_not_eligible():
     fails dependency-valid (parent superseded)."""
     p = fresh()
     pp = p.nursery.add("c1-dep-parent", words="parent knowledge")
-    p.confirm_proposal(pp.id)
+    p.confirm_proposal(pp.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pp.id})
     pc = p.nursery.add("c1-dep-child", words="child knowledge", parents=[pp.id])
-    p.confirm_proposal(pc.id)
+    p.confirm_proposal(pc.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pc.id})
     from form.mandell.supersession import supersede_proposal
     supersede_proposal(p, pp.id, "parent replacement words")
 

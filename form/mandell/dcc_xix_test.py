@@ -109,7 +109,7 @@ def fresh_owner(owner: str):
 def add_confirmed(p, label: str, words: str | None = None, parents=None) -> str:
     pr = p.nursery.add(label, words=words if words is not None else label,
                        parents=parents or [])
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
     return pr.id
 
 
@@ -944,15 +944,15 @@ from form.mandell.supersession import supersede_proposal
 owner = "DCCXIX_P"
 p = open_program(owner)
 # G1: base knowledge.
-x = p.nursery.add("soil retains moisture"); p.confirm_proposal(x.id)
+x = p.nursery.add("soil retains moisture"); p.confirm_proposal(x.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": x.id})
 CG.commit_checkpoint(p)  # G1
 g1 = CG.load_checkpoint(owner)[1]["generation_id"]
 # G2: revision + lineage + dependency + routing fixture, then disposition.
 sup = supersede_proposal(p, x.id, "soil retains moisture well")
 x2 = sup["new_id"]
-y = p.nursery.add("watering schedule depends on soil", parents=[x2]); p.confirm_proposal(y.id)
-a = p.nursery.add("plants require water"); p.confirm_proposal(a.id)
-b = p.nursery.add("plants do not require water"); p.confirm_proposal(b.id)
+y = p.nursery.add("watering schedule depends on soil", parents=[x2]); p.confirm_proposal(y.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": y.id})
+a = p.nursery.add("plants require water"); p.confirm_proposal(a.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": a.id})
+b = p.nursery.add("plants do not require water"); p.confirm_proposal(b.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": b.id})
 cid = conflict_id_for(a.id, b.id)
 assert any(e["conflict_id"] == cid for e in detectable_conflicts(p)), "conflict must detect"
 r = set_disposition(p, cid, "prefer", [a.id], "operator: greenhouse logs")

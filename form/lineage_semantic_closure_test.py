@@ -144,7 +144,7 @@ def _atomic_confirm_semantics(r) -> None:
 
         cls.save = spy
         try:
-            out = p.confirm_proposal(bad.id)
+            out = p.confirm_proposal(bad.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": bad.id})
         finally:
             cls.save = orig_save
         _rec(r, "F1_validation_failure_explicit", out.get("ok") is False and out.get("reason") == "missing_parent", str(out))
@@ -153,17 +153,17 @@ def _atomic_confirm_semantics(r) -> None:
         _rec(r, "F3_pending_on_fresh_load_after_failure", fresh(bad.id) == "pending" and disk(bad.id) == "pending")
         _rec(r, "F4_plane_unchanged_after_failure", set(p.cube.session.plane.units) == units0)
         _rec(r, "F5_zero_confirmation_persistence", p.nursery.summary()["confirmed"] == c0 and disk(bad.id) != "confirmed")
-        p.confirm_proposal(rej.id)
+        p.confirm_proposal(rej.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": rej.id})
         rr = p.reject_proposal(rej.id)
         _rec(r, "F8_reject_possible_after_pre_commit_failure", rr.get("ok") is True and fresh(rej.id) == "rejected")
         p.place("absent", "Absent")
-        ok = p.confirm_proposal(bad.id)
+        ok = p.confirm_proposal(bad.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": bad.id})
         u = p.cube.session.plane.units.get(bad.id)
         _rec(r, "F6_retry_succeeds_once_dependency_valid",
              ok.get("ok") is True and u is not None and list(u.parents) == ["absent"] and u.origin == "confirmed", str(ok))
         _rec(r, "F6b_confirmation_persisted_after_success", fresh(bad.id) == "confirmed")
         nu = len(p.cube.session.plane.units)
-        again = p.confirm_proposal(bad.id)
+        again = p.confirm_proposal(bad.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": bad.id})
         _rec(r, "F7_exactly_one_semantic_confirmation",
              again.get("ok") is False and len(p.cube.session.plane.units) == nu and p.nursery.summary()["confirmed"] == c0 + 1)
         good = p.nursery.add("Good", parents=["live"])
@@ -175,7 +175,7 @@ def _atomic_confirm_semantics(r) -> None:
         p.place = boom
         raised = False
         try:
-            p.confirm_proposal(good.id)
+            p.confirm_proposal(good.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": good.id})
         except RuntimeError:
             raised = True
         finally:
@@ -183,7 +183,7 @@ def _atomic_confirm_semantics(r) -> None:
         _rec(r, "N3_placement_exception_does_not_commit",
              raised and p.nursery.proposals[good.id].status == "pending" and fresh(good.id) == "pending"
              and good.id not in p.cube.session.plane.units)
-        again2 = p.confirm_proposal(good.id)
+        again2 = p.confirm_proposal(good.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": good.id})
         _rec(r, "N3b_retry_after_placement_exception", again2.get("ok") is True and fresh(good.id) == "confirmed")
     finally:
         path = getattr(p.nursery, "path", None)

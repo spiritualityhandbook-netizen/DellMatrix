@@ -97,7 +97,7 @@ def wipe():
 wipe()
 p = open_program(OWNER)
 prop = p.nursery.add("atomicity base", words="atomicity base alpha")
-r = p.confirm_proposal(prop.id)
+r = p.confirm_proposal(prop.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": prop.id})
 assert r.get("ok"), r
 aid = prop.id
 persist_rest.save(p)

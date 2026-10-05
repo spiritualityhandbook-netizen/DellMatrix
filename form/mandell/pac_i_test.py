@@ -415,7 +415,7 @@ def test_k():
     p = _fresh(owner)
     # Seed a nursery proposal + plane unit pair.
     prop = p.nursery.add("Rev One")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": prop.id})
     pid = prop.id
     p.place(pid, "Rev One", words="rev seed words")
     g1 = cir.checkpoint(p)
@@ -492,7 +492,7 @@ def test_m():
     check("M1.evidence", "undo_place_um1" in hist, "undo left no history evidence")
     # M2: revision-owned unit is refused, never bypassed.
     prop = p.nursery.add("M Rev")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": prop.id})
     pid = prop.id
     p.place(pid, "M Rev", words="m rev words")
     sres = supersede_proposal(p, pid, "m rev successor", label="M Rev 2")

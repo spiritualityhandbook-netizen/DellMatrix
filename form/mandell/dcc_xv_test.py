@@ -50,7 +50,7 @@ def _ctx(p, context="plant growth"):
 
 
 def _confirm(p, prop):
-    res = p.confirm_proposal(prop.id)
+    res = p.confirm_proposal(prop.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": prop.id})
     assert res.get("ok"), f"confirm failed: {res}"
     return prop.id
 

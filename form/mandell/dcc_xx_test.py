@@ -113,7 +113,7 @@ def op(p, text: str):
 
 def add_confirmed(p, label: str, words: str) -> str:
     pr = p.nursery.add(label, words=words, parents=[])
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
     return pr.id
 
 
@@ -379,7 +379,7 @@ p = open_program({owner!r})
 for label, words in [("plants_a", "plants require water"),
                      ("plants_b", "plants do not require water")]:
     pr = p.nursery.add(label, words=words, parents=[])
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
 r = route_intent(p, translate("grow using knowledge about plants water"), raw_line="x")
 assert r.ok, "route failed"
 oids = list(p.outcome_records.keys())
@@ -796,7 +796,7 @@ p = open_program({owner!r})
 for label, words in [("plants_a", "plants require water"),
                      ("plants_b", "plants do not require water")]:
     pr = p.nursery.add(label, words=words, parents=[])
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
 r = route_intent(p, translate("grow using knowledge about plants water"), raw_line="x")
 assert r.ok, "route failed"
 oids = list(p.outcome_records.keys())
