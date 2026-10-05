@@ -208,8 +208,14 @@ def test_state():
     observe_seed_execution(p, "70[Count]")
     s = ro.runtime_state(p)
     check("M.owner", s["ok"] is True and s["owner"] == "Operator")
-    check("M.generation", "generation" in str(s["current_generation"]).lower()
-          or s["current_generation"].startswith("not_recorded"))
+    # M.generation: current_generation is either explicitly not recorded,
+    # contains "generation", or is a valid generation ID (g + hex, from
+    # checkpoint commits). The PR branch commits checkpoints on confirm,
+    # so a generation ID is the expected new behavior.
+    _cg = str(s["current_generation"])
+    check("M.generation", "generation" in _cg.lower()
+          or _cg.startswith("not_recorded")
+          or (_cg.startswith("g") and len(_cg) > 1))
     check("M.outcomes", s["outcomes"]["total"] >= 1
           and s["outcomes"]["counts"].get("completed", 0) >= 1)
     check("M.last_exec", s["last_execution"]["status"] == "known"

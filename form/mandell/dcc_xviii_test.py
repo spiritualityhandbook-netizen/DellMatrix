@@ -115,8 +115,18 @@ def sha_of(path: Path) -> str:
 
 
 def add_confirmed(p, label: str, words: str) -> str:
+    # DCC-XVIII controls checkpoints explicitly via CG.commit_checkpoint
+    # with specific generation IDs. Bypass the automatic checkpoint in
+    # confirm_proposal (PR branch behavior) to preserve test control.
+    # The test then commits with explicit IDs.
+    from form.dell_matrix import confirm_lineage
     pr = p.nursery.add(label, words=words)
-    p.confirm_proposal(pr.id)
+    _orig_skip = getattr(confirm_lineage.confirm_proposal, '_SKIP_CHECKPOINT', False)
+    confirm_lineage.confirm_proposal._SKIP_CHECKPOINT = True
+    try:
+        p.confirm_proposal(pr.id)
+    finally:
+        confirm_lineage.confirm_proposal._SKIP_CHECKPOINT = _orig_skip
     return pr.id
 
 
@@ -577,10 +587,17 @@ sys.path.insert(0, __REPO__)
 owner, mode, crash_at, sidecar = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 from form.open import open_program
 from form.mandell import checkpoint_generation as CG
+from form.dell_matrix import confirm_lineage
 
 def _add2(p, label, words):
     pr = p.nursery.add(label, words=words)
-    p.confirm_proposal(pr.id)
+    # Bypass auto-checkpoint; test controls checkpoints explicitly
+    _orig = getattr(confirm_lineage.confirm_proposal, '_SKIP_CHECKPOINT', False)
+    confirm_lineage.confirm_proposal._SKIP_CHECKPOINT = True
+    try:
+        p.confirm_proposal(pr.id)
+    finally:
+        confirm_lineage.confirm_proposal._SKIP_CHECKPOINT = _orig
     return pr.id
 
 p = open_program(owner)
@@ -713,12 +730,20 @@ def control_v_process_matrix() -> None:
     wipe_owner(o)
     OWNERS.append(o)
     p = open_program(o)
+    from form.dell_matrix import confirm_lineage as _cl
+    def _confirm_skip(p, pid):
+        _orig = getattr(_cl.confirm_proposal, '_SKIP_CHECKPOINT', False)
+        _cl.confirm_proposal._SKIP_CHECKPOINT = True
+        try:
+            p.confirm_proposal(pid)
+        finally:
+            _cl.confirm_proposal._SKIP_CHECKPOINT = _orig
     _ = p.nursery.add("vm base", words="victor multi base")
-    p.confirm_proposal(_.id)
+    _confirm_skip(p, _.id)
     CG.commit_checkpoint(p, generation_id="gvm0000000000001")
     for i, gid in enumerate(("gvm0000000000002", "gvm0000000000003", "gvm0000000000004")):
         pr = p.nursery.add(f"vm s{i}", words=f"victor multi stale {i}")
-        p.confirm_proposal(pr.id)
+        _confirm_skip(p, pr.id)
         CG._seal_members(p, gid)
     sidecar_l = Path("/tmp/dccxviii_l_m.json")
     rc2, _, _ = _run_child(load_py, o, str(sidecar_l))
