@@ -376,6 +376,7 @@ from form.mandell.semantic_router import route_intent
 from form.mandell import checkpoint_generation as CG
 import os
 p = open_program({owner!r})
+p.acceptance_policy.grant_opt_in('test', scope='test')
 for label, words in [("plants_a", "plants require water"),
                      ("plants_b", "plants do not require water")]:
     pr = p.nursery.add(label, words=words, parents=[])
@@ -793,6 +794,7 @@ from form.mandell.semantic_router import route_intent
 from form.mandell import checkpoint_generation as CG
 import os
 p = open_program({owner!r})
+p.acceptance_policy.grant_opt_in('test', scope='test')
 for label, words in [("plants_a", "plants require water"),
                      ("plants_b", "plants do not require water")]:
     pr = p.nursery.add(label, words=words, parents=[])
