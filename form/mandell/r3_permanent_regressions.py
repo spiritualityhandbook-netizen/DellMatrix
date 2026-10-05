@@ -685,6 +685,7 @@ TEST_CASES = [
     ("R3H14", lambda: t14()),
     ("R3H14B", lambda: t14b()),
     ("R3H15", lambda: t15()),
+    ("R3H15B", lambda: t15b()),
     ("R3H16", lambda: t16()),
 ]
 
@@ -1380,6 +1381,107 @@ def t15():
         clean(owner)
     print("MATRIX_ROWS: %d/24" % passed)
     rec("15_revision_identity", passed == 24, "%d/24" % passed)
+
+def t15b():
+    # F6: Prove valid longer history. Create and supersede real proposals
+    # twice to establish an actual third revision. The writer must capture
+    # the actual predecessor root/number (not None/None).
+    o = "R3H15B"; clean(o)
+    setup = """
+import sys, os, json
+REPO_DIR = __REPO__
+OWNER_ID = __OWNER__
+sys.path.insert(0, REPO_DIR)
+from form.open import open_program
+from form import persist_rest
+from form.mandell.core_i_recovery import write_supersede_intent, _supersede_journal_path
+
+p = open_program(OWNER_ID)
+# Revision 1: create and confirm A
+pr_a = p.nursery.add('REV1', words='first')
+p.confirm_proposal(pr_a.id)
+# Set A as revision 1 (explicit, via API)
+p.nursery.proposals[pr_a.id].revision_number = 1
+p.nursery.save()
+persist_rest.save(p)
+
+# Revision 2: create B as successor of A
+pr_b = p.nursery.add('REV2', words='second')
+p.nursery.proposals[pr_b.id].revision_root_id = pr_a.id
+p.nursery.proposals[pr_b.id].revision_number = 2
+p.confirm_proposal(pr_b.id)
+p.nursery.save()
+persist_rest.save(p)
+
+# Revision 3: create C, write intent for B->C
+pr_c = p.nursery.add('REV3', words='third')
+p.nursery.save()
+persist_rest.save(p)
+
+# Writer must capture B's actual root (A.id) and number (2)
+write_supersede_intent(OWNER_ID, pr_b.id, pr_c.id)
+
+# Verify writer captured correctly
+import json as _j
+jpath = _supersede_journal_path(OWNER_ID)
+j = _j.load(open(jpath))
+captured_root = j.get("intent_old_root")
+captured_num = j.get("intent_old_number")
+print('WRITER_CAPTURED: root=%s num=%s expected_root=%s expected_num=2' % (
+    captured_root, captured_num, pr_a.id))
+assert captured_root == pr_a.id, "writer did not capture actual root"
+assert captured_num == 2, "writer did not capture actual number"
+
+# Set C as revision 3
+npath = os.path.join(REPO_DIR, 'form', 'state', 'nursery_' + OWNER_ID + '.json')
+nd = _j.load(open(npath))
+nd[pr_b.id]['lifecycle_state'] = 'superseded'
+nd[pr_b.id]['superseded_by_id'] = pr_c.id
+nd[pr_c.id]['status'] = 'confirmed'
+nd[pr_c.id]['revision_root_id'] = pr_a.id
+nd[pr_c.id]['revision_number'] = 3
+nd[pr_c.id]['supersedes_id'] = pr_b.id
+_j.dump(nd, open(npath, 'w'))
+ppath = os.path.join(REPO_DIR, 'form', 'state', 'program_' + OWNER_ID + '.json')
+pd = _j.load(open(ppath))
+pd['plane']['units'][pr_c.id] = {'id': pr_c.id}
+_j.dump(pd, open(ppath, 'w'))
+print('SETUP_DONE')
+""".replace('__REPO__', repr(REPO)).replace('__OWNER__', repr(o))
+    rc, out, err = run_script("t15b_setup", setup)
+    if rc != 0 or "SETUP_DONE" not in out:
+        rec("15b_three_revision", False, f"setup failed rc={rc}: {out[:100]}")
+        print(f"t15b SETUP FAILED: {out[:300]} {err[:200]}")
+        clean(o)
+        return
+    if "WRITER_CAPTURED" not in out:
+        rec("15b_three_revision", False, "writer capture not verified")
+        clean(o)
+        return
+
+    # Recovery via load should succeed (already_complete)
+    load = """
+import sys, os
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import _supersede_journal_path
+jpath = _supersede_journal_path(%r)
+try:
+    p = persist_rest.load(%r, activate=False)
+    jexists = os.path.isfile(jpath)
+    print('RECOVERED JEXISTS:' + str(jexists))
+except Exception as e:
+    print('RAISED:' + type(e).__name__ + ':' + str(e)[:100])
+""" % (REPO, o, o)
+    rc2, out2, err2 = run_script("t15b_load", load)
+    # Valid 3-revision chain should recover (journal cleared)
+    ok = rc2 == 0 and "RECOVERED" in out2 and "JEXISTS:False" in out2
+    rec("15b_three_revision", ok, out2[:80])
+    if ok:
+        print("t15b verified: 3-revision chain recovers, writer captured actual ancestry")
+    else:
+        print(f"t15b FAILED: rc={rc2}, out={out2[:200]}")
+    clean(o)
 
 if __name__ == "__main__":
     for owner, fn in TEST_CASES:
