@@ -139,7 +139,7 @@ def wipe_owner(owner: str) -> None:
 def grow_with_knowledge(p: Program, label: str, words: str, n: int = 3):
     """Build confirmed knowledge + n successful routed 37 executions."""
     pr = p.nursery.add(label, words=words, parents=[])
-    p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
+    p.confirm_proposal(pr.id)
     oids = []
     for _ in range(n):
         route_intent(p, translate(f"grow using knowledge about {words}"), raw_line="x")
@@ -396,7 +396,7 @@ def test_n():
         "from form.mandell.semantic_router import route_intent\n"
         "p = Program(owner=%r)\n"
         "pr = p.nursery.add('dbel_x', words='dbel xi knowledge', parents=[])\n"
-        "p.confirm_proposal(pr.id, _producer=\\\"test\\\", _review_context={\\\"reviewer\\\": \\\"test\\\", \\\"approved_pid\\\": pr.id})\\n"
+        "p.confirm_proposal(pr.id, _producer=\"test\", _review_context={\"reviewer\": \"test\", \"approved_pid\": pr.id})\\n"
         "oids = []\n"
         "for _ in range(3):\n"
         "    route_intent(p, translate('grow using knowledge about dbel xi knowledge'), raw_line='x')\n"
