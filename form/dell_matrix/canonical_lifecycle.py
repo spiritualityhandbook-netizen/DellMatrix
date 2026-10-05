@@ -61,6 +61,11 @@ def resolve_lifecycle(program: Any, unit_id: str) -> str:
     Uses form.mandell.supersession.inspect_revision — the canonical
     resolver. Never reads dynamic Unit attributes.
 
+    WO-5.2: Also integrates TPP-I presence (p.lifecycle[uid].presence).
+    If presence is "faded", the resolved state is "faded" (participation
+    dimension). The facade is the sole interpretation; TPP-I is a
+    migration source, not a second decision maker.
+
     Returns the canonical state string (e.g. "active", "faded",
     "unknown").
 
@@ -73,6 +78,17 @@ def resolve_lifecycle(program: Any, unit_id: str) -> str:
     explicitly UNKNOWN are treated as "unknown" (excluded, not active).
     Unreadable canonical state never silently becomes ACTIVE.
     """
+    # WO-5.2: Check TPP-I presence first (migration source).
+    # Presence "faded" overrides to faded state.
+    try:
+        lc = getattr(program, "lifecycle", None)
+        if isinstance(lc, dict):
+            meta = lc.get(unit_id)
+            if isinstance(meta, dict) and meta.get("presence") == "faded":
+                return "faded"
+    except Exception:
+        pass  # Presence unreadable; fall through to revision inspection.
+
     try:
         from form.mandell.supersession import inspect_revision
         rec = inspect_revision(program, unit_id)
@@ -103,13 +119,81 @@ def is_active(program: Any, unit_id: str) -> bool:
 def is_faded(program: Any, unit_id: str) -> bool:
     """True iff canonical lifecycle for (program, unit_id) is FADED.
 
-    NOTE: inspect_revision currently overwrites faded states with
-    MALFORMED, so this helper is not reachable for faded records in
-    practice. It is retained for API completeness. For exclusion
-    decisions, use `not is_active(...)` which correctly handles all
-    non-active states including faded.
+    WO-5.2: FADED is now a valid revision state (not malformed).
+    Faded records are preserved with identity/content/provenance intact;
+    they are excluded from ordinary participation but available for
+    explicit historical inspection.
     """
     return resolve_lifecycle(program, unit_id) == LifecycleState.FADED.value
+
+
+# WO-5.2/WO-5.3: Participation contexts.
+# Ordinary participation: eligible accepted/current knowledge only.
+# Excludes SUPERSEDED, FADED, and other non-current states.
+_ORDINARY_PARTICIPATION_STATES = frozenset({
+    LifecycleState.ACTIVE.value,
+    LifecycleState.PROPOSED.value,
+    LifecycleState.ACCEPTED.value,
+    LifecycleState.RESTORED.value,
+})
+
+# Historical participation: explicitly requested historical use.
+# Includes SUPERSEDED and FADED with clear labels. Does not include
+# malformed/unknown/deleted.
+_HISTORICAL_PARTICIPATION_STATES = frozenset({
+    LifecycleState.ACTIVE.value,
+    LifecycleState.PROPOSED.value,
+    LifecycleState.ACCEPTED.value,
+    LifecycleState.RESTORED.value,
+    LifecycleState.SUPERSEDED.value,
+    LifecycleState.FADED.value,
+})
+
+
+def is_participating(program: Any, unit_id: str,
+                     context: str = "ordinary") -> bool:
+    """WO-5.2/WO-5.3: Check participation in a given context.
+
+    Args:
+        program: The program.
+        unit_id: The unit/idea ID.
+        context: "ordinary" (default) or "historical".
+            - "ordinary": Eligible accepted/current knowledge. Excludes
+              SUPERSEDED and FADED.
+            - "historical": Explicitly requested historical use. Includes
+              SUPERSEDED and FADED with clear labels.
+
+    Returns:
+        True iff the record may participate in the given context.
+        Unreadable/unknown/malformed states return False (fail-closed).
+    """
+    state = resolve_lifecycle(program, unit_id)
+    if context == "historical":
+        return state in _HISTORICAL_PARTICIPATION_STATES
+    # Default: ordinary
+    return state in _ORDINARY_PARTICIPATION_STATES
+
+
+def participation_reason(program: Any, unit_id: str,
+                         context: str = "ordinary") -> str:
+    """WO-5.2: Human-readable reason for participation decision.
+
+    Exposes why a record is excluded, for transparency.
+    """
+    state = resolve_lifecycle(program, unit_id)
+    if context == "historical":
+        if state in _HISTORICAL_PARTICIPATION_STATES:
+            return f"participating (historical context, state={state})"
+        return f"excluded (historical context, state={state})"
+    if state in _ORDINARY_PARTICIPATION_STATES:
+        return f"participating (ordinary context, state={state})"
+    if state == LifecycleState.SUPERSEDED.value:
+        return ("excluded (ordinary context): superseded; "
+                "use historical context for explicit historical use")
+    if state == LifecycleState.FADED.value:
+        return ("excluded (ordinary context): faded; "
+                "use historical context for explicit historical inspection")
+    return f"excluded (ordinary context, state={state})"
 
 
 def filter_active(program: Any, unit_ids: Iterable[str]) -> List[str]:

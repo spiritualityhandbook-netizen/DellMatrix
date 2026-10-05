@@ -31,6 +31,10 @@ SUPERSESSION_VERSION = 1
 
 ACTIVE = "active"
 SUPERSEDED = "superseded"
+# WO-5.2: FADED is a valid revision state (participation dimension).
+# A faded idea remains part of its revision chain; fading affects
+# participation, not revision identity.
+FADED = "faded"
 MALFORMED = "malformed"
 UNKNOWN = "unknown"
 
@@ -59,12 +63,14 @@ def inspect_revision(program: Any, uid: str) -> Dict[str, Any]:
     """Deterministic Supersession V1 inspection for one unit.
 
     Fields: unit_id, supersession_version, lifecycle_state
-    ("active" | "superseded" | "malformed" | "unknown"), supersedes_id,
+    ("active" | "superseded" | "faded" | "malformed" | "unknown"), supersedes_id,
     superseded_by_id, revision_root_id, revision_number, chain (ordered
     root->tip ids, [] when unconstructible), malformed_reason, routable.
 
     Legacy units (no revision metadata) inspect as active revision #1 of
     their own root: no predecessor/successor is fabricated.
+
+    WO-5.2: FADED is a valid state. Fading is participation, not revision.
     """
     proposals = _proposals(program)
     prop = proposals.get(uid)
@@ -104,7 +110,10 @@ def inspect_revision(program: Any, uid: str) -> Dict[str, Any]:
 
     malformed: Optional[str] = None
 
-    if state not in (ACTIVE, SUPERSEDED):
+    # WO-5.2: FADED is a valid revision state. Fading is a participation
+    # dimension, not a revision dimension. A faded idea keeps its revision
+    # identity, root, number, and links.
+    if state not in (ACTIVE, SUPERSEDED, FADED):
         malformed = f"bad_lifecycle_state:{state}"
     elif superseded_by is not None and state == ACTIVE:
         # Claims a successor while still active: inconsistent link state.
