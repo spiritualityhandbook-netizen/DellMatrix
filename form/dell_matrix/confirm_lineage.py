@@ -179,7 +179,7 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
             # F2: Restore baseline bytes directly for complete compensation.
             # A Nursery-only revert leaves durable Program with Idea but no
             # journal for recovery. Use atomic_write_bytes (not raw open)
-            # to avoid partial writes.
+            # to prevent partial writes.
             reverted = False
             # F2: Only attempt compensation if baseline was captured.
             # Otherwise leave journal for recovery (fail closed).
