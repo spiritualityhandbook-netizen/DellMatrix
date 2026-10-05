@@ -453,13 +453,15 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             else:
                 old_id, words = rest, ""
             try:
-                # WO-5.1 / Director 2026-10-05: REPL supersede is an explicit
-                # user command — pass producer and bound review context so
-                # the operation authorizes before creating successor state.
+                # WO-5.1 / Director 2026-10-05 (whole-circuit): REPL supersede
+                # is an explicit user command — issue a bound approval
+                # (predecessor version + proposed successor data) so the
+                # operation authorizes before creating successor state.
                 result = supersede_proposal(
                     program, old_id, words,
                     _producer="repl_user",
-                    _review_context=program.make_review_context(old_id, "repl_user"),
+                    _review_context=program.make_supersede_context(
+                        old_id, "repl_user", words, label=None),
                 )
             except SupersedeError as e:
                 program.last_nurture = {

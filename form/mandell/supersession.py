@@ -368,35 +368,47 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     """
     nursery = program.nursery
 
-    # Director 2026-10-05: Authorize BEFORE creating successor state or
-    # writing intent. The supersession is a composite operation that
-    # confirms the successor; it must be authorized via the policy.
+    # Director 2026-10-05 (whole-circuit): Authorize BEFORE creating
+    # successor state or writing intent.
     #
-    # Operation-level authorization (not proposal-version level): the
-    # successor doesn't exist yet, so we verify the CALLER is authorized
-    # to supersede old_id — via a session-bound review context naming
-    # old_id, or a session opt-in for the producer. The internal successor
-    # confirm re-verifies at the commit boundary with the successor's
-    # actual version.
+    # Binding: predecessor version + proposed successor data. The approval
+    # must be an ISSUED approval (operation="supersede", target=old_id)
+    # whose data hash covers the predecessor's canonical version and the
+    # proposed successor's label/words; or a session opt-in for the
+    # producer. No direct policy._opt_ins inspection (use is_opted_in).
+    #
+    # The successor's confirmation authority is DERIVED from this approved
+    # enclosing operation via policy.derive_approval — recorded, bound,
+    # revocable, session-scoped. Not a general bypass.
+    from form.dell_matrix.acceptance_policy import canonical_hash
     policy = getattr(program, "acceptance_policy", None)
     if policy is None:
         raise SupersedeError("acceptance_policy_missing")
-    _authorized = False
-    if isinstance(_review_context, dict):
-        _rc = _review_context
-        if (isinstance(_rc.get("reviewer"), str) and _rc.get("reviewer")
-                and _rc.get("approved_pid") == old_id
-                and _rc.get("session_id") == policy.session_id):
-            _authorized = True
-    if not _authorized:
-        _grant = policy._opt_ins.get(_producer)
-        if _grant and _grant.get("session_id") == policy.session_id:
-            _authorized = True
-    if not _authorized:
+    # Expected binding hash: predecessor canonical version + successor data.
+    _pred_hash = program.acceptance_data_hash(old_id, "supersede")
+    _succ_data_hash = canonical_hash({"label": label or "", "words": words or ""})
+    _binding_hash = canonical_hash(
+        {"predecessor": _pred_hash, "successor": _succ_data_hash})
+    _source_approval_id = None
+    _source_opt_in = None
+    _reviewer = _producer
+    if isinstance(_review_context, dict) and _review_context.get("approval_id"):
+        _decision = policy.check(_producer, old_id, _review_context,
+                                 proposal_version=_binding_hash,
+                                 operation="supersede")
+        if _decision.get("allowed"):
+            _source_approval_id = _decision.get("approval_id")
+            _reviewer = _review_context.get("reviewer") or _producer
+    if _source_approval_id is None and policy.is_opted_in(_producer):
+        _source_opt_in = _producer
+    if _source_approval_id is None and _source_opt_in is None:
         raise SupersedeError(
             "acceptance_policy_denied: supersede operation not authorized "
             f"(producer={_producer!r}, old_id={old_id!r})"
         )
+    # Carry the authorization source for the derived successor confirm.
+    _auth_source = {"approval_id": _source_approval_id,
+                    "opt_in": _source_opt_in, "reviewer": _reviewer}
 
     # ---- Phase 1: validate (no writes) ----
     old_id = (old_id or "").strip()
@@ -479,14 +491,25 @@ def _supersede_impl(program: Any, old_id: str, words: str,
         _cl.confirm_proposal._SKIP_CHECKPOINT = True
         _cl.confirm_proposal._SKIP_JOURNAL = True
         try:
-            # Director 2026-10-05: Internal confirm uses verified authorization.
-            # The supersession was authorized at operation start; the
-            # successor confirm carries the producer with a bound context.
+            # Director 2026-10-05 (whole-circuit): derive the successor's
+            # confirmation authority from the approved enclosing operation.
+            # Recorded, bound to the successor's actual data, revocable,
+            # session-scoped — not a general bypass.
+            _policy = getattr(program, "acceptance_policy", None)
+            _derived = _policy.derive_approval(
+                source_approval_id=_auth_source["approval_id"],
+                source_opt_in=_auth_source["opt_in"],
+                operation="confirm",
+                target=succ_id,
+                reviewer=_auth_source["reviewer"],
+                data=program._acceptance_data_for(succ_id, "confirm"),
+                note="supersede successor confirm",
+            )
             res = program.confirm_proposal(
                 succ_id,
                 _producer=_producer,
-                _review_context=program.make_review_context(succ_id, _producer)
-                if _review_context else None,
+                _review_context=_derived["context"],
+                _operation="confirm",
             )
         finally:
             _cl.confirm_proposal._SKIP_CHECKPOINT = _orig_skip

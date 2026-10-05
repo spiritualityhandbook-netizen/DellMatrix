@@ -1397,39 +1397,90 @@ class Program:
                 -float(p.get("graph_coherence", 0) or 0),
             ))
 
-    def make_review_context(self, pid: str, reviewer: str) -> dict:
-        """Create a bound review context for a proposal.
+    def _acceptance_data_for(self, pid: str,
+                             operation: str = "confirm") -> dict:
+        """Canonical acceptance-relevant data for a proposal.
 
-        Binds to the current session and the proposal's current version.
-        The context is only valid if the proposal hasn't changed since review.
+        Director 2026-10-05: canonical JSON serialization + SHA-256;
+        no delimiter concatenation. Covers identity, owner, content,
+        parents, goals, and applicable revision metadata.
         """
-        import hashlib
-        policy = getattr(self, "acceptance_policy", None)
-        session_id = policy.session_id if policy else "no-policy"
+        from form.dell_matrix.acceptance_policy import acceptance_data
         prop = self.nursery.proposals.get(pid)
-        version_src = ""
-        if prop is not None:
-            version_src = f"{getattr(prop, 'label', '')}|{getattr(prop, 'words', '')}|{getattr(prop, 'detail', '')}"
-        proposal_version = hashlib.sha256(version_src.encode()).hexdigest()[:16]
-        return {
-            "reviewer": reviewer,
-            "approved_pid": pid,
-            "session_id": session_id,
-            "proposal_version": proposal_version,
+        content = {
+            "label": getattr(prop, "label", "") if prop else "",
+            "words": getattr(prop, "words", "") if prop else "",
+            "detail": getattr(prop, "detail", "") if prop else "",
         }
+        parents = list(getattr(prop, "parents", []) or []) if prop else []
+        goals = list(getattr(prop, "goals", []) or []) if prop else []
+        revision = {
+            "supersedes_id": getattr(prop, "supersedes_id", None),
+            "superseded_by_id": getattr(prop, "superseded_by_id", None),
+            "revision_root_id": getattr(prop, "revision_root_id", None),
+            "revision_number": getattr(prop, "revision_number", None),
+            "lifecycle_state": getattr(prop, "lifecycle_state", None),
+        } if prop else {}
+        owner = getattr(self, "owner", "") or ""
+        return acceptance_data(pid, owner, content, parents,
+                               goals=goals, revision=revision)
+
+    def make_review_context(self, pid: str, reviewer: str,
+                            operation: str = "confirm") -> dict:
+        """Issue a bound review approval for a proposal.
+
+        Director 2026-10-05: issuance is RECORDED in the session policy.
+        The returned context references the recorded approval_id; a
+        matching dict alone is not evidence of issuance. Bound to
+        operation, target, reviewed data hash, and session.
+        """
+        from form.dell_matrix.acceptance_policy import canonical_hash
+        policy = getattr(self, "acceptance_policy", None)
+        if policy is None:
+            raise RuntimeError("acceptance policy missing")
+        data = self._acceptance_data_for(pid, operation)
+        issued = policy.issue_approval(operation=operation, target=pid,
+                                        reviewer=reviewer, data=data)
+        return issued["context"]
+
+    def acceptance_data_hash(self, pid: str,
+                             operation: str = "confirm") -> str:
+        """Canonical hash of current acceptance-relevant data for pid."""
+        from form.dell_matrix.acceptance_policy import canonical_hash
+        return canonical_hash(self._acceptance_data_for(pid, operation))
+
+    def make_supersede_context(self, old_id: str, reviewer: str,
+                               words: str, label: str = None) -> dict:
+        """Issue a bound approval for a supersession operation.
+
+        Director 2026-10-05 (whole-circuit): binds predecessor version +
+        proposed successor data (label/words). The approval is recorded in
+        the session policy; the context references the issuance.
+        """
+        from form.dell_matrix.acceptance_policy import canonical_hash
+        policy = getattr(self, "acceptance_policy", None)
+        if policy is None:
+            raise RuntimeError("acceptance policy missing")
+        pred_hash = self.acceptance_data_hash(old_id, "supersede")
+        succ_hash = canonical_hash({"label": label or "", "words": words or ""})
+        data = {"predecessor": pred_hash, "successor": succ_hash}
+        issued = policy.issue_approval(operation="supersede", target=old_id,
+                                        reviewer=reviewer, data=data)
+        return issued["context"]
 
     def confirm_proposal(self, pid: str, _producer: str = "unknown",
-                         _review_context: dict = None) -> Dict[str, Any]:
+                         _review_context: dict = None,
+                         _operation: str = "confirm") -> Dict[str, Any]:
         """Canonical confirmation with acceptance policy (WO-5.1).
 
         Args:
             pid: Proposal ID.
             _producer: Producer ID for policy check (e.g., "repl_user",
                 "auto_growth", "code_evolution"). Defaults to "unknown".
-            _review_context: Explicit review proof from trusted command.
-                Must contain "reviewer", "approved_pid" == pid,
-                "session_id" matching the policy session, and
-                "proposal_version" matching the current proposal version.
+            _review_context: Review context referencing an approval ISSUED
+                by this session's policy (see make_review_context).
+            _operation: Operation the approval must bind to (default
+                "confirm"; composite ops use derived approvals).
 
         Returns:
             {"ok": True, ...} on success.
@@ -1446,8 +1497,6 @@ class Program:
                 "pid": pid,
                 "producer": _producer,
             }
-        # Director 2026-10-05: Get proposal version for review binding.
-        # Recheck at actual commit boundary.
         prop = self.nursery.proposals.get(pid)
         if prop is None:
             return {
@@ -1455,17 +1504,34 @@ class Program:
                 "reason": "not found or not pending",
                 "pid": pid,
             }
-        # Proposal version: content hash (label + words + detail).
-        import hashlib
-        version_src = f"{getattr(prop, 'label', '')}|{getattr(prop, 'words', '')}|{getattr(prop, 'detail', '')}"
-        proposal_version = hashlib.sha256(version_src.encode()).hexdigest()[:16]
+        # Canonical data hash at check time.
+        data_hash = self.acceptance_data_hash(pid, _operation)
         decision = policy.check(_producer, pid, _review_context,
-                                proposal_version=proposal_version)
+                                proposal_version=data_hash,
+                                operation=_operation)
         if not decision.get("allowed"):
             return {
                 "ok": False,
                 "reason": "acceptance_policy_denied",
                 "detail": decision.get("detail"),
+                "pid": pid,
+                "producer": _producer,
+            }
+        # Director 2026-10-05: revalidate at the ACTUAL mutation boundary.
+        # A check before delegation is not a commit-time check: recompute
+        # the canonical hash immediately before mutating; stale data fails.
+        commit_hash = self.acceptance_data_hash(pid, _operation)
+        if commit_hash != data_hash:
+            policy._audit.append({
+                "action": "deny",
+                "via": "commit_time_stale",
+                "producer": _producer,
+                "pid": pid,
+            })
+            return {
+                "ok": False,
+                "reason": "acceptance_policy_denied",
+                "detail": "Proposal data changed between check and commit.",
                 "pid": pid,
                 "producer": _producer,
             }
