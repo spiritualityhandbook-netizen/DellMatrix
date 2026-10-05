@@ -1543,7 +1543,18 @@ class Program:
                 "producer": _producer,
             }
         from form.dell_matrix.confirm_lineage import confirm_proposal as _confirm_proposal
-        return _confirm_proposal(self, pid)
+        # Director 2026-10-05 (boundary): carry the approved operation into
+        # the writer as an immutable snapshot. The writer validates live
+        # policy and reviewed-data integrity before placement and before
+        # durable publish.
+        _auth = {
+            "producer": _producer,
+            "pid": pid,
+            "operation": _operation,
+            "data_hash": live_hash,
+            "review_context": _review_context,
+        }
+        return _confirm_proposal(self, pid, _auth=_auth)
 
     def reject_proposal(self, pid: str) -> Dict[str, Any]:
         prop = self.nursery.reject(pid)
