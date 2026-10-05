@@ -296,7 +296,8 @@ def run_loop(cycles: int = 150, owner: str = "Func150") -> Dict[str, Any]:
             props = p.list_proposals()
             if props:
                 try:
-                    p.confirm_proposal(props[0]["id"])
+                    # WO-5.1: Pass producer ID. Denied by default without opt-in.
+                    p.confirm_proposal(props[0]["id"], _producer="function_150")
                 except Exception:
                     pass
 

@@ -340,11 +340,15 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
         if low.startswith("confirm "):
             pid = lab[8:].strip()
             # Use canonical promotion authority: places in cube + confirms.
-            if hasattr(program, "confirm_proposal"):
-                result = program.confirm_proposal(pid)
-            else:
-                result = program.nursery.confirm(pid)
-                result = {"ok": bool(result), "id": pid} if result else {"ok": False}
+            # WO-5.1: User typed "confirm <id>" — carry explicit review context.
+            # The direct nursery.confirm fallback is removed; coupled
+            # acceptance must go through the canonical boundary.
+            result = program.confirm_proposal(
+                pid,
+                _producer="repl_user",
+                _review_context={"reviewer": "repl_user",
+                                 "approved_pid": pid},
+            )
             if result.get("ok"):
                 program.last_nurture = {"action": "confirm", "pid": pid, "ok": True,
                                        "promoted": True}

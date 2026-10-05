@@ -427,7 +427,11 @@ def _supersede_impl(program: Any, old_id: str, words: str,
         _cl.confirm_proposal._SKIP_CHECKPOINT = True
         _cl.confirm_proposal._SKIP_JOURNAL = True
         try:
-            res = program.confirm_proposal(succ_id)
+            # WO-5.1: Internal confirm as part of supersession transaction.
+            # Supersession has its own authorization; bypass the per-proposal
+            # policy check to avoid double-gating the composite operation.
+            res = program.confirm_proposal(succ_id, _producer="supersession",
+                                           _policy_bypass=True)
         finally:
             _cl.confirm_proposal._SKIP_CHECKPOINT = _orig_skip
             _cl.confirm_proposal._SKIP_JOURNAL = _orig_skip_j

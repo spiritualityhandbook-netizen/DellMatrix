@@ -112,6 +112,8 @@ class Program:
     internet: Any = None
     cube: BlankCube = field(init=False)
     duo: DuoBeta = field(init=False)
+    # WO-5.1: Session-scoped acceptance policy. Default DENY.
+    acceptance_policy: Any = field(default_factory=lambda: None, init=False)
     avatar: Avatar = field(init=False)
     face: FaceController = field(init=False)
     kaomoji: Any = field(init=False)
@@ -176,6 +178,9 @@ class Program:
         self.avatar = Avatar(name=self.owner)
         self.face = FaceController()
         self.kaomoji = build_default_registry()
+        # WO-5.1: Initialize session-scoped acceptance policy (default DENY).
+        from form.dell_matrix.acceptance_policy import AcceptancePolicy
+        self.acceptance_policy = AcceptancePolicy()
         from form.dell_matrix.nursery import owner_nursery_path
         # Private injection hook for generation-member loads: when open_program
         # is given a staged Nursery, __post_init__ uses it instead of reading
@@ -1181,8 +1186,23 @@ class Program:
         return float(n), 0.0
 
     def set_auto_confirm_grow(self, on: bool) -> bool:
-        """Enable/disable auto-confirm-all after each grow (grow mode)."""
+        """Enable/disable auto-confirm-all after each grow (grow mode).
+
+        WO-5.1: Enabling grants a scoped session opt-in for the "grow_auto"
+        producer. Disabling revokes it. Opt-in is visible, revocable, audited,
+        and expires at session end.
+        """
         self.auto_confirm_grow = bool(on)
+        policy = getattr(self, "acceptance_policy", None)
+        if policy is not None:
+            if self.auto_confirm_grow:
+                policy.grant_opt_in(
+                    "grow_auto",
+                    scope=f"session:{policy.session_id}",
+                    note="User enabled 'auto confirm on' in REPL",
+                )
+            else:
+                policy.revoke_opt_in("grow_auto")
         self.note_seed(13, "Loop", f"auto_confirm_grow_{'on' if self.auto_confirm_grow else 'off'}")
         return self.auto_confirm_grow
 
@@ -1239,13 +1259,14 @@ class Program:
             self.forces.time.advance()
             result["forces"] = self.forces.status()
         # Auto-confirm-all grow mode: accept every pending nursery proposal
+        # WO-5.1: Requires active opt-in for "grow_auto" producer.
         if getattr(self, "auto_confirm_grow", False):
             pending = list(self.list_proposals())
             ok_n = 0
             fail_n = 0
             labels: List[str] = []
             for prop in pending:
-                res = self.confirm_proposal(prop["id"])
+                res = self.confirm_proposal(prop["id"], _producer="grow_auto")
                 if res.get("ok"):
                     ok_n += 1
                     labels.append(res.get("label") or prop.get("label") or prop.get("id"))
@@ -1366,7 +1387,39 @@ class Program:
                 -float(p.get("graph_coherence", 0) or 0),
             ))
 
-    def confirm_proposal(self, pid: str) -> Dict[str, Any]:
+    def confirm_proposal(self, pid: str, _producer: str = "unknown",
+                         _review_context: dict = None,
+                         _policy_bypass: bool = False) -> Dict[str, Any]:
+        """Canonical confirmation with acceptance policy (WO-5.1).
+
+        Args:
+            pid: Proposal ID.
+            _producer: Producer ID for policy check (e.g., "repl_user",
+                "auto_growth", "code_evolution"). Defaults to "unknown".
+            _review_context: Explicit review proof from trusted command.
+                Must contain "reviewer" and "approved_pid" == pid.
+            _policy_bypass: Internal bypass for composite operations
+                (supersession) with their own authorization. Not for
+                external use.
+
+        Returns:
+            {"ok": True, ...} on success.
+            {"ok": False, "reason": "acceptance_policy_denied", ...} if denied.
+        """
+        # WO-5.1: Policy check at canonical acceptance boundary.
+        # Recheck immediately before commit.
+        if not _policy_bypass:
+            policy = getattr(self, "acceptance_policy", None)
+            if policy is not None:
+                decision = policy.check(_producer, pid, _review_context)
+                if not decision.get("allowed"):
+                    return {
+                        "ok": False,
+                        "reason": "acceptance_policy_denied",
+                        "detail": decision.get("detail"),
+                        "pid": pid,
+                        "producer": _producer,
+                    }
         from form.dell_matrix.confirm_lineage import confirm_proposal as _confirm_proposal
         return _confirm_proposal(self, pid)
 
