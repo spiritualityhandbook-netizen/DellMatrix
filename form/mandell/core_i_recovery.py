@@ -1175,6 +1175,29 @@ def clear_supersede_intent(owner: str) -> None:
         pass
 
 
+def _validate_durable_program(pdata: dict, context: str) -> dict:
+    """Validate reread Program structure with strict member validator.
+
+    F7: Post-heal/repair rereads must validate the complete state with the
+    same strict validator before clearing. Returns the validated units dict.
+
+    Raises RollbackRecoveryError if plane is not a dict or units is not
+    a dict. Journal preserved.
+    """
+    if not isinstance(pdata, dict):
+        raise RollbackRecoveryError(
+            f"supersede intent: {context}: program not a dict (preserved)")
+    plane = pdata.get("plane")
+    if not isinstance(plane, dict):
+        raise RollbackRecoveryError(
+            f"supersede intent: {context}: bad plane (preserved)")
+    units = plane.get("units")
+    if not isinstance(units, dict):
+        raise RollbackRecoveryError(
+            f"supersede intent: {context}: bad units (preserved)")
+    return units
+
+
 def _validate_revision_identity(old_prop: dict, new_prop: dict, old_id: str,
                                 intent_old_root=None, intent_old_number=None) -> None:
     """Validate revision identity using canonical semantics.
@@ -1485,8 +1508,9 @@ def recover_supersede_intent(owner: str) -> str:
         _validate_revision_identity(durable_old, durable_new, old_id,
             intent_old_root=journal.get("intent_old_root"),
             intent_old_number=journal.get("intent_old_number"))
-        # Validate successor Idea still present in durable Program
-        durable_units = durable_pd.get("plane", {}).get("units", {})
+        # F7: Validate successor Idea still present in durable Program.
+        # Use strict member validator on reread.
+        durable_units = _validate_durable_program(durable_pd, "after repair")
         if new_id not in durable_units:
             raise RollbackRecoveryError(
                 "supersede intent: successor Idea missing from durable Program "
@@ -1597,7 +1621,9 @@ def recover_supersede_intent(owner: str) -> str:
             raise RollbackRecoveryError(
                 f"supersede intent: reread Program after heal failed (preserved): {exc}"
             ) from exc
-        durable_units = durable_pd.get("plane", {}).get("units", {})
+        # F7: Use strict member validator on reread. Malformed units
+        # (e.g., []) fail closed with journal preserved.
+        durable_units = _validate_durable_program(durable_pd, "after heal")
         if new_id in durable_units:
             raise RollbackRecoveryError(
                 "supersede intent: successor Idea present in durable Program "

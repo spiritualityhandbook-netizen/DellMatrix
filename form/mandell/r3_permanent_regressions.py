@@ -683,6 +683,7 @@ TEST_CASES = [
     ("R3H12", lambda: t12()),
     ("R3H13", lambda: t13()),
     ("R3H14", lambda: t14()),
+    ("R3H14B", lambda: t14b()),
     ("R3H15", lambda: t15()),
     ("R3H16", lambda: t16()),
 ]
@@ -1023,6 +1024,71 @@ except Exception as e:
     rec("14_orphan_idea", ok, out2[:80])
     if not ok:
         print(f"t14 FAILED: rc={rc2}, out={out2[:150]}")
+    clean(o)
+
+def t14b():
+    # F7: Malformed Program units ([]) during heal must fail closed,
+    # not return healed_to_old. Journal preserved.
+    o = "R3H14B"; clean(o)
+    setup = """
+import sys, os, json
+REPO_DIR = %r
+OWNER_ID = %r
+sys.path.insert(0, REPO_DIR)
+from form.open import open_program
+from form import persist_rest
+from form.mandell.core_i_recovery import write_supersede_intent, _supersede_journal_path
+
+p = open_program(OWNER_ID)
+pr_old = p.nursery.add('OLD_PROP', words='original')
+p.confirm_proposal(pr_old.id)
+pr_new = p.nursery.add('NEW_PROP', words='successor')
+p.nursery.save()
+persist_rest.save(p)
+write_supersede_intent(OWNER_ID, pr_old.id, pr_new.id)
+
+# Set up for heal branch: old active, new pending, no links, no Idea
+# Then corrupt Program units to [] (malformed)
+npath = os.path.join(REPO_DIR, 'form', 'state', 'nursery_' + OWNER_ID + '.json')
+nd = json.load(open(npath))
+# Ensure old is active, new is pending, no contradictory links
+# (default state after setup is already correct)
+json.dump(nd, open(npath, 'w'))
+ppath = os.path.join(REPO_DIR, 'form', 'state', 'program_' + OWNER_ID + '.json')
+pd = json.load(open(ppath))
+pd['plane']['units'] = []  # MALFORMED: should be dict
+json.dump(pd, open(ppath, 'w'))
+print('SETUP_DONE')
+""" % (REPO, o)
+    rc, out, err = run_script("t14b_setup", setup)
+    if rc != 0 or "SETUP_DONE" not in out:
+        rec("14b_malformed_units", False, f"setup failed rc={rc}")
+        print(f"t14b SETUP FAILED: {out[:200]} {err[:200]}")
+        clean(o)
+        return
+
+    # Recovery must raise (malformed units), journal preserved
+    load = """
+import sys, os
+sys.path.insert(0, %r)
+from form import persist_rest
+from form.mandell.core_i_recovery import _supersede_journal_path, RollbackRecoveryError
+jpath = _supersede_journal_path(%r)
+try:
+    p = persist_rest.load(%r, activate=False)
+    print('NO_RAISE_UNEXPECTED JEXISTS:' + str(os.path.isfile(jpath)))
+except RollbackRecoveryError:
+    print('RAISED_ROLLBACK JEXISTS:' + str(os.path.isfile(jpath)))
+except Exception as e:
+    print('OTHER:' + type(e).__name__)
+""" % (REPO, o, o)
+    rc2, out2, err2 = run_script("t14b_load", load)
+    ok = rc2 == 0 and "RAISED_ROLLBACK" in out2 and "JEXISTS:True" in out2
+    rec("14b_malformed_units", ok, out2[:80])
+    if not ok:
+        print(f"t14b FAILED: rc={rc2}, out={out2[:150]}")
+    else:
+        print("t14b postconditions verified: malformed units fail closed")
     clean(o)
 
 # 15. revision_identity_negative: Conflicting revision root/number
