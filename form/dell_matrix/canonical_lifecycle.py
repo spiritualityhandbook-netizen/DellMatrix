@@ -57,18 +57,18 @@ def _normalize_state(state: Any) -> Optional[str]:
 
 
 def resolve_lifecycle(program: Any, unit_id: str) -> str:
-    """Resolve canonical lifecycle state for (program, unit_id).
+    """Resolve canonical REVISION state for (program, unit_id).
+
+    Returns the revision dimension only: "active" | "superseded" |
+    "malformed" | "unknown". Participation (faded presence) is a SEPARATE
+    dimension — see is_participating().
+
+    Director 2026-10-05 (whole-circuit): the underlying record is
+    VALIDATED FIRST. TPP-I faded presence must not mask malformed revision
+    data, and faded presence never makes malformed records eligible.
 
     Uses form.mandell.supersession.inspect_revision — the canonical
     resolver. Never reads dynamic Unit attributes.
-
-    WO-5.2: Also integrates TPP-I presence (p.lifecycle[uid].presence).
-    If presence is "faded", the resolved state is "faded" (participation
-    dimension). The facade is the sole interpretation; TPP-I is a
-    migration source, not a second decision maker.
-
-    Returns the canonical state string (e.g. "active", "faded",
-    "unknown").
 
     LEGACY COMPATIBILITY (explicit, not silent): Units with NO canonical
     record at all (legacy units predating the proposal system) are treated
@@ -76,20 +76,9 @@ def resolve_lifecycle(program: Any, unit_id: str) -> str:
     not a silent default.
 
     FAIL-CLOSED: Units WITH a record that is unreadable, malformed, or
-    explicitly UNKNOWN are treated as "unknown" (excluded, not active).
-    Unreadable canonical state never silently becomes ACTIVE.
+    explicitly UNKNOWN resolve as "malformed"/"unknown" (excluded, not
+    active). Unreadable canonical state never silently becomes ACTIVE.
     """
-    # WO-5.2: Check TPP-I presence first (migration source).
-    # Presence "faded" overrides to faded state.
-    try:
-        lc = getattr(program, "lifecycle", None)
-        if isinstance(lc, dict):
-            meta = lc.get(unit_id)
-            if isinstance(meta, dict) and meta.get("presence") == "faded":
-                return "faded"
-    except Exception:
-        pass  # Presence unreadable; fall through to revision inspection.
-
     try:
         from form.mandell.supersession import inspect_revision
         rec = inspect_revision(program, unit_id)
@@ -102,30 +91,95 @@ def resolve_lifecycle(program: Any, unit_id: str) -> str:
             # Legacy unit: no canonical record. Explicit compatibility:
             # treat as active (documented policy, not silent default).
             return "active"
-        # Has a record: use its state, or "unknown" if unreadable.
-        return state or "unknown"
+        # Has a record: revision state, or malformed/unknown if unreadable.
+        if state in ("active", "superseded"):
+            return state
+        return "malformed" if malformed else "unknown"
     except Exception:
         # Unreadable canonical state -> unknown (fail-closed, not active)
         return "unknown"
 
 
-def is_active(program: Any, unit_id: str) -> bool:
-    """True iff canonical lifecycle for (program, unit_id) permits participation.
+def _presence_is_faded(program: Any, unit_id: str) -> bool:
+    """TPP-I compatibility adapter: faded presence signal.
 
-    Unreadable/unknown/malformed states return False (fail-closed).
+    Director 2026-10-05 (whole-circuit): TPP-I is a compatibility ADAPTER,
+    not an independent competing decision maker. It supplies the faded
+    presence signal; the authoritative participation interpretation lives
+    in is_participating(), which validates revision FIRST.
+
+    Never raises; unreadable presence means "not faded".
     """
-    return resolve_lifecycle(program, unit_id) in _ACTIVE_STATES
+    try:
+        lc = getattr(program, "lifecycle", None)
+        if isinstance(lc, dict):
+            meta = lc.get(unit_id)
+            if isinstance(meta, dict):
+                return meta.get("presence") == "faded"
+    except Exception:
+        pass
+    return False
+
+
+def _revision_valid(program: Any, unit_id: str) -> Optional[str]:
+    """Validated revision state, or None if invalid.
+
+    Invalid = malformed/unknown/unreadable. Faded presence never rescues
+    an invalid revision.
+    """
+    state = resolve_lifecycle(program, unit_id)
+    if state in ("active", "superseded"):
+        return state
+    return None
+
+
+def _is_accepted(program: Any, unit_id: str) -> bool:
+    """Acceptance dimension: proposal status is confirmed.
+
+    Director 2026-10-05 (whole-circuit): acceptance, revision,
+    participation, and projection are DISTINCT. Pending proposals do not
+    ordinarily participate, regardless of revision/presence.
+
+    A missing status (synthetic/legacy doubles) is treated as accepted
+    for compatibility; an explicit non-confirmed status excludes.
+    """
+    try:
+        proposals = getattr(getattr(program, "nursery", None), "proposals", {})
+        prop = proposals.get(unit_id) if isinstance(proposals, dict) else None
+        if prop is None:
+            # No proposal record: legacy compat path (resolve_lifecycle
+            # treats as active). Acceptance unknown -> do not block here;
+            # revision validation remains authoritative.
+            return True
+        status = getattr(prop, "status", None)
+        if status is None:
+            return True  # synthetic/legacy double: do not block
+        return status == "confirmed"
+    except Exception:
+        return False
+
+
+def is_active(program: Any, unit_id: str) -> bool:
+    """True iff unit may participate ordinarily.
+
+    Requires: accepted (confirmed) AND valid active revision AND
+    non-faded presence. Malformed/unknown revisions return False
+    (fail-closed) even when presence claims faded.
+    """
+    return (_is_accepted(program, unit_id)
+            and _revision_valid(program, unit_id) == "active"
+            and not _presence_is_faded(program, unit_id))
 
 
 def is_faded(program: Any, unit_id: str) -> bool:
-    """True iff canonical lifecycle for (program, unit_id) is FADED.
+    """True iff unit carries faded presence on a VALID revision.
 
-    WO-5.2: FADED is now a valid revision state (not malformed).
-    Faded records are preserved with identity/content/provenance intact;
-    they are excluded from ordinary participation but available for
-    explicit historical inspection.
+    Director 2026-10-05 (whole-circuit): faded presence on a malformed
+    or unknown revision is NOT "faded" — it is excluded data. Fading is
+    participation, not revision.
     """
-    return resolve_lifecycle(program, unit_id) == LifecycleState.FADED.value
+    return (_revision_valid(program, unit_id) is not None
+            and _presence_is_faded(program, unit_id))
 
 
 # WO-5.2/WO-5.3: Participation contexts.
@@ -155,24 +209,35 @@ def is_participating(program: Any, unit_id: str,
                      context: str = "ordinary") -> bool:
     """WO-5.2/WO-5.3: Check participation in a given context.
 
+    Director 2026-10-05 (whole-circuit): ONE authoritative participation
+    interpretation. Revision is validated FIRST; faded presence never
+    rescues malformed/unknown revisions.
+
     Args:
         program: The program.
         unit_id: The unit/idea ID.
         context: "ordinary" (default) or "historical".
-            - "ordinary": Eligible accepted/current knowledge. Excludes
-              SUPERSEDED and FADED.
-            - "historical": Explicitly requested historical use. Includes
-              SUPERSEDED and FADED with clear labels.
+            - "ordinary": accepted + revision-active + non-faded presence.
+              Excludes SUPERSEDED, FADED, pending, malformed.
+            - "historical": explicitly requested historical use. Accepted
+              records with revision active-or-superseded, including faded
+              presence. NEVER malformed/unknown.
 
     Returns:
         True iff the record may participate in the given context.
-        Unreadable/unknown/malformed states return False (fail-closed).
     """
-    state = resolve_lifecycle(program, unit_id)
+    revision = _revision_valid(program, unit_id)
+    if revision is None:
+        # Malformed/unknown: excluded in EVERY context. Faded presence
+        # must not make malformed data eligible for historical use.
+        return False
+    if not _is_accepted(program, unit_id):
+        return False
+    faded = _presence_is_faded(program, unit_id)
     if context == "historical":
-        return state in _HISTORICAL_PARTICIPATION_STATES
+        return revision in ("active", "superseded")
     # Default: ordinary
-    return state in _ORDINARY_PARTICIPATION_STATES
+    return revision == "active" and not faded
 
 
 def participation_reason(program: Any, unit_id: str,
@@ -181,20 +246,28 @@ def participation_reason(program: Any, unit_id: str,
 
     Exposes why a record is excluded, for transparency.
     """
-    state = resolve_lifecycle(program, unit_id)
+    revision = _revision_valid(program, unit_id)
+    if revision is None:
+        return (f"excluded ({context} context): "
+                f"revision {resolve_lifecycle(program, unit_id)}; "
+                "malformed/unknown records never participate")
+    if not _is_accepted(program, unit_id):
+        return f"excluded ({context} context): not accepted (pending)"
+    faded = _presence_is_faded(program, unit_id)
     if context == "historical":
-        if state in _HISTORICAL_PARTICIPATION_STATES:
-            return f"participating (historical context, state={state})"
-        return f"excluded (historical context, state={state})"
-    if state in _ORDINARY_PARTICIPATION_STATES:
-        return f"participating (ordinary context, state={state})"
-    if state == LifecycleState.SUPERSEDED.value:
+        if revision in ("active", "superseded"):
+            return (f"participating (historical context, revision={revision}, "
+                    f"faded={faded})")
+        return f"excluded (historical context, revision={revision})"
+    if revision == "active" and not faded:
+        return "participating (ordinary context)"
+    if revision == "superseded":
         return ("excluded (ordinary context): superseded; "
                 "use historical context for explicit historical use")
-    if state == LifecycleState.FADED.value:
+    if faded:
         return ("excluded (ordinary context): faded; "
                 "use historical context for explicit historical inspection")
-    return f"excluded (ordinary context, state={state})"
+    return f"excluded (ordinary context, revision={revision})"
 
 
 def filter_active(program: Any, unit_ids: Iterable[str]) -> List[str]:

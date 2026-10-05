@@ -191,6 +191,17 @@ def select_for_context(
                 if is_revision_active(program, pid)]
     active_revision_count = len(eligible)
 
+    # WO-5.2 (whole-circuit): participation dimension. The revision gate
+    # above is revision-only; ordinary routing additionally requires the
+    # authoritative participation interpretation (excludes faded presence).
+    # Uses the canonical facade — the single participation authority.
+    from form.dell_matrix import canonical_lifecycle as _cl
+    part_excluded_ids = [
+        pid for pid, _ in eligible if not _cl.is_active(program, pid)
+    ]
+    eligible = [(pid, prop) for pid, prop in eligible
+                if _cl.is_active(program, pid)]
+
     # DCC-XV: dependency validity gates eligibility. A derived unit is
     # dependency-valid only when every required transitive ancestor exists
     # on the plane, is confirmed, is revision-active, and has valid

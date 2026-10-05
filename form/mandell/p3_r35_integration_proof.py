@@ -267,9 +267,9 @@ def t352_affinity() -> None:
     # Canonical: f is FADED via nursery proposal (not dynamic attributes).
     prog = SimpleNamespace(nursery=SimpleNamespace(proposals={
         "a": Proposal(id="a", label="a", words="river flow water current",
-                      kind="new", lifecycle_state="active"),
+                      kind="new", lifecycle_state="active", status="confirmed"),
         "b": Proposal(id="b", label="b", words="river bank water shore",
-                      kind="new", lifecycle_state="active"),
+                      kind="new", lifecycle_state="active", status="confirmed"),
         "f": Proposal(id="f", label="f", words="river faded old silt",
                       kind="new", lifecycle_state="faded"),
     }))
@@ -311,9 +311,9 @@ def t352_pulse() -> None:
     # Canonical: f is FADED via nursery proposal.
     prog = SimpleNamespace(nursery=SimpleNamespace(proposals={
         "a": Proposal(id="a", label="a", words="river flow",
-                      kind="new", lifecycle_state="active"),
+                      kind="new", lifecycle_state="active", status="confirmed"),
         "b": Proposal(id="b", label="b", words="river bank",
-                      kind="new", lifecycle_state="active"),
+                      kind="new", lifecycle_state="active", status="confirmed"),
         "f": Proposal(id="f", label="f", words="river faded silt",
                       kind="new", lifecycle_state="faded"),
     }))
@@ -565,7 +565,7 @@ def t_mutation() -> None:
     # Canonical: f is FADED via nursery proposal.
     prog = SimpleNamespace(nursery=SimpleNamespace(proposals={
         "a": Proposal(id="a", label="a", words="river flow water current",
-                      kind="new", lifecycle_state="active"),
+                      kind="new", lifecycle_state="active", status="confirmed"),
         "f": Proposal(id="f", label="f", words="river faded old silt",
                       kind="new", lifecycle_state="faded"),
     }))
@@ -619,9 +619,9 @@ plane = cube.session.plane
 # Canonical: f is FADED via nursery proposal.
 prog = SimpleNamespace(nursery=SimpleNamespace(proposals={
     "a": Proposal(id="a", label="a", words="river flow water",
-                  kind="new", lifecycle_state="active"),
+                  kind="new", lifecycle_state="active", status="confirmed"),
     "b": Proposal(id="b", label="b", words="river bank shore",
-                  kind="new", lifecycle_state="active"),
+                  kind="new", lifecycle_state="active", status="confirmed"),
     "f": Proposal(id="f", label="f", words="river faded silt",
                   kind="new", lifecycle_state="faded"),
 }))
