@@ -139,6 +139,7 @@ LIST = [
     "form.mandell.wo52_coherence_test:smoke",
     "form.mandell.wo54_consumers_test:smoke",
     "form.mandell.d20_reference_test:smoke",
+    "form.mandell.absence_matrix_test:smoke",
 ]
 
 TIMEOUT_S = 900

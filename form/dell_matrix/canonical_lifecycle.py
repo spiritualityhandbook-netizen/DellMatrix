@@ -100,31 +100,45 @@ def resolve_lifecycle(program: Any, unit_id: str) -> str:
         return "unknown"
 
 
+_ABSENT = object()  # sentinel: distinguishes absent key from explicit null
+
+
 def _presence_state(program: Any, unit_id: str):
     """TPP-I compatibility adapter: (faded, malformed, reason).
 
-    Director 2026-10-05 (final): distinguish genuinely absent legacy data
-    from explicit malformed data. Absent presence (no lifecycle dict, no
-    entry) is legacy-compatible (not faded). A present-but-invalid
-    presence value is malformed and excludes with an explicit reason.
+    Director 2026-10-05 (close): use membership checks and a sentinel
+    before reading values. Distinguishes:
+    - absent lifecycle attr / absent key -> legacy absence (not faded)
+    - wrong container type (lifecycle not a dict) -> malformed
+    - explicit null record (lifecycle[uid] is None) -> malformed
+    - wrong record type (not a dict) -> malformed
+    - absent presence key -> not faded (legacy default)
+    - explicit null presence -> malformed
+    - invalid presence value -> malformed
 
     Never raises.
     """
     try:
-        lc = getattr(program, "lifecycle", None)
+        if not hasattr(program, "lifecycle"):
+            return (False, False, "absent_legacy")
+        lc = program.lifecycle
         if not isinstance(lc, dict):
+            return (False, True, "malformed_presence:wrong_container")
+        meta = lc.get(unit_id, _ABSENT)
+        if meta is _ABSENT:
             return (False, False, "absent_legacy")
-        meta = lc.get(unit_id)
         if meta is None:
-            return (False, False, "absent_legacy")
+            return (False, True, "malformed_presence:null_record")
         if not isinstance(meta, dict):
-            return (False, True, "malformed_presence:not_a_dict")
-        presence = meta.get("presence")
-        if presence is None or presence == "active":
+            return (False, True, "malformed_presence:wrong_record_type")
+        presence = meta.get("presence", _ABSENT)
+        if presence is _ABSENT or presence == "active":
             return (False, False, "")
+        if presence is None:
+            return (False, True, "malformed_presence:null_value")
         if presence == "faded":
             return (True, False, "")
-        return (False, True, f"malformed_presence:{presence!r}")
+        return (False, True, f"malformed_presence:invalid_value:{presence!r}")
     except Exception as e:
         return (False, True, f"malformed_presence:unreadable:{type(e).__name__}")
 
@@ -150,27 +164,41 @@ def _revision_valid(program: Any, unit_id: str) -> Optional[str]:
 def _acceptance_state(program: Any, unit_id: str):
     """Acceptance dimension: (accepted, malformed, reason).
 
-    Director 2026-10-05 (final): distinguish genuinely absent legacy data
-    (no proposal record) from explicit malformed data (proposal exists
-    but status is missing or invalid). A real proposal always carries a
-    status; None or garbage is malformed and excludes with a reason.
-    Synthetic-test compatibility must not justify production acceptance.
+    Director 2026-10-05 (close): use membership checks and a sentinel.
+    Distinguishes:
+    - absent nursery/proposals/key -> legacy absence (defer to revision)
+    - wrong container type (proposals not a dict) -> malformed
+    - explicit null record -> malformed
+    - wrong record type (no status attribute) -> malformed
+    - explicit null status -> malformed
+    - invalid status value -> malformed
+
+    Never raises.
     """
     try:
-        proposals = getattr(getattr(program, "nursery", None), "proposals", {})
-        prop = proposals.get(unit_id) if isinstance(proposals, dict) else None
-        if prop is None:
+        nursery = getattr(program, "nursery", None)
+        if nursery is None or not hasattr(nursery, "proposals"):
+            return (True, False, "absent_legacy")
+        proposals = nursery.proposals
+        if not isinstance(proposals, dict):
+            return (False, True, "malformed_status:wrong_container")
+        prop = proposals.get(unit_id, _ABSENT)
+        if prop is _ABSENT:
             # No proposal record: legitimate legacy path. Revision
             # validation remains authoritative.
             return (True, False, "absent_legacy")
-        status = getattr(prop, "status", None)
+        if prop is None:
+            return (False, True, "malformed_status:null_record")
+        if not hasattr(prop, "status"):
+            return (False, True, "malformed_status:wrong_record_type")
+        status = prop.status
         if status == "confirmed":
             return (True, False, "")
         if status in ("pending", "rejected"):
             return (False, False, f"status_{status}")
         if status is None:
-            return (False, True, "malformed_status:none")
-        return (False, True, f"malformed_status:{status!r}")
+            return (False, True, "malformed_status:null_value")
+        return (False, True, f"malformed_status:invalid_value:{status!r}")
     except Exception as e:
         return (False, True, f"malformed_status:unreadable:{type(e).__name__}")
 
