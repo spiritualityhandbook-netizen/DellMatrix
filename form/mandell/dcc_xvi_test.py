@@ -89,7 +89,7 @@ def fresh(owner: str = OWNER):
 
 def confirm(p, label: str) -> str:
     prop = p.nursery.add(label)
-    res = p.confirm_proposal(prop.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": prop.id})
+    res = p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
     assert res.get("ok"), f"confirm failed: {res}"
     return prop.id
 
@@ -448,7 +448,7 @@ def t_r_dependency():
     did = confirm(p, "foundational principle delta")
     # derived child E parented by D (derivation lineage)
     child = p.nursery.add("applied consequence of delta", parents=[did])
-    res_c = p.confirm_proposal(child.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": child.id})
+    res_c = p.confirm_proposal(child.id, _producer="test", _review_context=p.make_review_context(child.id, "test"))
     assert res_c.get("ok"), res_c
     eid = child.id
     dep0 = inspect_dependency(p, eid)
@@ -515,7 +515,7 @@ from form.open import open_program
 from form.persist_rest import save
 p = open_program("__OWNER__")
 prop = p.nursery.add("cross process base claim")
-p.confirm_proposal(prop.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": prop.id})
+p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 from form.mandell.supersession import supersede_proposal, inspect_revision
 res = supersede_proposal(p, prop.id, "cross process revised claim")
 assert res["ok"], res
@@ -570,7 +570,7 @@ def t_v_corpus():
     r3 = s2["new_id"]
     # child derived from the ORIGINAL (historical derivation parent)
     child = p.nursery.add("steam engine design note", parents=[r1])
-    res_c = p.confirm_proposal(child.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": child.id})
+    res_c = p.confirm_proposal(child.id, _producer="test", _review_context=p.make_review_context(child.id, "test"))
     assert res_c.get("ok"), res_c
     cid = child.id
 

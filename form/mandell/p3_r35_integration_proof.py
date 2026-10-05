@@ -118,8 +118,10 @@ def _fixture_program(owner: str):
     p = open_program(owner)
     a = p.nursery.add("river flow water current")
     b = p.nursery.add("river bank water shore")
-    p.confirm_proposal(a.id)
-    p.confirm_proposal(b.id)
+    for pr in (a, b):
+        cr = p.confirm_proposal(pr.id, _producer="test",
+                                _review_context=p.make_review_context(pr.id, "test"))
+        assert cr.get("ok"), cr
     return p, a.id, b.id
 
 

@@ -41,8 +41,7 @@ def run() -> bool:
         res = p.confirm_proposal(
             chosen["id"],
             _producer="acceptance_test",
-            _review_context={"reviewer": "acceptance_test",
-                             "approved_pid": chosen["id"]},
+            _review_context=p.make_review_context(chosen["id"], "acceptance_test"),
         )
         rec("confirm", res.get("ok") is True, res.get("label", ""))
     else:

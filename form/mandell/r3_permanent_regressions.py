@@ -263,7 +263,7 @@ from form.open import open_program
 from form.mandell import supersession as S
 p = open_program(%r)
 old = p.nursery.add('base', words='v1')
-p.confirm_proposal(old.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": old.id})
+p.confirm_proposal(old.id, _producer="test", _review_context=p.make_review_context(old.id, "test"))
 r = S.supersede_proposal(p, old.id, 'v2 words')
 print('OK:' + str(r.get('ok')))
 """ % (REPO, o)
@@ -331,7 +331,7 @@ from form.mandell import supersession as S
 from form import persist_rest
 p = open_program(%r)
 old = p.nursery.add('base', words='v1')
-p.confirm_proposal(old.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": old.id})
+p.confirm_proposal(old.id, _producer="test", _review_context=p.make_review_context(old.id, "test"))
 old_id = old.id
 r = S.supersede_proposal(p, old_id, 'v2 words')
 new_id = r.get('new_id')
@@ -557,7 +557,7 @@ def failing_commit(program, _fail_at=None):
 cg.commit_checkpoint = failing_commit
 
 try:
-    p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+    p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
     print('NO_RAISE_UNEXPECTED')
 except OSError as e:
     if 'INJECTED_COMMIT_FAILURE' in str(e):
@@ -635,7 +635,7 @@ def failing_commit2(program, _fail_at=None):
 cg.commit_checkpoint = failing_commit2
 aw.atomic_write_bytes = failing_awb
 try:
-    p2.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+    p2.confirm_proposal(pid, _producer="test", _review_context=p2.make_review_context(pid, "test"))
     print('NO_RAISE_UNEXPECTED_2')
 except OSError:
     print('RAISED_EXPECTED_2')
@@ -826,7 +826,7 @@ def fp(data):
 # Create and confirm predecessor
 p = open_program(OWNER_ID)
 pr_old = p.nursery.add('OLD_PROP', words='original content here')
-p.confirm_proposal(pr_old.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr_old.id})
+p.confirm_proposal(pr_old.id, _producer="test", _review_context=p.make_review_context(pr_old.id, "test"))
 assert getattr(pr_old, 'status', None) == 'confirmed'
 print('CONFIRMED_OK')
 p.nursery.save()
@@ -976,7 +976,7 @@ from form.mandell.core_i_recovery import write_supersede_intent, _supersede_jour
 # Create old (confirmed) and new (pending) proposals
 p = open_program(OWNER_ID)
 pr_old = p.nursery.add('OLD_PROP', words='original')
-p.confirm_proposal(pr_old.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr_old.id})
+p.confirm_proposal(pr_old.id, _producer="test", _review_context=p.make_review_context(pr_old.id, "test"))
 pr_new = p.nursery.add('NEW_PROP', words='successor')
 p.nursery.save()
 persist_rest.save(p)
@@ -1042,7 +1042,7 @@ from form.mandell.core_i_recovery import write_supersede_intent, _supersede_jour
 
 p = open_program(OWNER_ID)
 pr_old = p.nursery.add('OLD_PROP', words='original')
-p.confirm_proposal(pr_old.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr_old.id})
+p.confirm_proposal(pr_old.id, _producer="test", _review_context=p.make_review_context(pr_old.id, "test"))
 pr_new = p.nursery.add('NEW_PROP', words='successor')
 p.nursery.save()
 persist_rest.save(p)
@@ -1113,7 +1113,7 @@ def fp_bytes(path):
 
 p = open_program(OWNER_ID)
 pr_old = p.nursery.add('OLD_PROP', words='original')
-p.confirm_proposal(pr_old.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr_old.id})
+p.confirm_proposal(pr_old.id, _producer="test", _review_context=p.make_review_context(pr_old.id, "test"))
 pr_new = p.nursery.add('NEW_PROP', words='successor')
 # F6: Establish genuine revision identity BEFORE writing intent.
 # Old is first revision (number=1, no explicit root = own ID is canonical).
@@ -1399,7 +1399,7 @@ from form.mandell.core_i_recovery import write_supersede_intent, _supersede_jour
 p = open_program(OWNER_ID)
 # Revision 1: create and confirm A
 pr_a = p.nursery.add('REV1', words='first')
-p.confirm_proposal(pr_a.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr_a.id})
+p.confirm_proposal(pr_a.id, _producer="test", _review_context=p.make_review_context(pr_a.id, "test"))
 # Set A as revision 1 (explicit, via API)
 p.nursery.proposals[pr_a.id].revision_number = 1
 p.nursery.save()
@@ -1409,7 +1409,7 @@ persist_rest.save(p)
 pr_b = p.nursery.add('REV2', words='second')
 p.nursery.proposals[pr_b.id].revision_root_id = pr_a.id
 p.nursery.proposals[pr_b.id].revision_number = 2
-p.confirm_proposal(pr_b.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr_b.id})
+p.confirm_proposal(pr_b.id, _producer="test", _review_context=p.make_review_context(pr_b.id, "test"))
 p.nursery.save()
 persist_rest.save(p)
 

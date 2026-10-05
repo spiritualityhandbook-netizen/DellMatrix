@@ -124,7 +124,7 @@ def add_confirmed(p, label: str, words: str) -> str:
     _orig_skip = getattr(confirm_lineage.confirm_proposal, '_SKIP_CHECKPOINT', False)
     confirm_lineage.confirm_proposal._SKIP_CHECKPOINT = True
     try:
-        p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
+        p.confirm_proposal(pr.id, _producer="test", _review_context=p.make_review_context(pr.id, "test"))
     finally:
         confirm_lineage.confirm_proposal._SKIP_CHECKPOINT = _orig_skip
     return pr.id
@@ -325,7 +325,8 @@ def control_m_supersession() -> None:
     o = "DCCXVIII_M"
     p = fresh_owner(o)
     a = add_confirmed(p, "m base", "mike base words here")
-    res = S.supersede_proposal(p, a, "mike revision two words")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    res = S.supersede_proposal(p, a, "mike revision two words", _producer="test")
     assert res["ok"]
     b = res["new_id"]
     CG.commit_checkpoint(p, generation_id="gm00000000000001")
@@ -346,10 +347,10 @@ def control_n_lineage_dependency() -> None:
     from form.mandell.knowledge_lineage import lineage_record
     a = add_confirmed(p, "n root", "november root words")
     bp = p.nursery.add("n child", words="november child words", parents=[a])
-    p.confirm_proposal(bp.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": bp.id})
+    p.confirm_proposal(bp.id, _producer="test", _review_context=p.make_review_context(bp.id, "test"))
     b = bp.id
     cp = p.nursery.add("n grandchild", words="november grandchild words", parents=[b])
-    p.confirm_proposal(cp.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": cp.id})
+    p.confirm_proposal(cp.id, _producer="test", _review_context=p.make_review_context(cp.id, "test"))
     c = cp.id
     CG.commit_checkpoint(p, generation_id="gn00000000000001")
     q, lr = CG.load_checkpoint(o, activate=False)
@@ -369,20 +370,22 @@ def control_o_contextual_routing() -> None:
     p = fresh_owner(o)
     # Fixture: active revision pair, dep chain, invalid dep, candidates, conflict pair.
     old = add_confirmed(p, "o base", "orchard harvest moon cider")
-    res = S.supersede_proposal(p, old, "orchard harvest moon cider reserve")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    res = S.supersede_proposal(p, old, "orchard harvest moon cider reserve", _producer="test")
     assert res["ok"]
     new = res["new_id"]
     va = add_confirmed(p, "o valid a", "orchard valid ancestor cider")
     vbp = p.nursery.add("o valid b", words="orchard valid descendant cider", parents=[va])
-    p.confirm_proposal(vbp.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": vbp.id})
+    p.confirm_proposal(vbp.id, _producer="test", _review_context=p.make_review_context(vbp.id, "test"))
     vb = vbp.id
     # Invalid dependency via superseded ancestor (DCC-XVI contract):
     # descendants of a superseded ancestor are honestly dependency-invalid.
     vp = add_confirmed(p, "o parent", "orchard parent cider")
     vcp = p.nursery.add("o child", words="orchard child cider", parents=[vp])
-    p.confirm_proposal(vcp.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": vcp.id})
+    p.confirm_proposal(vcp.id, _producer="test", _review_context=p.make_review_context(vcp.id, "test"))
     bad = vcp.id
-    sres = S.supersede_proposal(p, vp, "orchard parent cider reserve")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    sres = S.supersede_proposal(p, vp, "orchard parent cider reserve", _producer="test")
     assert sres["ok"]
     c1 = add_confirmed(p, "o c1", "rain dances nourish crops")
     c2 = add_confirmed(p, "o c2", "rain dances do not nourish crops")
@@ -595,7 +598,7 @@ def _add2(p, label, words):
     _orig = getattr(confirm_lineage.confirm_proposal, '_SKIP_CHECKPOINT', False)
     confirm_lineage.confirm_proposal._SKIP_CHECKPOINT = True
     try:
-        p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
+        p.confirm_proposal(pr.id, _producer="test", _review_context=p.make_review_context(pr.id, "test"))
     finally:
         confirm_lineage.confirm_proposal._SKIP_CHECKPOINT = _orig
     return pr.id
@@ -735,7 +738,7 @@ def control_v_process_matrix() -> None:
         _orig = getattr(_cl.confirm_proposal, '_SKIP_CHECKPOINT', False)
         _cl.confirm_proposal._SKIP_CHECKPOINT = True
         try:
-            p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+            p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
         finally:
             _cl.confirm_proposal._SKIP_CHECKPOINT = _orig
     _ = p.nursery.add("vm base", words="victor multi base")

@@ -33,7 +33,7 @@ def test_bounded_learning():
             os.remove(pat)
 
     p = open_program(o)
-    ctx = lambda pid: {"reviewer": "test", "approved_pid": pid}
+    ctx = lambda pid: p.make_review_context(pid, "test")
 
     # Create and confirm two ideas
     pr1 = p.nursery.add('Idea One', words='first')

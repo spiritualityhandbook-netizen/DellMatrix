@@ -86,7 +86,7 @@ p = open_program('{owner}')
 p.cube.session.plane.units.clear()
 pr = p.nursery.add('M01', words='test')
 print(pr.id)
-res = p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
+res = p.confirm_proposal(pr.id, _producer="test", _review_context=p.make_review_context(pr.id, "test"))
 print(f"OK={{res.get('ok')}}")
 """
     r = run_subprocess(code)
@@ -105,7 +105,7 @@ p = open_program('{owner}')
 p.cube.session.plane.units.clear()
 pr = p.nursery.add('M02', words='test')
 pid = pr.id
-p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
 print(pid)
 """
     r = run_subprocess(code)
@@ -123,7 +123,7 @@ p = open_program('{owner}')
 p.cube.session.plane.units.clear()
 pr = p.nursery.add('M03', words='test')
 pid = pr.id
-p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
 print(pid)
 """
     r = run_subprocess(code)
@@ -142,7 +142,7 @@ p = open_program('{owner}')
 p.cube.session.plane.units.clear()
 pr = p.nursery.add('M04', words='test')
 pid = pr.id
-p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
 print(pid)
 """
     r = run_subprocess(code)
@@ -161,8 +161,8 @@ p = open_program('{owner}')
 p.cube.session.plane.units.clear()
 pr = p.nursery.add('M05', words='test')
 pid = pr.id
-r1 = p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
-r2 = p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+r1 = p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
+r2 = p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
 print(f"{{r1.get('ok')}}|{{r2.get('ok')}}|{{r2.get('reason')}}")
 """
     r = run_subprocess(code)
@@ -190,7 +190,7 @@ def fail_place(*a, **k):
     raise RuntimeError("injected")
 p.place = fail_place
 try:
-    p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+    p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
     print("NO_RAISE")
 except RuntimeError:
     print("RAISED")
@@ -218,7 +218,7 @@ pid = pr.id
 # Corrupt the program state to make save fail
 p.cube.session.plane.units['__bad__'] = object()
 try:
-    r = p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+    r = p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
     print('NO_RAISE')
 except Exception as e:
     print('RAISED')
@@ -251,7 +251,7 @@ def fail_seal(program, gen_id, _fail_at=None):
     raise cg.CheckpointCommitError("injected program staging failure")
 cg._seal_members = fail_seal
 try:
-    p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+    p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
     print("NO_RAISE")
 except Exception as e:
     print(f"RAISED:{{type(e).__name__}}")
@@ -283,7 +283,7 @@ def fail_save(*a, **k):
     raise OSError("injected nursery failure")
 p.nursery.save = fail_save
 try:
-    p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+    p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
     print("NO_RAISE")
 except Exception as e:
     print(f"RAISED:{{type(e).__name__}}")
@@ -420,7 +420,7 @@ p = open_program('{owner}')
 p.cube.session.plane.units.clear()
 pr = p.nursery.add('M17', words='test')
 pid = pr.id
-p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
 print(pid, flush=True)
 os._exit(42)
 """
@@ -557,7 +557,7 @@ p = open_program('{owner}')
 p.cube.session.plane.units.clear()
 pr = p.nursery.add('M25', words='test')
 pid = pr.id
-p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
 sp_status = p.nursery.proposals[pid].status
 sp_has = pid in p.cube.session.plane.units
 print(f"{{sp_status}}|{{sp_has}}|{{pid}}")
@@ -601,7 +601,7 @@ p = open_program('{owner}')
 p.cube.session.plane.units.clear()
 pr = p.nursery.add('M27', words='test')
 pid = pr.id
-p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
 print(pid)
 """
     r = run_subprocess(code)
@@ -634,7 +634,7 @@ def no_program(program, gen_id, _fail_at=None):
     return {{"members": {{}}, "previous_generation_id": None}}
 cg._seal_members = no_program
 try:
-    res = p.confirm_proposal(pid, _producer="test", _review_context={"reviewer": "test", "approved_pid": pid})
+    res = p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
     print(f"returned_ok={{res.get('ok')}}")
 except Exception as e:
     print(f"raised={{type(e).__name__}}")

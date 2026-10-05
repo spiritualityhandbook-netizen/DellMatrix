@@ -113,7 +113,7 @@ def op(p, text: str):
 
 def add_confirmed(p, label: str, words: str) -> str:
     pr = p.nursery.add(label, words=words, parents=[])
-    p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
+    p.confirm_proposal(pr.id, _producer="test", _review_context=p.make_review_context(pr.id, "test"))
     return pr.id
 
 
@@ -183,6 +183,7 @@ def control_c() -> None:
 # ---------------------------------------------------------------- CONTROL D
 def control_d() -> None:
     p = fresh_owner("DCCXX_D")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
     a = add_confirmed(p, "plants_a", "plants require water")
     r = op(p, "grow using knowledge about plants water")
     o1_id = last_outcome_id(p)
@@ -190,7 +191,7 @@ def control_d() -> None:
     k1 = [x for x in o1["knowledge"] if x["id"] == a][0]
     r1_rev = k1["revision_number"]
     # Revise the knowledge: A -> A2.
-    sup = supersede_proposal(p, a, "plants require water every day indeed")
+    sup = supersede_proposal(p, a, "plants require water every day indeed", _producer="test")
     check("D1 supersede ok", sup.get("ok"))
     a2 = sup["new_id"]
     check("D2 new revision id", a2 != a)
@@ -380,7 +381,9 @@ p.acceptance_policy.grant_opt_in('test', scope='test')
 for label, words in [("plants_a", "plants require water"),
                      ("plants_b", "plants do not require water")]:
     pr = p.nursery.add(label, words=words, parents=[])
-    p.confirm_proposal(pr.id)
+    ctx = p.make_review_context(pr.id, "test")
+    cr = p.confirm_proposal(pr.id, _producer="test", _review_context=ctx)
+    assert cr.get("ok"), cr
 r = route_intent(p, translate("grow using knowledge about plants water"), raw_line="x")
 assert r.ok, "route failed"
 oids = list(p.outcome_records.keys())
@@ -798,7 +801,9 @@ p.acceptance_policy.grant_opt_in('test', scope='test')
 for label, words in [("plants_a", "plants require water"),
                      ("plants_b", "plants do not require water")]:
     pr = p.nursery.add(label, words=words, parents=[])
-    p.confirm_proposal(pr.id)
+    ctx = p.make_review_context(pr.id, "test")
+    cr = p.confirm_proposal(pr.id, _producer="test", _review_context=ctx)
+    assert cr.get("ok"), cr
 r = route_intent(p, translate("grow using knowledge about plants water"), raw_line="x")
 assert r.ok, "route failed"
 oids = list(p.outcome_records.keys())

@@ -23,11 +23,12 @@ def test_historical_participation():
             os.remove(pat)
 
     p = open_program(o)
-    ctx = lambda pid: {"reviewer": "test", "approved_pid": pid}
+    ctx = lambda pid: p.make_review_context(pid, "test")
 
     # Create revision A, confirm it
     pr_a = p.nursery.add('Idea A', words='original')
-    p.confirm_proposal(pr_a.id, _producer="test", _review_context=ctx(pr_a.id))
+    cr = p.confirm_proposal(pr_a.id, _producer="test", _review_context=ctx(pr_a.id))
+    assert cr.get("ok"), f"Confirm failed: {cr}"
     p.nursery.save()
 
     # Create revision B (supersedes A), confirm it

@@ -57,7 +57,7 @@ def _run(p, eng):
 
 def _confirm_all(p):
     for prop in p.nursery.pending():
-        p.confirm_proposal(prop.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": prop.id})
+        p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 
 
 def _ids_by_label(p):
@@ -155,7 +155,7 @@ def test_status_security():
     """CONTROL F: pending/rejected/unknown never enter scope."""
     p = _fresh("DCCXI_F")
     a = p.nursery.add(K1_LABEL)
-    p.confirm_proposal(a.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": a.id})
+    p.confirm_proposal(a.id, _producer="test", _review_context=p.make_review_context(a.id, "test"))
     b = p.nursery.add("plant growth needs sunlight")  # pending
     c = p.nursery.add("plant growth needs soil")      # rejected
     p.nursery.reject(c.id)

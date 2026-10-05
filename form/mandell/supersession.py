@@ -371,24 +371,32 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     # Director 2026-10-05: Authorize BEFORE creating successor state or
     # writing intent. The supersession is a composite operation that
     # confirms the successor; it must be authorized via the policy.
+    #
+    # Operation-level authorization (not proposal-version level): the
+    # successor doesn't exist yet, so we verify the CALLER is authorized
+    # to supersede old_id — via a session-bound review context naming
+    # old_id, or a session opt-in for the producer. The internal successor
+    # confirm re-verifies at the commit boundary with the successor's
+    # actual version.
     policy = getattr(program, "acceptance_policy", None)
     if policy is None:
         raise SupersedeError("acceptance_policy_missing")
-    # We authorize against the old_id (the operation target). The successor
-    # doesn't exist yet, so we verify the operation itself is authorized.
-    # The internal confirm will re-verify with the successor's version.
-    auth = policy.check(_producer, old_id, _review_context,
-                        proposal_version="supersede-operation")
-    # Note: For supersession, the review context authorizes the operation,
-    # not a specific proposal version (the successor doesn't exist yet).
-    # We check that the producer is authorized via opt-in or valid context.
-    # If using review_context, it must have a valid session.
-    if not auth.get("allowed"):
-        # Allow if producer has opt-in (the check above may fail on version)
-        # Re-check with opt-in only
-        grant = policy._opt_ins.get(_producer)
-        if not (grant and grant.get("session_id") == policy.session_id):
-            raise SupersedeError(f"acceptance_policy_denied: {auth.get('reason')}")
+    _authorized = False
+    if isinstance(_review_context, dict):
+        _rc = _review_context
+        if (isinstance(_rc.get("reviewer"), str) and _rc.get("reviewer")
+                and _rc.get("approved_pid") == old_id
+                and _rc.get("session_id") == policy.session_id):
+            _authorized = True
+    if not _authorized:
+        _grant = policy._opt_ins.get(_producer)
+        if _grant and _grant.get("session_id") == policy.session_id:
+            _authorized = True
+    if not _authorized:
+        raise SupersedeError(
+            "acceptance_policy_denied: supersede operation not authorized "
+            f"(producer={_producer!r}, old_id={old_id!r})"
+        )
 
     # ---- Phase 1: validate (no writes) ----
     old_id = (old_id or "").strip()

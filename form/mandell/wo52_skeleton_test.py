@@ -33,11 +33,11 @@ def test_walking_skeleton():
     p.nursery.save()
     print(f"1. Proposed: {pid}")
 
-    # 2. Review/confirm (with review context)
+    # 2. Review/confirm (with bound review context)
     r = p.confirm_proposal(
         pid,
         _producer="test",
-        _review_context={"reviewer": "test", "approved_pid": pid},
+        _review_context=p.make_review_context(pid, "test"),
     )
     assert r.get("ok"), f"Confirm failed: {r}"
     p.nursery.save()

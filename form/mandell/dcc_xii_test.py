@@ -40,7 +40,7 @@ def _run(p, eng):
 
 def _confirm_all(p):
     for prop in p.nursery.pending():
-        p.confirm_proposal(prop.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": prop.id})
+        p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 
 
 def _v1_order(evidence):
@@ -121,7 +121,7 @@ def test_status_security():
     p.nursery.reject(rej.id)  # reject while pending
     for prop in p.nursery.pending():
         if prop.id != hot.id:
-            p.confirm_proposal(prop.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": prop.id})
+            p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
     sel = select_for_context(p, "plant growth", operation="grow")
     ids = [s["id"] for s in sel["selected"]]
     assert hot.id not in ids and rej.id not in ids

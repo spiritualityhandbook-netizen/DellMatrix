@@ -59,7 +59,7 @@ def fresh() -> Program:
 
 def make_knowledge(p, label="kie-idea", words="test knowledge about growth"):
     pr = p.nursery.add(label, words=words)
-    p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
+    p.confirm_proposal(pr.id, _producer="test", _review_context=p.make_review_context(pr.id, "test"))
     return pr.id
 
 
@@ -192,7 +192,8 @@ def test_superseded_not_eligible():
     p = fresh()
     kid1 = make_knowledge(p, "kie-old", "old knowledge")
     from form.mandell.supersession import supersede_proposal
-    supersede_proposal(p, kid1, "new knowledge words")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    supersede_proposal(p, kid1, "new knowledge words", _producer="test")
     exp = ki.explain_influence(p, kid1)
     elig = exp["chain"]["ELIGIBLE"]
     check("T1.superseded_not_eligible",
@@ -206,11 +207,12 @@ def test_dependency_blocked_not_eligible():
     fails dependency-valid (parent superseded)."""
     p = fresh()
     pp = p.nursery.add("c1-dep-parent", words="parent knowledge")
-    p.confirm_proposal(pp.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pp.id})
+    p.confirm_proposal(pp.id, _producer="test", _review_context=p.make_review_context(pp.id, "test"))
     pc = p.nursery.add("c1-dep-child", words="child knowledge", parents=[pp.id])
-    p.confirm_proposal(pc.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pc.id})
+    p.confirm_proposal(pc.id, _producer="test", _review_context=p.make_review_context(pc.id, "test"))
     from form.mandell.supersession import supersede_proposal
-    supersede_proposal(p, pp.id, "parent replacement words")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    supersede_proposal(p, pp.id, "parent replacement words", _producer="test")
 
     exp = ki.explain_influence(p, pc.id)
     elig = exp["chain"]["ELIGIBLE"]
@@ -273,7 +275,8 @@ def test_why_not_used():
     p = fresh()
     kid1 = make_knowledge(p, "kie-a", "alpha knowledge")
     from form.mandell.supersession import supersede_proposal
-    supersede_proposal(p, kid1, "replacement words")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    supersede_proposal(p, kid1, "replacement words", _producer="test")
     res = ki.why_not_used(p, kid1, context="alpha")
     check("T1.why_not_q", "NOT USED" in res["question"])
     check("T1.why_not_reasons", len(res.get("blocking_reasons", [])) > 0)
@@ -315,7 +318,8 @@ def test_historical_not_rewritten():
     obs1 = exp1["chain"]["OBSERVED"]
 
     from form.mandell.supersession import supersede_proposal
-    supersede_proposal(p, kid, "newer words here")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    supersede_proposal(p, kid, "newer words here", _producer="test")
 
     exp2 = ki.explain_influence(p, kid, outcome_id=oid)
     obs2 = exp2["chain"]["OBSERVED"]
@@ -427,7 +431,8 @@ def test_ekc_explicit_semantics():
 
     # Hard law: explicit choice cannot bypass supersession
     from form.mandell.supersession import supersede_proposal
-    supersede_proposal(p, kid, "replacement words")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    supersede_proposal(p, kid, "replacement words", _producer="test")
     sel_sup = ks.select_for_context(p, unrelated, explicit_ids=[kid])
     check("T2.ekc_no_bypass",
           kid not in [s["id"] for s in sel_sup["selected"]])
