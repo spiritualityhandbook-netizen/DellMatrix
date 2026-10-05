@@ -158,10 +158,19 @@ def auto_contract(rec) -> None:
         return orig_nconfirm(self, pid)
 
     cl.confirm_proposal, nmod.Nursery.confirm = authority, nconfirm
+    # Lineage test: mock policy to allow (policy tested separately)
+    from form.dell_matrix import acceptance_policy as ap_mod
+    orig_check = ap_mod.AcceptancePolicy.check
+    def mock_check(self, producer, pid, review_context=None, proposal_version=None):
+        if producer == "auto_growth":
+            return {"allowed": True, "via": "test_mock"}
+        return orig_check(self, producer, pid, review_context, proposal_version)
+    ap_mod.AcceptancePolicy.check = mock_check
     try:
         res = a._nursery_auto("Auto canonical probe", "w", judge, "probe")
     finally:
         cl.confirm_proposal, nmod.Nursery.confirm = orig_auth, orig_nconfirm
+        ap_mod.AcceptancePolicy.check = orig_check
     pid = res.get("id")
     rec("auto_confirms_only_via_program_authority",
         res.get("status") == "auto_confirmed" and calls["authority"] == 1 and calls["direct"] == 0, f"{res} {calls}")
@@ -245,8 +254,17 @@ def auto_language_contract(rec) -> None:
         before_live, before_file = live(), _hash(_path(A))
         a = ag.AutoGrowth(auto=True, internet=False)
         a.owner = G
+        # Lineage test: mock policy to allow (policy tested separately)
+        from form.dell_matrix import acceptance_policy as ap_mod2
+        orig_check2 = ap_mod2.AcceptancePolicy.check
+        def mock_check2(self, producer, pid, review_context=None, proposal_version=None):
+            if producer == "auto_growth":
+                return {"allowed": True, "via": "test_mock"}
+            return orig_check2(self, producer, pid, review_context, proposal_version)
+        ap_mod2.AcceptancePolicy.check = mock_check2
         # 7 A > AUTO > A
         res = a._nursery_auto("Autolang probe", "w", judge, "probe")
+        ap_mod2.AcceptancePolicy.check = orig_check2
         rec("L07_auto_confirms_under_own_owner", res.get("status") == "auto_confirmed", str(res))
         rec("L07_A_AUTO_A_working_copy_and_binding_unchanged", live() == before_live and L.bound_program() is pa)
         rec("L07_A_file_untouched_by_AUTO", _hash(_path(A)) == before_file)
@@ -254,6 +272,9 @@ def auto_language_contract(rec) -> None:
         # 8 AutoGrow custom > restart > AUTO (fresh process, a different session owner bound): retained, no leak
         code = ("import json, sys; import form.dell_matrix.auto_growth as ag; from form.persist import load; "
                 "from form.mandell.seed import CELLS; from form.mandell import language as L; "
+                "from form.dell_matrix import acceptance_policy as ap; "
+                "_oc = ap.AcceptancePolicy.check; "
+                "ap.AcceptancePolicy.check = lambda self, p, i, r=None, v=None: {'allowed': True, 'via': 'test'} if p == 'auto_growth' else _oc(self, p, i, r, v); "
                 f"s = load({S!r}); a = ag.AutoGrowth(auto=True, internet=False); a.owner = {G!r}; "
                 "j = {'floor_accept': True, 'verita_score': 0.9, 'combined': 0.9, 'grade': 'clear', 'reason': 'p'}; "
                 "r = a._nursery_auto('Autolang restart probe', 'w', j, 'probe'); "
