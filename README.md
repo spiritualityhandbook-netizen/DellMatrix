@@ -27,7 +27,13 @@ DellMatrix lets you create ideas, grow them into proposals, confirm the ones wor
 
 ## 2. Status
 
-Reviewed production SHA: `f3c9007` (2026-10-04). All claims below were verified by executing the commands on this SHA unless labeled otherwise.
+**Production main:** `1d5b6c7` (2026-10-05, post PR #77/#78 merges).
+**Phase-5 candidate:** PR #79 (branch `phase-5-nursery-growth`, NOT MERGED).
+
+All §2 claims below were verified on production main `1d5b6c7` unless
+labeled otherwise. Walkthroughs originally executed on `f3c9007`
+(2026-10-04) are retained as dated historical evidence where noted.
+Phase-5 behaviors (§6.5) are candidate-only until PR #79 merges.
 
 | Area | Status | Evidence |
 |------|--------|----------|
@@ -49,7 +55,7 @@ Reviewed production SHA: `f3c9007` (2026-10-04). All claims below were verified 
 | DuoBeta cross-session learning | **PARTIAL** | Works within session; cross-process persistence of staged proposals not observed |
 | REPL `supersede` command | **WORKING / VERIFIED** | `supersede idea <id> with <words>` works with genuine confirmed ID; fails gracefully on unknown/non-confirmed ID |
 | `lineage` by label | **PARTIAL** | Works by proposal ID; label lookup not implemented (use ID from `proposals`) |
-| Confirmation atomicity | **IN REPAIR / UNMERGED** | Active repair on [PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77) (not merged) |
+| Confirmation atomicity | **WORKING / VERIFIED** | Intent-journal recovery merged via [PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77) (2026-10-05); crash converges to complete OLD or NEW state |
 | Nested projects / perspectives | **PLANNED** | Not implemented |
 | Rich visual UX | **PLANNED** | HTML export exists; interactive UI planned |
 | Windows/Mac launchers | **UNVERIFIED** | `Launch DellMatrix.bat` / `.command` exist but not executed |
@@ -105,7 +111,7 @@ flowchart TD
 
 The nursery tracks proposal status (`pending` → `confirmed`). The plane holds confirmed Ideas as spatial units. On `save`, both are written to disk. On restart, `load` restores state from the disk files.
 
-**Crash recovery (IN REPAIR, not in production):** If the process crashes mid-confirmation on production main, the state may be ambiguous — there is no intent-journal recovery mechanism in the merged code. An intent-journal recovery mechanism is under active repair in [PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77) (not merged). That repair's scoped contract is: after a crash, recovery converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state), subject to the repair's evidence limits. Do not expect crash recovery on production main.
+**Crash recovery (MERGED via PR #77, 2026-10-05):** If the process crashes mid-confirmation, the intent-journal recovery mechanism converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state). This is production behavior on main `1d5b6c7`.
 
 ---
 
@@ -148,13 +154,13 @@ You'll see a banner and a `you>` prompt. Type `tutorial` for a guided walkthroug
 | Supersede (API) | `supersede_proposal(p, old_id, ...)` | New revision; old marked superseded | `form/mandell/supersession.py` | API and REPL both verified with genuine ID |
 | Outcomes | `outcomes` | Honest empty ("No outcomes recorded") or list | `form/repl.py` | Walkthrough verified |
 
-> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call on SHA `f3c9007`.
+> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call. Historical walkthroughs (2026-10-04) ran on SHA `f3c9007`; current production is main `1d5b6c7`.
 
 ---
 
 ## 6. Walkthroughs
 
-Each walkthrough was executed on SHA `f3c9007` with a temporary owner; state was cleaned up afterward. REPL sessions used piped stdin.
+> **Historical evidence (2026-10-04):** Each walkthrough below was executed on SHA `f3c9007` with a temporary owner; state was cleaned up afterward. REPL sessions used piped stdin. These remain valid as historical evidence of the production behavior at that SHA; they were not all re-executed on the Phase-5 candidate (PR #79, unmerged).
 
 ### 6.1 Create, store, reload
 
@@ -218,17 +224,21 @@ assert ranked[0]["id"] == "idea1"
 
 Supersession (replacing a confirmed idea with a newer revision) works via both the Python API and the REPL command (with a genuine confirmed proposal ID):
 
+> **Phase-5 candidate:** supersession requires explicit authorization (human opt-in or approval). This example was re-executed on the candidate head.
+
 ```python
-# VERIFIED working (Python API) - complete end-to-end:
+# VERIFIED working on Phase-5 candidate (Python API) - complete end-to-end:
 from form.open import open_program
 from form.mandell.supersession import supersede_proposal
 p = open_program("Owner")
+p.acceptance_policy.grant_opt_in("Owner", scope="supersede")  # Phase-5: explicit authorization
 # 1. Create and confirm the predecessor
 pr = p.nursery.add('Original Idea', words='initial content')
-p.confirm_proposal(pr.id)
+ctx = p.make_review_context(pr.id, "Owner")
+p.confirm_proposal(pr.id, _producer="Owner", _review_context=ctx)
 old_id = pr.id
 # 2. Supersede it (returns a receipt dict)
-receipt = supersede_proposal(p, old_id, words="revised content")
+receipt = supersede_proposal(p, old_id, words="revised content", _producer="Owner")
 assert receipt["ok"] is True
 assert receipt["old_id"] == old_id
 assert receipt["revision_number"] == 2
@@ -330,11 +340,11 @@ Diagrams or mock examples of the above are conceptual only. Roadmap phases beyon
 - Resonance/harmony has scoring but no direct user command.
 - DuoBeta learning is session-scoped; cross-session persistence unverified.
 - Windows/Mac launchers and Spanish/French commands are unverified.
-- Confirmation crash recovery is under active repair ([PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77), unmerged).
+- Confirmation crash recovery is production behavior (merged via PR #77).
 - "User-ready" is not claimed. See §2 for the scoped status table.
 
-### Repair in review
-An explicitly labeled repair-in-review subsection: confirmation/supersession atomicity fixes are in progress on [PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77) (branch `argus-repair-v2`, not merged into main). The main branch described by this README does **not** include those fixes.
+### Phase-5 candidate (PR #79, unmerged)
+Phase-5 acceptance authorization, lifecycle coherence, and learning bounds (§6.5) are implemented on branch `phase-5-nursery-growth` ([PR #79](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/79), NOT MERGED, NOT CERTIFIED). The main branch described by this README does **not** include Phase-5 changes.
 
 ### Test commands
 ```bash
@@ -342,11 +352,12 @@ python3 -m form.regress --twice        # full suite, forward, twice
 python3 -m form.regress --order rev    # full suite, reverse order
 ```
 
-**Repair-branch tests (not on production main):** The following modules exist only on the unmerged repair branch ([PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77)). They are not runnable on production `f3c9007`:
+**Phase-5 candidate tests (not on production main):** The following modules exist only on the unmerged Phase-5 branch ([PR #79](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/79)). They are not runnable on production `1d5b6c7`:
 ```bash
-# On repair branch checkout only:
-python3 -m form.mandell.r3_permanent_regressions  # R3 idea-preservation proofs
-python3 -m form.mandell.confirm_crash_matrix      # confirmation crash matrix
+# On Phase-5 branch checkout only:
+python3 -m form.mandell.wo51_adversarial_test  # acceptance adversarial
+python3 -m form.mandell.wo52_coherence_test   # lifecycle coherence
+python3 -m form.mandell.d20_reference_test    # Delta-20 reference model
 ```
 
 ### Contributing

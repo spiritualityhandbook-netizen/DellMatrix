@@ -1,7 +1,13 @@
 # DellMatrix README Code-Truth Evidence Map
 
 **Research date:** 2026-10-04 America/Chicago
-**Source SHA:** `f3c9007ea446af4aeb7f2f2f7a7a8add74a2704f` (production main, PR #75 merge)
+**Source SHA:** `f3c9007ea446af4aeb7f2f2f7a7a8add74a2704f` (production main at review time, PR #75 merge, 2026-10-04)
+**Current production:** `1d5b6c7` (main, post PR #77/#78, 2026-10-05)
+**Phase-5 candidate:** PR #79 (branch `phase-5-nursery-growth`, NOT MERGED, NOT CERTIFIED)
+
+> This map is historical evidence for the 2026-10-04 review. It was not
+> fully re-executed on the Phase-5 candidate. Phase-5 behaviors are
+> candidate-only until PR #79 merges.
 **Research env:** isolated clone at /tmp/dm_readme_research, Python 3.12.3, Linux
 **Method:** source reads + live REPL walkthroughs with temp owners (`README_TEST_*`), state cleaned after.
 
@@ -58,7 +64,7 @@
 
 ---
 
-## 3. Walkthrough results (all on f3c9007, temp owners, cleaned up)
+## 3. Walkthrough results (historical: all on f3c9007, temp owners, cleaned up, 2026-10-04)
 
 ### W1. Create / store / reload an idea — WORKING
 - **COMMANDS:** `create an idea called walktest` → `save` → new process `python3 -m form.repl --owner README_TEST_02 --load`
