@@ -1122,10 +1122,34 @@ def write_supersede_intent(owner: str, old_id: str, new_id: str) -> None:
     Covers the complete transition: successor acceptance, predecessor
     lifecycle change, and revision links. Must be called BEFORE modifying
     any files.
+
+    F6: Records the old proposal's revision root and number at intent-write
+    time. Recovery uses this as the canonical ancestry reference, not the
+    mutable asserted root in the current old_prop.
     """
     from form.persist import _path
     from form.dell_matrix.nursery import owner_nursery_path
     from form.dell_matrix.atomic_write import atomic_write_json
+    import json as _json
+
+    # F6: Capture old's revision identity at intent-write time.
+    old_root = None
+    old_num = None
+    try:
+        npath = owner_nursery_path(owner)
+        with open(npath, encoding="utf-8") as f:
+            ndata = _json.load(f)
+        proposals = ndata.get("proposals", {})
+        old_prop = proposals.get(old_id, {})
+        if isinstance(old_prop, dict):
+            r = old_prop.get("revision_root_id")
+            if isinstance(r, str) and r:
+                old_root = r
+            n = old_prop.get("revision_number")
+            if isinstance(n, int) and not isinstance(n, bool):
+                old_num = n
+    except Exception:
+        pass  # If we can't read it, leave as None; recovery will fail closed
 
     journal = {
         "journal_version": SUPERSEDE_JOURNAL_VERSION,
@@ -1136,6 +1160,9 @@ def write_supersede_intent(owner: str, old_id: str, new_id: str) -> None:
         "phase": "prepared",
         "old_nursery_sha256": _sha256_file_absent(owner_nursery_path(owner)),
         "old_program_sha256": _sha256_file_absent(_path(owner)),
+        # F6: Intent-fixed ancestry evidence
+        "intent_old_root": old_root,  # None if old had no explicit root (first revision)
+        "intent_old_number": old_num,  # None if old had no number
     }
     atomic_write_json(_supersede_journal_path(owner), journal)
 
@@ -1148,22 +1175,23 @@ def clear_supersede_intent(owner: str) -> None:
         pass
 
 
-def _validate_revision_identity(old_prop: dict, new_prop: dict, old_id: str) -> None:
+def _validate_revision_identity(old_prop: dict, new_prop: dict, old_id: str,
+                                intent_old_root=None, intent_old_number=None) -> None:
     """Validate revision identity using canonical semantics.
 
     Strict type contract (no coercion):
     - revision_root_id must be str (non-empty) or None/absent
     - revision_number must be int (not bool, not float, not str) or None/absent
 
-    The successor's root must equal the old's canonical root, defined as:
-    - old's revision_root_id if present and valid, else old's own ID
+    F6: Uses intent-fixed ancestry evidence (recorded at intent-write time)
+    as the canonical reference, not old_prop's mutable asserted root alone.
+    If the intent recorded a root, the current old's root must match it.
+    If the intent recorded None (old was first revision), the current old
+    must have no explicit root or root == old_id.
 
-    The successor's number must be exactly old's number + 1, using strict
-    integer arithmetic (no int() coercion of floats/strings).
-
-    For multi-revision chains: if old has an explicit root different from
-    its own ID, that root is accepted as the chain root (established by
-    prior supersession). The new must match it exactly.
+    The successor's root must equal the canonical root. The successor's
+    number must be exactly old's number + 1, using strict integer
+    arithmetic (no int() coercion of floats/strings).
 
     Raises RollbackRecoveryError on any contradiction. Journal preserved.
     """
@@ -1179,12 +1207,28 @@ def _validate_revision_identity(old_prop: dict, new_prop: dict, old_id: str) -> 
         raise RollbackRecoveryError(
             "supersede intent: missing or invalid new revision root (preserved).")
 
-    # Canonical old root: recorded root, or own ID if first revision
-    canonical_old_root = old_root if old_root is not None else old_id
-    if new_root != canonical_old_root:
+    # F6: Verify old's current root matches intent-fixed evidence.
+    # This prevents paired unrelated roots from passing.
+    if intent_old_root is not None:
+        # Intent recorded an explicit root; current old must match it.
+        if old_root != intent_old_root:
+            raise RollbackRecoveryError(
+                f"supersede intent: old root {old_root} does not match "
+                f"intent-recorded root {intent_old_root} (preserved).")
+        canonical_root = intent_old_root
+    else:
+        # Intent recorded None: old was first revision (no explicit root).
+        # Current old must have no explicit root, or root == own ID.
+        if old_root is not None and old_root != old_id:
+            raise RollbackRecoveryError(
+                f"supersede intent: old has unexpected root {old_root}; "
+                f"intent recorded first revision (preserved).")
+        canonical_root = old_id
+
+    if new_root != canonical_root:
         raise RollbackRecoveryError(
             f"supersede intent: revision root {new_root} does not match "
-            f"canonical old root {canonical_old_root} (preserved)."
+            f"canonical root {canonical_root} (preserved)."
         )
 
     old_num = old_prop.get("revision_number")
@@ -1206,6 +1250,13 @@ def _validate_revision_identity(old_prop: dict, new_prop: dict, old_id: str) -> 
     if new_num is None:
         raise RollbackRecoveryError(
             "supersede intent: missing new revision number (preserved).")
+
+    # F6: Verify old's number matches intent-fixed evidence.
+    if intent_old_number is not None:
+        if canonical_old_num != intent_old_number:
+            raise RollbackRecoveryError(
+                f"supersede intent: old number {canonical_old_num} does not match "
+                f"intent-recorded number {intent_old_number} (preserved).")
 
     if canonical_new_num != canonical_old_num + 1:
         raise RollbackRecoveryError(
@@ -1346,7 +1397,9 @@ def recover_supersede_intent(owner: str) -> str:
 
     if new_ok and old_ok and links_ok:
         # Validate revision identity before accepting complete NEW.
-        _validate_revision_identity(old_prop, new_prop, old_id)
+        _validate_revision_identity(old_prop, new_prop, old_id,
+            intent_old_root=journal.get("intent_old_root"),
+            intent_old_number=journal.get("intent_old_number"))
         clear_supersede_intent(owner)
         return "already_complete"
 
@@ -1385,7 +1438,9 @@ def recover_supersede_intent(owner: str) -> str:
     if new_ok and old_ok and not links_ok:
         # Validate full revision identity before repairing links.
         # Do not repair if identity is contradictory or missing.
-        _validate_revision_identity(old_prop, new_prop, old_id)
+        _validate_revision_identity(old_prop, new_prop, old_id,
+            intent_old_root=journal.get("intent_old_root"),
+            intent_old_number=journal.get("intent_old_number"))
         # Repair ONLY revision links (superseded_by_id, supersedes_id).
         # Do NOT touch chain (derivation lineage).
         if isinstance(old_prop, dict):
@@ -1427,7 +1482,9 @@ def recover_supersede_intent(owner: str) -> str:
                 "supersede intent: durable new link not repaired (preserved)."
             )
         # Validate revision identity in durable state
-        _validate_revision_identity(durable_old, durable_new, old_id)
+        _validate_revision_identity(durable_old, durable_new, old_id,
+            intent_old_root=journal.get("intent_old_root"),
+            intent_old_number=journal.get("intent_old_number"))
         # Validate successor Idea still present in durable Program
         durable_units = durable_pd.get("plane", {}).get("units", {})
         if new_id not in durable_units:

@@ -1048,6 +1048,12 @@ p = open_program(OWNER_ID)
 pr_old = p.nursery.add('OLD_PROP', words='original')
 p.confirm_proposal(pr_old.id)
 pr_new = p.nursery.add('NEW_PROP', words='successor')
+# F6: Establish genuine revision identity BEFORE writing intent.
+# Old is first revision (number=1, no explicit root = own ID is canonical).
+# This is recorded in the journal as intent-fixed ancestry evidence.
+# Use the in-memory proposal object to avoid NurseryConflict.
+pr_old.revision_number = 1
+# Note: no revision_root_id for first revision (None = own ID canonical)
 p.nursery.save()
 persist_rest.save(p)
 write_supersede_intent(OWNER_ID, pr_old.id, pr_new.id)
@@ -1056,11 +1062,12 @@ old_id, new_id = pr_old.id, pr_new.id
 npath = os.path.join(REPO_DIR, 'form', 'state', 'nursery_' + OWNER_ID + '.json')
 nd = json.load(open(npath))
 nd[old_id]['lifecycle_state'] = 'superseded'
-nd[old_id]['revision_root_id'] = 'rootA'
-nd[old_id]['revision_number'] = 5
+# Old keeps its genuine identity: number=1, no explicit root
+nd[old_id]['revision_number'] = 1
+# New is second revision: root=old_id (canonical), number=2
 nd[new_id]['status'] = 'confirmed'
-nd[new_id]['revision_root_id'] = 'rootA'
-nd[new_id]['revision_number'] = 6
+nd[new_id]['revision_root_id'] = old_id
+nd[new_id]['revision_number'] = 2
 if BRANCH == "complete":
     nd[old_id]['superseded_by_id'] = new_id
     nd[new_id]['supersedes_id'] = old_id
@@ -1072,6 +1079,13 @@ elif MUTATION == "nonsequential":
     nd[new_id]['revision_number'] = 9
 elif MUTATION == "malformed":
     nd[new_id]['revision_number'] = "not-a-number"
+elif MUTATION == "paired_unrelated":
+    # F6: Both old and new claim the same unrelated root.
+    # Intent recorded old as first revision (no root). This must fail.
+    nd[old_id]['revision_root_id'] = 'unrelated'
+    nd[old_id]['revision_number'] = 1
+    nd[new_id]['revision_root_id'] = 'unrelated'
+    nd[new_id]['revision_number'] = 2
 json.dump(nd, open(npath, 'w'))
 ppath = os.path.join(REPO_DIR, 'form', 'state', 'program_' + OWNER_ID + '.json')
 pd = json.load(open(ppath))
@@ -1167,7 +1181,12 @@ for attempt in (1, 2):
             fail("old link wrong")
         if new_d.get("supersedes_id") != old_id:
             fail("new link wrong")
-        if old_d.get("revision_root_id") != new_d.get("revision_root_id"):
+        # F6: Check roots match via canonical semantics.
+        # Old with no explicit root has canonical root = own ID.
+        old_root = old_d.get("revision_root_id")
+        if old_root is None:
+            old_root = old_id
+        if old_root != new_d.get("revision_root_id"):
             fail("roots mismatch in durable state")
         try:
             if int(new_d.get("revision_number")) != int(old_d.get("revision_number")) + 1:
@@ -1243,7 +1262,7 @@ def t15():
     import itertools
     branches = ["complete", "repair"]
     mutations = ["valid", "conflicting_root", "missing_root",
-                 "nonsequential", "malformed"]
+                 "nonsequential", "malformed", "paired_unrelated"]
     entrypoints = ["load", "constructor"]
     # Compile children once
     py_compile.compile(__file__, doraise=True)
@@ -1293,8 +1312,8 @@ def t15():
         else:
             print("MATRIX ROW FAILED %s: %s" % (case_id, detail2))
         clean(owner)
-    print("MATRIX_ROWS: %d/20" % passed)
-    rec("15_revision_identity", passed == 20, "%d/20" % passed)
+    print("MATRIX_ROWS: %d/24" % passed)
+    rec("15_revision_identity", passed == 24, "%d/24" % passed)
 
 if __name__ == "__main__":
     for owner, fn in TEST_CASES:
