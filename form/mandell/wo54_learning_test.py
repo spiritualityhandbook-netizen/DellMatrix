@@ -106,5 +106,5 @@ if __name__ == "__main__":
     test_bounded_learning()
 
 def smoke():
-    """Regression smoke entrypoint."
+    """Regression smoke entrypoint."""
     return test_bounded_learning()
