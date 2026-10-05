@@ -161,10 +161,12 @@ def auto_contract(rec) -> None:
     # Lineage test: mock policy to allow (policy tested separately)
     from form.dell_matrix import acceptance_policy as ap_mod
     orig_check = ap_mod.AcceptancePolicy.check
-    def mock_check(self, producer, pid, review_context=None, proposal_version=None):
+    def mock_check(self, producer, pid, review_context=None, proposal_version=None,
+                   operation="confirm"):
         if producer == "auto_growth":
             return {"allowed": True, "via": "test_mock"}
-        return orig_check(self, producer, pid, review_context, proposal_version)
+        return orig_check(self, producer, pid, review_context, proposal_version,
+                          operation=operation)
     ap_mod.AcceptancePolicy.check = mock_check
     try:
         res = a._nursery_auto("Auto canonical probe", "w", judge, "probe")
@@ -257,10 +259,12 @@ def auto_language_contract(rec) -> None:
         # Lineage test: mock policy to allow (policy tested separately)
         from form.dell_matrix import acceptance_policy as ap_mod2
         orig_check2 = ap_mod2.AcceptancePolicy.check
-        def mock_check2(self, producer, pid, review_context=None, proposal_version=None):
+        def mock_check2(self, producer, pid, review_context=None, proposal_version=None,
+                          operation="confirm"):
             if producer == "auto_growth":
                 return {"allowed": True, "via": "test_mock"}
-            return orig_check2(self, producer, pid, review_context, proposal_version)
+            return orig_check2(self, producer, pid, review_context, proposal_version,
+                               operation=operation)
         ap_mod2.AcceptancePolicy.check = mock_check2
         # 7 A > AUTO > A
         res = a._nursery_auto("Autolang probe", "w", judge, "probe")
@@ -274,7 +278,7 @@ def auto_language_contract(rec) -> None:
                 "from form.mandell.seed import CELLS; from form.mandell import language as L; "
                 "from form.dell_matrix import acceptance_policy as ap; "
                 "_oc = ap.AcceptancePolicy.check; "
-                "ap.AcceptancePolicy.check = lambda self, p, i, r=None, v=None: {'allowed': True, 'via': 'test'} if p == 'auto_growth' else _oc(self, p, i, r, v); "
+                "ap.AcceptancePolicy.check = lambda self, p, i, r=None, proposal_version=None, operation='confirm': {'allowed': True, 'via': 'test'} if p == 'auto_growth' else _oc(self, p, i, r, proposal_version, operation=operation); "
                 f"s = load({S!r}); a = ag.AutoGrowth(auto=True, internet=False); a.owner = {G!r}; "
                 "j = {'floor_accept': True, 'verita_score': 0.9, 'combined': 0.9, 'grade': 'clear', 'reason': 'p'}; "
                 "r = a._nursery_auto('Autolang restart probe', 'w', j, 'probe'); "

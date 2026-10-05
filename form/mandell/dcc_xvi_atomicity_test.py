@@ -129,7 +129,10 @@ if SCEN == "crash_after_create":
     S.supersede_proposal(p, aid, "atomicity successor alpha", _producer="test")
 elif SCEN == "crash_after_confirm":
     def crash_after_confirm(pid, **kwargs):
-        res = orig_confirm(pid)
+        # Forward all args (producer/context/operation); assert the
+        # confirmation actually succeeds before injecting the crash.
+        res = orig_confirm(pid, **kwargs)
+        assert res.get("ok"), f"confirm must succeed before crash: {res}"
         persist_rest.save(p)
         snap("crashed", "after_confirm")
         os._exit(42)
