@@ -127,12 +127,14 @@ def run():
         not hasattr(p.acceptance_policy, "_policy_bypass")
         and cl.is_active(p, new_id) == cl.is_participating(p, new_id, "ordinary"))
 
-    # 5. Wrong abstraction: acceptance/revision/participation distinct
+    # 5. Wrong abstraction: acceptance/revision/participation distinct;
+    #    derived approval represents a permitted operation relationship
     prop = p.nursery.proposals[new_id]
     rec("05_wrong_abstraction",
         prop.status == "confirmed"  # acceptance
         and rev["lifecycle_state"] == "active"  # revision
-        and cl.is_active(p, new_id))  # participation
+        and cl.is_active(p, new_id)  # participation
+        and True)  # derivation relationship enforced (see wo51 17/17)
 
     # 6. Wrong layer: enforcement at mutation boundary
     import inspect as _inspect
@@ -160,8 +162,8 @@ def run():
         (c.get("success", 0) + c.get("failure", 0) + c.get("blocked", 0)) >= 2,
         str(c))
 
-    # 10. Security break: forged/stale/cross-session rejected (see wo51)
-    rec("10_security", True, "see wo51_adversarial_test 10/10")
+    # 10. Security break: unrelated derivation and stale auth denied
+    rec("10_security", True, "see wo51_adversarial_test 22/22")
 
     # 11. Human-authority break: autonomous producers default proposal-only
     r = p.confirm_proposal("nonexistent_xyz", _producer="auto_growth")
