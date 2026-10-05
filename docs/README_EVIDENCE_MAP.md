@@ -31,7 +31,8 @@
 - **EVIDENCE STATUS:** Tested this session.
 
 ### 1d. Command registry
-- **SOURCE:** No `form/registry.py` exists. Dispatch is in `form/repl.py::_dispatch_public_line` (line 2540) → `form/mandell/translate.py::translate()` (line 137) → `_execute_intent`. There IS `form/dell_matrix/actions_registry.py` (Dell/operator registry), but English routing goes through `translate`.
+- **SOURCE:** The canonical operator registry is `form/mandell/registry.py` (True Dell registry, numbered operators CORE_I 00-50, CORE_II 51-99). Dispatch is in `form/repl.py::_dispatch_public_line` → `form/mandell/translate.py::translate()` → `_execute_intent`. `form/dell_matrix/actions_registry.py` provides UI action lists (`actions_flat`, `actions_for_mode`) for visual modes, not the language operator definitions.
+- **CORRECTION (2026-10-04):** An earlier draft incorrectly called `actions_registry.py` the Dell/operator registry. The canonical registry is `form/mandell/registry.py`.
 - **REACHABILITY:** Internal. Users interact via English lines at the `you>` prompt.
 - **EVIDENCE STATUS:** Code-verified. `help` lists 9 categories: create, knowledge, learn, explain, save, recover, look, dell, system.
 
@@ -79,11 +80,12 @@
 - **OBSERVED:** No REPL command named `resonance`/`harmony`. Resonance exists as library code (`resonance_rank` in `form/dell_matrix/first_person.py`) and surfaces in `page` output as `res=` scores and in `rank` affinity ordering. Phase-3 geometry proofs exist as test files, not user commands.
 - **STATUS:** PARTIAL — scoring machinery exists and is exercised by rank/page; no direct user-facing resonance command. Do not document as a runnable command.
 
-### W5. Supersession / history — MIXED
-- **Python API:** `supersede_proposal(p, old_id, words=...)` → `{'ok': True}`, old lifecycle → `superseded`. VERIFIED WORKING.
-- **REPL:** `supersede idea <label> with <words>` → `unknown_predecessor` (labels aren't proposals); `supersede idea <proposal-id> with <words>` → `not_on_plane` (proposal's idea not on plane under proposal ID). The English path does not handle the normal user flow.
+### W5. Supersession / history — WORKING (with correction)
+- **Python API:** `supersede_proposal(p, old_id, words=...)` → receipt with `{'ok': True, 'old_id': ..., 'new_id': ...}`, old lifecycle → `superseded`. VERIFIED WORKING.
+- **REPL:** `supersede idea <id> with <words>` → VERIFIED WORKING with genuine confirmed proposal ID (re-tested 2026-10-04). Earlier failure was due to testing with unconfirmed/unknown ID.
 - **History:** `history 3` → "History · 0 notes (empty — act, then history fills)". Command exists; empty state honest.
-- **STATUS:** API WORKING; REPL command BROKEN for normal flow. Document API + label the REPL gap.
+- **STATUS:** API WORKING; REPL WORKING with genuine ID. 
+- **CORRECTION (2026-10-04):** An earlier draft labeled the REPL command BROKEN based on a test with an unconfirmed ID. That conclusion is withdrawn; the retest with a genuine confirmed ID succeeds.
 
 ### W6. Visual output — WORKING
 - **COMMANDS:** `visual`, `sphere`, `lattice`

@@ -81,10 +81,10 @@ flowchart TD
     style I fill:#fff3e0
 ```
 
-**Autonomy note:** Most commands require you to type them, but DellMatrix has autonomous paths:
-- `auto_growth.py`: The `AutoGrowth` class can automatically propose and confirm ideas based on quality thresholds (`_should_auto_confirm` checks `floor_accept`, `verita_score`, `combined` score, and grade). When enabled, it calls `p.confirm_proposal()` without user input per proposal.
-- REPL `auto confirm on`: When enabled, every `grow` command automatically confirms all nursery proposals.
-- Default: Both are OFF by default. Human-controlled acceptance is the default, not a universally enforced policy.
+**Autonomy note:** Most commands require you to type them, but DellMatrix has autonomous paths with different defaults:
+- `auto_growth.py`: The `AutoGrowth` dataclass defaults to `auto=True, internet=True`. When instantiated with defaults, it can automatically propose and confirm ideas based on quality thresholds (`_should_auto_confirm` checks `floor_accept`, `verita_score`, `combined` score, and grade). It calls `p.confirm_proposal()` without per-proposal user input. Callers can set `auto=False` to disable.
+- REPL `auto confirm on`: The `Program.auto_confirm_grow` attribute defaults to `False`. When the user types `auto confirm on`, every subsequent `grow` command automatically confirms all nursery proposals.
+- Default posture: REPL interaction is human-controlled by default; the `AutoGrowth` class is opt-out (defaults on) when instantiated directly.
 
 ### (b) Proposal lifecycle and persistence
 
@@ -105,13 +105,15 @@ flowchart TD
 
 The nursery tracks proposal status (`pending` → `confirmed`). The plane holds confirmed Ideas as spatial units. On `save`, both are written to disk. On restart, `load` restores state from the disk files.
 
-**Crash recovery (IN REPAIR, not in production):** If the process crashes mid-confirmation, the current production code may leave the state ambiguous. An intent-journal recovery mechanism is under active repair in [PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77) (not merged). Until that merges, there is no universal crash guarantee: after a crash, recovery may expose the complete OLD state or the complete NEW state, not necessarily the exact pre-crash state.
+**Crash recovery (IN REPAIR, not in production):** If the process crashes mid-confirmation on production main, the state may be ambiguous — there is no intent-journal recovery mechanism in the merged code. An intent-journal recovery mechanism is under active repair in [PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77) (not merged). That repair's scoped contract is: after a crash, recovery converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state), subject to the repair's evidence limits. Do not expect crash recovery on production main.
 
 ---
 
 ## 4. Quick Start
 
 **Requirements:** Python 3.10+, no third-party packages for the core loop (see `requirements.txt`). Tested on Linux; Windows/Mac launchers exist but are unverified.
+
+**Docs:** [INSTALL](docs/INSTALL.md) · [START_HERE](docs/START_HERE.md) · [TUTORIAL](docs/TUTORIAL.md)
 
 ```bash
 # Clone and launch
@@ -133,7 +135,7 @@ You'll see a banner and a `you>` prompt. Type `tutorial` for a guided walkthroug
 | Action | User entrypoint | Observable result | Implementation source | Test |
 |--------|----------------|-------------------|----------------------|------|
 | Create idea | `create an idea called <name>` | Idea stored; coaching on strength/detail/goals | `form/repl.py`, `form/dell_matrix/` | Walkthrough verified |
-| Grow proposals | `grow ideas N` | N proposals in nursery | Dell 13 via `form/grow.py` | Walkthrough verified |
+| Grow proposals | `grow ideas N` | Proposals in nursery (count varies; observed 1 from `grow ideas 2`) | Dell 13 via `form/grow.py` | Walkthrough verified |
 | List proposals | `proposals` | Pending proposals with IDs | `form/dell_matrix/nursery.py` | Walkthrough verified |
 | Confirm | `confirm <id>` / `confirm all` | Proposal confirmed; Idea on plane | `form/dell_matrix/confirm_lineage.py` | Walkthrough verified |
 | Inspect | `look`, `page`, `rank` | Affinity-ordered idea display | `form/dell_matrix/first_person.py` | Walkthrough verified |
@@ -214,7 +216,7 @@ assert ranked[0]["id"] == "idea1"
 
 ### 6.5 Supersession and history
 
-Supersession (replacing a confirmed idea with a newer revision) works via the Python API but **not** via the REPL command:
+Supersession (replacing a confirmed idea with a newer revision) works via both the Python API and the REPL command (with a genuine confirmed proposal ID):
 
 ```python
 # VERIFIED working (Python API) - complete end-to-end:
@@ -225,17 +227,22 @@ p = open_program("Owner")
 pr = p.nursery.add('Original Idea', words='initial content')
 p.confirm_proposal(pr.id)
 old_id = pr.id
-# 2. Supersede it (returns a receipt dict, not just an ID)
+# 2. Supersede it (returns a receipt dict)
 receipt = supersede_proposal(p, old_id, words="revised content")
-assert receipt["supersedes_id"] == old_id
+assert receipt["ok"] is True
+assert receipt["old_id"] == old_id
 assert receipt["revision_number"] == 2
+new_id = receipt["new_id"]
 # → Old marked superseded; new revision active; history preserved.
 ```
 
 ```
 you> supersede idea <id> with <words>
-# → BROKEN in REPL (unknown_predecessor / not_on_plane). Use Python API.
+# → VERIFIED working with genuine confirmed ID. Fails gracefully on
+#   unknown/non-confirmed ID (not a broken command).
 ```
+
+*Historical note (2026-10-04): An earlier draft labeled the REPL command BROKEN based on a test with an unconfirmed ID. Retesting with a genuine confirmed proposal ID shows it works.*
 
 History: `history` shows recent entries. Crash recovery uses intent journals to distinguish interrupted operations from historical records (under active repair — see §2).
 
