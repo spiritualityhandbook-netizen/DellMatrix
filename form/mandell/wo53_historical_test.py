@@ -83,3 +83,7 @@ def test_historical_participation():
 
 if __name__ == "__main__":
     test_historical_participation()
+
+def smoke():
+    """Regression smoke entrypoint."
+    return test_historical_participation()

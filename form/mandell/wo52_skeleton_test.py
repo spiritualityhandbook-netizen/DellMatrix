@@ -101,3 +101,7 @@ def test_walking_skeleton():
 
 if __name__ == "__main__":
     test_walking_skeleton()
+
+def smoke():
+    """Regression smoke entrypoint."
+    return test_walking_skeleton()
