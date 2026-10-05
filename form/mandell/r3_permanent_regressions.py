@@ -573,8 +573,42 @@ jpath = _confirm_journal_path(OWNER_ID)
 nursery_ok = fp_bytes(npath) == baseline_nursery
 program_ok = fp_bytes(ppath) == baseline_program
 journal_cleared = not os.path.isfile(jpath)
-print('COMPLETE_COMPENSATION: nursery=%s program=%s journal_cleared=%s' % (
-    nursery_ok, program_ok, journal_cleared))
+# F2: Verify in-memory spatial authority is clean (correct authority:
+# program.spatial, not cube.session.spatial). A later save must not
+# reintroduce the failed Idea.
+spatial_clean = True
+try:
+    sp = p.spatial
+    if hasattr(sp, 'velocities') and pid in sp.velocities:
+        spatial_clean = False
+    if hasattr(sp, 'placements') and pid in sp.placements:
+        spatial_clean = False
+except Exception:
+    spatial_clean = False
+# F2: Verify a later save does not reintroduce the Idea. The Idea must
+# be absent from plane.units, spatial authority, and lattice cells.
+# History may honestly record the attempt (legitimate audit).
+persist_rest.save(p)
+idea_absent_after_save = True
+try:
+    if pid in p.cube.session.plane.units:
+        idea_absent_after_save = False
+    sp2 = p.spatial
+    if hasattr(sp2, 'velocities') and pid in sp2.velocities:
+        idea_absent_after_save = False
+    if hasattr(sp2, 'placements') and pid in sp2.placements:
+        idea_absent_after_save = False
+    # Check lattice cells do not contain the Idea
+    if hasattr(p.lattice, 'cells'):
+        for cell in p.lattice.cells.values():
+            members = cell.get('members', []) if isinstance(cell, dict) else []
+            if pid in members:
+                idea_absent_after_save = False
+                break
+except Exception:
+    idea_absent_after_save = False
+print('COMPLETE_COMPENSATION: nursery=%s program=%s journal_cleared=%s spatial_clean=%s no_reintroduce=%s' % (
+    nursery_ok, program_ok, journal_cleared, spatial_clean, idea_absent_after_save))
 
 # Test 2: Failed compensation (Program save fails during revert)
 p2 = open_program(OWNER_ID)
@@ -626,7 +660,7 @@ print('SETUP_DONE')
         print("STDERR:", err[:400])
         clean(o)
         return
-    complete_ok = "COMPLETE_COMPENSATION: nursery=True program=True journal_cleared=True" in out
+    complete_ok = "COMPLETE_COMPENSATION: nursery=True program=True journal_cleared=True spatial_clean=True no_reintroduce=True" in out
     failed_ok = "FAILED_COMPENSATION: journal_preserved=True" in out
     ok = complete_ok and failed_ok
     rec("16_f2_compensation", ok, "complete=%s failed=%s" % (complete_ok, failed_ok))

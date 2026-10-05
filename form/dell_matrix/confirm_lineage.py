@@ -63,33 +63,33 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
     existed = prop.id in units
     def _remove_newly_placed():
         """Remove a newly placed Idea from all in-memory structures.
-        F2: program.place() has multiple side effects beyond units:
-        - plane.units[pid]: the Unit object
-        - spatial.velocities[pid]: velocity tuple
-        - spatial.placements[pid]: placement record
-        - lattice: rebuilt from plane (derived, will be rebuilt on next save)
-        - history: new entry (append-only log, cannot be removed without corruption)
-        - keys: remembered label (index, stale entry harmless)
+        F2: Program.place() calls self.spatial.place() (SpatialAuthority),
+        which writes placements and velocities. Cleanup must use the SAME
+        authority: program.spatial (not program.cube.session.spatial,
+        which does not exist).
 
-        For complete compensation, we remove the units entry and the
-        spatial entries. The lattice is derived and will be rebuilt.
-        History is append-only; a failed-operation entry is honest (it
-        records the attempt). Keys index is harmless if stale.
-
-        After in-memory cleanup, the caller restores baseline file bytes
-        to disk, ensuring a later save cannot reintroduce effects.
+        After removing the Unit from plane.units, the lattice is rebuilt
+        from the plane using the sanctioned rebuild_from_plane method,
+        ensuring derived-state agreement.
         """
         units.pop(prop.id, None)
         try:
-            spatial = program.cube.session.spatial
+            # F2: Use program.spatial — the authority Program.place uses.
+            spatial = program.spatial
             if hasattr(spatial, 'velocities'):
                 spatial.velocities.pop(prop.id, None)
             if hasattr(spatial, 'placements'):
                 spatial.placements.pop(prop.id, None)
         except Exception:
             pass
-        # Note: lattice is derived from plane on save; history is append-only
-        # and honestly records the attempt; keys index staleness is harmless.
+        try:
+            # F2: Rebuild lattice from plane so derived state agrees.
+            if hasattr(program.lattice, 'rebuild_from_plane'):
+                program.lattice.rebuild_from_plane(program.cube.session.plane)
+        except Exception:
+            pass
+        # Note: history is append-only and honestly records the attempt;
+        # keys index staleness is harmless.
     try:
         program.place(
             prop.id, prop.label, words=prop.words, detail=_detail(prop, units), goals=_goals(prop, units),
