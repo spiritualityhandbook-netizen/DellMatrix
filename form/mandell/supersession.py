@@ -503,6 +503,8 @@ def _supersede_impl(program: Any, old_id: str, words: str,
                 target=succ_id,
                 reviewer=_auth_source["reviewer"],
                 data=program._acceptance_data_for(succ_id, "confirm"),
+                relationship={"type": "supersede_successor",
+                              "predecessor_id": old_id},
                 note="supersede successor confirm",
             )
             res = program.confirm_proposal(

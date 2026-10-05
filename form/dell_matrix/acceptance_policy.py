@@ -178,6 +178,10 @@ class AcceptancePolicy:
             "target": target,
             "reviewer": reviewer,
             "data_hash": data_hash,
+            # Full data retained for derivation relationship verification.
+            # (Director 2026-10-05 final: derived approvals must prove
+            # their relationship to the source's approved payload.)
+            "data": dict(data),
             "session_id": self._session_id,
             "producer": producer,
             "issued_at": time.time(),
@@ -207,36 +211,100 @@ class AcceptancePolicy:
                         source_opt_in: Optional[str],
                         operation: str, target: str, reviewer: str,
                         data: Mapping[str, Any],
+                        relationship: Mapping[str, Any],
                         note: str = "") -> Dict[str, Any]:
         """Derive a scoped approval from an approved enclosing operation.
 
-        Used by composite operations (e.g. supersession): the enclosing
-        operation was authorized (via approval or opt-in); the inner step
-        (e.g. successor confirm) gets its own recorded, audited approval
-        bound to the inner target+data. This is NOT a general bypass: the
-        derived approval is recorded, bound, revocable, and session-scoped
-        like any other.
+        Director 2026-10-05 (final): derivation is CONSTRAINED to explicit
+        permitted relationships. An ordinary approval cannot authorize
+        arbitrary derivation.
+
+        Currently permitted:
+        - {"type": "supersede_successor", "predecessor_id": old_id}:
+          source must be a "supersede" approval for predecessor_id (or an
+          active opt-in with the same relationship declared); the derived
+          operation must be "confirm"; the derived target's content must
+          match the source's approved successor payload.
+
+        The derived approval records its source chain. At execution time,
+        check() re-validates the chain: a revoked parent approval or a
+        revoked source opt-in invalidates an unfinished child.
         """
+        rel_type = relationship.get("type") if isinstance(relationship, Mapping) else None
+        if rel_type != "supersede_successor":
+            raise ApprovalError(
+                f"derive_approval: relationship type {rel_type!r} not permitted")
+        predecessor_id = relationship.get("predecessor_id")
+        if not predecessor_id:
+            raise ApprovalError("derive_approval: predecessor_id required")
+        if operation != "confirm":
+            raise ApprovalError(
+                "derive_approval: supersede_successor permits only confirm")
+
         if source_approval_id:
             src = self._issued_approvals.get(source_approval_id)
             if (not src or source_approval_id in self._revoked_approvals
                     or src["session_id"] != self._session_id):
                 raise ApprovalError("source approval invalid/revoked/foreign")
+            if src["operation"] != "supersede" or src["target"] != predecessor_id:
+                raise ApprovalError(
+                    "derive_approval: source is not a supersede approval "
+                    f"for {predecessor_id!r}")
+            # Bind to the approved successor payload: the derived target's
+            # content must match what the enclosing operation approved.
+            approved_succ = (src.get("data") or {}).get("successor")
+            content = (data.get("content") or {}) if isinstance(data, Mapping) else {}
+            derived_succ = canonical_hash({
+                "label": content.get("label", ""),
+                "words": content.get("words", ""),
+            })
+            if not approved_succ or derived_succ != approved_succ:
+                raise ApprovalError(
+                    "derive_approval: derived content does not match the "
+                    "approved successor payload")
             from_note = f"derived from {source_approval_id}"
+            derived_from = source_approval_id
         elif source_opt_in:
             if not self.is_opted_in(source_opt_in):
                 raise ApprovalError("source opt-in not active")
             from_note = f"derived from opt_in:{source_opt_in}"
+            derived_from = f"opt_in:{source_opt_in}"
         else:
             raise ApprovalError("derive_approval requires a source")
         note = (note + " " + from_note).strip()[:200]
         result = self.issue_approval(operation=operation, target=target,
                                      reviewer=reviewer, data=data,
                                      producer=source_opt_in, note=note)
-        result["record"]["derived_from"] = (
-            source_approval_id or f"opt_in:{source_opt_in}")
+        result["record"]["derived_from"] = derived_from
+        result["record"]["relationship"] = dict(relationship)
         self._issued_approvals[result["approval_id"]] = result["record"]
+        self._audit.append({
+            "action": "derive",
+            "approval_id": result["approval_id"],
+            "derived_from": derived_from,
+            "relationship": rel_type,
+            "at": time.time(),
+        })
         return result
+
+    def _source_chain_valid(self, record: Mapping[str, Any]) -> bool:
+        """Validate a derived approval's source chain at execution time.
+
+        Director 2026-10-05 (final): a revoked parent approval or a
+        revoked source opt-in invalidates an unfinished child. Already
+        committed outcomes are not retroactively undone (revocation only
+        gates future checks).
+        """
+        derived_from = record.get("derived_from")
+        if not derived_from:
+            return True  # not derived; nothing to re-validate
+        if derived_from.startswith("opt_in:"):
+            producer = derived_from[len("opt_in:"):]
+            return self.is_opted_in(producer)
+        src = self._issued_approvals.get(derived_from)
+        return bool(src
+                    and derived_from not in self._revoked_approvals
+                    and src["session_id"] == self._session_id)
 
     def revoke_approval(self, approval_id: str) -> Dict[str, Any]:
         """Revoke a previously issued approval. Audited."""
@@ -282,7 +350,8 @@ class AcceptancePolicy:
                     and rec["session_id"] == self._session_id
                     and rec["operation"] == operation
                     and rec["target"] == pid
-                    and rec["data_hash"] == proposal_version):
+                    and rec["data_hash"] == proposal_version
+                    and self._source_chain_valid(rec)):
                 self._audit.append({
                     "action": "allow",
                     "via": "issued_approval",
@@ -294,6 +363,25 @@ class AcceptancePolicy:
                 })
                 return {"allowed": True, "via": "issued_approval",
                         "approval_id": approval_id}
+            # Derived approval whose source chain is now invalid (parent
+            # revoked or opt-in revoked): deny explicitly.
+            if (rec is not None
+                    and approval_id not in self._revoked_approvals
+                    and rec.get("derived_from")
+                    and not self._source_chain_valid(rec)):
+                self._audit.append({
+                    "action": "deny",
+                    "via": "revoked_source_chain",
+                    "producer": producer,
+                    "pid": pid,
+                    "approval_id": approval_id,
+                    "at": time.time(),
+                })
+                return {
+                    "allowed": False,
+                    "reason": "acceptance_policy_denied",
+                    "detail": "Derived approval's source was revoked.",
+                }
             # A dict that fails issuance verification is not silently
             # treated as "no context": record the forgery attempt signal.
             if approval_id is not None:

@@ -174,12 +174,166 @@ def test_idempotent_supersede():
           str(r2))
 
 
+
+
+def test_derive_unrelated_target():
+    """Approval for A cannot derive approval for unrelated B."""
+    clean()
+    from form.dell_matrix.acceptance_policy import ApprovalError
+    p = open_program(OWNER)
+    a = p.nursery.add("DeriveA", words="a words")
+    b = p.nursery.add("DeriveB", words="b words")
+    # Issue a plain confirm approval for A
+    issued = p.acceptance_policy.issue_approval(
+        operation="confirm", target=a.id, reviewer="test",
+        data=p._acceptance_data_for(a.id))
+    try:
+        p.acceptance_policy.derive_approval(
+            source_approval_id=issued["approval_id"],
+            source_opt_in=None,
+            operation="confirm", target=b.id, reviewer="test",
+            data=p._acceptance_data_for(b.id),
+            relationship={"type": "supersede_successor", "predecessor_id": a.id})
+        check("derive_unrelated_denied", False, "unexpectedly allowed")
+    except ApprovalError as e:
+        check("derive_unrelated_denied", True, str(e)[:60])
+    except Exception as e:
+        check("derive_unrelated_denied", False, f"wrong exc {type(e).__name__}")
+
+
+def test_derive_wrong_source_operation():
+    """A confirm approval cannot source a supersede derivation."""
+    clean()
+    from form.dell_matrix.acceptance_policy import ApprovalError
+    p = open_program(OWNER)
+    a = p.nursery.add("DeriveC", words="c words")
+    issued = p.acceptance_policy.issue_approval(
+        operation="confirm", target=a.id, reviewer="test",
+        data=p._acceptance_data_for(a.id))
+    try:
+        p.acceptance_policy.derive_approval(
+            source_approval_id=issued["approval_id"],
+            source_opt_in=None,
+            operation="confirm", target="some_other",
+            reviewer="test", data=p._acceptance_data_for(a.id),
+            relationship={"type": "supersede_successor", "predecessor_id": a.id})
+        check("derive_wrong_op_denied", False, "unexpectedly allowed")
+    except ApprovalError:
+        check("derive_wrong_op_denied", True)
+    except Exception as e:
+        check("derive_wrong_op_denied", False, f"wrong exc {type(e).__name__}")
+
+
+def test_derive_changed_successor_data():
+    """Derived content must match the approved successor payload."""
+    clean()
+    from form.dell_matrix.acceptance_policy import ApprovalError
+    from form.mandell import supersession as S
+    p = open_program(OWNER)
+    pr = p.nursery.add("DeriveD", words="v1")
+    ctx = p.make_review_context(pr.id, "test")
+    assert p.confirm_proposal(pr.id, _producer="test", _review_context=ctx).get("ok")
+    # Issue supersede approval for specific successor words
+    sctx = p.make_supersede_context(pr.id, "test", "approved words", "V2")
+    src_id = sctx["approval_id"]
+    # Try to derive for content with DIFFERENT words
+    fake_data = p._acceptance_data_for(pr.id)
+    fake_data["content"] = {"label": "V2", "words": "different words", "detail": ""}
+    try:
+        p.acceptance_policy.derive_approval(
+            source_approval_id=src_id, source_opt_in=None,
+            operation="confirm", target="fake_succ",
+            reviewer="test", data=fake_data,
+            relationship={"type": "supersede_successor", "predecessor_id": pr.id})
+        check("derive_changed_data_denied", False, "unexpectedly allowed")
+    except ApprovalError:
+        check("derive_changed_data_denied", True)
+    except Exception as e:
+        check("derive_changed_data_denied", False, f"wrong exc {type(e).__name__}")
+
+
+def test_parent_revocation_invalidates_child():
+    """Revoking the parent approval invalidates the derived child."""
+    clean()
+    from form.mandell import supersession as S
+    p = open_program(OWNER)
+    pr = p.nursery.add("DeriveE", words="v1")
+    ctx = p.make_review_context(pr.id, "test")
+    assert p.confirm_proposal(pr.id, _producer="test", _review_context=ctx).get("ok")
+    sctx = p.make_supersede_context(pr.id, "test", "v2 words", "V2")
+    src_id = sctx["approval_id"]
+    # Manually derive (simulating what _supersede_impl does).
+    # Content must match the approved successor payload (label="V2").
+    succ = p.nursery.add("V2", words="v2 words")
+    derived = p.acceptance_policy.derive_approval(
+        source_approval_id=src_id, source_opt_in=None,
+        operation="confirm", target=succ.id, reviewer="test",
+        data=p._acceptance_data_for(succ.id),
+        relationship={"type": "supersede_successor", "predecessor_id": pr.id})
+    # Child valid before revocation
+    r1 = p.confirm_proposal(succ.id, _producer="test",
+                            _review_context=derived["context"])
+    check("child_valid_before_revoke", r1.get("ok") is True, str(r1.get("reason")))
+    # Revoke parent; a NEW derived child must now fail
+    p.acceptance_policy.revoke_approval(src_id)
+    succ2 = p.nursery.add("V2", words="v2 words")
+    try:
+        derived2 = p.acceptance_policy.derive_approval(
+            source_approval_id=src_id, source_opt_in=None,
+            operation="confirm", target=succ2.id, reviewer="test",
+            data=p._acceptance_data_for(succ2.id),
+            relationship={"type": "supersede_successor", "predecessor_id": pr.id})
+        check("revoked_parent_blocks_derive", False, "unexpectedly allowed")
+    except Exception:
+        check("revoked_parent_blocks_derive", True)
+
+
+def test_optin_revocation_invalidates_child():
+    """Revoking the source opt-in invalidates a derived child at execution."""
+    clean()
+    p = open_program(OWNER)
+    pr = p.nursery.add("DeriveF", words="v1")
+    p.acceptance_policy.grant_opt_in("testprod", scope="test")
+    # Derive from opt-in
+    succ = p.nursery.add("DeriveF2", words="v2 words")
+    derived = p.acceptance_policy.derive_approval(
+        source_approval_id=None, source_opt_in="testprod",
+        operation="confirm", target=succ.id, reviewer="test",
+        data=p._acceptance_data_for(succ.id),
+        relationship={"type": "supersede_successor", "predecessor_id": pr.id})
+    # Revoke the opt-in before child execution
+    p.acceptance_policy.revoke_opt_in("testprod")
+    r = p.confirm_proposal(succ.id, _producer="testprod",
+                           _review_context=derived["context"])
+    check("revoked_optin_blocks_child", r.get("ok") is False,
+          str(r.get("reason")))
+
+
+def test_valid_supersede_derivation():
+    """Positive control: valid supersede -> successor confirm works."""
+    clean()
+    from form.mandell import supersession as S
+    p = open_program(OWNER)
+    pr = p.nursery.add("DeriveG", words="v1")
+    ctx = p.make_review_context(pr.id, "test")
+    assert p.confirm_proposal(pr.id, _producer="test", _review_context=ctx).get("ok")
+    sctx = p.make_supersede_context(pr.id, "test", "v2 words", "V2")
+    res = S.supersede_proposal(p, pr.id, "v2 words", label="V2",
+                               _producer="test", _review_context=sctx)
+    check("valid_derivation_ok", res.get("ok") is True, str(res.get("reason")))
+
+
 def smoke():
     print("=== WO-5.1 ADVERSARIAL ACCEPTANCE ===")
     for fn in [test_forged_dict, test_stale_content, test_stale_parents,
                test_cross_session, test_revoked, test_valid_manual,
                test_revoked_opt_in, test_unknown_producer,
-               test_supersede_changed_successor, test_idempotent_supersede]:
+               test_supersede_changed_successor, test_idempotent_supersede,
+               test_derive_unrelated_target, test_derive_wrong_source_operation,
+               test_derive_changed_successor_data,
+               test_parent_revocation_invalidates_child,
+               test_optin_revocation_invalidates_child,
+               test_valid_supersede_derivation]:
         try:
             fn()
         except Exception as e:
