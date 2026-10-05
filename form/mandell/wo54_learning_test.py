@@ -98,8 +98,17 @@ def test_bounded_learning():
     print(f"6. Recording OFF: entries before={before_count}, after propose={after_count}")
 
     p.learning_record = True
+
+    # 7. Director counterexample (permanent): f(1e9) == f(1e9+1)
+    # Strict monotonicity is NOT guaranteed for saturated floats.
+    # The selector uses raw integers, which are unaffected.
+    from form.mandell.duobeta_learn import saturate_learned_score
+    assert saturate_learned_score(1000000000) == saturate_learned_score(1000000001), \
+        "Counterexample must hold: f(1e9) == f(1e9+1)"
+    print(f"7. Counterexample: f(1e9) == f(1e9+1) = {saturate_learned_score(1000000000)!r}")
+
     print("\nWO-5.4 bounded learning: ALL CHECKS PASSED")
-    print("6/6")
+    print("7/7")
     return True
 
 

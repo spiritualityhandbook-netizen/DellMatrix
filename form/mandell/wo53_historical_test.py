@@ -32,8 +32,10 @@ def test_historical_participation():
 
     # Create revision B (supersedes A), confirm it
     # supersede_proposal creates the successor from words
+    # Grant opt-in for test producer
+    p.acceptance_policy.grant_opt_in("test", scope="test")
     res = sup.supersede_proposal(p, pr_a.id, words='revised content',
-                                 label='Idea B')
+                                 label='Idea B', _producer="test")
     assert res.get("ok"), f"Supersede failed: {res}"
     pr_b_id = res.get("new_id")
     p.nursery.save()

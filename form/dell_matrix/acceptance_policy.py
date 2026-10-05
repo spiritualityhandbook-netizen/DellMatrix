@@ -92,24 +92,35 @@ class AcceptancePolicy:
         ]
 
     def check(self, producer: str, pid: str,
-              review_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+              review_context: Optional[Dict[str, Any]] = None,
+              proposal_version: Optional[str] = None) -> Dict[str, Any]:
         """Check if acceptance is allowed. Called immediately before commit.
 
         Args:
             producer: Producer ID attempting acceptance.
             pid: Proposal ID.
             review_context: Explicit review proof from trusted command.
-                Must contain "reviewer" and "approved_pid" matching pid.
+                Must contain "reviewer" (nonempty str), "approved_pid" == pid,
+                "session_id" == this policy's session_id, and
+                "proposal_version" == proposal_version.
+            proposal_version: Current version/content hash of the proposal.
+                The review is only valid if it matches what was reviewed.
 
         Returns:
             {"allowed": bool, "reason": str, ...}
         """
         # 1. Explicit review context from trusted public command.
+        # Director 2026-10-05: Bind to session and proposal version.
         if isinstance(review_context, dict):
             reviewer = review_context.get("reviewer")
             approved_pid = review_context.get("approved_pid")
+            ctx_session = review_context.get("session_id")
+            ctx_version = review_context.get("proposal_version")
             if (isinstance(reviewer, str) and reviewer and
-                    approved_pid == pid):
+                    approved_pid == pid and
+                    ctx_session == self._session_id and
+                    ctx_version is not None and
+                    ctx_version == proposal_version):
                 self._audit.append({
                     "action": "allow",
                     "via": "review_context",

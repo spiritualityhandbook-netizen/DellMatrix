@@ -65,35 +65,39 @@ ASI_LEARNED_CAP = 5
 
 
 def saturate_learned_score(raw: int) -> float:
-    """AEC-I (NBD-Ω-018): bounded monotonic saturation of learned evidence.
+    """AEC-I (NBD-Ω-018): bounded saturation of learned evidence.
 
     Transforms raw evidence count (success − failure − blocked) into a
     bounded advisory score.
 
     Contract:
       - BOUNDED: |result| < SATURATION_SCALE (100.0)
-      - MONOTONIC (supported domain): for |raw| < 6255496814851557,
-        raw A < raw B ⟹ result A < result B (strict)
       - SIGN-PRESERVING: sign(result) == sign(raw); f(0) == 0.0
       - DETERMINISTIC: pure function, no state, no randomness
       - PURE/READ-ONLY: does not modify inputs or global state
 
-    WO-5.4 / D20-P #15 ADMISSION: Strict ordering is NOT guaranteed for
-    |raw| >= 6255496814851557 (~6.25e15) due to IEEE 754 double-precision
-    limits. At 10^18, f(x) and f(x+1) both equal 99.99999999999999.
-    This is a bounded finding, not a defect in the formula:
-    - The raw evidence (ledger counts) is preserved exactly as integers.
-    - The score is ADVISORY influence, never truth.
-    - Selectors MUST define deterministic tie-breaking for score collisions
-      (see suggest_preferred: ties broken by raw count, then ID).
-    - Supported domain for strict ordering: |raw| < 6255496814851557.
+    WO-5.4 / D20-P #15 ADMISSION (corrected 2026-10-05):
+    Strict monotonicity is NOT guaranteed. Counterexample (Director):
+      f(1,000,000,000) = 99.999990000001
+      f(1,000,000,001) = 99.999990000001
+    These are equal due to IEEE 754 double-precision limits. An earlier
+    claim of a strict-order domain (|raw| < 6255496814851557) was FALSE
+    and is WITHDRAWN. No threshold is claimed.
+
+    This does not affect ordering: the production selector
+    (suggest_preferred) uses raw integer scores, not saturated floats.
+    Raw integers have perfect strict ordering. The saturated score is
+    for bounded display/influence only.
+
+    Deterministic tie-breaking: where saturated scores collide, selectors
+    must use raw integer scores first, then stable ID ordering.
+    See suggest_preferred.
 
     Float determinism: uses only multiplication, division, abs — all
-    IEEE 754 deterministic. Codebase already uses floats deterministically
-    for Jaccard similarity in Relevance V2 ranking.
+    IEEE 754 deterministic.
 
     This bounds INFLUENCE, not raw evidence. The underlying ledger
-    (success/failure/blocked counts) is untouched.
+    (success/failure/blocked counts) is preserved exactly as integers.
     """
     if raw == 0:
         return 0.0
@@ -382,14 +386,14 @@ def bounded_learned_score(program: Any, dell: Any,
     no collapsed "heat", no truth claim.
 
     AEC-I: replaced destructive hard clamp with monotonic saturation.
-    Raw evidence ordering is preserved within the supported domain:
-    6 < 10 raw ⟹ f(6) < f(10).
+    Raw evidence ordering is preserved in the integer domain.
 
-    WO-5.4 ADMISSION: Strict ordering holds for |raw| < 6255496814851557.
-    Beyond that, IEEE 754 collisions occur (see saturate_learned_score).
+    WO-5.4 ADMISSION (corrected 2026-10-05): The saturated float does NOT
+    guarantee strict ordering. Counterexample: f(1e9) == f(1e9+1).
+    An earlier domain claim was FALSE and is WITHDRAWN.
     The suggest_preferred selector uses raw integers (not saturated floats)
     and is therefore unaffected. Ties are broken deterministically by
-    original order.
+    raw score, then original order.
 
     This is an ADVISORY preference. It is NOT truth, eligibility,
     revision, dependency satisfaction, conflict resolution, disposition,

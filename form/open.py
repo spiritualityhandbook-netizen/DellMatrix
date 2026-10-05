@@ -1397,9 +1397,29 @@ class Program:
                 -float(p.get("graph_coherence", 0) or 0),
             ))
 
+    def make_review_context(self, pid: str, reviewer: str) -> dict:
+        """Create a bound review context for a proposal.
+
+        Binds to the current session and the proposal's current version.
+        The context is only valid if the proposal hasn't changed since review.
+        """
+        import hashlib
+        policy = getattr(self, "acceptance_policy", None)
+        session_id = policy.session_id if policy else "no-policy"
+        prop = self.nursery.proposals.get(pid)
+        version_src = ""
+        if prop is not None:
+            version_src = f"{getattr(prop, 'label', '')}|{getattr(prop, 'words', '')}|{getattr(prop, 'detail', '')}"
+        proposal_version = hashlib.sha256(version_src.encode()).hexdigest()[:16]
+        return {
+            "reviewer": reviewer,
+            "approved_pid": pid,
+            "session_id": session_id,
+            "proposal_version": proposal_version,
+        }
+
     def confirm_proposal(self, pid: str, _producer: str = "unknown",
-                         _review_context: dict = None,
-                         _policy_bypass: bool = False) -> Dict[str, Any]:
+                         _review_context: dict = None) -> Dict[str, Any]:
         """Canonical confirmation with acceptance policy (WO-5.1).
 
         Args:
@@ -1407,29 +1427,48 @@ class Program:
             _producer: Producer ID for policy check (e.g., "repl_user",
                 "auto_growth", "code_evolution"). Defaults to "unknown".
             _review_context: Explicit review proof from trusted command.
-                Must contain "reviewer" and "approved_pid" == pid.
-            _policy_bypass: Internal bypass for composite operations
-                (supersession) with their own authorization. Not for
-                external use.
+                Must contain "reviewer", "approved_pid" == pid,
+                "session_id" matching the policy session, and
+                "proposal_version" matching the current proposal version.
 
         Returns:
             {"ok": True, ...} on success.
             {"ok": False, "reason": "acceptance_policy_denied", ...} if denied.
         """
-        # WO-5.1: Policy check at canonical acceptance boundary.
-        # Recheck immediately before commit.
-        if not _policy_bypass:
-            policy = getattr(self, "acceptance_policy", None)
-            if policy is not None:
-                decision = policy.check(_producer, pid, _review_context)
-                if not decision.get("allowed"):
-                    return {
-                        "ok": False,
-                        "reason": "acceptance_policy_denied",
-                        "detail": decision.get("detail"),
-                        "pid": pid,
-                        "producer": _producer,
-                    }
+        # WO-5.1 / Director 2026-10-05: Policy check at canonical boundary.
+        # Missing policy fails CLOSED (not open).
+        policy = getattr(self, "acceptance_policy", None)
+        if policy is None:
+            return {
+                "ok": False,
+                "reason": "acceptance_policy_denied",
+                "detail": "No acceptance policy configured (fail closed).",
+                "pid": pid,
+                "producer": _producer,
+            }
+        # Director 2026-10-05: Get proposal version for review binding.
+        # Recheck at actual commit boundary.
+        prop = self.nursery.proposals.get(pid)
+        if prop is None:
+            return {
+                "ok": False,
+                "reason": "not found or not pending",
+                "pid": pid,
+            }
+        # Proposal version: content hash (label + words + detail).
+        import hashlib
+        version_src = f"{getattr(prop, 'label', '')}|{getattr(prop, 'words', '')}|{getattr(prop, 'detail', '')}"
+        proposal_version = hashlib.sha256(version_src.encode()).hexdigest()[:16]
+        decision = policy.check(_producer, pid, _review_context,
+                                proposal_version=proposal_version)
+        if not decision.get("allowed"):
+            return {
+                "ok": False,
+                "reason": "acceptance_policy_denied",
+                "detail": decision.get("detail"),
+                "pid": pid,
+                "producer": _producer,
+            }
         from form.dell_matrix.confirm_lineage import confirm_proposal as _confirm_proposal
         return _confirm_proposal(self, pid)
 

@@ -139,7 +139,9 @@ def wipe_owner(owner: str) -> None:
 def grow_with_knowledge(p: Program, label: str, words: str, n: int = 3):
     """Build confirmed knowledge + n successful routed 37 executions."""
     pr = p.nursery.add(label, words=words, parents=[])
-    p.confirm_proposal(pr.id, _producer="test", _review_context={"reviewer": "test", "approved_pid": pr.id})
+    ctx = p.make_review_context(pr.id, "test")
+    cr = p.confirm_proposal(pr.id, _producer="test", _review_context=ctx)
+    assert cr.get("ok"), f"confirm failed: {cr}"
     oids = []
     for _ in range(n):
         route_intent(p, translate(f"grow using knowledge about {words}"), raw_line="x")
@@ -388,6 +390,8 @@ def test_n():
           dl.suggest_preferred(p2, 37, ["zzz", kid])[0] == kid)
 
     # Fresh process.
+    # Director 2026-10-05: Use explicit review path; assert confirmation
+    # succeeded and Idea exists. Assert outcomes, gate, apply before save.
     build = (
         "import sys; sys.path.insert(0, %r)\n"
         "from form.open import Program\n"
@@ -396,14 +400,20 @@ def test_n():
         "from form.mandell.semantic_router import route_intent\n"
         "p = Program(owner=%r)\n"
         "pr = p.nursery.add('dbel_x', words='dbel xi knowledge', parents=[])\n"
-        "p.confirm_proposal(pr.id)\n"
+        "ctx = p.make_review_context(pr.id, 'dbel_test')\n"
+        "cr = p.confirm_proposal(pr.id, _producer='dbel_test', _review_context=ctx)\n"
+        "assert cr.get('ok'), 'confirm failed: %%r' %% cr\n"
+        "assert pr.id in p.nursery.proposals, 'Idea missing after confirm'\n"
         "oids = []\n"
         "for _ in range(3):\n"
         "    route_intent(p, translate('grow using knowledge about dbel xi knowledge'), raw_line='x')\n"
         "    oids.append(list(p.outcome_records.values())[-1]['outcome_id'])\n"
+        "assert len(oids) == 3, 'expected 3 outcomes'\n"
         "prop = dl.propose(p, 'preference', 37, pr.id, oids)\n"
-        "dl.gate_proposal(p, prop['proposal_id'])\n"
-        "dl.apply_proposal(p, prop['proposal_id'])\n"
+        "gr = dl.gate_proposal(p, prop['proposal_id'])\n"
+        "assert gr.get('accepted') or gr.get('ok'), 'gate failed: %%r' %% gr\n"
+        "ar = dl.apply_proposal(p, prop['proposal_id'])\n"
+        "assert ar.get('ok'), 'apply failed: %%r' %% ar\n"
         "p.save()\n"
         "print('PID:' + str(__import__('os').getpid()))\n"
         "print('KID:' + pr.id)\n" % (REPO, owner)

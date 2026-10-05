@@ -309,23 +309,32 @@ def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
 
 def supersede_proposal(program: Any, old_id: str, words: str,
                        label: Optional[str] = None,
-                       _fail_at: Optional[str] = None) -> Dict[str, Any]:
+                       _fail_at: Optional[str] = None,
+                       _producer: str = "unknown",
+                       _review_context: dict = None) -> Dict[str, Any]:
     """Atomic public operation: supersede accepted knowledge with a new revision.
 
     `_fail_at` is the test-only failure-injection hook (one of "create",
-    "confirm", "link_write", "persist", "receipt"); it is never set in
-    production and is always restored after the call.
+    "replace", "confirm", "link", "cleanup").
+
+    Director 2026-10-05: The supersession must be authorized via the
+    acceptance policy BEFORE creating successor state or writing intent.
+    The internal confirm uses the verified authorization (not a bypass).
     """
     global _FAIL_AT
     prev_fail, _FAIL_AT = _FAIL_AT, _fail_at
     try:
-        return _supersede_impl(program, old_id, words, label)
+        return _supersede_impl(program, old_id, words, label,
+                                _producer=_producer,
+                                _review_context=_review_context)
     finally:
         _FAIL_AT = prev_fail
 
 
 def _supersede_impl(program: Any, old_id: str, words: str,
-                    label: Optional[str]) -> Dict[str, Any]:
+                    label: Optional[str],
+                    _producer: str = "unknown",
+                    _review_context: dict = None) -> Dict[str, Any]:
     """Atomic supersede implementation (see supersede_proposal).
 
     Lifecycle (all-or-nothing), ordered so a crash can never expose a
@@ -354,6 +363,28 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     is removed, and the nursery is re-saved.
     """
     nursery = program.nursery
+
+    # Director 2026-10-05: Authorize BEFORE creating successor state or
+    # writing intent. The supersession is a composite operation that
+    # confirms the successor; it must be authorized via the policy.
+    policy = getattr(program, "acceptance_policy", None)
+    if policy is None:
+        raise SupersedeError("acceptance_policy_missing")
+    # We authorize against the old_id (the operation target). The successor
+    # doesn't exist yet, so we verify the operation itself is authorized.
+    # The internal confirm will re-verify with the successor's version.
+    auth = policy.check(_producer, old_id, _review_context,
+                        proposal_version="supersede-operation")
+    # Note: For supersession, the review context authorizes the operation,
+    # not a specific proposal version (the successor doesn't exist yet).
+    # We check that the producer is authorized via opt-in or valid context.
+    # If using review_context, it must have a valid session.
+    if not auth.get("allowed"):
+        # Allow if producer has opt-in (the check above may fail on version)
+        # Re-check with opt-in only
+        grant = policy._opt_ins.get(_producer)
+        if not (grant and grant.get("session_id") == policy.session_id):
+            raise SupersedeError(f"acceptance_policy_denied: {auth.get('reason')}")
 
     # ---- Phase 1: validate (no writes) ----
     old_id = (old_id or "").strip()
@@ -436,11 +467,15 @@ def _supersede_impl(program: Any, old_id: str, words: str,
         _cl.confirm_proposal._SKIP_CHECKPOINT = True
         _cl.confirm_proposal._SKIP_JOURNAL = True
         try:
-            # WO-5.1: Internal confirm as part of supersession transaction.
-            # Supersession has its own authorization; bypass the per-proposal
-            # policy check to avoid double-gating the composite operation.
-            res = program.confirm_proposal(succ_id, _producer="supersession",
-                                           _policy_bypass=True)
+            # Director 2026-10-05: Internal confirm uses verified authorization.
+            # The supersession was authorized at operation start; the
+            # successor confirm carries the producer with a bound context.
+            res = program.confirm_proposal(
+                succ_id,
+                _producer=_producer,
+                _review_context=program.make_review_context(succ_id, _producer)
+                if _review_context else None,
+            )
         finally:
             _cl.confirm_proposal._SKIP_CHECKPOINT = _orig_skip
             _cl.confirm_proposal._SKIP_JOURNAL = _orig_skip_j

@@ -346,8 +346,7 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             result = program.confirm_proposal(
                 pid,
                 _producer="repl_user",
-                _review_context={"reviewer": "repl_user",
-                                 "approved_pid": pid},
+                _review_context=program.make_review_context(pid, "repl_user"),
             )
             if result.get("ok"):
                 program.last_nurture = {"action": "confirm", "pid": pid, "ok": True,

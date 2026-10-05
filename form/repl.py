@@ -433,8 +433,7 @@ def _run_tutorial(p: Program) -> Program:
         res = dp.confirm_proposal(
             prop["id"],
             _producer="tutorial_demo",
-            _review_context={"reviewer": "tutorial_demo",
-                             "approved_pid": prop["id"]},
+            _review_context=dp.make_review_context(prop["id"], "tutorial_demo"),
         )
         if res.get("ok"):
             n += 1
@@ -2165,8 +2164,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             res = p.confirm_proposal(
                 prop["id"],
                 _producer="repl_user",
-                _review_context={"reviewer": "repl_user",
-                                 "approved_pid": prop["id"]},
+                _review_context=p.make_review_context(prop["id"], "repl_user"),
             )
             if res.get("ok"):
                 n += 1
@@ -2189,8 +2187,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         res = p.confirm_proposal(
             pid,
             _producer="repl_user",
-            _review_context={"reviewer": "repl_user",
-                             "approved_pid": pid},
+            _review_context=p.make_review_context(pid, "repl_user"),
         )
         _say(f'Confirmed. "{res["label"]}" is live.' if res.get("ok") else f"Could not confirm: {res.get('reason')}")
         return p
