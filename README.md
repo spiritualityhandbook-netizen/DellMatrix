@@ -4,7 +4,7 @@
 
 DellMatrix lets you create ideas, grow them into proposals, confirm the ones worth keeping, inspect how they relate, and save everything to disk — all through plain English commands in a terminal, with no network required.
 
-> **Scope honesty:** This README describes what the code at the reviewed production SHA actually does, based on executed walkthroughs. Section 2 lists exactly what is working, partial, in repair, or planned. Nothing here claims more than the evidence supports.
+> **Scope honesty:** This README describes what the code at the reviewed production SHA actually does, based on executed walkthroughs. Section 2 lists exactly what is working, partial, in repair, or planned. Nothing here claims more than the evidence supports. Full source/evidence map: [docs/README_EVIDENCE_MAP.md](docs/README_EVIDENCE_MAP.md).
 
 ---
 
@@ -47,8 +47,8 @@ Reviewed production SHA: `f3c9007` (2026-10-04). All claims below were verified 
 | Offline operation | **WORKING / VERIFIED** | No network calls in tested paths; stdlib-only core deps |
 | Resonance/harmony scoring | **PARTIAL** | Scoring machinery real (`resonance_rank`, affinity); no direct user command |
 | DuoBeta cross-session learning | **PARTIAL** | Works within session; cross-process persistence of staged proposals not observed |
-| REPL `supersede` command | **BROKEN** | `supersede idea <id> with <words>` fails on normal flow; Python API works |
-| `lineage` by label | **BROKEN** | Requires proposal ID; label lookup fails |
+| REPL `supersede` command | **WORKING / VERIFIED** | `supersede idea <id> with <words>` works with genuine confirmed ID; fails gracefully on unknown/non-confirmed ID |
+| `lineage` by label | **PARTIAL** | Works by proposal ID; label lookup not implemented (use ID from `proposals`) |
 | Confirmation atomicity | **IN REPAIR / UNMERGED** | Active repair on [PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77) (not merged) |
 | Nested projects / perspectives | **PLANNED** | Not implemented |
 | Rich visual UX | **PLANNED** | HTML export exists; interactive UI planned |
@@ -81,7 +81,10 @@ flowchart TD
     style I fill:#fff3e0
 ```
 
-**Autonomy note:** Every command above requires you to type it. DellMatrix does not take autonomous actions, schedule work, or modify state without an explicit command. "Human-controlled acceptance" in §7 describes the intended policy; the current enforcement is simply that no code path acts without user input.
+**Autonomy note:** Most commands require you to type them, but DellMatrix has autonomous paths:
+- `auto_growth.py`: The `AutoGrowth` class can automatically propose and confirm ideas based on quality thresholds (`_should_auto_confirm` checks `floor_accept`, `verita_score`, `combined` score, and grade). When enabled, it calls `p.confirm_proposal()` without user input per proposal.
+- REPL `auto confirm on`: When enabled, every `grow` command automatically confirms all nursery proposals.
+- Default: Both are OFF by default. Human-controlled acceptance is the default, not a universally enforced policy.
 
 ### (b) Proposal lifecycle and persistence
 
@@ -93,15 +96,16 @@ flowchart TD
     C -->|"reject"| E["Proposal rejected"]
     D --> F["save"]
     F --> G["Disk: nursery + program\nJSON files"]
-    G --> H["Crash / restart"]
-    H --> I["Recovery: journal\ndistinguishes crash\nfrom history"]
-    I --> J["Reloaded state\nmatches pre-crash"]
+    G --> H["Restart"]
+    H --> I["Reload: state restored\nfrom disk files"]
 
     style D fill:#e1f5e1
     style I fill:#fff3e0
 ```
 
-The nursery tracks proposal status (`pending` → `confirmed`). The plane holds confirmed Ideas as spatial units. On `save`, both are written to disk. If the process crashes mid-confirmation, an intent journal lets recovery distinguish "crashed confirmation" from "legitimate historical record" — this is the mechanism under active repair in PR #77.
+The nursery tracks proposal status (`pending` → `confirmed`). The plane holds confirmed Ideas as spatial units. On `save`, both are written to disk. On restart, `load` restores state from the disk files.
+
+**Crash recovery (IN REPAIR, not in production):** If the process crashes mid-confirmation, the current production code may leave the state ambiguous. An intent-journal recovery mechanism is under active repair in [PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77) (not merged). Until that merges, there is no universal crash guarantee: after a crash, recovery may expose the complete OLD state or the complete NEW state, not necessarily the exact pre-crash state.
 
 ---
 
@@ -139,7 +143,7 @@ You'll see a banner and a `you>` prompt. Type `tutorial` for a guided walkthroug
 | Visual export | `visual` | `DellMatrix_UI.html` generated | REPL `visual` handler | File verified; rendering untested |
 | Tutorial | `tutorial` | Guided acceptance path | `form/repl.py` | Walkthrough verified |
 | DuoBeta learn | `learn propose/inspect/gate/ledger` | Policy-gated learning within session | `form/duobeta/` | Walkthrough verified |
-| Supersede (API) | `supersede_proposal(p, old_id, ...)` | New revision; old marked superseded | `form/mandell/supersession.py` | API verified; REPL command broken |
+| Supersede (API) | `supersede_proposal(p, old_id, ...)` | New revision; old marked superseded | `form/mandell/supersession.py` | API and REPL both verified with genuine ID |
 | Outcomes | `outcomes` | Honest empty ("No outcomes recorded") or list | `form/repl.py` | Walkthrough verified |
 
 > A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call on SHA `f3c9007`.
@@ -197,9 +201,15 @@ you> rank
 The scoring machinery (`resonance_rank`, affinity) is real and drives `rank`/`page` ordering. There is **no direct user command** for resonance queries — this is a PARTIAL feature. The Phase-3 proof files (`form/mandell/p3_r3*_proof.py`) are tests, not user features.
 
 ```python
-# Python API only (not exposed in REPL):
+# Python API only (not exposed in REPL) - complete executable example:
 from form.dell_matrix.first_person import resonance_rank
-# → Returns scored candidates. Verified present; REPL gap labeled.
+nodes = [
+    {"id": "idea1", "x": 1.0, "y": 2.0, "f": 0.0},
+    {"id": "idea2", "x": 5.0, "y": 5.0, "f": 1.0},
+]
+ranked = resonance_rank(nodes, center=(0, 0, 0), scores={"idea1": 0.9, "idea2": 0.5})
+# → Returns scored candidates ordered by resonance. idea1 ranks higher (closer + higher score).
+assert ranked[0]["id"] == "idea1"
 ```
 
 ### 6.5 Supersession and history
@@ -207,11 +217,18 @@ from form.dell_matrix.first_person import resonance_rank
 Supersession (replacing a confirmed idea with a newer revision) works via the Python API but **not** via the REPL command:
 
 ```python
-# VERIFIED working (Python API):
+# VERIFIED working (Python API) - complete end-to-end:
 from form.open import open_program
 from form.mandell.supersession import supersede_proposal
 p = open_program("Owner")
-new_id = supersede_proposal(p, old_id, words="revised content")
+# 1. Create and confirm the predecessor
+pr = p.nursery.add('Original Idea', words='initial content')
+p.confirm_proposal(pr.id)
+old_id = pr.id
+# 2. Supersede it (returns a receipt dict, not just an ID)
+receipt = supersede_proposal(p, old_id, words="revised content")
+assert receipt["supersedes_id"] == old_id
+assert receipt["revision_number"] == 2
 # → Old marked superseded; new revision active; history preserved.
 ```
 
@@ -262,14 +279,14 @@ Diagrams or mock examples of the above are conceptual only. Roadmap phases beyon
 | `docs/` | Documentation (large; currency varies — prefer this README for current truth) |
 | `launch.py` | Root launcher → `form.repl.run()` |
 
-**Registry note:** There is no single `form/registry.py`. English commands route through `form/repl.py::_dispatch_public_line` → `form/mandell/translate.py::translate()` → `_execute_intent`. Operator (Dell) definitions live in `form/dell_matrix/actions_registry.py`. The `help` command lists 9 categories: `create`, `knowledge`, `learn`, `explain`, `save`, `recover`, `look`, `dell`, `system`.
+**Registry note:** The canonical operator registry is `form/mandell/registry.py` — the "True Dell registry" with numbered operators (CORE_I 00-50, CORE_II 51-99). English commands route through `form/repl.py::_dispatch_public_line` → `form/mandell/translate.py::translate()` → `_execute_intent`. `form/dell_matrix/actions_registry.py` provides UI action lists (`actions_flat`, `actions_for_mode`) for visual modes, not the language operator definitions. The `help` command lists 9 categories: `create`, `knowledge`, `learn`, `explain`, `save`, `recover`, `look`, `dell`, `system`.
 
 ---
 
 ## 9. Limitations, Tests, Contributing, Glossary
 
 ### Honest limitations
-- REPL `supersede` and label-based `lineage` are broken (Python API works).
+- `lineage` works by proposal ID; label lookup is not implemented.
 - Resonance/harmony has scoring but no direct user command.
 - DuoBeta learning is session-scoped; cross-session persistence unverified.
 - Windows/Mac launchers and Spanish/French commands are unverified.
@@ -283,6 +300,11 @@ An explicitly labeled repair-in-review subsection: confirmation/supersession ato
 ```bash
 python3 -m form.regress --twice        # full suite, forward, twice
 python3 -m form.regress --order rev    # full suite, reverse order
+```
+
+**Repair-branch tests (not on production main):** The following modules exist only on the unmerged repair branch ([PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77)). They are not runnable on production `f3c9007`:
+```bash
+# On repair branch checkout only:
 python3 -m form.mandell.r3_permanent_regressions  # R3 idea-preservation proofs
 python3 -m form.mandell.confirm_crash_matrix      # confirmation crash matrix
 ```
