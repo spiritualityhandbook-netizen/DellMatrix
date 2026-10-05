@@ -100,25 +100,39 @@ def resolve_lifecycle(program: Any, unit_id: str) -> str:
         return "unknown"
 
 
-def _presence_is_faded(program: Any, unit_id: str) -> bool:
-    """TPP-I compatibility adapter: faded presence signal.
+def _presence_state(program: Any, unit_id: str):
+    """TPP-I compatibility adapter: (faded, malformed, reason).
 
-    Director 2026-10-05 (whole-circuit): TPP-I is a compatibility ADAPTER,
-    not an independent competing decision maker. It supplies the faded
-    presence signal; the authoritative participation interpretation lives
-    in is_participating(), which validates revision FIRST.
+    Director 2026-10-05 (final): distinguish genuinely absent legacy data
+    from explicit malformed data. Absent presence (no lifecycle dict, no
+    entry) is legacy-compatible (not faded). A present-but-invalid
+    presence value is malformed and excludes with an explicit reason.
 
-    Never raises; unreadable presence means "not faded".
+    Never raises.
     """
     try:
         lc = getattr(program, "lifecycle", None)
-        if isinstance(lc, dict):
-            meta = lc.get(unit_id)
-            if isinstance(meta, dict):
-                return meta.get("presence") == "faded"
-    except Exception:
-        pass
-    return False
+        if not isinstance(lc, dict):
+            return (False, False, "absent_legacy")
+        meta = lc.get(unit_id)
+        if meta is None:
+            return (False, False, "absent_legacy")
+        if not isinstance(meta, dict):
+            return (False, True, "malformed_presence:not_a_dict")
+        presence = meta.get("presence")
+        if presence is None or presence == "active":
+            return (False, False, "")
+        if presence == "faded":
+            return (True, False, "")
+        return (False, True, f"malformed_presence:{presence!r}")
+    except Exception as e:
+        return (False, True, f"malformed_presence:unreadable:{type(e).__name__}")
+
+
+def _presence_is_faded(program: Any, unit_id: str) -> bool:
+    """True iff presence is explicitly faded (and well-formed)."""
+    faded, malformed, _ = _presence_state(program, unit_id)
+    return faded and not malformed
 
 
 def _revision_valid(program: Any, unit_id: str) -> Optional[str]:
@@ -133,30 +147,38 @@ def _revision_valid(program: Any, unit_id: str) -> Optional[str]:
     return None
 
 
-def _is_accepted(program: Any, unit_id: str) -> bool:
-    """Acceptance dimension: proposal status is confirmed.
+def _acceptance_state(program: Any, unit_id: str):
+    """Acceptance dimension: (accepted, malformed, reason).
 
-    Director 2026-10-05 (whole-circuit): acceptance, revision,
-    participation, and projection are DISTINCT. Pending proposals do not
-    ordinarily participate, regardless of revision/presence.
-
-    A missing status (synthetic/legacy doubles) is treated as accepted
-    for compatibility; an explicit non-confirmed status excludes.
+    Director 2026-10-05 (final): distinguish genuinely absent legacy data
+    (no proposal record) from explicit malformed data (proposal exists
+    but status is missing or invalid). A real proposal always carries a
+    status; None or garbage is malformed and excludes with a reason.
+    Synthetic-test compatibility must not justify production acceptance.
     """
     try:
         proposals = getattr(getattr(program, "nursery", None), "proposals", {})
         prop = proposals.get(unit_id) if isinstance(proposals, dict) else None
         if prop is None:
-            # No proposal record: legacy compat path (resolve_lifecycle
-            # treats as active). Acceptance unknown -> do not block here;
-            # revision validation remains authoritative.
-            return True
+            # No proposal record: legitimate legacy path. Revision
+            # validation remains authoritative.
+            return (True, False, "absent_legacy")
         status = getattr(prop, "status", None)
+        if status == "confirmed":
+            return (True, False, "")
+        if status in ("pending", "rejected"):
+            return (False, False, f"status_{status}")
         if status is None:
-            return True  # synthetic/legacy double: do not block
-        return status == "confirmed"
-    except Exception:
-        return False
+            return (False, True, "malformed_status:none")
+        return (False, True, f"malformed_status:{status!r}")
+    except Exception as e:
+        return (False, True, f"malformed_status:unreadable:{type(e).__name__}")
+
+
+def _is_accepted(program: Any, unit_id: str) -> bool:
+    """True iff acceptance dimension permits participation."""
+    accepted, malformed, _ = _acceptance_state(program, unit_id)
+    return accepted and not malformed
 
 
 def is_active(program: Any, unit_id: str) -> bool:
@@ -231,9 +253,14 @@ def is_participating(program: Any, unit_id: str,
         # Malformed/unknown: excluded in EVERY context. Faded presence
         # must not make malformed data eligible for historical use.
         return False
-    if not _is_accepted(program, unit_id):
+    accepted, acc_malformed, _ = _acceptance_state(program, unit_id)
+    if acc_malformed or not accepted:
+        # Malformed status excludes everywhere; pending/rejected excludes.
         return False
-    faded = _presence_is_faded(program, unit_id)
+    faded, pres_malformed, _ = _presence_state(program, unit_id)
+    if pres_malformed:
+        # Malformed presence excludes in EVERY context with explicit reason.
+        return False
     if context == "historical":
         return revision in ("active", "superseded")
     # Default: ordinary
@@ -251,9 +278,16 @@ def participation_reason(program: Any, unit_id: str,
         return (f"excluded ({context} context): "
                 f"revision {resolve_lifecycle(program, unit_id)}; "
                 "malformed/unknown records never participate")
-    if not _is_accepted(program, unit_id):
-        return f"excluded ({context} context): not accepted (pending)"
-    faded = _presence_is_faded(program, unit_id)
+    accepted, acc_malformed, acc_reason = _acceptance_state(program, unit_id)
+    if acc_malformed:
+        return (f"excluded ({context} context): malformed acceptance "
+                f"({acc_reason}); malformed records never participate")
+    if not accepted:
+        return f"excluded ({context} context): not accepted ({acc_reason})"
+    faded, pres_malformed, pres_reason = _presence_state(program, unit_id)
+    if pres_malformed:
+        return (f"excluded ({context} context): malformed presence "
+                f"({pres_reason}); malformed records never participate")
     if context == "historical":
         if revision in ("active", "superseded"):
             return (f"participating (historical context, revision={revision}, "

@@ -150,13 +150,88 @@ def test_restart_preserves():
     check("restart_revision", inspect_revision(p2, pid)["lifecycle_state"] == "active")
 
 
+
+
+def test_valid_legacy_participates():
+    """Genuinely absent legacy data: no proposal, no presence -> participates."""
+    clean()
+    p = open_program(OWNER)
+    # A unit ID with no proposal record and no presence entry.
+    # resolve_lifecycle treats as legacy active; acceptance absent_legacy.
+    check("legacy_participates_ordinary",
+          cl.is_participating(p, "legacy_ghost_001", "ordinary"))
+    check("legacy_not_malformed",
+          "malformed" not in cl.participation_reason(p, "legacy_ghost_001"))
+
+
+def test_malformed_status_excluded():
+    """Proposal with status=None or garbage: excluded everywhere with reason."""
+    clean()
+    p = open_program(OWNER)
+    pr = p.nursery.add("BadStatus", words="w")
+    pid = _confirm(p, pr)
+    # Corrupt to None
+    pr.status = None
+    p.nursery.save()
+    check("none_status_excluded_ordinary",
+          not cl.is_participating(p, pid, "ordinary"))
+    check("none_status_excluded_historical",
+          not cl.is_participating(p, pid, "historical"))
+    check("none_status_reason",
+          "malformed" in cl.participation_reason(p, pid),
+          cl.participation_reason(p, pid))
+    # Corrupt to garbage
+    pr.status = "bogus_state"
+    check("garbage_status_excluded",
+          not cl.is_participating(p, pid, "ordinary")
+          and not cl.is_participating(p, pid, "historical"))
+
+
+def test_malformed_presence_excluded():
+    """Garbage presence value: excluded everywhere with explicit reason."""
+    clean()
+    p = open_program(OWNER)
+    pr = p.nursery.add("BadPresence", words="w")
+    pid = _confirm(p, pr)
+    set_presence(p, pid, presence="vaporized")
+    check("bad_presence_excluded_ordinary",
+          not cl.is_participating(p, pid, "ordinary"))
+    check("bad_presence_excluded_historical",
+          not cl.is_participating(p, pid, "historical"))
+    check("bad_presence_reason",
+          "malformed" in cl.participation_reason(p, pid),
+          cl.participation_reason(p, pid))
+    check("bad_presence_not_faded", not cl.is_faded(p, pid))
+
+
+def test_malformed_restart():
+    """Malformed status/presence survive restart as excluded."""
+    clean()
+    from form import persist_rest
+    p = open_program(OWNER)
+    pr = p.nursery.add("BadRestart", words="w")
+    pid = _confirm(p, pr)
+    pr.status = None
+    set_presence(p, pid, presence="vaporized")
+    p.nursery.save()
+    persist_rest.save(p)
+    p2 = persist_rest.load(OWNER, activate=False)
+    check("restart_malformed_excluded",
+          not cl.is_participating(p2, pid, "ordinary")
+          and not cl.is_participating(p2, pid, "historical"))
+
+
 def smoke():
     print("=== WO-5.2/5.3 LIFECYCLE COHERENCE ===")
     for fn in [test_fade_unfade_preserves,
                test_unfade_cannot_reactivate_superseded,
                test_malformed_excluded_everywhere,
                test_ordinary_excludes_historical_growth_works,
-               test_restart_preserves]:
+               test_restart_preserves,
+               test_valid_legacy_participates,
+               test_malformed_status_excluded,
+               test_malformed_presence_excluded,
+               test_malformed_restart]:
         try:
             fn()
         except Exception as e:
