@@ -264,7 +264,8 @@ from form.mandell import supersession as S
 p = open_program(%r)
 old = p.nursery.add('base', words='v1')
 p.confirm_proposal(old.id, _producer="test", _review_context=p.make_review_context(old.id, "test"))
-r = S.supersede_proposal(p, old.id, 'v2 words')
+p.acceptance_policy.grant_opt_in("test", scope="test")
+r = S.supersede_proposal(p, old.id, 'v2 words', _producer="test")
 print('OK:' + str(r.get('ok')))
 """ % (REPO, o)
     rc, out, err = run_script("t06", code)
@@ -332,8 +333,9 @@ from form import persist_rest
 p = open_program(%r)
 old = p.nursery.add('base', words='v1')
 p.confirm_proposal(old.id, _producer="test", _review_context=p.make_review_context(old.id, "test"))
+p.acceptance_policy.grant_opt_in("test", scope="test")
 old_id = old.id
-r = S.supersede_proposal(p, old_id, 'v2 words')
+r = S.supersede_proposal(p, old_id, 'v2 words', _producer="test")
 new_id = r.get('new_id')
 p2 = persist_rest.load(%r, activate=False)
 old_p = p2.nursery.proposals[old_id]
@@ -849,7 +851,8 @@ supersession._save_nursery = hook_save_nursery
 
 got_oserror = False
 try:
-    supersede_proposal(p, old_id, words='successor content here')
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    supersede_proposal(p, old_id, words='successor content here', _producer="test")
     print('NO_RAISE_UNEXPECTED')
 except OSError as e:
     if 'INJECTED_ROLLBACK_SAVE_FAILURE_T13' in str(e):

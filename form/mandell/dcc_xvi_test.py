@@ -112,7 +112,8 @@ def snapshot(p):
 def t_a_acceptance():
     p = fresh()
     aid = confirm(p, "water boils at one hundred degrees")
-    res = supersede_proposal(p, aid, "water boils near one hundred degrees at sea level")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    res = supersede_proposal(p, aid, "water boils near one hundred degrees at sea level", _producer="test")
     check("A.ok", res.get("ok") is True)
     bid = res.get("new_id")
     check("A.successor_id", isinstance(bid, str) and bid and bid != aid)
@@ -145,7 +146,8 @@ def t_b_invalid_ids():
     aid = confirm(p, "stable fact alpha")
     before = snapshot(p)
     try:
-        supersede_proposal(p, "no_such_unit_zzz", "replacement words")
+        p.acceptance_policy.grant_opt_in("test", scope="test")
+        supersede_proposal(p, "no_such_unit_zzz", "replacement words", _producer="test")
         raised = None
     except SupersedeError as e:
         raised = e
@@ -159,10 +161,12 @@ def t_b_invalid_ids():
 def t_c_already_superseded():
     p = fresh()
     aid = confirm(p, "original claim one")
-    r1 = supersede_proposal(p, aid, "updated claim one")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    r1 = supersede_proposal(p, aid, "updated claim one", _producer="test")
     bid = r1["new_id"]
     before = snapshot(p)
-    r2 = supersede_proposal(p, aid, "another attempt at update")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    r2 = supersede_proposal(p, aid, "another attempt at update", _producer="test")
     check("C.refused", r2.get("ok") is False)
     check("C.reason", r2.get("reason") == "already_superseded")
     check("C.points_to_successor", r2.get("superseded_by_id") == bid)
@@ -196,13 +200,15 @@ def t_g_no_silent_fallback():
     before = snapshot(p)
     for bad_words, tag in (("", "empty"), ("   ", "blank")):
         try:
-            supersede_proposal(p, aid, bad_words)
+            p.acceptance_policy.grant_opt_in("test", scope="test")
+            supersede_proposal(p, aid, bad_words, _producer="test")
             raised = None
         except SupersedeError as e:
             raised = e
         check(f"G.{tag}_rejected", raised is not None and raised.reason == "empty_successor_words")
     try:
-        supersede_proposal(p, "   ", "some words")
+        p.acceptance_policy.grant_opt_in("test", scope="test")
+        supersede_proposal(p, "   ", "some words", _producer="test")
         raised = None
     except SupersedeError as e:
         raised = e
@@ -215,9 +221,11 @@ def t_g_no_silent_fallback():
 def t_h_chain():
     p = fresh()
     a = confirm(p, "revision root claim")
-    r1 = supersede_proposal(p, a, "second wording")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    r1 = supersede_proposal(p, a, "second wording", _producer="test")
     b = r1["new_id"]
-    r2 = supersede_proposal(p, b, "third wording")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    r2 = supersede_proposal(p, b, "third wording", _producer="test")
     c = r2["new_id"]
     ra, rb, rc = (inspect_revision(p, x) for x in (a, b, c))
     check("H.states", (ra["lifecycle_state"], rb["lifecycle_state"], rc["lifecycle_state"])
@@ -239,7 +247,8 @@ def t_h_chain():
 def t_ij_routing():
     p = fresh()
     aid = confirm(p, "oak trees grow tall in sunlight")
-    r = supersede_proposal(p, aid, "oak trees grow tall with ample sunlight and water")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    r = supersede_proposal(p, aid, "oak trees grow tall with ample sunlight and water", _producer="test")
     bid = r["new_id"]
     sel = select_for_context(p, "oak trees sunlight", operation="grow")
     ids = [s["id"] for s in sel["selected"]]
@@ -264,7 +273,8 @@ def t_k_atomic():
         before = snapshot(p)
         disk_before = Path(owner_nursery_path(OWNER)).read_text()
         try:
-            supersede_proposal(p, aid, "atomic replacement", _fail_at=pt)
+            p.acceptance_policy.grant_opt_in("test", scope="test")
+            supersede_proposal(p, aid, "atomic replacement", _fail_at=pt, _producer="test")
             raised = None
         except SupersedeError as e:
             raised = e
@@ -287,7 +297,8 @@ def t_k_atomic():
                   and p.nursery.proposals[bid].status == "confirmed")
             check("K.receipt_disk_changed",
                   Path(owner_nursery_path(OWNER)).read_text() != disk_before)
-            r2 = supersede_proposal(p, aid, "atomic replacement retry")
+            p.acceptance_policy.grant_opt_in("test", scope="test")
+            r2 = supersede_proposal(p, aid, "atomic replacement retry", _producer="test")
             check("K.receipt_retry_reject",
                   r2.get("ok") is False
                   and r2.get("reason") == "already_superseded"
@@ -302,7 +313,8 @@ def t_k_atomic():
         check(f"K.{pt}_old_still_active",
               old.lifecycle_state == "active" and old.superseded_by_id is None)
         # system still usable after the failed attempt
-        r2 = supersede_proposal(p, aid, "atomic replacement retry")
+        p.acceptance_policy.grant_opt_in("test", scope="test")
+        r2 = supersede_proposal(p, aid, "atomic replacement retry", _producer="test")
         check(f"K.{pt}_retry_ok", r2.get("ok") is True)
         wipe()
 
@@ -311,7 +323,8 @@ def t_k_atomic():
 def t_l_receipts():
     p = fresh()
     aid = confirm(p, "receipt base fact")
-    r = supersede_proposal(p, aid, "receipt updated fact")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    r = supersede_proposal(p, aid, "receipt updated fact", _producer="test")
     bid = r["new_id"]
     check("L.op_receipt", all(k in r for k in (
         "action", "ok", "old_id", "new_id", "old_lifecycle_state",
@@ -334,7 +347,8 @@ def t_l_receipts():
 def t_m_history_preserved():
     p = fresh()
     aid = confirm(p, "historical record keeps existing")
-    r = supersede_proposal(p, aid, "historical record refreshed")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    r = supersede_proposal(p, aid, "historical record refreshed", _producer="test")
     bid = r["new_id"]
     check("M.old_proposal_kept", aid in p.nursery.proposals
           and p.nursery.proposals[aid].status == "confirmed")
@@ -453,7 +467,8 @@ def t_r_dependency():
     eid = child.id
     dep0 = inspect_dependency(p, eid)
     check("R.valid_before", dep0["dependency_status"] == "valid", str(dep0))
-    r = supersede_proposal(p, did, "foundational principle delta revised")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    r = supersede_proposal(p, did, "foundational principle delta revised", _producer="test")
     d2 = r["new_id"]
     dep = inspect_dependency(p, eid)
     check("R.invalid_after", dep["dependency_status"] == "invalid")
@@ -474,7 +489,8 @@ def t_s_newer_not_truer():
     p = fresh()
     # A matches the context best, but is superseded by a less-matching B.
     aid = confirm(p, "honeybees pollinate apple blossoms in spring")
-    r = supersede_proposal(p, aid, "note about orchard irrigation schedules")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    r = supersede_proposal(p, aid, "note about orchard irrigation schedules", _producer="test")
     bid = r["new_id"]
     sel = select_for_context(p, "honeybees pollinate apple blossoms", operation="grow")
     ids = [s["id"] for s in sel["selected"]]
@@ -495,7 +511,8 @@ def t_s_newer_not_truer():
 def t_t_explicit_override():
     p = fresh()
     aid = confirm(p, "old method for fire starting")
-    r = supersede_proposal(p, aid, "modern method for fire starting")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    r = supersede_proposal(p, aid, "modern method for fire starting", _producer="test")
     rr = run_lang(p, f"use idea {aid} to grow")
     check("T.explicit_ok", bool(rr.ok))
     nur = p.last_nurture
@@ -517,7 +534,8 @@ p = open_program("__OWNER__")
 prop = p.nursery.add("cross process base claim")
 p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 from form.mandell.supersession import supersede_proposal, inspect_revision
-res = supersede_proposal(p, prop.id, "cross process revised claim")
+p.acceptance_policy.grant_opt_in("test", scope="test")
+res = supersede_proposal(p, prop.id, "cross process revised claim", _producer="test")
 assert res["ok"], res
 ra = inspect_revision(p, prop.id)
 rb = inspect_revision(p, res["new_id"])
@@ -564,9 +582,11 @@ print("PROC_B_OK", os.getpid(), old, new)
 def t_v_corpus():
     p = fresh()
     r1 = confirm(p, "water boils at one hundred degrees celsius")
-    s1 = supersede_proposal(p, r1, "water boils near one hundred degrees celsius at sea level")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    s1 = supersede_proposal(p, r1, "water boils near one hundred degrees celsius at sea level", _producer="test")
     r2 = s1["new_id"]
-    s2 = supersede_proposal(p, r2, "water boils near one hundred degrees celsius at standard pressure")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    s2 = supersede_proposal(p, r2, "water boils near one hundred degrees celsius at standard pressure", _producer="test")
     r3 = s2["new_id"]
     # child derived from the ORIGINAL (historical derivation parent)
     child = p.nursery.add("steam engine design note", parents=[r1])
