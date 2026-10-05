@@ -318,7 +318,7 @@ def t_bypass_consumption() -> None:
                   "distance": 0.0, "shared": 0.0, "goal_boost": 0.0,
                   "body_boost": 0.0}
         orig = rg._affinity
-        rg._affinity = lambda plane, a, b, body=None, program=None: dict(zeroed)  # BYPASS
+        rg._affinity = lambda plane, a, b, body=None, program=None, **kwargs: dict(zeroed)  # BYPASS
         try:
             n2 = Nursery(path=tmp + "2")
             out = rg.RingedGrowth(nursery=n2, seed=7).run(plane, cycles=1)
