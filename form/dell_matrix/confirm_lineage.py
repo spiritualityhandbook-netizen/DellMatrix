@@ -121,41 +121,66 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     existed = prop.id in units
     def _remove_newly_placed():
         """Remove a newly placed Idea from all in-memory structures.
+
+        Director 2026-10-05 (compensation): cleanup failures are OBSERVABLE,
+        not suppressed. Returns {"ok", "failures", "removed"}.
+
+        Critical (accepted-state artifacts that must not persist after
+        denial): plane unit, spatial velocities, spatial placements.
+        Best-effort (derived/append-only): lattice rebuild, history.
+
         F2: Program.place() calls self.spatial.place() (SpatialAuthority),
         which writes placements and velocities. Cleanup must use the SAME
-        authority: program.spatial (not program.cube.session.spatial,
-        which does not exist).
-
-        After removing the Unit from plane.units, the lattice is rebuilt
-        from the plane using the sanctioned rebuild_from_plane method,
-        ensuring derived-state agreement.
+        authority: program.spatial.
         """
-        units.pop(prop.id, None)
+        failures = []
+        removed = []
+        # Critical: plane unit
         try:
-            # F2: Use program.spatial — the authority Program.place uses.
+            units.pop(prop.id, None)
+            removed.append("unit")
+        except Exception as e:
+            failures.append(f"unit:{type(e).__name__}")
+        # Critical: spatial entries
+        try:
             spatial = program.spatial
             if hasattr(spatial, 'velocities'):
-                spatial.velocities.pop(prop.id, None)
+                try:
+                    spatial.velocities.pop(prop.id, None)
+                    removed.append("velocities")
+                except Exception as e:
+                    failures.append(f"velocities:{type(e).__name__}")
             if hasattr(spatial, 'placements'):
-                spatial.placements.pop(prop.id, None)
-        except Exception:
-            pass
+                try:
+                    spatial.placements.pop(prop.id, None)
+                    removed.append("placements")
+                except Exception as e:
+                    failures.append(f"placements:{type(e).__name__}")
+        except Exception as e:
+            failures.append(f"spatial_access:{type(e).__name__}")
+        # Best-effort: lattice rebuild (derived state; rebuildable later)
         try:
-            # F2: Rebuild lattice from plane so derived state agrees.
             if hasattr(program.lattice, 'rebuild_from_plane'):
                 program.lattice.rebuild_from_plane(program.cube.session.plane)
-        except Exception:
-            pass
+                removed.append("lattice_rebuilt")
+        except Exception as e:
+            failures.append(f"lattice:{type(e).__name__}")
         # Note: history is append-only and honestly records the attempt;
         # keys index staleness is harmless.
+        return {"ok": not failures, "failures": failures, "removed": removed}
     try:
         program.place(
             prop.id, prop.label, words=prop.words, detail=_detail(prop, units), goals=_goals(prop, units),
             skin=Skin.SEED, parents=list(rec["parents"]), origin=rec["origin"], lineage_version=int(rec["lineage_version"]),
         )
-    except Exception:
+    except Exception as e:
+        # Director 2026-10-05 (compensation): cleanup failures are
+        # observable. The original exception propagates (honest failure),
+        # but incomplete compensation is attached for the caller.
         if not existed:
-            _remove_newly_placed()
+            _pc = _remove_newly_placed()
+            if not _pc["ok"]:
+                e._compensation_incomplete = _pc
         raise
     # R3: Record intent BEFORE any durable writes. The journal enables
     # recovery to distinguish "crashed confirmation" from "legitimate
@@ -169,12 +194,16 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     if not _skip_journal:
         try:
             write_confirm_intent(program.owner, prop.id)
-        except Exception:
+        except Exception as e:
             # F1: Intent-write failure must restore newly placed memory.
             # The Idea was placed in-memory but no journal exists to enable
             # recovery. Remove it to prevent exposing unrecoverable hybrid.
+            # Director 2026-10-05 (compensation): incomplete cleanup is
+            # attached to the propagating exception (observable).
             if not existed:
-                _remove_newly_placed()
+                _ic = _remove_newly_placed()
+                if not _ic["ok"]:
+                    e._compensation_incomplete = _ic
             raise
     # Stage the nursery confirmation in memory (do NOT save yet).
     # The checkpoint transaction will persist both Program and Nursery atomically.
@@ -183,20 +212,43 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     # Director 2026-10-05 (boundary): validate carried authorization
     # immediately before durable publish. Revocation or content mutation
     # after staging denies; staged in-memory state is reverted via the
-    # existing compensation path and the intent journal is cleared
-    # (deliberate denial, not a crash — no recovery needed).
+    # existing compensation path.
+    #
+    # Director 2026-10-05 (compensation): incomplete compensation must NOT
+    # be reported as ordinary denial. If critical cleanup fails, the intent
+    # journal is RETAINED (evidence outlives unresolved restoration) and
+    # the receipt reports incomplete compensation alongside the original
+    # authorization denial.
     _v2 = _validate_writer_auth(program, pid, _auth, "pre_commit")
     if not _v2["ok"]:
         prop.status = "pending"
+        _comp = {"ok": True, "failures": [], "removed": []}
         if not existed:
-            _remove_newly_placed()
+            _comp = _remove_newly_placed()
+        _producer2 = _auth.get("producer") if isinstance(_auth, dict) else None
+        if not _comp["ok"]:
+            # Incomplete compensation: retain journal, report honestly.
+            # The original auth denial remains identifiable; the receipt
+            # is NOT an ordinary completed denial.
+            return {
+                "ok": False,
+                "reason": "acceptance_policy_denied",
+                "detail": _v2["detail"],
+                "pid": pid,
+                "producer": _producer2,
+                "stage": "pre_commit",
+                "compensation": "incomplete",
+                "compensation_failures": _comp["failures"],
+                "compensation_removed": _comp["removed"],
+                "evidence_retained": True,
+            }
+        # Complete compensation: clear journal (deliberate denial, not crash).
         try:
             from form.mandell.core_i_recovery import clear_confirm_intent
             if not _skip_journal:
                 clear_confirm_intent(program.owner)
         except Exception:
             pass
-        _producer2 = _auth.get("producer") if isinstance(_auth, dict) else None
         return _denied_receipt(pid, _producer2, _v2["detail"], "pre_commit")
     if not _skip:
         # F2: Capture baseline file bytes before commit. If commit fails
@@ -249,8 +301,9 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             # handler completes the revert, clear the journal. If the process
             # dies before clearing, recovery will use the journal.
             prop.status = "pending"
+            _ckpt_comp = {"ok": True, "failures": []}
             if not existed:
-                _remove_newly_placed()
+                _ckpt_comp = _remove_newly_placed()
             # Revert the live files that checkpoint may have dirtied.
             # F2: Restore baseline bytes directly for complete compensation.
             # A Nursery-only revert leaves durable Program with Idea but no
@@ -259,7 +312,9 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             reverted = False
             # F2: Only attempt compensation if baseline was captured.
             # Otherwise leave journal for recovery (fail closed).
-            if _baseline_ok:
+            # Director 2026-10-05 (compensation): incomplete in-memory
+            # cleanup also blocks journal clearing (evidence retained).
+            if _baseline_ok and _ckpt_comp["ok"]:
                 try:
                     from form.dell_matrix.atomic_write import atomic_write_bytes
                     # Restore Program file from baseline bytes (complete revert)
@@ -278,8 +333,8 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
                 except Exception:
                     # If we can't revert both files, leave journal for recovery.
                     pass
-            # If baseline capture failed (_baseline_ok=False), reverted stays
-            # False, journal is preserved for recovery.
+            # If baseline capture failed (_baseline_ok=False) or cleanup
+            # incomplete, reverted stays False, journal is preserved.
             if reverted:
                 if not _skip_journal:
                     clear_confirm_intent(program.owner)

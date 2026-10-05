@@ -141,6 +141,7 @@ LIST = [
     "form.mandell.d20_reference_test:smoke",
     "form.mandell.absence_matrix_test:smoke",
     "form.mandell.writer_boundary_test:smoke",
+    "form.mandell.compensation_test:smoke",
 ]
 
 TIMEOUT_S = 900
