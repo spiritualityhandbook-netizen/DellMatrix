@@ -135,6 +135,10 @@ LIST = [
     "form.mandell.wo52_skeleton_test:smoke",
     "form.mandell.wo53_historical_test:smoke",
     "form.mandell.wo54_learning_test:smoke",
+    "form.mandell.wo51_adversarial_test:smoke",
+    "form.mandell.wo52_coherence_test:smoke",
+    "form.mandell.wo54_consumers_test:smoke",
+    "form.mandell.d20_reference_test:smoke",
 ]
 
 TIMEOUT_S = 900

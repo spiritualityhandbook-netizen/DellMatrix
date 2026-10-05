@@ -541,7 +541,7 @@ def control_m_supersession_integration() -> None:
         "p = open_program(OWNER)\n"
         "p.acceptance_policy.grant_opt_in('test', scope='test')\n"
         "old = p.nursery.add('mu2 base', words='mu2 revision alpha')\n"
-        "p.confirm_proposal(old.id)\n"
+        "p.confirm_proposal(old.id, _producer='test')\n"
         "p.nursery.save(); persist_rest.save(p)\n"
         "with open(RES, 'w') as f:\n"
         "    json.dump({'pid_a': os.getpid(), 'old_id': old.id}, f)\n"
@@ -552,7 +552,7 @@ def control_m_supersession_integration() -> None:
         "    # Phase3 program, Phase4 nursery). Crash on 5th (Phase 4 post-replace).\n"
         "    return orig(path, payload, _fail_at='crash_after_replace' if state['n'] == 5 else _fail_at)\n"
         "AW.atomic_write_json = wrapper\n"
-        "S.supersede_proposal(p, old.id, 'mu2 revision two alpha')\n"
+        "S.supersede_proposal(p, old.id, 'mu2 revision two alpha', _producer='test')\n"
     )
     script_b = (
         "import json, os, sys\n"
