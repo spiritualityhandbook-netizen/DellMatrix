@@ -138,8 +138,9 @@ def run():
     import inspect as _inspect
     src = _inspect.getsource(p.confirm_proposal)
     rec("06_wrong_layer",
-        "commit_hash" in src and "acceptance_data_hash" in src,
-        "commit-time revalidation present")
+        "live_hash" in src and "policy.check" in src
+        and "execution boundary" in src,
+        "live validation at execution boundary present")
 
     # 7. Persistence break: new state survives save/restart
     rec("07_persistence",

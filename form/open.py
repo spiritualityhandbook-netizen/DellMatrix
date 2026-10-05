@@ -1462,7 +1462,11 @@ class Program:
         if policy is None:
             raise RuntimeError("acceptance policy missing")
         pred_hash = self.acceptance_data_hash(old_id, "supersede")
-        succ_hash = canonical_hash({"label": label or "", "words": words or ""})
+        # Label must match _supersede_impl's successor creation logic:
+        # explicit label, else "revision of {old label}".
+        old_prop = self.nursery.proposals.get(old_id)
+        eff_label = label or f"revision of {getattr(old_prop, 'label', old_id)}"
+        succ_hash = canonical_hash({"label": eff_label, "words": words or ""})
         data = {"predecessor": pred_hash, "successor": succ_hash}
         issued = policy.issue_approval(operation="supersede", target=old_id,
                                         reviewer=reviewer, data=data)

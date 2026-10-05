@@ -385,8 +385,12 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     if policy is None:
         raise SupersedeError("acceptance_policy_missing")
     # Expected binding hash: predecessor canonical version + successor data.
+    # Effective label matches successor creation (line ~456) and
+    # Program.make_supersede_context: explicit label, else "revision of...".
+    _old_prop = program.nursery.proposals.get(old_id)
+    _eff_label = label or f"revision of {getattr(_old_prop, 'label', old_id)}"
     _pred_hash = program.acceptance_data_hash(old_id, "supersede")
-    _succ_data_hash = canonical_hash({"label": label or "", "words": words or ""})
+    _succ_data_hash = canonical_hash({"label": _eff_label, "words": words or ""})
     _binding_hash = canonical_hash(
         {"predecessor": _pred_hash, "successor": _succ_data_hash})
     _source_approval_id = None

@@ -256,6 +256,39 @@ you> visual
 
 ---
 
+## 6.5 Phase-5: Acceptance Authorization and Lifecycle Coherence
+
+Phase 5 hardened the acceptance boundary and lifecycle interpretation.
+All claims verified by executed tests (see evidence map).
+
+**Acceptance policy** (`form/dell_matrix/acceptance_policy.py`):
+- Session IDs are collision-resistant (uuid4).
+- Acceptance data uses canonical JSON + SHA-256 (identity, owner, content,
+  parents, goals, revision metadata). No delimiter concatenation.
+- Approval issuance is recorded; a matching dict alone is not evidence.
+  Forged, stale, cross-session, and revoked approvals are denied.
+- Revocation is supported; retry means re-issuance after re-review.
+- Commit-boundary revalidation: live permission and data hash checked
+  immediately before the protected mutation.
+- Supersession binds predecessor version + successor payload. The
+  successor's confirmation is derived via a constrained, recorded
+  relationship (not a general bypass); revoked parents invalidate
+  unfinished children.
+
+**Lifecycle** (`form/dell_matrix/canonical_lifecycle.py`):
+- Acceptance, revision, participation, and projection are distinct.
+- Revision validated first; faded presence never masks malformed data.
+- Malformed records excluded in all contexts with explicit reasons.
+- Fade/unfade preserves identity, content, acceptance, and revision links.
+- Unfade/pin cannot reactivate superseded truth.
+
+**Learning** (DuoBeta):
+- Influence OFF restores baseline in all consumers.
+- Learning cannot manufacture evidence, resurrect excluded candidates,
+  or change accepted truth.
+
+---
+
 ## 7. Vision (Planned)
 
 The long-term vision — **not yet implemented** — includes:
