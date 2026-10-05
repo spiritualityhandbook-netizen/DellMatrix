@@ -63,15 +63,33 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
     existed = prop.id in units
     def _remove_newly_placed():
         """Remove a newly placed Idea from all in-memory structures.
-        F2: program.place() adds units entry AND spatial.velocities entry.
-        Both must be removed for complete compensation."""
+        F2: program.place() has multiple side effects beyond units:
+        - plane.units[pid]: the Unit object
+        - spatial.velocities[pid]: velocity tuple
+        - spatial.placements[pid]: placement record
+        - lattice: rebuilt from plane (derived, will be rebuilt on next save)
+        - history: new entry (append-only log, cannot be removed without corruption)
+        - keys: remembered label (index, stale entry harmless)
+
+        For complete compensation, we remove the units entry and the
+        spatial entries. The lattice is derived and will be rebuilt.
+        History is append-only; a failed-operation entry is honest (it
+        records the attempt). Keys index is harmless if stale.
+
+        After in-memory cleanup, the caller restores baseline file bytes
+        to disk, ensuring a later save cannot reintroduce effects.
+        """
         units.pop(prop.id, None)
         try:
             spatial = program.cube.session.spatial
             if hasattr(spatial, 'velocities'):
                 spatial.velocities.pop(prop.id, None)
+            if hasattr(spatial, 'placements'):
+                spatial.placements.pop(prop.id, None)
         except Exception:
             pass
+        # Note: lattice is derived from plane on save; history is append-only
+        # and honestly records the attempt; keys index staleness is harmless.
     try:
         program.place(
             prop.id, prop.label, words=prop.words, detail=_detail(prop, units), goals=_goals(prop, units),
@@ -112,19 +130,27 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
         # lattice, history, keys).
         _baseline_program_bytes = None
         _baseline_nursery_bytes = None
+        _baseline_ok = False
         try:
             from form.persist import _path as _ppath
             from form.dell_matrix.nursery import owner_nursery_path
             _p_path = _ppath(program.owner)
             _n_path = owner_nursery_path(program.owner)
+            # F2: Do not suppress baseline read failures. If we cannot
+            # capture baseline, compensation cannot be verified; leave
+            # journal for recovery instead of claiming success.
             if os.path.isfile(_p_path):
                 with open(_p_path, 'rb') as f:
                     _baseline_program_bytes = f.read()
+            # Legitimate absence: file doesn't exist, None is correct
             if os.path.isfile(_n_path):
                 with open(_n_path, 'rb') as f:
                     _baseline_nursery_bytes = f.read()
-        except Exception:
-            pass
+            _baseline_ok = True
+        except Exception as e:
+            # Baseline capture failed; compensation cannot be verified.
+            # Leave journal for recovery (do not clear).
+            _baseline_ok = False
         try:
             from form.mandell.checkpoint_generation import commit_checkpoint
             commit_checkpoint(program)
@@ -152,28 +178,32 @@ def confirm_proposal(program, pid: str) -> Dict[str, Any]:
             # Revert the live files that checkpoint may have dirtied.
             # F2: Restore baseline bytes directly for complete compensation.
             # A Nursery-only revert leaves durable Program with Idea but no
-            # journal for recovery.
+            # journal for recovery. Use atomic_write_bytes (not raw open)
+            # to avoid partial writes.
             reverted = False
-            try:
-                # Restore Program file from baseline bytes (complete revert)
-                if _baseline_program_bytes is not None:
-                    with open(_p_path, 'wb') as f:
-                        f.write(_baseline_program_bytes)
-                elif not existed:
-                    # No baseline (new file): save reverted in-memory state
-                    from form import persist_rest
-                    persist_rest.save(program)
-                # Restore Nursery file from baseline, then apply status revert
-                # (baseline has pending, which is what we want)
-                if _baseline_nursery_bytes is not None:
-                    with open(_n_path, 'wb') as f:
-                        f.write(_baseline_nursery_bytes)
-                else:
-                    nursery.save()
-                reverted = True
-            except Exception:
-                # If we can't revert both files, leave journal for recovery.
-                pass
+            # F2: Only attempt compensation if baseline was captured.
+            # Otherwise leave journal for recovery (fail closed).
+            if _baseline_ok:
+                try:
+                    from form.dell_matrix.atomic_write import atomic_write_bytes
+                    # Restore Program file from baseline bytes (complete revert)
+                    if _baseline_program_bytes is not None:
+                        atomic_write_bytes(_p_path, _baseline_program_bytes)
+                    elif not existed:
+                        # No baseline (new file): save reverted in-memory state
+                        from form import persist_rest
+                        persist_rest.save(program)
+                    # Restore Nursery file from baseline (has pending status)
+                    if _baseline_nursery_bytes is not None:
+                        atomic_write_bytes(_n_path, _baseline_nursery_bytes)
+                    else:
+                        nursery.save()
+                    reverted = True
+                except Exception:
+                    # If we can't revert both files, leave journal for recovery.
+                    pass
+            # If baseline capture failed (_baseline_ok=False), reverted stays
+            # False, journal is preserved for recovery.
             if reverted:
                 if not _skip_journal:
                     clear_confirm_intent(program.owner)

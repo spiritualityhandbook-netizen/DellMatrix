@@ -850,16 +850,19 @@ def recover_confirmation_intent(owner: str) -> str:
         )
     old_nursery_fp = journal.get("old_nursery_sha256")
     old_program_fp = journal.get("old_program_sha256")
-    # "absent" is valid (file didn't exist at journal time).
-    # Empty string, None, or non-string is malformed.
-    if not isinstance(old_nursery_fp, str) or old_nursery_fp == "":
-        raise RollbackRecoveryError(
-            "confirmation intent: missing or invalid old_nursery_sha256 (journal preserved)"
-        )
-    if not isinstance(old_program_fp, str) or old_program_fp == "":
-        raise RollbackRecoveryError(
-            "confirmation intent: missing or invalid old_program_sha256 (journal preserved)"
-        )
+    # F4: Same strict standard as supersession. Valid values: 64-char hex
+    # SHA-256 (file existed) or "absent" (file didn't exist). Missing/None/
+    # empty/arbitrary strings fail closed.
+    import re
+    _sha256_re = re.compile(r'^[0-9a-f]{64}$')
+    for fp_key, fp_val in (("old_nursery_sha256", old_nursery_fp),
+                           ("old_program_sha256", old_program_fp)):
+        if fp_val == "absent":
+            continue
+        if not isinstance(fp_val, str) or not _sha256_re.match(fp_val):
+            raise RollbackRecoveryError(
+                f"confirmation intent: missing or invalid {fp_key} (journal preserved)"
+            )
 
     from form.persist import _path
     from form.dell_matrix.nursery import owner_nursery_path
@@ -1148,45 +1151,66 @@ def clear_supersede_intent(owner: str) -> None:
 def _validate_revision_identity(old_prop: dict, new_prop: dict, old_id: str) -> None:
     """Validate revision identity using canonical semantics.
 
-    The successor's root must equal the old's canonical root, defined as:
-    - old's revision_root_id if present, else old's own ID (first revision)
+    Strict type contract (no coercion):
+    - revision_root_id must be str (non-empty) or None/absent
+    - revision_number must be int (not bool, not float, not str) or None/absent
 
-    The successor's number must be old's number + 1 (old defaults to 1).
+    The successor's root must equal the old's canonical root, defined as:
+    - old's revision_root_id if present and valid, else old's own ID
+
+    The successor's number must be exactly old's number + 1, using strict
+    integer arithmetic (no int() coercion of floats/strings).
+
+    For multi-revision chains: if old has an explicit root different from
+    its own ID, that root is accepted as the chain root (established by
+    prior supersession). The new must match it exactly.
 
     Raises RollbackRecoveryError on any contradiction. Journal preserved.
     """
     old_root = old_prop.get("revision_root_id")
     new_root = new_prop.get("revision_root_id")
-    # Canonical old root: recorded root, or own ID if first revision
-    canonical_old_root = old_root if old_root is not None else old_id
+
+    # Strict type: root must be str or None
+    if old_root is not None:
+        if not isinstance(old_root, str) or not old_root:
+            raise RollbackRecoveryError(
+                "supersede intent: invalid old revision root type (preserved).")
     if not isinstance(new_root, str) or not new_root:
         raise RollbackRecoveryError(
-            "supersede intent: missing revision root (preserved)."
-        )
+            "supersede intent: missing or invalid new revision root (preserved).")
+
+    # Canonical old root: recorded root, or own ID if first revision
+    canonical_old_root = old_root if old_root is not None else old_id
     if new_root != canonical_old_root:
         raise RollbackRecoveryError(
             f"supersede intent: revision root {new_root} does not match "
             f"canonical old root {canonical_old_root} (preserved)."
         )
+
     old_num = old_prop.get("revision_number")
     new_num = new_prop.get("revision_number")
-    canonical_old_num = old_num if old_num is not None else 1
+
+    # Strict type: numbers must be int (not bool), or None (defaults to 1)
+    # No float, no string, no coercion.
+    def _strict_int(val, name):
+        if val is None:
+            return 1
+        if isinstance(val, bool) or not isinstance(val, int):
+            raise RollbackRecoveryError(
+                f"supersede intent: {name} must be int, got {type(val).__name__} (preserved).")
+        return val
+
+    canonical_old_num = _strict_int(old_num, "old revision_number")
+    canonical_new_num = _strict_int(new_num, "new revision_number")
+    # new_num was None → defaults to 1, but new must have explicit number
     if new_num is None:
         raise RollbackRecoveryError(
-            "supersede intent: missing revision number (preserved)."
-        )
-    try:
-        if isinstance(new_num, bool) or isinstance(canonical_old_num, bool):
-            raise RollbackRecoveryError(
-                "supersede intent: bool revision number (preserved).")
-        if int(new_num) != int(canonical_old_num) + 1:
-            raise RollbackRecoveryError(
-                f"supersede intent: revision number not sequential "
-                f"({canonical_old_num} -> {new_num}) (preserved)."
-            )
-    except (ValueError, TypeError):
+            "supersede intent: missing new revision number (preserved).")
+
+    if canonical_new_num != canonical_old_num + 1:
         raise RollbackRecoveryError(
-            "supersede intent: invalid revision number (preserved)."
+            f"supersede intent: revision number not sequential "
+            f"({canonical_old_num} -> {canonical_new_num}) (preserved)."
         )
 
 

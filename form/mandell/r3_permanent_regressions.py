@@ -584,13 +584,13 @@ if pr2:
     p2.nursery.save()
     persist_rest.save(p2)
 
-import builtins
-orig_open = builtins.open
+from form.dell_matrix import atomic_write as aw
+orig_awb = aw.atomic_write_bytes
 write_failed = [False]
-def failing_open(path, mode='r', *a, **k):
-    if 'w' in mode and 'program_' in str(path) and write_failed[0]:
+def failing_awb(path, blob, *a, **k):
+    if 'program_' in str(path) and write_failed[0]:
         raise OSError("INJECTED_WRITE_FAILURE")
-    return orig_open(path, mode, *a, **k)
+    return orig_awb(path, blob, *a, **k)
 
 def failing_commit2(program, _fail_at=None):
     program.nursery.save()
@@ -599,7 +599,7 @@ def failing_commit2(program, _fail_at=None):
     raise OSError("INJECTED_COMMIT_FAILURE_2")
 
 cg.commit_checkpoint = failing_commit2
-builtins.open = failing_open
+aw.atomic_write_bytes = failing_awb
 try:
     p2.confirm_proposal(pid)
     print('NO_RAISE_UNEXPECTED_2')
@@ -609,7 +609,8 @@ except Exception as e:
     print('OTHER_2:' + type(e).__name__)
 finally:
     cg.commit_checkpoint = orig_commit
-    builtins.open = orig_open
+    aw.atomic_write_bytes = orig_awb
+    write_failed[0] = False
     write_failed[0] = False
 
 jpath2 = _confirm_journal_path(OWNER_ID)
