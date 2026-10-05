@@ -114,6 +114,11 @@ class Program:
     duo: DuoBeta = field(init=False)
     # WO-5.1: Session-scoped acceptance policy. Default DENY.
     acceptance_policy: Any = field(default_factory=lambda: None, init=False)
+    # WO-5.4: Learning gates. Default ON (influence) / ON (recording).
+    # learning_influence: when False, selectors return baseline order.
+    # learning_record: when False, evidence is not recorded.
+    learning_influence: bool = True
+    learning_record: bool = True
     avatar: Avatar = field(init=False)
     face: FaceController = field(init=False)
     kaomoji: Any = field(init=False)
