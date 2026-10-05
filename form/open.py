@@ -182,6 +182,41 @@ class Program:
         # the owner's live nursery file, so a committed generation can be
         # staged even if the live file is absent or corrupt.
         _injected = getattr(self, "_init_nursery", None)
+        # SWAT BREAK 1 FIX: Only when a Nursery is INJECTED, check for journals.
+        # If a confirmation or supersession journal exists, the live state
+        # is uncertain. The injected object bypasses file-based recovery,
+        # which would expose unhealed hybrids. Fail closed.
+        # Ordinary construction (no injection) MUST run recovery; do not block it.
+        if _injected is not None:
+            from form.mandell.core_i_recovery import _confirm_journal_path, _supersede_journal_path
+            import os as _os
+            if _os.path.isfile(_confirm_journal_path(self.owner)):
+                from form.mandell.core_i_recovery import RollbackRecoveryError
+                raise RollbackRecoveryError(
+                    "Program: confirmation journal exists for owner; "
+                    "injected Nursery bypasses recovery (fail closed)"
+                )
+            if _os.path.isfile(_supersede_journal_path(self.owner)):
+                from form.mandell.core_i_recovery import RollbackRecoveryError
+                raise RollbackRecoveryError(
+                    "Program: supersession journal exists for owner; "
+                    "injected Nursery bypasses recovery (fail closed)"
+                )
+        if _injected is None:
+            # R3: Run confirmation-intent recovery before loading live nursery.
+            # Recovers from RECORDED INTENT (journal), not inferred visibility.
+            # Preserves legitimate historical records without journals.
+            #
+            # R3-FINAL-ADMISSION req. 2: If recovery cannot execute, do NOT
+            # expose unverified live Nursery state. Fail closed.
+            # The injected-generation path (above) is preserved; it does not
+            # use the live file and has its own documented contract.
+            from form.mandell.core_i_recovery import recover_confirmation_intent
+            from form.mandell.core_i_recovery import recover_supersede_intent
+            # If ImportError occurs, it propagates (fail closed).
+            # Do NOT catch and continue; unverified state must not be exposed.
+            recover_confirmation_intent(self.owner)
+            recover_supersede_intent(self.owner)
         self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner))
         self.growth = RingedGrowth(nursery=self.nursery)
         self.lattice = HarmonicLattice(size=SIZE_CHROMATIC)

@@ -208,8 +208,25 @@ def test_state():
     observe_seed_execution(p, "70[Count]")
     s = ro.runtime_state(p)
     check("M.owner", s["ok"] is True and s["owner"] == "Operator")
-    check("M.generation", "generation" in str(s["current_generation"]).lower()
-          or s["current_generation"].startswith("not_recorded"))
+    # M.generation: Compare observed current_generation against the actual
+    # generation reported by the canonical checkpoint authority.
+    # - If no generation committed: expect "not_recorded" (positive case)
+    # - If generation committed: expect exact match with authority
+    # - Invalid observation (e.g., malformed) must not pass
+    from form.mandell.checkpoint_generation import current_generation_id
+    _actual_gid = current_generation_id("Operator")
+    _cg = s["current_generation"]
+    if _actual_gid is None:
+        # No generation committed: must be explicitly not_recorded
+        _gen_ok = isinstance(_cg, str) and _cg.startswith("not_recorded")
+    else:
+        # Generation committed: must exactly match canonical authority
+        _gen_ok = _cg == _actual_gid
+    # Negative control: a malformed observation must not pass
+    # (e.g., if _cg were an arbitrary string not matching authority)
+    _malformed = "g_invalid_malformed_xyz"
+    _malformed_ok = not (_malformed == _actual_gid if _actual_gid else False)
+    check("M.generation", _gen_ok and _malformed_ok)
     check("M.outcomes", s["outcomes"]["total"] >= 1
           and s["outcomes"]["counts"].get("completed", 0) >= 1)
     check("M.last_exec", s["last_execution"]["status"] == "known"

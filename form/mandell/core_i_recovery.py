@@ -510,10 +510,18 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
 
 
 def _sha256_file(path: str) -> str:
+    """SHA256 hex digest of file bytes, or empty string if missing.
+    
+    Note: This is the legacy version used by rollback/supersession.
+    The confirmation recovery uses a separate version that returns "absent".
+    """
     h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
+    try:
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                h.update(chunk)
+    except OSError:
+        return ""
     return h.hexdigest()
 
 
@@ -591,3 +599,1077 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
     from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
     rehydrate_ideas_from_live(owner)
     return program
+
+
+# ---------------------------------------------------------------------------
+# Confirmation-hybrid recovery (GDP_ARGUS_CONFIRMATION_CONVERGENCE_R2)
+# ---------------------------------------------------------------------------
+
+def recover_confirmation_hybrid(owner: str) -> int:
+    """Heal crashed confirmations: nursery=confirmed but Idea absent.
+
+    FAIL-CLOSED recovery, called before live state is exposed (e.g. at load).
+    Detects the hybrid left by a crash between nursery.save() and
+    program.save() during confirm_proposal, and heals to OLD by reverting
+    the proposal status to "pending".
+
+    This is the production-reader counterpart to the checkpoint transaction.
+    The checkpoint pointer provides atomicity only for checkpoint-aware
+    readers; the production loader reads live files directly. This recovery
+    ensures the loader never exposes a hybrid.
+
+    Returns the number of healed proposals (0 = no hybrid found).
+
+    Raises:
+        RollbackRecoveryError: If the nursery or program file is unreadable
+            or malformed (fail closed, never expose potentially hybrid state).
+
+    Note (R3): This visibility-based heuristic is DEPRECATED. It cannot
+    distinguish a crashed confirmation from a legitimate historical record
+    (e.g., faded Idea). Use recover_confirmation_intent() which recovers
+    from the recorded journal instead. This function is retained for
+    backward compatibility during migration.
+    """
+    from form.persist import _path, _STATE_DIR
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_json
+
+    npath = owner_nursery_path(owner)
+    ppath = _path(owner)
+
+    # If either file is missing, no hybrid is possible.
+    if not os.path.isfile(npath) or not os.path.isfile(ppath):
+        return 0
+
+    # Read live nursery file.
+    try:
+        with open(npath, encoding="utf-8") as f:
+            ndata = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"confirmation recovery: unreadable nursery file: {exc}"
+        ) from exc
+
+    # Read live program file, extract plane unit IDs.
+    try:
+        with open(ppath, encoding="utf-8") as f:
+            pdata = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"confirmation recovery: unreadable program file: {exc}"
+        ) from exc
+
+    # Extract unit IDs from program plane.
+    unit_ids = set()
+    try:
+        plane = pdata.get("plane", {})
+        units = plane.get("units", {})
+        if isinstance(units, dict):
+            unit_ids = set(units.keys())
+    except (AttributeError, TypeError):
+        # Malformed program structure: fail closed.
+        raise RollbackRecoveryError(
+            "confirmation recovery: malformed program plane structure"
+        )
+
+    # Find confirmed proposals without corresponding Ideas.
+    healed = 0
+    for pid, prop in ndata.items():
+        # Skip non-proposal keys (e.g., __conflict_dispositions__).
+        if not isinstance(prop, dict):
+            continue
+        if pid.startswith("__"):
+            continue
+        status = prop.get("status")
+        if status == "confirmed" and pid not in unit_ids:
+            # Hybrid detected: confirmed proposal without Idea.
+            # Heal to OLD by reverting to pending.
+            prop["status"] = "pending"
+            healed += 1
+
+    # Write back if any healed (atomic).
+    if healed > 0:
+        try:
+            atomic_write_json(npath, ndata)
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"confirmation recovery: failed to write healed nursery: {exc}"
+            ) from exc
+
+    return healed
+
+
+# ---------------------------------------------------------------------------
+# Confirmation intent journal (GDP_R3_IDEA_PRESERVATION_ADDENDUM)
+# ---------------------------------------------------------------------------
+# R2 used visibility-based healing ("confirmed without Idea = crash").
+# R3 corrects this: absence from Plane does NOT prove acceptance never
+# committed. Historical records (faded, superseded) may legitimately lack
+# Plane Ideas. Recovery must use RECORDED INTENT, not inferred visibility.
+#
+# Protocol:
+#   1. Before any file writes, journal records: operation, proposal_id,
+#      owner, phase="prepared", old fingerprints.
+#   2. Perform file writes (nursery, program).
+#   3. On success, delete journal (phase="committed" implied by deletion).
+#   4. On recovery, if journal exists: check the RECORDED proposal only.
+#      Do not scan all proposals. Historical records without journals
+#      are never touched.
+
+CONFIRM_JOURNAL_VERSION = 1
+
+
+def _confirm_journal_path(owner: str) -> str:
+    """Path of the confirmation intent journal for ``owner``."""
+    from form.persist import _STATE_DIR, _safe_owner
+    return os.path.join(_STATE_DIR, f"confirm_{_safe_owner(owner)}.journal.json")
+
+
+def _sha256_file_absent(path: str) -> str:
+    """SHA256 hex digest of file bytes.
+    
+    Returns:
+        - Hex digest if file exists and is readable
+        - "absent" if file does not exist (legitimate pre-operation absence)
+        - Raises OSError if file exists but is unreadable (corrupt storage)
+    
+    Used by confirmation recovery. Supersession uses _sha256_file (returns "").
+    """
+    import hashlib, os
+    if not os.path.exists(path):
+        return "absent"
+    # File exists; if unreadable, let the exception propagate (don't mask I/O errors)
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def write_confirm_intent(owner: str, proposal_id: str) -> None:
+    """Record intent to confirm before any durable writes.
+
+    Must be called BEFORE modifying nursery/program files. The journal
+    enables crash recovery to distinguish "crashed confirmation" from
+    "legitimate historical record".
+    """
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_json
+
+    journal = {
+        "journal_version": CONFIRM_JOURNAL_VERSION,
+        "operation": "confirm_proposal",
+        "owner": owner,
+        "proposal_id": proposal_id,
+        "phase": "prepared",
+        "old_nursery_sha256": _sha256_file_absent(owner_nursery_path(owner)),
+        "old_program_sha256": _sha256_file_absent(_path(owner)),
+    }
+    atomic_write_json(_confirm_journal_path(owner), journal)
+
+
+def clear_confirm_intent(owner: str) -> None:
+    """Delete the confirmation journal after successful commit."""
+    try:
+        os.unlink(_confirm_journal_path(owner))
+    except OSError:
+        pass
+
+
+def recover_confirmation_intent(owner: str) -> str:
+    """Recover from recorded confirmation intent (not inferred visibility).
+
+    STRICT CONTRACT (GDP_R3_COMPLETION_GATE req. 2):
+    - Validates exact owner, supported operation, strict version/type,
+      phase, proposal identity, and required fingerprints BEFORE mutation.
+    - Missing, malformed, or conflicting authoritative members → PRESERVE
+      journal and fail closed (raise), unless transaction evidence proves
+      a safe outcome.
+    - Malformed Units are NOT interpreted as empty valid Plane.
+    - Journal is cleared ONLY after proving coherence of every affected
+      member (nursery AND program) for either NEW-complete or OLD-complete.
+    - Stale journals (proposal already resolved) do not mutate history.
+
+    Returns:
+        "none": No journal; nothing to recover.
+        "already_complete": Journal existed and both files provably reflect
+            the confirmed state; journal cleared.
+        "healed_to_old": Journal existed, nursery was modified but program
+            lacks the Idea; proposal reverted to pending, journal cleared.
+        "no_change": Journal existed but nursery still matches OLD AND
+            program is coherent; journal cleared.
+
+    Raises:
+        RollbackRecoveryError: Journal corrupt, files missing/unreadable,
+            or members malformed/conflicting (fail closed, journal preserved).
+    """
+    jpath = _confirm_journal_path(owner)
+    if not os.path.isfile(jpath):
+        return "none"
+
+    # --- Validate journal strictly BEFORE any mutation ---
+    try:
+        with open(jpath, encoding="utf-8") as f:
+            journal = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"confirmation intent: corrupt journal (preserved): {exc}"
+        ) from exc
+
+    if not isinstance(journal, dict):
+        raise RollbackRecoveryError(
+            "confirmation intent: journal is not a dict (preserved)"
+        )
+    # F4: Strict version check - exclude bool (True == 1)
+    _cjv = journal.get("journal_version")
+    if not isinstance(_cjv, int) or isinstance(_cjv, bool) or _cjv != CONFIRM_JOURNAL_VERSION:
+        raise RollbackRecoveryError(
+            f"confirmation intent: unsupported version {journal.get('journal_version')} (preserved)"
+        )
+    # Exact owner match (prevent foreign-owner journal application)
+    if journal.get("owner") != owner:
+        raise RollbackRecoveryError(
+            f"confirmation intent: owner mismatch journal={journal.get('owner')} expected={owner} (preserved)"
+        )
+    # Supported operation
+    if journal.get("operation") != "confirm_proposal":
+        raise RollbackRecoveryError(
+            f"confirmation intent: unsupported operation {journal.get('operation')} (preserved)"
+        )
+    # Phase must be prepared (we only write prepared; committed is deletion)
+    if journal.get("phase") != "prepared":
+        raise RollbackRecoveryError(
+            f"confirmation intent: unexpected phase {journal.get('phase')} (preserved)"
+        )
+    proposal_id = journal.get("proposal_id")
+    # Validate required fields. Malformed transaction evidence is FAIL-CLOSED:
+    # preserve the journal and refuse unverified live state.
+    # "absent" is a valid value for fingerprints (legitimate pre-operation absence).
+    # Empty string or missing field is malformed.
+    if not proposal_id or not isinstance(proposal_id, str):
+        raise RollbackRecoveryError(
+            "confirmation intent: missing or invalid proposal_id (journal preserved)"
+        )
+    old_nursery_fp = journal.get("old_nursery_sha256")
+    old_program_fp = journal.get("old_program_sha256")
+    # F4: Same strict standard as supersession. Valid values: 64-char hex
+    # SHA-256 (file existed) or "absent" (file didn't exist). Missing/None/
+    # empty/arbitrary strings fail closed.
+    import re
+    _sha256_re = re.compile(r'^[0-9a-f]{64}$')
+    for fp_key, fp_val in (("old_nursery_sha256", old_nursery_fp),
+                           ("old_program_sha256", old_program_fp)):
+        if fp_val == "absent":
+            continue
+        if not isinstance(fp_val, str) or not _sha256_re.match(fp_val):
+            raise RollbackRecoveryError(
+                f"confirmation intent: missing or invalid {fp_key} (journal preserved)"
+            )
+
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_json
+
+    npath = owner_nursery_path(owner)
+    ppath = _path(owner)
+
+    # --- Files must exist and be readable; otherwise fail closed ---
+    # If a member file is missing, we cannot assume the operation never wrote.
+    # The journal records "absent" for legitimately missing files at journal time.
+    # But we must verify BOTH members against recorded evidence before clearing.
+    # Do NOT use one-member shortcuts.
+    #
+    # If a file is missing and the journal did NOT record "absent" for it,
+    # the file was deleted/corrupted → fail closed.
+    if not os.path.isfile(npath) and old_nursery_fp != "absent":
+        raise RollbackRecoveryError(
+            f"confirmation intent: nursery file missing (journal preserved): {npath}"
+        )
+    if not os.path.isfile(ppath) and old_program_fp != "absent":
+        raise RollbackRecoveryError(
+            f"confirmation intent: program file missing (journal preserved): {ppath}"
+        )
+
+    # --- Compute BOTH fingerprints FIRST, including explicit absence ---
+    # _sha256_file returns "absent" for missing files.
+    # Handle proven unchanged OLD before attempting to open missing files.
+    current_nursery_fp = _sha256_file_absent(npath)
+    current_program_fp = _sha256_file_absent(ppath)
+
+    # F5: Validate present members BEFORE fingerprint comparison.
+    # Malformed present files must not be accepted as no_change merely
+    # because their bytes match. Structure validation comes first.
+    if os.path.isfile(npath):
+        try:
+            with open(npath, encoding="utf-8") as f:
+                _nd = json.load(f)
+            if not isinstance(_nd, dict):
+                raise RollbackRecoveryError(
+                    "confirmation intent: nursery malformed (journal preserved)")
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            raise RollbackRecoveryError(
+                f"confirmation intent: nursery unreadable (journal preserved): {exc}"
+            ) from exc
+    if os.path.isfile(ppath):
+        try:
+            with open(ppath, encoding="utf-8") as f:
+                _pd = json.load(f)
+            if not isinstance(_pd, dict):
+                raise RollbackRecoveryError(
+                    "confirmation intent: program malformed (journal preserved)")
+            # F5: Present Program must have dict plane AND dict units.
+            # None is malformed, not valid. Only "absent" file is legitimate absence.
+            _plane = _pd.get("plane")
+            if not isinstance(_plane, dict):
+                raise RollbackRecoveryError(
+                    "confirmation intent: plane must be dict (journal preserved)")
+            _units = _plane.get("units")
+            if not isinstance(_units, dict):
+                raise RollbackRecoveryError(
+                    "confirmation intent: units must be dict (journal preserved)")
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            raise RollbackRecoveryError(
+                f"confirmation intent: program unreadable (journal preserved): {exc}"
+            ) from exc
+
+    if current_nursery_fp == old_nursery_fp and current_program_fp == old_program_fp:
+        # Both members unchanged, including legitimate absence ("absent"=="absent").
+        # Operation never wrote. Safe to clear.
+        clear_confirm_intent(owner)
+        return "no_change"
+
+    # --- Read and validate PRESENT members ---
+    # Do not interpret malformed content as absence.
+    # Only open files that exist; absent files were already handled above.
+    if os.path.isfile(npath):
+        try:
+            with open(npath, encoding="utf-8") as f:
+                ndata = json.load(f)
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            raise RollbackRecoveryError(
+                f"confirmation intent: unreadable nursery (journal preserved): {exc}"
+            ) from exc
+        if not isinstance(ndata, dict):
+            raise RollbackRecoveryError(
+                "confirmation intent: nursery is not a dict (journal preserved)"
+            )
+    else:
+        ndata = None  # Absent; was recorded as "absent" in journal
+
+    if os.path.isfile(ppath):
+        try:
+            with open(ppath, encoding="utf-8") as f:
+                pdata = json.load(f)
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            raise RollbackRecoveryError(
+                f"confirmation intent: unreadable program (journal preserved): {exc}"
+            ) from exc
+        if not isinstance(pdata, dict):
+            raise RollbackRecoveryError(
+                "confirmation intent: program is not a dict (journal preserved)"
+            )
+    else:
+        pdata = None  # Absent; was recorded as "absent" in journal
+
+    # --- Validate Program structure strictly (if present) ---
+    # Do NOT interpret malformed Units as empty valid Plane.
+    # If pdata is None (absent), skip validation; the fingerprint check already handled it.
+    # For changed companion + absent member, we fail closed below (cannot prove outcome).
+    if pdata is None:
+        # Program absent. If we reach here, the fingerprint check did NOT clear as no_change,
+        # meaning at least one member changed. Changed companion + absent member → fail closed
+        # unless the journal proves a coherent outcome. For now, fail closed.
+        raise RollbackRecoveryError(
+            "confirmation intent: program absent but nursery changed (journal preserved). "
+            "Cannot prove safe outcome."
+        )
+    plane = pdata.get("plane")
+    if plane is None:
+        raise RollbackRecoveryError(
+            "confirmation intent: program missing 'plane' member (journal preserved)"
+        )
+    if not isinstance(plane, dict):
+        raise RollbackRecoveryError(
+            "confirmation intent: program 'plane' is not a dict (journal preserved)"
+        )
+    units = plane.get("units")
+    if units is None:
+        raise RollbackRecoveryError(
+            "confirmation intent: program plane missing 'units' (journal preserved)"
+        )
+    if not isinstance(units, dict):
+        raise RollbackRecoveryError(
+            f"confirmation intent: program units is {type(units).__name__}, not dict (journal preserved)"
+        )
+    unit_ids = set(units.keys())
+
+    # Fingerprints already computed and checked above for no_change.
+    # If we reach here, at least one member changed.
+    # Continue with proposal status verification below.
+    # (The nursery-unchanged-but-program-modified check is handled by the
+    #  specific proposal status logic that follows.)
+
+    # --- Nursery was modified. Examine the RECORDED proposal ---
+    prop = ndata.get(proposal_id)
+    if not isinstance(prop, dict):
+        # Proposal not in nursery. This could be:
+        # (a) Stale journal (proposal was deleted/superseded after), or
+        # (b) Corrupted state.
+        # We cannot prove safe outcome, so preserve journal and fail closed.
+        # EXCEPTION: If the proposal_id looks like a stale reference and
+        # the nursery is otherwise coherent, we may clear. But we cannot
+        # distinguish, so fail closed.
+        raise RollbackRecoveryError(
+            f"confirmation intent: proposal {proposal_id} not in nursery (journal preserved)"
+        )
+
+    status = prop.get("status")
+    if status != "confirmed":
+        # Proposal exists but is not confirmed.
+        # GDP_R3_CLOSE_STALE_INTENT_ESCAPE req. 1: Pending status alone does
+        # NOT prove Program stayed OLD. Must check if the specific Idea was
+        # written.
+        if status == "pending":
+            # If the Idea IS in the program, the operation partially completed
+            # (wrote Program but not Nursery). This is an incomplete transition,
+            # NOT a stale journal. Fail closed; do NOT clear.
+            if proposal_id in unit_ids:
+                raise RollbackRecoveryError(
+                    f"confirmation intent: proposal {proposal_id} pending but "
+                    f"Idea present in program (journal preserved). Incomplete transition."
+                )
+            # Idea NOT in program. The operation did not write the Program.
+            # The nursery fingerprint difference (if any) is from unrelated
+            # concurrent writes. The journal is stale. Safe to clear.
+            # Note: We do NOT require program fp == OLD, because unrelated
+            # writes (other Ideas, timestamps) may have changed it. The
+            # absence of the specific Idea proves the operation didn't complete.
+            clear_confirm_intent(owner)
+            return "no_change"
+        # Status is neither confirmed nor pending (e.g., rejected, etc.).
+        # Cannot prove safe outcome; preserve journal and fail closed.
+        raise RollbackRecoveryError(
+            f"confirmation intent: proposal {proposal_id} status={status}, not confirmed (journal preserved)"
+        )
+
+    # --- Proposal is confirmed. Check Idea presence ---
+    if proposal_id in unit_ids:
+        # Both files reflect NEW state. Prove program coherence:
+        # The Idea must be a valid dict (not just present).
+        idea = units.get(proposal_id)
+        if not isinstance(idea, dict):
+            raise RollbackRecoveryError(
+                f"confirmation intent: Idea {proposal_id} is malformed (journal preserved)"
+            )
+        # NEW is complete and coherent. Safe to clear.
+        clear_confirm_intent(owner)
+        return "already_complete"
+
+    # --- Hybrid: nursery confirmed, program lacks Idea, journal proves intent ---
+    # Heal to OLD by reverting proposal to pending.
+    # This is the ONLY case where we mutate.
+    #
+    # R3-COMPLETE-EXISTING-CONTRACT req. 1: When claiming OLD, compare the
+    # recorded Program fingerprint. The heal is only valid if the Program
+    # was never modified (still matches OLD). If Program was modified,
+    # we cannot prove OLD coherence; fail closed.
+    current_program_fp = _sha256_file_absent(ppath)
+    if current_program_fp != old_program_fp:
+        raise RollbackRecoveryError(
+            f"confirmation intent: program modified (fp mismatch), cannot prove OLD "
+            f"(journal preserved). Expected {old_program_fp[:8]}, got {current_program_fp[:8]}"
+        )
+    # Program matches OLD. Safe to revert nursery.
+    prop["status"] = "pending"
+    try:
+        atomic_write_json(npath, ndata)
+    except Exception as exc:
+        raise RollbackRecoveryError(
+            f"confirmation intent: failed to heal nursery (journal preserved): {exc}"
+        ) from exc
+    # Verify the heal succeeded before clearing journal.
+    healed_fp = _sha256_file_absent(npath)
+    if healed_fp == current_nursery_fp:
+        raise RollbackRecoveryError(
+            "confirmation intent: heal did not change nursery (journal preserved)"
+        )
+    clear_confirm_intent(owner)
+    return "healed_to_old"
+
+
+# ---------------------------------------------------------------------------
+# Supersession intent journal (GDP_R3_COMPLETION_GATE req. 3)
+# ---------------------------------------------------------------------------
+# A supersession is ONE logical transition, not two independent operations.
+# It must record and recover:
+#   - Successor acceptance/content (new proposal confirmed, Idea present)
+#   - Predecessor lifecycle (old proposal marked superseded)
+#   - Complete revision links (bidirectional chain)
+#
+# The successor's confirmation journal must NOT be cleared until the
+# entire supersession is recoverable. Use this enclosing journal instead.
+
+SUPERSEDE_JOURNAL_VERSION = 1
+
+
+def _supersede_journal_path(owner: str) -> str:
+    """Path of the supersession intent journal for ``owner``."""
+    from form.persist import _STATE_DIR, _safe_owner
+    return os.path.join(_STATE_DIR, f"supersede_{_safe_owner(owner)}.journal.json")
+
+
+def write_supersede_intent(owner: str, old_id: str, new_id: str) -> None:
+    """Record supersession intent before any durable writes.
+
+    Covers the complete transition: successor acceptance, predecessor
+    lifecycle change, and revision links. Must be called BEFORE modifying
+    any files.
+
+    F6: Records the old proposal's revision root and number at intent-write
+    time, read from the actual top-level Nursery contract (ndata[old_id] --
+    proposals are stored directly under their IDs; there is no "proposals"
+    key). Uses the established canonical normalization: root defaults to
+    the proposal's own ID, number defaults to 1.
+
+    All ancestry-reading failures (unreadable file, malformed JSON,
+    non-dict top level, missing predecessor, malformed predecessor,
+    unconfirmed predecessor, malformed root/number values) PROPAGATE as
+    exceptions before any intent is written. The writer never guesses
+    first-revision identity.
+
+    The journal carries journal_format="ancestry_v2" with required
+    intent_old_root (non-empty str) and intent_old_number (int, not bool).
+    """
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_json
+    import json as _json
+
+    # F6: Read the actual Nursery file. Failures propagate; no guessing.
+    npath = owner_nursery_path(owner)
+    with open(npath, encoding="utf-8") as f:
+        ndata = _json.load(f)
+    if not isinstance(ndata, dict):
+        raise ValueError(
+            f"supersede intent: nursery top level not a dict for owner {owner}")
+    old_prop = ndata.get(old_id)
+    if not isinstance(old_prop, dict):
+        raise ValueError(
+            f"supersede intent: predecessor {old_id} missing or malformed "
+            f"in nursery (not a dict)")
+    # Verify the predecessor is the recorded confirmed revision.
+    if old_prop.get("status") != "confirmed":
+        raise ValueError(
+            f"supersede intent: predecessor {old_id} not confirmed "
+            f"(status={old_prop.get('status')!r}); refusing intent")
+
+    # F6: Capture and strictly validate revision identity.
+    # Distinguish: absent (legitimate first revision) vs malformed.
+    raw_root = old_prop.get("revision_root_id")
+    if raw_root is None:
+        old_root = old_id  # canonical normalization: first revision
+    elif isinstance(raw_root, str) and raw_root:
+        old_root = raw_root
+    else:
+        raise ValueError(
+            f"supersede intent: predecessor {old_id} has malformed "
+            f"revision_root_id {raw_root!r}")
+    raw_num = old_prop.get("revision_number")
+    if raw_num is None:
+        old_num = 1  # canonical normalization: first revision
+    elif isinstance(raw_num, int) and not isinstance(raw_num, bool):
+        old_num = raw_num
+    else:
+        raise ValueError(
+            f"supersede intent: predecessor {old_id} has malformed "
+            f"revision_number {raw_num!r}")
+
+    journal = {
+        "journal_version": SUPERSEDE_JOURNAL_VERSION,
+        "journal_format": "ancestry_v2",
+        "operation": "supersede_proposal",
+        "owner": owner,
+        "old_id": old_id,
+        "new_id": new_id,
+        "phase": "prepared",
+        "old_nursery_sha256": _sha256_file_absent(owner_nursery_path(owner)),
+        "old_program_sha256": _sha256_file_absent(_path(owner)),
+        # F6: Intent-fixed ancestry evidence, normalized, strictly typed.
+        "intent_old_root": old_root,
+        "intent_old_number": old_num,
+    }
+    atomic_write_json(_supersede_journal_path(owner), journal)
+
+
+def clear_supersede_intent(owner: str) -> None:
+    """Delete the supersession journal after successful commit."""
+    try:
+        os.unlink(_supersede_journal_path(owner))
+    except OSError:
+        pass
+
+
+def _validate_durable_program(pdata: dict, context: str) -> dict:
+    """Validate reread Program structure with strict member validator.
+
+    F7: Post-heal/repair rereads must validate the complete state with the
+    same strict validator before clearing. Returns the validated units dict.
+
+    Raises RollbackRecoveryError if plane is not a dict or units is not
+    a dict. Journal preserved.
+    """
+    if not isinstance(pdata, dict):
+        raise RollbackRecoveryError(
+            f"supersede intent: {context}: program not a dict (preserved)")
+    plane = pdata.get("plane")
+    if not isinstance(plane, dict):
+        raise RollbackRecoveryError(
+            f"supersede intent: {context}: bad plane (preserved)")
+    units = plane.get("units")
+    if not isinstance(units, dict):
+        raise RollbackRecoveryError(
+            f"supersede intent: {context}: bad units (preserved)")
+    return units
+
+
+def _validate_revision_identity(old_prop: dict, new_prop: dict, old_id: str,
+                                intent_old_root=None, intent_old_number=None) -> None:
+    """Validate revision identity using canonical semantics.
+
+    Strict type contract (no coercion):
+    - revision_root_id must be str (non-empty) or None/absent
+    - revision_number must be int (not bool, not float, not str) or None/absent
+
+    F6: Uses intent-fixed ancestry evidence (normalized at intent-write time:
+    root=old_id and number=1 for verified first revision) as the canonical
+    reference. The current old's normalized root/number must match the
+    intent exactly. This prevents paired unrelated roots from passing.
+
+    The successor's root must equal the canonical root. The successor's
+    number must be exactly old's number + 1, using strict integer
+    arithmetic (no int() coercion of floats/strings).
+
+    Raises RollbackRecoveryError on any contradiction. Journal preserved.
+    """
+    old_root = old_prop.get("revision_root_id")
+    new_root = new_prop.get("revision_root_id")
+
+    # Strict type: root must be str or None
+    if old_root is not None:
+        if not isinstance(old_root, str) or not old_root:
+            raise RollbackRecoveryError(
+                "supersede intent: invalid old revision root type (preserved).")
+    if not isinstance(new_root, str) or not new_root:
+        raise RollbackRecoveryError(
+            "supersede intent: missing or invalid new revision root (preserved).")
+
+    # F6: Normalize current old using the same canonical contract the
+    # writer uses (root defaults to own ID). Must match intent exactly.
+    # intent_old_root/intent_old_number are required (validated by caller).
+    normalized_old_root = old_root if old_root is not None else old_id
+    if normalized_old_root != intent_old_root:
+        raise RollbackRecoveryError(
+            f"supersede intent: old root {normalized_old_root} does not match "
+            f"intent-recorded root {intent_old_root} (preserved).")
+    canonical_root = intent_old_root
+
+    if new_root != canonical_root:
+        raise RollbackRecoveryError(
+            f"supersede intent: revision root {new_root} does not match "
+            f"canonical root {canonical_root} (preserved)."
+        )
+
+    old_num = old_prop.get("revision_number")
+    new_num = new_prop.get("revision_number")
+
+    # Strict type: numbers must be int (not bool), or None (defaults to 1)
+    # No float, no string, no coercion.
+    def _strict_int(val, name):
+        if val is None:
+            return 1
+        if isinstance(val, bool) or not isinstance(val, int):
+            raise RollbackRecoveryError(
+                f"supersede intent: {name} must be int, got {type(val).__name__} (preserved).")
+        return val
+
+    canonical_old_num = _strict_int(old_num, "old revision_number")
+    canonical_new_num = _strict_int(new_num, "new revision_number")
+    # new_num was None → defaults to 1, but new must have explicit number
+    if new_num is None:
+        raise RollbackRecoveryError(
+            "supersede intent: missing new revision number (preserved).")
+
+    # F6: Old's number must match intent-fixed evidence exactly.
+    # intent_old_number is required (validated by caller).
+    if canonical_old_num != intent_old_number:
+        raise RollbackRecoveryError(
+            f"supersede intent: old number {canonical_old_num} does not match "
+            f"intent-recorded number {intent_old_number} (preserved).")
+
+    if canonical_new_num != canonical_old_num + 1:
+        raise RollbackRecoveryError(
+            f"supersede intent: revision number not sequential "
+            f"({canonical_old_num} -> {canonical_new_num}) (preserved)."
+        )
+
+
+def recover_supersede_intent(owner: str) -> str:
+    """Recover from recorded supersession intent.
+
+    Validates the complete transition:
+    - Successor: confirmed in nursery, Idea present in program
+    - Predecessor: marked superseded in nursery
+    - Links: bidirectional (old.superseded_by_id == new_id,
+      new.chain includes old_id)
+
+    Returns:
+        "none": No journal.
+        "already_complete": All members coherent; journal cleared.
+        "healed_to_old": Incomplete; reverted to pre-supersession state.
+
+    Raises:
+        RollbackRecoveryError: Cannot prove safe outcome (journal preserved).
+    """
+    jpath = _supersede_journal_path(owner)
+    if not os.path.isfile(jpath):
+        return "none"
+
+    # Strict validation (same pattern as confirmation)
+    try:
+        with open(jpath, encoding="utf-8") as f:
+            journal = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"supersede intent: corrupt journal (preserved): {exc}"
+        ) from exc
+
+    if not isinstance(journal, dict):
+        raise RollbackRecoveryError("supersede intent: not a dict (preserved)")
+    # F4: Strict version check - exclude bool (True == 1 in Python)
+    jv = journal.get("journal_version")
+    if not isinstance(jv, int) or isinstance(jv, bool) or jv != SUPERSEDE_JOURNAL_VERSION:
+        raise RollbackRecoveryError("supersede intent: bad version (preserved)")
+    if journal.get("owner") != owner:
+        raise RollbackRecoveryError("supersede intent: owner mismatch (preserved)")
+    if journal.get("operation") != "supersede_proposal":
+        raise RollbackRecoveryError("supersede intent: bad operation (preserved)")
+    if journal.get("phase") != "prepared":
+        raise RollbackRecoveryError("supersede intent: bad phase (preserved)")
+    # F6: Require ancestry_v2 format explicitly. Old-format journals (missing
+    # journal_format) are preserved, not silently reinterpreted: without
+    # verified intent-fixed ancestry, recovery cannot prove the outcome.
+    if journal.get("journal_format") != "ancestry_v2":
+        raise RollbackRecoveryError(
+            "supersede intent: old journal format without verified ancestry "
+            "(preserved; not reinterpreted)")
+    _ior = journal.get("intent_old_root")
+    if not isinstance(_ior, str) or not _ior:
+        raise RollbackRecoveryError(
+            "supersede intent: missing or invalid intent_old_root (preserved)")
+    _ion = journal.get("intent_old_number")
+    if not isinstance(_ion, int) or isinstance(_ion, bool):
+        raise RollbackRecoveryError(
+            "supersede intent: missing or invalid intent_old_number (preserved)")
+
+    old_id = journal.get("old_id")
+    new_id = journal.get("new_id")
+    if not isinstance(old_id, str) or not old_id:
+        raise RollbackRecoveryError("supersede intent: bad old_id (preserved)")
+    if not isinstance(new_id, str) or not new_id:
+        raise RollbackRecoveryError("supersede intent: bad new_id (preserved)")
+    # F4: Validate fingerprint fields are present with valid values.
+    # Legitimate values: 64-char hex SHA-256 (file existed) or "absent"
+    # (file didn't exist, via _sha256_file_absent). Missing/None/empty
+    # fail closed - do not accept incomplete schema.
+    import re
+    _sha256_re = re.compile(r'^[0-9a-f]{64}$')
+    for fp_key in ("old_nursery_sha256", "old_program_sha256"):
+        fp_val = journal.get(fp_key)
+        if fp_val == "absent":
+            continue  # Legitimate explicit absence
+        if not isinstance(fp_val, str) or not _sha256_re.match(fp_val):
+            raise RollbackRecoveryError(
+                f"supersede intent: missing or invalid {fp_key} (preserved)")
+
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_json
+
+    npath = owner_nursery_path(owner)
+    ppath = _path(owner)
+
+    if not os.path.isfile(npath):
+        raise RollbackRecoveryError("supersede intent: nursery missing (preserved)")
+    if not os.path.isfile(ppath):
+        raise RollbackRecoveryError("supersede intent: program missing (preserved)")
+
+    try:
+        with open(npath, encoding="utf-8") as f:
+            ndata = json.load(f)
+        with open(ppath, encoding="utf-8") as f:
+            pdata = json.load(f)
+    except Exception as exc:
+        raise RollbackRecoveryError(
+            f"supersede intent: unreadable files (preserved): {exc}"
+        ) from exc
+
+    # Validate program structure
+    plane = pdata.get("plane")
+    if not isinstance(plane, dict):
+        raise RollbackRecoveryError("supersede intent: bad plane (preserved)")
+    units = plane.get("units")
+    if not isinstance(units, dict):
+        raise RollbackRecoveryError("supersede intent: bad units (preserved)")
+
+    # Check if BOTH members were modified.
+    # Must verify Program as well as Nursery before claiming no_change.
+    # Do not clear intent merely because a proposal is absent/pending.
+    current_nursery_fp = _sha256_file(npath)
+    current_program_fp = _sha256_file(ppath)
+    if (current_nursery_fp == journal.get("old_nursery_sha256") and
+        current_program_fp == journal.get("old_program_sha256")):
+        clear_supersede_intent(owner)
+        return "no_change"
+
+    # Examine both proposals
+    old_prop = ndata.get(old_id)
+    new_prop = ndata.get(new_id)
+
+    # Complete NEW state requires:
+    # - new confirmed, Idea present
+    # - old superseded
+    # - links bidirectional
+    new_ok = (
+        isinstance(new_prop, dict)
+        and new_prop.get("status") == "confirmed"
+        and new_id in units
+        and isinstance(units.get(new_id), dict)
+    )
+    old_ok = (
+        isinstance(old_prop, dict)
+        and old_prop.get("lifecycle_state") == "superseded"
+    )
+    # R3-COMPLETE-EXISTING-CONTRACT req. 2: Revision links use
+    # supersedes_id/superseded_by_id. Do NOT check chain (derivation).
+    links_ok = (
+        isinstance(old_prop, dict)
+        and old_prop.get("superseded_by_id") == new_id
+        and isinstance(new_prop, dict)
+        and new_prop.get("supersedes_id") == old_id
+    )
+
+    if new_ok and old_ok and links_ok:
+        # Validate revision identity before accepting complete NEW.
+        _validate_revision_identity(old_prop, new_prop, old_id,
+            intent_old_root=journal.get("intent_old_root"),
+            intent_old_number=journal.get("intent_old_number"))
+        clear_supersede_intent(owner)
+        return "already_complete"
+
+    # Before link commit: predecessor active, successor confirmed with durable Idea.
+    # This is a permitted intermediate state ONLY if:
+    # - Predecessor lifecycle is valid "active" (not None; None is malformed)
+    # - Successor is confirmed with durable Idea
+    # - NEITHER proposal carries supersession links (no superseded_by_id, no supersedes_id)
+    # If links exist (one-way or contradictory) → fail closed, preserve evidence.
+    old_active_valid = (
+        isinstance(old_prop, dict)
+        and old_prop.get("lifecycle_state") == "active"
+        # Explicit None is malformed, not legacy. Must be "active".
+    )
+    # Check for any supersession links (incomplete relationship)
+    old_has_link = isinstance(old_prop, dict) and old_prop.get("superseded_by_id") is not None
+    new_has_link = isinstance(new_prop, dict) and new_prop.get("supersedes_id") is not None
+    if new_ok and old_active_valid:
+        if old_has_link or new_has_link:
+            # Contradictory: active predecessor but links present → fail closed
+            raise RollbackRecoveryError(
+                "supersede intent: active predecessor with supersession links "
+                "(journal preserved). Contradictory state."
+            )
+        # Valid pre-commit: no links, predecessor active, successor confirmed.
+        # Accept as-is, clear journal.
+        clear_supersede_intent(owner)
+        return "already_complete"
+
+    # If successor and predecessor are both in correct states but links
+    # are incomplete, repair ONLY the revision links (not derivation chain).
+    # R3-COMPLETE-EXISTING-CONTRACT req. 2: Supersession uses supersedes_id
+    # and superseded_by_id, with revision root and number. Do NOT add
+    # revision ancestry to derivation chain. The two relationship types
+    # remain distinct.
+    if new_ok and old_ok and not links_ok:
+        # Validate full revision identity before repairing links.
+        # Do not repair if identity is contradictory or missing.
+        _validate_revision_identity(old_prop, new_prop, old_id,
+            intent_old_root=journal.get("intent_old_root"),
+            intent_old_number=journal.get("intent_old_number"))
+        # Repair ONLY revision links (superseded_by_id, supersedes_id).
+        # Do NOT touch chain (derivation lineage).
+        if isinstance(old_prop, dict):
+            old_prop["superseded_by_id"] = new_id
+        if isinstance(new_prop, dict):
+            new_prop["supersedes_id"] = old_id
+        try:
+            atomic_write_json(npath, ndata)
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"supersede intent: link repair failed (preserved): {exc}"
+            ) from exc
+        # Reread durable Nursery (not ndata in memory) and validate
+        # saved identities and reciprocal links against Program/journal
+        # before clearing intent. Checking ndata proves memory, not persistence.
+        try:
+            with open(npath, encoding="utf-8") as f:
+                durable_nd = json.load(f)
+            with open(ppath, encoding="utf-8") as f:
+                durable_pd = json.load(f)
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"supersede intent: reread after repair failed (preserved): {exc}"
+            ) from exc
+        durable_old = durable_nd.get(old_id)
+        durable_new = durable_nd.get(new_id)
+        if not isinstance(durable_old, dict) or not isinstance(durable_new, dict):
+            raise RollbackRecoveryError(
+                "supersede intent: repaired members missing from durable Nursery "
+                "(preserved)."
+            )
+        # Validate reciprocal links in durable state
+        if durable_old.get("superseded_by_id") != new_id:
+            raise RollbackRecoveryError(
+                "supersede intent: durable old link not repaired (preserved)."
+            )
+        if durable_new.get("supersedes_id") != old_id:
+            raise RollbackRecoveryError(
+                "supersede intent: durable new link not repaired (preserved)."
+            )
+        # Validate revision identity in durable state
+        _validate_revision_identity(durable_old, durable_new, old_id,
+            intent_old_root=journal.get("intent_old_root"),
+            intent_old_number=journal.get("intent_old_number"))
+        # F7: Validate successor Idea still present in durable Program.
+        # Use strict member validator on reread.
+        durable_units = _validate_durable_program(durable_pd, "after repair")
+        if new_id not in durable_units:
+            raise RollbackRecoveryError(
+                "supersede intent: successor Idea missing from durable Program "
+                "after repair (preserved)."
+            )
+        clear_supersede_intent(owner)
+        return "already_complete"
+
+    # Incomplete: heal to OLD.
+    # Aborted persistence: new may not exist or is pending, old is active.
+    # This is the OLD state; clear journal.
+    new_absent_or_pending = (
+        new_prop is None or
+        (isinstance(new_prop, dict) and new_prop.get("status") == "pending")
+    )
+    if new_absent_or_pending and old_active_valid:
+        # Operation never completed. But verify no successor Idea remains.
+        # If Idea exists, this is evidence that must be preserved, not cleared.
+        if new_id in units:
+            raise RollbackRecoveryError(
+                "supersede intent: successor Idea present but proposal not confirmed "
+                "(journal preserved). Cannot clear as healed."
+            )
+        # F7: Reject contradictory links. If old has successor link or new
+        # has predecessor link, this is not a clean OLD state. Fail closed.
+        if isinstance(old_prop, dict) and old_prop.get("superseded_by_id") is not None:
+            raise RollbackRecoveryError(
+                "supersede intent: old has successor link but is active "
+                "(journal preserved). Contradictory state."
+            )
+        if isinstance(new_prop, dict) and new_prop.get("supersedes_id") is not None:
+            raise RollbackRecoveryError(
+                "supersede intent: pending new has predecessor link "
+                "(journal preserved). Contradictory state."
+            )
+        # No Idea, no links, old active, new absent/pending → true OLD state.
+        clear_supersede_intent(owner)
+        return "healed_to_old"
+
+    # This requires restoring the old proposal to active and removing
+    # the new proposal's confirmation. We use the OLD fingerprint to
+    # verify, but we don't have the full OLD content. Instead, we revert
+    # the specific changes:
+    # - new proposal -> pending (if it exists and was newly created)
+    # - old proposal -> active (if it was marked superseded)
+    # Note: This is a best-effort heal. If we cannot prove the revert
+    # is safe, fail closed.
+    healed = False
+    if isinstance(new_prop, dict) and new_prop.get("status") == "confirmed":
+        # Only revert if the Idea is also missing (true hybrid)
+        # If Idea is present but links are incomplete, it's a different
+        # kind of partial state that needs manual review.
+        if new_id not in units:
+            new_prop["status"] = "pending"
+            healed = True
+    if isinstance(old_prop, dict) and old_prop.get("lifecycle_state") == "superseded":
+        # Only revert if the successor is being reverted too
+        if healed:
+            old_prop["lifecycle_state"] = "active"
+            old_prop.pop("superseded_by_id", None)
+
+    if healed:
+        try:
+            atomic_write_json(npath, ndata)
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"supersede intent: heal failed (preserved): {exc}"
+            ) from exc
+        # F7: Reread durable Nursery and verify the heal before clearing.
+        # Do not clear intent based on in-memory state alone.
+        try:
+            with open(npath, encoding="utf-8") as f:
+                durable_nd = json.load(f)
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"supersede intent: reread after heal failed (preserved): {exc}"
+            ) from exc
+        durable_old = durable_nd.get(old_id)
+        durable_new = durable_nd.get(new_id)
+        # Verify old is active in durable state
+        if not isinstance(durable_old, dict):
+            raise RollbackRecoveryError(
+                "supersede intent: old missing from durable Nursery after heal "
+                "(preserved).")
+        if durable_old.get("lifecycle_state") != "active":
+            raise RollbackRecoveryError(
+                "supersede intent: old not active in durable Nursery after heal "
+                "(preserved).")
+        if durable_old.get("superseded_by_id") is not None:
+            raise RollbackRecoveryError(
+                "supersede intent: old still has successor link after heal "
+                "(preserved).")
+        # Verify new is pending or absent in durable state
+        if isinstance(durable_new, dict):
+            if durable_new.get("status") != "pending":
+                raise RollbackRecoveryError(
+                    "supersede intent: new not pending in durable Nursery after heal "
+                    "(preserved).")
+            if durable_new.get("supersedes_id") is not None:
+                raise RollbackRecoveryError(
+                    "supersede intent: new still has predecessor link after heal "
+                    "(preserved).")
+        # Verify no successor Idea in durable Program
+        try:
+            with open(ppath, encoding="utf-8") as f:
+                durable_pd = json.load(f)
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"supersede intent: reread Program after heal failed (preserved): {exc}"
+            ) from exc
+        # F7: Use strict member validator on reread. Malformed units
+        # (e.g., []) fail closed with journal preserved.
+        durable_units = _validate_durable_program(durable_pd, "after heal")
+        if new_id in durable_units:
+            raise RollbackRecoveryError(
+                "supersede intent: successor Idea present in durable Program "
+                "after heal (preserved).")
+        clear_supersede_intent(owner)
+        return "healed_to_old"
+
+    # Cannot prove safe heal; preserve journal and fail closed.
+    raise RollbackRecoveryError(
+        "supersede intent: incomplete transition, cannot safely heal (preserved)"
+    )

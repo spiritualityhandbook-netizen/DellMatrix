@@ -82,7 +82,19 @@ def inspect_revision(program: Any, uid: str) -> Dict[str, Any]:
             "routable": False,
         }
 
-    state = getattr(prop, "lifecycle_state", None) or ACTIVE
+    # ARGUS-2 FIX (approved): Fail closed on explicit None/empty lifecycle_state.
+    # Distinguish "attribute missing" (legacy → ACTIVE via compatibility policy)
+    # from "attribute present but None/empty/whitespace" (malformed → fail closed).
+    _MISSING = object()
+    _raw_state = getattr(prop, "lifecycle_state", _MISSING)
+    if _raw_state is _MISSING:
+        state = ACTIVE
+    elif _raw_state is None:
+        state = None
+    elif isinstance(_raw_state, str) and _raw_state.strip() == "":
+        state = None
+    else:
+        state = _raw_state
     supersedes = getattr(prop, "supersedes_id", None)
     superseded_by = getattr(prop, "superseded_by_id", None)
     root = getattr(prop, "revision_root_id", None) or uid
@@ -250,6 +262,11 @@ def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> None:
             pass
     # Direct save: the rollback itself must not trip the inject hook.
     program.nursery.save()
+    # Also save Program: the plane.remove above modified in-memory state.
+    # Without this, durable Program retains the successor Idea (rollback gap).
+    # Propagate failure: incomplete rollback must not be silently accepted.
+    from form import persist_rest
+    persist_rest.save(program)
 
 
 def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
@@ -273,6 +290,12 @@ def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
             pass
     # Direct save: the rollback itself must not trip the inject hook.
     program.nursery.save()
+    # Also persist Program: plane.remove modified in-memory state.
+    # Without this, durable Program retains the successor Idea.
+    # Propagate failure: if Program save fails, the rollback is incomplete.
+    # Do not suppress; the caller must handle it.
+    from form import persist_rest
+    persist_rest.save(program)
 
 
 def supersede_proposal(program: Any, old_id: str, words: str,
@@ -382,14 +405,41 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     # Phase-4 commit) therefore leaves the predecessor active: a fresh
     # process can never observe "predecessor superseded" without a
     # completely established successor.
+    #
+    # R3-COMPLETION-GATE: Write supersession intent journal BEFORE any
+    # writes. This is the ENCLOSING transaction. Do not publish independent
+    # successor acceptance and clear its recovery evidence before the
+    # supersession outcome is recoverable.
+    from form.mandell.core_i_recovery import (
+        write_supersede_intent, clear_supersede_intent
+    )
+    write_supersede_intent(program.owner, old_id, succ_id)
     try:
         if _FAIL_AT == "confirm":
             raise SupersedeError("injected_failure", "confirm")
-        res = program.confirm_proposal(succ_id)
+        # Set skip flags: supersession has its own transaction boundary.
+        # _SKIP_CHECKPOINT avoids nested checkpoint commits.
+        # _SKIP_JOURNAL prevents confirm_proposal from writing/clearing
+        # its own journal; the supersession journal is the authority.
+        from form.dell_matrix import confirm_lineage as _cl
+        _orig_skip = getattr(_cl.confirm_proposal, '_SKIP_CHECKPOINT', False)
+        _orig_skip_j = getattr(_cl.confirm_proposal, '_SKIP_JOURNAL', False)
+        _cl.confirm_proposal._SKIP_CHECKPOINT = True
+        _cl.confirm_proposal._SKIP_JOURNAL = True
+        try:
+            res = program.confirm_proposal(succ_id)
+        finally:
+            _cl.confirm_proposal._SKIP_CHECKPOINT = _orig_skip
+            _cl.confirm_proposal._SKIP_JOURNAL = _orig_skip_j
         if not res.get("ok"):
             raise SupersedeError("confirm_failed", str(res.get("reason")))
     except Exception:
         _rollback_unconfirmed(program, succ_id)
+        # Clear supersession journal on failure (operation aborted)
+        try:
+            clear_supersede_intent(program.owner)
+        except:
+            pass
         raise
 
     # ---- Phase 4: complete revision links, then ONE atomic commit ----
@@ -423,8 +473,18 @@ def _supersede_impl(program: Any, old_id: str, words: str,
         if _FAIL_AT == "link_write":
             raise SupersedeError("injected_failure", "link_write")
         _save_nursery(program)
+        # R3: Phase 3 (confirm_proposal with skip) already saved both nursery
+        # and program files with the successor Idea durable. Phase 4 only
+        # updates predecessor links in the nursery. No program save needed.
+        # R3-COMPLETION-GATE: Clear supersession journal ONLY after the
+        # complete transition is durable. The successor's acceptance is
+        # now recoverable as part of the supersession outcome.
+        clear_supersede_intent(program.owner)
     except Exception:
         _rollback_full(program, old, old_snap, succ_id)
+        # Preserve journal for crash recovery (do not clear on failure).
+        # If the process survives, the caller can retry. If it crashes,
+        # recovery will use the journal.
         raise
 
     # ---- Phase 5: auditable receipt ----

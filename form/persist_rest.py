@@ -196,6 +196,15 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     # hybrid state.
     from form.mandell.core_i_recovery import recover_rollback_transaction
     recover_rollback_transaction(owner)
+    # Confirmation-intent recovery (GDP_R3_IDEA_PRESERVATION_ADDENDUM).
+    # Recovers from RECORDED INTENT (journal), not inferred visibility.
+    from form.mandell.core_i_recovery import recover_confirmation_intent
+    recover_confirmation_intent(owner)
+    # Supersession-intent recovery (GDP_R3_COMPLETION_GATE req. 3).
+    # Recovers the complete supersession transition (successor, predecessor,
+    # links) from the enclosing journal.
+    from form.mandell.core_i_recovery import recover_supersede_intent
+    recover_supersede_intent(owner)
     path = path or _path(owner)
     if not os.path.isfile(path):
         p = open_program(owner)
