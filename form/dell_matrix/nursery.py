@@ -254,7 +254,14 @@ class Nursery:
         instance last loaded/saved it, instead of silently overwriting another
         instance. After interruption the canonical file holds either the
         previous complete generation or the new complete generation.
+
+        Director 2026-10-06 (close unsafe save): an instance whose
+        compensation/rollback was incomplete rejects the save with
+        RollbackRecoveryError until verified restoration or reconstruction.
+        No bytes are written on rejection.
         """
+        from form.mandell.core_i_recovery import check_save_allowed
+        check_save_allowed(self, "nursery.save")
         from form.dell_matrix.atomic_write import atomic_write_json
 
         if not self.path:

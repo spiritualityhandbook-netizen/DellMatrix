@@ -210,10 +210,18 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         # Director 2026-10-05 (compensation): cleanup failures are
         # observable. The original exception propagates (honest failure),
         # but incomplete compensation is attached for the caller.
+        # Director 2026-10-06 (close unsafe save): incomplete compensation
+        # marks the instance; normal saves are rejected until verified
+        # restoration or reconstruction.
         if not existed:
             _pc = _remove_newly_placed()
             if not _pc["ok"]:
                 e._compensation_incomplete = _pc
+                from form.mandell.core_i_recovery import mark_recovery_required
+                mark_recovery_required(
+                    program, prop.id, "compensation_incomplete",
+                    {"failures": _pc["failures"],
+                     "removed": _pc.get("removed", [])})
         raise
     # R3: Record intent BEFORE any durable writes. The journal enables
     # recovery to distinguish "crashed confirmation" from "legitimate
@@ -233,10 +241,18 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             # recovery. Remove it to prevent exposing unrecoverable hybrid.
             # Director 2026-10-05 (compensation): incomplete cleanup is
             # attached to the propagating exception (observable).
+            # Director 2026-10-06 (close unsafe save): incomplete
+            # compensation marks the instance; normal saves rejected until
+            # verified restoration or reconstruction.
             if not existed:
                 _ic = _remove_newly_placed()
                 if not _ic["ok"]:
                     e._compensation_incomplete = _ic
+                    from form.mandell.core_i_recovery import mark_recovery_required
+                    mark_recovery_required(
+                        program, prop.id, "compensation_incomplete",
+                        {"failures": _ic["failures"],
+                         "removed": _ic.get("removed", [])})
             raise
     # Stage the nursery confirmation in memory (do NOT save yet).
     # The checkpoint transaction will persist both Program and Nursery atomically.
@@ -263,6 +279,14 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             # Incomplete compensation: retain journal, report honestly.
             # The original auth denial remains identifiable; the receipt
             # is NOT an ordinary completed denial.
+            # Director 2026-10-06 (close unsafe save): mark the instance;
+            # normal saves are rejected until verified restoration or
+            # reconstruction.
+            from form.mandell.core_i_recovery import mark_recovery_required
+            mark_recovery_required(
+                program, pid, "compensation_incomplete",
+                {"failures": _comp["failures"],
+                 "removed": _comp.get("removed", [])})
             return {
                 "ok": False,
                 "reason": "acceptance_policy_denied",
@@ -337,6 +361,15 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             _ckpt_comp = {"ok": True, "failures": []}
             if not existed:
                 _ckpt_comp = _remove_newly_placed()
+            # Director 2026-10-06 (close unsafe save): incomplete
+            # compensation marks the instance; normal saves are rejected
+            # until verified restoration or reconstruction.
+            if not _ckpt_comp["ok"]:
+                from form.mandell.core_i_recovery import mark_recovery_required
+                mark_recovery_required(
+                    program, prop.id, "compensation_incomplete",
+                    {"failures": _ckpt_comp["failures"],
+                     "removed": _ckpt_comp.get("removed", [])})
             # Revert the live files that checkpoint may have dirtied.
             # F2: Restore baseline bytes directly for complete compensation.
             # A Nursery-only revert leaves durable Program with Idea but no
@@ -404,7 +437,16 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         except Exception:
             prop.status = "pending"
             if not existed:
-                _remove_newly_placed()
+                _sk = _remove_newly_placed()
+                # Director 2026-10-06 (close unsafe save): incomplete
+                # compensation marks the instance even here; the enclosing
+                # supersession rollback will clear it on verified success.
+                if not _sk["ok"]:
+                    from form.mandell.core_i_recovery import mark_recovery_required
+                    mark_recovery_required(
+                        program, prop.id, "compensation_incomplete",
+                        {"failures": _sk["failures"],
+                         "removed": _sk.get("removed", [])})
             # Leave journal for recovery (do not clear).
             raise
     try:

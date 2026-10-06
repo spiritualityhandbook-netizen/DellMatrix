@@ -380,7 +380,22 @@ def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> Dict[str, Any
     # Only save if verification passed; otherwise the saved state would
     # claim restoration that didn't happen.
     if failures:
+        # Director 2026-10-06 (close unsafe save): incomplete restoration
+        # marks the instance. Normal saves are rejected until verified
+        # restoration or reconstruction. The flag is per-instance memory;
+        # disk recovery by another instance does not clear it.
+        # Keyed by artifact ID so a verified restoration of the same
+        # artifact (however it was marked) clears the condition.
+        from form.mandell.core_i_recovery import mark_recovery_required
+        mark_recovery_required(
+            program, succ_id,
+            "rollback_unconfirmed_incomplete",
+            {"failures": failures, "removed": removed})
         return {"ok": False, "failures": failures, "removed": removed}
+    # Verified restoration: clear this artifact's condition before the
+    # internal save (other unrelated conditions are preserved).
+    from form.mandell.core_i_recovery import clear_recovery_required
+    clear_recovery_required(program, succ_id)
     # Direct save: the rollback itself must not trip the inject hook.
     # Director: save failures propagate (do not suppress); the caller
     # must handle incomplete rollback. This preserves the
@@ -461,7 +476,19 @@ def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
         failures.extend(_verify_lattice_agreement(program))
     # Only save if verification passed
     if failures:
+        # Director 2026-10-06 (close unsafe save): incomplete restoration
+        # marks the instance; normal saves are rejected until verified
+        # restoration or reconstruction. Keyed by artifact ID.
+        from form.mandell.core_i_recovery import mark_recovery_required
+        mark_recovery_required(
+            program, succ_id,
+            "rollback_full_incomplete",
+            {"failures": failures, "removed": removed})
         return {"ok": False, "failures": failures, "removed": removed}
+    # Verified restoration: clear this artifact's condition before the
+    # internal save (other unrelated conditions are preserved).
+    from form.mandell.core_i_recovery import clear_recovery_required
+    clear_recovery_required(program, succ_id)
     # Director: save failures propagate (do not suppress); preserves
     # the "rollback_propagates" contract.
     program.nursery.save()

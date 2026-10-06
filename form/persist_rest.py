@@ -28,7 +28,14 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
     interruption the canonical file holds either the previous complete
     generation or the new complete generation -- never a partially
     serialized generation.
+
+    Director 2026-10-06 (close unsafe save): an instance whose
+    compensation/rollback was incomplete rejects the save with
+    RollbackRecoveryError until verified restoration or reconstruction.
+    No bytes are written on rejection.
     """
+    from form.mandell.core_i_recovery import check_save_allowed
+    check_save_allowed(program, "persist_rest.save")
     from form.dell_matrix.atomic_write import atomic_write_json
 
     path = path or _path(program.owner)

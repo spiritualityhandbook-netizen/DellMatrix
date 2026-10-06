@@ -1,6 +1,8 @@
 """Supersession actual failure path test (Director 2026-10-05, 2026-10-06).
 
-Tests the REAL compensation path, not denial-before-placement:
+Tests the REAL compensation path, not denial-before-placement.
+
+Scenario A -- restart proof (fresh OS process):
 1. Valid authorization, confirmed predecessor
 2. Begin supersession (successor placed via the production confirm path)
 3. Inject link_write failure; production _rollback_full runs with an
@@ -16,10 +18,21 @@ Tests the REAL compensation path, not denial-before-placement:
    placements and lattice (via production all_members). Assert the
    documented coherent recovery outcome ("already_complete") -- or
    explicit fail-closed behavior (RollbackRecoveryError + journal retained).
-6. Save assertions: save the unresolved original instance and assert the
-   ACTUAL artifact state (detectably unclean, not "did not throw"); then
-   complete restoration via production _rollback_full, save, and assert
-   the actual artifacts are clean. Restoration must precede a clean save.
+
+Scenario B -- unsafe-save closure (Director 2026-10-06):
+Detecting an unsafe save does not prevent it. An instance with incomplete
+rollback must REJECT normal saves until verified restoration or
+reconstruction:
+6. Rejected saves: persist_rest.save and nursery.save raise
+   RollbackRecoveryError on the unresolved instance.
+7. Durable member bytes unchanged by the rejected saves.
+8. Recovery evidence (journal) preserved across the rejected saves.
+9. Another instance reloading the owner (which runs disk recovery and
+   clears the disk journal) does NOT clear this instance's in-memory
+   recovery-required condition: its saves stay rejected.
+10. Verified restoration via production _rollback_full, then save/reload
+    produces coherent state (successor absent everywhere, predecessor
+    active). Restoration precedes the clean save.
 
 "A denial before placement cannot prove compensation."
 
@@ -63,186 +76,13 @@ def clean():
         os.remove(jp)
 
 
-RESTART_CHILD_SRC = '''
-import sys, json, os
-REPO_ROOT, OWNER, PRED_ID, SUCC_ID = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-sys.path.insert(0, REPO_ROOT)
-os.chdir(REPO_ROOT)
-out = {}
-from form.mandell.core_i_recovery import (
-    _supersede_journal_path, recover_supersede_intent, RollbackRecoveryError)
-jp = _supersede_journal_path(OWNER)
-# 1. Journal evidence linkage (production journal path + schema).
-try:
-    with open(jp, encoding="utf-8") as f:
-        journal = json.load(f)
-    out["journal_old_id"] = journal.get("old_id")
-    out["journal_new_id"] = journal.get("new_id")
-    out["journal_link_ok"] = (journal.get("old_id") == PRED_ID
-                              and journal.get("new_id") == SUCC_ID)
-except Exception as e:
-    out["journal_link_ok"] = False
-    out["journal_error"] = f"{type(e).__name__}: {e}"
-# 2. Production recovery: documented outcome or explicit fail-closed.
-try:
-    outcome = recover_supersede_intent(OWNER)
-    out["recovery"] = {"outcome": outcome, "fail_closed": False,
-                       "journal_retained": os.path.isfile(jp)}
-except RollbackRecoveryError as e:
-    out["recovery"] = {"outcome": None, "fail_closed": True,
-                       "journal_retained": os.path.isfile(jp),
-                       "error": str(e)[:300]}
-except Exception as e:
-    out["recovery"] = {"outcome": None, "fail_closed": "unexpected",
-                       "journal_retained": os.path.isfile(jp),
-                       "error": f"{type(e).__name__}: {e}"}
-# 3. Inspect the exact successor in every representation (production load).
-from form import persist_rest
-p2 = persist_rest.load(OWNER, activate=False)
-out["succ_in_nursery"] = SUCC_ID in p2.nursery.proposals
-out["succ_nursery_status"] = getattr(p2.nursery.proposals.get(SUCC_ID), "status", None)
-out["succ_in_units"] = SUCC_ID in p2.cube.session.plane.units
-out["succ_in_velocities"] = SUCC_ID in p2.spatial.velocities
-out["succ_in_placements"] = SUCC_ID in p2.spatial.placements
-try:
-    p2.lattice.rebuild_from_plane(p2.cube.session.plane)
-    out["succ_in_lattice"] = SUCC_ID in p2.lattice.all_members()
-except Exception as e:
-    out["succ_in_lattice"] = f"ERROR {type(e).__name__}: {e}"
-from form.mandell.supersession import inspect_revision
-rev = inspect_revision(p2, PRED_ID)
-out["pred_lifecycle"] = rev.get("lifecycle_state") if isinstance(rev, dict) else str(rev)
-print(json.dumps(out))
-'''
+def run_failure_scenario():
+    """Clean slate, authorized supersession, link_write failure with
+    injected throwing plane.remove during production _rollback_full.
 
-
-def run_restart_child(owner, pred_id, succ_id):
-    """Fresh-process restart: production recovery + artifact inspection."""
-    repo_root = os.path.dirname(REPO)
-    child_path = os.path.join("/tmp", f"restart_child_{owner}.py")
-    with open(child_path, "w", encoding="utf-8") as f:
-        f.write(RESTART_CHILD_SRC)
-    proc = subprocess.run(
-        [sys.executable, child_path, repo_root, owner, pred_id, succ_id],
-        capture_output=True, text=True, timeout=120, cwd=repo_root)
-    if proc.returncode != 0:
-        check("restart:child_ok", False, f"child failed: {proc.stderr[:300]}")
-        return
-    try:
-        out = json.loads(proc.stdout.strip().split("\n")[-1])
-    except Exception as e:
-        check("restart:child_parse", False, f"parse: {e}; stdout={proc.stdout[:300]}")
-        return
-
-    # Journal evidence linkage: the journal names this exact pair.
-    check("restart:journal_link", out.get("journal_link_ok") is True,
-          f"old={out.get('journal_old_id')} new={out.get('journal_new_id')}")
-
-    rec = out.get("recovery", {})
-    if rec.get("fail_closed") is True:
-        # Explicit fail-closed: recovery refused and retained evidence.
-        check("restart:fail_closed_journal_retained",
-              rec.get("journal_retained") is True,
-              f"error={rec.get('error')}")
-    elif rec.get("fail_closed") == "unexpected":
-        check("restart:recovery_no_unexpected", False, f"error={rec.get('error')}")
-    else:
-        # Documented coherent recovery outcome for the valid pre-commit
-        # state (predecessor active, successor confirmed, no links):
-        # "already_complete" -- accepted as-is, journal cleared.
-        check("restart:recovery_outcome",
-              rec.get("outcome") == "already_complete",
-              f"outcome={rec.get('outcome')}")
-        check("restart:journal_cleared_after_coherent",
-              rec.get("journal_retained") is False,
-              "journal must be cleared once recovery proves coherence")
-
-    # The exact successor inspected in every representation.
-    check("restart:succ_nursery",
-          out.get("succ_in_nursery") is True
-          and out.get("succ_nursery_status") == "confirmed",
-          f"in_nursery={out.get('succ_in_nursery')} status={out.get('succ_nursery_status')}")
-    check("restart:succ_plane", out.get("succ_in_units") is True,
-          f"in_units={out.get('succ_in_units')}")
-    check("restart:succ_velocities", out.get("succ_in_velocities") is True,
-          f"in_velocities={out.get('succ_in_velocities')}")
-    check("restart:succ_placements", out.get("succ_in_placements") is True,
-          f"in_placements={out.get('succ_in_placements')}")
-    check("restart:succ_lattice", out.get("succ_in_lattice") is True,
-          f"in_lattice={out.get('succ_in_lattice')}")
-    check("restart:pred_active", out.get("pred_lifecycle") == "active",
-          f"lifecycle={out.get('pred_lifecycle')}")
-
-
-def run_save_assertions(p, pred, pred_id, succ_id, old_snap):
-    """Save the unresolved original instance; assert actual artifacts.
-
-    Restoration must precede a clean save: saving the unresolved instance
-    must NOT silently yield clean state. Then complete restoration via
-    production _rollback_full and assert the artifacts are actually clean.
+    Returns (p, pred, pred_id, succ_id, old_snap, journal_path), or
+    (None, ...) with a failed check if the scenario is invalid.
     """
-    from form import persist_rest
-    from form.mandell import supersession as sup
-    from form.mandell.supersession import inspect_revision
-
-    # 4a. Exercise saving the UNRESOLVED original instance.
-    # In-memory rollback was incomplete: proposal popped, plane.remove
-    # threw (unit still present), spatial entries popped.
-    # Save exactly as production would (nursery + program).
-    try:
-        p.nursery.save()
-        persist_rest.save(p)
-        saved = True
-        save_err = None
-    except Exception as e:
-        saved = False
-        save_err = e
-    if not saved:
-        # The save was rejected: acceptable disjunct ("that save must be
-        # rejected"), and it is observable, not silent.
-        check("save:unresolved_rejected", True,
-              f"save rejected: {type(save_err).__name__}: {save_err}")
-    else:
-        p3 = persist_rest.load(OWNER, activate=False)
-        n3 = succ_id in p3.nursery.proposals
-        u3 = succ_id in p3.cube.session.plane.units
-        v3 = succ_id in p3.spatial.velocities
-        pl3 = succ_id in p3.spatial.placements
-        # Actual artifact assertions: the unresolved save is detectably
-        # UNCLEAN -- it must not be counted as clean merely for not throwing.
-        # The four representations must all agree for a coherent state;
-        # here they disagree (partial in-memory rollback was persisted).
-        states = [n3, u3, v3, pl3]
-        is_clean = not any(states)
-        check("save:unresolved_not_clean", is_clean is False,
-              f"nursery={n3} units={u3} vel={v3} place={pl3}")
-        check("save:unresolved_inconsistent",
-              not (all(states) or not any(states)),
-              f"nursery={n3} units={u3} vel={v3} place={pl3}: "
-              f"representations disagree")
-
-    # 4b. Complete the restoration via production _rollback_full
-    # (plane.remove is restored now), then the save must be clean.
-    rb = sup._rollback_full(p, pred, old_snap, succ_id)
-    check("save:restoration_ok", rb.get("ok") is True,
-          f"failures={rb.get('failures')}")
-    # _rollback_full saves nursery + program itself on success.
-    p4 = persist_rest.load(OWNER, activate=False)
-    n4 = succ_id in p4.nursery.proposals
-    u4 = succ_id in p4.cube.session.plane.units
-    v4 = succ_id in p4.spatial.velocities
-    pl4 = succ_id in p4.spatial.placements
-    check("save:clean_after_restoration", not (n4 or u4 or v4 or pl4),
-          f"nursery={n4} units={u4} vel={v4} place={pl4}")
-    rev4 = inspect_revision(p4, pred_id)
-    lc4 = rev4.get("lifecycle_state") if isinstance(rev4, dict) else str(rev4)
-    check("save:pred_active_after_restoration", lc4 == "active",
-          f"lifecycle={lc4}")
-
-
-def test_actual_failure_path():
-    """The real test: authorize, confirm predecessor, start supersession,
-    fail at link_write with injected cleanup failure."""
     clean()
     from form.mandell import supersession as sup
     from form.mandell.supersession import ACTIVE, inspect_revision
@@ -323,15 +163,16 @@ def test_actual_failure_path():
         p.place = orig_place
         p.cube.session.plane.remove = orig_remove
 
-    if succ_id is None:
-        check("fail:aborted", False,
-              "no successor ID captured; artifact assertions impossible")
-        return
-
-    # Req 2 (continued): journal retained (production journal path).
     jp = _supersede_journal_path(OWNER)
     if not os.path.isabs(jp):
         jp = os.path.join(REPO, jp)
+
+    if succ_id is None:
+        check("fail:aborted", False,
+              "no successor ID captured; artifact assertions impossible")
+        return None, None, None, None, None, jp
+
+    # Journal retained (production journal path).
     check("fail:journal_retained", os.path.isfile(jp),
           f"journal at {jp} exists={os.path.isfile(jp)}")
 
@@ -341,11 +182,217 @@ def test_actual_failure_path():
     check("fail:pred_restored_active", lifecycle == "active",
           f"lifecycle={lifecycle}")
 
-    # Req 3: fresh-process restart with production recovery.
-    run_restart_child(OWNER, pred_id, succ_id)
+    # The instance must be marked recovery-required (incomplete rollback).
+    check("fail:marked_recovery_required",
+          getattr(p, "_recovery_required", None) is not None,
+          "instance must require recovery after incomplete rollback")
 
-    # Req 4: save assertions on the unresolved original instance.
-    run_save_assertions(p, pred, pred_id, succ_id, old_snap)
+    return p, pred, pred_id, succ_id, old_snap, jp
+
+
+RESTART_CHILD_SRC = '''
+import sys, json, os
+REPO_ROOT, OWNER, PRED_ID, SUCC_ID = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+sys.path.insert(0, REPO_ROOT)
+os.chdir(REPO_ROOT)
+out = {}
+from form.mandell.core_i_recovery import (
+    _supersede_journal_path, recover_supersede_intent, RollbackRecoveryError)
+jp = _supersede_journal_path(OWNER)
+# 1. Journal evidence linkage (production journal path + schema).
+try:
+    with open(jp, encoding="utf-8") as f:
+        journal = json.load(f)
+    out["journal_old_id"] = journal.get("old_id")
+    out["journal_new_id"] = journal.get("new_id")
+    out["journal_link_ok"] = (journal.get("old_id") == PRED_ID
+                              and journal.get("new_id") == SUCC_ID)
+except Exception as e:
+    out["journal_link_ok"] = False
+    out["journal_error"] = f"{type(e).__name__}: {e}"
+# 2. Production recovery: documented outcome or explicit fail-closed.
+try:
+    outcome = recover_supersede_intent(OWNER)
+    out["recovery"] = {"outcome": outcome, "fail_closed": False,
+                       "journal_retained": os.path.isfile(jp)}
+except RollbackRecoveryError as e:
+    out["recovery"] = {"outcome": None, "fail_closed": True,
+                       "journal_retained": os.path.isfile(jp),
+                       "error": str(e)[:300]}
+except Exception as e:
+    out["recovery"] = {"outcome": None, "fail_closed": "unexpected",
+                       "journal_retained": os.path.isfile(jp),
+                       "error": f"{type(e).__name__}: {e}"}
+# 3. Inspect the exact successor in every representation (production load).
+from form import persist_rest
+p2 = persist_rest.load(OWNER, activate=False)
+out["succ_in_nursery"] = SUCC_ID in p2.nursery.proposals
+out["succ_nursery_status"] = getattr(p2.nursery.proposals.get(SUCC_ID), "status", None)
+out["succ_in_units"] = SUCC_ID in p2.cube.session.plane.units
+out["succ_in_velocities"] = SUCC_ID in p2.spatial.velocities
+out["succ_in_placements"] = SUCC_ID in p2.spatial.placements
+try:
+    p2.lattice.rebuild_from_plane(p2.cube.session.plane)
+    out["succ_in_lattice"] = SUCC_ID in p2.lattice.all_members()
+except Exception as e:
+    out["succ_in_lattice"] = f"ERROR {type(e).__name__}: {e}"
+from form.mandell.supersession import inspect_revision
+rev = inspect_revision(p2, PRED_ID)
+out["pred_lifecycle"] = rev.get("lifecycle_state") if isinstance(rev, dict) else str(rev)
+print(json.dumps(out))
+'''
+
+
+def test_restart_proof():
+    """Scenario A: fresh-process restart with production recovery."""
+    p, pred, pred_id, succ_id, old_snap, jp = run_failure_scenario()
+    if succ_id is None:
+        return
+    repo_root = os.path.dirname(REPO)
+    child_path = os.path.join("/tmp", f"restart_child_{OWNER}.py")
+    with open(child_path, "w", encoding="utf-8") as f:
+        f.write(RESTART_CHILD_SRC)
+    proc = subprocess.run(
+        [sys.executable, child_path, repo_root, OWNER, pred_id, succ_id],
+        capture_output=True, text=True, timeout=120, cwd=repo_root)
+    if proc.returncode != 0:
+        check("restart:child_ok", False, f"child failed: {proc.stderr[:300]}")
+        return
+    try:
+        out = json.loads(proc.stdout.strip().split("\n")[-1])
+    except Exception as e:
+        check("restart:child_parse", False, f"parse: {e}; stdout={proc.stdout[:300]}")
+        return
+
+    # Journal evidence linkage: the journal names this exact pair.
+    check("restart:journal_link", out.get("journal_link_ok") is True,
+          f"old={out.get('journal_old_id')} new={out.get('journal_new_id')}")
+
+    rec = out.get("recovery", {})
+    if rec.get("fail_closed") is True:
+        # Explicit fail-closed: recovery refused and retained evidence.
+        check("restart:fail_closed_journal_retained",
+              rec.get("journal_retained") is True,
+              f"error={rec.get('error')}")
+    elif rec.get("fail_closed") == "unexpected":
+        check("restart:recovery_no_unexpected", False, f"error={rec.get('error')}")
+    else:
+        # Documented coherent recovery outcome for the valid pre-commit
+        # state (predecessor active, successor confirmed, no links):
+        # "already_complete" -- accepted as-is, journal cleared.
+        check("restart:recovery_outcome",
+              rec.get("outcome") == "already_complete",
+              f"outcome={rec.get('outcome')}")
+        check("restart:journal_cleared_after_coherent",
+              rec.get("journal_retained") is False,
+              "journal must be cleared once recovery proves coherence")
+
+    # The exact successor inspected in every representation.
+    check("restart:succ_nursery",
+          out.get("succ_in_nursery") is True
+          and out.get("succ_nursery_status") == "confirmed",
+          f"in_nursery={out.get('succ_in_nursery')} status={out.get('succ_nursery_status')}")
+    check("restart:succ_plane", out.get("succ_in_units") is True,
+          f"in_units={out.get('succ_in_units')}")
+    check("restart:succ_velocities", out.get("succ_in_velocities") is True,
+          f"in_velocities={out.get('succ_in_velocities')}")
+    check("restart:succ_placements", out.get("succ_in_placements") is True,
+          f"in_placements={out.get('succ_in_placements')}")
+    check("restart:succ_lattice", out.get("succ_in_lattice") is True,
+          f"in_lattice={out.get('succ_in_lattice')}")
+    check("restart:pred_active", out.get("pred_lifecycle") == "active",
+          f"lifecycle={out.get('pred_lifecycle')}")
+
+
+def test_save_proof():
+    """Scenario B: the unsafe save is closed (Director 2026-10-06).
+
+    The unresolved instance must REJECT normal saves; durable bytes and
+    recovery evidence must be unchanged; another instance's disk recovery
+    must not clear this instance's condition; verified restoration then
+    permits a clean save.
+    """
+    p, pred, pred_id, succ_id, old_snap, jp = run_failure_scenario()
+    if succ_id is None:
+        return
+    from form import persist_rest
+    from form.mandell import supersession as sup
+    from form.mandell.supersession import inspect_revision
+    from form.mandell.core_i_recovery import RollbackRecoveryError
+    from form.persist import _path as _program_path
+    from form.dell_matrix.nursery import owner_nursery_path
+
+    prog_path = _program_path(OWNER)
+    nurs_path = owner_nursery_path(OWNER)
+    with open(prog_path, "rb") as f:
+        prog_before = f.read()
+    with open(nurs_path, "rb") as f:
+        nurs_before = f.read()
+
+    # 1. The unresolved save is REJECTED (both member files).
+    rej_nursery = rej_prog = False
+    try:
+        p.nursery.save()
+    except RollbackRecoveryError:
+        rej_nursery = True
+    try:
+        persist_rest.save(p)
+    except RollbackRecoveryError:
+        rej_prog = True
+    check("save:unresolved_rejected", rej_nursery and rej_prog,
+          f"nursery_rejected={rej_nursery} program_rejected={rej_prog}")
+
+    # 2. Durable member bytes unchanged by the rejected saves.
+    with open(prog_path, "rb") as f:
+        prog_after = f.read()
+    with open(nurs_path, "rb") as f:
+        nurs_after = f.read()
+    check("save:bytes_unchanged",
+          prog_before == prog_after and nurs_before == nurs_after,
+          "durable bytes must be unchanged by rejected saves")
+
+    # 3. Recovery evidence preserved across the rejected saves.
+    check("save:evidence_preserved", os.path.isfile(jp),
+          f"journal at {jp} must survive rejected saves")
+    check("save:flag_preserved",
+          getattr(p, "_recovery_required", None) is not None,
+          "in-memory recovery-required must survive rejected saves")
+
+    # 4. Another instance reloading the owner runs disk recovery (clearing
+    # the disk journal) -- this instance's in-memory condition survives.
+    # (persist_rest.load runs the existing recovery mechanism.)
+    p2 = persist_rest.load(OWNER, activate=False)
+    check("save:disk_journal_cleared_by_other",
+          not os.path.isfile(jp),
+          "other instance's load runs disk recovery")
+    still_rejected = False
+    try:
+        persist_rest.save(p)
+    except RollbackRecoveryError:
+        still_rejected = True
+    check("save:flag_survives_disk_recovery",
+          still_rejected and getattr(p, "_recovery_required", None) is not None,
+          "disk recovery must not repair this instance's memory")
+
+    # 5. Verified restoration, then save/reload produces coherent state.
+    rb = sup._rollback_full(p, pred, old_snap, succ_id)
+    check("save:restoration_ok", rb.get("ok") is True,
+          f"failures={rb.get('failures')}")
+    check("save:flag_cleared_by_verified_restoration",
+          getattr(p, "_recovery_required", None) is None,
+          "verified restoration clears the condition")
+    # _rollback_full saves nursery + program itself on success.
+    p4 = persist_rest.load(OWNER, activate=False)
+    n4 = succ_id in p4.nursery.proposals
+    u4 = succ_id in p4.cube.session.plane.units
+    v4 = succ_id in p4.spatial.velocities
+    pl4 = succ_id in p4.spatial.placements
+    check("save:clean_after_restoration", not (n4 or u4 or v4 or pl4),
+          f"nursery={n4} units={u4} vel={v4} place={pl4}")
+    rev4 = inspect_revision(p4, pred_id)
+    lc4 = rev4.get("lifecycle_state") if isinstance(rev4, dict) else str(rev4)
+    check("save:pred_active_after_restoration", lc4 == "active",
+          f"lifecycle={lc4}")
 
 
 def test_spatial_verification_sensitivity():
@@ -375,20 +422,53 @@ def test_spatial_verification_sensitivity():
     check("sens:clean_passes", len(failures2) == 0, f"failures={failures2}")
 
 
+def test_save_guard_sensitivity():
+    """Sensitivity: removing the save guard must fail the save proof.
+
+    Calls the production check_save_allowed directly: with the guard
+    present, a flagged instance is rejected; this documents the exact
+    production check the save proof depends on.
+    """
+    from form.mandell.core_i_recovery import (
+        check_save_allowed, mark_recovery_required, clear_recovery_required,
+        RollbackRecoveryError)
+    p = open_program("SENS_GUARD")
+    # Unflagged: allowed (no exception).
+    try:
+        check_save_allowed(p, "probe")
+        unflagged_ok = True
+    except RollbackRecoveryError:
+        unflagged_ok = False
+    check("sens:unflagged_allowed", unflagged_ok, "unflagged save must pass guard")
+    # Flagged: rejected.
+    mark_recovery_required(p, "probe_id", "probe_reason", {"x": 1})
+    try:
+        check_save_allowed(p, "probe")
+        flagged_rejected = False
+    except RollbackRecoveryError:
+        flagged_rejected = True
+    check("sens:flagged_rejected", flagged_rejected, "flagged save must be rejected")
+    # Cleared: allowed again.
+    clear_recovery_required(p, "probe_id")
+    try:
+        check_save_allowed(p, "probe")
+        cleared_ok = True
+    except RollbackRecoveryError:
+        cleared_ok = False
+    check("sens:cleared_allowed", cleared_ok, "cleared save must pass guard")
+
+
 def smoke():
     print("=== SUPERSESSION FAILURE PATH ===")
-    try:
-        test_actual_failure_path()
-    except Exception as e:
-        import traceback
-        check("test_actual_failure_path", False,
-              f"EXC {type(e).__name__}: {e}\n{traceback.format_exc()[:600]}")
-    try:
-        test_spatial_verification_sensitivity()
-    except Exception as e:
-        import traceback
-        check("test_spatial_verification_sensitivity", False,
-              f"EXC {type(e).__name__}: {e}\n{traceback.format_exc()[:600]}")
+    for fn in [test_restart_proof, test_save_proof,
+               test_spatial_verification_sensitivity,
+               test_save_guard_sensitivity]:
+        try:
+            fn()
+        except Exception as e:
+            import traceback
+            check(fn.__name__, False,
+                  f"EXC {type(e).__name__}: {e}\n{traceback.format_exc()[:600]}")
     n = sum(CHECKS)
     print(f"=== {n}/{len(CHECKS)} ===")
     return n == len(CHECKS)
