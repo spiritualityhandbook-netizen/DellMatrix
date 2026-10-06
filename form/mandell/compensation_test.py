@@ -268,51 +268,64 @@ def test_public_path_denial():
 
 
 def test_removal_throwing():
-    """Control: verification catches throwing membership checks as named failures.
-    
-    Directly tests that if `in` throws during verification, the failure
-    is named (verify:*_check:ExceptionType) not suppressed.
+    """Control: throwing removal during rollback -> incomplete, named failures.
+
+    Exercises the PRODUCTION _rollback_unconfirmed with a spatial dict
+    whose pop() raises. The named failure (velocities:RuntimeError) must
+    appear; the rollback must report ok=False and save nothing.
     """
-    # Simulate the verification logic from _remove_newly_placed
-    failures = []
-    class ThrowingDict(dict):
-        def __contains__(self, k):
-            raise RuntimeError("injected_contains_failure")
-    d = ThrowingDict({"a": 1})
+    from form.mandell.supersession import _rollback_unconfirmed
+    owner = "COMP_RM_THROW3"
+    p = fresh_program(owner)
+    pr = p.nursery.add("RmThrow", words="test")
+    sid = pr.id
+    orig_vel = p.spatial.velocities
+    p.spatial.velocities = BrokenDict({sid: [1.0, 2.0]})
     try:
-        if "a" in d:
-            failures.append("verify:present")
-    except Exception as e:
-        failures.append(f"verify:check:{type(e).__name__}")
-    # The failure must be named, not suppressed
-    has_named = any("verify:check:RuntimeError" in f for f in failures)
-    check("ctrl:rm_throw_named", has_named,
-          f"failures={failures}")
+        rb = _rollback_unconfirmed(p, sid)
+        check("ctrl:throw_rollback_incomplete", rb.get("ok") is False,
+              f"ok={rb.get('ok')}")
+        check("ctrl:throw_named",
+              any("velocities:RuntimeError" in f for f in rb.get("failures", [])),
+              f"failures={rb.get('failures')}")
+    finally:
+        p.spatial.velocities = orig_vel
+
+
+class NoopDict(dict):
+    """pop() succeeds but silently does nothing."""
+    def pop(self, k, d=None):
+        return d
 
 
 def test_removal_silent_noop():
-    """Control: if removal silently does nothing (pop succeeds but item
-    remains), verification must detect it as incomplete.
-    
-    This is the key enclosing-rollback guarantee: a pop() that doesn't
-    actually remove is not proof of cleanup.
+    """Control: silent-noop removal is caught by production verification.
+
+    Calls the PRODUCTION _verify_successor_absent and _rollback_unconfirmed
+    with a spatial dict whose pop() silently does nothing. The verification
+    must report verify:velocities_still_present and the rollback ok=False.
     """
-    owner = "COMP_RM_NOOP"
+    from form.mandell.supersession import (
+        _verify_successor_absent, _rollback_unconfirmed)
+    owner = "COMP_RM_NOOP2"
     p = fresh_program(owner)
     pr = p.nursery.add("RmNoop", words="test")
-    # Simulate: item is in units, pop is called but item remains
-    # (simulating a buggy pop implementation)
-    # The verification `if prop.id in units` would catch this.
-    p.cube.session.plane.units[pr.id] = object()
-    # Verify the check works
-    still_present = pr.id in p.cube.session.plane.units
-    check("ctrl:noop_detectable", still_present,
-          "membership check detects present item")
-    # Cleanup
-    del p.cube.session.plane.units[pr.id]
-    gone = pr.id not in p.cube.session.plane.units
-    check("ctrl:removal_verifiable", gone,
-          "membership check confirms absence after real removal")
+    sid = pr.id
+    orig_vel = p.spatial.velocities
+    p.spatial.velocities = NoopDict({sid: [1.0, 2.0]})
+    try:
+        failures = _verify_successor_absent(p, sid)
+        check("ctrl:noop_vel_detected",
+              any("verify:velocities_still_present" in f for f in failures),
+              f"failures={failures}")
+        rb = _rollback_unconfirmed(p, sid)
+        check("ctrl:noop_rollback_incomplete", rb.get("ok") is False,
+              f"ok={rb.get('ok')}")
+        check("ctrl:noop_rollback_named",
+              any("velocities_still_present" in f for f in rb.get("failures", [])),
+              f"failures={rb.get('failures')}")
+    finally:
+        p.spatial.velocities = orig_vel
 
 
 def test_verification_throwing():
