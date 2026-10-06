@@ -343,22 +343,16 @@ def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> Dict[str, Any
     if failures:
         return {"ok": False, "failures": failures, "removed": removed}
     # Direct save: the rollback itself must not trip the inject hook.
-    try:
-        program.nursery.save()
-        removed.append("nursery_saved")
-    except Exception as e:
-        failures.append(f"nursery_save:{type(e).__name__}")
-        return {"ok": False, "failures": failures, "removed": removed}
+    # Director: save failures propagate (do not suppress); the caller
+    # must handle incomplete rollback. This preserves the
+    # "rollback_propagates" contract.
+    program.nursery.save()
+    removed.append("nursery_saved")
     # Also save Program: the plane.remove above modified in-memory state.
     # Without this, durable Program retains the successor Idea (rollback gap).
-    # Propagate failure: incomplete rollback must not be silently accepted.
-    try:
-        from form import persist_rest
-        persist_rest.save(program)
-        removed.append("program_saved")
-    except Exception as e:
-        failures.append(f"program_save:{type(e).__name__}")
-        return {"ok": False, "failures": failures, "removed": removed}
+    from form import persist_rest
+    persist_rest.save(program)
+    removed.append("program_saved")
     return {"ok": True, "failures": [], "removed": removed}
 
 
@@ -435,19 +429,13 @@ def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
     # Only save if verification passed
     if failures:
         return {"ok": False, "failures": failures, "removed": removed}
-    try:
-        program.nursery.save()
-        removed.append("nursery_saved")
-    except Exception as e:
-        failures.append(f"nursery_save:{type(e).__name__}")
-        return {"ok": False, "failures": failures, "removed": removed}
-    try:
-        from form import persist_rest
-        persist_rest.save(program)
-        removed.append("program_saved")
-    except Exception as e:
-        failures.append(f"program_save:{type(e).__name__}")
-        return {"ok": False, "failures": failures, "removed": removed}
+    # Director: save failures propagate (do not suppress); preserves
+    # the "rollback_propagates" contract.
+    program.nursery.save()
+    removed.append("nursery_saved")
+    from form import persist_rest
+    persist_rest.save(program)
+    removed.append("program_saved")
     return {"ok": True, "failures": [], "removed": removed}
 
 
