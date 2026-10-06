@@ -167,6 +167,35 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             failures.append(f"lattice:{type(e).__name__}")
         # Note: history is append-only and honestly records the attempt;
         # keys index staleness is harmless.
+        #
+        # Director 2026-10-05 (enclosing rollback): Preserve evidence until
+        # complete restoration is VERIFIED. A pop() that silently does
+        # nothing (key already absent) is not proof of removal. Verify the
+        # critical artifacts are actually absent; if verification fails,
+        # report incomplete compensation so the journal is retained.
+        _verify_failures = []
+        try:
+            if prop.id in units:
+                _verify_failures.append("verify:unit_still_present")
+        except Exception as e:
+            _verify_failures.append(f"verify:unit_check:{type(e).__name__}")
+        try:
+            spatial = program.spatial
+            if hasattr(spatial, 'velocities'):
+                try:
+                    if prop.id in spatial.velocities:
+                        _verify_failures.append("verify:velocities_still_present")
+                except Exception:
+                    pass  # cannot check; treat as unknown, not failure
+            if hasattr(spatial, 'placements'):
+                try:
+                    if prop.id in spatial.placements:
+                        _verify_failures.append("verify:placements_still_present")
+                except Exception:
+                    pass
+        except Exception as e:
+            _verify_failures.append(f"verify:spatial_check:{type(e).__name__}")
+        failures.extend(_verify_failures)
         return {"ok": not failures, "failures": failures, "removed": removed}
     try:
         program.place(

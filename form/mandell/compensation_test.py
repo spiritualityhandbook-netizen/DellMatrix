@@ -238,6 +238,35 @@ def test_positive_controls():
           "no incomplete flag on clean denial")
 
 
+def test_public_path_denial():
+    """Public-path failure: confirm_proposal without _producer/_review_context
+    (the public API) must deny and clean up completely.
+    
+    Director 2026-10-05 (enclosing rollback): The public path is how real
+    users trigger confirmation. Failure through this path must preserve
+    the same compensation guarantees as the internal authorized path.
+    """
+    owner = "COMP_PUBLIC"
+    p = fresh_program(owner)
+    # Public API: no _producer, no _review_context
+    pr = p.nursery.add("PublicTest", words="public path content")
+    r = p.confirm_proposal(pr.id)
+    # Must deny (no authorization)
+    check("pub:denied", r.get("ok") is False,
+          f"got {r.get('ok')}")
+    check("pub:reason_denied", "denied" in r.get("reason", "").lower(),
+          f"reason={r.get('reason')}")
+    # Must not leave accepted-state artifacts
+    check("pub:no_unit", pr.id not in p.cube.session.plane.units,
+          "unit leaked")
+    # Compensation must be complete (not incomplete)
+    check("pub:complete", r.get("compensation") != "incomplete",
+          f"compensation={r.get('compensation')}")
+    # Proposal must remain pending (not confirmed)
+    check("pub:still_pending", pr.status == "pending",
+          f"status={pr.status}")
+
+
 def smoke():
     print("=== COMPENSATION COMPLETENESS ===")
     for fn in [test_incomplete_compensation_reported,
@@ -245,7 +274,8 @@ def smoke():
                test_normal_denial_complete,
                test_restart_after_incomplete,
                test_supersession_derived_compensation,
-               test_positive_controls]:
+               test_positive_controls,
+               test_public_path_denial]:
         try:
             fn()
         except Exception as e:
