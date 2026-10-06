@@ -185,14 +185,18 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
                 try:
                     if prop.id in spatial.velocities:
                         _verify_failures.append("verify:velocities_still_present")
-                except Exception:
-                    pass  # cannot check; treat as unknown, not failure
+                except Exception as e:
+                    # Director 2026-10-05: Unverifiable cleanup is incomplete.
+                    # Named failure, not suppressed.
+                    _verify_failures.append(
+                        f"verify:velocities_check_failed:{type(e).__name__}")
             if hasattr(spatial, 'placements'):
                 try:
                     if prop.id in spatial.placements:
                         _verify_failures.append("verify:placements_still_present")
-                except Exception:
-                    pass
+                except Exception as e:
+                    _verify_failures.append(
+                        f"verify:placements_check_failed:{type(e).__name__}")
         except Exception as e:
             _verify_failures.append(f"verify:spatial_check:{type(e).__name__}")
         failures.extend(_verify_failures)

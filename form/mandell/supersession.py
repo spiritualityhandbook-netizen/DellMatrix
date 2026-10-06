@@ -48,10 +48,14 @@ class SupersedeError(ValueError):
 
     `reason` is the stable machine-readable code; `str(exc)` appends the
     human detail as "reason:detail". Receipts and tests key on `reason`.
+    `details` carries structured failure context (e.g., incomplete
+    compensation/rollback details) for observability.
     """
 
-    def __init__(self, reason: str, detail: str = ""):
+    def __init__(self, reason: str, detail: str = "",
+                 details: dict = None):
         self.reason = reason
+        self.details = details or {}
         super().__init__(f"{reason}:{detail}" if detail else reason)
 
 
@@ -260,55 +264,191 @@ def _save_nursery(program: Any) -> None:
     program.nursery.save()
 
 
-def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> None:
+def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> Dict[str, Any]:
     """Rollback for a failure before/within successor confirmation.
 
     The predecessor was never touched (still active in memory and on
     disk). The successor never became a confirmed revision, so it is
-    removed (proposal + plane unit) and the nursery is re-saved.
+    removed (proposal + plane unit + spatial entries) and the nursery is
+    re-saved.
+
+    Director 2026-10-05 (enclosing rollback): Returns status dict.
+    Verifies successor artifacts are absent before saving. Unresolved
+    restoration returns ok=False with named failures; the caller must
+    retain evidence (journal) and report observably.
     """
+    failures = []
+    removed = []
     if succ_id is not None:
-        program.nursery.proposals.pop(succ_id, None)
+        # Remove successor proposal
+        try:
+            program.nursery.proposals.pop(succ_id, None)
+            removed.append("proposal")
+        except Exception as e:
+            failures.append(f"proposal:{type(e).__name__}")
+        # Remove plane unit
         try:
             program.cube.session.plane.remove(succ_id)
-        except Exception:
-            pass
+            removed.append("unit")
+        except Exception as e:
+            failures.append(f"unit:{type(e).__name__}")
+        # Remove spatial entries (velocities, placements)
+        try:
+            spatial = program.spatial
+            if hasattr(spatial, 'velocities'):
+                try:
+                    spatial.velocities.pop(succ_id, None)
+                    removed.append("velocities")
+                except Exception as e:
+                    failures.append(f"velocities:{type(e).__name__}")
+            if hasattr(spatial, 'placements'):
+                try:
+                    spatial.placements.pop(succ_id, None)
+                    removed.append("placements")
+                except Exception as e:
+                    failures.append(f"placements:{type(e).__name__}")
+        except Exception as e:
+            failures.append(f"spatial_access:{type(e).__name__}")
+        # Verify: successor artifacts must be absent
+        # (Director: unverifiable cleanup is incomplete; named failures,
+        # not suppressed exceptions)
+        try:
+            if succ_id in program.nursery.proposals:
+                failures.append("verify:proposal_still_present")
+        except Exception as e:
+            failures.append(f"verify:proposal_check:{type(e).__name__}")
+        try:
+            if succ_id in program.cube.session.plane.units:
+                failures.append("verify:unit_still_present")
+        except Exception as e:
+            failures.append(f"verify:unit_check:{type(e).__name__}")
+        try:
+            spatial = program.spatial
+            if hasattr(spatial, 'velocities'):
+                try:
+                    if succ_id in spatial.velocities:
+                        failures.append("verify:velocities_still_present")
+                except Exception as e:
+                    failures.append(f"verify:velocities_check:{type(e).__name__}")
+            if hasattr(spatial, 'placements'):
+                try:
+                    if succ_id in spatial.placements:
+                        failures.append("verify:placements_still_present")
+                except Exception as e:
+                    failures.append(f"verify:placements_check:{type(e).__name__}")
+        except Exception as e:
+            failures.append(f"verify:spatial_check:{type(e).__name__}")
+    # Only save if verification passed; otherwise the saved state would
+    # claim restoration that didn't happen.
+    if failures:
+        return {"ok": False, "failures": failures, "removed": removed}
     # Direct save: the rollback itself must not trip the inject hook.
-    program.nursery.save()
+    try:
+        program.nursery.save()
+        removed.append("nursery_saved")
+    except Exception as e:
+        failures.append(f"nursery_save:{type(e).__name__}")
+        return {"ok": False, "failures": failures, "removed": removed}
     # Also save Program: the plane.remove above modified in-memory state.
     # Without this, durable Program retains the successor Idea (rollback gap).
     # Propagate failure: incomplete rollback must not be silently accepted.
-    from form import persist_rest
-    persist_rest.save(program)
+    try:
+        from form import persist_rest
+        persist_rest.save(program)
+        removed.append("program_saved")
+    except Exception as e:
+        failures.append(f"program_save:{type(e).__name__}")
+        return {"ok": False, "failures": failures, "removed": removed}
+    return {"ok": True, "failures": [], "removed": removed}
 
 
 def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
-                   succ_id: Optional[str]) -> None:
+                   succ_id: Optional[str]) -> Dict[str, Any]:
     """Rollback for a failure at the final link-commit.
 
     The successor was created and confirmed solely by this operation but
     the revision links were never durably committed, so the operation is
     all-or-nothing: the predecessor's link fields are restored, the
-    successor proposal/plane unit is removed, and the nursery is
-    re-saved. Durable state returns to entirely-old; no half revision
-    chain can survive.
+    successor proposal/plane unit/spatial entries are removed, and the
+    nursery is re-saved. Durable state returns to entirely-old; no half
+    revision chain can survive.
+
+    Director 2026-10-05 (enclosing rollback): Returns status dict.
+    Verifies predecessor restoration and successor removal before saving.
+    Unresolved restoration returns ok=False; caller must retain evidence.
     """
-    for k, v in old_snap.items():
-        setattr(old, k, v)
+    failures = []
+    removed = []
+    # Restore predecessor link fields
+    try:
+        for k, v in old_snap.items():
+            setattr(old, k, v)
+        removed.append("predecessor_restored")
+    except Exception as e:
+        failures.append(f"predecessor_restore:{type(e).__name__}")
+    # Verify predecessor restoration
+    try:
+        for k, v in old_snap.items():
+            if getattr(old, k, None) != v:
+                failures.append(f"verify:predecessor_{k}_not_restored")
+    except Exception as e:
+        failures.append(f"verify:predecessor_check:{type(e).__name__}")
+    # Remove successor artifacts
     if succ_id is not None:
-        program.nursery.proposals.pop(succ_id, None)
+        try:
+            program.nursery.proposals.pop(succ_id, None)
+            removed.append("proposal")
+        except Exception as e:
+            failures.append(f"proposal:{type(e).__name__}")
         try:
             program.cube.session.plane.remove(succ_id)
-        except Exception:
-            pass
-    # Direct save: the rollback itself must not trip the inject hook.
-    program.nursery.save()
-    # Also persist Program: plane.remove modified in-memory state.
-    # Without this, durable Program retains the successor Idea.
-    # Propagate failure: if Program save fails, the rollback is incomplete.
-    # Do not suppress; the caller must handle it.
-    from form import persist_rest
-    persist_rest.save(program)
+            removed.append("unit")
+        except Exception as e:
+            failures.append(f"unit:{type(e).__name__}")
+        try:
+            spatial = program.spatial
+            if hasattr(spatial, 'velocities'):
+                try:
+                    spatial.velocities.pop(succ_id, None)
+                    removed.append("velocities")
+                except Exception as e:
+                    failures.append(f"velocities:{type(e).__name__}")
+            if hasattr(spatial, 'placements'):
+                try:
+                    spatial.placements.pop(succ_id, None)
+                    removed.append("placements")
+                except Exception as e:
+                    failures.append(f"placements:{type(e).__name__}")
+        except Exception as e:
+            failures.append(f"spatial_access:{type(e).__name__}")
+        # Verify successor absent
+        try:
+            if succ_id in program.nursery.proposals:
+                failures.append("verify:proposal_still_present")
+        except Exception as e:
+            failures.append(f"verify:proposal_check:{type(e).__name__}")
+        try:
+            if succ_id in program.cube.session.plane.units:
+                failures.append("verify:unit_still_present")
+        except Exception as e:
+            failures.append(f"verify:unit_check:{type(e).__name__}")
+    # Only save if verification passed
+    if failures:
+        return {"ok": False, "failures": failures, "removed": removed}
+    try:
+        program.nursery.save()
+        removed.append("nursery_saved")
+    except Exception as e:
+        failures.append(f"nursery_save:{type(e).__name__}")
+        return {"ok": False, "failures": failures, "removed": removed}
+    try:
+        from form import persist_rest
+        persist_rest.save(program)
+        removed.append("program_saved")
+    except Exception as e:
+        failures.append(f"program_save:{type(e).__name__}")
+        return {"ok": False, "failures": failures, "removed": removed}
+    return {"ok": True, "failures": [], "removed": removed}
 
 
 def supersede_proposal(program: Any, old_id: str, words: str,
@@ -521,14 +661,34 @@ def _supersede_impl(program: Any, old_id: str, words: str,
             _cl.confirm_proposal._SKIP_CHECKPOINT = _orig_skip
             _cl.confirm_proposal._SKIP_JOURNAL = _orig_skip_j
         if not res.get("ok"):
-            raise SupersedeError("confirm_failed", str(res.get("reason")))
-    except Exception:
-        _rollback_unconfirmed(program, succ_id)
-        # Clear supersession journal on failure (operation aborted)
-        try:
-            clear_supersede_intent(program.owner)
-        except:
-            pass
+            # Director 2026-10-05: Carry incomplete-compensation details
+            # through confirm_failed. If the successor confirmation itself
+            # reported incomplete compensation, preserve those details.
+            _comp_detail = res.get("compensation")
+            _comp_failures = res.get("compensation_failures", [])
+            raise SupersedeError(
+                "confirm_failed", str(res.get("reason")),
+                {"compensation": _comp_detail,
+                 "compensation_failures": _comp_failures})
+    except Exception as e:
+        # Director 2026-10-05 (enclosing rollback): Verify restoration
+        # before clearing intent. Unresolved restoration retains evidence.
+        _rb = _rollback_unconfirmed(program, succ_id)
+        if not _rb.get("ok"):
+            # Incomplete rollback: retain journal, attach details to
+            # the exception so the failure remains observable.
+            if isinstance(e, SupersedeError):
+                e.details = getattr(e, 'details', {}) or {}
+                e.details["rollback"] = "incomplete"
+                e.details["rollback_failures"] = _rb.get("failures", [])
+                e.details["rollback_removed"] = _rb.get("removed", [])
+            # Do NOT clear intent; evidence retained for recovery.
+        else:
+            # Complete rollback: clear supersession journal (operation aborted)
+            try:
+                clear_supersede_intent(program.owner)
+            except Exception:
+                pass
         raise
 
     # ---- Phase 4: complete revision links, then ONE atomic commit ----
@@ -569,11 +729,21 @@ def _supersede_impl(program: Any, old_id: str, words: str,
         # complete transition is durable. The successor's acceptance is
         # now recoverable as part of the supersession outcome.
         clear_supersede_intent(program.owner)
-    except Exception:
-        _rollback_full(program, old, old_snap, succ_id)
-        # Preserve journal for crash recovery (do not clear on failure).
-        # If the process survives, the caller can retry. If it crashes,
-        # recovery will use the journal.
+    except Exception as e:
+        # Director 2026-10-05 (enclosing rollback): Verify restoration.
+        # Unresolved restoration must retain evidence and remain observable.
+        _rb = _rollback_full(program, old, old_snap, succ_id)
+        if not _rb.get("ok"):
+            # Incomplete rollback: attach details to exception.
+            # Journal is already preserved (not cleared on failure).
+            if isinstance(e, SupersedeError):
+                e.details = getattr(e, 'details', {}) or {}
+                e.details["rollback"] = "incomplete"
+                e.details["rollback_failures"] = _rb.get("failures", [])
+                e.details["rollback_removed"] = _rb.get("removed", [])
+            # Do NOT clear intent; evidence retained.
+        # Else: complete rollback, journal preserved for crash recovery
+        # (do not clear on failure). If process survives, caller can retry.
         raise
 
     # ---- Phase 5: auditable receipt ----

@@ -23,8 +23,10 @@ import subprocess
 import sys
 import time
 
-# Fixed child path (durable location in workspace, outside repo)
-CHILD = os.path.expanduser("~/workspace/perf_child_v2.py")
+# Child resolved relative to __file__ (reproducible repository evidence)
+# Director 2026-10-05: external ~/workspace script is not reproducible.
+CHILD = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     "perf_child_v2.py")
 OUT = os.path.expanduser("~/workspace/perf_v2_results.json")
 
 
@@ -77,6 +79,13 @@ def verify_supersession_reload(repo, owner, old_id, new_id):
     Confirmation and supersession are different dimensions: old.status
     stays 'confirmed'; supersession is via inspect_revision lifecycle_state
     and the superseded_by_id / supersedes_id links.
+
+    Director 2026-10-05: Verify complete supersession identity/links:
+    - old lifecycle=superseded, new status=confirmed
+    - bidirectional links complete (old.superseded_by_id, new.supersedes_id)
+    - revision numbers and root IDs consistent
+    - new Idea present in durable plane (successor is real)
+    - old Idea still present (superseded is historical, not deleted)
     """
     vscript = f'''
 import sys, json, os
@@ -88,12 +97,25 @@ p = persist_rest.load({owner!r}, activate=False)
 old = p.nursery.proposals.get({old_id!r})
 new = p.nursery.proposals.get({new_id!r})
 rev = inspect_revision(p, {old_id!r})
+# Check durable Idea presence
+new_has_idea = False
+old_has_idea = False
+try:
+    new_has_idea = new_id in p.cube.session.plane.units
+    old_has_idea = old_id in p.cube.session.plane.units
+except Exception:
+    pass
 out = {{
     "old_lifecycle": rev.get("lifecycle_state") if isinstance(rev, dict) else str(rev),
     "new_status": getattr(new, "status", None),
     "old_superseded_by": getattr(old, "superseded_by_id", None),
     "new_supersedes": getattr(new, "supersedes_id", None),
     "new_rev": getattr(new, "revision_number", None),
+    "old_rev": getattr(old, "revision_number", None),
+    "new_root": getattr(new, "revision_root_id", None),
+    "old_root": getattr(old, "revision_root_id", None),
+    "new_has_idea": new_has_idea,
+    "old_has_idea": old_has_idea,
 }}
 print(json.dumps(out))
 '''
@@ -117,6 +139,12 @@ print(json.dumps(out))
          f"new.supersedes_id {data['new_supersedes']}"),
         (data["new_rev"] == 2,
          f"new.revision_number {data['new_rev']}, expected 2"),
+        (data["new_has_idea"],
+         "new Idea not present in durable plane"),
+        (data["old_has_idea"],
+         "old Idea missing (superseded should be historical, not deleted)"),
+        (data["new_root"] == data["old_root"] and data["new_root"] is not None,
+         f"revision_root_id mismatch: new={data['new_root']}, old={data['old_root']}"),
     ]
     for ok, detail in checks:
         if not ok:
@@ -125,6 +153,12 @@ print(json.dumps(out))
 
 
 def verify_confirm_reload(repo, owner, pid):
+    """Verify durable confirmation: status=confirmed AND Idea present in plane.
+    
+    Director 2026-10-05: Verify durable Idea presence alongside status.
+    A proposal marked confirmed but without a durable Idea is not a
+    complete confirmation.
+    """
     vscript = f'''
 import sys, json, os
 sys.path.insert(0, {repo!r})
@@ -132,7 +166,14 @@ os.chdir({repo!r})
 from form import persist_rest
 p = persist_rest.load({owner!r}, activate=False)
 prop = p.nursery.proposals.get({pid!r})
-print(json.dumps({{"status": getattr(prop, "status", None)}}))
+status = getattr(prop, "status", None)
+# Check Idea presence in durable plane
+has_idea = False
+try:
+    has_idea = pid in p.cube.session.plane.units
+except Exception:
+    pass
+print(json.dumps({{"status": status, "has_idea": has_idea}}))
 '''
     proc = subprocess.run([sys.executable, "-c", vscript],
                           capture_output=True, text=True, timeout=60,
@@ -141,7 +182,11 @@ print(json.dumps({{"status": getattr(prop, "status", None)}}))
         return False, f"reload failed"
     try:
         data = json.loads(proc.stdout.strip().split("\n")[-1])
-        return data["status"] == "confirmed", f"status={data['status']}"
+        if data["status"] != "confirmed":
+            return False, f"status={data['status']}"
+        if not data["has_idea"]:
+            return False, "Idea not present in durable plane"
+        return True, "status=confirmed, Idea present"
     except Exception as e:
         return False, str(e)
 
