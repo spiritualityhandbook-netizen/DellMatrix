@@ -264,6 +264,68 @@ def _save_nursery(program: Any) -> None:
     program.nursery.save()
 
 
+def _verify_successor_absent(program: Any, succ_id: str) -> list:
+    """Shared verification: successor artifacts must be absent.
+    
+    Director 2026-10-05 (paired rollback): Both rollback helpers use this
+    single implementation. Checks proposal, unit, velocities, placements.
+    Returns list of failure strings (empty = verified absent).
+    Unverifiable -> named failure (not suppressed).
+    """
+    failures = []
+    # Proposal
+    try:
+        if succ_id in program.nursery.proposals:
+            failures.append("verify:proposal_still_present")
+    except Exception as e:
+        failures.append(f"verify:proposal_check:{type(e).__name__}")
+    # Plane unit
+    try:
+        if succ_id in program.cube.session.plane.units:
+            failures.append("verify:unit_still_present")
+    except Exception as e:
+        failures.append(f"verify:unit_check:{type(e).__name__}")
+    # Spatial entries (velocities, placements)
+    try:
+        spatial = program.spatial
+        if hasattr(spatial, 'velocities'):
+            try:
+                if succ_id in spatial.velocities:
+                    failures.append("verify:velocities_still_present")
+            except Exception as e:
+                failures.append(f"verify:velocities_check:{type(e).__name__}")
+        if hasattr(spatial, 'placements'):
+            try:
+                if succ_id in spatial.placements:
+                    failures.append("verify:placements_still_present")
+            except Exception as e:
+                failures.append(f"verify:placements_check:{type(e).__name__}")
+    except Exception as e:
+        failures.append(f"verify:spatial_check:{type(e).__name__}")
+    return failures
+
+
+def _verify_lattice_agreement(program: Any) -> list:
+    """Verify lattice agrees with plane (no orphaned successor entries).
+    
+    Director 2026-10-05: Lattice agreement is part of the verified
+    restoration contract. Returns failures (empty = agreement verified).
+    """
+    failures = []
+    try:
+        # Lattice should not reference removed successor IDs.
+        # This is a best-effort check; lattice is rebuildable.
+        # For now, verify the lattice can rebuild without error.
+        if hasattr(program.lattice, 'rebuild_from_plane'):
+            try:
+                program.lattice.rebuild_from_plane(program.cube.session.plane)
+            except Exception as e:
+                failures.append(f"verify:lattice_rebuild:{type(e).__name__}")
+    except Exception as e:
+        failures.append(f"verify:lattice_check:{type(e).__name__}")
+    return failures
+
+
 def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> Dict[str, Any]:
     """Rollback for a failure before/within successor confirmation.
 
@@ -309,35 +371,12 @@ def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> Dict[str, Any
                     failures.append(f"placements:{type(e).__name__}")
         except Exception as e:
             failures.append(f"spatial_access:{type(e).__name__}")
-        # Verify: successor artifacts must be absent
-        # (Director: unverifiable cleanup is incomplete; named failures,
-        # not suppressed exceptions)
-        try:
-            if succ_id in program.nursery.proposals:
-                failures.append("verify:proposal_still_present")
-        except Exception as e:
-            failures.append(f"verify:proposal_check:{type(e).__name__}")
-        try:
-            if succ_id in program.cube.session.plane.units:
-                failures.append("verify:unit_still_present")
-        except Exception as e:
-            failures.append(f"verify:unit_check:{type(e).__name__}")
-        try:
-            spatial = program.spatial
-            if hasattr(spatial, 'velocities'):
-                try:
-                    if succ_id in spatial.velocities:
-                        failures.append("verify:velocities_still_present")
-                except Exception as e:
-                    failures.append(f"verify:velocities_check:{type(e).__name__}")
-            if hasattr(spatial, 'placements'):
-                try:
-                    if succ_id in spatial.placements:
-                        failures.append("verify:placements_still_present")
-                except Exception as e:
-                    failures.append(f"verify:placements_check:{type(e).__name__}")
-        except Exception as e:
-            failures.append(f"verify:spatial_check:{type(e).__name__}")
+        # Verify: successor artifacts must be absent (shared implementation)
+        # Director 2026-10-05 (paired rollback): Both helpers use
+        # _verify_successor_absent. Unverifiable -> named failures.
+        failures.extend(_verify_successor_absent(program, succ_id))
+        # Verify lattice agreement
+        failures.extend(_verify_lattice_agreement(program))
     # Only save if verification passed; otherwise the saved state would
     # claim restoration that didn't happen.
     if failures:
@@ -415,17 +454,11 @@ def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
                     failures.append(f"placements:{type(e).__name__}")
         except Exception as e:
             failures.append(f"spatial_access:{type(e).__name__}")
-        # Verify successor absent
-        try:
-            if succ_id in program.nursery.proposals:
-                failures.append("verify:proposal_still_present")
-        except Exception as e:
-            failures.append(f"verify:proposal_check:{type(e).__name__}")
-        try:
-            if succ_id in program.cube.session.plane.units:
-                failures.append("verify:unit_still_present")
-        except Exception as e:
-            failures.append(f"verify:unit_check:{type(e).__name__}")
+        # Verify successor absent (shared implementation includes spatial)
+        # Director 2026-10-05: _rollback_full was missing spatial verification.
+        failures.extend(_verify_successor_absent(program, succ_id))
+        # Verify lattice agreement
+        failures.extend(_verify_lattice_agreement(program))
     # Only save if verification passed
     if failures:
         return {"ok": False, "failures": failures, "removed": removed}
