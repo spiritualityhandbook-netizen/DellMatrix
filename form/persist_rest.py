@@ -45,6 +45,16 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
 
 
 def checkpoint(program: Program, *, _fail_at: Optional[str] = None) -> str:
+    """Write a legacy checkpoint file, then persist the program via guarded save().
+
+    Director 2026-10-06 (close all exposed save paths): an instance whose
+    compensation/rollback was incomplete rejects the checkpoint with
+    RollbackRecoveryError at the FIRST write boundary -- before
+    serialization, before the checkpoint file, and before the downstream
+    save. No bytes are written on rejection.
+    """
+    from form.mandell.core_i_recovery import check_save_allowed
+    check_save_allowed(program, "persist_rest.checkpoint")
     cp = _cp_path(program.owner)
     from form.dell_matrix.atomic_write import atomic_write_json
 

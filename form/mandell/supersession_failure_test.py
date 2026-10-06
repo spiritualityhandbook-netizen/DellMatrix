@@ -34,6 +34,26 @@ reconstruction:
     produces coherent state (successor absent everywhere, predecessor
     active). Restoration precedes the clean save.
 
+Scenario C -- close all exposed save paths (Director 2026-10-06):
+Director finding: persist_rest.checkpoint() wrote the checkpoint file
+before calling guarded save(); the canonical commit path sealed members
+through inner guarded saves (CheckpointCommitError wrap) but had no
+first-boundary rejection of its own.
+11. A real unresolved instance rejects form.persist.checkpoint (public
+    export), core_i_recovery.checkpoint and
+    checkpoint_generation.commit_checkpoint with RollbackRecoveryError,
+    with durable bytes unchanged, no new artifacts, and journal +
+    instance conditions preserved.
+12. Another instance's disk recovery does not enable the unresolved
+    instance's checkpoint path.
+13. Sensitivity: disabling only the first-boundary checkpoint guard
+    reproduces the Director's exact finding (one checkpoint written,
+    then the downstream save rejects); disabling the canonical top
+    guard changes the rejection to CheckpointCommitError.
+14. Verified restoration permits the legacy checkpoint and the canonical
+    commit; per-key enforcement holds (clearing one key leaves the other
+    enforced).
+
 "A denial before placement cannot prove compensation."
 
 Evidence class: INTEGRATION (real Program, real files) + CROSS_PROCESS
@@ -61,17 +81,32 @@ def check(name, cond, detail=""):
 
 
 def clean():
+    # NOTE: REPO is the form/ directory (see line 69); the state dir lives
+    # under the repository root, one level up.
+    ROOT = os.path.dirname(REPO)
     for pat in [f'form/state/nursery_{OWNER}.json', f'form/state/program_{OWNER}.json']:
-        pp = os.path.join(REPO, pat)
+        pp = os.path.join(ROOT, pat)
         if os.path.isfile(pp):
             os.remove(pp)
-    for pp in glob.glob(os.path.join(REPO, 'form', 'state', f'checkpoint_{OWNER}_*')):
+    for pp in glob.glob(os.path.join(ROOT, 'form', 'state', f'checkpoint_{OWNER}_*')):
         os.remove(pp)
+    # Legacy checkpoints use the program_ prefix, not checkpoint_.
+    for pp in glob.glob(os.path.join(ROOT, 'form', 'state', f'program_{OWNER}_cp_*.json')):
+        os.remove(pp)
+    # Checkpoint Generation V1 artifacts (manifests, members, pointer),
+    # idea snapshots and owner graph files for this test owner.
+    from form.mandell.checkpoint_generation import _owner_ns
+    ns = _owner_ns(OWNER)
+    for pat in [f'gen_{ns}_*.json', f'*_{ns}.g_*.json',
+                f'current_{ns}.json', f'ideas_{OWNER}.json',
+                f'graph_{OWNER}.json']:
+        for pp in glob.glob(os.path.join(ROOT, 'form', 'state', pat)):
+            os.remove(pp)
     # Remove any stale supersession journal from a previous run.
     from form.mandell.core_i_recovery import _supersede_journal_path
     jp = _supersede_journal_path(OWNER)
     if not os.path.isabs(jp):
-        jp = os.path.join(REPO, jp)
+        jp = os.path.join(ROOT, jp)
     if os.path.isfile(jp):
         os.remove(jp)
 
@@ -395,6 +430,212 @@ def test_save_proof():
           f"lifecycle={lc4}")
 
 
+def _owner_artifact_snapshot():
+    """{basename: bytes} for every OWNER-scoped durable artifact in the state dir.
+
+    Covers the program member file, legacy checkpoints, the nursery file,
+    Checkpoint Generation V1 artifacts (manifests, members, pointer),
+    idea snapshots, the owner graph file and the supersession journal.
+    """
+    from form.persist import _STATE_DIR
+    from form.mandell.checkpoint_generation import _owner_ns
+    ns = _owner_ns(OWNER)
+    pats = [
+        f"program_{OWNER}*",
+        f"nursery_{OWNER}*",
+        f"gen_{ns}_*",
+        f"*_{ns}.g_*",
+        f"current_{ns}.json",
+        f"ideas_{OWNER}*",
+        f"graph_{OWNER}*",
+        f"supersede_{OWNER}.journal.json",
+    ]
+    snap = {}
+    for pat in pats:
+        for pp in glob.glob(os.path.join(_STATE_DIR, pat)):
+            if not os.path.isfile(pp):
+                continue
+            with open(pp, "rb") as f:
+                snap[os.path.basename(pp)] = f.read()
+    return snap
+
+
+def test_checkpoint_sweep_proof():
+    """Scenario C: close all exposed save paths (Director 2026-10-06).
+
+    A real unresolved instance from the failure scenario must reject
+    every exposed persistence entrypoint with RollbackRecoveryError
+    before its first durable write:
+      - form.persist.checkpoint (public export of persist_rest.checkpoint)
+      - core_i_recovery.checkpoint (canonical entrypoint)
+      - checkpoint_generation.commit_checkpoint (direct canonical call)
+    (persist_rest.save / nursery.save are proven in test_save_proof.)
+    """
+    p, pred, pred_id, succ_id, old_snap, jp = run_failure_scenario()
+    if succ_id is None:
+        return
+    import form.persist as pub
+    from form import persist_rest
+    from form.persist import _STATE_DIR
+    from form.mandell import core_i_recovery as cir
+    from form.mandell import checkpoint_generation as cg
+    from form.mandell.core_i_recovery import (
+        RollbackRecoveryError, check_save_allowed,
+        mark_recovery_required, clear_recovery_required)
+    from form.mandell import supersession as sup
+
+    # Public export identity: the export IS the guarded function.
+    check("sweep:public_export_identity",
+          pub.checkpoint is persist_rest.checkpoint,
+          "form.persist.checkpoint must be persist_rest.checkpoint")
+
+    ops = [
+        ("legacy_checkpoint", lambda: pub.checkpoint(p)),
+        ("canonical_checkpoint", lambda: cir.checkpoint(p, stamp="sweep1")),
+        ("canonical_commit_direct", lambda: cg.commit_checkpoint(p)),
+    ]
+    for name, op in ops:
+        before = _owner_artifact_snapshot()
+        journal_before = os.path.isfile(jp)
+        rejected = False
+        try:
+            op()
+        except RollbackRecoveryError:
+            rejected = True
+        except Exception as e:
+            check(f"sweep:{name}_rejected", False,
+                  f"wrong exception {type(e).__name__}: {e}")
+            continue
+        check(f"sweep:{name}_rejected", rejected,
+              "must raise RollbackRecoveryError")
+        after = _owner_artifact_snapshot()
+        check(f"sweep:{name}_bytes_unchanged", before == after,
+              "no durable bytes may change on rejection")
+        check(f"sweep:{name}_journal_preserved",
+              journal_before and os.path.isfile(jp),
+              "recovery evidence must survive")
+        check(f"sweep:{name}_flag_preserved",
+              getattr(p, "_recovery_required", None) is not None,
+              "instance condition must survive")
+
+    # Another instance's disk recovery does not enable this instance.
+    p2 = persist_rest.load(OWNER, activate=False)
+    still = False
+    try:
+        pub.checkpoint(p)
+    except RollbackRecoveryError:
+        still = True
+    check("sweep:flag_survives_disk_recovery", still,
+          "other instance's recovery must not clear this instance")
+
+    # --- Sensitivity 1: with ONLY the first-boundary checkpoint guard
+    # disabled, the Director's exact finding reproduces: one checkpoint
+    # file is written, then the downstream save rejects. This proves the
+    # new guard is what provides zero-write rejection.
+    real_guard = cir.check_save_allowed
+
+    def selective_noop_checkpoint(obj, what="save"):
+        if what == "persist_rest.checkpoint":
+            return None
+        return real_guard(obj, what)
+
+    cp_written = []
+    before = _owner_artifact_snapshot()
+    cir.check_save_allowed = selective_noop_checkpoint
+    try:
+        raised = False
+        try:
+            pub.checkpoint(p)
+        except RollbackRecoveryError:
+            raised = True
+        after = _owner_artifact_snapshot()
+        new_files = set(after) - set(before)
+        cp_written = [f for f in new_files if "_cp_" in f]
+        check("sens:checkpoint_guard_load_bearing",
+              raised and len(cp_written) == 1 and len(new_files) == 1,
+              f"raised={raised} new={sorted(new_files)}")
+        check("sens:program_bytes_still_unchanged",
+              after.get(f"program_{OWNER}.json") == before.get(f"program_{OWNER}.json"),
+              "downstream save guard still holds")
+    finally:
+        cir.check_save_allowed = real_guard
+    for f in cp_written:
+        os.remove(os.path.join(_STATE_DIR, f))
+
+    # --- Sensitivity 2: with ONLY the canonical top guard disabled, the
+    # rejection comes from the inner nursery.save wrap -- a
+    # CheckpointCommitError, not a RollbackRecoveryError. The negative
+    # control's type assertion fails, proving the top guard is
+    # load-bearing for first-boundary rejection.
+    def selective_noop_canonical(obj, what="save"):
+        if what == "checkpoint_generation.commit_checkpoint":
+            return None
+        return real_guard(obj, what)
+
+    before = _owner_artifact_snapshot()
+    cir.check_save_allowed = selective_noop_canonical
+    try:
+        exc_type = None
+        try:
+            cg.commit_checkpoint(p)
+        except Exception as e:
+            exc_type = type(e).__name__
+        after = _owner_artifact_snapshot()
+        check("sens:canonical_guard_changes_type",
+              exc_type == "CheckpointCommitError",
+              f"got {exc_type}; without the top guard the rejection "
+              "comes from the inner save wrap, not RollbackRecoveryError")
+        check("sens:canonical_no_writes_without_top_guard",
+              before == after,
+              "inner nursery.save still rejects before any write")
+    finally:
+        cir.check_save_allowed = real_guard
+
+    # --- Positive controls: verified restoration permits persistence.
+    rb = sup._rollback_full(p, pred, old_snap, succ_id)
+    check("sweep:restoration_ok", rb.get("ok") is True,
+          f"failures={rb.get('failures')}")
+    check("sweep:flag_cleared",
+          getattr(p, "_recovery_required", None) is None,
+          "verified restoration clears the condition")
+    cp_path = pub.checkpoint(p)
+    check("sweep:checkpoint_allowed_after_restoration",
+          os.path.isfile(cp_path),
+          f"checkpoint at {os.path.basename(cp_path)}")
+    gen_id = cir.checkpoint(p, stamp="sweep_restored")
+    check("sweep:canonical_allowed_after_restoration",
+          isinstance(gen_id, str) and len(gen_id) > 0,
+          f"generation {gen_id}")
+    from form.mandell.checkpoint_generation import _manifest_path, _read_pointer
+    check("sweep:generation_sealed",
+          os.path.isfile(_manifest_path(OWNER, gen_id)),
+          "manifest must exist")
+    ptr = _read_pointer(OWNER)
+    check("sweep:pointer_points_at_restored",
+          ptr.get("generation_id") == gen_id,
+          f"pointer={ptr.get('generation_id')}")
+
+    # --- Per-key enforcement: clearing one key leaves the other enforced.
+    mark_recovery_required(p, "artifact_A", "probe A")
+    mark_recovery_required(p, "artifact_B", "probe B")
+    clear_recovery_required(p, "artifact_A")
+    still_b = False
+    try:
+        check_save_allowed(p, "probe")
+    except RollbackRecoveryError:
+        still_b = True
+    check("sweep:unrelated_key_still_enforced", still_b,
+          "clearing artifact_A must not clear artifact_B")
+    clear_recovery_required(p, "artifact_B")
+    try:
+        check_save_allowed(p, "probe")
+        both_clear_ok = True
+    except RollbackRecoveryError:
+        both_clear_ok = False
+    check("sweep:all_keys_cleared_allows", both_clear_ok,
+          "all keys cleared must allow")
+
+
 def test_spatial_verification_sensitivity():
     """Sensitivity: _verify_successor_absent must check spatial entries.
 
@@ -461,6 +702,7 @@ def test_save_guard_sensitivity():
 def smoke():
     print("=== SUPERSESSION FAILURE PATH ===")
     for fn in [test_restart_proof, test_save_proof,
+               test_checkpoint_sweep_proof,
                test_spatial_verification_sensitivity,
                test_save_guard_sensitivity]:
         try:
