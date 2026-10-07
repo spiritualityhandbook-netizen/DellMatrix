@@ -730,6 +730,213 @@ def test_checks_disabled_negatives_fail():
 
 # ---------------------------------------------------------------- smoke
 
+
+# ---------------------------------------------------------------- J. content semantics (Director 2026-10-07 AMEND)
+# Absence vs empty: None = unconstrained (documented positive);
+# every valid Mapping, including {}, is hashed and bound.
+
+def test_none_content_is_unconstrained_positive():
+    from form.dell_matrix import agent_authority as aa
+    owner = "R61_J1"
+    p = fresh_program(owner)
+    pr = p.nursery.add("NoneContent", words="v1")
+    # No content_pid -> content=None -> unconstrained by content.
+    root = aa.issue_root_grant(p, issuer="human:ace", subject="agent-a",
+                               max_depth=1)
+    child = aa.attenuate_for(p, root["grant_id"], target=pr.id)
+    check("J1:record_unbound",
+          p.acceptance_policy._issued_grants[child["grant_id"]]
+          .get("content_hash") is None)
+    pr.words = "changed words entirely"
+    r = aa.agent_confirm(p, pr.id, child["grant_id"], "agent-a")
+    check("J1:unconstrained_allows", r.get("ok") is True, str(r))
+
+
+def test_empty_dict_content_binds():
+    from form.dell_matrix.acceptance_policy import canonical_hash
+    owner = "R61_J2"
+    p = fresh_program(owner)
+    g = p.acceptance_policy.issue_grant(
+        issuer="human:ace", subject="agent-a", owner=owner,
+        operation="nursery.confirm", content={}, max_depth=0)
+    rec = p.acceptance_policy._issued_grants[g["grant_id"]]
+    check("J2:empty_hashed_not_none",
+          rec.get("content_hash") == canonical_hash({}),
+          str(rec.get("content_hash")))
+    # Exact hash match allows (policy level).
+    d = p.acceptance_policy.check(
+        "agent:a", "any-pid", {"grant_id": g["grant_id"]},
+        proposal_version=canonical_hash({}), operation="confirm",
+        subject="agent-a", owner=owner)
+    check("J2:exact_match_allows", d.get("allowed") is True, str(d))
+    # Different content denies (policy level).
+    d2 = p.acceptance_policy.check(
+        "agent:a", "any-pid", {"grant_id": g["grant_id"]},
+        proposal_version=canonical_hash({"x": 1}), operation="confirm",
+        subject="agent-a", owner=owner)
+    check("J2:different_denies", d2.get("allowed") is False, str(d2))
+
+
+def test_nonempty_content_binding():
+    from form.dell_matrix import agent_authority as aa
+    owner = "R61_J3"
+    p = fresh_program(owner)
+    pr = p.nursery.add("NonEmpty", words="stable words")
+    _, child = mkpair(p, pr.id, bind_content=True)
+    rec = p.acceptance_policy._issued_grants[child["grant_id"]]
+    check("J3:bound", rec.get("content_hash") is not None)
+    r = aa.agent_confirm(p, pr.id, child["grant_id"], "agent-a")
+    check("J3:matching_allows", r.get("ok") is True, str(r))
+    # Fresh proposal for the deny case (pr is now confirmed).
+    pr2 = p.nursery.add("NonEmpty2", words="stable words")
+    _, child2 = mkpair(p, pr2.id, bind_content=True)
+    pr2.words = "mutated"
+    r2 = aa.agent_confirm(p, pr2.id, child2["grant_id"], "agent-a")
+    check("J3:changed_denies", r2.get("ok") is False, str(r2))
+
+
+def test_malformed_content_rejected():
+    owner = "R61_J4"
+    p = fresh_program(owner)
+    _raises_approval(p, lambda: p.acceptance_policy.issue_grant(
+        issuer="human:ace", subject="agent-a", owner=owner,
+        operation="nursery.confirm", content="not-a-mapping"),
+        "J4:malformed_issue_rejected")
+    _raises_approval(p, lambda: p.acceptance_policy.issue_grant(
+        issuer="human:ace", subject="agent-a", owner=owner,
+        operation="nursery.confirm", content=123),
+        "J4:malformed_type_rejected")
+
+
+def test_attenuation_never_drops_restriction():
+    from form.dell_matrix import agent_authority as aa
+    from form.dell_matrix.acceptance_policy import canonical_hash
+    owner = "R61_J5"
+    p = fresh_program(owner)
+    pr = p.nursery.add("NoDrop", words="w")
+    root = aa.issue_root_grant(p, issuer="human:ace", subject="agent-a",
+                               max_depth=2)
+    bound = aa.attenuate_for(p, root["grant_id"], target=pr.id,
+                             content_pid=pr.id)
+    bh = p.acceptance_policy._issued_grants[bound["grant_id"]]["content_hash"]
+    check("J5:child_bound", bh is not None)
+    # Omitting content inherits the parent's binding (never drops it).
+    child2 = p.acceptance_policy.attenuate_grant(parent_id=bound["grant_id"])
+    check("J5:inherited_not_dropped",
+          p.acceptance_policy._issued_grants[child2["grant_id"]]
+          ["content_hash"] == bh)
+    # Empty-dict parent binding is preserved exactly.
+    g = p.acceptance_policy.issue_grant(
+        issuer="human:ace", subject="agent-a", owner=owner,
+        operation="nursery.confirm", content={}, max_depth=1)
+    gc = p.acceptance_policy.attenuate_grant(parent_id=g["grant_id"])
+    check("J5:empty_binding_preserved",
+          p.acceptance_policy._issued_grants[gc["grant_id"]]
+          ["content_hash"] == canonical_hash({}))
+
+# ---------------------------------------------------------------- K. subject-bound endpoint (Director 2026-10-07 AMEND)
+
+def test_endpoint_legitimate_succeeds_and_reloads():
+    from form.dell_matrix import agent_authority as aa
+    owner = "R61_K1"
+    p = fresh_program(owner)
+    pr = p.nursery.add("EpLegit", words="w")
+    ep = aa.bind_agent(p, "agent-a")
+    root = aa.issue_root_grant(p, issuer="human:ace", subject="agent-a",
+                               max_depth=1)
+    child = aa.attenuate_for(p, root["grant_id"], target=pr.id,
+                             content_pid=pr.id)
+    r = ep.confirm(pr.id, child["grant_id"])
+    check("K1:confirm_ok", r.get("ok") is True, str(r))
+    check("K1:status", p.nursery.proposals[pr.id].status == "confirmed")
+    from form import persist_rest
+    p2 = persist_rest.load(owner, activate=False)
+    check("K1:reload_on_plane", pr.id in p2.cube.session.plane.units)
+
+
+def test_endpoint_other_subject_handle_denies():
+    from form.dell_matrix import agent_authority as aa
+    owner = "R61_K2"
+    p = fresh_program(owner)
+    pr = p.nursery.add("EpOther", words="w")
+    root = aa.issue_root_grant(p, issuer="human:ace", subject="agent-a",
+                               max_depth=1)
+    child = aa.attenuate_for(p, root["grant_id"], target=pr.id)
+    ep_b = aa.bind_agent(p, "agent-b")
+    r = ep_b.confirm(pr.id, child["grant_id"])
+    check("K2:deny", r.get("ok") is False, str(r))
+    check("K2:still_pending", p.nursery.proposals[pr.id].status == "pending")
+
+
+def test_endpoint_payload_substitution_impossible():
+    from form.dell_matrix import agent_authority as aa
+    owner = "R61_K3"
+    p = fresh_program(owner)
+    pr = p.nursery.add("EpSubst", words="w")
+    ep = aa.bind_agent(p, "agent-a")
+    # The request surface has no subject/issuer/producer/review-context
+    # parameters: substitution attempts are TypeErrors, not silent accepts.
+    import inspect
+    sig = inspect.signature(ep.confirm)
+    check("K3:surface_is_pid_and_handle_only",
+          list(sig.parameters.keys()) == ["pid", "grant_handle"],
+          str(list(sig.parameters.keys())))
+    for kwargs in ({"subject": "agent-b"}, {"issuer": "human:ace"},
+                   {"producer": "agent-b"}, {"_auth": {}}):
+        try:
+            ep.confirm(pr.id, "grant_x", **kwargs)
+            check(f"K3:substitution_rejected_{sorted(kwargs)}", False,
+                  "no TypeError raised")
+        except TypeError:
+            check(f"K3:substitution_rejected_{sorted(kwargs)}", True)
+    check("K3:still_pending", p.nursery.proposals[pr.id].status == "pending")
+
+
+def test_endpoint_persona_cannot_change_binding():
+    from form.dell_matrix import agent_authority as aa
+    from form.dell_matrix.personas import PERSONAS
+    owner = "R61_K4"
+    p = fresh_program(owner)
+    ep = aa.bind_agent(p, "agent-a")
+    for pid_persona in list(PERSONAS.keys())[:4]:
+        p.persona_matrix.active = pid_persona
+        check(f"K4:binding_stable_under_{pid_persona}",
+              ep.bound_subject == "agent-a", ep.bound_subject)
+    p.persona_matrix.active = None
+
+
+def test_endpoint_surface_has_no_controller_methods():
+    from form.dell_matrix import agent_authority as aa
+    owner = "R61_K5"
+    p = fresh_program(owner)
+    ep = aa.bind_agent(p, "agent-a")
+    for name in ("issue_grant", "issue_root_grant", "attenuate_grant",
+                 "attenuate_for", "revoke_grant", "describe_grants",
+                 "list_approvals", "audit_log", "reset_session"):
+        check(f"K5:no_{name}", not hasattr(ep, name), name)
+    # The only callable request method is confirm(); bound_subject is a
+    # read-only host-audit property, not a request parameter.
+    import inspect as _inspect
+    methods = [m for m in dir(ep)
+               if not m.startswith("_") and callable(getattr(ep, m))]
+    check("K5:only_confirm_callable", methods == ["confirm"], str(methods))
+    prop = getattr(type(ep), "bound_subject", None)
+    check("K5:bound_subject_readonly",
+          isinstance(prop, property) and prop.fset is None)
+
+
+def test_bind_agent_rejects_bad_subject():
+    from form.dell_matrix import agent_authority as aa
+    owner = "R61_K6"
+    p = fresh_program(owner)
+    for bad in ("", None, 123, "x" * 201):
+        try:
+            aa.bind_agent(p, bad)
+            check(f"K6:rejects_{type(bad).__name__}", False, "no error")
+        except (ValueError, TypeError):
+            check(f"K6:rejects_{type(bad).__name__}", True)
+
+
 def smoke():
     for fn in [test_root_grant_confirm_reload,
                test_human_confirm_still_works,
@@ -761,7 +968,18 @@ def smoke():
                test_persona_change_does_not_alter_permission,
                test_denied_attempt_preserves_state_and_evidence,
                test_incomplete_compensation_blocks_grant_path,
-               test_checks_disabled_negatives_fail]:
+               test_checks_disabled_negatives_fail,
+               test_none_content_is_unconstrained_positive,
+               test_empty_dict_content_binds,
+               test_nonempty_content_binding,
+               test_malformed_content_rejected,
+               test_attenuation_never_drops_restriction,
+               test_endpoint_legitimate_succeeds_and_reloads,
+               test_endpoint_other_subject_handle_denies,
+               test_endpoint_payload_substitution_impossible,
+               test_endpoint_persona_cannot_change_binding,
+               test_endpoint_surface_has_no_controller_methods,
+               test_bind_agent_rejects_bad_subject]:
         try:
             fn()
         except Exception as e:
@@ -771,6 +989,8 @@ def smoke():
     n = sum(CHECKS)
     print(f"=== {n}/{len(CHECKS)} ===")
     return n == len(CHECKS)
+
+
 
 
 if __name__ == "__main__":

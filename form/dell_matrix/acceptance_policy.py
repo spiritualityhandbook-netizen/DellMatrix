@@ -377,6 +377,12 @@ class AcceptancePolicy:
         Binds: issuer, session, trusted subject, owner, operation,
         target/content, and permitted delegation depth. Roots have no
         parent. Use attenuate_grant for narrowed children.
+
+        Content semantics (Director 2026-10-07 AMEND: absence vs empty):
+        content=None means UNCONSTRAINED (documented positive — the grant
+        authorizes the operation on the target regardless of content).
+        Every valid supplied Mapping — including {} — is hashed and
+        bound; execution then requires an exact hash match.
         """
         err = self._validate_grant_fields(
             issuer=issuer, subject=subject, owner=owner, operation=operation,
@@ -395,7 +401,10 @@ class AcceptancePolicy:
             "owner": owner,
             "operation": operation,
             "target": target,
-            "content_hash": canonical_hash(content) if content else None,
+            # Director 2026-10-07 AMEND: explicit absence handling. None
+            # = unconstrained; {} (and every valid Mapping) is hashed.
+            "content_hash": (canonical_hash(content)
+                             if content is not None else None),
             "parent_id": None,
             "max_depth": max_depth,
             "issued_at": time.time(),

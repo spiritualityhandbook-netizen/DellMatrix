@@ -99,3 +99,77 @@ def agent_confirm(program: Any, pid: str, grant_id: str,
         _operation="confirm",
         _subject=subject,
     )
+
+
+class AgentEndpoint:
+    """Host-created subject-bound agent endpoint (Director 2026-10-07).
+
+    Created ONLY by the trusted host via bind_agent(). The subject,
+    owner, and operation are bound at creation from trusted host state;
+    the agent request surface exposes exactly one method:
+
+        confirm(pid, grant_handle)
+
+    The surface accepts NO subject, issuer, producer, review context,
+    _auth, or arbitrary forwarded kwargs. Identity substitution through
+    the payload is impossible by construction: there is no parameter
+    to substitute through.
+
+    Mint/revoke/controller functions (issue_root_grant, attenuate_for,
+    revoke_grant, describe_grants) are NOT on this surface.
+
+    This is local mediated-request enforcement. It does not authenticate
+    strings by itself and does not protect against arbitrary malicious
+    Python inside the trusted host.
+    """
+
+    __slots__ = ("_program", "_subject", "_owner")
+
+    def __init__(self, program: Any, trusted_subject: str):
+        if not isinstance(trusted_subject, str) or not trusted_subject:
+            raise ValueError("trusted_subject must be non-empty str")
+        if len(trusted_subject) > 200:
+            raise ValueError("trusted_subject exceeds 200 chars")
+        object.__setattr__(self, "_program", program)
+        object.__setattr__(self, "_subject", trusted_subject)
+        object.__setattr__(self, "_owner",
+                           getattr(program, "owner", None))
+
+    @property
+    def bound_subject(self) -> str:
+        """The host-bound subject (read-only; for audit display)."""
+        return self._subject
+
+    def confirm(self, pid: str,
+                grant_handle: str) -> Dict[str, Any]:
+        """Agent request: confirm pid presenting a grant handle.
+
+        Only pid and the handle cross the boundary. The subject is the
+        host binding, never a request parameter.
+        """
+        if not isinstance(pid, str) or not pid:
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": "Endpoint: pid must be non-empty str.",
+                    "pid": pid}
+        if not isinstance(grant_handle, str) or not grant_handle:
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": "Endpoint: grant handle must be non-empty str.",
+                    "pid": pid}
+        return self._program.confirm_proposal(
+            pid,
+            _producer=f"agent:{self._subject}",
+            _review_context={"grant_id": grant_handle},
+            _operation="confirm",
+            _subject=self._subject,
+        )
+
+
+def bind_agent(program: Any, trusted_subject: str) -> AgentEndpoint:
+    """Create a subject-bound agent endpoint. TRUSTED HOST ONLY.
+
+    `trusted_subject` is established by the host (e.g. the agent
+    framework's authenticated identity), never by agent payload text.
+    The returned endpoint is the ONLY agent-facing request surface;
+    it cannot mint, attenuate, revoke, or list grants.
+    """
+    return AgentEndpoint(program, trusted_subject)

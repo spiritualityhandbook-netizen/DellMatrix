@@ -214,9 +214,19 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
   opt-in paths unchanged. Threat boundary: untrusted agent requests
   through mediated interfaces; NOT malicious in-process Python; NOT
   concurrent-execution race safety (single-threaded dispatcher).
-- **PROOFS:** `form/mandell/r61_authority_test.py` — 97/97 checks
+- **PROOFS:** `form/mandell/r61_authority_test.py` — 140/140 checks
   (in-process INTEGRATION + CROSS_PROCESS via fixed child scripts
   `form/mandell/r61_child.py` with JSON arguments), registered in
-  `form/regress.py` LIST.
+  `form/regress.py` LIST. `form/mandell/r61_oracle_test.py` — 25/25
+  independent-oracle checks (stdlib-only model vs production, 11
+  scenarios, sensitivity proven).
+- **AMEND (Director 2026-10-07):** content defect fixed — `content=None`
+  is unconstrained (documented), every Mapping including `{}` is hashed
+  and bound; attenuation never drops inherited restrictions. Agent
+  identity boundary: `bind_agent(program, trusted_subject)` creates a
+  subject-bound `AgentEndpoint` whose request surface is exactly
+  `confirm(pid, grant_handle)` — no subject/issuer/producer/review
+  context accepted; mint/revoke/controller methods absent from the
+  surface.
 - **EVIDENCE STATUS:** candidate-branch only. Awaiting Director review;
   no merge without authorization.
