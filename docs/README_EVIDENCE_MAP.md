@@ -231,10 +231,13 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
 - **EVIDENCE STATUS:** candidate-branch only. Awaiting Director review;
   no merge without authorization.
 
-## 10. Phase-6 R6.2 — inference docking circuit (candidate)
+## 10. Phase-6 R6.2 — inference docking circuit (MERGED)
 
-- **STATUS:** candidate-branch only (`gdp-phase6-r62-docking`). NOT
-  CERTIFIED. DO NOT MERGE without Director authorization.
+- **STATUS:** MERGED to main 2026-10-07 via `946812a` (parents
+  `f1d3337` + `2eea753`; merge tree = certified tree `9c421afc`).
+  Director-certified under GDP_PHASE_6_R62_ADMIT_MERGE_AND_ADVANCE.
+  Post-merge: regress --twice 107/107 GREEN, --order rev 107/107
+  GREEN on a fresh checkout.
 - **CIRCUIT:** host identity → explicit docking → read-only context →
   inference → schema-validated PENDING Nursery proposal → human
   review/issued authority → R6.1 bound endpoint → canonical writer →
@@ -250,13 +253,17 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
   errors, receipts, or logs; reflected errors sanitized.
   Strict proposal schema (exactly label+words, typed, bounded);
   authority-bearing fields rejected. No eval/shell/auto-confirm.
-- **PROOFS:** `form/mandell/r62_docking_test.py` — 72/72 checks
+- **PROOFS:** `form/mandell/r62_docking_test.py` — 170/170 checks
   (walking skeleton fake→pending→grant→endpoint→writer→reload;
   undocked zero-calls; pending-until-authorized; malformed/timeout/
   failure preserve state; authority-requesting output confers nothing;
   canary non-leak with negative control; pre-writer revocation denies;
   persona/provider descriptive; inference-absent core works; save
-  guards hold; schema/bounds; no-eval), registered in regress LIST.
+  guards hold; schema/bounds; no-eval; Director reproductions D1–D3
+  rejected; stubbed-HTTP transport contract D4; real child-process
+  reload D5; genuine save-guard D6; canary sensitivity D7;
+  representation boundaries E1–E7; structured outbound canaries
+  F1–F3), registered in regress LIST.
 - **RESEARCH:** `~/workspace/PHASE_6_R62_RESEARCH_DELTA20.md` —
   ADOPT (output validation, writer authorization, secret hygiene),
   ADAPT (bridge behind explicit docking, ocap-style least authority),
@@ -266,5 +273,9 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
 - **PERF (bounded):** docked propose (fake) median 17.0ms vs direct
   nursery.add 19.9ms (n=15, operation-only) — no substantial docking
   overhead observed in this workload.
-- **LIMITS:** fake-provider evidence only; no live-provider calls in
-  this circuit. No network identity system. No concurrency claims.
+- **LIMITS:** stubbed-HTTP transport evidence only; no live-provider
+  calls in this circuit. No network identity system. No concurrency
+  claims. Protected-material coverage is exactly: canonical issued
+  handles, active approval IDs, configured env credential values,
+  recognized formats (raw and \uXXXX-decoded forms) — arbitrary
+  unknown secrets and every possible encoding not claimed covered.
