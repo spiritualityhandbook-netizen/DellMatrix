@@ -15,7 +15,7 @@ this module. AUTHORITY SINGULARITY: one durable state path.
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import hashlib
 import json
 import os
