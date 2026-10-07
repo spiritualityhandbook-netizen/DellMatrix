@@ -402,27 +402,39 @@ def _handle_latinmandell(p: Program, lower: str, raw: str):
 
 
 def _run_tutorial(p: Program) -> Program:
+    # WO-5.1: Tutorial uses an explicitly isolated demo mode that cannot
+    # accept into the user's ordinary owner state. The demo program has
+    # its own acceptance policy; the user's program is untouched.
+    from form.open import open_program
+    demo_owner = f"DEMO_TUTORIAL_{p.owner}"
+    dp = open_program(demo_owner)
     print()
     _say("Tutorial — offline acceptance path (~1 min)")
+    _say(f"Demo mode: using isolated owner '{demo_owner}' (your '{p.owner}' state is untouched)")
     _say("Path: create → grow → confirm → sphere → save → load → visual")
     print()
 
     _say("Step 1 — create")
-    p.place("tutorial_seed", "Tutorial Seed", words="first idea", skin=Skin.CUBE)
+    dp.place("tutorial_seed", "Tutorial Seed", words="first idea", skin=Skin.CUBE)
     _say('Created idea: "Tutorial Seed"')
     print()
 
     _say("Step 2 — grow (Nursery only; live matrix unchanged)")
-    out = p.grow_ideas(1)
+    out = dp.grow_ideas(1)
     _say(f"Proposed {out.get('proposed_new', 0)} new + {out.get('proposed_evolved', 0)} evolved.")
     _say(f"Nursery pending: {out.get('nursery', {}).get('pending', 0)}")
     print()
 
-    _say("Step 3 — confirm")
-    pending = p.list_proposals()
+    _say("Step 3 — confirm (demo review: you are reviewing these)")
+    pending = dp.list_proposals()
     n = 0
     for prop in list(pending):
-        res = p.confirm_proposal(prop["id"])
+        # Demo explicitly reviews each proposal before confirming.
+        res = dp.confirm_proposal(
+            prop["id"],
+            _producer="tutorial_demo",
+            _review_context=dp.make_review_context(prop["id"], "tutorial_demo"),
+        )
         if res.get("ok"):
             n += 1
             _say(f'Confirmed: "{res.get("label", "")}"')
@@ -433,18 +445,18 @@ def _run_tutorial(p: Program) -> Program:
     print()
 
     _say("Step 4 — sphere")
-    p.lattice.to_sphere()
-    _say(f"Form → sphere  (skin={p.lattice.perception.skin_name()})")
+    dp.lattice.to_sphere()
+    _say(f"Form → sphere  (skin={dp.lattice.perception.skin_name()})")
     print()
 
     _say("Step 5 — save")
-    path = p.save()
-    _say(f"Session saved: {path}")
+    path = dp.save()
+    _say(f"Demo session saved: {path}")
     print()
 
     _say("Step 6 — load")
-    p2 = persist_load(p.owner)
-    _say(f"Session loaded for {p2.owner}. ideas={len(p2.cube.session.plane.units)}")
+    p2 = persist_load(dp.owner)
+    _say(f"Demo session loaded for {p2.owner}. ideas={len(p2.cube.session.plane.units)}")
     print()
 
     _say("Step 7 — visual")
@@ -453,8 +465,9 @@ def _run_tutorial(p: Program) -> Program:
     _say(paths.get("easy") or paths.get("html", ""))
     print()
     _say("Tutorial complete. Type help anytime. You are ready.")
+    _say(f"(Demo used isolated owner '{demo_owner}'; your '{p.owner}' state was not modified.)")
     print()
-    return p2
+    return p
 
 
 def _show_proposals(p: Program) -> None:
@@ -2147,7 +2160,12 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             return p
         n = 0
         for prop in list(pending):
-            res = p.confirm_proposal(prop["id"])
+            # WO-5.1: User typed "confirm all" — explicit review context.
+            res = p.confirm_proposal(
+                prop["id"],
+                _producer="repl_user",
+                _review_context=p.make_review_context(prop["id"], "repl_user"),
+            )
             if res.get("ok"):
                 n += 1
                 _say(f'Confirmed: "{res["label"]}"')
@@ -2165,7 +2183,12 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
 
     if lower.startswith("confirm "):
         pid = raw_line.split(maxsplit=1)[1].strip()
-        res = p.confirm_proposal(pid)
+        # WO-5.1: User typed "confirm <id>" — explicit review context.
+        res = p.confirm_proposal(
+            pid,
+            _producer="repl_user",
+            _review_context=p.make_review_context(pid, "repl_user"),
+        )
         _say(f'Confirmed. "{res["label"]}" is live.' if res.get("ok") else f"Could not confirm: {res.get('reason')}")
         return p
 

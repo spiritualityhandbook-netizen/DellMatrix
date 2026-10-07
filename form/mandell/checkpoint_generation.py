@@ -327,7 +327,17 @@ def commit_checkpoint(program, generation_id: Optional[str] = None,
     Returns the checkpoint receipt (Phase H). Any failure before the
     pointer swap raises CheckpointCommitError and leaves the previous
     committed generation authoritative.
+
+    Director 2026-10-06 (close all exposed save paths): an instance whose
+    compensation/rollback was incomplete rejects the commit with
+    RollbackRecoveryError at the FIRST write boundary -- before the
+    nursery save, the program save, the idea snapshot, the graph init,
+    the member copies and the manifest. No bytes are written on
+    rejection. This guard covers every canonical entrypoint
+    (core_i_recovery.checkpoint, confirm_lineage, direct calls).
     """
+    from form.mandell.core_i_recovery import check_save_allowed
+    check_save_allowed(program, "checkpoint_generation.commit_checkpoint")
     owner = program.owner
     gen_id = generation_id or _new_generation_id()
     sealed = _seal_members(program, gen_id, _fail_at=_fail_at)

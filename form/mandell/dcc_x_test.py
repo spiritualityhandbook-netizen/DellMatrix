@@ -56,7 +56,7 @@ def _run(p, eng):
 
 def _confirm_all(p):
     for prop in p.nursery.pending():
-        p.confirm_proposal(prop.id)
+        p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 
 
 def _ids_by_label(p):
@@ -101,7 +101,7 @@ def test_status_exclusion():
     """CONTROL C: pending/rejected/unknown excluded."""
     p = _fresh("DCCX_C")
     a = p.nursery.add(K1_LABEL)
-    p.confirm_proposal(a.id)
+    p.confirm_proposal(a.id, _producer="test", _review_context=p.make_review_context(a.id, "test"))
     b = p.nursery.add("plant growth needs sunlight")  # pending
     c = p.nursery.add("plant growth needs soil")      # rejected
     p.nursery.reject(c.id)

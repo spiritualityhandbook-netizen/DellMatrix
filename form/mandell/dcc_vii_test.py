@@ -43,7 +43,7 @@ def test_confirm_promotes():
     """Confirm via canonical path promotes to cube."""
     p = _fresh("DCCVII_Test_Confirm")
     prop = p.nursery.add("promote me")
-    result = p.confirm_proposal(prop.id)
+    result = p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
     assert result.get("ok"), f"confirm failed: {result}"
     assert p.nursery.proposals[prop.id].status == "confirmed"
     assert prop.id in p.cube.session.plane.units, "not promoted to cube"
@@ -55,7 +55,7 @@ def test_reject_excluded():
     p = _fresh("DCCVII_Test_Reject")
     a = p.nursery.add("idea alpha")
     b = p.nursery.add("idea beta")
-    p.confirm_proposal(a.id)
+    p.confirm_proposal(a.id, _producer="test", _review_context=p.make_review_context(a.id, "test"))
     p.nursery.reject(b.id)
 
     # Accepted query contains A, excludes B
@@ -79,7 +79,7 @@ def test_list_confirmed():
     """list confirmed queries accepted knowledge."""
     p = _fresh("DCCVII_Test_ListConf")
     prop = p.nursery.add("listable knowledge")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 
     intent, result = _run(p, "list confirmed")
     assert result.ok, f"list confirmed failed"
@@ -94,7 +94,7 @@ def test_count_confirmed():
     """count confirmed reports confirmed and promoted counts."""
     p = _fresh("DCCVII_Test_CountConf")
     prop = p.nursery.add("countable knowledge")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 
     intent, result = _run(p, "count confirmed")
     assert result.ok
@@ -108,7 +108,7 @@ def test_find_idea():
     """find idea queries promoted knowledge by text."""
     p = _fresh("DCCVII_Test_Find")
     prop = p.nursery.add("unique searchable knowledge xyz")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 
     intent, result = _run(p, "find idea xyz")
     assert result.ok
@@ -124,7 +124,7 @@ def test_persistence_roundtrip():
     p = _fresh(name)
     prop = p.nursery.add("persistent knowledge")
     pid = prop.id
-    p.confirm_proposal(pid)
+    p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
     save(p)
     del p
 
@@ -149,8 +149,8 @@ def test_duplicate_policy():
     # IDs should be unique (not silently deduplicated)
     assert a.id != b.id, "duplicate ideas should get unique IDs"
     # Both can be confirmed
-    p.confirm_proposal(a.id)
-    p.confirm_proposal(b.id)
+    p.confirm_proposal(a.id, _producer="test", _review_context=p.make_review_context(a.id, "test"))
+    p.confirm_proposal(b.id, _producer="test", _review_context=p.make_review_context(b.id, "test"))
     assert a.id in p.cube.session.plane.units
     assert b.id in p.cube.session.plane.units
     return True

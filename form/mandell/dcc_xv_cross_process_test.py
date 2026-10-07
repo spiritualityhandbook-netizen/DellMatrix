@@ -53,7 +53,7 @@ _SCRIPT_A = textwrap.dedent(
 
     p = open_program(OWNER)
     def confirm(prop):
-        res = p.confirm_proposal(prop.id)
+        res = p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
         assert res.get("ok"), res
         return prop.id
     aid = confirm(p.nursery.add("cross process root knowledge"))

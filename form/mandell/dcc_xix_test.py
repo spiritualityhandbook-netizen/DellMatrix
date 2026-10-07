@@ -109,7 +109,7 @@ def fresh_owner(owner: str):
 def add_confirmed(p, label: str, words: str | None = None, parents=None) -> str:
     pr = p.nursery.add(label, words=words if words is not None else label,
                        parents=parents or [])
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="test", _review_context=p.make_review_context(pr.id, "test"))
     return pr.id
 
 
@@ -285,7 +285,8 @@ def control_g() -> None:
     cid_old = conflict_id_for(a, b)
     set_disposition(p, cid_old, "prefer", [a])
     # Supersede the PREFERRED unit: A -> A2 (still a positive claim).
-    sup = supersede_proposal(p, a, "plants require water")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    sup = supersede_proposal(p, a, "plants require water", _producer="test")
     check("G1 supersede succeeded", sup.get("ok"))
     a2 = sup["new_id"]
     cid_new = conflict_id_for(a2, b)
@@ -316,7 +317,8 @@ def control_h() -> None:
     cid_old = conflict_id_for(a, b)
     set_disposition(p, cid_old, "prefer", [a])
     # Supersede the NON-preferred unit: B -> B2 (still negative).
-    sup = supersede_proposal(p, b, "plants do not require water")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    sup = supersede_proposal(p, b, "plants do not require water", _producer="test")
     check("H1 supersede succeeded", sup.get("ok"))
     b2 = sup["new_id"]
     cid_new = conflict_id_for(a, b2)
@@ -501,7 +503,8 @@ def control_o() -> None:
     b = add_confirmed(p, TB)
     cid = conflict_id_for(a, b)
     set_disposition(p, cid, "prefer", [a])
-    sup = supersede_proposal(p, a, "plants require water")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    sup = supersede_proposal(p, a, "plants require water", _producer="test")
     a2 = sup["new_id"]
     r = route_intent(p, translate(f"use idea {a} to grow"), raw_line="use")
     check("O1 explicit use of superseded unit still governed by DCC-XVI",
@@ -721,7 +724,8 @@ def control_u() -> None:
     def b6(p):
         p, a, b, cid = base_ab(p)
         set_disposition(p, cid, "prefer", [a])
-        sup = supersede_proposal(p, a, "plants require water")
+        p.acceptance_policy.grant_opt_in("test", scope="test")
+        sup = supersede_proposal(p, a, "plants require water", _producer="test")
         a2x = sup["new_id"]
         rec = ctx(p)
         disp = {d["conflict_id"]: d["disposition"] for d in rec["conflict_dispositions"]}
@@ -739,7 +743,8 @@ def control_u() -> None:
     def b7(p):
         p, a, b, cid = base_ab(p)
         set_disposition(p, cid, "prefer", [a])
-        sup = supersede_proposal(p, b, "plants do not require water")
+        p.acceptance_policy.grant_opt_in("test", scope="test")
+        sup = supersede_proposal(p, b, "plants do not require water", _producer="test")
         b2x = sup["new_id"]
         rec = ctx(p)
         disp = {d["conflict_id"]: d["disposition"] for d in rec["conflict_dispositions"]}
@@ -902,7 +907,8 @@ def control_u() -> None:
     def b17(p):
         p, a, b, cid = base_ab(p)
         set_disposition(p, cid, "prefer", [a])
-        sup = supersede_proposal(p, a, "plants require water")
+        p.acceptance_policy.grant_opt_in("test", scope="test")
+        sup = supersede_proposal(p, a, "plants require water", _producer="test")
         r = route_intent(p, translate(f"use idea {a} to grow"), raw_line="use")
         return {"ok": r.ok}
     p17 = fresh_owner("DCCXIX_U17")
@@ -944,15 +950,16 @@ from form.mandell.supersession import supersede_proposal
 owner = "DCCXIX_P"
 p = open_program(owner)
 # G1: base knowledge.
-x = p.nursery.add("soil retains moisture"); p.confirm_proposal(x.id)
+x = p.nursery.add("soil retains moisture"); p.confirm_proposal(x.id, _producer="test", _review_context=p.make_review_context(x.id, "test"))
 CG.commit_checkpoint(p)  # G1
 g1 = CG.load_checkpoint(owner)[1]["generation_id"]
 # G2: revision + lineage + dependency + routing fixture, then disposition.
-sup = supersede_proposal(p, x.id, "soil retains moisture well")
+p.acceptance_policy.grant_opt_in("test", scope="test")
+sup = supersede_proposal(p, x.id, "soil retains moisture well", _producer="test")
 x2 = sup["new_id"]
-y = p.nursery.add("watering schedule depends on soil", parents=[x2]); p.confirm_proposal(y.id)
-a = p.nursery.add("plants require water"); p.confirm_proposal(a.id)
-b = p.nursery.add("plants do not require water"); p.confirm_proposal(b.id)
+y = p.nursery.add("watering schedule depends on soil", parents=[x2]); p.confirm_proposal(y.id, _producer="test", _review_context=p.make_review_context(y.id, "test"))
+a = p.nursery.add("plants require water"); p.confirm_proposal(a.id, _producer="test", _review_context=p.make_review_context(a.id, "test"))
+b = p.nursery.add("plants do not require water"); p.confirm_proposal(b.id, _producer="test", _review_context=p.make_review_context(b.id, "test"))
 cid = conflict_id_for(a.id, b.id)
 assert any(e["conflict_id"] == cid for e in detectable_conflicts(p)), "conflict must detect"
 r = set_disposition(p, cid, "prefer", [a.id], "operator: greenhouse logs")

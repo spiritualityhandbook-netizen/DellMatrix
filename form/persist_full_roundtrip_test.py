@@ -182,7 +182,7 @@ def restore_contract(rec) -> None:
         snap2 = _tmp()
         tmps.append(snap2)
         save(q, snap2)
-        res = q.confirm_proposal(c.id)
+        res = q.confirm_proposal(c.id, _producer="test", _review_context=q.make_review_context(c.id, "test"))
         rolled = load(O, snap2)
         rec("rollback_keeps_committed_confirmation_DA",
             res.get("ok") is True and rolled.nursery.proposals.get(c.id) is not None

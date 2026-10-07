@@ -37,7 +37,12 @@ def run() -> bool:
     pending = p.list_proposals()
     chosen = select_confirmable_proposal(pending, p.cube.session.plane.units)
     if chosen:
-        res = p.confirm_proposal(chosen["id"])
+        # WO-5.1: Acceptance test uses explicit review context.
+        res = p.confirm_proposal(
+            chosen["id"],
+            _producer="acceptance_test",
+            _review_context=p.make_review_context(chosen["id"], "acceptance_test"),
+        )
         rec("confirm", res.get("ok") is True, res.get("label", ""))
     else:
         rec("confirm", True, "no plane-valid proposals (still offline-ok)")

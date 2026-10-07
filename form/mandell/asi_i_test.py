@@ -153,7 +153,7 @@ def wipe_owner(owner: str) -> None:
 
 def confirm(p: Program, label: str, words: str, parents=None) -> str:
     pr = p.nursery.add(label, words=words, parents=parents or [])
-    p.confirm_proposal(pr.id)
+    p.confirm_proposal(pr.id, _producer="test", _review_context=p.make_review_context(pr.id, "test"))
     return pr.id
 
 

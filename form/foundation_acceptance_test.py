@@ -37,7 +37,7 @@ def smoke() -> bool:
         raw = pending[0]
         pid = raw["id"]
         parents_before = list(raw.get("parents") or [])
-        res = p.confirm_proposal(pid)
+        res = p.confirm_proposal(pid, _producer="test", _review_context=p.make_review_context(pid, "test"))
         rec("transform_confirm", res.get("ok") is True)
         confirmed_id = res.get("id")
         u = p.cube.session.plane.units.get(confirmed_id)
@@ -143,7 +143,7 @@ def owner_isolation(rec) -> None:
         rec("owner_save_A_does_not_destroy_B", _sha(pb_path) == hb and _status(B, b1.id) == "pending")
         qb = load(B, snap_b)
         rec("owner_load_B_does_not_import_A", a1.id not in qb.nursery.proposals and b1.id in qb.nursery.proposals)
-        ra = pa.confirm_proposal(a1.id)
+        ra = pa.confirm_proposal(a1.id, _producer="test", _review_context=pa.make_review_context(a1.id, "test"))
         rec("owner_confirm_A_does_not_confirm_B",
             ra.get("ok") is True and _status(A, a1.id) == "confirmed" and _status(B, b1.id) == "pending"
             and _status(B, a1.id) == "ABSENT")
@@ -192,14 +192,14 @@ def lost_update_explicit(rec) -> None:
         t3 = open_program(T)
         bump = t1.nursery.add("Twin bump", parents=[])
         try:
-            r3 = t3.confirm_proposal(x.id)
+            r3 = t3.confirm_proposal(x.id, _producer="test", _review_context=t3.make_review_context(x.id, "test"))
         except Exception as e:
             r3 = {"ok": False, "reason": f"raised:{type(e).__name__}"}
         rec("db_stale_confirm_refused_stays_pending",
             r3.get("ok") is False and r3.get("reason") == "nursery_conflict" and x.id not in t3.cube.session.plane.units
             and t3.nursery.proposals[x.id].status == "pending" and _status(T, x.id) == "pending", str(r3))
         t4 = open_program(T)
-        r4 = t4.confirm_proposal(x.id)
+        r4 = t4.confirm_proposal(x.id, _producer="test", _review_context=t4.make_review_context(x.id, "test"))
         y = t4.nursery.add("Twin later", parents=[])
         rec("db_fresh_instance_not_false_positive",
             r4.get("ok") is True and _status(T, x.id) == "confirmed" and _status(T, y.id) == "pending")

@@ -135,7 +135,8 @@ def grow_from_root(program, cycles: int = 2) -> Dict[str, Any]:
         words = (prop.get("words") or "").lower()
         lab = (prop.get("label") or "").lower()
         if parents & roots or "code evolution" in lab or "decision shell" in lab or "code evolution" in words:
-            res = program.confirm_proposal(prop["id"])
+            # WO-5.1: Pass producer ID. Denied by default without opt-in.
+            res = program.confirm_proposal(prop["id"], _producer="code_evolution")
             if res.get("ok"):
                 confirmed.append(res.get("label"))
         if len(confirmed) >= 24:

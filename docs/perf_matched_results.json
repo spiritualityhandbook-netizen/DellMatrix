@@ -1,0 +1,195 @@
+{
+  "environment": {
+    "platform": "Linux-7.0.0-39-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "cpu_count": 2
+  },
+  "methodology": {
+    "repetitions": 10,
+    "workload": "10 proposals, 3 confirmed (matched)",
+    "isolation": "fresh subprocess per measurement; op timed separately from setup",
+    "order": "alternating baseline/candidate per rep",
+    "p95_method": "linear interpolation; n=10 provides LIMITED tail evidence",
+    "profiling": "none during benchmark"
+  },
+  "baseline_sha": "1d5b6c7",
+  "candidate_sha": "phase-5-nursery-growth (eb1319b)",
+  "operations": {
+    "confirm__baseline": {
+      "n": 10,
+      "all_succeeded": true,
+      "median_ms": 3.49,
+      "p95_ms": 4.01,
+      "min_ms": 3.38,
+      "max_ms": 4.27,
+      "median_fsync": 104.0,
+      "median_bytes": 0.0,
+      "raw_ms": [
+        3.57,
+        3.41,
+        3.46,
+        3.52,
+        4.27,
+        3.62,
+        3.47,
+        3.69,
+        3.45,
+        3.38
+      ]
+    },
+    "confirm__candidate": {
+      "n": 10,
+      "all_succeeded": true,
+      "median_ms": 205.03,
+      "p95_ms": 359.07,
+      "min_ms": 193.0,
+      "max_ms": 444.99,
+      "median_fsync": 104.0,
+      "median_bytes": 0.0,
+      "raw_ms": [
+        195.09,
+        194.88,
+        193.0,
+        214.06,
+        444.99,
+        196.95,
+        213.11,
+        254.05,
+        214.91,
+        195.51
+      ]
+    },
+    "supersede__baseline": {
+      "n": 10,
+      "all_succeeded": true,
+      "median_ms": 9.05,
+      "p95_ms": 14.79,
+      "min_ms": 6.68,
+      "max_ms": 18.16,
+      "median_fsync": 114.0,
+      "median_bytes": 0.0,
+      "raw_ms": [
+        10.67,
+        6.73,
+        6.68,
+        6.9,
+        10.11,
+        18.16,
+        9.13,
+        8.98,
+        9.92,
+        7.68
+      ]
+    },
+    "supersede__candidate": {
+      "n": 10,
+      "all_succeeded": true,
+      "median_ms": 311.63,
+      "p95_ms": 523.34,
+      "min_ms": 298.96,
+      "max_ms": 568.59,
+      "median_fsync": 114.0,
+      "median_bytes": 0.0,
+      "raw_ms": [
+        568.59,
+        310.21,
+        303.79,
+        360.64,
+        314.32,
+        468.04,
+        298.96,
+        308.99,
+        307.33,
+        313.06
+      ]
+    },
+    "learned_off__baseline": {
+      "n": 10,
+      "all_succeeded": true,
+      "median_ms": 1.48,
+      "p95_ms": 10.03,
+      "min_ms": 1.34,
+      "max_ms": 16.85,
+      "median_fsync": 82.0,
+      "median_bytes": 0.0,
+      "raw_ms": [
+        16.85,
+        1.34,
+        1.34,
+        1.35,
+        1.47,
+        1.58,
+        1.44,
+        1.69,
+        1.51,
+        1.49
+      ]
+    },
+    "learned_off__candidate": {
+      "n": 10,
+      "all_succeeded": true,
+      "median_ms": 1.56,
+      "p95_ms": 5.52,
+      "min_ms": 1.51,
+      "max_ms": 8.62,
+      "median_fsync": 20.0,
+      "median_bytes": 0.0,
+      "raw_ms": [
+        8.62,
+        1.53,
+        1.56,
+        1.56,
+        1.55,
+        1.56,
+        1.55,
+        1.51,
+        1.73,
+        1.53
+      ]
+    },
+    "learned_on__baseline": {
+      "n": 10,
+      "all_succeeded": true,
+      "median_ms": 1.42,
+      "p95_ms": 1.59,
+      "min_ms": 1.34,
+      "max_ms": 1.69,
+      "median_fsync": 82.0,
+      "median_bytes": 0.0,
+      "raw_ms": [
+        1.38,
+        1.38,
+        1.34,
+        1.37,
+        1.47,
+        1.46,
+        1.47,
+        1.69,
+        1.44,
+        1.4
+      ]
+    },
+    "learned_on__candidate": {
+      "n": 10,
+      "all_succeeded": true,
+      "median_ms": 1.54,
+      "p95_ms": 2.03,
+      "min_ms": 1.44,
+      "max_ms": 2.17,
+      "median_fsync": 20.0,
+      "median_bytes": 0.0,
+      "raw_ms": [
+        1.62,
+        1.6,
+        1.86,
+        1.47,
+        2.17,
+        1.56,
+        1.44,
+        1.52,
+        1.48,
+        1.5
+      ]
+    }
+  }
+}

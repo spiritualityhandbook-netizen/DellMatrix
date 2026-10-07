@@ -112,6 +112,13 @@ class Program:
     internet: Any = None
     cube: BlankCube = field(init=False)
     duo: DuoBeta = field(init=False)
+    # WO-5.1: Session-scoped acceptance policy. Default DENY.
+    acceptance_policy: Any = field(default_factory=lambda: None, init=False)
+    # WO-5.4: Learning gates. Default ON (influence) / ON (recording).
+    # learning_influence: when False, selectors return baseline order.
+    # learning_record: when False, evidence is not recorded.
+    learning_influence: bool = True
+    learning_record: bool = True
     avatar: Avatar = field(init=False)
     face: FaceController = field(init=False)
     kaomoji: Any = field(init=False)
@@ -176,6 +183,9 @@ class Program:
         self.avatar = Avatar(name=self.owner)
         self.face = FaceController()
         self.kaomoji = build_default_registry()
+        # WO-5.1: Initialize session-scoped acceptance policy (default DENY).
+        from form.dell_matrix.acceptance_policy import AcceptancePolicy
+        self.acceptance_policy = AcceptancePolicy()
         from form.dell_matrix.nursery import owner_nursery_path
         # Private injection hook for generation-member loads: when open_program
         # is given a staged Nursery, __post_init__ uses it instead of reading
@@ -1181,17 +1191,36 @@ class Program:
         return float(n), 0.0
 
     def set_auto_confirm_grow(self, on: bool) -> bool:
-        """Enable/disable auto-confirm-all after each grow (grow mode)."""
+        """Enable/disable auto-confirm-all after each grow (grow mode).
+
+        WO-5.1: Enabling grants a scoped session opt-in for the "grow_auto"
+        producer. Disabling revokes it. Opt-in is visible, revocable, audited,
+        and expires at session end.
+        """
         self.auto_confirm_grow = bool(on)
+        policy = getattr(self, "acceptance_policy", None)
+        if policy is not None:
+            if self.auto_confirm_grow:
+                policy.grant_opt_in(
+                    "grow_auto",
+                    scope=f"session:{policy.session_id}",
+                    note="User enabled 'auto confirm on' in REPL",
+                )
+            else:
+                policy.revoke_opt_in("grow_auto")
         self.note_seed(13, "Loop", f"auto_confirm_grow_{'on' if self.auto_confirm_grow else 'off'}")
         return self.auto_confirm_grow
 
-    def grow_ideas(self, cycles: int = 1, scope_ids=None) -> Dict[str, Any]:
+    def grow_ideas(self, cycles: int = 1, scope_ids=None,
+                   include_superseded: bool = False) -> Dict[str, Any]:
         """Run RingedGrowth.
 
         DCC-XI: scope_ids optionally constrains the consumer to exactly
         the given unit IDs via a read-only ScopedPlaneView. None (default)
         preserves historical full-plane behavior for baseline growth.
+
+        WO-5.3: include_superseded=True enables explicit historical use.
+        Ordinary growth (default) excludes SUPERSEDED.
         """
         from form.mandell.knowledge_selector import ScopedPlaneView
         if not self.enhance.on:
@@ -1220,7 +1249,8 @@ class Program:
         except Exception:
             graph = None
             graph_state = "unavailable"
-        result = self.growth.run(plane, cycles=cycles, graph=graph, program=self)
+        result = self.growth.run(plane, cycles=cycles, graph=graph, program=self,
+                                 include_superseded=include_superseded)
         result["scope_mode"] = scope_mode
         result["graph_signal"] = graph_state
         result["scope_ids"] = list(scope_ids) if scope_ids is not None else None
@@ -1239,13 +1269,14 @@ class Program:
             self.forces.time.advance()
             result["forces"] = self.forces.status()
         # Auto-confirm-all grow mode: accept every pending nursery proposal
+        # WO-5.1: Requires active opt-in for "grow_auto" producer.
         if getattr(self, "auto_confirm_grow", False):
             pending = list(self.list_proposals())
             ok_n = 0
             fail_n = 0
             labels: List[str] = []
             for prop in pending:
-                res = self.confirm_proposal(prop["id"])
+                res = self.confirm_proposal(prop["id"], _producer="grow_auto")
                 if res.get("ok"):
                     ok_n += 1
                     labels.append(res.get("label") or prop.get("label") or prop.get("id"))
@@ -1366,9 +1397,164 @@ class Program:
                 -float(p.get("graph_coherence", 0) or 0),
             ))
 
-    def confirm_proposal(self, pid: str) -> Dict[str, Any]:
+    def _acceptance_data_for(self, pid: str,
+                             operation: str = "confirm") -> dict:
+        """Canonical acceptance-relevant data for a proposal.
+
+        Director 2026-10-05: canonical JSON serialization + SHA-256;
+        no delimiter concatenation. Covers identity, owner, content,
+        parents, goals, and applicable revision metadata.
+        """
+        from form.dell_matrix.acceptance_policy import acceptance_data
+        prop = self.nursery.proposals.get(pid)
+        content = {
+            "label": getattr(prop, "label", "") if prop else "",
+            "words": getattr(prop, "words", "") if prop else "",
+            "detail": getattr(prop, "detail", "") if prop else "",
+        }
+        parents = list(getattr(prop, "parents", []) or []) if prop else []
+        goals = list(getattr(prop, "goals", []) or []) if prop else []
+        revision = {
+            "supersedes_id": getattr(prop, "supersedes_id", None),
+            "superseded_by_id": getattr(prop, "superseded_by_id", None),
+            "revision_root_id": getattr(prop, "revision_root_id", None),
+            "revision_number": getattr(prop, "revision_number", None),
+            "lifecycle_state": getattr(prop, "lifecycle_state", None),
+        } if prop else {}
+        owner = getattr(self, "owner", "") or ""
+        return acceptance_data(pid, owner, content, parents,
+                               goals=goals, revision=revision)
+
+    def make_review_context(self, pid: str, reviewer: str,
+                            operation: str = "confirm") -> dict:
+        """Issue a bound review approval for a proposal.
+
+        Director 2026-10-05: issuance is RECORDED in the session policy.
+        The returned context references the recorded approval_id; a
+        matching dict alone is not evidence of issuance. Bound to
+        operation, target, reviewed data hash, and session.
+        """
+        from form.dell_matrix.acceptance_policy import canonical_hash
+        policy = getattr(self, "acceptance_policy", None)
+        if policy is None:
+            raise RuntimeError("acceptance policy missing")
+        data = self._acceptance_data_for(pid, operation)
+        issued = policy.issue_approval(operation=operation, target=pid,
+                                        reviewer=reviewer, data=data)
+        return issued["context"]
+
+    def acceptance_data_hash(self, pid: str,
+                             operation: str = "confirm") -> str:
+        """Canonical hash of current acceptance-relevant data for pid."""
+        from form.dell_matrix.acceptance_policy import canonical_hash
+        return canonical_hash(self._acceptance_data_for(pid, operation))
+
+    def make_supersede_context(self, old_id: str, reviewer: str,
+                               words: str, label: str = None) -> dict:
+        """Issue a bound approval for a supersession operation.
+
+        Director 2026-10-05 (whole-circuit): binds predecessor version +
+        proposed successor data (label/words). The approval is recorded in
+        the session policy; the context references the issuance.
+        """
+        from form.dell_matrix.acceptance_policy import canonical_hash
+        policy = getattr(self, "acceptance_policy", None)
+        if policy is None:
+            raise RuntimeError("acceptance policy missing")
+        pred_hash = self.acceptance_data_hash(old_id, "supersede")
+        # Label must match _supersede_impl's successor creation logic:
+        # explicit label, else "revision of {old label}".
+        old_prop = self.nursery.proposals.get(old_id)
+        eff_label = label or f"revision of {getattr(old_prop, 'label', old_id)}"
+        succ_hash = canonical_hash({"label": eff_label, "words": words or ""})
+        data = {"predecessor": pred_hash, "successor": succ_hash}
+        issued = policy.issue_approval(operation="supersede", target=old_id,
+                                        reviewer=reviewer, data=data)
+        return issued["context"]
+
+    def confirm_proposal(self, pid: str, _producer: str = "unknown",
+                         _review_context: dict = None,
+                         _operation: str = "confirm") -> Dict[str, Any]:
+        """Canonical confirmation with acceptance policy (WO-5.1).
+
+        Args:
+            pid: Proposal ID.
+            _producer: Producer ID for policy check (e.g., "repl_user",
+                "auto_growth", "code_evolution"). Defaults to "unknown".
+            _review_context: Review context referencing an approval ISSUED
+                by this session's policy (see make_review_context).
+            _operation: Operation the approval must bind to (default
+                "confirm"; composite ops use derived approvals).
+
+        Returns:
+            {"ok": True, ...} on success.
+            {"ok": False, "reason": "acceptance_policy_denied", ...} if denied.
+        """
+        # WO-5.1 / Director 2026-10-05: Policy check at canonical boundary.
+        # Missing policy fails CLOSED (not open).
+        policy = getattr(self, "acceptance_policy", None)
+        if policy is None:
+            return {
+                "ok": False,
+                "reason": "acceptance_policy_denied",
+                "detail": "No acceptance policy configured (fail closed).",
+                "pid": pid,
+                "producer": _producer,
+            }
+        prop = self.nursery.proposals.get(pid)
+        if prop is None:
+            return {
+                "ok": False,
+                "reason": "not found or not pending",
+                "pid": pid,
+            }
+        # Canonical data hash at check time.
+        data_hash = self.acceptance_data_hash(pid, _operation)
+        decision = policy.check(_producer, pid, _review_context,
+                                proposal_version=data_hash,
+                                operation=_operation)
+        if not decision.get("allowed"):
+            return {
+                "ok": False,
+                "reason": "acceptance_policy_denied",
+                "detail": decision.get("detail"),
+                "pid": pid,
+                "producer": _producer,
+            }
+        # Director 2026-10-05 (final): live validation at the EXECUTION
+        # boundary. The initial check above gates entry; this final check
+        # validates live permission (revocation, source chain) and reviewed
+        # data immediately before the protected mutation. A full policy
+        # check — not just a hash comparison — so revocation between
+        # authorization and execution denies with no accepted transition.
+        live_hash = self.acceptance_data_hash(pid, _operation)
+        live = policy.check(_producer, pid, _review_context,
+                            proposal_version=live_hash,
+                            operation=_operation)
+        if not live.get("allowed"):
+            # No mutation has occurred; proposal remains pending and
+            # retryable. Staged work (none yet) needs no recovery.
+            return {
+                "ok": False,
+                "reason": "acceptance_policy_denied",
+                "detail": live.get("detail") or
+                          "Live validation failed at execution boundary.",
+                "pid": pid,
+                "producer": _producer,
+            }
         from form.dell_matrix.confirm_lineage import confirm_proposal as _confirm_proposal
-        return _confirm_proposal(self, pid)
+        # Director 2026-10-05 (boundary): carry the approved operation into
+        # the writer as an immutable snapshot. The writer validates live
+        # policy and reviewed-data integrity before placement and before
+        # durable publish.
+        _auth = {
+            "producer": _producer,
+            "pid": pid,
+            "operation": _operation,
+            "data_hash": live_hash,
+            "review_context": _review_context,
+        }
+        return _confirm_proposal(self, pid, _auth=_auth)
 
     def reject_proposal(self, pid: str) -> Dict[str, Any]:
         prop = self.nursery.reject(pid)

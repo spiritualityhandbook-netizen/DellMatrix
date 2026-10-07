@@ -65,24 +65,39 @@ ASI_LEARNED_CAP = 5
 
 
 def saturate_learned_score(raw: int) -> float:
-    """AEC-I (NBD-Ω-018): bounded monotonic saturation of learned evidence.
+    """AEC-I (NBD-Ω-018): bounded saturation of learned evidence.
 
     Transforms raw evidence count (success − failure − blocked) into a
-    bounded advisory score that preserves ordering.
+    bounded advisory score.
 
     Contract:
       - BOUNDED: |result| < SATURATION_SCALE (100.0)
-      - MONOTONIC: raw A < raw B ⟹ result A < result B (strict)
       - SIGN-PRESERVING: sign(result) == sign(raw); f(0) == 0.0
       - DETERMINISTIC: pure function, no state, no randomness
       - PURE/READ-ONLY: does not modify inputs or global state
 
+    WO-5.4 / D20-P #15 ADMISSION (corrected 2026-10-05):
+    Strict monotonicity is NOT guaranteed. Counterexample (Director):
+      f(1,000,000,000) = 99.999990000001
+      f(1,000,000,001) = 99.999990000001
+    These are equal due to IEEE 754 double-precision limits. An earlier
+    claim of a strict-order domain (|raw| < 6255496814851557) was FALSE
+    and is WITHDRAWN. No threshold is claimed.
+
+    This does not affect ordering: the production selector
+    (suggest_preferred) uses raw integer scores, not saturated floats.
+    Raw integers have perfect strict ordering. The saturated score is
+    for bounded display/influence only.
+
+    Deterministic tie-breaking: where saturated scores collide, selectors
+    must use raw integer scores first, then stable ID ordering.
+    See suggest_preferred.
+
     Float determinism: uses only multiplication, division, abs — all
-    IEEE 754 deterministic. Codebase already uses floats deterministically
-    for Jaccard similarity in Relevance V2 ranking.
+    IEEE 754 deterministic.
 
     This bounds INFLUENCE, not raw evidence. The underlying ledger
-    (success/failure/blocked counts) is untouched.
+    (success/failure/blocked counts) is preserved exactly as integers.
     """
     if raw == 0:
         return 0.0
@@ -104,7 +119,14 @@ def _learn_entries(program: Any) -> List[Any]:
 
 
 def _append_learn_entry(program: Any, detail: str, meta: Dict[str, Any]) -> Any:
-    """Append a learning entry to the DuoBeta ledger (durable via duo_ledger)."""
+    """Append a learning entry to the DuoBeta ledger (durable via duo_ledger).
+
+    WO-5.4: If program.learning_record is False, returns None without
+    recording. The ledger is unchanged.
+    """
+    # WO-5.4: Recording OFF → do not record.
+    if not getattr(program, "learning_record", True):
+        return None
     from form.duobeta.growth import GrowthEntry
     duo = program.duo
     duo.generation += 1
@@ -171,6 +193,10 @@ def propose(program: Any, kind: str, dell: Any,
          "knowledge_id": kid, "status": "PROPOSED",
          "evidence": {"outcome_ids": oids}, "gate": None,
          "reason": "", "proposed_ts": _ts()})
+    # WO-5.4: If recording is OFF, _append_learn_entry returns None.
+    if entry is None:
+        return {"ok": False, "reason": "learning_record_disabled",
+                "detail": "Recording is OFF; proposal not staged."}
     return {"ok": True, "proposal_id": entry.gen, "kind": kind,
             "dell": dell_n, "knowledge_id": kid,
             "evidence_outcome_ids": oids, "status": "PROPOSED"}
@@ -330,10 +356,16 @@ def suggest_preferred(program: Any, dell: Any,
     No learning → original order. Ties → original order (stable).
     This is the bounded 'future selection' DBEL-I influences.
     The certified 37 selector is untouched.
+
+    WO-5.4: If program.learning_influence is False, returns baseline
+    order (identical inputs → identical outputs, no learning effect).
     """
     try:
         dell_n = int(dell)
     except (TypeError, ValueError):
+        return list(knowledge_ids)
+    # WO-5.4: Learning influence OFF → baseline order.
+    if not getattr(program, "learning_influence", True):
         return list(knowledge_ids)
     idx = preference_index(program)
 
@@ -354,7 +386,14 @@ def bounded_learned_score(program: Any, dell: Any,
     no collapsed "heat", no truth claim.
 
     AEC-I: replaced destructive hard clamp with monotonic saturation.
-    Raw evidence ordering is preserved: 6 < 10 raw ⟹ f(6) < f(10).
+    Raw evidence ordering is preserved in the integer domain.
+
+    WO-5.4 ADMISSION (corrected 2026-10-05): The saturated float does NOT
+    guarantee strict ordering. Counterexample: f(1e9) == f(1e9+1).
+    An earlier domain claim was FALSE and is WITHDRAWN.
+    The suggest_preferred selector uses raw integers (not saturated floats)
+    and is therefore unaffected. Ties are broken deterministically by
+    raw score, then original order.
 
     This is an ADVISORY preference. It is NOT truth, eligibility,
     revision, dependency satisfaction, conflict resolution, disposition,
@@ -363,10 +402,15 @@ def bounded_learned_score(program: Any, dell: Any,
     add, remove, or resurrect a candidate.
 
     No learning → 0.0 (cold start: selection order exactly baseline).
+
+    WO-5.4: If program.learning_influence is False, returns 0.0.
     """
     try:
         dell_n = int(dell)
     except (TypeError, ValueError):
+        return 0.0
+    # WO-5.4: Learning influence OFF → 0.0 (baseline).
+    if not getattr(program, "learning_influence", True):
         return 0.0
     idx = preference_index(program)
     # Key must match preference_index exactly: (dell, knowledge_id as stored).

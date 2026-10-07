@@ -96,8 +96,10 @@ def wipe():
 
 wipe()
 p = open_program(OWNER)
+p.acceptance_policy.grant_opt_in("test", scope="test")
 prop = p.nursery.add("atomicity base", words="atomicity base alpha")
-r = p.confirm_proposal(prop.id)
+ctx = p.make_review_context(prop.id, "test")
+r = p.confirm_proposal(prop.id, _producer="test", _review_context=ctx)
 assert r.get("ok"), r
 aid = prop.id
 persist_rest.save(p)
@@ -119,27 +121,30 @@ def snap(op, at):
         {"op": op, "at": at, "aid": aid, "succ_id": cell.get("succ_id")}))
 
 if SCEN == "crash_after_create":
-    def crash_before_confirm(pid):
+    def crash_before_confirm(pid, **kwargs):
         persist_rest.save(p)
         snap("crashed", "before_confirm")
         os._exit(42)
     p.confirm_proposal = crash_before_confirm
-    S.supersede_proposal(p, aid, "atomicity successor alpha")
+    S.supersede_proposal(p, aid, "atomicity successor alpha", _producer="test")
 elif SCEN == "crash_after_confirm":
-    def crash_after_confirm(pid):
-        res = orig_confirm(pid)
+    def crash_after_confirm(pid, **kwargs):
+        # Forward all args (producer/context/operation); assert the
+        # confirmation actually succeeds before injecting the crash.
+        res = orig_confirm(pid, **kwargs)
+        assert res.get("ok"), f"confirm must succeed before crash: {res}"
         persist_rest.save(p)
         snap("crashed", "after_confirm")
         os._exit(42)
     p.confirm_proposal = crash_after_confirm
-    S.supersede_proposal(p, aid, "atomicity successor alpha")
+    S.supersede_proposal(p, aid, "atomicity successor alpha", _producer="test")
 elif SCEN == "crash_before_commit":
     def crash_before_save(prog):
         persist_rest.save(prog)
         snap("crashed", "before_commit")
         os._exit(42)
     S._save_nursery = crash_before_save
-    S.supersede_proposal(p, aid, "atomicity successor alpha")
+    S.supersede_proposal(p, aid, "atomicity successor alpha", _producer="test")
 elif SCEN == "crash_after_commit":
     def crash_after_save(prog):
         orig_ssave(prog)
@@ -147,18 +152,18 @@ elif SCEN == "crash_after_commit":
         snap("crashed", "after_commit")
         os._exit(42)
     S._save_nursery = crash_after_save
-    S.supersede_proposal(p, aid, "atomicity successor alpha")
+    S.supersede_proposal(p, aid, "atomicity successor alpha", _producer="test")
 elif SCEN in ("inject_confirm", "inject_persist", "inject_receipt"):
     point = SCEN.split("_", 1)[1]
     try:
-        S.supersede_proposal(p, aid, "atomicity successor alpha", _fail_at=point)
+        S.supersede_proposal(p, aid, "atomicity successor alpha", _fail_at=point, _producer="test")
         outcome = "returned_unexpectedly"
     except S.SupersedeError as e:
         outcome = "raised:" + e.reason
     persist_rest.save(p)
     snap(outcome, "injected_" + point)
 elif SCEN == "success":
-    res = S.supersede_proposal(p, aid, "atomicity successor alpha")
+    res = S.supersede_proposal(p, aid, "atomicity successor alpha", _producer="test")
     assert res.get("ok"), res
     persist_rest.save(p)
     snap("ok", "success")
@@ -181,6 +186,7 @@ EXP = __EXP__
 res = json.load(open(RES))
 aid, succ_id = res["aid"], res.get("succ_id")
 p = load(OWNER)
+p.acceptance_policy.grant_opt_in("test", scope="test")
 checks = []
 def check(name, cond):
     checks.append((name, bool(cond)))
@@ -242,7 +248,7 @@ else:
 if SCEN == "inject_receipt":
     check("receipt_op_raised", res["op"] == "raised:injected_failure")
     n_before = len(p.nursery.proposals)
-    r2 = S.supersede_proposal(p, aid, "retry words")
+    r2 = S.supersede_proposal(p, aid, "retry words", _producer="test")
     check("retry_refused", r2.get("ok") is False and r2.get("reason") == "already_superseded")
     check("retry_points_at_succ", r2.get("superseded_by_id") == succ_id)
     check("no_duplicate", len(p.nursery.proposals) == n_before)

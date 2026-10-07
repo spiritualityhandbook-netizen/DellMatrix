@@ -340,11 +340,14 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
         if low.startswith("confirm "):
             pid = lab[8:].strip()
             # Use canonical promotion authority: places in cube + confirms.
-            if hasattr(program, "confirm_proposal"):
-                result = program.confirm_proposal(pid)
-            else:
-                result = program.nursery.confirm(pid)
-                result = {"ok": bool(result), "id": pid} if result else {"ok": False}
+            # WO-5.1: User typed "confirm <id>" — carry explicit review context.
+            # The direct nursery.confirm fallback is removed; coupled
+            # acceptance must go through the canonical boundary.
+            result = program.confirm_proposal(
+                pid,
+                _producer="repl_user",
+                _review_context=program.make_review_context(pid, "repl_user"),
+            )
             if result.get("ok"):
                 program.last_nurture = {"action": "confirm", "pid": pid, "ok": True,
                                        "promoted": True}
@@ -397,7 +400,9 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             before_ids = set(program.nursery.proposals.keys())
 
             # Run existing consumer: grow_ideas
-            growth_result = program.grow_ideas(1)
+            # WO-5.3: Explicit historical use — include superseded.
+            # The user explicitly requested "use idea {pid} to grow".
+            growth_result = program.grow_ideas(1, include_superseded=True)
 
             # Find offspring parented by this knowledge
             after_props = program.nursery.proposals
@@ -448,7 +453,16 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             else:
                 old_id, words = rest, ""
             try:
-                result = supersede_proposal(program, old_id, words)
+                # WO-5.1 / Director 2026-10-05 (whole-circuit): REPL supersede
+                # is an explicit user command — issue a bound approval
+                # (predecessor version + proposed successor data) so the
+                # operation authorizes before creating successor state.
+                result = supersede_proposal(
+                    program, old_id, words,
+                    _producer="repl_user",
+                    _review_context=program.make_supersede_context(
+                        old_id, "repl_user", words, label=None),
+                )
             except SupersedeError as e:
                 program.last_nurture = {
                     "action": "supersede", "ok": False, "old_id": old_id,

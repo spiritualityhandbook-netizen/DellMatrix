@@ -29,6 +29,81 @@ class RollbackRecoveryError(Exception):
     potentially hybrid live state."""
 
 
+# Director 2026-10-06 (close unsafe save): per-instance recovery-required
+# flag. An instance whose compensation/rollback was incomplete must reject
+# normal saves until verified restoration or reconstruction.
+#
+# The flag is IN-MEMORY ONLY (a dict of key -> record on the program and
+# its nursery). Disk recovery by another instance (which clears the disk
+# journal) does not repair -- and does not clear -- this instance's
+# memory. A fresh load/reconstruction yields an unflagged instance.
+# Keys are the artifact (proposal) IDs, so a verified restoration of the
+# same artifact clears the condition however it was marked, while an
+# unrelated unresolved artifact keeps saves rejected.
+
+def mark_recovery_required(program, key, reason, details=None):
+    """Mark a program instance as requiring recovery before it may save.
+
+    Called when compensation/rollback verification fails (ok=False).
+    Both the program and its nursery are marked so that
+    ``persist_rest.save`` and ``nursery.save`` both reject.
+    """
+    record = {"reason": reason, "details": dict(details or {})}
+    for obj in (program, getattr(program, "nursery", None)):
+        if obj is None:
+            continue
+        try:
+            req = getattr(obj, "_recovery_required", None)
+            if not isinstance(req, dict):
+                req = {}
+            else:
+                req = dict(req)
+            req[key] = record
+            obj._recovery_required = req
+        except Exception:
+            pass
+
+
+def clear_recovery_required(program, key):
+    """Clear one recovery-required condition after verified restoration.
+
+    Called on the success path of a rollback helper, after its
+    verification passes and before its internal save. Other unrelated
+    keys are preserved.
+    """
+    for obj in (program, getattr(program, "nursery", None)):
+        if obj is None:
+            continue
+        try:
+            req = getattr(obj, "_recovery_required", None)
+            if isinstance(req, dict) and key in req:
+                req = dict(req)
+                del req[key]
+                if req:
+                    obj._recovery_required = req
+                else:
+                    del obj._recovery_required
+        except Exception:
+            pass
+
+
+def check_save_allowed(obj, what="save"):
+    """Raise RollbackRecoveryError if the instance requires recovery.
+
+    Called at the top of normal save paths. No bytes are written when
+    the save is rejected; recovery evidence is preserved.
+    """
+    req = getattr(obj, "_recovery_required", None)
+    if req:
+        keys = sorted(req.keys()) if isinstance(req, dict) else ["unknown"]
+        raise RollbackRecoveryError(
+            f"{what} rejected: this instance requires recovery "
+            f"(conditions={keys}). Complete a verified rollback or "
+            f"reconstruct by reloading; no bytes were written and "
+            f"recovery evidence is preserved."
+        )
+
+
 def _gen_id_from_stamp(stamp: Optional[str]) -> str:
     """Map a caller stamp into the generation-id namespace, or mint a fresh id."""
     from form.mandell.checkpoint_generation import _new_generation_id

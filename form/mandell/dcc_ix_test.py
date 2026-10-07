@@ -36,7 +36,7 @@ def _run(p, eng):
 
 def _confirm_all(p):
     for prop in p.nursery.pending():
-        p.confirm_proposal(prop.id)
+        p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 
 
 def test_relevance_control():
@@ -69,7 +69,7 @@ def test_status_control():
     p = _fresh("DCCIX_Status")
     # Confirmed (relevant)
     a = p.nursery.add("plant biology")
-    p.confirm_proposal(a.id)
+    p.confirm_proposal(a.id, _producer="test", _review_context=p.make_review_context(a.id, "test"))
     # Pending (relevant but not confirmed)
     b = p.nursery.add("plant chemistry")
     # Rejected (relevant but rejected)
@@ -143,7 +143,7 @@ def test_explicit_override_preserved():
     """DCC-VIII explicit ID selection still works."""
     p = _fresh("DCCIX_Override")
     prop = p.nursery.add("explicit knowledge")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
     
     # Explicit ID takes precedence
     i, r = _run(p, f"use idea {prop.id} to grow")

@@ -207,7 +207,7 @@ def _body_goal_boost(body: Dict[str, Any], label_a: str, label_b: str) -> float:
 
 
 def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = None,
-             program: Any = None) -> Dict[str, float]:
+             program: Any = None, include_superseded: bool = False) -> Dict[str, float]:
     """Pair affinity for growth — mathematical admission contract (GDP-001 Phase 3, 3.1.1).
 
     (1) Name: _affinity — deterministic composite pair score driving ring
@@ -281,7 +281,15 @@ def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = Non
     # Fail-closed: same dict shape, zeroed, no exception.
     if program is not None:
         from form.dell_matrix import canonical_lifecycle
-        if not canonical_lifecycle.is_active(program, a) or not canonical_lifecycle.is_active(program, b):
+        # WO-5.3: Ordinary excludes SUPERSEDED. Explicit historical use
+        # (include_superseded=True) uses historical context.
+        if include_superseded:
+            ok_a = canonical_lifecycle.is_participating(program, a, context="historical")
+            ok_b = canonical_lifecycle.is_participating(program, b, context="historical")
+        else:
+            ok_a = canonical_lifecycle.is_active(program, a)
+            ok_b = canonical_lifecycle.is_active(program, b)
+        if not ok_a or not ok_b:
             return {
                 "affinity": 0.0,
                 "jaccard": 0.0,
@@ -393,7 +401,8 @@ class RingedGrowth:
 
     def run(self, plane: Plane, cycles: int = 1,
             graph: Optional[Any] = None,
-            program: Any = None) -> Dict[str, Any]:
+            program: Any = None,
+            include_superseded: bool = False) -> Dict[str, Any]:
         """Run growth cycles over the plane's live units.
 
         graph: optional attached Phase-2 SemanticGraph (P3 R3.6). When
@@ -464,7 +473,8 @@ class RingedGrowth:
             pairs: List[Tuple[str, str, Dict[str, float]]] = []
             for i, a in enumerate(ids):
                 for b in ids[i + 1 :]:
-                    aff = _affinity(plane, a, b, body=body, program=program)
+                    aff = _affinity(plane, a, b, body=body, program=program,
+                                    include_superseded=include_superseded)
                     pairs.append((a, b, aff))
             pairs.sort(key=lambda t: -t[2]["affinity"])
 

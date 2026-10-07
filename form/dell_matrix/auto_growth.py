@@ -55,7 +55,8 @@ def _save_ledger(rows: List[Dict[str, Any]]) -> None:
 
 @dataclass
 class AutoGrowth:
-    auto: bool = True
+    # WO-5.1: Default OFF. Automated acceptance requires explicit opt-in.
+    auto: bool = False
     internet: bool = True
     queries: List[str] = field(default_factory=lambda: [
         "systems thinking coherence",
@@ -135,7 +136,8 @@ class AutoGrowth:
                 reason=f"auto:{source}:{judge.get('reason', '')}"[:160],
             )
             if self._should_auto_confirm(judge, self.last_report.get("delta_band", "elevated")):
-                res = p.confirm_proposal(prop.id)
+                # WO-5.1: Pass producer ID. Denied by default without opt-in.
+                res = p.confirm_proposal(prop.id, _producer="auto_growth")
                 if res.get("ok") is True:
                     save(p)
                     self.confirmed_total += 1

@@ -294,6 +294,23 @@ def _check_eligible(program: Any, kid: str) -> Dict[str, Any]:
             "source": "supersession.is_revision_active",
         }
 
+    # Gate 3b: PARTICIPATION (canonical facade, positive). Ordinary
+    # eligibility excludes faded presence. WO-5.2 whole-circuit.
+    try:
+        from form.dell_matrix import canonical_lifecycle as _cl
+        part_active = _cl.is_active(program, kid)
+    except Exception as e:
+        return {"status": "UNKNOWN", "reason": f"participation check failed: {e}"}
+    if not part_active:
+        return {
+            "status": "FACT",
+            "eligible": False,
+            "reason": "NOT_PARTICIPATING",
+            "detail": "excluded by authoritative participation interpretation "
+                      "(faded, pending, or otherwise non-participating)",
+            "source": "canonical_lifecycle.is_active",
+        }
+
     # Gate 4: DEPENDENCY-VALID (canonical authority, positive)
     try:
         from .dependency_validity import is_dependency_valid

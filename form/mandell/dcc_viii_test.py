@@ -38,7 +38,7 @@ def test_ab_behavioral_difference():
     # A: Without catalyst
     pA = _fresh("DCCVIII_AB_A")
     baseA = pA.nursery.add("base foundation")
-    pA.confirm_proposal(baseA.id)
+    pA.confirm_proposal(baseA.id, _producer="test", _review_context=pA.make_review_context(baseA.id, "test"))
     before_A = len(pA.nursery.proposals)
     pA.grow_ideas(2)
     new_A = len(pA.nursery.proposals) - before_A
@@ -46,9 +46,9 @@ def test_ab_behavioral_difference():
     # B: With catalyst
     pB = _fresh("DCCVIII_AB_B")
     baseB = pB.nursery.add("base foundation")
-    pB.confirm_proposal(baseB.id)
+    pB.confirm_proposal(baseB.id, _producer="test", _review_context=pB.make_review_context(baseB.id, "test"))
     catalyst = pB.nursery.add("growth catalyst alpha beta gamma delta")
-    pB.confirm_proposal(catalyst.id)
+    pB.confirm_proposal(catalyst.id, _producer="test", _review_context=pB.make_review_context(catalyst.id, "test"))
     before_B = len(pB.nursery.proposals)
     pB.grow_ideas(2)
     new_B = len(pB.nursery.proposals) - before_B
@@ -65,7 +65,7 @@ def test_explicit_use():
     """Explicit 'use idea <id> to grow' works via pipeline."""
     p = _fresh("DCCVIII_Explicit")
     prop = p.nursery.add("explicit use test knowledge")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 
     intent, result = _run(p, f"use idea {prop.id} to grow")
     assert result.ok, f"use idea failed"
@@ -118,8 +118,8 @@ def test_multiple_knowledge_deterministic():
     p = _fresh("DCCVIII_Multi")
     a = p.nursery.add("knowledge alpha")
     b = p.nursery.add("knowledge beta")
-    p.confirm_proposal(a.id)
-    p.confirm_proposal(b.id)
+    p.confirm_proposal(a.id, _producer="test", _review_context=p.make_review_context(a.id, "test"))
+    p.confirm_proposal(b.id, _producer="test", _review_context=p.make_review_context(b.id, "test"))
 
     # Use A explicitly
     i1, r1 = _run(p, f"use idea {a.id} to grow")
@@ -141,9 +141,9 @@ def test_persistence_consumption():
     name = "DCCVIII_Persist"
     p = _fresh(name)
     base = p.nursery.add("persistent base")
-    p.confirm_proposal(base.id)
+    p.confirm_proposal(base.id, _producer="test", _review_context=p.make_review_context(base.id, "test"))
     catalyst = p.nursery.add("persistent catalyst")
-    p.confirm_proposal(catalyst.id)
+    p.confirm_proposal(catalyst.id, _producer="test", _review_context=p.make_review_context(catalyst.id, "test"))
     save(p)
     del p
 
@@ -164,7 +164,7 @@ def test_composition():
 
     p = _fresh("DCCVIII_Compose")
     prop = p.nursery.add("composable knowledge")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 
     # Compose: use idea then trace
     r = compose_english(f"use idea {prop.id} to grow then trace")
@@ -180,7 +180,7 @@ def test_trace_provenance():
 
     p = _fresh("DCCVIII_Trace")
     prop = p.nursery.add("traceable knowledge")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
 
     r = compose_english(f"use idea {prop.id} to grow then trace")
     assert r.ok
@@ -198,7 +198,7 @@ def test_rejection_isolation():
     p = _fresh("DCCVIII_RejIso")
     a = p.nursery.add("accepted knowledge")
     b = p.nursery.add("rejected knowledge")
-    p.confirm_proposal(a.id)
+    p.confirm_proposal(a.id, _producer="test", _review_context=p.make_review_context(a.id, "test"))
     p.nursery.reject(b.id)
 
     # A is usable

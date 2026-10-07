@@ -131,6 +131,18 @@ LIST = [
     "form.mandell.p3_r35_integration_proof",
     # P3 R3.6 — graph/harmony consumer + wiring world proof (GDP-001 Phase 3).
     "form.mandell.p3_r36_graph_harmony_proof",
+    # Phase 5 — Nursery, Growth & Learning (GDP-001 Phase 5).
+    "form.mandell.wo52_skeleton_test:smoke",
+    "form.mandell.wo53_historical_test:smoke",
+    "form.mandell.wo54_learning_test:smoke",
+    "form.mandell.wo51_adversarial_test:smoke",
+    "form.mandell.wo52_coherence_test:smoke",
+    "form.mandell.wo54_consumers_test:smoke",
+    "form.mandell.d20_reference_test:smoke",
+    "form.mandell.absence_matrix_test:smoke",
+    "form.mandell.writer_boundary_test:smoke",
+    "form.mandell.compensation_test:smoke",
+    "form.mandell.supersession_failure_test:smoke",
 ]
 
 TIMEOUT_S = 900

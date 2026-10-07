@@ -415,11 +415,12 @@ def test_k():
     p = _fresh(owner)
     # Seed a nursery proposal + plane unit pair.
     prop = p.nursery.add("Rev One")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
     pid = prop.id
     p.place(pid, "Rev One", words="rev seed words")
     g1 = cir.checkpoint(p)
-    res = supersede_proposal(p, pid, "rev successor words", label="Rev Two")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    res = supersede_proposal(p, pid, "rev successor words", label="Rev Two", _producer="test")
     check("K.supersede_ok", res.get("ok") is True, f"supersede failed: {res}")
     new_id = res.get("new_id")
     check("K.successor_id", isinstance(new_id, str) and new_id and new_id != pid,
@@ -492,10 +493,11 @@ def test_m():
     check("M1.evidence", "undo_place_um1" in hist, "undo left no history evidence")
     # M2: revision-owned unit is refused, never bypassed.
     prop = p.nursery.add("M Rev")
-    p.confirm_proposal(prop.id)
+    p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
     pid = prop.id
     p.place(pid, "M Rev", words="m rev words")
-    sres = supersede_proposal(p, pid, "m rev successor", label="M Rev 2")
+    p.acceptance_policy.grant_opt_in("test", scope="test")
+    sres = supersede_proposal(p, pid, "m rev successor", label="M Rev 2", _producer="test")
     check("M2.supersede", sres.get("ok") is True, f"setup supersede failed: {sres}")
     push_action(p, {"kind": "place", "id": pid, "label": "M Rev"})
     r2 = undo_last(p)
