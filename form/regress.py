@@ -145,6 +145,7 @@ LIST = [
     "form.mandell.supersession_failure_test:smoke",
     "form.mandell.r61_authority_test:smoke",
     "form.mandell.r61_oracle_test:smoke",
+    "form.mandell.r62_docking_test:smoke",
 ]
 
 TIMEOUT_S = 900
