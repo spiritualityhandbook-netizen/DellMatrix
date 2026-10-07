@@ -897,6 +897,145 @@ def test_child_process_representation_sweep():
     clean_owner(owner)
 
 
+
+# ------------------------------------------------------- F. structured outbound screen
+# Director 2026-10-07 (fourth review): a credential canary inside
+# structured context reached the provider when JSON serialization
+# escaped it (newline, quote, backslash, supplementary Unicode).
+# Fix: screen structured values BEFORE serialization with the
+# existing recursive screen.
+
+_CANARY_ENV = "GEMINI_API_KEY"
+
+def _with_canary(canary, fn):
+    """Run fn() with a temporary configured credential canary."""
+    import os as _os
+    old = _os.environ.get(_CANARY_ENV)
+    _os.environ[_CANARY_ENV] = canary
+    try:
+        return fn()
+    finally:
+        if old is None:
+            _os.environ.pop(_CANARY_ENV, None)
+        else:
+            _os.environ[_CANARY_ENV] = old
+
+
+def _canary_matrix():
+    base = "sk-canary-"
+    return [
+        ("ordinary", base + "plainvalue"),
+        ("newline", base + "line1\nline2"),
+        ("tab", base + "col1\tcol2"),
+        ("quote", base + 'say"hi'),
+        ("backslash", base + "back\\slash"),
+        ("bmp", base + "caf\u00e9"),
+        ("supplementary", base + "\U0001F600"),
+    ]
+
+
+def test_structured_outbound_canaries():
+    """Every canary representation in nested dicts, lists, and keys
+    is rejected before generation: zero calls, zero proposals."""
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_F1"
+    p = fresh_program(owner)
+    n0 = len(p.nursery.proposals)
+    for name, canary in _canary_matrix():
+        def _run(c=canary):
+            sess = idock.dock(p, "agent-a", provider="fake",
+                              fake_mode="valid")
+            r = sess.propose(
+                "draft",
+                context={"outer": {"deep": [c]},
+                         "k_" + c: "v"})
+            return r, sess._provider.calls
+        r, calls = _with_canary(canary, _run)
+        check(f"F1:{name}_rejected",
+              r.get("ok") is False and r.get("reason") == "protected_input"
+              and calls == 0, str(r))
+        check(f"F1:{name}_non_reflecting", canary not in str(r),
+              str(r)[:120])
+    check("F1:zero_proposals", len(p.nursery.proposals) == n0)
+    # Positive controls: clean counterparts stay usable.
+    sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    r = sess.propose("draft", context={"note": "caf\u00e9 plain",
+                                       "items": ["a\n", "b"]})
+    check("F1:clean_accepted", r.get("ok") is True, str(r))
+    clean_owner(owner)
+
+
+def test_structured_screen_sensitivity():
+    """Disable the structured screen: an escaped canary must reach
+    the provider in recoverable form; restore -> rejected."""
+    import json as _json
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_F2"
+    p = fresh_program(owner)
+    canary = "sk-canary-line1\nline2"
+    real_screen = idock._screen_decoded_values
+    idock._screen_decoded_values = lambda obj, prot: False
+    try:
+        def _run():
+            sess = idock.dock(p, "agent-a", provider="fake",
+                              fake_mode="reflect")
+            r = sess.propose("draft", context={"note": canary})
+            return r, sess
+        r, sess = _with_canary(canary, _run)
+        # The provider received it: decode the transmitted context
+        # and recover the exact canary (the Director's reproduction).
+        transmitted = sess._provider.last_prompt
+        ctx_text = transmitted.split("\n\n[context]\n", 1)[1]
+        recovered = _json.loads(ctx_text)["note"]
+        check("F2:weakened_transmits", r.get("ok") is True, str(r))
+        check("F2:weakened_recoverable", recovered == canary,
+              repr(recovered))
+    finally:
+        idock._screen_decoded_values = real_screen
+    # Restored: same input rejected before generation.
+    def _run2():
+        sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+        r = sess.propose("draft", context={"note": canary})
+        return r, sess._provider.calls
+    r2, calls2 = _with_canary(canary, _run2)
+    check("F2:restored_rejects",
+          r2.get("ok") is False and r2.get("reason") == "protected_input"
+          and calls2 == 0, str(r2))
+    clean_owner(owner)
+
+
+def test_output_and_error_same_representations():
+    """Output protection and error sanitization across the same
+    canary representations."""
+    import json as _json
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_F3"
+    p = fresh_program(owner)
+    n0 = len(p.nursery.proposals)
+    for name, canary in _canary_matrix():
+        def _run(c=canary):
+            # Provider returns the canary JSON-escaped in words.
+            payload = _json.dumps({"label": "L", "words": "got " + c})
+            sess = idock.dock(p, "agent-a", provider="fake",
+                              fake_mode="valid")
+            sess._provider = _scripted_provider(payload)
+            return sess.propose("draft")
+        r = _with_canary(canary, _run)
+        check(f"F3:{name}_output_rejected",
+              r.get("ok") is False and r.get("reason") == "protected_output",
+              str(r))
+    check("F3:zero_proposals", len(p.nursery.proposals) == n0)
+    # Error sanitization redacts the canary in every representation.
+    for name, canary in _canary_matrix():
+        def _run2(c=canary):
+            return idock.sanitize_error("boom: " + c,
+                                       frozenset({c}))
+        red = _with_canary(canary, _run2)
+        check(f"F3:{name}_error_redacted",
+              canary not in red and "[REDACTED]" in red, red[:80])
+    clean_owner(owner)
+
+
 def smoke():
     for fn in [test_skeleton_fake_to_confirmed_reload,
                test_undocked_zero_calls,
@@ -924,7 +1063,10 @@ def smoke():
                test_transport_size_boundaries,
                test_context_boundary_matrix,
                test_representation_sensitivity,
-               test_child_process_representation_sweep]:
+               test_child_process_representation_sweep,
+               test_structured_outbound_canaries,
+               test_structured_screen_sensitivity,
+               test_output_and_error_same_representations]:
         try:
             fn()
         except Exception as e:

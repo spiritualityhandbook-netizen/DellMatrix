@@ -548,6 +548,18 @@ class DockedSession:
         except DockError as e:
             return {"ok": False, "reason": "bad_context",
                     "detail": str(e)}
+        # Structured screen BEFORE serialization (AMEND 2026-10-07,
+        # round 3): JSON escaping (newlines, quotes, backslashes,
+        # surrogate pairs) transforms protected values past any
+        # text-level screen applied after serialization. The existing
+        # recursive screen operates on the structured values, where a
+        # credential canary matches exactly regardless of how
+        # json.dumps would later escape it.
+        prot = protected_values(self._program)
+        if _screen_decoded_values(safe_ctx, prot):
+            return {"ok": False, "reason": "protected_input",
+                    "detail": "Context carries protected material; "
+                             "rejected before provider call."}
         full_prompt = prompt
         if safe_ctx:
             full_prompt += "\n\n[context]\n" + json.dumps(
@@ -559,8 +571,8 @@ class DockedSession:
         # in raw AND \uXXXX-decoded form. Key-name filtering alone is
         # insufficient: values (issued handles, credential values,
         # recognized formats) are checked, including handles that
-        # JSON decoding would restore from escapes.
-        prot = protected_values(self._program)
+        # JSON decoding would restore from escapes. This complements
+        # the structured pre-serialization screen above.
         if contains_protected_decoded(full_prompt, prot):
             return {"ok": False, "reason": "protected_input",
                     "detail": "Prompt/context carries protected material; "
