@@ -338,6 +338,269 @@ def test_no_eval_or_shell_on_output():
         check(f"C12:no_{token}_in_dock", token not in body, token)
 
 
+
+# ------------------------------------------------------- D. AMEND proofs
+# Director 2026-10-07: actual transport, secret values, bounded
+# context, real execution (child process, genuine save-guard,
+# canary sensitivity), transport-contract via stubbed HTTP.
+
+def test_director_secret_value_reproduction():
+    """Director reproduction: context={"note": "grant_" + 32 hex}
+    must NOT reach the provider nor the proposal."""
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_D1"
+    p = fresh_program(owner)
+    n0 = len(p.nursery.proposals)
+    handle = "grant_" + "ab" * 16
+    sess = idock.dock(p, "agent-a", provider="fake", fake_mode="reflect")
+    r = sess.propose("draft", context={"note": handle})
+    check("D1:protected_input_rejected",
+          r.get("ok") is False and r.get("reason") == "protected_input",
+          str(r))
+    check("D1:zero_provider_calls", sess._provider.calls == 0)
+    check("D1:no_proposal", len(p.nursery.proposals) == n0)
+    # Nested values are covered too.
+    sess2 = idock.dock(p, "agent-a", provider="fake", fake_mode="reflect")
+    r2 = sess2.propose("draft",
+                       context={"outer": {"inner": [handle]}})
+    check("D1:nested_rejected",
+          r2.get("ok") is False and r2.get("reason") == "protected_input",
+          str(r2))
+    # And prompt text itself.
+    sess3 = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    r3 = sess3.propose("draft about " + handle)
+    check("D1:prompt_text_rejected",
+          r3.get("ok") is False and r3.get("reason") == "protected_input",
+          str(r3))
+
+
+def test_director_response_bound_reproduction():
+    """Director reproduction: max_response_chars=10 must reject the
+    66+ char fake response, not silently accept it."""
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_D2"
+    p = fresh_program(owner)
+    n0 = len(p.nursery.proposals)
+    sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid",
+                      max_response_chars=10)
+    r = sess.propose("draft")
+    check("D2:oversized_rejected",
+          r.get("ok") is False and r.get("reason") == "response_too_large",
+          str(r))
+    check("D2:no_proposal", len(p.nursery.proposals) == n0)
+    # Boundary: exactly at the limit is accepted.
+    import json as _json
+    exact = _json.dumps({"label": "L", "words": "W"})
+    sess2 = idock.dock(p, "agent-a", provider="fake", fake_mode="valid",
+                       max_response_chars=len(
+                           _json.dumps({"label": "Docked Idea",
+                                        "words": "inference drafted these words"})))
+    r2 = sess2.propose("draft")
+    check("D2:at_limit_accepted", r2.get("ok") is True, str(r2))
+
+
+def test_director_context_bound_reproduction():
+    """Director reproduction: deeply nested context must be rejected
+    with a stable receipt, not RecursionError."""
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_D3"
+    p = fresh_program(owner)
+    n0 = len(p.nursery.proposals)
+    deep = cur = {}
+    for _ in range(50):
+        cur["n"] = {}
+        cur = cur["n"]
+    sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    r = sess.propose("draft", context=deep)
+    check("D3:deep_rejected",
+          r.get("ok") is False and r.get("reason") == "bad_context",
+          str(r))
+    check("D3:zero_calls", sess._provider.calls == 0)
+    # Cyclic context.
+    cyc = {"a": {}}
+    cyc["a"]["self"] = cyc
+    sess2 = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    r2 = sess2.propose("draft", context=cyc)
+    check("D3:cyclic_rejected",
+          r2.get("ok") is False and r2.get("reason") == "bad_context",
+          str(r2))
+    # Non-dict context.
+    sess3 = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    r3 = sess3.propose("draft", context=["not", "a", "dict"])
+    check("D3:nondict_rejected",
+          r3.get("ok") is False and r3.get("reason") == "bad_context",
+          str(r3))
+    check("D3:no_proposals", len(p.nursery.proposals) == n0)
+    # Valid context still works and preserves scalar types.
+    sess4 = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    ctx = {"count": 3, "ratio": 1.5, "flag": True, "nothing": None,
+           "name": "ok"}
+    clean = idock.validate_context(ctx)
+    check("D3:scalars_preserved",
+          clean == ctx, str(clean))
+
+
+def test_transport_contract_stubbed_http():
+    """Real bridge path with stubbed HTTP (no live calls). Asserts the
+    requested model/timeout reach the actual request, the read is
+    bounded, no detection runs, and the receipt is truthful."""
+    import urllib.request as _urlreq
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_D4"
+    p = fresh_program(owner)
+    seen = {}
+
+    class _Resp:
+        def __init__(self, payload):
+            self._data = payload
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def read(self, n=None):
+            seen["read_n"] = n
+            data = self._data
+            return data[:n] if n else data
+
+    real_urlopen = _urlreq.urlopen
+
+    def _stub(url_or_req, timeout=None):
+        url = (url_or_req.full_url if hasattr(url_or_req, "full_url")
+               else url_or_req)
+        seen["timeout"] = timeout
+        seen["url"] = url
+        if url.endswith("/api/tags"):
+            return _Resp(b'{"models": []}')
+        if url.endswith("/api/chat"):
+            import json as _json
+            payload = _json.loads(url_or_req.data.decode())
+            seen["payload_model"] = payload.get("model")
+            seen["payload_prompt_len"] = len(
+                str(payload.get("messages")))
+            body = _json.dumps(
+                {"message": {"content": _json.dumps(
+                    {"label": "Stubbed", "words": "via stub"})}}).encode()
+            return _Resp(body)
+        raise AssertionError("unexpected url " + url)
+
+    _urlreq.urlopen = _stub
+    try:
+        bridge_mod = idock._load_bridge()
+        # No detection may run during configured dispatch.
+        real_detect = bridge_mod.LLMBridge.detect
+        def _no_detect(self):
+            raise AssertionError("detect() called during dispatch")
+        bridge_mod.LLMBridge.detect = _no_detect
+        try:
+            sess = idock.dock(p, "agent-a", provider="ollama",
+                              model="HOST_CHOSEN_MODEL", timeout_s=2,
+                              max_response_chars=8000)
+            r = sess.propose("draft via stub")
+        finally:
+            bridge_mod.LLMBridge.detect = real_detect
+    finally:
+        _urlreq.urlopen = real_urlopen
+    check("D4:propose_ok", r.get("ok") is True, str(r))
+    check("D4:model_reached_transport",
+          seen.get("payload_model") == "HOST_CHOSEN_MODEL",
+          str(seen.get("payload_model")))
+    check("D4:timeout_reached_transport", seen.get("timeout") == 2,
+          str(seen.get("timeout")))
+    check("D4:read_bounded",
+          seen.get("read_n") == 8000 * 4, str(seen.get("read_n")))
+    check("D4:receipt_truthful",
+          r.get("model") == "HOST_CHOSEN_MODEL", str(r.get("model")))
+    check("D4:fields_exact",
+          p.nursery.proposals[r["pid"]].label == "Stubbed")
+
+
+def test_fresh_process_reload():
+    """REAL child OS process: full circuit + save; parent inspects
+    via production reload."""
+    import subprocess
+    owner = "R62_D5"
+    fresh_program(owner)  # establishes clean state
+    clean_owner(owner)
+    args = json.dumps({"repo": ROOT, "owner": owner})
+    proc = subprocess.run(
+        [sys.executable, "form/mandell/r62_child.py", args],
+        cwd=ROOT, capture_output=True, text=True, timeout=120)
+    check("D5:child_ok", proc.returncode == 0, proc.stderr[:300])
+    out = json.loads(proc.stdout.strip().splitlines()[-1])
+    check("D5:child_reported", out.get("ok") is True, str(out))
+    from form import persist_rest
+    p2 = persist_rest.load(owner, activate=False)
+    prop = p2.nursery.proposals.get(out["pid"])
+    check("D5:parent_sees_confirmed",
+          prop is not None and prop.status == "confirmed",
+          str(getattr(prop, "status", None)))
+    check("D5:parent_sees_on_plane", out["pid"] in p2.cube.session.plane.units)
+    check("D5:words_intact",
+          prop.words == "inference drafted these words")
+    clean_owner(owner)
+
+
+def test_save_guard_genuine():
+    """Genuinely recovery-required instance via the production marking
+    API: exposed save paths reject, bytes unchanged, evidence kept."""
+    import hashlib
+    from form.mandell.core_i_recovery import (
+        mark_recovery_required, RollbackRecoveryError)
+    from form import persist_rest
+    owner = "R62_D6"
+    p = fresh_program(owner)
+    path = persist_rest.save(p)
+    with open(path, "rb") as f:
+        before = hashlib.sha256(f.read()).hexdigest()
+    # Genuine mark through the production marking function (the same
+    # function production calls on incomplete compensation).
+    mark_recovery_required(p, "r62_probe",
+                           "incomplete compensation (probe)",
+                           {"failures": ["probe"]})
+    for fn, name in ((lambda: persist_rest.save(p), "persist_rest.save"),
+                     (lambda: p.nursery.save(), "nursery.save")):
+        try:
+            fn()
+            check(f"D6:{name}_rejected", False, "save succeeded")
+        except RollbackRecoveryError:
+            check(f"D6:{name}_rejected", True)
+    with open(path, "rb") as f:
+        after = hashlib.sha256(f.read()).hexdigest()
+    check("D6:bytes_unchanged", before == after)
+    req = getattr(p, "_recovery_required", None)
+    check("D6:evidence_retained",
+          isinstance(req, dict) and "r62_probe" in req, str(req))
+    clean_owner(owner)
+
+
+def test_canary_sensitivity():
+    """Weaken the ACTUAL production protection: the protected-input
+    negative control must FAIL; restore -> passes."""
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_D7"
+    p = fresh_program(owner)
+    handle = "grant_" + "cd" * 16
+    real = idock.contains_protected
+    idock.contains_protected = lambda text, prot: False
+    try:
+        sess = idock.dock(p, "agent-a", provider="fake",
+                          fake_mode="reflect")
+        r = sess.propose("draft", context={"note": handle})
+        leaked = (r.get("ok") is True
+                  and handle in p.nursery.proposals[r["pid"]].words)
+        check("D7:weakened_leaks", leaked,
+              "protection weakened but no leak observed")
+    finally:
+        idock.contains_protected = real
+    # Restored: the same input is rejected again.
+    sess2 = idock.dock(p, "agent-a", provider="fake", fake_mode="reflect")
+    r2 = sess2.propose("draft", context={"note": handle})
+    check("D7:restored_rejects",
+          r2.get("ok") is False and r2.get("reason") == "protected_input",
+          str(r2))
+    clean_owner(owner)
+
+
 def smoke():
     for fn in [test_skeleton_fake_to_confirmed_reload,
                test_undocked_zero_calls,
@@ -351,7 +614,14 @@ def smoke():
                test_save_guards_hold_for_docked_proposals,
                test_schema_strictness_and_bounds,
                test_dock_surface_has_no_authority_methods,
-               test_no_eval_or_shell_on_output]:
+               test_no_eval_or_shell_on_output,
+               test_director_secret_value_reproduction,
+               test_director_response_bound_reproduction,
+               test_director_context_bound_reproduction,
+               test_transport_contract_stubbed_http,
+               test_fresh_process_reload,
+               test_save_guard_genuine,
+               test_canary_sensitivity]:
         try:
             fn()
         except Exception as e:

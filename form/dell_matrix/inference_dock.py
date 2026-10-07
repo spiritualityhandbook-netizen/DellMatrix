@@ -131,8 +131,10 @@ def _load_bridge():
 class _BridgeProvider:
     """Thin wrapper over LLMBridge honoring explicit config.
 
-    The bridge's detect() is NEVER consulted to enable a provider.
-    The configured provider is enabled explicitly by the host.
+    Uses dispatch() — NEVER call() — so no provider auto-detection
+    runs during configured dispatch. Explicit model/timeout/read-bound
+    reach the actual provider request. The ACTUAL model identity comes
+    back in result.meta and is reported truthfully by the dock.
     """
 
     def __init__(self, bridge_mod, provider: str, model: Optional[str]):
@@ -140,6 +142,7 @@ class _BridgeProvider:
         self.provider = provider
         self.model = model
         self.calls = 0
+        self.last_actual_model: Optional[str] = None
         self._bridge = bridge_mod.LLMBridge()
         # Explicit host enablement only — not silent auto-detection.
         self._bridge.enable(provider)
@@ -147,21 +150,89 @@ class _BridgeProvider:
     def generate(self, prompt: str, *, timeout_s: int,
                  max_chars: int) -> str:
         self.calls += 1
-        # NOTE: bridge.call signature is (provider, prompt, system);
-        # timeout/size bounds are enforced by the dock around it.
-        result = self._bridge.call(self.provider, prompt[:max_chars])
+        # max_chars is chars; the transport read bound is bytes.
+        max_bytes = max_chars * 4
+        result = self._bridge.dispatch(
+            self.provider, prompt, "",
+            model=self.model, timeout=timeout_s, max_bytes=max_bytes)
         if not result.ok:
             raise ProviderError(
                 f"provider {self.provider} failed")
-        text = (result.text or "")[:max_chars]
-        return text
+        self.last_actual_model = (result.meta or {}).get("model")
+        # NOTE: no silent truncation here. The dock enforces the
+        # response bound by REJECTING oversized responses before
+        # parsing (directive: slicing after an unlimited read, or
+        # silent truncation, is insufficient).
+        return result.text or ""
 
 
 # ---------------------------------------------------------------- sanitization
 
-def sanitize_error(text: str) -> str:
-    """Redact key-material shapes from a surfaced provider error."""
-    return _SECRET_VALUE_RE.sub("[REDACTED]", str(text))
+def sanitize_error(text: str, protected: frozenset = frozenset()) -> str:
+    """Redact key-material shapes AND known protected values from a
+    surfaced provider error."""
+    s = str(text)
+    for val in protected:
+        if val and val in s:
+            s = s.replace(val, "[REDACTED]")
+    return _SECRET_VALUE_RE.sub("[REDACTED]", s)
+
+
+# Recognized handle format (canonical issued handles look like this).
+_HANDLE_RE = re.compile(r"grant_[0-9a-f]{32}")
+
+# Environment names whose values are provider credentials. The trusted
+# host reads these values for redaction; they are never logged,
+# exposed to agents, or placed in model context.
+_CREDENTIAL_ENV_NAMES = (
+    "GOOGLE_API_KEY", "GEMINI_API_KEY", "AISTUDIO_API_KEY",
+    "XAI_API_KEY", "ANTHROPIC_API_KEY", "GITHUB_TOKEN", "GH_TOKEN",
+    "OLLAMA_API_KEY",
+)
+
+
+def protected_values(program) -> frozenset:
+    """Trusted-host knowledge of protected material (AMEND 2026-10-07).
+
+    Covers EXACTLY:
+    - canonical issued grant handles (this session's policy)
+    - active approval IDs (this session's policy)
+    - configured provider credential values (environment)
+    - recognized handle formats are matched by _HANDLE_RE separately.
+
+    This is a value list for redaction, computed by trusted host code.
+    It is never exposed to agents, never logged, and never placed in
+    model context. It does NOT claim detection of arbitrary unknown
+    secrets.
+    """
+    vals = set()
+    try:
+        policy = getattr(program, "acceptance_policy", None)
+        if policy is not None:
+            for gid in getattr(policy, "_issued_grants", {}):
+                if isinstance(gid, str) and gid:
+                    vals.add(gid)
+            for aid in getattr(policy, "_issued_approvals", {}):
+                if isinstance(aid, str) and aid:
+                    vals.add(aid)
+    except Exception:
+        pass
+    import os as _os
+    for name in _CREDENTIAL_ENV_NAMES:
+        v = _os.environ.get(name, "").strip()
+        if v:
+            vals.add(v)
+    return frozenset(vals)
+
+
+def contains_protected(text: str, protected: frozenset) -> bool:
+    """True if text carries protected material: a known protected
+    value or a recognized handle format."""
+    s = str(text)
+    for val in protected:
+        if val and val in s:
+            return True
+    return bool(_HANDLE_RE.search(s))
 
 
 def scrub_context(obj: Any) -> Any:
@@ -183,6 +254,84 @@ def scrub_context(obj: Any) -> Any:
         s = str(obj)
         return s[:2000]
     return str(obj)[:2000]
+
+
+# ---------------------------------------------------------------- context validation (AMEND 2026-10-07)
+# Bounded processing: depth, node count, and combined size are
+# validated BEFORE generation. Malformed/cyclic/excessive context is
+# rejected with a stable receipt: no provider call, no proposal.
+
+_MAX_CONTEXT_DEPTH = 10
+_MAX_CONTEXT_NODES = 1000
+_MAX_CONTEXT_CHARS = 100000
+
+
+def validate_context(context: Any) -> Dict[str, Any]:
+    """Validate host context. Returns a scrubbed plain-dict copy.
+
+    Raises DockError on: non-dict input (None is explicitly mapped to
+    {}), cycles, depth > 10, nodes > 1000, serialized size > 100000
+    chars, or scrub/serialize failure. Valid JSON scalar types are
+    preserved.
+    """
+    if context is None:
+        return {}
+    if not isinstance(context, dict):
+        raise DockError(
+            f"bad_context: context must be a dict or None, "
+            f"got {type(context).__name__}")
+    seen: set = set()
+    count = [0]
+
+    def _walk(node: Any, depth: int) -> Any:
+        # Cycle detection BEFORE recursion (no RecursionError).
+        if isinstance(node, (dict, list, tuple)):
+            nid = id(node)
+            if nid in seen:
+                raise DockError("bad_context: cyclic context")
+            seen.add(nid)
+            try:
+                if depth > _MAX_CONTEXT_DEPTH:
+                    raise DockError(
+                        f"bad_context: depth exceeds {_MAX_CONTEXT_DEPTH}")
+                count[0] += 1
+                if count[0] > _MAX_CONTEXT_NODES:
+                    raise DockError(
+                        f"bad_context: nodes exceed {_MAX_CONTEXT_NODES}")
+                if isinstance(node, dict):
+                    out = {}
+                    for k, v in node.items():
+                        if not isinstance(k, str):
+                            raise DockError(
+                                "bad_context: non-string dict key")
+                        if _SENSITIVE_KEY_RE.search(k):
+                            continue
+                        out[k] = _walk(v, depth + 1)
+                    return out
+                return [_walk(v, depth + 1) for v in node]
+            finally:
+                seen.discard(nid)
+        if isinstance(node, (str, int, float, bool)) or node is None:
+            return node
+        s = str(node)
+        return s[:2000]
+
+    try:
+        clean = _walk(context, 0)
+    except DockError:
+        raise
+    except Exception as e:
+        raise DockError(
+            f"bad_context: processing failed ({type(e).__name__})")
+    try:
+        serial = json.dumps(clean, sort_keys=True)
+    except Exception as e:
+        raise DockError(
+            f"bad_context: not JSON-serializable ({type(e).__name__})")
+    if len(serial) > _MAX_CONTEXT_CHARS:
+        raise DockError(
+            f"bad_context: serialized size exceeds {_MAX_CONTEXT_CHARS}")
+    return clean
 
 
 # ---------------------------------------------------------------- validation
@@ -268,9 +417,17 @@ class DockedSession:
                 context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Run inference and create a PENDING Nursery proposal.
 
-        Returns {"ok": True, "pid", "provider", "model"} or
-        {"ok": False, "reason", "detail"}. Denial/failure creates no
-        proposal and mutates no accepted state.
+        Enforcement order (AMEND 2026-10-07):
+        docked? -> prompt bound -> context validated/bounded ->
+        protected-input rejected -> provider call ->
+        response bound enforced -> protected-output rejected ->
+        schema validated -> Nursery.add (pending only).
+
+        Returns {"ok": True, "pid", "provider", "model"} (model is the
+        ACTUAL model identity reported by the transport) or
+        {"ok": False, "reason", "detail"} with bounded public
+        error messages. Denial/failure creates no proposal and mutates
+        no accepted state.
         """
         if not self._docked:
             return {"ok": False, "reason": "undocked",
@@ -281,14 +438,29 @@ class DockedSession:
         if len(prompt) > self._max_prompt_chars:
             return {"ok": False, "reason": "prompt_too_large",
                     "detail": f"Prompt exceeds {self._max_prompt_chars} chars."}
-        # Read-only host context, scrubbed of sensitive key names.
-        # Grant handles and credentials never enter model context.
-        safe_ctx = scrub_context(context or {})
+        # Bounded context validation BEFORE generation. Malformed /
+        # cyclic / excessive context -> stable receipt, no provider
+        # call, no proposal. Failures stay inside the failure boundary.
+        try:
+            safe_ctx = validate_context(context)
+        except DockError as e:
+            return {"ok": False, "reason": "bad_context",
+                    "detail": str(e)}
         full_prompt = prompt
         if safe_ctx:
             full_prompt += "\n\n[context]\n" + json.dumps(
-                safe_ctx, sort_keys=True)[:self._max_prompt_chars]
-            full_prompt = full_prompt[:self._max_prompt_chars]
+                safe_ctx, sort_keys=True)
+            if len(full_prompt) > self._max_prompt_chars:
+                return {"ok": False, "reason": "prompt_too_large",
+                        "detail": "Prompt+context exceeds bound."}
+        # Protected-material screen on the exact outbound text.
+        # Key-name filtering alone is insufficient: values (issued
+        # handles, credential values, recognized formats) are checked.
+        prot = protected_values(self._program)
+        if contains_protected(full_prompt, prot):
+            return {"ok": False, "reason": "protected_input",
+                    "detail": "Prompt/context carries protected material; "
+                             "rejected before provider call."}
         try:
             raw = self._provider.generate(
                 full_prompt, timeout_s=self._timeout_s,
@@ -296,19 +468,34 @@ class DockedSession:
         except (TimeoutError, ConnectionError) as e:
             return {"ok": False, "reason": "provider_failure",
                     "detail": sanitize_error(
-                        f"{type(e).__name__}: {e}")}
+                        f"{type(e).__name__}", prot)}
         except DockError as e:
             return {"ok": False, "reason": "provider_failure",
-                    "detail": str(e)}
+                    "detail": sanitize_error(str(e), prot)}
         except Exception as e:  # provider raised something unexpected
             return {"ok": False, "reason": "provider_failure",
                     "detail": sanitize_error(
-                        f"{type(e).__name__}: {e}")}
+                        f"{type(e).__name__}", prot)}
+        # Response bound enforced by REJECTION before parsing. Silent
+        # truncation is not accepted.
+        if not isinstance(raw, str):
+            return {"ok": False, "reason": "invalid_output",
+                    "detail": "Provider returned non-text."}
+        if len(raw) > self._max_response_chars:
+            return {"ok": False, "reason": "response_too_large",
+                    "detail": f"Response exceeds {self._max_response_chars} "
+                             "chars; rejected before parsing."}
+        # Protected-material screen on provider output BEFORE parsing
+        # and before Nursery.add.
+        if contains_protected(raw, prot):
+            return {"ok": False, "reason": "protected_output",
+                    "detail": "Provider output carries protected material; "
+                             "rejected before proposal creation."}
         try:
             fields = validate_proposal_output(raw)
         except ProviderError as e:
             return {"ok": False, "reason": "invalid_output",
-                    "detail": sanitize_error(str(e))}
+                    "detail": sanitize_error(str(e), prot)}
         # Canonical Nursery API. The proposal is PENDING: inference
         # never confirms, never mints authority.
         try:
@@ -317,9 +504,12 @@ class DockedSession:
         except Exception as e:
             return {"ok": False, "reason": "nursery_failure",
                     "detail": f"{type(e).__name__}"}
+        # Truthful model identity: the ACTUAL model reported by the
+        # transport, not merely the requested label.
+        actual_model = getattr(self._provider, "last_actual_model", None)
         return {"ok": True, "pid": prop.id,
                 "provider": self._provider_name,
-                "model": self._model_label}
+                "model": actual_model or self._model_label}
 
 
 def dock(program, trusted_subject: str, provider: str = "fake", *,
