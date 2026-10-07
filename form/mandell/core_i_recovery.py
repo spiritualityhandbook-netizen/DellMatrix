@@ -92,6 +92,11 @@ def check_save_allowed(obj, what="save"):
 
     Called at the top of normal save paths. No bytes are written when
     the save is rejected; recovery evidence is preserved.
+
+    R6.3: also rejects instances marked stale after an authority-bound
+    rollback restored a generation beneath them. The initiating (and
+    any pre-rollback) instance must not save stale state over the
+    restored outcome; the caller must reload.
     """
     req = getattr(obj, "_recovery_required", None)
     if req:
@@ -101,6 +106,13 @@ def check_save_allowed(obj, what="save"):
             f"(conditions={keys}). Complete a verified rollback or "
             f"reconstruct by reloading; no bytes were written and "
             f"recovery evidence is preserved."
+        )
+    if getattr(obj, "_post_rollback_stale", False):
+        raise RollbackRecoveryError(
+            f"{what} rejected: this instance is stale after an "
+            f"authority-bound rollback restored a generation beneath "
+            f"it. Reload to obtain the restored state; no bytes were "
+            f"written."
         )
 
 
@@ -114,13 +126,17 @@ def _gen_id_from_stamp(stamp: Optional[str]) -> str:
     return _new_generation_id()
 
 
-def checkpoint(program, stamp: Optional[str] = None) -> str:
+def checkpoint(program, stamp: Optional[str] = None, *,
+               keep_extra=None) -> str:
     """Seal the program's current logical state as one coherent generation.
 
     Delegates to Checkpoint Generation V1. Returns the committed generation id
     (observable generation identity). Raises CheckpointCommitError on failure;
     a failure before the CURRENT pointer swap leaves the previous committed
     generation authoritative — never a partial state.
+
+    keep_extra: generation ids that retention must preserve in addition to
+    current + previous (R6.3: the frozen rollback target).
     """
     from form.mandell import checkpoint_generation as gen
     owner = program.owner
@@ -132,7 +148,8 @@ def checkpoint(program, stamp: Optional[str] = None) -> str:
         gen_id = gen._new_generation_id()
     except Exception:
         pass
-    receipt = gen.commit_checkpoint(program, generation_id=gen_id)
+    receipt = gen.commit_checkpoint(program, generation_id=gen_id,
+                                    keep_extra=keep_extra)
     committed = receipt["generation_id"]
     program.last_checkpoint = committed
     return committed
@@ -600,7 +617,53 @@ def _sha256_file(path: str) -> str:
     return h.hexdigest()
 
 
-def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] = None):
+def _validate_rollback_mediation(owner: str, path: Optional[str],
+                                 mediation: Optional[Dict[str, Any]]) -> str:
+    """Validate the mediation token for canonical rollback (R6.3).
+
+    An owner string alone denies. The token is minted by
+    Program.confirm_rollback after the live revalidation (the commit
+    decision); recover_rollback_intent completes recorded outcomes via
+    _eager_converge_live directly and does not use this path.
+
+    Returns the authorized generation id. Raises RollbackRecoveryError
+    on missing/forged/mismatched mediation (fail closed, zero mutation).
+    """
+    if not isinstance(mediation, dict):
+        raise RollbackRecoveryError(
+            "rollback denied: missing mediation — an owner string alone "
+            "denies. Use Program.confirm_rollback (authority-mediated).")
+    if mediation.get("operation") != "checkpoint.rollback":
+        raise RollbackRecoveryError(
+            "rollback denied: mediation operation mismatch.")
+    if mediation.get("owner") != owner:
+        raise RollbackRecoveryError(
+            "rollback denied: mediation owner mismatch.")
+    gid = mediation.get("generation_id")
+    if not isinstance(gid, str) or not gid:
+        raise RollbackRecoveryError(
+            "rollback denied: mediation names no generation.")
+    # The requested target must be the authorized generation id.
+    # (Legacy .json paths are not mediation-authorized.)
+    want = path
+    if want is None:
+        # CURRENT resolved once here; the mediated Program path always
+        # passes an explicit id, but the primitive preserves the
+        # None→CURRENT semantic under mediation.
+        from form.mandell import checkpoint_generation as gen
+        try:
+            want = gen._read_pointer(owner).get("generation_id")
+        except Exception as exc:
+            raise RollbackRecoveryError(
+                f"rollback denied: CURRENT unreadable: {exc}") from exc
+    if want != gid:
+        raise RollbackRecoveryError(
+            "rollback denied: requested target != authorized generation.")
+    return gid
+
+
+def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] = None,
+             _mediation: Optional[Dict[str, Any]] = None):
     """Restore a checkpoint. ``path`` may be:
 
     - None → the current committed generation (CURRENT pointer authority);
@@ -623,12 +686,16 @@ def rollback(owner: str, path: Optional[str] = None, *, _fail_at: Optional[str] 
     Raises FileNotFoundError("rollback_missing") when nothing restorable exists.
     Raises CheckpointError/NurseryConflictError on convergence failure, with
     zero partial mutation for failures before the first live write.
+    Raises RollbackRecoveryError when mediation is missing/invalid (R6.3:
+    an owner string alone denies).
     """
     from form.mandell import checkpoint_generation as gen
     from form.mandell.checkpoint_generation import (
         CheckpointError,
         _load_generation,
     )
+    # R6.3: mediation is mandatory and validated BEFORE any state access.
+    _validate_rollback_mediation(owner, path, _mediation)
     target = path
     receipt = None
     if target is None:
@@ -847,6 +914,202 @@ def clear_confirm_intent(owner: str) -> None:
         os.unlink(_confirm_journal_path(owner))
     except OSError:
         pass
+
+
+# ---------------------------------------------------------------------------
+# Rollback-intent journal (GDP_PHASE_6_R63_AUTHORITY_BOUND_ROLLBACK)
+# ---------------------------------------------------------------------------
+# Records the AUTHORIZED rollback outcome before the protected
+# transition. The commit decision is the live authority revalidation
+# immediately before _eager_converge_live; after that point, restart
+# completes the recorded outcome WITHOUT requiring the (possibly
+# vanished) session credential. Revocation after the commit decision
+# does not retroactively undo the recorded outcome (consistent with
+# R6.1: revocation gates future checks only).
+#
+# The journal NEVER records grant handles or credentials — only the
+# non-secret authorized exact operation: owner, target generation id,
+# frozen member fingerprints, compensating generation id, and the
+# pre-rollback live fingerprints.
+
+ROLLBACK_JOURNAL_VERSION = 1
+
+# Reentrancy guard: _eager_converge_live's verification calls
+# persist_rest.load, which would re-enter recover_rollback_intent for
+# an in-flight (not crashed) operation. The guard makes nested
+# recovery a no-op; the outer flow owns the journal lifecycle.
+_recover_rollback_intent_active = False
+
+
+def _rollback_journal_path(owner: str) -> str:
+    """Path of the rollback intent journal for ``owner``.
+
+    Distinct from the rollback TRANSACTION journal (_journal_path):
+    the transaction journal tracks the file-level converge; this one
+    records the authorized operation intent.
+    """
+    from form.persist import _STATE_DIR, _safe_owner
+    return os.path.join(
+        _STATE_DIR, f"rollback_intent_{_safe_owner(owner)}.journal.json")
+
+
+def write_rollback_intent(owner: str, generation_id: str,
+                          compensating_generation_id: str,
+                          target_members: dict) -> None:
+    """Record intent to roll back before the protected transition.
+
+    Must be called AFTER the live authority revalidation (the commit
+    decision) and BEFORE _eager_converge_live. The journal enables
+    crash recovery to complete the authorized outcome deterministically.
+    """
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_json
+
+    if not isinstance(generation_id, str) or not generation_id:
+        raise ValueError("generation_id must be non-empty str")
+    if not isinstance(target_members, dict) or not target_members:
+        raise ValueError("target_members must be a non-empty dict")
+    journal = {
+        "journal_version": ROLLBACK_JOURNAL_VERSION,
+        "operation": "authority_bound_rollback",
+        "owner": owner,
+        "generation_id": generation_id,
+        "compensating_generation_id": compensating_generation_id,
+        "target_members": {k: v for k, v in target_members.items()
+                           if isinstance(k, str) and isinstance(v, str)},
+        "phase": "prepared",
+        "old_program_sha256": _sha256_file_absent(_path(owner)),
+        "old_nursery_sha256": _sha256_file_absent(owner_nursery_path(owner)),
+    }
+    atomic_write_json(_rollback_journal_path(owner), journal)
+
+
+def clear_rollback_intent(owner: str) -> None:
+    """Delete the rollback journal after verified successful commit."""
+    try:
+        os.unlink(_rollback_journal_path(owner))
+    except OSError:
+        pass
+
+
+def recover_rollback_intent(owner: str) -> str:
+    """Recover from recorded rollback intent (not inferred visibility).
+
+    Strict validation BEFORE any mutation: version, owner, operation,
+    phase, generation identity, and frozen member fingerprints. The
+    target generation's sealed members are re-validated; on mismatch
+    the journal is preserved and recovery raises (fail closed).
+
+    Returns:
+        "none": No journal; nothing to recover.
+        "already_complete": Live state already reflects the target
+            generation; journal cleared.
+        "no_change": Live state still reflects the pre-rollback state
+            (crash before the protected transition); journal cleared.
+        "converged": Crash mid-transition; the authorized outcome was
+            completed deterministically from the sealed target
+            generation; journal cleared.
+
+    Raises:
+        RollbackRecoveryError: journal corrupt/malformed, or the
+        frozen target fails fingerprint validation (journal preserved).
+    """
+    global _recover_rollback_intent_active
+    if _recover_rollback_intent_active:
+        return "none"
+    _recover_rollback_intent_active = True
+    try:
+        return _recover_rollback_intent_inner(owner)
+    finally:
+        _recover_rollback_intent_active = False
+
+
+def _recover_rollback_intent_inner(owner: str) -> str:
+    jpath = _rollback_journal_path(owner)
+    if not os.path.isfile(jpath):
+        return "none"
+
+    try:
+        with open(jpath, encoding="utf-8") as f:
+            journal = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"rollback intent: corrupt journal (preserved): {exc}"
+        ) from exc
+    if not isinstance(journal, dict):
+        raise RollbackRecoveryError(
+            "rollback intent: journal is not a dict (preserved)")
+    _rjv = journal.get("journal_version")
+    if (not isinstance(_rjv, int) or isinstance(_rjv, bool)
+            or _rjv != ROLLBACK_JOURNAL_VERSION):
+        raise RollbackRecoveryError(
+            f"rollback intent: unsupported version "
+            f"{journal.get('journal_version')} (preserved)")
+    if journal.get("owner") != owner:
+        raise RollbackRecoveryError(
+            f"rollback intent: owner mismatch (preserved)")
+    if journal.get("operation") != "authority_bound_rollback":
+        raise RollbackRecoveryError(
+            f"rollback intent: unsupported operation "
+            f"{journal.get('operation')} (preserved)")
+    if journal.get("phase") != "prepared":
+        raise RollbackRecoveryError(
+            f"rollback intent: unexpected phase "
+            f"{journal.get('phase')} (preserved)")
+    target_gid = journal.get("generation_id")
+    if not isinstance(target_gid, str) or not target_gid:
+        raise RollbackRecoveryError(
+            "rollback intent: malformed generation_id (preserved)")
+    target_members = journal.get("target_members")
+    if not isinstance(target_members, dict) or not target_members:
+        raise RollbackRecoveryError(
+            "rollback intent: malformed target_members (preserved)")
+
+    from form.mandell import checkpoint_generation as gen
+    # Re-validate the frozen target's sealed members BEFORE mutation.
+    try:
+        manifest = gen._read_manifest(owner, target_gid)
+    except Exception as exc:
+        raise RollbackRecoveryError(
+            f"rollback intent: target generation unreadable "
+            f"(preserved): {exc}") from exc
+    for kind, sha in target_members.items():
+        spec = (manifest.get("members") or {}).get(kind) or {}
+        if spec.get("sha256") != sha:
+            raise RollbackRecoveryError(
+                f"rollback intent: target member {kind!r} fingerprint "
+                f"changed since authorization (preserved)")
+
+    # Determine live state relative to the recorded outcome.
+    try:
+        current_gid = gen._read_pointer(owner).get("generation_id")
+    except Exception:
+        current_gid = None
+    if current_gid == target_gid:
+        clear_rollback_intent(owner)
+        return "already_complete"
+    # Crash before the protected transition: live still at the
+    # pre-rollback fingerprints recorded in the journal.
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    if (_sha256_file_absent(_path(owner)) == journal.get("old_program_sha256")
+            and _sha256_file_absent(owner_nursery_path(owner))
+            == journal.get("old_nursery_sha256")):
+        clear_rollback_intent(owner)
+        return "no_change"
+    # Crash mid-transition: complete the authorized outcome
+    # deterministically from the sealed target generation.
+    # Clear the intent BEFORE converging: _eager_converge_live's
+    # verification calls persist_rest.load, which would re-enter this
+    # recovery (infinite recursion). The transaction journal still
+    # guards the file-level convergence on crash.
+    clear_rollback_intent(owner)
+    _eager_converge_live(
+        gen._load_generation(owner, target_gid, False, None)[0], owner)
+    from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
+    rehydrate_ideas_from_live(owner)
+    return "converged"
 
 
 def recover_confirmation_intent(owner: str) -> str:

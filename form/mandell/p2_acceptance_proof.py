@@ -217,7 +217,10 @@ r1 = CG.commit_checkpoint(p)
 n_before = len([e for e in g._entries if e.status.value=="active"])
 g.nest(nb.id, ids["rooms"], PROV)
 assert g.parent(nb.id) == ids["rooms"]
-rollback(OWNER)
+# R6.3: canonical rollback requires mediation (assertions preserved).
+_gid = CG.current_generation_id(OWNER)
+_med = {"operation": "checkpoint.rollback", "owner": OWNER, "generation_id": _gid}
+rollback(OWNER, _gid, _mediation=_med)
 g2 = SemanticGraph.load(OWNER)
 n_after = len([e for e in g2._entries if e.status.value=="active"])
 print("RESULT " + json.dumps({

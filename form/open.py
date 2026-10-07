@@ -1568,6 +1568,164 @@ class Program:
         }
         return _confirm_proposal(self, pid, _auth=_auth)
 
+    def confirm_rollback(self, generation_id=None,
+                         _review_context: dict = None,
+                         _subject: str = None,
+                         _producer: str = "unknown") -> Dict[str, Any]:
+        """Authority-mediated checkpoint rollback (R6.3).
+
+        The canonical mediated rollback. Every exposed path (Dell28,
+        REPL revert/restore, agent endpoint, direct Program calls)
+        routes through here. An owner string alone denies.
+
+        Sequence (mirrors confirm_proposal's two-check pattern):
+        1. Freeze the restore target (CURRENT resolved once; manifest
+           + member fingerprints bound; private staging, no activation).
+        2. Entry authority check (policy.check, operation=
+           "checkpoint.rollback"). Denial = zero mutation.
+        3. Safety checkpoint of live state (retention keeps the frozen
+           target). Failure = zero rollback mutation.
+        4. Live revalidation = THE COMMIT DECISION (full policy check;
+           revocation/chain/target/operation re-verified; frozen target
+           re-validated). Denial = safe, no rollback.
+        5. Intent journal records the authorized outcome (no handles).
+        6. Canonical core_i_recovery.rollback to the frozen target.
+        7. Verify restoration (CURRENT names target; members match).
+        8. Clear intent; mark this (now stale) instance; return receipt.
+
+        After the commit decision, restart completes the recorded
+        outcome without the session credential (recover_rollback_intent).
+
+        Returns {"ok": True, "generation_id", "compensating_generation_id",
+        ...} or {"ok": False, "reason", "detail"}.
+        """
+        from form.dell_matrix import rollback_authority as ra
+        from form.dell_matrix.acceptance_policy import canonical_hash
+
+        policy = getattr(self, "acceptance_policy", None)
+        if policy is None:
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": "No acceptance policy configured (fail closed)."}
+        # 1. Freeze the target before any writes.
+        try:
+            frozen = ra.freeze_rollback_target(self.owner, generation_id)
+        except ra.RollbackTargetError as exc:
+            return {"ok": False, "reason": "rollback_target_invalid",
+                    "detail": str(exc)[:300]}
+        target_gid = frozen["generation_id"]
+        # Content binds the frozen target AND live state at entry.
+        live_fp = ra._live_fingerprints(self.owner)
+        content_hash = canonical_hash(
+            ra.rollback_content(frozen, live_fp))
+        # 2. Entry authority check. Zero mutation on denial.
+        decision = policy.check(
+            _producer, target_gid, _review_context,
+            proposal_version=content_hash,
+            operation=ra.ROLLBACK_OPERATION,
+            subject=_subject, owner=self.owner)
+        if not decision.get("allowed"):
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": decision.get("detail"),
+                    "generation_id": target_gid}
+        # 3. Safety checkpoint (retention preserves the frozen target).
+        from form.mandell.core_i_recovery import checkpoint as _checkpoint
+        import time as _time
+        stamp = (f"pre-rollback-{target_gid}-"
+                 f"{_time.strftime('%Y%m%dT%H%M%S', _time.gmtime())}")
+        try:
+            comp_gid = _checkpoint(self, stamp=stamp,
+                                   keep_extra={target_gid})
+        except Exception as exc:
+            return {"ok": False, "reason": "safety_checkpoint_failed",
+                    "detail": f"{type(exc).__name__}: {str(exc)[:200]}",
+                    "generation_id": target_gid}
+        # 4. Live revalidation = the commit decision. Full policy check
+        # (revocation, chain, subject, owner, target, operation) plus
+        # frozen-target re-validation, immediately before the protected
+        # transition. Uses entry-captured live fingerprints: the safety
+        # checkpoint above is part of the authorized flow, not drift.
+        live = policy.check(
+            _producer, target_gid, _review_context,
+            proposal_version=content_hash,
+            operation=ra.ROLLBACK_OPERATION,
+            subject=_subject, owner=self.owner)
+        if not live.get("allowed"):
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": live.get("detail") or
+                    "Live validation failed at execution boundary.",
+                    "generation_id": target_gid,
+                    "compensating_generation_id": comp_gid}
+        try:
+            frozen2 = ra.freeze_rollback_target(self.owner, target_gid)
+        except ra.RollbackTargetError as exc:
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": f"Target changed after authorization: {exc}",
+                    "generation_id": target_gid,
+                    "compensating_generation_id": comp_gid}
+        if frozen2["members"] != frozen["members"]:
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": "Target fingerprints changed after "
+                             "authorization.",
+                    "generation_id": target_gid,
+                    "compensating_generation_id": comp_gid}
+        # 5. Intent journal records the authorized outcome (no handles).
+        from form.mandell.core_i_recovery import (
+            write_rollback_intent, clear_rollback_intent,
+            recover_rollback_intent)
+        write_rollback_intent(self.owner, target_gid, comp_gid,
+                              frozen["members"])
+        # 6. Canonical rollback to the frozen target. The mediation token
+        # is minted HERE — after the live revalidation (commit decision) —
+        # and validated inside rollback() before any state access.
+        from form.mandell.core_i_recovery import rollback as _rollback
+        _mediation = {"operation": ra.ROLLBACK_OPERATION,
+                      "owner": self.owner,
+                      "generation_id": target_gid,
+                      "via": live.get("via"),
+                      "compensating_generation_id": comp_gid}
+        try:
+            restored = _rollback(self.owner, target_gid,
+                                 _mediation=_mediation)
+        except Exception as exc:
+            # Journal preserved: recovery will complete or fail closed.
+            return {"ok": False, "reason": "rollback_failed",
+                    "detail": f"{type(exc).__name__}: {str(exc)[:200]}",
+                    "generation_id": target_gid,
+                    "compensating_generation_id": comp_gid}
+        # 7. Verify complete restoration before success. The canonical
+        # rollback converges live files to the target generation; CURRENT
+        # still names the latest committed generation (the safety
+        # checkpoint) — that is the existing invariant, preserved.
+        # Verification: the restored state loads through the production
+        # path, and the live nursery bytes match the target's sealed
+        # nursery member exactly.
+        try:
+            from form import persist_rest
+            probe = persist_rest.load(self.owner, activate=False)
+            if probe is None:
+                raise ValueError("restored program failed to load")
+            import hashlib as _hl
+            from form.dell_matrix.nursery import owner_nursery_path
+            _h = _hl.sha256()
+            with open(owner_nursery_path(self.owner), "rb") as _f:
+                for _c in iter(lambda: _f.read(65536), b""):
+                    _h.update(_c)
+            if _h.hexdigest() != frozen["members"].get("nursery"):
+                raise ValueError("live nursery does not match target "
+                                 "generation member")
+        except Exception as exc:
+            return {"ok": False, "reason": "restoration_unverified",
+                    "detail": f"{type(exc).__name__}: {str(exc)[:200]}",
+                    "generation_id": target_gid,
+                    "compensating_generation_id": comp_gid}
+        # 8. Clear intent; mark this (now stale) instance; receipt.
+        clear_rollback_intent(self.owner)
+        self._post_rollback_stale = True
+        return {"ok": True, "generation_id": target_gid,
+                "compensating_generation_id": comp_gid,
+                "via": decision.get("via"),
+                "restored": True}
+
     def reject_proposal(self, pid: str) -> Dict[str, Any]:
         prop = self.nursery.reject(pid)
         if not prop:

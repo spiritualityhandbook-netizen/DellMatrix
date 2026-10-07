@@ -111,10 +111,16 @@ def smoke() -> int:
                            ("simulate", 31), ("checkpoint", 27), ("retry", 42),
                            ("load", 28)]:
         r = route_intent(p, translate(text), raw_line=text)
-        rec(
-            f"selects_dell_{exp_dell}",
-            r.routed and r.dell == exp_dell and r.ok,
-        )
+        if exp_dell == 28:
+            # R6.3: Dell 28 routes correctly but denies without explicit
+            # bound authority (execution requires mediation).
+            rec(f"selects_dell_{exp_dell}",
+                r.routed and r.dell == exp_dell and not r.ok)
+        else:
+            rec(
+                f"selects_dell_{exp_dell}",
+                r.routed and r.dell == exp_dell and r.ok,
+            )
     # DCC-III: argument-bearing routes
     for text, exp_dell in [("stamp my-milestone", 34), ("cycle 2", 6), ("form sphere", 15)]:
         r = route_intent(p, translate(text), raw_line=text)
@@ -292,10 +298,12 @@ def smoke() -> int:
     # --- DCC-III: checkpoint + rollback (control)
     r = route_intent(p, translate("checkpoint"), raw_line="checkpoint")
     rec("checkpoint_writes", r.routed and r.ok and "Checkpoint written" in " ".join(r.messages))
+    # R6.3: Dell 28 via router denies without explicit bound authority
+    # (the mediated path is proven in the R6.3 circuit suite).
     r = route_intent(p, translate("load"), raw_line="load")
     rec(
         "rollback_restores",
-        r.routed and r.ok and r.new_program is not None and "restored" in " ".join(r.messages).lower(),
+        r.routed and not r.ok and r.new_program is None,
     )
 
     # --- DCC-III: adversarial — correct action + wrong Dell refused

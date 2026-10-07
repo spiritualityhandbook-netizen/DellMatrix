@@ -92,6 +92,29 @@ def _run_driver(name: str, code: str, *args: str, timeout: int = 180):
 
 _DRIVER_PREAMBLE = "import os, sys\nsys.path.insert(0, os.getcwd())\n"
 
+# R6.3: test-only mediated rollback helper. Production code must use
+# Program.confirm_rollback; tests mint the mediation token directly.
+_MEDIATED_RB = """
+def _mrb(owner, gid):
+    from form.mandell.core_i_recovery import rollback as _rb
+    _med = {"operation": "checkpoint.rollback", "owner": owner, "generation_id": gid}
+    return _rb(owner, gid, _mediation=_med)
+def _mrb_fail(owner, gid, fail_at):
+    from form.mandell.core_i_recovery import rollback as _rb
+    _med = {"operation": "checkpoint.rollback", "owner": owner, "generation_id": gid}
+    return _rb(owner, gid, _fail_at=fail_at, _mediation=_med)
+"""
+_DRIVER_PREAMBLE = _DRIVER_PREAMBLE + _MEDIATED_RB
+
+
+def _t_mediated_rollback(owner, gid=None):
+    """R6.3: in-process mediated rollback for tests."""
+    from form.mandell import checkpoint_generation as _CG
+    g = gid or _CG.current_generation_id(owner)
+    _med = {"operation": "checkpoint.rollback", "owner": owner,
+            "generation_id": g}
+    return rollback(owner, g, _mediation=_med)
+
 
 # ---------------------------------------------------------------------------
 # 0.1.1 -- rollback corruption repair
@@ -103,7 +126,7 @@ def t_r1_rollback_repoints_to_live(rec) -> None:
     first = p.nursery.add("r1 idea", words="w")
     rc = CG.commit_checkpoint(p)
     member_file = rc["members"]["nursery"]["file"]
-    p2 = rollback(o)
+    p2 = _t_mediated_rollback(o)
     live = owner_nursery_path(o)
     ok = os.path.abspath(p2.nursery.path or "") == os.path.abspath(live)
     ok = ok and os.path.basename(p2.nursery.path or "") != member_file
@@ -121,7 +144,7 @@ def t_r1_postrollback_mutation_keeps_member_byte_identical(rec) -> None:
     gid = rc["generation_id"]
     mpath = _member_path(o, rc, "nursery")
     manifest_sha = rc["members"]["nursery"]["sha256"]
-    p2 = rollback(o)
+    p2 = _t_mediated_rollback(o)
     # Two different mutation paths, both autosave.
     p2.nursery.add("r1 second", words="w2")
     p2.nursery.confirm(first.id)
@@ -143,7 +166,7 @@ def t_r1_rollback_then_commit_chain_coherent(rec) -> None:
     p = _fresh_program(o)
     p.nursery.add("chain idea", words="w")
     rc1 = CG.commit_checkpoint(p)
-    p2 = rollback(o)
+    p2 = _t_mediated_rollback(o)
     rc2 = CG.commit_checkpoint(p2)
     ok = rc2["generation_id"] != rc1["generation_id"]
     ok = ok and rc2["previous_generation_id"] == rc1["generation_id"]
@@ -184,7 +207,11 @@ from form.mandell.core_i_recovery import rollback
 from form.mandell import checkpoint_generation as CG
 from form import persist_rest
 from form.dell_matrix.nursery import owner_nursery_path
-p2 = rollback(o)
+# R6.3: canonical rollback requires mediation; the driver mints the
+# test token for the CURRENT generation (assertions preserved).
+_gid = CG.current_generation_id(o)
+_med = {"operation": "checkpoint.rollback", "owner": o, "generation_id": _gid}
+p2 = rollback(o, _gid, _mediation=_med)
 live = owner_nursery_path(o)
 assert os.path.abspath(p2.nursery.path) == os.path.abspath(live), "sealed alias survived!"
 p2.nursery.add("xproc second", words="xp2")
@@ -260,8 +287,12 @@ def t_r2_xproc_save_checkpoint_rollback_mutate_save_load(rec) -> None:
 _PMISS = _DRIVER_PREAMBLE + """
 o = sys.argv[1]
 from form.mandell.core_i_recovery import rollback
+# R6.3: mediation names a nonexistent generation; the honest
+# rollback_missing error must still surface (assertions preserved).
+_med = {"operation": "checkpoint.rollback", "owner": o,
+        "generation_id": "no_such_generation"}
 try:
-    rollback(o, None)
+    rollback(o, "no_such_generation", _mediation=_med)
     print("MISS_FAIL no error", flush=True)
 except FileNotFoundError as exc:
     print("MISS_OK", "rollback_missing" in str(exc), flush=True)
@@ -292,7 +323,7 @@ def t_r3_member_immutability_battery(rec) -> None:
     committed = [CG.commit_checkpoint(p)["generation_id"]]
     ok = True
     for i in range(3):
-        q = rollback(o)
+        q = _t_mediated_rollback(o)
         q.nursery.add(f"inv mutation {i}", words="w")
         persist_rest.save(q)
         committed.append(CG.commit_checkpoint(q)["generation_id"])
@@ -320,7 +351,7 @@ def t_r3_no_alias_ownership(rec) -> None:
     p.nursery.add("alias idea", words="w")
     rc = CG.commit_checkpoint(p)
     member_files = {m["file"] for m in rc["members"].values()}
-    q = rollback(o)
+    q = _t_mediated_rollback(o)
     qp = os.path.abspath(q.nursery.path or "")
     ok = os.path.basename(qp) not in member_files
     ok = ok and qp == os.path.abspath(owner_nursery_path(o))
@@ -662,8 +693,10 @@ def t_r3_fail_closed_recovery(rec) -> None:
     persist_rest.save(p2)
     from form.mandell import core_i_recovery as R
     g = R.checkpoint(p2, stamp="r3g")
+    # R6.3: canonical rollback requires mediation.
+    _med = {"operation": "checkpoint.rollback", "owner": o, "generation_id": g}
     try:
-        R.rollback(o, g, _fail_at="rollback_commit_program")
+        R.rollback(o, g, _fail_at="rollback_commit_program", _mediation=_med)
     except Exception:
         pass
     # Corrupt the target hashes in the journal.
@@ -740,7 +773,10 @@ def t_perf_baseline(rec) -> None:
     t0 = time.perf_counter(); persist_rest.save(p); t_save = time.perf_counter() - t0
     t0 = time.perf_counter(); persist_rest.load(o); t_load = time.perf_counter() - t0
     t0 = time.perf_counter(); CG.commit_checkpoint(p); t_commit = time.perf_counter() - t0
-    t0 = time.perf_counter(); rollback(o); t_rb = time.perf_counter() - t0
+    # R6.3: canonical rollback requires mediation.
+    _gid = CG.current_generation_id(o)
+    _med = {"operation": "checkpoint.rollback", "owner": o, "generation_id": _gid}
+    t0 = time.perf_counter(); rollback(o, _gid, _mediation=_med); t_rb = time.perf_counter() - t0
     print(f"PERF save={t_save:.3f}s load={t_load:.3f}s commit={t_commit:.3f}s rollback={t_rb:.3f}s")
     rec("perf_baseline_recorded", True, "")
 
@@ -795,7 +831,7 @@ print('G2=' + g2)
     # --- rollback to g1 in a fresh process (eager convergence inside rollback)
     rb = _DRIVER_PREAMBLE + f"""
 from form.mandell import core_i_recovery as R
-rp = R.rollback({owner!r}, {g1!r})
+rp = _mrb({owner!r}, {g1!r})
 print('RB_OK')
 """
     r = _run_driver("d2rollback", rb)
@@ -842,7 +878,7 @@ print('MUT_OK')
     s4 = _DRIVER_PREAMBLE + f"""
 from form.mandell import core_i_recovery as R
 from form import persist_rest
-R.rollback({owner!r}, {g1!r})
+_mrb({owner!r}, {g1!r})
 q = persist_rest.load({owner!r}, activate=False)
 persist_rest.save(q)
 z = persist_rest.load({owner!r}, activate=False)
@@ -857,7 +893,7 @@ print('UNITS=' + ','.join(sorted(str(x) for x in z.cube.session.plane.units)))
     s5 = _DRIVER_PREAMBLE + f"""
 from form.mandell import core_i_recovery as R
 from form import persist_rest
-R.rollback({owner!r}, {g1!r})
+_mrb({owner!r}, {g1!r})
 q = persist_rest.load({owner!r}, activate=False)
 q.place('idea_gamma', 'Gamma')
 persist_rest.save(q)
@@ -884,9 +920,9 @@ print('UNITS=' + ','.join(sorted(str(x) for x in z.cube.session.plane.units)))
         s6b = _DRIVER_PREAMBLE + f"""
 from form.mandell import core_i_recovery as R
 from form import persist_rest
-R.rollback({owner!r}, {g2!r})
+_mrb({owner!r}, {g2!r})
 a = sorted(str(x) for x in persist_rest.load({owner!r}, activate=False).cube.session.plane.units)
-R.rollback({owner!r}, {g1!r})
+_mrb({owner!r}, {g1!r})
 b = sorted(str(x) for x in persist_rest.load({owner!r}, activate=False).cube.session.plane.units)
 print('A=' + ','.join(a))
 print('B=' + ','.join(b))
@@ -909,7 +945,7 @@ print('B=' + ','.join(b))
     if g2:
         setup7 = _DRIVER_PREAMBLE + f"""
 from form.mandell import core_i_recovery as R
-R.rollback({owner!r}, {g2!r})
+_mrb({owner!r}, {g2!r})
 print('SETUP7_OK')
 """
         r = _run_driver("d2setup7", setup7)
@@ -922,7 +958,7 @@ print('SETUP7_OK')
     # which need not byte-match the sealed member file).
     cap = _DRIVER_PREAMBLE + f"""
 from form.mandell import core_i_recovery as R
-R.rollback({owner!r}, {g1!r})
+_mrb({owner!r}, {g1!r})
 print('CAP_OK')
 """
     _run_driver("d2cap", cap)
@@ -934,7 +970,7 @@ print('CAP_OK')
     # Restore the OLD pair (g2) for the injection loop baseline.
     rst = _DRIVER_PREAMBLE + f"""
 from form.mandell import core_i_recovery as R
-R.rollback({owner!r}, {g2!r})
+_mrb({owner!r}, {g2!r})
 print('RST_OK')
 """
     _run_driver("d2rst", rst)
@@ -947,7 +983,7 @@ print('RST_OK')
         fs = _DRIVER_PREAMBLE + f"""
 from form.mandell import core_i_recovery as R
 try:
-    R.rollback({owner!r}, {g1!r}, _fail_at={stage!r})
+    _mrb_fail({owner!r}, {g1!r}, {stage!r})
     print('NO_RAISE')
 except Exception as e:
     print('RAISED=' + type(e).__name__)
@@ -989,7 +1025,7 @@ except Exception as e:
         if stage in post_stage and g2:
             rs = _DRIVER_PREAMBLE + f"""
 from form.mandell import core_i_recovery as R
-R.rollback({owner!r}, {g2!r})
+_mrb({owner!r}, {g2!r})
 print('RESTORED')
 """
             rr = _run_driver("d2restore", rs)

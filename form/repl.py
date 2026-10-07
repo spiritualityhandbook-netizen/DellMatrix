@@ -1255,6 +1255,61 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         except Exception:
             pass
 
+    # R6.3: intercept "restore confirm <generation>" BEFORE translate
+    # (the word "confirm" would otherwise route to Dell 37/Nurture).
+    # Bare "restore"/"revert" also handled here: freeze+describe, never
+    # execute. Typing "restore" alone is never approval.
+    if _checkpoint_lang and raw_line:
+        from form.dell_matrix import rollback_authority as _ra
+        _m = re.search(r"\bconfirm\s+([A-Za-z0-9_.\-]+)",
+                       raw_line, re.IGNORECASE)
+        if _m:
+            _gen = _m.group(1)
+            try:
+                _frozen = _ra.freeze_rollback_target(p.owner, _gen)
+            except _ra.RollbackTargetError as _exc:
+                _say(f"Restore denied: cannot freeze target: {_exc}")
+                return p
+            _policy = getattr(p, "acceptance_policy", None)
+            if _policy is None:
+                _say("Restore denied: no acceptance policy (fail closed).")
+                return p
+            _live = _ra._live_fingerprints(p.owner)
+            _data = _ra.rollback_content(_frozen, _live)
+            _issued = _policy.issue_approval(
+                operation=_ra.ROLLBACK_OPERATION, target=_gen,
+                reviewer="human", data=_data,
+                note="repl-human restore confirm")
+            _res = p.confirm_rollback(
+                _gen,
+                _review_context={"approval_id":
+                                 _issued["context"]["approval_id"]},
+                _subject="human", _producer="repl-human")
+            if _res.get("ok"):
+                _say(f"Restored generation {_res['generation_id']}.")
+                _say(f"  Compensating checkpoint: "
+                     f"{_res['compensating_generation_id']}")
+                _say("  (Pre-rollback state preserved; "
+                     "restore it to undo.)")
+                from form import persist_rest as _pr
+                return _pr.load(p.owner)
+            _say(f"Restore denied ({_res.get('reason')}): "
+                 f"{_res.get('detail', '')[:200]}")
+            return p
+        # Bare restore/revert: freeze and describe; do not execute.
+        if re.search(r"\b(restore|revert)\b", raw_line, re.IGNORECASE):
+            try:
+                _frozen = _ra.freeze_rollback_target(p.owner, None)
+            except _ra.RollbackTargetError as _exc:
+                _say(f"Restore unavailable: {_exc}")
+                return p
+            _say("Restore requires explicit approval. This would:")
+            _say(f"  - roll back to generation {_frozen['generation_id']}")
+            _say(f"  - seal a safety checkpoint of current state first")
+            _say(f"  - discard uncommitted work after the safety checkpoint")
+            _say(f"To approve, type: restore confirm {_frozen['generation_id']}")
+            return p
+
     action = intent.action
     args = intent.args or {}
     lower = raw_line.lower().strip()
@@ -2315,6 +2370,12 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
     # checkpoint rollback (Director ruling: session/persistence semantics).
     # Checkpoint language ("revert", bare/checkpoint-qualified "restore")
     # keeps Dell28 via _checkpoint_lang above.
+    # R6.3: checkpoint-restore language ("revert", bare/checkpoint-qualified
+    # "restore") is authority-mediated. Typing "restore" alone is NEVER
+    # approval: the first step freezes the target and shows what would be
+    # restored. The second step ("restore confirm <generation>") issues an
+    # explicit human approval bound to the frozen target and executes
+    # through Program.confirm_rollback (the single enforcement point).
     elif action == "load" and not _checkpoint_lang:
         # ARGUS vector 9: claiming "Session loaded." when no save file exists
         # would silently replace the live program with a fresh one. Check

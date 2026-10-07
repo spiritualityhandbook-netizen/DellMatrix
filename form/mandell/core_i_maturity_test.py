@@ -27,9 +27,26 @@ def smoke() -> bool:
     rec("checkpoint_unified_state", out.get("ok") is not False and bool(latest_checkpoint("CpA")))
     execute_seed(p, "08[Create] :: extra_unit")
     execute_seed(p, "55[Set] :: k=9")
+    # R6.3: Dell 28 without bound authority denies; the mediated path
+    # restores unified state (assertions preserved).
     out = execute_seed(p, "28[Rollback]")
-    restored = out.get("new_program")
-    rec("rollback_unified_state", restored is not None and "keep_unit" in restored.cube.session.plane.units and "extra_unit" not in restored.cube.session.plane.units and restored.core_ii.store.get("k") == "1")
+    rec("rollback_denied_without_authority", out.get("ok") is False,
+        f"unmediated Dell28 must deny: {out}")
+    from form.dell_matrix import rollback_authority as _ra
+    _frozen = _ra.freeze_rollback_target(p.owner, None)
+    _grant = _ra.issue_rollback_grant(
+        p, issuer="root", subject="test", frozen_target=_frozen)
+    _res = p.confirm_rollback(
+        None, _review_context={"grant_id": _grant["grant_id"]},
+        _subject="test")
+    rec("rollback_unified_state", _res.get("ok") is True,
+        f"mediated rollback failed: {_res}")
+    from form import persist_rest as _pr
+    restored = _pr.load(p.owner, activate=False) if _res.get("ok") else None
+    rec("rollback_unified_state_content",
+        restored is not None and "keep_unit" in restored.cube.session.plane.units
+        and "extra_unit" not in restored.cube.session.plane.units
+        and restored.core_ii.store.get("k") == "1")
 
     p = open_program("TxIso")
     execute_seed(p, "08[Create] :: base")
@@ -50,8 +67,17 @@ def smoke() -> bool:
     execute_seed(p, "08[Create] :: saved")
     execute_seed(p, "27[Checkpoint]")
     execute_seed(p, "08[Create] :: later")
-    out = execute_seed(p, "28[Rollback]")
-    q = out.get("new_program")
+    # R6.3: mediated rollback (assertions preserved).
+    from form.dell_matrix import rollback_authority as _ra2
+    _frozen2 = _ra2.freeze_rollback_target(p.owner, None)
+    _grant2 = _ra2.issue_rollback_grant(
+        p, issuer="root", subject="test", frozen_target=_frozen2)
+    _res2 = p.confirm_rollback(
+        None, _review_context={"grant_id": _grant2["grant_id"]},
+        _subject="test")
+    assert _res2.get("ok"), _res2
+    from form import persist_rest as _pr2
+    q = _pr2.load(p.owner, activate=False)
     tmpd = tempfile.mkdtemp(prefix="dm_corei_rb_")
     try:
         path = os.path.join(tmpd, "corei_rb.json")
@@ -78,7 +104,11 @@ def smoke() -> bool:
     execute_seed(p, "33[Resume]")
     rec("resume_walk", p.avatar.body.locomotion.name == "WALK")
     miss = execute_seed(open_program("Miss"), "28[Rollback]")
-    rec("invalid_rollback_explicit", miss.get("error") == "rollback_missing")
+    # R6.3: unmediated rollback fails explicitly (no target to freeze,
+    # zero mutation).
+    rec("invalid_rollback_explicit",
+        miss.get("error") in ("rollback_target_invalid",
+                              "acceptance_policy_denied"))
 
     p = open_program("Mirr")
     before = list(p.cube.session.plane.units)

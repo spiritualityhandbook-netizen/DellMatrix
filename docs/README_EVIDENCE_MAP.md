@@ -279,3 +279,46 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
   handles, active approval IDs, configured env credential values,
   recognized formats (raw and \uXXXX-decoded forms) — arbitrary
   unknown secrets and every possible encoding not claimed covered.
+
+## 11. Phase-6 R6.3 — authority-bound rollback circuit (candidate)
+
+- **STATUS:** candidate-branch only (`gdp-phase6-r63-rollback`). NOT
+  CERTIFIED. DO NOT MERGE without Director authorization.
+- **CIRCUIT:** freeze target (CURRENT resolved once; manifest + member
+  fingerprints bound) → issue grant/approval → bound endpoint →
+  private validation → safety checkpoint (retention keeps target) →
+  canonical authorized rollback → production reload → truthful receipt.
+- **DESIGN:** `form/dell_matrix/rollback_authority.py` (trusted side:
+  freeze_rollback_target, issue_rollback_grant, RollbackEndpoint,
+  bind_rollback_agent). `Program.confirm_rollback` (open.py) is the
+  single enforcement point: entry check → safety checkpoint →
+  live revalidation (commit decision) → intent journal → canonical
+  `core_i_recovery.rollback` (requires `_mediation`; owner string
+  alone denies). Dell28, REPL revert/restore, and Program entrypoints
+  route through it. No second permission store.
+- **AUTHORITY:** AcceptancePolicy GRANTABLE_OPERATIONS =
+  {"nursery.confirm", "checkpoint.rollback"} (frozen allowlist;
+  never interchangeable). Content binds target generation +
+  live-at-issuance fingerprints (fail closed on drift). Revocation
+  honored at entry and at the execution boundary. Session-scoped;
+  restart requires re-issuance.
+- **RECOVERY:** rollback intent journal (no handles/credentials)
+  extends the existing machinery; commit decision = live revalidation.
+  After it, restart completes the recorded outcome without the
+  session credential. Stale initiating instances refuse save
+  (RollbackRecoveryError). Rollback never resurrects revoked authority.
+- **PROOFS:** `form/mandell/r63_rollback_test.py` — 29/29 checks
+  (positive grant/human paths; missing/forged/foreign credentials;
+  wrong operation/owner/subject/target; manifest drift; live drift;
+  revoked grant/ancestor; retention interference; activation ordering;
+  interrupted restoration + child-process restart; malformed journal;
+  stale-save protection; journal secret hygiene; compensation
+  round-trip; endpoint isolation; Dell28 denial; sensitivity),
+  registered in regress LIST.
+- **RESEARCH:** `~/workspace/PHASE_6_R63_RESEARCH_DELTA20.md` —
+  ADOPT complete mediation + exact-resource binding; ADAPT rollback
+  journal + checkpoint retention; REJECT duplicate authority,
+  moving-target approval, early activation.
+- **LIMITS:** No protection claimed against malicious in-process
+  Python or concurrent races (declared mediated-interface boundary).
+  Human REPL path requires explicit "restore confirm <generation>".
