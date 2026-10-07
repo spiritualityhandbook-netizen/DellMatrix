@@ -185,3 +185,38 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
 - Visual: `visual` command in repl → `DellMatrix_UI.html`
 - Legacy note: `src/README.md`, `form/LEGACY.md`
 - Deps: `requirements.txt` (Python 3.10+, stdlib-only core)
+
+---
+
+## 9. R6.1 capability-authority circuit (candidate stage, 2026-10-07)
+
+> **Status:** CANDIDATE — implemented on branch `gdp-phase6-r61-authority`
+> (GDP_PHASE_6_CAPABILITY_AUTHORITY_CIRCUIT, Director 2026-10-07). NOT
+> merged to production. NOT certified. The claims below describe the
+> candidate branch, verified by the registered proof suite.
+
+- **SOURCE:** `form/dell_matrix/acceptance_policy.py` (grant issuance,
+  attenuation, revocation, `check()` grant branch), new module
+  `form/dell_matrix/agent_authority.py` (trusted dispatch adapter),
+  `form/open.py::Program.confirm_proposal` (`_subject` trusted binding),
+  `form/dell_matrix/confirm_lineage.py` (writer re-validation +
+  test-only `_BETWEEN_STAGES` hook, None in production).
+- **WHAT IT DOES:** opaque session-scoped grant handles
+  (`grant_<uuid4hex>`) backed by canonical issuance records; root
+  issuance is trusted-path-only; `attenuate_grant` narrows only
+  (subject/owner/operation equality, target/content narrow-or-equal,
+  strictly decreasing delegation depth); `_grant_chain_valid`
+  recursively validates the full ancestor chain at execution time;
+  revocation of any ancestor denies unfinished descendants; committed
+  history survives revocation/restart; audit references grants by
+  sequence number, never by handle value.
+- **SCOPE:** the `nursery.confirm` capability only. Human approval and
+  opt-in paths unchanged. Threat boundary: untrusted agent requests
+  through mediated interfaces; NOT malicious in-process Python; NOT
+  concurrent-execution race safety (single-threaded dispatcher).
+- **PROOFS:** `form/mandell/r61_authority_test.py` — 97/97 checks
+  (in-process INTEGRATION + CROSS_PROCESS via fixed child scripts
+  `form/mandell/r61_child.py` with JSON arguments), registered in
+  `form/regress.py` LIST.
+- **EVIDENCE STATUS:** candidate-branch only. Awaiting Director review;
+  no merge without authorization.

@@ -40,6 +40,11 @@ def _validate_writer_auth(program, pid: str, auth: Dict[str, Any], stage: str) -
     durable publish. The auth snapshot is immutable; any intervening
     revocation or content mutation denies.
 
+    R6.1: the trusted subject binding rides the auth snapshot (set by
+    trusted dispatch in Program.confirm_proposal); the writer never
+    re-derives identity from caller input. Owner scope comes from the
+    Program object itself.
+
     Returns {"ok": True} or {"ok": False, "detail": str}. Never raises.
     """
     try:
@@ -57,7 +62,9 @@ def _validate_writer_auth(program, pid: str, auth: Dict[str, Any], stage: str) -
                     "detail": f"{stage}: reviewed data changed after approval"}
         decision = policy.check(
             auth.get("producer"), pid, auth.get("review_context"),
-            proposal_version=live_hash, operation=operation)
+            proposal_version=live_hash, operation=operation,
+            subject=auth.get("subject"),
+            owner=getattr(program, "owner", None))
         if not decision.get("allowed"):
             return {"ok": False,
                     "detail": f"{stage}: {decision.get('detail') or 'policy denied'}"}
@@ -65,6 +72,15 @@ def _validate_writer_auth(program, pid: str, auth: Dict[str, Any], stage: str) -
     except Exception as e:
         return {"ok": False,
                 "detail": f"{stage}: validation error {type(e).__name__}"}
+
+
+# R6.1 test-only hook. None (and never set) in production. If set to a
+# callable, it is invoked with (program, pid, auth) after staging and
+# before the pre-commit authorization check, so proofs can
+# deterministically revoke a grant or mutate content mid-write and
+# observe the writer deny. A raising hook fails closed through the
+# normal compensation path.
+_BETWEEN_STAGES = None
 
 
 def _denied_receipt(pid, producer, detail, stage):
@@ -268,7 +284,18 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     # journal is RETAINED (evidence outlives unresolved restoration) and
     # the receipt reports incomplete compensation alongside the original
     # authorization denial.
+    # R6.1: deterministic mid-write hook for revocation/content-change
+    # proofs (test-only; _BETWEEN_STAGES is None in production).
+    _hook = _BETWEEN_STAGES
+    _hook_err = None
+    if callable(_hook):
+        try:
+            _hook(program, pid, _auth)
+        except Exception as e:
+            _hook_err = f"between-stages hook failed: {type(e).__name__}"
     _v2 = _validate_writer_auth(program, pid, _auth, "pre_commit")
+    if _hook_err is not None and _v2["ok"]:
+        _v2 = {"ok": False, "detail": _hook_err}
     if not _v2["ok"]:
         prop.status = "pending"
         _comp = {"ok": True, "failures": [], "removed": []}
