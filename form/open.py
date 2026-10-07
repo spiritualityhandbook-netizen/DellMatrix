@@ -1474,7 +1474,8 @@ class Program:
 
     def confirm_proposal(self, pid: str, _producer: str = "unknown",
                          _review_context: dict = None,
-                         _operation: str = "confirm") -> Dict[str, Any]:
+                         _operation: str = "confirm",
+                         _subject: str = None) -> Dict[str, Any]:
         """Canonical confirmation with acceptance policy (WO-5.1).
 
         Args:
@@ -1482,9 +1483,14 @@ class Program:
             _producer: Producer ID for policy check (e.g., "repl_user",
                 "auto_growth", "code_evolution"). Defaults to "unknown".
             _review_context: Review context referencing an approval ISSUED
-                by this session's policy (see make_review_context).
+                by this session's policy (see make_review_context), or an
+                R6.1 capability grant ({"grant_id": ...}).
             _operation: Operation the approval must bind to (default
                 "confirm"; composite ops use derived approvals).
+            _subject: R6.1 trusted subject binding for the grant path.
+                Established by trusted dispatch code, never by the
+                caller's payload. Required when _review_context carries a
+                grant_id; ignored by the human-approval/opt-in paths.
 
         Returns:
             {"ok": True, ...} on success.
@@ -1512,7 +1518,8 @@ class Program:
         data_hash = self.acceptance_data_hash(pid, _operation)
         decision = policy.check(_producer, pid, _review_context,
                                 proposal_version=data_hash,
-                                operation=_operation)
+                                operation=_operation,
+                                subject=_subject, owner=self.owner)
         if not decision.get("allowed"):
             return {
                 "ok": False,
@@ -1530,7 +1537,8 @@ class Program:
         live_hash = self.acceptance_data_hash(pid, _operation)
         live = policy.check(_producer, pid, _review_context,
                             proposal_version=live_hash,
-                            operation=_operation)
+                            operation=_operation,
+                            subject=_subject, owner=self.owner)
         if not live.get("allowed"):
             # No mutation has occurred; proposal remains pending and
             # retryable. Staged work (none yet) needs no recovery.
@@ -1547,12 +1555,16 @@ class Program:
         # the writer as an immutable snapshot. The writer validates live
         # policy and reviewed-data integrity before placement and before
         # durable publish.
+        # R6.1: the trusted subject binding rides the snapshot so writer
+        # stages re-validate the same binding (no re-derivation from
+        # caller input inside the writer).
         _auth = {
             "producer": _producer,
             "pid": pid,
             "operation": _operation,
             "data_hash": live_hash,
             "review_context": _review_context,
+            "subject": _subject,
         }
         return _confirm_proposal(self, pid, _auth=_auth)
 

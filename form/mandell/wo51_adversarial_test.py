@@ -337,10 +337,10 @@ def test_revoke_between_auth_and_execution():
     orig_check = policy.check
     calls = {"n": 0}
     def injecting_check(producer, pid, review_context=None,
-                        proposal_version=None, operation="confirm"):
+                        proposal_version=None, operation="confirm", **kw):
         calls["n"] += 1
         res = orig_check(producer, pid, review_context,
-                         proposal_version, operation)
+                         proposal_version, operation, **kw)
         if calls["n"] == 1 and res.get("allowed"):
             # First check passed; revoke before the live execution check
             policy.revoke_approval(approval_id)
@@ -369,13 +369,13 @@ def test_mutate_between_auth_and_execution():
     orig_check = policy.check
     calls = {"n": 0}
     def injecting_check(producer, pid, review_context=None,
-                        proposal_version=None, operation="confirm"):
+                        proposal_version=None, operation="confirm", **kw):
         calls["n"] += 1
         if calls["n"] == 1:
             # Mutate after the first check
             p.nursery.proposals[pid].words = "tampered"
         return orig_check(producer, pid, review_context,
-                          proposal_version, operation)
+                          proposal_version, operation, **kw)
     policy.check = injecting_check
     try:
         r = p.confirm_proposal(pr.id, _producer="test", _review_context=issued)

@@ -143,6 +143,8 @@ LIST = [
     "form.mandell.writer_boundary_test:smoke",
     "form.mandell.compensation_test:smoke",
     "form.mandell.supersession_failure_test:smoke",
+    "form.mandell.r61_authority_test:smoke",
+    "form.mandell.r61_oracle_test:smoke",
 ]
 
 TIMEOUT_S = 900
