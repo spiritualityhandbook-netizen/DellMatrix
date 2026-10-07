@@ -151,30 +151,38 @@ class _BridgeProvider:
                  max_chars: int) -> str:
         self.calls += 1
         # max_chars is chars; the transport read bound is bytes.
+        # Separate transport-byte and decoded-char limits (AMEND).
         max_bytes = max_chars * 4
         result = self._bridge.dispatch(
             self.provider, prompt, "",
             model=self.model, timeout=timeout_s, max_bytes=max_bytes)
         if not result.ok:
+            if (result.error or "").startswith("response_too_large:"):
+                raise _TransportTooLarge(result.error)
             raise ProviderError(
                 f"provider {self.provider} failed")
         self.last_actual_model = (result.meta or {}).get("model")
         # NOTE: no silent truncation here. The dock enforces the
-        # response bound by REJECTING oversized responses before
+        # decoded-char bound by REJECTING oversized responses before
         # parsing (directive: slicing after an unlimited read, or
         # silent truncation, is insufficient).
         return result.text or ""
 
 
+class _TransportTooLarge(ProviderError):
+    """Transport body exceeded the byte bound (distinct receipt)."""
+
+
 # ---------------------------------------------------------------- sanitization
 
 def sanitize_error(text: str, protected: frozenset = frozenset()) -> str:
-    """Redact key-material shapes AND known protected values from a
-    surfaced provider error."""
+    """Redact known protected values, recognized handle formats, and
+    key-material shapes from a surfaced provider error."""
     s = str(text)
     for val in protected:
         if val and val in s:
             s = s.replace(val, "[REDACTED]")
+    s = _HANDLE_RE.sub("[REDACTED]", s)
     return _SECRET_VALUE_RE.sub("[REDACTED]", s)
 
 
@@ -235,6 +243,56 @@ def contains_protected(text: str, protected: frozenset) -> bool:
     return bool(_HANDLE_RE.search(s))
 
 
+_UNESCAPE_RE = re.compile(r"\\u([0-9a-fA-F]{4})")
+
+
+def _unescape_unicode(s: str) -> str:
+    """Decode \\uXXXX sequences WITHOUT a full unicode_escape pass
+    (which would mangle legitimate backslashes). Used so an encoded
+    handle like gr\\u0061nt_<hex> is screened as the handle it
+    becomes after JSON decoding."""
+    return _UNESCAPE_RE.sub(
+        lambda m: chr(int(m.group(1), 16)), s)
+
+
+def contains_protected_decoded(text: str, protected: frozenset) -> bool:
+    """Screen both the raw text and its \\uXXXX-decoded form.
+
+    Representation-boundary fix (AMEND 2026-10-07): checking encoded
+    text alone misses handles that JSON decoding restores. Clean
+    escaped Unicode that decodes to nothing protected remains usable.
+    """
+    s = str(text)
+    if contains_protected(s, protected):
+        return True
+    try:
+        u = _unescape_unicode(s)
+    except Exception:
+        return False
+    return u != s and contains_protected(u, protected)
+
+
+def _screen_decoded_values(obj: Any, protected: frozenset) -> bool:
+    """Recursively screen decoded JSON keys and string values.
+
+    Applied to parsed provider output BEFORE proposal creation, so an
+    encoded handle smuggled through JSON escapes cannot reach
+    Nursery.add. Returns True if protected material is found.
+    """
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(k, str) and contains_protected_decoded(k, protected):
+                return True
+            if _screen_decoded_values(v, protected):
+                return True
+        return False
+    if isinstance(obj, (list, tuple)):
+        return any(_screen_decoded_values(v, protected) for v in obj)
+    if isinstance(obj, str):
+        return contains_protected_decoded(obj, protected)
+    return False
+
+
 def scrub_context(obj: Any) -> Any:
     """Recursively drop sensitive key names from host context.
 
@@ -269,11 +327,21 @@ _MAX_CONTEXT_CHARS = 100000
 def validate_context(context: Any) -> Dict[str, Any]:
     """Validate host context. Returns a scrubbed plain-dict copy.
 
-    Raises DockError on: non-dict input (None is explicitly mapped to
-    {}), cycles, depth > 10, nodes > 1000, serialized size > 100000
-    chars, or scrub/serialize failure. Valid JSON scalar types are
-    preserved.
+    Representation-boundary enforcement (AMEND 2026-10-07):
+    - None is explicitly mapped to {}; any other non-dict is rejected
+      (no silent normalization).
+    - EVERY visited value -- containers AND scalars -- counts against
+      the node budget.
+    - Depth and cumulative size are enforced DURING traversal, before
+      building an oversized copy.
+    - Unsupported objects are REJECTED (never str()-normalized).
+    - NaN and infinities are rejected under the declared JSON schema.
+    - Legitimate finite scalars (str/int/float/bool/None) and plain
+      dict/list/tuple containers are preserved.
+
+    Raises DockError with a stable bad_context receipt otherwise.
     """
+    import math as _math
     if context is None:
         return {}
     if not isinstance(context, dict):
@@ -282,39 +350,70 @@ def validate_context(context: Any) -> Dict[str, Any]:
             f"got {type(context).__name__}")
     seen: set = set()
     count = [0]
+    size = [0]
+
+    def _budget(n: int):
+        count[0] += 1
+        if count[0] > _MAX_CONTEXT_NODES:
+            raise DockError(
+                f"bad_context: nodes exceed {_MAX_CONTEXT_NODES}")
+        size[0] += n
+        if size[0] > _MAX_CONTEXT_CHARS:
+            raise DockError(
+                f"bad_context: cumulative size exceeds {_MAX_CONTEXT_CHARS}")
 
     def _walk(node: Any, depth: int) -> Any:
-        # Cycle detection BEFORE recursion (no RecursionError).
-        if isinstance(node, (dict, list, tuple)):
+        if depth > _MAX_CONTEXT_DEPTH:
+            raise DockError(
+                f"bad_context: depth exceeds {_MAX_CONTEXT_DEPTH}")
+        if isinstance(node, dict):
             nid = id(node)
             if nid in seen:
                 raise DockError("bad_context: cyclic context")
             seen.add(nid)
             try:
-                if depth > _MAX_CONTEXT_DEPTH:
-                    raise DockError(
-                        f"bad_context: depth exceeds {_MAX_CONTEXT_DEPTH}")
-                count[0] += 1
-                if count[0] > _MAX_CONTEXT_NODES:
-                    raise DockError(
-                        f"bad_context: nodes exceed {_MAX_CONTEXT_NODES}")
-                if isinstance(node, dict):
-                    out = {}
-                    for k, v in node.items():
-                        if not isinstance(k, str):
-                            raise DockError(
-                                "bad_context: non-string dict key")
-                        if _SENSITIVE_KEY_RE.search(k):
-                            continue
-                        out[k] = _walk(v, depth + 1)
-                    return out
+                _budget(2)
+                out = {}
+                for k, v in node.items():
+                    if not isinstance(k, str):
+                        raise DockError(
+                            "bad_context: non-string dict key")
+                    _budget(len(k))
+                    if _SENSITIVE_KEY_RE.search(k):
+                        continue
+                    out[k] = _walk(v, depth + 1)
+                return out
+            finally:
+                seen.discard(nid)
+        if isinstance(node, (list, tuple)):
+            nid = id(node)
+            if nid in seen:
+                raise DockError("bad_context: cyclic context")
+            seen.add(nid)
+            try:
+                _budget(2)
                 return [_walk(v, depth + 1) for v in node]
             finally:
                 seen.discard(nid)
-        if isinstance(node, (str, int, float, bool)) or node is None:
+        # Scalars: every one counts.
+        if node is None or isinstance(node, bool):
+            _budget(4)
             return node
-        s = str(node)
-        return s[:2000]
+        if isinstance(node, int):
+            _budget(len(str(node)))
+            return node
+        if isinstance(node, float):
+            if _math.isnan(node) or _math.isinf(node):
+                raise DockError(
+                    "bad_context: non-finite number rejected")
+            _budget(len(repr(node)))
+            return node
+        if isinstance(node, str):
+            _budget(len(node))
+            return node
+        # Unsupported objects are rejected, not str()-normalized.
+        raise DockError(
+            f"bad_context: unsupported type {type(node).__name__}")
 
     try:
         clean = _walk(context, 0)
@@ -324,7 +423,7 @@ def validate_context(context: Any) -> Dict[str, Any]:
         raise DockError(
             f"bad_context: processing failed ({type(e).__name__})")
     try:
-        serial = json.dumps(clean, sort_keys=True)
+        serial = json.dumps(clean, sort_keys=True, allow_nan=False)
     except Exception as e:
         raise DockError(
             f"bad_context: not JSON-serializable ({type(e).__name__})")
@@ -346,7 +445,10 @@ def validate_proposal_output(text: str) -> Dict[str, str]:
     if not isinstance(text, str) or not text.strip():
         raise ProviderError("empty model output")
     try:
-        data = json.loads(text)
+        data = json.loads(
+            text,
+            parse_constant=lambda v: (_ for _ in ()).throw(
+                ValueError(f"non-finite constant {v}")))
     except Exception:
         raise ProviderError("malformed model output: not JSON")
     if not isinstance(data, dict):
@@ -453,11 +555,13 @@ class DockedSession:
             if len(full_prompt) > self._max_prompt_chars:
                 return {"ok": False, "reason": "prompt_too_large",
                         "detail": "Prompt+context exceeds bound."}
-        # Protected-material screen on the exact outbound text.
-        # Key-name filtering alone is insufficient: values (issued
-        # handles, credential values, recognized formats) are checked.
+        # Protected-material screen on the exact outbound text,
+        # in raw AND \uXXXX-decoded form. Key-name filtering alone is
+        # insufficient: values (issued handles, credential values,
+        # recognized formats) are checked, including handles that
+        # JSON decoding would restore from escapes.
         prot = protected_values(self._program)
-        if contains_protected(full_prompt, prot):
+        if contains_protected_decoded(full_prompt, prot):
             return {"ok": False, "reason": "protected_input",
                     "detail": "Prompt/context carries protected material; "
                              "rejected before provider call."}
@@ -465,6 +569,10 @@ class DockedSession:
             raw = self._provider.generate(
                 full_prompt, timeout_s=self._timeout_s,
                 max_chars=self._max_response_chars)
+        except _TransportTooLarge:
+            return {"ok": False, "reason": "response_too_large",
+                    "detail": "Transport body exceeded the byte bound; "
+                             "rejected before parsing."}
         except (TimeoutError, ConnectionError) as e:
             return {"ok": False, "reason": "provider_failure",
                     "detail": sanitize_error(
@@ -486,8 +594,8 @@ class DockedSession:
                     "detail": f"Response exceeds {self._max_response_chars} "
                              "chars; rejected before parsing."}
         # Protected-material screen on provider output BEFORE parsing
-        # and before Nursery.add.
-        if contains_protected(raw, prot):
+        # and before Nursery.add — raw AND decoded forms.
+        if contains_protected_decoded(raw, prot):
             return {"ok": False, "reason": "protected_output",
                     "detail": "Provider output carries protected material; "
                              "rejected before proposal creation."}
@@ -496,6 +604,14 @@ class DockedSession:
         except ProviderError as e:
             return {"ok": False, "reason": "invalid_output",
                     "detail": sanitize_error(str(e), prot)}
+        # Representation-boundary screen: JSON decoding restores
+        # \uXXXX escapes, so screen the DECODED keys/values before
+        # any proposal creation. A literal or escaped handle in label,
+        # words, or unexpected fields is rejected here.
+        if _screen_decoded_values(fields, prot):
+            return {"ok": False, "reason": "protected_output",
+                    "detail": "Decoded provider output carries protected "
+                             "material; rejected before proposal creation."}
         # Canonical Nursery API. The proposal is PENDING: inference
         # never confirms, never mints authority.
         try:

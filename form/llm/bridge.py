@@ -59,6 +59,29 @@ def _env(*names: str) -> str:
     return ""
 
 
+class _ResponseTooLarge(Exception):
+    """Transport body exceeded the byte bound (AMEND 2026-10-07)."""
+
+
+def _read_bounded(resp, max_bytes: int) -> bytes:
+    """Read at most max_bytes+1 bytes, handling short reads.
+
+    Reading exactly max_bytes cannot distinguish EOF from truncation,
+    so one extra byte is the truncation sentinel. Loops on short
+    reads; never performs an unlimited fallback. Returns the body
+    (at most max_bytes+1 bytes).
+    """
+    chunks = []
+    remaining = max_bytes + 1
+    while remaining > 0:
+        chunk = resp.read(min(65536, remaining))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        remaining -= len(chunk)
+    return b"".join(chunks)
+
+
 def _http_json(url: str, payload: dict, headers: Optional[dict] = None,
                timeout: int = 120, max_bytes: Optional[int] = None) -> dict:
     data = json.dumps(payload).encode("utf-8")
@@ -66,9 +89,15 @@ def _http_json(url: str, payload: dict, headers: Optional[dict] = None,
         url, data=data, headers=headers or {"Content-Type": "application/json"}, method="POST"
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
-        # Bounded transport read: cap bytes at the socket, not by
-        # slicing after an unlimited read.
-        raw = resp.read(max_bytes) if max_bytes else resp.read()
+        if max_bytes is None:
+            raw = resp.read()
+        else:
+            raw = _read_bounded(resp, max_bytes)
+            if len(raw) > max_bytes:
+                # Oversized: reject BEFORE parsing. A truncated prefix
+                # must never be accepted because it happens to parse.
+                raise _ResponseTooLarge(
+                    f"transport body exceeds {max_bytes} bytes")
         return json.loads(raw.decode("utf-8"))
 
 
@@ -178,6 +207,11 @@ class LLMBridge:
         except urllib.error.HTTPError as e:
             body = e.read(2000).decode("utf-8", errors="replace")[:500]
             return ProviderResult(provider, False, error=f"HTTP {e.code}: {body}")
+        except _ResponseTooLarge as e:
+            # Machine-readable prefix: the dock maps this to a stable
+            # response_too_large receipt (never parsed, never silent).
+            return ProviderResult(provider, False,
+                                  error=f"response_too_large: {e}")
         except Exception as e:
             return ProviderResult(provider, False, error=str(e))
         return ProviderResult(provider, False, error="unhandled")

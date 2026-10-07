@@ -453,14 +453,21 @@ def test_transport_contract_stubbed_http():
     class _Resp:
         def __init__(self, payload):
             self._data = payload
+            self._pos = 0
         def __enter__(self):
             return self
         def __exit__(self, *a):
             return False
         def read(self, n=None):
+            # Socket-like: advance a cursor; b"" at EOF.
+            if "first_read_n" not in seen and n is not None:
+                seen["first_read_n"] = n
             seen["read_n"] = n
-            data = self._data
-            return data[:n] if n else data
+            if self._pos >= len(self._data):
+                return b""
+            out = self._data[self._pos:self._pos + n] if n else self._data[self._pos:]
+            self._pos += len(out)
+            return out
 
     real_urlopen = _urlreq.urlopen
 
@@ -507,7 +514,8 @@ def test_transport_contract_stubbed_http():
     check("D4:timeout_reached_transport", seen.get("timeout") == 2,
           str(seen.get("timeout")))
     check("D4:read_bounded",
-          seen.get("read_n") == 8000 * 4, str(seen.get("read_n")))
+          seen.get("first_read_n") == 8000 * 4 + 1,
+          str(seen.get("first_read_n")))
     check("D4:receipt_truthful",
           r.get("model") == "HOST_CHOSEN_MODEL", str(r.get("model")))
     check("D4:fields_exact",
@@ -601,6 +609,294 @@ def test_canary_sensitivity():
     clean_owner(owner)
 
 
+
+# ------------------------------------------------------- E. representation boundaries
+# Director 2026-10-07 (third review): encoded vs decoded, truncation
+# vs rejection, validation vs coercion.
+
+def _scripted_provider(payload_text):
+    """Fake-like provider returning an exact canned response."""
+    from form.dell_matrix import inference_dock as idock
+    class _P(idock.FakeProvider):
+        def generate(self, prompt, *, timeout_s, max_chars):
+            self.calls += 1
+            self.last_prompt = prompt
+            return payload_text
+    return _P()
+
+
+def test_encoded_handle_in_output_rejected():
+    """Director reproduction: JSON words containing gr\u0061nt_<hex>
+    decodes to a recognized handle; the decoded screen must reject
+    before Nursery.add."""
+    import json as _json
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_E1"
+    p = fresh_program(owner)
+    n0 = len(p.nursery.proposals)
+    handle = "grant_" + "ef" * 16
+    # The provider returns the handle with 'a' unicode-escaped, as raw
+    # JSON text carrying single-backslash \u0061 sequences.
+    payload = ('{"label": "Encoded", "words": "see gr\\u0061nt_'
+               + "ef" * 16 + '"}')
+    # Sanity: raw text does NOT contain the literal handle...
+    check("E1:raw_hides_handle", "grant_" not in payload, payload[:60])
+    # ...but JSON decoding restores it.
+    check("E1:decoding_restores",
+          _json.loads(payload)["words"].count("grant_") == 1)
+    sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    sess._provider = _scripted_provider(payload)
+    r = sess.propose("draft")
+    check("E1:rejected",
+          r.get("ok") is False and r.get("reason") == "protected_output",
+          str(r))
+    check("E1:no_proposal", len(p.nursery.proposals) == n0)
+    check("E1:receipt_non_reflecting", handle not in str(r), str(r)[:120])
+
+
+def test_literal_handle_and_label_rejected():
+    import json as _json
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_E2"
+    p = fresh_program(owner)
+    n0 = len(p.nursery.proposals)
+    handle = "grant_" + "12" * 16
+    for field in ("words", "label"):
+        data = {"label": "L", "words": "W"}
+        data[field] = "has " + handle
+        sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+        sess._provider = _scripted_provider(_json.dumps(data))
+        r = sess.propose("draft")
+        check(f"E2:{field}_rejected",
+              r.get("ok") is False and r.get("reason") == "protected_output",
+              str(r))
+    check("E2:no_proposals", len(p.nursery.proposals) == n0)
+
+
+def test_clean_escaped_unicode_usable():
+    """Escaped Unicode that decodes to nothing protected stays usable."""
+    import json as _json
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_E3"
+    p = fresh_program(owner)
+    # caf\u00e9 decodes to 'caf\u00e9' (literal backslash-u text);
+    # the JSON layer then decodes \u00e9 -> e-acute. No handle.
+    payload = _json.dumps({"label": "Caf\u00e9",
+                           "words": "plain caf\u00e9 text"})
+    sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    sess._provider = _scripted_provider(payload)
+    r = sess.propose("draft")
+    check("E3:accepted", r.get("ok") is True, str(r))
+    got = p.nursery.proposals[r["pid"]]
+    check("E3:decoded_usable", got.label == "Caf\u00e9", got.label)
+
+
+def test_transport_size_boundaries():
+    """Below/at/over limit, short reads, valid-JSON-prefix + excess."""
+    import json as _json
+    import urllib.request as _urlreq
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_E4"
+
+    def _run(body: bytes, max_bytes: int, chunk_sizes):
+        """Drive _read_bounded + parse through a chunked stub."""
+        chunks = []
+        pos = [0]
+
+        class _R:
+            def __enter__(self):
+                return self
+            def __exit__(self, *a):
+                return False
+            def read(self, n=None):
+                if pos[0] >= len(body):
+                    return b""
+                # Simulate short reads via the chunk plan.
+                want = chunk_sizes[min(len(chunks), len(chunk_sizes) - 1)]
+                n = min(n, want) if n else want
+                out = body[pos[0]:pos[0] + n]
+                pos[0] += len(out)
+                chunks.append(out)
+                return out
+
+        real = _urlreq.urlopen
+        _urlreq.urlopen = lambda *a, **k: _R()
+        try:
+            from form.llm import bridge as _b
+            try:
+                return ("parsed", _b._http_json("http://x/", {},
+                                                max_bytes=max_bytes))
+            except _b._ResponseTooLarge:
+                return ("too_large", None)
+            except Exception as e:
+                return ("error", f"{type(e).__name__}")
+        finally:
+            _urlreq.urlopen = real
+
+    small = _json.dumps({"a": 1}).encode()
+    # Below limit: parses.
+    st, _ = _run(small, 100, [7])
+    check("E4:below_limit", st == "parsed", st)
+    # Exactly at limit: parses.
+    st, _ = _run(small, len(small), [3])
+    check("E4:at_limit", st == "parsed", st)
+    # Over limit: rejected, even with short reads.
+    st, _ = _run(small, len(small) - 1, [2])
+    check("E4:over_limit", st == "too_large", st)
+    # Valid JSON prefix + excessive whitespace/data: the truncated
+    # prefix must NOT be accepted because it parses.
+    prefix = _json.dumps({"label": "L", "words": "W"}).encode()
+    body = prefix + b" " * 5000
+    st, val = _run(body, len(prefix) + 10, [64])
+    check("E4:prefix_not_accepted", st == "too_large", f"{st} {val}")
+    # Director's shape: 1011-byte body, 11-byte limit.
+    big = b'{"k": "' + b"x" * 1002 + b'"}'
+    check("E4:body_size", len(big) == 1011, str(len(big)))
+    st, _ = _run(big, 11, [5])
+    check("E4:director_shape", st == "too_large", st)
+
+
+def test_context_boundary_matrix():
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_E5"
+    p = fresh_program(owner)
+    n0 = len(p.nursery.proposals)
+
+    def _try(ctx):
+        sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+        r = sess.propose("draft", context=ctx)
+        return r, sess._provider.calls
+
+    # 1,001 scalar entries: every value counts -> rejected.
+    r, calls = _try({"items": list(range(1001))})
+    check("E5:scalar_budget",
+          r.get("ok") is False and r.get("reason") == "bad_context"
+          and calls == 0, str(r))
+    # 999 scalars: accepted (positive control).
+    r, _ = _try({"items": list(range(990))})
+    check("E5:under_budget_ok", r.get("ok") is True, str(r))
+    # Arbitrary object: rejected, not str()-normalized.
+    class _Weird:
+        def __str__(self):
+            return "innocent"
+    r, calls = _try({"obj": _Weird()})
+    check("E5:object_rejected",
+          r.get("ok") is False and r.get("reason") == "bad_context"
+          and calls == 0, str(r))
+    # NaN / infinities rejected.
+    for v, name in ((float("nan"), "nan"), (float("inf"), "inf"),
+                    (float("-inf"), "ninf")):
+        r, calls = _try({"v": v})
+        check(f"E5:{name}_rejected",
+              r.get("ok") is False and r.get("reason") == "bad_context"
+              and calls == 0, str(r))
+    # Oversized individual string rejected during traversal.
+    r, calls = _try({"big": "x" * 200000})
+    check("E5:oversize_string",
+          r.get("ok") is False and r.get("reason") == "bad_context"
+          and calls == 0, str(r))
+    # Legitimate nested finite scalars accepted.
+    r, _ = _try({"a": {"b": [1, 2.5, "x", True, None]}})
+    check("E5:legit_nested_ok", r.get("ok") is True, str(r))
+    # Only the accepted proposes created proposals.
+    check("E5:only_accepted_proposed",
+          len(p.nursery.proposals) == n0 + 2,
+          str(len(p.nursery.proposals) - n0))
+    clean_owner(owner)
+
+
+def test_representation_sensitivity():
+    """Weaken each new protection: the corresponding control fails;
+    restore -> passes."""
+    import json as _json
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_E6"
+    p = fresh_program(owner)
+    handle = "grant_" + "ab" * 16
+    # Single-backslash \u0061 in the raw JSON text, as in E1.
+    payload = ('{"label": "L", "words": "x gr\\u0061nt_' + "ab" * 16 + '"}')
+
+    # Weaken the whole output protection (contains_protected_decoded
+    # feeds both the raw and the parsed screens).
+    real_cpd = idock.contains_protected_decoded
+    idock.contains_protected_decoded = lambda text, prot: False
+    try:
+        sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+        sess._provider = _scripted_provider(payload)
+        r = sess.propose("draft")
+        leaked = (r.get("ok") is True
+                  and handle in p.nursery.proposals[r["pid"]].words)
+        check("E6:weakened_screen_leaks", leaked, str(r))
+    finally:
+        idock.contains_protected_decoded = real_cpd
+    # Restored.
+    sess2 = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    sess2._provider = _scripted_provider(payload)
+    r2 = sess2.propose("draft")
+    check("E6:restored_rejects",
+          r2.get("ok") is False and r2.get("reason") == "protected_output",
+          str(r2))
+
+    # Weaken the transport bound: truncated prefix must not parse-accept.
+    from form.llm import bridge as _b
+    real_read = _b._read_bounded
+    _b._read_bounded = lambda resp, max_bytes: resp.read(max_bytes)
+    try:
+        import urllib.request as _urlreq
+        body = b'{"a": 1}' + b" " * 500
+
+        class _R:
+            def __init__(self):
+                self._done = False
+            def __enter__(self):
+                return self
+            def __exit__(self, *a):
+                return False
+            def read(self, n=None):
+                if self._done:
+                    return b""
+                self._done = True
+                return body[:n] if n else body
+
+        real_u = _urlreq.urlopen
+        _urlreq.urlopen = lambda *a, **k: _R()
+        try:
+            val = _b._http_json("http://x/", {}, max_bytes=10)
+            parsed = True
+        except Exception:
+            parsed = False
+        finally:
+            _urlreq.urlopen = real_u
+        check("E6:weakened_transport_parses_prefix", parsed,
+              "truncated prefix was rejected even when weakened")
+    finally:
+        _b._read_bounded = real_read
+    clean_owner(owner)
+
+
+def test_child_process_representation_sweep():
+    """Fixed child script replays the Director reproductions in a real
+    OS process; parent asserts receipts and zero state change."""
+    import subprocess
+    owner = "R62_E7"
+    fresh_program(owner)
+    clean_owner(owner)
+    args = json.dumps({"repo": ROOT, "owner": owner,
+                       "kind": "repr_sweep"})
+    proc = subprocess.run(
+        [sys.executable, "form/mandell/r62_child.py", args],
+        cwd=ROOT, capture_output=True, text=True, timeout=120)
+    check("E7:child_ok", proc.returncode == 0, proc.stderr[:300])
+    out = json.loads(proc.stdout.strip().splitlines()[-1])
+    check("E7:encoded_rejected", out.get("encoded") == "protected_output",
+          str(out))
+    check("E7:oversized_rejected", out.get("oversized") == "response_too_large",
+          str(out))
+    check("E7:deep_rejected", out.get("deep") == "bad_context", str(out))
+    check("E7:zero_proposals", out.get("proposals") == 0, str(out))
+    clean_owner(owner)
+
+
 def smoke():
     for fn in [test_skeleton_fake_to_confirmed_reload,
                test_undocked_zero_calls,
@@ -621,7 +917,14 @@ def smoke():
                test_transport_contract_stubbed_http,
                test_fresh_process_reload,
                test_save_guard_genuine,
-               test_canary_sensitivity]:
+               test_canary_sensitivity,
+               test_encoded_handle_in_output_rejected,
+               test_literal_handle_and_label_rejected,
+               test_clean_escaped_unicode_usable,
+               test_transport_size_boundaries,
+               test_context_boundary_matrix,
+               test_representation_sensitivity,
+               test_child_process_representation_sweep]:
         try:
             fn()
         except Exception as e:
