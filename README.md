@@ -27,13 +27,13 @@ DellMatrix lets you create ideas, grow them into proposals, confirm the ones wor
 
 ## 2. Status
 
-**Production main:** `1d5b6c7` (2026-10-05, post PR #77/#78 merges).
-**Phase-5 candidate:** PR #79 (branch `phase-5-nursery-growth`, NOT MERGED).
+**Production main:** `ea9b76a` (2026-10-07, post PR #79 merge — Phase 5 admitted).
+**Phase 5:** MERGED to production via PR #79 (merge `ea9b76a`); Director admission PASS.
 
 All §2 claims below were verified on production main `1d5b6c7` unless
 labeled otherwise. Walkthroughs originally executed on `f3c9007`
 (2026-10-04) are retained as dated historical evidence where noted.
-Phase-5 behaviors (§6.5) are candidate-only until PR #79 merges.
+Phase-5 behaviors (§6.5) are production behavior as of `ea9b76a`.
 
 | Area | Status | Evidence |
 |------|--------|----------|
@@ -343,8 +343,8 @@ Diagrams or mock examples of the above are conceptual only. Roadmap phases beyon
 - Confirmation crash recovery is production behavior (merged via PR #77).
 - "User-ready" is not claimed. See §2 for the scoped status table.
 
-### Phase-5 candidate (PR #79, unmerged)
-Phase-5 acceptance authorization, lifecycle coherence, and learning bounds (§6.5) are implemented on branch `phase-5-nursery-growth` ([PR #79](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/79), NOT MERGED, NOT CERTIFIED). The main branch described by this README does **not** include Phase-5 changes.
+### Phase 5 (merged to production)
+Phase-5 acceptance authorization, lifecycle coherence, and learning bounds (§6.5) were admitted via [PR #79](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/79) (merge `ea9b76a`, 2026-10-07; Director admission PASS). The main branch described by this README **includes** Phase-5 changes.
 
 ### Test commands
 ```bash
