@@ -230,3 +230,41 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
   surface.
 - **EVIDENCE STATUS:** candidate-branch only. Awaiting Director review;
   no merge without authorization.
+
+## 10. Phase-6 R6.2 — inference docking circuit (candidate)
+
+- **STATUS:** candidate-branch only (`gdp-phase6-r62-docking`). NOT
+  CERTIFIED. DO NOT MERGE without Director authorization.
+- **CIRCUIT:** host identity → explicit docking → read-only context →
+  inference → schema-validated PENDING Nursery proposal → human
+  review/issued authority → R6.1 bound endpoint → canonical writer →
+  receipt/save/reload.
+- **DESIGN:** `form/dell_matrix/inference_dock.py` (trusted host
+  adapter; NOT core path). Inference NEVER confers authority; model
+  output is data. Docking never mints/expands authority.
+  `form/llm/bridge.py` reused through lazy optional import only —
+  core open/repl paths never import it (SIDE lock preserved).
+  Explicit provider config; bridge auto-detection never enables.
+  Undocked = zero provider calls. Credentials stay with the adapter;
+  keys/grant handles never enter model context, proposal metadata,
+  errors, receipts, or logs; reflected errors sanitized.
+  Strict proposal schema (exactly label+words, typed, bounded);
+  authority-bearing fields rejected. No eval/shell/auto-confirm.
+- **PROOFS:** `form/mandell/r62_docking_test.py` — 72/72 checks
+  (walking skeleton fake→pending→grant→endpoint→writer→reload;
+  undocked zero-calls; pending-until-authorized; malformed/timeout/
+  failure preserve state; authority-requesting output confers nothing;
+  canary non-leak with negative control; pre-writer revocation denies;
+  persona/provider descriptive; inference-absent core works; save
+  guards hold; schema/bounds; no-eval), registered in regress LIST.
+- **RESEARCH:** `~/workspace/PHASE_6_R62_RESEARCH_DELTA20.md` —
+  ADOPT (output validation, writer authorization, secret hygiene),
+  ADAPT (bridge behind explicit docking, ocap-style least authority),
+  REJECT (inference as authority, duplicate policy/store, preform
+  autonomous threads). Delta-20 prospective falsifiers bound to the
+  skeleton for all 20 categories.
+- **PERF (bounded):** docked propose (fake) median 17.0ms vs direct
+  nursery.add 19.9ms (n=15, operation-only) — no substantial docking
+  overhead observed in this workload.
+- **LIMITS:** fake-provider evidence only; no live-provider calls in
+  this circuit. No network identity system. No concurrency claims.
