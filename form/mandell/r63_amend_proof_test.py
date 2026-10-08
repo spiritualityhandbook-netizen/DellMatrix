@@ -376,16 +376,20 @@ def _t(ctx):
         assert after_hashes[kind] is not None, f"{kind} missing after rollback"
 
 
-def _child_rollback_at(owner, generation_id, fail_at):
+def _child_rollback_at(owner, generation_id, fail_at, expect_exit=42):
     """Run confirm_rollback in a child process with _fail_at injection.
 
-    Returns (exit_code, output). The child is killed by the injected
-    failure; the parent then recovers via persist_rest.load.
+    The child uses os._exit(expect_exit) on the injected failure —
+    a real crash, not an exception catch. Returns (exit_code, output).
+    The parent then recovers via persist_rest.load.
+
+    Requires the expected exit code; a SyntaxError, unrelated
+    exception, or normal denied receipt is NOT crash evidence.
     """
     import subprocess
     import textwrap
     code = textwrap.dedent(f"""
-        import sys
+        import sys, os
         sys.path.insert(0, ".")
         from form import persist_rest
         from form.dell_matrix import rollback_authority as ra
@@ -393,24 +397,29 @@ def _child_rollback_at(owner, generation_id, fail_at):
         frozen = ra.freeze_rollback_target({owner!r}, {generation_id!r})
         grant = ra.issue_rollback_grant(p, issuer="root", subject="s",
                                          frozen_target=frozen)
-        # Inject the failure point via the mediation path
         import form.mandell.core_i_recovery as cir
         orig = cir._eager_converge_live
         def patched(program, owner, _fail_at=None, **kw):
-            return orig(program, owner, _fail_at={fail_at!r}, **kw)
+            try:
+                return orig(program, owner, _fail_at={fail_at!r}, **kw)
+            except BaseException:
+                # Real crash: os._exit, not exception propagation
+                os._exit({expect_exit})
         cir._eager_converge_live = patched
-        try:
-            r = p.confirm_rollback({generation_id!r},
-                                    _review_context={{"grant_id": grant["grant_id"]}},
-                                    _subject="s")
-            print("RESULT:" + str(r.get("ok")))
-        except BaseException as e:
-            print("EXC:" + type(e).__name__)
-            sys.exit(42)
+        r = p.confirm_rollback({generation_id!r},
+                                _review_context={{"grant_id": grant["grant_id"]}},
+                                _subject="s")
+        # If we get here without _exit, the failure did not trigger
+        print("NO_CRASH:" + str(r))
+        os._exit(99)
     """)
     proc = subprocess.run(
         [sys.executable, "-c", code],
         capture_output=True, text=True, timeout=120)
+    # Require the expected crash exit code
+    assert proc.returncode == expect_exit, (
+        f"expected os._exit({expect_exit}), got {proc.returncode}; "
+        f"output: {(proc.stdout + proc.stderr)[-500:]}")
     return proc.returncode, proc.stdout + proc.stderr
 
 
@@ -468,6 +477,118 @@ def _t(ctx):
     p2 = persist_rest.load(o, activate=False)
     assert p2 is not None
     # After parent load (which recovers), journal must be gone
+    assert not os.path.isfile(_journal_path(o))
+
+
+@check("r63a_manifest_only_change_denies")
+def _t(ctx):
+    """Manifest-only change between entry and execution must deny.
+    The authorization must not record a superseded fingerprint."""
+    from form import persist_rest
+    from form.dell_matrix import rollback_authority as ra
+    from form.mandell import checkpoint_generation as gen
+    import json
+    o = _owner("manifestdeny")
+    p, g1 = _setup_distinguishable(o)
+    # Freeze at entry
+    frozen = ra.freeze_rollback_target(o, g1)
+    old_manifest = frozen["manifest_sha256"]
+    # Mutate ONLY the manifest metadata (members unchanged)
+    mpath = gen._manifest_path(o, g1)
+    with open(mpath, encoding="utf-8") as f:
+        manifest = json.load(f)
+    manifest["_boundary_test"] = "manifest-only mutation"
+    with open(mpath, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+    # Issue grant and attempt rollback: the revalidation must deny
+    # because the manifest fingerprint changed.
+    grant = ra.issue_rollback_grant(p, issuer="root", subject="s",
+                                     frozen_target=frozen)
+    r = p.confirm_rollback(g1, _review_context={"grant_id": grant["grant_id"]},
+                            _subject="s")
+    assert r["ok"] is False, f"manifest-only change must deny, got {r}"
+    assert r["reason"] == "acceptance_policy_denied"
+    # The policy denies on content mismatch (manifest is part of the
+    # bound content). The detail need not name "manifest" specifically.
+    assert "changed" in r["detail"].lower() or "mismatch" in r["detail"].lower()
+
+
+@check("r63a_two_instance_save_protection")
+def _t(ctx):
+    """Two instances opened before restoration: after success, both
+    must reject saves/checkpoints. Fresh reload must remain usable."""
+    from form import persist_rest
+    from form.open import open_program
+    from form.dell_matrix import rollback_authority as ra
+    from form.mandell.core_i_recovery import checkpoint
+    o = _owner("twoinst")
+    p1 = open_program(o)
+    p1.nursery.add("two instance", words="w" * 20)
+    g1 = checkpoint(p1, stamp="two1")
+    # Second instance opened before restoration
+    p2 = open_program(o)
+    # p1 performs the authorized rollback
+    frozen = ra.freeze_rollback_target(o, g1)
+    grant = ra.issue_rollback_grant(p1, issuer="root", subject="s",
+                                     frozen_target=frozen)
+    r = p1.confirm_rollback(g1, _review_context={"grant_id": grant["grant_id"]},
+                             _subject="s")
+    assert r["ok"], r
+    # Both pre-existing instances must reject saves
+    for inst, label in ((p1, "p1"), (p2, "p2")):
+        try:
+            persist_rest.save(inst)
+            assert False, f"{label} save must be rejected"
+        except Exception as e:
+            assert "stale" in str(e).lower() or "epoch" in str(e).lower(), e
+        # Checkpoints must also be rejected
+        try:
+            from form.mandell.core_i_recovery import checkpoint as _cp
+            _cp(inst, stamp="should_fail")
+            assert False, f"{label} checkpoint must be rejected"
+        except Exception as e:
+            assert "stale" in str(e).lower() or "epoch" in str(e).lower(), e
+    # Fresh reload must be usable
+    p3 = persist_rest.load(o, activate=False)
+    persist_rest.save(p3)  # Must not raise
+
+
+@check("r63a_verification_failure_preserves_journal")
+def _t(ctx):
+    """Injected verification failure: journal preserved, recovery
+    repeatable, second attempt completes."""
+    from form.mandell.core_i_recovery import (
+        write_rollback_authorization, recover_rollback_transaction,
+        _journal_path)
+    from form.dell_matrix import rollback_authority as ra
+    import form.mandell.core_i_recovery as cir
+    o = _owner("verifyfail")
+    p, g1 = _setup_distinguishable(o)
+    frozen = ra.freeze_rollback_target(o, g1)
+    write_rollback_authorization(o, g1, frozen["manifest_sha256"],
+                                 frozen["members"], "comp_test")
+    # Drift live so recovery must converge
+    from form.dell_matrix.nursery import owner_nursery_path
+    with open(owner_nursery_path(o), "ab") as f:
+        f.write(b" ")
+    # Inject verification failure
+    orig_verify = cir._verify_rollback_outcome
+    def failing_verify(*a, **kw):
+        raise RuntimeError("injected verification failure")
+    cir._verify_rollback_outcome = failing_verify
+    try:
+        outcome = recover_rollback_transaction(o)
+        assert False, f"should raise, got {outcome}"
+    except RuntimeError as e:
+        assert "injected" in str(e)
+    finally:
+        cir._verify_rollback_outcome = orig_verify
+    # Journal preserved
+    assert os.path.isfile(_journal_path(o)), \
+        "journal must survive verification failure"
+    # Repeatable: second attempt completes
+    outcome = recover_rollback_transaction(o)
+    assert outcome in ("already_complete", "completed"), outcome
     assert not os.path.isfile(_journal_path(o))
 
 

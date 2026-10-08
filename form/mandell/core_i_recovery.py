@@ -96,7 +96,9 @@ def check_save_allowed(obj, what="save"):
     R6.3: also rejects instances marked stale after an authority-bound
     rollback restored a generation beneath them. The initiating (and
     any pre-rollback) instance must not save stale state over the
-    restored outcome; the caller must reload.
+    restored outcome; the caller must reload. Cross-instance staleness
+    is tracked via the per-owner restoration epoch (process-local;
+    sequential saves only, no concurrent-safety claim).
     """
     req = getattr(obj, "_recovery_required", None)
     if req:
@@ -114,6 +116,19 @@ def check_save_allowed(obj, what="save"):
             f"it. Reload to obtain the restored state; no bytes were "
             f"written."
         )
+    # Cross-instance epoch check: if a rollback completed after this
+    # instance was loaded, the instance is stale.
+    owner = getattr(obj, "owner", None)
+    if owner:
+        current_epoch = _rollback_epochs.get(owner, 0)
+        instance_epoch = getattr(obj, "_rollback_epoch", 0)
+        if instance_epoch != current_epoch:
+            raise RollbackRecoveryError(
+                f"{what} rejected: this instance was loaded before an "
+                f"authority-bound rollback restored a generation "
+                f"(epoch {instance_epoch} != {current_epoch}). Reload "
+                f"to obtain the restored state; no bytes were written."
+            )
 
 
 def _gen_id_from_stamp(stamp: Optional[str]) -> str:
@@ -479,6 +494,15 @@ def _verify_rollback_outcome(owner: str, program, journal: dict) -> None:
 # the entire recovery until verified completion.
 _recover_rollback_active = False
 
+# R6.3: per-owner restoration epoch (process-local). When an
+# authority-bound rollback completes, the epoch increments. Instances
+# record the epoch at load; check_save_allowed rejects saves from
+# instances whose epoch is stale (loaded before the restoration).
+# This protects pre-existing instances in the same process from
+# overwriting the restored outcome via sequential saves. No
+# concurrent-safety claim.
+_rollback_epochs: dict = {}
+
 
 def recover_rollback_transaction(owner: str) -> Optional[str]:
     """Deterministically recover an interrupted rollback transaction.
@@ -530,15 +554,9 @@ def recover_rollback_transaction(owner: str) -> Optional[str]:
     if phase == "prepared":
         return _recover_prepared(owner, jpath, journal)
     if phase in ("staged", "committed"):
-        result = _recover_staged(owner, jpath, journal)
-        # R2 (ARGUS MF-R2-1): recovery must also complete the observable
-        # working set, not just the canonical files. The transaction proved
-        # TARGET COMPLETE for program+nursery+ideas-snapshot; rehydration
-        # makes the individual idea files agree with the snapshot.
-        # Marker-guarded and idempotent: safe under repeated recovery.
-        from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
-        rehydrate_ideas_from_live(owner)
-        return result
+        # _recover_staged completes the commit, rehydrates, verifies,
+        # and deletes the journal only after complete outcome proof.
+        return _recover_staged(owner, jpath, journal)
     # Unknown phase: refuse to guess; preserve journal for diagnosis.
     raise RollbackRecoveryError(
         f"rollback journal for {owner!r} has unknown phase {phase!r}; "
@@ -611,8 +629,20 @@ def _recover_authorized(owner: str, jpath: str, journal: dict) -> str:
 
     # Check if live state ALREADY reflects the target (verified by
     # comparing live file bytes to sealed fingerprints — not by
-    # inferring from the CURRENT pointer).
+    # inferring from the CURRENT pointer). If so, run the complete
+    # shared verification (including rehydration) before clearing.
     if _live_matches_target(owner, target_members):
+        # Load the target program for verification (private, no activation).
+        program, _receipt = gen._load_generation(owner, target_gid, False, None)
+        _recover_rollback_active = True
+        try:
+            # Rehydrate before deletion: individual Idea files must
+            # agree with the live snapshot.
+            from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
+            rehydrate_ideas_from_live(owner)
+            _verify_rollback_outcome(owner, program, journal)
+        finally:
+            _recover_rollback_active = False
         os.unlink(jpath)
         return "already_complete"
 
@@ -677,10 +707,31 @@ def _validate_journal_fields(owner: str, journal: dict, required: tuple) -> None
         )
 
 
+def _journal_has_authorization(journal: dict) -> bool:
+    """Check if the journal carries R6.3 authorization evidence."""
+    return (journal.get("operation") == "authority_bound_rollback"
+            and isinstance(journal.get("target_members"), dict)
+            and isinstance(journal.get("generation_id"), str))
+
+
 def _recover_prepared(owner: str, jpath: str, journal: dict) -> str:
-    """'prepared' phase: nothing was staged. Verify live files match the
-    recorded old fingerprints (if recorded), then discard the journal.
-    The old triple remains authoritative."""
+    """'prepared' phase: nothing was staged.
+
+    If the journal carries R6.3 authorization, the durable commit
+    decision was made: recovery MUST complete the authorized target,
+    not abandon it via legacy rollback. Delegates to the authorized
+    recovery path.
+
+    Legacy (no authorization): verify live files match the recorded
+    old fingerprints (if recorded), then discard the journal. The old
+    triple remains authoritative.
+    """
+    if _journal_has_authorization(journal):
+        # Authorized prepared: the commit decision is durable. Complete
+        # the authorized target; do not fall through to legacy
+        # abandonment.
+        _validate_authorized_journal(owner, journal)
+        return _recover_authorized(owner, jpath, journal)
     _validate_journal_fields(owner, journal,
                              ("old_program_sha256", "old_nursery_sha256",
                               "old_ideas_sha256"))
@@ -724,8 +775,17 @@ def _recover_prepared(owner: str, jpath: str, journal: dict) -> str:
 
 def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
     """'staged'/'committed' phase: deterministically complete the commit,
-    then verify the canonical files match the recorded target fingerprints.
-    The target triple becomes authoritative only after proof."""
+    then verify the complete outcome. The target becomes authoritative
+    only after proof.
+
+    If the journal carries R6.3 authorization, validate it and honor
+    the authorized target through the complete verification (including
+    rehydration) before journal deletion. The authorization is not
+    abandoned.
+    """
+    global _recover_rollback_active
+    if _journal_has_authorization(journal):
+        _validate_authorized_journal(owner, journal)
     _validate_journal_fields(owner, journal,
                              ("program_sha256", "nursery_sha256", "ideas_sha256"))
     from form.persist import _path as _live_program_path
@@ -777,6 +837,22 @@ def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
                 f"recorded target {recorded[:16]} for {owner!r}; cannot prove "
                 f"target pair; refusing"
             )
+    # Complete verification (shared): rehydrate individual Idea files
+    # BEFORE journal deletion. If rehydration fails, the journal is
+    # preserved and recovery is repeatable.
+    from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
+    from form import persist_rest
+    _recover_rollback_active = True
+    try:
+        rehydrate_ideas_from_live(owner)
+        # Fresh load must reflect the committed target.
+        rever = persist_rest.load(owner, activate=False)
+        if rever is None:
+            raise RollbackRecoveryError(
+                f"rollback recovery: restored program failed to load "
+                f"for {owner!r}; journal preserved")
+    finally:
+        _recover_rollback_active = False
     os.unlink(jpath)
     return "completed"
 
@@ -813,6 +889,7 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     serialized independent copies. Sealed members are never written
     (Dell28 invariant preserved).
     """
+    global _recover_rollback_active
     import hashlib
     from form import persist_rest
     from form.persist import serialize, _path as _live_program_path
@@ -958,7 +1035,6 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     # the inner recovery from seeing the "committed" journal and
     # deleting it out from under this verification.
     _check_fail("rollback_verify", _fail_at)
-    global _recover_rollback_active
     _recover_rollback_active = True
     try:
         _verify_rollback_outcome(owner, program, journal)

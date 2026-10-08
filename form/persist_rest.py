@@ -228,8 +228,16 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
         p.language = empty_language()
         if activate:
             bind(p)
+        # R6.3: record the restoration epoch at load; saves from a
+        # pre-restoration instance are rejected by check_save_allowed.
+        from form.mandell.core_i_recovery import _rollback_epochs
+        p._rollback_epoch = _rollback_epochs.get(owner, 0)
         return p
-    return _load_impl(owner, path, None, activate)
+    p = _load_impl(owner, path, None, activate)
+    # R6.3: record the restoration epoch at load.
+    from form.mandell.core_i_recovery import _rollback_epochs
+    p._rollback_epoch = _rollback_epochs.get(owner, 0)
+    return p
 
 
 def _load_impl(owner: str, path: str, nursery, activate: bool) -> Program:

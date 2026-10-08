@@ -1662,9 +1662,20 @@ class Program:
                     "detail": f"Target changed after authorization: {exc}",
                     "generation_id": target_gid,
                     "compensating_generation_id": comp_gid}
+        # Revalidate the ENTIRE frozen descriptor, not only members.
+        # A manifest-only change between entry and execution must deny;
+        # we must not write an authorization record containing a
+        # superseded fingerprint.
+        for key in ("owner", "generation_id", "manifest_sha256"):
+            if frozen2.get(key) != frozen.get(key):
+                return {"ok": False, "reason": "acceptance_policy_denied",
+                        "detail": f"Target {key} changed after "
+                                 "authorization.",
+                        "generation_id": target_gid,
+                        "compensating_generation_id": comp_gid}
         if frozen2["members"] != frozen["members"]:
             return {"ok": False, "reason": "acceptance_policy_denied",
-                    "detail": "Target fingerprints changed after "
+                    "detail": "Target member fingerprints changed after "
                              "authorization.",
                     "generation_id": target_gid,
                     "compensating_generation_id": comp_gid}
@@ -1714,8 +1725,14 @@ class Program:
                     "detail": f"{type(exc).__name__}: {str(exc)[:200]}",
                     "generation_id": target_gid,
                     "compensating_generation_id": comp_gid}
-        # 8. Mark this (now stale) instance; return receipt.
+        # 8. Mark this (now stale) instance; increment the per-owner
+        # restoration epoch so pre-existing instances in this process
+        # are also recognized as stale on their next save attempt.
+        # Return receipt.
         self._post_rollback_stale = True
+        from form.mandell.core_i_recovery import _rollback_epochs
+        _rollback_epochs[self.owner] = _rollback_epochs.get(self.owner, 0) + 1
+        self._rollback_epoch = _rollback_epochs[self.owner]
         return {"ok": True, "generation_id": target_gid,
                 "compensating_generation_id": comp_gid,
                 "via": decision.get("via"),
@@ -1971,8 +1988,13 @@ def open_program(owner: str = "Operator", _nursery=None) -> Program:
     the provided Nursery is used instead of the owner's live nursery file,
     which is never consulted on that path.
     """
+    from form.mandell.core_i_recovery import _rollback_epochs
     if _nursery is None:
-        return Program(owner=owner)
+        prog = Program(owner=owner)
+        # R6.3: record restoration epoch; pre-restoration instances
+        # are stale for save purposes.
+        prog._rollback_epoch = _rollback_epochs.get(owner, 0)
+        return prog
     prog = Program.__new__(Program)
     prog._init_nursery = _nursery
     try:
@@ -1982,6 +2004,7 @@ def open_program(owner: str = "Operator", _nursery=None) -> Program:
             del prog._init_nursery
         except AttributeError:
             pass
+    prog._rollback_epoch = _rollback_epochs.get(owner, 0)
     return prog
 
 
