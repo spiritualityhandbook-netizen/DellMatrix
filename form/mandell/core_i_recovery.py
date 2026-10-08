@@ -561,12 +561,16 @@ def _verify_rollback_outcome(owner: str, program, journal: dict) -> None:
     if rever is None:
         raise CheckpointError(
             "rollback verification: restored program failed to load")
-    want_units = sorted(str(u) for u in program.cube.session.plane.units)
-    got_units = sorted(str(u) for u in rever.cube.session.plane.units)
-    if want_units != got_units:
-        raise CheckpointError(
-            f"rollback verification failed: live units {got_units} != "
-            f"target {want_units}")
+    # If a target program was supplied (authorized path), verify units
+    # match. For legacy (program=None), the staged hashes already prove
+    # the members; units check is skipped.
+    if program is not None:
+        want_units = sorted(str(u) for u in program.cube.session.plane.units)
+        got_units = sorted(str(u) for u in rever.cube.session.plane.units)
+        if want_units != got_units:
+            raise CheckpointError(
+                f"rollback verification failed: live units {got_units} != "
+                f"target {want_units}")
     # Rehydration must make individual idea files agree with the live
     # snapshot. This is idempotent and marker-guarded.
     rehydrate_ideas_from_live(owner)
