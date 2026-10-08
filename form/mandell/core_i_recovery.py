@@ -119,6 +119,15 @@ def check_save_allowed(obj, what="save"):
     # Cross-instance epoch check: if a rollback completed after this
     # instance was loaded, the instance is stale.
     owner = getattr(obj, "owner", None)
+    if owner is None:
+        # Nursery (no owner attr): derive from its path.
+        # Path format: .../state/nursery_<owner>.json
+        path = getattr(obj, "path", None)
+        if path:
+            import re as _re
+            m = _re.search(r"nursery_(.+)\.json$", path)
+            if m:
+                owner = m.group(1)
     if owner:
         current_epoch = _rollback_epochs.get(owner, 0)
         instance_epoch = getattr(obj, "_rollback_epoch", 0)
@@ -383,14 +392,67 @@ def _validate_authorized_journal(owner: str, journal: dict) -> dict:
     return journal
 
 
-def _carry_authorization(owner: str, journal: dict) -> None:
-    """Carry authorization evidence from an "authorized" journal forward.
+def _revalidate_sealed_target(owner: str, journal: dict) -> None:
+    """Re-validate the sealed generation against the authorized record.
 
-    If the existing transaction journal records the durable commit
-    decision (phase "authorized"), its authorization fields are copied
-    into the new journal dict (in place) before the file-level
-    transaction advances. The authorization is preserved through
-    prepared/staged/committed; it is not a competing outcome.
+    Verifies that the sealed manifest and member fingerprints still
+    match the authorization. This proves the staged bytes (verified
+    separately against staged hashes) represent the approved
+    generation, not just that bytes were written.
+
+    Raises RollbackRecoveryError on mismatch (journal preserved).
+    """
+    from form.mandell import checkpoint_generation as gen
+    import hashlib as _hl
+    target_gid = journal["generation_id"]
+    try:
+        manifest = gen._read_manifest(owner, target_gid)
+    except Exception as exc:
+        raise RollbackRecoveryError(
+            f"rollback recovery: sealed target {target_gid!r} unreadable "
+            f"(journal preserved): {exc}") from exc
+    # Manifest fingerprint must match.
+    _mh = _hl.sha256()
+    try:
+        with open(gen._manifest_path(owner, target_gid), "rb") as _mf:
+            for _chunk in iter(lambda: _mf.read(65536), b""):
+                _mh.update(_chunk)
+    except OSError as exc:
+        raise RollbackRecoveryError(
+            f"rollback recovery: sealed manifest unreadable "
+            f"(journal preserved): {exc}") from exc
+    if _mh.hexdigest() != journal["manifest_sha256"]:
+        raise RollbackRecoveryError(
+            f"rollback recovery: sealed manifest changed since "
+            f"authorization (journal preserved); refusing")
+    # Member fingerprints must match.
+    for kind, sha in journal["target_members"].items():
+        spec = (manifest.get("members") or {}).get(kind) or {}
+        if spec.get("sha256") != sha:
+            raise RollbackRecoveryError(
+                f"rollback recovery: sealed member {kind!r} changed "
+                f"since authorization (journal preserved); refusing")
+
+
+def _carry_authorization(owner: str, journal: dict) -> None:
+    """Carry authorization evidence forward through every phase.
+
+    If the existing transaction journal carries R6.3 authorization
+    metadata (in ANY supported phase: authorized, prepared, staged,
+    committed), its authorization fields are copied into the new
+    journal dict (in place) before the file-level transaction advances.
+    The authorization is preserved through replay; it is not a
+    competing outcome.
+
+    Fail-closed: unreadable, corrupt, non-object, or malformed
+    authorization evidence RAISES (journal preserved). Never silently
+    returns and overwrites it. Malformed metadata does not downgrade
+    a new transaction into legacy.
+
+    Recognizes the PRESENCE of authorization metadata before
+    validating it: if the journal claims authorization
+    (operation == "authority_bound_rollback" or has target_members),
+    it must validate strictly.
     """
     jpath = _journal_path(owner)
     if not os.path.isfile(jpath):
@@ -398,14 +460,26 @@ def _carry_authorization(owner: str, journal: dict) -> None:
     try:
         with open(jpath, encoding="utf-8") as f:
             existing = json.load(f)
-    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
-        return
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"rollback journal for {owner!r} unreadable during "
+            f"authorization carry (preserved): {exc}; refusing to "
+            f"overwrite") from exc
     if not isinstance(existing, dict):
+        raise RollbackRecoveryError(
+            f"rollback journal for {owner!r} is not an object during "
+            f"authorization carry (preserved); refusing to overwrite")
+    # Recognize authorization metadata presence before validating.
+    has_auth = (
+        existing.get("operation") == "authority_bound_rollback"
+        or "target_members" in existing
+        or "manifest_sha256" in existing
+    )
+    if not has_auth:
+        # Genuine legacy journal: no authorization to carry. Explicit.
         return
-    if existing.get("phase") != "authorized":
-        return
-    # Strict: the existing authorized record must validate, else fail
-    # closed rather than silently dropping authorization.
+    # Authorization claimed: must validate strictly. Malformed does
+    # not downgrade to legacy; it fails closed.
     _validate_authorized_journal(owner, existing)
     for key in ("operation", "generation_id", "manifest_sha256",
                 "target_members", "compensating_generation_id"):
@@ -504,6 +578,16 @@ _recover_rollback_active = False
 _rollback_epochs: dict = {}
 
 
+def _advance_rollback_epoch(owner: str) -> None:
+    """Advance the per-owner restoration epoch.
+
+    Called at the canonical completion boundary (verified rollback
+    completion, including recovery). Pre-existing instances in this
+    process become stale for save purposes.
+    """
+    _rollback_epochs[owner] = _rollback_epochs.get(owner, 0) + 1
+
+
 def recover_rollback_transaction(owner: str) -> Optional[str]:
     """Deterministically recover an interrupted rollback transaction.
 
@@ -597,35 +681,8 @@ def _recover_authorized(owner: str, jpath: str, journal: dict) -> str:
     target_members = journal["target_members"]
 
     from form.mandell import checkpoint_generation as gen
-    # Re-validate the sealed target BEFORE any mutation.
-    try:
-        manifest = gen._read_manifest(owner, target_gid)
-    except Exception as exc:
-        raise RollbackRecoveryError(
-            f"rollback recovery: target generation {target_gid!r} "
-            f"unreadable (journal preserved): {exc}") from exc
-    # Manifest fingerprint must match the authorized record.
-    import hashlib as _hl
-    _mh = _hl.sha256()
-    try:
-        with open(gen._manifest_path(owner, target_gid), "rb") as _mf:
-            for _chunk in iter(lambda: _mf.read(65536), b""):
-                _mh.update(_chunk)
-    except OSError as exc:
-        raise RollbackRecoveryError(
-            f"rollback recovery: target manifest unreadable "
-            f"(journal preserved): {exc}") from exc
-    if _mh.hexdigest() != journal["manifest_sha256"]:
-        raise RollbackRecoveryError(
-            f"rollback recovery: target manifest changed since "
-            f"authorization (journal preserved); refusing")
-    # Member fingerprints must match the authorized record.
-    for kind, sha in target_members.items():
-        spec = (manifest.get("members") or {}).get(kind) or {}
-        if spec.get("sha256") != sha:
-            raise RollbackRecoveryError(
-                f"rollback recovery: target member {kind!r} changed "
-                f"since authorization (journal preserved); refusing")
+    # Re-validate the sealed target BEFORE any mutation (shared).
+    _revalidate_sealed_target(owner, journal)
 
     # Check if live state ALREADY reflects the target (verified by
     # comparing live file bytes to sealed fingerprints — not by
@@ -644,6 +701,7 @@ def _recover_authorized(owner: str, jpath: str, journal: dict) -> str:
         finally:
             _recover_rollback_active = False
         os.unlink(jpath)
+        _advance_rollback_epoch(owner)
         return "already_complete"
 
     # Complete the authorized outcome: load the target privately
@@ -786,6 +844,11 @@ def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
     global _recover_rollback_active
     if _journal_has_authorization(journal):
         _validate_authorized_journal(owner, journal)
+        # Re-validate the sealed target binding: the staged hashes
+        # prove bytes were written, but not that they represent the
+        # approved generation. The sealed manifest/member fingerprints
+        # must still match the authorized record.
+        _revalidate_sealed_target(owner, journal)
     _validate_journal_fields(owner, journal,
                              ("program_sha256", "nursery_sha256", "ideas_sha256"))
     from form.persist import _path as _live_program_path
@@ -854,6 +917,9 @@ def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
     finally:
         _recover_rollback_active = False
     os.unlink(jpath)
+    # Advance epoch if this was an authorized recovery (not legacy).
+    if _journal_has_authorization(journal):
+        _advance_rollback_epoch(owner)
     return "completed"
 
 

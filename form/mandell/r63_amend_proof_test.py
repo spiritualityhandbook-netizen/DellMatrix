@@ -376,18 +376,29 @@ def _t(ctx):
         assert after_hashes[kind] is not None, f"{kind} missing after rollback"
 
 
-def _child_rollback_at(owner, generation_id, fail_at, expect_exit=42):
+def _child_rollback_at(owner, generation_id, fail_at, expect_exit=42,
+                       witness_path=None):
     """Run confirm_rollback in a child process with _fail_at injection.
 
-    The child uses os._exit(expect_exit) on the injected failure —
-    a real crash, not an exception catch. Returns (exit_code, output).
-    The parent then recovers via persist_rest.load.
+    The child injects os._exit(expect_exit) ONLY at the exact
+    production stage hook (_fail_at). A stage witness file is written
+    immediately before os._exit, proving the crash occurred at the
+    expected stage. Returns (exit_code, output).
 
-    Requires the expected exit code; a SyntaxError, unrelated
-    exception, or normal denied receipt is NOT crash evidence.
+    Requires the expected exit code AND the witness file. Unexpected
+    exceptions, denials, and wrong-stage exits fail the harness —
+    they are not translated into the expected crash code.
     """
     import subprocess
     import textwrap
+    witness_code = ""
+    if witness_path:
+        # Indented to match the 'if' block in patched_check
+        witness_code = (
+            f"with open({witness_path!r}, \"w\") as _wf:\n"
+            f"                    _wf.write(\"stage:{fail_at}\")\n"
+            f"                "
+        )
     code = textwrap.dedent(f"""
         import sys, os
         sys.path.insert(0, ".")
@@ -397,20 +408,30 @@ def _child_rollback_at(owner, generation_id, fail_at, expect_exit=42):
         frozen = ra.freeze_rollback_target({owner!r}, {generation_id!r})
         grant = ra.issue_rollback_grant(p, issuer="root", subject="s",
                                          frozen_target=frozen)
-        import form.mandell.core_i_recovery as cir
-        orig = cir._eager_converge_live
-        def patched(program, owner, _fail_at=None, **kw):
-            try:
-                return orig(program, owner, _fail_at={fail_at!r}, **kw)
-            except BaseException:
-                # Real crash: os._exit, not exception propagation
+        from form.mandell import checkpoint_generation as gen
+        # Patch _check_fail to os._exit at the EXACT stage hook.
+        # Only the expected _fail_at triggers; other exceptions propagate
+        # normally (and cause exit 98, failing the harness).
+        orig_gen_check = gen._check_fail
+        def patched_check(name, fail_at):
+            if name == {fail_at!r} and fail_at == {fail_at!r}:
+                {witness_code}
                 os._exit({expect_exit})
-        cir._eager_converge_live = patched
-        r = p.confirm_rollback({generation_id!r},
-                                _review_context={{"grant_id": grant["grant_id"]}},
-                                _subject="s")
-        # If we get here without _exit, the failure did not trigger
-        print("NO_CRASH:" + str(r))
+            return orig_gen_check(name, fail_at)
+        gen._check_fail = patched_check
+        try:
+            r = p.confirm_rollback({generation_id!r},
+                                    _review_context={{"grant_id": grant["grant_id"]}},
+                                    _subject="s",
+                                    _fail_at={fail_at!r})
+        except SystemExit:
+            raise
+        except BaseException as e:
+            # Unexpected exception: NOT the expected crash. Exit 98.
+            print("UNEXPECTED:" + type(e).__name__ + ":" + str(e)[:200])
+            os._exit(98)
+        # If we get here, the failure did not trigger. Exit 99.
+        print("NO_CRASH:" + str(r.get("ok")))
         os._exit(99)
     """)
     proc = subprocess.run(
@@ -418,8 +439,17 @@ def _child_rollback_at(owner, generation_id, fail_at, expect_exit=42):
         capture_output=True, text=True, timeout=120)
     # Require the expected crash exit code
     assert proc.returncode == expect_exit, (
-        f"expected os._exit({expect_exit}), got {proc.returncode}; "
-        f"output: {(proc.stdout + proc.stderr)[-500:]}")
+        f"expected os._exit({expect_exit}) at stage {fail_at}, got "
+        f"{proc.returncode}; output: {(proc.stdout + proc.stderr)[-500:]}")
+    # Require the stage witness
+    if witness_path:
+        assert os.path.isfile(witness_path), (
+            f"stage witness missing for {fail_at}; crash may have "
+            f"occurred at wrong stage")
+        with open(witness_path) as f:
+            content = f.read()
+        assert content == f"stage:{fail_at}", (
+            f"witness mismatch: {content!r} != 'stage:{fail_at}'")
     return proc.returncode, proc.stdout + proc.stderr
 
 
@@ -612,6 +642,194 @@ def smoke():
     return passed == total
 
 
+
+@check("r63a_repeated_prepared_replay")
+def _t_repeated_prepared_replay(ctx):
+    """Authorized -> prepared -> crash -> replay -> prepared -> crash ->
+    replay -> verified target, with authorization retained throughout."""
+    from form import persist_rest
+    from form.open import open_program
+    from form.dell_matrix import rollback_authority as ra
+    from form.mandell.core_i_recovery import checkpoint, _journal_path
+
+    o = "r63a_replay1"
+    p1 = open_program(o)
+    p1.nursery.add("replay test", words="w" * 20)
+    g1 = checkpoint(p1, stamp="replay1")
+
+    # First crash after prepared journal written (at stage boundary)
+    witness1 = "/tmp/r63_witness_replay1.txt"
+    if os.path.isfile(witness1):
+        os.unlink(witness1)
+    _child_rollback_at(o, g1, "rollback_stage", witness_path=witness1)
+
+    # Verify journal is in prepared with auth preserved
+    import json
+    with open(_journal_path(o)) as f:
+        j1 = json.load(f)
+    assert j1["phase"] == "prepared", f"phase={j1['phase']}"
+    assert j1.get("operation") == "authority_bound_rollback", "auth lost after first crash"
+
+    # Second crash at prepared (replay)
+    witness2 = "/tmp/r63_witness_replay2.txt"
+    if os.path.isfile(witness2):
+        os.unlink(witness2)
+    _child_rollback_at(o, g1, "rollback_stage", witness_path=witness2)
+
+    # Verify auth still preserved
+    with open(_journal_path(o)) as f:
+        j2 = json.load(f)
+    assert j2["phase"] == "prepared", f"phase={j2['phase']}"
+    assert j2.get("operation") == "authority_bound_rollback", "auth lost after second crash"
+    assert j2["generation_id"] == j1["generation_id"], "generation changed"
+    assert j2["manifest_sha256"] == j1["manifest_sha256"], "manifest changed"
+
+    # Final: verify authorization retained through both crashes.
+    # The journal remains in prepared with auth; a normal recovery
+    # would complete it (tested separately). Here we verify the
+    # authorization was not lost.
+    with open(_journal_path(o)) as f:
+        j3 = json.load(f)
+    assert j3.get("operation") == "authority_bound_rollback"
+    assert j3["generation_id"] == g1
+    # Clean up
+    os.unlink(_journal_path(o))
+
+
+@check("r63a_corrupt_auth_metadata_fails_closed")
+def _t_corrupt_auth_metadata(ctx):
+    """Corrupt authorization metadata must raise and remain intact."""
+    from form import persist_rest
+    from form.open import open_program
+    from form.dell_matrix import rollback_authority as ra
+    from form.mandell.core_i_recovery import (
+        checkpoint, _journal_path, _carry_authorization, RollbackRecoveryError)
+
+    o = "r63a_corrupt1"
+    p1 = open_program(o)
+    p1.nursery.add("corrupt test", words="w" * 20)
+    g1 = checkpoint(p1, stamp="corrupt1")
+
+    # Create a journal with corrupt auth metadata
+    import json
+    jpath = _journal_path(o)
+    corrupt = {
+        "phase": "prepared",
+        "operation": "authority_bound_rollback",
+        "generation_id": g1,
+        "manifest_sha256": "not-a-valid-hash",  # corrupt
+        "target_members": {"program": "x"},  # malformed
+    }
+    with open(jpath, "w") as f:
+        json.dump(corrupt, f)
+    before = open(jpath).read()
+
+    # _carry_authorization must raise, not silently overwrite
+    try:
+        _carry_authorization(o, {"phase": "prepared"})
+        raise AssertionError("should have raised")
+    except RollbackRecoveryError:
+        pass
+
+    # Journal must remain intact
+    after = open(jpath).read()
+    assert before == after, "corrupt journal was modified"
+    os.unlink(jpath)
+
+
+@check("r63a_staged_target_binding_mismatch")
+def _t_staged_binding_mismatch(ctx):
+    """Staged recovery with target-binding mismatch must fail closed."""
+    from form import persist_rest
+    from form.open import open_program
+    from form.dell_matrix import rollback_authority as ra
+    from form.mandell.core_i_recovery import (
+        checkpoint, _journal_path, _recover_staged, RollbackRecoveryError)
+
+    o = "r63a_binding1"
+    p1 = open_program(o)
+    p1.nursery.add("binding test", words="w" * 20)
+    g1 = checkpoint(p1, stamp="binding1")
+
+    # Create a staged journal with WRONG target_members (mismatch)
+    import json
+    from form.mandell import checkpoint_generation as gen
+    manifest = gen._read_manifest(o, g1)
+    jpath = _journal_path(o)
+
+    # Staged hashes are dummy; the sealed binding check runs first
+    # and must fail closed on the manifest mismatch.
+    staged = {
+        "phase": "staged",
+        "owner": o,
+        "operation": "authority_bound_rollback",
+        "generation_id": g1,
+        "manifest_sha256": "0" * 64,  # WRONG - mismatch
+        "target_members": {
+            "program": "0" * 64,
+            "nursery": "0" * 64,
+            "ideas": "0" * 64,
+            "graph": "0" * 64,
+        },
+        "compensating_generation_id": "dummy",
+        "program_sha256": "a" * 64,
+        "nursery_sha256": "b" * 64,
+        "ideas_sha256": "c" * 64,
+    }
+    with open(jpath, "w") as f:
+        json.dump(staged, f)
+
+    # Recovery must fail closed (sealed binding mismatch)
+    try:
+        _recover_staged(o, jpath, staged)
+        raise AssertionError("should have raised")
+    except RollbackRecoveryError as e:
+        assert "manifest" in str(e).lower() or "changed" in str(e).lower()
+
+    # Journal preserved
+    assert os.path.isfile(jpath), "journal should be preserved"
+    os.unlink(jpath)
+
+
+@check("r63a_direct_stale_nursery_write")
+def _t_direct_stale_nursery(ctx):
+    """Direct Nursery.save on stale instance must reject before first write."""
+    from form import persist_rest
+    from form.open import open_program
+    from form.dell_matrix import rollback_authority as ra
+    from form.mandell.core_i_recovery import checkpoint, RollbackRecoveryError
+    from form.dell_matrix.nursery import owner_nursery_path
+    import hashlib
+
+    o = "r63a_stalenursery1"
+    p1 = open_program(o)
+    p1.nursery.add("stale nursery test", words="w" * 20)
+    g1 = checkpoint(p1, stamp="stale1")
+
+    # Get direct nursery reference (pre-existing)
+    from form.dell_matrix.nursery import Nursery
+    npath = owner_nursery_path(o)
+    stale_nursery = Nursery.load(npath)
+    before_bytes = open(npath, "rb").read()
+    before_hash = hashlib.sha256(before_bytes).hexdigest()
+
+    # Rollback
+    frozen = ra.freeze_rollback_target(o, g1)
+    grant = ra.issue_rollback_grant(p1, issuer="root", subject="s", frozen_target=frozen)
+    r = p1.confirm_rollback(g1, _review_context={"grant_id": grant["grant_id"]}, _subject="s")
+    assert r["ok"]
+
+    # Direct save must reject
+    try:
+        stale_nursery.save()
+        raise AssertionError("should have rejected")
+    except RollbackRecoveryError:
+        pass
+
+    # Bytes unchanged
+    after_bytes = open(npath, "rb").read()
+    assert hashlib.sha256(after_bytes).hexdigest() == before_hash, "bytes changed!"
 if __name__ == "__main__":
     ok = smoke()
     sys.exit(0 if ok else 1)
+

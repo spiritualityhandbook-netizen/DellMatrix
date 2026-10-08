@@ -1571,7 +1571,8 @@ class Program:
     def confirm_rollback(self, generation_id=None,
                          _review_context: dict = None,
                          _subject: str = None,
-                         _producer: str = "unknown") -> Dict[str, Any]:
+                         _producer: str = "unknown",
+                         _fail_at: str = None) -> Dict[str, Any]:
         """Authority-mediated checkpoint rollback (R6.3).
 
         The canonical mediated rollback. Every exposed path (Dell28,
@@ -1698,7 +1699,8 @@ class Program:
                       "compensating_generation_id": comp_gid}
         try:
             restored = _rollback(self.owner, target_gid,
-                                 _mediation=_mediation)
+                                 _mediation=_mediation,
+                                 _fail_at=_fail_at)
         except Exception as exc:
             # Journal preserved: recovery will complete or fail closed.
             # This instance is stale: it must not save over the recovery.
@@ -1730,8 +1732,8 @@ class Program:
         # are also recognized as stale on their next save attempt.
         # Return receipt.
         self._post_rollback_stale = True
-        from form.mandell.core_i_recovery import _rollback_epochs
-        _rollback_epochs[self.owner] = _rollback_epochs.get(self.owner, 0) + 1
+        from form.mandell.core_i_recovery import _advance_rollback_epoch, _rollback_epochs
+        _advance_rollback_epoch(self.owner)
         self._rollback_epoch = _rollback_epochs[self.owner]
         return {"ok": True, "generation_id": target_gid,
                 "compensating_generation_id": comp_gid,
