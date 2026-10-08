@@ -299,6 +299,7 @@ class Nursery:
         n = cls(path=path)
         # R6.3: record restoration epoch; pre-restoration instances
         # are stale for save purposes (checked by check_save_allowed).
+        # Uses canonical (_safe_owner) key from path (already sanitized).
         if path:
             import re as _re
             m = _re.search(r"nursery_(.+)\.json$", path)

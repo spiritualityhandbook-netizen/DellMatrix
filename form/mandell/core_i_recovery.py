@@ -117,19 +117,34 @@ def check_save_allowed(obj, what="save"):
             f"written."
         )
     # Cross-instance epoch check: if a rollback completed after this
-    # instance was loaded, the instance is stale.
+    # instance was loaded, the instance is stale. Uses canonical
+    # (_safe_owner) identity so Program and Nursery agree.
     owner = getattr(obj, "owner", None)
     if owner is None:
-        # Nursery (no owner attr): derive from its path.
-        # Path format: .../state/nursery_<owner>.json
+        # Nursery (no owner attr): derive sanitized owner from its path.
+        # Path format: .../state/nursery_<safe_owner>.json
+        # The path already contains the sanitized form; use it directly
+        # as the canonical key (do not try to unsanitize).
         path = getattr(obj, "path", None)
         if path:
             import re as _re
             m = _re.search(r"nursery_(.+)\.json$", path)
             if m:
-                owner = m.group(1)
+                # m.group(1) is already _safe_owner form; use as key
+                key = m.group(1)
+                current_epoch = _rollback_epochs.get(key, 0)
+                instance_epoch = getattr(obj, "_rollback_epoch", 0)
+                if instance_epoch != current_epoch:
+                    raise RollbackRecoveryError(
+                        f"{what} rejected: this instance was loaded before an "
+                        f"authority-bound rollback restored a generation "
+                        f"(epoch {instance_epoch} != {current_epoch}). Reload "
+                        f"to obtain the restored state; no bytes were written."
+                    )
+                return
     if owner:
-        current_epoch = _rollback_epochs.get(owner, 0)
+        key = _epoch_key(owner)
+        current_epoch = _rollback_epochs.get(key, 0)
         instance_epoch = getattr(obj, "_rollback_epoch", 0)
         if instance_epoch != current_epoch:
             raise RollbackRecoveryError(
@@ -470,12 +485,8 @@ def _carry_authorization(owner: str, journal: dict) -> None:
             f"rollback journal for {owner!r} is not an object during "
             f"authorization carry (preserved); refusing to overwrite")
     # Recognize authorization metadata presence before validating.
-    has_auth = (
-        existing.get("operation") == "authority_bound_rollback"
-        or "target_members" in existing
-        or "manifest_sha256" in existing
-    )
-    if not has_auth:
+    # Uses the shared presence predicate.
+    if not _journal_claims_authorization(existing):
         # Genuine legacy journal: no authorization to carry. Explicit.
         return
     # Authorization claimed: must validate strictly. Malformed does
@@ -578,14 +589,27 @@ _recover_rollback_active = False
 _rollback_epochs: dict = {}
 
 
+def _epoch_key(owner: str) -> str:
+    """Canonical restoration-resource identity for epoch keys.
+
+    Uses _safe_owner (the same sanitization as storage paths) so that
+    Program and Nursery agree, and owner names mapping to the same
+    storage path share the epoch. Do NOT use the raw owner string.
+    """
+    from form.persist import _safe_owner
+    return _safe_owner(owner)
+
+
 def _advance_rollback_epoch(owner: str) -> None:
     """Advance the per-owner restoration epoch.
 
     Called at the canonical completion boundary (verified rollback
     completion, including recovery). Pre-existing instances in this
-    process become stale for save purposes.
+    process become stale for save purposes. Keyed by canonical
+    (_safe_owner) identity.
     """
-    _rollback_epochs[owner] = _rollback_epochs.get(owner, 0) + 1
+    key = _epoch_key(owner)
+    _rollback_epochs[key] = _rollback_epochs.get(key, 0) + 1
 
 
 def recover_rollback_transaction(owner: str) -> Optional[str]:
@@ -765,8 +789,41 @@ def _validate_journal_fields(owner: str, journal: dict, required: tuple) -> None
         )
 
 
+def _journal_claims_authorization(journal: dict) -> bool:
+    """Presence predicate: does the journal CLAIM authority-bound status?
+
+    ONE shared rule used by carry, dispatch, prepared recovery, and
+    staged/committed recovery. Presence identifies a claimed
+    authority-bound record; strict validation (_validate_authorized_journal)
+    determines whether it is valid.
+
+    A journal claims authorization if it has:
+    - operation == "authority_bound_rollback", OR
+    - any authorization metadata key present (even if null/malformed)
+
+    Malformed claimed records must be validated strictly and raise;
+    they must NEVER downgrade to legacy handling.
+    """
+    if not isinstance(journal, dict):
+        return False
+    if journal.get("operation") == "authority_bound_rollback":
+        return True
+    # Presence of any auth metadata key, even if null/wrong-type
+    for key in ("target_members", "manifest_sha256", "generation_id",
+                "compensating_generation_id"):
+        if key in journal:
+            return True
+    return False
+
+
 def _journal_has_authorization(journal: dict) -> bool:
-    """Check if the journal carries R6.3 authorization evidence."""
+    """Check if the journal carries VALID R6.3 authorization evidence.
+
+    DEPRECATED: Use _journal_claims_authorization for presence detection,
+    then _validate_authorized_journal for strict validation. This
+    function is retained for backward compatibility but should not be
+    used for dispatch decisions (it permits downgrade on malformed).
+    """
     return (journal.get("operation") == "authority_bound_rollback"
             and isinstance(journal.get("target_members"), dict)
             and isinstance(journal.get("generation_id"), str))
@@ -784,10 +841,11 @@ def _recover_prepared(owner: str, jpath: str, journal: dict) -> str:
     old fingerprints (if recorded), then discard the journal. The old
     triple remains authoritative.
     """
-    if _journal_has_authorization(journal):
+    if _journal_claims_authorization(journal):
         # Authorized prepared: the commit decision is durable. Complete
         # the authorized target; do not fall through to legacy
-        # abandonment.
+        # abandonment. Strict validation raises on malformed (never
+        # downgrades to legacy).
         _validate_authorized_journal(owner, journal)
         return _recover_authorized(owner, jpath, journal)
     _validate_journal_fields(owner, journal,
@@ -842,7 +900,7 @@ def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
     abandoned.
     """
     global _recover_rollback_active
-    if _journal_has_authorization(journal):
+    if _journal_claims_authorization(journal):
         _validate_authorized_journal(owner, journal)
         # Re-validate the sealed target binding: the staged hashes
         # prove bytes were written, but not that they represent the
@@ -900,25 +958,27 @@ def _recover_staged(owner: str, jpath: str, journal: dict) -> str:
                 f"recorded target {recorded[:16]} for {owner!r}; cannot prove "
                 f"target pair; refusing"
             )
-    # Complete verification (shared): rehydrate individual Idea files
-    # BEFORE journal deletion. If rehydration fails, the journal is
-    # preserved and recovery is repeatable.
-    from form.mandell.idea_checkpoint import rehydrate_ideas_from_live
-    from form import persist_rest
+    # Complete verification via SHARED verifier: rehydrates individual
+    # Idea files, verifies all four members, fresh load, and Idea
+    # agreement BEFORE journal deletion. If verification fails, the
+    # journal is preserved and recovery is repeatable.
+    from form.mandell import checkpoint_generation as gen
     _recover_rollback_active = True
     try:
-        rehydrate_ideas_from_live(owner)
-        # Fresh load must reflect the committed target.
-        rever = persist_rest.load(owner, activate=False)
-        if rever is None:
-            raise RollbackRecoveryError(
-                f"rollback recovery: restored program failed to load "
-                f"for {owner!r}; journal preserved")
+        # Load target program for verification (private, no activation).
+        # For authorized journals, use the sealed generation; for legacy,
+        # the program arg is not critical (verifier uses staged hashes).
+        program = None
+        if _journal_claims_authorization(journal):
+            program, _receipt = gen._load_generation(
+                owner, journal["generation_id"], False, None)
+        _verify_rollback_outcome(owner, program, journal)
     finally:
         _recover_rollback_active = False
     os.unlink(jpath)
     # Advance epoch if this was an authorized recovery (not legacy).
-    if _journal_has_authorization(journal):
+    # Uses presence predicate: if auth was claimed, it was validated.
+    if _journal_claims_authorization(journal):
         _advance_rollback_epoch(owner)
     return "completed"
 

@@ -1732,9 +1732,9 @@ class Program:
         # are also recognized as stale on their next save attempt.
         # Return receipt.
         self._post_rollback_stale = True
-        from form.mandell.core_i_recovery import _advance_rollback_epoch, _rollback_epochs
+        from form.mandell.core_i_recovery import _advance_rollback_epoch, _rollback_epochs, _epoch_key
         _advance_rollback_epoch(self.owner)
-        self._rollback_epoch = _rollback_epochs[self.owner]
+        self._rollback_epoch = _rollback_epochs[_epoch_key(self.owner)]
         return {"ok": True, "generation_id": target_gid,
                 "compensating_generation_id": comp_gid,
                 "via": decision.get("via"),
@@ -1995,7 +1995,8 @@ def open_program(owner: str = "Operator", _nursery=None) -> Program:
         prog = Program(owner=owner)
         # R6.3: record restoration epoch; pre-restoration instances
         # are stale for save purposes.
-        prog._rollback_epoch = _rollback_epochs.get(owner, 0)
+        from form.mandell.core_i_recovery import _epoch_key
+        prog._rollback_epoch = _rollback_epochs.get(_epoch_key(owner), 0)
         return prog
     prog = Program.__new__(Program)
     prog._init_nursery = _nursery
