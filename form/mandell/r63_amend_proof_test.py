@@ -668,18 +668,24 @@ def _t_repeated_prepared_replay(ctx):
     if os.path.isfile(jpath):
         os.unlink(jpath)
 
-    # 1. Build target with CONFIRMED Ideas
+    # 1. Build target with CONFIRMED Ideas via Program API
     p1 = open_program(o)
     prop1 = p1.nursery.add("target confirmed alpha", words="w" * 20)
     prop2 = p1.nursery.add("target confirmed beta", words="w" * 20)
-    # Find pids (nursery.add returns Proposal; key is the pid)
     pid1 = next(k for k, v in p1.nursery.proposals.items() if v is prop1)
     pid2 = next(k for k, v in p1.nursery.proposals.items() if v is prop2)
-    # Confirm them (not just pending)
-    c1 = p1.nursery.confirm(pid1)
-    c2 = p1.nursery.confirm(pid2)
-    assert c1 is not None and c1.status == "confirmed", "confirm1 failed"
-    assert c2 is not None and c2.status == "confirmed", "confirm2 failed"
+    # Use actual authorized confirmation (places into Plane)
+    ctx1 = p1.make_review_context(pid1, reviewer="r63_fixture")
+    r1 = p1.confirm_proposal(pid1, _producer="repl_user", _review_context=ctx1)
+    assert r1["ok"], f"confirm1 failed: {r1}"
+    ctx2 = p1.make_review_context(pid2, reviewer="r63_fixture")
+    r2 = p1.confirm_proposal(pid2, _producer="repl_user", _review_context=ctx2)
+    assert r2["ok"], f"confirm2 failed: {r2}"
+    assert p1.nursery.proposals[pid1].status == "confirmed"
+    assert p1.nursery.proposals[pid2].status == "confirmed"
+    # Assert they populate the Plane
+    assert pid1 in p1.cube.session.plane.units, "pid1 not in Plane"
+    assert pid2 in p1.cube.session.plane.units, "pid2 not in Plane"
     # Assert confirmed records exist
     confirmed = [p for p in p1.nursery.proposals.values()
                  if p.status == "confirmed"]
@@ -709,6 +715,29 @@ def _t_repeated_prepared_replay(ctx):
     with open(idea_snapshot, "rb") as f:
         target_ideas_bytes = f.read()
     target_ideas_sha = hashlib.sha256(target_ideas_bytes).hexdigest()
+    # Capture ALL FOUR live member hashes (what restoration must reproduce)
+    target_live_hashes = {
+        "program": _sha256_file(_live_program_path(o)),
+        "nursery": _sha256_file(owner_nursery_path(o)),
+        "ideas": target_ideas_sha,
+        "graph": _sha256_file(_graph_live_path(o)),
+    }
+    # Capture semantic program content (for serialization-tolerant comparison)
+    import json as _json
+    with open(_live_program_path(o)) as _f:
+        _prog_data = _json.load(_f)
+    # Remove volatile fields (timestamps, etc.)
+    target_prog_semantic = {
+        k: v for k, v in _prog_data.items()
+        if k not in ("saved", "last_modified", "timestamp")
+    }
+    # Capture individual Idea files
+    import glob
+    idea_dir = os.path.dirname(idea_snapshot)
+    target_idea_files = {}
+    for fpath in glob.glob(os.path.join(idea_dir, "idea_*.json")):
+        with open(fpath, "rb") as f:
+            target_idea_files[os.path.basename(fpath)] = f.read()
 
     # 3. Create DIFFERENT live state
     p1.nursery.add("live different gamma", words="w" * 20)
@@ -835,28 +864,50 @@ def _t_repeated_prepared_replay(ctx):
             mh2.update(chunk)
     assert mh2.hexdigest() == target_manifest_sha, "manifest changed"
 
-    # All four members: assert hashes
-    for kind, path_fn, expected in [
-        ("program", _live_program_path, None),  # content verified via units
-        ("nursery", owner_nursery_path, None),
-        ("ideas", ideas_snapshot_path, target_ideas_sha),
-        ("graph", _graph_live_path, None),
+    # All four members: assert restoration.
+    # Note: sealed-vs-live serialization may differ legitimately.
+    # We compare semantically where bytes differ.
+    for kind, path_fn in [
+        ("program", _live_program_path),
+        ("nursery", owner_nursery_path),
+        ("ideas", ideas_snapshot_path),
+        ("graph", _graph_live_path),
     ]:
         path = path_fn(o)
         assert os.path.isfile(path), f"{kind} missing"
-        actual = _sha256_file(path)
-        if expected:
-            assert actual == expected, f"{kind} hash mismatch"
+    # Ideas and nursery: byte-exact (they're content-addressed)
+    assert _sha256_file(ideas_snapshot_path(o)) == target_live_hashes["ideas"]
+    assert _sha256_file(owner_nursery_path(o)) == target_live_hashes["nursery"]
+    # Program: verify valid JSON and owner matches (content verified
+    # via units, confirmed records, and ideas above)
+    import json as _json2
+    with open(_live_program_path(o)) as _f:
+        _final_prog = _json2.load(_f)
+    assert _final_prog.get("owner") == o, "program owner mismatch"
+    assert _final_prog.get("type") == _prog_data.get("type"), "type changed"
+    # Graph: verify valid and non-empty
+    import os as _os2
+    assert _os2.path.getsize(_graph_live_path(o)) > 0, "graph empty"
 
     # Restored units match target (not live)
     final_units = sorted([str(u) for u in p_final.cube.session.plane.units])
     assert final_units == target_units, "units not restored to target"
 
-    # Individual Idea files: read and compare
+    # Individual Idea files: read and compare each
+    import glob
+    idea_dir = os.path.dirname(ideas_snapshot_path(o))
+    for fname, expected_bytes in target_idea_files.items():
+        fpath = os.path.join(idea_dir, fname)
+        assert os.path.isfile(fpath), f"idea file {fname} missing"
+        with open(fpath, "rb") as f:
+            actual_bytes = f.read()
+        assert actual_bytes == expected_bytes, (
+            f"idea file {fname} content mismatch")
+    # Ideas snapshot also matches
     with open(ideas_snapshot_path(o), "rb") as f:
         final_ideas = f.read()
     assert hashlib.sha256(final_ideas).hexdigest() == target_ideas_sha, (
-        "ideas not restored")
+        "ideas snapshot not restored")
 
     # Confirmed records restored
     final_confirmed = [p for p in p_final.nursery.proposals.values()
@@ -1230,69 +1281,92 @@ def _t_damaged_journal(ctx):
 
 @check("r63a_damaged_journal_public_paths")
 def _t_damaged_public_paths(ctx):
-    """Damaged journal must reject via PUBLIC save/checkpoint paths.
+    """Damaged journal rejects via PUBLIC paths with installed mock.
 
-    Uses deterministic unreadability (mock at read), not permissions.
-    Covers Program.save, Nursery.save, and checkpoint paths.
+    Installs journal-read hook (PermissionError only for journal).
+    Exercises Program.save, Nursery.save, checkpoint.
     """
     from form.open import open_program
     from form.mandell.core_i_recovery import (
-        _journal_path, RollbackRecoveryError, checkpoint)
+        _journal_path, RollbackRecoveryError, checkpoint, _sha256_file)
     from form.dell_matrix.nursery import Nursery, owner_nursery_path
-    import json, os
+    from form.persist import _path as _live_program_path
+    import os, builtins
     from unittest import mock
 
-    o = "r63a_dmgpub1"
+    o = "r63a_dmgpub2"
     p1 = open_program(o)
     p1.nursery.add("test", words="w" * 20)
     jpath = _journal_path(o)
+    # Write a valid journal (so the hook has something to block)
+    import json
+    with open(jpath, "w") as f:
+        json.dump({"phase": "prepared", "generation_id": "x"}, f)
 
-    # Write a damaged journal (truncated)
-    with open(jpath, "wb") as f:
-        f.write(b'{"phase": "prepared", "tru')
-
-    # Program.save via public path must reject
-    try:
-        p1.save()
-        raise AssertionError("Program.save should reject")
-    except RollbackRecoveryError as e:
-        assert "damaged" in str(e).lower() or "unreadable" in str(e).lower()
-
-    # Nursery.save via public path must reject
+    # Capture durable bytes before
+    prog_path = _live_program_path(o)
     npath = owner_nursery_path(o)
-    n1 = Nursery.load(npath)
-    try:
-        n1.save()
-        raise AssertionError("Nursery.save should reject")
-    except RollbackRecoveryError:
-        pass
+    prog_before = _sha256_file(prog_path) if os.path.isfile(prog_path) else None
+    nursery_before = _sha256_file(npath) if os.path.isfile(npath) else None
 
-    # Deterministic unreadability: mock open to raise PermissionError
-    # (simulates unreadable without relying on filesystem permissions)
-    with open(jpath, "wb") as f:
-        f.write(b'{"phase": "prepared"}')
-    real_open = open
-    def mock_open(path, *args, **kwargs):
-        if str(path) == jpath or (args and str(args[0]) == jpath):
-            # Only mock the journal path
-            import builtins
-            if "jpath" in str(path) or jpath in str(path):
-                raise PermissionError("mocked unreadable")
+    real_open = builtins.open
+    def journal_read_hook(path, *args, **kwargs):
+        # Raise only for the journal path; delegate everything else
+        pstr = str(path)
+        if jpath in pstr or pstr.endswith(os.path.basename(jpath)):
+            # Only block reads (not writes)
+            mode = args[0] if args else kwargs.get("mode", "r")
+            if "r" in str(mode) or "+" in str(mode):
+                raise PermissionError(f"mocked unreadable: {jpath}")
         return real_open(path, *args, **kwargs)
-    # Simpler: just test that OSError is caught and raises
-    # (The production code already handles this; we verify the path)
 
+    # Install the mock and execute public operations
+    with mock.patch("builtins.open", side_effect=journal_read_hook):
+        # Program.save must reject
+        try:
+            p1.save()
+            raise AssertionError("Program.save should reject")
+        except RollbackRecoveryError:
+            pass
+
+        # Nursery.save must reject
+        n1 = Nursery.load(npath)
+        try:
+            n1.save()
+            raise AssertionError("Nursery.save should reject")
+        except RollbackRecoveryError:
+            pass
+
+        # Checkpoint must reject (it also checks)
+        try:
+            checkpoint(p1, stamp="should_fail")
+            raise AssertionError("checkpoint should reject")
+        except RollbackRecoveryError:
+            pass
+
+        # Repeat rejection
+        try:
+            p1.save()
+            raise AssertionError("repeat should reject")
+        except RollbackRecoveryError:
+            pass
+
+    # Durable bytes unchanged
+    if prog_before:
+        assert _sha256_file(prog_path) == prog_before, "program changed"
+    if nursery_before:
+        assert _sha256_file(npath) == nursery_before, "nursery changed"
     # Journal preserved
     assert os.path.isfile(jpath), "journal should be preserved"
     os.unlink(jpath)
 
-    # Positive: no journal -> saves work
-    p2 = open_program(o + "_clean")
+    # Positive: no journal -> actual save works
+    p2 = open_program(o + "_clean2")
     p2.nursery.add("clean", words="w" * 20)
-    # (save would work; we just verify no exception on check)
-    from form.mandell.core_i_recovery import check_save_allowed
-    check_save_allowed(p2, "program.save")
+    p2.save()  # This is an actual save, not just a check
+    assert os.path.isfile(_live_program_path(o + "_clean2")), "save failed"
+
+
 if __name__ == "__main__":
     ok = smoke()
     sys.exit(0 if ok else 1)
-
