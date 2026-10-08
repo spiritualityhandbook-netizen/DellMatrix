@@ -143,16 +143,28 @@ def check_save_allowed(obj, what="save"):
             try:
                 with open(jpath, encoding="utf-8") as f:
                     j = json.load(f)
-                if _journal_claims_authorization(j):
-                    raise RollbackRecoveryError(
-                        f"{what} rejected: an authorized rollback "
-                        f"transaction is unresolved. Complete recovery "
-                        f"before writing; no bytes were written."
-                    )
-            except (OSError, ValueError):
-                # Unreadable journal: fail closed via existing
-                # recovery path, not here.
-                pass
+            except (OSError, ValueError, UnicodeDecodeError) as exc:
+                # Damaged evidence: fail closed. A direct save does not
+                # invoke loader recovery; "recovery will reject later"
+                # cannot authorize writing now. Preserve evidence and cause.
+                raise RollbackRecoveryError(
+                    f"{what} rejected: rollback journal evidence is "
+                    f"damaged/unreadable ({type(exc).__name__}). Complete "
+                    f"recovery before writing; no bytes were written; "
+                    f"journal preserved."
+                ) from exc
+            if not isinstance(j, dict):
+                raise RollbackRecoveryError(
+                    f"{what} rejected: rollback journal is not an object "
+                    f"(got {type(j).__name__}). Complete recovery before "
+                    f"writing; no bytes were written; journal preserved."
+                )
+            if _journal_claims_authorization(j):
+                raise RollbackRecoveryError(
+                    f"{what} rejected: an authorized rollback "
+                    f"transaction is unresolved. Complete recovery "
+                    f"before writing; no bytes were written."
+                )
     # Cross-instance epoch check: if a rollback completed after this
     # instance was loaded, the instance is stale. Uses canonical
     # (_safe_owner) identity so Program and Nursery agree.
