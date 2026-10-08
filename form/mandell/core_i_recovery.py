@@ -1210,9 +1210,12 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     _check_fail("rollback_cleanup", _fail_at)
     os.unlink(_journal_path(owner))
     # Canonical completion: invalidate pre-restoration instances.
-    # This is the ONE completion rule; called on every successful
-    # _eager_converge_live (normal and recovery paths).
-    _advance_rollback_epoch(owner)
+    # This is the ONE completion rule for AUTHORIZED rollback;
+    # called on successful _eager_converge_live (normal and recovery
+    # paths). Legacy rollback does not advance (preserves existing
+    # legacy test semantics).
+    if _journal_claims_authorization(journal):
+        _advance_rollback_epoch(owner)
 
 
 def _sha256_file(path: str) -> str:
