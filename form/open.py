@@ -1668,12 +1668,14 @@ class Program:
                              "authorization.",
                     "generation_id": target_gid,
                     "compensating_generation_id": comp_gid}
-        # 5. Intent journal records the authorized outcome (no handles).
-        from form.mandell.core_i_recovery import (
-            write_rollback_intent, clear_rollback_intent,
-            recover_rollback_intent)
-        write_rollback_intent(self.owner, target_gid, comp_gid,
-                              frozen["members"])
+        # 5. Durable commit decision: record the authorized outcome in
+        # the existing transaction journal (phase "authorized"). No
+        # handles, no secrets. After this record, crash recovery MUST
+        # complete the authorized target.
+        from form.mandell.core_i_recovery import write_rollback_authorization
+        write_rollback_authorization(
+            self.owner, target_gid, frozen["manifest_sha256"],
+            frozen["members"], comp_gid)
         # 6. Canonical rollback to the frozen target. The mediation token
         # is minted HERE — after the live revalidation (commit decision) —
         # and validated inside rollback() before any state access.
@@ -1688,38 +1690,31 @@ class Program:
                                  _mediation=_mediation)
         except Exception as exc:
             # Journal preserved: recovery will complete or fail closed.
+            # This instance is stale: it must not save over the recovery.
+            self._post_rollback_stale = True
             return {"ok": False, "reason": "rollback_failed",
                     "detail": f"{type(exc).__name__}: {str(exc)[:200]}",
                     "generation_id": target_gid,
                     "compensating_generation_id": comp_gid}
-        # 7. Verify complete restoration before success. The canonical
-        # rollback converges live files to the target generation; CURRENT
-        # still names the latest committed generation (the safety
-        # checkpoint) — that is the existing invariant, preserved.
-        # Verification: the restored state loads through the production
-        # path, and the live nursery bytes match the target's sealed
-        # nursery member exactly.
+        # 7. _eager_converge_live verified the complete outcome (all
+        # four members + rehydration) and deleted the journal only after
+        # verification. This is an independent production-path check
+        # that the restored state loads and reflects the target.
         try:
             from form import persist_rest
             probe = persist_rest.load(self.owner, activate=False)
             if probe is None:
                 raise ValueError("restored program failed to load")
-            import hashlib as _hl
-            from form.dell_matrix.nursery import owner_nursery_path
-            _h = _hl.sha256()
-            with open(owner_nursery_path(self.owner), "rb") as _f:
-                for _c in iter(lambda: _f.read(65536), b""):
-                    _h.update(_c)
-            if _h.hexdigest() != frozen["members"].get("nursery"):
-                raise ValueError("live nursery does not match target "
-                                 "generation member")
         except Exception as exc:
+            # Verification failed: the instance is stale and must not
+            # save. The journal was already deleted by the verified
+            # convergence; this is a load-path inconsistency.
+            self._post_rollback_stale = True
             return {"ok": False, "reason": "restoration_unverified",
                     "detail": f"{type(exc).__name__}: {str(exc)[:200]}",
                     "generation_id": target_gid,
                     "compensating_generation_id": comp_gid}
-        # 8. Clear intent; mark this (now stale) instance; receipt.
-        clear_rollback_intent(self.owner)
+        # 8. Mark this (now stale) instance; return receipt.
         self._post_rollback_stale = True
         return {"ok": True, "generation_id": target_gid,
                 "compensating_generation_id": comp_gid,

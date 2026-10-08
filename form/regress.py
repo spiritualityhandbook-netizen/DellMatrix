@@ -147,6 +147,7 @@ LIST = [
     "form.mandell.r61_oracle_test:smoke",
     "form.mandell.r62_docking_test:smoke",
     "form.mandell.r63_rollback_test:smoke",
+    "form.mandell.r63_amend_proof_test:smoke",
 ]
 
 TIMEOUT_S = 900

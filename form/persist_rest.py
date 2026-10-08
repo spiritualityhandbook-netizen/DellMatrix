@@ -222,10 +222,6 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     # links) from the enclosing journal.
     from form.mandell.core_i_recovery import recover_supersede_intent
     recover_supersede_intent(owner)
-    # Rollback-intent recovery (GDP_PHASE_6_R63_AUTHORITY_BOUND_ROLLBACK).
-    # Completes an authorized rollback outcome recorded before a crash.
-    from form.mandell.core_i_recovery import recover_rollback_intent
-    recover_rollback_intent(owner)
     path = path or _path(owner)
     if not os.path.isfile(path):
         p = open_program(owner)

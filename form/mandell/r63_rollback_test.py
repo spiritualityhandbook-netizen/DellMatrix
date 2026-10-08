@@ -376,37 +376,37 @@ def _t(ctx):
     from form import persist_rest
     from form.dell_matrix import rollback_authority as ra
     from form.mandell.core_i_recovery import (
-        write_rollback_intent, recover_rollback_intent,
-        _rollback_journal_path)
+        write_rollback_authorization, recover_rollback_transaction,
+        _journal_path)
     from form.dell_matrix.nursery import owner_nursery_path
     o = _owner("crash")
     p, g1, g2 = _two_gens(o)
     frozen = ra.freeze_rollback_target(p.owner, g1)
     # Simulate: intent written, crash MID-transition (live files are
     # neither the old state nor the target — e.g. partial write).
-    write_rollback_intent(o, g1, "comp_test", frozen["members"])
-    assert os.path.isfile(_rollback_journal_path(o))
+    write_rollback_authorization(o, g1, frozen["manifest_sha256"], frozen["members"], "comp_test")
+    assert os.path.isfile(_journal_path(o))
     with open(owner_nursery_path(o), "a", encoding="utf-8") as f:
         f.write(" ")
-    outcome = recover_rollback_intent(o)
-    assert outcome == "converged", outcome
-    assert not os.path.isfile(_rollback_journal_path(o))
+    outcome = recover_rollback_transaction(o)
+    assert outcome == "completed", outcome
+    assert not os.path.isfile(_journal_path(o))
     assert _labels(o) == ["idea one"], _labels(o)
 
 
 @check("r63_malformed_journal_fails_closed")
 def _t(ctx):
     from form.mandell.core_i_recovery import (
-        recover_rollback_intent, _rollback_journal_path,
+        recover_rollback_transaction, _journal_path,
         RollbackRecoveryError)
     import json
     o = _owner("malf")
-    jp = _rollback_journal_path(o)
+    jp = _journal_path(o)
     # Corrupt JSON.
     with open(jp, "w", encoding="utf-8") as f:
         f.write("{not valid")
     try:
-        recover_rollback_intent(o)
+        recover_rollback_transaction(o)
         assert False, "should raise"
     except RollbackRecoveryError:
         pass
@@ -417,12 +417,12 @@ def _t(ctx):
                    "owner": o, "phase": "prepared", "generation_id": "g",
                    "target_members": {"x": "y"}}, f)
     try:
-        recover_rollback_intent(o)
+        recover_rollback_transaction(o)
         assert False, "should raise"
     except RollbackRecoveryError:
         pass
     os.unlink(jp)
-    assert recover_rollback_intent(o) == "none"
+    assert recover_rollback_transaction(o) is None
 
 
 @check("r63_stale_instance_cannot_save")
@@ -453,16 +453,16 @@ def _t(ctx):
     import json
     from form.dell_matrix import rollback_authority as ra
     from form.mandell.core_i_recovery import (
-        write_rollback_intent, _rollback_journal_path)
+        write_rollback_authorization, _journal_path)
     o = _owner("sec")
     p, g1, g2 = _two_gens(o)
     frozen = ra.freeze_rollback_target(p.owner, g1)
     grant = _issue(p, frozen)
-    write_rollback_intent(o, g1, "comp_x", frozen["members"])
-    raw = open(_rollback_journal_path(o), encoding="utf-8").read()
+    write_rollback_authorization(o, g1, frozen["manifest_sha256"], frozen["members"], "comp_x")
+    raw = open(_journal_path(o), encoding="utf-8").read()
     assert grant["grant_id"] not in raw, "grant handle in journal!"
     assert "grant_" not in raw.replace("generation", ""), raw[:200]
-    os.unlink(_rollback_journal_path(o))
+    os.unlink(_journal_path(o))
 
 
 @check("r63_compensation_round_trip")
@@ -603,12 +603,12 @@ def _t(ctx):
     from form import persist_rest
     from form.dell_matrix import rollback_authority as ra
     from form.mandell.core_i_recovery import (
-        write_rollback_intent, _rollback_journal_path)
+        write_rollback_authorization, _journal_path)
     from form.dell_matrix.nursery import owner_nursery_path
     o = _owner("child")
     p, g1, g2 = _two_gens(o)
     frozen = ra.freeze_rollback_target(p.owner, g1)
-    write_rollback_intent(o, g1, "comp_test", frozen["members"])
+    write_rollback_authorization(o, g1, frozen["manifest_sha256"], frozen["members"], "comp_test")
     with open(owner_nursery_path(o), "a", encoding="utf-8") as f:
         f.write(" ")
     child = (
@@ -621,7 +621,7 @@ def _t(ctx):
                        text=True, timeout=60, cwd=os.getcwd())
     assert r.returncode == 0, r.stderr[-300:]
     assert "CHILD_LABELS=idea one" in r.stdout, r.stdout
-    assert not os.path.isfile(_rollback_journal_path(o))
+    assert not os.path.isfile(_journal_path(o))
 
 
 def smoke() -> bool:

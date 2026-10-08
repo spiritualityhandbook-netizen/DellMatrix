@@ -68,12 +68,24 @@ def freeze_rollback_target(owner: str,
                 "generation_id must be non-empty str or None")
         gid = generation_id
     # Read and validate the manifest; verify every member file exists
-    # and matches its sealed sha256 fingerprint.
+    # and matches its sealed sha256 fingerprint. The manifest's own
+    # fingerprint is bound: metadata changes are detectable.
     try:
         manifest = gen._read_manifest(owner, gid)
+        manifest_path = gen._manifest_path(owner, gid)
     except Exception as exc:
         raise RollbackTargetError(
             f"generation {gid!r} unreadable: {exc}") from exc
+    import hashlib as _hl
+    _mh = _hl.sha256()
+    try:
+        with open(manifest_path, "rb") as _mf:
+            for _chunk in iter(lambda: _mf.read(65536), b""):
+                _mh.update(_chunk)
+    except OSError as exc:
+        raise RollbackTargetError(
+            f"generation {gid!r} manifest unreadable: {exc}") from exc
+    manifest_sha256 = _mh.hexdigest()
     members = manifest.get("members") or {}
     if not isinstance(members, dict) or not members:
         raise RollbackTargetError(
@@ -113,12 +125,19 @@ def freeze_rollback_target(owner: str,
     return {
         "owner": owner,
         "generation_id": gid,
+        "manifest_sha256": manifest_sha256,
         "members": frozen_members,
     }
 
 
 def _live_fingerprints(owner: str) -> Dict[str, str]:
-    """Non-secret live-state fingerprints for content binding."""
+    """Non-secret live-state fingerprints for content binding.
+
+    Distinguishes genuinely absent files ("absent") from unreadable
+    files (raises RollbackTargetError). Only genuine absence may
+    become "absent"; an unreadable file is a fail-closed error, never
+    silently treated as missing.
+    """
     from form.persist import _path, _STATE_DIR, _safe_owner
     from form.dell_matrix.nursery import owner_nursery_path
     import hashlib
@@ -132,8 +151,12 @@ def _live_fingerprints(owner: str) -> Dict[str, str]:
                 for chunk in iter(lambda: f.read(65536), b""):
                     h.update(chunk)
             out[name] = h.hexdigest()
-        except OSError:
+        except FileNotFoundError:
             out[name] = "absent"
+        except OSError as exc:
+            raise RollbackTargetError(
+                f"live {name} file for {owner!r} unreadable "
+                f"(not absent): {exc}") from exc
     return out
 
 
@@ -147,6 +170,7 @@ def rollback_content(frozen_target: Dict[str, Any],
     return {
         "target_generation": {
             "generation_id": frozen_target["generation_id"],
+            "manifest_sha256": frozen_target["manifest_sha256"],
             "members": dict(frozen_target["members"]),
         },
         "live_at_issuance": dict(live_fingerprints),
