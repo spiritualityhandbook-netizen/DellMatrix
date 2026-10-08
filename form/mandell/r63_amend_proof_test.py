@@ -810,10 +810,54 @@ def _t_repeated_prepared_replay(ctx):
             return [_norm(x) for x in obj]
         return obj
 
-    # 3. Live state: the init will create a journal with the target
-    # generation. The live program state at init time differs from target
-    # by construction (init runs after target checkpoint).
-    # Distinguishability is verified by generation ID difference.
+    # 3. Create genuinely different live content
+    # Pin the target generation so retention doesn't evict it
+    from form import persist_rest as _pr
+    p_live = _pr.load(o, activate=False)
+    prop_live = p_live.nursery.add("live accepted delta", words="live words here")
+    pid_live = next(k for k, v in p_live.nursery.proposals.items()
+                    if v is prop_live)
+    ctx_live = p_live.make_review_context(pid_live, reviewer="r63_fixture")
+    r_live = p_live.confirm_proposal(
+        pid_live, _producer="repl_user", _review_context=ctx_live)
+    assert r_live["ok"], "live confirm failed"
+    # Persist live Idea via canonical API
+    _live_idea_obj = Idea(idea_id=r_live["id"], title="live accepted delta")
+    _live_idea_obj.words = "live words here"
+    save_idea(_live_idea_obj, o)
+    # Live-only Graph relationship
+    from form.mandell.semantic_graph import SemanticGraph as _SG3
+    _g_live = _SG3.load(o)
+    from form.mandell.idea import Provenance as _PV, ProvenanceSource as _PSS
+    _pv_live = _PV(source=_PSS.HUMAN, activity="relate", agent="r63_live")
+    _rel_live = _g_live.add_relationship(
+        RelationshipType.RELATED_TO, r_live["id"], idea_id1,
+        provenance=_pv_live)
+    assert _rel_live is not None, "live relationship failed"
+    _g_live.save()
+    # Checkpoint live state, KEEPING the target generation
+    g_live = checkpoint(p_live, stamp="replay5_live", keep_extra=[g1])
+    assert g_live != g1, "generations should differ"
+    # Verify target generation still available
+    from form.mandell import checkpoint_generation as _gen2
+    _tgt_manifest = _gen2._read_manifest(o, g1)
+    assert _tgt_manifest, "target manifest evicted!"
+    # Assert Plane units differ
+    with open(_live_program_path(o)) as _lf:
+        _live_prog = _json.load(_lf)
+    _live_units = _live_prog.get("plane", {}).get("units", {})
+    assert set(_live_units.keys()) != set(target_plane_units.keys()), (
+        "live Plane units must differ from target")
+    # Assert Graph differs
+    with open(_gpath(o)) as _lgf:
+        _live_graph_json = _gj.load(_lgf)
+    assert _norm(_live_graph_json) != _norm(target_graph_json), (
+        "live Graph must differ from target")
+    # Assert live-only Idea in canonical storage; target doesn't have it
+    from form.mandell.idea_persist import list_idea_ids as _li2
+    _live_ids = _li2(o)
+    assert r_live["id"] in _live_ids, "live Idea not in storage"
+    assert r_live["id"] not in target_ids, "live Idea should not be in target"
 
     # Stale writers for later
     stale_prog = p1
