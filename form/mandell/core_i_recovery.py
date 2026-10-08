@@ -116,6 +116,43 @@ def check_save_allowed(obj, what="save"):
             f"it. Reload to obtain the restored state; no bytes were "
             f"written."
         )
+    # Unresolved authorized transaction: another pre-existing instance
+    # must not overwrite an outstanding authorized transaction. Reuse
+    # the journal authority (no parallel store). Trusted recovery
+    # (via _recover_rollback_active) is allowed to finish.
+    if not _recover_rollback_active:
+        jpath = None
+        owner = getattr(obj, "owner", None)
+        if owner:
+            jpath = _journal_path(owner)
+        else:
+            # Nursery: derive journal path from nursery path.
+            # Nursery path: .../nursery_<safe_owner>.json
+            # Journal path: .../rollback_<safe_owner>.journal.json
+            # The <safe_owner> is already sanitized; reuse directly.
+            path = getattr(obj, "path", None)
+            if path:
+                import re as _re
+                m = _re.search(r"nursery_(.+)\.json$", path)
+                if m:
+                    from form.persist import _STATE_DIR
+                    safe = m.group(1)
+                    jpath = os.path.join(
+                        _STATE_DIR, f"rollback_{safe}.journal.json")
+        if jpath and os.path.isfile(jpath):
+            try:
+                with open(jpath, encoding="utf-8") as f:
+                    j = json.load(f)
+                if _journal_claims_authorization(j):
+                    raise RollbackRecoveryError(
+                        f"{what} rejected: an authorized rollback "
+                        f"transaction is unresolved. Complete recovery "
+                        f"before writing; no bytes were written."
+                    )
+            except (OSError, ValueError):
+                # Unreadable journal: fail closed via existing
+                # recovery path, not here.
+                pass
     # Cross-instance epoch check: if a rollback completed after this
     # instance was loaded, the instance is stale. Uses canonical
     # (_safe_owner) identity so Program and Nursery agree.
@@ -1172,6 +1209,10 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
         _recover_rollback_active = False
     _check_fail("rollback_cleanup", _fail_at)
     os.unlink(_journal_path(owner))
+    # Canonical completion: invalidate pre-restoration instances.
+    # This is the ONE completion rule; called on every successful
+    # _eager_converge_live (normal and recovery paths).
+    _advance_rollback_epoch(owner)
 
 
 def _sha256_file(path: str) -> str:

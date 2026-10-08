@@ -1727,14 +1727,13 @@ class Program:
                     "detail": f"{type(exc).__name__}: {str(exc)[:200]}",
                     "generation_id": target_gid,
                     "compensating_generation_id": comp_gid}
-        # 8. Mark this (now stale) instance; increment the per-owner
-        # restoration epoch so pre-existing instances in this process
-        # are also recognized as stale on their next save attempt.
+        # 8. Mark this (now stale) instance. The per-owner restoration
+        # epoch was already advanced by _eager_converge_live (the ONE
+        # completion rule); sync to the current value.
         # Return receipt.
         self._post_rollback_stale = True
-        from form.mandell.core_i_recovery import _advance_rollback_epoch, _rollback_epochs, _epoch_key
-        _advance_rollback_epoch(self.owner)
-        self._rollback_epoch = _rollback_epochs[_epoch_key(self.owner)]
+        from form.mandell.core_i_recovery import _rollback_epochs, _epoch_key
+        self._rollback_epoch = _rollback_epochs.get(_epoch_key(self.owner), 0)
         return {"ok": True, "generation_id": target_gid,
                 "compensating_generation_id": comp_gid,
                 "via": decision.get("via"),
