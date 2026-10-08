@@ -686,6 +686,37 @@ def _t_repeated_prepared_replay(ctx):
     # Assert they populate the Plane
     assert pid1 in p1.cube.session.plane.units, "pid1 not in Plane"
     assert pid2 in p1.cube.session.plane.units, "pid2 not in Plane"
+    # Save individual Idea files via canonical API
+    from form.mandell.idea_persist import save_idea
+    from form.mandell.idea import Idea
+    idea1 = Idea(idea_id=r1["id"], title="target confirmed alpha")
+    idea1.words = "w" * 20
+    save_idea(idea1, o)
+    idea2 = Idea(idea_id=r2["id"], title="target confirmed beta")
+    idea2.words = "w" * 20
+    save_idea(idea2, o)
+    # Create a real relationship through the canonical graph API
+    # Create relationship between the actual Idea IDs (not proposal pids)
+    from form.mandell.idea_persist import list_idea_ids as _liids
+    from form.mandell.semantic_graph import SemanticGraph, RelationshipType
+    from form.mandell.idea import Provenance, ProvenanceSource
+    # Use the first two Idea IDs (they correspond to our confirmed Ideas)
+    all_iids = _liids(o)
+    assert len(all_iids) >= 2, f"need 2 Ideas, got {len(all_iids)}"
+    idea_id1, idea_id2 = all_iids[0], all_iids[1]
+    graph = SemanticGraph.load(o)
+    prov = Provenance(source=ProvenanceSource.HUMAN, activity="relate", agent="r63_fixture")
+    rel = graph.add_relationship(
+        RelationshipType.RELATED_TO, idea_id1, idea_id2, provenance=prov)
+    assert rel is not None, "relationship creation failed"
+    graph.save()
+    # Capture via by_type (returns list of RelationshipEntry)
+    target_rels = [
+        (r.source_id, r.target_id, str(r.type))
+        for r in graph.by_type(RelationshipType.RELATED_TO)
+        if idea_id1 in (r.source_id, r.target_id)
+    ]
+    assert len(target_rels) > 0, "no relationships captured"
     # Assert confirmed records exist
     confirmed = [p for p in p1.nursery.proposals.values()
                  if p.status == "confirmed"]
@@ -722,22 +753,41 @@ def _t_repeated_prepared_replay(ctx):
         "ideas": target_ideas_sha,
         "graph": _sha256_file(_graph_live_path(o)),
     }
-    # Capture semantic program content (for serialization-tolerant comparison)
+    # Capture semantic program content (for content comparison)
     import json as _json
     with open(_live_program_path(o)) as _f:
         _prog_data = _json.load(_f)
-    # Remove volatile fields (timestamps, etc.)
-    target_prog_semantic = {
-        k: v for k, v in _prog_data.items()
-        if k not in ("saved", "last_modified", "timestamp")
-    }
-    # Capture individual Idea files
-    import glob
-    idea_dir = os.path.dirname(idea_snapshot)
+    # Capture nursery proposals (labels, content) - the semantic payload
+    target_nursery_proposals = _prog_data.get("nursery", {}).get(
+        "proposals", _prog_data.get("nursery", {}))
+    # If nested, try direct
+    if isinstance(target_nursery_proposals, dict):
+        # Extract label/words for each proposal
+        target_proposal_content = {
+            pid: {
+                "label": p.get("label"),
+                "words": p.get("words"),
+                "status": p.get("status"),
+            }
+            for pid, p in target_nursery_proposals.items()
+            if isinstance(p, dict)
+        }
+    else:
+        target_proposal_content = {}
+    # Capture individual Idea files via canonical paths
+    from form.mandell.idea_persist import list_idea_ids, _idea_path
+    target_ids = list_idea_ids(o)
+    assert target_ids, "no Idea IDs captured"
+    # Assert our confirmed Idea IDs are present
+    assert r1["id"] in target_ids and r2["id"] in target_ids, (
+        f"target Idea IDs missing: {r1['id']}, {r2['id']} not in {target_ids}")
     target_idea_files = {}
-    for fpath in glob.glob(os.path.join(idea_dir, "idea_*.json")):
-        with open(fpath, "rb") as f:
-            target_idea_files[os.path.basename(fpath)] = f.read()
+    for iid in target_ids:
+        ipath = _idea_path(iid, o)
+        assert os.path.isfile(ipath), f"idea file for {iid} missing"
+        with open(ipath, "rb") as f:
+            target_idea_files[iid] = f.read()
+    assert set(target_idea_files.keys()) == set(target_ids)
 
     # 3. Create DIFFERENT live state
     p1.nursery.add("live different gamma", words="w" * 20)
@@ -878,31 +928,76 @@ def _t_repeated_prepared_replay(ctx):
     # Ideas and nursery: byte-exact (they're content-addressed)
     assert _sha256_file(ideas_snapshot_path(o)) == target_live_hashes["ideas"]
     assert _sha256_file(owner_nursery_path(o)) == target_live_hashes["nursery"]
-    # Program: verify valid JSON and owner matches (content verified
-    # via units, confirmed records, and ideas above)
+    # Program: compare actual content (labels, words, status)
+    # Not just IDs, owner, or type
     import json as _json2
     with open(_live_program_path(o)) as _f:
         _final_prog = _json2.load(_f)
     assert _final_prog.get("owner") == o, "program owner mismatch"
-    assert _final_prog.get("type") == _prog_data.get("type"), "type changed"
-    # Graph: verify valid and non-empty
-    import os as _os2
-    assert _os2.path.getsize(_graph_live_path(o)) > 0, "graph empty"
+    final_nursery = _final_prog.get("nursery", {}).get(
+        "proposals", _final_prog.get("nursery", {}))
+    if isinstance(final_nursery, dict):
+        final_proposal_content = {
+            pid: {
+                "label": p.get("label"),
+                "words": p.get("words"),
+                "status": p.get("status"),
+            }
+            for pid, p in final_nursery.items()
+            if isinstance(p, dict)
+        }
+    else:
+        final_proposal_content = {}
+    # Assert target content restored (labels/words, not just IDs)
+    for pid, expected in target_proposal_content.items():
+        assert pid in final_proposal_content, f"proposal {pid} missing"
+        actual = final_proposal_content[pid]
+        assert actual["label"] == expected["label"], (
+            f"label mismatch for {pid}")
+        assert actual["status"] == expected["status"], (
+            f"status mismatch for {pid}")
+    # Assert live-only content absent
+    # (live_only pid was added after target capture; it should NOT be in restored)
+    # Note: we check that no unexpected confirmed Ideas appear
+    # Graph: parse and compare restored content (not just file size)
+    from form.mandell.semantic_graph import SemanticGraph as _SG
+    from form.mandell.semantic_graph import RelationshipType as _RT
+    restored_graph = _SG.load(o)
+    restored_rels = [
+        (r.source_id, r.target_id, str(r.type))
+        for r in restored_graph.by_type(_RT.RELATED_TO)
+    ]
+    # Assert target relationship restored
+    assert len(restored_rels) > 0, "no relationships after restore"
+    # The target relationship (idea_id1 -> idea_id2) must be present
+    target_rel_set = set(target_rels)
+    restored_rel_set = set(restored_rels)
+    assert target_rel_set.issubset(restored_rel_set), (
+        f"target rels missing: {target_rel_set - restored_rel_set}")
 
     # Restored units match target (not live)
     final_units = sorted([str(u) for u in p_final.cube.session.plane.units])
     assert final_units == target_units, "units not restored to target"
 
-    # Individual Idea files: read and compare each
-    import glob
-    idea_dir = os.path.dirname(ideas_snapshot_path(o))
-    for fname, expected_bytes in target_idea_files.items():
-        fpath = os.path.join(idea_dir, fname)
-        assert os.path.isfile(fpath), f"idea file {fname} missing"
+    # Individual Idea files: read via canonical paths and compare
+    from form.mandell.idea_persist import list_idea_ids as _list_ids
+    from form.mandell.idea_persist import _idea_path as _ipath
+    final_ids = _list_ids(o)
+    # Assert complete restored ID set (no live-only, no missing)
+    assert set(final_ids) == set(target_ids), (
+        f"ID set mismatch: {set(final_ids)} vs {set(target_ids)}")
+    # Count and compare each file
+    compared = 0
+    for iid in target_ids:
+        fpath = _ipath(iid, o)
+        assert os.path.isfile(fpath), f"idea file {iid} missing"
         with open(fpath, "rb") as f:
             actual_bytes = f.read()
-        assert actual_bytes == expected_bytes, (
-            f"idea file {fname} content mismatch")
+        assert actual_bytes == target_idea_files[iid], (
+            f"idea {iid} content mismatch")
+        compared += 1
+    assert compared == len(target_ids) and compared > 0, (
+        f"compared {compared}, expected {len(target_ids)}")
     # Ideas snapshot also matches
     with open(ideas_snapshot_path(o), "rb") as f:
         final_ideas = f.read()
