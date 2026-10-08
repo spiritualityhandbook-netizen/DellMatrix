@@ -1568,6 +1568,177 @@ class Program:
         }
         return _confirm_proposal(self, pid, _auth=_auth)
 
+    def confirm_rollback(self, generation_id=None,
+                         _review_context: dict = None,
+                         _subject: str = None,
+                         _producer: str = "unknown",
+                         _fail_at: str = None) -> Dict[str, Any]:
+        """Authority-mediated checkpoint rollback (R6.3).
+
+        The canonical mediated rollback. Every exposed path (Dell28,
+        REPL revert/restore, agent endpoint, direct Program calls)
+        routes through here. An owner string alone denies.
+
+        Sequence (mirrors confirm_proposal's two-check pattern):
+        1. Freeze the restore target (CURRENT resolved once; manifest
+           + member fingerprints bound; private staging, no activation).
+        2. Entry authority check (policy.check, operation=
+           "checkpoint.rollback"). Denial = zero mutation.
+        3. Safety checkpoint of live state (retention keeps the frozen
+           target). Failure = zero rollback mutation.
+        4. Live revalidation = THE COMMIT DECISION (full policy check;
+           revocation/chain/target/operation re-verified; frozen target
+           re-validated). Denial = safe, no rollback.
+        5. Intent journal records the authorized outcome (no handles).
+        6. Canonical core_i_recovery.rollback to the frozen target.
+        7. Verify restoration (CURRENT names target; members match).
+        8. Clear intent; mark this (now stale) instance; return receipt.
+
+        After the commit decision, restart completes the recorded
+        outcome without the session credential (recover_rollback_intent).
+
+        Returns {"ok": True, "generation_id", "compensating_generation_id",
+        ...} or {"ok": False, "reason", "detail"}.
+        """
+        from form.dell_matrix import rollback_authority as ra
+        from form.dell_matrix.acceptance_policy import canonical_hash
+
+        policy = getattr(self, "acceptance_policy", None)
+        if policy is None:
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": "No acceptance policy configured (fail closed)."}
+        # 1. Freeze the target before any writes.
+        try:
+            frozen = ra.freeze_rollback_target(self.owner, generation_id)
+        except ra.RollbackTargetError as exc:
+            return {"ok": False, "reason": "rollback_target_invalid",
+                    "detail": str(exc)[:300]}
+        target_gid = frozen["generation_id"]
+        # Content binds the frozen target AND live state at entry.
+        live_fp = ra._live_fingerprints(self.owner)
+        content_hash = canonical_hash(
+            ra.rollback_content(frozen, live_fp))
+        # 2. Entry authority check. Zero mutation on denial.
+        decision = policy.check(
+            _producer, target_gid, _review_context,
+            proposal_version=content_hash,
+            operation=ra.ROLLBACK_OPERATION,
+            subject=_subject, owner=self.owner)
+        if not decision.get("allowed"):
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": decision.get("detail"),
+                    "generation_id": target_gid}
+        # 3. Safety checkpoint (retention preserves the frozen target).
+        from form.mandell.core_i_recovery import checkpoint as _checkpoint
+        import time as _time
+        stamp = (f"pre-rollback-{target_gid}-"
+                 f"{_time.strftime('%Y%m%dT%H%M%S', _time.gmtime())}")
+        try:
+            comp_gid = _checkpoint(self, stamp=stamp,
+                                   keep_extra={target_gid})
+        except Exception as exc:
+            return {"ok": False, "reason": "safety_checkpoint_failed",
+                    "detail": f"{type(exc).__name__}: {str(exc)[:200]}",
+                    "generation_id": target_gid}
+        # 4. Live revalidation = the commit decision. Full policy check
+        # (revocation, chain, subject, owner, target, operation) plus
+        # frozen-target re-validation, immediately before the protected
+        # transition. Uses entry-captured live fingerprints: the safety
+        # checkpoint above is part of the authorized flow, not drift.
+        live = policy.check(
+            _producer, target_gid, _review_context,
+            proposal_version=content_hash,
+            operation=ra.ROLLBACK_OPERATION,
+            subject=_subject, owner=self.owner)
+        if not live.get("allowed"):
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": live.get("detail") or
+                    "Live validation failed at execution boundary.",
+                    "generation_id": target_gid,
+                    "compensating_generation_id": comp_gid}
+        try:
+            frozen2 = ra.freeze_rollback_target(self.owner, target_gid)
+        except ra.RollbackTargetError as exc:
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": f"Target changed after authorization: {exc}",
+                    "generation_id": target_gid,
+                    "compensating_generation_id": comp_gid}
+        # Revalidate the ENTIRE frozen descriptor, not only members.
+        # A manifest-only change between entry and execution must deny;
+        # we must not write an authorization record containing a
+        # superseded fingerprint.
+        for key in ("owner", "generation_id", "manifest_sha256"):
+            if frozen2.get(key) != frozen.get(key):
+                return {"ok": False, "reason": "acceptance_policy_denied",
+                        "detail": f"Target {key} changed after "
+                                 "authorization.",
+                        "generation_id": target_gid,
+                        "compensating_generation_id": comp_gid}
+        if frozen2["members"] != frozen["members"]:
+            return {"ok": False, "reason": "acceptance_policy_denied",
+                    "detail": "Target member fingerprints changed after "
+                             "authorization.",
+                    "generation_id": target_gid,
+                    "compensating_generation_id": comp_gid}
+        # 5. Durable commit decision: record the authorized outcome in
+        # the existing transaction journal (phase "authorized"). No
+        # handles, no secrets. After this record, crash recovery MUST
+        # complete the authorized target.
+        from form.mandell.core_i_recovery import write_rollback_authorization
+        write_rollback_authorization(
+            self.owner, target_gid, frozen["manifest_sha256"],
+            frozen["members"], comp_gid)
+        # 6. Canonical rollback to the frozen target. The mediation token
+        # is minted HERE — after the live revalidation (commit decision) —
+        # and validated inside rollback() before any state access.
+        from form.mandell.core_i_recovery import rollback as _rollback
+        _mediation = {"operation": ra.ROLLBACK_OPERATION,
+                      "owner": self.owner,
+                      "generation_id": target_gid,
+                      "via": live.get("via"),
+                      "compensating_generation_id": comp_gid}
+        try:
+            restored = _rollback(self.owner, target_gid,
+                                 _mediation=_mediation,
+                                 _fail_at=_fail_at)
+        except Exception as exc:
+            # Journal preserved: recovery will complete or fail closed.
+            # This instance is stale: it must not save over the recovery.
+            self._post_rollback_stale = True
+            return {"ok": False, "reason": "rollback_failed",
+                    "detail": f"{type(exc).__name__}: {str(exc)[:200]}",
+                    "generation_id": target_gid,
+                    "compensating_generation_id": comp_gid}
+        # 7. _eager_converge_live verified the complete outcome (all
+        # four members + rehydration) and deleted the journal only after
+        # verification. This is an independent production-path check
+        # that the restored state loads and reflects the target.
+        try:
+            from form import persist_rest
+            probe = persist_rest.load(self.owner, activate=False)
+            if probe is None:
+                raise ValueError("restored program failed to load")
+        except Exception as exc:
+            # Verification failed: the instance is stale and must not
+            # save. The journal was already deleted by the verified
+            # convergence; this is a load-path inconsistency.
+            self._post_rollback_stale = True
+            return {"ok": False, "reason": "restoration_unverified",
+                    "detail": f"{type(exc).__name__}: {str(exc)[:200]}",
+                    "generation_id": target_gid,
+                    "compensating_generation_id": comp_gid}
+        # 8. Mark this (now stale) instance. The per-owner restoration
+        # epoch was already advanced by _eager_converge_live (the ONE
+        # completion rule); sync to the current value.
+        # Return receipt.
+        self._post_rollback_stale = True
+        from form.mandell.core_i_recovery import _rollback_epochs, _epoch_key
+        self._rollback_epoch = _rollback_epochs.get(_epoch_key(self.owner), 0)
+        return {"ok": True, "generation_id": target_gid,
+                "compensating_generation_id": comp_gid,
+                "via": decision.get("via"),
+                "restored": True}
+
     def reject_proposal(self, pid: str) -> Dict[str, Any]:
         prop = self.nursery.reject(pid)
         if not prop:
@@ -1818,8 +1989,14 @@ def open_program(owner: str = "Operator", _nursery=None) -> Program:
     the provided Nursery is used instead of the owner's live nursery file,
     which is never consulted on that path.
     """
+    from form.mandell.core_i_recovery import _rollback_epochs
     if _nursery is None:
-        return Program(owner=owner)
+        prog = Program(owner=owner)
+        # R6.3: record restoration epoch; pre-restoration instances
+        # are stale for save purposes.
+        from form.mandell.core_i_recovery import _epoch_key
+        prog._rollback_epoch = _rollback_epochs.get(_epoch_key(owner), 0)
+        return prog
     prog = Program.__new__(Program)
     prog._init_nursery = _nursery
     try:
@@ -1829,6 +2006,7 @@ def open_program(owner: str = "Operator", _nursery=None) -> Program:
             del prog._init_nursery
         except AttributeError:
             pass
+    prog._rollback_epoch = _rollback_epochs.get(owner, 0)
     return prog
 
 

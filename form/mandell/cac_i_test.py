@@ -369,7 +369,8 @@ def control_l_core_i():
     r = ob.route(p, action="checkpoint", dell=27, term="Checkpoint", raw_line="checkpoint")
     check("L.ckpt27", r.routed and r.ok, r.error)
     r = ob.route(p, action="load", dell=28, term="Rollback", raw_line="load")
-    check("L.rb28", r.routed and r.ok, r.error)
+    # R6.3: Dell 28 routes but denies without explicit bound authority.
+    check("L.rb28", r.routed and not r.ok, r.error)
     # 37 nurture via route_intent
     from form.mandell.translate import Intent
     r = route_intent(p, Intent(action="nurture", dell=37, term="Stream",

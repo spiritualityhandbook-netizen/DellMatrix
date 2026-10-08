@@ -279,12 +279,16 @@ def _commit_pointer(owner: str, sealed: Dict[str, Any], _fail_at: Optional[str] 
     return pointer
 
 
-def _retain_current_and_previous(owner: str) -> Dict[str, Any]:
+def _retain_current_and_previous(owner: str, keep_extra=None) -> Dict[str, Any]:
     """Conservative retention: keep current + previous committed generations.
 
     Deletes older committed generations and uncommitted stale generation
     artifacts for this owner. Never deletes the generation named by the
     CURRENT pointer; if the pointer cannot be read honestly, deletes nothing.
+
+    keep_extra: additional generation ids that must survive this retention
+    pass (R6.3: the frozen rollback target — a safety checkpoint's
+    retention must not delete the generation selected for restoration).
     """
     removed = 0
     try:
@@ -294,6 +298,10 @@ def _retain_current_and_previous(owner: str) -> Dict[str, Any]:
     keep = {pointer["generation_id"]}
     if pointer.get("previous_generation_id"):
         keep.add(pointer["previous_generation_id"])
+    if keep_extra:
+        for gid in keep_extra:
+            if isinstance(gid, str) and gid:
+                keep.add(gid)
     ns = _owner_ns(owner)
     manifest_prefix = f"gen_{ns}_"
     member_infix = f"_{ns}.g_"
@@ -318,7 +326,8 @@ def _retain_current_and_previous(owner: str) -> Dict[str, Any]:
 
 
 def commit_checkpoint(program, generation_id: Optional[str] = None,
-                      _fail_at: Optional[str] = None) -> Dict[str, Any]:
+                      _fail_at: Optional[str] = None,
+                      keep_extra=None) -> Dict[str, Any]:
     """Seal the program's current logical state as one coherent generation.
 
     Saves the live nursery + program (Persistence V2), seals byte-exact
@@ -343,7 +352,7 @@ def commit_checkpoint(program, generation_id: Optional[str] = None,
     sealed = _seal_members(program, gen_id, _fail_at=_fail_at)
     _commit_pointer(owner, sealed, _fail_at=_fail_at)
     _check_fail("after_commit", _fail_at)  # crash here: new generation committed
-    retention = _retain_current_and_previous(owner)
+    retention = _retain_current_and_previous(owner, keep_extra=keep_extra)
     return {
         "checkpoint_protocol_version": CHECKPOINT_PROTOCOL_VERSION,
         "generation_id": gen_id,

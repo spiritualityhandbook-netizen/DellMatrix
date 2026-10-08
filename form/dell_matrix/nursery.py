@@ -297,6 +297,15 @@ class Nursery:
         leaves a partially mutated nursery behind.
         """
         n = cls(path=path)
+        # R6.3: record restoration epoch; pre-restoration instances
+        # are stale for save purposes (checked by check_save_allowed).
+        # Uses canonical (_safe_owner) key from path (already sanitized).
+        if path:
+            import re as _re
+            m = _re.search(r"nursery_(.+)\.json$", path)
+            if m:
+                from form.mandell.core_i_recovery import _rollback_epochs
+                n._rollback_epoch = _rollback_epochs.get(m.group(1), 0)
         if not path or not os.path.isfile(path):
             return n
         try:

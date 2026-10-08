@@ -80,10 +80,13 @@ def smoke() -> bool:
             print('  generation:', GEN['g1'], flush=True)
 
         # ---- P2 (fresh process): load -> further mutation -> rollback -> save
-        rc, out = _run_repl(['create idea SecondIdea', '28[Rollback]', 'save'])
+        # R6.3: REPL rollback requires explicit "restore confirm <gen>".
+        _gen = GEN.get('g1', '')
+        rc, out = _run_repl(['create idea SecondIdea',
+                             f'restore confirm {_gen}', 'save'])
         check('P2 second idea placed after reload', 'SecondIdea' in out)
         check('P2 rollback honest (ok, no traceback)',
-              'rollback' in out.lower() and 'traceback' not in out.lower())
+              'restored' in out.lower() and 'traceback' not in out.lower())
 
         # ---- P2b (fresh process, API): post-rollback nursery mutation (Dell28)
         code = (

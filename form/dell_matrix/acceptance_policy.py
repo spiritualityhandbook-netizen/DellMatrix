@@ -120,6 +120,11 @@ class AcceptancePolicy:
 
     # R6.1: the only grantable capability in this circuit.
     GRANT_OPERATION = "nursery.confirm"
+    # R6.3: frozen allowlist of grantable operations. checkpoint.rollback
+    # is never interchangeable with nursery.confirm: issuance, checking,
+    # attenuation, audit, and revocation all carry the operation string,
+    # and _check_grant denies on operation mismatch.
+    GRANTABLE_OPERATIONS = frozenset({"nursery.confirm", "checkpoint.rollback"})
     # R6.1: bound on delegation chain length (excessive depth rejected).
     MAX_GRANT_DEPTH = 8
 
@@ -349,9 +354,9 @@ class AcceptancePolicy:
                 return f"{name} must be non-empty str"
             if len(val) > 200:
                 return f"{name} exceeds 200 chars"
-        if operation != self.GRANT_OPERATION:
+        if operation not in self.GRANTABLE_OPERATIONS:
             return (f"operation {operation!r} not grantable in this circuit "
-                    f"(only {self.GRANT_OPERATION!r})")
+                    f"(grantable: {sorted(self.GRANTABLE_OPERATIONS)!r})")
         if target is not None and (not isinstance(target, str) or not target):
             return "target must be None or non-empty str"
         if content is not None and not isinstance(content, Mapping):

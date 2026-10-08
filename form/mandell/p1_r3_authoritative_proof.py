@@ -112,7 +112,9 @@ print("MUTATED")
     # ---- P3: authoritative rollback to A ----
     run_driver("p3_rollback", f"""
 from form.mandell.core_i_recovery import rollback
-rollback({OWNER!r}, {gen_a!r})
+# R6.3: canonical rollback requires mediation (assertions preserved).
+_med = {{"operation": "checkpoint.rollback", "owner": {OWNER!r}, "generation_id": {gen_a!r}}}
+rollback({OWNER!r}, {gen_a!r}, _mediation=_med)
 print("ROLLED_BACK")
 """)
     print("PASS p3_rollback")
@@ -179,8 +181,10 @@ print("REMUTATED")
     with open(script, "w", encoding="utf-8") as f:
         f.write(PREAMBLE + f"""
 from form.mandell.core_i_recovery import rollback
+# R6.3: canonical rollback requires mediation (assertions preserved).
+_med = {{"operation": "checkpoint.rollback", "owner": {OWNER!r}, "generation_id": {gen_a!r}}}
 try:
-    rollback({OWNER!r}, {gen_a!r}, _fail_at="rollback_commit_program")
+    rollback({OWNER!r}, {gen_a!r}, _fail_at="rollback_commit_program", _mediation=_med)
     print("NO_CRASH")
 except BaseException as e:
     print("CRASHED=" + type(e).__name__)

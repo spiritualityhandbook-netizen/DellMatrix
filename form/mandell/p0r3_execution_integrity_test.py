@@ -235,9 +235,11 @@ def t_atomicity_partial_chain_reported() -> None:
         step2 is not None and step2.ok is False and bool(step2.error),
         "integration")
     # First node's mutation persisted AND the failure is explicit — not silent.
+    # R6.3: unmediated rollback fails explicitly (target invalid or denied).
     rec("partial_flow_honest",
         getattr(p, "last_stamp", {}).get("mark") == "pa"
-        and "rollback_missing" in (step2.error or ""),
+        and (step2.error or "") in ("rollback_target_invalid",
+                                     "acceptance_policy_denied"),
         "integration")
 
 

@@ -44,17 +44,38 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
             messages.append(f"Checkpoint fail: {exc}")
             return {**base, "ok": False, "error": str(exc)}
     if n == 28:
-        from .core_i_recovery import rollback
-        target = label if label.endswith(".json") else getattr(program, "last_checkpoint", None)
+        # R6.3: Dell 28 is authority-mediated. It routes through
+        # Program.confirm_rollback — the single enforcement point.
+        # Without an explicit bound approval/grant (human two-step
+        # "restore confirm <generation>" or an agent RollbackEndpoint),
+        # this denies with zero mutation. Typing "restore" alone is
+        # never approval.
+        from form.dell_matrix import rollback_authority as _ra
+        label_gen = label if (label and not label.endswith(".json")) else None
         try:
-            restored = rollback(program.owner, target)
-            program.last_core_i = {"dell": 28, "ok": True}
-            messages.append("Checkpoint restored.")
-            return {**base, "ok": True, "error": "", "new_program": restored}
-        except FileNotFoundError:
-            program.last_core_i = {"dell": 28, "ok": False, "error": "rollback_missing"}
-            messages.append("Rollback missing checkpoint")
-            return {**base, "ok": False, "error": "rollback_missing"}
+            res = program.confirm_rollback(
+                label_gen, _review_context=None,
+                _subject="dell28-system", _producer="dell28")
+        except Exception as exc:
+            program.last_core_i = {"dell": 28, "ok": False,
+                                   "error": f"{type(exc).__name__}: {exc}"}
+            messages.append(f"Rollback fail: {exc}")
+            return {**base, "ok": False, "error": str(exc)}
+        if res.get("ok"):
+            program.last_core_i = {"dell": 28, "ok": True,
+                                   "generation_id": res["generation_id"]}
+            messages.append(
+                f"Checkpoint restored: generation {res['generation_id']} "
+                f"(compensating {res['compensating_generation_id']}).")
+            from form import persist_rest as _pr
+            return {**base, "ok": True, "error": "",
+                    "new_program": _pr.load(program.owner, activate=False)}
+        program.last_core_i = {"dell": 28, "ok": False,
+                               "error": res.get("reason")}
+        messages.append(
+            f"Rollback denied ({res.get('reason')}): "
+            f"{res.get('detail', '')[:160]}")
+        return {**base, "ok": False, "error": res.get("reason") or ""}
     if n == 34:
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         mark = label or "stamp"

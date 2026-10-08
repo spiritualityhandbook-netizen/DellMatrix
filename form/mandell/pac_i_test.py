@@ -557,26 +557,34 @@ def test_o():
     out27 = execute_seed(p, "27[Checkpoint]")
     check("O.dell27_ok", out27.get("ok") is True, f"dell27 failed: {out27.get('error')}")
     p.place("uo2", "O Two", words="o2")
+    # R6.3: Dell 28 without explicit bound approval denies (zero mutation).
+    # The positive mediated path is proven in the R6.3 circuit suite.
     out28 = execute_seed(p, "28[Rollback]")
-    check("O.dell28_ok", out28.get("ok") is True, f"dell28 failed: {out28.get('error')}")
-    restored = out28.get("new_program")
-    if restored is None:
-        check("O.restored", False, "no new_program in Dell 28 result")
-    else:
-        units = _units(restored)
-        check("O.restored", units == {"uo1"}, f"Dell 28 did not restore G1: {units}")
+    check("O.dell28_denied", out28.get("ok") is False and
+          out28.get("error") == "acceptance_policy_denied",
+          f"dell28 should deny without authority: {out28}")
+    check("O.restored", out28.get("new_program") is None,
+          "denied Dell 28 must not return a program")
+    # Live state untouched by the denial.
+    check("O.untouched", _units(p) == {"uo1", "uo2"},
+          f"denied rollback mutated live state: {_units(p)}")
     # Explicit generation id rollback.
     gid = out27.get("generation_id")
     p2 = _fresh(owner + "b")
     p2.place("uo3", "O Three", words="o3")
     g = cir.checkpoint(p2)
     from form.mandell.core_i_recovery import rollback
-    rp = rollback(p2.owner, g)
+    # R6.3: canonical rollback requires mediation (assertions preserved).
+    _med = {"operation": "checkpoint.rollback", "owner": p2.owner,
+            "generation_id": g}
+    rp = rollback(p2.owner, g, _mediation=_med)
     check("O.explicit_gen", _units(rp) == {"uo3"}, f"explicit generation rollback wrong: {_units(rp)}")
     # Missing checkpoint -> honest rollback_missing.
     p3 = _fresh(owner + "c")
+    _med3 = {"operation": "checkpoint.rollback", "owner": p3.owner,
+             "generation_id": "no_such_generation"}
     try:
-        rollback(p3.owner, None)
+        rollback(p3.owner, "no_such_generation", _mediation=_med3)
         check("O.missing", False, "expected FileNotFoundError")
     except FileNotFoundError as exc:
         check("O.missing", "rollback_missing" in str(exc), f"wrong error: {exc}")
