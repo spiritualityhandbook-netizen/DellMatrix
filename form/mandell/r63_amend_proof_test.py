@@ -226,6 +226,8 @@ def _t(ctx):
     # Weaken: patch _validate_rollback_mediation to no-op
     orig = cir._validate_rollback_mediation
     cir._validate_rollback_mediation = lambda *a, **kw: "weakened"
+    weakened_denies = None
+    weakened_exc = None
     try:
         # The negative control: unmediated rollback should deny.
         # With weakened mediation, it must NOT deny (control fails).
@@ -233,12 +235,21 @@ def _t(ctx):
             cir.rollback("some_owner", "some_gen")
             weakened_denies = False
         except Exception as e:
+            weakened_exc = e
             # If it still denies, the weakening didn't take effect
-            weakened_denies = "denied" in str(e).lower() or "mediation" in str(e).lower()
-        # The control FAILS when weakened (i.e., it does not deny)
+            weakened_denies = ("denied" in str(e).lower()
+                               or "mediation" in str(e).lower())
+        # The control FAILS when weakened (i.e., it does not deny).
         # This proves the mediation check is the actual enforcement.
-        assert not weakened_denies or "weakened" in str(e).lower(), \
-            "weakened mediation should not enforce denial"
+        # (If our lambda returned "weakened" as the gid, the rollback
+        # proceeds past mediation and fails later on missing generation
+        # — which still proves mediation was the gate.)
+        assert weakened_denies is False or (
+            weakened_exc is not None
+            and "weakened" not in str(weakened_exc).lower()
+            and "denied" not in str(weakened_exc).lower()
+            and "mediation" not in str(weakened_exc).lower()
+        ), "weakened mediation should not enforce denial"
     finally:
         cir._validate_rollback_mediation = orig
     # Restore: the control must work again
