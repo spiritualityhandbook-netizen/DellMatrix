@@ -328,10 +328,12 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
 
 ## 12. Phase-6 R6.4 — multi-intelligence shared-state circuit (candidate)
 
-- **STATUS:** candidate-branch only (`gdp-phase6-r64-multi-intelligence`).
-  NOT CERTIFIED. DO NOT MERGE without Director authorization.
+- **STATUS:** MERGED/CLOSED (2026-10-09).
+  PR #83 → merge commit `0ceb3113` (parents `84a5913` + `a9c3594`,
+  tree `7ab8c67`). Production verification green from fresh clean clone
+  (regress --twice 110/110, --order rev 110/110).
   AMEND-4 (GDP_PHASE_6_R64_FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT)
-  corrections applied.
+  corrections applied and Director-certified.
 - **CIRCUIT:** host-bound agent identity → typed request envelope →
   serialized HostCoordinator dispatch → canonical R6.1 writer →
   idempotent receipt → structured audit. Two agents, one owner, one
