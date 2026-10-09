@@ -1,7 +1,8 @@
 # ADMISSION PACKET — R6.4 MULTI-INTELLIGENCE SHARED-STATE CIRCUIT
+## (AMEND corrections applied)
 
 **To:** Director · **From:** Uni Ω · **Date:** 2026-10-08
-**Directive:** GDP_PHASE_6_R64_MULTI_INTELLIGENCE_SHARED_STATE_CIRCUIT (MODE=C)
+**Directive:** GDP_PHASE_6_R64_CLOSE_IDENTITY_EVIDENCE_AND_PERSISTENCE (MODE=C)
 **Status:** CANDIDATE — NOT CERTIFIED — DO NOT MERGE. Awaiting Director admission review.
 
 ---
@@ -9,32 +10,45 @@
 ## 1. Identity
 
 - **PR:** #83
-- **HEAD:** `80081a0f0ba57d1ec53b4f51d294749a2ca71ef9` (code freeze)
-- **TREE:** `1b903e74e565387bc202449425d6021753926b31` (code freeze)
+- **HEAD:** `4e4f98894d6a77c7ead9565590d3bda0f4763586`
+- **TREE:** `77dcb367262e7cdd99d4873e281c67ec379e4cea`
 - **BASE:** `84a59137fe75d4ad5206642f8ba8a42183fdcef2` (R6.3 merge)
-- **Note:** The admission packet itself is committed after the code freeze;
-  the final packet commit changes HEAD but not the code tree's R6.4
-  content. CI must run on the final HEAD.
+- **Branch:** `gdp-phase6-r64-multi-intelligence`
+- **Prior candidate:** `d7eb47d` (AMEND findings; superseded)
 - **Branch:** `gdp-phase6-r64-multi-intelligence`
 
-## 2. Scope coverage (6.4.1–6.4.5)
+## 2. Scope coverage (6.4.1–6.4.5 + AMEND findings)
 
 | Objective | Implementation | Proofs |
 |-----------|---------------|--------|
-| 6.4.1 agent identity/BIMO binding | `agent_coordinator.py`: AgentIdentity, host-bound registration; persona/BIMO descriptive only | 9 checks: host binding, unregistered rejection, envelope identity-field rejection, narrow surface |
-| 6.4.2 shared-state protocol | `agent_coordinator.py`: HostCoordinator, RequestEnvelope, detached snapshots, serialized dispatch, idempotency | 18 checks: snapshots, A-confirms, B-denied, retry idempotent, reuse rejects, content/revoke/rollback/recovery denies, queue bounds, reentrancy |
-| 6.4.3 audit trail | `agent_coordinator.py`: capture_agent_action; program payload `agent_audit` | 7 checks: subject/correlation/operation/affected, no grant leakage, stable IDs, persistence |
-| 6.4.4 IntrinsicAgent recovery | `intrinsic_agent.py`: for_agent isolation, versioned to_dict/from_dict; payload `agent_local` | 16 checks: isolation, roundtrip, malformed fails closed, absence default, reload restores, no permissions, cross-owner |
-| 6.4.5 public-path proofs | `r64_multi_intelligence_test.py`, `r64_child.py`, `r64_reference_model.py` | 23 checks: cross-process, reference model (7), sensitivity (4) |
+| 6.4.1 agent identity/BIMO binding | `agent_coordinator.py`: AgentIdentity, host-bound registration; persona/BIMO descriptive only | 9 checks |
+| 6.4.2 shared-state protocol | `agent_coordinator.py`: HostCoordinator, strict RequestEnvelope, detached snapshots, serialized dispatch, namespaced idempotency | 18 checks + AMEND |
+| 6.4.3 audit trail | `agent_coordinator.py`: capture_agent_action; value-based secret screening; `agent_audit` payload; malformed preserved | 7 checks + AMEND |
+| 6.4.4 IntrinsicAgent recovery | `intrinsic_agent.py`: for_agent isolation, strict versioned validation; auto-sync hook in serialize() | 16 checks + AMEND |
+| 6.4.5 public-path proofs | `r64_multi_intelligence_test.py` (98 checks), `r64_child.py`, `r64_reference_model.py` | 23 + 25 AMEND checks |
 
-**Total: 73/73 checks pass.**
+**Total: 98/98 checks pass.**
+
+### AMEND findings → fixes (all 8)
+
+1. **Retry identity:** receipts namespaced by (owner, subject, request_id); canonical descriptor compared. B cannot receive A's receipt.
+2. **Mutable receipts:** deep-copy on store and return; caller mutation isolated.
+3. **Secret logging:** value-based screening via `protected_values`/`contains_protected`; boundary rejection; canary test.
+4. **Malformed state:** strict int/float (no bool/coercion/NaN/Inf); absent≠null; full-payload validation; over-bound rejected.
+5. **Audit failure:** `audit_ok` flag in outcome; committed+flagged, never silent.
+6. **Queue leakage:** queued entries removed on retry/conflict; bound+5 retries prove no growth.
+7. **Auto-sync:** `sync_all_agents_to_program` in `serialize()`; observe→save→reload without manual sync.
+8. **Model:** binds identity; revocation/rollback production-compared; model-only checks removed.
 
 ## 3. Results
 
-- `python3 -m form.mandell.r64_multi_intelligence_test`: **73/73**
+- `python3 -m form.mandell.r64_multi_intelligence_test`: **98/98**
 - `python3 -m form.regress --twice`: **110/110 GREEN** (both passes)
 - `python3 -m form.regress --order rev`: **110/110 GREEN**
-- Exact-head CI: pending (PR #83 workflows)
+- Exact-head CI: Python package (3.10, 3.11) SUCCESS; Form smoke SUCCESS.
+  Code scanning AI findings: FAILURE — classified from logs as GitHub
+  Copilot monthly quota exhausted (402); EVALUATION_UNAVAILABLE, not a
+  code defect.
 
 ## 4. Architecture decisions (directive §2)
 
