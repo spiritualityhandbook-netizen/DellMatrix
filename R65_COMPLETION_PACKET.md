@@ -47,14 +47,13 @@ unsupported parallel mechanisms.
    `_assert_persona_authority_separation`.
 3. No sovereignty gate for bulk operations → added `_check_sovereignty`.
 
-## Sensitivities
+## Sensitivities (Real)
 
-- Disable `effective_capabilities` intersection (use union) →
-  `r65 bimo: sensitivity` fails (proves intersection is load-bearing).
-- Modify `dispatch` to consult `persona_slots` →
-  `r65 skeleton: persona change` tests would fail (proves separation).
-- Remove sovereignty check →
-  `r65 sovereignty: bulk without token rejected` fails.
+- Weaken `AcceptancePolicy.check` (specific decision) →
+  `r65 sensitivity: weakened check diverges` passes (unauthorized now
+  succeeds), proving the check is load-bearing. Restored in `finally`.
+- The sensitivity patches the real production method, not a fabricated
+  dispatch replacement. Observable divergence required.
 
 ## Research
 
@@ -67,31 +66,33 @@ See `R65_RESEARCH_DELTA20.md`:
 
 ## Delta-20
 
-7 applicable categories, all with executed negative controls.
-Categories 8-20 reserved; no additional R6.5 falsifiers identified.
+All 20 established categories mapped with bounded status and evidence.
 See `R65_RESEARCH_DELTA20.md` for the full mapping.
 
-## Verification (AMEND)
+## Verification (AMEND-2)
 
 - `python3 -m form.regress --twice`: **111/111 GREEN** (both passes)
 - `python3 -m form.regress --order rev`: **111/111 GREEN**
-- R6.5 separation: **25/25**
+- R6.5 separation: **34/34**
 - Exact-head CI: [pending push]
 
 ## Costs
 
-- 3 new methods (no new modules, no new authorities)
-- 1 new test file (21 checks)
-- 4 documentation files
-- Zero changes to R6.1–R6.4 runtime behavior (additive only)
+- 1 presentation utility (`effective_capabilities`, labeled non-enforcing)
+- 1 new test file (34 checks) + 1 fixed child script
+- 5 documentation files
+- Zero changes to R6.1–R6.4 runtime behavior (additive only; AMEND removed
+  the two non-production helpers)
 
 ## Limits
 
 - Single-host enforcement (per R6.4; no distributed).
-- Sovereignty token validation is format/owner check; the trusted host
-  is responsible for issuance.
+- Human sovereignty enforced via trusted-host grant issuance (no separate
+  token mechanism).
 - Does not cover UI/UX, distributed systems, or Phase-7.
 - Scanning: EVALUATION_UNAVAILABLE (Copilot quota 402), unchanged.
+- Performance: no measured baseline; changes are O(1)/O(n) on bounded
+  inputs, no hot paths modified.
 
 ## Authorization
 

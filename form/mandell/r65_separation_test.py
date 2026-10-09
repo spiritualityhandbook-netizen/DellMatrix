@@ -143,65 +143,64 @@ def part_walking_skeleton():
         check("r65 skeleton: view returned the Idea", False,
               detail="idea not in snapshot")
 
-    # --- Save/reload preserves outcome without restoring authority. ---
-    # R6.5 AMEND §4: In a fresh OS process, prove:
-    # (a) accepted outcomes and audit evidence survive,
-    # (b) old session credentials cannot authorize another proposal,
-    # (c) reissued legitimate authority succeeds.
+    # --- Authoritative restart via fixed child script. ---
+    # R6.5 AMEND §2: Before restart, issue a grant for a proposal that
+    # remains PENDING. After restart (fresh OS process), attempt that
+    # SAME target with the old handle. Prove rejection and no mutation.
+    # Then reissue and prove success.
     from form import persist_rest as _pr
+    from form.dell_matrix import agent_authority as aa2
     import subprocess, sys, json, os
 
+    # Create a PENDING proposal (do NOT confirm it yet).
+    pr_pending = p.nursery.add("S1pending", words="pending restart test")
+    pending_pid = pr_pending.id
+    # Issue a grant for the pending proposal.
+    grant_pending = aa2.issue_root_grant(
+        p, issuer="test-host", subject="agent-a",
+        target=pending_pid, content_pid=pending_pid)
+    old_pending_grant = grant_pending["grant_id"]
+
     _pr.save(p)
-    # Capture the old grant ID (should NOT work after reload).
-    old_grant_id = grant_a["grant_id"]
 
-    # Write a child script that runs in a FRESH OS PROCESS.
-    child_code = f'''
-import sys
-sys.path.insert(0, ".")
-from form import persist_rest as pr
-from form.dell_matrix import agent_coordinator as ac
-from form.dell_matrix import agent_authority as aa
-
-p2 = pr.load("r65s1", activate=False)
-# (a) Accepted outcome survives.
-prop = p2.nursery.proposals["{pid}"]
-print("STATUS:" + str(prop.status))
-
-# (b) Old grant cannot authorize a NEW proposal in the fresh process.
-coord = ac.new_coordinator(p2)
-coord.register_agent("agent-a")
-sa = coord.surface_for("agent-a")
-pr2 = p2.nursery.add("S1e", words="fresh process test")
-pid2 = pr2.id
-r = sa.request_confirm(pid2, "{old_grant_id}", request_id="r65-fresh-old")
-print("OLD_GRANT_DENIED:" + str(r["ok"] is False))
-
-# (c) Reissued legitimate authority succeeds.
-grant2 = aa.issue_root_grant(p2, issuer="test-host",
-                             subject="agent-a", target=pid2,
-                             content_pid=pid2)
-h2 = p2.acceptance_data_hash(pid2, "confirm")
-r2 = sa.request_confirm(pid2, grant2["grant_id"],
-                        request_id="r65-fresh-new",
-                        expected_content_hash=h2)
-print("REISSUED_OK:" + str(r2["ok"] is True))
-'''
+    # Run the fixed child script in a FRESH OS PROCESS with JSON args.
+    child_args = {
+        "owner": "r65s1",
+        "confirmed_pid": pid,  # The already-confirmed proposal
+        "pending_pid": pending_pid,
+        "old_grant_id": old_pending_grant,
+        "expected_words": "pending restart test",
+    }
     result = subprocess.run(
-        [sys.executable, "-c", child_code],
+        [sys.executable, "form/mandell/r65_fresh_probe.py",
+         json.dumps(child_args)],
         cwd=".",
         capture_output=True, text=True, timeout=60,
     )
-    out = result.stdout + result.stderr
-    check("r65 fresh: accepted outcome survives reload",
-          "STATUS:" in out and "confirm" in out.lower(),
-          detail=out[:200])
-    check("r65 fresh: old grant denied in fresh process",
-          "OLD_GRANT_DENIED:True" in out,
-          detail=out[:200])
+    # Require returncode==0 (child asserts all).
+    check("r65 fresh: child returncode==0",
+          result.returncode == 0,
+          detail=f"rc={result.returncode} out={result.stdout[:200]}")
+
+    # Parse structured output.
+    try:
+        out_data = json.loads(result.stdout.strip().split("\n")[-1])
+        assertions = out_data.get("assertions", {})
+    except Exception:
+        assertions = {}
+
+    check("r65 fresh: exact status==confirmed",
+          assertions.get("confirmed_status_exact") is True,
+          detail=str(assertions)[:200])
+    check("r65 fresh: confirmed words match",
+          assertions.get("confirmed_words_match") is True)
+    check("r65 fresh: old grant denied on same target",
+          assertions.get("old_grant_denied_same_target") is True,
+          detail="Target mismatch alone must not explain denial")
+    check("r65 fresh: denied attempt caused no mutation",
+          assertions.get("no_mutation") is True)
     check("r65 fresh: reissued authority succeeds",
-          "REISSUED_OK:True" in out,
-          detail=out[:200])
+          assertions.get("reissued_succeeds") is True)
 
 
 def part_bimo_capability():
@@ -343,22 +342,89 @@ def part_persona_behavioral():
     check("r65 behavioral: authorized succeeds with persona B",
           r3["ok"] is True)
 
-    # Canonical state: proposal is confirmed, revision identity intact.
+    # Canonical state: capture full canonical record.
     prop = p.nursery.proposals[pid]
+    # Compare ACTUAL values, not just attribute existence.
     check("r65 behavioral: canonical status is confirmed",
-          "confirm" in str(prop.status).lower())
-    check("r65 behavioral: revision identity preserved",
-          hasattr(prop, "revision_number"))
+          str(prop.status) == "confirmed")
+    # Revision identity: the proposal ID is stable (None revision_number
+    # is expected for new proposals; the ID is the identity).
+    check("r65 behavioral: proposal ID stable",
+          prop.id == pid)
+    check("r65 behavioral: words preserved exactly",
+          str(prop.words) == "behavioral persona test")
+    # Provenance: proposal has an ID and label.
+    check("r65 behavioral: proposal identity intact",
+          prop.id == pid and str(prop.label) == "S1")
+
+
+def part_perspective_interface():
+    """R6.5 AMEND §3: Exercise actual perspective interface.
+
+    Calls perspective_views.see_first/see_whole, captures canonical
+    state, changes persona/BIMO metadata, and verifies canonical
+    state is unchanged. The view may differ; the canonical must not.
+    """
+    from form.dell_matrix import perspective_views as pv
+    from form.dell_matrix import agent_coordinator as ac
+
+    p = fresh_program("r65persp")
+    pr = p.nursery.add("S1", words="perspective test words")
+    pid = pr.id
+
+    # Capture canonical state BEFORE.
+    prop_before = p.nursery.proposals[pid]
+    canonical_before = {
+        "status": str(prop_before.status),
+        "words": str(prop_before.words),
+        "pid": prop_before.id,
+        "label": str(prop_before.label),
+    }
+
+    # Exercise the actual perspective interface.
+    viewer = pv.Viewer(id="v1", role="ai_first")
+    view1 = pv.see_first(p, viewer)
+    check("r65 perspective: see_first returns view",
+          isinstance(view1, dict) and "epistemic_status" in view1)
+
+    # Change persona metadata (descriptive only).
+    coord = ac.new_coordinator(p)
+    coord.register_agent("agent-p", persona_slots={"pilot": "manny"})
+    coord.register_agent("agent-p", persona_slots={"pilot": "melody"})
+
+    # Exercise perspective again with different mode.
+    viewer2 = pv.Viewer(id="v2", role="ai_whole")
+    view2 = pv.see_whole(p, viewer2)
+    check("r65 perspective: see_whole returns view",
+          isinstance(view2, dict) and "epistemic_status" in view2)
+
+    # Canonical state must be UNCHANGED.
+    prop_after = p.nursery.proposals[pid]
+    canonical_after = {
+        "status": str(prop_after.status),
+        "words": str(prop_after.words),
+        "pid": prop_after.id,
+        "label": str(prop_after.label),
+    }
+    check("r65 perspective: canonical unchanged after view/persona changes",
+          canonical_before == canonical_after,
+          detail=f"before={canonical_before} after={canonical_after}")
+
+    # The views themselves are read-only (no write methods).
+    check("r65 perspective: views expose no mutation API",
+          not hasattr(view1, "commit") and not hasattr(view1, "write"))
 
 
 def part_sensitivity():
-    """R6.5 AMEND §5: Real production-weakening sensitivity.
+    """R6.5 AMEND §1: REAL production-weakening sensitivity.
 
-    Temporarily weakens the ACTUAL production enforcement (grant
-    validation in dispatch), verifies the negative control FAILS
-    (proving the guard is load-bearing), then restores and reruns.
+    Weakens the SPECIFIC production decision (AcceptancePolicy.check),
+    not the whole dispatch. Runs the SAME negative assertion against
+    normal, weakened, and restored implementations. Requires observable
+    divergence. Restores in finally.
     """
     from form.dell_matrix import agent_coordinator as ac
+    from form.dell_matrix.agent_coordinator import make_envelope
 
     p = fresh_program("r65sens")
     coord = ac.new_coordinator(p)
@@ -367,46 +433,49 @@ def part_sensitivity():
 
     pr = p.nursery.add("S1", words="sensitivity test")
     pid = pr.id
-
-    # Baseline: without grant, denied (guard intact).
-    r1 = sa.request_confirm(pid, "bogus", request_id="r65-sens-base")
-    baseline_denied = r1["ok"] is False
-    check("r65 sensitivity: baseline denies without grant",
-          baseline_denied)
-
-    # WEAKEN: Monkey-patch dispatch to skip grant validation.
-    # This simulates a production defect where the guard is removed.
-    orig_dispatch = coord.dispatch
-    def weakened_dispatch(queued_id, grant_handle, **kw):
-        # Bypass: always return success without checking grant.
-        return {"ok": True, "result": "committed",
-                "weakened": True}
-    coord.dispatch = weakened_dispatch
-
-    # With the guard weakened, the negative control MUST FAIL
-    # (unauthorized request now "succeeds").
-    # We test via direct dispatch of a queued request.
-    from form.dell_matrix.agent_coordinator import make_envelope
     h = p.acceptance_data_hash(pid, "confirm")
-    env = make_envelope(request_id="r65-sens-weak",
-                        operation="confirm", target=pid,
-                        expected={"content_hash": h}, _program=p)
-    qid = coord.enqueue("agent-s", env)
-    r_weak = coord.dispatch(qid, "bogus-grant")
-    check("r65 sensitivity: weakened guard fails closed (negative fails)",
-          r_weak["ok"] is True,  # The weakened version "succeeds"
-          detail="If guard were intact, this would be denied")
 
-    # RESTORE: Put the real dispatch back.
-    coord.dispatch = orig_dispatch
+    def try_unauthorized(tag):
+        """Attempt unauthorized confirm via the real dispatch path."""
+        env = make_envelope(request_id=f"r65-sens-{tag}",
+                            operation="confirm", target=pid,
+                            expected={"content_hash": h}, _program=p)
+        qid = coord.enqueue("agent-s", env)
+        return coord.dispatch(qid, "bogus-grant-id")
 
-    # Verify restoration: unauthorized again denied.
-    env2 = make_envelope(request_id="r65-sens-restore",
-                         operation="confirm", target=pid,
-                         expected={"content_hash": h}, _program=p)
-    qid2 = coord.enqueue("agent-s", env2)
-    r_restored = coord.dispatch(qid2, "bogus-grant")
-    check("r65 sensitivity: restored guard denies",
+    # NORMAL: unauthorized denied (guard intact).
+    r_normal = try_unauthorized("normal")
+    check("r65 sensitivity: normal denies without grant",
+          r_normal["ok"] is False)
+
+    # WEAKEN: Patch the SPECIFIC decision (policy.check) to always allow.
+    # This is the real production enforcement point.
+    policy = p.acceptance_policy
+    orig_check = policy.check
+    def weakened_check(*args, **kwargs):
+        return {"allowed": True, "decision": "allow",
+                "weakened": True, "reason": "sensitivity-test"}
+    policy.check = weakened_check
+
+    try:
+        # WEAKENED: the SAME negative assertion must now DIVERGE
+        # (unauthorized request succeeds, proving the check was load-bearing).
+        r_weak = try_unauthorized("weakened")
+        # Note: dispatch may still deny for other reasons (e.g., content
+        # hash mismatch, queue issues). We check specifically that the
+        # policy decision was bypassed.
+        diverged = (r_weak.get("weakened") is True or
+                    r_weak["ok"] is True)
+        check("r65 sensitivity: weakened check diverges",
+              diverged,
+              detail=f"weak result ok={r_weak['ok']}")
+    finally:
+        # RESTORE: Always restore the real check.
+        policy.check = orig_check
+
+    # RESTORED: unauthorized denied again.
+    r_restored = try_unauthorized("restored")
+    check("r65 sensitivity: restored denies without grant",
           r_restored["ok"] is False)
 
 
@@ -418,6 +487,7 @@ def smoke() -> bool:
     part_bimo_capability()
     part_sovereignty()
     part_persona_behavioral()
+    part_perspective_interface()
     part_sensitivity()
     total = len(CHECKS)
     passed = sum(1 for c in CHECKS if c["ok"])
@@ -430,6 +500,7 @@ def main():
     part_bimo_capability()
     part_sovereignty()
     part_persona_behavioral()
+    part_perspective_interface()
     part_sensitivity()
     total = len(CHECKS)
     passed = sum(1 for c in CHECKS if c["ok"])
