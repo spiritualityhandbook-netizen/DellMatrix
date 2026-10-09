@@ -10,7 +10,8 @@
 ## 1. Identity
 
 - **PR:** #83
-- **HEAD:** (to be filled after final commit)
+- **HEAD:** `0f61be07413331787b90fbd4c2f4ed3402489407`
+- **TREE:** `95713a986175ca9a285a89073d661108b347a547`
 - **BASE:** `84a59137fe75d4ad5206642f8ba8a42183fdcef2` (R6.3 merge)
 - **Branch:** `gdp-phase6-r64-multi-intelligence`
 - **Prior candidates:** `d7eb47d` (AMEND findings; superseded),
