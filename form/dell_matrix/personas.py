@@ -547,6 +547,44 @@ class BIMOBody:
             "docked": self.docked_personas(),
         }
 
+    def effective_capabilities(
+        self, grants: Dict[str, List[str]]
+    ) -> List[str]:
+        """Compute the ENFORCED capability set for this BIMO fusion.
+
+        R6.5 (GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT): BIMO = enforced
+        capability, not costume. The effective capabilities are the
+        INTERSECTION of explicitly granted capabilities across all
+        docked personas — never the union of descriptive abilities.
+
+        Args:
+            grants: Mapping from persona ID to list of explicitly
+                granted capability names (from the authority owner,
+                e.g., AcceptancePolicy via agent_authority).
+
+        Returns:
+            Sorted list of capabilities granted to ALL docked personas.
+            Empty if no personas docked or no common grants.
+
+        The fused `abilities` text from `fuse()` is DESCRIPTIVE and must
+        never be used for permission decisions.
+        """
+        docked = self.docked_personas()
+        if not docked:
+            return []
+        # Start with the first persona's grants, intersect with the rest.
+        common = None
+        for p in docked:
+            pid = p.get("id", "")
+            granted = set(grants.get(pid, []))
+            if common is None:
+                common = granted
+            else:
+                common &= granted
+            if not common:
+                break
+        return sorted(common or [])
+
     def render_ascii(self) -> List[str]:
         lines = [
             f"═══ BIMO BODY · mode={self.mode} · pilot={self.pilot} ═══",
