@@ -9,9 +9,12 @@
 ## 1. Identity
 
 - **PR:** #83
-- **HEAD:** `db647a252d95387f7634a0e4d84fe5b4e6c424ca`
-- **TREE:** `e87da1e607f4583375de6021257660024f8d017f`
+- **HEAD:** `80081a0f0ba57d1ec53b4f51d294749a2ca71ef9` (code freeze)
+- **TREE:** `1b903e74e565387bc202449425d6021753926b31` (code freeze)
 - **BASE:** `84a59137fe75d4ad5206642f8ba8a42183fdcef2` (R6.3 merge)
+- **Note:** The admission packet itself is committed after the code freeze;
+  the final packet commit changes HEAD but not the code tree's R6.4
+  content. CI must run on the final HEAD.
 - **Branch:** `gdp-phase6-r64-multi-intelligence`
 
 ## 2. Scope coverage (6.4.1–6.4.5)
