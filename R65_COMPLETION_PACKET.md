@@ -71,11 +71,11 @@ See `R65_RESEARCH_DELTA20.md`:
 Categories 8-20 reserved; no additional R6.5 falsifiers identified.
 See `R65_RESEARCH_DELTA20.md` for the full mapping.
 
-## Verification
+## Verification (AMEND)
 
 - `python3 -m form.regress --twice`: **111/111 GREEN** (both passes)
 - `python3 -m form.regress --order rev`: **111/111 GREEN**
-- R6.5 separation: **21/21**
+- R6.5 separation: **25/25**
 - Exact-head CI: [pending push]
 
 ## Costs
