@@ -550,24 +550,25 @@ class BIMOBody:
     def effective_capabilities(
         self, grants: Dict[str, List[str]]
     ) -> List[str]:
-        """Compute the ENFORCED capability set for this BIMO fusion.
+        """PRESENTATION UTILITY ONLY — not an enforcement mechanism.
 
-        R6.5 (GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT): BIMO = enforced
-        capability, not costume. The effective capabilities are the
-        INTERSECTION of explicitly granted capabilities across all
-        docked personas — never the union of descriptive abilities.
+        R6.5 (AMEND): Caller-supplied capability name lists are
+        DESCRIPTIVE data, not validated grants. This method computes
+        the intersection for display purposes (e.g., showing what a
+        BIMO fusion *would* be able to do if all constituents held
+        those grants).
 
-        Args:
-            grants: Mapping from persona ID to list of explicitly
-                granted capability names (from the authority owner,
-                e.g., AcceptancePolicy via agent_authority).
+        It does NOT:
+        - Validate grants against the AcceptancePolicy
+        - Bind operations, targets, or content
+        - Enforce anything at execution time
 
-        Returns:
-            Sorted list of capabilities granted to ALL docked personas.
-            Empty if no personas docked or no common grants.
+        Real authority comes ONLY from grants issued through the
+        trusted host path (agent_authority.issue_root_grant) and
+        validated at dispatch time by the coordinator.
 
-        The fused `abilities` text from `fuse()` is DESCRIPTIVE and must
-        never be used for permission decisions.
+        Persona docking must never change permission. This method
+        exists for UI/guidance; it is never consulted for decisions.
         """
         docked = self.docked_personas()
         if not docked:

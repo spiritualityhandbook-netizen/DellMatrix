@@ -1,6 +1,6 @@
 # R6.5 Research Dispositions + Delta-20
 
-**Directive:** GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT §5
+**Directive:** GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT §5 (AMEND)
 **Date:** 2026-10-09
 
 ## Research Dispositions
@@ -13,12 +13,11 @@ Research informs implementation; it does not redefine project law.
 
 **Contribution:** Unforgeable tokens, attenuation-only delegation,
 complete mediation. R6.1's AcceptancePolicy already implements this
-for grant issuance. R6.5 extends the principle to BIMO/persona:
-the fused BIMO's effective capabilities are the intersection of
-grants, never the union of descriptive abilities.
+for grant issuance. R6.5 proves the principle holds for persona/BIMO:
+descriptive metadata cannot substitute for validated grants.
 
 **DellMatrix analog:** `agent_authority.issue_root_grant` (unforgeable
-handles); `BIMOBody.effective_capabilities` (intersection, not union).
+handles); coordinator dispatch (complete mediation).
 
 ### Object-capability model (E language, Joe-E)
 
@@ -26,10 +25,12 @@ handles); `BIMOBody.effective_capabilities` (intersection, not union).
 
 **Contribution:** The "no ambient authority" principle. A persona
 activated in a session must not confer ambient authority. R6.4's
-coordinator already enforces this (persona_slots never consulted);
-R6.5 adds the explicit runtime assertion.
+coordinator already enforces this; R6.5 proves it behaviorally.
 
-**DellMatrix analog:** `HostCoordinator._assert_persona_authority_separation`.
+**Correction from research:** Authorization must validate the specific
+operation at execution, rather than trust credential formatting or
+descriptive metadata. (This led to removal of the format-only
+sovereignty token.)
 
 ### View-model separation (MVVM, CQRS)
 
@@ -38,20 +39,17 @@ R6.5 adds the explicit runtime assertion.
 **Contribution:** Command/query separation as the mechanism for
 PERSPECTIVE ≠ TRUTH. Views are queries; they cannot issue commands.
 R6.4's `snapshot_for` already returns detached data; R6.5 proves the
-write barrier holds.
-
-**DellMatrix analog:** `snapshot_for` (detached, sanitized); perspective
-views (read-only by construction).
+write barrier holds and exercises actual perspective interfaces.
 
 ### Human-in-the-loop / meaningful human control
 
 **Disposition:** ADAPT
 
 **Contribution:** Sovereignty as an explicit gate, not a convention.
-Machine-initiated bulk operations require explicit human authorization.
-R6.5 implements the sovereignty token check.
-
-**DellMatrix analog:** `HostCoordinator._check_sovereignty`.
+R6.5 AMEND corrects the implementation: sovereignty is enforced via
+the existing grant-issuance path (only the trusted host mints grants),
+not via a separate token format. Human sovereignty applies to every
+protected operation equally.
 
 ### Unix setuid / sudo
 
@@ -61,22 +59,96 @@ R6.5 implements the sovereignty token check.
 required design. DellMatrix uses explicit capability grants, not
 ambient privilege escalation.
 
-## Delta-20 Prospective Mapping
+## Delta-20 (Established Categories)
 
-| # | Category | R6.5 Claim | Evidence |
-|---|----------|------------|----------|
-| 1 | False separation | Persona-activated path exercises ungranted capability | NEGATIVE: `r65 skeleton: persona change does not bypass denial` |
-| 2 | BIMO costume | Fused BIMO performs action no constituent could | NEGATIVE: `r65 bimo: effective = intersection`; sensitivity proves union would be wrong |
-| 3 | Perspective write | View modifies canonical record | NEGATIVE: `r65 skeleton: view mutation does not touch canonical` |
-| 4 | Behavior as authority | Past successes grant capability without issuance | NEGATIVE: `r65 skeleton: unauthorized confirm denies` (no grant = deny, regardless of history) |
-| 5 | Sovereignty bypass | Bulk op exceeds scope without human auth | NEGATIVE: `r65 sovereignty: bulk without token rejected` |
-| 6 | Revocation gap | Revoked grant still commits | NEGATIVE: `r65 skeleton: revocation before execution denies` |
-| 7 | Authority restoration | Save/reload restores session authority | NEGATIVE: grants are session-scoped; reload starts fresh (verified by design) |
-| 8-20 | (Reserved) | No additional falsifiers identified for R6.5 scope | — |
+Mapping R6.5 evidence against the 20 established Delta-20 categories.
 
-**Reconciliation:** All 7 applicable Delta-20 categories have executed
-negative controls. Categories 8-20 are reserved; no R6.5-relevant
-falsifiers were identified beyond the 7 above.
+### 1. Missing concept
+**Finding:** None. R6.5 does not introduce new concepts requiring
+coverage. The three enforcement mechanisms (grant-issuance boundary,
+behavioral persona proofs, presentation-only BIMO) are all within
+the established R6.1–R6.4 architecture.
+
+### 2. Contradiction
+**Finding:** None. The removal of the sovereignty token does not
+contradict the human-sovereignty claim; it corrects the mechanism.
+Sovereignty is enforced via grant issuance, not token format.
+
+### 3. Semantic drift
+**Finding:** None. No R6.1–R6.4 behavior changed. All R6.5 changes
+are additive (new methods, new tests, documentation).
+
+### 4. Duplicate authority
+**Finding:** None. R6.5 creates no new authority. The removed
+sovereignty token would have been a duplicate; its removal prevents
+this. `effective_capabilities` is explicitly labeled presentation-only.
+
+### 5. Wrong abstraction
+**Finding:** None. The grant handle remains the correct abstraction
+for authority. Persona/BIMO remain descriptive metadata.
+
+### 6. Wrong layer
+**Finding:** None. Enforcement remains at the coordinator dispatch
+layer (where R6.4 placed it). No new enforcement layer created.
+
+### 7. Persistence failure
+**Finding:** None. Fresh-process test proves accepted outcomes survive
+reload. Old grants do not authorize in fresh process (session-scoped).
+
+### 8. History/provenance consequence
+**Finding:** None. No historical records modified. Audit evidence
+preserved through existing R6.4 mechanisms.
+
+### 9. Security consequence
+**POSITIVE.** The AMEND removes a format-only credential check that
+could have created false confidence. Real enforcement (grant
+validation at dispatch) is now the only mechanism, with sensitivity
+proof.
+
+### 10. Human-authority consequence
+**POSITIVE.** Human sovereignty is now correctly enforced via the
+trusted-host grant issuance path, not via an invented token format.
+Every protected operation requires a host-issued grant.
+
+### 11. Offline consequence
+**Finding:** None. All R6.5 mechanisms are local; no network dependencies.
+
+### 12. Performance consequence
+**Finding:** None. The added checks are O(1) or O(n) on small bounded
+inputs. No performance-sensitive paths modified.
+
+### 13. Public-path theater
+**Finding:** None (verified). All proofs execute through real public
+interfaces (`surface_for`, `snapshot_for`, `dispatch`, `issue_root_grant`).
+No mocks for enforcement decisions.
+
+### 14. Mathematical weakness
+**Finding:** None. No new mathematical claims. The intersection
+computation is presentation-only, not a security boundary.
+
+### 15. Visual theater
+**Finding:** None. No UI changes.
+
+### 16. Historical-recovery conflict
+**Finding:** None. R6.3 rollback mechanisms untouched.
+
+### 17. Simpler reuse opportunity
+**Finding:** None. R6.5 reuses R6.1 (AcceptancePolicy), R6.2
+(agent_authority), R6.4 (coordinator) with no duplication.
+
+### 18. Research contradiction
+**Finding:** None. Research dispositions (above) align with implementation.
+The AMEND was informed by the object-capability literature.
+
+### 19. Future-phase incompatibility
+**Finding:** None. R6.5 does not constrain Phase-7. The separation
+boundaries are compatible with future workshop/perspective work.
+
+### 20. From-scratch challenge
+**Open question for Director:** Could the persona/BIMO descriptive
+layer be removed entirely without loss? The AMEND proves it does not
+affect authority, but its UX value (guidance, synthesis) is outside
+R6.5's scope to evaluate.
 
 ## Partial / Unavailable / Excluded
 

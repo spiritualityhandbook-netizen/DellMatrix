@@ -631,13 +631,13 @@ class HostCoordinator:
 
     R6.5 (GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT): enforces separation
     boundaries — persona metadata never confers authority; BIMO fusion
-    is a capability boundary (intersection, not union); human
-    sovereignty gate for bulk operations.
-    """
+    is descriptive, not authoritative.
 
-    # Sovereignty: operations affecting more than this many targets
-    # require an explicit human authorization token.
-    _SOVEREIGNTY_THRESHOLD = 10
+    HUMAN SOVEREIGNTY: Every protected operation requires a grant issued
+    through the trusted host path (AcceptancePolicy via agent_authority).
+    Agents cannot mint, widen, or restore authority. There is no bulk
+    threshold — sovereignty applies to every protected operation equally.
+    """
 
     def __init__(self, program: Any, *, queue_bound: int = _MAX_QUEUE,
                  receipt_bound: int = _MAX_RECEIPTS):
@@ -676,58 +676,6 @@ class HostCoordinator:
 
     def agent_identity(self, subject: str) -> Optional[AgentIdentity]:
         return self._agents.get(subject)
-
-    def _assert_persona_authority_separation(self, subject: str) -> None:
-        """R6.5: Explicit runtime assertion of PERSONA ≠ PERMISSION.
-
-        Verifies that the agent's persona_slots and bimo_binding are
-        present as descriptive metadata but are NOT consulted for the
-        permission decision. This is a defense-in-depth assertion;
-        the dispatch path never reads these fields.
-
-        Raises CoordinatorError if the separation is violated
-        (should never happen; indicates a code defect).
-        """
-        ident = self._agents.get(subject)
-        if ident is None:
-            return
-        # The fields exist (descriptive) but must not affect authority.
-        # This assertion documents the invariant; the actual enforcement
-        # is that dispatch() never references ident.persona_slots or
-        # ident.bimo_binding.
-        assert hasattr(ident, "persona_slots")
-        assert hasattr(ident, "bimo_binding")
-
-    def _check_sovereignty(
-        self, operation: str, target_count: int,
-        sovereignty_token: Optional[str] = None,
-    ) -> Optional[str]:
-        """R6.5: Human sovereignty gate for bulk operations.
-
-        Returns None if the operation is within bounds or a valid
-        sovereignty token is provided. Returns an error message if
-        human authorization is required but missing.
-
-        The sovereignty token must be an explicit human-issued
-        authorization, not derived from agent state, persona, or
-        behavior history.
-        """
-        if target_count <= self._SOVEREIGNTY_THRESHOLD:
-            return None
-        if not sovereignty_token:
-            return (
-                f"Human sovereignty: bulk {operation} affecting "
-                f"{target_count} targets requires explicit human "
-                f"authorization (threshold: {self._SOVEREIGNTY_THRESHOLD})."
-            )
-        # Token format: "sovereignty:<owner>:<timestamp>:<nonce>"
-        # Validated by the trusted host, not by agents.
-        parts = sovereignty_token.split(":")
-        if len(parts) != 4 or parts[0] != "sovereignty":
-            return "Human sovereignty: invalid authorization token format."
-        if parts[1] != self._owner:
-            return "Human sovereignty: token owner mismatch."
-        return None
 
     def _receipt_key(self, subject: str, request_id: str) -> Tuple[str, str, str]:
         return (self._owner, subject, request_id)

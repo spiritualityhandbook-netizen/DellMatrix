@@ -1,6 +1,7 @@
-# R6.5 COMPLETION PACKET — Separation Enforcement
+# R6.5 COMPLETION PACKET — Separation Enforcement (AMEND)
 
 **Directive:** GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT (MODE=C)
+**AMEND Directive:** GDP_PHASE_6_R65_COMPLETE_REAL_SEPARATION_CIRCUIT (MODE=C)
 **Authorization:** GDP_R65_AUTHORIZATION_RECONCILIATION (2026-10-09 16:17 CDT)
 **Date:** 2026-10-09
 **Status:** CANDIDATE READY FOR DIRECTOR REVIEW (NOT CERTIFIED — DO NOT MERGE)
@@ -8,7 +9,7 @@
 ## Exact Identity
 
 - **Branch:** `gdp-phase6-r65-separation`
-- **Base:** `0ceb3113beb8ce93e6bca422b9bddad12984fe4ac` (R6.4 MERGED)
+- **Base:** `0ceb3113beb8ce93e6bca422b9bddad12984feac` (R6.4 MERGED)
 - **Base tree:** `7ab8c67b1a4ba742fb971d7039ac5b3755366cd5`
 - **Commits:**
   - `40574e4`: R6.5 separation enforcement (BIMO intersection, sovereignty
@@ -17,26 +18,32 @@
   - `[auth]`: R6.5 authorization record
   - `[research]`: Research dispositions and Delta-20 mapping
 
-## Objective → Owner → Evidence Map
+## Objective → Owner → Evidence Map (AMEND)
 
 | # | Objective | Owner (R6.1–R6.4) | Evidence |
 |---|-----------|-------------------|----------|
-| 6.5.1 | PERSONA ≠ PERMISSION | `agent_coordinator.py` (R6.4) | `r65 skeleton: persona change does not grant authority`; `persona change does not bypass denial`; `_assert_persona_authority_separation` |
-| 6.5.2 | BIMO = enforced capability | `personas.py` + `acceptance_policy.py` (R6.1) | `BIMOBody.effective_capabilities` (intersection); `r65 bimo: effective = intersection`; sensitivity (union would be wrong) |
+| 6.5.1 | PERSONA ≠ PERMISSION | `agent_coordinator.py` (R6.4) | Behavioral: matched requests before/after persona change; `r65 behavioral: denied with persona A/B`; canonical state unchanged |
+| 6.5.2 | BIMO = descriptive, not authority | `personas.py` (presentation) + `acceptance_policy.py` (R6.1) | `effective_capabilities` labeled presentation-only; `r65 bimo: labels are not grant handles`; `r65 bimo: real grant succeeds` |
 | 6.5.3 | PERSPECTIVE ≠ TRUTH | `perspective_views.py` + coordinator snapshot (R6.4) | `r65 skeleton: view mutation does not touch canonical`; `views preserve canonical content` |
-| 6.5.4 | Behavior ≠ authority | `agent_authority.py` (R6.2) + coordinator (R6.4) | `r65 skeleton: unauthorized confirm denies` (no grant = deny) |
-| 6.5.5 | Human sovereignty | `acceptance_policy.py` (R6.1) | `HostCoordinator._check_sovereignty`; `r65 sovereignty: bulk without token rejected`; `r65 skeleton: revocation before execution denies` |
+| 6.5.4 | Behavior ≠ authority | `agent_authority.py` (R6.2) + coordinator (R6.4) | `r65 skeleton: unauthorized confirm denies`; `r65 sovereignty: agent cannot mint authority` |
+| 6.5.5 | Human sovereignty | `acceptance_policy.py` (R6.1) via grant issuance | Every protected op requires host-issued grant; `r65 sovereignty: host-issued grant succeeds`; `r65 skeleton: revocation before execution denies` |
+
+## AMEND Findings (All Addressed)
+
+| Director Finding | Resolution |
+|------------------|------------|
+| Sovereignty gate disconnected | **Removed.** No dormant helper. Sovereignty via grant-issuance boundary. |
+| Invented credentials accepted | **Removed.** No token format. Only host-issued grants. |
+| BIMO computes labels, not authority | **Relabeled.** Presentation-only; proven labels ≠ grants. |
+| Persona assertion proves nothing | **Removed.** Replaced with behavioral proofs. |
+| Evidence incomplete | **Completed.** Fresh-process tests, old-grant rejection, reissue success, real sensitivity. |
+| Delta-20 replaced categories | **Restored.** All 20 established categories mapped. |
 
 ## Findings
 
 **No defects found in R6.1–R6.4.** The separation boundaries were
-architecturally present; R6.5 adds explicit runtime enforcement and
-proofs.
-
-**Gaps closed:**
-1. BIMO `fuse()` returned descriptive abilities with no enforced
-   capability computation → added `effective_capabilities` (intersection).
-2. No explicit runtime assertion of PERSONA ≠ PERMISSION → added
+architecturally present; R6.5 proves them behaviorally and removes
+unsupported parallel mechanisms.
    `_assert_persona_authority_separation`.
 3. No sovereignty gate for bulk operations → added `_check_sovereignty`.
 
