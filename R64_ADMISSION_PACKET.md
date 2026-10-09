@@ -10,8 +10,8 @@
 ## 1. Identity
 
 - **PR:** #83
-- **Reviewed HEAD:** (to be filled after final commit)
-- **Reviewed TREE:** (to be filled after final commit)
+- **Reviewed HEAD:** `75d11279b056bde47af0c89075d879b4e360c306`
+- **Reviewed TREE:** `1cd3a9ffb22ba45b3a8de671450d06a34459b3d8`
 - **BASE:** `84a59137fe75d4ad5206642f8ba8a42183fdcef2` (R6.3 merge)
 - **Branch:** `gdp-phase6-r64-multi-intelligence`
 - **Historical code-freeze identities:**
