@@ -1,24 +1,29 @@
-# R6.4 Delta-20 — AMEND-2 Reconciliation
+# R6.4 Delta-20 — AMEND-3 Reconciliation
 
-**Directive:** GDP_PHASE_6_R64_FINISH_EXISTING_BOUNDARIES (MODE=C)
+**Directive:** GDP_PHASE_6_R64_CLOSE_ALL_OUTWARD_SECRET_PATHS (MODE=C)
 **Date:** 2026-10-09
-**Status:** All twenty re-examined against the Director's AMEND-2 findings.
-Affected claims reopened below. No PROVEN label rests on helper presence
-alone — every claim maps to an executed assertion, with sensitivity
-controls where the boundary is load-bearing.
+**Status:** All twenty re-examined against the Director's AMEND-3 findings.
+Affected security, provenance, public-path, failure, and contradiction
+claims reopened below. No PROVEN label rests on helper presence alone.
 
-## Director AMEND-2 findings → dispositions
+## Director AMEND-3 findings → dispositions
+
+Director independently reproduced on `c555079` (controlled-dependency
+probes, not a full independent regression):
+- Request detachment: confirmed holding.
+- Canonical incomplete-compensation reporting: confirmed holding.
+- Null rejection: confirmed holding.
+- Synchronization-error propagation: confirmed holding.
+
+Still failing → fixed:
 
 | # | Finding | Disposition |
 |---|---------|-------------|
-| B1 | Enqueue retains original mutable envelope | FIXED: validated snapshot retained; caller object never stored. Proven structurally (`is not`) + behaviorally (post-enqueue mutation). |
-| B2 | Grant handles in request_id enter audit unchanged | FIXED: complete envelope screened; complete audit sanitized. Proven with canaries. |
-| B3 | Secret-screen import failure silently disables | FIXED: protection failure rejects explicitly. Proven with injected failure. |
-| B4 | Sync failures suppressed twice | FIXED: suppression removed from sync AND serialize; failure propagates before durable write. Proven through ordinary save. |
-| B5 | Explicit null becomes fresh state | FIXED: sentinels in loader and for_agent; from_dict rejects null. Proven. |
-| B6 | Writer incomplete-compensation becomes ordinary denial | FIXED: canonical fields classified; incomplete_recovery with details. Proven through real writer. |
+| C1 | Protected handle in proposal words reaches snapshot() unchanged | FIXED: snapshot_for sanitizes; canonical content untouched. Proven. |
+| C2 | Grant handle as audit/provenance key survives sanitizer | FIXED: keys sanitized with deterministic collision-free safe representations. Proven. |
+| C3 | Sanitization failure returns handle with sanitize_failed=True | FIXED: all fallbacks removed; minimal fixed-schema receipts. Proven. |
 
-## Delta-20 (AMEND-2 re-examination)
+## Delta-20 (AMEND-3 re-examination)
 
 ### 1. Missing workflow — PROVEN (executed)
 135 checks cover all AMEND and AMEND-2 findings; smoke() registered in regress.
@@ -57,19 +62,22 @@ payload; malformed load → save → reload keeps evidence (proven).
 Committed history survives revocation/restart/rollback.
 
 ### 9. False provenance — PROVEN (re-examined and reopened, now re-closed)
-AMEND-2 found: request_id unscreened, audit fields unsanitized,
-protection failure silent. All fixed: complete envelope screened
-(identifiers, target, keys, values, decoded forms); complete audit
-sanitized; protection failure rejects explicitly. Proven with canaries
-in request_id, nested keys, target, post-enqueue mutation, and errors;
-protection-unavailable negative control; clean-input positive control;
-sensitivity (disabled screening → canary passes) proves the guard is
-active.
+AMEND-3 found: snapshots bypassed screening; sanitizer ignored dict
+keys; sanitization failure released the original. Fixed: one complete
+outward boundary (snapshots, receipts, audit, keys+values, identifiers,
+provenance, errors); deterministic collision-free key representations;
+minimal fixed-schema receipts on protection failure (no
+`sanitize_failed` fallbacks). Proven: 19 new controls including
+snapshot canaries (canonical unchanged), key collision tests,
+protection failure at entry/after-enqueue/during-output, writer
+exceptions with handles, all outcome paths, zero-canary durable audit,
+and sensitivity (disabled guard leaks; restored guard sanitizes).
 
 ### 10. Credential/subject escape — PROVEN (re-verified)
 See §9. Coverage stated: canonical grant-handle format + session values
-+ configured credentials + decoded forms. No unknown-secret guarantee
-(explicit).
++ configured credentials + decoded forms, now applied to the complete
+outward boundary (including snapshots and dictionary keys). No
+unknown-secret guarantee (explicit).
 
 ### 11. Human-authority bypass — PROVEN (unchanged)
 No mint/widen/revoke on agent surfaces.
@@ -85,16 +93,19 @@ proven through the REAL public writer with failure injected after
 actual placement (not synthetic receipts). No mocks.
 
 ### 15. Vacuous/count/statistical claims — PROVEN (re-verified)
-135 checks; sensitivity probes on the load-bearing boundaries
-(envelope retention, secret screening, writer classification);
-no unconditional passes.
+154 checks; sensitivity probes on the load-bearing boundaries
+(envelope retention, secret screening, output guard, writer
+classification); no unconditional passes.
 
 ### 16. Misleading display — PROVEN (re-examined and reopened, now re-closed)
-AMEND-2 found: invented reason names, lost incomplete details,
-invisible aggregated audit failures, conflated in-memory/persisted
-evidence. Fixed: canonical writer fields; incomplete_recovery with
-sanitized structured details; audit block aggregates lifecycle
-failures and distinguishes in-memory from persisted.
+AMEND-3 found: `sanitize_failed=True` flags that released the original
+payload — a warning flag does not close the boundary (OWASP: logging
+failures must not leak information). Fixed: all such fallbacks
+removed; minimal fixed-schema receipts preserve classification with
+zero uncontrolled content. Packet identity corrected: reviewed
+head/tree separated from historical code-freeze identities; no blanket
+"confirmed by Director" claims — the packet now identifies exactly
+which controls the Director independently reproduced.
 
 ### 17. Recovery/replay failure — PROVEN (re-verified)
 Incomplete compensation preserved with canonical fields through the

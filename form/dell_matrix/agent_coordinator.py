@@ -3,6 +3,7 @@
 GDP_PHASE_6_R64_MULTI_INTELLIGENCE_SHARED_STATE_CIRCUIT (MODE=C).
 AMEND: GDP_PHASE_6_R64_CLOSE_IDENTITY_EVIDENCE_AND_PERSISTENCE.
 AMEND-2: GDP_PHASE_6_R64_FINISH_EXISTING_BOUNDARIES.
+AMEND-3: GDP_PHASE_6_R64_CLOSE_ALL_OUTWARD_SECRET_PATHS.
 
 One trusted host coordinator serializes protected mutations for multiple
 logical agents cooperating over one knowledge system. Identity, permission,
@@ -26,7 +27,7 @@ Architecture (per directive §2):
 
 Request lifecycle:
     register_agent (trusted) -> AgentIdentity
-    snapshot_for(subject)     -> detached read-only dict
+    snapshot_for(subject)     -> detached sanitized snapshot
     enqueue(subject, envelope) -> queued_id   (shape/bounds validated;
         the VALIDATED snapshot is retained, not the caller's envelope)
     dispatch(queued_id, grant_handle) -> receipt  (authority, freshness,
@@ -52,10 +53,20 @@ operation, all keys and values) is screened by VALUE using the existing
 protected-value infrastructure
 (form.dell_matrix.inference_dock.protected_values /
 contains_protected_decoded), not by key name alone. Protection failure
-rejects explicitly. Complete outward receipts and audit records
-(subject, request_id, affected, errors) are sanitized. Coverage:
-canonical grant-handle format + session-issued values + configured
-credentials. No unknown-secret guarantee is claimed.
+rejects explicitly.
+
+ONE COMPLETE OUTWARD BOUNDARY (AMEND-3): every agent-facing return is
+sanitized through a single boundary — snapshots, receipts, audit
+records, nested dictionary keys AND values, identifiers, provenance,
+error details. Protected dictionary keys receive deterministic
+collision-free safe representations ([REDACTED_KEY:n]); they are never
+passed through and never silently overwrite evidence. If sanitization
+is unavailable, the original payload is NEVER released: receipts become
+minimal fixed-schema (classification preserved, no uncontrolled text,
+no identifiers, no nested payloads, no reflected exceptions),
+snapshots fail closed. A warning flag does not close the boundary.
+Coverage: canonical grant-handle format + session-issued values +
+configured credentials. No unknown-secret guarantee is claimed.
 
 Outcome contract: audit capture failures are aggregated across the
 request lifecycle (enqueue, dispatch, retry, conflict, failure,
@@ -285,9 +296,15 @@ def _screen_envelope(program: Any, *, request_id: str, operation: str,
 def _sanitize_outward(program: Any, obj: Any) -> Any:
     """Redact recognized protected values from outward-bound data.
 
-    Applied to complete receipts and audit records (directive §2).
+    Directive §1 (CLOSE_ALL_OUTWARD_SECRET_PATHS): sanitizes nested
+    dictionary KEYS as well as values, identifiers, provenance, and error
+    details. Protected keys are replaced with deterministic
+    collision-free safe representations ([REDACTED_KEY:n]) — never
+    silently overwritten, never passed through.
+
     Raises EnvelopeValidationError if protection is unavailable — the
-    caller must treat this as observable failure, not silent success.
+    caller must treat this as observable failure and MUST NOT return the
+    unsanitized original (directive §2).
     """
     protected_values, contains_protected = _protection_utils()
     try:
@@ -296,27 +313,88 @@ def _sanitize_outward(program: Any, obj: Any) -> Any:
         raise EnvelopeValidationError(
             f"secret protection unavailable (values failed): {e}")
 
-    def _redact(o: Any) -> Any:
+    def _check(text: str) -> bool:
+        try:
+            return bool(contains_protected(text, protected))
+        except Exception as e:
+            raise EnvelopeValidationError(
+                f"secret protection unavailable (screen failed): {e}")
+
+    def _redact(o: Any, key_counter: List[int]) -> Any:
         if isinstance(o, str):
-            try:
-                hit = contains_protected(o, protected)
-            except Exception as e:
-                raise EnvelopeValidationError(
-                    f"secret protection unavailable (redact failed): {e}")
-            return _REDACTED if hit else o
+            return _REDACTED if _check(o) else o
         if isinstance(o, dict):
-            return {k: _redact(v) for k, v in o.items()}
+            out: Dict[str, Any] = {}
+            for k, v in o.items():
+                nk = k
+                if isinstance(k, str) and _check(k):
+                    # Protected key: deterministic collision-free safe
+                    # representation. Never silently overwrite evidence.
+                    key_counter[0] += 1
+                    nk = f"[REDACTED_KEY:{key_counter[0]}]"
+                    while nk in out:
+                        key_counter[0] += 1
+                        nk = f"[REDACTED_KEY:{key_counter[0]}]"
+                out[nk] = _redact(v, key_counter)
+            return out
         if isinstance(o, (list, tuple)):
-            return [_redact(v) for v in o]
+            return [_redact(v, key_counter) for v in o]
         return o
 
     try:
-        return _redact(obj)
+        return _redact(obj, [0])
     except EnvelopeValidationError:
         raise
     except Exception as e:
         raise EnvelopeValidationError(
             f"secret protection unavailable (redact failed): {e}")
+
+
+def _safe_detail(program: Any, text: Any) -> str:
+    """Sanitize an outward-bound detail string.
+
+    Returns the sanitized text, or a fixed safe message if sanitization
+    is unavailable. Never returns unsanitized text.
+    """
+    try:
+        sanitized = _sanitize_outward(program, str(text))
+        return str(sanitized)[:300]
+    except EnvelopeValidationError:
+        return "Detail withheld: output sanitization unavailable."
+
+
+def _minimal_receipt(*, ok: bool, result: str,
+                     audit_failures: List[str]) -> Dict[str, Any]:
+    """Minimal fixed-schema receipt for protection-unavailable exits.
+
+    Directive §2: preserves the actual classification (ok/result) but
+    contains NO uncontrolled text, identifiers, nested payloads, or
+    reflected exceptions. Reports the protection failure explicitly.
+    Never falsely reverses an already-committed operation.
+    """
+    return {
+        "ok": bool(ok),
+        "result": result,
+        "historical": False,
+        "request_id": "",
+        "subject": "",
+        "operation": "",
+        "target": "",
+        "reason": "protection_unavailable",
+        "detail": ("Output sanitization failed after execution. "
+                   "Classification preserved; no request content returned. "
+                   "Evidence/protection failure reported explicitly."),
+        "audit_ok": False,
+        "audit": {
+            "captured_in_memory": False,
+            "persisted": False,
+            "evidence": "missing",
+            "failures": list(audit_failures) + ["protection_unavailable"],
+            "ok": False,
+        },
+        "protection_failure": True,
+        "ts": _utcnow(),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -575,7 +653,14 @@ class HostCoordinator:
     # -- snapshots (bounded, detached) ------------------------------------
 
     def snapshot_for(self, subject: str) -> Dict[str, Any]:
-        """Return a bounded DETACHED snapshot for an agent."""
+        """Return a bounded DETACHED sanitized snapshot for an agent.
+
+        Directive §1 (CLOSE_ALL_OUTWARD_SECRET_PATHS): proposal and Plane
+        words/labels are sanitized. The snapshot is built from detached
+        string copies; sanitization never modifies canonical Idea content.
+        If sanitization is unavailable, fail closed (raise) rather than
+        return unscreened content.
+        """
         _validate_subject(subject)
         if subject not in self._agents:
             raise CoordinatorError(f"unknown agent subject: {subject}")
@@ -605,13 +690,18 @@ class HostCoordinator:
                     "x": getattr(u, "x", 0),
                     "y": getattr(u, "y", 0),
                 })
-        return {
+        snap = {
             "subject": subject,
             "owner": self._owner,
-            "ideas": copy.deepcopy(ideas),
-            "units": copy.deepcopy(units),
+            "ideas": ideas,
+            "units": units,
             "detached": True,
         }
+        try:
+            return _sanitize_outward(self._program, snap)
+        except EnvelopeValidationError as e:
+            raise CoordinatorError(
+                f"snapshot unavailable: output sanitization failed ({e})")
 
     # -- enqueue -----------------------------------------------------------
 
@@ -682,17 +772,24 @@ class HostCoordinator:
     # -- dispatch ----------------------------------------------------------
 
     def dispatch(self, queued_id: str, grant_handle: str) -> Dict[str, Any]:
-        """Execute or deny a queued request. Serialized; non-reentrant."""
+        """Execute or deny a queued request. Serialized; non-reentrant.
+
+        Directive §2: all exits return sanitized outward data, or a
+        minimal fixed-schema receipt if sanitization is unavailable.
+        """
         if self._in_dispatch:
-            return self._deny_receipt(
+            return self._outward(self._deny_receipt(
                 None, None, "reentrant_dispatch",
                 "Concurrent/reentrant dispatch is rejected explicitly; "
-                "protected writes are serialized.", audit_ok=True)
+                "protected writes are serialized.", audit_ok=True))
         queued = self._queue.get(queued_id)
         if queued is None:
-            return self._deny_receipt(None, None, "unknown_queued_id",
-                                      f"No such queued request: {queued_id!r}.",
-                                      audit_ok=True)
+            # The queued_id is user-supplied; sanitize the reflected detail.
+            return self._outward(self._deny_receipt(
+                None, None, "unknown_queued_id",
+                _safe_detail(self._program,
+                             f"No such queued request: {queued_id!r}."),
+                audit_ok=True))
         subject = queued["subject"]
         envelope: RequestEnvelope = queued["envelope"]
         program = self._program
@@ -721,12 +818,8 @@ class HostCoordinator:
                 block = self._audit_block(
                     queued, "retry", audit_rec is not None)
                 hist = self._finalize_audit_ok(hist, block)
-                # Sanitize the outward historical receipt (directive §2).
-                try:
-                    hist = _sanitize_outward(self._program, hist)
-                except EnvelopeValidationError:
-                    hist["sanitize_failed"] = True
-                return hist
+                # Directive §2: sanitized outward, or minimal on failure.
+                return self._outward(hist)
             # Directive §1: conflicting reuse is denied WITHOUT overwriting
             # the established historical receipt. The prior record stands.
             receipt = self._deny_receipt(
@@ -742,11 +835,7 @@ class HostCoordinator:
             block = self._audit_block(
                 queued, "conflict", audit_rec is not None)
             receipt = self._finalize_audit_ok(receipt, block)
-            try:
-                receipt = _sanitize_outward(self._program, receipt)
-            except EnvelopeValidationError:
-                receipt["sanitize_failed"] = True
-            return copy.deepcopy(receipt)
+            return copy.deepcopy(self._outward(receipt))
 
         self._in_dispatch = True
         try:
@@ -861,15 +950,30 @@ class HostCoordinator:
                 receipt["audit_failure"] = (
                     "Committed; audit capture failed. The operation is "
                     "complete; evidence is missing, not reversed.")
-            try:
-                receipt = _sanitize_outward(self._program, receipt)
-            except EnvelopeValidationError:
-                receipt["sanitize_failed"] = True
+            # Directive §2: sanitized outward, or minimal on failure.
+            # The minimal receipt (classification preserved) is what is
+            # stored and returned; the unsanitized original is never released.
+            receipt = self._outward(receipt)
             self._store_receipt(rkey, queued["descriptor"], receipt)
             self._queue.pop(queued_id, None)
             return copy.deepcopy(receipt)
         finally:
             self._in_dispatch = False
+
+    def _outward(self, receipt: Dict[str, Any]) -> Dict[str, Any]:
+        """Return the outward-bound receipt: sanitized, or minimal.
+
+        Directive §2 (CLOSE_ALL_OUTWARD_SECRET_PATHS): if sanitization
+        fails, NEVER return the unsanitized original. Return a minimal
+        fixed-schema receipt preserving the classification (ok/result).
+        """
+        try:
+            return _sanitize_outward(self._program, receipt)
+        except EnvelopeValidationError:
+            return _minimal_receipt(
+                ok=receipt.get("ok", False),
+                result=receipt.get("result", AUDIT_FAILED),
+                audit_failures=receipt.get("audit", {}).get("failures", []))
 
     # -- internals ----------------------------------------------------------
 
@@ -963,10 +1067,10 @@ class HostCoordinator:
             detail=f"{reason}: {detail}"[:300])
         block = self._audit_block(queued, "denied", audit_rec is not None)
         receipt = self._finalize_audit_ok(receipt, block)
-        try:
-            receipt = _sanitize_outward(self._program, receipt)
-        except EnvelopeValidationError:
-            receipt["sanitize_failed"] = True
+        # Directive §2: sanitized outward, or minimal on failure.
+        # The minimal receipt (classification preserved) is what is
+        # stored and returned; the unsanitized original is never released.
+        receipt = self._outward(receipt)
         self._store_receipt(rkey, envelope.descriptor(), receipt)
         self._queue.pop(queued_id, None)
         return copy.deepcopy(receipt)
@@ -995,10 +1099,10 @@ class HostCoordinator:
             detail=f"unknown_outcome: {detail}"[:300])
         block = self._audit_block(queued, "failed", audit_rec is not None)
         receipt = self._finalize_audit_ok(receipt, block)
-        try:
-            receipt = _sanitize_outward(self._program, receipt)
-        except EnvelopeValidationError:
-            receipt["sanitize_failed"] = True
+        # Directive §2: sanitized outward, or minimal on failure.
+        # The minimal receipt (classification preserved) is what is
+        # stored and returned; the unsanitized original is never released.
+        receipt = self._outward(receipt)
         self._store_receipt(rkey, envelope.descriptor(), receipt)
         self._queue.pop(queued_id, None)
         return copy.deepcopy(receipt)
@@ -1067,10 +1171,10 @@ class HostCoordinator:
             detail=f"incomplete_recovery: {san_detail}"[:300])
         block = self._audit_block(queued, "incomplete", audit_rec is not None)
         receipt = self._finalize_audit_ok(receipt, block)
-        try:
-            receipt = _sanitize_outward(self._program, receipt)
-        except EnvelopeValidationError:
-            receipt["sanitize_failed"] = True
+        # Directive §2: sanitized outward, or minimal on failure.
+        # The minimal receipt (classification preserved) is what is
+        # stored and returned; the unsanitized original is never released.
+        receipt = self._outward(receipt)
         self._store_receipt(rkey, envelope.descriptor(), receipt)
         self._queue.pop(queued_id, None)
         return copy.deepcopy(receipt)
@@ -1112,7 +1216,13 @@ class AgentRequestSurface:
                         request_id: Optional[str] = None,
                         expected_content_hash: Optional[str] = None,
                         correlation: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Request a confirm through the coordinator."""
+        """Request a confirm through the coordinator.
+
+        Directive §2: validation-error exits return sanitized details;
+        if sanitization is unavailable, a fixed safe message is used.
+        The grant handle itself never enters the returned receipt.
+        """
+        _program = self._coordinator._program
         if not isinstance(pid, str) or not pid:
             return {"ok": False, "result": AUDIT_DENIED,
                     "reason": "bad_target",
@@ -1133,15 +1243,17 @@ class AgentRequestSurface:
             envelope = make_envelope(
                 request_id=rid, operation="confirm", target=pid,
                 expected=expected, correlation=correlation,
-                _program=self._coordinator._program)
+                _program=_program)
         except (EnvelopeValidationError, ValueError) as e:
             return {"ok": False, "result": AUDIT_DENIED,
-                    "reason": "bad_envelope", "detail": str(e)}
+                    "reason": "bad_envelope",
+                    "detail": _safe_detail(_program, e)}
         try:
             queued_id = self._coordinator.enqueue(self._subject, envelope)
         except (CoordinatorError, EnvelopeValidationError, ValueError) as e:
             return {"ok": False, "result": AUDIT_DENIED,
-                    "reason": "enqueue_rejected", "detail": str(e)}
+                    "reason": "enqueue_rejected",
+                    "detail": _safe_detail(_program, e)}
         return self._coordinator.dispatch(queued_id, grant_handle)
 
 

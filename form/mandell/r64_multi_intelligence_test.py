@@ -759,6 +759,7 @@ def smoke() -> bool:
     part_amend_findings()
     part_amend_reference()
     part_amend2_boundaries()
+    part_amend3_outward()
     total = len(CHECKS)
     passed = sum(CHECKS)
     print(f"=== R6.4 circuit: {passed}/{total} ===")
@@ -1402,6 +1403,236 @@ def part_amend2_boundaries():
     check("b2 §5: save after malformed load preserves evidence",
           bad_rec in originals2 and "not-a-dict" in originals2,
           detail=f"malformed={len(mal2)}")
+
+
+def part_amend3_outward():
+    """AMEND-3 (GDP_PHASE_6_R64_CLOSE_ALL_OUTWARD_SECRET_PATHS): one
+    complete outward boundary. Public-path proofs that no agent-facing
+    return releases protected material, and that sanitization failure
+    never releases the original payload."""
+    from form.dell_matrix import agent_coordinator as ac
+    from form.dell_matrix import agent_authority as aa
+    from form import persist_rest as _pr
+
+    canary = "grant_" + "ef" * 16
+
+    # --- Snapshot sanitization: protected handle in proposal words. ---
+    p = fresh_program("r64c1")
+    pr = p.nursery.add("C1", words=f"proposal with {canary} inside")
+    pid = pr.id
+    coord = ac.new_coordinator(p)
+    coord.register_agent("agent-a")
+    snap = coord.snapshot_for("agent-a")
+    snap_text = str(snap)
+    check("c3 snapshot: protected handle redacted from proposal words",
+          canary not in snap_text and "[REDACTED]" in snap_text,
+          detail=snap_text[:200])
+    # Canonical Idea content is NOT modified by snapshot sanitization.
+    check("c3 snapshot: canonical proposal words unchanged",
+          canary in p.nursery.proposals[pid].words)
+
+    # --- Snapshot sanitization: protected handle in Plane unit words. ---
+    # (Place a unit via the writer path so it appears on the Plane.)
+    _, ch = _mkpair(p, pid, "agent-a")
+    # Directly set a unit's words to include the canary (simulating
+    # content that reached the Plane).
+    from form.open import open_program
+    p2 = fresh_program("r64c2")
+    pr2 = p2.nursery.add("C2", words="clean words")
+    # Simulate Plane content with a canary via direct unit creation.
+    # Use the program's plane directly.
+    plane = p2.cube.session.plane
+    from form.dell_matrix.plane import Unit as _Unit
+    import uuid as _uuid
+    uid = "u_" + _uuid.uuid4().hex[:12]
+    # Construct a minimal unit; check the Unit signature first.
+    try:
+        u = _Unit(id=uid, label="test", words=f"unit words {canary} here",
+                  x=0, y=0)
+        plane.units[uid] = u
+        coord2 = ac.new_coordinator(p2)
+        coord2.register_agent("agent-a")
+        snap2 = coord2.snapshot_for("agent-a")
+        check("c3 snapshot: protected handle redacted from plane words",
+              canary not in str(snap2),
+              detail=str(snap2)[:200])
+        check("c3 snapshot: canonical unit words unchanged",
+              canary in plane.units[uid].words)
+    except Exception as e:
+        check("c3 snapshot: plane unit setup", False, detail=str(e)[:200])
+
+    # --- Protected dict keys: safe deterministic representation. ---
+    p3 = fresh_program("r64c3")
+    pr3 = p3.nursery.add("C3", words="boundary c3 words")
+    pid3 = pr3.id
+    _, ch3 = _mkpair(p3, pid3, "agent-a")
+    h3 = p3.acceptance_data_hash(pid3, "confirm")
+    coord3 = ac.new_coordinator(p3)
+    coord3.register_agent("agent-a")
+    sa3 = coord3.surface_for("agent-a")
+    # Inject a protected key into provenance via a custom capture.
+    # (Directly exercise the sanitizer on nested structures.)
+    nested = {
+        "outer": {
+            f"key_{canary}_a": "value1",
+            f"key_{canary}_b": "value2",
+            "clean": f"val {canary} end",
+        },
+        "list": [{f"k_{canary}": "v"}],
+    }
+    san = ac._sanitize_outward(p3, nested)
+    san_text = str(san)
+    check("c3 keys: protected keys replaced, no collision",
+          canary not in san_text
+          and "[REDACTED_KEY:1]" in san_text
+          and "[REDACTED_KEY:2]" in san_text
+          and "[REDACTED_KEY:3]" in san_text,
+          detail=san_text[:300])
+    check("c3 keys: values redacted",
+          "[REDACTED]" in san_text)
+    # Determinism: same input -> same output.
+    san2 = ac._sanitize_outward(p3, nested)
+    check("c3 keys: deterministic", str(san) == str(san2))
+
+    # --- Writer exception with handle + protection failure -> minimal. ---
+    # Protection must fail AFTER enqueue (not at entry), so the request
+    # reaches dispatch and the writer raises.
+    p4 = fresh_program("r64c4")
+    pr4 = p4.nursery.add("C4", words="boundary c4 words")
+    pid4 = pr4.id
+    _, ch4 = _mkpair(p4, pid4, "agent-a")
+    h4 = p4.acceptance_data_hash(pid4, "confirm")
+    coord4 = ac.new_coordinator(p4)
+    coord4.register_agent("agent-a")
+    env4 = ac.make_envelope(request_id="wr-exc", operation="confirm",
+                            target=pid4, expected={"content_hash": h4},
+                            _program=p4)
+    q4 = coord4.enqueue("agent-a", env4)
+
+    orig_confirm = aa.agent_confirm
+    def _raising(program, pid_, grant_id_, subject_):
+        raise RuntimeError(f"writer blew up on {canary}")
+    aa.agent_confirm = _raising
+    import form.dell_matrix.inference_dock as _idock
+    orig_pv = _idock.protected_values
+    def _boom(program):
+        raise RuntimeError("simulated protection failure")
+    _idock.protected_values = _boom
+    try:
+        r4 = coord4.dispatch(q4, ch4["grant_id"])
+    finally:
+        aa.agent_confirm = orig_confirm
+        _idock.protected_values = orig_pv
+    check("c3 protection-failure: minimal receipt, no handle",
+          canary not in str(r4)
+          and r4.get("reason") == "protection_unavailable"
+          and r4.get("result") == "failed"  # classification preserved
+          and r4.get("ok") is False
+          and "sanitize_failed" not in r4,
+          detail=str(r4)[:300])
+    check("c3 protection-failure: no uncontrolled identifiers",
+          r4.get("request_id") == "" and r4.get("subject") == ""
+          and r4.get("target") == "")
+
+    # --- Writer exception with handle, protection OK -> sanitized. ---
+    # (Fresh queue: the previous dispatch consumed q4.)
+    env4b = ac.make_envelope(request_id="wr-exc2", operation="confirm",
+                             target=pid4, expected={"content_hash": h4},
+                             _program=p4)
+    q4b = coord4.enqueue("agent-a", env4b)
+    aa.agent_confirm = _raising
+    try:
+        r4b = coord4.dispatch(q4b, ch4["grant_id"])
+    finally:
+        aa.agent_confirm = orig_confirm
+    check("c3 writer-exc: handle sanitized when protection works",
+          canary not in str(r4b) and "[REDACTED]" in str(r4b)
+          and r4b.get("result") == "failed",
+          detail=str(r4b)[:300])
+
+    # --- Protection failure at entry -> explicit rejection. ---
+    _idock.protected_values = _boom
+    try:
+        try:
+            ac.make_envelope(request_id="entry-1", operation="confirm",
+                             target=pid4, expected={}, _program=p4)
+            check("c3 entry: protection failure rejects", False)
+        except ac.EnvelopeValidationError:
+            check("c3 entry: protection failure rejects", True)
+    finally:
+        _idock.protected_values = orig_pv
+
+    # --- All outcome paths sanitized: success, denial, retry, conflict. ---
+    p5 = fresh_program("r64c5")
+    pr5 = p5.nursery.add("C5", words="boundary c5 words")
+    pid5 = pr5.id
+    _, ch5 = _mkpair(p5, pid5, "agent-a")
+    h5 = p5.acceptance_data_hash(pid5, "confirm")
+    coord5 = ac.new_coordinator(p5)
+    coord5.register_agent("agent-a")
+    sa5 = coord5.surface_for("agent-a")
+    # Success with a canary smuggled in correlation BEFORE screening
+    # was fixed would have leaked; now it must be rejected at entry.
+    r_bad = sa5.request_confirm(pid5, ch5["grant_id"], request_id="path-1",
+                                expected_content_hash=h5,
+                                correlation={"note": f"has {canary}"})
+    check("c3 paths: canary correlation rejected at entry",
+          not r_bad["ok"])
+    # Clean success.
+    _, ch5b = _mkpair(p5, pid5, "agent-a")
+    # (Need a fresh proposal since pid5's grant was consumed; use new pid.)
+    pr5b = p5.nursery.add("C5b", words="clean c5b words")
+    pid5b = pr5b.id
+    _, ch5c = _mkpair(p5, pid5b, "agent-a")
+    h5b = p5.acceptance_data_hash(pid5b, "confirm")
+    r_ok = sa5.request_confirm(pid5b, ch5c["grant_id"], request_id="path-ok",
+                               expected_content_hash=h5b)
+    check("c3 paths: clean success has zero canary",
+          r_ok["ok"] is True and canary not in str(r_ok))
+    # Historical retry.
+    r_hist = sa5.request_confirm(pid5b, ch5c["grant_id"], request_id="path-ok",
+                                 expected_content_hash=h5b)
+    check("c3 paths: historical retry has zero canary",
+          r_hist.get("historical") is True and canary not in str(r_hist))
+    # Conflict.
+    env_c = ac.make_envelope(request_id="path-ok", operation="confirm",
+                             target=pid5b,
+                             expected={"content_hash": "different"},
+                             _program=p5)
+    qc = coord5.enqueue("agent-a", env_c)
+    r_conf = coord5.dispatch(qc, ch5c["grant_id"])
+    check("c3 paths: conflict denial has zero canary",
+          not r_conf["ok"] and canary not in str(r_conf))
+
+    # --- Durable audit: zero canary occurrences. ---
+    _pr.save(p5)
+    p5r = _pr.load("r64c5", activate=False)
+    audit_all = str(p5r.agent_audit_records) + str(p5r.agent_audit_malformed)
+    check("c3 durable: zero canary in persisted audit",
+          canary not in audit_all)
+
+    # --- Sensitivity: disable the output guard -> canary passes. ---
+    orig_san = ac._sanitize_outward
+    ac._sanitize_outward = lambda program, obj: obj  # disabled
+    try:
+        snap_weak = coord.snapshot_for("agent-a")
+        check("c3 sensitivity: disabled guard leaks snapshot canary",
+              canary in str(snap_weak))
+    finally:
+        ac._sanitize_outward = orig_san
+    # Restore and rerun: production sanitizes again.
+    snap_fixed = coord.snapshot_for("agent-a")
+    check("c3 sensitivity: restored guard sanitizes",
+          canary not in str(snap_fixed))
+
+    # --- Clean Unicode/content positives. ---
+    p6 = fresh_program("r64c6")
+    pr6 = p6.nursery.add("C6", words="héllo wörld 🌍 unicode")
+    coord6 = ac.new_coordinator(p6)
+    coord6.register_agent("agent-a")
+    snap6 = coord6.snapshot_for("agent-a")
+    check("c3 positive: unicode content passes through unsanitized",
+          "héllo" in str(snap6) and "[REDACTED]" not in str(snap6))
 
 
 def main():

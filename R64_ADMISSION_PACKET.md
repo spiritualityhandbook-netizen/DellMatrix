@@ -1,8 +1,8 @@
 # ADMISSION PACKET — R6.4 MULTI-INTELLIGENCE SHARED-STATE CIRCUIT
-## (AMEND-2 corrections applied)
+## (AMEND-3 corrections applied)
 
 **To:** Director · **From:** Uni Ω · **Date:** 2026-10-09
-**Directive:** GDP_PHASE_6_R64_FINISH_EXISTING_BOUNDARIES (MODE=C)
+**Directive:** GDP_PHASE_6_R64_CLOSE_ALL_OUTWARD_SECRET_PATHS (MODE=C)
 **Status:** CANDIDATE — NOT CERTIFIED — DO NOT MERGE. Awaiting Director admission review.
 
 ---
@@ -10,26 +10,36 @@
 ## 1. Identity
 
 - **PR:** #83
-- **HEAD:** `0f61be07413331787b90fbd4c2f4ed3402489407`
-- **TREE:** `95713a986175ca9a285a89073d661108b347a547`
+- **Reviewed HEAD:** (to be filled after final commit — this is the head
+  the Director should review)
+- **Reviewed TREE:** (to be filled after final commit)
 - **BASE:** `84a59137fe75d4ad5206642f8ba8a42183fdcef2` (R6.3 merge)
 - **Branch:** `gdp-phase6-r64-multi-intelligence`
-- **Prior candidates:** `d7eb47d` (AMEND findings; superseded),
-  `06f6953` (AMEND-2 findings; superseded)
+- **Historical code-freeze identities** (code content; packet docs only
+  in subsequent commits):
+  - `d7eb47d` — AMEND findings; superseded
+  - `06f6953` — AMEND-2 findings; superseded
+  - `0f61be0` — AMEND-2 code freeze; superseded by AMEND-3
+  - `c555079` — AMEND-2 final (Director reviewed); superseded by AMEND-3
 
-## 2. Scope coverage (6.4.1–6.4.5 + AMEND + AMEND-2 findings)
+## 2. Scope coverage (6.4.1–6.4.5 + AMEND + AMEND-2 + AMEND-3 findings)
 
 | Objective | Implementation | Proofs |
 |-----------|---------------|--------|
 | 6.4.1 agent identity/BIMO binding | `agent_coordinator.py`: AgentIdentity, host-bound registration; persona/BIMO descriptive only | 9 checks |
-| 6.4.2 shared-state protocol | `agent_coordinator.py`: HostCoordinator, strict RequestEnvelope, detached snapshots, serialized dispatch, namespaced idempotency, RETAINED validated snapshot | 18 + AMEND + AMEND-2 checks |
-| 6.4.3 audit trail | `agent_coordinator.py`: capture_agent_action; complete secret screening; sanitized receipts/audit; `agent_audit` payload with preserved malformed evidence | 7 + AMEND + AMEND-2 checks |
+| 6.4.2 shared-state protocol | `agent_coordinator.py`: HostCoordinator, strict RequestEnvelope, detached snapshots, serialized dispatch, namespaced idempotency, RETAINED validated snapshot | 18 + AMEND + AMEND-2 + AMEND-3 checks |
+| 6.4.3 audit trail | `agent_coordinator.py`: capture_agent_action; complete secret screening; ONE outward boundary (snapshots/receipts/audit/keys sanitized); `agent_audit` payload with preserved malformed evidence | 7 + AMEND + AMEND-2 + AMEND-3 checks |
 | 6.4.4 IntrinsicAgent recovery | `intrinsic_agent.py`: for_agent isolation, strict versioned validation, sentinel absence, fail-honest sync | 16 + AMEND + AMEND-2 checks |
-| 6.4.5 public-path proofs | `r64_multi_intelligence_test.py` (135 checks), `r64_child.py`, `r64_reference_model.py` | 23 + 25 AMEND + 37 AMEND-2 checks |
+| 6.4.5 public-path proofs | `r64_multi_intelligence_test.py` (154 checks), `r64_child.py`, `r64_reference_model.py` | 23 + 25 AMEND + 37 AMEND-2 + 19 AMEND-3 checks |
 
-**Total: 135/135 checks pass.**
+**Total: 154/154 checks pass.**
 
-### AMEND findings → fixes (8/8, confirmed by Director)
+### AMEND findings → fixes (8/8)
+
+Director's AMEND ruling independently reproduced: B receiving A's cached
+receipt, mutable cached evidence, secret logging via innocent key,
+malformed behavioral state, invisible audit failure, queue leakage,
+persistence/evidence gaps, model sharing omissions. All 8 fixed (see below).
 
 1. **Retry identity:** receipts namespaced by (owner, subject, request_id); canonical descriptor compared. B cannot receive A's receipt. ✅
 2. **Mutable receipts:** deep-copy on store and return; caller mutation isolated. ✅
@@ -90,15 +100,50 @@
    controls; packet/PR/evidence-map/ledger reconciled; Delta-20
    re-examined with affected claims reopened.
 
+### AMEND-3 findings → fixes (3/3)
+
+Director's AMEND-3 ruling independently reproduced (controlled-dependency
+probes on `c555079`, not a full independent regression):
+- Protected grant handle in proposal words reaching `snapshot()` unchanged.
+- Grant handle used as an audit/provenance key surviving sanitization.
+- Writer exception containing a handle, followed by protection failure,
+  returning the handle with `sanitize_failed=True`.
+
+Fixes:
+
+1. **One complete outward boundary:** `_sanitize_outward` now sanitizes
+   nested dictionary KEYS as well as values. Protected keys receive
+   deterministic collision-free safe representations
+   (`[REDACTED_KEY:n]`) — never passed through, never silently
+   overwritten. `snapshot_for` sanitizes proposal and Plane words/labels;
+   the snapshot is built from detached string copies, so canonical Idea
+   content is never modified (proven: canary in snapshot, canonical
+   unchanged). All agent-facing returns (snapshots, receipts, audit,
+   validation-error details) pass through the single boundary.
+2. **Failure never releases the original:** every `sanitize_failed=True`
+   fallback removed. If sanitization fails, `_outward` returns a minimal
+   fixed-schema receipt: classification (`ok`/`result`) preserved, but
+   NO uncontrolled text, identifiers, nested payloads, or reflected
+   exceptions. Snapshots fail closed (raise) rather than return
+   unscreened content. The minimal receipt is what is stored and
+   returned; the unsanitized original is never released. Committed
+   operations are not falsely reversed (ok=True preserved).
+3. **Executed matrix:** 19 new public-path controls covering protected
+   handles in proposal/Plane snapshots, protected keys/values in nested
+   structures, protection failure at entry/after-enqueue/during-output,
+   writer exceptions with protected material, all outcome paths
+   (success/denial/retry/conflict/incomplete), clean Unicode positives.
+   Zero canary occurrences asserted in complete outward payloads and
+   durable audit. Sensitivity: disabling the actual output guard leaks;
+   restored production sanitizes.
+
 ## 3. Results
 
-- `python3 -m form.mandell.r64_multi_intelligence_test`: **135/135**
+- `python3 -m form.mandell.r64_multi_intelligence_test`: **154/154**
 - `python3 -m form.regress --twice`: **110/110 GREEN** (both passes)
 - `python3 -m form.regress --order rev`: **110/110 GREEN**
-- Exact-head CI on `935d3bc`:
-  - Python package (3.10): SUCCESS (30s)
-  - Python package (3.11): SUCCESS (23s)
-  - Form smoke: SUCCESS (7m45s)
+- Exact-head CI: (to be verified on final HEAD; prior head `c555079` had
+  Python package 3.10/3.11 SUCCESS and smoke SUCCESS)
   - Code scanning AI findings: FAILURE — classified from the actual log
     (run 37922294553, 2026-10-09T11:12:55Z) as GitHub Copilot monthly
     quota exhausted (`SessionModelError: You have exceeded your monthly
