@@ -10,9 +10,8 @@
 ## 1. Identity
 
 - **PR:** #83
-- **Reviewed HEAD:** (to be filled after final commit — this is the head
-  the Director should review)
-- **Reviewed TREE:** (to be filled after final commit)
+- **Reviewed HEAD:** `409327ff3f4ef29f33f4681b1f34fac03740254f`
+- **Reviewed TREE:** `fba5dcfeb5136a7d3059c593b26a3bbed16524d1`
 - **BASE:** `84a59137fe75d4ad5206642f8ba8a42183fdcef2` (R6.3 merge)
 - **Branch:** `gdp-phase6-r64-multi-intelligence`
 - **Historical code-freeze identities** (code content; packet docs only
