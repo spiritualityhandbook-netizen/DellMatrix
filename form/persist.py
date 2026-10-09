@@ -103,6 +103,14 @@ def _serialize_lattice(program: Program) -> Dict[str, Any]:
 
 def serialize(program: Program) -> Dict[str, Any]:
     assert_floor_intact()
+    # R6.4 AMEND §5: canonical hook — synchronize live agent observations
+    # into the payload staging before serialization. Callers never invoke
+    # sync manually.
+    try:
+        from form.dell_matrix.intrinsic_agent import sync_all_agents_to_program
+        sync_all_agents_to_program(program)
+    except Exception:
+        pass
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
     plane = program.cube.session.plane

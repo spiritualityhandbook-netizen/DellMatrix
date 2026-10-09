@@ -153,6 +153,10 @@ class Program:
     agent_audit_records: Dict[str, Dict[str, Any]] = field(
         default_factory=dict, repr=False, compare=False)
     agent_audit_seq: int = field(default=0, repr=False, compare=False)
+    # R6.4 AMEND §4: malformed audit evidence preserved on load (never
+    # silently dropped). List of {note, ...} dicts.
+    agent_audit_malformed: List[Dict[str, Any]] = field(
+        default_factory=list, repr=False, compare=False)
     # UX / entity layer (Phases A–E)
     companion: AICompanion = field(default_factory=AICompanion)
     ux_mode: str = "builder"  # beginner | builder | depth

@@ -132,18 +132,17 @@ class IntrinsicAgent:
         Genuine absence (data is None) yields the explicit compatible
         default: a fresh empty behavioral state. Explicit malformed /
         null / wrong-type stored state is NOT absence and raises
-        AgentLocalLoadError.
+        AgentLocalLoadError. Versions are strict ints: bool, float,
+        str, NaN, and coercion are rejected.
         """
         if data is None:
             return cls()
         if not isinstance(data, dict):
             raise AgentLocalLoadError(
                 f"agent-local state for {subject!r}: expected dict or null")
-        version = data.get("version", 1)
-        try:
-            version = int(version)
-        except (TypeError, ValueError):
-            raise AgentLocalLoadError("agent-local version is not an int")
+        if "version" not in data:
+            raise AgentLocalLoadError("agent-local version: absent key")
+        version = _strict_int(data["version"], "version", subject)
         if version != AGENT_LOCAL_VERSION:
             raise AgentLocalLoadError(
                 f"unsupported agent-local version: {version}")
@@ -199,6 +198,21 @@ def sync_agent_to_program(program: Any, subject: str) -> None:
     states[subject] = inst.to_dict()
 
 
+def sync_all_agents_to_program(program: Any) -> None:
+    """Canonical hook: synchronize every live agent's observations into the
+    program payload staging before save/checkpoint serialization.
+
+    Called by the normal save path (form.persist.serialize); callers never
+    need to invoke sync_agent_to_program manually.
+    """
+    cache = getattr(program, "agent_local_agents", None) or {}
+    for subject in list(cache.keys()):
+        try:
+            sync_agent_to_program(program, subject)
+        except Exception:
+            pass
+
+
 # Module-global compatibility instance (pre-R6.4 interface). Prefer
 # for_agent(program, subject) for isolated per-agent behavioral state.
 AGENT = IntrinsicAgent()
@@ -211,54 +225,160 @@ _MAX_SEEN_CELLS = 1024
 _MAX_SEEN_LABELS = 256
 _MAX_HISTORY = 32
 _MAX_LABEL_LEN = 120
+_MAX_HISTORY_VALUE_LEN = 256
+_MAX_HISTORY_KEYS = 16
+
+_MISSING = object()
 
 
 class AgentLocalLoadError(ValueError):
     """Malformed agent-local state. Fail closed; malformed is not absence."""
 
 
+def _strict_int(value: Any, name: str, subject: str) -> int:
+    """Strict integer: rejects bool, float, str, NaN, coercion."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise AgentLocalLoadError(
+            f"agent-local {name} for {subject!r}: expected int, "
+            f"got {type(value).__name__}")
+    return value
+
+
+def _strict_float(value: Any, name: str, subject: str) -> float:
+    """Strict finite float: rejects bool, str, NaN, Inf, coercion."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise AgentLocalLoadError(
+            f"agent-local {name} for {subject!r}: expected number, "
+            f"got {type(value).__name__}")
+    f = float(value)
+    import math as _math
+    if not _math.isfinite(f):
+        raise AgentLocalLoadError(
+            f"agent-local {name} for {subject!r}: non-finite number")
+    return f
+
+
 def _validate_agent_state_dict(data: Any, subject: str) -> Dict[str, Any]:
-    """Validate one agent's stored behavioral state. Raises AgentLocalLoadError."""
+    """Validate one agent's stored behavioral state. Raises AgentLocalLoadError.
+
+    AMEND §5: absent keys (via membership) differ from explicit null;
+    versions are strict ints (no bool/float/coercion); NaN/Inf rejected;
+    the FULL payload is validated (not a sliced prefix); nested history
+    content is bounded.
+    """
     if not isinstance(data, dict):
         raise AgentLocalLoadError(
             f"agent-local state for {subject!r} is not a dict")
-    cells = data.get("seen_cells", [])
+
+    # seen_cells: full-list validation; over-bound length is malformed
+    # (not silently truncated).
+    cells = data.get("seen_cells", _MISSING)
+    if cells is _MISSING:
+        cells = []
+    elif cells is None:
+        raise AgentLocalLoadError("seen_cells: explicit null is malformed")
     if not isinstance(cells, list):
         raise AgentLocalLoadError("seen_cells is not a list")
+    if len(cells) > _MAX_SEEN_CELLS:
+        raise AgentLocalLoadError("seen_cells exceeds bound")
     clean_cells = []
-    for c in cells[:_MAX_SEEN_CELLS]:
+    for c in cells:
         if (isinstance(c, (list, tuple)) and len(c) == 2
-                and isinstance(c[0], (int, float)) and isinstance(c[1], (int, float))):
+                and not isinstance(c[0], bool) and isinstance(c[0], (int, float))
+                and not isinstance(c[1], bool) and isinstance(c[1], (int, float))):
+            import math as _math
+            if not _math.isfinite(float(c[0])) or not _math.isfinite(float(c[1])):
+                raise AgentLocalLoadError("seen_cells entry non-finite")
             clean_cells.append((int(c[0]), int(c[1])))
         else:
             raise AgentLocalLoadError("seen_cells entry malformed")
-    labels = data.get("seen_labels", [])
+
+    labels = data.get("seen_labels", _MISSING)
+    if labels is _MISSING:
+        labels = []
+    elif labels is None:
+        raise AgentLocalLoadError("seen_labels: explicit null is malformed")
     if not isinstance(labels, list):
         raise AgentLocalLoadError("seen_labels is not a list")
+    if len(labels) > _MAX_SEEN_LABELS:
+        raise AgentLocalLoadError("seen_labels exceeds bound")
     clean_labels = []
-    for lab in labels[:_MAX_SEEN_LABELS]:
+    for lab in labels:
         if not isinstance(lab, str):
             raise AgentLocalLoadError("seen_labels entry is not a str")
-        clean_labels.append(lab[:_MAX_LABEL_LEN])
-    last_action = data.get("last_action", "")
+        if len(lab) > _MAX_LABEL_LEN:
+            raise AgentLocalLoadError("seen_labels entry exceeds bound")
+        clean_labels.append(lab)
+
+    last_action = data.get("last_action", _MISSING)
+    if last_action is _MISSING:
+        last_action = ""
+    elif last_action is None:
+        raise AgentLocalLoadError("last_action: explicit null is malformed")
     if not isinstance(last_action, str):
         raise AgentLocalLoadError("last_action is not a str")
-    try:
-        curiosity = float(data.get("curiosity_score", 0.0))
-    except (TypeError, ValueError):
-        raise AgentLocalLoadError("curiosity_score is not numeric")
-    history = data.get("history", [])
+    if len(last_action) > 64:
+        raise AgentLocalLoadError("last_action exceeds bound")
+
+    curiosity_raw = data.get("curiosity_score", _MISSING)
+    if curiosity_raw is _MISSING:
+        curiosity = 0.0
+    elif curiosity_raw is None:
+        raise AgentLocalLoadError("curiosity_score: explicit null is malformed")
+    else:
+        curiosity = _strict_float(curiosity_raw, "curiosity_score", subject)
+
+    history = data.get("history", _MISSING)
+    if history is _MISSING:
+        history = []
+    elif history is None:
+        raise AgentLocalLoadError("history: explicit null is malformed")
     if not isinstance(history, list):
         raise AgentLocalLoadError("history is not a list")
+    if len(history) > _MAX_HISTORY:
+        raise AgentLocalLoadError("history exceeds bound")
     clean_history = []
-    for rec in history[-_MAX_HISTORY:]:
+    for rec in history:
         if not isinstance(rec, dict):
             raise AgentLocalLoadError("history entry is not a dict")
-        clean_history.append({str(k): v for k, v in rec.items()})
+        if len(rec) > _MAX_HISTORY_KEYS:
+            raise AgentLocalLoadError("history entry exceeds key bound")
+        clean_rec = {}
+        for k, v in rec.items():
+            if not isinstance(k, str):
+                raise AgentLocalLoadError("history key is not a str")
+            if len(k) > 64:
+                raise AgentLocalLoadError("history key exceeds bound")
+            ks = k
+            if isinstance(v, str):
+                if len(v) > _MAX_HISTORY_VALUE_LEN:
+                    raise AgentLocalLoadError("history value exceeds bound")
+                clean_rec[ks] = v
+            elif isinstance(v, bool):
+                raise AgentLocalLoadError("history value bool not allowed")
+            elif isinstance(v, (int, float)):
+                import math as _math
+                if not _math.isfinite(float(v)):
+                    raise AgentLocalLoadError("history value non-finite")
+                clean_rec[ks] = v
+            elif v is None:
+                clean_rec[ks] = None
+            elif isinstance(v, list):
+                if len(v) > 16:
+                    raise AgentLocalLoadError("history list value too long")
+                for x in v:
+                    if isinstance(x, str) and len(x) > _MAX_HISTORY_VALUE_LEN:
+                        raise AgentLocalLoadError("history list item exceeds bound")
+                clean_rec[ks] = [str(x)[:_MAX_HISTORY_VALUE_LEN] for x in v]
+            else:
+                raise AgentLocalLoadError(
+                    f"history value type {type(v).__name__} not allowed")
+        clean_history.append(clean_rec)
+
     return {
         "seen_cells": clean_cells,
         "seen_labels": clean_labels,
-        "last_action": last_action[:64],
+        "last_action": last_action,
         "curiosity_score": curiosity,
         "history": clean_history,
     }

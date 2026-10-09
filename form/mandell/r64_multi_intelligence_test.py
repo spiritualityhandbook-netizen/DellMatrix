@@ -596,7 +596,11 @@ def part_reference_model():
     prod_results.append((bool(r["ok"]), r.get("reason", "")))
 
     # Reference model expectation (no production helpers called).
-    model = ReferenceModel()
+    # Descriptors match production's canonical descriptor shape.
+    def _desc(pid, h):
+        return {"operation": "confirm", "target": pid,
+                "expected": {"content_hash": h}, "correlation": {}}
+    model = ReferenceModel(owner="r64ref")
     expected = model.expect_sequence([
         {"kind": "register", "subject": "agent-a"},
         {"kind": "register", "subject": "agent-b"},
@@ -607,15 +611,20 @@ def part_reference_model():
         {"kind": "issue", "grant_id": "g-a2", "subject": "agent-a",
          "pid": pid2, "content_hash": h2},
         {"kind": "request", "subject": "agent-a", "request_id": "m-1",
-         "pid": pid1, "grant_id": "g-a1", "expected_hash": h1},
+         "pid": pid1, "grant_id": "g-a1", "expected_hash": h1,
+         "descriptor": _desc(pid1, h1)},
         {"kind": "request", "subject": "agent-a", "request_id": "m-1",
-         "pid": pid1, "grant_id": "g-a1", "expected_hash": h1},
+         "pid": pid1, "grant_id": "g-a1", "expected_hash": h1,
+         "descriptor": _desc(pid1, h1)},
         {"kind": "request", "subject": "agent-b", "request_id": "m-2",
-         "pid": pid2, "grant_id": "g-a2", "expected_hash": h2},
+         "pid": pid2, "grant_id": "g-a2", "expected_hash": h2,
+         "descriptor": _desc(pid2, h2)},
         {"kind": "request", "subject": "agent-a", "request_id": "m-3",
-         "pid": pid2, "grant_id": "g-a2", "expected_hash": h2},
+         "pid": pid2, "grant_id": "g-a2", "expected_hash": h2,
+         "descriptor": _desc(pid2, h2)},
         {"kind": "request", "subject": "agent-a", "request_id": "m-1",
-         "pid": pid2, "grant_id": "g-a2", "expected_hash": h2},
+         "pid": pid2, "grant_id": "g-a2", "expected_hash": h2,
+         "descriptor": _desc(pid2, h2)},
     ])
     # Filter to the request steps only.
     exp_requests = [e for e in expected if e[1] in (
@@ -636,28 +645,8 @@ def part_reference_model():
           prod_results[4][0] is False and exp_requests[4] == (False, "request_id_reuse"),
           detail=f"prod={prod_results[4]} model={exp_requests[4]}")
 
-    # Revocation and epoch in the model.
-    m2 = ReferenceModel()
-    exp2 = m2.expect_sequence([
-        {"kind": "register", "subject": "agent-a"},
-        {"kind": "set_content", "pid": "p1", "content_hash": "h1"},
-        {"kind": "issue", "grant_id": "g1", "subject": "agent-a",
-         "pid": "p1", "content_hash": "h1"},
-        {"kind": "revoke", "grant_id": "g1"},
-        {"kind": "request", "subject": "agent-a", "request_id": "r1",
-         "pid": "p1", "grant_id": "g1", "expected_hash": "h1"},
-        {"kind": "advance_epoch"},
-        {"kind": "issue", "grant_id": "g2", "subject": "agent-a",
-         "pid": "p1", "content_hash": "h1"},
-        {"kind": "request", "subject": "agent-a", "request_id": "r2",
-         "pid": "p1", "grant_id": "g2", "expected_hash": "h1",
-         "epoch_at_enqueue": 0},
-    ])
-    req2 = [e for e in exp2 if e[1] in ("grant_revoked", "stale_after_rollback")]
-    check("6.4.5 model: revoked grant denies",
-          req2[0] == (False, "grant_revoked"))
-    check("6.4.5 model: stale epoch denies",
-          req2[1] == (False, "stale_after_rollback"))
+    # Revocation and rollback agreement moved to part_amend_reference
+    # (production comparison, not model-only).
 
 
 # ---------------------------------------------------------------------------
@@ -767,6 +756,8 @@ def smoke() -> bool:
     part_rollback_recovery()
     part_reference_model()
     part_sensitivity()
+    part_amend_findings()
+    part_amend_reference()
     total = len(CHECKS)
     passed = sum(CHECKS)
     print(f"=== R6.4 circuit: {passed}/{total} ===")
@@ -774,8 +765,253 @@ def smoke() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# main
+# AMEND — proof controls for Director findings
 # ---------------------------------------------------------------------------
+
+def part_amend_findings():
+    """Public-path controls for every Director AMEND finding."""
+    from form.dell_matrix import agent_coordinator as ac
+    from form.dell_matrix import intrinsic_agent as ia
+
+    # Finding 1: cross-subject retry isolation. B reuses A's request_id
+    # with an invalid grant -> must NOT receive A's cached receipt.
+    p = fresh_program("r64amend1")
+    pr = p.nursery.add("Amend One", words="amend finding one words")
+    pid = pr.id
+    _, ch_a = _mkpair(p, pid, "agent-a")
+    h = p.acceptance_data_hash(pid, "confirm")
+    coord = ac.new_coordinator(p)
+    coord.register_agent("agent-a")
+    coord.register_agent("agent-b")
+    sa = coord.surface_for("agent-a")
+    sb = coord.surface_for("agent-b")
+    ra = sa.request_confirm(pid, ch_a["grant_id"], request_id="shared-id",
+                            expected_content_hash=h)
+    check("amend cross-subject retry: A commits", ra["ok"])
+    # B reuses the same request_id with a bogus grant.
+    rb = sb.request_confirm(pid, "grant_" + "0" * 32, request_id="shared-id",
+                            expected_content_hash=h)
+    check("amend cross-subject retry: B denied (no A's receipt)",
+          not rb["ok"] and rb.get("subject") == "agent-b"
+          and rb.get("idempotent_retry") is not True,
+          detail=str(rb)[:200])
+    check("amend cross-subject retry: B not attributed as A",
+          rb.get("subject") != "agent-a" or not rb["ok"])
+
+    # Finding 2: mutable cached evidence. Mutating a returned receipt's
+    # affected list must not change later cached receipts.
+    r1 = sa.request_confirm(pid, ch_a["grant_id"], request_id="shared-id",
+                            expected_content_hash=h)
+    check("amend receipt isolated: retry is historical", r1.get("historical") is True)
+    r1["affected"].append("forged-pid")
+    r1["correlation"]["injected"] = True
+    r2 = sa.request_confirm(pid, ch_a["grant_id"], request_id="shared-id",
+                            expected_content_hash=h)
+    check("amend receipt isolated: cached affected unchanged",
+          r2["affected"] == [pid], detail=str(r2["affected"]))
+    check("amend receipt isolated: cached correlation unchanged",
+          "injected" not in r2["correlation"])
+
+    # Finding 3: queue leakage. Repeated exact retries must not grow queue.
+    q_before = len(coord._queue)
+    for i in range(_queue_probe_n(coord)):
+        sa.request_confirm(pid, ch_a["grant_id"], request_id="shared-id",
+                           expected_content_hash=h)
+    check("amend queue: retries do not grow queue",
+          len(coord._queue) <= q_before,
+          detail=f"queue {q_before} -> {len(coord._queue)}")
+
+    # Finding 4: secret-value screening. Grant-handle canary under an
+    # innocent key must be rejected at the boundary, never reach audit.
+    canary = "grant_" + "ab" * 16
+    rsec = sa.request_confirm(pid, ch_a["grant_id"], request_id="sec-1",
+                              expected_content_hash=h,
+                              correlation={"note": f"innocent {canary} here"})
+    check("amend secret: canary under innocent key rejected",
+          not rsec["ok"] and rsec.get("reason") in ("bad_envelope", "enqueue_rejected"),
+          detail=str(rsec)[:200])
+    audit = ac.list_agent_audit(p)
+    leaked = any(canary in str(r) for r in audit)
+    check("amend secret: canary never reaches durable audit", not leaked)
+
+    # Finding 5: malformed behavioral state (strict).
+    bad_cases = [
+        ({"version": None}, "null version"),
+        ({"version": True}, "bool version"),
+        ({"version": 1.0}, "float version"),
+        ({"version": "1"}, "str version"),
+        ({"version": 1, "curiosity_score": float("nan")}, "NaN curiosity"),
+        ({"version": 1, "curiosity_score": float("inf")}, "Inf curiosity"),
+        ({"version": 1, "seen_cells": None}, "null seen_cells"),
+        ({"version": 1, "history": None}, "null history"),
+        ({"version": 1, "seen_cells": [[0, 0]] * 1025}, "over-bound cells"),
+        ({"version": 1, "history": [{"k": "v"}] * 33}, "over-bound history"),
+        ({"version": 1, "history": [{"k": "x" * 300}]}, "over-bound history value"),
+        ({"version": 1, "seen_cells": [[0, 0], ["bad", 1]]}, "malformed tail entry"),
+    ]
+    for bad, name in bad_cases:
+        try:
+            ia.IntrinsicAgent.from_dict(bad, "x")
+            check(f"amend malformed: {name} rejected", False)
+        except ia.AgentLocalLoadError:
+            check(f"amend malformed: {name} rejected", True)
+    # Absent keys still yield fresh default (not malformed).
+    inst = ia.IntrinsicAgent.from_dict({"version": 1}, "x")
+    check("amend absent keys: fresh default",
+          inst.seen_cells == set() and inst.curiosity_score == 0.0)
+
+    # Finding 6: unsynchronized save/reload. Observe -> ordinary save ->
+    # fresh-process reload WITHOUT manual sync_agent_to_program.
+    p2 = fresh_program("r64amend2")
+    ag = ia.for_agent(p2, "agent-a")
+    class Body:
+        pos = (9, 9)
+    class P:
+        avatar = type("A", (), {"body": Body()})()
+    ag.observe(P(), {"nodes": [{"label": "AutoSyncSite"}]})
+    # NOTE: no sync_agent_to_program call here.
+    from form import persist_rest
+    persist_rest.save(p2)
+    p3 = persist_rest.load("r64amend2", activate=False)
+    ag3 = ia.for_agent(p3, "agent-a")
+    check("amend autosync: observe->save->reload without manual sync",
+          "AutoSyncSite" in ag3.seen_labels and (9, 9) in ag3.seen_cells)
+
+    # Finding 7: audit failure observable. Inject audit-write failure;
+    # the outcome must show audit_ok=False, not ordinary committed.
+    p4 = fresh_program("r64amend3")
+    pr4 = p4.nursery.add("Amend Audit", words="audit failure words")
+    pid4 = pr4.id
+    _, ch4 = _mkpair(p4, pid4, "agent-a")
+    h4 = p4.acceptance_data_hash(pid4, "confirm")
+    coord4 = ac.new_coordinator(p4)
+    coord4.register_agent("agent-a")
+    sa4 = coord4.surface_for("agent-a")
+    p4.agent_audit_records = None  # break the audit store
+    r4 = sa4.request_confirm(pid4, ch4["grant_id"], request_id="af-1",
+                             expected_content_hash=h4)
+    check("amend audit failure: committed but flagged",
+          r4["ok"] is True and r4.get("audit_ok") is False
+          and "audit_failure" in r4,
+          detail=str(r4)[:200])
+    p4.agent_audit_records = {}
+
+    # Finding 8: incomplete compensation preserved (not ordinary denial).
+    from form.dell_matrix import agent_authority as aa
+    orig_confirm = aa.agent_confirm
+    def _incomplete(program, pid_, grant_id_, subject_):
+        return {"ok": False, "reason": "incomplete_compensation",
+                "detail": "simulated incomplete compensation"}
+    aa.agent_confirm = _incomplete
+    try:
+        p5 = fresh_program("r64amend4")
+        pr5 = p5.nursery.add("Amend Incomplete", words="incomplete words")
+        pid5 = pr5.id
+        _, ch5 = _mkpair(p5, pid5, "agent-a")
+        h5 = p5.acceptance_data_hash(pid5, "confirm")
+        coord5 = ac.new_coordinator(p5)
+        coord5.register_agent("agent-a")
+        sa5 = coord5.surface_for("agent-a")
+        r5 = sa5.request_confirm(pid5, ch5["grant_id"], request_id="ic-1",
+                                 expected_content_hash=h5)
+        check("amend incomplete: not ordinary denial",
+              not r5["ok"] and r5.get("result") == "incomplete_recovery"
+              and r5.get("reason") == "incomplete_compensation",
+              detail=str(r5)[:200])
+    finally:
+        aa.agent_confirm = orig_confirm
+
+
+def _queue_probe_n(coord) -> int:
+    """More than queue_bound exact retries (AMEND §1)."""
+    return coord._queue_bound + 5
+
+
+# ---------------------------------------------------------------------------
+# AMEND — reference model: revocation and rollback production comparison
+# ---------------------------------------------------------------------------
+
+def part_amend_reference():
+    """The model binds identity; production outcomes for revocation and
+    rollback are compared (not model-only)."""
+    from form.dell_matrix import agent_coordinator as ac
+    from form.dell_matrix import agent_authority as aa
+    from form.mandell import core_i_recovery as rec
+    from form.mandell.r64_reference_model import ReferenceModel
+
+    owner = "r64amref"
+    p = fresh_program(owner)
+    pr = p.nursery.add("Amend Ref", words="amend reference words")
+    pid = pr.id
+    root, ch = _mkpair(p, pid, "agent-a")
+    h = p.acceptance_data_hash(pid, "confirm")
+
+    coord = ac.new_coordinator(p)
+    coord.register_agent("agent-a")
+    sa = coord.surface_for("agent-a")
+
+    # Production: revoke then request -> deny.
+    aa.revoke_grant(p, root["grant_id"])
+    r_prod_revoke = sa.request_confirm(pid, ch["grant_id"], request_id="amr-1",
+                                       expected_content_hash=h)
+    # Model: same scenario.
+    m = ReferenceModel(owner=owner)
+    desc = {"operation": "confirm", "target": pid,
+            "expected": {"content_hash": h}, "correlation": {}}
+    exp = m.expect_sequence([
+        {"kind": "register", "subject": "agent-a"},
+        {"kind": "set_content", "pid": pid, "content_hash": h},
+        {"kind": "issue", "grant_id": "g1", "subject": "agent-a",
+         "pid": pid, "content_hash": h},
+        {"kind": "revoke", "grant_id": "g1"},
+        {"kind": "request", "subject": "agent-a", "request_id": "amr-1",
+         "pid": pid, "grant_id": "g1", "expected_hash": h,
+         "descriptor": desc},
+    ])
+    exp_revoke = [e for e in exp if e[1] in ("grant_revoked", "committed")][-1]
+    check("amend model: production and model agree on revocation deny",
+          (not r_prod_revoke["ok"]) and exp_revoke == (False, "grant_revoked"),
+          detail=f"prod_ok={r_prod_revoke['ok']} model={exp_revoke}")
+
+    # Production: rollback epoch invalidates (from part_rollback_recovery
+    # pattern, compared against model).
+    p2 = fresh_program("r64amref2")
+    pr2 = p2.nursery.add("Amend Ref 2", words="amend reference two words")
+    pid2 = pr2.id
+    _, ch2 = _mkpair(p2, pid2, "agent-a")
+    h2 = p2.acceptance_data_hash(pid2, "confirm")
+    coord2 = ac.new_coordinator(p2)
+    coord2.register_agent("agent-a")
+    qid = coord2.enqueue("agent-a", ac.make_envelope(
+        request_id="amr-2", operation="confirm", target=pid2,
+        expected={"content_hash": h2}, _program=p2))
+    saved = dict(coord2._queue[qid])
+    rec._advance_rollback_epoch("r64amref2")
+    from form.open import open_program
+    p2f = open_program("r64amref2")
+    coord2f = ac.new_coordinator(p2f)
+    coord2f.register_agent("agent-a")
+    coord2f._queue[qid] = saved
+    r_prod_roll = coord2f.dispatch(qid, ch2["grant_id"])
+    m2 = ReferenceModel(owner="r64amref2")
+    exp2 = m2.expect_sequence([
+        {"kind": "register", "subject": "agent-a"},
+        {"kind": "set_content", "pid": pid2, "content_hash": h2},
+        {"kind": "issue", "grant_id": "g2", "subject": "agent-a",
+         "pid": pid2, "content_hash": h2},
+        {"kind": "advance_epoch"},
+        {"kind": "request", "subject": "agent-a", "request_id": "amr-2",
+         "pid": pid2, "grant_id": "g2", "expected_hash": h2,
+         "epoch_at_enqueue": 0,
+         "descriptor": {"operation": "confirm", "target": pid2,
+                        "expected": {"content_hash": h2}, "correlation": {}}},
+    ])
+    exp_roll = [e for e in exp2 if e[1] in ("stale_after_rollback", "committed")][-1]
+    check("amend model: production and model agree on rollback deny",
+          (not r_prod_roll["ok"]
+           and r_prod_roll.get("reason") == "stale_after_rollback")
+          and exp_roll == (False, "stale_after_rollback"),
+          detail=f"prod={r_prod_roll.get('reason')} model={exp_roll}")
 
 def main():
     sys.exit(0 if smoke() else 1)

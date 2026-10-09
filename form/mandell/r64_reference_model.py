@@ -40,13 +40,20 @@ class RefAgent:
 
 
 class ReferenceModel:
-    """Independent decision model for the R6.4 protocol."""
+    """Independent decision model for the R6.4 protocol.
 
-    def __init__(self):
+    AMEND §6: retry records are namespaced by (owner, subject,
+    request_id); identity is bound. The model supports revocation and
+    rollback-epoch scenarios for production comparison.
+    """
+
+    def __init__(self, owner: str = "owner"):
+        self.owner = owner
         self.agents: Dict[str, RefAgent] = {}
         self.grants: Dict[str, RefGrant] = {}
         self.committed_pids: set = set()
-        self.receipts: Dict[str, dict] = {}
+        # Namespaced: (owner, subject, request_id) -> receipt.
+        self.receipts: Dict[tuple, dict] = {}
         self.epoch: int = 0
         self.content: Dict[str, str] = {}  # pid -> content_hash
 
@@ -76,12 +83,18 @@ class ReferenceModel:
 
     def decide(self, subject: str, request_id: str, pid: str,
                grant_id: str, expected_hash: Optional[str],
-               epoch_at_enqueue: int) -> Tuple[bool, str]:
-        """Return (allowed, reason). Pure decision logic."""
-        # Idempotency: exact retry.
-        prior = self.receipts.get(request_id)
+               epoch_at_enqueue: int,
+               descriptor: Optional[dict] = None) -> Tuple[bool, str]:
+        """Return (allowed, reason). Pure decision logic.
+
+        Retry identity is namespaced by (owner, subject, request_id):
+        B supplying A's request_id gets no cached receipt. Descriptor
+        comparison covers operation/target/expected/correlation.
+        """
+        rkey = (self.owner, subject, request_id)
+        prior = self.receipts.get(rkey)
         if prior is not None:
-            if prior["pid"] == pid and prior["hash"] == expected_hash:
+            if prior["descriptor"] == (descriptor or {}):
                 return True, "idempotent_retry"
             return False, "request_id_reuse"
         # Identity.
@@ -109,7 +122,7 @@ class ReferenceModel:
         # Commit.
         g.uses += 1
         self.committed_pids.add(pid)
-        self.receipts[request_id] = {"pid": pid, "hash": expected_hash}
+        self.receipts[rkey] = {"descriptor": descriptor or {}}
         return True, "committed"
 
     def expect_sequence(self, steps: List[dict]) -> List[Tuple[bool, str]]:
@@ -137,7 +150,8 @@ class ReferenceModel:
                 out.append(self.decide(
                     s["subject"], s["request_id"], s["pid"],
                     s["grant_id"], s.get("expected_hash"),
-                    s.get("epoch_at_enqueue", self.epoch)))
+                    s.get("epoch_at_enqueue", self.epoch),
+                    descriptor=s.get("descriptor")))
             else:
                 raise ValueError(f"unknown step kind: {kind}")
         return out
