@@ -1,7 +1,8 @@
-# R6.5 COMPLETION PACKET — Separation Enforcement (AMEND)
+# R6.5 COMPLETION PACKET — Separation Enforcement (AMEND-2)
 
 **Directive:** GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT (MODE=C)
 **AMEND Directive:** GDP_PHASE_6_R65_COMPLETE_REAL_SEPARATION_CIRCUIT (MODE=C)
+**AMEND-2 Directive:** GDP_R65_FINISH_EXISTING_EXECUTABLE_PROOF (MODE=C)
 **Authorization:** GDP_R65_AUTHORIZATION_RECONCILIATION (2026-10-09 16:17 CDT)
 **Date:** 2026-10-09
 **Status:** CANDIDATE READY FOR DIRECTOR REVIEW (NOT CERTIFIED — DO NOT MERGE)
@@ -9,14 +10,10 @@
 ## Exact Identity
 
 - **Branch:** `gdp-phase6-r65-separation`
+- **Head:** `59c592337c8c7d713fbab5a4d0b620b39d92562d`
+- **Tree:** `98e18d73b8088ebe3bacce86b2d57ae9d2c8a008`
 - **Base:** `0ceb3113beb8ce93e6bca422b9bddad12984feac` (R6.4 MERGED)
 - **Base tree:** `7ab8c67b1a4ba742fb971d7039ac5b3755366cd5`
-- **Commits:**
-  - `40574e4`: R6.5 separation enforcement (BIMO intersection, sovereignty
-    gate, persona assertion, walking skeleton 21/21)
-  - `9d46d9b`: Register separation test in regress runner
-  - `[auth]`: R6.5 authorization record
-  - `[research]`: Research dispositions and Delta-20 mapping
 
 ## Objective → Owner → Evidence Map (AMEND)
 
