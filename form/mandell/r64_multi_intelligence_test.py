@@ -758,6 +758,7 @@ def smoke() -> bool:
     part_sensitivity()
     part_amend_findings()
     part_amend_reference()
+    part_amend2_boundaries()
     total = len(CHECKS)
     passed = sum(CHECKS)
     print(f"=== R6.4 circuit: {passed}/{total} ===")
@@ -896,13 +897,17 @@ def part_amend_findings():
           detail=str(r4)[:200])
     p4.agent_audit_records = {}
 
-    # Finding 8: incomplete compensation preserved (not ordinary denial).
+    # Finding 8 (AMEND-2): incomplete compensation is classified by the
+    # canonical writer contract (reason="acceptance_policy_denied",
+    # compensation="incomplete"), proven through the real writer in
+    # part_amend2_boundaries §3. A synthetic receipt with an invented
+    # reason name must NOT classify as incomplete_recovery.
     from form.dell_matrix import agent_authority as aa
     orig_confirm = aa.agent_confirm
-    def _incomplete(program, pid_, grant_id_, subject_):
+    def _invented(program, pid_, grant_id_, subject_):
         return {"ok": False, "reason": "incomplete_compensation",
-                "detail": "simulated incomplete compensation"}
-    aa.agent_confirm = _incomplete
+                "detail": "synthetic invented reason"}
+    aa.agent_confirm = _invented
     try:
         p5 = fresh_program("r64amend4")
         pr5 = p5.nursery.add("Amend Incomplete", words="incomplete words")
@@ -914,9 +919,9 @@ def part_amend_findings():
         sa5 = coord5.surface_for("agent-a")
         r5 = sa5.request_confirm(pid5, ch5["grant_id"], request_id="ic-1",
                                  expected_content_hash=h5)
-        check("amend incomplete: not ordinary denial",
-              not r5["ok"] and r5.get("result") == "incomplete_recovery"
-              and r5.get("reason") == "incomplete_compensation",
+        check("amend incomplete: invented reason is ordinary denial",
+              not r5["ok"] and r5.get("result") == "denied"
+              and r5.get("reason") == "writer_incomplete_compensation",
               detail=str(r5)[:200])
     finally:
         aa.agent_confirm = orig_confirm
@@ -1012,6 +1017,392 @@ def part_amend_reference():
            and r_prod_roll.get("reason") == "stale_after_rollback")
           and exp_roll == (False, "stale_after_rollback"),
           detail=f"prod={r_prod_roll.get('reason')} model={exp_roll}")
+
+def part_amend2_boundaries():
+    """AMEND-2 (GDP_PHASE_6_R64_FINISH_EXISTING_BOUNDARIES): public-path
+    proofs for the six still-failing findings. Every fix is proven
+    through production paths with sensitivity controls."""
+    from form.dell_matrix import agent_coordinator as ac
+    from form.dell_matrix import agent_authority as aa
+    from form.dell_matrix import intrinsic_agent as ia
+    from form import persist_rest as _pr
+    from form.persist import _path as _ppath
+    import json as _json
+
+    # ------------------------------------------------------------------
+    # §1: Retain the validated request.
+    # ------------------------------------------------------------------
+    p = fresh_program("r64b1")
+    pr = p.nursery.add("B1", words="boundary one words")
+    pid = pr.id
+    _, ch = _mkpair(p, pid, "agent-a")
+    h = p.acceptance_data_hash(pid, "confirm")
+    coord = ac.new_coordinator(p)
+    coord.register_agent("agent-a")
+    env = ac.make_envelope(request_id="ret-1", operation="confirm", target=pid,
+                           expected={"content_hash": h},
+                           correlation={"k": "v"}, _program=p)
+    qid = coord.enqueue("agent-a", env)
+    # Structural: the queued envelope is NOT the caller's object.
+    check("b2 §1: queued envelope is retained snapshot, not caller object",
+          coord._queue[qid]["envelope"] is not env)
+    # Behavioral: mutate the ORIGINAL's nested mappings post-enqueue.
+    env.expected["content_hash"] = "forged"
+    env.expected["injected"] = True
+    env.correlation["k"] = "mutated"
+    r = coord.dispatch(qid, ch["grant_id"])
+    check("b2 §1: post-enqueue mutation does not change execution",
+          r["ok"] is True, detail=str(r)[:200])
+    check("b2 §1: receipt reflects retained snapshot",
+          r.get("correlation", {}).get("k") == "v"
+          and "injected" not in r.get("correlation", {}))
+    audit = ac.list_agent_audit(p)
+    att = [a for a in audit if a.get("request_id") == "ret-1"]
+    check("b2 §1: audit reflects retained snapshot",
+          any(a.get("correlation", {}).get("k") == "v"
+              and "injected" not in a.get("correlation", {}) for a in att),
+          detail=str(att)[:200])
+
+    # §1: conflicting reuse preserves the original retry record.
+    env2 = ac.make_envelope(request_id="ret-1", operation="confirm", target=pid,
+                            expected={"content_hash": "different"},
+                            correlation={}, _program=p)
+    qid2 = coord.enqueue("agent-a", env2)
+    rc = coord.dispatch(qid2, ch["grant_id"])
+    check("b2 §1: conflicting reuse denied",
+          not rc["ok"] and rc.get("reason") == "request_id_reuse",
+          detail=str(rc)[:200])
+    rkey = (p.owner, "agent-a", "ret-1")
+    stored = coord._receipts.get(rkey)
+    check("b2 §1: conflict does not overwrite established history",
+          stored is not None and stored["receipt"].get("ok") is True
+          and stored["receipt"].get("historical") is not True
+          and stored["descriptor"]["expected"].get("content_hash") == h)
+    env3 = ac.make_envelope(request_id="ret-1", operation="confirm", target=pid,
+                            expected={"content_hash": h},
+                            correlation={"k": "v"}, _program=p)
+    qid3 = coord.enqueue("agent-a", env3)
+    rh = coord.dispatch(qid3, ch["grant_id"])
+    check("b2 §1: exact retry after conflict returns original historical",
+          rh.get("historical") is True and rh.get("ok") is True)
+
+    # ------------------------------------------------------------------
+    # §2: Complete secret protection.
+    # ------------------------------------------------------------------
+    p2 = fresh_program("r64b2")
+    pr2 = p2.nursery.add("B2", words="boundary two words")
+    pid2 = pr2.id
+    _, ch2 = _mkpair(p2, pid2, "agent-a")
+    h2 = p2.acceptance_data_hash(pid2, "confirm")
+    coord2 = ac.new_coordinator(p2)
+    coord2.register_agent("agent-a")
+    sa2 = coord2.surface_for("agent-a")
+    canary = "grant_" + "cd" * 16
+
+    r_rid = sa2.request_confirm(pid2, ch2["grant_id"], request_id=f"x-{canary}",
+                                expected_content_hash=h2)
+    check("b2 §2: canary in request_id rejected",
+          not r_rid["ok"] and r_rid.get("reason") in ("bad_envelope", "enqueue_rejected"),
+          detail=str(r_rid)[:200])
+    r_key = sa2.request_confirm(pid2, ch2["grant_id"], request_id="k-1",
+                                expected_content_hash=h2,
+                                correlation={f"innocent_{canary}": "v"})
+    check("b2 §2: canary in nested key rejected",
+          not r_key["ok"] and r_key.get("reason") in ("bad_envelope", "enqueue_rejected"),
+          detail=str(r_key)[:200])
+    try:
+        env_t = ac.make_envelope(request_id="t-1", operation="confirm",
+                                 target=f"{pid2}-{canary}",
+                                 expected={}, _program=p2)
+        coord2.enqueue("agent-a", env_t)
+        check("b2 §2: canary in target rejected", False)
+    except (ac.EnvelopeValidationError, ac.CoordinatorError):
+        check("b2 §2: canary in target rejected", True)
+
+    # Post-enqueue mutation inserting a canary: the retained snapshot is
+    # clean, and the mutation cannot reach execution or audit.
+    env_m = ac.make_envelope(request_id="m-1", operation="confirm", target=pid2,
+                             expected={"content_hash": h2},
+                             correlation={"clean": "yes"}, _program=p2)
+    qm = coord2.enqueue("agent-a", env_m)
+    env_m.correlation["evil"] = canary
+    env_m.expected["evil"] = canary
+    rm = coord2.dispatch(qm, ch2["grant_id"])
+    audit2 = ac.list_agent_audit(p2)
+    leaked = any(canary in str(a) for a in audit2)
+    check("b2 §2: post-enqueue canary never reaches audit",
+          rm["ok"] is True and not leaked,
+          detail=f"ok={rm['ok']} leaked={leaked}")
+
+    # Protection-unavailable -> explicit rejection, not silent pass.
+    import form.dell_matrix.inference_dock as _idock
+    orig_pv = _idock.protected_values
+    def _boom(program):
+        raise RuntimeError("simulated protection failure")
+    _idock.protected_values = _boom
+    try:
+        try:
+            ac.make_envelope(request_id="pu-1", operation="confirm", target=pid2,
+                             expected={}, _program=p2)
+            check("b2 §2: protection failure rejects explicitly", False)
+        except ac.EnvelopeValidationError:
+            check("b2 §2: protection failure rejects explicitly", True)
+    finally:
+        _idock.protected_values = orig_pv
+
+    # Sensitivity: with screening disabled, the canary passes the boundary
+    # (proves screening is the active guard, not something else).
+    orig_screen = ac._screen_envelope
+    ac._screen_envelope = lambda *a, **kw: None
+    try:
+        r_weak = sa2.request_confirm(pid2, ch2["grant_id"], request_id="weak-1",
+                                     expected_content_hash=h2,
+                                     correlation={"note": f"x {canary} y"})
+        check("b2 §2 sensitivity: disabled screening lets canary through",
+              r_weak["ok"] is True or r_weak.get("reason") != "bad_envelope",
+              detail=str(r_weak)[:200])
+    finally:
+        ac._screen_envelope = orig_screen
+
+    # Clean-input positive control: works, no redaction artifacts in audit.
+    # (Fresh proposal + grant: earlier tests consumed the previous ones.)
+    pr2c = p2.nursery.add("B2c", words="boundary two c words")
+    pid2c = pr2c.id
+    _, ch2c = _mkpair(p2, pid2c, "agent-a")
+    h2c = p2.acceptance_data_hash(pid2c, "confirm")
+    r_clean = sa2.request_confirm(pid2c, ch2c["grant_id"], request_id="clean-1",
+                                  expected_content_hash=h2c,
+                                  correlation={"note": "ordinary"})
+    audit_clean = [a for a in ac.list_agent_audit(p2)
+                   if a.get("request_id") == "clean-1"]
+    redacted = any("[REDACTED]" in str(a) for a in audit_clean)
+    check("b2 §2: clean input works without redaction artifacts",
+          r_clean["ok"] is True and len(audit_clean) > 0 and not redacted,
+          detail=f"ok={r_clean['ok']} records={len(audit_clean)}")
+
+    # ------------------------------------------------------------------
+    # §3: Real writer contract (canonical incomplete-compensation fields).
+    # ------------------------------------------------------------------
+    p3 = fresh_program("r64b3")
+    pr3 = p3.nursery.add("B3", words="boundary three words")
+    pid3 = pr3.id
+    _, ch3 = _mkpair(p3, pid3, "agent-a")
+    h3 = p3.acceptance_data_hash(pid3, "confirm")
+    coord3 = ac.new_coordinator(p3)
+    coord3.register_agent("agent-a")
+    sa3 = coord3.surface_for("agent-a")
+    # Real writer, failure injected AFTER actual placement: revoke the
+    # grant (pre-commit auth fails) and break cleanup (compensation fails).
+    orig_place = p3.place
+    class BrokenDict(dict):
+        def pop(self, *a, **kw):
+            raise RuntimeError("injected_cleanup_failure")
+    def injecting_place(*a, **kw):
+        result = orig_place(*a, **kw)
+        aa.revoke_grant(p3, ch3["grant_id"])
+        p3.spatial.velocities = BrokenDict(p3.spatial.velocities)
+        return result
+    p3.place = injecting_place
+    try:
+        r3 = sa3.request_confirm(pid3, ch3["grant_id"], request_id="wr-1",
+                                 expected_content_hash=h3)
+    finally:
+        p3.place = orig_place
+    check("b2 §3: real incomplete compensation -> incomplete_recovery",
+          not r3["ok"] and r3.get("result") == "incomplete_recovery"
+          and r3.get("reason") == "incomplete_recovery",
+          detail=str(r3)[:300])
+    check("b2 §3: canonical fields preserved (not invented names)",
+          r3.get("compensation") == "incomplete"
+          and isinstance(r3.get("compensation_failures"), list)
+          and len(r3.get("compensation_failures")) > 0
+          and r3.get("evidence_retained") is True,
+          detail=str(r3.get("compensation_failures"))[:200])
+    check("b2 §3: writer_reason is the canonical acceptance_policy_denied",
+          r3.get("writer_reason") == "acceptance_policy_denied")
+
+    # §3: audit-failure aggregation. A failed attempted-event must not
+    # disappear because the final event captures successfully.
+    p3b = fresh_program("r64b3b")
+    pr3b = p3b.nursery.add("B3b", words="boundary three b words")
+    pid3b = pr3b.id
+    _, ch3b = _mkpair(p3b, pid3b, "agent-a")
+    h3b = p3b.acceptance_data_hash(pid3b, "confirm")
+    coord3b = ac.new_coordinator(p3b)
+    coord3b.register_agent("agent-a")
+    p3b.agent_audit_records = None  # break audit for enqueue only
+    env3b = ac.make_envelope(request_id="ag-1", operation="confirm", target=pid3b,
+                             expected={"content_hash": h3b}, _program=p3b)
+    q3b = coord3b.enqueue("agent-a", env3b)
+    p3b.agent_audit_records = {}  # restore; final capture succeeds
+    r3b = coord3b.dispatch(q3b, ch3b["grant_id"])
+    check("b2 §3: failed attempted-event survives final success",
+          r3b.get("audit_ok") is False
+          and "enqueue_attempted" in r3b.get("audit", {}).get("failures", []),
+          detail=str(r3b.get("audit"))[:200])
+    check("b2 §3: in-memory vs persisted evidence distinguished",
+          r3b.get("audit", {}).get("evidence") == "in_memory"
+          and r3b.get("audit", {}).get("persisted") is False
+          and r3b.get("audit", {}).get("captured_in_memory") is True)
+
+    # ------------------------------------------------------------------
+    # §4: Honest behavioral save.
+    # ------------------------------------------------------------------
+    # Sync failure propagates (no suppression); no durable write occurs.
+    p4 = fresh_program("r64b4")
+    _pr.save(p4)  # good baseline bytes on disk
+    with open(_ppath("r64b4"), "rb") as f:
+        baseline = f.read()
+    ag4 = ia.for_agent(p4, "agent-a")
+    ag4.observe(p4, {"nodes": [{"label": "BeforePoison"}]})
+    ag4.curiosity_score = float("nan")  # poison live state
+    raised = None
+    try:
+        _pr.save(p4)
+    except Exception as e:
+        raised = e
+    check("b2 §4: sync failure propagates (no suppression)",
+          isinstance(raised, ia.AgentLocalLoadError),
+          detail=f"raised={type(raised).__name__ if raised else None}")
+    with open(_ppath("r64b4"), "rb") as f:
+        after = f.read()
+    check("b2 §4: failed save preserves previous bytes",
+          after == baseline)
+    # The live observations are still in memory (not silently dropped).
+    check("b2 §4: live observations preserved in memory",
+          "BeforePoison" in ag4.seen_labels)
+
+    # Explicit null section -> load rejects.
+    p4b = fresh_program("r64b4b")
+    _pr.save(p4b)
+    pp4b = _ppath("r64b4b")
+    with open(pp4b) as f:
+        d4b = _json.load(f)
+    d4b["agent_local"] = None
+    with open(pp4b, "w") as f:
+        _json.dump(d4b, f)
+    try:
+        _pr.load("r64b4b", activate=False)
+        check("b2 §4: explicit null section rejected on load", False)
+    except ia.AgentLocalLoadError:
+        check("b2 §4: explicit null section rejected on load", True)
+    except Exception as e:
+        check("b2 §4: explicit null section rejected on load", False,
+              detail=f"wrong: {type(e).__name__}")
+
+    # Explicit null subject record -> load rejects.
+    p4c = fresh_program("r64b4c")
+    _pr.save(p4c)
+    pp4c = _ppath("r64b4c")
+    with open(pp4c) as f:
+        d4c = _json.load(f)
+    d4c["agent_local"]["agents"]["agent-a"] = None
+    with open(pp4c, "w") as f:
+        _json.dump(d4c, f)
+    try:
+        _pr.load("r64b4c", activate=False)
+        check("b2 §4: explicit null subject record rejected on load", False)
+    except ia.AgentLocalLoadError:
+        check("b2 §4: explicit null subject record rejected on load", True)
+    except Exception as e:
+        check("b2 §4: explicit null subject record rejected on load", False,
+              detail=f"wrong: {type(e).__name__}")
+
+    # Explicit null subject record -> for_agent rejects (not fresh).
+    p4d = fresh_program("r64b4d")
+    p4d.agent_local_states = {"agent-a": None}
+    try:
+        ia.for_agent(p4d, "agent-a")
+        check("b2 §4: explicit null subject rejected in for_agent", False)
+    except ia.AgentLocalLoadError:
+        check("b2 §4: explicit null subject rejected in for_agent", True)
+
+    # Outer version validated: null / wrong type / mismatch reject.
+    for bad_v, name in [(None, "null"), ("1", "str"), (2, "mismatch"), (True, "bool")]:
+        p4e = fresh_program("r64b4e")
+        _pr.save(p4e)
+        pp4e = _ppath("r64b4e")
+        with open(pp4e) as f:
+            d4e = _json.load(f)
+        d4e["agent_local"]["agent_local_version"] = bad_v
+        with open(pp4e, "w") as f:
+            _json.dump(d4e, f)
+        try:
+            _pr.load("r64b4e", activate=False)
+            check(f"b2 §4: outer version {name} rejected", False)
+        except ia.AgentLocalLoadError:
+            check(f"b2 §4: outer version {name} rejected", True)
+        except Exception as e:
+            check(f"b2 §4: outer version {name} rejected", False,
+                  detail=f"wrong: {type(e).__name__}")
+
+    # No str() normalization of arbitrary objects in history.
+    for bad_h, name in [
+        ({"version": 1, "history": [{"k": {"nested": "dict"}}]}, "dict item"),
+        ({"version": 1, "history": [{"k": [float("nan")]}]}, "NaN list item"),
+        ({"version": 1, "history": [{"k": [{"deep": 1}]}]}, "dict in list"),
+        ({"version": 1, "history": [{"k": (1, 2)}]}, "tuple item"),
+    ]:
+        try:
+            ia.IntrinsicAgent.from_dict(bad_h, "x")
+            check(f"b2 §4: history {name} rejected (no str norm)", False)
+        except ia.AgentLocalLoadError:
+            check(f"b2 §4: history {name} rejected (no str norm)", True)
+    # Valid scalars still accepted.
+    ok_h = {"version": 1, "history": [{"k": "v", "n": 3, "f": 1.5, "z": None,
+                                       "l": ["a", 1, None]}]}
+    try:
+        inst_h = ia.IntrinsicAgent.from_dict(ok_h, "x")
+        check("b2 §4: valid history scalars accepted",
+              inst_h.history[0]["l"] == ["a", 1, None])
+    except ia.AgentLocalLoadError as e:
+        check("b2 §4: valid history scalars accepted", False, detail=str(e))
+
+    # ------------------------------------------------------------------
+    # §5: Damaged audit evidence preserved (complete originals).
+    # ------------------------------------------------------------------
+    p5 = fresh_program("r64b5")
+    pr5 = p5.nursery.add("B5", words="boundary five words")
+    pid5 = pr5.id
+    _, ch5 = _mkpair(p5, pid5, "agent-a")
+    h5 = p5.acceptance_data_hash(pid5, "confirm")
+    coord5 = ac.new_coordinator(p5)
+    coord5.register_agent("agent-a")
+    sa5 = coord5.surface_for("agent-a")
+    r5 = sa5.request_confirm(pid5, ch5["grant_id"], request_id="ev-1",
+                             expected_content_hash=h5)
+    assert r5["ok"]
+    _pr.save(p5)
+    pp5 = _ppath("r64b5")
+    with open(pp5) as f:
+        d5 = _json.load(f)
+    # Inject a malformed record into the saved file (shape check fails:
+    # audit_id mismatches the key; plus a non-dict record).
+    bad_rec = {"audit_id": "aa1:wrong", "audit_seq": 999,
+               "note": "damaged evidence", "payload": {"x": 1}}
+    d5["agent_audit"]["records"]["aa1:damaged"] = bad_rec
+    d5["agent_audit"]["records"]["aa1:notadict"] = "not-a-dict"
+    with open(pp5, "w") as f:
+        _json.dump(d5, f)
+    p5b = _pr.load("r64b5", activate=False)
+    mal = p5b.agent_audit_malformed
+    originals = [m.get("original") for m in mal if isinstance(m, dict)]
+    check("b2 §5: malformed load preserves complete originals",
+          bad_rec in originals and "not-a-dict" in originals,
+          detail=f"malformed={len(mal)}")
+    # Valid records still restored.
+    check("b2 §5: valid records survive malformed load",
+          any(r.get("request_id") == "ev-1"
+              for r in p5b.agent_audit_records.values()))
+    # Subsequent save -> reload: evidence NOT silently discarded.
+    _pr.save(p5b)
+    p5c = _pr.load("r64b5", activate=False)
+    mal2 = p5c.agent_audit_malformed
+    originals2 = [m.get("original") for m in mal2 if isinstance(m, dict)]
+    check("b2 §5: save after malformed load preserves evidence",
+          bad_rec in originals2 and "not-a-dict" in originals2,
+          detail=f"malformed={len(mal2)}")
+
 
 def main():
     sys.exit(0 if smoke() else 1)

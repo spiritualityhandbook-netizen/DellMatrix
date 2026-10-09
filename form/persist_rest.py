@@ -501,19 +501,45 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     except Exception:
         p.lifecycle = {}
     # R6.4: restore agent-local behavioral state (IntrinsicAgent).
-    # Missing section -> explicit compatible default (fresh, pre-R6.4
-    # generations). Malformed -> FAIL CLOSED (AgentLocalLoadError);
+    # Directive §4: a sentinel distinguishes genuine absence (section
+    # missing -> fresh default, pre-R6.4 generations) from explicit null
+    # (section present with null -> fail closed). The outer
+    # agent_local_version is validated strictly, as are inner record
+    # versions. Malformed -> FAIL CLOSED (AgentLocalLoadError);
     # malformed is not absence.
     try:
         from form.dell_matrix.intrinsic_agent import (
             IntrinsicAgent, AgentLocalLoadError)
-        al = data.get("agent_local")
-        if al is None:
+        _ABSENT = object()
+        al = data.get("agent_local", _ABSENT)
+        if al is _ABSENT:
             p.agent_local_states = {}
+        elif al is None:
+            raise AgentLocalLoadError(
+                "agent_local section: explicit null is malformed, not absence")
         elif not isinstance(al, dict):
             raise AgentLocalLoadError("agent_local section is not a dict")
         else:
-            agents = al.get("agents", {})
+            # Outer version: strict int, must match. Explicit null or
+            # missing version on a present section is malformed.
+            outer_v = al.get("agent_local_version", _ABSENT)
+            if outer_v is _ABSENT or outer_v is None:
+                raise AgentLocalLoadError(
+                    "agent_local.agent_local_version: missing or null")
+            if isinstance(outer_v, bool) or not isinstance(outer_v, int):
+                raise AgentLocalLoadError(
+                    "agent_local.agent_local_version: expected int, "
+                    f"got {type(outer_v).__name__}")
+            from form.dell_matrix.intrinsic_agent import AGENT_LOCAL_VERSION
+            if outer_v != AGENT_LOCAL_VERSION:
+                raise AgentLocalLoadError(
+                    f"unsupported agent_local_version: {outer_v}")
+            agents = al.get("agents", _ABSENT)
+            if agents is _ABSENT:
+                agents = {}
+            elif agents is None:
+                raise AgentLocalLoadError(
+                    "agent_local.agents: explicit null is malformed")
             if not isinstance(agents, dict):
                 raise AgentLocalLoadError("agent_local.agents is not a dict")
             states: Dict[str, Dict[str, Any]] = {}
@@ -521,6 +547,10 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
                 if not isinstance(subject, str):
                     raise AgentLocalLoadError(
                         "agent-local subject key is not str")
+                if raw is None:
+                    raise AgentLocalLoadError(
+                        f"agent-local state for {subject!r}: explicit null "
+                        "is malformed, not absence")
                 # from_dict validates; stored null is malformed, not absence.
                 states[subject] = IntrinsicAgent.from_dict(raw, subject).to_dict()
             p.agent_local_states = states
@@ -530,21 +560,34 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     except Exception as exc:
         raise AgentLocalLoadError(f"agent-local restore failed: {exc}")
     # R6.4: restore agent-action audit records. Shape-checked; valid
-    # records restored. Malformed records are NOT silently dropped:
-    # they are preserved in program.agent_audit_malformed and the load
-    # records an explicit evidence note (AMEND §4).
+    # records restored. Directive §5: malformed records are NOT silently
+    # dropped and their original bytes are NOT discarded. The COMPLETE
+    # original malformed record is preserved in program.agent_audit_malformed
+    # (through the existing agent_audit payload section — no parallel
+    # store), so a subsequent save cannot silently overwrite the evidence.
+    # A note is not a backup.
     try:
-        aa = data.get("agent_audit")
-        if aa is None:
+        import copy as _copy
+        _ABSENT2 = object()
+        aa = data.get("agent_audit", _ABSENT2)
+        if aa is _ABSENT2:
             p.agent_audit_records = {}
             p.agent_audit_seq = 0
             p.agent_audit_malformed = []
+        elif aa is None:
+            p.agent_audit_records = {}
+            p.agent_audit_seq = 0
+            p.agent_audit_malformed = [{
+                "note": "agent_audit section: explicit null is malformed",
+                "original": None,
+            }]
         elif not isinstance(aa, dict):
             p.agent_audit_records = {}
             p.agent_audit_seq = 0
             p.agent_audit_malformed = [{
                 "note": "agent_audit section is not a dict",
                 "type": type(aa).__name__,
+                "original": _copy.deepcopy(aa),
             }]
         else:
             seq = aa.get("audit_seq", 0)
@@ -554,11 +597,28 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
                 p.agent_audit_seq = max(0, int(seq))
             except (TypeError, ValueError):
                 p.agent_audit_seq = 0
+            # Previously preserved malformed evidence (complete originals)
+            # is restored first; it is not re-validated or "fixed".
+            preserved = aa.get("malformed", _ABSENT2)
+            malformed: List[Dict[str, Any]] = []
+            if preserved is _ABSENT2 or preserved is None:
+                pass
+            elif isinstance(preserved, list):
+                for entry in preserved:
+                    malformed.append(_copy.deepcopy(entry)
+                                     if isinstance(entry, dict)
+                                     else {"note": "malformed entry not a dict",
+                                           "original": _copy.deepcopy(entry)})
+            else:
+                malformed.append({
+                    "note": "agent_audit.malformed is not a list",
+                    "type": type(preserved).__name__,
+                    "original": _copy.deepcopy(preserved),
+                })
             raw_audit = aa.get("records")
             if raw_audit is None:
                 raw_audit = {}
             restored_audit: Dict[str, Dict[str, Any]] = {}
-            malformed: List[Dict[str, Any]] = []
             if isinstance(raw_audit, dict):
                 for aid, rec in raw_audit.items():
                     if (isinstance(aid, str) and isinstance(rec, dict)
@@ -569,11 +629,13 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
                             "audit_id": aid if isinstance(aid, str) else None,
                             "note": "record failed shape check",
                             "record_type": type(rec).__name__,
+                            "original": _copy.deepcopy(rec),
                         })
             else:
                 malformed.append({
                     "note": "agent_audit.records is not a dict",
                     "type": type(raw_audit).__name__,
+                    "original": _copy.deepcopy(raw_audit),
                 })
             p.agent_audit_records = restored_audit
             p.agent_audit_malformed = malformed
@@ -589,7 +651,8 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     except Exception:
         p.agent_audit_records = {}
         p.agent_audit_seq = 0
-        p.agent_audit_malformed = [{"note": "agent_audit restore raised"}]
+        p.agent_audit_malformed = [{"note": "agent_audit restore raised",
+                                    "original": None}]
     restore_core_ii(p, data)
     return p
 

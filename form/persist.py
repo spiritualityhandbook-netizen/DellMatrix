@@ -103,14 +103,12 @@ def _serialize_lattice(program: Program) -> Dict[str, Any]:
 
 def serialize(program: Program) -> Dict[str, Any]:
     assert_floor_intact()
-    # R6.4 AMEND §5: canonical hook — synchronize live agent observations
-    # into the payload staging before serialization. Callers never invoke
-    # sync manually.
-    try:
-        from form.dell_matrix.intrinsic_agent import sync_all_agents_to_program
-        sync_all_agents_to_program(program)
-    except Exception:
-        pass
+    # R6.4 directive §4: canonical hook — synchronize live agent
+    # observations into the payload staging before serialization.
+    # NO broad suppression: a sync failure propagates and no durable
+    # write occurs; previous bytes and observations are preserved.
+    from form.dell_matrix.intrinsic_agent import sync_all_agents_to_program
+    sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
     plane = program.cube.session.plane
@@ -239,6 +237,9 @@ def serialize(program: Program) -> Dict[str, Any]:
         },
         # R6.4: agent-action audit trail (structured outcome capture).
         # OBSERVATION, never permission. Grant handles never logged.
+        # Directive §5: preserved malformed evidence (complete originals)
+        # is written back through this same section — no parallel store —
+        # so a malformed load followed by save cannot silently discard it.
         "agent_audit": {
             "audit_version": 1,
             "audit_seq": int(getattr(program, "agent_audit_seq", 0) or 0),
@@ -247,6 +248,11 @@ def serialize(program: Program) -> Dict[str, Any]:
                 for aid, rec in (getattr(program, "agent_audit_records", None) or {}).items()
                 if isinstance(aid, str) and isinstance(rec, dict)
             },
+            "malformed": [
+                dict(m) for m in
+                (getattr(program, "agent_audit_malformed", None) or [])
+                if isinstance(m, dict)
+            ],
         },
     }
 

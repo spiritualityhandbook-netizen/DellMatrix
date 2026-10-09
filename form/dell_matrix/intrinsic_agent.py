@@ -129,17 +129,20 @@ class IntrinsicAgent:
     def from_dict(cls, data: Any, subject: str = "?") -> "IntrinsicAgent":
         """Restore from a versioned snapshot. Fail closed on malformed.
 
-        Genuine absence (data is None) yields the explicit compatible
-        default: a fresh empty behavioral state. Explicit malformed /
-        null / wrong-type stored state is NOT absence and raises
-        AgentLocalLoadError. Versions are strict ints: bool, float,
-        str, NaN, and coercion are rejected.
+        Directive §4: explicit null (data is None) is malformed, not
+        absence. Genuine absence is handled by callers via sentinel
+        (for_agent, the loader); they construct IntrinsicAgent() directly
+        and never pass an unverified None here. Versions are strict ints:
+        bool, float, str, NaN, and coercion are rejected.
         """
         if data is None:
-            return cls()
+            raise AgentLocalLoadError(
+                f"agent-local state for {subject!r}: explicit null is "
+                "malformed, not absence")
         if not isinstance(data, dict):
             raise AgentLocalLoadError(
-                f"agent-local state for {subject!r}: expected dict or null")
+                f"agent-local state for {subject!r}: expected dict, "
+                f"got {type(data).__name__}")
         if "version" not in data:
             raise AgentLocalLoadError("agent-local version: absent key")
         version = _strict_int(data["version"], "version", subject)
@@ -165,6 +168,11 @@ def for_agent(program: Any, subject: str) -> IntrinsicAgent:
     durable state persists through the canonical program payload
     (agent_local section).
 
+    Directive §4: a sentinel distinguishes genuine absence (subject key
+    missing -> fresh default) from explicit null (subject key present
+    with null value -> AgentLocalLoadError). from_dict never receives
+    an unverified None.
+
     Movement behavior stays distinct from knowledge acceptance: this
     agent explores (observe/propose_action/step); it never confirms
     proposals or holds grants.
@@ -177,9 +185,20 @@ def for_agent(program: Any, subject: str) -> IntrinsicAgent:
         program.agent_local_agents = cache
     inst = cache.get(subject)
     if inst is None:
-        stored = getattr(program, "agent_local_states", None) or {}
-        raw = stored.get(subject) if isinstance(stored, dict) else None
-        inst = IntrinsicAgent.from_dict(raw, subject)
+        stored = getattr(program, "agent_local_states", None)
+        if not isinstance(stored, dict):
+            stored = {}
+        raw = stored.get(subject, _MISSING)
+        if raw is _MISSING:
+            # Genuine absence: no stored record for this subject.
+            inst = IntrinsicAgent()
+        elif raw is None:
+            # Explicit null stored record is malformed, not absence.
+            raise AgentLocalLoadError(
+                f"agent-local state for {subject!r}: explicit null "
+                "is malformed, not absence")
+        else:
+            inst = IntrinsicAgent.from_dict(raw, subject)
         cache[subject] = inst
     return inst
 
@@ -204,13 +223,32 @@ def sync_all_agents_to_program(program: Any) -> None:
 
     Called by the normal save path (form.persist.serialize); callers never
     need to invoke sync_agent_to_program manually.
+
+    Directive §4: no broad suppression. All live snapshots are STAGED and
+    validated BEFORE any stored state is replaced; a failure raises and
+    leaves the previous staged state untouched. Declared retention
+    (to_dict truncation) is separate from input validation (from_dict
+    rejection) — the staged snapshot must round-trip cleanly.
     """
     cache = getattr(program, "agent_local_agents", None) or {}
+    staged: Dict[str, Dict[str, Any]] = {}
     for subject in list(cache.keys()):
-        try:
-            sync_agent_to_program(program, subject)
-        except Exception:
-            pass
+        inst = cache.get(subject)
+        if inst is None:
+            continue
+        # May raise: nothing has been mutated yet.
+        snap = inst.to_dict()
+        # The staged snapshot must round-trip through strict validation.
+        IntrinsicAgent.from_dict(snap, subject)
+        staged[subject] = snap
+    # All staged OK; write into stored state. Subjects with stored state
+    # but no live instance this session are preserved untouched.
+    states = getattr(program, "agent_local_states", None)
+    if not isinstance(states, dict):
+        states = {}
+        program.agent_local_states = states
+    for subject, snap in staged.items():
+        states[subject] = snap
 
 
 # Module-global compatibility instance (pre-R6.4 interface). Prefer
@@ -364,12 +402,34 @@ def _validate_agent_state_dict(data: Any, subject: str) -> Dict[str, Any]:
             elif v is None:
                 clean_rec[ks] = None
             elif isinstance(v, list):
+                # Directive §4: no str() normalization of arbitrary
+                # objects; no nonfinite values; no malformed containers.
+                # Each item must be a valid scalar or None, else reject.
                 if len(v) > 16:
                     raise AgentLocalLoadError("history list value too long")
+                clean_list = []
                 for x in v:
-                    if isinstance(x, str) and len(x) > _MAX_HISTORY_VALUE_LEN:
-                        raise AgentLocalLoadError("history list item exceeds bound")
-                clean_rec[ks] = [str(x)[:_MAX_HISTORY_VALUE_LEN] for x in v]
+                    if isinstance(x, str):
+                        if len(x) > _MAX_HISTORY_VALUE_LEN:
+                            raise AgentLocalLoadError(
+                                "history list item exceeds bound")
+                        clean_list.append(x)
+                    elif isinstance(x, bool):
+                        raise AgentLocalLoadError(
+                            "history list item bool not allowed")
+                    elif isinstance(x, (int, float)):
+                        import math as _math
+                        if not _math.isfinite(float(x)):
+                            raise AgentLocalLoadError(
+                                "history list item non-finite")
+                        clean_list.append(x)
+                    elif x is None:
+                        clean_list.append(None)
+                    else:
+                        raise AgentLocalLoadError(
+                            "history list item type "
+                            f"{type(x).__name__} not allowed")
+                clean_rec[ks] = clean_list
             else:
                 raise AgentLocalLoadError(
                     f"history value type {type(v).__name__} not allowed")

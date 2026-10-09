@@ -2,6 +2,7 @@
 
 GDP_PHASE_6_R64_MULTI_INTELLIGENCE_SHARED_STATE_CIRCUIT (MODE=C).
 AMEND: GDP_PHASE_6_R64_CLOSE_IDENTITY_EVIDENCE_AND_PERSISTENCE.
+AMEND-2: GDP_PHASE_6_R64_FINISH_EXISTING_BOUNDARIES.
 
 One trusted host coordinator serializes protected mutations for multiple
 logical agents cooperating over one knowledge system. Identity, permission,
@@ -26,7 +27,8 @@ Architecture (per directive §2):
 Request lifecycle:
     register_agent (trusted) -> AgentIdentity
     snapshot_for(subject)     -> detached read-only dict
-    enqueue(subject, envelope) -> queued_id   (shape/bounds validated)
+    enqueue(subject, envelope) -> queued_id   (shape/bounds validated;
+        the VALIDATED snapshot is retained, not the caller's envelope)
     dispatch(queued_id, grant_handle) -> receipt  (authority, freshness,
         recovery-required, and epoch revalidated AT EXECUTION)
 
@@ -34,29 +36,38 @@ A queued request is NOT prior authorization to commit. Revocation,
 changed content, recovery-required state, and rollback invalidation
 still take effect at dispatch.
 
-Retry identity (AMEND §1): receipts are namespaced by canonical
+Retry identity: receipts are namespaced by canonical
 (owner, host-bound subject, request_id). A canonical detached request
 descriptor (operation, target, expected evidence, correlation semantics)
 is compared for idempotency. B can never receive A's cached receipt.
 Returned receipts are detached deep copies; caller mutation cannot
 alter cached evidence. Cached-retry and conflict paths remove their
-queued entries. Historical receipts are labeled historical: not new
+queued entries; a conflicting reuse never overwrites established
+history. Historical receipts are labeled historical: not new
 authorization, execution, or proof of unchanged live state. Receipt
 retention is bounded (no durable exactly-once claim).
 
-Secret protection (AMEND §3): recognized handles/credentials are
-screened by VALUE using the existing protected-value infrastructure
-(form.dell_matrix.inference_dock.protected_values / contains_protected),
-not by key name alone. Envelopes carrying protected values are rejected
-at the boundary; audit capture defensively redacts. Coverage: canonical
-grant-handle format + session-issued values + configured credentials.
-No unknown-secret guarantee is claimed.
+Secret protection: the COMPLETE external envelope (identifiers, target,
+operation, all keys and values) is screened by VALUE using the existing
+protected-value infrastructure
+(form.dell_matrix.inference_dock.protected_values /
+contains_protected_decoded), not by key name alone. Protection failure
+rejects explicitly. Complete outward receipts and audit records
+(subject, request_id, affected, errors) are sanitized. Coverage:
+canonical grant-handle format + session-issued values + configured
+credentials. No unknown-secret guarantee is claimed.
 
-Outcome contract (AMEND §4): audit capture failure is observable in the
-returned outcome (audit_ok flag); incomplete compensation from the
-canonical writer is preserved as incomplete_recovery, never ordinary
-denial; operation exceptions yield honest failed/unknown, never inferred
-noncommit.
+Outcome contract: audit capture failures are aggregated across the
+request lifecycle (enqueue, dispatch, retry, conflict, failure,
+incomplete) and observable in the returned outcome (audit_ok flag +
+audit block); captured-in-memory evidence is distinguished from
+persisted evidence. Incomplete compensation from the canonical writer
+is classified by the writer's canonical fields
+(reason="acceptance_policy_denied", compensation="incomplete",
+compensation_failures, compensation_removed, evidence_retained) and
+preserved as incomplete_recovery with sanitized structured details —
+never ordinary denial. Operation exceptions yield honest
+failed/unknown, never inferred noncommit.
 """
 
 from __future__ import annotations
@@ -197,63 +208,115 @@ def _validate_mapping_strict(mapping: Any, name: str) -> Dict[str, Any]:
     return copy.deepcopy(mapping)
 
 
-def _check_no_protected_values(program: Any, mapping: Dict[str, Any],
-                               where: str) -> None:
-    """Reject mappings carrying recognized protected values (AMEND §3).
+def _protection_utils():
+    """Import the existing protection utilities.
 
-    Scans VALUES (not just keys) using the existing protected-value
-    infrastructure. Raises EnvelopeValidationError on detection.
+    Directive §2: protection import failure must REJECT explicitly, never
+    silently disable screening. Reuses the existing protection
+    infrastructure; no new secret interpreter is introduced.
     """
     try:
         from form.dell_matrix.inference_dock import (
-            protected_values, contains_protected)
-    except Exception:
-        return  # infrastructure unavailable; key-name scrub remains below
-    protected = protected_values(program)
+            protected_values, contains_protected_decoded)
+    except Exception as e:
+        raise EnvelopeValidationError(
+            f"secret protection unavailable (import failed): {e}")
+    return protected_values, contains_protected_decoded
+
+
+def _screen_envelope(program: Any, *, request_id: str, operation: str,
+                     target: str, expected: Dict[str, Any],
+                     correlation: Dict[str, Any]) -> None:
+    """Screen the COMPLETE external envelope (directive §2).
+
+    Covers identifiers (request_id), target, operation, and all keys and
+    string values in expected/correlation — not only expected/correlation
+    values. Uses the decoded-form check so \\uXXXX-encoded handles are
+    caught. Raises EnvelopeValidationError on detection or on protection
+    failure. Never reflects protected values in the error message.
+    """
+    protected_values, contains_protected = _protection_utils()
+    try:
+        protected = protected_values(program)
+    except Exception as e:
+        raise EnvelopeValidationError(
+            f"secret protection unavailable (values failed): {e}")
+
+    def _hit(where: str) -> EnvelopeValidationError:
+        # The error names the location, never the protected value.
+        return EnvelopeValidationError(
+            f"envelope: protected material detected at {where}")
+
+    for label, text in (("request_id", request_id),
+                        ("operation", operation),
+                        ("target", target)):
+        try:
+            if contains_protected(str(text), protected):
+                raise _hit(label)
+        except EnvelopeValidationError:
+            raise
+        except Exception as e:
+            raise EnvelopeValidationError(
+                f"secret protection unavailable (screen failed): {e}")
 
     def _scan(obj: Any, path: str) -> None:
-        if isinstance(obj, str):
-            if contains_protected(obj, protected):
-                raise EnvelopeValidationError(
-                    f"{where}: protected value detected at {path}")
-        elif isinstance(obj, dict):
-            for k, v in obj.items():
-                if contains_protected(str(k), protected):
-                    raise EnvelopeValidationError(
-                        f"{where}: protected key at {path}.{k}")
-                _scan(v, f"{path}.{k}")
-        elif isinstance(obj, (list, tuple)):
-            for i, v in enumerate(obj):
-                _scan(v, f"{path}[{i}]")
+        try:
+            if isinstance(obj, str):
+                if contains_protected(obj, protected):
+                    raise _hit(path)
+            elif isinstance(obj, dict):
+                for k, v in obj.items():
+                    if isinstance(k, str) and contains_protected(k, protected):
+                        raise _hit(f"{path}.<key>")
+                    _scan(v, f"{path}.{k}")
+            elif isinstance(obj, (list, tuple)):
+                for i, v in enumerate(obj):
+                    _scan(v, f"{path}[{i}]")
+        except EnvelopeValidationError:
+            raise
+        except Exception as e:
+            raise EnvelopeValidationError(
+                f"secret protection unavailable (screen failed): {e}")
 
-    _scan(mapping, where)
+    _scan(expected, "expected")
+    _scan(correlation, "correlation")
 
 
-def _redact_protected(program: Any, obj: Any) -> Any:
-    """Defensively redact recognized protected values (defense in depth)."""
+def _sanitize_outward(program: Any, obj: Any) -> Any:
+    """Redact recognized protected values from outward-bound data.
+
+    Applied to complete receipts and audit records (directive §2).
+    Raises EnvelopeValidationError if protection is unavailable — the
+    caller must treat this as observable failure, not silent success.
+    """
+    protected_values, contains_protected = _protection_utils()
     try:
-        from form.dell_matrix.inference_dock import (
-            protected_values, contains_protected)
         protected = protected_values(program)
-    except Exception:
-        protected = frozenset()
+    except Exception as e:
+        raise EnvelopeValidationError(
+            f"secret protection unavailable (values failed): {e}")
 
     def _redact(o: Any) -> Any:
         if isinstance(o, str):
             try:
-                from form.dell_matrix.inference_dock import contains_protected as cp
-                if cp(o, protected):
-                    return _REDACTED
-            except Exception:
-                pass
-            return o
+                hit = contains_protected(o, protected)
+            except Exception as e:
+                raise EnvelopeValidationError(
+                    f"secret protection unavailable (redact failed): {e}")
+            return _REDACTED if hit else o
         if isinstance(o, dict):
             return {k: _redact(v) for k, v in o.items()}
-        if isinstance(o, list):
+        if isinstance(o, (list, tuple)):
             return [_redact(v) for v in o]
         return o
 
-    return _redact(obj)
+    try:
+        return _redact(obj)
+    except EnvelopeValidationError:
+        raise
+    except Exception as e:
+        raise EnvelopeValidationError(
+            f"secret protection unavailable (redact failed): {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -344,10 +407,12 @@ def _validate_envelope_fields(*, request_id: Any, operation: Any,
             if forbidden in mapping:
                 raise EnvelopeValidationError(
                     f"{name} must not carry identity/credential field: {forbidden}")
-    # Value-based secret screening (AMEND §3).
+    # Value-based secret screening of the COMPLETE envelope (directive §2):
+    # identifiers, target, operation, and all keys/values in expected and
+    # correlation. Protection failure rejects explicitly.
     if program is not None:
-        _check_no_protected_values(program, exp, "expected")
-        _check_no_protected_values(program, corr, "correlation")
+        _screen_envelope(program, request_id=request_id, operation=operation,
+                         target=target, expected=exp, correlation=corr)
     return request_id, operation, target, exp, corr
 
 
@@ -387,8 +452,10 @@ def capture_agent_action(program: Any, *, subject: str, request_id: str,
 
     Post-hoc observation. Returns the record, or None if capture failed
     (callers must treat None as observable failure, not silent success).
-    Recognized protected values are redacted (defense in depth); the
-    boundary rejection in _validate_envelope_fields is the primary guard.
+    The COMPLETE record is sanitized — subject, request_id, operation,
+    target, correlation, affected, provenance, and detail (directive §2).
+    If sanitization protection is unavailable, capture FAILS (returns
+    None) rather than storing unsanitized material.
     """
     try:
         records = getattr(program, "agent_audit_records", None)
@@ -399,20 +466,37 @@ def capture_agent_action(program: Any, *, subject: str, request_id: str,
         seq = int(getattr(program, "agent_audit_seq", 0) or 0) + 1
         owner = str(getattr(program, "owner", "") or "")
 
+        # Sanitize the complete outward record BEFORE construction.
+        # Protection failure -> observable capture failure (None).
+        try:
+            san_subject = _sanitize_outward(program, subject)
+            san_request_id = _sanitize_outward(program, request_id)
+            san_operation = _sanitize_outward(program, operation)
+            san_target = _sanitize_outward(program, target)
+            san_correlation = _sanitize_outward(program, dict(correlation or {}))
+            san_affected = _sanitize_outward(
+                program, [a for a in (affected or [])[:16]])
+            san_provenance = _sanitize_outward(program, dict(provenance or {}))
+            san_detail = _sanitize_outward(program, detail)
+        except EnvelopeValidationError:
+            return None
+
         record = {
-            "audit_id": _audit_id_for(owner, seq, request_id, operation, result),
+            "audit_id": _audit_id_for(owner, seq, str(san_request_id),
+                                      str(san_operation), result),
             "audit_version": AGENT_AUDIT_VERSION,
             "audit_seq": seq,
             "owner": owner,
-            "subject": _bound(subject, _MAX_SUBJECT),
-            "request_id": _bound(request_id, _MAX_REQUEST_ID),
-            "operation": _bound(operation, _MAX_OPERATION),
-            "target": _bound(target, _MAX_TARGET),
+            "subject": _bound(san_subject, _MAX_SUBJECT),
+            "request_id": _bound(san_request_id, _MAX_REQUEST_ID),
+            "operation": _bound(san_operation, _MAX_OPERATION),
+            "target": _bound(san_target, _MAX_TARGET),
             "result": result,
-            "correlation": _redact_protected(program, dict(correlation or {})),
-            "affected": [_bound(a, _MAX_TARGET) for a in (affected or [])[:16]],
-            "provenance": _redact_protected(program, dict(provenance or {})),
-            "detail": _bound(_redact_protected(program, detail), 300),
+            "correlation": san_correlation if isinstance(san_correlation, dict) else {},
+            "affected": [_bound(a, _MAX_TARGET) for a in san_affected]
+                        if isinstance(san_affected, list) else [],
+            "provenance": san_provenance if isinstance(san_provenance, dict) else {},
+            "detail": _bound(san_detail, 300),
             "ts": _utcnow(),
         }
         program.agent_audit_seq = seq
@@ -534,27 +618,34 @@ class HostCoordinator:
     def enqueue(self, subject: str, envelope: RequestEnvelope) -> str:
         """Validate and queue a request. Returns queued_id.
 
-        The SAME validator runs here as at construction (AMEND §2):
-        directly constructed malformed envelopes are rejected even if
-        make_envelope was bypassed.
+        Directive §1: the validator's DETACHED values are RETAINED. A new
+        envelope is constructed from the validated values and stored;
+        the caller's original envelope (whose nested mappings remain
+        mutable) is never stored. The descriptor is derived from the
+        retained snapshot. Post-enqueue mutation of the caller's envelope
+        cannot reach execution, attribution, screening, or evidence.
         """
         _validate_subject(subject)
         if subject not in self._agents:
             raise CoordinatorError(f"unknown agent subject: {subject}")
         if not isinstance(envelope, RequestEnvelope):
             raise CoordinatorError("envelope must be a RequestEnvelope")
-        # Re-validate the envelope's fields (construction may have been
-        # bypassed via direct RequestEnvelope(...) instantiation).
-        _validate_envelope_fields(
+        # Re-validate AND RETAIN: construct a new envelope from the
+        # validator's detached copies. Construction may have been bypassed
+        # via direct RequestEnvelope(...) instantiation, and the original's
+        # nested mappings are mutable regardless.
+        rid, op, tgt, exp, corr = _validate_envelope_fields(
             request_id=envelope.request_id, operation=envelope.operation,
             target=envelope.target, expected=envelope.expected,
             correlation=envelope.correlation, program=self._program)
+        retained = RequestEnvelope(request_id=rid, operation=op, target=tgt,
+                                   expected=exp, correlation=corr)
         if len(self._queue) >= self._queue_bound:
             raise CoordinatorError("coordinator queue full")
         # Fingerprint/epoch computation failures fail closed (AMEND §2).
         try:
             content_now = self._program.acceptance_data_hash(
-                envelope.target, envelope.operation)
+                retained.target, retained.operation)
             if not isinstance(content_now, str):
                 raise TypeError("content fingerprint not a str")
         except Exception as e:
@@ -569,23 +660,23 @@ class HostCoordinator:
         self._queue[queued_id] = {
             "queued_id": queued_id,
             "subject": subject,
-            "envelope": envelope,
-            "descriptor": envelope.descriptor(),
+            "envelope": retained,
+            "descriptor": retained.descriptor(),
             "content_at_enqueue": content_now,
             "epoch_at_enqueue": epoch_now,
             "enqueued_at": _utcnow(),
+            # Directive §3: aggregate audit-capture failures across the
+            # request lifecycle; a failed attempted-event must not
+            # disappear because a later final-event capture succeeds.
+            "audit_failures": [],
         }
         audit_rec = capture_agent_action(
-            self._program, subject=subject, request_id=envelope.request_id,
-            operation=envelope.operation, target=envelope.target,
-            result=AUDIT_ATTEMPTED, correlation=envelope.correlation,
+            self._program, subject=subject, request_id=retained.request_id,
+            operation=retained.operation, target=retained.target,
+            result=AUDIT_ATTEMPTED, correlation=retained.correlation,
             detail="enqueued")
         if audit_rec is None:
-            # Audit capture failure is observable; the request is still
-            # queued but flagged.
-            self._queue[queued_id]["audit_ok"] = False
-        else:
-            self._queue[queued_id]["audit_ok"] = True
+            self._queue[queued_id]["audit_failures"].append("enqueue_attempted")
         return queued_id
 
     # -- dispatch ----------------------------------------------------------
@@ -619,13 +710,42 @@ class HostCoordinator:
                 hist["idempotent_retry"] = True
                 hist["detail"] = ("Historical receipt: not new authorization, "
                                   "execution, or proof of unchanged live state.")
-                self._audit_retry(subject, envelope, hist)
+                audit_rec = capture_agent_action(
+                    self._program, subject=subject,
+                    request_id=envelope.request_id,
+                    operation=envelope.operation, target=envelope.target,
+                    result=hist.get("result", AUDIT_DENIED),
+                    correlation=envelope.correlation,
+                    detail="idempotent retry: historical receipt returned, "
+                           "no duplicate transition")
+                block = self._audit_block(
+                    queued, "retry", audit_rec is not None)
+                hist = self._finalize_audit_ok(hist, block)
+                # Sanitize the outward historical receipt (directive §2).
+                try:
+                    hist = _sanitize_outward(self._program, hist)
+                except EnvelopeValidationError:
+                    hist["sanitize_failed"] = True
                 return hist
+            # Directive §1: conflicting reuse is denied WITHOUT overwriting
+            # the established historical receipt. The prior record stands.
             receipt = self._deny_receipt(
                 subject, envelope, "request_id_reuse",
-                "request_id reused with different request descriptor; rejected.",
-                audit_ok=True)
-            self._store_receipt(rkey, queued["descriptor"], receipt)
+                "request_id reused with different request descriptor; rejected.")
+            audit_rec = capture_agent_action(
+                self._program, subject=subject,
+                request_id=envelope.request_id,
+                operation=envelope.operation, target=envelope.target,
+                result=AUDIT_DENIED, correlation=envelope.correlation,
+                detail="request_id_reuse: conflicting descriptor rejected; "
+                       "established receipt preserved")
+            block = self._audit_block(
+                queued, "conflict", audit_rec is not None)
+            receipt = self._finalize_audit_ok(receipt, block)
+            try:
+                receipt = _sanitize_outward(self._program, receipt)
+            except EnvelopeValidationError:
+                receipt["sanitize_failed"] = True
             return copy.deepcopy(receipt)
 
         self._in_dispatch = True
@@ -637,13 +757,15 @@ class HostCoordinator:
             except Exception as e:
                 return self._finalize_denial(
                     subject, envelope, queued_id, rkey, "recovery_required",
-                    f"Recovery-required state blocks dispatch: {e}")
+                    f"Recovery-required state blocks dispatch: {e}",
+                    queued=queued)
 
             # Rollback epoch.
             if self._rollback_epoch() != queued["epoch_at_enqueue"]:
                 return self._finalize_denial(
                     subject, envelope, queued_id, rkey, "stale_after_rollback",
-                    "Rollback epoch advanced after enqueue; queued request invalidated.")
+                    "Rollback epoch advanced after enqueue; queued request invalidated.",
+                    queued=queued)
 
             # Freshness.
             try:
@@ -654,16 +776,19 @@ class HostCoordinator:
             except Exception as e:
                 return self._finalize_denial(
                     subject, envelope, queued_id, rkey, "fingerprint_failed",
-                    f"Content fingerprint failed closed: {e}")
+                    f"Content fingerprint failed closed: {e}",
+                    queued=queued)
             expected = envelope.expected.get("content_hash")
             if expected and expected != content_now:
                 return self._finalize_denial(
                     subject, envelope, queued_id, rkey, "content_changed",
-                    "Target content changed since the request was prepared; denied.")
+                    "Target content changed since the request was prepared; denied.",
+                    queued=queued)
             if content_now != queued["content_at_enqueue"]:
                 return self._finalize_denial(
                     subject, envelope, queued_id, rkey, "content_changed",
-                    "Target content changed between enqueue and dispatch; denied.")
+                    "Target content changed between enqueue and dispatch; denied.",
+                    queued=queued)
 
             # Authority: canonical R6.1 writer path.
             from form.dell_matrix import agent_authority as aa
@@ -674,25 +799,33 @@ class HostCoordinator:
                 # Honest failed/unknown; never infer noncommit from exception.
                 return self._finalize_failure(
                     subject, envelope, queued_id, rkey,
-                    f"Writer raised {type(e).__name__}: {e}")
+                    f"Writer raised {type(e).__name__}: {e}",
+                    queued=queued)
 
             if not isinstance(writer_receipt, dict):
                 return self._finalize_failure(
                     subject, envelope, queued_id, rkey,
-                    "Writer returned non-dict receipt; outcome unknown.")
+                    "Writer returned non-dict receipt; outcome unknown.",
+                    queued=queued)
             if not writer_receipt.get("ok"):
-                reason = writer_receipt.get("reason", "writer_denied")
-                # Preserve incomplete-compensation details (AMEND §4).
-                if reason in ("incomplete_compensation", "incomplete_recovery",
-                              "recovery_required"):
+                # Directive §3: classify by the canonical writer contract,
+                # not invented reason names.
+                if self._is_canonical_incomplete(writer_receipt):
                     return self._finalize_incomplete(
-                        subject, envelope, queued_id, rkey, reason,
-                        writer_receipt)
-                detail = writer_receipt.get("detail", "")
+                        subject, envelope, queued_id, rkey, writer_receipt,
+                        queued=queued)
+                reason = writer_receipt.get("reason", "writer_denied")
+                try:
+                    san_wdetail = _sanitize_outward(
+                        self._program, writer_receipt.get("detail", ""))
+                except EnvelopeValidationError:
+                    san_wdetail = "[sanitize failed]"
+                detail = str(san_wdetail)
                 return self._finalize_denial(
                     subject, envelope, queued_id, rkey, f"writer_{reason}",
                     f"Canonical writer denied: {detail}" if detail else
-                    "Canonical writer denied.")
+                    "Canonical writer denied.",
+                    queued=queued)
 
             # Committed.
             receipt = {
@@ -711,7 +844,6 @@ class HostCoordinator:
                     "content_hash": content_now,
                 },
                 "affected": [envelope.target],
-                "audit_ok": True,
                 "ts": _utcnow(),
             }
             audit_rec = capture_agent_action(
@@ -721,12 +853,18 @@ class HostCoordinator:
                 affected=[envelope.target],
                 provenance={"writer_ok": True},
                 detail="committed via canonical writer")
+            block = self._audit_block(queued, "committed",
+                                      audit_rec is not None)
+            receipt = self._finalize_audit_ok(receipt, block)
             if audit_rec is None:
                 # Committed but audit failed: observable, NOT reversed.
-                receipt["audit_ok"] = False
                 receipt["audit_failure"] = (
                     "Committed; audit capture failed. The operation is "
                     "complete; evidence is missing, not reversed.")
+            try:
+                receipt = _sanitize_outward(self._program, receipt)
+            except EnvelopeValidationError:
+                receipt["sanitize_failed"] = True
             self._store_receipt(rkey, queued["descriptor"], receipt)
             self._queue.pop(queued_id, None)
             return copy.deepcopy(receipt)
@@ -734,6 +872,43 @@ class HostCoordinator:
             self._in_dispatch = False
 
     # -- internals ----------------------------------------------------------
+
+    def _audit_block(self, queued: Optional[Dict[str, Any]],
+                     event: str, captured: bool) -> Dict[str, Any]:
+        """Build the receipt's audit-evidence block (directive §3).
+
+        Aggregates capture failures across the request lifecycle
+        (enqueue, dispatch, retry, conflict, failure, incomplete). A
+        failed attempted-event is listed even when the final event
+        captured successfully. Distinguishes captured-in-memory evidence
+        from persisted evidence (persistence requires save+reload; it is
+        never claimed at dispatch time).
+        """
+        failures: List[str] = []
+        if queued is not None:
+            failures.extend(queued.get("audit_failures") or [])
+        if not captured:
+            failures.append(event)
+        ok = not failures
+        return {
+            "captured_in_memory": captured,
+            "persisted": False,
+            "evidence": "in_memory" if captured else "missing",
+            "failures": failures,
+            "ok": ok,
+        }
+
+    def _finalize_audit_ok(self, receipt: Dict[str, Any],
+                           audit_block: Dict[str, Any]) -> Dict[str, Any]:
+        """Attach the audit block; keep top-level audit_ok for compat."""
+        receipt["audit"] = audit_block
+        receipt["audit_ok"] = audit_block["ok"]
+        if not audit_block["ok"]:
+            receipt["audit_failure"] = (
+                "One or more audit captures failed during this request's "
+                f"lifecycle: {', '.join(audit_block['failures'])}. "
+                "The outcome stands; evidence is incomplete, not reversed.")
+        return receipt
 
     def _rollback_epoch(self) -> int:
         from form.mandell import core_i_recovery as rec
@@ -758,15 +933,6 @@ class HostCoordinator:
             oldest = self._receipt_order.pop(0)
             self._receipts.pop(oldest, None)
 
-    def _audit_retry(self, subject: str, envelope: RequestEnvelope,
-                     hist: Dict[str, Any]) -> None:
-        capture_agent_action(
-            self._program, subject=subject, request_id=envelope.request_id,
-            operation=envelope.operation, target=envelope.target,
-            result=hist.get("result", AUDIT_DENIED),
-            correlation=envelope.correlation,
-            detail="idempotent retry: historical receipt returned, no duplicate transition")
-
     def _deny_receipt(self, subject: Optional[str],
                       envelope: Optional[RequestEnvelope],
                       reason: str, detail: str,
@@ -787,22 +953,28 @@ class HostCoordinator:
 
     def _finalize_denial(self, subject: str, envelope: RequestEnvelope,
                          queued_id: str, rkey: Tuple[str, str, str],
-                         reason: str, detail: str) -> Dict[str, Any]:
+                         reason: str, detail: str,
+                         queued: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         receipt = self._deny_receipt(subject, envelope, reason, detail)
         audit_rec = capture_agent_action(
             self._program, subject=subject, request_id=envelope.request_id,
             operation=envelope.operation, target=envelope.target,
             result=AUDIT_DENIED, correlation=envelope.correlation,
             detail=f"{reason}: {detail}"[:300])
-        if audit_rec is None:
-            receipt["audit_ok"] = False
+        block = self._audit_block(queued, "denied", audit_rec is not None)
+        receipt = self._finalize_audit_ok(receipt, block)
+        try:
+            receipt = _sanitize_outward(self._program, receipt)
+        except EnvelopeValidationError:
+            receipt["sanitize_failed"] = True
         self._store_receipt(rkey, envelope.descriptor(), receipt)
         self._queue.pop(queued_id, None)
         return copy.deepcopy(receipt)
 
     def _finalize_failure(self, subject: str, envelope: RequestEnvelope,
                           queued_id: str, rkey: Tuple[str, str, str],
-                          detail: str) -> Dict[str, Any]:
+                          detail: str,
+                          queued: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Honest failed/unknown outcome (AMEND §4)."""
         receipt = {
             "ok": False,
@@ -814,7 +986,6 @@ class HostCoordinator:
             "target": envelope.target,
             "reason": "unknown_outcome",
             "detail": _bound(detail, 300),
-            "audit_ok": True,
             "ts": _utcnow(),
         }
         audit_rec = capture_agent_action(
@@ -822,17 +993,47 @@ class HostCoordinator:
             operation=envelope.operation, target=envelope.target,
             result=AUDIT_FAILED, correlation=envelope.correlation,
             detail=f"unknown_outcome: {detail}"[:300])
-        if audit_rec is None:
-            receipt["audit_ok"] = False
+        block = self._audit_block(queued, "failed", audit_rec is not None)
+        receipt = self._finalize_audit_ok(receipt, block)
+        try:
+            receipt = _sanitize_outward(self._program, receipt)
+        except EnvelopeValidationError:
+            receipt["sanitize_failed"] = True
         self._store_receipt(rkey, envelope.descriptor(), receipt)
         self._queue.pop(queued_id, None)
         return copy.deepcopy(receipt)
 
+    def _is_canonical_incomplete(self, writer_receipt: Dict[str, Any]) -> bool:
+        """Classify by the canonical writer contract (directive §3).
+
+        confirm_lineage reports incomplete compensation as:
+            reason="acceptance_policy_denied",
+            compensation="incomplete",
+            compensation_failures, compensation_removed, evidence_retained.
+        No invented reason names are consulted.
+        """
+        return (writer_receipt.get("reason") == "acceptance_policy_denied"
+                and writer_receipt.get("compensation") == "incomplete")
+
     def _finalize_incomplete(self, subject: str, envelope: RequestEnvelope,
                              queued_id: str, rkey: Tuple[str, str, str],
-                             reason: str,
-                             writer_receipt: Dict[str, Any]) -> Dict[str, Any]:
-        """Preserve incomplete-compensation details (AMEND §4)."""
+                             writer_receipt: Dict[str, Any],
+                             queued: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Preserve incomplete-compensation details (directive §3).
+
+        Returns incomplete_recovery with the canonical structured fields
+        retained and sanitized — never an ordinary denial, and failure
+        details never disappear.
+        """
+        try:
+            san_failures = _sanitize_outward(
+                self._program, writer_receipt.get("compensation_failures", []))
+            san_removed = _sanitize_outward(
+                self._program, writer_receipt.get("compensation_removed", []))
+            san_detail = _sanitize_outward(
+                self._program, writer_receipt.get("detail", ""))
+        except EnvelopeValidationError:
+            san_failures, san_removed, san_detail = [], [], "[sanitize failed]"
         receipt = {
             "ok": False,
             "result": AUDIT_INCOMPLETE,
@@ -841,23 +1042,35 @@ class HostCoordinator:
             "subject": subject,
             "operation": envelope.operation,
             "target": envelope.target,
-            "reason": reason,
+            "reason": "incomplete_recovery",
+            "writer_reason": writer_receipt.get("reason"),
+            "compensation": writer_receipt.get("compensation"),
+            "compensation_failures": san_failures,
+            "compensation_removed": san_removed,
+            "evidence_retained": bool(writer_receipt.get("evidence_retained")),
             "detail": _bound(
-                "Incomplete recovery: the writer reported incomplete "
-                f"compensation ({writer_receipt.get('detail', '')}). This is "
-                "not an ordinary denial; recovery must complete before "
-                "the outcome is known.", 300),
-            "writer_detail": _bound(str(writer_receipt.get("detail", "")), 200),
-            "audit_ok": True,
+                "Incomplete recovery: the canonical writer reported "
+                "incomplete compensation. This is not an ordinary denial; "
+                "recovery must complete before the outcome is known.", 300),
+            "writer_detail": _bound(str(san_detail), 200),
             "ts": _utcnow(),
         }
         audit_rec = capture_agent_action(
             self._program, subject=subject, request_id=envelope.request_id,
             operation=envelope.operation, target=envelope.target,
             result=AUDIT_INCOMPLETE, correlation=envelope.correlation,
-            detail=f"{reason}: {writer_receipt.get('detail', '')}"[:300])
-        if audit_rec is None:
-            receipt["audit_ok"] = False
+            provenance={
+                "compensation": "incomplete",
+                "compensation_failures": san_failures,
+                "evidence_retained": bool(writer_receipt.get("evidence_retained")),
+            },
+            detail=f"incomplete_recovery: {san_detail}"[:300])
+        block = self._audit_block(queued, "incomplete", audit_rec is not None)
+        receipt = self._finalize_audit_ok(receipt, block)
+        try:
+            receipt = _sanitize_outward(self._program, receipt)
+        except EnvelopeValidationError:
+            receipt["sanitize_failed"] = True
         self._store_receipt(rkey, envelope.descriptor(), receipt)
         self._queue.pop(queued_id, None)
         return copy.deepcopy(receipt)

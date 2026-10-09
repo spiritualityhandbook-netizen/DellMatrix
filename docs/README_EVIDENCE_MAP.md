@@ -330,6 +330,7 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
 
 - **STATUS:** candidate-branch only (`gdp-phase6-r64-multi-intelligence`).
   NOT CERTIFIED. DO NOT MERGE without Director authorization.
+  AMEND-2 (GDP_PHASE_6_R64_FINISH_EXISTING_BOUNDARIES) corrections applied.
 - **CIRCUIT:** host-bound agent identity → typed request envelope →
   serialized HostCoordinator dispatch → canonical R6.1 writer →
   idempotent receipt → structured audit. Two agents, one owner, one
@@ -343,18 +344,39 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
   the R6.1 `agent_confirm` writer path. BIMO slots/personas descriptive
   only (PERSONA != PERMISSION). Agents get detached snapshots + narrow
   interfaces, never mutable objects or credentials.
-- **PROTOCOL:** request_id idempotency (exact retry = cached receipt;
-  reuse with different content rejects); content freshness revalidated
-  at dispatch; rollback epoch invalidates stale queued requests;
-  recovery-required blocks dispatch; reentrant dispatch rejected.
-- **PROOFS:** `form/mandell/r64_multi_intelligence_test.py` — 73 checks
+- **PROTOCOL:** request_id idempotency namespaced by (owner, subject,
+  request_id) with canonical descriptor comparison; the VALIDATED
+  envelope snapshot is retained at enqueue (post-enqueue mutation cannot
+  reach execution); conflicting reuse never overwrites established
+  history; content freshness revalidated at dispatch; rollback epoch
+  invalidates stale queued requests; recovery-required blocks dispatch;
+  reentrant dispatch rejected.
+- **SECRETS:** complete envelope screened by value (identifiers, target,
+  keys, values); protection failure rejects explicitly; outward receipts
+  and audit records sanitized (subject, request_id, affected, errors).
+- **OUTCOMES:** audit failures aggregated across the lifecycle and
+  observable (audit_ok + audit block; in-memory vs persisted
+  distinguished); incomplete compensation classified by the canonical
+  writer contract and preserved as incomplete_recovery with sanitized
+  structured details.
+- **PERSISTENCE:** behavioral sync is fail-honest (no suppression;
+  staged/validated before stored state changes; failed save preserves
+  previous bytes); explicit null rejected via sentinels (section,
+  subject, for_agent); outer and inner versions strictly validated;
+  damaged audit evidence preserved as complete originals through the
+  payload (malformed load → save → reload keeps evidence).
+- **PROOFS:** `form/mandell/r64_multi_intelligence_test.py` — 135 checks
   (identity, protocol, audit, IntrinsicAgent, cross-process, rollback,
-  recovery, reference model, sensitivity), registered in regress LIST.
+  recovery, reference model, sensitivity, AMEND findings, AMEND-2
+  boundary proofs), registered in regress LIST.
   `form/mandell/r64_child.py` — fixed cross-process scripts.
   `form/mandell/r64_reference_model.py` — independent decision model.
 - **RESEARCH:** Erlang message-passing ADAPTED (typed envelopes through
   serialized coordinator, not shared mutable objects); Python queues
-  REJECTED as a transaction-safety claim.
+  REJECTED as a transaction-safety claim. Copy semantics: a validated
+  detached copy is only independent if RETAINED (enqueue now stores the
+  validated snapshot, not the caller's envelope).
 - **LIMITS:** No distributed consensus, concurrent-writer safety, or
   malicious in-process Python protection claimed. No crash-safe
-  exactly-once execution claimed.
+  exactly-once execution claimed. Secret screening covers recognized
+  formats/values only (no unknown-secret guarantee).
