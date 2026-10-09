@@ -173,7 +173,15 @@ Still failing → fixed:
 - `python3 -m form.mandell.r64_multi_intelligence_test`: **168/168**
 - `python3 -m form.regress --twice`: **110/110 GREEN** (both passes)
 - `python3 -m form.regress --order rev`: **110/110 GREEN**
-- Exact-head CI: (to be verified on final HEAD below)
+- Exact-head CI on `4300d8e`:
+  - Python package (3.10): SUCCESS (30s)
+  - Python package (3.11): SUCCESS (21s)
+  - Form smoke: SUCCESS (5m51s)
+  - Code scanning AI findings: FAILURE — classified from the actual log
+    (run 37928700320, 2026-10-09T12:14:36Z) as GitHub Copilot monthly
+    quota exhausted (`SessionModelError: You have exceeded your monthly
+    quota`, statusCode 402, errorCode "quota").
+    **EVALUATION_UNAVAILABLE** — not a code defect, never a PASS.
   - Python package (3.10): SUCCESS (25s)
   - Python package (3.11): SUCCESS (25s)
   - Form smoke: SUCCESS (8m48s)
