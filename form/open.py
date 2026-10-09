@@ -141,6 +141,18 @@ class Program:
     # Presence metadata for ideas: {unit_id: {presence, pinned, created_seq}}.
     # Persisted via existing Program persistence. Not a second database.
     lifecycle: Dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+    # R6.4: agent-local behavioral state (IntrinsicAgent observations).
+    # subject -> versioned state dict; isolated per agent within the owner.
+    # Persisted via the program payload (agent_local section).
+    agent_local_states: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict, repr=False, compare=False)
+    # R6.4: agent-action audit records (structured outcome capture).
+    # audit_id -> audit record; agent_audit_seq is the per-owner durable
+    # sequence counter. Persisted via the program payload (agent_audit).
+    # OBSERVATION, never permission: audit records never grant authority.
+    agent_audit_records: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict, repr=False, compare=False)
+    agent_audit_seq: int = field(default=0, repr=False, compare=False)
     # UX / entity layer (Phases A–E)
     companion: AICompanion = field(default_factory=AICompanion)
     ux_mode: str = "builder"  # beginner | builder | depth

@@ -500,6 +500,65 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
             p.lifecycle = {}
     except Exception:
         p.lifecycle = {}
+    # R6.4: restore agent-local behavioral state (IntrinsicAgent).
+    # Missing section -> explicit compatible default (fresh, pre-R6.4
+    # generations). Malformed -> FAIL CLOSED (AgentLocalLoadError);
+    # malformed is not absence.
+    try:
+        from form.dell_matrix.intrinsic_agent import (
+            IntrinsicAgent, AgentLocalLoadError)
+        al = data.get("agent_local")
+        if al is None:
+            p.agent_local_states = {}
+        elif not isinstance(al, dict):
+            raise AgentLocalLoadError("agent_local section is not a dict")
+        else:
+            agents = al.get("agents", {})
+            if not isinstance(agents, dict):
+                raise AgentLocalLoadError("agent_local.agents is not a dict")
+            states: Dict[str, Dict[str, Any]] = {}
+            for subject, raw in agents.items():
+                if not isinstance(subject, str):
+                    raise AgentLocalLoadError(
+                        "agent-local subject key is not str")
+                # from_dict validates; stored null is malformed, not absence.
+                states[subject] = IntrinsicAgent.from_dict(raw, subject).to_dict()
+            p.agent_local_states = states
+        p.agent_local_agents = {}
+    except AgentLocalLoadError:
+        raise
+    except Exception as exc:
+        raise AgentLocalLoadError(f"agent-local restore failed: {exc}")
+    # R6.4: restore agent-action audit records. Shape-checked; a malformed
+    # section yields an empty audit (observation only, never permission).
+    # Records are historical evidence: never reinterpreted, never rewritten.
+    try:
+        aa = data.get("agent_audit") or {}
+        seq = aa.get("audit_seq", 0)
+        try:
+            p.agent_audit_seq = max(0, int(seq))
+        except (TypeError, ValueError):
+            p.agent_audit_seq = 0
+        raw_audit = aa.get("records") or {}
+        restored_audit: Dict[str, Dict[str, Any]] = {}
+        if isinstance(raw_audit, dict):
+            for aid, rec in raw_audit.items():
+                if (isinstance(aid, str) and isinstance(rec, dict)
+                        and rec.get("audit_id") == aid):
+                    restored_audit[aid] = dict(rec)
+        p.agent_audit_records = restored_audit
+        max_aseq = p.agent_audit_seq
+        for rec in restored_audit.values():
+            try:
+                s = int(rec.get("audit_seq", 0) or 0)
+            except (TypeError, ValueError):
+                s = 0
+            if s > max_aseq:
+                max_aseq = s
+        p.agent_audit_seq = max_aseq
+    except Exception:
+        p.agent_audit_records = {}
+        p.agent_audit_seq = 0
     restore_core_ii(p, data)
     return p
 
@@ -511,6 +570,7 @@ DURABLE_KEYS = (
     "companion", "inspire", "self_knowledge", "ux", "forces", "bimo",
     "nursery", "lattice", "history", "latinmandell_customs",
     "mandell_language", "core_ii", "outcome_ledger", "spatial",
+    "lifecycle", "agent_local", "agent_audit",
 )
 
 

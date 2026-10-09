@@ -218,6 +218,28 @@ def serialize(program: Program) -> Dict[str, Any]:
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).
         # Presence metadata for ideas. Uses existing persistence.
         "lifecycle": dict(getattr(program, "lifecycle", None) or {}),
+        # R6.4: agent-local behavioral state (IntrinsicAgent observations),
+        # isolated per subject within the owner. Versioned, validated on
+        # restore; genuine absence (pre-R6.4) -> fresh default.
+        "agent_local": {
+            "agent_local_version": 1,
+            "agents": {
+                str(subj): dict(state)
+                for subj, state in (getattr(program, "agent_local_states", None) or {}).items()
+                if isinstance(subj, str) and isinstance(state, dict)
+            },
+        },
+        # R6.4: agent-action audit trail (structured outcome capture).
+        # OBSERVATION, never permission. Grant handles never logged.
+        "agent_audit": {
+            "audit_version": 1,
+            "audit_seq": int(getattr(program, "agent_audit_seq", 0) or 0),
+            "records": {
+                aid: dict(rec)
+                for aid, rec in (getattr(program, "agent_audit_records", None) or {}).items()
+                if isinstance(aid, str) and isinstance(rec, dict)
+            },
+        },
     }
 
 
