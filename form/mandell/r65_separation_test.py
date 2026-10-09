@@ -252,6 +252,20 @@ def part_persona_separation():
               detail=str(e)[:150])
 
 
+def smoke() -> bool:
+    """Regression smoke entrypoint for form.regress."""
+    global CHECKS
+    CHECKS = []
+    part_walking_skeleton()
+    part_bimo_capability()
+    part_sovereignty()
+    part_persona_separation()
+    total = len(CHECKS)
+    passed = sum(1 for c in CHECKS if c["ok"])
+    print(f"R6.5 separation: {passed}/{total}", flush=True)
+    return passed == total and total > 0
+
+
 def main():
     part_walking_skeleton()
     part_bimo_capability()
