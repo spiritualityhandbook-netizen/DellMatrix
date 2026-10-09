@@ -760,6 +760,7 @@ def smoke() -> bool:
     part_amend_reference()
     part_amend2_boundaries()
     part_amend3_outward()
+    part_amend4_collision_error()
     total = len(CHECKS)
     passed = sum(CHECKS)
     print(f"=== R6.4 circuit: {passed}/{total} ===")
@@ -1633,6 +1634,157 @@ def part_amend3_outward():
     snap6 = coord6.snapshot_for("agent-a")
     check("c3 positive: unicode content passes through unsanitized",
           "héllo" in str(snap6) and "[REDACTED]" not in str(snap6))
+
+
+def part_amend4_collision_error():
+    """AMEND-4 (GDP_PHASE_6_R64_FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT):
+    collision-free key representation and safe error contract."""
+    from form.dell_matrix import agent_coordinator as ac
+    from form.dell_matrix import agent_authority as aa
+
+    canary = "grant_" + "ab" * 16
+    prot_key = f"key_{canary}_x"
+
+    # --- Mixed-key collision: protected key + literal [REDACTED_KEY:1]. ---
+    p = fresh_program("r64d1")
+    d1 = {prot_key: "A", "[REDACTED_KEY:1]": "B"}
+    s1 = ac._sanitize_outward(p, d1)
+    check("d4 collision: protected-then-literal preserves both entries",
+          len(s1) == 2 and s1.get("[REDACTED_KEY:1]") == "B"
+          and "A" in s1.values() and canary not in str(s1),
+          detail=str(s1)[:200])
+    # The protected key must NOT have been assigned [REDACTED_KEY:1]
+    # (which would collide); it gets the next available.
+    prot_repl = [k for k in s1.keys() if k != "[REDACTED_KEY:1]"][0]
+    check("d4 collision: protected key gets non-colliding replacement",
+          prot_repl.startswith("[REDACTED_KEY:")
+          and prot_repl != "[REDACTED_KEY:1]"
+          and s1[prot_repl] == "A")
+
+    # --- Reverse order: literal first, protected second. ---
+    d2 = {"[REDACTED_KEY:1]": "B", prot_key: "A"}
+    s2 = ac._sanitize_outward(p, d2)
+    check("d4 collision: literal-then-protected preserves both",
+          len(s2) == 2 and s2.get("[REDACTED_KEY:1]") == "B"
+          and "A" in s2.values() and canary not in str(s2),
+          detail=str(s2)[:200])
+
+    # --- Multiple reserved suffixes and protected keys. ---
+    canary2 = "grant_" + "cd" * 16
+    prot_key2 = f"other_{canary2}_y"
+    d3 = {
+        prot_key: "A",
+        "[REDACTED_KEY:1]": "B",
+        "[REDACTED_KEY:2]": "C",
+        prot_key2: "D",
+        "clean": "E",
+    }
+    # Snapshot the input to prove it's unchanged.
+    import copy as _copy
+    d3_orig = _copy.deepcopy(d3)
+    s3 = ac._sanitize_outward(p, d3)
+    check("d4 collision: multiple reserves preserve entry count",
+          len(s3) == 5 and canary not in str(s3)
+          and canary2 not in str(s3),
+          detail=str(s3)[:300])
+    check("d4 collision: value associations preserved",
+          s3.get("[REDACTED_KEY:1]") == "B"
+          and s3.get("[REDACTED_KEY:2]") == "C"
+          and s3.get("clean") == "E"
+          and "A" in s3.values() and "D" in s3.values())
+    check("d4 collision: input unchanged", d3 == d3_orig)
+    # Determinism.
+    s3b = ac._sanitize_outward(p, d3)
+    check("d4 collision: deterministic", str(s3) == str(s3b))
+
+    # --- Nested dictionaries. ---
+    d4 = {
+        "outer": {prot_key: "nested_A", "[REDACTED_KEY:1]": "nested_B"},
+        "[REDACTED_KEY:1]": "top_B",
+        prot_key2: "top_D",
+    }
+    s4 = ac._sanitize_outward(p, d4)
+    check("d4 collision: nested preserves all entries",
+          len(s4) == 3 and len(s4["outer"]) == 2
+          and canary not in str(s4) and canary2 not in str(s4),
+          detail=str(s4)[:300])
+
+    # --- Snapshot with canary-bearing protection exception. ---
+    p5 = fresh_program("r64d5")
+    pr5 = p5.nursery.add("C5", words="clean words")
+    coord5 = ac.new_coordinator(p5)
+    coord5.register_agent("agent-a")
+    import form.dell_matrix.inference_dock as _idock
+    orig_pv = _idock.protected_values
+    def _canary_boom(program):
+        raise RuntimeError(f"protection exploded on {canary}")
+    _idock.protected_values = _canary_boom
+    try:
+        try:
+            coord5.snapshot_for("agent-a")
+            check("d4 error: snapshot failure raises", False)
+        except ac.CoordinatorError as e:
+            msg = str(e)
+            check("d4 error: fixed non-reflecting message, zero canary",
+                  canary not in msg
+                  and msg == "snapshot unavailable: output sanitization failed",
+                  detail=msg[:200])
+            # No chaining that reveals the original.
+            check("d4 error: no exception chaining",
+                  e.__cause__ is None and e.__suppress_context__)
+    finally:
+        _idock.protected_values = orig_pv
+
+    # --- Protection failure at entry with canary: no reflection. ---
+    _idock.protected_values = _canary_boom
+    try:
+        try:
+            ac.make_envelope(request_id="d4-entry", operation="confirm",
+                             target="x", expected={}, _program=p5)
+            check("d4 error: entry failure raises", False)
+        except ac.EnvelopeValidationError as e:
+            check("d4 error: entry message fixed, zero canary",
+                  canary not in str(e)
+                  and str(e) == "secret protection unavailable (values failed)",
+                  detail=str(e)[:200])
+    finally:
+        _idock.protected_values = orig_pv
+
+    # --- Sensitivity: break the allocator -> collision returns. ---
+    # (Simulate the old buggy allocator by monkeypatching.)
+    orig_san = ac._sanitize_outward
+    def _buggy(program, obj):
+        # Old behavior: only checks already-emitted keys.
+        if isinstance(obj, dict):
+            out = {}
+            cnt = [0]
+            for k, v in obj.items():
+                nk = k
+                if isinstance(k, str) and canary in k:
+                    cnt[0] += 1
+                    nk = f"[REDACTED_KEY:{cnt[0]}]"
+                    while nk in out:
+                        cnt[0] += 1
+                        nk = f"[REDACTED_KEY:{cnt[0]}]"
+                out[nk] = v
+            return out
+        return obj
+    ac._sanitize_outward = _buggy
+    try:
+        buggy = ac._sanitize_outward(p, d1)
+        check("d4 sensitivity: buggy allocator loses evidence",
+              len(buggy) == 1)  # A's entry disappears
+    finally:
+        ac._sanitize_outward = orig_san
+    fixed = ac._sanitize_outward(p, d1)
+    check("d4 sensitivity: fixed allocator preserves evidence",
+          len(fixed) == 2)
+
+    # --- Clean input positive: no spurious redaction. ---
+    d_clean = {"a": 1, "[REDACTED_KEY:1]": "legit", "b": {"c": 2}}
+    s_clean = ac._sanitize_outward(p, d_clean)
+    check("d4 positive: clean keys pass through",
+          s_clean == d_clean)
 
 
 def main():

@@ -225,13 +225,17 @@ def _protection_utils():
     Directive §2: protection import failure must REJECT explicitly, never
     silently disable screening. Reuses the existing protection
     infrastructure; no new secret interpreter is introduced.
+
+    Directive §2 (FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT): the
+    failure message is FIXED — the original exception text is never
+    reflected, as it may contain protected material.
     """
     try:
         from form.dell_matrix.inference_dock import (
             protected_values, contains_protected_decoded)
-    except Exception as e:
+    except Exception:
         raise EnvelopeValidationError(
-            f"secret protection unavailable (import failed): {e}")
+            "secret protection unavailable (import failed)")
     return protected_values, contains_protected_decoded
 
 
@@ -249,9 +253,9 @@ def _screen_envelope(program: Any, *, request_id: str, operation: str,
     protected_values, contains_protected = _protection_utils()
     try:
         protected = protected_values(program)
-    except Exception as e:
+    except Exception:
         raise EnvelopeValidationError(
-            f"secret protection unavailable (values failed): {e}")
+            "secret protection unavailable (values failed)")
 
     def _hit(where: str) -> EnvelopeValidationError:
         # The error names the location, never the protected value.
@@ -266,9 +270,9 @@ def _screen_envelope(program: Any, *, request_id: str, operation: str,
                 raise _hit(label)
         except EnvelopeValidationError:
             raise
-        except Exception as e:
+        except Exception:
             raise EnvelopeValidationError(
-                f"secret protection unavailable (screen failed): {e}")
+                "secret protection unavailable (screen failed)")
 
     def _scan(obj: Any, path: str) -> None:
         try:
@@ -285,9 +289,9 @@ def _screen_envelope(program: Any, *, request_id: str, operation: str,
                     _scan(v, f"{path}[{i}]")
         except EnvelopeValidationError:
             raise
-        except Exception as e:
+        except Exception:
             raise EnvelopeValidationError(
-                f"secret protection unavailable (screen failed): {e}")
+                "secret protection unavailable (screen failed)")
 
     _scan(expected, "expected")
     _scan(correlation, "correlation")
@@ -309,32 +313,49 @@ def _sanitize_outward(program: Any, obj: Any) -> Any:
     protected_values, contains_protected = _protection_utils()
     try:
         protected = protected_values(program)
-    except Exception as e:
+    except Exception:
+        # Fixed message: the original exception text may contain
+        # protected material and is never reflected (directive §2).
         raise EnvelopeValidationError(
-            f"secret protection unavailable (values failed): {e}")
+            "secret protection unavailable (values failed)")
 
     def _check(text: str) -> bool:
         try:
             return bool(contains_protected(text, protected))
-        except Exception as e:
+        except Exception:
             raise EnvelopeValidationError(
-                f"secret protection unavailable (screen failed): {e}")
+                "secret protection unavailable (screen failed)")
 
     def _redact(o: Any, key_counter: List[int]) -> Any:
         if isinstance(o, str):
             return _REDACTED if _check(o) else o
         if isinstance(o, dict):
+            # Directive §1 (FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT):
+            # Reserve ALL surviving clean keys BEFORE allocating
+            # replacements. A protected key followed by a literal
+            # "[REDACTED_KEY:1]" (or vice versa) must not collide —
+            # the allocator checks reserved clean keys, not only keys
+            # already emitted.
+            reserved: set = set()
+            for k in o.keys():
+                if isinstance(k, str) and not _check(k):
+                    reserved.add(k)
             out: Dict[str, Any] = {}
+            allocated: set = set()
             for k, v in o.items():
                 nk = k
                 if isinstance(k, str) and _check(k):
-                    # Protected key: deterministic collision-free safe
-                    # representation. Never silently overwrite evidence.
-                    key_counter[0] += 1
-                    nk = f"[REDACTED_KEY:{key_counter[0]}]"
-                    while nk in out:
+                    # Deterministic replacement that skips reserved clean
+                    # keys AND previously allocated replacements.
+                    while True:
                         key_counter[0] += 1
-                        nk = f"[REDACTED_KEY:{key_counter[0]}]"
+                        candidate = f"[REDACTED_KEY:{key_counter[0]}]"
+                        if (candidate not in reserved
+                                and candidate not in allocated
+                                and candidate not in out):
+                            break
+                    nk = candidate
+                    allocated.add(nk)
                 out[nk] = _redact(v, key_counter)
             return out
         if isinstance(o, (list, tuple)):
@@ -345,9 +366,9 @@ def _sanitize_outward(program: Any, obj: Any) -> Any:
         return _redact(obj, [0])
     except EnvelopeValidationError:
         raise
-    except Exception as e:
+    except Exception:
         raise EnvelopeValidationError(
-            f"secret protection unavailable (redact failed): {e}")
+            "secret protection unavailable (redact failed)")
 
 
 def _safe_detail(program: Any, text: Any) -> str:
@@ -699,9 +720,15 @@ class HostCoordinator:
         }
         try:
             return _sanitize_outward(self._program, snap)
-        except EnvelopeValidationError as e:
+        except EnvelopeValidationError:
+            # Directive §2 (FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT):
+            # Fixed non-reflecting outward error. The original exception
+            # text is NOT included — it may contain protected material.
+            # Diagnostic evidence is retained through the audit failure
+            # mechanism, not the exception message. Suppress chaining.
             raise CoordinatorError(
-                f"snapshot unavailable: output sanitization failed ({e})")
+                "snapshot unavailable: output sanitization failed"
+            ) from None
 
     # -- enqueue -----------------------------------------------------------
 
@@ -738,14 +765,14 @@ class HostCoordinator:
                 retained.target, retained.operation)
             if not isinstance(content_now, str):
                 raise TypeError("content fingerprint not a str")
-        except Exception as e:
+        except Exception:
             raise CoordinatorError(
-                f"fingerprint computation failed closed: {e}")
+                "fingerprint computation failed closed")
         try:
             epoch_now = self._rollback_epoch()
-        except Exception as e:
+        except Exception:
             raise CoordinatorError(
-                f"epoch computation failed closed: {e}")
+                "epoch computation failed closed")
         queued_id = "q:" + uuid.uuid4().hex[:16]
         self._queue[queued_id] = {
             "queued_id": queued_id,

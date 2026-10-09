@@ -1,29 +1,26 @@
-# R6.4 Delta-20 — AMEND-3 Reconciliation
+# R6.4 Delta-20 — AMEND-4 Reconciliation
 
-**Directive:** GDP_PHASE_6_R64_CLOSE_ALL_OUTWARD_SECRET_PATHS (MODE=C)
+**Directive:** GDP_PHASE_6_R64_FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT (MODE=C)
 **Date:** 2026-10-09
-**Status:** All twenty re-examined against the Director's AMEND-3 findings.
-Affected security, provenance, public-path, failure, and contradiction
-claims reopened below. No PROVEN label rests on helper presence alone.
+**Status:** All twenty re-examined against the Director's AMEND-4 findings.
+Affected evidence-integrity, security, failure-reporting, and public-path
+claims reopened below. Full twenty-category mapping retained.
 
-## Director AMEND-3 findings → dispositions
+## Director AMEND-4 findings → dispositions
 
-Director independently reproduced on `c555079` (controlled-dependency
+Director independently reproduced on `b97b625` (controlled-dependency
 probes, not a full independent regression):
-- Request detachment: confirmed holding.
-- Canonical incomplete-compensation reporting: confirmed holding.
-- Null rejection: confirmed holding.
-- Synchronization-error propagation: confirmed holding.
+- Snapshot redaction preserves canonical content: confirmed holding.
+- Writer-failure receipts withhold secrets: confirmed holding.
 
 Still failing → fixed:
 
 | # | Finding | Disposition |
 |---|---------|-------------|
-| C1 | Protected handle in proposal words reaches snapshot() unchanged | FIXED: snapshot_for sanitizes; canonical content untouched. Proven. |
-| C2 | Grant handle as audit/provenance key survives sanitizer | FIXED: keys sanitized with deterministic collision-free safe representations. Proven. |
-| C3 | Sanitization failure returns handle with sanitize_failed=True | FIXED: all fallbacks removed; minimal fixed-schema receipts. Proven. |
+| D1 | Mixed-key collision: {protected_key: A, "[REDACTED_KEY:1]": B} loses A's evidence | FIXED: full reservation of surviving clean keys before allocation. Proven. |
+| D2 | Snapshot exception reflects canary-bearing protection failure via str(e) | FIXED: fixed non-reflecting message, chaining suppressed. Proven. |
 
-## Delta-20 (AMEND-3 re-examination)
+## Delta-20 (AMEND-4 re-examination)
 
 ### 1. Missing workflow — PROVEN (executed)
 135 checks cover all AMEND and AMEND-2 findings; smoke() registered in regress.
@@ -62,16 +59,14 @@ payload; malformed load → save → reload keeps evidence (proven).
 Committed history survives revocation/restart/rollback.
 
 ### 9. False provenance — PROVEN (re-examined and reopened, now re-closed)
-AMEND-3 found: snapshots bypassed screening; sanitizer ignored dict
-keys; sanitization failure released the original. Fixed: one complete
-outward boundary (snapshots, receipts, audit, keys+values, identifiers,
-provenance, errors); deterministic collision-free key representations;
-minimal fixed-schema receipts on protection failure (no
-`sanitize_failed` fallbacks). Proven: 19 new controls including
-snapshot canaries (canonical unchanged), key collision tests,
-protection failure at entry/after-enqueue/during-output, writer
-exceptions with handles, all outcome paths, zero-canary durable audit,
-and sensitivity (disabled guard leaks; restored guard sanitizes).
+AMEND-4 found: mixed-key collision losing evidence; snapshot exception
+reflecting canary-bearing protection failures. Fixed: full reservation
+of surviving clean keys before allocation (deterministic, collision-free);
+fixed non-reflecting error messages with suppressed chaining for all
+protection failures. Proven: 14 new controls including both collision
+orders, multiple reserves, nested dicts, entry/snapshot/output canary
+exceptions, and sensitivity (buggy allocator loses evidence; fixed
+preserves).
 
 ### 10. Credential/subject escape — PROVEN (re-verified)
 See §9. Coverage stated: canonical grant-handle format + session values
@@ -93,19 +88,18 @@ proven through the REAL public writer with failure injected after
 actual placement (not synthetic receipts). No mocks.
 
 ### 15. Vacuous/count/statistical claims — PROVEN (re-verified)
-154 checks; sensitivity probes on the load-bearing boundaries
-(envelope retention, secret screening, output guard, writer
-classification); no unconditional passes.
+168 checks; sensitivity probes on the load-bearing boundaries
+(envelope retention, secret screening, output guard, key allocator,
+error wrapper, writer classification); no unconditional passes.
 
 ### 16. Misleading display — PROVEN (re-examined and reopened, now re-closed)
-AMEND-3 found: `sanitize_failed=True` flags that released the original
-payload — a warning flag does not close the boundary (OWASP: logging
-failures must not leak information). Fixed: all such fallbacks
-removed; minimal fixed-schema receipts preserve classification with
-zero uncontrolled content. Packet identity corrected: reviewed
-head/tree separated from historical code-freeze identities; no blanket
-"confirmed by Director" claims — the packet now identifies exactly
-which controls the Director independently reproduced.
+AMEND-4 found: exception messages reflecting internal protection
+failures (OWASP: use generic outward errors, not reflected internals).
+Fixed: all protection failure messages use fixed non-reflecting text;
+exception chaining suppressed where it would reveal the original.
+Packet identity: reviewed head/tree separated from historical
+code-freeze identities; Director-reproduced controls identified
+exactly.
 
 ### 17. Recovery/replay failure — PROVEN (re-verified)
 Incomplete compensation preserved with canonical fields through the

@@ -330,7 +330,8 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
 
 - **STATUS:** candidate-branch only (`gdp-phase6-r64-multi-intelligence`).
   NOT CERTIFIED. DO NOT MERGE without Director authorization.
-  AMEND-3 (GDP_PHASE_6_R64_CLOSE_ALL_OUTWARD_SECRET_PATHS) corrections applied.
+  AMEND-4 (GDP_PHASE_6_R64_FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT)
+  corrections applied.
 - **CIRCUIT:** host-bound agent identity → typed request envelope →
   serialized HostCoordinator dispatch → canonical R6.1 writer →
   idempotent receipt → structured audit. Two agents, one owner, one
@@ -353,10 +354,11 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
   reentrant dispatch rejected.
 - **SECRETS:** complete envelope screened by value (identifiers, target,
   keys, values); ONE complete outward boundary sanitizes snapshots,
-  receipts, audit records, nested dict keys+values, identifiers,
-  provenance, error details. Protection failure rejects explicitly at
-  entry; sanitization failure never releases the original (minimal
-  fixed-schema receipts; snapshots fail closed).
+  receipts, audit records, nested dict keys+values (collision-free via
+  full reservation), identifiers, provenance, error details. Protection
+  failure rejects explicitly at entry; sanitization failure never
+  releases the original (minimal fixed-schema receipts; snapshots fail
+  closed with fixed non-reflecting errors).
 - **OUTCOMES:** audit failures aggregated across the lifecycle and
   observable (audit_ok + audit block; in-memory vs persisted
   distinguished); incomplete compensation classified by the canonical
@@ -368,9 +370,9 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
   subject, for_agent); outer and inner versions strictly validated;
   damaged audit evidence preserved as complete originals through the
   payload (malformed load → save → reload keeps evidence).
-- **PROOFS:** `form/mandell/r64_multi_intelligence_test.py` — 154 checks
+- **PROOFS:** `form/mandell/r64_multi_intelligence_test.py` — 168 checks
   (identity, protocol, audit, IntrinsicAgent, cross-process, rollback,
-  recovery, reference model, sensitivity, AMEND/AMEND-2/AMEND-3 boundary
+  recovery, reference model, sensitivity, AMEND through AMEND-4 boundary
   proofs), registered in regress LIST.
   `form/mandell/r64_child.py` — fixed cross-process scripts.
   `form/mandell/r64_reference_model.py` — independent decision model.
@@ -379,7 +381,8 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
   REJECTED as a transaction-safety claim. Copy semantics: a validated
   detached copy is only independent if RETAINED (enqueue now stores the
   validated snapshot, not the caller's envelope). OWASP: logging
-  failures must not leak information (no `sanitize_failed` fallbacks).
+  failures must not leak information; outward errors generic, not
+  reflected internals.
 - **LIMITS:** No distributed consensus, concurrent-writer safety, or
   malicious in-process Python protection claimed. No crash-safe
   exactly-once execution claimed. Secret screening covers recognized

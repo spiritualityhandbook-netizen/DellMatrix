@@ -1,8 +1,8 @@
 # ADMISSION PACKET — R6.4 MULTI-INTELLIGENCE SHARED-STATE CIRCUIT
-## (AMEND-3 corrections applied)
+## (AMEND-4 corrections applied)
 
 **To:** Director · **From:** Uni Ω · **Date:** 2026-10-09
-**Directive:** GDP_PHASE_6_R64_CLOSE_ALL_OUTWARD_SECRET_PATHS (MODE=C)
+**Directive:** GDP_PHASE_6_R64_FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT (MODE=C)
 **Status:** CANDIDATE — NOT CERTIFIED — DO NOT MERGE. Awaiting Director admission review.
 
 ---
@@ -10,28 +10,29 @@
 ## 1. Identity
 
 - **PR:** #83
-- **Reviewed HEAD:** `409327ff3f4ef29f33f4681b1f34fac03740254f`
-- **Reviewed TREE:** `fba5dcfeb5136a7d3059c593b26a3bbed16524d1`
+- **Reviewed HEAD:** (to be filled after final commit)
+- **Reviewed TREE:** (to be filled after final commit)
 - **BASE:** `84a59137fe75d4ad5206642f8ba8a42183fdcef2` (R6.3 merge)
 - **Branch:** `gdp-phase6-r64-multi-intelligence`
-- **Historical code-freeze identities** (code content; packet docs only
-  in subsequent commits):
+- **Historical code-freeze identities:**
   - `d7eb47d` — AMEND findings; superseded
   - `06f6953` — AMEND-2 findings; superseded
-  - `0f61be0` — AMEND-2 code freeze; superseded by AMEND-3
-  - `c555079` — AMEND-2 final (Director reviewed); superseded by AMEND-3
+  - `0f61be0` — AMEND-2 code freeze; superseded
+  - `c555079` — AMEND-2 final (Director reviewed); superseded
+  - `409327f` — AMEND-3 code (Director reviewed); superseded
+  - `b97b625` — AMEND-3 final (Director reviewed); superseded by AMEND-4
 
-## 2. Scope coverage (6.4.1–6.4.5 + AMEND + AMEND-2 + AMEND-3 findings)
+## 2. Scope coverage (6.4.1–6.4.5 + AMEND through AMEND-4)
 
 | Objective | Implementation | Proofs |
 |-----------|---------------|--------|
 | 6.4.1 agent identity/BIMO binding | `agent_coordinator.py`: AgentIdentity, host-bound registration; persona/BIMO descriptive only | 9 checks |
-| 6.4.2 shared-state protocol | `agent_coordinator.py`: HostCoordinator, strict RequestEnvelope, detached snapshots, serialized dispatch, namespaced idempotency, RETAINED validated snapshot | 18 + AMEND + AMEND-2 + AMEND-3 checks |
-| 6.4.3 audit trail | `agent_coordinator.py`: capture_agent_action; complete secret screening; ONE outward boundary (snapshots/receipts/audit/keys sanitized); `agent_audit` payload with preserved malformed evidence | 7 + AMEND + AMEND-2 + AMEND-3 checks |
+| 6.4.2 shared-state protocol | `agent_coordinator.py`: HostCoordinator, strict RequestEnvelope, detached snapshots, serialized dispatch, namespaced idempotency, RETAINED validated snapshot | 18 + AMEND + AMEND-2 + AMEND-3 + AMEND-4 checks |
+| 6.4.3 audit trail | `agent_coordinator.py`: capture_agent_action; complete secret screening; ONE outward boundary (snapshots/receipts/audit/keys sanitized, collision-free); safe error contract | 7 + AMEND + AMEND-2 + AMEND-3 + AMEND-4 checks |
 | 6.4.4 IntrinsicAgent recovery | `intrinsic_agent.py`: for_agent isolation, strict versioned validation, sentinel absence, fail-honest sync | 16 + AMEND + AMEND-2 checks |
-| 6.4.5 public-path proofs | `r64_multi_intelligence_test.py` (154 checks), `r64_child.py`, `r64_reference_model.py` | 23 + 25 AMEND + 37 AMEND-2 + 19 AMEND-3 checks |
+| 6.4.5 public-path proofs | `r64_multi_intelligence_test.py` (168 checks), `r64_child.py`, `r64_reference_model.py` | 23 + 25 AMEND + 37 AMEND-2 + 19 AMEND-3 + 14 AMEND-4 checks |
 
-**Total: 154/154 checks pass.**
+**Total: 168/168 checks pass.**
 
 ### AMEND findings → fixes (8/8)
 
@@ -136,12 +137,43 @@ Fixes:
    durable audit. Sensitivity: disabling the actual output guard leaks;
    restored production sanitizes.
 
+### AMEND-4 findings → fixes (2/2)
+
+Director's AMEND-4 ruling independently reproduced on `b97b625`
+(controlled-dependency probes, not a full independent regression):
+- Snapshot redaction preserves canonical content: confirmed holding.
+- Writer-failure receipts withhold secrets: confirmed holding.
+
+Still failing → fixed:
+
+1. **Collision-free key representation:** the allocator now reserves ALL
+   surviving clean keys BEFORE allocating replacements — not only keys
+   already emitted. Deterministic replacements avoid reserved clean keys,
+   previously allocated replacements, and already-emitted keys.
+   Proven: protected key + literal `[REDACTED_KEY:1]` (both orders)
+   preserves both entries; multiple reserves + protected keys preserve
+   count and value associations; nested dicts; input unchanged;
+   deterministic; zero canary. Sensitivity: the old allocator (only
+   checking emitted keys) loses evidence; the fixed allocator preserves.
+2. **Safe error contract:** `snapshot_for` no longer includes `str(e)` in
+   CoordinatorError — fixed non-reflecting message
+   ("snapshot unavailable: output sanitization failed") with chaining
+   suppressed (`from None`). All protection failure messages
+   (import/values/screen in both `_sanitize_outward` and
+   `_screen_envelope`) use FIXED text — original exception never
+   reflected, as it may contain protected material. Fingerprint/epoch
+   failures likewise fixed. Proven: canary-bearing protection exception
+   at snapshot and entry yields fixed messages with zero canary and no
+   chaining. Diagnostic evidence retained through audit failure codes,
+   not exception text. No canonical content modified; no operation
+   status falsely changed.
+
 ## 3. Results
 
-- `python3 -m form.mandell.r64_multi_intelligence_test`: **154/154**
+- `python3 -m form.mandell.r64_multi_intelligence_test`: **168/168**
 - `python3 -m form.regress --twice`: **110/110 GREEN** (both passes)
 - `python3 -m form.regress --order rev`: **110/110 GREEN**
-- Exact-head CI on `289b9b8`:
+- Exact-head CI: (to be verified on final HEAD below)
   - Python package (3.10): SUCCESS (25s)
   - Python package (3.11): SUCCESS (25s)
   - Form smoke: SUCCESS (8m48s)
