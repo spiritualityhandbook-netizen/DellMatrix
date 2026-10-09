@@ -280,10 +280,13 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
   recognized formats (raw and \uXXXX-decoded forms) — arbitrary
   unknown secrets and every possible encoding not claimed covered.
 
-## 11. Phase-6 R6.3 — authority-bound rollback circuit (candidate)
+## 11. Phase-6 R6.3 — authority-bound rollback circuit (MERGED/CLOSED)
 
-- **STATUS:** candidate-branch only (`gdp-phase6-r63-rollback`). NOT
-  CERTIFIED. DO NOT MERGE without Director authorization.
+- **STATUS:** MERGED/CLOSED 2026-10-08. PR #82 → merge
+  `84a59137fe75d4ad5206642f8ba8a42183fdcef2` (parents b896304 + cedac79;
+  tree 9a0f90b1). Director certified via
+  GDP_PHASE_6_R63_ADMIT_MERGE_AND_ADVANCE. Post-merge production
+  verification green (fresh clone: regress --twice 109/109, rev 109/109).
 - **CIRCUIT:** freeze target (CURRENT resolved once; manifest + member
   fingerprints bound) → issue grant/approval → bound endpoint →
   private validation → safety checkpoint (retention keeps target) →
@@ -322,3 +325,65 @@ DellMatrix at f3c9007 is a **working offline idea environment** for its tested c
 - **LIMITS:** No protection claimed against malicious in-process
   Python or concurrent races (declared mediated-interface boundary).
   Human REPL path requires explicit "restore confirm <generation>".
+
+## 12. Phase-6 R6.4 — multi-intelligence shared-state circuit (candidate)
+
+- **STATUS:** candidate-branch only (`gdp-phase6-r64-multi-intelligence`).
+  NOT CERTIFIED. DO NOT MERGE without Director authorization.
+  AMEND-4 (GDP_PHASE_6_R64_FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT)
+  corrections applied.
+- **CIRCUIT:** host-bound agent identity → typed request envelope →
+  serialized HostCoordinator dispatch → canonical R6.1 writer →
+  idempotent receipt → structured audit. Two agents, one owner, one
+  knowledge system; identity, permission, memory, outcomes separate.
+- **DESIGN:** `form/dell_matrix/agent_coordinator.py` (HostCoordinator,
+  AgentIdentity, RequestEnvelope, AgentRequestSurface, agent audit).
+  `form/dell_matrix/intrinsic_agent.py` (agent-local behavioral state,
+  versioned persistence). Program payload gains `agent_local` and
+  `agent_audit` sections (`form/persist.py`, `form/persist_rest.py`).
+- **AUTHORITY:** All permission decisions owned by AcceptancePolicy via
+  the R6.1 `agent_confirm` writer path. BIMO slots/personas descriptive
+  only (PERSONA != PERMISSION). Agents get detached snapshots + narrow
+  interfaces, never mutable objects or credentials.
+- **PROTOCOL:** request_id idempotency namespaced by (owner, subject,
+  request_id) with canonical descriptor comparison; the VALIDATED
+  envelope snapshot is retained at enqueue (post-enqueue mutation cannot
+  reach execution); conflicting reuse never overwrites established
+  history; content freshness revalidated at dispatch; rollback epoch
+  invalidates stale queued requests; recovery-required blocks dispatch;
+  reentrant dispatch rejected.
+- **SECRETS:** complete envelope screened by value (identifiers, target,
+  keys, values); ONE complete outward boundary sanitizes snapshots,
+  receipts, audit records, nested dict keys+values (collision-free via
+  full reservation), identifiers, provenance, error details. Protection
+  failure rejects explicitly at entry; sanitization failure never
+  releases the original (minimal fixed-schema receipts; snapshots fail
+  closed with fixed non-reflecting errors).
+- **OUTCOMES:** audit failures aggregated across the lifecycle and
+  observable (audit_ok + audit block; in-memory vs persisted
+  distinguished); incomplete compensation classified by the canonical
+  writer contract and preserved as incomplete_recovery with sanitized
+  structured details.
+- **PERSISTENCE:** behavioral sync is fail-honest (no suppression;
+  staged/validated before stored state changes; failed save preserves
+  previous bytes); explicit null rejected via sentinels (section,
+  subject, for_agent); outer and inner versions strictly validated;
+  damaged audit evidence preserved as complete originals through the
+  payload (malformed load → save → reload keeps evidence).
+- **PROOFS:** `form/mandell/r64_multi_intelligence_test.py` — 168 checks
+  (identity, protocol, audit, IntrinsicAgent, cross-process, rollback,
+  recovery, reference model, sensitivity, AMEND through AMEND-4 boundary
+  proofs), registered in regress LIST.
+  `form/mandell/r64_child.py` — fixed cross-process scripts.
+  `form/mandell/r64_reference_model.py` — independent decision model.
+- **RESEARCH:** Erlang message-passing ADAPTED (typed envelopes through
+  serialized coordinator, not shared mutable objects); Python queues
+  REJECTED as a transaction-safety claim. Copy semantics: a validated
+  detached copy is only independent if RETAINED (enqueue now stores the
+  validated snapshot, not the caller's envelope). OWASP: logging
+  failures must not leak information; outward errors generic, not
+  reflected internals.
+- **LIMITS:** No distributed consensus, concurrent-writer safety, or
+  malicious in-process Python protection claimed. No crash-safe
+  exactly-once execution claimed. Secret screening covers recognized
+  formats/values only (no unknown-secret guarantee).
