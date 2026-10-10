@@ -628,6 +628,15 @@ class HostCoordinator:
 
     Serializes protected multi-agent mutations. Constructed by the
     trusted host with the live Program; agents never construct one.
+
+    R6.5 (GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT): enforces separation
+    boundaries — persona metadata never confers authority; BIMO fusion
+    is descriptive, not authoritative.
+
+    HUMAN SOVEREIGNTY: Every protected operation requires a grant issued
+    through the trusted host path (AcceptancePolicy via agent_authority).
+    Agents cannot mint, widen, or restore authority. There is no bulk
+    threshold — sovereignty applies to every protected operation equally.
     """
 
     def __init__(self, program: Any, *, queue_bound: int = _MAX_QUEUE,

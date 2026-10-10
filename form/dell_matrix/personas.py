@@ -547,6 +547,45 @@ class BIMOBody:
             "docked": self.docked_personas(),
         }
 
+    def effective_capabilities(
+        self, grants: Dict[str, List[str]]
+    ) -> List[str]:
+        """PRESENTATION UTILITY ONLY — not an enforcement mechanism.
+
+        R6.5 (AMEND): Caller-supplied capability name lists are
+        DESCRIPTIVE data, not validated grants. This method computes
+        the intersection for display purposes (e.g., showing what a
+        BIMO fusion *would* be able to do if all constituents held
+        those grants).
+
+        It does NOT:
+        - Validate grants against the AcceptancePolicy
+        - Bind operations, targets, or content
+        - Enforce anything at execution time
+
+        Real authority comes ONLY from grants issued through the
+        trusted host path (agent_authority.issue_root_grant) and
+        validated at dispatch time by the coordinator.
+
+        Persona docking must never change permission. This method
+        exists for UI/guidance; it is never consulted for decisions.
+        """
+        docked = self.docked_personas()
+        if not docked:
+            return []
+        # Start with the first persona's grants, intersect with the rest.
+        common = None
+        for p in docked:
+            pid = p.get("id", "")
+            granted = set(grants.get(pid, []))
+            if common is None:
+                common = granted
+            else:
+                common &= granted
+            if not common:
+                break
+        return sorted(common or [])
+
     def render_ascii(self) -> List[str]:
         lines = [
             f"═══ BIMO BODY · mode={self.mode} · pilot={self.pilot} ═══",
