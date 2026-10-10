@@ -70,15 +70,14 @@ def main():
         else:
             results["verify_pending_plane_content"] = False
 
-        # Verify audit records.
-        try:
-            audit_records = ac.list_agent_audit(p3)
-        except Exception:
-            audit_records = []
+        # Verify audit records (including target and result).
+        audit_records = ac.list_agent_audit(p3)  # Do not swallow.
         for exp in expected_audit:
             found = any(
                 str(r.get("request_id", "")) == exp["request_id"]
                 and str(r.get("subject", "")) == exp["subject"]
+                and str(r.get("target", "")) == exp["target"]
+                and str(r.get("result", "")) == exp["result"]
                 for r in audit_records
             )
             results[f"verify_audit_{exp['request_id']}"] = found

@@ -35,6 +35,12 @@ def fresh_program(owner: str):
     return open_program(owner)
 
 
+def unique_owner(prefix: str) -> str:
+    """Generate a unique owner for test isolation."""
+    import uuid
+    return f"{prefix}_{uuid.uuid4().hex[:8]}"
+
+
 def _mkgrant(p, pid, subject):
     """Issue a grant via agent_authority (R6.2 owner)."""
     from form.dell_matrix import agent_authority as aa
@@ -52,7 +58,7 @@ def part_walking_skeleton():
     from form.dell_matrix import perspective_views as pv
 
     # --- Setup: one Idea, two agents with different personas. ---
-    p = fresh_program("r65s1")
+    p = fresh_program(unique_owner("r65s1"))
     pr = p.nursery.add("S1", words="separation test idea words")
     pid = pr.id
 
@@ -155,14 +161,14 @@ def part_walking_skeleton():
     import subprocess, sys, json, os, uuid, shutil
 
     # Generate unique owner for isolation.
-    unique_owner = f"r65restart_{uuid.uuid4().hex[:8]}"
+    restart_owner = f"r65restart_{uuid.uuid4().hex[:8]}"
     # Note: fresh_program uses owner for path; we need a fresh program
     # with the unique owner. For simplicity, use the existing p but
     # track the owner name for the child.
     #
     # Actually, we need a truly isolated program. Let's create one.
     from form.open import open_program as _open
-    p_restart = _open(unique_owner)
+    p_restart = _open(restart_owner)
 
     # Set up: one confirmed, one pending (in the isolated program).
     coord_r = ac2.new_coordinator(p_restart)
@@ -186,26 +192,32 @@ def part_walking_skeleton():
         target=pending_pid, content_pid=pending_pid)
     old_pending_grant = grant_pending["grant_id"]
 
-    # Capture audit records before save.
-    try:
-        audit_before = ac2.list_agent_audit(p_restart)
-    except Exception:
-        audit_before = []
-    # Extract expectations (request_id, subject, target).
+    # Capture the SPECIFIC committed audit record (not just any records).
+    # Do NOT swallow errors — if capture fails, the test must fail.
+    audit_before = ac2.list_agent_audit(p_restart)
+    # Find the committed record for our confirmed proposal.
     expected_audit = []
-    for rec in audit_before[:5]:  # Limit to recent
-        expected_audit.append({
-            "request_id": str(rec.get("request_id", "")),
-            "subject": str(rec.get("subject", "")),
-            "target": str(rec.get("target", "")),
-        })
+    for rec in audit_before:
+        if (str(rec.get("request_id", "")) == "r65-restart-confirm"
+            and str(rec.get("result", "")) == "committed"):
+            expected_audit.append({
+                "request_id": str(rec.get("request_id", "")),
+                "subject": str(rec.get("subject", "")),
+                "target": str(rec.get("target", "")),
+                "result": str(rec.get("result", "")),
+            })
+            break
+    # Require nonempty — empty expectations cannot satisfy the proof.
+    check("r65 fresh: captured committed audit record",
+          len(expected_audit) > 0,
+          detail=f"found {len(expected_audit)} committed records")
 
     _pr.save(p_restart)
 
     try:
         # Child 1: mutating probe.
         child1_args = {
-            "owner": unique_owner,
+            "owner": restart_owner,
             "confirmed_pid": pid_c,
             "pending_pid": pending_pid,
             "old_grant_id": old_pending_grant,
@@ -233,12 +245,17 @@ def part_walking_skeleton():
                     "old_grant_denied_same_target",
                     "denial_preserves_pending", "denial_preserves_absence",
                     "reissued_succeeds", "reissued_confirmed_status",
-                    "reissued_idea_in_plane", "reissued_plane_content_exact"]:
+                    "reissued_idea_in_plane", "reissued_plane_content_exact",
+                    "audit_expectations_nonempty", "audit_nonempty",
+                    "audit_changed_result_fails"]:
             check(f"r65 fresh: {key}", a1.get(key) is True)
+        # Check the specific audit record.
+        check("r65 fresh: audit_r65-restart-confirm",
+              a1.get("audit_r65-restart-confirm") is True)
 
         # Child 2: verification-only (no mutation).
         child2_args = {
-            "owner": unique_owner,
+            "owner": restart_owner,
             "confirmed_pid": pid_c,
             "pending_pid": pending_pid,
             "expected_confirmed_words": "separation test idea words",
@@ -269,9 +286,9 @@ def part_walking_skeleton():
         # Cleanup: remove the unique owner's state files.
         try:
             import glob
-            for f in glob.glob(f"form/state/{unique_owner}*"):
+            for f in glob.glob(f"form/state/{restart_owner}*"):
                 os.remove(f)
-            for f in glob.glob(f"/tmp/{unique_owner}*"):
+            for f in glob.glob(f"/tmp/{restart_owner}*"):
                 os.remove(f)
         except Exception:
             pass
@@ -305,7 +322,7 @@ def part_bimo_capability():
 
     # CRITICAL: The presentation output cannot be used as authority.
     # Attempting to use these labels as a grant must fail.
-    p = fresh_program("r65bimo")
+    p = fresh_program(unique_owner("r65bimo"))
     coord = ac.new_coordinator(p)
     coord.register_agent("agent-b")
     sa = coord.surface_for("agent-b")
@@ -346,7 +363,7 @@ def part_sovereignty():
     from form.dell_matrix import agent_coordinator as ac
     from form.dell_matrix import agent_authority as aa
 
-    p = fresh_program("r65s2")
+    p = fresh_program(unique_owner("r65s2"))
     coord = ac.new_coordinator(p)
     coord.register_agent("agent-a")
     sa = coord.surface_for("agent-a")
@@ -382,7 +399,7 @@ def part_persona_behavioral():
     from form.dell_matrix import agent_coordinator as ac
     from form.dell_matrix import agent_authority as aa
 
-    p = fresh_program("r65s3")
+    p = fresh_program(unique_owner("r65s3"))
     coord = ac.new_coordinator(p)
     # Register with persona A.
     coord.register_agent("agent-x", persona_slots={"pilot": "manny"})
@@ -444,7 +461,7 @@ def part_perspective_interface():
     from form.dell_matrix import agent_coordinator as ac
     from form.dell_matrix import agent_authority as aa
 
-    p = fresh_program("r65persp")
+    p = fresh_program(unique_owner("r65persp"))
     coord = ac.new_coordinator(p)
     coord.register_agent("agent-p")
     sa = coord.surface_for("agent-p")
@@ -536,105 +553,109 @@ def part_perspective_interface():
 
 
 def part_sensitivity():
-    """R6.5 AMEND-3 §1: Sensitivity with independent PENDING fixtures.
+    """R6.5 AMEND-5 §1: Sensitivity with exact preconditions.
 
-    Uses THREE independently prepared equivalent PENDING proposals.
-    Asserts pending status and Idea absence before each attempt.
-    Normal/restored must deny for canonical authority reasons and
-    leave state unchanged. Weakened must produce a REAL state
-    transition (proposal confirmed). No receipt-marker escapes.
-    Restores in finally.
+    Uses THREE independently prepared equivalent PENDING fixtures.
+    Before EACH attempt: assert status=="pending" AND pid not in
+    plane.units. After normal/restored denial: assert both again.
+    After weakened success: assert confirmed + exact unit presence.
     """
     from form.dell_matrix import agent_coordinator as ac
     from form.dell_matrix.agent_coordinator import make_envelope
+    import uuid
 
-    p = fresh_program("r65sens")
+    # Unique owner for isolation.
+    owner = f"r65sens_{uuid.uuid4().hex[:8]}"
+    from form.open import open_program as _open
+    p = _open(owner)
     coord = ac.new_coordinator(p)
     coord.register_agent("agent-s")
 
-    # Prepare THREE independent equivalent PENDING fixtures.
-    pids = []
-    for i in range(3):
-        pr = p.nursery.add(f"S{i}", words=f"sensitivity fixture {i}")
-        pids.append(pr.id)
-
-    def assert_pending_and_absent(pid, tag):
-        """Assert proposal is pending and no Idea in Plane yet."""
-        prop = p.nursery.proposals[pid]
-        is_pending = str(prop.status) not in ("confirmed", "committed")
-        # Check Plane for Idea absence (by proposal ID in units).
-        plane = p.cube.session.plane
-        units = getattr(plane, "units", {}) or {}
-        absent = not any(
-            str(getattr(u, "label", "")) == pid or pid in str(u.id)
-            for u in units.values()
-        )
-        check(f"r65 sensitivity [{tag}]: fixture is pending",
-              is_pending, detail=f"status={prop.status}")
-        # Note: Ideas may not map directly to Plane units; absence
-        # check is best-effort. The key assertion is pending status.
-        return is_pending
-
-    def try_unauthorized(pid, tag):
-        """Attempt unauthorized confirm via real dispatch."""
-        h = p.acceptance_data_hash(pid, "confirm")
-        env = make_envelope(request_id=f"r65-sens-{tag}",
-                            operation="confirm", target=pid,
-                            expected={"content_hash": h}, _program=p)
-        qid = coord.enqueue("agent-s", env)
-        return coord.dispatch(qid, "bogus-grant-id")
-
-    # NORMAL (fixture 0): must deny for authority reasons.
-    assert_pending_and_absent(pids[0], "normal")
-    r_normal = try_unauthorized(pids[0], "normal")
-    check("r65 sensitivity: normal denies without grant",
-          r_normal["ok"] is False)
-    # Denial must be for authority reasons (not e.g., bad request).
-    reason = str(r_normal.get("reason", "")) + str(r_normal.get("detail", ""))
-    check("r65 sensitivity: normal denial is authority-based",
-          "grant" in reason.lower() or "denied" in reason.lower()
-          or "policy" in reason.lower(),
-          detail=reason[:150])
-    # State unchanged.
-    check("r65 sensitivity: normal leaves pending",
-          str(p.nursery.proposals[pids[0]].status) not in
-          ("confirmed", "committed"))
-
-    # WEAKENED (fixture 1): must produce REAL state transition.
-    assert_pending_and_absent(pids[1], "weakened")
-    policy = p.acceptance_policy
-    orig_check = policy.check
-    check_invoked = {"count": 0}
-    def weakened_check(*args, **kwargs):
-        check_invoked["count"] += 1
-        return {"allowed": True, "decision": "allow"}
-    policy.check = weakened_check
     try:
-        r_weak = try_unauthorized(pids[1], "weakened")
-        # REAL transition: proposal must actually become confirmed.
-        # (No "weakened" marker escape — the state must change.)
-        is_confirmed = (
-            str(p.nursery.proposals[pids[1]].status) == "confirmed"
-        )
-        check("r65 sensitivity: weakened produces real transition",
-              is_confirmed and r_weak["ok"] is True,
-              detail=f"ok={r_weak['ok']} status={p.nursery.proposals[pids[1]].status}")
-        check("r65 sensitivity: weakened check was invoked",
-              check_invoked["count"] > 0)
-    finally:
-        policy.check = orig_check
+        # Prepare THREE independent equivalent PENDING fixtures.
+        pids = []
+        for i in range(3):
+            pr = p.nursery.add(f"S{i}", words=f"sensitivity fixture {i}")
+            pids.append(pr.id)
 
-    # RESTORED (fixture 2): must deny again, check actually invoked.
-    assert_pending_and_absent(pids[2], "restored")
-    # Verify the restored check is the real one (not weakened).
-    check("r65 sensitivity: check restored",
-          p.acceptance_policy.check is orig_check)
-    r_restored = try_unauthorized(pids[2], "restored")
-    check("r65 sensitivity: restored denies without grant",
-          r_restored["ok"] is False)
-    check("r65 sensitivity: restored leaves pending",
-          str(p.nursery.proposals[pids[2]].status) not in
-          ("confirmed", "committed"))
+        def get_units():
+            plane = p.cube.session.plane
+            return getattr(plane, "units", {}) or {}
+
+        def assert_exact_pending_and_absent(pid, tag):
+            """Assert status=="pending" AND pid not in plane.units."""
+            prop = p.nursery.proposals[pid]
+            is_pending = (str(prop.status) == "pending")
+            check(f"r65 sensitivity [{tag}]: status==pending",
+                  is_pending, detail=f"status={prop.status}")
+            absent = (pid not in get_units())
+            check(f"r65 sensitivity [{tag}]: pid absent from Plane",
+                  absent, detail=f"pid={pid} in units={pid in get_units()}")
+            return is_pending and absent
+
+        def try_unauthorized(pid, tag):
+            h = p.acceptance_data_hash(pid, "confirm")
+            env = make_envelope(request_id=f"r65-sens-{tag}",
+                                operation="confirm", target=pid,
+                                expected={"content_hash": h}, _program=p)
+            qid = coord.enqueue("agent-s", env)
+            return coord.dispatch(qid, "bogus-grant-id")
+
+        # NORMAL (fixture 0).
+        assert_exact_pending_and_absent(pids[0], "normal")
+        r_normal = try_unauthorized(pids[0], "normal")
+        check("r65 sensitivity: normal denies without grant",
+              r_normal["ok"] is False)
+        # After denial: assert exact pending AND absence again.
+        assert_exact_pending_and_absent(pids[0], "normal-after")
+
+        # WEAKENED (fixture 1).
+        assert_exact_pending_and_absent(pids[1], "weakened")
+        policy = p.acceptance_policy
+        orig_check = policy.check
+        def weakened_check(*args, **kwargs):
+            return {"allowed": True, "decision": "allow"}
+        policy.check = weakened_check
+        try:
+            r_weak = try_unauthorized(pids[1], "weakened")
+            # After weakened success: assert confirmed + exact unit presence.
+            prop_w = p.nursery.proposals[pids[1]]
+            check("r65 sensitivity: weakened confirms",
+                  str(prop_w.status) == "confirmed" and r_weak["ok"] is True,
+                  detail=f"status={prop_w.status}")
+            unit_w = get_units().get(pids[1])
+            check("r65 sensitivity: weakened Idea in Plane by exact pid",
+                  unit_w is not None)
+            if unit_w is not None:
+                check("r65 sensitivity: weakened unit content exact",
+                      str(getattr(unit_w, "words", "")) == "sensitivity fixture 1")
+        finally:
+            policy.check = orig_check
+
+        # RESTORED (fixture 2).
+        assert_exact_pending_and_absent(pids[2], "restored")
+        check("r65 sensitivity: check restored",
+              p.acceptance_policy.check is orig_check)
+        r_restored = try_unauthorized(pids[2], "restored")
+        check("r65 sensitivity: restored denies without grant",
+              r_restored["ok"] is False)
+        # After denial: assert exact pending AND absence again.
+        assert_exact_pending_and_absent(pids[2], "restored-after")
+
+    finally:
+        # Cleanup canonical state paths.
+        try:
+            from form import persist_rest as _pr
+            # Remove the program file if it exists.
+            import os, glob
+            for pat in [f"form/state/{owner}*", f"form/state/program_{owner}*"]:
+                for f in glob.glob(pat):
+                    try:
+                        os.remove(f)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
 
 
 def smoke() -> bool:

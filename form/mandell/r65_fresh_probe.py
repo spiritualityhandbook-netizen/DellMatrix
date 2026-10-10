@@ -65,20 +65,32 @@ def main():
 
         # (c) Audit records survive: compare captured expectations.
         # Use list_agent_audit to get actual records.
-        try:
-            audit_records = ac.list_agent_audit(p2)
-        except Exception:
-            audit_records = []
-        # Check each expected record is present.
+        audit_records = ac.list_agent_audit(p2)  # Do not swallow errors.
+        # Require nonempty expectations.
+        results["audit_expectations_nonempty"] = len(expected_audit) > 0
+        # Check each expected record is present with matching result.
         for exp in expected_audit:
             found = any(
                 str(r.get("request_id", "")) == exp["request_id"]
                 and str(r.get("subject", "")) == exp["subject"]
                 and str(r.get("target", "")) == exp["target"]
+                and str(r.get("result", "")) == exp["result"]
                 for r in audit_records
             )
             results[f"audit_{exp['request_id']}"] = found
         results["audit_nonempty"] = len(audit_records) > 0
+        # Negative control: empty expectations must fail (not vacuously pass).
+        # (This is verified by the parent requiring nonempty above.)
+        # Negative control: changed result must not match.
+        fake_exp = {"request_id": "r65-restart-confirm",
+                    "subject": "agent-a", "target": confirmed_pid,
+                    "result": "CHANGED_RESULT"}
+        fake_found = any(
+            str(r.get("request_id", "")) == fake_exp["request_id"]
+            and str(r.get("result", "")) == fake_exp["result"]
+            for r in audit_records
+        )
+        results["audit_changed_result_fails"] = (fake_found is False)
 
         # (d) Pending proposal: status==pending and pid NOT in plane.units.
         pend_prop = p2.nursery.proposals[pending_pid]
