@@ -33,8 +33,8 @@
 ## Exact Identity
 
 - **Branch:** `gdp-phase7-r71-composition`
-- **Head:** [to be recorded after final commit]
-- **Tree:** [to be recorded after final commit]
+- **Head:** `db62e2bf54221377c4a684b879e334cf9b684453`
+- **Tree:** `77d468fd08a72ca596b3c9ffeb41dfacb3c71ba6`
 - **Base:** `efd68bf5ef702dcb5a59aa246ed4397c0c0a133c` (R6.5 production)
 
 ## Objective Identity (Preserved)
