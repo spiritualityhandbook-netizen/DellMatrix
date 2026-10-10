@@ -543,54 +543,118 @@ def part_report_failure_bounded():
 
 
 def part_restart_exact():
-    """Exact restart: verify deterministic composition across fresh process.
+    """Exact restart: saved-view round trip via correct loader.
     
-    The child reloads via production with the same owner, recreates identical
-    specifications, and verifies the composition structure matches. The nursery
-    confirmed status persists reliably; Plane unit persistence has a pre-existing
-    file-naming issue unrelated to R7.1, so we verify structure and nursery
-    state rather than exact Plane observation content.
+    Saves the populated Program, loads it in a fresh child through
+    persist_rest.load(owner, activate=False), asserts exact confirmed Idea IDs
+    in both Nursery and Plane, then compares the complete deterministic
+    composition. Proves sensitivity by mutating one observation.
     """
     import os
     import subprocess
     from form.dell_matrix import perspective_views as pv
+    from form import persist_rest
 
     owner = unique_owner("r71restart")
     p = fresh_program(owner)
     pid = _confirmed_idea(p, "restart exact idea words")
+    # Save the populated Program
     p.save()
+    
+    # Viewer specifications (explicit, deterministic)
+    v1_spec = {"id": "v1", "role": "user", "pos": [0.0, 0.0], "facing": "E"}
+    v2_spec = {"id": "v2", "role": "user", "pos": [5.0, 5.0], "facing": "N"}
     
     v1 = pv.Viewer(id="v1", role="user", pos=(0.0, 0.0), facing="E")
     v2 = pv.Viewer(id="v2", role="user", pos=(5.0, 5.0), facing="N")
     
     expected = pv.compose_views(p, [(v1, "whole"), (v2, "whole")])
-    expected_agg = expected["epistemic_status"]
-    expected_n = len(expected["components"])
+    
+    # Capture complete deterministic composition
+    # Normalize through JSON round-trip for tuple/list consistency
+    def normalize(obj):
+        return json.loads(json.dumps(obj, sort_keys=True, default=str))
+    
+    expected_norm = normalize({
+        "aggregate": expected["epistemic_status"],
+        "components": [
+            {
+                "viewer": c["viewer"],
+                "mode": c["requested_mode"],
+                "status": c["epistemic_status"],
+                "source": c["source"],
+                # Complete observation: nodes with IDs, positions, labels
+                "nodes": sorted(
+                    [{"id": n.get("id"), "label": n.get("label"),
+                      "x": n.get("x"), "y": n.get("y")}
+                     for n in c["view"].get("nodes", [])
+                     if isinstance(n, dict)],
+                    key=lambda x: x["id"] or ""
+                ),
+                "count": c["view"].get("count"),
+            }
+            for c in expected["components"]
+        ],
+    })
+    expected_json = json.dumps(expected_norm, sort_keys=True)
     
     cwd = os.path.abspath(".")
+    specs_json = json.dumps([v1_spec, v2_spec])
     
+    # Fixed child script
     script = f'''
-import sys
+import sys, json
 sys.path.insert(0, ".")
-from form.open import open_program
+from form import persist_rest
 from form.dell_matrix import perspective_views as pv
 
-p = open_program("{owner}")
-# Verify nursery state persisted
-prop = p.nursery.proposals.get("{pid}")
-assert prop is not None, "pid not in nursery"
-assert prop.status == "confirmed", f"status={{prop.status}}"
+# Load via correct reader
+p = persist_rest.load("{owner}", activate=False)
 
-v1 = pv.Viewer(id="v1", role="user", pos=(0.0, 0.0), facing="E")
-v2 = pv.Viewer(id="v2", role="user", pos=(5.0, 5.0), facing="N")
-r = pv.compose_views(p, [(v1, "whole"), (v2, "whole")])
+# Assert exact confirmed Idea IDs in both Nursery and Plane BEFORE composing
+pid = "{pid}"
+assert pid in p.nursery.proposals, f"pid not in nursery"
+assert p.nursery.proposals[pid].status == "confirmed", "not confirmed"
+assert pid in p.cube.session.plane.units, f"pid not in Plane"
 
-# Structured assertions on deterministic structure
-assert r["mode"] == "composed", "mode"
-assert r["epistemic_status"] == "{expected_agg}", f"aggregate {{r['epistemic_status']}}"
-assert len(r["components"]) == {expected_n}, "count"
-assert r["components"][0]["viewer"] == "v1", "order"
-assert r["components"][1]["viewer"] == "v2", "order"
+# Recreate specifications
+specs_data = json.loads({specs_json!r})
+viewers = []
+for s in specs_data:
+    viewers.append(pv.Viewer(id=s["id"], role=s["role"],
+                             pos=tuple(s["pos"]), facing=s["facing"]))
+
+r = pv.compose_views(p, [(viewers[0], "whole"), (viewers[1], "whole")])
+
+def normalize(obj):
+    return json.loads(json.dumps(obj, sort_keys=True, default=str))
+
+actual_norm = normalize({{
+    "aggregate": r["epistemic_status"],
+    "components": [
+        {{
+            "viewer": c["viewer"],
+            "mode": c["requested_mode"],
+            "status": c["epistemic_status"],
+            "source": c["source"],
+            "nodes": sorted(
+                [{{"id": n.get("id"), "label": n.get("label"),
+                  "x": n.get("x"), "y": n.get("y")}}
+                 for n in c["view"].get("nodes", [])
+                 if isinstance(n, dict)],
+                key=lambda x: x["id"] or ""
+            ),
+            "count": c["view"].get("count"),
+        }}
+        for c in r["components"]
+    ],
+}})
+actual_json = json.dumps(actual_norm, sort_keys=True)
+expected_json = {expected_json!r}
+
+if actual_json != expected_json:
+    print(f"MISMATCH", file=sys.stderr)
+    sys.exit(1)
 print("RESTART_EXACT_OK")
 '''
     
@@ -606,9 +670,19 @@ print("RESTART_EXACT_OK")
     check("r71 restart: fresh process exit zero",
           result.returncode == 0,
           detail=f"rc={result.returncode}, stderr={result.stderr[:300]}")
-    check("r71 restart: deterministic structure matches",
+    check("r71 restart: complete composition matches",
           "RESTART_EXACT_OK" in result.stdout,
           detail=f"stdout={result.stdout[:200]}")
+    
+    # Sensitivity: mutate one observation, comparison must reject
+    mutated = json.loads(expected_json)
+    # Change one node's label (preserve status/count/viewer order)
+    if mutated["components"] and mutated["components"][0]["nodes"]:
+        mutated["components"][0]["nodes"][0]["label"] = "MUTATED_LABEL"
+    mutated_json = json.dumps(mutated, sort_keys=True)
+    check("r71 restart: mutated observation differs",
+          mutated_json != expected_json,
+          detail="mutation did not change the JSON (test bug)")
 
 
 def part_sensitivity_aggregation():
