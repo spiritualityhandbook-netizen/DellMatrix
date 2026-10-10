@@ -10,8 +10,8 @@
 ## Exact Identity
 
 - **Branch:** `gdp-phase6-r65-separation`
-- **Head:** [to be recorded after final commit]
-- **Tree:** [to be recorded after final commit]
+- **Head:** `05c256f08407b4ba2e142d62a96d8e801481a8b5`
+- **Tree:** `8698039d8f85087ad44ad6d5305de4492905de6f`
 - **Base:** `0ceb3113beb8ce93e6bca422b9bddad12984feac` (R6.4 MERGED)
 - **Base tree:** `7ab8c67b1a4ba742fb971d7039ac5b3755366cd5`
 
