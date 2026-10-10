@@ -401,6 +401,18 @@ def _validate_spec(spec, index: int) -> tuple:
     if viewer.facing not in ("N", "S", "E", "W", "NE", "NW", "SE", "SW"):
         raise ValueError(f"spec[{index}]: bad facing {viewer.facing!r}")
     
+    # Mode-relevant Viewer field validation.
+    # Malformed input must not masquerade as unavailable Program data.
+    if mode == "parts":
+        # part_radius must be a finite positive number
+        pr = viewer.part_radius
+        if not isinstance(pr, (int, float)) or not math.isfinite(pr) or pr <= 0:
+            raise ValueError(f"spec[{index}]: part_radius must be finite positive")
+        # part_skins must be a list of strings
+        ps = viewer.part_skins
+        if not isinstance(ps, list) or not all(isinstance(s, str) for s in ps):
+            raise ValueError(f"spec[{index}]: part_skins must be list of strings")
+    
     return viewer, mode
 
 
@@ -471,18 +483,8 @@ def compose_views(program, specs, **kwargs) -> Dict[str, Any]:
             "components": [],
         }
     
-    # Empty input → explicitly empty request
-    if not specs:
-        return {
-            "mode": "composed",
-            "ok": True,
-            "epistemic_status": UNKNOWN,
-            "data_source": "composed",
-            "components": [],
-            "combined_report": ["empty request: no viewer specifications provided"],
-            "note": "empty request is not proof of an empty Plane",
-        }
-    
+    # Validate container type FIRST. Only an empty supported list/tuple
+    # means an empty request. Malformed containers reject explicitly.
     if not isinstance(specs, (list, tuple)):
         return {
             "mode": "composed",
@@ -493,13 +495,26 @@ def compose_views(program, specs, **kwargs) -> Dict[str, Any]:
             "components": [],
         }
     
+    # Empty input → explicitly empty request (only for valid empty containers)
+    if len(specs) == 0:
+        return {
+            "mode": "composed",
+            "ok": True,
+            "epistemic_status": UNKNOWN,
+            "data_source": "composed",
+            "components": [],
+            "combined_report": ["empty request: no viewer specifications provided"],
+            "note": "empty request is not proof of an empty Plane",
+        }
+    
     components = []
     statuses = []
     
     for i, spec in enumerate(specs):
+        # Validate spec structure
         try:
             viewer, mode = _validate_spec(spec, i)
-        except ValueError as e:
+        except ValueError:
             # Bounded, non-reflecting failure
             components.append({
                 "index": i,
@@ -510,22 +525,43 @@ def compose_views(program, specs, **kwargs) -> Dict[str, Any]:
             })
             statuses.append(UNSUPPORTED)
             continue
+        except Exception:
+            # Defensive: any validation failure is bounded
+            components.append({
+                "index": i,
+                "ok": False,
+                "error": "invalid specification",
+                "epistemic_status": UNSUPPORTED,
+                "data_source": "none",
+            })
+            statuses.append(UNSUPPORTED)
+            continue
         
-        # Route through see_as (existing validated dispatch)
+        # Route through see_as, detach, and validate — all inside failure boundary.
+        # Python documents that classes can customize deepcopy; copying belongs
+        # inside the boundary, not outside it.
         try:
             view = see_as(program, viewer, mode)
+            # Detach: deep copy so caller cannot mutate canonical state
+            # via returned references.
+            detached = copy.deepcopy(view)
+            # Validate detached result is a dict with expected shape
+            if not isinstance(detached, dict):
+                raise TypeError("view result not a dict")
         except Exception:
-            # Bounded failure; do not reflect internals
-            view = {
+            # Bounded failure; do not reflect internals or exception text.
+            # Preserve the component slot so siblings are not lost.
+            components.append({
+                "index": i,
+                "viewer": viewer.id,
+                "requested_mode": mode,
                 "ok": False,
                 "error": "view failed",
                 "epistemic_status": UNAVAILABLE,
                 "data_source": "none",
-            }
-        
-        # Detach: deep copy so caller cannot mutate canonical state
-        # via returned references. Also snapshot viewer identity.
-        detached = copy.deepcopy(view)
+            })
+            statuses.append(UNAVAILABLE)
+            continue
         
         component = {
             "index": i,
@@ -539,25 +575,34 @@ def compose_views(program, specs, **kwargs) -> Dict[str, Any]:
         statuses.append(detached.get("epistemic_status", UNKNOWN))
     
     # Aggregate status per defined semantics
-    aggregate = _aggregate_status(statuses)
+    try:
+        aggregate = _aggregate_status(statuses)
+    except Exception:
+        aggregate = UNKNOWN
     
-    # Build attributed combined report (not merged truth)
+    # Build attributed combined report (not merged truth).
+    # Report construction is inside the failure boundary.
     report_lines = []
-    for comp in components:
-        vid = comp.get("viewer", f"spec[{comp['index']}]")
-        mode = comp.get("requested_mode", "?")
-        status = comp.get("epistemic_status", UNKNOWN)
-        view = comp.get("view", {})
-        # Attribute each observation; do not merge into accepted truth
-        if comp.get("ok", True) is False:
-            report_lines.append(f"[{vid}/{mode}] {status}: {view.get('error', 'unavailable')}")
-        else:
-            rep = view.get("report", "")
-            if isinstance(rep, list):
-                rep = " ".join(str(x) for x in rep)
-            # Truncate to keep output bounded; attribute source
-            rep_str = str(rep)[:200]
-            report_lines.append(f"[{vid}/{mode}] {status}: {rep_str}")
+    try:
+        for comp in components:
+            vid = comp.get("viewer", f"spec[{comp.get('index', '?')}]")
+            mode = comp.get("requested_mode", "?")
+            status = comp.get("epistemic_status", UNKNOWN)
+            view = comp.get("view", {})
+            # Attribute each observation; do not merge into accepted truth
+            if comp.get("ok", True) is False:
+                err = view.get("error", "unavailable") if isinstance(view, dict) else "unavailable"
+                report_lines.append(f"[{vid}/{mode}] {status}: {err}")
+            else:
+                rep = view.get("report", "") if isinstance(view, dict) else ""
+                if isinstance(rep, list):
+                    rep = " ".join(str(x) for x in rep)
+                # Truncate to keep output bounded; attribute source
+                rep_str = str(rep)[:200]
+                report_lines.append(f"[{vid}/{mode}] {status}: {rep_str}")
+    except Exception:
+        # Bounded: report construction failed; preserve components
+        report_lines = ["report construction failed (bounded)"]
     
     # Omit confident counts when not all readable
     result = {
