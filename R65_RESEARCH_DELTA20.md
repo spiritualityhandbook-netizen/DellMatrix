@@ -70,9 +70,12 @@ behavioral persona proofs, presentation-only BIMO) are all within
 the established R6.1–R6.4 architecture.
 
 ### 2. Contradiction
-**Finding:** None. The removal of the sovereignty token does not
-contradict the human-sovereignty claim; it corrects the mechanism.
-Sovereignty is enforced via grant issuance, not token format.
+**Finding:** RESOLVED in AMEND-6. The AMEND-5 packet claimed "canonical
+cleanup for every case" while the code used guessed `form/state/...` globs
+with `except Exception: pass`. This report-to-code disagreement is now
+resolved: the packet describes disposable-copy isolation (accurate), and
+the guessed cleanup code has been removed. No behavioral contradiction
+remains.
 
 ### 3. Semantic drift
 **Finding:** None. No R6.1–R6.4 behavior changed. All R6.5 changes
@@ -92,8 +95,13 @@ for authority. Persona/BIMO remain descriptive metadata.
 layer (where R6.4 placed it). No new enforcement layer created.
 
 ### 7. Persistence failure
-**Finding:** None. Fresh-process test proves accepted outcomes survive
-reload. Old grants do not authorize in fresh process (session-scoped).
+**Finding:** None for production; test isolation verified in AMEND-6.
+Fresh-process test proves accepted outcomes survive reload. Old grants
+do not authorize in fresh process (session-scoped). Test artifacts are
+confined to disposable repository copies; production `form/state/` is
+not modified by the suite (verified via sentinel-file test). The suite
+does not redirect production `_STATE_DIR`; it runs in a copy where
+`form/state/` is fresh.
 
 ### 8. History/provenance consequence
 **Finding:** None. No historical records modified. Audit evidence
@@ -118,9 +126,15 @@ Every protected operation requires a host-issued grant.
 inputs. No performance-sensitive paths modified.
 
 ### 13. Public-path theater
-**Finding:** None (verified). All proofs execute through real public
-interfaces (`surface_for`, `snapshot_for`, `dispatch`, `issue_root_grant`).
-No mocks for enforcement decisions.
+**Finding:** None (verified, re-examined in AMEND-6). All proofs execute
+through real public interfaces (`surface_for`, `snapshot_for`, `dispatch`,
+`issue_root_grant`). No mocks for enforcement decisions. The suite runs
+via two public paths: (1) `form.regress` (canonical regression entry,
+uses isolated copy), and (2) direct `python3 form/mandell/r65_separation_test.py`
+(which self-isolates via disposable copy). Both paths verified. The
+isolation mechanism (disposable copies) is test infrastructure, not
+production behavior; it does not create a parallel test-only path for
+the enforcement logic itself.
 
 ### 14. Mathematical weakness
 **Finding:** None. No new mathematical claims. The intersection
@@ -130,7 +144,12 @@ computation is presentation-only, not a security boundary.
 **Finding:** None. No UI changes.
 
 ### 16. Historical-recovery conflict
-**Finding:** None. R6.3 rollback mechanisms untouched.
+**Finding:** None for R6.3 mechanisms (untouched). Re-examined in AMEND-6
+for test failure handling: The previous `except Exception: pass` in cleanup
+code could have masked failures. This is now resolved: `tempfile.TemporaryDirectory`
+propagates cleanup failures as exceptions (not swallowed). Behavioral test
+failures are preserved in CHECKS and reported; cleanup errors fail the test
+with explicit diagnostic. No failure-masking remains.
 
 ### 17. Simpler reuse opportunity
 **Finding:** None. R6.5 reuses R6.1 (AcceptancePolicy), R6.2

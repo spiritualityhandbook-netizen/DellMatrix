@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
-"""R6.5 separation enforcement — walking skeleton and proof matrix.
+"""R6.5 separation enforcement - walking skeleton and proof matrix.
 
 GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT (MODE=C).
-AMEND: GDP_PHASE_6_R65_COMPLETE_REAL_SEPARATION_CIRCUIT.
-AMEND-2: GDP_R65_FINISH_EXISTING_EXECUTABLE_PROOF.
-AMEND-3: GDP_R65_FINISH_NONVACUOUS_EXISTING_CONTROLS.
+AMEND-6: GDP_R65_FINISH_EXISTING_ISOLATION_AND_RETURN_FOR_ADMISSION.
 
 Proves at runtime:
-- PERSONA ≠ PERMISSION: persona changes cannot grant/widen/restore authority.
+- PERSONA != PERMISSION: persona changes cannot grant/widen/restore authority.
 - BIMO = PRESENTATION ONLY: descriptive metadata, not authority.
-- PERSPECTIVE ≠ TRUTH: views are read-only; cannot modify canonical records.
+- PERSPECTIVE != TRUTH: views are read-only; cannot modify canonical records.
 - HUMAN SOVEREIGNTY: every protected op requires host-issued grant.
 
 Uses real public interfaces. No mocks for the enforcement decisions.
+
+ISOLATION:
+This suite creates persistent artifacts in form/state/. Isolation is via
+disposable repository copies:
+1. form.regress: runs in a private temp copy (see _copy_tree).
+2. Direct execution: main() creates a temp copy via TemporaryDirectory
+   and re-executes there. Cleanup failures propagate.
+
+Each case uses UUID-suffixed owners. No manual file deletion.
 """
 
 from __future__ import annotations
@@ -214,84 +221,73 @@ def part_walking_skeleton():
 
     _pr.save(p_restart)
 
+    # Child 1: mutating probe.
+    child1_args = {
+        "owner": restart_owner,
+        "confirmed_pid": pid_c,
+        "pending_pid": pending_pid,
+        "old_grant_id": old_pending_grant,
+        "expected_confirmed_words": "separation test idea words",
+        "expected_pending_words": "pending restart test",
+        "expected_audit": expected_audit,
+    }
+    result1 = subprocess.run(
+        [sys.executable, "form/mandell/r65_fresh_probe.py",
+         json.dumps(child1_args)],
+        cwd=".", capture_output=True, text=True, timeout=60,
+    )
+    check("r65 fresh: child1 returncode==0",
+          result1.returncode == 0,
+          detail=f"rc={result1.returncode} out={result1.stdout[:200]}")
     try:
-        # Child 1: mutating probe.
-        child1_args = {
-            "owner": restart_owner,
-            "confirmed_pid": pid_c,
-            "pending_pid": pending_pid,
-            "old_grant_id": old_pending_grant,
-            "expected_confirmed_words": "separation test idea words",
-            "expected_pending_words": "pending restart test",
-            "expected_audit": expected_audit,
-        }
-        result1 = subprocess.run(
-            [sys.executable, "form/mandell/r65_fresh_probe.py",
-             json.dumps(child1_args)],
-            cwd=".", capture_output=True, text=True, timeout=60,
-        )
-        check("r65 fresh: child1 returncode==0",
-              result1.returncode == 0,
-              detail=f"rc={result1.returncode} out={result1.stdout[:200]}")
-        try:
-            out1 = json.loads(result1.stdout.strip().split("\n")[-1])
-            a1 = out1.get("assertions", {})
-        except Exception:
-            a1 = {}
+        out1 = json.loads(result1.stdout.strip().split("\n")[-1])
+        a1 = out1.get("assertions", {})
+    except Exception:
+        a1 = {}
 
-        for key in ["confirmed_status_exact", "confirmed_words_exact",
-                    "confirmed_idea_in_plane", "plane_content_exact",
-                    "pending_status_exact", "pending_absent_from_plane",
-                    "old_grant_denied_same_target",
-                    "denial_preserves_pending", "denial_preserves_absence",
-                    "reissued_succeeds", "reissued_confirmed_status",
-                    "reissued_idea_in_plane", "reissued_plane_content_exact",
-                    "audit_expectations_nonempty", "audit_nonempty",
-                    "audit_changed_result_fails"]:
-            check(f"r65 fresh: {key}", a1.get(key) is True)
-        # Check the specific audit record.
-        check("r65 fresh: audit_r65-restart-confirm",
-              a1.get("audit_r65-restart-confirm") is True)
+    for key in ["confirmed_status_exact", "confirmed_words_exact",
+                "confirmed_idea_in_plane", "plane_content_exact",
+                "pending_status_exact", "pending_absent_from_plane",
+                "old_grant_denied_same_target",
+                "denial_preserves_pending", "denial_preserves_absence",
+                "reissued_succeeds", "reissued_confirmed_status",
+                "reissued_idea_in_plane", "reissued_plane_content_exact",
+                "audit_expectations_nonempty", "audit_nonempty",
+                "audit_changed_result_fails"]:
+        check(f"r65 fresh: {key}", a1.get(key) is True)
+    # Check the specific audit record.
+    check("r65 fresh: audit_r65-restart-confirm",
+          a1.get("audit_r65-restart-confirm") is True)
 
-        # Child 2: verification-only (no mutation).
-        child2_args = {
-            "owner": restart_owner,
-            "confirmed_pid": pid_c,
-            "pending_pid": pending_pid,
-            "expected_confirmed_words": "separation test idea words",
-            "expected_pending_words": "pending restart test",
-            "expected_audit": expected_audit,
-        }
-        result2 = subprocess.run(
-            [sys.executable, "form/mandell/r65_verify_probe.py",
-             json.dumps(child2_args)],
-            cwd=".", capture_output=True, text=True, timeout=60,
-        )
-        check("r65 fresh: child2 returncode==0",
-              result2.returncode == 0,
-              detail=f"rc={result2.returncode} out={result2.stdout[:200]}")
-        try:
-            out2 = json.loads(result2.stdout.strip().split("\n")[-1])
-            a2 = out2.get("assertions", {})
-        except Exception:
-            a2 = {}
+    # Child 2: verification-only (no mutation).
+    child2_args = {
+        "owner": restart_owner,
+        "confirmed_pid": pid_c,
+        "pending_pid": pending_pid,
+        "expected_confirmed_words": "separation test idea words",
+        "expected_pending_words": "pending restart test",
+        "expected_audit": expected_audit,
+    }
+    result2 = subprocess.run(
+        [sys.executable, "form/mandell/r65_verify_probe.py",
+         json.dumps(child2_args)],
+        cwd=".", capture_output=True, text=True, timeout=60,
+    )
+    check("r65 fresh: child2 returncode==0",
+          result2.returncode == 0,
+          detail=f"rc={result2.returncode} out={result2.stdout[:200]}")
+    try:
+        out2 = json.loads(result2.stdout.strip().split("\n")[-1])
+        a2 = out2.get("assertions", {})
+    except Exception:
+        a2 = {}
 
-        for key in ["verify_confirmed_status", "verify_confirmed_words",
-                    "verify_confirmed_plane", "verify_confirmed_plane_content",
-                    "verify_pending_confirmed", "verify_pending_words",
-                    "verify_pending_plane", "verify_pending_plane_content"]:
-            check(f"r65 fresh: {key}", a2.get(key) is True)
+    for key in ["verify_confirmed_status", "verify_confirmed_words",
+                "verify_confirmed_plane", "verify_confirmed_plane_content",
+                "verify_pending_confirmed", "verify_pending_words",
+                "verify_pending_plane", "verify_pending_plane_content"]:
+        check(f"r65 fresh: {key}", a2.get(key) is True)
 
-    finally:
-        # Cleanup: remove the unique owner's state files.
-        try:
-            import glob
-            for f in glob.glob(f"form/state/{restart_owner}*"):
-                os.remove(f)
-            for f in glob.glob(f"/tmp/{restart_owner}*"):
-                os.remove(f)
-        except Exception:
-            pass
 
 
 def part_bimo_capability():
@@ -571,91 +567,76 @@ def part_sensitivity():
     coord = ac.new_coordinator(p)
     coord.register_agent("agent-s")
 
+    # Prepare THREE independent equivalent PENDING fixtures.
+    pids = []
+    for i in range(3):
+        pr = p.nursery.add(f"S{i}", words=f"sensitivity fixture {i}")
+        pids.append(pr.id)
+
+    def get_units():
+        plane = p.cube.session.plane
+        return getattr(plane, "units", {}) or {}
+
+    def assert_exact_pending_and_absent(pid, tag):
+        """Assert status=="pending" AND pid not in plane.units."""
+        prop = p.nursery.proposals[pid]
+        is_pending = (str(prop.status) == "pending")
+        check(f"r65 sensitivity [{tag}]: status==pending",
+              is_pending, detail=f"status={prop.status}")
+        absent = (pid not in get_units())
+        check(f"r65 sensitivity [{tag}]: pid absent from Plane",
+              absent, detail=f"pid={pid} in units={pid in get_units()}")
+        return is_pending and absent
+
+    def try_unauthorized(pid, tag):
+        h = p.acceptance_data_hash(pid, "confirm")
+        env = make_envelope(request_id=f"r65-sens-{tag}",
+                            operation="confirm", target=pid,
+                            expected={"content_hash": h}, _program=p)
+        qid = coord.enqueue("agent-s", env)
+        return coord.dispatch(qid, "bogus-grant-id")
+
+    # NORMAL (fixture 0).
+    assert_exact_pending_and_absent(pids[0], "normal")
+    r_normal = try_unauthorized(pids[0], "normal")
+    check("r65 sensitivity: normal denies without grant",
+          r_normal["ok"] is False)
+    # After denial: assert exact pending AND absence again.
+    assert_exact_pending_and_absent(pids[0], "normal-after")
+
+    # WEAKENED (fixture 1).
+    assert_exact_pending_and_absent(pids[1], "weakened")
+    policy = p.acceptance_policy
+    orig_check = policy.check
+    def weakened_check(*args, **kwargs):
+        return {"allowed": True, "decision": "allow"}
+    policy.check = weakened_check
     try:
-        # Prepare THREE independent equivalent PENDING fixtures.
-        pids = []
-        for i in range(3):
-            pr = p.nursery.add(f"S{i}", words=f"sensitivity fixture {i}")
-            pids.append(pr.id)
-
-        def get_units():
-            plane = p.cube.session.plane
-            return getattr(plane, "units", {}) or {}
-
-        def assert_exact_pending_and_absent(pid, tag):
-            """Assert status=="pending" AND pid not in plane.units."""
-            prop = p.nursery.proposals[pid]
-            is_pending = (str(prop.status) == "pending")
-            check(f"r65 sensitivity [{tag}]: status==pending",
-                  is_pending, detail=f"status={prop.status}")
-            absent = (pid not in get_units())
-            check(f"r65 sensitivity [{tag}]: pid absent from Plane",
-                  absent, detail=f"pid={pid} in units={pid in get_units()}")
-            return is_pending and absent
-
-        def try_unauthorized(pid, tag):
-            h = p.acceptance_data_hash(pid, "confirm")
-            env = make_envelope(request_id=f"r65-sens-{tag}",
-                                operation="confirm", target=pid,
-                                expected={"content_hash": h}, _program=p)
-            qid = coord.enqueue("agent-s", env)
-            return coord.dispatch(qid, "bogus-grant-id")
-
-        # NORMAL (fixture 0).
-        assert_exact_pending_and_absent(pids[0], "normal")
-        r_normal = try_unauthorized(pids[0], "normal")
-        check("r65 sensitivity: normal denies without grant",
-              r_normal["ok"] is False)
-        # After denial: assert exact pending AND absence again.
-        assert_exact_pending_and_absent(pids[0], "normal-after")
-
-        # WEAKENED (fixture 1).
-        assert_exact_pending_and_absent(pids[1], "weakened")
-        policy = p.acceptance_policy
-        orig_check = policy.check
-        def weakened_check(*args, **kwargs):
-            return {"allowed": True, "decision": "allow"}
-        policy.check = weakened_check
-        try:
-            r_weak = try_unauthorized(pids[1], "weakened")
-            # After weakened success: assert confirmed + exact unit presence.
-            prop_w = p.nursery.proposals[pids[1]]
-            check("r65 sensitivity: weakened confirms",
-                  str(prop_w.status) == "confirmed" and r_weak["ok"] is True,
-                  detail=f"status={prop_w.status}")
-            unit_w = get_units().get(pids[1])
-            check("r65 sensitivity: weakened Idea in Plane by exact pid",
-                  unit_w is not None)
-            if unit_w is not None:
-                check("r65 sensitivity: weakened unit content exact",
-                      str(getattr(unit_w, "words", "")) == "sensitivity fixture 1")
-        finally:
-            policy.check = orig_check
-
-        # RESTORED (fixture 2).
-        assert_exact_pending_and_absent(pids[2], "restored")
-        check("r65 sensitivity: check restored",
-              p.acceptance_policy.check is orig_check)
-        r_restored = try_unauthorized(pids[2], "restored")
-        check("r65 sensitivity: restored denies without grant",
-              r_restored["ok"] is False)
-        # After denial: assert exact pending AND absence again.
-        assert_exact_pending_and_absent(pids[2], "restored-after")
-
+        r_weak = try_unauthorized(pids[1], "weakened")
+        # After weakened success: assert confirmed + exact unit presence.
+        prop_w = p.nursery.proposals[pids[1]]
+        check("r65 sensitivity: weakened confirms",
+              str(prop_w.status) == "confirmed" and r_weak["ok"] is True,
+              detail=f"status={prop_w.status}")
+        unit_w = get_units().get(pids[1])
+        check("r65 sensitivity: weakened Idea in Plane by exact pid",
+              unit_w is not None)
+        if unit_w is not None:
+            check("r65 sensitivity: weakened unit content exact",
+                  str(getattr(unit_w, "words", "")) == "sensitivity fixture 1")
     finally:
-        # Cleanup canonical state paths.
-        try:
-            from form import persist_rest as _pr
-            # Remove the program file if it exists.
-            import os, glob
-            for pat in [f"form/state/{owner}*", f"form/state/program_{owner}*"]:
-                for f in glob.glob(pat):
-                    try:
-                        os.remove(f)
-                    except Exception:
-                        pass
-        except Exception:
-            pass
+        policy.check = orig_check
+
+    # RESTORED (fixture 2).
+    assert_exact_pending_and_absent(pids[2], "restored")
+    check("r65 sensitivity: check restored",
+          p.acceptance_policy.check is orig_check)
+    r_restored = try_unauthorized(pids[2], "restored")
+    check("r65 sensitivity: restored denies without grant",
+          r_restored["ok"] is False)
+    # After denial: assert exact pending AND absence again.
+    assert_exact_pending_and_absent(pids[2], "restored-after")
+
 
 
 def smoke() -> bool:
@@ -674,7 +655,64 @@ def smoke() -> bool:
     return passed == total and total > 0
 
 
+def _is_in_isolated_copy() -> bool:
+    """Check if already in an isolated copy."""
+    import os
+    current = os.path.abspath(".")
+    while current != "/":
+        if os.path.exists(os.path.join(current, ".dm_regress_copy")):
+            return True
+        if os.path.exists(os.path.join(current, ".r65_isolated")):
+            return True
+        current = os.path.dirname(current)
+    return False
+
+
+def _run_in_isolated_copy() -> int:
+    """Create disposable repo copy and re-execute suite there.
+    
+    Uses tempfile.TemporaryDirectory for automatic cleanup.
+    Cleanup failures propagate (not swallowed).
+    """
+    import os
+    import shutil
+    import subprocess
+    import sys
+    import tempfile
+    
+    current = os.path.abspath(".")
+    repo_root = None
+    while current != "/":
+        if os.path.isdir(os.path.join(current, "form")):
+            repo_root = current
+            break
+        current = os.path.dirname(current)
+    
+    if repo_root is None:
+        print("ERROR: Cannot find repository root", file=sys.stderr)
+        return 2
+    
+    with tempfile.TemporaryDirectory(prefix="r65_isolated_") as tmpdir:
+        dest = os.path.join(tmpdir, "repo")
+        shutil.copytree(
+            repo_root, dest,
+            ignore=shutil.ignore_patterns('.git', '__pycache__', '*.pyc'),
+            symlinks=True
+        )
+        open(os.path.join(dest, ".r65_isolated"), "w").close()
+        
+        result = subprocess.run(
+            [sys.executable, "form/mandell/r65_separation_test.py"],
+            cwd=dest,
+            env={**os.environ, "PYTHONPATH": dest},
+        )
+        return result.returncode
+
+
 def main():
+    if not _is_in_isolated_copy():
+        return _run_in_isolated_copy()
+    
     part_walking_skeleton()
     part_bimo_capability()
     part_sovereignty()
