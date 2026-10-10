@@ -1,9 +1,10 @@
-# R6.5 COMPLETION PACKET — Separation Enforcement (AMEND-3)
+# R6.5 COMPLETION PACKET — Separation Enforcement (AMEND-4)
 
 **Directive:** GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT (MODE=C)
 **AMEND Directive:** GDP_PHASE_6_R65_COMPLETE_REAL_SEPARATION_CIRCUIT (MODE=C)
 **AMEND-2 Directive:** GDP_R65_FINISH_EXISTING_EXECUTABLE_PROOF (MODE=C)
 **AMEND-3 Directive:** GDP_R65_FINISH_NONVACUOUS_EXISTING_CONTROLS (MODE=C)
+**AMEND-4 Directive:** GDP_R65_COMPLETE_ASSERTIONS_WITH_CANONICAL_EVIDENCE (MODE=C)
 **Authorization:** GDP_R65_AUTHORIZATION_RECONCILIATION (2026-10-09 16:17 CDT)
 **Date:** 2026-10-09
 **Status:** CANDIDATE READY FOR DIRECTOR REVIEW (NOT CERTIFIED — DO NOT MERGE)
@@ -11,8 +12,8 @@
 ## Exact Identity
 
 - **Branch:** `gdp-phase6-r65-separation`
-- **Head:** `86dd64d6d057ebb1b0712f145c6619e2215f5a91`
-- **Tree:** `4b25f9ad7e602dd6ec69cd2b0a2d014f50346d14`
+- **Head:** `cb522962194f0dfcca69c0e1c57d6f8c0a372c88`
+- **Tree:** [to be recorded after final commit]
 - **Base:** `0ceb3113beb8ce93e6bca422b9bddad12984feac` (R6.4 MERGED)
 - **Base tree:** `7ab8c67b1a4ba742fb971d7039ac5b3755366cd5`
 
@@ -67,11 +68,11 @@ See `R65_RESEARCH_DELTA20.md`:
 All 20 established categories mapped with bounded status and evidence.
 See `R65_RESEARCH_DELTA20.md` for the full mapping.
 
-## Verification (AMEND-3)
+## Verification (AMEND-4)
 
 - `python3 -m form.regress --twice`: **111/111 GREEN** (both passes)
 - `python3 -m form.regress --order rev`: **111/111 GREEN**
-- R6.5 separation: **52/52**
+- R6.5 separation: **62/62**
 - Exact-head CI: [pending push]
 
 ## Costs
