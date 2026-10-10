@@ -555,7 +555,7 @@ def compose_views(program, specs, **kwargs) -> Dict[str, Any]:
             rep = view.get("report", "")
             if isinstance(rep, list):
                 rep = " ".join(str(x) for x in rep)
-            # Truncate to avoid unbounded output; attribute source
+            # Truncate to keep output bounded; attribute source
             rep_str = str(rep)[:200]
             report_lines.append(f"[{vid}/{mode}] {status}: {rep_str}")
     
