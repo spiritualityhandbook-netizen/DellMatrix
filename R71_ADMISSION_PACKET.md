@@ -20,8 +20,8 @@ loader resolves it.
 ## Exact Identity
 
 - **Branch:** `gdp-phase7-r71-composition`
-- **Head:** [frozen below]
-- **Tree:** [frozen below]
+- **Head:** `d1769d2829018316d0e7c908550e4a456c050a3f`
+- **Tree:** `8c0aac4c436e67bc4559c6d5b74dee78d290bbb4`
 - **Base:** `efd68bf5ef702dcb5a59aa246ed4397c0c0a133c`
 - **Note:** Intermediate identities (26ec9229, db62e2b, c93e864, ad6fafc)
   superseded; frozen head below is authoritative.
