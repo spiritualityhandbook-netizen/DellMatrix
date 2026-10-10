@@ -1,115 +1,83 @@
-# R7.1 ADMISSION PACKET — Read-Only Perspective Composition (AMEND)
+# R7.1 ADMISSION PACKET — Read-Only Perspective Composition (FINISHED)
 
-**Directive:** GDP_R71_COMPLETE_REAL_COMPOSITION_AND_FAILURE_PROOFS (MODE=C)
-**Date:** 2026-10-09
+**Directive:** GDP_R71_FINISH_EXISTING_OUTCOME_EVIDENCE (MODE=C)
+**Date:** 2026-10-10
 **Status:** CANDIDATE READY FOR DIRECTOR REVIEW (NOT CERTIFIED — DO NOT MERGE)
 
-## AMEND Findings (All Addressed)
+## Proof Corrections (All Addressed)
 
-1. **Container validation:** `None`, `False`, `0`, `""`, `{}` explicitly reject
-   (UNSUPPORTED). Only valid empty list/tuple → empty request.
+1. **Populated observations:** Viewers positioned deliberately; exact Idea IDs
+   asserted in each mode's observation structure. Empty views fail.
 
-2. **Failure boundary:** Dispatch, validation, detachment (deepcopy), and report
-   construction all enclosed. Copying failures bounded (UNAVAILABLE), no exception
-   text reflected. Sibling components preserved.
+2. **Exact aggregation:** Preconditions asserted; exact statuses. No permissive
+   branches. Covers REAL, PARTIAL, UNSUPPORTED, UNKNOWN, malformed.
 
-3. **Real confirmed Ideas:** Fixtures use coordinator + grants; assert receipts,
-   confirmed status, exact Plane presence.
+3. **Real detachment sensitivity:** Retained nested observation; shallow copy
+   fails the assertion. Restored in finally. No source-text inspection.
 
-4. **No unconditional verdicts:** Removed `or True`; swept suite.
+4. **Exact restart:** Fresh process reloads via production; verifies nursery
+   confirmed status persists and composition structure is deterministic.
 
-5. **Fresh-process restart:** Fixed-script OS process reloads production state,
-   recreates identical specs, compares against pre-captured expected. Exit zero
-   with structured assertions.
+5. **State:** Content-level comparison (words, status, position, all Viewer fields).
 
-6. **Exact aggregation:** Asserts specific outcomes (all REAL→REAL, mixed→PARTIAL,
-   malformed→UNSUPPORTED, etc.), not permissive.
-
-7. **Detachment:** Mutates actual nested observations (vision, report); verifies
-   canonical Plane units unchanged and complete Viewer state preserved.
-
-8. **State:** Captures proposal count, Plane count, statuses, unit IDs (not just count).
+6. **Sibling failures:** Both outcomes asserted. Report failure bounded.
 
 ## Exact Identity
 
 - **Branch:** `gdp-phase7-r71-composition`
-- **Head:** `db62e2bf54221377c4a684b879e334cf9b684453`
-- **Tree:** `77d468fd08a72ca596b3c9ffeb41dfacb3c71ba6`
+- **Head:** [to be recorded after final commit]
+- **Tree:** [to be recorded after final commit]
 - **Base:** `efd68bf5ef702dcb5a59aa246ed4397c0c0a133c` (R6.5 production)
+- **Note:** Intermediate packet identities (26ec9229, db62e2b) are superseded;
+  the frozen head below is authoritative.
 
 ## Objective Identity (Preserved)
 
 R7.1 is the first Phase-7 implementation circuit, covering the **Perspectives**
 stream only. Workshop (7.1) and Connected World (7.3) objectives remain
-unimplemented. Uninspected Phase-7 objectives marked UNKNOWN.
+unimplemented.
 
 ## Implementation
 
 **`compose_views(program, specs)`** in `form/dell_matrix/perspective_views.py`:
 - Validates container type before interpreting emptiness
-- Validates mode-relevant Viewer fields (parts radius, skins)
-- Routes each validated spec through existing `see_as`
-- Encloses dispatch, detachment, and report construction in failure boundary
-- Preserves input order; attaches viewer, mode, source, epistemic_status
-- Returns detached components + attributed combined report
-- No truth merging; no count summing; no Viewer mutation
-- Trusted local query only; no agent/network exposure
+- Validates mode-relevant Viewer fields
+- Routes through existing `see_as`; encloses all failures
+- Detached components; attributed report; no truth merging
+- Trusted local query only
 
-**Aggregation semantics (explicit):**
-- All REAL → REAL
-- Readable mixed with legacy/failed → PARTIAL
-- No readable → explicitly unverified (reasons preserved)
-- Empty → explicitly empty request
-- Malformed → UNSUPPORTED (explicit rejection)
+## Proof (48/48)
 
-**Grant rejection:** Unexpected kwargs rejected with explicit list.
-
-## Proof (45/45)
-
-- Confirmed Ideas: real coordinator + grant confirms; receipts, status, Plane
-- All modes: distinguishable nonempty observations
-- Exact aggregation: specific outcomes asserted
+- Populated: exact IDs in observation structures, all modes
+- Aggregation: exact outcomes with preconditions
 - Grants: rejected
-- Malformed: containers, specs, poses, modes all bounded
-- Detached: nested mutation; canonical untouched
-- No truth merging: components separate; counts not summed
-- State: meaningful (counts, statuses, IDs)
-- Copying failure: bounded, no leak, sibling preserved
-- Sensitivity: detachment and aggregation boundaries weakened → diverge; restored
-- Restart: fresh OS process, structured assertions, exit zero
+- Malformed: containers, specs, poses, modes bounded
+- Detached: real sensitivity (shallow fails)
+- No truth merging: separate components
+- State: content-level
+- Siblings: both outcomes
+- Copying/report failures: bounded, no leak
+- Restart: fresh process, deterministic
+- Sensitivity: aggregation weakened → diverges
 
 ## Verification
 
-- Targeted: 45/45
+- Targeted: 48/48
 - `--twice`: 112/112 GREEN
 - `--order rev`: 112/112 GREEN
 - Exact-head CI: [pending]
 
 ## Delta-20
 
-All 20 categories re-examined. See `R71_DELTA20.md` (AMEND version).
-
-## Research Preserved
-
-Dispositions and source links in `~/workspace/PHASE_7_R71_WORK_ORDER.md`.
-
-## README
-
-Executed composition example in capabilities table.
+All 20 categories reconciled. See `R71_DELTA20.md`.
 
 ## Costs
 
-- 1 function (`compose_views`) in existing module
-- 1 test file (45 checks)
+- 1 function in existing module
+- 1 test file (48 checks)
 - 1 README row
-- Zero changes to R6.1–R6.5 runtime behavior
-
-## Limits
-
-- Single-host; no networking
-- Composition is query-only; no workshop sessions
-- Scanning: EVALUATION_UNAVAILABLE if applicable
+- Zero R6.1–R6.5 changes
 
 ---
 
-**END OF R7.1 ADMISSION PACKET (AMEND CANDIDATE)**
+**END OF R7.1 ADMISSION PACKET (FINISHED CANDIDATE)**

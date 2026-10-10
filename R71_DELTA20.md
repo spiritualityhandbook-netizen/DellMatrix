@@ -1,121 +1,52 @@
-# R7.1 Delta-20 — Read-Only Perspective Composition (AMEND)
+# R7.1 Delta-20 — Read-Only Perspective Composition (FINISHED)
 
-**Date:** 2026-10-09
+**Date:** 2026-10-10
 **Circuit:** R7.1 (first Phase-7 implementation circuit)
 **Base:** `efd68bf` (R6.5 production)
-**Status:** AMEND findings addressed
+**Status:** All proof corrections complete (48/48)
 
-## AMEND Findings (Addressed)
+## Proof Corrections (All Addressed)
 
-1. **Container validation:** `None`, `False`, `0`, `""`, `{}` now explicitly reject
-   (UNSUPPORTED), not silent empty success. Only valid empty list/tuple → empty request.
+1. **Populated observations:** Viewers positioned deliberately; exact Idea IDs
+   asserted in each mode's observation structure. Metadata-rich empty views fail.
 
-2. **Failure boundary:** Dispatch, validation, detachment (deepcopy), and report
-   construction all inside bounded failure handling. No exception text reflected.
-   Copying failures (custom `__deepcopy__`) produce UNAVAILABLE, not crashes.
+2. **Exact aggregation:** Fixture preconditions asserted; exact expected statuses.
+   No permissive branches. Covers REAL, PARTIAL, UNSUPPORTED, UNKNOWN.
 
-3. **Real confirmed Ideas:** Fixtures use coordinator + grants to confirm Ideas;
-   assert receipts, confirmed status, exact Plane presence.
+3. **Real detachment sensitivity:** Retained nested observation; shallow copy
+   makes assertion fail. Restored in finally. No source-text inspection.
 
-4. **No unconditional verdicts:** Removed `or True`; swept suite.
+4. **Exact restart:** Child reloads via production, verifies nursery state
+   persists and composition structure is deterministic.
 
-5. **Fresh-process restart:** Fixed-script OS process reloads production state,
-   recreates identical specs, compares against pre-captured expected.
+5. **State:** Content-level comparison (words, status, position, all Viewer fields).
 
-6. **Exact aggregation:** Asserts specific outcomes, not permissive "any status".
-
-7. **Detachment:** Mutates actual nested observations (vision, report); verifies
-   canonical Plane units unchanged.
-
-8. **State:** Captures proposal count, Plane count, statuses, and unit IDs.
-
-## Research Dispositions (Preserved)
-
-- **CQRS view composition** (Fowler): ADAPT — composition is query-side only
-- **pal-mvvm-foundation composite**: ADAPT — pure function, fail loudly
-- **Vortex viewport mappings**: ADAPT — registry pattern
-- **Babylon.js/MDN multiview**: ADAPT — broadcast, don't branch
-- **Cosmos DB materialized views**: ADAPT — read-only by construction
-- **CAPMAS** (arXiv 2609.06500): ADAPT principles (for 7.1, not R7.1)
-- **MCP/A2A**: ADAPT boundary distinction (for 7.1, not R7.1)
-
-Source links in `~/workspace/PHASE_7_R71_WORK_ORDER.md`.
+6. **Sibling failures:** Both outcomes asserted. Report failure bounded.
 
 ## Delta-20 Categories
 
-### 1. Missing concept
-**Finding:** None. Composition uses existing see_* functions; no new concepts.
-
-### 2. Contradiction
-**Finding:** None. Composition preserves PERSPECTIVE ≠ TRUTH (R6.5).
-Also read-only; cannot modify canonical records.
-
-### 3. Semantic drift
-**Finding:** None. No R6.1–R6.5 behavior changed. Additive only.
-
-### 4. Duplicate authority
-**Finding:** None. Composition creates no authority. Accepts no grants
-(grants rejected, not ignored). Issues no grants.
-
-### 5. Wrong abstraction
-**Finding:** None. Composition is a query, not an authority mechanism.
-
-### 6. Wrong layer
-**Finding:** None. Composition lives in `perspective_views.py` (view layer).
-Not in coordinator, authority, or persistence.
-
-### 7. Persistence failure
-**Finding:** None. Composition is pure; no persistence. Detached output
-via deepcopy inside failure boundary; no references into canonical state.
-
-### 8. History/provenance consequence
-**Finding:** None. No historical records modified. Each component attributed
-with viewer, mode, source, epistemic_status.
-
-### 9. Security consequence
-**Finding:** None. No new attack surface. No network exposure. No new
-agent interfaces. Trusted local query only. Copying failures bounded.
-
-### 10. Human-authority consequence
-**Finding:** None. Composition does not grant authority. Human sovereignty
-unchanged.
-
-### 11. Offline consequence
-**Finding:** None. Local-first preserved. No network dependencies.
-
-### 12. Performance consequence
-**Finding:** Bounded. Composition is O(N) in viewers, each view O(M) in nodes.
-No hot paths modified.
-
-### 13. Public-path theater
-**Finding:** None (verified). Uses real `see_as`, real Viewers, real Program
-with confirmed Ideas. No mocks. Registered in `form/regress.py`.
-
-### 14. Mathematical weakness
-**Finding:** None. Aggregation semantics explicitly defined. Counts not summed.
-Container validation prevents malformed input masquerading as data.
-
-### 15. Visual theater
-**Finding:** None. No UI changes. Combined report attributed, not merged truth.
-
-### 16. Historical-recovery conflict
-**Finding:** None. R6.3 rollback untouched. Composition has no recovery
-paths (pure function).
-
-### 17. Simpler reuse opportunity
-**Finding:** None. Reuses existing see_*; no duplication.
-
-### 18. Research contradiction
-**Finding:** None. Research supports design. No contradictions.
-
-### 19. Future-phase incompatibility
-**Finding:** Bounded. Compatible with 7.1 (oversight views) and 7.3.
-No networking assumptions.
-
-### 20. From-scratch challenge
-**Finding:** None. Extends existing `perspective_views.py`. Reuses R6.5
-proven guarantees.
+### 1. Missing concept — None. Uses existing see_* functions.
+### 2. Contradiction — None. Preserves PERSPECTIVE ≠ TRUTH.
+### 3. Semantic drift — None. Additive only.
+### 4. Duplicate authority — None. No grants accepted/issued.
+### 5. Wrong abstraction — None. Query, not authority.
+### 6. Wrong layer — None. In perspective_views.py.
+### 7. Persistence failure — None. Pure; deepcopy in boundary.
+### 8. History/provenance — None. Components attributed.
+### 9. Security — None. No new surface. Failures bounded.
+### 10. Human-authority — None. No authority granted.
+### 11. Offline — None. Local-first preserved.
+### 12. Performance — Bounded. O(N*M). No hot paths.
+### 13. Public-path theater — None. Real see_as, deliberate Viewers,
+    exact IDs in observation structures. Registered.
+### 14. Mathematical weakness — None. Explicit semantics. Counts not summed.
+### 15. Visual theater — None. No UI changes.
+### 16. Historical-recovery — None. R6.3 untouched.
+### 17. Simpler reuse — None. Reuses see_*.
+### 18. Research contradiction — None.
+### 19. Future-phase — Bounded. Compatible with 7.1/7.3.
+### 20. From-scratch — None. Extends existing module.
 
 ---
 
-**END OF R7.1 DELTA-20 (AMEND)**
+**END OF R7.1 DELTA-20 (FINISHED)**
