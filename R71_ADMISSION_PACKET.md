@@ -25,8 +25,8 @@
 ## Exact Identity
 
 - **Branch:** `gdp-phase7-r71-composition`
-- **Head:** [to be recorded after final commit]
-- **Tree:** [to be recorded after final commit]
+- **Head:** `738ddbc800cd182873b75dd7c098cc1efa68b5ce`
+- **Tree:** `93dd059a03484f5c8e1a39e64e134ded72095f14`
 - **Base:** `efd68bf5ef702dcb5a59aa246ed4397c0c0a133c` (R6.5 production)
 - **Note:** Intermediate packet identities (26ec9229, db62e2b) are superseded;
   the frozen head below is authoritative.
