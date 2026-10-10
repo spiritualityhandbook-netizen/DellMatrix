@@ -3,49 +3,41 @@
 **Date:** 2026-10-10
 **Circuit:** R7.1 (first Phase-7 implementation circuit)
 **Base:** `efd68bf` (R6.5 production)
-**Status:** All proof corrections complete (48/48)
+**Status:** All proof corrections complete (49/49)
 
-## Proof Corrections (All Addressed)
+## Proof Corrections
 
-1. **Populated observations:** Viewers positioned deliberately; exact Idea IDs
-   asserted in each mode's observation structure. Metadata-rich empty views fail.
+1. **Populated observations:** Exact Idea IDs in each mode's structure.
+2. **Exact aggregation:** Preconditions; exact statuses; no permissive.
+3. **Detachment sensitivity:** Retained nested; shallow fails; restored.
+4. **Exact restart:** Uses persist_rest.load(owner, activate=False).
+   Asserts IDs in Nursery and Plane. Compares complete composition via JSON.
+   Sensitivity: mutated observation rejects.
+5. **State:** Content-level comparison.
+6. **Siblings:** Both outcomes; report failure bounded.
 
-2. **Exact aggregation:** Fixture preconditions asserted; exact expected statuses.
-   No permissive branches. Covers REAL, PARTIAL, UNSUPPORTED, UNKNOWN.
+## Delta-20
 
-3. **Real detachment sensitivity:** Retained nested observation; shallow copy
-   makes assertion fail. Restored in finally. No source-text inspection.
-
-4. **Exact restart:** Child reloads via production, verifies nursery state
-   persists and composition structure is deterministic.
-
-5. **State:** Content-level comparison (words, status, position, all Viewer fields).
-
-6. **Sibling failures:** Both outcomes asserted. Report failure bounded.
-
-## Delta-20 Categories
-
-### 1. Missing concept — None. Uses existing see_* functions.
-### 2. Contradiction — None. Preserves PERSPECTIVE ≠ TRUTH.
-### 3. Semantic drift — None. Additive only.
-### 4. Duplicate authority — None. No grants accepted/issued.
-### 5. Wrong abstraction — None. Query, not authority.
-### 6. Wrong layer — None. In perspective_views.py.
-### 7. Persistence failure — None. Pure; deepcopy in boundary.
-### 8. History/provenance — None. Components attributed.
-### 9. Security — None. No new surface. Failures bounded.
-### 10. Human-authority — None. No authority granted.
-### 11. Offline — None. Local-first preserved.
-### 12. Performance — Bounded. O(N*M). No hot paths.
-### 13. Public-path theater — None. Real see_as, deliberate Viewers,
-    exact IDs in observation structures. Registered.
-### 14. Mathematical weakness — None. Explicit semantics. Counts not summed.
-### 15. Visual theater — None. No UI changes.
-### 16. Historical-recovery — None. R6.3 untouched.
-### 17. Simpler reuse — None. Reuses see_*.
-### 18. Research contradiction — None.
-### 19. Future-phase — Bounded. Compatible with 7.1/7.3.
-### 20. From-scratch — None. Extends existing module.
+1. Missing concept — None.
+2. Contradiction — None. Preserves PERSPECTIVE ≠ TRUTH.
+3. Semantic drift — None. Additive.
+4. Duplicate authority — None.
+5. Wrong abstraction — None.
+6. Wrong layer — None.
+7. Persistence failure — None.
+8. History/provenance — None.
+9. Security — None. Bounded failures.
+10. Human-authority — None.
+11. Offline — None.
+12. Performance — Bounded.
+13. Public-path theater — None. Correct loader used.
+14. Mathematical weakness — None.
+15. Visual theater — None.
+16. Historical-recovery — None.
+17. Simpler reuse — None.
+18. Research contradiction — None.
+19. Future-phase — Bounded.
+20. From-scratch — None.
 
 ---
 
