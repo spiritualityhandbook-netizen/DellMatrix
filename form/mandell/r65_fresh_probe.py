@@ -3,40 +3,34 @@
 
 Takes JSON arguments via argv[1]:
 {
-  "owner": "r65s1",
-  "confirmed_pid": "<pid of already-confirmed proposal>",
-  "confirmed_label": "S1",
-  "pending_pid": "<pid of pending proposal>",
-  "pending_label": "S1pending",
+  "owner": "<unique owner>",
+  "confirmed_pid": "<pid>",
+  "pending_pid": "<pid>",
   "old_grant_id": "<grant ID from before restart>",
-  "expected_words": "<words of pending proposal>"
+  "expected_confirmed_words": "<exact words>",
+  "expected_pending_words": "<exact words>",
+  "expected_audit": [
+    {"request_id": "...", "subject": "...", "target": "...", "result": "..."}
+  ]
 }
 
-Outputs JSON to stdout with assertions. Exit 0 iff all pass.
-Exit 2 on unexpected exception.
+Uses plane.units[pid] for exact Idea identity (not label search).
+Outputs JSON with assertions. Exit 0 iff all pass. Exit 2 on exception.
 """
 
 import json
 import sys
-
-def _find_unit_by_label(p, label):
-    plane = p.cube.session.plane
-    units = getattr(plane, "units", {}) or {}
-    for uid, u in units.items():
-        if str(getattr(u, "label", "")) == label:
-            return u
-    return None
 
 def main():
     try:
         args = json.loads(sys.argv[1])
         owner = args["owner"]
         confirmed_pid = args["confirmed_pid"]
-        confirmed_label = args["confirmed_label"]
         pending_pid = args["pending_pid"]
-        pending_label = args["pending_label"]
         old_grant_id = args["old_grant_id"]
-        expected_words = args["expected_words"]
+        expected_confirmed_words = args["expected_confirmed_words"]
+        expected_pending_words = args["expected_pending_words"]
+        expected_audit = args.get("expected_audit", [])
 
         sys.path.insert(0, ".")
         from form import persist_rest as pr
@@ -47,41 +41,57 @@ def main():
         p2 = pr.load(owner, activate=False)
         results = {}
 
+        def get_unit(pid):
+            plane = p2.cube.session.plane
+            units = getattr(plane, "units", {}) or {}
+            return units.get(pid)
+
         # (a) Confirmed proposal: exact status and words.
         prop = p2.nursery.proposals[confirmed_pid]
         results["confirmed_status_exact"] = (str(prop.status) == "confirmed")
-        results["confirmed_words_match"] = (
-            str(prop.words) == "separation test idea words"
+        results["confirmed_words_exact"] = (
+            str(prop.words) == expected_confirmed_words
         )
 
-        # (b) Confirmed Idea exists in reloaded Plane with expected content.
-        unit = _find_unit_by_label(p2, confirmed_label)
+        # (b) Confirmed Idea in Plane by EXACT pid key.
+        unit = get_unit(confirmed_pid)
         results["confirmed_idea_in_plane"] = (unit is not None)
         if unit is not None:
-            results["plane_content_matches"] = (
-                expected_words[:20] in str(getattr(unit, "words", ""))
-                or "separation test" in str(getattr(unit, "words", ""))
+            results["plane_content_exact"] = (
+                str(getattr(unit, "words", "")) == expected_confirmed_words
             )
         else:
-            results["plane_content_matches"] = False
+            results["plane_content_exact"] = False
 
-        # (c) Audit records survive (check for audit trail presence).
-        # The coordinator writes audit blocks; verify the program has
-        # audit-related state.
-        has_audit = (
-            hasattr(p2, "_audit_trail") or
-            hasattr(p2, "audit_log") or
-            len(getattr(p2, "_audit_trail", []) or []) >= 0
+        # (c) Audit records survive: compare captured expectations.
+        # Use list_agent_audit to get actual records.
+        try:
+            audit_records = ac.list_agent_audit(p2)
+        except Exception:
+            audit_records = []
+        # Check each expected record is present.
+        for exp in expected_audit:
+            found = any(
+                str(r.get("request_id", "")) == exp["request_id"]
+                and str(r.get("subject", "")) == exp["subject"]
+                and str(r.get("target", "")) == exp["target"]
+                for r in audit_records
+            )
+            results[f"audit_{exp['request_id']}"] = found
+        results["audit_nonempty"] = len(audit_records) > 0
+
+        # (d) Pending proposal: status==pending and pid NOT in plane.units.
+        pend_prop = p2.nursery.proposals[pending_pid]
+        results["pending_status_exact"] = (
+            str(pend_prop.status) == "pending"
         )
-        # Best-effort: audit infrastructure exists.
-        results["audit_infrastructure_present"] = True
+        results["pending_absent_from_plane"] = (
+            get_unit(pending_pid) is None
+        )
 
-        # (d) Old grant against SAME pending target must deny.
+        # (e) Old grant against SAME pending target must deny.
         coord = ac.new_coordinator(p2)
         coord.register_agent("agent-a")
-        pre_status = str(p2.nursery.proposals[pending_pid].status)
-        pre_unit = _find_unit_by_label(p2, pending_label)
-
         h = p2.acceptance_data_hash(pending_pid, "confirm")
         env = make_envelope(
             request_id="r65-fresh-old",
@@ -91,18 +101,16 @@ def main():
         r = coord.dispatch(qid, old_grant_id)
         results["old_grant_denied_same_target"] = (r["ok"] is False)
 
-        # (e) Denial preserves pending state AND Idea absence.
-        post_status = str(p2.nursery.proposals[pending_pid].status)
-        post_unit = _find_unit_by_label(p2, pending_label)
+        # (f) Denial preserves pending state AND Idea absence.
+        post_prop = p2.nursery.proposals[pending_pid]
         results["denial_preserves_pending"] = (
-            pre_status == post_status
-            and "confirm" not in post_status.lower()
+            str(post_prop.status) == "pending"
         )
         results["denial_preserves_absence"] = (
-            pre_unit is None and post_unit is None
+            get_unit(pending_pid) is None
         )
 
-        # (f) Reissue for same target: confirmed status AND Idea presence.
+        # (g) Reissue for same target: confirmed + exact Plane content.
         grant2 = aa.issue_root_grant(
             p2, issuer="test-host", subject="agent-a",
             target=pending_pid, content_pid=pending_pid)
@@ -114,20 +122,21 @@ def main():
         qid2 = coord.enqueue("agent-a", env2)
         r2 = coord.dispatch(qid2, grant2["grant_id"])
         results["reissued_succeeds"] = (r2["ok"] is True)
-        # Check status and Plane presence after reissue.
-        final_status = str(p2.nursery.proposals[pending_pid].status)
-        results["reissued_confirmed_status"] = (final_status == "confirmed")
-        final_unit = _find_unit_by_label(p2, pending_label)
+        final_prop = p2.nursery.proposals[pending_pid]
+        results["reissued_confirmed_status"] = (
+            str(final_prop.status) == "confirmed"
+        )
+        final_unit = get_unit(pending_pid)
         results["reissued_idea_in_plane"] = (final_unit is not None)
+        if final_unit is not None:
+            results["reissued_plane_content_exact"] = (
+                str(getattr(final_unit, "words", "")) == expected_pending_words
+            )
+        else:
+            results["reissued_plane_content_exact"] = False
 
-        # (g) Subsequent fresh reload verifies committed outcome.
-        # Save and reload in this same process (simulates second restart).
+        # Save for the verification-only child.
         pr.save(p2)
-        p3 = pr.load(owner, activate=False)
-        reloaded_status = str(p3.nursery.proposals[pending_pid].status)
-        results["reload_verifies_commit"] = (reloaded_status == "confirmed")
-        reloaded_unit = _find_unit_by_label(p3, pending_label)
-        results["reload_verifies_plane"] = (reloaded_unit is not None)
 
         output = {"returncode": 0, "assertions": results}
         print(json.dumps(output))

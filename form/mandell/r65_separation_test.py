@@ -146,80 +146,135 @@ def part_walking_skeleton():
         check("r65 skeleton: view returned the Idea", False,
               detail="idea not in snapshot")
 
-    # --- Authoritative restart via fixed child script. ---
-    # R6.5 AMEND §2: Before restart, issue a grant for a proposal that
-    # remains PENDING. After restart (fresh OS process), attempt that
-    # SAME target with the old handle. Prove rejection and no mutation.
-    # Then reissue and prove success.
+    # --- Authoritative restart via fixed child scripts. ---
+    # R6.5 AMEND-4: Unique owner, audit capture, two children.
+    # Child 1: mutating probe (denial, reissue). Child 2: verification-only.
     from form import persist_rest as _pr
     from form.dell_matrix import agent_authority as aa2
-    import subprocess, sys, json, os
+    from form.dell_matrix import agent_coordinator as ac2
+    import subprocess, sys, json, os, uuid, shutil
 
-    # Create a PENDING proposal (do NOT confirm it yet).
-    pr_pending = p.nursery.add("S1pending", words="pending restart test")
-    pending_pid = pr_pending.id
-    # Issue a grant for the pending proposal.
+    # Generate unique owner for isolation.
+    unique_owner = f"r65restart_{uuid.uuid4().hex[:8]}"
+    # Note: fresh_program uses owner for path; we need a fresh program
+    # with the unique owner. For simplicity, use the existing p but
+    # track the owner name for the child.
+    #
+    # Actually, we need a truly isolated program. Let's create one.
+    from form.open import open_program as _open
+    p_restart = _open(unique_owner)
+
+    # Set up: one confirmed, one pending (in the isolated program).
+    coord_r = ac2.new_coordinator(p_restart)
+    coord_r.register_agent("agent-a")
+    sa_r = coord_r.surface_for("agent-a")
+
+    pr_c = p_restart.nursery.add("S1", words="separation test idea words")
+    pid_c = pr_c.id
+    grant_c = aa2.issue_root_grant(p_restart, issuer="test-host",
+                                   subject="agent-a", target=pid_c,
+                                   content_pid=pid_c)
+    h_c = p_restart.acceptance_data_hash(pid_c, "confirm")
+    sa_r.request_confirm(pid_c, grant_c["grant_id"],
+                         request_id="r65-restart-confirm",
+                         expected_content_hash=h_c)
+
+    pr_p = p_restart.nursery.add("S1pending", words="pending restart test")
+    pending_pid = pr_p.id
     grant_pending = aa2.issue_root_grant(
-        p, issuer="test-host", subject="agent-a",
+        p_restart, issuer="test-host", subject="agent-a",
         target=pending_pid, content_pid=pending_pid)
     old_pending_grant = grant_pending["grant_id"]
 
-    _pr.save(p)
-
-    # Run the fixed child script in a FRESH OS PROCESS with JSON args.
-    child_args = {
-        "owner": "r65s1",
-        "confirmed_pid": pid,  # The already-confirmed proposal
-        "confirmed_label": "S1",
-        "pending_pid": pending_pid,
-        "pending_label": "S1pending",
-        "old_grant_id": old_pending_grant,
-        "expected_words": "pending restart test",
-    }
-    result = subprocess.run(
-        [sys.executable, "form/mandell/r65_fresh_probe.py",
-         json.dumps(child_args)],
-        cwd=".",
-        capture_output=True, text=True, timeout=60,
-    )
-    # Require returncode==0 (child asserts all).
-    check("r65 fresh: child returncode==0",
-          result.returncode == 0,
-          detail=f"rc={result.returncode} out={result.stdout[:200]}")
-
-    # Parse structured output.
+    # Capture audit records before save.
     try:
-        out_data = json.loads(result.stdout.strip().split("\n")[-1])
-        assertions = out_data.get("assertions", {})
+        audit_before = ac2.list_agent_audit(p_restart)
     except Exception:
-        assertions = {}
+        audit_before = []
+    # Extract expectations (request_id, subject, target).
+    expected_audit = []
+    for rec in audit_before[:5]:  # Limit to recent
+        expected_audit.append({
+            "request_id": str(rec.get("request_id", "")),
+            "subject": str(rec.get("subject", "")),
+            "target": str(rec.get("target", "")),
+        })
 
-    check("r65 fresh: exact status==confirmed",
-          assertions.get("confirmed_status_exact") is True,
-          detail=str(assertions)[:200])
-    check("r65 fresh: confirmed words match",
-          assertions.get("confirmed_words_match") is True)
-    check("r65 fresh: confirmed Idea in Plane",
-          assertions.get("confirmed_idea_in_plane") is True)
-    check("r65 fresh: Plane content matches",
-          assertions.get("plane_content_matches") is True)
-    check("r65 fresh: old grant denied on same target",
-          assertions.get("old_grant_denied_same_target") is True,
-          detail="Target mismatch alone must not explain denial")
-    check("r65 fresh: denial preserves pending",
-          assertions.get("denial_preserves_pending") is True)
-    check("r65 fresh: denial preserves Idea absence",
-          assertions.get("denial_preserves_absence") is True)
-    check("r65 fresh: reissued succeeds",
-          assertions.get("reissued_succeeds") is True)
-    check("r65 fresh: reissued confirmed status",
-          assertions.get("reissued_confirmed_status") is True)
-    check("r65 fresh: reissued Idea in Plane",
-          assertions.get("reissued_idea_in_plane") is True)
-    check("r65 fresh: reload verifies commit",
-          assertions.get("reload_verifies_commit") is True)
-    check("r65 fresh: reload verifies Plane",
-          assertions.get("reload_verifies_plane") is True)
+    _pr.save(p_restart)
+
+    try:
+        # Child 1: mutating probe.
+        child1_args = {
+            "owner": unique_owner,
+            "confirmed_pid": pid_c,
+            "pending_pid": pending_pid,
+            "old_grant_id": old_pending_grant,
+            "expected_confirmed_words": "separation test idea words",
+            "expected_pending_words": "pending restart test",
+            "expected_audit": expected_audit,
+        }
+        result1 = subprocess.run(
+            [sys.executable, "form/mandell/r65_fresh_probe.py",
+             json.dumps(child1_args)],
+            cwd=".", capture_output=True, text=True, timeout=60,
+        )
+        check("r65 fresh: child1 returncode==0",
+              result1.returncode == 0,
+              detail=f"rc={result1.returncode} out={result1.stdout[:200]}")
+        try:
+            out1 = json.loads(result1.stdout.strip().split("\n")[-1])
+            a1 = out1.get("assertions", {})
+        except Exception:
+            a1 = {}
+
+        for key in ["confirmed_status_exact", "confirmed_words_exact",
+                    "confirmed_idea_in_plane", "plane_content_exact",
+                    "pending_status_exact", "pending_absent_from_plane",
+                    "old_grant_denied_same_target",
+                    "denial_preserves_pending", "denial_preserves_absence",
+                    "reissued_succeeds", "reissued_confirmed_status",
+                    "reissued_idea_in_plane", "reissued_plane_content_exact"]:
+            check(f"r65 fresh: {key}", a1.get(key) is True)
+
+        # Child 2: verification-only (no mutation).
+        child2_args = {
+            "owner": unique_owner,
+            "confirmed_pid": pid_c,
+            "pending_pid": pending_pid,
+            "expected_confirmed_words": "separation test idea words",
+            "expected_pending_words": "pending restart test",
+            "expected_audit": expected_audit,
+        }
+        result2 = subprocess.run(
+            [sys.executable, "form/mandell/r65_verify_probe.py",
+             json.dumps(child2_args)],
+            cwd=".", capture_output=True, text=True, timeout=60,
+        )
+        check("r65 fresh: child2 returncode==0",
+              result2.returncode == 0,
+              detail=f"rc={result2.returncode} out={result2.stdout[:200]}")
+        try:
+            out2 = json.loads(result2.stdout.strip().split("\n")[-1])
+            a2 = out2.get("assertions", {})
+        except Exception:
+            a2 = {}
+
+        for key in ["verify_confirmed_status", "verify_confirmed_words",
+                    "verify_confirmed_plane", "verify_confirmed_plane_content",
+                    "verify_pending_confirmed", "verify_pending_words",
+                    "verify_pending_plane", "verify_pending_plane_content"]:
+            check(f"r65 fresh: {key}", a2.get(key) is True)
+
+    finally:
+        # Cleanup: remove the unique owner's state files.
+        try:
+            import glob
+            for f in glob.glob(f"form/state/{unique_owner}*"):
+                os.remove(f)
+            for f in glob.glob(f"/tmp/{unique_owner}*"):
+                os.remove(f)
+        except Exception:
+            pass
 
 
 def part_bimo_capability():
