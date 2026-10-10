@@ -1,8 +1,33 @@
-# R7.1 Delta-20 — Read-Only Perspective Composition
+# R7.1 Delta-20 — Read-Only Perspective Composition (AMEND)
 
 **Date:** 2026-10-09
 **Circuit:** R7.1 (first Phase-7 implementation circuit)
 **Base:** `efd68bf` (R6.5 production)
+**Status:** AMEND findings addressed
+
+## AMEND Findings (Addressed)
+
+1. **Container validation:** `None`, `False`, `0`, `""`, `{}` now explicitly reject
+   (UNSUPPORTED), not silent empty success. Only valid empty list/tuple → empty request.
+
+2. **Failure boundary:** Dispatch, validation, detachment (deepcopy), and report
+   construction all inside bounded failure handling. No exception text reflected.
+   Copying failures (custom `__deepcopy__`) produce UNAVAILABLE, not crashes.
+
+3. **Real confirmed Ideas:** Fixtures use coordinator + grants to confirm Ideas;
+   assert receipts, confirmed status, exact Plane presence.
+
+4. **No unconditional verdicts:** Removed `or True`; swept suite.
+
+5. **Fresh-process restart:** Fixed-script OS process reloads production state,
+   recreates identical specs, compares against pre-captured expected.
+
+6. **Exact aggregation:** Asserts specific outcomes, not permissive "any status".
+
+7. **Detachment:** Mutates actual nested observations (vision, report); verifies
+   canonical Plane units unchanged.
+
+8. **State:** Captures proposal count, Plane count, statuses, and unit IDs.
 
 ## Research Dispositions (Preserved)
 
@@ -23,7 +48,7 @@ Source links in `~/workspace/PHASE_7_R71_WORK_ORDER.md`.
 
 ### 2. Contradiction
 **Finding:** None. Composition preserves PERSPECTIVE ≠ TRUTH (R6.5).
-It is also read-only; cannot modify canonical records.
+Also read-only; cannot modify canonical records.
 
 ### 3. Semantic drift
 **Finding:** None. No R6.1–R6.5 behavior changed. Additive only.
@@ -41,7 +66,7 @@ Not in coordinator, authority, or persistence.
 
 ### 7. Persistence failure
 **Finding:** None. Composition is pure; no persistence. Detached output
-via deepcopy; no references into canonical state.
+via deepcopy inside failure boundary; no references into canonical state.
 
 ### 8. History/provenance consequence
 **Finding:** None. No historical records modified. Each component attributed
@@ -49,7 +74,7 @@ with viewer, mode, source, epistemic_status.
 
 ### 9. Security consequence
 **Finding:** None. No new attack surface. No network exposure. No new
-agent interfaces. Trusted local query only.
+agent interfaces. Trusted local query only. Copying failures bounded.
 
 ### 10. Human-authority consequence
 **Finding:** None. Composition does not grant authority. Human sovereignty
@@ -59,43 +84,38 @@ unchanged.
 **Finding:** None. Local-first preserved. No network dependencies.
 
 ### 12. Performance consequence
-**Finding:** Bounded. Composition is O(N) in number of viewers, each view
-is O(M) in visible nodes. No hot paths modified. No measured baseline
-(required only if perf becomes a concern).
+**Finding:** Bounded. Composition is O(N) in viewers, each view O(M) in nodes.
+No hot paths modified.
 
 ### 13. Public-path theater
-**Finding:** None (verified). Uses real `see_as` dispatch, real Viewers,
-real Program. No mocks. Registered in `form/regress.py`.
+**Finding:** None (verified). Uses real `see_as`, real Viewers, real Program
+with confirmed Ideas. No mocks. Registered in `form/regress.py`.
 
 ### 14. Mathematical weakness
-**Finding:** None. Aggregation semantics explicitly defined (no invented
-ordering among UNKNOWN/UNAVAILABLE/UNSUPPORTED). Counts not summed
-(overlapping observations).
+**Finding:** None. Aggregation semantics explicitly defined. Counts not summed.
+Container validation prevents malformed input masquerading as data.
 
 ### 15. Visual theater
-**Finding:** None. No UI changes. Combined report is attributed text,
-not merged truth.
+**Finding:** None. No UI changes. Combined report attributed, not merged truth.
 
 ### 16. Historical-recovery conflict
 **Finding:** None. R6.3 rollback untouched. Composition has no recovery
 paths (pure function).
 
 ### 17. Simpler reuse opportunity
-**Finding:** None. Reuses existing see_* functions; no duplication.
+**Finding:** None. Reuses existing see_*; no duplication.
 
 ### 18. Research contradiction
-**Finding:** None. Research supports the design (CQRS, materialized views).
-No contradictions found.
+**Finding:** None. Research supports design. No contradictions.
 
 ### 19. Future-phase incompatibility
-**Finding:** Bounded. Composition is compatible with 7.1 (workshop sessions
-can use composed views for oversight) and does not preclude 7.3. No
-networking assumptions baked in.
+**Finding:** Bounded. Compatible with 7.1 (oversight views) and 7.3.
+No networking assumptions.
 
 ### 20. From-scratch challenge
-**Finding:** None. Built by extending existing `perspective_views.py`,
-not from scratch. Reuses R6.5 proven read-only guarantees.
+**Finding:** None. Extends existing `perspective_views.py`. Reuses R6.5
+proven guarantees.
 
 ---
 
-**END OF R7.1 DELTA-20**
+**END OF R7.1 DELTA-20 (AMEND)**
