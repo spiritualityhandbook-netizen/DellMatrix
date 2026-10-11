@@ -363,6 +363,284 @@ _SEE = {
 }
 
 
+def _is_finite_pose(pos) -> bool:
+    """Check that a pose is a pair of finite numbers."""
+    try:
+        x, y = pos
+        return (isinstance(x, (int, float)) and isinstance(y, (int, float))
+                and math.isfinite(x) and math.isfinite(y))
+    except (TypeError, ValueError):
+        return False
+
+
+def _validate_spec(spec, index: int) -> tuple:
+    """Validate one composition spec. Returns (viewer, mode) or raises ValueError.
+    
+    Spec must be a (Viewer, mode) tuple. Mode must be in MODES.
+    Viewer pose must be finite. No grants or other kwargs accepted.
+    """
+    # Spec structure
+    if not isinstance(spec, (tuple, list)) or len(spec) != 2:
+        raise ValueError(f"spec[{index}]: must be (Viewer, mode) tuple")
+    viewer, mode = spec
+    
+    # Viewer type
+    if not isinstance(viewer, Viewer):
+        raise ValueError(f"spec[{index}]: viewer must be a Viewer instance")
+    
+    # Mode validation
+    if not isinstance(mode, str) or mode.lower() not in MODES:
+        raise ValueError(f"spec[{index}]: bad mode {mode!r}")
+    mode = mode.lower()
+    
+    # Pose validation (finite numbers)
+    if not _is_finite_pose(viewer.pos):
+        raise ValueError(f"spec[{index}]: viewer pose must be finite numbers")
+    
+    # Facing validation
+    if viewer.facing not in ("N", "S", "E", "W", "NE", "NW", "SE", "SW"):
+        raise ValueError(f"spec[{index}]: bad facing {viewer.facing!r}")
+    
+    # Mode-relevant Viewer field validation.
+    # Malformed input must not masquerade as unavailable Program data.
+    if mode == "parts":
+        # part_radius must be a finite positive number
+        pr = viewer.part_radius
+        if not isinstance(pr, (int, float)) or not math.isfinite(pr) or pr <= 0:
+            raise ValueError(f"spec[{index}]: part_radius must be finite positive")
+        # part_skins must be a list of strings
+        ps = viewer.part_skins
+        if not isinstance(ps, list) or not all(isinstance(s, str) for s in ps):
+            raise ValueError(f"spec[{index}]: part_skins must be list of strings")
+    
+    return viewer, mode
+
+
+def _aggregate_status(statuses: List[str]) -> str:
+    """Aggregate epistemic statuses per R7.1 directive semantics.
+    
+    - All REAL → REAL
+    - Readable (REAL/PARTIAL) mixed with legacy/failed → PARTIAL
+    - No readable → the most informative non-readable status (not invented ordering)
+    """
+    if not statuses:
+        return UNKNOWN  # Should not happen; empty input handled separately
+    
+    readable = [s for s in statuses if s in (REAL, PARTIAL)]
+    if not readable:
+        # No readable components: preserve the first non-readable reason.
+        # Do not invent an ordering among UNKNOWN/UNAVAILABLE/UNSUPPORTED.
+        return statuses[0]
+    
+    if all(s == REAL for s in statuses):
+        return REAL
+    
+    # Mixed readable with legacy/failed → PARTIAL
+    return PARTIAL
+
+
+def compose_views(program, specs, **kwargs) -> Dict[str, Any]:
+    """Compose multiple perspective views into one attributed result.
+    
+    R7.1 — Read-only perspective composition. Pure query over existing
+    see_* functions. Creates no authority, mutates nothing.
+    
+    Args:
+        program: The DellMatrix program to view.
+        specs: List of (Viewer, mode) tuples. Mode in MODES.
+        **kwargs: REJECTED. Unexpected keyword arguments (including grants)
+            cause a bounded failure. Grants are not accepted (read-only).
+    
+    Returns:
+        Dict with:
+        - "mode": "composed"
+        - "epistemic_status": aggregated per R7.1 semantics
+        - "components": list of detached component results, in input order,
+          each with viewer id, requested mode, source, epistemic_status
+        - "combined_report": attributed report (not merged truth)
+        - "data_source": "composed"
+    
+    Aggregation semantics:
+    - All components REAL → REAL
+    - Readable mixed with legacy/failed → PARTIAL (each status retained)
+    - No readable → explicitly unverified (reasons preserved, no confident counts)
+    - Empty specs → explicitly empty request (not proof of empty Plane)
+    
+    Failures are bounded and non-reflecting (no internal details leaked).
+    """
+    import copy
+    
+    # Reject unexpected kwargs (including grants)
+    if kwargs:
+        bad = sorted(kwargs.keys())
+        return {
+            "mode": "composed",
+            "ok": False,
+            "error": "unexpected arguments rejected",
+            "rejected": bad,
+            "epistemic_status": UNSUPPORTED,
+            "data_source": "none",
+            "components": [],
+        }
+    
+    # Validate container type FIRST. Only an empty supported list/tuple
+    # means an empty request. Malformed containers reject explicitly.
+    if not isinstance(specs, (list, tuple)):
+        return {
+            "mode": "composed",
+            "ok": False,
+            "error": "specs must be a list of (Viewer, mode) tuples",
+            "epistemic_status": UNSUPPORTED,
+            "data_source": "none",
+            "components": [],
+        }
+    
+    # Empty input → explicitly empty request (only for valid empty containers)
+    if len(specs) == 0:
+        return {
+            "mode": "composed",
+            "ok": True,
+            "epistemic_status": UNKNOWN,
+            "data_source": "composed",
+            "components": [],
+            "combined_report": ["empty request: no viewer specifications provided"],
+            "note": "empty request is not proof of an empty Plane",
+        }
+    
+    components = []
+    statuses = []
+    
+    for i, spec in enumerate(specs):
+        # Validate spec structure
+        try:
+            viewer, mode = _validate_spec(spec, i)
+        except ValueError:
+            # Bounded, non-reflecting failure
+            components.append({
+                "index": i,
+                "ok": False,
+                "error": "invalid specification",
+                "epistemic_status": UNSUPPORTED,
+                "data_source": "none",
+            })
+            statuses.append(UNSUPPORTED)
+            continue
+        except Exception:
+            # Defensive: any validation failure is bounded
+            components.append({
+                "index": i,
+                "ok": False,
+                "error": "invalid specification",
+                "epistemic_status": UNSUPPORTED,
+                "data_source": "none",
+            })
+            statuses.append(UNSUPPORTED)
+            continue
+        
+        # Route through see_as, detach, and validate — all inside failure boundary.
+        # Python documents that classes can customize deepcopy; copying belongs
+        # inside the boundary, not outside it.
+        try:
+            view = see_as(program, viewer, mode)
+            # Detach: deep copy so caller cannot mutate canonical state
+            # via returned references.
+            detached = copy.deepcopy(view)
+            # Validate detached result is a dict with expected shape
+            if not isinstance(detached, dict):
+                raise TypeError("view result not a dict")
+        except Exception:
+            # Bounded failure; do not reflect internals or exception text.
+            # Preserve the component slot so siblings are not lost.
+            components.append({
+                "index": i,
+                "viewer": viewer.id,
+                "requested_mode": mode,
+                "ok": False,
+                "error": "view failed",
+                "epistemic_status": UNAVAILABLE,
+                "data_source": "none",
+            })
+            statuses.append(UNAVAILABLE)
+            continue
+        
+        component = {
+            "index": i,
+            "viewer": viewer.id,
+            "requested_mode": mode,
+            "source": detached.get("data_source", "unknown"),
+            "epistemic_status": detached.get("epistemic_status", UNKNOWN),
+            "view": detached,
+        }
+        components.append(component)
+        statuses.append(detached.get("epistemic_status", UNKNOWN))
+    
+    # Aggregate status per defined semantics
+    try:
+        aggregate = _aggregate_status(statuses)
+    except Exception:
+        aggregate = UNKNOWN
+    
+    # Build attributed combined report (not merged truth).
+    # Report construction is inside the failure boundary.
+    report_lines = []
+    try:
+        for comp in components:
+            vid = comp.get("viewer", f"spec[{comp.get('index', '?')}]")
+            mode = comp.get("requested_mode", "?")
+            status = comp.get("epistemic_status", UNKNOWN)
+            view = comp.get("view", {})
+            # Attribute each observation; do not merge into accepted truth
+            if comp.get("ok", True) is False:
+                err = view.get("error", "unavailable") if isinstance(view, dict) else "unavailable"
+                report_lines.append(f"[{vid}/{mode}] {status}: {err}")
+            else:
+                rep = view.get("report", "") if isinstance(view, dict) else ""
+                if isinstance(rep, list):
+                    rep = " ".join(str(x) for x in rep)
+                # Truncate to keep output bounded; attribute source
+                rep_str = str(rep)[:200]
+                report_lines.append(f"[{vid}/{mode}] {status}: {rep_str}")
+    except Exception:
+        # Bounded: report construction failed; preserve components
+        report_lines = ["report construction failed (bounded)"]
+    
+    # Omit confident counts when not all readable
+    result = {
+        "mode": "composed",
+        "ok": True,
+        "epistemic_status": aggregate,
+        "data_source": "composed",
+        "components": components,
+        "combined_report": report_lines,
+    }
+    
+    # Only include count when aggregate is REAL (all verified)
+    if aggregate == REAL:
+        total_units = 0
+        for comp in components:
+            view = comp.get("view", {})
+            # Do not sum overlapping counts; report per-component
+            c = view.get("count")
+            if isinstance(c, int):
+                total_units += 0  # Deliberately not summed; see note
+        result["note"] = (
+            "per-component counts retained in components; "
+            "not summed (overlapping observations)"
+        )
+    elif aggregate == PARTIAL:
+        result["note"] = (
+            "mixed readability; each component status retained; "
+            "not all observations verified"
+        )
+    else:
+        result["note"] = (
+            "no readable components; reasons preserved; "
+            "no confident counts emitted"
+        )
+    
+    return result
+
+
 def see_as(program, viewer: Viewer, mode: Optional[str] = None) -> Dict[str, Any]:
     m = (mode or viewer.effective_mode()).lower()
     if m not in _SEE:

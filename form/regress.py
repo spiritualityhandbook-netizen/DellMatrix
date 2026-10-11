@@ -150,6 +150,7 @@ LIST = [
     "form.mandell.r63_amend_proof_test:smoke",
     "form.mandell.r64_multi_intelligence_test:smoke",
     "form.mandell.r65_separation_test:smoke",
+    "form.mandell.r71_composition_test:smoke",
 ]
 
 TIMEOUT_S = 900
