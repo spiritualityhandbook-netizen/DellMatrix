@@ -1,8 +1,19 @@
-# R7.1 ADMISSION PACKET — Read-Only Perspective Composition (FINISHED)
+# R7.1 ADMISSION PACKET — Read-Only Perspective Composition (MERGED/CLOSED)
 
-**Directive:** GDP_R71_FINISH_REQUIRED_PERSISTED_VIEW_COMPARISON (MODE=C)
-**Date:** 2026-10-10
-**Status:** CANDIDATE READY FOR DIRECTOR REVIEW (NOT CERTIFIED — DO NOT MERGE)
+**Directive:** GDP_PHASE_7_R71_ADMIT_MERGE_AND_ADVANCE (MODE=D)
+**Date:** 2026-10-10/11
+**Status:** R7.1 MERGED / CLOSED
+
+**Merge:** PR #85 → `cf4d67e23785b8a9dc3068cc627619b7747256e7`
+**Parents:** `efd68bf5ef702dcb5a59aa246ed4397c0c0a133c` + `7164cde8ddad99d44c68543eab907bd9c702359a`
+**Tree:** `21f9a9c4bbe67c3ca0c67cfc154e199631140249` (matches certified)
+
+**Production verification (fresh clean clone at cf4d67e):**
+- `form.regress --twice`: 112/112 GREEN (R7.1 52/52)
+- `form.regress --order rev`: 112/112 GREEN
+
+**Scanning:** EVALUATION_UNAVAILABLE (Copilot quota 402)
+**Certification scope:** Read-only composition circuit only; not all Phase 7.
 
 ## Restart Proof (Finished)
 
