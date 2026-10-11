@@ -26,11 +26,12 @@ old selected-field comparison) is closed by full-result equality.
 ## Exact Identity
 
 - **Branch:** `gdp-phase7-r71-composition`
-- **Head:** `d1769d2829018316d0e7c908550e4a456c050a3f`
-- **Tree:** `8c0aac4c436e67bc4559c6d5b74dee78d290bbb4`
+- **Code head:** `9ff7b87cd7d6d7d686f0722520c5e662b3c8a1b8`
+- **Code tree:** `5ad786165e4b151bdc5a8fc267f047ddd03e60f9`
 - **Base:** `efd68bf5ef702dcb5a59aa246ed4397c0c0a133c`
-- **Note:** Intermediate identities (26ec9229, db62e2b, c93e864, ad6fafc)
-  superseded; frozen head below is authoritative.
+- **Note:** Intermediate identities (26ec9229, db62e2b, c93e864, ad6fafc,
+  d1769d28, dd10354) superseded. The frozen PR head adds only this packet;
+  its exact identity is in the PR body and CI ran on it.
 
 ## Proof (52/52)
 
