@@ -317,6 +317,57 @@ Diagrams or mock examples of the above are conceptual only. Roadmap phases beyon
 
 ---
 
+## 7.5 R7.2: Perspective Studio (Implementation in Progress)
+
+A scoped REPL workshop for composing perspective views and inspecting
+their meaning. Read-only: the studio composes views via R7.1
+`compose_views`; it cannot confirm, grant, or mutate.
+
+**Exact syntax:**
+
+```
+you> perspective studio
+Perspective Studio — scoped composition workshop.
+Type 'help' for studio commands, 'leave' to exit.
+
+you> compose [{"id":"v1","role":"user","pos":[0,0],"facing":"E","mode":"whole"}]
+Composed 1 view(s) [REAL]:
+  v1 (whole): REAL via program
+
+you> legend
+Layout legend (descriptive only):
+  epistemic_status: Verification standing of the view; not accepted truth.
+  label: Display label of the observed unit.
+  position: Canonical plane coordinates (x, y) of the observed unit.
+  requested_mode: The observation mode requested.
+  skin: Presentation metadata only; carries no authority or truth claim.
+  source: Provenance of the observation data.
+  viewer: Attribution: which viewer specification produced this component.
+
+you> leave
+Studio session saved (a1b2c3d4...). Exited.
+```
+
+**Spec schema:** JSON array (max 8 entries, max 8KB). Each spec is an
+object with `id` (string, required), `role` (string), `pos` ([x, y]
+finite numbers, required), `facing` (N/S/E/W/NE/NW/SE/SW),
+`mode` (first/third/parts/whole, optional). Malformed specs are
+rejected with explicit errors. A spec carrying a non-matching `owner`
+is rejected.
+
+**While in studio:** only `compose`, `legend`, `help`, `leave` are
+accepted. All other commands — including mutations like `confirm` —
+are rejected as out-of-scope before normal dispatch.
+
+**Persistence:** `leave` saves the closed session record (session ID,
+owner, command kind, time, bounded result) via the canonical save.
+Reload restores the closed record, not the active mode. EOF/quit
+without `leave` does NOT persist the session; this is stated explicitly.
+
+---
+
+---
+
 ## 8. Architecture and Source Guide
 
 | Path | Role |

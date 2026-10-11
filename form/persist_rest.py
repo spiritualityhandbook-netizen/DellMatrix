@@ -491,6 +491,45 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         p.outcome_seq = max_seq
     except Exception:
         pass
+    # R7.2: restore Perspective Studio session evidence. Closed records only;
+    # the active studio mode is session-only and never restored. Shape-checked:
+    # missing section -> empty (legacy); malformed section -> preserved as
+    # raw evidence on p.studio_sessions_malformed and reported, not silently
+    # dropped. Retention: keep the 10 most recent closed sessions.
+    try:
+        from form.dell_matrix.perspective_studio import StudioSession
+        raw_ss = data.get("studio_sessions")
+        p.studio_sessions = {}
+        p.studio_sessions_malformed = None
+        if raw_ss is None:
+            pass  # Legacy: no studio sessions recorded.
+        elif not isinstance(raw_ss, dict):
+            p.studio_sessions_malformed = {"raw": raw_ss, "error": "not an object"}
+        else:
+            raw_sessions = raw_ss.get("sessions")
+            if not isinstance(raw_sessions, dict):
+                p.studio_sessions_malformed = {
+                    "raw": raw_ss, "error": "sessions not an object"}
+            else:
+                valid: Dict[str, Dict[str, Any]] = {}
+                malformed: Dict[str, Any] = {}
+                for sid, rec in raw_sessions.items():
+                    if not isinstance(sid, str):
+                        continue
+                    ok, err = StudioSession.validate(rec)
+                    if ok:
+                        valid[sid] = dict(rec)  # type: ignore[arg-type]
+                    else:
+                        malformed[sid] = {"raw": rec, "error": err}
+                if malformed:
+                    p.studio_sessions_malformed = malformed
+                # Retention: 10 most recent by started timestamp.
+                ordered = sorted(valid.items(),
+                                 key=lambda kv: str(kv[1].get("started", "")),
+                                 reverse=True)[:10]
+                p.studio_sessions = dict(ordered)
+    except Exception:
+        pass
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")

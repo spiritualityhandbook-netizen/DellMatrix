@@ -221,6 +221,18 @@ def serialize(program: Program) -> Dict[str, Any]:
                 if isinstance(rec, dict)
             },
         },
+        # R7.2: Perspective Studio session evidence. Closed session records
+        # only; the active studio mode is session-only and never persists.
+        # Shape-validated on load; malformed sections are preserved as
+        # evidence and reported, not silently dropped.
+        "studio_sessions": {
+            "version": 1,
+            "sessions": {
+                sid: s.to_dict() if hasattr(s, "to_dict") else dict(s)
+                for sid, s in (getattr(program, "studio_sessions", None) or {}).items()
+                if isinstance(sid, str)
+            },
+        },
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).
         # Presence metadata for ideas. Uses existing persistence.
         "lifecycle": dict(getattr(program, "lifecycle", None) or {}),

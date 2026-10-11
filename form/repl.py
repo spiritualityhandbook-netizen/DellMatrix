@@ -2785,6 +2785,104 @@ def _handle_reissue(p: Program, line: str, pending: Optional[str]) -> tuple:
     return p, source
 
 
+def _handle_studio_line(p, line: str, studio):
+    """R7.2: handle one input line while Perspective Studio is active.
+
+    Only studio commands are accepted: compose, legend, help, leave.
+    Everything else is rejected explicitly before normal dispatch.
+    No mutations route from this circuit.
+
+    Returns (program, studio_or_None). On leave, the session is closed,
+    merged into p.studio_sessions, and persisted via the canonical save.
+    """
+    from form.dell_matrix.perspective_studio import (
+        parse_specs_json, STUDIO_COMMANDS)
+
+    lower = line.strip().lower()
+
+    # leave: close, persist, exit studio mode.
+    if lower == "leave":
+        session = studio.close()
+        # Merge into the program's durable session records.
+        sessions = getattr(p, "studio_sessions", None)
+        if not isinstance(sessions, dict):
+            sessions = {}
+            p.studio_sessions = sessions
+        sessions[session.session_id] = session.to_dict()
+        # Retention: keep 10 most recent.
+        if len(sessions) > 10:
+            ordered = sorted(sessions.items(),
+                             key=lambda kv: str(kv[1].get("started", "")),
+                             reverse=True)[:10]
+            p.studio_sessions = dict(ordered)
+        # Canonical save with existing recovery/stale-writer guards.
+        # Report saved/exited only after success; on failure the session
+        # is retained for retry and remains visible.
+        try:
+            from form import persist_rest
+            persist_rest.save(p)
+            _say(f"Studio session saved ({session.session_id[:8]}...). Exited.")
+            return p, None
+        except Exception as exc:
+            # Save failure: retain the session for retry, remain visible.
+            # No swallowed errors, no alternate writes.
+            _say(f"Save failed: {type(exc).__name__}. "
+                 f"Session retained ({session.session_id[:8]}...); "
+                 f"still in studio — 'leave' to retry.")
+            return p, studio
+
+    if lower == "legend":
+        legend = studio.legend()
+        _say("Layout legend (descriptive only):")
+        for k in sorted(legend.keys()):
+            _say(f"  {k}: {legend[k]}")
+        return p, studio
+
+    if lower == "help":
+        _say(studio.help_text())
+        return p, studio
+
+    if lower.startswith("compose"):
+        rest = line.strip()[7:].strip()
+        if not rest:
+            _say("compose: missing JSON specs. "
+                 'Example: compose [{"id":"v1","role":"user","pos":[0,0],"facing":"E"}]')
+            return p, studio
+        # Screen input-derived data for protected values before recording.
+        try:
+            from form.dell_matrix.inference_dock import (
+                protected_values, contains_protected)
+            protected = protected_values(p)
+            if contains_protected(rest, protected):
+                studio._record("compose", "rejected: protected material in input")
+                _say("compose: rejected — input contains protected material.")
+                return p, studio
+        except Exception:
+            pass
+        ok, err, specs = parse_specs_json(rest)
+        if not ok:
+            studio._record("compose", f"rejected: {err[:120]}")
+            _say(f"compose: {err}")
+            return p, studio
+        result = studio.compose(specs)
+        if not result.get("ok"):
+            _say(f"compose: {result.get('status')} — {result.get('detail', '')}")
+            return p, studio
+        # Display the detached composition report.
+        _say(f"Composed {len(result.get('components', []))} view(s) "
+             f"[{result.get('epistemic_status')}]:")
+        for c in result.get("components", []):
+            _say(f"  {c.get('viewer')} ({c.get('requested_mode')}): "
+                 f"{c.get('epistemic_status')} via {c.get('source')}")
+        return p, studio
+
+    # Out-of-scope: explicit rejection before normal dispatch.
+    # Mutations (confirm, grant, etc.) never route from the studio.
+    _say(f"Studio: '{line.strip()[:40]}' is out of scope. "
+         f"Studio commands: {', '.join(STUDIO_COMMANDS)}.")
+    return p, studio
+
+
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
     print("  DellMatrix — Mandell Origin")
@@ -2816,15 +2914,28 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     # IRI-I: staged reissue source. Session-only; never persisted.
     _pending_reissue: Optional[str] = None
 
+    # R7.2: active Perspective Studio. Session-only; never persisted.
+    # Reload restores closed session records, not the active mode.
+    _studio = None
+
     while True:
         try:
             line = input("you> ").strip()
         except (EOFError, KeyboardInterrupt):
             print()
+            # R7.2: explicit EOF behavior in studio mode. Unsaved studio
+            # evidence is NOT persisted; state this plainly.
+            if _studio is not None:
+                _say("Studio session NOT saved (EOF). "
+                     "Use 'leave' inside the studio to persist evidence.")
             break
         if not line:
             continue
         if line.lower() in ("quit", "exit", "q"):
+            # R7.2: explicit quit behavior in studio mode.
+            if _studio is not None:
+                _say("Studio session NOT saved (quit). "
+                     "Use 'leave' inside the studio to persist evidence.")
             _say("Goodbye.")
             break
         if line.lower().startswith("say "):
@@ -2836,6 +2947,21 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         # confirmed, goes through _dispatch_public_line below.
         if line.lower() == "reissue" or line.lower().startswith("reissue "):
             p, _pending_reissue = _handle_reissue(p, line, _pending_reissue)
+            continue
+
+        # R7.2: Perspective Studio mode. Session-only; the active studio is
+        # never persisted (reload restores closed session records, not the
+        # mode). While active, only studio commands are accepted; everything
+        # else is rejected before normal dispatch. No mutations route here.
+        if _studio is not None:
+            p, _studio = _handle_studio_line(p, line, _studio)
+            continue
+        if line.lower() == "perspective studio":
+            from form.dell_matrix.perspective_studio import PerspectiveStudio
+            _studio = PerspectiveStudio(p)
+            _studio._record("enter", "studio entered")
+            _say("Perspective Studio — scoped composition workshop.")
+            _say("Type 'help' for studio commands, 'leave' to exit.")
             continue
 
         # EIC-I: mint interaction identity for this public attempt.
