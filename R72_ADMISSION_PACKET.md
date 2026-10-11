@@ -70,8 +70,8 @@ No category replaced; provenance/security/recovery use established numbering.
 ## Exact Identity
 
 - **Branch:** `gdp-phase7-r72-studio`
-- **Head:** [frozen below]
-- **Tree:** [frozen below]
+- **Head:** `76ec2fb20f76a9aeaa211b94abf9971dc2952d54`
+- **Tree:** `0d0e19e11f130061c7301edc0cc55f734502b78d`
 - **Base:** `25386e8daaa8936ac821b9ee4fd5b2271bf1397e` (main)
 
 ---
