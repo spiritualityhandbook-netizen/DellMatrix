@@ -27,11 +27,14 @@ DellMatrix lets you create ideas, grow them into proposals, confirm the ones wor
 
 ## 2. Status
 
-**Production main:** `ea9b76a` (2026-10-07, post PR #79 merge — Phase 5 admitted).
+**Production main:** `cf4d67e` (2026-10-11, post PR #85 merge — R7.1 admitted).
 **Phase 5:** MERGED to production via PR #79 (merge `ea9b76a`); Director admission PASS.
+**Phase 6:** R6.1–R6.5 MERGED/CLOSED.
+**Phase 7 R7.1:** MERGED to production via PR #85 (merge `cf4d67e`); Director admission PASS. Read-only perspective composition.
 
-All §2 claims below were verified on production main `1d5b6c7` unless
-labeled otherwise. Walkthroughs originally executed on `f3c9007`
+All §2 claims below were verified on production main `1d5b6c7` (pre-R7.1)
+unless labeled otherwise. Current production is main `cf4d67e`
+(R7.1 merge, 2026-10-11). Walkthroughs originally executed on `f3c9007`
 (2026-10-04) are retained as dated historical evidence where noted.
 Phase-5 behaviors (§6.5) are production behavior as of `ea9b76a`.
 
@@ -111,7 +114,7 @@ flowchart TD
 
 The nursery tracks proposal status (`pending` → `confirmed`). The plane holds confirmed Ideas as spatial units. On `save`, both are written to disk. On restart, `load` restores state from the disk files.
 
-**Crash recovery (MERGED via PR #77, 2026-10-05):** If the process crashes mid-confirmation, the intent-journal recovery mechanism converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state). This is production behavior on main `1d5b6c7`.
+**Crash recovery (MERGED via PR #77, 2026-10-05):** If the process crashes mid-confirmation, the intent-journal recovery mechanism converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state). This is production behavior as of main `cf4d67e` (R7.1 merge, 2026-10-11; mechanism unchanged since PR #77).
 
 ---
 
@@ -153,9 +156,9 @@ You'll see a banner and a `you>` prompt. Type `tutorial` for a guided walkthroug
 | DuoBeta learn | `learn propose/inspect/gate/ledger` | Policy-gated learning within session | `form/duobeta/` | Walkthrough verified |
 | Supersede (API) | `supersede_proposal(p, old_id, ...)` | New revision; old marked superseded | `form/mandell/supersession.py` | API and REPL both verified with genuine ID |
 | Outcomes | `outcomes` | Honest empty ("No outcomes recorded") or list | `form/repl.py` | Walkthrough verified |
-| Compose perspectives | `compose_views(program, [(viewer, mode), ...])` | Unified read-only view; each component attributed with viewer/mode/status | `form/dell_matrix/perspective_views.py` | R7.1 29/29 |
+| Compose perspectives | `compose_views(program, [(viewer, mode), ...])` | Unified read-only view; each component attributed with viewer/mode/status | `form/dell_matrix/perspective_views.py` | R7.1 52/52, MERGED |
 
-> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call. Historical walkthroughs (2026-10-04) ran on SHA `f3c9007`; current production is main `1d5b6c7`.
+> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call. Historical walkthroughs (2026-10-04) ran on SHA `f3c9007`; current production is main `cf4d67e` (R7.1 merge, 2026-10-11).
 
 ---
 
@@ -353,7 +356,7 @@ python3 -m form.regress --twice        # full suite, forward, twice
 python3 -m form.regress --order rev    # full suite, reverse order
 ```
 
-**Phase-5 candidate tests (not on production main):** The following modules exist only on the unmerged Phase-5 branch ([PR #79](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/79)). They are not runnable on production `1d5b6c7`:
+**Phase-5 candidate tests (not on production main):** The following modules exist only on the unmerged Phase-5 branch ([PR #79](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/79)). They are not runnable on production `cf4d67e`:
 ```bash
 # On Phase-5 branch checkout only:
 python3 -m form.mandell.wo51_adversarial_test  # acceptance adversarial
