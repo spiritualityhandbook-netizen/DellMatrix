@@ -1,9 +1,10 @@
-# R7.1 Delta-20 — Read-Only Perspective Composition (FINISHED)
+# R7.1 Delta-20 — Read-Only Perspective Composition (MERGED/CLOSED)
 
-**Date:** 2026-10-10
+**Date:** 2026-10-10/11
 **Circuit:** R7.1 (first Phase-7 implementation circuit)
 **Base:** `efd68bf` (R6.5 production)
-**Status:** All proof corrections complete (49/49)
+**Merge:** PR #85 → `cf4d67e` (parents efd68bf + 7164cde8; tree 21f9a9c matches certified)
+**Status:** MERGED / CLOSED — all proof corrections complete (52/52)
 
 ## Proof Corrections
 
