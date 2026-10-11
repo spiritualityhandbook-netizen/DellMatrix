@@ -543,146 +543,131 @@ def part_report_failure_bounded():
 
 
 def part_restart_exact():
-    """Exact restart: saved-view round trip via correct loader.
-    
+    """Exact restart: full-result equality via correct loader.
+
     Saves the populated Program, loads it in a fresh child through
     persist_rest.load(owner, activate=False), asserts exact confirmed Idea IDs
-    in both Nursery and Plane, then compares the complete deterministic
-    composition. Proves sensitivity by mutating one observation.
+    in both Nursery and Plane, then requires exact equality of the complete
+    normalized compose_views result -- every field, no hand-built projection.
+    A mutated expectation submitted to the same child must produce an
+    explicit comparison mismatch, not an unrelated failure.
     """
     import os
     import subprocess
     from form.dell_matrix import perspective_views as pv
-    from form import persist_rest
 
     owner = unique_owner("r71restart")
     p = fresh_program(owner)
     pid = _confirmed_idea(p, "restart exact idea words")
-    # Save the populated Program
     p.save()
-    
-    # Viewer specifications (explicit, deterministic)
+
     v1_spec = {"id": "v1", "role": "user", "pos": [0.0, 0.0], "facing": "E"}
     v2_spec = {"id": "v2", "role": "user", "pos": [5.0, 5.0], "facing": "N"}
-    
+
     v1 = pv.Viewer(id="v1", role="user", pos=(0.0, 0.0), facing="E")
     v2 = pv.Viewer(id="v2", role="user", pos=(5.0, 5.0), facing="N")
-    
+
     expected = pv.compose_views(p, [(v1, "whole"), (v2, "whole")])
-    
-    # Capture complete deterministic composition
-    # Normalize through JSON round-trip for tuple/list consistency
+
+    # Full-result normalization: every field of the compose_views result is
+    # preserved through the same JSON round trip (tuple/list conversions).
+    # No default=str: an unsupported value fails explicitly instead of being
+    # silently stringified.
     def normalize(obj):
-        return json.loads(json.dumps(obj, sort_keys=True, default=str))
-    
-    expected_norm = normalize({
-        "aggregate": expected["epistemic_status"],
-        "components": [
-            {
-                "viewer": c["viewer"],
-                "mode": c["requested_mode"],
-                "status": c["epistemic_status"],
-                "source": c["source"],
-                # Complete observation: nodes with IDs, positions, labels
-                "nodes": sorted(
-                    [{"id": n.get("id"), "label": n.get("label"),
-                      "x": n.get("x"), "y": n.get("y")}
-                     for n in c["view"].get("nodes", [])
-                     if isinstance(n, dict)],
-                    key=lambda x: x["id"] or ""
-                ),
-                "count": c["view"].get("count"),
-            }
-            for c in expected["components"]
-        ],
-    })
+        return json.loads(json.dumps(obj, sort_keys=True))
+
+    expected_norm = normalize(expected)
     expected_json = json.dumps(expected_norm, sort_keys=True)
-    
-    cwd = os.path.abspath(".")
     specs_json = json.dumps([v1_spec, v2_spec])
-    
-    # Fixed child script
-    script = f'''
+
+    cwd = os.path.abspath(".")
+
+    # One fixed child script. Owner, specs, expected result, and the exact
+    # Idea ID travel as JSON arguments.
+    script = '''
 import sys, json
 sys.path.insert(0, ".")
 from form import persist_rest
 from form.dell_matrix import perspective_views as pv
 
-# Load via correct reader
-p = persist_rest.load("{owner}", activate=False)
-
-# Assert exact confirmed Idea IDs in both Nursery and Plane BEFORE composing
-pid = "{pid}"
-assert pid in p.nursery.proposals, f"pid not in nursery"
-assert p.nursery.proposals[pid].status == "confirmed", "not confirmed"
-assert pid in p.cube.session.plane.units, f"pid not in Plane"
-
-# Recreate specifications
-specs_data = json.loads({specs_json!r})
-viewers = []
-for s in specs_data:
-    viewers.append(pv.Viewer(id=s["id"], role=s["role"],
-                             pos=tuple(s["pos"]), facing=s["facing"]))
-
-r = pv.compose_views(p, [(viewers[0], "whole"), (viewers[1], "whole")])
-
 def normalize(obj):
-    return json.loads(json.dumps(obj, sort_keys=True, default=str))
+    return json.loads(json.dumps(obj, sort_keys=True))
 
-actual_norm = normalize({{
-    "aggregate": r["epistemic_status"],
-    "components": [
-        {{
-            "viewer": c["viewer"],
-            "mode": c["requested_mode"],
-            "status": c["epistemic_status"],
-            "source": c["source"],
-            "nodes": sorted(
-                [{{"id": n.get("id"), "label": n.get("label"),
-                  "x": n.get("x"), "y": n.get("y")}}
-                 for n in c["view"].get("nodes", [])
-                 if isinstance(n, dict)],
-                key=lambda x: x["id"] or ""
-            ),
-            "count": c["view"].get("count"),
-        }}
-        for c in r["components"]
-    ],
-}})
-actual_json = json.dumps(actual_norm, sort_keys=True)
-expected_json = {expected_json!r}
+def main():
+    owner = sys.argv[1]
+    specs = json.loads(sys.argv[2])
+    expected = json.loads(sys.argv[3])
+    pid = sys.argv[4]
 
-if actual_json != expected_json:
-    print(f"MISMATCH", file=sys.stderr)
-    sys.exit(1)
-print("RESTART_EXACT_OK")
+    p = persist_rest.load(owner, activate=False)
+
+    # Assert exact confirmed Idea IDs in Nursery and Plane before composing.
+    assert pid in p.nursery.proposals, "pid not in nursery"
+    assert p.nursery.proposals[pid].status == "confirmed", "not confirmed"
+    assert pid in p.cube.session.plane.units, "pid not in Plane"
+
+    viewers = [pv.Viewer(id=s["id"], role=s["role"],
+                         pos=tuple(s["pos"]), facing=s["facing"])
+               for s in specs]
+    actual = normalize(pv.compose_views(p, [(v, "whole") for v in viewers]))
+
+    if actual == expected:
+        print("RESTART_EXACT_OK")
+        return 0
+    print("COMPARISON_MISMATCH: full compose_views result differs from expectation")
+    return 1
+
+sys.exit(main())
 '''
-    
-    result = subprocess.run(
-        [sys.executable, "-c", script],
-        cwd=cwd,
-        env={**os.environ, "PYTHONPATH": cwd},
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    
+
+    def run_child(expected_arg):
+        return subprocess.run(
+            [sys.executable, "-c", script, owner, specs_json, expected_arg, pid],
+            cwd=cwd,
+            env={**os.environ, "PYTHONPATH": cwd},
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+    # Valid expectation: exit zero and exact full-result equality.
+    result = run_child(expected_json)
     check("r71 restart: fresh process exit zero",
           result.returncode == 0,
           detail=f"rc={result.returncode}, stderr={result.stderr[:300]}")
-    check("r71 restart: complete composition matches",
+    check("r71 restart: full result exactly equal",
           "RESTART_EXACT_OK" in result.stdout,
           detail=f"stdout={result.stdout[:200]}")
-    
-    # Sensitivity: mutate one observation, comparison must reject
+
+    # Negative control through the same comparison: change one observation
+    # field (a node skin) while counts, statuses, and viewer order stay
+    # intact. The child must report an explicit comparison mismatch.
     mutated = json.loads(expected_json)
-    # Change one node's label (preserve status/count/viewer order)
-    if mutated["components"] and mutated["components"][0]["nodes"]:
-        mutated["components"][0]["nodes"][0]["label"] = "MUTATED_LABEL"
+    changed = False
+    for comp in mutated.get("components", []):
+        for node in comp.get("view", {}).get("nodes", []):
+            if isinstance(node, dict) and "skin" in node:
+                node["skin"] = "MUTATED_SKIN"
+                changed = True
+                break
+        if changed:
+            break
+    check("r71 restart: mutation targets a real observation field",
+          changed,
+          detail="no node with a skin field found (test bug)")
     mutated_json = json.dumps(mutated, sort_keys=True)
-    check("r71 restart: mutated observation differs",
+    check("r71 restart: mutation actually changed expectation",
           mutated_json != expected_json,
           detail="mutation did not change the JSON (test bug)")
+
+    bad = run_child(mutated_json)
+    check("r71 restart: mutated expectation rejected",
+          bad.returncode != 0,
+          detail=f"mutated run unexpectedly passed: rc={bad.returncode}, "
+                 f"stdout={bad.stdout[:200]}")
+    check("r71 restart: rejection is explicit comparison mismatch",
+          "COMPARISON_MISMATCH" in bad.stdout,
+          detail=f"stdout={bad.stdout[:200]}, stderr={bad.stderr[:200]}")
 
 
 def part_sensitivity_aggregation():

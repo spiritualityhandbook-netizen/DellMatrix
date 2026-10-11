@@ -10,12 +10,18 @@ Uses persist_rest.load(owner, activate=False) — the correct reader.
 - Saves populated Program with confirmed Idea
 - Child loads via correct reader
 - Asserts exact Idea IDs in Nursery AND Plane before composing
-- Captures complete deterministic composition as JSON
-- Child recreates identical specs, composes, compares complete result
-- Sensitivity: mutated observation rejects; valid succeeds
+- Normalizes the ENTIRE compose_views result via JSON round trip:
+  every field preserved, no hand-built projection, no default=str
+  (unsupported values fail explicitly instead of being silently stringified)
+- One fixed child script takes owner, specs, and expected result as JSON args
+- Valid run: exit zero and exact full-result equality
+- Negative control: a skin-mutated expectation (counts, statuses, viewer
+  order intact) submitted to the same child produces an explicit
+  COMPARISON_MISMATCH, not an unrelated failure
 
 The "pre-existing file-naming issue" claim is withdrawn; the correct
-loader resolves it.
+loader resolves it. The projection gap (skin/report changes passing the
+old selected-field comparison) is closed by full-result equality.
 
 ## Exact Identity
 
@@ -26,13 +32,14 @@ loader resolves it.
 - **Note:** Intermediate identities (26ec9229, db62e2b, c93e864, ad6fafc)
   superseded; frozen head below is authoritative.
 
-## Proof (49/49)
+## Proof (52/52)
 
-All Director-required outcomes with populated evidence.
+All Director-required outcomes with populated evidence, including
+full-result restart equality and the executed negative control.
 
 ## Verification
 
-- Targeted: 49/49
+- Targeted: 52/52
 - `--twice`: 112/112 GREEN
 - `--order rev`: 112/112 GREEN
 - Exact-head CI: [pending]

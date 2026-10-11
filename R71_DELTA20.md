@@ -11,8 +11,12 @@
 2. **Exact aggregation:** Preconditions; exact statuses; no permissive.
 3. **Detachment sensitivity:** Retained nested; shallow fails; restored.
 4. **Exact restart:** Uses persist_rest.load(owner, activate=False).
-   Asserts IDs in Nursery and Plane. Compares complete composition via JSON.
-   Sensitivity: mutated observation rejects.
+   Compares the ENTIRE normalized compose_views result (every field, no
+   hand-built projection, no default=str). One fixed child script takes owner,
+   specs, and expected as JSON args. Valid run requires exit zero and exact
+   equality. Negative control submits a skin-mutated expectation (counts,
+   statuses, viewer order intact) to the same child and requires an explicit
+   COMPARISON_MISMATCH.
 5. **State:** Content-level comparison.
 6. **Siblings:** Both outcomes; report failure bounded.
 
