@@ -179,8 +179,8 @@ uncertainty stated.
 ## Final Admission Identity
 
 - **Branch:** `gdp-phase7-r72-studio`
-- **Head:** [to be frozen after CI]
-- **Tree:** [to be frozen after CI]
+- **Head:** `9aeb4194502aa41bd6d86e831ce7350f96fe016b`
+- **Tree:** `19a0e50d8012b209d2de573310acec9cc2e356db`
 - **Base:** `25386e8daaa8936ac821b9ee4fd5b2271bf1397e` (main)
 - **PR:** #87 (to be updated)
 
