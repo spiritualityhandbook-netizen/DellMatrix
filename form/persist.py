@@ -223,15 +223,18 @@ def serialize(program: Program) -> Dict[str, Any]:
         },
         # R7.2: Perspective Studio session evidence. Closed session records
         # only; the active studio mode is session-only and never persists.
-        # Shape-validated on load; malformed sections are preserved as
-        # evidence and reported, not silently dropped.
+        # Malformed evidence is preserved in the section (not a sidecar)
+        # so it survives save/reload. Validated on load by the strict
+        # shared schema in perspective_studio.validate_section.
         "studio_sessions": {
             "version": 1,
             "sessions": {
-                sid: s.to_dict() if hasattr(s, "to_dict") else dict(s)
-                for sid, s in (getattr(program, "studio_sessions", None) or {}).items()
-                if isinstance(sid, str)
+                sid: dict(rec)
+                for sid, rec in (getattr(program, "studio_sessions", None) or {}).items()
+                if isinstance(sid, str) and isinstance(rec, dict)
             },
+            **({"malformed": dict(getattr(program, "studio_sessions_malformed", None) or {})}
+               if getattr(program, "studio_sessions_malformed", None) else {}),
         },
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).
         # Presence metadata for ideas. Uses existing persistence.

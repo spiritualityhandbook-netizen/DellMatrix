@@ -2785,6 +2785,49 @@ def _handle_reissue(p: Program, line: str, pending: Optional[str]) -> tuple:
     return p, source
 
 
+def _studio_screen_input(p, text: str) -> bool:
+    """R7.2: fail-closed protection screen for studio input.
+
+    Screens the raw text and its decoded form. Returns True if the input
+    is clean. Returns False (reject) if protected material is found OR
+    if screening cannot be performed. Never raises.
+    """
+    try:
+        from form.dell_matrix.inference_dock import (
+            protected_values, contains_protected_decoded)
+        protected = protected_values(p)
+        if contains_protected_decoded(text, protected):
+            return False
+        return True
+    except Exception:
+        # Fail closed: if we cannot screen, we reject.
+        return False
+
+
+def _studio_screen_specs(p, specs) -> bool:
+    """R7.2: screen decoded spec keys and values. Fail-closed."""
+    try:
+        from form.dell_matrix.inference_dock import (
+            protected_values, contains_protected_decoded)
+        protected = protected_values(p)
+        def _check(obj) -> bool:
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    if isinstance(k, str) and contains_protected_decoded(k, protected):
+                        return False
+                    if not _check(v):
+                        return False
+                return True
+            if isinstance(obj, (list, tuple)):
+                return all(_check(v) for v in obj)
+            if isinstance(obj, str):
+                return not contains_protected_decoded(obj, protected)
+            return True
+        return _check(specs)
+    except Exception:
+        return False
+
+
 def _handle_studio_line(p, line: str, studio):
     """R7.2: handle one input line while Perspective Studio is active.
 
@@ -2792,42 +2835,53 @@ def _handle_studio_line(p, line: str, studio):
     Everything else is rejected explicitly before normal dispatch.
     No mutations route from this circuit.
 
-    Returns (program, studio_or_None). On leave, the session is closed,
-    merged into p.studio_sessions, and persisted via the canonical save.
+    Protection is fail-closed: input is screened before reflection or
+    recording; screening failure rejects. All failure messages are fixed
+    bounded codes; raw input text is never reflected.
+
+    Returns (program, studio_or_None). On leave, the closed record is
+    staged, then persisted via the canonical save. The studio is discarded
+    only after successful save. On save failure, prior in-memory records
+    are restored and the studio remains active for retry.
     """
     from form.dell_matrix.perspective_studio import (
-        parse_specs_json, STUDIO_COMMANDS)
+        parse_specs_json, STUDIO_COMMANDS, FAIL_PROTECTED, FAIL_OUT_OF_SCOPE,
+        FAIL_SAVE)
 
-    lower = line.strip().lower()
+    stripped = line.strip()
+    lower = stripped.lower()
 
-    # leave: close, persist, exit studio mode.
+    # leave: stage closed record, save, discard studio only on success.
     if lower == "leave":
-        session = studio.close()
-        # Merge into the program's durable session records.
-        sessions = getattr(p, "studio_sessions", None)
-        if not isinstance(sessions, dict):
-            sessions = {}
-            p.studio_sessions = sessions
-        sessions[session.session_id] = session.to_dict()
-        # Retention: keep 10 most recent.
-        if len(sessions) > 10:
-            ordered = sorted(sessions.items(),
+        # Stage: build the closed record without mutating the studio.
+        closed_record = studio.prepare_leave()
+        sid = closed_record["session_id"]
+        # Save prior in-memory records for restoration on failure.
+        prior = dict(getattr(p, "studio_sessions", None) or {})
+        prior_malformed = getattr(p, "studio_sessions_malformed", None)
+        # Merge: new record plus retention (10 most recent).
+        merged = dict(prior)
+        merged[sid] = closed_record
+        if len(merged) > 10:
+            ordered = sorted(merged.items(),
                              key=lambda kv: str(kv[1].get("started", "")),
                              reverse=True)[:10]
-            p.studio_sessions = dict(ordered)
+            merged = dict(ordered)
+        p.studio_sessions = merged
         # Canonical save with existing recovery/stale-writer guards.
-        # Report saved/exited only after success; on failure the session
-        # is retained for retry and remains visible.
+        # Report saved/exited only after success.
         try:
             from form import persist_rest
             persist_rest.save(p)
-            _say(f"Studio session saved ({session.session_id[:8]}...). Exited.")
+            _say(f"Studio session saved ({sid[:8]}...). Exited.")
             return p, None
         except Exception as exc:
-            # Save failure: retain the session for retry, remain visible.
-            # No swallowed errors, no alternate writes.
-            _say(f"Save failed: {type(exc).__name__}. "
-                 f"Session retained ({session.session_id[:8]}...); "
+            # Save failure: restore prior records, keep studio active.
+            # The studio was not marked closed; retry is coherent.
+            p.studio_sessions = prior
+            p.studio_sessions_malformed = prior_malformed
+            _say(f"{FAIL_SAVE}: {type(exc).__name__}. "
+                 f"Session retained ({sid[:8]}...); "
                  f"still in studio — 'leave' to retry.")
             return p, studio
 
@@ -2843,42 +2897,55 @@ def _handle_studio_line(p, line: str, studio):
         return p, studio
 
     if lower.startswith("compose"):
-        rest = line.strip()[7:].strip()
+        rest = stripped[7:].strip()
         if not rest:
-            _say("compose: missing JSON specs. "
-                 'Example: compose [{"id":"v1","role":"user","pos":[0,0],"facing":"E"}]')
+            studio._record("compose", "rejected: missing specs")
+            _say("compose: missing JSON specs.")
             return p, studio
-        # Screen input-derived data for protected values before recording.
-        try:
-            from form.dell_matrix.inference_dock import (
-                protected_values, contains_protected)
-            protected = protected_values(p)
-            if contains_protected(rest, protected):
-                studio._record("compose", "rejected: protected material in input")
-                _say("compose: rejected — input contains protected material.")
-                return p, studio
-        except Exception:
-            pass
+        # Screen raw input BEFORE parsing, reflecting, or recording.
+        # Fail-closed: screening failure rejects.
+        if not _studio_screen_input(p, rest):
+            studio._record("compose", FAIL_PROTECTED)
+            _say(f"compose rejected: {FAIL_PROTECTED}.")
+            return p, studio
         ok, err, specs = parse_specs_json(rest)
         if not ok:
-            studio._record("compose", f"rejected: {err[:120]}")
-            _say(f"compose: {err}")
+            studio._record("compose", f"rejected: {err}")
+            _say(f"compose rejected: {err}.")
+            return p, studio
+        # Screen decoded spec keys and values before composition.
+        if not _studio_screen_specs(p, specs):
+            studio._record("compose", FAIL_PROTECTED)
+            _say(f"compose rejected: {FAIL_PROTECTED}.")
             return p, studio
         result = studio.compose(specs)
         if not result.get("ok"):
-            _say(f"compose: {result.get('status')} — {result.get('detail', '')}")
+            _say(f"compose rejected: {result.get('status')}.")
             return p, studio
-        # Display the detached composition report.
+        # Display attributed observations, retaining status and provenance.
+        # Uses the compositor's report lines; does not invent counts.
         _say(f"Composed {len(result.get('components', []))} view(s) "
              f"[{result.get('epistemic_status')}]:")
         for c in result.get("components", []):
-            _say(f"  {c.get('viewer')} ({c.get('requested_mode')}): "
-                 f"{c.get('epistemic_status')} via {c.get('source')}")
+            vid = c.get("viewer", "?")
+            mode = c.get("requested_mode", "?")
+            status = c.get("epistemic_status", "?")
+            source = c.get("source", "?")
+            _say(f"[{vid}/{mode}] status={status} source={source}")
+            view = c.get("view", {})
+            report = view.get("report", []) if isinstance(view, dict) else []
+            if isinstance(report, list):
+                for rline in report[:12]:
+                    _say(f"  {rline}")
+            elif isinstance(report, str):
+                _say(f"  {report[:200]}")
         return p, studio
 
     # Out-of-scope: explicit rejection before normal dispatch.
-    # Mutations (confirm, grant, etc.) never route from the studio.
-    _say(f"Studio: '{line.strip()[:40]}' is out of scope. "
+    # Mutations (confirm, grant, reissue, etc.) never route from the studio.
+    # Fixed message: never reflect raw input text.
+    studio._record("rejected", FAIL_OUT_OF_SCOPE)
+    _say(f"Studio: command out of scope. "
          f"Studio commands: {', '.join(STUDIO_COMMANDS)}.")
     return p, studio
 
@@ -2919,8 +2986,10 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     _studio = None
 
     while True:
+        # R7.2: scoped studio prompt. The active studio is session-only.
+        _prompt = "studio> " if _studio is not None else "you> "
         try:
-            line = input("you> ").strip()
+            line = input(_prompt).strip()
         except (EOFError, KeyboardInterrupt):
             print()
             # R7.2: explicit EOF behavior in studio mode. Unsaved studio
@@ -2938,6 +3007,19 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                      "Use 'leave' inside the studio to persist evidence.")
             _say("Goodbye.")
             break
+
+        # R7.2: Perspective Studio mode. Session-only; the active studio is
+        # never persisted (reload restores closed session records, not the
+        # mode). While active, ALL inputs pass through the scoped command
+        # handler before normal dispatch. This gate is ahead of every
+        # non-exit special handler (say-prefix, reissue, etc.): a reissue
+        # staged before studio entry cannot execute inside the studio, and
+        # a reissue requested inside the studio cannot reach dispatch.
+        # No mutations route from this circuit.
+        if _studio is not None:
+            p, _studio = _handle_studio_line(p, line, _studio)
+            continue
+
         if line.lower().startswith("say "):
             line = line[4:].strip()
 
@@ -2945,17 +3027,13 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         # Handled here (not in _dispatch_public_line): reissue is session
         # control, not semantic input. The staged source itself, when
         # confirmed, goes through _dispatch_public_line below.
+        # NOTE: this is AFTER the studio gate above. While the studio is
+        # active, reissue commands are rejected as out-of-scope and never
+        # reach this handler.
         if line.lower() == "reissue" or line.lower().startswith("reissue "):
             p, _pending_reissue = _handle_reissue(p, line, _pending_reissue)
             continue
 
-        # R7.2: Perspective Studio mode. Session-only; the active studio is
-        # never persisted (reload restores closed session records, not the
-        # mode). While active, only studio commands are accepted; everything
-        # else is rejected before normal dispatch. No mutations route here.
-        if _studio is not None:
-            p, _studio = _handle_studio_line(p, line, _studio)
-            continue
         if line.lower() == "perspective studio":
             from form.dell_matrix.perspective_studio import PerspectiveStudio
             _studio = PerspectiveStudio(p)

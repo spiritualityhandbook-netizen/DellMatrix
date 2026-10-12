@@ -15,6 +15,17 @@ inspecting their meaning. It is a presentation adapter only:
 
 All mutations route through the standard dispatcher or are rejected;
 the studio itself performs no mutations.
+
+Persistence contract (shared strict schema):
+- Section version 1. Bool-as-version and unsupported coercions rejected.
+- Session dict key must equal the record's session_id.
+- Record owner must equal the Program owner.
+- Only closed records persist; active sessions never serialize.
+- Malformed sections are preserved as evidence through save/reload.
+- Retention: 10 most recent sessions, 50 most recent commands per session.
+  Bounds are enforced during recording, not only at serialization.
+  History beyond the retained window is not available; this is documented,
+  not claimed as complete.
 """
 
 from __future__ import annotations
@@ -34,23 +45,38 @@ _MAX_FACING_LEN = 8
 _MAX_MODE_LEN = 16
 _MAX_JSON_BYTES = 8192
 
+# Bounds for session evidence. Enforced during recording.
+_MAX_COMMANDS = 50
+_MAX_SESSIONS = 10
+
+# Strict persistence schema version. Must be int 1; bool is rejected.
+STUDIO_SECTION_VERSION = 1
+
 _VALID_FACINGS = frozenset({"N", "S", "E", "W", "NE", "NW", "SE", "SW"})
 _VALID_MODES = frozenset({"first", "third", "parts", "whole"})
 
 # Inspectable layout legend. Descriptive only: these define what the
 # presentation fields mean, not what they authorize or prove.
+# Keys correspond to fields displayed by the studio's compose output.
 LEGEND: Dict[str, str] = {
-    "position": "Canonical plane coordinates (x, y) of the observed unit.",
-    "label": "Display label of the observed unit.",
-    "skin": "Presentation metadata only; carries no authority or truth claim.",
-    "epistemic_status": "Verification standing of the view (e.g., REAL, PARTIAL); "
-                        "not accepted truth and not permission.",
     "viewer": "Attribution: which viewer specification produced this component.",
     "requested_mode": "The observation mode requested (first/third/parts/whole).",
+    "epistemic_status": "Verification standing of the view (e.g., REAL, PARTIAL); "
+                        "not accepted truth and not permission.",
     "source": "Provenance of the observation data.",
+    "observations": "The attributed observation report from the compositor.",
 }
 
 STUDIO_COMMANDS = ("compose", "legend", "help", "leave")
+
+# Fixed bounded failure codes. Never reflect raw input, unknown keys,
+# or exception text.
+FAIL_PROTECTED = "PROTECTED_MATERIAL"
+FAIL_MALFORMED_JSON = "MALFORMED_JSON"
+FAIL_INVALID_SPEC = "INVALID_SPEC"
+FAIL_OWNER_MISMATCH = "OWNER_MISMATCH"
+FAIL_OUT_OF_SCOPE = "OUT_OF_SCOPE"
+FAIL_SAVE = "SAVE_FAILED"
 
 
 def _is_finite_number(v: Any) -> bool:
@@ -62,6 +88,8 @@ def validate_spec(raw: Any) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
 
     Returns (ok, error, normalized). No eval, no attribute access,
     no permissive string coercion. Finite numbers only. Bounded input.
+    This is the shared contract: the REPL and direct API callers use
+    the same validation. Direct callers must not assume normalized data.
     """
     if not isinstance(raw, dict):
         return False, "spec must be a JSON object", None
@@ -91,12 +119,16 @@ def validate_spec(raw: Any) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
             return False, "spec.mode must be a string (max 16)", None
         if mode not in _VALID_MODES:
             return False, f"spec.mode must be one of {sorted(_VALID_MODES)}", None
-    # owner: if supplied, must match the Program owner (checked by caller);
-    # reject unexpected keys to keep the schema explicit.
+    # owner: if supplied, must be a bounded string; the caller checks it
+    # against the Program owner. Reject unexpected keys to keep the schema
+    # explicit.
     allowed = {"id", "role", "pos", "facing", "mode", "owner"}
     extra = set(raw.keys()) - allowed
     if extra:
-        return False, f"spec has unexpected keys: {sorted(extra)}", None
+        return False, "spec has unexpected keys", None
+    owner = raw.get("owner")
+    if owner is not None and (not isinstance(owner, str) or len(owner) > 128):
+        return False, "spec.owner must be a string (max 128)", None
     normalized = {
         "id": vid,
         "role": role,
@@ -104,8 +136,8 @@ def validate_spec(raw: Any) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
         "facing": facing,
         "mode": mode,
     }
-    if "owner" in raw:
-        normalized["owner"] = raw["owner"]
+    if owner is not None:
+        normalized["owner"] = owner
     return True, "", normalized
 
 
@@ -114,26 +146,40 @@ def parse_specs_json(text: str) -> Tuple[bool, str, Optional[List[Dict[str, Any]
 
     Bounded input: rejects payloads over _MAX_JSON_BYTES and arrays
     over _MAX_SPECS. Every spec goes through validate_spec.
+    Error messages are bounded and do not reflect input content.
     """
     if len(text.encode("utf-8")) > _MAX_JSON_BYTES:
-        return False, f"specs JSON exceeds {_MAX_JSON_BYTES} bytes", None
+        return False, FAIL_MALFORMED_JSON, None
     try:
         raw = json.loads(text)
-    except (json.JSONDecodeError, ValueError) as exc:
-        return False, f"malformed JSON: {exc}", None
+    except (json.JSONDecodeError, ValueError):
+        return False, FAIL_MALFORMED_JSON, None
     if not isinstance(raw, list):
-        return False, "specs must be a JSON array", None
+        return False, FAIL_MALFORMED_JSON, None
     if not raw:
-        return False, "specs array must not be empty", None
+        return False, FAIL_INVALID_SPEC, None
     if len(raw) > _MAX_SPECS:
-        return False, f"specs array exceeds {_MAX_SPECS} entries", None
+        return False, FAIL_INVALID_SPEC, None
     out: List[Dict[str, Any]] = []
-    for i, item in enumerate(raw):
-        ok, err, norm = validate_spec(item)
+    for item in raw:
+        ok, _, norm = validate_spec(item)
         if not ok:
-            return False, f"spec[{i}]: {err}", None
+            return False, FAIL_INVALID_SPEC, None
         out.append(norm)  # type: ignore[arg-type]
     return True, "", out
+
+
+def _is_valid_command(rec: Any) -> bool:
+    """Strict command record check. No coercion."""
+    if not isinstance(rec, dict):
+        return False
+    for k in ("kind", "time", "result"):
+        v = rec.get(k)
+        if not isinstance(v, str) or len(v) > 256:
+            return False
+    if len(rec.get("kind", "")) == 0 or len(rec.get("kind", "")) > 32:
+        return False
+    return True
 
 
 @dataclass
@@ -142,6 +188,9 @@ class StudioSession:
 
     Only presentation specifications and bounded evidence are stored.
     Never grants, authority, or raw credentials.
+    Bounds are enforced during recording: at most _MAX_COMMANDS commands
+    are retained; older commands are discarded. This is a retained window,
+    not complete history.
     """
     session_id: str
     owner: str
@@ -149,46 +198,116 @@ class StudioSession:
     closed: Optional[str] = None
     commands: List[Dict[str, str]] = field(default_factory=list)
 
+    def record(self, kind: str, result: str) -> None:
+        """Record one command. Enforces the in-memory bound."""
+        self.commands.append({
+            "kind": str(kind)[:32],
+            "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "result": str(result)[:240],
+        })
+        # Enforce bound during recording, not only at serialization.
+        if len(self.commands) > _MAX_COMMANDS:
+            self.commands = self.commands[-_MAX_COMMANDS:]
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "session_id": self.session_id,
             "owner": self.owner,
             "started": self.started,
             "closed": self.closed,
-            "commands": [
-                {
-                    "kind": str(c.get("kind", ""))[:32],
-                    "time": str(c.get("time", ""))[:32],
-                    "result": str(c.get("result", ""))[:240],
-                }
-                for c in self.commands
-            ][-50:],
+            "commands": [dict(c) for c in self.commands[-_MAX_COMMANDS:]],
         }
 
     @staticmethod
-    def validate(raw: Any) -> Tuple[bool, str]:
-        """Shape check for a persisted session record."""
+    def validate(raw: Any, owner: str) -> Tuple[bool, str]:
+        """Strict shape check for a persisted session record.
+
+        Requires: session_id/owner/started are non-empty bounded strings;
+        owner matches the Program owner; closed is set (only closed records
+        persist); commands is a list of valid command records.
+        No coercion. Bool is not a valid string.
+        """
         if not isinstance(raw, dict):
             return False, "session must be an object"
         for key in ("session_id", "owner", "started"):
             v = raw.get(key)
-            if not isinstance(v, str) or not v or len(v) > 128:
-                return False, f"session.{key} must be a non-empty string (max 128)"
+            if not isinstance(v, str) or isinstance(v, bool):
+                return False, f"session.{key} must be a string"
+            if not v or len(v) > 128:
+                return False, f"session.{key} must be non-empty (max 128)"
+        if raw["owner"] != owner:
+            return False, "session.owner does not match Program owner"
         closed = raw.get("closed")
-        if closed is not None and (not isinstance(closed, str) or len(closed) > 128):
-            return False, "session.closed must be a string or null"
+        if not isinstance(closed, str) or not closed or len(closed) > 128:
+            return False, "session.closed must be set (only closed records persist)"
         cmds = raw.get("commands")
-        if cmds is not None:
-            if not isinstance(cmds, list):
-                return False, "session.commands must be an array"
-            for c in cmds:
-                if not isinstance(c, dict):
-                    return False, "session command must be an object"
-                for k in ("kind", "time", "result"):
-                    v = c.get(k)
-                    if v is not None and not isinstance(v, str):
-                        return False, f"session command.{k} must be a string"
+        if not isinstance(cmds, list):
+            return False, "session.commands must be an array"
+        if len(cmds) > _MAX_COMMANDS:
+            return False, f"session.commands exceeds {_MAX_COMMANDS}"
+        for c in cmds:
+            if not _is_valid_command(c):
+                return False, "session.commands has an invalid record"
         return True, ""
+
+
+def validate_section(raw: Any, owner: str) -> Tuple[Dict[str, Dict[str, Any]], Optional[Dict[str, Any]]]:
+    """Validate a persisted studio_sessions section with the strict schema.
+
+    Returns (sessions, malformed). Sessions maps session_id -> record for
+    valid closed records. Malformed is None when the section is absent
+    (legacy) or fully valid; otherwise it preserves the malformed records
+    with per-record errors, in a structure that survives save/reload.
+
+    Distinguishes:
+    - absent (None): legacy, no sessions. Not malformed.
+    - explicit null or non-dict: malformed, preserved under "_section".
+    - wrong version (including bool): malformed, preserved under "_section".
+    - per-record failures: valid records kept, failures preserved by key.
+    - previously-preserved "malformed" key: carried through unchanged.
+
+    Never raises for any input. No broad suppression needed by callers.
+    """
+    if raw is None:
+        return {}, None
+    if not isinstance(raw, dict):
+        return {}, {"_section": {"raw": raw, "error": "section not an object"}}
+    version = raw.get("version")
+    # Strict: must be int 1. Bool is rejected (isinstance(True, int) is True,
+    # so check explicitly). No coercion.
+    if isinstance(version, bool) or not isinstance(version, int):
+        return {}, {"_section": {"raw": raw, "error": "section version must be int 1"}}
+    if version != STUDIO_SECTION_VERSION:
+        return {}, {"_section": {"raw": raw, "error": f"unsupported section version {version}"}}
+    raw_sessions = raw.get("sessions")
+    if not isinstance(raw_sessions, dict):
+        return {}, {"_section": {"raw": raw, "error": "sessions not an object"}}
+    valid: Dict[str, Dict[str, Any]] = {}
+    malformed: Dict[str, Any] = {}
+    for sid, rec in raw_sessions.items():
+        if not isinstance(sid, str):
+            malformed["_non_string_key"] = {"raw": rec, "error": "session key not a string"}
+            continue
+        ok, err = StudioSession.validate(rec, owner)
+        if not ok:
+            malformed[sid] = {"raw": rec, "error": err}
+            continue
+        # Key/ID agreement: dict key must equal the record's session_id.
+        if not isinstance(rec, dict) or rec.get("session_id") != sid:
+            malformed[sid] = {"raw": rec, "error": "session key/ID mismatch"}
+            continue
+        valid[sid] = dict(rec)
+    # Carry through previously-preserved malformed evidence.
+    preserved = raw.get("malformed")
+    if isinstance(preserved, dict):
+        for k, v in preserved.items():
+            if k not in malformed and isinstance(k, str):
+                malformed[k] = v
+    # Retention: 10 most recent by started timestamp.
+    ordered = sorted(valid.items(),
+                     key=lambda kv: str(kv[1].get("started", "")),
+                     reverse=True)[:_MAX_SESSIONS]
+    return dict(ordered), (malformed if malformed else None)
 
 
 class PerspectiveStudio:
@@ -196,6 +315,8 @@ class PerspectiveStudio:
 
     The studio holds no authority. It delegates composition, derives the
     owner from the Program, and records bounded session evidence.
+    The public compose() validates specs with the shared contract;
+    callers must not assume normalized data.
     """
 
     WORKSHOP_ID = "perspective"
@@ -218,24 +339,33 @@ class PerspectiveStudio:
         return self._session
 
     def _record(self, kind: str, result: str) -> None:
-        self._session.commands.append({
-            "kind": kind,
-            "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "result": result,
-        })
+        self._session.record(kind, result)
 
     def compose(self, specs: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Compose views via R7.1 compose_views. No hardcoded composition."""
+        """Compose views via R7.1 compose_views.
+
+        Validates every spec with the shared contract. Rejects owner
+        mismatch. Returns the compositor's result with fixed failure codes.
+        """
         from form.dell_matrix.perspective_views import Viewer, compose_views
 
-        # Owner mismatch: reject any spec carrying a different owner.
+        # Shared validation: do not assume normalized data.
+        normalized: List[Dict[str, Any]] = []
         for s in specs:
+            ok, _, norm = validate_spec(s)
+            if not ok:
+                self._record("compose", FAIL_INVALID_SPEC)
+                return {"ok": False, "status": FAIL_INVALID_SPEC,
+                        "detail": "spec failed validation"}
+            normalized.append(norm)  # type: ignore[arg-type]
+        # Owner mismatch: reject any spec carrying a different owner.
+        for s in normalized:
             if "owner" in s and s["owner"] != self._owner:
-                self._record("compose", "rejected: owner mismatch")
-                return {"ok": False, "status": "OWNER_MISMATCH",
+                self._record("compose", FAIL_OWNER_MISMATCH)
+                return {"ok": False, "status": FAIL_OWNER_MISMATCH,
                         "detail": "spec owner does not match Program owner"}
         viewers = []
-        for s in specs:
+        for s in normalized:
             viewers.append(Viewer(
                 id=s["id"],
                 role=s["role"],
@@ -243,11 +373,10 @@ class PerspectiveStudio:
                 facing=s["facing"],
                 mode=s.get("mode"),
             ))
-        # Caller supplies the mode per spec; default to whole-view.
         pairs = [(v, v.effective_mode()) for v in viewers]
         result = compose_views(self._program, pairs)
-        # Detachment: the studio never hands out its live session or the
-        # program's mutable state; the result is already a detached report.
+        # Detachment: the compositor returns deep-copied views; the studio
+        # never hands out its live session or the program's mutable state.
         self._record("compose",
                      f"ok={result.get('ok')} status={result.get('epistemic_status')} "
                      f"components={len(result.get('components', []))}")
@@ -269,11 +398,27 @@ class PerspectiveStudio:
             "  legend                Show the inspectable layout legend.\n"
             "  help                  Show this text.\n"
             "  leave                 Save session evidence and exit the studio.\n"
-            "Out-of-scope commands are rejected while the studio is active."
+            "Out-of-scope commands are rejected while the studio is active.\n"
+            "Evidence: the 50 most recent commands per session are retained;\n"
+            "earlier commands are not preserved. At most 10 sessions are kept."
         )
 
-    def close(self) -> StudioSession:
-        """Close the session record. Does not persist; caller saves."""
-        self._session.closed = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        self._record("leave", "session closed")
-        return self._session
+    def prepare_leave(self) -> Dict[str, Any]:
+        """Build the closed session record WITHOUT mutating the studio.
+
+        The caller stages this record, saves, and only discards the studio
+        after successful persistence. On save failure the studio remains
+        active and usable; prepare_leave() is idempotent.
+        """
+        closed_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        record = self._session.to_dict()
+        record["closed"] = closed_at
+        # The leave command itself is part of the closed record.
+        cmds = list(record.get("commands", []))
+        cmds.append({
+            "kind": "leave",
+            "time": closed_at,
+            "result": "session closed",
+        })
+        record["commands"] = cmds[-_MAX_COMMANDS:]
+        return record

@@ -326,25 +326,22 @@ their meaning. Read-only: the studio composes views via R7.1
 **Exact syntax:**
 
 ```
-you> perspective studio
-Perspective Studio — scoped composition workshop.
-Type 'help' for studio commands, 'leave' to exit.
-
-you> compose [{"id":"v1","role":"user","pos":[0,0],"facing":"E","mode":"whole"}]
+studio> compose [{"id":"v1","role":"user","pos":[0,0],"facing":"E","mode":"whole"}]
 Composed 1 view(s) [REAL]:
-  v1 (whole): REAL via program
+[v1/whole] status=REAL source=program
+  Whole plane · 3 nodes
+  skins: {...}
+  · label [skin]
 
-you> legend
+studio> legend
 Layout legend (descriptive only):
   epistemic_status: Verification standing of the view; not accepted truth.
-  label: Display label of the observed unit.
-  position: Canonical plane coordinates (x, y) of the observed unit.
+  observations: The attributed observation report from the compositor.
   requested_mode: The observation mode requested.
-  skin: Presentation metadata only; carries no authority or truth claim.
   source: Provenance of the observation data.
   viewer: Attribution: which viewer specification produced this component.
 
-you> leave
+studio> leave
 Studio session saved (a1b2c3d4...). Exited.
 ```
 
@@ -352,17 +349,32 @@ Studio session saved (a1b2c3d4...). Exited.
 object with `id` (string, required), `role` (string), `pos` ([x, y]
 finite numbers, required), `facing` (N/S/E/W/NE/NW/SE/SW),
 `mode` (first/third/parts/whole, optional). Malformed specs are
-rejected with explicit errors. A spec carrying a non-matching `owner`
+rejected with fixed codes. A spec carrying a non-matching `owner`
 is rejected.
 
-**While in studio:** only `compose`, `legend`, `help`, `leave` are
-accepted. All other commands — including mutations like `confirm` —
-are rejected as out-of-scope before normal dispatch.
+**While in studio** (prompt shows `studio> `): only `compose`, `legend`,
+`help`, `leave` are accepted. All other commands — including `reissue`
+and mutations like `confirm` — are rejected as out-of-scope before
+normal dispatch. The studio gate is enforced ahead of all non-exit
+input handlers.
 
-**Persistence:** `leave` saves the closed session record (session ID,
-owner, command kind, time, bounded result) via the canonical save.
-Reload restores the closed record, not the active mode. EOF/quit
-without `leave` does NOT persist the session; this is stated explicitly.
+**Protection:** Compose input is screened for protected material
+(grant handles, credentials) via R6.2 utilities before reflection or
+recording. Screening covers raw text, escaped sequences, and decoded
+keys/values. Screening failure rejects (fail-closed). Rejections use
+fixed codes; raw input is never reflected.
+
+**Persistence:** `leave` stages the closed session record, then saves
+via the canonical save. The studio exits only after successful save.
+On save failure, prior records are restored and the studio remains
+active for retry. Reload restores closed records, never active mode.
+Malformed sections are preserved as evidence. EOF/quit without `leave`
+does NOT persist the session; this is stated explicitly.
+
+**Evidence bounds:** The 50 most recent commands per session are
+retained (enforced during recording); at most 10 sessions are kept.
+Rejected attempts are recorded with safe codes. This is a retained
+window, not complete history.
 
 ---
 
