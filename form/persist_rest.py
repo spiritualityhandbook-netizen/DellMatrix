@@ -494,11 +494,12 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     # R7.2: restore Perspective Studio session evidence with the shared
     # strict schema. Closed records only; the active studio mode is
     # session-only and never restored. validate_section never raises;
-    # no broad suppression. Malformed evidence is preserved (in memory
-    # and through save/reload via the section's "malformed" key).
-    # Retention: 10 most recent closed sessions.
-    from form.dell_matrix.perspective_studio import validate_section
-    sessions, malformed = validate_section(data.get("studio_sessions"), p.owner)
+    # no broad suppression. The _MISSING sentinel distinguishes absent
+    # (legacy) from explicit null (malformed). Malformed evidence is
+    # preserved (in memory and through save/reload via the section's
+    # "malformed" key). Retention: 10 most recent closed sessions.
+    from form.dell_matrix.perspective_studio import validate_section, _MISSING
+    sessions, malformed = validate_section(data.get("studio_sessions", _MISSING), p.owner)
     p.studio_sessions = sessions
     p.studio_sessions_malformed = malformed
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).

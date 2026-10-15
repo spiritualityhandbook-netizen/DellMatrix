@@ -2786,11 +2786,12 @@ def _handle_reissue(p: Program, line: str, pending: Optional[str]) -> tuple:
 
 
 def _studio_screen_input(p, text: str) -> bool:
-    """R7.2: fail-closed protection screen for studio input.
+    """R7.2: fail-closed protection screen for raw studio input text.
 
-    Screens the raw text and its decoded form. Returns True if the input
-    is clean. Returns False (reject) if protected material is found OR
-    if screening cannot be performed. Never raises.
+    Screens the raw text and its decoded form. Returns True if clean.
+    Returns False (reject) if protected material is found OR if screening
+    cannot be performed. Never raises. The structured specs are screened
+    again by PerspectiveStudio.compose via the shared helper.
     """
     try:
         from form.dell_matrix.inference_dock import (
@@ -2801,30 +2802,6 @@ def _studio_screen_input(p, text: str) -> bool:
         return True
     except Exception:
         # Fail closed: if we cannot screen, we reject.
-        return False
-
-
-def _studio_screen_specs(p, specs) -> bool:
-    """R7.2: screen decoded spec keys and values. Fail-closed."""
-    try:
-        from form.dell_matrix.inference_dock import (
-            protected_values, contains_protected_decoded)
-        protected = protected_values(p)
-        def _check(obj) -> bool:
-            if isinstance(obj, dict):
-                for k, v in obj.items():
-                    if isinstance(k, str) and contains_protected_decoded(k, protected):
-                        return False
-                    if not _check(v):
-                        return False
-                return True
-            if isinstance(obj, (list, tuple)):
-                return all(_check(v) for v in obj)
-            if isinstance(obj, str):
-                return not contains_protected_decoded(obj, protected)
-            return True
-        return _check(specs)
-    except Exception:
         return False
 
 
@@ -2903,7 +2880,8 @@ def _handle_studio_line(p, line: str, studio):
             _say("compose: missing JSON specs.")
             return p, studio
         # Screen raw input BEFORE parsing, reflecting, or recording.
-        # Fail-closed: screening failure rejects.
+        # Fail-closed: screening failure rejects. Structured specs are
+        # screened again by PerspectiveStudio.compose (shared contract).
         if not _studio_screen_input(p, rest):
             studio._record("compose", FAIL_PROTECTED)
             _say(f"compose rejected: {FAIL_PROTECTED}.")
@@ -2912,11 +2890,6 @@ def _handle_studio_line(p, line: str, studio):
         if not ok:
             studio._record("compose", f"rejected: {err}")
             _say(f"compose rejected: {err}.")
-            return p, studio
-        # Screen decoded spec keys and values before composition.
-        if not _studio_screen_specs(p, specs):
-            studio._record("compose", FAIL_PROTECTED)
-            _say(f"compose rejected: {FAIL_PROTECTED}.")
             return p, studio
         result = studio.compose(specs)
         if not result.get("ok"):

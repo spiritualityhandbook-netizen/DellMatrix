@@ -1,144 +1,155 @@
-# R7.2 Delta-20 — Perspective Studio (REPAIR CIRCUIT)
+# R7.2 Delta-20 — Perspective Studio (FINISH-BOUNDARIES CIRCUIT)
 
-**Date:** 2026-10-11 (AMEND repair)
-**Circuit:** R7.2 Perspective Studio — Close Scope, Evidence, and Failure Circuit
-**Base:** `25386e8` (main, post R7.1 docs)
-**Status:** Repair in progress
+**Date:** 2026-10-15
+**Circuit:** GDP_R72_FINISH_EXISTING_BOUNDARIES_AND_EXECUTABLE_EVIDENCE (MODE=C)
+**Start:** `e77806b7fa39ef86216249a4fa28ab70579306e4` (PR #87)
+**Base:** `25386e8daaa8936ac821b9ee4fd5b2271bf1397e` (main)
+**Status:** Candidate ready for Director review (NOT CERTIFIED — DO NOT MERGE)
 
-## Director Findings (all addressed)
+Category names and numbering are the established Delta-20 set
+(as in R64_DELTA20.md). No category renamed or renumbered.
 
-1. **Scope bypass**: reissue handled before studio gate → FIXED (gate first)
-2. **Protection fail-open**: screening exception suppressed → FIXED (fail-closed)
-3. **Incomplete persistence**: no version, malformed not preserved, DURABLE_KEYS missing → FIXED
-4. **Failed save left closed session**: close-before-save → FIXED (stage-then-save)
-5. **Overstated logging**: unbounded commands, unrecorded rejections, metadata display → FIXED
-6. **Weak proofs**: or-True, vacuous checks → REPLACED (74 effective checks)
+## Finding dispositions (second AMEND)
 
-## Delta-20 Categories (Reconciled Against Executed Evidence)
+1. **Persistence still loses evidence** — FIXED. Loader uses the
+   `_MISSING` sentinel: absent key is legacy; explicit null is malformed.
+   `serialize_section` shares the strict schema with restoration; active,
+   foreign-owner, and key/ID-mismatched records are preserved as malformed,
+   never silently saved as valid or discarded. Same-key malformed failures
+   accumulate as lists; earlier evidence is never overwritten.
+2. **Protection is REPL-input-only** — FIXED. `PerspectiveStudio.compose`
+   screens structured input before composition and detached output before
+   release via the shared `_screen_protected` helper (R6.2 utilities).
+   Canonical Idea content is never modified to sanitize a view.
+3. **Validation escapes its boundary** — FIXED. compose() enforces the
+   container contract (list, non-empty, eight-spec limit, aggregate
+   bounds) and catches numeric conversion/overflow failures, returning
+   fixed bounded rejection codes. The REPL remains usable afterward.
+4. **Advertised proofs absent** — REPLACED. Real authority-bound rollback
+   executed to a sealed checkpoint; genuinely recovery-required and stale
+   instances created via production attributes (no guard mock);
+   protection sensitivity demonstrates actual canary disclosure under
+   weakened protection and rejection after restore; gate-order checks
+   target the main dispatch gate (last of three studio branches), backed
+   by behavioral REPL proofs.
 
-### 1. Missing concept — Bounded.
-The studio is a scoped REPL mode, not a new subsystem. It reuses the
-existing REPL loop and R7.1 compose_views. No new runtime concept introduced.
-The AMEND repair did not add concepts; it closed the existing scope.
+## Delta-20 Categories
 
-### 2. Contradiction — None.
-Preserves R7.1 PERSPECTIVE ≠ TRUTH. The legend explicitly states that
-epistemic status means verification, not accepted truth or permission.
-Preserves R6.5 PERSONA ≠ PERMISSION: the studio grants nothing.
-The scope fix strengthens this: mutations cannot bypass via reissue.
+### 1. Missing workflow — Bounded.
+The studio completes the Phase-7 workshop workflow: enter → compose →
+inspect observations → legend/help → rejected mutation → failed leave →
+continued use → successful retry → fresh-process reload. The full journey
+is executed as one real-REPL proof, not asserted piecemeal.
 
-### 3. Semantic drift — Watched.
+### 2. Contradictory records — None.
+One shared strict schema (`validate_section` / `serialize_section`)
+governs both directions of persistence; serializer and loader cannot
+disagree about what a valid record is. Malformed evidence is preserved
+in both directions under the same rules.
+
+### 3. Semantic drift — Bounded.
 "Studio" could imply authoring accepted truth. Mitigated: the studio
-only composes views (read-only); the help text and legend state this
-explicitly. Mutations are rejected, not reinterpreted. The repair adds
-a scoped prompt (`studio> `) to reinforce the mode boundary.
+only composes views (read-only, PERSPECTIVE ≠ TRUTH preserved); the
+scoped `studio> ` prompt and help text state the boundary explicitly.
+Mutations are rejected, never reinterpreted.
 
 ### 4. Duplicate authority — None.
-No replacement compositor (delegates to compose_views), no permission
-system (R6.5 owns), no dispatcher (REPL dispatch unchanged), no save
-path (canonical persist_rest.save). PerspectiveStudio is a presentation
-adapter only. The repair did not add authorities.
+No new compositor (delegates to R7.1 `compose_views`), no permission
+model (R6.5 owns), no dispatcher (REPL dispatch unchanged), no save
+path (canonical `persist_rest.save`), no persistence store (existing
+Program payload section; no sidecar).
 
-### 5. Wrong abstraction — Bounded.
-The studio is a workshop (Phase-7 concept), not a truth or permission
-system. Commands are presentation operations (compose, legend) plus
-session control (help, leave).
+### 5. Identity/permission conflation — None.
+PERSONA ≠ PERMISSION preserved. The studio grants nothing; owner binding
+is enforced on compose (spec owner must match Program owner) and on
+restoration (records bound to the loading Program's owner).
 
-### 6. Wrong layer — None.
-Workshop/presentation layer. Does not touch Mandell core, lifecycle,
-or persistence internals. Serializer/loader changes are minimal and
-follow the strict schema pattern. DURABLE_KEYS now includes the section.
+### 6. Unmediated execution layer — None.
+While the studio is active, every non-exit input passes the scoped
+handler before normal dispatch; the gate precedes reissue and the
+say-prefix handler. Proven behaviorally with genuinely pending targets
+(exact pending status, Plane absence, unchanged canonical content).
 
-### 7. Persistence failure — Bounded.
-Uses canonical persist_rest.save with existing recovery/stale-writer
-guards (check_save_allowed). Session evidence is a versioned subsection
-of the Program payload with strict validation. Malformed evidence is
-preserved through save/reload. Save failure restores prior records and
-retains an active session; proven by executed controls. Checkpoint and
-rollback preserve the studio evidence contract.
+### 7. Persistence inconsistency — Bounded.
+Section is versioned (int 1; bool rejected, no coercion) and included in
+DURABLE_KEYS. Absent vs explicit null distinguished by sentinel.
+Malformed sections, carriers, and multiple same-key failures preserved
+through load → save → fresh-process reload. Active records are never
+persisted as valid.
 
-### 8. History/provenance — None.
-All studio commands (including rejected attempts) are logged in the
-session record with kind, time, and safe result code. Bounds are enforced
-during recording (50 commands, 10 sessions); retention is documented,
-not claimed as complete.
+### 8. Lost history — None.
+Malformed evidence accumulates without overwriting earlier entries;
+session retention (10 closed sessions, 50 commands) is explicit in help
+text and enforced during recording, not only at serialization.
 
-### 9. Security — Bounded.
-Scoped command set; no new privilege. Input-derived data (compose JSON)
-is screened for protected material via R6.2 inference_dock utilities
-before reflection or recording. Screening covers raw text, decoded
-escapes, and structured keys/values. Fail-closed: screening failure
-rejects. Fixed bounded failure codes; raw input never reflected.
-Grants, authority, and credentials are never persisted. Proven by
-executed controls including sensitivity (weakened protection exposes).
+### 9. False provenance — Bounded.
+Compose displays actual attributed observations from `compose_views`
+(viewer/mode/status/source report lines), field-for-field equal to a
+direct compositor call. No invented counts; disagreement is not merged
+into truth.
 
-### 10. Human-authority — None.
-The studio cannot confirm, grant, or override. Mutations attempted in
-studio mode are explicitly rejected before normal dispatch. The reissue
-bypass is closed: staged reissues cannot execute inside the studio.
+### 10. Credential/subject escape — Bounded.
+Fail-closed protection on every public entrypoint (REPL raw input,
+decoded specs, direct compose input, detached compose output). Fixed
+bounded failure codes; no reflected input, unknown keys, or exception
+text. Protected canaries in keys, values, and escaped JSON show zero
+disclosure in responses and persisted evidence. Sensitivity: weakened
+screening discloses the canary; restored screening rejects.
 
-### 11. Offline — None.
-Local-first preserved. No network dependency. Cloud perspective
-explicitly deferred per directive.
+### 11. Human-authority bypass — None.
+EOF/quit in studio mode never claim persistence; leave persists only via
+the canonical save after staging. Stale-writer and recovery-required
+guards are reused, never bypassed; genuinely blocked instances reject
+leave with durable bytes unchanged and the session retained for retry.
 
-### 12. Performance — Bounded.
-Composition is O(viewers × modes) via R7.1. Spec parsing is bounded
-(8KB JSON, 8 specs). Session records are bounded (50 commands enforced
-during recording, 10 sessions retained).
+### 12. Offline dependency — None.
+No networking, no cloud perspective (explicitly deferred), no external
+service introduced.
 
-### 13. Public-path theater — Proven.
-The walking skeleton and scope proofs use the real REPL
-(`python3 -m form.repl`) with piped commands. Composition output is
-field-for-field equal to a direct compose_views call. The full user
-journey (enter → compose → legend/help → rejected mutation → failed
-leave → retry → reload) is executed. No mocks for the routing proofs.
+### 13. Measured performance regression — None observed.
+Full canonical regression (--twice and --order rev) green at the same
+suite size as the start candidate plus the expanded R7.2 suite.
 
-### 14. Mathematical weakness — None.
-The layout legend is descriptive (what fields mean), not a proof or
-guarantee. No mathematical claims made. Legend keys validated against
-displayed fields.
+### 14. Public-path theater — None.
+Proofs execute the real REPL (subprocess, piped input), the public
+compose() API, canonical save/load, and authority-bound rollback —
+not private stand-ins. A new Program in one process is never called
+cross-process; fresh-process reload is a separate OS process.
 
-### 15. Visual theater — Watched.
-The legend is a machine-inspectable dict (keys asserted by tests).
-Compose displays actual attributed observations (report lines with
-viewer/mode/status/source), not just metadata. Proven by journey test.
+### 15. Vacuous/count/statistical claims — None.
+No unconditional verdicts or permissive alternatives remain. Checks that
+previously could not distinguish success from the defect (static
+gate-order search matching the EOF branch; INVALID_SPEC accepted as
+sensitivity proof; already-confirmed mutation targets) were replaced
+with checks that fail on the demonstrated defect.
 
-### 16. Historical-recovery — None.
-R6.3 rollback untouched. The studio does not interact with the
-confirmation lifecycle or rollback machinery. Checkpoint/rollback
-preservation of studio evidence is proven.
+### 16. Misleading display — Bounded.
+The prompt shows the scoped mode (`studio> `). Composition output shows
+observations, not component metadata. The legend's keys are validated
+against the fields actually displayed.
 
-### 17. Simpler reuse — None.
-Reuses R7.1 compose_views directly and R6.2 protection utilities.
-The studio module is the minimal adapter; no reimplementation of
-composition, viewing, dispatch, or protection.
+### 17. Recovery/replay failure — Bounded.
+Real rollback to a sealed checkpoint containing studio evidence restores
+exactly the checkpoint records after distinguishable live evidence was
+created; fresh-process reload compares the exact expected records.
+Failed leave restores prior in-memory records and retries coherently
+(exactly one closed record).
 
-### 18. Research contradiction — None.
-Dispositions: CQRS ADAPT (query/write separation, without CQRS
-machinery); pal-mvvm-foundation ADAPT; Vortex ADAPT; Babylon.js/MDN
-ADAPT; Cosmos DB materialized views ADAPT; Blender View Keeper REJECT.
-Director's repair note: research supports central enforcement on every
-request and excluding sensitive input from logs — implemented via the
-existing coordinator and protection utilities, no new subsystem.
-Sources without actual links marked UNKNOWN per directive.
+### 18. Unnecessary architecture — None.
+Repairs extend existing mechanisms only: the REPL loop, R7.1 compositor,
+R6.2 protection utilities, canonical persistence. No second router,
+selector, ledger, store, compositor, permission system, or dispatcher.
 
-### 19. Future-phase — Bounded.
-Compatible with R7.3 (BIMO Forge) as a peer workshop using the same
-scoped-mode pattern. R7.4 (Connected) may add cloud views later;
-deferred, not blocked.
+### 19. Research-to-code mismatch — Bounded.
+Central enforcement on every request and exclusion of sensitive input
+from logs (Director's research note) are implemented through the
+existing coordinator and protection utilities. External dispositions
+from the first circuit are retained (CQRS ADAPT, materialized views
+ADAPT, Blender View Keeper REJECT); unlinked sources remain UNKNOWN.
 
-### 20. From-scratch — None.
-Extends R7.1. One module (perspective_studio.py), REPL command branches,
-one persistence subsection. No reimplementation. The AMEND repair
-modified existing code; it did not add subsystems.
-
----
-
-**Remaining uncertainty:**
-- Scanning: EVALUATION_UNAVAILABLE (Copilot quota 402).
-- The `say ` prefix inside studio is rejected as out-of-scope (not stripped).
-  This is intentional per "all inputs pass through the scoped handler."
-- Workshop identity ("perspective") is used for attribution only; the
-  Program-level workshop is not activated. This matches the authorized scope.
-
-**END OF R7.2 DELTA-20 (REPAIR)**
+### 20. Independent-model disagreement — Bounded.
+Director probes and Uni proofs now exercise the same boundaries with
+the same expectations (sentinel absence, shared schema, public-path
+protection, executed rollback). Remaining uncertainty: code scanning is
+EVALUATION_UNAVAILABLE (Copilot quota 402), stated separately and never
+as PASS; certification scope is the R7.2 studio circuit only.

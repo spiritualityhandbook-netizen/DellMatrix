@@ -124,11 +124,28 @@ def part_say_prefix_in_studio():
 
 
 def part_static_order():
-    """Static check: studio gate precedes reissue and say-prefix in run()."""
+    """Static check: the main studio gate precedes reissue and say-prefix.
+
+    There are three 'if _studio is not None:' branches: EOF handler,
+    quit handler, and the main dispatch gate. The main gate is the LAST
+    one (after the exit handlers), identified by its position after the
+    quit/exit branch. We verify THAT gate precedes reissue/say-prefix.
+    """
     import inspect
     import form.repl as repl_mod
     src = inspect.getsource(repl_mod.run)
-    studio_gate = src.find("if _studio is not None:")
+    # Find all gate positions; the main gate is the last one.
+    gate_positions = []
+    idx = 0
+    while True:
+        idx = src.find("if _studio is not None:", idx)
+        if idx == -1:
+            break
+        gate_positions.append(idx)
+        idx += 1
+    check("r72 order: main gate exists", len(gate_positions) >= 3,
+          f"found={len(gate_positions)}")
+    studio_gate = gate_positions[-1] if gate_positions else -1
     reissue_branch = src.find('line.lower() == "reissue"')
     say_prefix = src.find('line.lower().startswith("say ")')
     check("r72 order: studio gate before reissue",
@@ -276,7 +293,7 @@ def part_protection_fail_closed():
 
 
 def part_protection_sensitivity():
-    """Sensitivity: weakened protection exposes; restored protection rejects."""
+    """Sensitivity: weakened protection DISCLOSES; restored rejects."""
     from form.open import open_program
     from form.dell_matrix.perspective_studio import PerspectiveStudio
     from form.dell_matrix import inference_dock
@@ -297,20 +314,26 @@ def part_protection_sensitivity():
     repl_mod._say = lambda m: said.append(str(m))
     try:
         p2, s2 = repl_mod._handle_studio_line(
-            p, f'compose [{{"id":"v1","pos":[0,0],"facing":"E","role":"{canary}"}}]',
+            p, f'compose [{{"id":"v1","pos":[0,0],"facing":"E","role":"user"}}]',
             studio)
+        # Also test direct API with canary in viewer ID
+        studio_api = PerspectiveStudio(p)
+        api_result = studio_api.compose(
+            [{"id": canary, "pos": [0, 0], "facing": "E"}])
     finally:
         repl_mod._say = orig_say
         inference_dock.contains_protected_decoded = orig_cpd
 
     output = "\n".join(said)
-    # With weakened protection, the canary reaches composition (or validation).
-    # The point is: the test is sensitive to the protection being active.
-    weakened_reached = "Composed" in output or "INVALID_SPEC" in output
-    check("r72 sensitivity: weakened protection exposes",
-          weakened_reached, f"out={output[:200]}")
+    # With weakened protection, the canary must ACTUALLY APPEAR in output
+    # (disclosure), not just reach a different rejection.
+    api_str = str(api_result)
+    disclosed = canary in output or canary in api_str
+    check("r72 sensitivity: weakened protection discloses canary",
+          disclosed,
+          f"canary_in_repl={canary in output} canary_in_api={canary in api_str}")
 
-    # Restored: rejects again
+    # Restored: rejects with zero disclosure
     studio2 = PerspectiveStudio(p)
     said2 = []
     repl_mod._say = lambda m: said2.append(str(m))
@@ -318,11 +341,16 @@ def part_protection_sensitivity():
         p3, s3 = repl_mod._handle_studio_line(
             p, f'compose [{{"id":"v1","pos":[0,0],"facing":"E","role":"{canary}"}}]',
             studio2)
+        api_result2 = studio2.compose([{"id": canary, "pos": [0, 0], "facing": "E"}])
     finally:
         repl_mod._say = orig_say
     output2 = "\n".join(said2)
+    api_str2 = str(api_result2)
     check("r72 sensitivity: restored protection rejects",
           "PROTECTED_MATERIAL" in output2, f"out={output2[:200]}")
+    check("r72 sensitivity: zero disclosure after restore",
+          canary not in output2 and canary not in api_str2,
+          "canary absent from REPL and API output")
 
 
 # =====================================================================
@@ -379,23 +407,59 @@ def part_persistence_strict():
 
 
 def part_persistence_absent_vs_null():
-    """Absent (legacy) vs explicit null are distinguished."""
-    from form.dell_matrix.perspective_studio import validate_section
+    """Absent (legacy) vs explicit null are distinguished via sentinel."""
+    from form.dell_matrix.perspective_studio import validate_section, _MISSING
 
-    s, m = validate_section(None, "o")
+    # Absent key (legacy): _MISSING sentinel → not malformed.
+    s, m = validate_section(_MISSING, "o")
     check("r72 persist: absent is legacy (not malformed)",
           s == {} and m is None, f"m={m}")
 
-    # Explicit null in a dict section: "sessions" is None
+    # Explicit null: malformed, never legacy absence.
+    s, m = validate_section(None, "o")
+    check("r72 persist: explicit null is malformed",
+          s == {} and m is not None and "_section" in m, f"m={m}")
+
+    # Explicit null sessions in a dict: malformed.
     s, m = validate_section({"version": 1, "sessions": None}, "o")
     check("r72 persist: explicit null sessions is malformed",
           s == {} and m is not None, f"m={m}")
 
+    # Loader distinguishes: absent key vs explicit null value.
+    from form import persist_rest
+    from form.persist import _path
+    import json as _json
+    owner, pid = _make_fixture("r72 sentinel")
+    p = persist_rest.load(owner, activate=False)
+    path = _path(owner)
+    with open(path) as f:
+        data = _json.load(f)
+    # Remove the key entirely (absent)
+    data.pop("studio_sessions", None)
+    with open(path, "w") as f:
+        _json.dump(data, f)
+    p2 = persist_rest.load(owner, activate=False)
+    check("r72 persist: absent key loads as legacy",
+          p2.studio_sessions == {} and p2.studio_sessions_malformed is None,
+          f"sessions={p2.studio_sessions} mal={p2.studio_sessions_malformed}")
+
+    # Explicit null value
+    with open(path) as f:
+        data = _json.load(f)
+    data["studio_sessions"] = None
+    with open(path, "w") as f:
+        _json.dump(data, f)
+    p3 = persist_rest.load(owner, activate=False)
+    check("r72 persist: explicit null loads as malformed",
+          p3.studio_sessions == {} and p3.studio_sessions_malformed is not None,
+          f"mal={p3.studio_sessions_malformed}")
+
 
 def part_persistence_roundtrip():
-    """Malformed evidence survives save/reload."""
+    """Malformed evidence survives save/reload; same-key not overwritten."""
     from form.open import open_program
     from form import persist_rest
+    from form.dell_matrix.perspective_studio import validate_section, serialize_section
     import json as _json
 
     owner, pid = _make_fixture("r72 roundtrip")
@@ -426,6 +490,35 @@ def part_persistence_roundtrip():
           p2.studio_sessions_malformed is not None and "bad1" in p2.studio_sessions_malformed,
           f"malformed={p2.studio_sessions_malformed}")
 
+    # Same-key malformed: earlier evidence not overwritten.
+    # Add a second malformation for "bad1" and verify both are kept.
+    malformed_v1 = p2.studio_sessions_malformed
+    # Simulate a new validation with the same key failing again
+    s, m = validate_section({
+        "version": 1,
+        "sessions": {"bad1": {"session_id": "bad1"}},  # still bad
+        "malformed": malformed_v1,
+    }, owner)
+    bad1_entries = m.get("bad1", []) if m else []
+    check("r72 persist: same-key malformed not overwritten",
+          isinstance(bad1_entries, list) and len(bad1_entries) >= 2,
+          f"entries={len(bad1_entries) if isinstance(bad1_entries, list) else 'not-a-list'}")
+
+    # Serializer uses strict schema: active records are NOT saved as valid.
+    from form.dell_matrix.perspective_studio import PerspectiveStudio, StudioSession
+    p3 = persist_rest.load(owner, activate=False)
+    studio_active = PerspectiveStudio(p3)  # active, not closed
+    # Manually inject the active session into studio_sessions (simulating a bug)
+    p3.studio_sessions[studio_active.session.session_id] = studio_active.session.to_dict()
+    section = serialize_section(p3.studio_sessions, p3.studio_sessions_malformed, owner)
+    active_sid = studio_active.session.session_id
+    check("r72 persist: active record not saved as valid",
+          active_sid not in section["sessions"],
+          f"sessions={list(section['sessions'].keys())}")
+    check("r72 persist: active record preserved as malformed",
+          active_sid in section.get("malformed", {}),
+          f"malformed={list(section.get('malformed', {}).keys())}")
+
 
 def part_durable_keys():
     """studio_sessions is in the canonical durable projection."""
@@ -435,10 +528,12 @@ def part_durable_keys():
 
 
 def part_checkpoint_rollback():
-    """Checkpoint and rollback preserve the studio evidence contract."""
+    """Execute real authority-bound rollback to a sealed checkpoint."""
     from form.open import open_program
     from form import persist_rest
     from form.dell_matrix.perspective_studio import PerspectiveStudio
+    from form.dell_matrix import rollback_authority as ra
+    from form.mandell.core_i_recovery import checkpoint
     import form.repl as repl_mod
 
     owner, pid = _make_fixture("r72 checkpoint")
@@ -456,14 +551,15 @@ def part_checkpoint_rollback():
         repl_mod._say = orig_say
 
     sid = studio.session.session_id
-    check("r72 checkpoint: session persisted",
+    check("r72 rollback: session persisted",
           sid in p.studio_sessions, f"sessions={list(p.studio_sessions.keys())}")
 
-    # Checkpoint
-    cp = persist_rest.checkpoint(p)
-    check("r72 checkpoint: checkpoint written", bool(cp), f"cp={cp}")
+    # Save and checkpoint (sealed generation with studio evidence)
+    persist_rest.save(p)
+    g1 = checkpoint(p, stamp="r72-studio-1")
+    check("r72 rollback: checkpoint written", bool(g1), f"g1={g1}")
 
-    # Modify (add another session) and save
+    # Create distinguishably different live evidence (second session)
     studio2 = PerspectiveStudio(p)
     repl_mod._say = lambda m: None
     try:
@@ -471,16 +567,27 @@ def part_checkpoint_rollback():
     finally:
         repl_mod._say = orig_say
     sid2 = studio2.session.session_id
+    check("r72 rollback: second session differs", sid2 != sid, f"sid2={sid2}")
+    persist_rest.save(p)
+    check("r72 rollback: live has both",
+          sid in p.studio_sessions and sid2 in p.studio_sessions,
+          f"live={list(p.studio_sessions.keys())}")
 
-    # Rollback to checkpoint: should restore the first session only
-    # (rollback is via core_i_recovery; we test that studio data is in the checkpoint)
-    import json as _json
-    with open(cp) as f:
-        cp_data = _json.load(f)
-    cp_sessions = cp_data.get("studio_sessions", {}).get("sessions", {})
-    check("r72 checkpoint: studio in checkpoint",
-          sid in cp_sessions and sid2 not in cp_sessions,
-          f"cp_sessions={list(cp_sessions.keys())}")
+    # Execute REAL authority-bound rollback to the sealed checkpoint.
+    frozen = ra.freeze_rollback_target(owner, g1)
+    grant = ra.issue_rollback_grant(p, issuer="root", subject="s",
+                                   frozen_target=frozen)
+    r = p.confirm_rollback(g1, _review_context={"grant_id": grant["grant_id"]},
+                           _subject="s")
+    check("r72 rollback: executed", r.get("ok") is True, f"r={r}")
+
+    # Fresh-process reload must show the checkpoint state (sid only, not sid2).
+    p2 = persist_rest.load(owner, activate=False)
+    check("r72 rollback: restored sid",
+          sid in p2.studio_sessions, f"restored={list(p2.studio_sessions.keys())}")
+    check("r72 rollback: sid2 gone",
+          sid2 not in p2.studio_sessions,
+          f"restored={list(p2.studio_sessions.keys())}")
 
 
 # =====================================================================
@@ -572,30 +679,21 @@ def part_stale_save():
     from form.open import open_program
     from form.dell_matrix.perspective_studio import PerspectiveStudio
     from form import persist_rest
-    from form.mandell.core_i_recovery import check_save_allowed
     import form.repl as repl_mod
 
     owner, pid = _make_fixture("r72 stale")
     from form import persist_rest
     p = persist_rest.load(owner, activate=False)
 
-    # Make the program stale by simulating incomplete rollback.
-    # We use the real guard: check_save_allowed should reject.
-    # (We don't fabricate the stale state; we test that IF the guard
-    # rejects, the studio does not bypass it.)
+    # Genuinely recovery-required instance: set the production attribute
+    # that check_save_allowed inspects. This is the real guard's input,
+    # not a mock of the guard itself.
+    p._recovery_required = {"test": "simulated recovery condition"}
+    check("r72 stale: guard input set",
+          getattr(p, "_recovery_required", None) is not None,
+          "production attribute")
+
     studio = PerspectiveStudio(p)
-    sid = studio.session.session_id
-
-    orig_check = check_save_allowed
-    def rejecting_check(prog, op):
-        raise RuntimeError("recovery required")
-    import form.mandell.core_i_recovery as cir
-    cir.check_save_allowed = rejecting_check
-    # persist_rest.save imports check_save_allowed inside the function,
-    # so we need to patch where it's looked up. It does:
-    #   from form.mandell.core_i_recovery import check_save_allowed
-    # inside save(). Patching the module attribute works.
-
     said = []
     orig_say = repl_mod._say
     repl_mod._say = lambda m: said.append(str(m))
@@ -603,15 +701,35 @@ def part_stale_save():
         p2, studio2 = repl_mod._handle_studio_line(p, "leave", studio)
     finally:
         repl_mod._say = orig_say
-        cir.check_save_allowed = orig_check
 
     output = "\n".join(said)
     check("r72 stale: recovery-required save rejected",
           "SAVE_FAILED" in output, f"out={output[:200]}")
     check("r72 stale: studio retained",
-          studio2 is not None, "studio discarded on guard rejection")
-    check("r72 stale: no record persisted",
-          sid not in p2.studio_sessions, "record persisted despite guard")
+          studio2 is not None and studio2.session.closed is None,
+          f"studio2={studio2}")
+    # No bytes written: the session was not persisted.
+    p3 = persist_rest.load(owner, activate=False)
+    check("r72 stale: no bytes written",
+          studio.session.session_id not in p3.studio_sessions,
+          f"sessions={list(p3.studio_sessions.keys())}")
+
+    # Genuinely stale instance (post-rollback): production attribute.
+    p._recovery_required = None
+    p._post_rollback_stale = True
+    studio3 = PerspectiveStudio(p)
+    said = []
+    repl_mod._say = lambda m: said.append(str(m))
+    try:
+        p4, studio4 = repl_mod._handle_studio_line(p, "leave", studio3)
+    finally:
+        repl_mod._say = orig_say
+    output = "\n".join(said)
+    check("r72 stale: post-rollback save rejected",
+          "SAVE_FAILED" in output, f"out={output[:200]}")
+    check("r72 stale: stale studio retained",
+          studio4 is not None and studio4.session.closed is None,
+          f"studio4={studio4}")
 
 
 # =====================================================================
@@ -812,17 +930,16 @@ def part_sibling_sweep():
     import inspect
     import form.repl as repl_mod
     src = inspect.getsource(repl_mod.run)
-    # The studio is the only REPL-level scoped mode. Verify no other
-    # "if X is not None:" gate exists that could bypass it, and that
-    # the studio gate is the first non-exit branch.
+    # The studio is the only REPL-level scoped mode. The main dispatch gate
+    # is the LAST 'if _studio is not None:' (after EOF/quit handlers).
+    # Verify THAT gate is the first non-exit branch, before reissue/say.
     lines = src.split("\n")
-    gate_idx = None
-    for i, l in enumerate(lines):
-        if "if _studio is not None:" in l:
-            gate_idx = i
-            break
-    check("r72 sweep: studio gate exists", gate_idx is not None)
-    # Check that reissue/say handlers come after
+    gate_indices = [i for i, l in enumerate(lines) if "if _studio is not None:" in l]
+    check("r72 sweep: gates found", len(gate_indices) >= 3,
+          f"found={len(gate_indices)}")
+    gate_idx = gate_indices[-1] if gate_indices else None
+    check("r72 sweep: main gate exists", gate_idx is not None)
+    # Check that reissue/say handlers come after the main gate
     reissue_idx = next((i for i, l in enumerate(lines)
                         if 'line.lower() == "reissue"' in l), None)
     say_idx = next((i for i, l in enumerate(lines)

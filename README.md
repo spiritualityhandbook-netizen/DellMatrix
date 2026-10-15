@@ -317,7 +317,7 @@ Diagrams or mock examples of the above are conceptual only. Roadmap phases beyon
 
 ---
 
-## 7.5 R7.2: Perspective Studio (Implementation in Progress)
+## 7.5 R7.2: Perspective Studio (Candidate — NOT CERTIFIED)
 
 A scoped REPL workshop for composing perspective views and inspecting
 their meaning. Read-only: the studio composes views via R7.1
@@ -361,15 +361,21 @@ input handlers.
 **Protection:** Compose input is screened for protected material
 (grant handles, credentials) via R6.2 utilities before reflection or
 recording. Screening covers raw text, escaped sequences, and decoded
-keys/values. Screening failure rejects (fail-closed). Rejections use
-fixed codes; raw input is never reflected.
+keys/values. The public `PerspectiveStudio.compose` API enforces the
+same screening on structured input and on the detached result before
+release — direct API callers get identical enforcement. Screening
+failure rejects (fail-closed). Rejections use fixed codes; raw input
+is never reflected.
 
 **Persistence:** `leave` stages the closed session record, then saves
 via the canonical save. The studio exits only after successful save.
 On save failure, prior records are restored and the studio remains
 active for retry. Reload restores closed records, never active mode.
-Malformed sections are preserved as evidence. EOF/quit without `leave`
-does NOT persist the session; this is stated explicitly.
+One strict schema governs serialization and restoration: an absent
+section is legacy, an explicit null is malformed, and malformed
+records are preserved as evidence (never silently saved as valid or
+discarded). EOF/quit without `leave` does NOT persist the session;
+this is stated explicitly.
 
 **Evidence bounds:** The 50 most recent commands per session are
 retained (enforced during recording); at most 10 sessions are kept.

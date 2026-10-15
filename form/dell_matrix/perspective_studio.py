@@ -251,63 +251,196 @@ class StudioSession:
         return True, ""
 
 
+# Sentinel for absent section key (legacy). Distinct from explicit null,
+# which is malformed. Python maps JSON null to None, so the loader must
+# use data.get("studio_sessions", _MISSING) to distinguish.
+_MISSING = object()
+
+
+def _add_malformed(malformed: Dict[str, Any], key: str, raw: Any, error: str) -> None:
+    """Add malformed evidence without overwriting earlier evidence.
+
+    Multiple failures under the same key are preserved as a list, in
+    observation order. Earlier evidence is never discarded.
+    """
+    entry = {"raw": raw, "error": error}
+    if key in malformed:
+        existing = malformed[key]
+        if isinstance(existing, list):
+            existing.append(entry)
+        else:
+            malformed[key] = [existing, entry]
+    else:
+        malformed[key] = [entry]
+
+
 def validate_section(raw: Any, owner: str) -> Tuple[Dict[str, Dict[str, Any]], Optional[Dict[str, Any]]]:
     """Validate a persisted studio_sessions section with the strict schema.
 
     Returns (sessions, malformed). Sessions maps session_id -> record for
     valid closed records. Malformed is None when the section is absent
-    (legacy) or fully valid; otherwise it preserves the malformed records
-    with per-record errors, in a structure that survives save/reload.
+    (legacy, via _MISSING) or fully valid; otherwise it preserves the
+    malformed records with per-record errors.
 
-    Distinguishes:
-    - absent (None): legacy, no sessions. Not malformed.
-    - explicit null or non-dict: malformed, preserved under "_section".
+    Distinguishes (via the _MISSING sentinel):
+    - absent (_MISSING): legacy, no sessions. Not malformed.
+    - explicit null (None): malformed, preserved under "_section".
+    - non-dict: malformed, preserved under "_section".
     - wrong version (including bool): malformed, preserved under "_section".
     - per-record failures: valid records kept, failures preserved by key.
-    - previously-preserved "malformed" key: carried through unchanged.
+    - previously-preserved "malformed" key: carried through; same-key
+      failures are appended, not overwritten.
 
     Never raises for any input. No broad suppression needed by callers.
     """
-    if raw is None:
+    if raw is _MISSING:
         return {}, None
+    if raw is None:
+        malformed: Dict[str, Any] = {}
+        _add_malformed(malformed, "_section", None, "explicit null is malformed, not legacy absence")
+        return {}, malformed
     if not isinstance(raw, dict):
-        return {}, {"_section": {"raw": raw, "error": "section not an object"}}
+        malformed = {}
+        _add_malformed(malformed, "_section", raw, "section not an object")
+        return {}, malformed
     version = raw.get("version")
     # Strict: must be int 1. Bool is rejected (isinstance(True, int) is True,
     # so check explicitly). No coercion.
     if isinstance(version, bool) or not isinstance(version, int):
-        return {}, {"_section": {"raw": raw, "error": "section version must be int 1"}}
+        malformed = {}
+        _add_malformed(malformed, "_section", raw, "section version must be int 1")
+        return {}, malformed
     if version != STUDIO_SECTION_VERSION:
-        return {}, {"_section": {"raw": raw, "error": f"unsupported section version {version}"}}
+        malformed = {}
+        _add_malformed(malformed, "_section", raw, f"unsupported section version {version}")
+        return {}, malformed
     raw_sessions = raw.get("sessions")
     if not isinstance(raw_sessions, dict):
-        return {}, {"_section": {"raw": raw, "error": "sessions not an object"}}
+        malformed = {}
+        _add_malformed(malformed, "_section", raw, "sessions not an object")
+        return {}, malformed
     valid: Dict[str, Dict[str, Any]] = {}
-    malformed: Dict[str, Any] = {}
+    malformed = {}
     for sid, rec in raw_sessions.items():
         if not isinstance(sid, str):
-            malformed["_non_string_key"] = {"raw": rec, "error": "session key not a string"}
+            _add_malformed(malformed, "_non_string_key", rec, "session key not a string")
             continue
         ok, err = StudioSession.validate(rec, owner)
         if not ok:
-            malformed[sid] = {"raw": rec, "error": err}
+            _add_malformed(malformed, sid, rec, err)
             continue
         # Key/ID agreement: dict key must equal the record's session_id.
         if not isinstance(rec, dict) or rec.get("session_id") != sid:
-            malformed[sid] = {"raw": rec, "error": "session key/ID mismatch"}
+            _add_malformed(malformed, sid, rec, "session key/ID mismatch")
             continue
         valid[sid] = dict(rec)
-    # Carry through previously-preserved malformed evidence.
+    # Carry through previously-preserved malformed evidence. Same-key
+    # failures are appended, not overwritten.
     preserved = raw.get("malformed")
     if isinstance(preserved, dict):
         for k, v in preserved.items():
-            if k not in malformed and isinstance(k, str):
-                malformed[k] = v
+            if not isinstance(k, str):
+                continue
+            if isinstance(v, list):
+                for entry in v:
+                    if isinstance(entry, dict):
+                        _add_malformed(malformed, k, entry.get("raw"), entry.get("error", "preserved"))
+                    else:
+                        _add_malformed(malformed, k, entry, "preserved")
+            elif isinstance(v, dict) and "raw" in v:
+                _add_malformed(malformed, k, v.get("raw"), v.get("error", "preserved"))
+            else:
+                _add_malformed(malformed, k, v, "preserved")
     # Retention: 10 most recent by started timestamp.
     ordered = sorted(valid.items(),
                      key=lambda kv: str(kv[1].get("started", "")),
                      reverse=True)[:_MAX_SESSIONS]
     return dict(ordered), (malformed if malformed else None)
+
+
+def serialize_section(sessions: Any, malformed: Any, owner: str) -> Dict[str, Any]:
+    """Serialize studio sessions with the shared strict schema.
+
+    Valid closed records go to "sessions". Invalid records (active,
+    malformed, foreign-owner, key/ID-mismatched) are preserved in
+    "malformed", not silently saved as valid or discarded. This is the
+    same schema the loader validates; serialization and restoration share
+    the contract.
+
+    Returns the section dict. Never raises for any input.
+    """
+    valid: Dict[str, Dict[str, Any]] = {}
+    mal: Dict[str, Any] = {}
+    if isinstance(sessions, dict):
+        for sid, rec in sessions.items():
+            if not isinstance(sid, str):
+                _add_malformed(mal, "_non_string_key", rec, "session key not a string")
+                continue
+            ok, err = StudioSession.validate(rec, owner)
+            if not ok:
+                _add_malformed(mal, sid, rec, f"not serialized as valid: {err}")
+                continue
+            if not isinstance(rec, dict) or rec.get("session_id") != sid:
+                _add_malformed(mal, sid, rec, "not serialized as valid: key/ID mismatch")
+                continue
+            valid[sid] = dict(rec)
+    # Carry through existing malformed evidence.
+    if isinstance(malformed, dict):
+        for k, v in malformed.items():
+            if not isinstance(k, str):
+                continue
+            if isinstance(v, list):
+                for entry in v:
+                    if isinstance(entry, dict):
+                        _add_malformed(mal, k, entry.get("raw"), entry.get("error", "preserved"))
+                    else:
+                        _add_malformed(mal, k, entry, "preserved")
+            elif isinstance(v, dict) and "raw" in v:
+                _add_malformed(mal, k, v.get("raw"), v.get("error", "preserved"))
+            else:
+                _add_malformed(mal, k, v, "preserved")
+    # Retention: 10 most recent.
+    ordered = sorted(valid.items(),
+                     key=lambda kv: str(kv[1].get("started", "")),
+                     reverse=True)[:_MAX_SESSIONS]
+    section: Dict[str, Any] = {
+        "version": STUDIO_SECTION_VERSION,
+        "sessions": dict(ordered),
+    }
+    if mal:
+        section["malformed"] = mal
+    return section
+
+
+def _screen_protected(program: Any, obj: Any) -> bool:
+    """Screen structured data for protected material. Fail-closed.
+
+    Returns True if clean. Returns False if protected material is found
+    OR if screening cannot be performed. Never raises. Shared by the
+    public compose() API and the REPL handler.
+    """
+    try:
+        from form.dell_matrix.inference_dock import (
+            protected_values, contains_protected_decoded)
+        protected = protected_values(program)
+
+        def _check(o: Any) -> bool:
+            if isinstance(o, dict):
+                for k, v in o.items():
+                    if isinstance(k, str) and contains_protected_decoded(k, protected):
+                        return False
+                    if not _check(v):
+                        return False
+                return True
+            if isinstance(o, (list, tuple)):
+                return all(_check(v) for v in o)
+            if isinstance(o, str):
+                return not contains_protected_decoded(o, protected)
+            return True
+
+        return _check(obj)
+    except Exception:
+        return False
 
 
 class PerspectiveStudio:
@@ -344,20 +477,52 @@ class PerspectiveStudio:
     def compose(self, specs: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Compose views via R7.1 compose_views.
 
-        Validates every spec with the shared contract. Rejects owner
-        mismatch. Returns the compositor's result with fixed failure codes.
+        Enforces the complete collection contract: supported container,
+        non-empty, eight-spec limit, per-spec validation, finite
+        representable coordinates, and owner binding. Screens structured
+        input for protected material before composition, and screens the
+        detached output before release. Protection failure rejects with
+        fixed codes; no reflected input or exception text.
         """
         from form.dell_matrix.perspective_views import Viewer, compose_views
 
+        # Collection contract: supported container, non-empty, bounded.
+        if not isinstance(specs, list):
+            self._record("compose", FAIL_INVALID_SPEC)
+            return {"ok": False, "status": FAIL_INVALID_SPEC,
+                    "detail": "specs must be a list"}
+        if not specs:
+            self._record("compose", FAIL_INVALID_SPEC)
+            return {"ok": False, "status": FAIL_INVALID_SPEC,
+                    "detail": "specs must not be empty"}
+        if len(specs) > _MAX_SPECS:
+            self._record("compose", FAIL_INVALID_SPEC)
+            return {"ok": False, "status": FAIL_INVALID_SPEC,
+                    "detail": f"specs exceeds {_MAX_SPECS}"}
+
+        # Protection: screen structured input before composition.
+        # Direct API callers receive the same enforcement as the REPL.
+        if not _screen_protected(self._program, specs):
+            self._record("compose", FAIL_PROTECTED)
+            return {"ok": False, "status": FAIL_PROTECTED,
+                    "detail": "protected material rejected"}
+
         # Shared validation: do not assume normalized data.
+        # Catch numeric conversion failures (e.g., OverflowError from
+        # huge integers) and return fixed bounded rejection.
         normalized: List[Dict[str, Any]] = []
-        for s in specs:
-            ok, _, norm = validate_spec(s)
-            if not ok:
-                self._record("compose", FAIL_INVALID_SPEC)
-                return {"ok": False, "status": FAIL_INVALID_SPEC,
-                        "detail": "spec failed validation"}
-            normalized.append(norm)  # type: ignore[arg-type]
+        try:
+            for s in specs:
+                ok, _, norm = validate_spec(s)
+                if not ok:
+                    self._record("compose", FAIL_INVALID_SPEC)
+                    return {"ok": False, "status": FAIL_INVALID_SPEC,
+                            "detail": "spec failed validation"}
+                normalized.append(norm)  # type: ignore[arg-type]
+        except (OverflowError, ValueError, TypeError, ArithmeticError):
+            self._record("compose", FAIL_INVALID_SPEC)
+            return {"ok": False, "status": FAIL_INVALID_SPEC,
+                    "detail": "spec numeric conversion failed"}
         # Owner mismatch: reject any spec carrying a different owner.
         for s in normalized:
             if "owner" in s and s["owner"] != self._owner:
@@ -365,16 +530,31 @@ class PerspectiveStudio:
                 return {"ok": False, "status": FAIL_OWNER_MISMATCH,
                         "detail": "spec owner does not match Program owner"}
         viewers = []
-        for s in normalized:
-            viewers.append(Viewer(
-                id=s["id"],
-                role=s["role"],
-                pos=(s["pos"][0], s["pos"][1]),
-                facing=s["facing"],
-                mode=s.get("mode"),
-            ))
+        try:
+            for s in normalized:
+                viewers.append(Viewer(
+                    id=s["id"],
+                    role=s["role"],
+                    pos=(s["pos"][0], s["pos"][1]),
+                    facing=s["facing"],
+                    mode=s.get("mode"),
+                ))
+        except (OverflowError, ValueError, TypeError, ArithmeticError):
+            self._record("compose", FAIL_INVALID_SPEC)
+            return {"ok": False, "status": FAIL_INVALID_SPEC,
+                    "detail": "viewer construction failed"}
         pairs = [(v, v.effective_mode()) for v in viewers]
         result = compose_views(self._program, pairs)
+
+        # Protection: screen detached output before release. The compositor
+        # may reflect canonical labels containing protected-format material.
+        # If screening fails or finds protected material, reject without
+        # releasing the output. Do not modify canonical Idea content.
+        if not _screen_protected(self._program, result):
+            self._record("compose", FAIL_PROTECTED)
+            return {"ok": False, "status": FAIL_PROTECTED,
+                    "detail": "protected material in output"}
+
         # Detachment: the compositor returns deep-copied views; the studio
         # never hands out its live session or the program's mutable state.
         self._record("compose",
