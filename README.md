@@ -317,6 +317,75 @@ Diagrams or mock examples of the above are conceptual only. Roadmap phases beyon
 
 ---
 
+## 7.5 R7.2: Perspective Studio (Candidate — NOT CERTIFIED)
+
+A scoped REPL workshop for composing perspective views and inspecting
+their meaning. Read-only: the studio composes views via R7.1
+`compose_views`; it cannot confirm, grant, or mutate.
+
+**Exact syntax:**
+
+```
+studio> compose [{"id":"v1","role":"user","pos":[0,0],"facing":"E","mode":"whole"}]
+Composed 1 view(s) [REAL]:
+[v1/whole] status=REAL source=program
+  Whole plane · 3 nodes
+  skins: {...}
+  · label [skin]
+
+studio> legend
+Layout legend (descriptive only):
+  epistemic_status: Verification standing of the view; not accepted truth.
+  observations: The attributed observation report from the compositor.
+  requested_mode: The observation mode requested.
+  source: Provenance of the observation data.
+  viewer: Attribution: which viewer specification produced this component.
+
+studio> leave
+Studio session saved (a1b2c3d4...). Exited.
+```
+
+**Spec schema:** JSON array (max 8 entries, max 8KB). Each spec is an
+object with `id` (string, required), `role` (string), `pos` ([x, y]
+finite numbers, required), `facing` (N/S/E/W/NE/NW/SE/SW),
+`mode` (first/third/parts/whole, optional). Malformed specs are
+rejected with fixed codes. A spec carrying a non-matching `owner`
+is rejected.
+
+**While in studio** (prompt shows `studio> `): only `compose`, `legend`,
+`help`, `leave` are accepted. All other commands — including `reissue`
+and mutations like `confirm` — are rejected as out-of-scope before
+normal dispatch. The studio gate is enforced ahead of all non-exit
+input handlers.
+
+**Protection:** Compose input is screened for protected material
+(grant handles, credentials) via R6.2 utilities before reflection or
+recording. Screening covers raw text, escaped sequences, and decoded
+keys/values. The public `PerspectiveStudio.compose` API enforces the
+same screening on structured input and on the detached result before
+release — direct API callers get identical enforcement. Screening
+failure rejects (fail-closed). Rejections use fixed codes; raw input
+is never reflected.
+
+**Persistence:** `leave` stages the closed session record, then saves
+via the canonical save. The studio exits only after successful save.
+On save failure, prior records are restored and the studio remains
+active for retry. Reload restores closed records, never active mode.
+One strict schema governs serialization and restoration: an absent
+section is legacy, an explicit null is malformed, and malformed
+records are preserved as evidence (never silently saved as valid or
+discarded). EOF/quit without `leave` does NOT persist the session;
+this is stated explicitly.
+
+**Evidence bounds:** The 50 most recent commands per session are
+retained (enforced during recording); at most 10 sessions are kept.
+Rejected attempts are recorded with safe codes. This is a retained
+window, not complete history.
+
+---
+
+---
+
 ## 8. Architecture and Source Guide
 
 | Path | Role |

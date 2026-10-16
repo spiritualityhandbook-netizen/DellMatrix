@@ -108,6 +108,7 @@ def serialize(program: Program) -> Dict[str, Any]:
     # NO broad suppression: a sync failure propagates and no durable
     # write occurs; previous bytes and observations are preserved.
     from form.dell_matrix.intrinsic_agent import sync_all_agents_to_program
+    from form.dell_matrix.perspective_studio import serialize_section
     sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
@@ -221,6 +222,17 @@ def serialize(program: Program) -> Dict[str, Any]:
                 if isinstance(rec, dict)
             },
         },
+        # R7.2: Perspective Studio session evidence. Closed session records
+        # only; the active studio mode is session-only and never persists.
+        # Uses the shared strict schema (serialize_section): valid records
+        # are saved; invalid records (active, malformed, foreign-owner,
+        # key/ID-mismatched) are preserved in "malformed", not silently
+        # saved as valid or discarded.
+        "studio_sessions": serialize_section(
+            getattr(program, "studio_sessions", None),
+            getattr(program, "studio_sessions_malformed", None),
+            program.owner,
+        ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).
         # Presence metadata for ideas. Uses existing persistence.
         "lifecycle": dict(getattr(program, "lifecycle", None) or {}),

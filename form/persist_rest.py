@@ -491,6 +491,17 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         p.outcome_seq = max_seq
     except Exception:
         pass
+    # R7.2: restore Perspective Studio session evidence with the shared
+    # strict schema. Closed records only; the active studio mode is
+    # session-only and never restored. validate_section never raises;
+    # no broad suppression. The _MISSING sentinel distinguishes absent
+    # (legacy) from explicit null (malformed). Malformed evidence is
+    # preserved (in memory and through save/reload via the section's
+    # "malformed" key). Retention: 10 most recent closed sessions.
+    from form.dell_matrix.perspective_studio import validate_section, _MISSING
+    sessions, malformed = validate_section(data.get("studio_sessions", _MISSING), p.owner)
+    p.studio_sessions = sessions
+    p.studio_sessions_malformed = malformed
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")
@@ -664,7 +675,7 @@ DURABLE_KEYS = (
     "companion", "inspire", "self_knowledge", "ux", "forces", "bimo",
     "nursery", "lattice", "history", "latinmandell_customs",
     "mandell_language", "core_ii", "outcome_ledger", "spatial",
-    "lifecycle", "agent_local", "agent_audit",
+    "lifecycle", "agent_local", "agent_audit", "studio_sessions",
 )
 
 
