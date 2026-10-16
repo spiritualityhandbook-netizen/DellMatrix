@@ -109,6 +109,8 @@ def serialize(program: Program) -> Dict[str, Any]:
     # write occurs; previous bytes and observations are preserved.
     from form.dell_matrix.intrinsic_agent import sync_all_agents_to_program
     from form.dell_matrix.perspective_studio import serialize_section
+    from form.dell_matrix.workshop_session import (
+        serialize_section as serialize_workshop_section)
     sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
@@ -231,6 +233,14 @@ def serialize(program: Program) -> Dict[str, Any]:
         "studio_sessions": serialize_section(
             getattr(program, "studio_sessions", None),
             getattr(program, "studio_sessions_malformed", None),
+            program.owner,
+        ),
+        # R7.3: General workshop session evidence. Same contract as the
+        # studio section: closed records only, shared strict schema,
+        # malformed evidence preserved, never silently filtered.
+        "workshop_sessions": serialize_workshop_section(
+            getattr(program, "workshop_sessions", None),
+            getattr(program, "workshop_sessions_malformed", None),
             program.owner,
         ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).

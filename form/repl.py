@@ -2923,6 +2923,104 @@ def _handle_studio_line(p, line: str, studio):
     return p, studio
 
 
+def _handle_workshop_line(p, line: str, wsession):
+    """R7.3: handle one input line while a workshop session is active.
+
+    General workshop contract: while a workshop session is open, only
+    that workshop's own commands (stems derived from its registry entry)
+    plus meta commands run; everything else is rejected out-of-scope
+    BEFORE normal dispatch. In-scope lines route through the SAME public
+    dispatcher as outside — the workshop grants nothing new. Input is
+    screened before scope decisions or recording (fail-closed); only
+    command stems and fixed result codes are recorded, never raw lines.
+    """
+    from form.dell_matrix.workshop_session import (
+        scope_stems, FAIL_PROTECTED, FAIL_OUT_OF_SCOPE, FAIL_SAVE)
+
+    stripped = line.strip()
+    lower = stripped.lower()
+
+    # Screen raw input BEFORE scope decision, dispatch, or recording.
+    if not _studio_screen_input(p, stripped):
+        wsession.record("protected", f"rejected: {FAIL_PROTECTED}")
+        _say(f"Rejected: {FAIL_PROTECTED}.")
+        return p, wsession
+
+    # leave: stage closed record, save, discard session only on success.
+    if lower in ("leave", "workshop leave", "workshop exit"):
+        closed_record = wsession.closed_copy()
+        sid = closed_record["session_id"]
+        prior = dict(getattr(p, "workshop_sessions", None) or {})
+        prior_malformed = getattr(p, "workshop_sessions_malformed", None)
+        prev_flag = p.active_workshop
+        merged = dict(prior)
+        merged[sid] = closed_record
+        if len(merged) > 10:
+            ordered = sorted(merged.items(),
+                             key=lambda kv: str(kv[1].get("started", "")),
+                             reverse=True)[:10]
+            merged = dict(ordered)
+        p.workshop_sessions = merged
+        # Clear the active flag BEFORE save so persisted state is
+        # coherent (not in a workshop, with a closed session record).
+        # Restored on failure.
+        p.leave_workshop()
+        try:
+            from form import persist_rest
+            persist_rest.save(p)
+            _say(f"Workshop session saved ({sid[:8]}...). "
+                 f"Exited {wsession.workshop} workshop.")
+            return p, None
+        except Exception as exc:
+            p.workshop_sessions = prior
+            p.workshop_sessions_malformed = prior_malformed
+            p.active_workshop = prev_flag
+            _say(f"{FAIL_SAVE}: {type(exc).__name__}. "
+                 f"Session retained ({sid[:8]}...); "
+                 f"still in {wsession.workshop} workshop — 'leave' to retry.")
+            return p, wsession
+
+    if lower == "help":
+        from form.dell_matrix.workshops import get_workshop
+        w = get_workshop(wsession.workshop) or {}
+        _say(f"{w.get('name', wsession.workshop)} — scoped session. "
+             f"Only this workshop's commands run here:")
+        for c in w.get("commands") or []:
+            _say(f"  {c['label']}: {c['cmd']}")
+        _say("Meta: workshops · leave (saves session and exits)")
+        wsession.record("help", "shown")
+        return p, wsession
+
+    if lower in ("workshops", "workshop list"):
+        wsession.record("workshops", "dispatched")
+        import uuid as _uuid
+        p = _dispatch_public_line(p, stripped, str(_uuid.uuid4()))
+        return p, wsession
+
+    if lower.startswith("workshop "):
+        # Entering another workshop (or re-entering) from inside one:
+        # one scoped environment at a time.
+        wsession.record("workshop", f"rejected: {FAIL_OUT_OF_SCOPE}")
+        _say("Already in a scoped workshop session. 'leave' first, "
+             "then enter another workshop.")
+        return p, wsession
+
+    token = lower.split()[0] if lower.split() else ""
+    if token and token in scope_stems(wsession.workshop):
+        # In scope: route through the SAME public dispatcher.
+        wsession.record(token, "dispatched")
+        import uuid as _uuid
+        p = _dispatch_public_line(p, stripped, str(_uuid.uuid4()))
+        return p, wsession
+
+    # Out-of-scope: explicit rejection before normal dispatch.
+    # Fixed message: never reflect raw input text.
+    wsession.record(token or "unknown", f"rejected: {FAIL_OUT_OF_SCOPE}")
+    _say(f"Out of scope for the {wsession.workshop} workshop. "
+         f"Type 'help' for its commands; 'leave' to exit.")
+    return p, wsession
+
+
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
     print("  DellMatrix — Mandell Origin")
@@ -2958,9 +3056,18 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     # Reload restores closed session records, not the active mode.
     _studio = None
 
+    # R7.3: active general workshop session. Session-only like the
+    # studio: reload restores closed session records, never the mode.
+    _wsession = None
+
     while True:
-        # R7.2: scoped studio prompt. The active studio is session-only.
-        _prompt = "studio> " if _studio is not None else "you> "
+        # R7.2/R7.3: scoped prompts. Active scoped modes are session-only.
+        if _studio is not None:
+            _prompt = "studio> "
+        elif _wsession is not None:
+            _prompt = f"workshop:{_wsession.workshop}> "
+        else:
+            _prompt = "you> "
         try:
             line = input(_prompt).strip()
         except (EOFError, KeyboardInterrupt):
@@ -2970,6 +3077,9 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             if _studio is not None:
                 _say("Studio session NOT saved (EOF). "
                      "Use 'leave' inside the studio to persist evidence.")
+            if _wsession is not None:
+                _say("Workshop session NOT saved (EOF). "
+                     "Use 'leave' inside the workshop to persist evidence.")
             break
         if not line:
             continue
@@ -2978,6 +3088,9 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             if _studio is not None:
                 _say("Studio session NOT saved (quit). "
                      "Use 'leave' inside the studio to persist evidence.")
+            if _wsession is not None:
+                _say("Workshop session NOT saved (quit). "
+                     "Use 'leave' inside the workshop to persist evidence.")
             _say("Goodbye.")
             break
 
@@ -2992,6 +3105,37 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         if _studio is not None:
             p, _studio = _handle_studio_line(p, line, _studio)
             continue
+
+        # R7.3: general workshop session mode. Same gate position as the
+        # studio: ahead of say-prefix, reissue, and normal dispatch, so
+        # nothing staged or prefixed outside can execute inside, and
+        # nothing inside can reach dispatch except the workshop's own
+        # commands through the same public dispatcher.
+        if _wsession is not None:
+            p, _wsession = _handle_workshop_line(p, line, _wsession)
+            continue
+
+        # R7.3: entering a workshop opens a scoped session. Intercepted
+        # here (like the studio entry) so the gate owns the session from
+        # the first line. Unknown ids fall through to normal dispatch,
+        # which reports them exactly as before.
+        if line.lower().startswith("workshop "):
+            _wid = line.lower().split(maxsplit=1)[1].strip()
+            from form.dell_matrix.workshops import get_workshop as _get_ws
+            if _get_ws(_wid) is not None:
+                _out = p.enter_workshop(_wid)
+                if _out.get("ok"):
+                    from form.dell_matrix.workshop_session import (
+                        WorkshopSession as _WS)
+                    _wsession = _WS.open(p.owner, _wid)
+                    _wsession.record("enter", "workshop entered")
+                    _w = _out["workshop"]
+                    _say(f"Entered {_w['name']}: {_w.get('description','')}")
+                    for _c in _w.get("commands") or []:
+                        _say(f"  {_c['label']}: {_c['cmd']}")
+                    _say("Scoped session: only this workshop's commands "
+                         "run here. 'leave' saves the session and exits.")
+                    continue
 
         if line.lower().startswith("say "):
             line = line[4:].strip()
