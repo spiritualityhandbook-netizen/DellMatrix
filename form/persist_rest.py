@@ -502,6 +502,18 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     sessions, malformed = validate_section(data.get("studio_sessions", _MISSING), p.owner)
     p.studio_sessions = sessions
     p.studio_sessions_malformed = malformed
+    # R7.3: restore general workshop session evidence with the same
+    # strict schema and sentinel distinction (absent = legacy, explicit
+    # null = malformed). Closed records only; the active workshop mode
+    # is session-only and never restored as an active session (the
+    # Program's active_workshop flag has its own pre-existing restore).
+    from form.dell_matrix.workshop_session import (
+        validate_section as validate_workshop_section,
+        _MISSING as _WS_MISSING)
+    wsessions, wmalformed = validate_workshop_section(
+        data.get("workshop_sessions", _WS_MISSING), p.owner)
+    p.workshop_sessions = wsessions
+    p.workshop_sessions_malformed = wmalformed
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")
@@ -676,6 +688,7 @@ DURABLE_KEYS = (
     "nursery", "lattice", "history", "latinmandell_customs",
     "mandell_language", "core_ii", "outcome_ledger", "spatial",
     "lifecycle", "agent_local", "agent_audit", "studio_sessions",
+    "workshop_sessions",
 )
 
 

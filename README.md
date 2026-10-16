@@ -384,6 +384,40 @@ window, not complete history.
 
 ---
 
+## 7.6 R7.3: General Workshop Contract (Candidate — NOT CERTIFIED)
+
+All seven workshops (matrix, perspective, mandel, persona, bimo,
+psalms, forces) are real scoped environments in the REPL:
+
+```
+you> workshop matrix
+Entered Matrix Workshop: ...
+Scoped session: only this workshop's commands run here. 'leave' saves the session and exits.
+workshop:matrix> cube        ← dispatches (in scope)
+workshop:matrix> confirm     ← rejected: out of scope
+workshop:matrix> leave       ← session saved; exited
+```
+
+**Contract:** The scoped command set is derived from the workshop's
+own registry entry (`form/dell_matrix/workshops.py`) — the menu shown
+and the set enforced are one source. In-scope commands route through
+the same public dispatcher as outside; a workshop grants no authority.
+Out-of-scope lines (including `say`-prefixed lines and staged
+reissues) are rejected before dispatch. Only one scoped environment
+(the studio included) may be active at a time. Input is screened for
+protected material before recording; session evidence records only
+command stems and fixed result codes — never raw lines.
+
+**Persistence:** `leave` stages the closed record, clears the active
+workshop flag, then saves canonically; on save failure everything is
+restored and the session is retained for retry. EOF/quit without
+`leave` do NOT persist the session; this is stated explicitly.
+Evidence uses the strict shared section schema: an absent section is
+legacy, an explicit null is malformed, and malformed records are
+preserved as evidence. Bounds: 50 commands per session, 10 sessions.
+
+---
+
 ---
 
 ## 8. Architecture and Source Guide
