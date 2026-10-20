@@ -3,19 +3,32 @@
 Single action registry for snapshot visual, live visual, and help.
 
 Modes (progressive disclosure):
+  first-run — guided onboarding surface (R7.4 / draft 7.1.4, D1);
+              exists to be graduated from; presentational only
   beginner — core acceptance path
   builder  — lattice + avatar + nursery power
   depth    — full system + workshops + polyglot hints
+
+Disclosure filters what is SHOWN at every level; it never gates
+dispatch — any command runs at any level.
 """
 
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-# mode levels: beginner < builder < depth
-_MODE_RANK = {"beginner": 0, "builder": 1, "depth": 2}
+# mode levels: first-run < beginner < builder < depth
+_MODE_RANK = {"first-run": -1, "beginner": 0, "builder": 1, "depth": 2}
 
 ACTIONS: List[Dict[str, Any]] = [
+    {"group": "First run", "mode": "first-run", "items": [
+        {"label": "Onboard", "cmd": "onboard", "hint": "Guided first moves — show · explain · try · verify"},
+        {"label": "Tutorial", "cmd": "tutorial", "hint": "Watch the full acceptance path"},
+        {"label": "Help", "cmd": "help", "hint": "Top commands"},
+        {"label": "Status", "cmd": "status", "hint": "Where you are · gen · pillars"},
+        {"label": "Look", "cmd": "look", "hint": "What you see from facing"},
+        {"label": "Mode beginner", "cmd": "mode beginner", "hint": "Simple menus (disclosure never gates commands)"},
+    ]},
     {"group": "Start", "mode": "beginner", "items": [
         {"label": "Tutorial", "cmd": "tutorial", "hint": "Guided acceptance path"},
         {"label": "Help", "cmd": "help", "hint": "Top commands"},

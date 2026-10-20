@@ -159,7 +159,11 @@ class Program:
         default_factory=list, repr=False, compare=False)
     # UX / entity layer (Phases A–E)
     companion: AICompanion = field(default_factory=AICompanion)
-    ux_mode: str = "builder"  # beginner | builder | depth
+    ux_mode: str = "builder"  # first-run | beginner | builder | depth
+    # NOTE: the constructor default is NOT the new-owner starting
+    # level. Brand-new owners are marked first-run at the canonical
+    # fresh-owner boundaries (persist load with no state file; REPL
+    # start with no state file) — see onboarding_session.mark_new_owner.
     skin_filter: Optional[str] = None
     persona_lens: Optional[str] = None
     grid_snap: bool = False
