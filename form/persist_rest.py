@@ -557,6 +557,17 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         data.get("bimo_configurations", _FG_MISSING), p.owner)
     p.bimo_configurations = configs
     p.bimo_configurations_malformed = cmalformed
+    # R7.6: restore Connected World session evidence with the same
+    # strict schema and sentinel distinction (absent = legacy,
+    # explicit null = malformed). The active connect session and its
+    # provider selection are session-only and never restored.
+    from form.dell_matrix.connection_session import (
+        validate_section as validate_connection_section,
+        _MISSING as _CN_MISSING)
+    csessions, cmalformed2 = validate_connection_section(
+        data.get("connection_sessions", _CN_MISSING), p.owner)
+    p.connection_sessions = csessions
+    p.connection_sessions_malformed = cmalformed2
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")
@@ -732,7 +743,7 @@ DURABLE_KEYS = (
     "mandell_language", "core_ii", "outcome_ledger", "spatial",
     "lifecycle", "agent_local", "agent_audit", "studio_sessions",
     "workshop_sessions", "onboarding_sessions", "forge_sessions",
-    "bimo_configurations",
+    "bimo_configurations", "connection_sessions",
 )
 
 

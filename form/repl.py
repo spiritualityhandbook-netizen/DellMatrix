@@ -99,6 +99,8 @@ Lattice / Perception / Looking
   bimo undock <slot> | bimo clear | bimo pilot <name>
   forge                 BIMO Forge: stage an arrangement, preview it,
                         save it as a named configuration
+  connect               Connected World: gated fetch with provenance
+                        evidence + docked inference (pending proposals)
   rooms | view <room>   view-rooms (growth water force network …)
   forces | force tick   nature forces field
   weather clear|rain|storm|fog
@@ -3531,6 +3533,209 @@ def _handle_forge_line(p, line: str, session):
     return p, session
 
 
+_CONNECT_COMMANDS = (
+    "Connect commands:",
+    "  status              gate state, provider, dock, pending count",
+    "  internet on|off     the existing gate (default OFF, allowlist",
+    "                      enforced by the gate itself)",
+    "  allow <host>        add a host to the gate allowlist",
+    "  fetch <url>         gated fetch; records provenance evidence",
+    "                      (host, status, bytes) — never content",
+    "  provider <name>     select the inference provider BY NAME only",
+    "                      (default 'fake': deterministic, offline;",
+    "                      credentials are read from the host",
+    "                      environment, never entered here)",
+    "  ask <prompt>        docked inference -> a PENDING Nursery",
+    "                      proposal (never auto-confirmed)",
+    "  help · leave        leave saves session evidence and exits",
+)
+
+
+def _connect_status(p, session) -> None:
+    st = p.internet_status() if hasattr(p, "internet_status") else {}
+    _say(f"Internet gate: {'ON' if st.get('on') else 'OFF'} · "
+         f"hosts allowed: {st.get('host_count', 0)}")
+    _say(f"Provider: {session.provider} "
+         f"({'offline deterministic' if session.provider == 'fake' else 'host bridge, explicit name'}) · "
+         f"docked: {'yes' if session.docked is not None else 'no'}")
+    pend = (p.nursery.summary() or {}).get("pending", 0)
+    _say(f"Nursery proposals pending review: {pend}")
+
+
+def _finish_connection(p, session):
+    """R7.6: stage the closed record, save, exit only on success.
+
+    Mirrors the other scoped sessions' stage-then-save. The dock
+    handle is runtime-only: it is undocked after a successful save;
+    on failure the session (and its dock) stays intact for retry.
+    Gate changes made during the session persist with this save —
+    the gate's own durable section carries them.
+    """
+    from form.dell_matrix.connection_session import FAIL_SAVE
+    closed_record = session.closed_copy()
+    sid = closed_record["session_id"]
+    prior = dict(getattr(p, "connection_sessions", None) or {})
+    prior_malformed = getattr(p, "connection_sessions_malformed", None)
+    merged = dict(prior)
+    merged[sid] = closed_record
+    if len(merged) > 10:
+        ordered = sorted(merged.items(),
+                         key=lambda kv: str(kv[1].get("started", "")),
+                         reverse=True)[:10]
+        merged = dict(ordered)
+    p.connection_sessions = merged
+    try:
+        from form import persist_rest
+        persist_rest.save(p)
+    except Exception as exc:
+        p.connection_sessions = prior
+        p.connection_sessions_malformed = prior_malformed
+        _say(f"{FAIL_SAVE}: {type(exc).__name__}. "
+             f"Session retained ({sid[:8]}...); "
+             f"still connected — 'leave' to retry.")
+        return p, session
+    if session.docked is not None:
+        try:
+            session.docked.undock()
+        except Exception:
+            pass
+        session.docked = None
+    _say(f"Connection session saved ({sid[:8]}...). Exited.")
+    return p, None
+
+
+def _handle_connect_line(p, line: str, session):
+    """R7.6: handle one input line while the connect session is active.
+
+    Scoped-session gate in the same position as the other scoped
+    gates: input is screened fail-closed before any scope decision or
+    recording. Commands route ONLY to the two existing authorities —
+    the InternetGate (via the Program's gate methods) and the
+    inference dock (via its host dock() + DockedSession.propose()).
+    Nothing here routes to the public dispatcher. Only step kinds and
+    fixed result summaries are recorded: never prompts, never fetched
+    content, never credentials.
+    """
+    from form.dell_matrix.connection_session import (
+        FAIL_DOCK, FAIL_OUT_OF_SCOPE, FAIL_PROTECTED)
+
+    stripped = line.strip()
+    lower = stripped.lower()
+    parts = lower.split()
+    token = parts[0] if parts else ""
+
+    if not _studio_screen_input(p, stripped):
+        session.record("protected", f"rejected: {FAIL_PROTECTED}")
+        _say(f"Rejected: {FAIL_PROTECTED}.")
+        return p, session
+
+    if lower in ("leave", "connect leave", "connect exit"):
+        return _finish_connection(p, session)
+
+    if lower == "help":
+        session.record("help", "shown")
+        for ln in _CONNECT_COMMANDS:
+            _say(ln)
+        return p, session
+
+    if lower == "status":
+        session.record("status", "shown")
+        _connect_status(p, session)
+        return p, session
+
+    if lower in ("internet on", "internet off"):
+        on = lower.endswith(" on")
+        out = p.internet_on() if on else p.internet_off()
+        session.record("internet", "gate on" if on else "gate off")
+        _say(out.get("msg") or ("Internet ON" if on else "Internet OFF"))
+        return p, session
+
+    if token == "allow" and len(parts) == 2:
+        host = p.internet.allow_host(parts[1]) if p.internet else ""
+        session.record("allow", "host allowed")
+        _say(f"Allowed host → {host}")
+        return p, session
+
+    if token == "fetch" and len(parts) == 2:
+        url = stripped.split(maxsplit=1)[1].strip()
+        out = p.net_fetch(url)
+        if out.get("ok"):
+            from urllib.parse import urlparse
+            host = urlparse(out.get("url") or url).hostname or "unknown"
+            session.record(
+                "fetch",
+                f"host={host} status={out.get('status')} "
+                f"bytes={out.get('bytes')}")
+            _say(f"Fetched {out.get('url')} ({out.get('bytes')} bytes)")
+            _say((out.get("preview") or "")[:400])
+            _say("(Provenance recorded: host, status, bytes. Content "
+                 "is not stored as knowledge.)")
+        else:
+            err = str(out.get("error") or "")
+            code = ("gate off" if "OFF" in err
+                    else "host not allowed" if "not allowed" in err
+                    else "fetch failed")
+            session.record("fetch", f"rejected: {code}")
+            _say(err or "fetch failed")
+        return p, session
+
+    if token == "provider" and len(parts) == 2:
+        name = parts[1]
+        if not all(c.isalnum() or c in "_-" for c in name):
+            session.record("provider", "rejected: invalid provider name")
+            _say("Provider rejected: a provider is selected by a single "
+                 "name token only. Credentials are never entered here — "
+                 "providers read them from the host environment.")
+            return p, session
+        if session.docked is not None:
+            try:
+                session.docked.undock()
+            except Exception:
+                pass
+            session.docked = None
+        session.provider = name
+        session.record("provider", "provider selected")
+        _say(f"Provider → {name}. It takes effect on the next 'ask'.")
+        return p, session
+
+    if token == "ask" and len(parts) >= 2:
+        prompt = stripped.split(maxsplit=1)[1]
+        if session.docked is None:
+            from form.dell_matrix.inference_dock import DockError, dock
+            try:
+                session.docked = dock(
+                    p, trusted_subject=f"connect:{p.owner}",
+                    provider=session.provider)
+            except DockError as e:
+                session.record("ask", f"rejected: {FAIL_DOCK}")
+                _say(f"{FAIL_DOCK}: {e}")
+                return p, session
+            except Exception as e:
+                session.record("ask", f"rejected: {FAIL_DOCK}")
+                _say(f"{FAIL_DOCK}: {type(e).__name__}")
+                return p, session
+        out = session.docked.propose(prompt)
+        if out.get("ok"):
+            session.record("ask", "proposal pending")
+            _say(f"Proposal {out.get('pid')} created — PENDING in the "
+                 f"Nursery (provider={out.get('provider')}, "
+                 f"model={out.get('model')}). It is not confirmed and "
+                 f"carries no authority; review it with 'proposals'.")
+        else:
+            reason = str(out.get("reason") or "failed")
+            if len(reason) > 32 or not all(
+                    c.isalnum() or c in "_-" for c in reason):
+                reason = "failed"
+            session.record("ask", f"rejected: {reason}")
+            _say(f"Ask failed ({reason}): {out.get('detail') or ''}")
+        return p, session
+
+    session.record(token or "unknown", f"rejected: {FAIL_OUT_OF_SCOPE}")
+    _say("Connect: that is not a connect command here. 'help' lists "
+         "the connect commands.")
+    return p, session
+
+
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
     print("  DellMatrix — Mandell Origin")
@@ -3590,6 +3795,11 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     # configurations, never the active staging.
     _forge = None
 
+    # R7.6: active Connected World session. Session-only like the
+    # other scoped modes: reload restores closed session records,
+    # never the active session, its provider selection, or its dock.
+    _connect = None
+
     while True:
         # R7.2/R7.3/R7.4: scoped prompts. Active scoped modes are
         # session-only.
@@ -3601,6 +3811,8 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             _prompt = "onboard> "
         elif _forge is not None:
             _prompt = "forge> "
+        elif _connect is not None:
+            _prompt = "connect> "
         else:
             _prompt = "you> "
         try:
@@ -3622,6 +3834,10 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                 _say("Forge session NOT saved (EOF). Staged changes are "
                      "discarded; configurations saved with 'save <name>' "
                      "during the session remain saved.")
+            if _connect is not None:
+                _say("Connection session NOT saved (EOF). Nothing from "
+                     "this session was persisted — use 'leave' inside "
+                     "connect to persist the session.")
             break
         if not line:
             continue
@@ -3640,6 +3856,10 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                 _say("Forge session NOT saved (quit). Staged changes are "
                      "discarded; configurations saved with 'save <name>' "
                      "during the session remain saved.")
+            if _connect is not None:
+                _say("Connection session NOT saved (quit). Nothing from "
+                     "this session was persisted — use 'leave' inside "
+                     "connect to persist the session.")
             _say("Goodbye.")
             break
 
@@ -3680,6 +3900,15 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         # commit inside the session.
         if _forge is not None:
             p, _forge = _handle_forge_line(p, line, _forge)
+            continue
+
+        # R7.6: Connected World session mode. Same gate position as
+        # the other scoped gates: ahead of say-prefix, reissue, and
+        # normal dispatch. Inside, commands route only to the
+        # InternetGate and the inference dock — the public dispatcher
+        # is not reachable from here.
+        if _connect is not None:
+            p, _connect = _handle_connect_line(p, line, _connect)
             continue
 
         # R7.3: entering a workshop opens a scoped session. Intercepted
@@ -3740,6 +3969,28 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             for _ln in _FORGE_COMMANDS:
                 _say(_ln)
             _forge_present(_forge)
+            continue
+
+        # R7.6: entering Connected World opens the scoped connection
+        # session. Intercepted here (like the other scoped entries) so
+        # the gate owns the session from the first line; the entry is
+        # below every scoped gate, so it cannot be entered from inside
+        # the studio, a workshop, onboarding, or the forge.
+        if line.lower() == "connect":
+            from form.dell_matrix.connection_session import (
+                ConnectionSession as _CS)
+            _connect = _CS.open(p.owner)
+            _connect.record("enter", "connection entered")
+            _say("Connected World — the gated public path to the "
+                 "internet gate and the inference dock. The gate is "
+                 "OFF until you turn it on; fetches record provenance "
+                 "evidence (host, status, bytes), never content; "
+                 "docked inference creates PENDING proposals only; "
+                 "credentials are never entered here — providers read "
+                 "them from the host environment.")
+            for _ln in _CONNECT_COMMANDS:
+                _say(_ln)
+            _connect_status(p, _connect)
             continue
 
         if line.lower().startswith("say "):
