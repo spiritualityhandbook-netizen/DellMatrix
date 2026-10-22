@@ -97,6 +97,8 @@ Lattice / Perception / Looking
   matrix personas       persona matrix map
   bimo | bimo defaults | bimo fuse | bimo dock <slot> <persona>
   bimo undock <slot> | bimo clear | bimo pilot <name>
+  forge                 BIMO Forge: stage an arrangement, preview it,
+                        save it as a named configuration
   rooms | view <room>   view-rooms (growth water force network …)
   forces | force tick   nature forces field
   weather clear|rain|storm|fog
@@ -3239,6 +3241,296 @@ def _handle_onboarding_line(p, line: str, session):
     return p, session
 
 
+_FORGE_COMMANDS = (
+    "Forge commands:",
+    "  status              staged arrangement (live body untouched)",
+    "  dock <slot> <persona> · undock <slot> · pilot <name>",
+    "  defaults · clear    stage the default dock / empty slots",
+    "  preview             fuse the STAGED arrangement",
+    "  configs             named configurations",
+    "  load <name>         stage a named configuration",
+    "  save <name>         commit: staged arrangement becomes the live",
+    "                      body AND a named configuration (one save)",
+    "  help · leave        leave saves session evidence and exits;",
+    "                      unsaved staging is discarded",
+)
+
+
+def _forge_present(session) -> None:
+    """R7.5: show the staged arrangement (never the live body)."""
+    body = session.staged_body()
+    for line in body.render_ascii():
+        _say(line)
+    st = body.status()
+    _say(f"Staged: filled {st['filled_count']}/{len(st['slots'])} · "
+         f"pilot={st['pilot']} · live body untouched until 'save <name>'")
+
+
+def _finish_forge(p, session):
+    """R7.5: stage the closed record, save, exit only on success.
+
+    Mirrors the studio/workshop/onboarding stage-then-save: on save
+    failure the priors are restored and the forge stays open for
+    retry. Configurations committed during the session were saved at
+    commit time and are not affected by this save either way.
+    """
+    from form.dell_matrix.bimo_forge import FAIL_SAVE
+    closed_record = session.closed_copy()
+    sid = closed_record["session_id"]
+    prior = dict(getattr(p, "forge_sessions", None) or {})
+    prior_malformed = getattr(p, "forge_sessions_malformed", None)
+    merged = dict(prior)
+    merged[sid] = closed_record
+    if len(merged) > 10:
+        ordered = sorted(merged.items(),
+                         key=lambda kv: str(kv[1].get("started", "")),
+                         reverse=True)[:10]
+        merged = dict(ordered)
+    p.forge_sessions = merged
+    try:
+        from form import persist_rest
+        persist_rest.save(p)
+        _say(f"Forge session saved ({sid[:8]}...). Exited. "
+             f"Configurations saved during the session remain stored "
+             f"and live.")
+        return p, None
+    except Exception as exc:
+        p.forge_sessions = prior
+        p.forge_sessions_malformed = prior_malformed
+        _say(f"{FAIL_SAVE}: {type(exc).__name__}. "
+             f"Session retained ({sid[:8]}...); "
+             f"still in the forge — 'leave' to retry.")
+        return p, session
+
+
+def _commit_forge_config(p, session, raw_name: str):
+    """R7.5: commit the staged arrangement as a named configuration.
+
+    One canonical save applies BOTH effects — the live body adopts the
+    staged slots/pilot, and the named configuration is stored — with
+    stage-then-save semantics: on failure every prior is restored, so
+    neither effect can land alone. The configuration is validated
+    against the strict schema BEFORE anything is applied, so staged
+    state the schema would reject (e.g. an unknown persona reference
+    inherited from hand-edited live state) fails here, honestly,
+    instead of being silently preserved as malformed on save.
+    """
+    from form.dell_matrix.bimo_forge import (
+        FAIL_SAVE, make_configuration, normalize_config_name,
+        validate_configuration)
+    from form.dell_matrix.personas import BIMO_SLOTS
+    name = normalize_config_name(raw_name)
+    if name is None:
+        session.record("save", "rejected: invalid configuration name")
+        _say("Save rejected: a configuration name is 1-48 chars of "
+             "a-z, 0-9, '-' or '_', starting with a letter or digit.")
+        return p
+    config = make_configuration(name, p.owner, session.staged_slots,
+                                session.staged_pilot)
+    ok, err = validate_configuration(config, p.owner)
+    if not ok:
+        session.record("save", "rejected: staged arrangement invalid")
+        _say(f"Save rejected: {err}. Fix the staged arrangement "
+             f"('status' shows it) and save again.")
+        return p
+    prior_slots = dict(p.bimo.slots)
+    prior_pilot = p.bimo.pilot
+    prior_mode = p.bimo.mode
+    prior_lens = getattr(p, "persona_lens", None)
+    prior_matrix = (p.persona_matrix.active
+                    if getattr(p, "persona_matrix", None) is not None
+                    else None)
+    prior_configs = dict(getattr(p, "bimo_configurations", None) or {})
+    prior_cmalformed = getattr(p, "bimo_configurations_malformed", None)
+    merged = dict(prior_configs)
+    merged[name] = config
+    if len(merged) > 10:
+        ordered = sorted(merged.items(),
+                         key=lambda kv: str(kv[1].get("saved", "")),
+                         reverse=True)[:10]
+        merged = dict(ordered)
+    p.bimo.slots = {s: session.staged_slots.get(s) for s in BIMO_SLOTS}
+    p.bimo.mode = "docked"
+    if session.staged_pilot != prior_pilot:
+        p.bimo.set_pilot(session.staged_pilot)
+        p.persona_lens = session.staged_pilot
+        if getattr(p, "persona_matrix", None) is not None:
+            p.persona_matrix.active = session.staged_pilot
+    p.bimo_configurations = merged
+    try:
+        from form import persist_rest
+        persist_rest.save(p)
+    except Exception as exc:
+        p.bimo.slots = prior_slots
+        p.bimo.pilot = prior_pilot
+        p.bimo.mode = prior_mode
+        p.persona_lens = prior_lens
+        if getattr(p, "persona_matrix", None) is not None:
+            p.persona_matrix.active = prior_matrix
+        p.bimo_configurations = prior_configs
+        p.bimo_configurations_malformed = prior_cmalformed
+        session.record("save", f"rejected: {FAIL_SAVE}")
+        _say(f"{FAIL_SAVE}: {type(exc).__name__}. Nothing committed — "
+             f"the live body and stored configurations are unchanged; "
+             f"the staged arrangement is retained.")
+        return p
+    session.record("save", f"configuration committed: {name}")
+    _say(f"Committed '{name}': the staged arrangement is now the live "
+         f"BIMO body and is stored as a named configuration.")
+    return p
+
+
+def _handle_forge_line(p, line: str, session):
+    """R7.5: handle one input line while the BIMO Forge is active.
+
+    Scoped-session gate in the same position as the studio / workshop
+    / onboarding gates: input is screened fail-closed before any scope
+    decision or recording. Commands operate on the session's STAGED
+    copy through BIMOBody's own methods (one docking authority); the
+    live body changes only via an explicit 'save <name>' commit.
+    Nothing here routes to the public dispatcher. Only step kinds and
+    fixed result summaries are recorded, never raw lines.
+    """
+    from form.dell_matrix.bimo_forge import (
+        FAIL_OUT_OF_SCOPE, FAIL_PROTECTED, normalize_config_name)
+
+    stripped = line.strip()
+    lower = stripped.lower()
+    parts = lower.split()
+    token = parts[0] if parts else ""
+
+    if not _studio_screen_input(p, stripped):
+        session.record("protected", f"rejected: {FAIL_PROTECTED}")
+        _say(f"Rejected: {FAIL_PROTECTED}.")
+        return p, session
+
+    if lower in ("leave", "forge leave", "forge exit"):
+        return _finish_forge(p, session)
+
+    if lower == "help":
+        session.record("help", "shown")
+        for ln in _FORGE_COMMANDS:
+            _say(ln)
+        return p, session
+
+    if lower == "status":
+        session.record("status", "shown")
+        _forge_present(session)
+        return p, session
+
+    if lower == "preview":
+        body = session.staged_body()
+        was_empty = not any(body.slots.values())
+        out = body.fuse()
+        session.adopt(body)
+        session.record("preview", "fused staged arrangement")
+        for ln in out.get("guidance") or []:
+            _say(ln)
+        if was_empty:
+            _say("(The staged arrangement was empty; the fusion pass "
+                 "staged the default dock, as 'bimo fuse' does.)")
+        return p, session
+
+    if token == "dock" and len(parts) == 3:
+        body = session.staged_body()
+        out = body.dock(parts[1], parts[2])
+        if out.get("ok"):
+            session.adopt(body)
+            session.record("dock", "docked")
+            pe = out.get("persona_meta") or {}
+            _say(f"Staged: {pe.get('emoji', '')} "
+                 f"{pe.get('name', parts[2])} → slot [{parts[1]}] "
+                 f"(live body untouched)")
+        else:
+            reason = str(out.get("reason") or "")
+            code = ("unknown slot" if "unknown slot" in reason
+                    else "unknown persona")
+            session.record("dock", f"rejected: {code}")
+            _say(f"Fail: {out.get('reason')}")
+        return p, session
+
+    if token == "undock" and len(parts) == 2:
+        body = session.staged_body()
+        out = body.undock(parts[1])
+        if out.get("ok"):
+            session.adopt(body)
+            session.record("undock", "undocked")
+            _say(f"Staged: slot [{parts[1]}] emptied "
+                 f"(was {out.get('undocked')})")
+        else:
+            session.record("undock", "rejected: unknown slot")
+            _say(f"Fail: {out.get('reason')}")
+        return p, session
+
+    if token == "pilot" and len(parts) == 2:
+        body = session.staged_body()
+        out = body.set_pilot(parts[1])
+        if out.get("ok"):
+            session.adopt(body)
+            session.record("pilot", "pilot staged")
+            _say(f"Staged pilot → {out['pilot']} (applies on save)")
+        else:
+            session.record("pilot", "rejected: unknown persona")
+            _say(f"Fail: {out.get('reason')}")
+        return p, session
+
+    if lower == "defaults":
+        body = session.staged_body()
+        body.dock_defaults()
+        session.adopt(body)
+        session.record("defaults", "default dock staged")
+        _forge_present(session)
+        return p, session
+
+    if lower == "clear":
+        body = session.staged_body()
+        body.clear()
+        session.adopt(body)
+        session.record("clear", "slots cleared in staging")
+        _say("Staged: all slots cleared (live body untouched).")
+        return p, session
+
+    if lower == "configs":
+        session.record("configs", "listed")
+        configs = getattr(p, "bimo_configurations", None) or {}
+        if not configs:
+            _say("No named configurations stored yet. "
+                 "'save <name>' stores the staged arrangement.")
+        for nm in sorted(configs):
+            cfg = configs[nm]
+            filled = sum(1 for v in (cfg.get("slots") or {}).values() if v)
+            _say(f"  {nm} · pilot={cfg.get('pilot')} · "
+                 f"{filled} slot(s) filled · saved {cfg.get('saved')}")
+        return p, session
+
+    if token == "load" and len(parts) == 2:
+        name = normalize_config_name(parts[1])
+        configs = getattr(p, "bimo_configurations", None) or {}
+        cfg = configs.get(name) if name else None
+        if cfg is None:
+            session.record("load", "rejected: unknown configuration")
+            _say(f"No stored configuration named '{parts[1]}'. "
+                 f"'configs' lists what exists.")
+            return p, session
+        from form.dell_matrix.personas import BIMO_SLOTS
+        session.staged_slots = {s: (cfg.get("slots") or {}).get(s)
+                                for s in BIMO_SLOTS}
+        session.staged_pilot = cfg["pilot"]
+        session.record("load", "configuration staged")
+        _say(f"Staged configuration '{name}' (live body untouched "
+             f"until 'save <name>').")
+        _forge_present(session)
+        return p, session
+
+    if token == "save" and len(parts) == 2:
+        return _commit_forge_config(p, session, parts[1]), session
+
+    session.record(token or "unknown", f"rejected: {FAIL_OUT_OF_SCOPE}")
+    _say("Forge: that is not a forge command here. 'help' lists the "
+         "forge commands; the live body changes only via 'save <name>'.")
+    return p, session
+
+
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
     print("  DellMatrix — Mandell Origin")
@@ -3293,6 +3585,11 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     # begun/completed facts, never the active flow.
     _osession = None
 
+    # R7.5: active BIMO Forge session. Session-only like the other
+    # scoped modes: reload restores closed session records and named
+    # configurations, never the active staging.
+    _forge = None
+
     while True:
         # R7.2/R7.3/R7.4: scoped prompts. Active scoped modes are
         # session-only.
@@ -3302,6 +3599,8 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             _prompt = f"workshop:{_wsession.workshop}> "
         elif _osession is not None:
             _prompt = "onboard> "
+        elif _forge is not None:
+            _prompt = "forge> "
         else:
             _prompt = "you> "
         try:
@@ -3319,6 +3618,10 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             if _osession is not None:
                 _say("Onboarding session NOT saved (EOF). "
                      "Use 'leave' inside onboarding to persist evidence.")
+            if _forge is not None:
+                _say("Forge session NOT saved (EOF). Staged changes are "
+                     "discarded; configurations saved with 'save <name>' "
+                     "during the session remain saved.")
             break
         if not line:
             continue
@@ -3333,6 +3636,10 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             if _osession is not None:
                 _say("Onboarding session NOT saved (quit). "
                      "Use 'leave' inside onboarding to persist evidence.")
+            if _forge is not None:
+                _say("Forge session NOT saved (quit). Staged changes are "
+                     "discarded; configurations saved with 'save <name>' "
+                     "during the session remain saved.")
             _say("Goodbye.")
             break
 
@@ -3364,6 +3671,15 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         # bounded meta lines) reaches the public dispatcher.
         if _osession is not None:
             p, _osession = _handle_onboarding_line(p, line, _osession)
+            continue
+
+        # R7.5: BIMO Forge session mode. Same gate position as the
+        # other scoped gates: ahead of say-prefix, reissue, and normal
+        # dispatch. Inside the forge, commands stage a detached BIMO
+        # arrangement; the live body changes only via an explicit
+        # commit inside the session.
+        if _forge is not None:
+            p, _forge = _handle_forge_line(p, line, _forge)
             continue
 
         # R7.3: entering a workshop opens a scoped session. Intercepted
@@ -3406,6 +3722,24 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                  "I show it in an isolated demo, explain why, you try "
                  "it in your own state, and I verify it happened.")
             _present_onboarding_move(p, _osession)
+            continue
+
+        # R7.5: entering the BIMO Forge opens the scoped staging
+        # session. Intercepted here (like the other scoped entries) so
+        # the gate owns the session from the first line; the entry is
+        # below every scoped gate, so the forge cannot be entered from
+        # inside the studio, a workshop, or onboarding.
+        if line.lower() == "forge":
+            from form.dell_matrix.bimo_forge import ForgeSession as _FS
+            _forge = _FS.open(p.owner, dict(p.bimo.slots), p.bimo.pilot)
+            _forge.record("enter", "forge entered")
+            _say("BIMO Forge — build a BIMO arrangement on a staged "
+                 "copy. The live body does not change until you commit "
+                 "with 'save <name>', which also stores the arrangement "
+                 "as a named configuration.")
+            for _ln in _FORGE_COMMANDS:
+                _say(_ln)
+            _forge_present(_forge)
             continue
 
         if line.lower().startswith("say "):
