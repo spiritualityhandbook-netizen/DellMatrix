@@ -11,6 +11,52 @@
 
 ---
 
+## RECONCILIATION NOTE (2026-10-22) — READ BEFORE USING THE PHASE 1–7 TABLES
+
+The Phase 1–7 objective tables in this document are the original
+DERIVED DRAFT planning record, retained verbatim per ledger law. They
+were never updated row-by-row as the phases executed, so their
+NOT_STARTED statuses are DRAFTING state, not execution state. Do not
+cite them as current status. Execution truth lives in the delivery
+chain: PRs #70–#92, the per-phase closure packets, and the workspace
+GDP ledger's phase sections. Verified phase outcomes: Phase 0
+CERTIFIED/MERGED/CLOSED (PR #70); Phase 1 CERTIFIED/MERGED/CLOSED
+(PR #71); Phase 2 CERTIFIED/MERGED/CLOSED (PR #72); Phase 3
+CERTIFIED/MERGED/CLOSED (PR #74); Phase 6 R6.4 MERGED/CLOSED
+(PR #83); Phase 7 COMPLETE — R7.1 Director-CERTIFIED (PR #85),
+R7.2–R7.7 merged with fresh-clone verification (PRs #87–#92;
+R7.3–R7.7 carry no independent/Director review, category-20
+UNKNOWN). Phase 4/5 row-level status is not re-verified by this
+note.
+
+Specific resolution — Phase 0 item 0.3.1 deferral (§7 R4-A2–A5),
+EXECUTED in Phase 3 and verified against current main on 2026-10-22:
+(1) vesica_strength vs sacred_geometry.vesica — RESOLVED by
+delegation: form/dell_matrix/verita.py vesica_strength() is a thin
+compatibility wrapper over the ONE canonical implementation
+form.dell_matrix.sacred_geometry.vesica (EQ-GEO-001, item 3.4.1);
+its preserved 3-key return shape serves stated callers. Two
+definitions, one authority, by design. (2) resonance vs _affinity —
+RESOLVED by documented separation: form/dell_matrix/resonance.py
+carries the 3.1.2 concept separation (pulse = diffusion over time;
+ringed_growth._affinity = one-shot pair scoring; "Keep both; do not
+merge") and the 3.1.5 Resonance-vs-Verita firewall. (3) _harmonic vs
+pair-verita vs sacred-verita — distinct operations; separation
+proven in form/mandell/p3_r32_harmony_proof.py and stated in
+form/dell_matrix/harmony.py (R3.2). Presence of two definitions is
+not proof of competing authority.
+
+Related classification (2026-10-22, caller-traced):
+form/dell_matrix/idea_grow.py pair_affinity() is consumed ONLY by
+IdeaGrow.step(). The module is DEPRECATED for public growth by its
+own header (NBD 2026-08-01): the one public growth entrypoint is
+RingedGrowth via program.grow_ideas(); IdeaGrow is not called from
+Program, REPL, or visuals, and form/trading/session.py evolve()
+uses grow_ideas() (its docstrings now say so). Not a competing
+authority; retained for research/resonance experiments only.
+
+---
+
 ## PHASE 0 — INTEGRITY & SEMANTIC FOUNDATION [CERTIFIED] [MERGED] [CLOSED]
 
 **Merge:** PR #70 merged 2026-10-03T21:00:12Z as `827e4f8bacb0e2eb1438183ecb3cab722c39f7fd`
