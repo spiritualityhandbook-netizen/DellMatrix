@@ -46,7 +46,7 @@ class TradingSession:
         return self.book
 
     def ideas_from_market(self) -> List[str]:
-        """Place top movers as plane ideas — evolution food for IdeaGrow."""
+        """Place top movers as plane ideas — evolution food for growth."""
         placed = []
         for q in self.book.top_movers(8):
             uid = f"eq_{q.symbol}"
@@ -56,7 +56,7 @@ class TradingSession:
         return placed
 
     def evolve(self, cycles: int = 5) -> Dict[str, Any]:
-        """DuoBeta tick + IdeaGrow on trading ideas."""
+        """DuoBeta tick + RingedGrowth (program.grow_ideas) on trading ideas."""
         if len(self.program.cube.session.plane.units) < 2:
             self.ideas_from_market()
         grow = self.program.grow_ideas(cycles)
