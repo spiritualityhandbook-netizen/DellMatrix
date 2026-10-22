@@ -113,6 +113,9 @@ def serialize(program: Program) -> Dict[str, Any]:
         serialize_section as serialize_workshop_section)
     from form.dell_matrix.onboarding_session import (
         serialize_section as serialize_onboarding_section)
+    from form.dell_matrix.bimo_forge import (
+        serialize_sessions_section as serialize_forge_section,
+        serialize_configurations_section as serialize_configurations_section)
     sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
@@ -256,6 +259,20 @@ def serialize(program: Program) -> Dict[str, Any]:
             getattr(program, "onboarding_sessions_malformed", None),
             program.owner,
             begun=getattr(program, "onboarding_begun", False),
+        ),
+        # R7.5: BIMO Forge evidence + named configurations. Same strict
+        # schema contract: closed session records only; configurations
+        # hold slot->persona mappings and a pilot ONLY (behavior, never
+        # authority); malformed evidence preserved, never filtered.
+        "forge_sessions": serialize_forge_section(
+            getattr(program, "forge_sessions", None),
+            getattr(program, "forge_sessions_malformed", None),
+            program.owner,
+        ),
+        "bimo_configurations": serialize_configurations_section(
+            getattr(program, "bimo_configurations", None),
+            getattr(program, "bimo_configurations_malformed", None),
+            program.owner,
         ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).
         # Presence metadata for ideas. Uses existing persistence.

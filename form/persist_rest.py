@@ -539,6 +539,24 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     p.onboarding_begun = bool(ometa.get("begun"))
     p.onboarding_completed = _onboarding_has_completed(osessions)
     _apply_onboarding_level(p, osessions, ometa)
+    # R7.5: restore BIMO Forge session evidence and named configurations
+    # with the same strict schema and sentinel distinction (absent =
+    # legacy, explicit null = malformed). The active forge session is
+    # session-only and never restored. Configurations are validated
+    # against the canonical slot roster and persona registry here, so a
+    # hand-edited configuration can never apply unknown state.
+    from form.dell_matrix.bimo_forge import (
+        validate_sessions_section as validate_forge_section,
+        validate_configurations_section as validate_configurations_section,
+        _MISSING as _FG_MISSING)
+    fsessions, fmalformed = validate_forge_section(
+        data.get("forge_sessions", _FG_MISSING), p.owner)
+    p.forge_sessions = fsessions
+    p.forge_sessions_malformed = fmalformed
+    configs, cmalformed = validate_configurations_section(
+        data.get("bimo_configurations", _FG_MISSING), p.owner)
+    p.bimo_configurations = configs
+    p.bimo_configurations_malformed = cmalformed
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")
@@ -713,7 +731,8 @@ DURABLE_KEYS = (
     "nursery", "lattice", "history", "latinmandell_customs",
     "mandell_language", "core_ii", "outcome_ledger", "spatial",
     "lifecycle", "agent_local", "agent_audit", "studio_sessions",
-    "workshop_sessions", "onboarding_sessions",
+    "workshop_sessions", "onboarding_sessions", "forge_sessions",
+    "bimo_configurations",
 )
 
 
