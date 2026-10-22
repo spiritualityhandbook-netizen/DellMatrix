@@ -135,7 +135,8 @@ Workshops (depth mode)
   workshop leave
 
 UX modes
-  mode beginner|builder|depth
+  mode first-run|beginner|builder|depth
+  onboard                 guided first moves (first-run onboarding)
   click inspect|confirm   (live node click)
 
 LatinMandell (core depth)
@@ -232,7 +233,7 @@ Dell — execute capabilities via Mandell seeds
     "system": """
 System — configure and orient
 
-  tutorial · mode beginner|builder|depth
+  tutorial · onboard · mode beginner|builder|depth · first-run (new owners)
   visual | live · help more
 """.strip(),
 }
@@ -3021,13 +3022,230 @@ def _handle_workshop_line(p, line: str, wsession):
     return p, wsession
 
 
+def _onboarding_show(p, session, move) -> None:
+    """R7.4 (D2 Show): demonstrate the move in the isolated demo owner.
+
+    Mirrors the tutorial's demo machinery: the demo program is
+    DEMO_TUTORIAL_<owner>; only demo state is touched. The invoking
+    owner's state changes only through their own Try steps. One demo
+    instance serves the whole session (cached on the session object,
+    runtime-only), so the demo accumulates across moves exactly like
+    the tutorial's single demo program.
+    """
+    from form.open import open_program
+    dp = getattr(session, "_demo", None)
+    if dp is None:
+        dp = open_program(f"DEMO_TUTORIAL_{p.owner}")
+        session._demo = dp
+    mid = move["id"]
+    if mid == "create":
+        dp.place("onboarding_demo", "Onboarding Demo",
+                 words="shown example", skin=Skin.CUBE)
+        _say('Show: in the demo, an idea "Onboarding Demo" was created.')
+    elif mid == "grow_confirm":
+        out = dp.grow_ideas(1)
+        _say(f"Show: the demo grew — +{out.get('proposed_new', 0)} new "
+             f"+{out.get('proposed_evolved', 0)} evolved proposed; "
+             f"nursery pending {out.get('nursery', {}).get('pending', 0)}.")
+        n = 0
+        for prop in list(dp.list_proposals()):
+            res = dp.confirm_proposal(
+                prop["id"], _producer="onboarding_demo",
+                _review_context=dp.make_review_context(
+                    prop["id"], "onboarding_demo"))
+            if res.get("ok"):
+                n += 1
+        _say(f"Show: the demo confirmed {n} proposal(s) into its matrix.")
+    elif mid == "look":
+        v = dp.look_around()
+        seen = v.get("in_view_ids") or []
+        _say(f"Show: the demo looks — facing {v.get('facing', '?')}, "
+             f"sees {len(seen)} idea(s) in view.")
+    elif mid == "save_load":
+        path = dp.save()
+        p2 = persist_load(dp.owner)
+        _say(f"Show: the demo saved ({path}) and loaded back with "
+             f"{len(p2.cube.session.plane.units)} idea(s).")
+
+
+def _present_onboarding_move(p, session) -> None:
+    """R7.4 (D2): present the current move — Show, then Explain."""
+    from form.dell_matrix.onboarding_session import MOVES
+    move = MOVES[session.move_index]
+    print()
+    _say(f"Move {session.move_index + 1} of {len(MOVES)} — {move['title']}")
+    _onboarding_show(p, session, move)
+    session.record(f"show:{move['id']}", "shown")
+    _say(f"Why: {move['explain']}")
+    session.record(f"explain:{move['id']}", "explained")
+    _say(f"Your try: {move['try_hint']}")
+    _say("('help' repeats this move · 'leave' ends without completing)")
+
+
+def _verify_onboarding_try(p, move_id: str, stem: str,
+                           before_units: int, before_pending: int) -> bool:
+    """R7.4 (D2 Verify): check the observable result of the user's Try.
+
+    Executed against live program state (or a fresh load of the saved
+    state for save/load). A Try that changed nothing does not verify.
+    """
+    units = len(p.cube.session.plane.units)
+    pending = (p.nursery.summary() or {}).get("pending", 0)
+    if move_id == "create":
+        return units > before_units
+    if move_id == "grow_confirm":
+        if stem == "grow":
+            return pending > before_pending or units > before_units
+        return units > before_units or pending < before_pending
+    if move_id == "look":
+        v = p.look_around()
+        return isinstance(v, dict) and "in_view_ids" in v
+    if move_id == "save_load":
+        try:
+            import os as _os
+            from form.persist import _path as _persist_path
+            if not _os.path.isfile(_persist_path(p.owner)):
+                return False
+            from form.persist_rest import load as _rest_load
+            p2 = _rest_load(p.owner, activate=False)
+            return len(p2.cube.session.plane.units) == units
+        except Exception:
+            return False
+    return False
+
+
+def _finish_onboarding(p, session, completed: bool):
+    """R7.4: stage the closed record, save, exit only on success.
+
+    Mirrors the studio/workshop stage-then-save: the closed record is
+    built without mutating the session; graduation (first-run ->
+    beginner) is applied BEFORE the save so persisted state is
+    coherent; on save failure everything is restored and the session
+    remains active for retry.
+    """
+    from form.dell_matrix.onboarding_session import FAIL_SAVE
+    closed_record = session.closed_copy(completed)
+    sid = closed_record["session_id"]
+    prior = dict(getattr(p, "onboarding_sessions", None) or {})
+    prior_malformed = getattr(p, "onboarding_sessions_malformed", None)
+    prior_begun = getattr(p, "onboarding_begun", False)
+    prior_completed = getattr(p, "onboarding_completed", False)
+    prior_mode = p.ux_mode
+    merged = dict(prior)
+    merged[sid] = closed_record
+    if len(merged) > 10:
+        ordered = sorted(merged.items(),
+                         key=lambda kv: str(kv[1].get("started", "")),
+                         reverse=True)[:10]
+        merged = dict(ordered)
+    p.onboarding_sessions = merged
+    p.onboarding_begun = True
+    if completed:
+        p.onboarding_completed = True
+        if p.ux_mode == "first-run":
+            p.set_ux_mode("beginner")
+    try:
+        from form import persist_rest
+        persist_rest.save(p)
+        if completed:
+            _say(f"Onboarding complete — all moves verified in your "
+                 f"own state. Session saved ({sid[:8]}...).")
+            _say(f"Disclosure level: first-run → {p.ux_mode}. "
+                 f"Type 'help' to see your wider surface.")
+        else:
+            _say(f"Onboarding session saved ({sid[:8]}...). Exited. "
+                 f"Not complete — your level stays {p.ux_mode} until "
+                 f"every move verifies.")
+        return p, None
+    except Exception as exc:
+        p.onboarding_sessions = prior
+        p.onboarding_sessions_malformed = prior_malformed
+        p.onboarding_begun = prior_begun
+        p.onboarding_completed = prior_completed
+        p.ux_mode = prior_mode
+        _say(f"{FAIL_SAVE}: {type(exc).__name__}. "
+             f"Session retained ({sid[:8]}...); "
+             f"still onboarding — 'leave' to retry.")
+        return p, session
+
+
+def _handle_onboarding_line(p, line: str, session):
+    """R7.4: handle one input line while onboarding is active.
+
+    Scoped-session gate (same position and discipline as the studio /
+    workshop gates): input is screened fail-closed before any scope
+    decision or recording; only the current move's Try stems route —
+    through the SAME public dispatcher — plus bounded meta lines
+    (help, proposals, status, leave). Everything else is rejected
+    out-of-scope before dispatch. Only step kinds and fixed result
+    codes are recorded, never raw lines.
+    """
+    from form.dell_matrix.onboarding_session import (
+        MOVES, FAIL_PROTECTED, FAIL_OUT_OF_SCOPE)
+
+    stripped = line.strip()
+    lower = stripped.lower()
+
+    if not _studio_screen_input(p, stripped):
+        session.record("protected", f"rejected: {FAIL_PROTECTED}")
+        _say(f"Rejected: {FAIL_PROTECTED}.")
+        return p, session
+
+    if lower in ("leave", "onboard leave", "onboard exit"):
+        return _finish_onboarding(p, session, completed=False)
+
+    if lower == "help":
+        session.record("help", "shown")
+        _present_onboarding_move(p, session)
+        return p, session
+
+    move = MOVES[session.move_index]
+    parts = lower.split()
+    token = parts[0] if parts else ""
+
+    # Bounded meta: read-only orientation lines dispatch but never
+    # count as a Try and never verify a move.
+    if token in ("proposals", "status"):
+        session.record(token, "dispatched")
+        import uuid as _uuid
+        p = _dispatch_public_line(p, stripped, str(_uuid.uuid4()))
+        return p, session
+
+    if token in move["try_stems"]:
+        before_units = len(p.cube.session.plane.units)
+        before_pending = (p.nursery.summary() or {}).get("pending", 0)
+        session.record(f"try:{move['id']}", "dispatched")
+        import uuid as _uuid
+        p = _dispatch_public_line(p, stripped, str(_uuid.uuid4()))
+        if _verify_onboarding_try(p, move["id"], token,
+                                   before_units, before_pending):
+            session.record(f"verify:{move['id']}", "verified")
+            _say(f"Verified: {move['title']} — it happened in your "
+                 f"own state.")
+            session.move_index += 1
+            if session.move_index >= len(MOVES):
+                return _finish_onboarding(p, session, completed=True)
+            _present_onboarding_move(p, session)
+            return p, session
+        session.record(f"verify:{move['id']}", "not verified")
+        _say(f"Not verified: that did not change your state yet. "
+             f"Try: {move['try_hint']}")
+        return p, session
+
+    session.record(token or "unknown", f"rejected: {FAIL_OUT_OF_SCOPE}")
+    _say(f"Onboarding: that is not this move's try. "
+         f"{move['title']} — your try: {move['try_hint']} "
+         f"(or 'help' / 'leave').")
+    return p, session
+
+
 def run(owner: str = "Operator", do_load: bool = False) -> None:
     print()
     print("  DellMatrix — Mandell Origin")
     print("  Offline · Type tutorial  or  help")
     print("  Try: create an idea called test")
     print("  Depth: explain create · la cresce 2")
-    print("  Live: live  · look  · zoom <id>  · mode builder|depth")
+    print("  Live: live  · look  · zoom <id>  · mode first-run|beginner|builder|depth")
     print()
     _session_existed = False
     if do_load:
@@ -3043,6 +3261,16 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     if not do_load:
         from form.mandell.language import bind
         bind(p)  # Q-022: explicit owner binding BEFORE any customize, so customize > save > --load restores it
+        # R7.4 (D1): a REPL start with no persisted state file is a
+        # brand-new owner — they start at the first-run level with
+        # onboarding begun. (An owner WITH a state file who starts
+        # without --load keeps the pre-existing fresh in-memory start;
+        # their persisted level is governed by the load path.)
+        from form.persist import _path as _repl_state_path
+        import os as _repl_os
+        if not _repl_os.path.isfile(_repl_state_path(owner)):
+            from form.dell_matrix.onboarding_session import mark_new_owner
+            mark_new_owner(p)
     if do_load:
         _say(f"Loaded session for {owner}." if _session_existed
              else f"No saved session for {owner}; started fresh.")
@@ -3060,12 +3288,20 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
     # studio: reload restores closed session records, never the mode.
     _wsession = None
 
+    # R7.4: active onboarding session. Session-only like the studio /
+    # workshop modes: reload restores closed session records and the
+    # begun/completed facts, never the active flow.
+    _osession = None
+
     while True:
-        # R7.2/R7.3: scoped prompts. Active scoped modes are session-only.
+        # R7.2/R7.3/R7.4: scoped prompts. Active scoped modes are
+        # session-only.
         if _studio is not None:
             _prompt = "studio> "
         elif _wsession is not None:
             _prompt = f"workshop:{_wsession.workshop}> "
+        elif _osession is not None:
+            _prompt = "onboard> "
         else:
             _prompt = "you> "
         try:
@@ -3080,6 +3316,9 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             if _wsession is not None:
                 _say("Workshop session NOT saved (EOF). "
                      "Use 'leave' inside the workshop to persist evidence.")
+            if _osession is not None:
+                _say("Onboarding session NOT saved (EOF). "
+                     "Use 'leave' inside onboarding to persist evidence.")
             break
         if not line:
             continue
@@ -3091,6 +3330,9 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             if _wsession is not None:
                 _say("Workshop session NOT saved (quit). "
                      "Use 'leave' inside the workshop to persist evidence.")
+            if _osession is not None:
+                _say("Onboarding session NOT saved (quit). "
+                     "Use 'leave' inside onboarding to persist evidence.")
             _say("Goodbye.")
             break
 
@@ -3115,6 +3357,15 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             p, _wsession = _handle_workshop_line(p, line, _wsession)
             continue
 
+        # R7.4: onboarding session mode. Same gate position as the
+        # studio / workshop gates: ahead of say-prefix, reissue, and
+        # normal dispatch, so nothing staged or prefixed outside can
+        # execute inside, and inside only the current move's Try (plus
+        # bounded meta lines) reaches the public dispatcher.
+        if _osession is not None:
+            p, _osession = _handle_onboarding_line(p, line, _osession)
+            continue
+
         # R7.3: entering a workshop opens a scoped session. Intercepted
         # here (like the studio entry) so the gate owns the session from
         # the first line. Unknown ids fall through to normal dispatch,
@@ -3136,6 +3387,26 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
                     _say("Scoped session: only this workshop's commands "
                          "run here. 'leave' saves the session and exits.")
                     continue
+
+        # R7.4: entering onboarding opens the scoped teach-rhythm
+        # session. Intercepted here (like the studio / workshop
+        # entries) so the gate owns the session from the first line.
+        if line.lower() == "onboard":
+            if getattr(p, "onboarding_completed", False):
+                _say("Onboarding already complete for this owner — "
+                     "every move was verified in your own state. "
+                     f"Disclosure level: {p.ux_mode}.")
+                continue
+            from form.dell_matrix.onboarding_session import (
+                OnboardingSession as _OS)
+            p.onboarding_begun = True
+            _osession = _OS.open(p.owner)
+            _osession.record("enter", "onboarding entered")
+            _say("Onboarding — learn by doing. Four moves; for each: "
+                 "I show it in an isolated demo, explain why, you try "
+                 "it in your own state, and I verify it happened.")
+            _present_onboarding_move(p, _osession)
+            continue
 
         if line.lower().startswith("say "):
             line = line[4:].strip()

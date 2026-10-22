@@ -111,6 +111,8 @@ def serialize(program: Program) -> Dict[str, Any]:
     from form.dell_matrix.perspective_studio import serialize_section
     from form.dell_matrix.workshop_session import (
         serialize_section as serialize_workshop_section)
+    from form.dell_matrix.onboarding_session import (
+        serialize_section as serialize_onboarding_section)
     sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
@@ -242,6 +244,18 @@ def serialize(program: Program) -> Dict[str, Any]:
             getattr(program, "workshop_sessions", None),
             getattr(program, "workshop_sessions_malformed", None),
             program.owner,
+        ),
+        # R7.4: onboarding session evidence (draft 7.1.4, D1/D2). Same
+        # contract as the studio/workshop sections — closed records
+        # only, shared strict schema, malformed evidence preserved —
+        # plus the section-level "begun" fact that drives the D1
+        # starting-level state machine. Programs that never touched
+        # onboarding serialize begun=False (legacy-equivalent).
+        "onboarding_sessions": serialize_onboarding_section(
+            getattr(program, "onboarding_sessions", None),
+            getattr(program, "onboarding_sessions_malformed", None),
+            program.owner,
+            begun=getattr(program, "onboarding_begun", False),
         ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).
         # Presence metadata for ideas. Uses existing persistence.

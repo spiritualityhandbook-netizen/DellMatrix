@@ -153,6 +153,7 @@ LIST = [
     "form.mandell.r71_composition_test:smoke",
     "form.mandell.r72_studio_test:smoke",
     "form.mandell.r73_workshop_test:smoke",
+    "form.mandell.r74_onboarding_test:smoke",
 ]
 
 TIMEOUT_S = 900

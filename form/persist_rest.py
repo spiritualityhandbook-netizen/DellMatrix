@@ -226,6 +226,12 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     if not os.path.isfile(path):
         p = open_program(owner)
         p.language = empty_language()
+        # R7.4 (D1): a brand-new owner (no persisted state at all)
+        # starts at the first-run disclosure level with onboarding
+        # begun. Legacy owners always take the file path above, where
+        # an absent onboarding section leaves their mode untouched.
+        from form.dell_matrix.onboarding_session import mark_new_owner
+        mark_new_owner(p)
         if activate:
             bind(p)
         # R6.3: record the restoration epoch at load; saves from a
@@ -514,6 +520,25 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         data.get("workshop_sessions", _WS_MISSING), p.owner)
     p.workshop_sessions = wsessions
     p.workshop_sessions_malformed = wmalformed
+    # R7.4: restore onboarding session evidence (draft 7.1.4, D1/D2)
+    # with the same strict schema and sentinel distinction, then apply
+    # the D1 starting-level rule. Absent section = legacy (owner never
+    # demoted); begun without completion = first-run on load; a valid
+    # completed record graduates a persisted first-run mode to
+    # beginner; section-level malformation fails closed to first-run
+    # with the evidence preserved.
+    from form.dell_matrix.onboarding_session import (
+        validate_section as validate_onboarding_section,
+        _MISSING as _OB_MISSING,
+        apply_restored_level as _apply_onboarding_level,
+        has_completed as _onboarding_has_completed)
+    osessions, omalformed, ometa = validate_onboarding_section(
+        data.get("onboarding_sessions", _OB_MISSING), p.owner)
+    p.onboarding_sessions = osessions
+    p.onboarding_sessions_malformed = omalformed
+    p.onboarding_begun = bool(ometa.get("begun"))
+    p.onboarding_completed = _onboarding_has_completed(osessions)
+    _apply_onboarding_level(p, osessions, ometa)
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")
@@ -688,7 +713,7 @@ DURABLE_KEYS = (
     "nursery", "lattice", "history", "latinmandell_customs",
     "mandell_language", "core_ii", "outcome_ledger", "spatial",
     "lifecycle", "agent_local", "agent_audit", "studio_sessions",
-    "workshop_sessions",
+    "workshop_sessions", "onboarding_sessions",
 )
 
 
