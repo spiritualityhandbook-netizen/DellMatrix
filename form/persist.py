@@ -116,6 +116,8 @@ def serialize(program: Program) -> Dict[str, Any]:
     from form.dell_matrix.bimo_forge import (
         serialize_sessions_section as serialize_forge_section,
         serialize_configurations_section as serialize_configurations_section)
+    from form.dell_matrix.connection_session import (
+        serialize_section as serialize_connection_section)
     sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
@@ -272,6 +274,15 @@ def serialize(program: Program) -> Dict[str, Any]:
         "bimo_configurations": serialize_configurations_section(
             getattr(program, "bimo_configurations", None),
             getattr(program, "bimo_configurations_malformed", None),
+            program.owner,
+        ),
+        # R7.6: Connected World session evidence. Same strict schema
+        # contract: closed records only, provenance steps (host, status,
+        # byte counts, outcome codes) — never prompts, never fetched
+        # content, never credentials.
+        "connection_sessions": serialize_connection_section(
+            getattr(program, "connection_sessions", None),
+            getattr(program, "connection_sessions_malformed", None),
             program.owner,
         ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).

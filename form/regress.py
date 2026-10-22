@@ -155,6 +155,7 @@ LIST = [
     "form.mandell.r73_workshop_test:smoke",
     "form.mandell.r74_onboarding_test:smoke",
     "form.mandell.r75_forge_test:smoke",
+    "form.mandell.r76_connected_test:smoke",
 ]
 
 TIMEOUT_S = 900
