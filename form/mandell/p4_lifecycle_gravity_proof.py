@@ -1,28 +1,51 @@
 #!/usr/bin/env python3
-"""P4 LIFECYCLE-GRAVITY PROOF (GDP Phase 4 finalization gate).
+"""P4 lifecycle-gravity proof — REPAIRED 2026-10-22.
 
-Verifies the lifecycle-gravity defect class, not just the single FADED
-case (Delta-20 #6 repair):
+Contract under test (current canonical law):
+  SpatialAuthority._wells filters well candidates through
+  canonical_lifecycle.is_active(program, uid), which requires ALL of:
+    - accepted: the proposal was confirmed through the WO-5.1
+      acceptance-policy boundary (Program.confirm_proposal);
+    - a valid ACTIVE revision (supersession.inspect_revision);
+    - non-faded presence (TPP-I, form/lifecycle.py set_presence).
+  SUPERSEDED ideas do NOT participate ordinarily (WO-5.3: superseded
+  was removed from _ACTIVE_STATES deliberately, Director 2026-10-05).
+  Units with NO canonical record attract by explicit legacy
+  compatibility policy (documented in canonical_lifecycle, not a
+  silent default). Malformed records fail closed.
 
-- FADED, REJECTED, DELETED, ARCHIVED -> exert NO attraction
-- SUPERSEDED -> ATTRACTS (Phase-3 policy: in _ACTIVE_STATES)
-- PROPOSED, ACCEPTED, RESTORED, ACTIVE -> ATTRACT (policy)
-- UNKNOWN/malformed -> no attraction (fail-closed)
-- Explicit force wells with inactive lifecycle -> filtered
-- Fallback score-derived wells with inactive lifecycle -> filtered
-- Restored ACTIVE (fade -> restore) -> attracts again
+Repair history: the original version of this proof constructed
+lifecycle states by writing ``lifecycle_state`` directly onto
+UNCONFIRMED Nursery proposals (a Phase-3-era fixture). Phase 5
+(WO-5.1/5.2/5.3) made acceptance + revision + presence the
+load-bearing dimensions of is_active, so that fixture described
+non-participating state and the proof decayed to 13/17 at HEAD
+(b852210) — invisibly, because no P4 proof was registered in
+form/regress.py. A discriminating probe (2026-10-22) proved the
+PRODUCT correct through the production boundary (add -> review ->
+confirm => is_active True => well forms), so this repair rebuilds
+the fixtures on production boundaries only. Direct record writes
+remain ONLY where the fixture's purpose is corruption (the
+malformed case). Expectations are re-based on current law; the
+superseded expectation INVERTED versus the Phase-3 table because
+the law changed, not because the product regressed.
+
+Checks:
+- confirmed active -> attracts; pending -> no; rejected -> no
+- confirmed + faded presence -> no; unfade (restore) -> attracts
+- superseded -> no (WO-5.3); its confirmed successor -> attracts
+- legacy no-record -> attracts (explicit compatibility)
+- malformed record -> no (fail-closed)
+- explicit gravity wells filtered the same way; score-fallback too
 - CAUSAL MUTANT: removing is_active from _wells must FAIL this proof
-
-Phase-3 policy (canonical_lifecycle._ACTIVE_STATES):
-  ACTIVE = {active, proposed, accepted, restored, superseded}
-  INACTIVE = {faded, deleted, archived, rejected, unknown/malformed}
 """
-import math
+
 import os
 import shutil
 import sys
 
-REPO = os.path.expanduser("~/workspace/dellmatrix-gdp-phase4")
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))))
 sys.path.insert(0, REPO)
 os.chdir(REPO)
 
@@ -52,22 +75,30 @@ def _prog(owner):
     return Program(owner=owner)
 
 
-def _set_lifecycle(p, uid, state):
-    """Set canonical lifecycle via nursery Proposal (Phase-3 boundary)."""
-    from form.dell_matrix.nursery import Proposal
-    p.nursery.proposals[uid] = Proposal(
-        id=uid, label=uid, words="test", kind="new",
-        lifecycle_state=state)
+def _place_pair(p):
+    p.cube.session.plane.units.clear()
+    p.place("anchor", "anchor idea", x=0.0, y=0.0)
+
+
+def _confirmed(p, label, x=50.0, y=0.0):
+    """Build a confirmed, active idea through the production boundary:
+    nursery.add -> place -> make_review_context -> confirm_proposal
+    (the WO-5.1 acceptance-policy path). Returns the proposal id."""
+    prop = p.nursery.add(label, words="test", kind="new")
+    pid = prop.id
+    p.place(pid, label, x=x, y=y)
     p.nursery.save()
+    ctx = p.make_review_context(pid, reviewer="p4proof")
+    res = p.confirm_proposal(pid, _producer="repl_user",
+                             _review_context=ctx)
+    assert res.get("ok"), f"confirm failed for {pid}: {res}"
+    return pid
 
 
 def _wells_for(p, uid):
-    """Return wells list; check if uid is among well sources."""
-    from form.dell_matrix import canonical_lifecycle
-    # We check via the authority's _wells with a high score for uid
+    """True iff a fallback well exists at uid's current position."""
     scores = {uid: 10.0}
     wells = p.spatial._wells(p, p.cube.session.plane, scores)
-    # A well is "for uid" if its position matches uid's position
     pa = p.cube.session.plane
     u = pa.units[uid]
     return any(abs(wx - u.x) < 1e-9 and abs(wy - u.y) < 1e-9
@@ -75,54 +106,85 @@ def _wells_for(p, uid):
 
 
 def t_lifecycle_well_gating():
-    """Each lifecycle state: active states attract, inactive do not.
+    """Each producible lifecycle state: who attracts, who does not."""
+    from form.lifecycle import do_fade
+    from form.mandell.supersession import supersede_proposal
 
-    Phase-3 IMPLEMENTED policy (via inspect_revision + canonical_lifecycle):
-    - Proposal states "active"/"superseded" -> active -> ATTRACT
-    - Proposal states "faded"/"rejected"/"deleted"/"archived"/"proposed"/
-      "accepted"/"restored" -> malformed -> INACTIVE -> no attract
-      (inspect_revision only accepts active/superseded; the
-      _ACTIVE_STATES set lists proposed/accepted/restored but they
-      cannot occur via the Proposal path -- documented implementation
-      reality, not a Phase-4 defect)
-    - No proposal (legacy) -> "active" via explicit compatibility -> ATTRACT
-    """
-    cases = [
-        # (state, should_attract, note)
-        ("faded", False, "inactive"),
-        ("rejected", False, "inactive"),
-        ("deleted", False, "inactive"),
-        ("archived", False, "inactive"),
-        ("proposed", False, "malformed->inactive (impl)"),
-        ("accepted", False, "malformed->inactive (impl)"),
-        ("restored", False, "malformed->inactive (impl)"),
-        ("active", True, "active"),
-        ("superseded", True, "active per policy"),
-    ]
-    for state, should_attract, note in cases:
-        owner = f"P4LG_{state}"
-        try:
-            p = _prog(owner)
-            p.cube.session.plane.units.clear()
-            p.place("probe", "probe idea", x=50.0, y=0.0)
-            p.place("anchor", "anchor idea", x=0.0, y=0.0)
-            _set_lifecycle(p, "probe", state)
-            is_well = _wells_for(p, "probe")
-            rec(f"gravity::{state}_well",
-                is_well == should_attract,
-                f"state={state} well={is_well} expect={should_attract} "
-                f"({note})")
-        finally:
-            _clean(owner)
+    # confirmed active -> attracts
+    owner = "P4LG_active"
+    try:
+        p = _prog(owner)
+        _place_pair(p)
+        pid = _confirmed(p, "probe idea")
+        rec("gravity::active_well", _wells_for(p, pid),
+            "confirmed active idea attracts")
+    finally:
+        _clean(owner)
+
+    # pending proposal (never confirmed) -> no attraction
+    owner = "P4LG_pending"
+    try:
+        p = _prog(owner)
+        _place_pair(p)
+        prop = p.nursery.add("pending idea", words="test", kind="new")
+        p.place(prop.id, "pending idea", x=50.0, y=0.0)
+        p.nursery.save()
+        rec("gravity::pending_no_well", not _wells_for(p, prop.id),
+            "unconfirmed proposal does not attract (WO-5.1)")
+    finally:
+        _clean(owner)
+
+    # rejected proposal -> no attraction
+    owner = "P4LG_rejected"
+    try:
+        p = _prog(owner)
+        _place_pair(p)
+        prop = p.nursery.add("rejected idea", words="test", kind="new")
+        p.place(prop.id, "rejected idea", x=50.0, y=0.0)
+        p.nursery.reject(prop.id)
+        p.nursery.save()
+        rec("gravity::rejected_well", not _wells_for(p, prop.id),
+            "rejected proposal does not attract")
+    finally:
+        _clean(owner)
+
+    # confirmed + faded presence -> no attraction
+    owner = "P4LG_faded"
+    try:
+        p = _prog(owner)
+        _place_pair(p)
+        pid = _confirmed(p, "fading idea")
+        do_fade(p, pid, "p4proof")
+        rec("gravity::faded_well", not _wells_for(p, pid),
+            "faded presence does not attract (TPP-I)")
+    finally:
+        _clean(owner)
+
+    # superseded -> no attraction under WO-5.3 ordinary participation;
+    # its confirmed successor -> attracts (positive control)
+    owner = "P4LG_superseded"
+    try:
+        p = _prog(owner)
+        _place_pair(p)
+        pid = _confirmed(p, "original idea")
+        ctx = p.make_supersede_context(pid, reviewer="p4proof",
+                                       words="revised idea words")
+        res = supersede_proposal(p, pid, words="revised idea words",
+                                 _producer="repl_user",
+                                 _review_context=ctx)
+        assert res.get("ok"), f"supersede failed: {res}"
+        rec("gravity::superseded_well", not _wells_for(p, pid),
+            "superseded does not attract (WO-5.3 ordinary participation)")
+        succ = res.get("successor_id") or res.get("new_id")
+        assert succ, f"no successor in supersede result: {res}"
+        rec("gravity::successor_well", _wells_for(p, succ),
+            "confirmed successor attracts")
+    finally:
+        _clean(owner)
 
 
 def t_unknown_malformed_no_attract():
-    """Malformed lifecycle -> no attraction (fail-closed).
-
-    Note: no-proposal (legacy) -> "active" via EXPLICIT Phase-3
-    compatibility policy (documented, not silent). This is correct
-    per policy; the proof documents it.
-    """
+    """Legacy no-record attracts (explicit policy); malformed does not."""
     owner = "P4LG_unknown"
     try:
         p = _prog(owner)
@@ -133,8 +195,13 @@ def t_unknown_malformed_no_attract():
         is_well = _wells_for(p, "probe")
         rec("gravity::legacy_no_proposal_active", is_well,
             f"well={is_well} (explicit legacy compatibility)")
-        # Malformed state string -> malformed -> inactive
-        _set_lifecycle(p, "probe", "not_a_real_state_xyz")
+        # Corruption fixture (the ONLY direct write in this proof):
+        # a record whose lifecycle_state is garbage must fail closed.
+        from form.dell_matrix.nursery import Proposal
+        p.nursery.proposals["probe"] = Proposal(
+            id="probe", label="probe", words="test", kind="new",
+            status="confirmed", lifecycle_state="not_a_real_state_xyz")
+        p.nursery.save()
         is_well2 = _wells_for(p, "probe")
         rec("gravity::malformed_no_well", not is_well2,
             f"well={is_well2} (fail-closed)")
@@ -143,20 +210,21 @@ def t_unknown_malformed_no_attract():
 
 
 def t_explicit_well_filtered():
-    """Explicit gravity well for faded idea -> filtered out."""
+    """Explicit gravity wells are lifecycle-filtered identically."""
+    from form.lifecycle import do_fade
     owner = "P4LG_explicit"
     try:
         p = _prog(owner)
-        p.cube.session.plane.units.clear()
-        p.place("faded1", "faded one", x=50.0, y=0.0)
-        p.place("active1", "active one", x=0.0, y=0.0)
-        _set_lifecycle(p, "faded1", "faded")
-        p.forces.gravity.wells = [{"id": "faded1", "x": 50.0, "y": 0.0}]
+        _place_pair(p)
+        pid = _confirmed(p, "explicit one")
+        do_fade(p, pid, "p4proof")
+        p.forces.gravity.wells = [{"id": pid, "x": 50.0, "y": 0.0}]
         wells = p.spatial._wells(p, p.cube.session.plane, {})
         rec("gravity::explicit_faded_filtered", len(wells) == 0,
             f"wells={len(wells)}")
-        # Control: active well passes through
-        _set_lifecycle(p, "faded1", "active")
+        # Control: a confirmed active idea's explicit well passes.
+        pid2 = _confirmed(p, "explicit two", x=-50.0)
+        p.forces.gravity.wells = [{"id": pid2, "x": -50.0, "y": 0.0}]
         wells2 = p.spatial._wells(p, p.cube.session.plane, {})
         rec("gravity::explicit_active_passes", len(wells2) == 1,
             f"wells={len(wells2)}")
@@ -165,64 +233,63 @@ def t_explicit_well_filtered():
 
 
 def t_fallback_well_filtered():
-    """Score-fallback wells skip inactive ideas."""
+    """Score-fallback wells skip inactive ideas, keep active ones."""
+    from form.lifecycle import do_fade
     owner = "P4LG_fallback"
     try:
         p = _prog(owner)
-        p.cube.session.plane.units.clear()
-        p.place("faded_hi", "faded high score", x=50.0, y=0.0)
-        p.place("active_lo", "active low score", x=-50.0, y=0.0)
-        _set_lifecycle(p, "faded_hi", "faded")
-        _set_lifecycle(p, "active_lo", "active")
-        # faded has HIGHER score but must not be in fallback
-        scores = {"faded_hi": 10.0, "active_lo": 0.1}
+        _place_pair(p)
+        faded = _confirmed(p, "faded high score")
+        do_fade(p, faded, "p4proof")
+        active = _confirmed(p, "active low score", x=-50.0)
+        scores = {faded: 10.0, active: 0.1}
         wells = p.spatial._wells(p, p.cube.session.plane, scores)
         pa = p.cube.session.plane
-        uf = pa.units["faded_hi"]
-        faded_is_well = any(
-            abs(wx - uf.x) < 1e-9 and abs(wy - uf.y) < 1e-9
-            for wx, wy, _ in wells)
+        uf, ua = pa.units[faded], pa.units[active]
+        faded_is_well = any(abs(wx - uf.x) < 1e-9 and abs(wy - uf.y) < 1e-9
+                            for wx, wy, _ in wells)
+        active_is_well = any(abs(wx - ua.x) < 1e-9 and abs(wy - ua.y) < 1e-9
+                             for wx, wy, _ in wells)
         rec("gravity::fallback_skips_faded", not faded_is_well,
             f"faded_in_wells={faded_is_well}")
+        rec("gravity::fallback_keeps_active", active_is_well,
+            f"active_in_wells={active_is_well}")
     finally:
         _clean(owner)
 
 
 def t_restore_reattracts():
-    """Fade -> restore -> attracts again (lifecycle is dynamic)."""
+    """Fade -> unfade (restore presence) -> attracts again."""
+    from form.lifecycle import do_fade, do_unfade
     owner = "P4LG_restore"
     try:
         p = _prog(owner)
-        p.cube.session.plane.units.clear()
-        p.place("probe", "probe idea", x=50.0, y=0.0)
-        p.place("anchor", "anchor idea", x=0.0, y=0.0)
-        _set_lifecycle(p, "probe", "faded")
-        w1 = _wells_for(p, "probe")
-        _set_lifecycle(p, "probe", "active")
-        w2 = _wells_for(p, "probe")
+        _place_pair(p)
+        pid = _confirmed(p, "restorable idea")
+        w0 = _wells_for(p, pid)
+        do_fade(p, pid, "p4proof")
+        w1 = _wells_for(p, pid)
+        do_unfade(p, pid, "p4proof")
+        w2 = _wells_for(p, pid)
         rec("gravity::restore_reattracts",
-            not w1 and w2, f"faded_well={w1} restored_well={w2}")
+            w0 and not w1 and w2,
+            f"active={w0} faded_well={w1} restored_well={w2}")
     finally:
         _clean(owner)
 
 
 def t_causal_mutant():
-    """CAUSAL: removing is_active from _wells MUST fail the gating proof.
-
-    We monkeypatch _wells to skip the lifecycle filter, then assert
-    that a faded idea becomes a well (proof detects the mutant).
-    """
+    """CAUSAL: removing is_active from _wells MUST fail this proof."""
+    from form.lifecycle import do_fade
     owner = "P4LG_mutant"
     try:
         p = _prog(owner)
-        p.cube.session.plane.units.clear()
-        p.place("faded1", "faded one", x=50.0, y=0.0)
-        p.place("active1", "active one", x=0.0, y=0.0)
-        _set_lifecycle(p, "faded1", "faded")
+        _place_pair(p)
+        pid = _confirmed(p, "mutant probe")
+        do_fade(p, pid, "p4proof")
         orig = p.spatial._wells
 
         def _mutant_wells(self, program, plane, scores):
-            # Mutant: no lifecycle filter (the defect)
             wells = []
             for wid, s in sorted(scores.items(),
                                  key=lambda kv: (-kv[1], kv[0]))[:3]:
@@ -234,16 +301,13 @@ def t_causal_mutant():
         import types
         p.spatial._wells = types.MethodType(_mutant_wells, p.spatial)
         try:
-            is_well = _wells_for(p, "faded1")
-            # The mutant SHOULD make faded1 a well; if our detection
-            # logic cannot see it, the causal proof is vacuous.
+            is_well = _wells_for(p, pid)
             rec("causal::mutant_detected", is_well,
                 f"mutant well={is_well} (must be True to prove "
                 f"detection works)")
         finally:
             p.spatial._wells = orig
-        # And with the real _wells, faded is NOT a well (control)
-        is_well_real = _wells_for(p, "faded1")
+        is_well_real = _wells_for(p, pid)
         rec("causal::real_gates", not is_well_real,
             f"real well={is_well_real}")
     finally:
@@ -258,11 +322,16 @@ def main():
     t_fallback_well_filtered()
     t_restore_reattracts()
     t_causal_mutant()
-    n = len(CHECKS)
-    print(f"P4 LIFECYCLE-GRAVITY: {n - len(FAILED)}/{n} pass; "
-          f"failed={FAILED}", flush=True)
-    return 1 if FAILED else 0
+    print(f"P4 LIFECYCLE-GRAVITY: {len(CHECKS) - len(FAILED)}/{len(CHECKS)}"
+          f" pass; failed={FAILED}", flush=True)
+    return 0 if not FAILED else 1
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def smoke() -> bool:
+    """Canonical-runner adapter (form/regress.py): True iff the
+    full proof passes. Added 2026-10-22 (P4 coverage repair)."""
+    return main() == 0

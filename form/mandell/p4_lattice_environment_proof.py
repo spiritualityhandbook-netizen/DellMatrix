@@ -37,7 +37,11 @@ import sys
 FAILURES: list[str] = []
 
 
+CHECKS: list[str] = []
+
+
 def rec(name: str, ok: bool, detail: str = "") -> None:
+    CHECKS.append(name)
     print(f"[{'PASS' if ok else 'FAIL'}] {name} | {detail}", flush=True)
     if not ok:
         FAILURES.append(name)
@@ -530,8 +534,16 @@ def main() -> int:
     n = len(FAILURES)
     print(f"P4 LATTICE+ENV: {'ALL PASS' if not n else f'{n} FAILURES: {FAILURES}'}",
           flush=True)
+    print(f"P4 LATTICE+ENV: {len(CHECKS) - n}/{len(CHECKS)} checks pass",
+          flush=True)
     return 1 if n else 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def smoke() -> bool:
+    """Canonical-runner adapter (form/regress.py): True iff the
+    full proof passes. Added 2026-10-22 (P4 coverage repair)."""
+    return main() == 0
