@@ -563,6 +563,92 @@ print(f"STORED_ID:{stored.get('id', '')}")
 # RUNNER
 # ══════════════════════════════════════════════════════════════════
 
+# ══════════════════════════════════════════════════════════════════
+# T3: ROUTABLE — positive-evidence conflict routing (Phase D)
+# ══════════════════════════════════════════════════════════════════
+
+def _conflict_pair(p):
+    """Two confirmed units forming one Conflict V1 polarity pair."""
+    a = make_knowledge(p, "kie-route-a",
+                       "tidal gates require daily inspection for growth")
+    b = make_knowledge(p, "kie-route-b",
+                       "tidal gates do not require daily inspection for growth")
+    return a, b
+
+
+def test_routable_no_context_unknown():
+    p = fresh()
+    kid = make_knowledge(p, words="knowledge about growth patterns")
+    exp = ki.explain_influence(p, kid)
+    r = exp["chain"]["ROUTABLE"]
+    check("T3.routable_no_context",
+          r["status"] == "UNKNOWN" and "no context" in r.get("reason", ""))
+
+
+def test_routable_conflict_quarantined():
+    p = fresh()
+    a, b = _conflict_pair(p)
+    for kid, other in ((a, b), (b, a)):
+        exp = ki.explain_influence(p, kid, context="growth")
+        r = exp["chain"]["ROUTABLE"]
+        check(f"T3.quarantined_{kid[-1]}",
+              r["status"] == "FACT" and r.get("routable") is False
+              and len(r.get("conflicts") or []) == 1
+              and r["conflicts"][0]["other_id"] == other
+              and r["conflicts"][0]["negation_evidence"]
+              and (r.get("dispositions") or {})
+              .get(r["conflicts"][0]["conflict_id"], {})
+              .get("disposition") == "unresolved")
+
+
+def test_routable_clean_unit():
+    p = fresh()
+    _conflict_pair(p)
+    c = make_knowledge(p, "kie-route-c",
+                       "growth patterns need steady light and water")
+    exp = ki.explain_influence(p, c, context="growth")
+    r = exp["chain"]["ROUTABLE"]
+    check("T3.clean_routable",
+          r["status"] == "FACT" and r.get("routable") is True
+          and r.get("conflicts") == [])
+
+
+def test_routable_not_selected():
+    p = fresh()
+    kid = make_knowledge(p, words="knowledge about growth patterns")
+    exp = ki.explain_influence(p, kid, context="quantum xyzzy unrelated")
+    r = exp["chain"]["ROUTABLE"]
+    check("T3.routable_not_selected",
+          r["status"] == "FACT" and r.get("routable") is False
+          and "not in canonical selection" in r.get("reason", ""))
+
+
+def test_routable_disposition_flips():
+    from form.mandell import conflict_disposition as cd
+    p = fresh()
+    a, b = _conflict_pair(p)
+    cid = cd.conflict_id_for(a, b)
+    out = cd.set_disposition(p, cid, "coexist",
+                             operator_reason="kie t3 coexist")
+    check("T3.disposition_set", out.get("ok") is True)
+    for kid in (a, b):
+        r = ki.explain_influence(p, kid, context="growth")["chain"]["ROUTABLE"]
+        check(f"T3.coexist_routable_{kid[-1]}",
+              r["status"] == "FACT" and r.get("routable") is True
+              and (r.get("dispositions") or {}).get(cid, {})
+              .get("disposition") == "coexist")
+    cd.clear_disposition(p, cid)
+    out = cd.set_disposition(p, cid, "prefer", preferred_ids=[a],
+                             operator_reason="kie t3 prefer")
+    check("T3.prefer_set", out.get("ok") is True)
+    ra = ki.explain_influence(p, a, context="growth")["chain"]["ROUTABLE"]
+    rb = ki.explain_influence(p, b, context="growth")["chain"]["ROUTABLE"]
+    check("T3.prefer_preferred_routable",
+          ra["status"] == "FACT" and ra.get("routable") is True)
+    check("T3.prefer_other_quarantined",
+          rb["status"] == "FACT" and rb.get("routable") is False)
+
+
 def main():
     tests = [
         test_isolation_proof,
@@ -592,6 +678,11 @@ def main():
         test_repl_why_help,
         test_real_user_path_repl_stdin,
         test_cross_process_explanation,
+        test_routable_no_context_unknown,
+        test_routable_conflict_quarantined,
+        test_routable_clean_unit,
+        test_routable_not_selected,
+        test_routable_disposition_flips,
     ]
     for t in tests:
         try:

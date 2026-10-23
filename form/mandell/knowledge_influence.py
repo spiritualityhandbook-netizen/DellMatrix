@@ -96,8 +96,8 @@ def _explain_current(
         selected = {"status": "UNKNOWN", "reason": "no context provided for selection check"}
     result["chain"]["SELECTED"] = selected
 
-    # ── ROUTABLE ── (requires conflict check; simplified)
-    routable = _check_routable(program, kid)
+    # ── ROUTABLE ── (mirrors the execution path's routing computation)
+    routable = _check_routable(program, kid, context, explicit_ids)
     result["chain"]["ROUTABLE"] = routable
 
     # ── USED ── (current: not yet executed in this explanation)
@@ -377,15 +377,95 @@ def _check_selected(program: Any, kid: str, context: str,
         return {"status": "UNKNOWN", "reason": f"selection check failed: {e}"}
 
 
-def _check_routable(program: Any, kid: str) -> Dict[str, Any]:
-    """Check conflict/disposition routability (current state)."""
+def _check_routable(program: Any, kid: str, context: str = None,
+                    explicit_ids: Optional[list] = None) -> Dict[str, Any]:
+    """Check conflict/disposition routability (current state).
+
+    POSITIVE evidence: this mirrors the execution path's own routing
+    computation (core_i_ops grow consumer, DCC-XIII/XIX) step for
+    step — canonical selection for the context, Conflict V1
+    detection over the selected set, then the disposition overlay.
+    The explanation reports what that computation decides for this
+    unit; it does not invent a second routing rule.
+
+    Routability is defined over a selection for a context, so
+    without a context the honest answer is UNKNOWN (mirrors the
+    SELECTED stage). Historical routability stays with the Outcome
+    provenance, never with this current-state check.
+    """
+    if not context:
+        return {"status": "UNKNOWN",
+                "reason": "no context provided for routability check"}
     try:
-        from . import conflict_disposition as cd
-        # Simplified: check if knowledge is in any active conflict
-        # Full implementation would use conflict_router
+        from . import knowledge_selector as ks
+        from .conflict_router import detect_conflicts
+        from .conflict_disposition import (
+            apply_dispositions, conflict_id_for)
+        result = ks.select_for_context(program, context,
+                                       operation="grow",
+                                       explicit_ids=explicit_ids)
+        selected = result.get("selected") or []
+        selected_ids = [s["id"] for s in selected
+                        if isinstance(s, dict) and s.get("id")]
+        if kid not in selected_ids:
+            return {
+                "status": "FACT",
+                "routable": False,
+                "reason": ("not in canonical selection for this "
+                           "context (routing applies to the "
+                           "selected set)"),
+                "source": "knowledge_selector.select_for_context + "
+                          "conflict_router + conflict_disposition",
+            }
+        items = [{"id": sid, "text": ks.unit_text(program, sid)}
+                 for sid in selected_ids]
+        conflicts = detect_conflicts(items)
+        routable_ids, quarantined_ids, disp = apply_dispositions(
+            selected_ids, conflicts, program)
+        mine = [c for c in conflicts
+                if kid in (c.get("id_a"), c.get("id_b"))]
+        evidence = [{
+            "conflict_id": conflict_id_for(
+                str(c.get("id_a")), str(c.get("id_b"))),
+            "other_id": (c.get("id_b") if c.get("id_a") == kid
+                         else c.get("id_a")),
+            "negation_evidence": c.get("negation_evidence"),
+            "shared_frame": c.get("shared_frame"),
+            "frame_jaccard": c.get("frame_jaccard"),
+        } for c in mine]
+        dispositions = {
+            d.get("conflict_id"): {
+                "disposition": d.get("disposition"),
+                "permitted_ids": d.get("permitted_ids"),
+            }
+            for d in (disp.get("conflict_dispositions") or [])
+            if d.get("conflict_id")
+            in {e["conflict_id"] for e in evidence}
+        }
+        if kid in routable_ids:
+            return {
+                "status": "FACT",
+                "routable": True,
+                "reason": ("in the routable subset of the canonical "
+                           "selection after conflict routing and "
+                           "dispositions"
+                           if mine else
+                           "selected and in no detected conflict"),
+                "conflicts": evidence,
+                "dispositions": dispositions,
+                "source": "conflict_router.detect_conflicts + "
+                          "conflict_disposition.apply_dispositions",
+            }
         return {
-            "status": "UNKNOWN",
-            "reason": "routability requires conflict context; use execution receipts for definitive answer",
+            "status": "FACT",
+            "routable": False,
+            "reason": ("quarantined by conflict routing: every "
+                       "detected conflict involving this unit fails "
+                       "to permit it under current dispositions"),
+            "conflicts": evidence,
+            "dispositions": dispositions,
+            "source": "conflict_router.detect_conflicts + "
+                      "conflict_disposition.apply_dispositions",
         }
     except Exception as e:
         return {"status": "UNKNOWN", "reason": f"routability check failed: {e}"}
