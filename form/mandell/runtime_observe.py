@@ -304,6 +304,78 @@ def resolve_lineage_ref(program: Any, ref: str) -> Dict[str, Any]:
             "detail": "no proposal or idea with that id or label"}
 
 
+def resonance_candidates(program: Any, focus_ref: Optional[str] = None,
+                         limit: int = 10) -> Dict[str, Any]:
+    """Ranked resonance candidates over the canonically active plane
+    units, computed with the production machinery
+    (form.dell_matrix.first_person.resonance_rank over
+    Program.nodes_payload + Program.scores + live forces). Read-only:
+    unlike first_person_view it does NOT snap or move the avatar.
+
+    - focus_ref None: rank all active units from the avatar's
+      current center.
+    - focus_ref given: resolved via resolve_lineage_ref and must
+      name a live unit; the OTHER active units are ranked from the
+      focus position — candidate connections, as suggestions only
+      (nothing is linked or mutated).
+    Units excluded by the canonical lifecycle (superseded, faded,
+    malformed) never appear. Returns {"ok": True, "focus": {...} or
+    None, "rows": [{"id", "label", "resonance", "dist", "score"}],
+    "considered": n} or {"ok": False, "status": ...} with status in
+    not_recorded / ambiguous / not_live / empty.
+    """
+    from form.dell_matrix import canonical_lifecycle
+    from form.dell_matrix.first_person import resonance_rank, snap_center
+
+    units = program.cube.session.plane.units or {}
+    scores = program.scores() if hasattr(program, "scores") else {}
+    nodes = [n for n in program.nodes_payload()
+             if canonical_lifecycle.is_active(program, n["id"])]
+    form = (program.lattice.perception.form.value
+            if hasattr(program, "lattice") else "cube")
+    forces = program.forces.status() if hasattr(program, "forces") else {}
+
+    focus = None
+    if focus_ref is not None:
+        res = resolve_lineage_ref(program, focus_ref)
+        if res.get("status") == "ambiguous":
+            return {"ok": False, "status": "ambiguous",
+                    "matches": res["matches"]}
+        if not res.get("ok"):
+            return {"ok": False, "status": "not_recorded",
+                    "detail": res.get("detail", "")}
+        if "unit" in res:
+            focus_id = res["unit_id"]
+        else:
+            focus_id = res["proposal"].id
+        fnode = next((n for n in nodes if n["id"] == focus_id), None)
+        if fnode is None:
+            return {"ok": False, "status": "not_live",
+                    "detail": "that record is not a live idea "
+                              "(pending, superseded, or faded)"}
+        focus = {"id": fnode["id"], "label": fnode["label"]}
+        center = (int(round(float(fnode["x"]))),
+                  int(round(float(fnode["y"]))), 0)
+        pool = [n for n in nodes if n["id"] != focus_id]
+    else:
+        ax, ay = program.avatar.body.pos
+        cf = int(getattr(program, "center_f", 0) or 0)
+        center = snap_center(float(ax), float(ay), float(cf))
+        pool = list(nodes)
+
+    if not pool:
+        return {"ok": False, "status": "empty",
+                "detail": "no live ideas to rank"}
+    ranked = resonance_rank(pool, center=center, scores=scores,
+                            forces=forces, form=form)
+    rows = [{"id": n["id"], "label": n.get("label", ""),
+             "resonance": n["_resonance"], "dist": n["_dist"],
+             "score": float(scores.get(n["id"], 0.0) or 0.0)}
+            for n in ranked[:limit]]
+    return {"ok": True, "focus": focus, "rows": rows,
+            "considered": len(pool)}
+
+
 def resolve_outcome_ref(program: Any, ref: str) -> Dict[str, Any]:
     """Resolve a user-facing outcome reference (COO-I). Read-only.
 

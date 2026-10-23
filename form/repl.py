@@ -64,6 +64,7 @@ Ideas / Growth
   grow ideas 2
   proposals | confirm <id> | confirm all | reject all
   rank | lineage <id or label>
+  resonance [id or label] | harmony
   distill <words> | macro [n] | replay [n]
   auto confirm on|off   grow mode: auto-confirm all after each grow
   grow mode             show auto_confirm_grow status
@@ -181,6 +182,7 @@ Create — make and develop ideas
   grow ideas <n>
   proposals | confirm <id> | confirm all | reject all
   rank | lineage <id or label>
+  resonance [id or label] | harmony
 """.strip(),
     "knowledge": """
 Knowledge — understand what knowledge does
@@ -1102,6 +1104,45 @@ def _handle_why_command(p: Program, raw: str) -> bool:
 
 
 def _handle_macro_rank(p: Program, lower: str, raw: str) -> bool:
+    if lower == "harmony":
+        from form.dell_matrix import canonical_lifecycle as _cl
+        ids = [uid for uid in (p.cube.session.plane.units or {})
+               if _cl.is_active(p, uid)]
+        if not ids:
+            _say("No live ideas yet — harmony needs at least one confirmed idea.")
+            return True
+        _say(f"Harmony of {len(ids)} live idea(s): {p.harmony_of(ids):.3f}"
+             "  (1.000 = one coherent whole; lower = more tension/redundancy)")
+        return True
+
+    if lower == "resonance" or lower.startswith("resonance "):
+        from form.mandell import runtime_observe as _ro
+        ref = raw.split(maxsplit=1)[1].strip() if " " in raw.strip() and lower != "resonance" else None
+        res = _ro.resonance_candidates(p, ref)
+        if res.get("status") == "ambiguous":
+            _say(f"'{ref}' matches {len(res['matches'])} records — use the ID:")
+            for cand in res["matches"]:
+                _say(f"  {cand['id']} [{cand['kind']}] {cand['label']}")
+            return True
+        if not res.get("ok"):
+            if res.get("status") == "not_live":
+                _say(f"'{ref}' is not a live idea yet — confirm it first, then ask for its resonance.")
+            elif res.get("status") == "empty":
+                _say("No live ideas yet — create an idea first.")
+            else:
+                _say(f"No proposal or idea for id or label: {ref}")
+            return True
+        if res.get("focus"):
+            f = res["focus"]
+            _say(f"Candidate connections for {f['label']} ({f['id']})"
+                 " — suggestions only; nothing is linked unless you act:")
+        else:
+            _say("Resonance from where you stand (strongest first):")
+        for i, row in enumerate(res["rows"], 1):
+            _say(f"  {i}. [{row['resonance']:.3f}] {row['label']} ({row['id']})"
+                 f" · dist {row['dist']:.2f} · score {row['score']:.3f}")
+        return True
+
     if lower in ("rank", "rank proposals"):
         ranked = p.ranked_proposals() if hasattr(p, "ranked_proposals") else p.list_proposals()
         if not ranked:
