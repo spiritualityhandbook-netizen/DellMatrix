@@ -158,6 +158,7 @@ LIST = [
     "form.mandell.r76_connected_test:smoke",
     "form.mandell.r77_grand_integration_test:smoke",
     "form.mandell.dock_transport_test:smoke",
+    "form.mandell.gate_hardening_test:smoke",
     "form.mandell.p4_lifecycle_gravity_proof:smoke",
     "form.mandell.p4_placement_dynamics_proof:smoke",
     "form.mandell.p4_lattice_collision_proof:smoke",

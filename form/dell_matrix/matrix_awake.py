@@ -255,7 +255,7 @@ class MatrixAwake:
         if net_query:
             try:
                 from form.dell_matrix.internet_gate import InternetGate
-                net = InternetGate()
+                net = InternetGate(auto_allowed=True)
                 net.ensure_on_for_auto()
                 fw = net.search_far_wide(net_query)
                 for idea in fw.get("ideas") or []:

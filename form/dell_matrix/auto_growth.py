@@ -178,7 +178,7 @@ class AutoGrowth:
             return ideas
         try:
             from form.dell_matrix.internet_gate import InternetGate
-            net = InternetGate()
+            net = InternetGate(auto_allowed=True)
             if self.auto:
                 net.ensure_on_for_auto()
             else:
