@@ -193,6 +193,48 @@ def outcomes_for_interaction(program: Any, interaction_id: str) -> Dict[str, Any
             "interaction_id": iid, "count": len(recs), "outcomes": recs}
 
 
+def resolve_interaction_ref(program: Any, ref: str) -> Dict[str, Any]:
+    """Resolve a user-facing interaction reference. Read-only.
+
+    Interactions carry no sequence number of their own; the only
+    user-visible handle near an interaction is the seq of one of its
+    member outcomes (the REPL outcome lists print seq, never
+    interaction IDs). Accepts:
+    - integer sequence number: the seq of ANY outcome recorded for
+      the interaction; resolves through that outcome's recorded
+      interaction_id to the whole sibling group.
+    - a full interaction UUID, as before.
+    Never ambiguous: integers are outcome seq, non-integers are
+    interaction UUIDs. An outcome with no recorded interaction
+    (legacy UNKNOWN) is an honest miss — no interaction is ever
+    fabricated for it.
+    """
+    from .outcome_ledger import get_outcome_by_seq
+    r = str(ref or "").strip()
+    if not r:
+        return {"ok": False, "status": "unknown_interaction",
+                "outcomes": []}
+    if r.isdigit():
+        rec = get_outcome_by_seq(program, int(r))
+        if rec is None:
+            return {"ok": False, "status": "unknown_seq",
+                    "detail": f"no outcome with seq {r}", "outcomes": []}
+        iid = rec.get("interaction_id")
+        if not iid:
+            return {"ok": False, "status": "no_interaction_recorded",
+                    "detail": f"outcome seq {r} has no recorded "
+                              f"interaction (legacy UNKNOWN)",
+                    "outcomes": []}
+        out = outcomes_for_interaction(program, iid)
+        out["ref_kind"] = "seq"
+        out["via_outcome_seq"] = int(r)
+        return out
+    out = outcomes_for_interaction(program, r)
+    if out.get("ok"):
+        out["ref_kind"] = "uuid"
+    return out
+
+
 def resolve_outcome_ref(program: Any, ref: str) -> Dict[str, Any]:
     """Resolve a user-facing outcome reference (COO-I). Read-only.
 

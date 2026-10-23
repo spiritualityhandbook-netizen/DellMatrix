@@ -248,6 +248,7 @@ def test_readonly():
     ro.latest_outcomes(p); ro.outcomes_for_dell(p, 70)
     ro.outcomes_by_status(p, "completed"); ro.outcome_by_id(p, "out1:nope")
     ro.outcomes_for_knowledge_item(p, "nope")
+    ro.resolve_interaction_ref(p, "1"); ro.resolve_interaction_ref(p, "int_x")
     ro.runtime_health(); ro.runtime_state(p)
 
     after = fingerprint(p)
@@ -299,10 +300,61 @@ def test_malformed():
     check("Q.kid_empty", ro.outcomes_for_knowledge_item(p, "")["count"] == 0)
 
 
+# ── R: interaction ref resolution (seq + UUID) ─────────────────────
+def test_interaction_ref():
+    p = fresh()
+    observe_seed_execution(p, "70[Count]", interaction_id="int_r_1")
+    observe_seed_execution(p, "51[Select]", interaction_id="int_r_1")
+    observe_seed_execution(p, "70[Count]", interaction_id="int_r_2")
+    observe_seed_execution(p, "70[Count]")  # no interaction (legacy)
+
+    recs = sorted(p.outcome_records.values(),
+                  key=lambda r: r["outcome_seq"])
+    seq_a, seq_b, seq_c, seq_legacy = (r["outcome_seq"] for r in recs)
+
+    # Seq of any member resolves to the whole sibling group.
+    q = ro.resolve_interaction_ref(p, str(seq_a))
+    check("R.seq_member_a", q["ok"] is True and q["count"] == 2
+          and q["interaction_id"] == "int_r_1"
+          and q["ref_kind"] == "seq" and q["via_outcome_seq"] == seq_a)
+    q = ro.resolve_interaction_ref(p, str(seq_b))
+    check("R.seq_member_b", q["ok"] is True and q["count"] == 2
+          and q["interaction_id"] == "int_r_1")
+    q = ro.resolve_interaction_ref(p, str(seq_c))
+    check("R.seq_single", q["ok"] is True and q["count"] == 1
+          and q["interaction_id"] == "int_r_2")
+    # UUID path unchanged.
+    q = ro.resolve_interaction_ref(p, "int_r_1")
+    check("R.uuid", q["ok"] is True and q["count"] == 2
+          and q["ref_kind"] == "uuid")
+    q = ro.resolve_interaction_ref(p, "int_absent")
+    check("R.uuid_miss", q["ok"] is True and q["status"] == "not_recorded"
+          and q["count"] == 0)
+    # Honest misses: unknown seq, legacy outcome, empty ref.
+    q = ro.resolve_interaction_ref(p, "999")
+    check("R.unknown_seq", q["ok"] is False
+          and q["status"] == "unknown_seq")
+    q = ro.resolve_interaction_ref(p, str(seq_legacy))
+    check("R.no_interaction_recorded", q["ok"] is False
+          and q["status"] == "no_interaction_recorded")
+    q = ro.resolve_interaction_ref(p, "")
+    check("R.empty", q["ok"] is False
+          and q["status"] == "unknown_interaction")
+    # REPL integration: seq and UUID forms both handled.
+    import form.repl as repl
+    check("R.repl_seq",
+          repl._handle_ros_command(p, f"outcomes interaction {seq_a}") is True)
+    check("R.repl_uuid",
+          repl._handle_ros_command(p, "outcomes interaction int_r_2") is True)
+    check("R.repl_legacy",
+          repl._handle_ros_command(p, f"outcomes interaction {seq_legacy}") is True)
+
+
 def main() -> int:
     for fn in [test_explain, test_trace, test_outcomes, test_health,
                test_state, test_readonly, test_repl,
-               test_live_visual_boundary, test_malformed]:
+               test_live_visual_boundary, test_malformed,
+               test_interaction_ref]:
         try:
             fn()
         except Exception as exc:
