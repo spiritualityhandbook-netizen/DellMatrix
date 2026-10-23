@@ -3,7 +3,12 @@
 InternetGate — network search far and wide for matrix growth.
 
 DEFAULT OFF for pure offline runs.
-Auto-growth may enable when auto_allowed=True (default).
+Auto-growth may enable ONLY on a gate explicitly constructed with
+auto_allowed=True by trusted host code (AutoGrowth / MatrixAwake
+own such gates). The Program-carried gate never auto-enables:
+auto_allowed defaults to False and is never restored from persisted
+state (persisted values were only the former default round-tripping;
+no user surface sets it).
 
   fetch_url / research_topic / search_public / search_far_wide
 
@@ -34,7 +39,7 @@ DEFAULT_HOSTS = [
 @dataclass
 class InternetGate:
     on: bool = False
-    auto_allowed: bool = True
+    auto_allowed: bool = False
     allowed_hosts: List[str] = field(default_factory=lambda: list(DEFAULT_HOSTS))
     last_fetch: Dict[str, Any] = field(default_factory=dict)
     last_search: Dict[str, Any] = field(default_factory=dict)
@@ -82,7 +87,12 @@ class InternetGate:
         if not data:
             return g
         g.on = bool(data.get("on"))
-        g.auto_allowed = bool(data.get("auto_allowed", True))
+        # auto_allowed is deliberately NOT restored: persisted values
+        # were only the former default (True) round-tripping through
+        # to_dict, and no user surface can set it. Auto-enable is a
+        # construction-time opt-in by trusted host code only, so a
+        # loaded gate always starts fail-closed.
+        g.auto_allowed = False
         hosts = data.get("allowed_hosts")
         if isinstance(hosts, list) and hosts:
             g.allowed_hosts = [str(h) for h in hosts[:48]]
