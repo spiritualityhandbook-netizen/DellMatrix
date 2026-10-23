@@ -114,6 +114,15 @@ class Proposal:
     superseded_by_id: Optional[str] = None   # successor that replaced this one
     revision_root_id: Optional[str] = None   # id of revision #1 in this chain
     revision_number: Optional[int] = None     # 1-based position in revision chain
+    # Post-GDP Phase E: action provenance (additive). origin records
+    # who/what drafted this proposal when the creator knows: the dock
+    # sets "dock:<provider>:<actual model>" for inference-drafted
+    # proposals, so a reviewer can tell model-drafted proposals from
+    # human-typed ones at the review gate. "" = not recorded (legacy
+    # records and creators that do not assert provenance); never
+    # fabricated after the fact. Proposal(**record) fills the default
+    # for pre-Phase-E nursery files.
+    origin: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -165,6 +174,7 @@ class Nursery:
         seed: int = 0,
         harmony: float = 0.0,
         graph_coherence: float = 0.0,
+        origin: str = "",
     ) -> Proposal:
         """Add a proposal. ID = _slug(label, seed): deterministic given
         (seed, label, add-sequence) across processes (GDP-001 Phase 3, 3.1.4).
@@ -191,6 +201,7 @@ class Nursery:
             reason=reason[:160],
             harmony=float(harmony),
             graph_coherence=float(graph_coherence),
+            origin=origin[:120] if isinstance(origin, str) else "",
         )
         self.proposals[pid] = p
         try:

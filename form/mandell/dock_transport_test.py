@@ -227,6 +227,7 @@ def part_happy_transport():
             "provider ollama",
             "ask draft an idea about tidal gates",
             "leave",
+            "proposals",
             "quit",
         ], owner, {"OLLAMA_HOST": f"http://127.0.0.1:{port}",
                   "OLLAMA_MODEL": ""})
@@ -255,6 +256,12 @@ def part_happy_transport():
         check("happy: proposal persisted PENDING, unconfirmed",
               any(p.get("label") == "Transport Idea" for p in pend),
               f"{pend}")
+        check("happy: persisted proposal carries dock origin",
+              any(p.get("origin") == f"dock:ollama:{MODEL_A}"
+                  for p in pend),
+              f"{pend}")
+        check("happy: review listing shows the origin",
+              f"origin: dock:ollama:{MODEL_A}" in out, out[-600:])
         steps = _session_steps(st)
         check("happy: ask step recorded as proposal pending",
               ("ask", "proposal pending") in steps, f"{steps}")

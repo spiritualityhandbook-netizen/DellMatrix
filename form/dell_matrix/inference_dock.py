@@ -112,6 +112,25 @@ class FakeProvider:
                            "words": "inference drafted these words"})
 
 
+# ------------------------------------------------------- provenance (Phase E)
+
+# Model identity is transport-reported text — untrusted. A provenance
+# segment keeps a conservative printable charset; everything else
+# (whitespace, quotes, control characters, unicode) becomes "_", and
+# the segment is length-bounded. The origin string is review evidence
+# shown to the human at the Nursery gate; it is never parsed as
+# authority and never grants anything.
+_ORIGIN_CHARS = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._:/-")
+
+
+def _origin_segment(text) -> str:
+    if not isinstance(text, str) or not text:
+        return "unknown"
+    return "".join(
+        ch if ch in _ORIGIN_CHARS else "_" for ch in text)[:80]
+
+
 # ---------------------------------------------------------------- bridge loading (lazy, optional)
 
 def _load_bridge():
@@ -624,17 +643,24 @@ class DockedSession:
             return {"ok": False, "reason": "protected_output",
                     "detail": "Decoded provider output carries protected "
                              "material; rejected before proposal creation."}
+        # Truthful model identity: the ACTUAL model reported by the
+        # transport, not merely the requested label. Computed before
+        # Nursery.add so the proposal itself carries provenance
+        # (Phase E): origin = "dock:<provider>:<actual model>", with
+        # segments sanitized because model identity is untrusted
+        # transport-reported text.
+        actual_model = getattr(self._provider, "last_actual_model", None)
+        origin = "dock:{}:{}".format(
+            _origin_segment(self._provider_name),
+            _origin_segment(actual_model or self._model_label))
         # Canonical Nursery API. The proposal is PENDING: inference
         # never confirms, never mints authority.
         try:
             prop = self._program.nursery.add(
-                fields["label"], words=fields["words"])
+                fields["label"], words=fields["words"], origin=origin)
         except Exception as e:
             return {"ok": False, "reason": "nursery_failure",
                     "detail": f"{type(e).__name__}"}
-        # Truthful model identity: the ACTUAL model reported by the
-        # transport, not merely the requested label.
-        actual_model = getattr(self._provider, "last_actual_model", None)
         return {"ok": True, "pid": prop.id,
                 "provider": self._provider_name,
                 "model": actual_model or self._model_label}
