@@ -662,18 +662,21 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
             return True
         if lower.startswith("outcomes interaction "):
             ref = raw.strip()[21:].strip()
-            # Accept seq or UUID for the interaction ref; resolve to ID
-            # For now, treat ref as interaction_id directly (UUID)
-            # TODO: allow seq-based interaction lookup if needed
-            res = ro.outcomes_for_interaction(p, ref)
+            # Accept an outcome seq or an interaction UUID. A seq
+            # resolves through that outcome's recorded interaction_id
+            # (interactions carry no seq of their own).
+            res = ro.resolve_interaction_ref(p, ref)
             if not res.get("ok"):
                 _say(f"outcomes interaction: {res.get('status')}")
                 return True
             recs = res["outcomes"]
+            iid = str(res.get("interaction_id") or ref)
             if not recs:
-                _say(f"No outcomes for interaction {ref[:12]}...")
+                _say(f"No outcomes for interaction {iid[:12]}...")
                 return True
-            _say(f"Interaction {ref[:12]}... → {len(recs)} outcome(s):")
+            via = (f" (via outcome [{res['via_outcome_seq']}])"
+                   if res.get("ref_kind") == "seq" else "")
+            _say(f"Interaction {iid[:12]}...{via} → {len(recs)} outcome(s):")
             for r in recs:
                 _say(f"  [{r.get('outcome_seq')}] {r.get('operation')}[{r.get('dell')}]"
                      f" · {r.get('result')}")
