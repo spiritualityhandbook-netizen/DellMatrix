@@ -485,6 +485,9 @@ def _show_proposals(p: Program) -> None:
         aff = float(prop.get("affinity", 0))
         _say(f"  {i}. aff={aff:.3f} [{prop.get('kind')}] {prop['id']}")
         _say(f"      {prop['label']}")
+        origin = prop.get("origin") or ""
+        if origin:
+            _say(f"      origin: {origin}")
     _say("Type: confirm <id> | confirm all | reject all | rank | lineage <id>")
 
 

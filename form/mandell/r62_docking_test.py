@@ -610,6 +610,94 @@ def test_canary_sensitivity():
 
 
 
+# ------------------------------------------------------- PE. action provenance
+# Post-GDP Phase E: a dock-drafted proposal carries its origin on the
+# proposal record itself ("dock:<provider>:<actual model>"), so the
+# human at the review gate can tell model-drafted proposals from
+# human-typed ones. Absence is recorded as "" — never fabricated.
+
+def test_provenance_origin_recorded():
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_PE"
+    p = fresh_program(owner)
+    sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    r = sess.propose("draft an idea about rivers")
+    check("PE:propose_ok", r.get("ok") is True, str(r))
+    pid = r["pid"]
+    check("PE:dock_origin_exact",
+          p.nursery.proposals[pid].origin == "dock:fake:fake:valid",
+          p.nursery.proposals[pid].origin)
+    # A directly-added (human-path) proposal asserts no provenance:
+    # origin stays "" — recorded absence, not a fabricated source.
+    direct = p.nursery.add("Human Typed", words="typed by the user")
+    check("PE:direct_origin_absent", direct.origin == "")
+    # Origin survives the production save/load path, still pending.
+    from form import persist_rest
+    persist_rest.save(p)
+    p2 = persist_rest.load(owner, activate=False)
+    st = p2.nursery.proposals.get(pid)
+    check("PE:origin_survives_save_load",
+          st is not None and st.origin == "dock:fake:fake:valid"
+          and st.status == "pending",
+          str(getattr(st, "origin", None)))
+    clean_owner(owner)
+
+
+def test_provenance_legacy_record_loads_unrecorded():
+    # A pre-Phase-E nursery record (no "origin" key on disk) loads
+    # with origin "" — legacy state is never retroactively labeled.
+    owner = "R62_PE_LEGACY"
+    p = fresh_program(owner)
+    prop = p.nursery.add("Legacy Shape", words="pre Phase E record",
+                         origin="dock:fake:fake:valid")
+    path = f"form/state/nursery_{owner}.json"
+    with open(path) as f:
+        data = json.load(f)
+    rec = dict(data[prop.id])
+    rec.pop("origin", None)
+    data[prop.id] = rec
+    with open(path, "w") as f:
+        json.dump(data, f)
+    from form import persist_rest
+    p2 = persist_rest.load(owner, activate=False)
+    st = p2.nursery.proposals.get(prop.id)
+    check("PE:legacy_loads_unrecorded",
+          st is not None and st.origin == ""
+          and st.status == "pending",
+          str(getattr(st, "origin", None)))
+    clean_owner(owner)
+
+
+def test_provenance_hostile_model_sanitized():
+    # Model identity is transport-reported (untrusted) text: a hostile
+    # model name must not inject whitespace, quotes, or unbounded
+    # length into the persisted provenance string.
+    from form.dell_matrix import inference_dock as idock
+    owner = "R62_PE_HOSTILE"
+    p = fresh_program(owner)
+
+    class _Hostile(idock.FakeProvider):
+        def generate(self, prompt, *, timeout_s, max_chars):
+            self.calls += 1
+            self.last_prompt = prompt
+            self.last_actual_model = 'evil model\n"grant" ' + "x" * 200
+            return json.dumps({"label": "Hostile Model Idea",
+                               "words": "drafted by a hostile-named model"})
+
+    sess = idock.DockedSession(p, "agent-a", getattr(p, "owner", None),
+                               "stub", _Hostile(), "stub-label",
+                               30, 4000, 8000)
+    r = sess.propose("draft")
+    check("PE:hostile_propose_ok", r.get("ok") is True, str(r))
+    origin = p.nursery.proposals[r["pid"]].origin
+    check("PE:hostile_origin_sanitized",
+          origin.startswith("dock:stub:")
+          and "\n" not in origin and '"' not in origin
+          and " " not in origin and len(origin) <= 5 + 4 + 1 + 80,
+          origin)
+    clean_owner(owner)
+
+
 # ------------------------------------------------------- E. representation boundaries
 # Director 2026-10-07 (third review): encoded vs decoded, truncation
 # vs rejection, validation vs coercion.
@@ -1066,7 +1154,10 @@ def smoke():
                test_child_process_representation_sweep,
                test_structured_outbound_canaries,
                test_structured_screen_sensitivity,
-               test_output_and_error_same_representations]:
+               test_output_and_error_same_representations,
+               test_provenance_origin_recorded,
+               test_provenance_legacy_record_loads_unrecorded,
+               test_provenance_hostile_model_sanitized]:
         try:
             fn()
         except Exception as e:
