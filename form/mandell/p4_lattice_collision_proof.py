@@ -21,7 +21,8 @@ import os
 import shutil
 import sys
 
-REPO = os.path.expanduser("~/workspace/dellmatrix-gdp-phase4")
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))))
 sys.path.insert(0, REPO)
 os.chdir(REPO)
 
@@ -130,8 +131,7 @@ def t5_cross_process_deterministic():
     """Rebuild deterministic across fresh processes (via members)."""
     import subprocess
     code = (
-        "import sys; sys.path.insert(0, '/home/hatch/workspace/"
-        "dellmatrix-gdp-phase4');"
+        f"import sys; sys.path.insert(0, '{REPO}');"
         "from form.open import Program;"
         "p=Program(owner='P4LC5');"
         "p.cube.session.plane.units.clear();"
@@ -428,3 +428,9 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def smoke() -> bool:
+    """Canonical-runner adapter (form/regress.py): True iff the
+    full proof passes. Added 2026-10-22 (P4 coverage repair)."""
+    return main() == 0

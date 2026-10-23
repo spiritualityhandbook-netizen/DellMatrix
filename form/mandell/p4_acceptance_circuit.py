@@ -18,7 +18,8 @@ import os
 import subprocess
 import sys
 
-REPO = os.path.expanduser("~/workspace/dellmatrix-gdp-phase4")
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))))
 CANDIDATE_BASE = "416620d996acebc5bbcff5e8de7376b737642a9e"
 OWNER = "P4ACCEPT"
 IDS = ["acc_river", "acc_stream", "acc_meadow", "acc_stone"]
@@ -226,10 +227,47 @@ PHASES = {1: phase1_create_place, 2: phase2_update_settle,
           3: phase3_change_info, 4: phase4_fresh_verify}
 
 
+def _run_all_phases() -> int:
+    """Run every phase in its OWN process (the circuit's cross-process
+    design is preserved) and aggregate. Added 2026-10-22 so the
+    canonical runner can execute the whole circuit as one entry."""
+    import re
+    import subprocess
+    total_n = total_m = 0
+    ok = True
+    for ph in (1, 2, 3, 4):
+        r = subprocess.run(
+            [sys.executable, os.path.abspath(__file__),
+             "--phase", str(ph)],
+            capture_output=True, text=True, timeout=900)
+        sys.stdout.write(r.stdout)
+        if r.stderr:
+            sys.stderr.write(r.stderr)
+        hits = re.findall(r"(\d+)/(\d+)", r.stdout)
+        if hits:
+            n, m = map(int, hits[-1])
+            total_n += n
+            total_m += m
+        if r.returncode != 0:
+            ok = False
+    print(f"P4 ACCEPTANCE (all phases): {total_n}/{total_m} pass",
+          flush=True)
+    return 0 if (ok and total_m > 0 and total_n == total_m) else 1
+
+
+def smoke() -> bool:
+    """Canonical-runner adapter (form/regress.py): True iff all four
+    phases pass in their own processes."""
+    return _run_all_phases() == 0
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--phase", type=int, required=True, choices=[1, 2, 3, 4])
+    ap.add_argument("--phase", type=int, required=False, default=None,
+                    choices=[1, 2, 3, 4])
     args = ap.parse_args()
+    if args.phase is None:
+        return _run_all_phases()
     sys.path.insert(0, REPO)
     os.chdir(REPO)
     print(f"--- circuit phase {args.phase} (pid {os.getpid()}) ---", flush=True)

@@ -23,8 +23,10 @@ import os
 import shutil
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/workspace/dellmatrix-gdp-phase4"))
-os.chdir(os.path.expanduser("~/workspace/dellmatrix-gdp-phase4"))
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))))
+sys.path.insert(0, REPO)
+os.chdir(REPO)
 
 from form.persist import _STATE_DIR, _safe_owner  # noqa: E402
 from form.dell_matrix.spatial_authority import (  # noqa: E402
@@ -376,3 +378,9 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def smoke() -> bool:
+    """Canonical-runner adapter (form/regress.py): True iff the
+    full proof passes. Added 2026-10-22 (P4 coverage repair)."""
+    return main() == 0

@@ -157,6 +157,12 @@ LIST = [
     "form.mandell.r75_forge_test:smoke",
     "form.mandell.r76_connected_test:smoke",
     "form.mandell.r77_grand_integration_test:smoke",
+    "form.mandell.p4_lifecycle_gravity_proof:smoke",
+    "form.mandell.p4_placement_dynamics_proof:smoke",
+    "form.mandell.p4_lattice_collision_proof:smoke",
+    "form.mandell.p4_lattice_environment_proof:smoke",
+    "form.mandell.p4_susx100_proof:smoke",
+    "form.mandell.p4_acceptance_circuit:smoke",
 ]
 
 TIMEOUT_S = 900
