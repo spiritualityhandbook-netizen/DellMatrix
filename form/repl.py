@@ -2356,6 +2356,9 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _say(f"mandel:  {rep.get('mandel')}")
         if rep.get("ok") == "true" and rep.get("english"):
             return _execute_intent(p, translate(rep["english"]), raw_line=rep["english"])
+        # Phase K: an unmapped phrase must say so — two empty lines
+        # read as a malfunction, not as an honest miss.
+        _say(f"  ({rep.get('note') or 'no map yet for this phrase/language'})")
         return p
 
     if lower.startswith("fr ") or lower.startswith("french "):
@@ -2365,6 +2368,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _say(f"mandel:  {rep.get('mandel')}")
         if rep.get("ok") == "true" and rep.get("english"):
             return _execute_intent(p, translate(rep["english"]), raw_line=rep["english"])
+        _say(f"  ({rep.get('note') or 'no map yet for this phrase/language'})")
         return p
 
     if action == "place":
