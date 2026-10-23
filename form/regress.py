@@ -163,6 +163,7 @@ LIST = [
     "form.mandell.resonance_command_test:smoke",
     "form.mandell.duobeta_cross_session_test:smoke",
     "form.mandell.polyglot_user_path_test:smoke",
+    "form.mandell.launchers_test:smoke",
     "form.mandell.p4_lifecycle_gravity_proof:smoke",
     "form.mandell.p4_placement_dynamics_proof:smoke",
     "form.mandell.p4_lattice_collision_proof:smoke",
