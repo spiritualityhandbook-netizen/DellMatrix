@@ -235,6 +235,75 @@ def resolve_interaction_ref(program: Any, ref: str) -> Dict[str, Any]:
     return out
 
 
+def resolve_lineage_ref(program: Any, ref: str) -> Dict[str, Any]:
+    """Resolve a user-facing lineage reference. Read-only.
+
+    Accepts an exact proposal/unit ID (the historical behavior) or a
+    proposal/unit label. Label resolution is never ambiguous:
+    - exact-case label matches across nursery proposals and plane
+      units are collected first; only if there are none are
+      case-insensitive matches collected;
+    - matches are deduplicated by record ID (a confirmed proposal and
+      its plane unit share an ID and are one entity; the proposal
+      record wins, matching the ID path's precedence);
+    - exactly one distinct ID resolves; more than one is reported
+      "ambiguous" with the candidate IDs; zero is "not_recorded".
+    Returns {"ok": True, "via": "id"|"label", "proposal": ...} or
+    {"ok": True, "via": ..., "unit": ..., "unit_id": ...} or
+    {"ok": False, "status": "ambiguous"|"not_recorded"|"unknown_ref",
+     ...}. Mutates nothing.
+    """
+    r = str(ref or "").strip()
+    if not r:
+        return {"ok": False, "status": "unknown_ref",
+                "detail": "empty reference"}
+    proposals = getattr(getattr(program, "nursery", None),
+                        "proposals", None) or {}
+    try:
+        units = program.cube.session.plane.units or {}
+    except AttributeError:
+        units = {}
+    prop = proposals.get(r)
+    if prop is not None:
+        return {"ok": True, "via": "id", "proposal": prop}
+    unit = units.get(r)
+    if unit is not None:
+        return {"ok": True, "via": "id", "unit": unit, "unit_id": r}
+
+    def collect(case_insensitive: bool):
+        found = []
+        for pid, p in proposals.items():
+            lab = getattr(p, "label", "") or ""
+            if (lab.lower() == r.lower()) if case_insensitive else (lab == r):
+                found.append(("proposal", pid, lab, p))
+        for uid, u in units.items():
+            lab = getattr(u, "label", "") or ""
+            if (lab.lower() == r.lower()) if case_insensitive else (lab == r):
+                found.append(("unit", uid, lab, u))
+        return found
+
+    matches = collect(False) or collect(True)
+    by_id: Dict[str, Any] = {}
+    for kind, rid, lab, obj in matches:
+        cur = by_id.get(rid)
+        if cur is None or (cur[0] == "unit" and kind == "proposal"):
+            by_id[rid] = (kind, lab, obj)
+    if len(by_id) == 1:
+        rid, (kind, lab, obj) = next(iter(by_id.items()))
+        if kind == "proposal":
+            return {"ok": True, "via": "label", "proposal": obj}
+        return {"ok": True, "via": "label", "unit": obj, "unit_id": rid}
+    if len(by_id) > 1:
+        cands = sorted(
+            ({"kind": kind, "id": rid, "label": lab}
+             for rid, (kind, lab, _obj) in by_id.items()),
+            key=lambda c: c["id"])
+        return {"ok": False, "status": "ambiguous", "matches": cands,
+                "detail": f"{len(cands)} records share that label"}
+    return {"ok": False, "status": "not_recorded",
+            "detail": "no proposal or idea with that id or label"}
+
+
 def resolve_outcome_ref(program: Any, ref: str) -> Dict[str, Any]:
     """Resolve a user-facing outcome reference (COO-I). Read-only.
 
