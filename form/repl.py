@@ -63,7 +63,7 @@ Ideas / Growth
   create an idea called test
   grow ideas 2
   proposals | confirm <id> | confirm all | reject all
-  rank | lineage <id>
+  rank | lineage <id or label>
   distill <words> | macro [n] | replay [n]
   auto confirm on|off   grow mode: auto-confirm all after each grow
   grow mode             show auto_confirm_grow status
@@ -180,7 +180,7 @@ Create — make and develop ideas
   create an idea called <name>
   grow ideas <n>
   proposals | confirm <id> | confirm all | reject all
-  rank | lineage <id>
+  rank | lineage <id or label>
 """.strip(),
     "knowledge": """
 Knowledge — understand what knowledge does
@@ -488,7 +488,7 @@ def _show_proposals(p: Program) -> None:
         origin = prop.get("origin") or ""
         if origin:
             _say(f"      origin: {origin}")
-    _say("Type: confirm <id> | confirm all | reject all | rank | lineage <id>")
+    _say("Type: confirm <id> | confirm all | reject all | rank | lineage <id or label>")
 
 
 def _handle_lattice(p: Program, lower: str, raw: str) -> bool:
@@ -2027,7 +2027,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         "create an idea": "usage: create an idea called <name>",
         "create": "usage: create an idea called <name>",
         "zoom": "usage: zoom <id|label>  ·  or: page",
-        "lineage": "usage: lineage <id>",
+        "lineage": "usage: lineage <id or label>",
         "shell": "usage: shell <n>",
         "chord": "usage: chord <h> <v>",
         "distill": "usage: distill <words>",
@@ -2172,21 +2172,30 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         return p
 
     if lower.startswith("lineage "):
-        pid = raw_line.split(maxsplit=1)[1].strip()
-        prop = p.nursery.proposals.get(pid)
-        if prop:
-            _say(f"Proposal {prop.id} [{prop.kind}] {prop.label}")
+        ref = raw_line.split(maxsplit=1)[1].strip()
+        from form.mandell import runtime_observe as _ro
+        res = _ro.resolve_lineage_ref(p, ref)
+        via = " (via label)" if res.get("via") == "label" else ""
+        if res.get("ok") and "proposal" in res:
+            prop = res["proposal"]
+            _say(f"Proposal {prop.id} [{prop.kind}] {prop.label}{via}")
             _say(f"  parents: {prop.parents or '—'}")
             _say(f"  affinity: {prop.affinity:.3f}")
             _say(f"  status: {prop.status}")
             return p
-        unit = p.cube.session.plane.units.get(pid)
-        if unit:
-            _say(f"Live idea {pid}: {unit.label}")
-            kids = [pr for pr in p.nursery.proposals.values() if pid in (pr.parents or [])]
+        if res.get("ok") and "unit" in res:
+            uid = res["unit_id"]
+            unit = res["unit"]
+            _say(f"Live idea {uid}: {unit.label}{via}")
+            kids = [pr for pr in p.nursery.proposals.values() if uid in (pr.parents or [])]
             _say(f"  nursery children: {len(kids)}")
             return p
-        _say(f"No proposal or idea for id: {pid}")
+        if res.get("status") == "ambiguous":
+            _say(f"Label '{ref}' matches {len(res['matches'])} records — use the ID:")
+            for cand in res["matches"]:
+                _say(f"  {cand['id']} [{cand['kind']}] {cand['label']}")
+            return p
+        _say(f"No proposal or idea for id or label: {ref}")
         return p
 
     if lower in (
