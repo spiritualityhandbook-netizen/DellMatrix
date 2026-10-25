@@ -64,6 +64,8 @@ Ideas / Growth
   grow ideas 2
   proposals | confirm <id> | confirm all | reject all
   rank | lineage <id or label>
+  groups | group create <name> | group add <id or label> to <name>
+  group remove <id or label> from <name> | group show <name> | group delete <name>
   resonance [id or label] | harmony
   distill <words> | macro [n] | replay [n]
   auto confirm on|off   grow mode: auto-confirm all after each grow
@@ -182,6 +184,8 @@ Create — make and develop ideas
   grow ideas <n>
   proposals | confirm <id> | confirm all | reject all
   rank | lineage <id or label>
+  groups | group create <name> | group add <id or label> to <name>
+  group remove <id or label> from <name> | group show <name> | group delete <name>
   resonance [id or label] | harmony
 """.strip(),
     "knowledge": """
@@ -1215,6 +1219,149 @@ def _apply_seed_result(p: Program, result: dict) -> Program:
     return p
 
 
+def _group_slug(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", (name or "").lower()).strip("_")
+    return f"project_{slug}" if slug else ""
+
+
+def _find_group(plane, ref: str):
+    """Find a user-named group by sandbox id, exact label, or
+    case-insensitive label. SandboxGate's auto_sandbox is an isolation
+    mechanism, not a user group, and is never matched."""
+    ref = (ref or "").strip()
+    if not ref:
+        return None
+    sb = plane.sandboxes.get(ref)
+    if sb is not None and ref != "auto_sandbox":
+        return sb
+    for cand in plane.sandboxes.values():
+        if cand.id != "auto_sandbox" and cand.label == ref:
+            return cand
+    low = ref.lower()
+    for cand in plane.sandboxes.values():
+        if cand.id != "auto_sandbox" and cand.label.lower() == low:
+            return cand
+    return None
+
+
+def _handle_group_command(p: Program, lower: str, raw_line: str) -> None:
+    """Phase M: named projects on the Plane Sandbox authority.
+
+    A project IS a named sandbox group: membership is held by
+    Plane.box/unbox, and Plane.enhance_scope scopes a member's
+    enhancement to its group-mates — that isolation is the documented
+    project semantics, stated in the output rather than hidden.
+    Group names persist across save/load via the persist pair.
+    """
+    from form.mandell import runtime_observe as _ro
+    plane = p.cube.session.plane
+
+    if lower == "groups":
+        groups = [sb for sb in plane.sandboxes.values()
+                  if sb.id != "auto_sandbox"]
+        if not groups:
+            _say("No groups yet · group create <name>")
+            return
+        _say("Groups — named projects (members enhance within the group):")
+        for sb in groups:
+            _say(f"  {sb.label} [{sb.id}] · {len(sb.member_ids)} member(s)")
+        return
+
+    rest = raw_line[len("group"):].strip()
+    rest_low = rest.lower()
+
+    if rest_low.startswith("create "):
+        name = rest[len("create "):].strip()
+        if _find_group(plane, name) is not None:
+            _say(f"Group '{name}' already exists · groups · group show {name}")
+            return
+        sid = _group_slug(name)
+        if not sid or sid in plane.sandboxes:
+            _say(f"Cannot create a group named '{name}' — pick a name with letters or digits.")
+            return
+        plane.box([], sid, label=name)
+        _say(f"Group created: {name} [{sid}] · add ideas with: group add <id or label> to {name}")
+        return
+
+    if rest_low.startswith("add ") or rest_low.startswith("remove "):
+        adding = rest_low.startswith("add ")
+        body = rest[len("add "):] if adding else rest[len("remove "):]
+        sep = " to " if adding else " from "
+        idx = body.lower().rfind(sep)
+        if idx < 0:
+            _say("usage: group add <id or label> to <name>" if adding
+                 else "usage: group remove <id or label> from <name>")
+            return
+        ref = body[:idx].strip()
+        name = body[idx + len(sep):].strip()
+        sb = _find_group(plane, name)
+        if sb is None:
+            _say(f"No group named '{name}' · groups")
+            return
+        res = _ro.resolve_lineage_ref(p, ref)
+        if res.get("status") == "ambiguous":
+            _say(f"'{ref}' matches {len(res['matches'])} records — use the ID:")
+            for cand in res["matches"]:
+                _say(f"  {cand['id']} [{cand['kind']}] {cand['label']}")
+            return
+        if not (res.get("ok") and "unit" in res):
+            if res.get("ok") and "proposal" in res:
+                _say(f"'{ref}' is a nursery proposal, not a live idea — confirm it first, then add it.")
+            else:
+                _say(f"No live idea for id or label: {ref}")
+            return
+        uid = res["unit_id"]
+        unit = res["unit"]
+        if adding:
+            if unit.sandbox_id == sb.id:
+                _say(f"{unit.label} is already in group '{sb.label}'.")
+                return
+            if unit.sandboxed and unit.sandbox_id:
+                other = plane.sandboxes.get(unit.sandbox_id)
+                other_name = other.label if other else unit.sandbox_id
+                _say(f"{unit.label} is in group '{other_name}' — remove it from there first.")
+                return
+            plane.box([uid], sb.id)
+            _say(f"Added {unit.label} ({uid}) to group '{sb.label}' · {len(sb.member_ids)} member(s)")
+            return
+        if unit.sandbox_id != sb.id:
+            _say(f"{unit.label} is not in group '{sb.label}'.")
+            return
+        plane.unbox(uid)
+        _say(f"Removed {unit.label} ({uid}) from group '{sb.label}' · {len(sb.member_ids)} member(s)")
+        return
+
+    if rest_low.startswith("show "):
+        name = rest[len("show "):].strip()
+        sb = _find_group(plane, name)
+        if sb is None:
+            _say(f"No group named '{name}' · groups")
+            return
+        _say(f"Group '{sb.label}' [{sb.id}] · {len(sb.member_ids)} member(s)")
+        _say("  members enhance within this group (sandbox scope)")
+        for uid in sb.member_ids:
+            unit = plane.units.get(uid)
+            _say(f"  {uid} · {unit.label if unit else '(missing)'}")
+        return
+
+    if rest_low.startswith("delete "):
+        name = rest[len("delete "):].strip()
+        sb = _find_group(plane, name)
+        if sb is None:
+            _say(f"No group named '{name}' · groups")
+            return
+        count = len(sb.member_ids)
+        for uid in list(sb.member_ids):
+            plane.unbox(uid)
+        del plane.sandboxes[sb.id]
+        _say(f"Group '{sb.label}' deleted · {count} member(s) released")
+        return
+
+    _say("usage: group create <name> | group add <id or label> to <name> | "
+         "group remove <id or label> from <name> | group show <name> | "
+         "group delete <name> | groups")
+
+
 def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = False,
                   interaction_id: Optional[str] = None) -> Program:
     # MPC-008: macro-definition capability is not established. A request to
@@ -2069,6 +2216,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         "create": "usage: create an idea called <name>",
         "zoom": "usage: zoom <id|label>  ·  or: page",
         "lineage": "usage: lineage <id or label>",
+        "group": "usage: group create <name> | group add <id or label> to <name> | group remove <id or label> from <name> | group show <name> | group delete <name> | groups",
         "shell": "usage: shell <n>",
         "chord": "usage: chord <h> <v>",
         "distill": "usage: distill <words>",
@@ -2210,6 +2358,10 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _say("Supported: " + ", ".join(list_langs()) + " · en (primary)")
         _say("LatinMandell: explain · deepen · morph · customize · la …")
         _echo_seed(mandel="35[Discover] :: lang_list")
+        return p
+
+    if lower == "groups" or lower.startswith("group "):
+        _handle_group_command(p, lower, raw_line)
         return p
 
     if lower.startswith("lineage "):
