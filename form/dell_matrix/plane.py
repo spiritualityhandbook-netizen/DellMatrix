@@ -173,8 +173,11 @@ class Plane:
         u.goals = [str(g).strip() for g in goals if str(g).strip()]
         return True
 
-    def box(self, unit_ids: List[str], sandbox_id: str = "box1") -> Sandbox:
+    def box(self, unit_ids: List[str], sandbox_id: str = "box1",
+            label: Optional[str] = None) -> Sandbox:
         sb = self.sandboxes.get(sandbox_id) or Sandbox(id=sandbox_id)
+        if label is not None:
+            sb.label = label
         for uid in unit_ids:
             u = self.units.get(uid)
             if not u:

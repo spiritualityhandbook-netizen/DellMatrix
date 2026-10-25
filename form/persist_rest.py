@@ -357,8 +357,14 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         unit = plane.units[uid]
         unit.sandboxed = bool(u.get("sandboxed", False))
         unit.sandbox_id = u.get("sandbox_id")
-    for sid, members in data.get("plane", {}).get("sandboxes", {}).items():
-        plane.box(list(members), sid)
+    for sid, entry in data.get("plane", {}).get("sandboxes", {}).items():
+        # Phase M: current shape is {"label": ..., "members": [...]};
+        # legacy saves stored a bare member list — accept both.
+        if isinstance(entry, dict):
+            plane.box(list(entry.get("members") or []), sid,
+                      label=str(entry.get("label") or "sandbox"))
+        else:
+            plane.box(list(entry), sid)
     try:
         plane.set_perspective(Perspective(data.get("plane", {}).get("perspective", "table")))
     except Exception:

@@ -139,7 +139,13 @@ def serialize(program: Program) -> Dict[str, Any]:
         }
         for uid, u in plane.units.items()
     }
-    sandboxes = {sid: list(sb.member_ids) for sid, sb in plane.sandboxes.items()}
+    # Phase M: persist the sandbox label alongside members — a named
+    # group must keep its name across save/load. The restorer accepts
+    # both this shape and the legacy {sid: [member_ids]} shape.
+    sandboxes = {
+        sid: {"label": sb.label, "members": list(sb.member_ids)}
+        for sid, sb in plane.sandboxes.items()
+    }
     main = program.main
     amb = program.ambient
     return {
