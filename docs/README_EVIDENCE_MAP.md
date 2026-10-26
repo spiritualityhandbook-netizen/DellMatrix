@@ -2,7 +2,7 @@
 
 **Research date:** 2026-10-04 America/Chicago
 **Source SHA:** `f3c9007ea446af4aeb7f2f2f7a7a8add74a2704f` (production main at review time, PR #75 merge, 2026-10-04)
-**Current production:** `ea9b76a` (main, post PR #79 merge, 2026-10-07 — Phase 5 admitted)
+**Current production:** `2f98844` (main, post PR #106 merge, 2026-10-26 — README Completion Program Phase N; this map's per-claim evidence remains as researched on the dates shown)
 **Phase 5:** MERGED to production via PR #79 (Director admission PASS)
 
 > This map is historical evidence for the 2026-10-04 review. It was not

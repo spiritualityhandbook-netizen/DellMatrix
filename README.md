@@ -21,22 +21,23 @@ DellMatrix lets you create ideas, grow them into proposals, confirm the ones wor
 - **Learning hooks** — DuoBeta observation and policy-gated learning
 - **Visual export** — generate an offline HTML view of your idea space
 
-**Present runtime vs. planned vision:** Today DellMatrix is a working terminal-based idea environment (see §2). The long-term vision includes nested projects, preserved history across sessions, interchangeable perspectives, and richer visual/UX layers — those are labeled PLANNED in §2 and §7, not described as implemented.
+**Present runtime vs. planned vision:** Today DellMatrix is a working terminal-based idea environment (see §2). Parts of the long-term vision are now implemented and verified: projects as named groups, interchangeable perspectives, cross-session learning, and an interactive visual layer. What remains planned (deep group-in-group nesting, candidate connections) is labeled PLANNED in §2 and §7, not described as implemented.
 
 ---
 
 ## 2. Status
 
-**Production main:** `cf4d67e` (2026-10-11, post PR #85 merge — R7.1 admitted).
+**Production main:** `2f98844` (2026-10-26, post PR #106 merge — README Completion Program Phase N).
 **Phase 5:** MERGED to production via PR #79 (merge `ea9b76a`); Director admission PASS.
 **Phase 6:** R6.1–R6.5 MERGED/CLOSED.
-**Phase 7 R7.1:** MERGED to production via PR #85 (merge `cf4d67e`); Director admission PASS. Read-only perspective composition.
+**Phase 7:** R7.1 MERGED via PR #85 (Director admission PASS); R7.2–R7.7 MERGED via PRs #87–#92 (independent/Director certification outstanding — merged is not certified).
+**Post-GDP capability phases A–E:** MERGED via PRs #95–#99 (dock transport, interaction lookup, InternetGate hardening, KIE routability, action provenance).
+**README Completion Program H–N:** MERGED via PRs #100–#106 (lineage by label, resonance commands, DuoBeta cross-session, Spanish/French, launchers, projects, visual UX).
 
-All §2 claims below were verified on production main `1d5b6c7` (pre-R7.1)
-unless labeled otherwise. Current production is main `cf4d67e`
-(R7.1 merge, 2026-10-11). Walkthroughs originally executed on `f3c9007`
+All §2 claims below were verified on or before production main `2f98844`
+(2026-10-26) unless labeled otherwise. Walkthroughs originally executed on `f3c9007`
 (2026-10-04) are retained as dated historical evidence where noted.
-Phase-5 behaviors (§6.5) are production behavior as of `ea9b76a`.
+Phase-5 behaviors (§6.7) are production behavior as of `ea9b76a`.
 
 | Area | Status | Evidence |
 |------|--------|----------|
@@ -48,21 +49,26 @@ Phase-5 behaviors (§6.5) are production behavior as of `ea9b76a`.
 | Inspect (`look`, `page`, `rank`) | **WORKING / VERIFIED** | Affinity-ordered display, lineage shown |
 | Shapes (`sphere`, `lattice`) | **WORKING / VERIFIED** | Skin/form change, grid render |
 | Save / reload (`save`, `--load`) | **WORKING / VERIFIED** | Files written, state survives restart |
-| Visual export (`visual`) | **WORKING / VERIFIED** | Offline HTML file generated (in-browser rendering untested) |
+| Visual export (`visual`) | **WORKING / VERIFIED** | Offline HTML file generated; interactive (see Rich visual UX row) |
 | Tutorial (`tutorial`) | **WORKING / VERIFIED** | Walks the acceptance path |
 | Help (`help`, 9 categories) | **WORKING / VERIFIED** | create, knowledge, learn, explain, save, recover, look, dell, system |
 | DuoBeta learn (`learn propose/inspect/gate/ledger`) | **WORKING / VERIFIED** | Real policy gating within session |
 | Python API (`open_program`, `confirm_proposal`, `persist_rest`, `supersede_proposal`) | **WORKING / VERIFIED** | Direct API calls tested |
 | Offline operation | **WORKING / VERIFIED** | No network calls in tested paths; stdlib-only core deps |
-| Resonance/harmony scoring | **PARTIAL** | Scoring machinery real (`resonance_rank`, affinity); no direct user command |
-| DuoBeta cross-session learning | **PARTIAL** | Works within session; cross-process persistence of staged proposals not observed |
+| Resonance/harmony commands | **WORKING / VERIFIED** | Direct user commands `resonance`, `resonance <id or label>`, `harmony` over canonical active nodes (Phase I, PR #101; `resonance_command_test` 17/17) |
+| DuoBeta cross-session learning | **WORKING / VERIFIED** | Full lifecycle across separate OS processes — execute, `save`, restart `--load`, propose, gate, apply — proven by `duobeta_cross_session_test` 21/21 (Phase J, PR #102). Persistence is via explicit `save`/`load`; a plain start is a fresh in-memory program |
 | REPL `supersede` command | **WORKING / VERIFIED** | `supersede idea <id> with <words>` works with genuine confirmed ID; fails gracefully on unknown/non-confirmed ID |
-| `lineage` by label | **PARTIAL** | Works by proposal ID; label lookup not implemented (use ID from `proposals`) |
+| `lineage` by label | **WORKING / VERIFIED** | `lineage <id or label>`: exact ID, exact label, or case-insensitive label; multiple distinct matches report ambiguity honestly (Phase H, PR #100) |
 | Confirmation atomicity | **WORKING / VERIFIED** | Intent-journal recovery merged via [PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77) (2026-10-05); crash converges to complete OLD or NEW state |
-| Nested projects / perspectives | **PLANNED** | Not implemented |
-| Rich visual UX | **PLANNED** | HTML export exists; interactive UI planned |
-| Windows/Mac launchers | **UNVERIFIED** | `Launch DellMatrix.bat` / `.command` exist but not executed |
-| Spanish/French commands | **UNVERIFIED** | Claimed in old docs; not executed this session |
+| Perspectives | **WORKING / VERIFIED** | Plane perspective/zoom persisted; R7.1 `compose_views`; R7.2 Perspective Studio (§7.5) |
+| Projects (named groups) | **WORKING / VERIFIED** | A project is a named Plane sandbox group: `groups`, `group create/add/remove/show/delete`; membership scopes enhancement within the group (Phase M, PR #105). Group-in-group nesting is NOT implemented |
+| Rich visual UX | **WORKING / VERIFIED (scoped)** | Snapshot export is interactive offline: click-to-inspect + filter/search; the page's script is verified by executed DOM-logic tests (`visual_ux_test` 17/17, Phase N, PR #106). Live bridge is interactive on localhost, verified at HTTP level. Pixel rendering in a named commercial browser was not executed in the build environment |
+| Connected inference (`connect`) | **WORKING / VERIFIED (scoped)** | Public connect path runs the dock over real HTTP, proven against a local provider-shaped double (Phase A, PR #95); dock output lands as pending proposals with origin stamps (Phase E, PR #99). A live third-party provider run was not executed in the build environment |
+| Outcome interaction lookup | **WORKING / VERIFIED** | `outcomes interaction <seq>` resolves a recorded interaction by sequence (Phase B, PR #96) |
+| Knowledge routability (KIE) | **WORKING / VERIFIED** | Stored knowledge completes the eligibility → selection → routing path under the hard laws (Phase D, PR #98) |
+| InternetGate posture | **WORKING / VERIFIED** | Auto-enable hardened off by default; external access fails closed (Phase C, PR #97) |
+| Windows/Mac launchers | **PARTIAL (split)** | Mac `Launch DellMatrix.command`: **VERIFIED** — executed end-to-end in a terminal; executable bit fixed (Phase L, PR #104). Windows `Launch DellMatrix.bat`: present and structurally verified; NOT executed (no Windows environment available) |
+| Spanish/French commands | **WORKING / VERIFIED** | `es`/`spanish` and `fr`/`french` run the core loop; language maps at exact parity (41 intents each); unmapped phrases answer honestly and execute nothing (Phase K, PR #103) |
 
 ---
 
@@ -114,13 +120,13 @@ flowchart TD
 
 The nursery tracks proposal status (`pending` → `confirmed`). The plane holds confirmed Ideas as spatial units. On `save`, both are written to disk. On restart, `load` restores state from the disk files.
 
-**Crash recovery (MERGED via PR #77, 2026-10-05):** If the process crashes mid-confirmation, the intent-journal recovery mechanism converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state). This is production behavior as of main `cf4d67e` (R7.1 merge, 2026-10-11; mechanism unchanged since PR #77).
+**Crash recovery (MERGED via PR #77, 2026-10-05):** If the process crashes mid-confirmation, the intent-journal recovery mechanism converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state). This is production behavior on current main `2f98844` (mechanism unchanged since PR #77).
 
 ---
 
 ## 4. Quick Start
 
-**Requirements:** Python 3.10+, no third-party packages for the core loop (see `requirements.txt`). Tested on Linux; Windows/Mac launchers exist but are unverified.
+**Requirements:** Python 3.10+, no third-party packages for the core loop (see `requirements.txt`). Tested on Linux; the Mac launcher is executed and verified, the Windows launcher is structurally verified only (see §2).
 
 **Docs:** [INSTALL](docs/INSTALL.md) · [START_HERE](docs/START_HERE.md) · [TUTORIAL](docs/TUTORIAL.md)
 
@@ -135,7 +141,7 @@ You'll see a banner and a `you>` prompt. Type `tutorial` for a guided walkthroug
 
 **Offline:** The core loop (create → grow → confirm → inspect → save) makes no network calls. Optional features under `form/llm` may need extras; they are not part of the core loop.
 
-**Generated output:** `save` writes JSON files under `form/state/`. `visual` generates `DellMatrix_UI.html` in the repo root.
+**Generated output:** `save` writes JSON files under `form/state/`. `visual` generates `DellMatrix_UI.html` in the repo root (a generated, git-ignored output file, not a tracked deliverable).
 
 ---
 
@@ -148,23 +154,25 @@ You'll see a banner and a `you>` prompt. Type `tutorial` for a guided walkthroug
 | List proposals | `proposals` | Pending proposals with IDs | `form/dell_matrix/nursery.py` | Walkthrough verified |
 | Confirm | `confirm <id>` / `confirm all` | Proposal confirmed; Idea on plane | `form/dell_matrix/confirm_lineage.py` | Walkthrough verified |
 | Inspect | `look`, `page`, `rank` | Affinity-ordered idea display | `form/dell_matrix/first_person.py` | Walkthrough verified |
-| Lineage | `lineage <proposal-id>` | Ancestry/derivation shown | `form/dell_matrix/lineage.py` | Walkthrough verified (ID only) |
+| Lineage | `lineage <proposal-id or label>` | Ancestry/derivation shown | `form/dell_matrix/lineage.py`, `form/mandell/runtime_observe.py` | Verified by ID and by label |
 | Shapes | `sphere`, `lattice` | Visual form change + grid | `form/dell_matrix/` spatial | Walkthrough verified |
 | Save / reload | `save`, `python3 -m form.repl --load` | JSON files; state survives restart | `form/persist.py`, `form/persist_rest.py` | Walkthrough verified |
-| Visual export | `visual` | `DellMatrix_UI.html` generated | REPL `visual` handler | File verified; rendering untested |
+| Visual export | `visual` | `DellMatrix_UI.html` generated (interactive offline) | REPL `visual` handler | File verified; script verified by executed DOM-logic tests; browser pixel rendering not executed in build environment |
+| Resonance / harmony | `resonance`, `resonance <id or label>`, `harmony` | Ranked resonance candidates / harmony view over active nodes | `form/mandell/runtime_observe.py` | Verified (`resonance_command_test`) |
+| Projects (groups) | `groups`, `group create/add/remove/show/delete` | Named group created; members listed; enhancement scoped to group | `form/dell_matrix/plane.py` (Sandbox), REPL group handler | Verified (`projects_groups_test`) |
 | Tutorial | `tutorial` | Guided acceptance path | `form/repl.py` | Walkthrough verified |
 | DuoBeta learn | `learn propose/inspect/gate/ledger` | Policy-gated learning within session | `form/duobeta/` | Walkthrough verified |
 | Supersede (API) | `supersede_proposal(p, old_id, ...)` | New revision; old marked superseded | `form/mandell/supersession.py` | API and REPL both verified with genuine ID |
 | Outcomes | `outcomes` | Honest empty ("No outcomes recorded") or list | `form/repl.py` | Walkthrough verified |
 | Compose perspectives | `compose_views(program, [(viewer, mode), ...])` | Unified read-only view; each component attributed with viewer/mode/status | `form/dell_matrix/perspective_views.py` | R7.1 52/52, MERGED |
 
-> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call. Historical walkthroughs (2026-10-04) ran on SHA `f3c9007`; current production is main `cf4d67e` (R7.1 merge, 2026-10-11).
+> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call. Historical walkthroughs (2026-10-04) ran on SHA `f3c9007`; current production is main `2f98844` (2026-10-26).
 
 ---
 
 ## 6. Walkthroughs
 
-> **Historical evidence (2026-10-04):** Each walkthrough below was executed on SHA `f3c9007` with a temporary owner; state was cleaned up afterward. REPL sessions used piped stdin. These remain valid as historical evidence of the production behavior at that SHA; they were not all re-executed on the Phase-5 candidate (PR #79, unmerged).
+> **Historical evidence (2026-10-04):** Each walkthrough below was executed on SHA `f3c9007` with a temporary owner; state was cleaned up afterward. REPL sessions used piped stdin. These remain valid as historical evidence of the production behavior at that SHA. The Phase-5 candidate they predate has since merged (PR #79); capabilities proven later carry their own dated evidence in §2.
 
 ### 6.1 Create, store, reload
 
@@ -200,9 +208,9 @@ you> look
 ### 6.3 Inspect relationships
 
 ```
-you> lineage <proposal-id>
-# → Shows derivation/ancestry for that proposal. VERIFIED (ID required;
-#    label lookup does not work — known gap).
+you> lineage <proposal-id or label>
+# → Shows derivation/ancestry for that proposal. VERIFIED by ID and by
+#    label (exact or case-insensitive; ambiguous labels list candidates).
 
 you> rank
 # → Ideas ordered by affinity. VERIFIED.
@@ -210,10 +218,23 @@ you> rank
 
 ### 6.4 Resonance / harmony candidates
 
-The scoring machinery (`resonance_rank`, affinity) is real and drives `rank`/`page` ordering. There is **no direct user command** for resonance queries — this is a PARTIAL feature. The Phase-3 proof files (`form/mandell/p3_r3*_proof.py`) are tests, not user features.
+Resonance and harmony are direct user commands (Phase I, PR #101), computed over canonical **active** nodes only (superseded/excluded records never appear):
+
+```
+you> resonance
+# → Ranked resonance candidates for the current center. VERIFIED.
+
+you> resonance <id or label>
+# → Resonance view centered on that node. VERIFIED.
+
+you> harmony
+# → Harmony view of the current candidate set. VERIFIED.
+```
+
+The underlying scoring machinery (`resonance_rank`, affinity) also drives `rank`/`page` ordering:
 
 ```python
-# Python API only (not exposed in REPL) - complete executable example:
+# Python API - complete executable example:
 from form.dell_matrix.first_person import resonance_rank
 nodes = [
     {"id": "idea1", "x": 1.0, "y": 2.0, "f": 0.0},
@@ -228,10 +249,10 @@ assert ranked[0]["id"] == "idea1"
 
 Supersession (replacing a confirmed idea with a newer revision) works via both the Python API and the REPL command (with a genuine confirmed proposal ID):
 
-> **Phase-5 candidate:** supersession requires explicit authorization (human opt-in or approval). This example was re-executed on the candidate head.
+> Supersession requires explicit authorization (human opt-in or approval) — production behavior since PR #79.
 
 ```python
-# VERIFIED working on Phase-5 candidate (Python API) - complete end-to-end:
+# VERIFIED working on production (Python API) - complete end-to-end:
 from form.open import open_program
 from form.mandell.supersession import supersede_proposal
 p = open_program("Owner")
@@ -258,19 +279,23 @@ you> supersede idea <id> with <words>
 
 *Historical note (2026-10-04): An earlier draft labeled the REPL command BROKEN based on a test with an unconfirmed ID. Retesting with a genuine confirmed proposal ID shows it works.*
 
-History: `history` shows recent entries. Crash recovery uses intent journals to distinguish interrupted operations from historical records (under active repair — see §2).
+History: `history` shows recent entries. Crash recovery uses intent journals to distinguish interrupted operations from historical records (production behavior, merged via PR #77 — see §2).
 
 ### 6.6 Visual output
 
 ```
 you> visual
-# → Generates DellMatrix_UI.html (offline, no network). VERIFIED file created.
-#    In-browser rendering not tested this session.
+# → Generates DellMatrix_UI.html (offline, no network): an interactive
+#    snapshot — click a node to inspect it, filter/search nodes by
+#    label, word, skin, or id. VERIFIED file created; the page's script
+#    behavior is verified by executed DOM-logic tests
+#    (visual_ux_test). Pixel rendering in a named commercial browser
+#    was not executed in the build environment.
 ```
 
 ---
 
-## 6.5 Phase-5: Acceptance Authorization and Lifecycle Coherence
+## 6.7 Phase-5: Acceptance Authorization and Lifecycle Coherence
 
 Phase 5 hardened the acceptance boundary and lifecycle interpretation.
 All claims verified by executed tests (see evidence map).
@@ -305,19 +330,20 @@ All claims verified by executed tests (see evidence map).
 
 ## 7. Vision (Planned)
 
-The long-term vision — **not yet implemented** — includes:
+The long-term vision — each item states its current standing:
 
-- **Nested ideas and projects** — ideas containing sub-ideas, projects grouping related work
-- **Preserved history** — full revision chains visible and navigable across sessions
-- **Interchangeable perspectives** — view the same idea space through different lenses (spatial, temporal, affinity-based)
-- **Candidate connections** — the system suggests related ideas; you accept or reject each one
-- **Human-controlled acceptance** — nothing is confirmed, superseded, or learned without your explicit approval
+- **Projects grouping related work** — IMPLEMENTED: a project is a named group (§2, Phase M). **Nested ideas** (ideas containing sub-ideas, group-in-group nesting) remain PLANNED
+- **Preserved history** — IMPLEMENTED for the learning lifecycle: DuoBeta proposals, gates, and applications persist across sessions via explicit `save`/`load` (§2, Phase J); full revision chains are visible via `lineage`
+- **Interchangeable perspectives** — IMPLEMENTED: persisted plane perspectives, `compose_views`, Perspective Studio (§7.5)
+- **Richer visual layers** — IMPLEMENTED (scoped): interactive offline snapshot + localhost live bridge (§6.6, §2)
+- **Candidate connections** — PLANNED: the system suggesting related ideas for your acceptance is not implemented
+- **Human-controlled acceptance** — IMPLEMENTED and load-bearing: nothing is confirmed, superseded, or learned without your explicit approval
 
-Diagrams or mock examples of the above are conceptual only. Roadmap phases beyond the current terminal-based environment are PLANNED. The current system (§2, §6) is the honest baseline.
+Diagrams or mock examples of PLANNED items are conceptual only. The current system (§2, §6) is the honest baseline.
 
 ---
 
-## 7.5 R7.2: Perspective Studio (Candidate — NOT CERTIFIED)
+## 7.5 R7.2: Perspective Studio (MERGED via PR #87 — not independently certified)
 
 A scoped REPL workshop for composing perspective views and inspecting
 their meaning. Read-only: the studio composes views via R7.1
@@ -384,7 +410,7 @@ window, not complete history.
 
 ---
 
-## 7.6 R7.3: General Workshop Contract (Candidate — NOT CERTIFIED)
+## 7.6 R7.3: General Workshop Contract (MERGED via PR #88 — not independently certified)
 
 All seven workshops (matrix, perspective, mandel, persona, bimo,
 psalms, forces) are real scoped environments in the REPL:
@@ -443,15 +469,18 @@ preserved as evidence. Bounds: 50 commands per session, 10 sessions.
 ## 9. Limitations, Tests, Contributing, Glossary
 
 ### Honest limitations
-- `lineage` works by proposal ID; label lookup is not implemented.
-- Resonance/harmony has scoring but no direct user command.
-- DuoBeta learning is session-scoped; cross-session persistence unverified.
-- Windows/Mac launchers and Spanish/French commands are unverified.
+- `lineage` by label reports ambiguity when several distinct records share a label; use the ID to disambiguate.
+- DuoBeta persistence follows the explicit `save`/`load` contract: a plain REPL start is a fresh in-memory program and EOF does not autosave.
+- The Windows launcher (`.bat`) has not been executed — no Windows environment was available; the Mac launcher is executed and verified.
+- A live third-party inference provider run through the dock was not executed in the build environment; the connect path is proven against a local provider-shaped double.
+- Pixel rendering of the visual export in a named commercial browser was not executed in the build environment; the page's script behavior is verified by executed DOM-logic tests.
+- Group-in-group nesting (projects within projects) is not implemented; a project is one named group of units.
+- R7.2–R7.7 and the Post-GDP / README-program phases are merged but have no independent (Director) certification.
 - Confirmation crash recovery is production behavior (merged via PR #77).
 - "User-ready" is not claimed. See §2 for the scoped status table.
 
 ### Phase 5 (merged to production)
-Phase-5 acceptance authorization, lifecycle coherence, and learning bounds (§6.5) were admitted via [PR #79](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/79) (merge `ea9b76a`, 2026-10-07; Director admission PASS). The main branch described by this README **includes** Phase-5 changes.
+Phase-5 acceptance authorization, lifecycle coherence, and learning bounds (§6.7) were admitted via [PR #79](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/79) (merge `ea9b76a`, 2026-10-07; Director admission PASS). The main branch described by this README **includes** Phase-5 changes.
 
 ### Test commands
 ```bash
@@ -459,9 +488,8 @@ python3 -m form.regress --twice        # full suite, forward, twice
 python3 -m form.regress --order rev    # full suite, reverse order
 ```
 
-**Phase-5 candidate tests (not on production main):** The following modules exist only on the unmerged Phase-5 branch ([PR #79](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/79)). They are not runnable on production `cf4d67e`:
+**Phase-5 tests (on production main):** The following modules merged with Phase 5 (PR #79) and are runnable on current main:
 ```bash
-# On Phase-5 branch checkout only:
 python3 -m form.mandell.wo51_adversarial_test  # acceptance adversarial
 python3 -m form.mandell.wo52_coherence_test   # lifecycle coherence
 python3 -m form.mandell.d20_reference_test    # Delta-20 reference model
