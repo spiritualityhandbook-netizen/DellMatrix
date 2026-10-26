@@ -443,6 +443,8 @@ def plane_to_html(
   .credit {{ font-size:11px; color:#5c6575; margin-top:12px; line-height:1.5; }}
   .page-card {{ border:1px solid var(--accent); border-radius:10px; padding:10px; margin-top:10px; font-size:12px; }}
   .seen {{ font-size:12px; border:1px solid var(--line); border-radius:8px; padding:6px; margin-bottom:4px; }}
+  .filter-input {{ width:100%; box-sizing:border-box; padding:8px 10px; margin:6px 0 2px; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; font-size:13px; }}
+  .filter-status {{ font-size:11px; color:var(--muted); margin-bottom:6px; }}
 </style>
 </head>
 <body>
@@ -470,6 +472,8 @@ def plane_to_html(
   </section>
   <section class="card" style="overflow:auto">
     <h2>Matrix snapshot</h2>
+    <input class="filter-input" id="node-filter" type="search" placeholder="Filter nodes by label, word, skin, or id…" aria-label="Filter nodes">
+    <div class="filter-status" id="filter-status"></div>
     {svg}
     <div id="detail" style="margin-top:14px">
       <h2 style="margin-top:0">Selected idea (inspect)</h2>
@@ -553,6 +557,25 @@ function showNode(id) {{
   document.getElementById('cmd-hint').textContent = 'Inspect page — paste to zoom in program';
 }}
 document.querySelectorAll('.node').forEach(g => g.addEventListener('click', () => showNode(g.getAttribute('data-id'))));
+function nodeMatches(n, q) {{
+  if (!q) return true;
+  const hay = ((n.label || '') + ' ' + (n.words || '') + ' ' + (n.skin || '') + ' ' + (n.id || '') + ' ' + (n.detail || '')).toLowerCase();
+  return q.split(/\s+/).every(tok => hay.includes(tok));
+}}
+function applyFilter(raw) {{
+  const q = (raw || '').trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('.node').forEach(g => {{
+    const n = byId[g.getAttribute('data-id')];
+    const hit = n ? nodeMatches(n, q) : !q;
+    g.style.display = hit ? '' : 'none';
+    if (hit) shown++;
+  }});
+  const st = document.getElementById('filter-status');
+  if (st) st.textContent = q ? ('filter: ' + shown + ' of ' + NODES.length + ' node(s) match') : '';
+  return shown;
+}}
+document.getElementById('node-filter').addEventListener('input', e => applyFilter(e.target.value));
 (function(){{
   const box = document.getElementById('avatar-box');
   if (AVATAR && (AVATAR.look || AVATAR.describe)) {{

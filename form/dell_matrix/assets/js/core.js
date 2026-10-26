@@ -11,6 +11,7 @@
     { id: 'personas', href: '/personas', label: 'Personas' },
     { id: 'forces', href: '/forces', label: 'Forces' },
     { id: 'geometry', href: '/geometry', label: 'Geometry' },
+    { id: 'nature_code', href: '/nature_code', label: 'Nature' },
     { id: 'matrices', href: '/matrices', label: 'Matrices' },
     { id: 'workshops', href: '/workshops', label: 'Workshops' },
     { id: 'inspire', href: '/inspire', label: 'Inspire' },
