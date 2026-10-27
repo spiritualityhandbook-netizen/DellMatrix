@@ -11,16 +11,66 @@ def _units(program: Any) -> Dict[str, Any]:
 
 
 def resolve_unit(units: Dict[str, Any], token: str) -> Optional[Any]:
+    """Resolve a token to a unit: exact ID, then exact-case label,
+    then case-insensitive label (canonical tiers, P1/TD-3 — the same
+    order as runtime_observe.resolve_lineage_ref). A tier with more
+    than one distinct unit is ambiguous and resolves to None; callers
+    that must distinguish ambiguity from a miss use
+    resolve_sources_strict."""
     token = str(token or "").strip()
     if not token:
         return None
     if token in units:
         return units[token]
+    exact = [u for u in units.values()
+             if str(getattr(u, "label", "")) == token]
+    if len(exact) == 1:
+        return exact[0]
+    if len(exact) > 1:
+        return None
     low = token.lower()
-    hits = [u for u in units.values() if str(getattr(u, "label", "")).lower() == low]
+    hits = [u for u in units.values()
+            if str(getattr(u, "label", "")).lower() == low]
     if len(hits) == 1:
         return hits[0]
     return None
+
+
+def resolve_sources_strict(units: Dict[str, Any], label: str):
+    """resolve_sources with ambiguity surfaced: returns
+    (sources, ambiguous_tokens). A token is ambiguous when its label
+    tier matches more than one distinct unit (previously such tokens
+    were silently dropped, so a merge could proceed on a subset of
+    the named sources without any signal)."""
+    found: List[Any] = []
+    seen = set()
+    ambiguous: List[str] = []
+    for tok in label_tokens(label):
+        if tok in units:
+            u = units[tok]
+        else:
+            exact = [x for x in units.values()
+                     if str(getattr(x, "label", "")) == tok]
+            if len(exact) > 1:
+                ambiguous.append(tok)
+                continue
+            if len(exact) == 1:
+                u = exact[0]
+            else:
+                low = tok.lower()
+                hits = [x for x in units.values()
+                        if str(getattr(x, "label", "")).lower() == low]
+                if len(hits) > 1:
+                    ambiguous.append(tok)
+                    continue
+                u = hits[0] if hits else None
+        if u is None:
+            continue
+        if u.id in seen:
+            continue
+        seen.add(u.id)
+        found.append(u)
+    return found, ambiguous
 
 
 def label_tokens(label: str) -> List[str]:
@@ -55,7 +105,12 @@ def _child_id(units: Dict[str, Any], base: str) -> str:
 
 def merge_live(program: Any, label: str) -> Dict[str, Any]:
     units = _units(program)
-    sources = resolve_sources(units, label)
+    sources, ambiguous = resolve_sources_strict(units, label)
+    if ambiguous:
+        return {"ok": False, "error": "ambiguous_source",
+                "detail": "label matches multiple units: "
+                          + ", ".join(ambiguous),
+                "created": []}
     if len(sources) < 2:
         vals = list(units.values())
         if not sources and len(vals) >= 2:
@@ -90,7 +145,12 @@ def merge_live(program: Any, label: str) -> Dict[str, Any]:
 
 def split_live(program: Any, label: str) -> Dict[str, Any]:
     units = _units(program)
-    sources = resolve_sources(units, label)
+    sources, ambiguous = resolve_sources_strict(units, label)
+    if ambiguous:
+        return {"ok": False, "error": "ambiguous_source",
+                "detail": "label matches multiple units: "
+                          + ", ".join(ambiguous),
+                "created": []}
     source = sources[0] if sources else None
     if source is None and units:
         source = list(units.values())[-1]

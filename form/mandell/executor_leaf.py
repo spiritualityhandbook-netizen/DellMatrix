@@ -280,20 +280,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             messages.append("Temp → warm (enhance ON)")
         if hasattr(program, "note_seed"):
             program.note_seed(26, "Temp", lab)
-    elif primary == 27:
-        from form.persist import checkpoint as persist_cp
-        try:
-            cp = persist_cp(program)
-            messages.append(f"Checkpoint written: {cp}")
-        except Exception:
-            path = program.save()
-            messages.append(f"Checkpoint stand-in save: {path}")
-        if hasattr(program, "note_seed"):
-            program.note_seed(27, "Checkpoint")
-    elif primary == 28:
-        from form.persist import load as persist_load
-        new_program = persist_load(program.owner)
-        messages.append("Session loaded.")
     elif primary == 29:
         short = program.distill_label(label) if hasattr(program, "distill_label") else (label or "x")
         place_idea(f"compress_{short}", Skin.SEED)
@@ -332,31 +318,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             messages.append("Resumed walk.")
         if hasattr(program, "note_seed"):
             program.note_seed(33, "Resume")
-    elif primary == 34:
-        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        mark = label or "stamp"
-        messages.append(f"Stamp: {mark} @ {ts}")
-        if hasattr(program, "note_seed"):
-            program.note_seed(34, "Stamp", f"{mark}_{ts}")
-    elif primary == 35:
-        lab = (label or "").lower()
-        if "nursery" in lab:
-            pending = program.list_proposals()
-            messages.append(f"Nursery pending: {len(pending)}")
-            for prop in pending[:8]:
-                messages.append(f"  [{prop.get('kind')}] {prop.get('id')} — {prop.get('label')}")
-        elif lab.startswith("shell"):
-            n = 0
-            parts = lab.split()
-            if len(parts) > 1 and parts[1].isdigit():
-                n = int(parts[1])
-            cells = program.lattice.cells_by_shell(n)
-            messages.append(f"Shell {n}: {len(cells)} cells")
-        else:
-            st = program.avatar_status()
-            ns = program.nursery.summary()
-            messages.append(f"{st['look']}  {st['describe']}")
-            messages.append(f"ideas={len(program.cube.session.plane.units)} nursery={ns['pending']}")
     elif primary == 36:
         name = label or "inject"
         place_idea(name, Skin.SEED)
@@ -390,17 +351,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             messages.append(f"  · {r}")
         if hasattr(program, "note_seed"):
             program.note_seed(39, "Schema", "valid" if ok else "invalid")
-    elif primary == 40:
-        ideas = len(program.cube.session.plane.units)
-        hist = len(getattr(program, "history", []))
-        cells = len(program.lattice.cells)
-        pending = program.nursery.summary().get("pending", 0)
-        approx = ideas * 8 + hist * 4 + cells * 2 + pending * 6
-        messages.append("TokenCount (approx session weight):")
-        messages.append(f"  ideas={ideas} history={hist} cells={cells} pending={pending}")
-        messages.append(f"  approx_units={approx}")
-        if hasattr(program, "note_seed"):
-            program.note_seed(40, "TokenCount", str(approx))
     elif primary == 41:
         raw = label or ""
         cleaned = re.sub(
@@ -432,15 +382,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         messages.append("  3. acceptance: create → grow → confirm → sphere → save → load → visual")
         if hasattr(program, "note_seed"):
             program.note_seed(43, "Fallback")
-    elif primary == 44:
-        messages.append("Bridge (external tool posture):")
-        messages.append("  · Origin stays offline for acceptance")
-        messages.append("  · Side packages: form/trading, form/llm (not core)")
-        messages.append("  · Use 45[Translate] for EN ↔ Mandell")
-        if label:
-            messages.append(f"  · noted target: {label}")
-        if hasattr(program, "note_seed"):
-            program.note_seed(44, "Bridge", label or "external")
     elif primary == 45:
         from form.mandell.bridge import bridge
         rep = bridge(label or "")
@@ -455,9 +396,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
                 f"  {i}. aff={float(prop.get('affinity', 0)):.3f} [{prop.get('kind')}] "
                 f"{prop.get('id')} — {prop.get('label')}"
             )
-    elif primary == 47:
-        paths = program.visual()
-        messages.append(paths.get("easy") or paths.get("html", ""))
     elif primary == 48:
         lab = (label or "").lower()
         n = 3
@@ -505,13 +443,23 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         # - 51-99: Core-II authority lives in chain_exec/core_ii_exec;
         #   the leaf has no Core-II executor. Production routes these via
         #   the front door before the leaf; direct leaf calls refuse.
-        # - 37: production authority is core_i_ops (HANDLED); the leaf has
-        #   no 37 arm (MPC-011 removed the dead Stream branch). Direct leaf
-        #   calls refuse rather than shadow the real authority.
+        # - HANDLED set {27, 28, 34, 35, 37, 40, 44, 47}: production
+        #   authority is core_i_ops (the front door intercepts these
+        #   before the leaf on every production path). The leaf has NO
+        #   arms for them: MPC-011 removed 37's dead Stream branch, and
+        #   P1/TD-1 removed the seven divergent shadow arms (legacy
+        #   timestamp checkpoints + silent save fallback for 27, a
+        #   save-reload mislabeled as rollback for 28, success claims
+        #   for the honestly-refused 44/47, and divergent 34/35/40
+        #   copies). Direct leaf calls refuse rather than shadow the
+        #   real authority.
         # 0-50 with explicit arms execute below (message-only "runtime thin"
         # for registered-but-armless dells: pre-existing, documented).
-        if primary is None or primary > 50 or primary == 37:
-            name = {37: "Nurture"}.get(primary, "reserved/not-active")
+        if primary is None or primary > 50 or primary in (27, 28, 34, 35, 37, 40, 44, 47):
+            name = {27: "Checkpoint", 28: "Rollback", 34: "Stamp",
+                    35: "Discover", 37: "Nurture", 40: "TokenCount",
+                    44: "Bridge", 47: "Embed"}.get(
+                        primary, "reserved/not-active")
             return {
                 "ok": False,
                 "seed": s.as_mandel(),

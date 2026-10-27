@@ -11,7 +11,7 @@
 |------|------|--------|
 | Auto-wire Nature physics into every force_tick | `form/open.py` `force_tick` | **DONE** |
 | Ch3 Angular oscillation | `nature_code.AngularMover` + NatureBridge | **DONE** |
-| Breath → oscillation phase | `nature_physics.program_force_tick_nature` | **DONE** |
+| Breath → oscillation phase | `nature_physics.program_force_tick_nature` | **RETIRED** (P1, Ten-Phase Master Plan: nature_physics was a Phase-4-retired adapter whose sole function was never called; the live physics tick is `Program.force_tick` in `form/open.py` + `form/dell_matrix/nature_code.py`) |
 | Act-on-seen (vision actions) | `form/dell_matrix/act_on_seen.py` | **DONE** |
 | Neuroevo ForceField intensities | `form/dell_matrix/neuroevo.py` | **DONE** |
 | Nature paraphrase seeds | english_brain PARAPHRASE + VERB_MAP | **DONE** (this pass) |

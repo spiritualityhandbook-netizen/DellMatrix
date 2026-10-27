@@ -2,7 +2,7 @@
 
 **Source:** Daniel Shiffman, *The Nature of Code* (Chapters 0–11)  
 **Cores:** `form/dell_matrix/nature_code.py`  
-**Physics tick:** `form/dell_matrix/nature_physics.py`  
+**Physics tick:** `form/dell_matrix/nature_code.py` + `Program.force_tick` (`form/open.py`) — `form/dell_matrix/nature_physics.py` was retired in P1 (Ten-Phase Master Plan); code samples below that import it are historical.  
 **Symbolic forces:** `form/dell_matrix/forces.py` (ForceField)  
 **Growth engine:** `form/dell_matrix/ringed_growth.py`  
 **Evolution / decision:** `form/dell_matrix/code_evolution.py` + `decision_shells.py`  

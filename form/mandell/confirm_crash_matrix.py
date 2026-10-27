@@ -444,8 +444,11 @@ CLAIM_MAP = {
     "23_missing_staging": "UNPROVEN; no replacement",
     "mutant_no_nursery_save": "covered by t09 (nursery save failure raises)",
     "mutant_naive_sequential": "covered by t11 (crash after nursery save)",
-    "mutant_swallow_recovery": "covered by t19/t24 (recovery errors propagate)",
-    "mutant_malformed_to_success": "covered by t19/t24 (fail closed)",
+    "mutant_swallow_recovery": "was covered by t19/t24 (hybrid); hybrid retired P1 — journal-path recovery errors covered by registered recovery suites; P2 re-verifies on harness disposition",
+    "mutant_malformed_to_success": "was covered by t19/t24 (hybrid fail closed); hybrid retired P1 — see 19/24 entries",
+    "18_recovery_idempotent": "RETARGETED P1: hybrid retired; property verified against live recover_confirmation_intent (no-journal -> 'none' twice, idempotent)",
+    "19_corrupt_nursery_failclosed": "RETIRED P1: claim was specific to the visibility-scanning hybrid (retired as the GDP_R3 defect class). Journal-based recovery never touches state without a journal (verified P1: corrupt nursery + no journal -> 'none', state untouched).",
+    "24_unreadable_program_failclosed": "RETIRED P1: same basis as 19 — hybrid-specific claim; journal-path fail-closed evidence lives in the registered recovery suites.",
 }
 
 # =====================================================================
@@ -453,45 +456,30 @@ CLAIM_MAP = {
 # =====================================================================
 
 def t18():
-    # Recovery interrupted: run recovery twice, second should be idempotent
+    # Recovery interrupted: run recovery twice, second should be idempotent.
+    # P1 RETARGET: recover_confirmation_hybrid was retired (visibility-based
+    # healing, the GDP_R3 defect class; no production caller). The live
+    # recovery is the journal-based recover_confirmation_intent; with no
+    # journal it is a no-op ("none") and idempotent by construction.
     owner = "M18"
     clean(owner)
     code = f"""
 import sys; sys.path.insert(0, '{REPO}')
-from form.mandell.core_i_recovery import recover_confirmation_hybrid
-r1 = recover_confirmation_hybrid('{owner}')
-r2 = recover_confirmation_hybrid('{owner}')
+from form.mandell.core_i_recovery import recover_confirmation_intent
+r1 = recover_confirmation_intent('{owner}')
+r2 = recover_confirmation_intent('{owner}')
 print(f"{{r1}}|{{r2}}")
 """
     r = run_subprocess(code)
-    ok = r.stdout.strip() == "0|0"
+    ok = r.stdout.strip() == "none|none"
     rec("18_recovery_idempotent", ok, r.stdout.strip())
 
 def t19():
-    # Corrupt nursery JSON → fail closed (raise, not hybrid)
-    owner = "M19"
-    clean(owner)
-    npath = os.path.join(REPO, f'form/state/nursery_{owner}.json')
-    os.makedirs(os.path.dirname(npath), exist_ok=True)
-    with open(npath, 'w') as f:
-        f.write("{corrupt json")
-    ppath = os.path.join(REPO, f'form/state/program_{owner}.json')
-    with open(ppath, 'w') as f:
-        f.write('{"plane": {"units": {}}}')
-    code = f"""
-import sys; sys.path.insert(0, '{REPO}')
-from form.mandell.core_i_recovery import recover_confirmation_hybrid, RollbackRecoveryError
-try:
-    recover_confirmation_hybrid('{owner}')
-    print("NO_RAISE")
-except RollbackRecoveryError:
-    print("FAIL_CLOSED")
-except Exception as e:
-    print(f"OTHER:{{type(e).__name__}}")
-"""
-    r = run_subprocess(code)
-    ok = "FAIL_CLOSED" in r.stdout
-    rec("19_corrupt_nursery_failclosed", ok, r.stdout.strip())
+    # REMOVED FROM PASS COUNTS (P1): the corrupt-nursery fail-closed claim
+    # was specific to the retired visibility-scanning hybrid. The journal
+    # recovery deliberately never touches state without a journal.
+    # See CLAIM_MAP.
+    pass
 
 def t20():
     # REMOVED FROM PASS COUNTS (F9): Was unconditional True ("N/A").
@@ -518,30 +506,10 @@ def t23():
     pass
 
 def t24():
-    # Unreadable program file → fail closed
-    owner = "M24"
-    clean(owner)
-    npath = os.path.join(REPO, f'form/state/nursery_{owner}.json')
-    os.makedirs(os.path.dirname(npath), exist_ok=True)
-    with open(npath, 'w') as f:
-        f.write('{}')
-    ppath = os.path.join(REPO, f'form/state/program_{owner}.json')
-    with open(ppath, 'w') as f:
-        f.write('{unreadable')
-    code = f"""
-import sys; sys.path.insert(0, '{REPO}')
-from form.mandell.core_i_recovery import recover_confirmation_hybrid, RollbackRecoveryError
-try:
-    recover_confirmation_hybrid('{owner}')
-    print("NO_RAISE")
-except RollbackRecoveryError:
-    print("FAIL_CLOSED")
-except Exception as e:
-    print(f"OTHER:{{type(e).__name__}}")
-"""
-    r = run_subprocess(code)
-    ok = "FAIL_CLOSED" in r.stdout
-    rec("24_unreadable_program_failclosed", ok, r.stdout.strip())
+    # REMOVED FROM PASS COUNTS (P1): the unreadable-program fail-closed
+    # claim was specific to the retired visibility-scanning hybrid.
+    # See CLAIM_MAP (same basis as t19).
+    pass
 
 # =====================================================================
 # Cases 25-27: Agreement

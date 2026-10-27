@@ -92,20 +92,37 @@ def format_create_end(res: Dict[str, Any]) -> str:
 # ─── Edit detail / goals ───────────────────────────────────────────────────
 
 def _resolve_unit(program, ref: str):
+    """Resolve an edit target. Canonical tiers first (P1/TD-3): exact
+    ID, exact-case label, case-insensitive label — a tier matches
+    only when it names exactly ONE unit, so an edit can never land
+    on the wrong unit when labels collide. The partial-substring
+    tier remains as this surface's deliberate fuzzy fallback, and it
+    too must be unique to resolve."""
     plane = program.cube.session.plane
     ref = (ref or "").strip()
     if not ref:
         return None, None
     if ref in plane.units:
         return ref, plane.units[ref]
-    for uid, u in plane.units.items():
-        if (u.label or "").lower() == ref.lower():
-            return uid, u
-    # partial
+    exact = [(uid, u) for uid, u in plane.units.items()
+             if (u.label or "") == ref]
+    if len(exact) == 1:
+        return exact[0]
+    if len(exact) > 1:
+        return None, None
+    low = ref.lower()
+    ci = [(uid, u) for uid, u in plane.units.items()
+          if (u.label or "").lower() == low]
+    if len(ci) == 1:
+        return ci[0]
+    if len(ci) > 1:
+        return None, None
+    # partial (unique only)
     rl = ref.lower()
-    for uid, u in plane.units.items():
-        if rl in (u.label or "").lower() or rl in uid.lower():
-            return uid, u
+    part = [(uid, u) for uid, u in plane.units.items()
+            if rl in (u.label or "").lower() or rl in uid.lower()]
+    if len(part) == 1:
+        return part[0]
     return None, None
 
 
