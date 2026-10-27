@@ -591,6 +591,15 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         data.get("dock_sessions", _DS_MISSING), p.owner)
     p.dock_sessions = dsessions
     p.dock_sessions_malformed = dmalformed
+    # SD-4: restore Director records (recommendations and
+    # refusals — records only, never decisions).
+    from form.dell_matrix.director_records import (
+        validate_section as validate_director_section,
+        _MISSING as _DR_MISSING)
+    drecords, drmalformed = validate_director_section(
+        data.get("director_records", _DR_MISSING), p.owner)
+    p.director_records = drecords
+    p.director_records_malformed = drmalformed
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")
@@ -767,6 +776,7 @@ DURABLE_KEYS = (
     "lifecycle", "agent_local", "agent_audit", "studio_sessions",
     "workshop_sessions", "onboarding_sessions", "forge_sessions",
     "bimo_configurations", "connection_sessions", "dock_sessions",
+    "director_records",
 )
 
 

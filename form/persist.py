@@ -120,6 +120,8 @@ def serialize(program: Program) -> Dict[str, Any]:
         serialize_section as serialize_connection_section)
     from form.dell_matrix.dock_session import (
         serialize_section as serialize_dock_section)
+    from form.dell_matrix.director_records import (
+        serialize_section as serialize_director_section)
     sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
@@ -300,6 +302,14 @@ def serialize(program: Program) -> Dict[str, Any]:
         "dock_sessions": serialize_dock_section(
             getattr(program, "dock_sessions", None),
             getattr(program, "dock_sessions_malformed", None),
+            program.owner,
+        ),
+        # SD-4: Director records (recommendations, evidence
+        # requests, directive links, refusals). Records only —
+        # never decisions; AcceptancePolicy is untouched by them.
+        "director_records": serialize_director_section(
+            getattr(program, "director_records", None),
+            getattr(program, "director_records_malformed", None),
             program.owner,
         ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).
