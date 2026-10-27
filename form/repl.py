@@ -2993,6 +2993,29 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
         _say(msg)
         return p
 
+    # P10 (flow-grammar conformance): a raw multi-atom Mandell
+    # seed line executes with the canonical chain semantics
+    # (chain_exec, via the seed path below) — ONE composed-
+    # execution authority at the public path. Before P10, the
+    # DCC-IV branch claimed every line containing ">" or ":"
+    # first, so ">" and ">>" chains executed with flow_executor
+    # semantics (whose Assert ignores the seed label payload)
+    # while the other seven operators fell through to
+    # chain_exec — the same seed text meant different things by
+    # dispatcher. flow_executor remains for composed programs
+    # that are not raw seeds (its API consumers are unchanged).
+    try:
+        from form.mandell.seed import parse_seed as _parse_seed_p10
+        _seed_p10 = _parse_seed_p10(line)
+    except Exception:
+        _seed_p10 = None
+    if _seed_p10 is not None and _seed_p10.ok \
+            and len(_seed_p10.atoms) > 1:
+        from form.mandell.execution_observer import (
+            observe_seed_execution as _observe_p10)
+        return _apply_seed_result(
+            p, _observe_p10(p, line, interaction_id=interaction_id))
+
     # DCC-IV: composed Mandell program (flow operators) -> flow executor.
     if ">" in line or ":" in line:
         try:
