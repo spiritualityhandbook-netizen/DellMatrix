@@ -500,6 +500,19 @@ def _show_proposals(p: Program) -> None:
                     evidence[entry["pid"]] = (
                         entry.get("task") or rec.get("task") or "",
                         rec.get("session_id") or "")
+    # SD-5: join Director recommendations so the gate sees the
+    # scoped Director's advice next to the proposal it concerns.
+    # This is the first inside-out design, filed in the dev-scope
+    # matrix (pid directorrecommendationsinrev_4116), recommended
+    # by the Director, and confirmed through the human gate before
+    # implementation. Recommendations are advice records (SD-4):
+    # displayed here, never applied.
+    recommendations = {}
+    for entry in (getattr(p, "director_records", None) or {}).values():
+        if isinstance(entry, dict) \
+                and entry.get("kind") == "recommendation" \
+                and entry.get("pid"):
+            recommendations.setdefault(entry["pid"], []).append(entry)
     _say(f"Nursery has {len(pending)} proposal(s):")
     for i, prop in enumerate(pending[:20], 1):
         aff = float(prop.get("affinity", 0))
@@ -514,6 +527,10 @@ def _show_proposals(p: Program) -> None:
         ev = evidence.get(prop["id"])
         if ev:
             _say(f"      task: {ev[0]} · session {ev[1][:8]}")
+        for rec_entry in recommendations.get(prop["id"], []):
+            _say(f"      director: recommends "
+                 f"{rec_entry.get('decision')} — "
+                 f"{(rec_entry.get('reason') or '')[:120]}")
     _say("Type: confirm <id> | confirm all | reject all | rank | lineage <id or label>")
 
 

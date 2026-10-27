@@ -143,6 +143,10 @@ LIST = [
     # recommendation records, scoped snapshot, adversarial scope
     # suite).
     "form.mandell.p7_sd4_test",
+    # Master plan P8 / SD-5 — inside-out loop first full turn
+    # (kind=design filing, loop ledger chain, REPL recommendation
+    # display) + dormant-cluster disposition guards.
+    "form.mandell.p8_sd5_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",

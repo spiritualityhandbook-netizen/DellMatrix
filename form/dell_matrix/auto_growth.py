@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 """
-Auto Growth — matrix grows itself continuously.
+Auto Growth — the automated Nursery producer (WO-5.1).
 
-  · Internet search_far_wide for fuel
-  · Verita + Floor Spirit license
-  · Delta pressure guides restore vs expand
-  · Nursery handled automatically (auto-confirm / auto-reject)
-  · Confirmed ideas enter growth ledger (and plane when available)
+KEPT AUTHORITY (SD-5 trim): AutoGrowth._nursery_auto is the
+canonical auto-propose path, contract-proven by
+form/lineage_authority_test.py: AUTO PROPOSE >
+Program.confirm_proposal (VALIDATE > PLACE > Nursery.confirm >
+PERSIST) > {ok:True} > COUNT SUCCESS. AUTO never mutates
+confirmation status itself; acceptance requires explicit opt-in
+(auto=True) plus AcceptancePolicy's producer gate — denied by
+default. The judge is INJECTED as a dict by the caller; this
+module no longer computes verita/floor judgments itself.
 
-Auto mode: reject fog · confirm strong aligned · prioritize vital restore seeds
-No human nursery click required when auto=True.
-
-SOURCE OF TRUTH: GitHub repo spiritualityhandbook-netizen/DellMatrix
+RETIRED in SD-5 (master plan P8) with the dormant free-matrix
+cluster: the continuous growth orchestration (step /
+run_continuous / harvest_net / next_query / _judge) — it had no
+production caller, and its judging coupled to the retired
+floor_spirit / delta_pressure modules. The docked semantic
+layer (SD-1..SD-4) is the growth judge now; RingedGrowth is
+the growth engine.
 """
 from __future__ import annotations
 
@@ -72,39 +79,6 @@ class AutoGrowth:
     last_report: Dict[str, Any] = field(default_factory=dict)
     # Program owner whose canonical confirmation authority AUTO uses (persisted live Program).
     owner: str = "AutoGrow"
-
-    def next_query(self, override: str = "") -> str:
-        if override.strip():
-            return override.strip()
-        if not self.queries:
-            return "coherent growth systems"
-        q = self.queries[self.query_index % len(self.queries)]
-        self.query_index += 1
-        return q
-
-    def _judge(self, label: str, words: str) -> Dict[str, Any]:
-        try:
-            from form.dell_matrix.verita import verita_of_one
-            from form.dell_matrix.floor_spirit import FLOOR_SPIRIT
-            v = verita_of_one(label, words=words)
-            lic = FLOOR_SPIRIT.license_verita(v, f"{label} {words}")
-            return {
-                "verita_score": v.get("score", 0),
-                "verita_accept": v.get("accept"),
-                "floor_accept": lic.get("final_accept"),
-                "combined": lic.get("combined_score", v.get("score", 0)),
-                "reason": lic.get("reason"),
-                "grade": v.get("grade"),
-            }
-        except Exception as e:
-            return {
-                "verita_score": 0.0,
-                "verita_accept": False,
-                "floor_accept": False,
-                "combined": 0.0,
-                "reason": f"judge_error:{e}",
-                "grade": "fog",
-            }
 
     def _should_auto_confirm(self, judge: Dict[str, Any], delta_band: str) -> bool:
         if not self.auto:
@@ -171,180 +145,3 @@ class AutoGrowth:
         rows = _load_ledger()
         rows.append({**item, "ts": time.time()})
         _save_ledger(rows)
-
-    def harvest_net(self, query: str = "") -> List[Dict[str, Any]]:
-        ideas: List[Dict[str, Any]] = []
-        if not self.internet:
-            return ideas
-        try:
-            from form.dell_matrix.internet_gate import InternetGate
-            net = InternetGate(auto_allowed=True)
-            if self.auto:
-                net.ensure_on_for_auto()
-            else:
-                net.turn_on()
-            q = self.next_query(query)
-            try:
-                from form.dell_matrix.matrix_body import body_pulse
-                body = body_pulse()
-                missing = body.get("missing") or []
-                if missing:
-                    q = f"{q} {missing[0]} system restore architecture"
-            except Exception:
-                pass
-            fw = net.search_far_wide(q)
-            for idea in fw.get("ideas") or []:
-                ideas.append(idea)
-            self.last_report["last_query"] = q
-            self.last_report["net_count"] = fw.get("count", 0)
-            self.last_report["net_sources"] = fw.get("primary_sources") or []
-        except Exception as e:
-            self.last_report["net_error"] = str(e)
-        return ideas
-
-    def step(
-        self,
-        *,
-        query: str = "",
-        extra_ideas: Optional[List[Dict[str, Any]]] = None,
-        place_on_confirm: bool = True,
-    ) -> Dict[str, Any]:
-        self.tick += 1
-        body: Dict[str, Any] = {}
-        delta: Dict[str, Any] = {}
-        try:
-            from form.dell_matrix.matrix_body import body_pulse
-            body = body_pulse()
-        except Exception as e:
-            body = {"missing": [], "error": str(e)}
-        try:
-            from form.dell_matrix.delta_pressure import from_body
-            delta = from_body(body)
-        except Exception:
-            delta = {"band": "elevated", "magnitude": 0.3}
-
-        self.last_report["delta_band"] = delta.get("band", "elevated")
-
-        ideas = self.harvest_net(query)
-        for ex in (extra_ideas or []):
-            ideas.append(ex)
-
-        missing = body.get("missing") or []
-        if missing:
-            ideas.insert(0, {
-                "label": f"Restore {missing[0]} organ",
-                "words": f"vital densify {missing[0]} whole body offline coherent growth",
-                "source": "delta:vital",
-            })
-
-        results = []
-        confirmed_labels = []
-        for idea in ideas[:12]:
-            label = str(idea.get("label") or "")[:80]
-            words = str(idea.get("words") or "")[:400]
-            if len(label) < 3:
-                continue
-            judge = self._judge(label, words)
-            nursery = self._nursery_auto(label, words, judge, str(idea.get("source") or "auto"))
-            plane = {"ok": False}
-            status = nursery.get("status") or ""
-            # Only canonical confirmations are recorded; placement already happened inside
-            # Program.confirm_proposal and the owner Program was saved (place_on_confirm kept for API compat).
-            if status == "auto_confirmed":
-                confirmed_labels.append(label)
-                plane = {"ok": True, "surface": "Program.confirm_proposal", "id": nursery.get("id")}
-                self._commit_ledger({
-                    "label": label,
-                    "words": words[:200],
-                    "source": idea.get("source"),
-                    "judge": judge,
-                    "nursery": status,
-                    "plane": plane.get("ok"),
-                })
-            results.append({
-                "label": label[:60],
-                "source": idea.get("source"),
-                "judge": judge,
-                "nursery": status,
-                "plane": plane.get("ok"),
-            })
-
-        report = {
-            "ok": True,
-            "auto": self.auto,
-            "tick": self.tick,
-            "query": self.last_report.get("last_query"),
-            "net_count": self.last_report.get("net_count", 0),
-            "net_sources": self.last_report.get("net_sources", []),
-            "delta_band": delta.get("band"),
-            "delta_top": (delta.get("top_action") or {}).get("action"),
-            "missing": missing[:8],
-            "processed": len(results),
-            "confirmed": len(confirmed_labels),
-            "confirmed_labels": confirmed_labels[:8],
-            "confirmed_total": self.confirmed_total,
-            "rejected_total": self.rejected_total,
-            "results": results[:12],
-            "law": (
-                "auto: net far-wide → Verita+Floor judge → nursery self-handle → "
-                "confirm strong · reject fog · ledger · plane when available"
-            ),
-            "repo": "github.com/spiritualityhandbook-netizen/DellMatrix",
-        }
-        self.last_report = {**self.last_report, **report}
-        return report
-
-    def run_continuous(self, ticks: int = 5, sleep_s: float = 0.5, query: str = "") -> List[Dict[str, Any]]:
-        out = []
-        for _ in range(max(1, ticks)):
-            out.append(self.step(query=query))
-            if sleep_s > 0:
-                time.sleep(sleep_s)
-        return out
-
-
-AUTO = AutoGrowth()
-
-
-def auto_step(**kwargs) -> Dict[str, Any]:
-    return AUTO.step(**kwargs)
-
-
-def smoke() -> bool:
-    print("=== AUTO GROWTH SMOKE ===")
-    r = []
-    def rec(n, ok):
-        print(f"[{'PASS' if ok else 'FAIL'}] {n}"); r.append(ok)
-    ag = AutoGrowth(auto=True, internet=False)
-    out = ag.step(
-        extra_ideas=[
-            {"label": "Restore floor skeleton", "words": "vital organ densify coherent offline body grow", "source": "test"},
-            {"label": "??", "words": "asdf", "source": "test"},
-        ],
-        place_on_confirm=False,
-    )
-    rec("step_ok", out.get("ok") is True)
-    rec("processed", out.get("processed", 0) >= 1)
-    rec("confirmed_labels_tracked", isinstance(out.get("confirmed_labels"), list))
-    print(f"confirmed_total={ag.confirmed_total} rejected_total={ag.rejected_total}")
-    print(f"=== {sum(r)}/{len(r)} ===")
-    return all(r)
-
-
-if __name__ == "__main__":
-    import sys
-    if "--smoke" in sys.argv:
-        sys.exit(0 if smoke() else 1)
-    AUTO.auto = True
-    AUTO.internet = True
-    rep = AUTO.step(query="coherent autonomous systems architecture")
-    print(json.dumps({
-        "tick": rep["tick"],
-        "query": rep.get("query"),
-        "net_count": rep.get("net_count"),
-        "confirmed": rep.get("confirmed"),
-        "confirmed_labels": rep.get("confirmed_labels"),
-        "delta_band": rep.get("delta_band"),
-        "law": rep.get("law"),
-        "repo": rep.get("repo"),
-    }, indent=2))

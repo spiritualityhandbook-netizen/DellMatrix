@@ -600,6 +600,14 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         data.get("director_records", _DR_MISSING), p.owner)
     p.director_records = drecords
     p.director_records_malformed = drmalformed
+    # SD-5: restore the inside-out loop ledger.
+    from form.dell_matrix.design_loop import (
+        validate_section as validate_design_loop_section,
+        _MISSING as _DL_MISSING)
+    dlevents, dlmalformed = validate_design_loop_section(
+        data.get("design_loop", _DL_MISSING), p.owner)
+    p.design_loop = dlevents
+    p.design_loop_malformed = dlmalformed
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")
@@ -776,7 +784,7 @@ DURABLE_KEYS = (
     "lifecycle", "agent_local", "agent_audit", "studio_sessions",
     "workshop_sessions", "onboarding_sessions", "forge_sessions",
     "bimo_configurations", "connection_sessions", "dock_sessions",
-    "director_records",
+    "director_records", "design_loop",
 )
 
 

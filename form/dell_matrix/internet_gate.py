@@ -3,9 +3,11 @@
 InternetGate — network search far and wide for matrix growth.
 
 DEFAULT OFF for pure offline runs.
-Auto-growth may enable ONLY on a gate explicitly constructed with
-auto_allowed=True by trusted host code (AutoGrowth / MatrixAwake
-own such gates). The Program-carried gate never auto-enables:
+Auto-enable may happen ONLY on a gate explicitly constructed with
+auto_allowed=True by trusted host code. (The former AutoGrowth /
+MatrixAwake owners were retired in SD-5; no production code
+constructs such a gate today — the capability remains a
+host-only opt-in.) The Program-carried gate never auto-enables:
 auto_allowed defaults to False and is never restored from persisted
 state (persisted values were only the former default round-tripping;
 no user surface sets it).

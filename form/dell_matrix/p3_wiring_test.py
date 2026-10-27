@@ -6,7 +6,9 @@ Proves, on real paths, the P3 outcomes:
 - TD-5: cross-door id creation goes through idea_create.unique_unit_id.
 - TD-6: tokenizer/Jaccard parity on the canonical text_metrics kit,
   with harmony's documented deliberate difference intact.
-- TD-4: idea_grow.pair_affinity agrees with canonical ringed _affinity.
+- TD-4: idea_grow.pair_affinity agreed with canonical ringed
+  _affinity (P3); SD-5 retired idea_grow — the guard now checks
+  the duplicate is gone and the canonical authority computes.
 - TD-7: the seven _ts/_utcnow delegations share the utc_time format.
 - Wires: smoke_ux on the Program, radial_drift forgetting far shells,
   kaomoji registry consulted by the face, Avatar.status via read_body,
@@ -74,15 +76,17 @@ def smoke() -> bool:
 
         # ── TD-6: tokenizer parity on the kit ────────────────────────
         from form.dell_matrix import text_metrics as tm
-        from form.dell_matrix import ringed_growth, verita, floor_spirit
+        from form.dell_matrix import ringed_growth, verita
         from form.mandell import knowledge_selector as ks
         sample = "To be or not to be, an AI era"
         rec("td6_ks_is_kit", ks._tokens is tm.tokens and ks._jaccard is tm.jaccard)
         rec("td6_rg_is_kit", ringed_growth._tokens is tm.tokens_of
             and ringed_growth._jaccard is tm.jaccard)
         rec("td6_shared_vocab", ks._tokens(sample) == tm.tokens(sample) == {"era", "not"})
-        rec("td6_verita_floor", verita.tokens is tm.tokens
-            and floor_spirit._tokens is tm.tokens)
+        # SD-5: floor_spirit (the third TD-6 delegator checked
+        # here in P3) is retired with the dormant cluster; the
+        # verita delegation remains.
+        rec("td6_verita_floor", verita.tokens is tm.tokens)
         from form.dell_matrix import harmony
         rec("td6_harmony_keeps_own_tokenizer",
             harmony._TOKEN.pattern != tm.TOKEN_RE.pattern
@@ -132,13 +136,17 @@ def smoke() -> bool:
                 and b["id"] == "wiring_probe_1" and a["id"] != b["id"],
                 f"{a['id']} vs {b['id']}")
 
-            with contextlib.redirect_stdout(io.StringIO()):
-                from form.dell_matrix import idea_grow
-                pa = idea_grow.pair_affinity(plane, a["id"], b["id"])
+            # TD-4 closed in P3 by adapting idea_grow.pair_affinity
+            # onto the canonical authority; SD-5 (P8) completed the
+            # disposition by RETIRING idea_grow (zero production
+            # callers). The guard now: the duplicate is gone and
+            # the canonical authority computes.
+            import importlib.util as _ilu
             ca = ringed_growth._affinity(plane, a["id"], b["id"])
-            rec("td4_affinity_parity", abs(pa["affinity"] - ca["affinity"]) < 1e-9
-                and pa["shared_tokens"] == ca["shared"]
-                and abs(pa["jaccard"] - ca["jaccard"]) < 1e-9)
+            rec("td4_affinity_parity",
+                _ilu.find_spec("form.dell_matrix.idea_grow") is None
+                and ca["affinity"] >= 0.0 and "shared" in ca
+                and "jaccard" in ca)
 
             p.place("far_unit", "FarUnit", words="payload words here",
                     x=9.0, y=9.0)

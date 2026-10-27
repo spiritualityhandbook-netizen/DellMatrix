@@ -43,7 +43,9 @@ ORGANS: Dict[str, Dict[str, Any]] = {
     "vision": {"role": "eye", "module": "form.dell_matrix.vision", "dell": 82, "vital": False},
     "perception": {"role": "proprioception", "module": "form.dell_matrix.perception", "dell": 82, "vital": False},
     "live_visual": {"role": "face", "module": "form.dell_matrix.live_visual", "dell": 9, "vital": False},
-    "act_on_seen": {"role": "hand", "module": "form.dell_matrix.act_on_seen", "dell": 82, "vital": False},
+    # SD-5: the "act_on_seen" organ entry is removed with its
+    # module (retired with the dormant free-matrix cluster); the
+    # hand role has no live organ until a real one is wired.
     # higher / social
     "personas": {"role": "identity", "module": "form.dell_matrix.personas", "dell": 2, "vital": False},
     "neuroevo": {"role": "adaptation", "module": "form.dell_matrix.neuroevo", "dell": 88, "vital": False},

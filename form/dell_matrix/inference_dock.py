@@ -456,12 +456,13 @@ def validate_context(context: Any) -> Dict[str, Any]:
 
 # ---------------------------------------------------------------- validation
 
-def validate_proposal_output(text: str) -> Dict[str, str]:
+def validate_proposal_output(text: str) -> Dict[str, Any]:
     """Validate raw model output against the explicit proposal schema.
 
-    Returns {"label": ..., "words": ...} or raises ProviderError.
-    Model output is DATA: unknown keys, authority-bearing keys,
-    wrong types, and out-of-range lengths are all rejected. No eval.
+    Returns {"label", "words", "detail", "goals"} or raises
+    ProviderError. Model output is DATA: unknown keys,
+    authority-bearing keys, wrong types, and out-of-range lengths
+    are all rejected. No eval.
     """
     if not isinstance(text, str) or not text.strip():
         raise ProviderError("empty model output")
@@ -475,7 +476,12 @@ def validate_proposal_output(text: str) -> Dict[str, str]:
     if not isinstance(data, dict):
         raise ProviderError("malformed model output: not an object")
     keys = set(data.keys())
-    if keys != set(PROPOSAL_KEYS):
+    # SD-5: "detail" and "goals" are known OPTIONAL keys, bounded
+    # exactly as in the SD-2 semantic schema, so a filed design
+    # (or any docked filing) can carry authored content. Unknown
+    # keys — above all authority-bearing ones — are still rejected.
+    if not set(PROPOSAL_KEYS) <= keys <= set(PROPOSAL_KEYS) | {
+            "detail", "goals"}:
         raise ProviderError(
             f"unexpected proposal fields: {sorted(keys)}")
     label, words = data["label"], data["words"]
@@ -486,7 +492,19 @@ def validate_proposal_output(text: str) -> Dict[str, str]:
         raise ProviderError("label length out of bounds")
     if not (1 <= len(words) <= MAX_WORDS_CHARS):
         raise ProviderError("words length out of bounds")
-    return {"label": label, "words": words}
+    out: Dict[str, Any] = {"label": label, "words": words,
+                           "detail": "", "goals": []}
+    detail = data.get("detail", "")
+    if not isinstance(detail, str) or len(detail) > MAX_DETAIL_CHARS:
+        raise ProviderError("detail out of bounds")
+    out["detail"] = detail
+    goals = data.get("goals", [])
+    if not isinstance(goals, list) or len(goals) > MAX_GOALS or any(
+            not isinstance(g, str) or len(g) > MAX_GOAL_CHARS
+            for g in goals):
+        raise ProviderError("goals out of bounds")
+    out["goals"] = list(goals)
+    return out
 
 
 # --------------------------------------------- semantic verb schema (SD-2)
@@ -676,7 +694,8 @@ class DockedSession:
 
     def propose(self, prompt: str,
                 context: Optional[Dict[str, Any]] = None,
-                reason: Optional[str] = None) -> Dict[str, Any]:
+                reason: Optional[str] = None,
+                *, kind: str = "new") -> Dict[str, Any]:
         """Run inference and create a PENDING Nursery proposal.
 
         Enforcement order (AMEND 2026-10-07):
@@ -692,6 +711,10 @@ class DockedSession:
         proposal carries a reason. The session's task kind and the
         evidence link are recorded in the session evidence record.
 
+        SD-5: `kind` selects the proposal kind ("new" default;
+        "design" files an inside-out design proposal). Kinds
+        outside the contract are refused before any provider call.
+
         Returns {"ok": True, "pid", "provider", "model", "task",
         "session_id"} (model is the ACTUAL model identity reported
         by the transport) or {"ok": False, "reason", "detail"} with
@@ -701,6 +724,14 @@ class DockedSession:
         if not self._docked:
             return {"ok": False, "reason": "undocked",
                     "detail": "Session is undocked: zero provider calls."}
+        # SD-5: the proposal kind contract. "design" files a design
+        # proposal (the inside-out loop's inner-loop artifact);
+        # anything outside the contract is refused before any
+        # provider call.
+        if kind not in ("new", "evolved", "design"):
+            return {"ok": False, "reason": "invalid_kind",
+                    "detail": "kind must be 'new', 'evolved', or "
+                              "'design'."}
         if not isinstance(prompt, str) or not prompt.strip():
             return {"ok": False, "reason": "bad_prompt",
                     "detail": "Prompt must be a non-empty string."}
@@ -820,7 +851,9 @@ class DockedSession:
         try:
             prop = self._program.nursery.add(
                 fields["label"], words=fields["words"], origin=origin,
-                reason=chosen_reason)
+                reason=chosen_reason, kind=kind,
+                detail=fields.get("detail", ""),
+                goals=fields.get("goals", []))
         except Exception as e:
             return {"ok": False, "reason": "nursery_failure",
                     "detail": f"{type(e).__name__}"}

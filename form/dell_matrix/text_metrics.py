@@ -13,8 +13,9 @@ counted, no underscores), so growth token sets and KIE selection
 token sets were quietly different sets for short-token text.
 
 Now: this module is the single implementation. ringed_growth,
-idea_grow, verita, floor_spirit, and knowledge_selector delegate
-here, and harmony's pairwise coherence uses this module's jaccard.
+verita, and knowledge_selector delegate here, and harmony's
+pairwise coherence uses this module's jaccard. (idea_grow and
+floor_spirit also delegated here until their SD-5 retirement.)
 
 Deliberate exceptions, documented at their sites:
 - harmony._idea_tokens keeps the [a-z0-9]+ tokenizer: its domain is

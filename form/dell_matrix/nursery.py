@@ -88,7 +88,10 @@ class Proposal:
     id: str
     label: str
     words: str
-    kind: str  # "new" | "evolved"
+    kind: str  # producer kinds in production use: "new" |
+    # "evolved" (growth + docked verbs) | "design" (SD-5: a
+    # proposal whose confirmation accepts a design for host
+    # implementation) | "auto" (AutoGrowth's auto-propose path)
     parents: List[str] = field(default_factory=list)
     affinity: float = 0.0
     reason: str = ""

@@ -113,13 +113,16 @@ def part_opt_in_lane_preserved():
     g = InternetGate(auto_allowed=True)
     check("optin: explicit opt-in auto-enables",
           g.ensure_on_for_auto() is True and g.on is True)
-    # The two designed auto-growth owners opt in at construction.
+    # SD-5: the two designed auto-growth owners (AutoGrowth /
+    # MatrixAwake) are RETIRED with the dormant cluster. The
+    # invariant is now stronger: the live growth authority
+    # (RingedGrowth) never constructs an auto-allowed gate, and
+    # no production module does either — auto-enable remains a
+    # trusted-host-only opt-in on an explicitly built gate.
     import inspect
-    from form.dell_matrix import auto_growth, matrix_awake
-    check("optin: AutoGrowth constructs its gate with auto_allowed=True",
-          "InternetGate(auto_allowed=True)" in inspect.getsource(auto_growth))
-    check("optin: MatrixAwake constructs its gate with auto_allowed=True",
-          "InternetGate(auto_allowed=True)" in inspect.getsource(matrix_awake))
+    from form.dell_matrix import ringed_growth
+    check("optin: live growth authority never auto-enables the gate",
+          "auto_allowed=True" not in inspect.getsource(ringed_growth))
 
 
 def part_hard_gates_unmoved():
