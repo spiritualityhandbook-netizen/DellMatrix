@@ -38,11 +38,11 @@ touching either authority's laws:
   existing law). Provider selection is one token — a name.
 
 Session evidence persists in the `connection_sessions` section under
-the shared strict schema (sixth instance): closed records only,
-bounded (50 steps / 10 sessions), owner-bound, malformed preserved,
-absent = legacy. Only step kinds and fixed result summaries are
-stored — never prompts, never fetched content, never URLs beyond the
-recorded fetch host.
+the shared strict schema (implemented once in the session_section
+kit, P3/TD-2): closed records only, bounded (50 steps / 10
+sessions), owner-bound, malformed preserved, absent = legacy. Only
+step kinds and fixed result summaries are stored — never prompts,
+never fetched content, never URLs beyond the recorded fetch host.
 """
 
 from __future__ import annotations
@@ -51,6 +51,16 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
+
+from form.dell_matrix.session_section import (
+    MISSING,
+    add_malformed,
+    append_step,
+    closed_record,
+    is_valid_step,
+    serialize_records_section,
+    validate_records_section,
+)
 
 _MAX_STEPS = 50
 _MAX_SESSIONS = 10
@@ -62,18 +72,8 @@ FAIL_OUT_OF_SCOPE = "OUT_OF_SCOPE"
 FAIL_SAVE = "SAVE_FAILED"
 FAIL_DOCK = "DOCK_FAILED"
 
-
-def _is_valid_step(rec: Any) -> bool:
-    """Strict step record check. No coercion."""
-    if not isinstance(rec, dict):
-        return False
-    for k in ("kind", "time", "result"):
-        v = rec.get(k)
-        if not isinstance(v, str) or len(v) > 256:
-            return False
-    if len(rec.get("kind", "")) == 0 or len(rec.get("kind", "")) > 32:
-        return False
-    return True
+# The kit's step check, under this module's historical name.
+_is_valid_step = is_valid_step
 
 
 @dataclass
@@ -104,13 +104,7 @@ class ConnectionSession:
 
     def record(self, kind: str, result: str) -> None:
         """Record one step. Enforces the in-memory bound."""
-        self.steps.append({
-            "kind": str(kind)[:32],
-            "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "result": str(result)[:240],
-        })
-        if len(self.steps) > _MAX_STEPS:
-            self.steps = self.steps[-_MAX_STEPS:]
+        self.steps = append_step(self.steps, kind, result, _MAX_STEPS)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -123,17 +117,7 @@ class ConnectionSession:
 
     def closed_copy(self) -> Dict[str, Any]:
         """Build the closed record WITHOUT mutating the session."""
-        record = self.to_dict()
-        record["closed"] = time.strftime(
-            "%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        steps = list(record.get("steps", []))
-        steps.append({
-            "kind": "leave",
-            "time": record["closed"],
-            "result": "leave recorded",
-        })
-        record["steps"] = steps[-_MAX_STEPS:]
-        return record
+        return closed_record(self.to_dict(), "steps", _MAX_STEPS)
 
     @staticmethod
     def validate(raw: Any, owner: str) -> Tuple[bool, str]:
@@ -164,124 +148,31 @@ class ConnectionSession:
 
 # Sentinel for absent section key (legacy). Distinct from explicit null,
 # which is malformed. Loaders use data.get("connection_sessions", _MISSING).
-_MISSING = object()
-
-
-def _add_malformed(malformed: Dict[str, Any], key: str, raw: Any, error: str) -> None:
-    """Add malformed evidence without overwriting earlier evidence."""
-    entry = {"raw": raw, "error": error}
-    if key in malformed:
-        existing = malformed[key]
-        if isinstance(existing, list):
-            existing.append(entry)
-        else:
-            malformed[key] = [existing, entry]
-    else:
-        malformed[key] = [entry]
-
-
-def _carry_preserved(raw: Any, malformed: Dict[str, Any]) -> None:
-    """Carry previously-preserved malformed evidence through, by key."""
-    preserved = raw.get("malformed") if isinstance(raw, dict) else None
-    if isinstance(preserved, dict):
-        for k, v in preserved.items():
-            if not isinstance(k, str):
-                continue
-            if isinstance(v, list):
-                for entry in v:
-                    if isinstance(entry, dict):
-                        _add_malformed(malformed, k, entry.get("raw"),
-                                       entry.get("error", "preserved"))
-                    else:
-                        _add_malformed(malformed, k, entry, "preserved")
-            elif isinstance(v, dict) and "raw" in v:
-                _add_malformed(malformed, k, v.get("raw"),
-                               v.get("error", "preserved"))
-            else:
-                _add_malformed(malformed, k, v, "preserved")
+# _MISSING is the session_section kit's one sentinel (P3/TD-2), and
+# _add_malformed its one implementation.
+_MISSING = MISSING
+_add_malformed = add_malformed
 
 
 def validate_section(raw: Any, owner: str
                      ) -> Tuple[Dict[str, Dict[str, Any]],
                                 Optional[Dict[str, Any]]]:
     """Validate a persisted connection_sessions section. Never raises."""
-    if raw is _MISSING:
-        return {}, None
-    if raw is None:
-        malformed: Dict[str, Any] = {}
-        _add_malformed(malformed, "_section", None,
-                       "explicit null is malformed, not legacy absence")
-        return {}, malformed
-    if not isinstance(raw, dict):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, "section not an object")
-        return {}, malformed
-    version = raw.get("version")
-    if isinstance(version, bool) or not isinstance(version, int):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw,
-                       "section version must be int 1")
-        return {}, malformed
-    if version != CONNECTION_SECTION_VERSION:
-        malformed = {}
-        _add_malformed(malformed, "_section", raw,
-                       f"unsupported section version {version}")
-        return {}, malformed
-    if not isinstance(raw.get("sessions"), dict):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, "sessions not an object")
-        return {}, malformed
-    valid: Dict[str, Dict[str, Any]] = {}
-    malformed = {}
-    for sid, rec in raw["sessions"].items():
-        if not isinstance(sid, str):
-            _add_malformed(malformed, "_non_string_key", rec,
-                           "session key not a string")
-            continue
-        ok, err = ConnectionSession.validate(rec, owner)
-        if not ok:
-            _add_malformed(malformed, sid, rec, err)
-            continue
-        if not isinstance(rec, dict) or rec.get("session_id") != sid:
-            _add_malformed(malformed, sid, rec, "session key/ID mismatch")
-            continue
-        valid[sid] = dict(rec)
-    _carry_preserved(raw, malformed)
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("started", "")),
-                     reverse=True)[:_MAX_SESSIONS]
-    return dict(ordered), (malformed if malformed else None)
+    return validate_records_section(
+        raw, version=CONNECTION_SECTION_VERSION, kind="sessions",
+        validate_rec=lambda rec: ConnectionSession.validate(rec, owner),
+        id_field="session_id", max_keep=_MAX_SESSIONS,
+        sort_field="started", key_not_string="session key not a string",
+        mismatch="session key/ID mismatch")
 
 
 def serialize_section(sessions: Any, malformed: Any,
                       owner: str) -> Dict[str, Any]:
     """Serialize connection sessions with the strict schema. Never raises."""
-    valid: Dict[str, Dict[str, Any]] = {}
-    mal: Dict[str, Any] = {}
-    if isinstance(sessions, dict):
-        for sid, rec in sessions.items():
-            if not isinstance(sid, str):
-                _add_malformed(mal, "_non_string_key", rec,
-                               "session key not a string")
-                continue
-            ok, err = ConnectionSession.validate(rec, owner)
-            if not ok:
-                _add_malformed(mal, sid, rec,
-                               f"not serialized as valid: {err}")
-                continue
-            if not isinstance(rec, dict) or rec.get("session_id") != sid:
-                _add_malformed(mal, sid, rec,
-                               "not serialized as valid: key/ID mismatch")
-                continue
-            valid[sid] = dict(rec)
-    _carry_preserved({"malformed": malformed} if isinstance(malformed, dict) else {}, mal)
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("started", "")),
-                     reverse=True)[:_MAX_SESSIONS]
-    section: Dict[str, Any] = {
-        "version": CONNECTION_SECTION_VERSION,
-        "sessions": dict(ordered),
-    }
-    if mal:
-        section["malformed"] = mal
-    return section
+    return serialize_records_section(
+        sessions, malformed, version=CONNECTION_SECTION_VERSION,
+        kind="sessions",
+        validate_rec=lambda rec: ConnectionSession.validate(rec, owner),
+        id_field="session_id", max_keep=_MAX_SESSIONS,
+        sort_field="started", key_not_string="session key not a string",
+        mismatch="not serialized as valid: key/ID mismatch")
