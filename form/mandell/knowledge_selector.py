@@ -34,17 +34,10 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional, Set
 
-_TOKEN = re.compile(r"[a-z0-9]+")
-
-
-def _tokens(text: str) -> Set[str]:
-    """Tokenize text the same way RingedGrowth does."""
-    return {m.group(0).lower() for m in _TOKEN.finditer(text.lower())}
-
-
-def _token_seq(text: str) -> List[str]:
-    """Ordered token sequence (same normalization as _tokens)."""
-    return [m.group(0).lower() for m in _TOKEN.finditer(text.lower())]
+from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens as _tokens, token_seq as _token_seq, jaccard as _jaccard
+# Canonical tokenization/Jaccard substrate: text_metrics (P3/TD-6).
+# This module tokenizes the same way RingedGrowth does — both delegate
+# to the one implementation above.
 
 
 def _norm_text(text: str) -> str:
@@ -58,15 +51,6 @@ def _ordered_subseq(ctx_seq: List[str], unit_seq: List[str]) -> bool:
         return False
     it = iter(unit_seq)
     return all(any(tok == want for tok in it) for want in ctx_seq)
-
-
-def _jaccard(a: Set[str], b: Set[str]) -> float:
-    """Jaccard similarity between token sets."""
-    if not a or not b:
-        return 0.0
-    inter = len(a & b)
-    union = len(a | b)
-    return inter / union if union else 0.0
 
 
 def _unit_tokens(program: Any, uid: str) -> Set[str]:

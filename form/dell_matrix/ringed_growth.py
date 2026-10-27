@@ -36,7 +36,8 @@ from form.dell_matrix.graph_harmony import (  # P3 R3.6: graph consumer (read-on
 )
 
 RINGS = ("Seed", "Token", "Body", "Lens", "Evolve")
-_TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
+from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens_of as _tokens, jaccard as _jaccard
+# Canonical tokenization/Jaccard substrate: text_metrics (P3/TD-6).
 
 SOLSTICE_AFFINITY = 0.28
 EQUINOX_AFFINITY = 0.16
@@ -87,19 +88,6 @@ def _unit_blob(plane: Plane, uid: str) -> str:
 
 def _tokens_uid(plane: Plane, uid: str) -> Set[str]:
     return {m.group(0).lower() for m in _TOKEN.finditer(_unit_blob(plane, uid))}
-
-
-def _tokens(label: str, words: str) -> Set[str]:
-    raw = f"{label} {words}".lower()
-    return {m.group(0).lower() for m in _TOKEN.finditer(raw)}
-
-
-def _jaccard(a: Set[str], b: Set[str]) -> float:
-    if not a or not b:
-        return 0.0
-    inter = len(a & b)
-    union = len(a | b)
-    return inter / union if union else 0.0
 
 
 def _tension(a: Set[str], b: Set[str]) -> float:

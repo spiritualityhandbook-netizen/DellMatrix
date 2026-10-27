@@ -44,12 +44,9 @@ import time
 
 from form.dell_matrix import sacred_geometry
 
-_TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
+from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens
+# Canonical tokenization substrate: text_metrics (P3/TD-6).
 _FOG = ("asdf", "test123", "xxx", "???", "null", "undefined", "lorem", "TODO_ONLY")
-
-
-def tokens(text: str) -> Set[str]:
-    return {m.group(0).lower() for m in _TOKEN.finditer(text or "")}
 
 
 # ---------------------------------------------------------------------------

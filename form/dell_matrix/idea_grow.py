@@ -42,20 +42,8 @@ except ImportError:
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.open import open_program
 
-_TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
-
-
-def tokens_of(label: str, words: str) -> Set[str]:
-    raw = f"{label} {words}".lower()
-    return {m.group(0).lower() for m in _TOKEN.finditer(raw) if not m.group(0).startswith("pulled")}
-
-
-def jaccard(a: Set[str], b: Set[str]) -> float:
-    if not a or not b:
-        return 0.0
-    inter = len(a & b)
-    union = len(a | b)
-    return inter / union if union else 0.0
+from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens_of, jaccard
+# Canonical tokenization/Jaccard substrate: text_metrics (P3/TD-6).
 
 
 def distance(plane: Plane, a: str, b: str) -> float:
