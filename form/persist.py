@@ -124,6 +124,8 @@ def serialize(program: Program) -> Dict[str, Any]:
         serialize_section as serialize_director_section)
     from form.dell_matrix.design_loop import (
         serialize_section as serialize_design_loop_section)
+    from form.dell_matrix.exchange import (
+        serialize_receipts_section as serialize_exchange_section)
     sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
@@ -319,6 +321,13 @@ def serialize(program: Program) -> Dict[str, Any]:
         "design_loop": serialize_design_loop_section(
             getattr(program, "design_loop", None),
             getattr(program, "design_loop_malformed", None),
+            program.owner,
+        ),
+        # P9: Exchange receipts recorded against proposals
+        # (run transcripts; assembled into packets at export).
+        "exchange_receipts": serialize_exchange_section(
+            getattr(program, "exchange_receipts", None),
+            getattr(program, "exchange_receipts_malformed", None),
             program.owner,
         ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).

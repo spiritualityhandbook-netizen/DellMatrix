@@ -608,6 +608,13 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         data.get("design_loop", _DL_MISSING), p.owner)
     p.design_loop = dlevents
     p.design_loop_malformed = dlmalformed
+    # P9: restore Exchange receipts recorded against proposals.
+    from form.dell_matrix.exchange import (
+        validate_receipts_section, _MISSING as _EX_MISSING)
+    exentries, exmalformed = validate_receipts_section(
+        data.get("exchange_receipts", _EX_MISSING), p.owner)
+    p.exchange_receipts = exentries
+    p.exchange_receipts_malformed = exmalformed
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")
@@ -785,6 +792,7 @@ DURABLE_KEYS = (
     "workshop_sessions", "onboarding_sessions", "forge_sessions",
     "bimo_configurations", "connection_sessions", "dock_sessions",
     "director_records", "design_loop",
+    "director_records", "exchange_receipts",
 )
 
 

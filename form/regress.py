@@ -147,6 +147,9 @@ LIST = [
     # (kind=design filing, loop ledger chain, REPL recommendation
     # display) + dormant-cluster disposition guards.
     "form.mandell.p8_sd5_test",
+    # Master plan P9 — Exchange v1 (seed packets with receipts,
+    # chain lint, gated cross-process import, replication counts).
+    "form.mandell.p9_exchange_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",
