@@ -4,6 +4,7 @@
     python -m form.regress              # forward
     python -m form.regress --order rev  # reverse order
     python -m form.regress --twice      # run the list twice on the same state (exposes state coupling)
+    python -m form.regress --passk ENTRY K  # run ONE entry K times, fresh copy per run (pass^k reliability)
     python -m form.regress --help       # usage only (exit 0, no entry runs); any bad argument exits 2 unrun
 
 Each entry "module[:function]" (default function: smoke) runs in its own process:
@@ -166,6 +167,7 @@ LIST = [
     "form.mandell.launchers_test:smoke",
     "form.mandell.projects_groups_test:smoke",
     "form.mandell.visual_ux_test:smoke",
+    "form.mandell.passk_test:smoke",
     "form.mandell.p4_lifecycle_gravity_proof:smoke",
     "form.mandell.p4_placement_dynamics_proof:smoke",
     "form.mandell.p4_lattice_collision_proof:smoke",
@@ -304,6 +306,40 @@ def run(entries: Optional[List[str]] = None, intended: Optional[Iterable[str]] =
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+PASSK_MAX = 20
+
+
+def run_passk(entry: str, k: int, src: str = ROOT) -> bool:
+    """Run ONE entry k times, each in a FRESH private copy of ``src`` (pass^k reliability).
+
+    A single GREEN can be luck or state coupling; pass^k reports p/k honestly and is
+    GREEN only at p == k. Every run gets its own _copy_tree, so no run can inherit
+    another run's state. Usage errors (a regression copy as src, k outside
+    1..PASSK_MAX, an entry not intended for src) print a PASSK error line and return
+    False WITHOUT running anything."""
+    e = normalize(entry)
+    if os.path.exists(os.path.join(src, COPY_MARKER)):
+        print(f"PASSK: src {src} is a regression copy ({COPY_MARKER}); refused, nothing run", flush=True)
+        return False
+    if not isinstance(k, int) or isinstance(k, bool) or k < 1 or k > PASSK_MAX:
+        print(f"PASSK: k must be an integer in 1..{PASSK_MAX} (got {k!r}); nothing run", flush=True)
+        return False
+    if e not in intended_entries(src):
+        print(f"PASSK: unknown entry {e}; nothing run", flush=True)
+        return False
+    passed = 0
+    for i in range(1, k + 1):
+        tmp = _copy_tree(src)
+        try:
+            ok, why = run_entry(e, os.path.join(tmp, "src"))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+        passed += 1 if ok else 0
+        print(f"PASSK run {i}/{k}: {'OK ' if ok else 'RED'} {e} {why}", flush=True)
+    print(f"PASSK: {e} {passed}/{k} -> {'GREEN' if passed == k else 'RED'}", flush=True)
+    return passed == k
+
+
 class _Once(argparse.Action):
     """Store an option at most once: a repeated or conflicting --order/--twice is a usage error."""
 
@@ -322,6 +358,8 @@ def _parser() -> argparse.ArgumentParser:
                     help="entry order (fwd|rev); --order rev and --order=rev are equivalent")
     ap.add_argument("--twice", nargs=0, default=False, action=_Once,
                     help="run the list twice on the same state (exposes state coupling)")
+    ap.add_argument("--passk", nargs=2, default=None, action=_Once, metavar=("ENTRY", "K"),
+                    help="run ONE entry K times (1..20), fresh copy per run; conflicts with --order/--twice")
     return ap
 
 
@@ -337,6 +375,26 @@ def main(argv: Optional[List[str]] = None) -> int:
         ns = ap.parse_args(a)
     except SystemExit as e:
         return 0 if e.code in (0, None) else 2
+    if ns.passk is not None:
+        given = ns.__dict__.get("_given", set())
+        if "order" in given or "twice" in given:
+            print("error: --passk conflicts with --order/--twice", file=sys.stderr)
+            return 2
+        entry_raw, k_raw = ns.passk
+        try:
+            k = int(k_raw)
+        except (TypeError, ValueError):
+            print(f"error: --passk K must be an integer in 1..{PASSK_MAX} (got {k_raw!r})", file=sys.stderr)
+            return 2
+        if k < 1 or k > PASSK_MAX:
+            print(f"error: --passk K must be in 1..{PASSK_MAX} (got {k})", file=sys.stderr)
+            return 2
+        if normalize(entry_raw) not in intended_entries(ROOT):
+            print(f"error: --passk unknown entry {normalize(entry_raw)}", file=sys.stderr)
+            return 2
+        ok = run_passk(entry_raw, k)
+        print(f"PASSK FINAL: {'GREEN' if ok else 'RED'}")
+        return 0 if ok else 1
     ok = run(order=ns.order, twice=ns.twice)
     print(f"REGRESS FINAL: {'GREEN' if ok else 'RED'} (order={ns.order}{', twice' if ns.twice else ''})")
     return 0 if ok else 1
