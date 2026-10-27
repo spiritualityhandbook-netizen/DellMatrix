@@ -7,7 +7,8 @@ From: NVIDIA / RL research theme "copying humans isn't enough"
   · Intrinsic curiosity: prefer unseen organs, new skins, unexplored centers
   · Anti-shortcut: reject actions that only repeat last trail
 
-Works with companion + free_matrix walk without needing neural nets.
+Live authority: per-subject agent-local behavioral state
+(round-tripped by persist). The free-matrix walk is retired (SD-5).
 """
 from __future__ import annotations
 
@@ -82,33 +83,16 @@ class IntrinsicAgent:
             "source_idea": "nvidia_copying_humans_not_enough",
         }
 
-    def step(self, program) -> Dict[str, Any]:
-        prop = self.propose_action(program)
-        action = prop["action"]
-        result: Dict[str, Any] = {"ok": False}
-        try:
-            from form.dell_matrix import free_matrix as fm
-            if action == "turn_left":
-                result = fm.turn(program, "left")
-            elif action == "turn_right":
-                result = fm.turn(program, "right")
-            elif action == "look_up":
-                result = fm.look(program, "up")
-            elif action in ("forward", "back", "left", "right"):
-                result = fm.walk(program, action if action != "back" else "back")
-            else:
-                result = fm.walk(program, "forward")
-        except Exception as e:
-            result = {"ok": False, "error": str(e)}
-        self.last_action = action
-        sight = {}
-        try:
-            from form.dell_matrix import free_matrix as fm
-            sight = fm.see(program, "companion", "first")
-        except Exception:
-            pass
-        obs = self.observe(program, sight)
-        return {"action": action, "result": result, "observe": obs, "proposal": prop}
+    # SD-5 (master plan P8): step() — the free-matrix walk
+    # EXECUTION — is RETIRED with the dormant free-matrix
+    # cluster (no production or test caller; the dock is now
+    # the agent interface). propose_action above is KEPT: it
+    # is a pure function of agent state and r64's behavioral
+    # evidence (movement distinct from knowledge acceptance).
+    # This module's live authority is the agent-local state:
+    # observe / propose_action / to_dict / from_dict /
+    # sync_all_agents_to_program, round-tripped by persist
+    # on every save.
 
     def to_dict(self) -> Dict[str, Any]:
         """Versioned behavioral snapshot. Observations only.

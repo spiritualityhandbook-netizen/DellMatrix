@@ -281,7 +281,12 @@ def test_schema_strictness_and_bounds():
             check(f"C10:reject_{i}", True)
     good = idock.validate_proposal_output(
         json.dumps({"label": "L", "words": "W"}))
-    check("C10:accept_exact", good == {"label": "L", "words": "W"})
+    # SD-5 contract extension: the validator now also returns the
+    # optional authored-content fields (detail "", goals []) —
+    # known keys with SD-2 bounds; unknown/authority keys above
+    # are still rejected exactly as before.
+    check("C10:accept_exact", good == {"label": "L", "words": "W",
+                                       "detail": "", "goals": []})
     # Oversized prompt refused before any provider call.
     sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid",
                       max_prompt_chars=10)

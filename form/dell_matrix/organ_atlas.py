@@ -109,10 +109,8 @@ ORGAN_ATLAS: Dict[str, Dict[str, Any]] = {
         "role": "proprioception", "module": "form.dell_matrix.perception", "dell": 82, "vital": False,
         "source": "form perception · form duals",
     },
-    "act_on_seen": {
-        "role": "hand", "module": "form.dell_matrix.act_on_seen", "dell": 82, "vital": False,
-        "source": "form act_on_seen · act on vision",
-    },
+    # SD-5: "act_on_seen" entry removed with its retired module
+    # (dormant free-matrix cluster); see matrix_body.py.
     "live_visual": {
         "role": "face_surface", "module": "form.dell_matrix.live_visual", "dell": 9, "vital": False,
         "source": "form live_visual · live render",

@@ -122,6 +122,8 @@ def serialize(program: Program) -> Dict[str, Any]:
         serialize_section as serialize_dock_section)
     from form.dell_matrix.director_records import (
         serialize_section as serialize_director_section)
+    from form.dell_matrix.design_loop import (
+        serialize_section as serialize_design_loop_section)
     sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
@@ -310,6 +312,13 @@ def serialize(program: Program) -> Dict[str, Any]:
         "director_records": serialize_director_section(
             getattr(program, "director_records", None),
             getattr(program, "director_records_malformed", None),
+            program.owner,
+        ),
+        # SD-5: the inside-out loop ledger (filed / gate /
+        # implemented events per design proposal).
+        "design_loop": serialize_design_loop_section(
+            getattr(program, "design_loop", None),
+            getattr(program, "design_loop_malformed", None),
             program.owner,
         ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).

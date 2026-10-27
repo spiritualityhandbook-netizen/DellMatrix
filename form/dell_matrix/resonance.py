@@ -183,7 +183,8 @@ def harmonize_pair(
     mutual enhance scope; fails closed ({"ok": False, ...}) for missing
     units or units outside mutual scope. This is a state-mutating
     resonance operation owned by the pulse/diffusion subsystem
-    (live caller: EnhanceGate.harmonize <- idea_grow.py), NOT the R3.2
+    (historical caller: EnhanceGate.harmonize <- idea_grow.py,
+    retired in SD-5), NOT the R3.2
     set-coherence metric harmony_score (form/dell_matrix/harmony.py),
     which is stateless and operates on idea sets. Name kept for
     compatibility; behavior unchanged.
