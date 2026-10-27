@@ -1237,7 +1237,8 @@ class Program:
         return self.auto_confirm_grow
 
     def grow_ideas(self, cycles: int = 1, scope_ids=None,
-                   include_superseded: bool = False) -> Dict[str, Any]:
+                   include_superseded: bool = False,
+                   session: Any = None) -> Dict[str, Any]:
         """Run RingedGrowth.
 
         DCC-XI: scope_ids optionally constrains the consumer to exactly
@@ -1246,6 +1247,12 @@ class Program:
 
         WO-5.3: include_superseded=True enables explicit historical use.
         Ordinary growth (default) excludes SUPERSEDED.
+
+        SD-3: `session` is an optional docked inference session
+        (host-supplied, e.g. the REPL connection's dock). When it is
+        docked, Solstice pair crosses are authored by the docked
+        mind through SYNTHESIZE; token affinity remains the pair
+        pre-filter and the labeled fallback (see RingedGrowth.run).
         """
         from form.mandell.knowledge_selector import ScopedPlaneView
         if not self.enhance.on:
@@ -1275,7 +1282,8 @@ class Program:
             graph = None
             graph_state = "unavailable"
         result = self.growth.run(plane, cycles=cycles, graph=graph, program=self,
-                                 include_superseded=include_superseded)
+                                 include_superseded=include_superseded,
+                                 session=session)
         result["scope_mode"] = scope_mode
         result["graph_signal"] = graph_state
         result["scope_ids"] = list(scope_ids) if scope_ids is not None else None

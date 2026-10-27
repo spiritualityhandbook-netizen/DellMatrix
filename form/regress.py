@@ -135,6 +135,10 @@ LIST = [
     # (extended schema, coordinator snapshot activation, IdeaLab40
     # calibration against the probe corpus).
     "form.mandell.p5_sd2_test",
+    # Master plan P6 / SD-3 — growth demotion (docked SYNTHESIZE
+    # routing for pair crosses, labeled token fallback, REPL
+    # connect grow).
+    "form.mandell.p6_sd3_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",
