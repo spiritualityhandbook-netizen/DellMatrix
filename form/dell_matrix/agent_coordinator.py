@@ -90,6 +90,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
+from form.utc_time import utc_now_str
 
 # ---------------------------------------------------------------------------
 # Constants and bounds
@@ -135,7 +136,7 @@ def _bound(text: Any, limit: int) -> str:
 
 
 def _utcnow() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    return utc_now_str()
 
 
 # ---------------------------------------------------------------------------

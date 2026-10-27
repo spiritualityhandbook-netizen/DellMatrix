@@ -20,6 +20,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from form.utc_time import utc_now_str
 
 try:
     from form.mandell.floor import FLOOR, assert_floor_intact
@@ -104,7 +105,7 @@ class SelfGrow:
             self.live_names = set()
 
     def _ts(self) -> str:
-        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return utc_now_str()
 
     def step(self) -> WatchLine:
         assert_floor_intact()

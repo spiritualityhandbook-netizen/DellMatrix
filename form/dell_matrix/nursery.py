@@ -20,6 +20,7 @@ import hashlib
 import json
 import os
 import re
+from form.utc_time import utc_now_str
 
 _STATE_DIR = os.path.join(os.path.dirname(__file__), "..", "state")
 os.makedirs(_STATE_DIR, exist_ok=True)
@@ -63,7 +64,7 @@ def _disk_sig(path: str) -> Optional[str]:
 
 
 def _ts() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return utc_now_str()
 
 
 def _slug(text: str, seed: int = 0) -> str:

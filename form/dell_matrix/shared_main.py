@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 import json
 import os
 import sys
+from form.utc_time import utc_now_str
 
 try:
     from form.mandell.floor import FLOOR, assert_floor_intact
@@ -38,7 +39,7 @@ LEVEL = 3
 
 
 def _ts() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return utc_now_str()
 
 
 def _empty() -> Dict[str, Any]:
