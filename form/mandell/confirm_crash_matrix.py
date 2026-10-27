@@ -354,9 +354,16 @@ except BaseException:
     is_old = (status == "pending" and not has_idea)
     is_new = (status == "confirmed" and has_idea)
     is_hybrid = not (is_old or is_new)
-    ok = not is_hybrid
-    # Check against expectation if specified
-    detail = f"status={status}, has_idea={has_idea}, old={is_old}, new={is_new}"
+    # P2: the expectation is binding, not documentary. "OLD" requires
+    # the proven old pair, "NEW" the proven new pair, "OLD or NEW"
+    # either complete pair (never hybrid).
+    if expect == "OLD":
+        ok = is_old
+    elif expect == "NEW":
+        ok = is_new
+    else:
+        ok = not is_hybrid
+    detail = f"status={status}, has_idea={has_idea}, old={is_old}, new={is_new}, expect={expect}"
     rec(f"crash_{name}", ok, detail)
 
 def t10():
@@ -366,13 +373,89 @@ def t10():
                 "OLD")
 
 def t11():
-    # Crash after nursery.save, before program save.
-    # NOTE (F9): This test bypasses confirm_proposal and therefore has no
-    # journal. Without a journal, recovery cannot detect the hybrid.
-    # The F2 fix covers the confirm_proposal path (with journal).
-    # Direct checkpoint crashes without journal remain UNPROVEN.
-    # This test documents the gap; it is not counted as a pass.
+    # Crash after nursery.save, before program save, inside a BARE
+    # checkpoint seal (no confirm in progress -> no confirm journal).
+    # F9 documented this window as UNPROVEN: recovery had no recorded
+    # intent to converge from. P2 (Ten-Phase Master Plan) closed it:
+    # commit_checkpoint now writes a checkpoint-intent journal and
+    # preserves the pre-seal live pair before the seal's first durable
+    # write; load-time recovery restores the OLD pair byte-exactly.
+    # The staged state here mirrors confirm_proposal's own staging
+    # (status confirmed in memory, unit placed in memory, neither
+    # saved), so the crash exposes exactly the hybrid the journal
+    # exists for: nursery file NEW, program file OLD. Expect OLD.
+    _crash_test("11_after_nursery",
+                "program.nursery.save(); os._exit(42)",
+                "OLD")
+
+    # Part 2: crash AFTER the pointer swap but before the journal is
+    # cleared. The commit landed, so recovery must keep the NEW pair
+    # and only clear the journal (the "committed" branch).
+    owner = "CR_11_after_pointer"
+    clean(owner)
+    code_setup = f"""
+import sys; sys.path.insert(0, '{REPO}')
+from form.open import open_program
+p = open_program('{owner}')
+p.cube.session.plane.units.clear()
+pr = p.nursery.add('Crash 11 pointer', words='test')
+print(pr.id)
+p.nursery.save()
+from form import persist_rest
+persist_rest.save(p)
+"""
+    r = run_subprocess(code_setup)
+    pid = r.stdout.strip()
+    code_crash = f"""
+import sys, os; sys.path.insert(0, '{REPO}')
+from form.open import open_program
+from form.mandell import checkpoint_generation as cg
+from form.dell_matrix.plane import Skin
+from form.dell_matrix.lineage import assign_lineage
+
+p = open_program('{owner}')
+prop = p.nursery.proposals.get('{pid}')
+units = p.cube.session.plane.units
+assign_lineage(units, [], origin='confirmed', child_id=prop.id)
+p.place(prop.id, prop.label, words=prop.words, skin=Skin.SEED,
+        parents=[], origin='confirmed', lineage_version=1)
+prop.status = 'confirmed'
+
+orig_commit = cg._commit_pointer
+def crash_commit(owner_, sealed, _fail_at=None):
+    out = orig_commit(owner_, sealed, _fail_at=_fail_at)
+    os._exit(43)
+cg._commit_pointer = crash_commit
+try:
+    cg.commit_checkpoint(p)
+except BaseException:
     pass
+"""
+    run_subprocess(code_crash)
+    status, has_idea = fresh_view(owner, pid)
+    rec("crash_11_after_pointer", status == "confirmed" and has_idea,
+        f"status={status}, has_idea={has_idea}, expect=NEW (committed branch)")
+
+    # Part 3 (in-process guard): a second checkpoint intent while a
+    # journal is unrecovered must refuse, not overwrite the evidence;
+    # recovery of an untouched pair reports "no_change" and clears.
+    from form.mandell.core_i_recovery import (
+        write_checkpoint_intent, recover_checkpoint_intent,
+        _checkpoint_journal_path, RollbackRecoveryError)
+    guard_owner = "T11GUARD"
+    clean(guard_owner)
+    write_checkpoint_intent(guard_owner, "g_guard_1")
+    refused = False
+    try:
+        write_checkpoint_intent(guard_owner, "g_guard_2")
+    except RollbackRecoveryError:
+        refused = True
+    outcome = recover_checkpoint_intent(guard_owner)
+    journal_gone = not os.path.isfile(_checkpoint_journal_path(guard_owner))
+    rec("t11_stale_journal_refused", refused and outcome == "no_change" and journal_gone,
+        f"refused={refused}, recover={outcome}, journal_gone={journal_gone}")
+    clean(guard_owner)
+    clean(owner)
 
 def t12():
     # Crash after both saves, before member sealing
@@ -434,7 +517,7 @@ os._exit(42)
 # F9 CLAIM_MAP: superseded/unproven cases removed from pass counts.
 # Maps original claim → replacement evidence or UNPROVEN status.
 CLAIM_MAP = {
-    "11_after_nursery": "UNPROVEN (no journal in direct checkpoint crash); F2 covers confirm_proposal path with journal",
+    "11_after_nursery": "covered by t11 (P2: checkpoint-intent journal — commit_checkpoint preserves the pre-seal pair and journals intent before the seal's first write; a crash after nursery.save converges to the OLD pair at load, a crash after the pointer swap to NEW)",
     "14_during_manifest": "UNPROVEN (manifest stage); R3 t13 covers rollback I/O",
     "15_before_pointer": "UNPROVEN (pointer stage); R3 t15 covers revision recovery",
     "16_during_pointer": "UNPROVEN (pointer stage); no replacement",
@@ -643,12 +726,13 @@ def m05():
 
 def main():
     print("=== Confirmation Crash Matrix (F9: only real assertions counted) ===", flush=True)
-    print("Removed from counts (see CLAIM_MAP): t11,t14,t15,t16,t20,t21,t22,t23,m02,m03,m04,m05", flush=True)
+    print("Removed from counts (see CLAIM_MAP): t14,t15,t16,t20,t21,t22,t23,m02,m03,m04,m05", flush=True)
     # F9: Only cases with real assertions are executed and counted.
     # Removed cases are documentation-only; see CLAIM_MAP for disposition.
-    # t11: crash during checkpoint without journal → UNPROVEN (no recovery trigger)
+    # t11: EXECUTED since P2 — the checkpoint-intent journal covers the
+    # bare-checkpoint crash window it documents.
     for fn in [t01, t02, t03, t04, t05, t06, t07, t08, t09,
-               t10, t12, t13, t17,
+               t10, t11, t12, t13, t17,
                t18, t19, t24,
                t25, t26, t27, m01]:
         try:

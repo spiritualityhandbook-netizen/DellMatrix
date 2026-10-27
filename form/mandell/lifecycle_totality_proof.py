@@ -15,7 +15,12 @@ These tests guard the ARGUS-2 repair against regression.
 import os
 import sys
 
-REPO = os.path.expanduser("~/workspace/dellmatrix-fresh-main")
+# P2 repair: REPO was hardcoded to a historical worktree
+# (~/workspace/dellmatrix-fresh-main), so this proof imported and
+# exercised THAT tree's code — its green result was evidence about
+# stale code, and it cannot run anywhere else (CI: FileNotFoundError).
+# Derive the repo root from this file, like the other harnesses.
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, REPO)
 os.chdir(REPO)
 

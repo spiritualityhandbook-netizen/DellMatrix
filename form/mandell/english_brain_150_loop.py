@@ -232,8 +232,12 @@ def run_loop(cycles: int = 150, seed: int = 42) -> Dict[str, Any]:
 def smoke() -> bool:
     # short path for suite
     out = run_loop(cycles=6, seed=7)
-    # soft gate for smoke
-    return out["probe_rate"] >= 0.7 and out["expand_rate"] >= 0.6
+    # soft gate for smoke: two conditions, reported as the final count
+    # so the regression runner's N/M verdict is this gate itself, not
+    # whichever detail count run_loop printed last (P2 registration).
+    gates = (out["probe_rate"] >= 0.7, out["expand_rate"] >= 0.6)
+    print(f"english_brain_150_loop smoke: {sum(gates)}/{len(gates)}")
+    return all(gates)
 
 
 if __name__ == "__main__":

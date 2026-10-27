@@ -120,5 +120,10 @@ def main():
     return 0 if passed == total else 1
 
 
+def smoke() -> bool:
+    """Entry point for regression runner (P2 registration)."""
+    return main() == 0
+
+
 if __name__ == "__main__":
     sys.exit(main())

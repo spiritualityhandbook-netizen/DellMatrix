@@ -89,5 +89,17 @@ def main():
     print(f"\nR2 AUTHORITATIVE PROOF: {'PASS' if all_ok else 'FAIL'}")
     return 0 if all_ok else 1
 
+
+def smoke() -> bool:
+    """Entry point for regression runner (P2 registration).
+
+    The proof's verdict is one aggregate over its numbered checks
+    (each printed above); the count line reports that single verdict.
+    """
+    ok = main() == 0
+    print(f"p1_r2_checkpoint_proof smoke: {1 if ok else 0}/1")
+    return ok
+
+
 if __name__ == "__main__":
     sys.exit(main())

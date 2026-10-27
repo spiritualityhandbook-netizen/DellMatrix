@@ -207,6 +207,12 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     reader never accepts a hybrid program/nursery pair.
     """
     assert_floor_intact()
+    # Checkpoint-intent recovery (Ten-Phase P2, t11 closure) runs FIRST:
+    # it restores the raw pre-seal live pair that the transaction
+    # recoveries below reason about. A checkpoint journal means the
+    # seal's sequential saves were interrupted mid-commit.
+    from form.mandell.core_i_recovery import recover_checkpoint_intent
+    recover_checkpoint_intent(owner)
     # Transactional rollback recovery (Gate R3: FAIL-CLOSED). If a journal
     # exists, recovery must establish a proven-coherent pair or raise
     # RollbackRecoveryError. Never suppress; never expose potentially

@@ -243,5 +243,14 @@ print("RESULT " + json.dumps({
     _wipe()
 
 
-if __name__ == "__main__":
+def smoke() -> bool:
+    """Entry point for regression runner (P2 registration)."""
     main()
+    npass = sum(1 for _, ok in RESULTS if ok)
+    total = len(RESULTS)
+    print(f"p2_acceptance_proof smoke: {npass}/{total}")
+    return total > 0 and npass == total
+
+
+if __name__ == "__main__":
+    sys.exit(0 if smoke() else 1)

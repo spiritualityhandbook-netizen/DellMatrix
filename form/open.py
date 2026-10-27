@@ -241,10 +241,14 @@ class Program:
             # expose unverified live Nursery state. Fail closed.
             # The injected-generation path (above) is preserved; it does not
             # use the live file and has its own documented contract.
+            from form.mandell.core_i_recovery import recover_checkpoint_intent
             from form.mandell.core_i_recovery import recover_confirmation_intent
             from form.mandell.core_i_recovery import recover_supersede_intent
             # If ImportError occurs, it propagates (fail closed).
             # Do NOT catch and continue; unverified state must not be exposed.
+            # Checkpoint recovery first: it restores the raw pre-seal
+            # pair the confirmation/supersession recoveries reason about.
+            recover_checkpoint_intent(self.owner)
             recover_confirmation_intent(self.owner)
             recover_supersede_intent(self.owner)
         self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner))
