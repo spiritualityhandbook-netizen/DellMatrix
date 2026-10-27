@@ -489,13 +489,92 @@ def validate_proposal_output(text: str) -> Dict[str, str]:
     return {"label": label, "words": words}
 
 
+# --------------------------------------------- semantic verb schema (SD-2)
+
+#: Keys a semantic-verb response may carry. Anything else — above all
+#: authority-bearing keys such as "grant", "approve", "confirm",
+#: "status" — is rejected: model output is DATA, never authority.
+SEMANTIC_KEYS = frozenset(
+    {"label", "words", "detail", "goals", "reason", "parents"})
+MAX_DETAIL_CHARS = 2000
+MAX_GOALS = 8
+MAX_GOAL_CHARS = 200
+MAX_PARENTS = 4
+
+
+def validate_semantic_output(text: str, *,
+                             allowed_parents) -> Dict[str, Any]:
+    """Validate raw model output against the SD-2 semantic schema.
+
+    Returns {"label", "words", "detail", "goals", "reason",
+    "parents"} or raises ProviderError. `reason` is REQUIRED and
+    non-empty: a docked judgment that cannot state its evidence is
+    not accepted (LLM-as-judge discipline — the human gate reads
+    the reason at review). `parents` entries must come from
+    `allowed_parents` (ids that exist in the field snapshot the
+    judgment was made on) — the model cannot invent lineage.
+    Strictness otherwise matches validate_proposal_output: unknown
+    keys, wrong types, out-of-range lengths all reject.
+    """
+    if not isinstance(text, str) or not text.strip():
+        raise ProviderError("empty model output")
+    try:
+        data = json.loads(
+            text,
+            parse_constant=lambda v: (_ for _ in ()).throw(
+                ValueError(f"non-finite constant {v}")))
+    except Exception:
+        raise ProviderError("malformed model output: not JSON")
+    if not isinstance(data, dict):
+        raise ProviderError("malformed model output: not an object")
+    keys = set(data.keys())
+    if not keys <= SEMANTIC_KEYS:
+        raise ProviderError(
+            f"unexpected semantic fields: {sorted(keys - SEMANTIC_KEYS)}")
+    if "label" not in data or "words" not in data:
+        raise ProviderError("semantic output requires label and words")
+    label, words = data["label"], data["words"]
+    if not isinstance(label, str) or not isinstance(words, str):
+        raise ProviderError("label and words must be strings")
+    label, words = label.strip(), words.strip()
+    if not (1 <= len(label) <= MAX_LABEL_CHARS):
+        raise ProviderError("label length out of bounds")
+    if not (1 <= len(words) <= MAX_WORDS_CHARS):
+        raise ProviderError("words length out of bounds")
+    detail = data.get("detail", "")
+    if not isinstance(detail, str) or len(detail) > MAX_DETAIL_CHARS:
+        raise ProviderError("detail must be a string within bounds")
+    goals = data.get("goals", [])
+    if not isinstance(goals, list) or len(goals) > MAX_GOALS \
+            or any(not isinstance(g, str) or not g.strip()
+                   or len(g) > MAX_GOAL_CHARS for g in goals):
+        raise ProviderError("goals must be a bounded list of strings")
+    reason = data.get("reason")
+    if not isinstance(reason, str) or not reason.strip() \
+            or len(reason) > 1000:
+        raise ProviderError(
+            "semantic output requires a non-empty reason within bounds")
+    parents = data.get("parents", [])
+    if not isinstance(parents, list) or len(parents) > MAX_PARENTS \
+            or any(not isinstance(p, str) for p in parents):
+        raise ProviderError("parents must be a bounded list of strings")
+    allowed = set(allowed_parents)
+    if any(p not in allowed for p in parents):
+        raise ProviderError("parents reference ids outside the field")
+    return {"label": label, "words": words, "detail": detail.strip(),
+            "goals": [g.strip() for g in goals],
+            "reason": reason.strip(), "parents": list(parents)}
+
+
 # ---------------------------------------------------------------- docked session
 
 class DockedSession:
     """Host-created inference session. The ONLY inference-facing surface.
 
-    Created by dock() with a host-established subject. Exposes propose()
-    and undock() only. It cannot mint/attenuate/revoke/list grants and
+    Created by dock() with a host-established subject. Exposes
+    propose(), the SD-2 semantic verbs (relate / synthesize / flag),
+    field_snapshot(), and undock(). Every verb lands PENDING
+    proposals only. It cannot mint/attenuate/revoke/list grants and
     cannot confirm proposals — confirmation stays on the R6.1 bound
     endpoint after human review / issued authority.
 
@@ -509,7 +588,8 @@ class DockedSession:
     __slots__ = ("_program", "_subject", "_owner", "_provider_name",
                  "_provider", "_model_label", "_timeout_s",
                  "_max_prompt_chars", "_max_response_chars", "_docked",
-                 "_task", "_session_id", "_evidence", "_snap_name")
+                 "_task", "_session_id", "_evidence", "_snap_name",
+                 "_coordinator")
 
     def __init__(self, program, trusted_subject: str, owner,
                  provider_name: str, provider, model_label: str,
@@ -527,6 +607,11 @@ class DockedSession:
         object.__setattr__(self, "_docked", True)
         object.__setattr__(self, "_task", task)
         object.__setattr__(self, "_snap_name", "")
+        # SD-2: the field-snapshot coordinator is wired by dock()
+        # (the trusted host entry) after construction; direct
+        # construction leaves it None and the semantic verbs fail
+        # closed with a snapshot_unavailable receipt.
+        object.__setattr__(self, "_coordinator", None)
         # SD-1 session evidence: build the record and register it in
         # program state immediately, so a proposal's session link is
         # durable from the moment the proposal is — not only after a
@@ -720,16 +805,9 @@ class DockedSession:
         # Truthful model identity: the ACTUAL model reported by the
         # transport, not merely the requested label. Computed before
         # Nursery.add so the proposal itself carries provenance
-        # (Phase E, completed by SD-1): origin =
-        # "dock:<subject>:<provider>:<actual model>", with segments
-        # sanitized because model identity is untrusted
-        # transport-reported text. Segment limits keep the whole
-        # origin inside the Nursery's 120-char bound.
+        # (Phase E, completed by SD-1). See _origin_for.
         actual_model = getattr(self._provider, "last_actual_model", None)
-        origin = "dock:{}:{}:{}".format(
-            _origin_segment(self._subject, 40),
-            _origin_segment(self._provider_name, 24),
-            _origin_segment(actual_model or self._model_label, 44))
+        origin = self._origin_for(actual_model)
         # SD-1: every docked proposal carries a non-empty reason —
         # the host-supplied rationale when given, else a derived
         # provenance reason naming task, subject, provider, model.
@@ -748,33 +826,262 @@ class DockedSession:
                     "detail": f"{type(e).__name__}"}
         # SD-1 session evidence: link the proposal to this session
         # (prompt digest + context snapshot id; never the full
-        # prompt). Evidence failure never unwrites the proposal —
-        # it is recorded best-effort, like registration.
+        # prompt). Evidence failure never unwrites the proposal.
+        snapshot_id = None
+        if safe_ctx:
+            snapshot_id = hashlib.sha256(json.dumps(
+                safe_ctx, sort_keys=True).encode("utf-8")).hexdigest()
+        self._record_evidence(
+            prop, task=self._task, prompt_text=full_prompt,
+            snapshot_id=snapshot_id, actual_model=actual_model)
+        return {"ok": True, "pid": prop.id,
+                "provider": self._provider_name,
+                "model": actual_model or self._model_label,
+                "task": self._task,
+                "session_id": self._session_id}
+
+    # -- shared landing machinery (propose + the SD-2 verbs) -----------
+
+    def _origin_for(self, actual_model) -> str:
+        """Provenance origin: "dock:<subject>:<provider>:<actual
+        model>". Segments are sanitized because model identity is
+        untrusted transport-reported text; segment limits keep the
+        whole origin inside the Nursery's 120-char bound."""
+        return "dock:{}:{}:{}".format(
+            _origin_segment(self._subject, 40),
+            _origin_segment(self._provider_name, 24),
+            _origin_segment(actual_model or self._model_label, 44))
+
+    def _record_evidence(self, prop, *, task, prompt_text,
+                         snapshot_id, actual_model) -> None:
+        """SD-1 session evidence: link a landed proposal to this
+        session (prompt digest + snapshot id; never the full
+        prompt). Best-effort — evidence failure never unwrites a
+        proposal that already landed."""
         try:
             from form.dell_matrix import dock_session as _ds
-            snapshot_id = None
-            if safe_ctx:
-                snapshot_id = hashlib.sha256(json.dumps(
-                    safe_ctx, sort_keys=True).encode("utf-8")).hexdigest()
             _ds.append_proposal(self._evidence, {
                 "pid": str(prop.id)[:80],
                 "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "task": self._task,
+                "task": task,
                 "reason": prop.reason,
                 "origin": prop.origin,
                 "prompt_hash": hashlib.sha256(
-                    full_prompt.encode("utf-8")).hexdigest(),
-                "prompt_summary": " ".join(prompt.split())[:80],
-                "prompt_chars": len(full_prompt),
+                    prompt_text.encode("utf-8")).hexdigest(),
+                "prompt_summary": " ".join(prompt_text.split())[:80],
+                "prompt_chars": len(prompt_text),
                 "snapshot_id": snapshot_id,
                 "model": str(actual_model or self._model_label)[:120],
             })
         except Exception:
             pass
+
+    # -- SD-2 semantic verbs --------------------------------------------
+    #
+    # The docked mind performs the field's semantic work: RELATE
+    # judges how entries connect, SYNTHESIZE authors a genuinely new
+    # idea from several entries, FLAG surfaces false claims and
+    # conflicts. Every verb works from the canonical field snapshot
+    # (agent_coordinator.snapshot_for, wired by dock()), enforces the
+    # same screens as propose(), validates the extended semantic
+    # schema (reason REQUIRED, parents bounded to the field), and
+    # lands exactly one PENDING Nursery proposal. Verbs never confirm,
+    # never place, never mint authority.
+
+    _SCHEMA_TAIL = (
+        ' Respond with a single JSON object using only these keys: '
+        '"label", "words", "detail", "goals", "reason", "parents". '
+        '"reason" is required: state the evidence for your judgment. '
+        '"parents" lists the target ids your proposal is about.')
+
+    def field_snapshot(self):
+        """The canonical field snapshot for this session's subject,
+        or None when the host wired no coordinator (or it failed).
+        Bounded, detached, outward-sanitized by the coordinator."""
+        coord = self._coordinator
+        if coord is None:
+            return None
+        try:
+            return coord.snapshot_for(self._subject)
+        except Exception:
+            return None
+
+    def relate(self, a, b, *, reason=None) -> Dict[str, Any]:
+        """Judge how two field entries relate; land a PENDING
+        proposal expressing the relation."""
+        instruction = (
+            "[verb:relate] You are a docked semantic judge inside "
+            "DellMatrix. Decide how the two field entries below "
+            "relate — same meaning in different words, complementary, "
+            "conflicting, or unrelated — and author ONE proposal "
+            "expressing the relation and why it matters."
+            + self._SCHEMA_TAIL)
+        return self._verb("relate", [a, b], instruction, reason=reason)
+
+    def synthesize(self, ids, *, reason=None) -> Dict[str, Any]:
+        """Author a genuinely new idea from 2..4 field entries;
+        lands as a PENDING proposal whose detail/goals are authored
+        from ALL parents, not copied from one."""
+        if not isinstance(ids, (list, tuple)) \
+                or not (2 <= len(ids) <= MAX_PARENTS) \
+                or any(not isinstance(i, str) or not i for i in ids):
+            return {"ok": False, "reason": "bad_targets",
+                    "detail": "synthesize needs 2..4 field entry ids."}
+        instruction = (
+            "[verb:synthesize] You are a docked semantic judge "
+            "inside DellMatrix. Author ONE new idea that genuinely "
+            "synthesizes ALL the field entries below: its detail "
+            "must draw on every entry's substance (never copy just "
+            "one), and its goals must merge or advance theirs."
+            + self._SCHEMA_TAIL)
+        return self._verb("synthesize", list(ids), instruction,
+                          reason=reason)
+
+    def flag(self, target, concern: str = "", *,
+             reason=None) -> Dict[str, Any]:
+        """Examine one field entry for false/unverifiable claims or
+        conflicts; land a PENDING flag proposal naming the concern."""
+        if not isinstance(concern, str) or len(concern) > 1000:
+            return {"ok": False, "reason": "bad_concern",
+                    "detail": "Concern must be a string within bounds."}
+        instruction = (
+            "[verb:flag] You are a docked semantic judge inside "
+            "DellMatrix. Examine the field entry below for false or "
+            "unverifiable claims, internal contradictions, or "
+            "conflicts with other entries (a compact field index "
+            "follows the target). Author ONE flag proposal naming "
+            "the specific concern and the evidence for it; if the "
+            "entry is sound, say so and state what was checked."
+            + self._SCHEMA_TAIL)
+        return self._verb("flag", [target], instruction,
+                          concern=concern, reason=reason)
+
+    def _verb(self, verb, targets, instruction, *, concern="",
+              reason=None) -> Dict[str, Any]:
+        """Shared verb path: snapshot -> resolve targets -> prompt
+        -> screens -> provider -> semantic schema -> PENDING land."""
+        if not self._docked:
+            return {"ok": False, "reason": "undocked",
+                    "detail": "Session is undocked: zero provider calls."}
+        if reason is not None:
+            if not isinstance(reason, str) or not reason.strip():
+                return {"ok": False, "reason": "bad_reason",
+                        "detail": "Reason must be a non-empty string."}
+            if len(reason) > 1000:
+                return {"ok": False, "reason": "bad_reason",
+                        "detail": "Reason exceeds 1000 chars."}
+        coord = self._coordinator
+        if coord is None:
+            return {"ok": False, "reason": "snapshot_unavailable",
+                    "detail": "No field-snapshot coordinator is wired "
+                              "to this session."}
+        try:
+            snap = coord.snapshot_for(self._subject)
+        except Exception:
+            return {"ok": False, "reason": "snapshot_unavailable",
+                    "detail": "Field snapshot could not be built."}
+        index: Dict[str, Any] = {}
+        for e in snap.get("units", []):
+            if isinstance(e, dict) and e.get("uid"):
+                index[str(e["uid"])] = e
+        for e in snap.get("ideas", []):
+            if isinstance(e, dict) and e.get("pid"):
+                index[str(e["pid"])] = e
+        entries = []
+        for t in targets:
+            e = index.get(t)
+            if e is None:
+                return {"ok": False, "reason": "unknown_target",
+                        "detail": "A target is not in the field snapshot."}
+            entries.append(e)
+        prompt = instruction + "\n\n[targets]\n" + json.dumps(
+            entries, sort_keys=True)
+        if verb == "flag":
+            others = [{"id": k, "label": v.get("label", ""),
+                       "words": str(v.get("words", ""))[:120],
+                       "detail": str(v.get("detail", ""))[:200]}
+                      for k, v in list(index.items())
+                      if k not in targets][:40]
+            if others:
+                prompt += "\n\n[field]\n" + json.dumps(
+                    others, sort_keys=True)
+        if concern:
+            prompt += "\n\n[concern]\n" + concern
+        if len(prompt) > self._max_prompt_chars:
+            return {"ok": False, "reason": "prompt_too_large",
+                    "detail": "Verb prompt exceeds bound."}
+        prot = protected_values(self._program)
+        if contains_protected_decoded(prompt, prot):
+            return {"ok": False, "reason": "protected_input",
+                    "detail": "Field snapshot carries protected "
+                              "material; rejected before provider call."}
+        if reason is not None and contains_protected_decoded(reason, prot):
+            return {"ok": False, "reason": "protected_input",
+                    "detail": "Reason carries protected material; "
+                              "rejected before provider call."}
+        try:
+            raw = self._provider.generate(
+                prompt, timeout_s=self._timeout_s,
+                max_chars=self._max_response_chars)
+        except _TransportTooLarge:
+            return {"ok": False, "reason": "response_too_large",
+                    "detail": "Transport body exceeded the byte bound; "
+                              "rejected before parsing."}
+        except (TimeoutError, ConnectionError) as e:
+            return {"ok": False, "reason": "provider_failure",
+                    "detail": sanitize_error(f"{type(e).__name__}", prot)}
+        except DockError as e:
+            return {"ok": False, "reason": "provider_failure",
+                    "detail": sanitize_error(str(e), prot)}
+        except Exception as e:
+            return {"ok": False, "reason": "provider_failure",
+                    "detail": sanitize_error(f"{type(e).__name__}", prot)}
+        if not isinstance(raw, str):
+            return {"ok": False, "reason": "invalid_output",
+                    "detail": "Provider returned non-text."}
+        if len(raw) > self._max_response_chars:
+            return {"ok": False, "reason": "response_too_large",
+                    "detail": "Response exceeds bound; rejected."}
+        if contains_protected_decoded(raw, prot):
+            return {"ok": False, "reason": "protected_output",
+                    "detail": "Provider output carries protected "
+                              "material; rejected before proposal creation."}
+        try:
+            fields = validate_semantic_output(raw, allowed_parents=set(index))
+        except ProviderError as e:
+            return {"ok": False, "reason": "invalid_output",
+                    "detail": sanitize_error(str(e), prot)}
+        parents = fields["parents"] or list(targets)
+        if not set(parents) <= set(targets):
+            return {"ok": False, "reason": "invalid_output",
+                    "detail": "Model proposed lineage outside the "
+                              "verb's targets; rejected."}
+        if _screen_decoded_values(fields, prot):
+            return {"ok": False, "reason": "protected_output",
+                    "detail": "Decoded provider output carries "
+                              "protected material; rejected."}
+        actual_model = getattr(self._provider, "last_actual_model", None)
+        origin = self._origin_for(actual_model)
+        chosen_reason = reason if reason is not None else fields["reason"]
+        kind = "evolved" if verb in ("relate", "synthesize") else "new"
+        try:
+            prop = self._program.nursery.add(
+                fields["label"], words=fields["words"], kind=kind,
+                parents=parents, detail=fields["detail"],
+                goals=fields["goals"], origin=origin,
+                reason=chosen_reason)
+        except Exception as e:
+            return {"ok": False, "reason": "nursery_failure",
+                    "detail": f"{type(e).__name__}"}
+        snapshot_id = hashlib.sha256(json.dumps(
+            snap, sort_keys=True).encode("utf-8")).hexdigest()
+        self._record_evidence(
+            prop, task=verb, prompt_text=prompt,
+            snapshot_id=snapshot_id, actual_model=actual_model)
         return {"ok": True, "pid": prop.id,
                 "provider": self._provider_name,
                 "model": actual_model or self._model_label,
-                "task": self._task,
+                "task": verb, "verb": verb,
                 "session_id": self._session_id}
 
 
@@ -862,4 +1169,18 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
                 f"snap registration rejected: {result.reason}")
         object.__setattr__(session, "_snap_name", snap_name)
         session._evidence["snap_name"] = snap_name
+    # SD-2 production activation: wire the canonical field-snapshot
+    # coordinator and register this subject, so the session's
+    # semantic verbs work from coordinator.snapshot_for. This is
+    # the coordinator's first production caller (previously it was
+    # exercised only by its own suites). Failure leaves the
+    # coordinator unwired: propose() is unaffected and the verbs
+    # fail closed with snapshot_unavailable.
+    try:
+        from form.dell_matrix.agent_coordinator import new_coordinator
+        coord = new_coordinator(program)
+        coord.register_agent(trusted_subject)
+        object.__setattr__(session, "_coordinator", coord)
+    except Exception:
+        pass
     return session

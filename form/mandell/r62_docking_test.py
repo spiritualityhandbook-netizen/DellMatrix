@@ -312,8 +312,14 @@ def test_dock_surface_has_no_authority_methods():
     import inspect as _inspect
     methods = [m for m in dir(sess)
                if not m.startswith("_") and callable(getattr(sess, m))]
-    check("C11:surface", sorted(methods) == ["propose", "undock"],
-          str(methods))
+    # SD-2 (master plan P5) deliberately extends the surface with
+    # the semantic verbs + field_snapshot. None of them is an
+    # authority method: every verb lands PENDING proposals through
+    # the same Nursery path as propose(), and the no_* checks above
+    # still guard the authority boundary itself.
+    check("C11:surface", sorted(methods) == [
+        "field_snapshot", "flag", "propose", "relate", "synthesize",
+        "undock"], str(methods))
 
 
 def test_no_eval_or_shell_on_output():
