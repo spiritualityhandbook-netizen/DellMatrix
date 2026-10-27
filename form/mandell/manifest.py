@@ -32,8 +32,3 @@ def manifest_from_dell(n: int, term: Optional[str] = None) -> Optional[Manifest]
     return Manifest(term=term or d["name"], manor=d["manor"], dell=n)
 
 
-def manifest_from_lookup(key) -> Optional[Manifest]:
-    d = lookup(key)
-    if not d:
-        return None
-    return Manifest(term=d["name"], manor=d["manor"], dell=d["dell"])

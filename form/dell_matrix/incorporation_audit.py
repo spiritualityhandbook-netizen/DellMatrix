@@ -118,36 +118,6 @@ def audit_fourier(results: List[Tuple[str, bool]]) -> None:
     _rec(results, "continuous_ft_runs", len(cg["magnitudes"]) == 32 and max(cg["magnitudes"]) > 0)
 
 
-def audit_high_value_surface(results: List[Tuple[str, bool]]) -> None:
-    print("\n-- high_value_api surface --")
-    from form.dell_matrix.high_value_api import open_wired
-    from form.dell_matrix.fourier import make_sine
-
-    try:
-        p = open_wired("Audit")
-        p.place("a", "Alpha", x=1, y=0)
-        ok_attrs = all(hasattr(p, name) for name in (
-            "la_transform", "logistic_tick", "fourier_analyze",
-            "eigen_stability", "force_tick",
-        ))
-        _rec(results, "methods_present", ok_attrs)
-
-        ft = p.force_tick()
-        _rec(results, "force_tick_has_nature", isinstance(ft.get("nature"), dict))
-
-        tr = p.la_transform("scale", 1.1)
-        _rec(results, "la_transform_ok", tr.get("ok") is True)
-
-        fa = p.fourier_analyze(make_sine(32, 2.0))
-        _rec(results, "fourier_analyze_ok", fa.get("ok") is True)
-
-        es = p.eigen_stability("rotate", 0.5)
-        _rec(results, "eigen_stability_ok", "continuous" in es and "discrete" in es)
-    except Exception as e:
-        _rec(results, "surface_exception", False)
-        print(f"    exception: {e}")
-
-
 def audit_universal_properties(results: List[Tuple[str, bool]]) -> None:
     print("\n-- universal properties --")
     # 1. Offline: no network imports required for cores
@@ -187,7 +157,9 @@ def run_audit() -> bool:
     audit_eigen_stability(results)
     audit_logistic(results)
     audit_fourier(results)
-    audit_high_value_surface(results)
+    # (The high_value_api surface section was retired with
+    # high_value_api.py itself in P3: its wire_program_methods was
+    # never called on a production Program.)
     audit_universal_properties(results)
 
     passed = sum(1 for _, ok in results if ok)

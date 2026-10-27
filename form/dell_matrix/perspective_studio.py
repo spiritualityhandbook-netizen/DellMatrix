@@ -37,6 +37,18 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+from form.dell_matrix.session_section import (
+    MISSING,
+    add_malformed,
+    append_step,
+    is_valid_step,
+    serialize_records_section,
+    validate_records_section,
+)
+
+# The kit's record check, under this module's historical name.
+_is_valid_command = is_valid_step
+
 # Bounds for caller-supplied composition specs.
 _MAX_SPECS = 8
 _MAX_ID_LEN = 64
@@ -169,19 +181,6 @@ def parse_specs_json(text: str) -> Tuple[bool, str, Optional[List[Dict[str, Any]
     return True, "", out
 
 
-def _is_valid_command(rec: Any) -> bool:
-    """Strict command record check. No coercion."""
-    if not isinstance(rec, dict):
-        return False
-    for k in ("kind", "time", "result"):
-        v = rec.get(k)
-        if not isinstance(v, str) or len(v) > 256:
-            return False
-    if len(rec.get("kind", "")) == 0 or len(rec.get("kind", "")) > 32:
-        return False
-    return True
-
-
 @dataclass
 class StudioSession:
     """One closed or active studio session record.
@@ -200,14 +199,9 @@ class StudioSession:
 
     def record(self, kind: str, result: str) -> None:
         """Record one command. Enforces the in-memory bound."""
-        self.commands.append({
-            "kind": str(kind)[:32],
-            "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "result": str(result)[:240],
-        })
         # Enforce bound during recording, not only at serialization.
-        if len(self.commands) > _MAX_COMMANDS:
-            self.commands = self.commands[-_MAX_COMMANDS:]
+        self.commands = append_step(self.commands, kind, result,
+                                    _MAX_COMMANDS)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -254,24 +248,10 @@ class StudioSession:
 # Sentinel for absent section key (legacy). Distinct from explicit null,
 # which is malformed. Python maps JSON null to None, so the loader must
 # use data.get("studio_sessions", _MISSING) to distinguish.
-_MISSING = object()
-
-
-def _add_malformed(malformed: Dict[str, Any], key: str, raw: Any, error: str) -> None:
-    """Add malformed evidence without overwriting earlier evidence.
-
-    Multiple failures under the same key are preserved as a list, in
-    observation order. Earlier evidence is never discarded.
-    """
-    entry = {"raw": raw, "error": error}
-    if key in malformed:
-        existing = malformed[key]
-        if isinstance(existing, list):
-            existing.append(entry)
-        else:
-            malformed[key] = [existing, entry]
-    else:
-        malformed[key] = [entry]
+# _MISSING is the session_section kit's one sentinel (P3/TD-2), and
+# _add_malformed its one implementation.
+_MISSING = MISSING
+_add_malformed = add_malformed
 
 
 def validate_section(raw: Any, owner: str) -> Tuple[Dict[str, Dict[str, Any]], Optional[Dict[str, Any]]]:
@@ -293,69 +273,12 @@ def validate_section(raw: Any, owner: str) -> Tuple[Dict[str, Dict[str, Any]], O
 
     Never raises for any input. No broad suppression needed by callers.
     """
-    if raw is _MISSING:
-        return {}, None
-    if raw is None:
-        malformed: Dict[str, Any] = {}
-        _add_malformed(malformed, "_section", None, "explicit null is malformed, not legacy absence")
-        return {}, malformed
-    if not isinstance(raw, dict):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, "section not an object")
-        return {}, malformed
-    version = raw.get("version")
-    # Strict: must be int 1. Bool is rejected (isinstance(True, int) is True,
-    # so check explicitly). No coercion.
-    if isinstance(version, bool) or not isinstance(version, int):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, "section version must be int 1")
-        return {}, malformed
-    if version != STUDIO_SECTION_VERSION:
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, f"unsupported section version {version}")
-        return {}, malformed
-    raw_sessions = raw.get("sessions")
-    if not isinstance(raw_sessions, dict):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, "sessions not an object")
-        return {}, malformed
-    valid: Dict[str, Dict[str, Any]] = {}
-    malformed = {}
-    for sid, rec in raw_sessions.items():
-        if not isinstance(sid, str):
-            _add_malformed(malformed, "_non_string_key", rec, "session key not a string")
-            continue
-        ok, err = StudioSession.validate(rec, owner)
-        if not ok:
-            _add_malformed(malformed, sid, rec, err)
-            continue
-        # Key/ID agreement: dict key must equal the record's session_id.
-        if not isinstance(rec, dict) or rec.get("session_id") != sid:
-            _add_malformed(malformed, sid, rec, "session key/ID mismatch")
-            continue
-        valid[sid] = dict(rec)
-    # Carry through previously-preserved malformed evidence. Same-key
-    # failures are appended, not overwritten.
-    preserved = raw.get("malformed")
-    if isinstance(preserved, dict):
-        for k, v in preserved.items():
-            if not isinstance(k, str):
-                continue
-            if isinstance(v, list):
-                for entry in v:
-                    if isinstance(entry, dict):
-                        _add_malformed(malformed, k, entry.get("raw"), entry.get("error", "preserved"))
-                    else:
-                        _add_malformed(malformed, k, entry, "preserved")
-            elif isinstance(v, dict) and "raw" in v:
-                _add_malformed(malformed, k, v.get("raw"), v.get("error", "preserved"))
-            else:
-                _add_malformed(malformed, k, v, "preserved")
-    # Retention: 10 most recent by started timestamp.
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("started", "")),
-                     reverse=True)[:_MAX_SESSIONS]
-    return dict(ordered), (malformed if malformed else None)
+    return validate_records_section(
+        raw, version=STUDIO_SECTION_VERSION, kind="sessions",
+        validate_rec=lambda rec: StudioSession.validate(rec, owner),
+        id_field="session_id", max_keep=_MAX_SESSIONS,
+        sort_field="started", key_not_string="session key not a string",
+        mismatch="session key/ID mismatch")
 
 
 def serialize_section(sessions: Any, malformed: Any, owner: str) -> Dict[str, Any]:
@@ -369,47 +292,13 @@ def serialize_section(sessions: Any, malformed: Any, owner: str) -> Dict[str, An
 
     Returns the section dict. Never raises for any input.
     """
-    valid: Dict[str, Dict[str, Any]] = {}
-    mal: Dict[str, Any] = {}
-    if isinstance(sessions, dict):
-        for sid, rec in sessions.items():
-            if not isinstance(sid, str):
-                _add_malformed(mal, "_non_string_key", rec, "session key not a string")
-                continue
-            ok, err = StudioSession.validate(rec, owner)
-            if not ok:
-                _add_malformed(mal, sid, rec, f"not serialized as valid: {err}")
-                continue
-            if not isinstance(rec, dict) or rec.get("session_id") != sid:
-                _add_malformed(mal, sid, rec, "not serialized as valid: key/ID mismatch")
-                continue
-            valid[sid] = dict(rec)
-    # Carry through existing malformed evidence.
-    if isinstance(malformed, dict):
-        for k, v in malformed.items():
-            if not isinstance(k, str):
-                continue
-            if isinstance(v, list):
-                for entry in v:
-                    if isinstance(entry, dict):
-                        _add_malformed(mal, k, entry.get("raw"), entry.get("error", "preserved"))
-                    else:
-                        _add_malformed(mal, k, entry, "preserved")
-            elif isinstance(v, dict) and "raw" in v:
-                _add_malformed(mal, k, v.get("raw"), v.get("error", "preserved"))
-            else:
-                _add_malformed(mal, k, v, "preserved")
-    # Retention: 10 most recent.
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("started", "")),
-                     reverse=True)[:_MAX_SESSIONS]
-    section: Dict[str, Any] = {
-        "version": STUDIO_SECTION_VERSION,
-        "sessions": dict(ordered),
-    }
-    if mal:
-        section["malformed"] = mal
-    return section
+    return serialize_records_section(
+        sessions, malformed, version=STUDIO_SECTION_VERSION,
+        kind="sessions",
+        validate_rec=lambda rec: StudioSession.validate(rec, owner),
+        id_field="session_id", max_keep=_MAX_SESSIONS,
+        sort_field="started", key_not_string="session key not a string",
+        mismatch="not serialized as valid: key/ID mismatch")
 
 
 def _screen_protected(program: Any, obj: Any) -> bool:

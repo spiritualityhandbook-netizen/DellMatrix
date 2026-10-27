@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
+from form.utc_time import utc_now_str
 
 MIN_EVIDENCE = 3
 ALLOWED_KINDS = ("preference", "avoidance", "blocked_association")
@@ -107,7 +108,7 @@ def saturate_learned_score(raw: int) -> float:
 
 
 def _ts() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return utc_now_str()
 
 
 def _learn_entries(program: Any) -> List[Any]:

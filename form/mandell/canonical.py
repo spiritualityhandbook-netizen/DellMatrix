@@ -34,13 +34,6 @@ def seed_graph(text: str, cell_origin: str = "") -> Dict[str, Any]:
     return g
 
 
-def cell_graph(name: str) -> Dict[str, Any]:
-    s = expand_cell(name)
-    if not s.ok:
-        return {"ok": False, "error": s.error, "nodes": [], "edges": []}
-    return seed_graph(s.as_mandel() if s.as_mandel() else s.raw, cell_origin=name)
-
-
 def parse_directive_v2(text: str) -> Dict[str, Any]:
     raw = text or ""
     if not raw.strip():

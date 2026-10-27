@@ -332,14 +332,6 @@ def participation_reason(program: Any, unit_id: str,
     return f"excluded (ordinary context, revision={revision})"
 
 
-def filter_active(program: Any, unit_ids: Iterable[str]) -> List[str]:
-    """Return unit IDs with active canonical lifecycle, in original order.
-
-    Units with unreadable/unknown lifecycle are excluded (fail-closed).
-    """
-    return [uid for uid in (unit_ids or []) if is_active(program, uid)]
-
-
 def lifecycle_of_idea(idea: Any) -> str:
     """Resolve lifecycle for an Idea-like object (not a Unit ID).
 

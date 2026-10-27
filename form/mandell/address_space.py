@@ -103,16 +103,3 @@ def get_reserved(n: int) -> Optional[Dict[str, Any]]:
     return {"dell": n, **row, "status": "RESERVED_NOT_ACTIVE", "family": family_of(n)}
 
 
-def promotion_requirements() -> Dict[str, str]:
-    return {
-        "registry": "required",
-        "parser": "required",
-        "executor": "required",
-        "program_state": "required",
-        "persistence": "required",
-        "ui": "required",
-        "tests": "required",
-        "documentation": "required",
-        "dvs": "required",
-        "note": "Do not declare 100-999 active unless promoted through this pipeline.",
-    }

@@ -31,7 +31,8 @@ except Exception:
             raise RuntimeError("Floor integrity failure")
         return True
 
-_TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
+from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens as _tokens
+# Canonical tokenization substrate: text_metrics (P3/TD-6).
 
 PILLAR_ROLES = {
     "Alpha": {
@@ -82,10 +83,6 @@ DEFAULT_ORIENTATION = (
     "Delta fuels restore and densify · Omega seals honest cycles · "
     "Omni refuses any excluded organ · Alpha holds the why"
 )
-
-
-def _tokens(text: str) -> Set[str]:
-    return {m.group(0).lower() for m in _TOKEN.finditer(text or "")}
 
 
 @dataclass

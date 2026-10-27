@@ -182,8 +182,6 @@ def ready_set() -> List[Circuit]:
     """Circuits eligible for NBD ranking."""
     return by_state(READY)
 
-def closed_set() -> List[Circuit]:
-    return by_state(CLOSED)
 
 # No-resurrection law enforcement
 def is_resurrection(circuit_id: str, new_state: str) -> bool:

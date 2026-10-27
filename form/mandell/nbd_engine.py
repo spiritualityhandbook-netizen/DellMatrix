@@ -22,6 +22,7 @@ import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
+from form.utc_time import utc_now_str
 
 ENGINE_VERSION = 1
 
@@ -41,7 +42,7 @@ _EPS = 1e-9
 
 
 def _ts() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return utc_now_str()
 
 
 # ── E: evidence ──────────────────────────────────────────────────────

@@ -1122,12 +1122,11 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
             return {"ok": False, "error": "usage: plant <label>"}
         ax, ay = program.avatar.body.pos
         cf = int(getattr(program, "center_f", 0) or 0)
-        nid = "plant_" + "".join(ch if ch.isalnum() else "_" for ch in label.lower())[:40]
-        # unique id
-        base, i = nid, 1
-        while nid in program.cube.session.plane.units:
-            nid = f"{base}_{i}"
-            i += 1
+        # Canonical slug + collision dedup (form/idea_create.py,
+        # P3/TD-5); this door's "plant_" prefix is a parameter.
+        from form.idea_create import unique_unit_id
+        nid = unique_unit_id(program.cube.session.plane.units, label,
+                             prefix="plant_")
         try:
             from form.dell_matrix.plane import Skin
             skin = Skin.SEED

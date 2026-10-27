@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 
 from form.mandell.floor import FLOOR, assert_floor_intact
 from form.dell_matrix.core import DellMatrix
+from form.utc_time import utc_now_str
 
 
 @dataclass
@@ -33,7 +34,7 @@ class DuoBeta:
     rings: tuple = ("Seed", "Token", "Body", "Lens", "Evolve")  # structural Voynich rings
 
     def _ts(self) -> str:
-        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return utc_now_str()
 
     def understand_self(self) -> Dict[str, Any]:
         """Self-understanding for the program — structural, not sentient."""

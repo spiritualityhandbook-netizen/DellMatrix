@@ -81,20 +81,6 @@ def neighbors_for_form(form: str, h: int, v: int, f: int) -> Dict[str, Tuple[int
     return neighbors_cube(h, v, f)
 
 
-def face_toward(yaw: str, pitch: str = "level") -> Tuple[int, int, int]:
-    """Unit step in look direction."""
-    if pitch == "up":
-        return (0, 0, 1)
-    if pitch == "down":
-        return (0, 0, -1)
-    dx, dy = _YAW_DELTA.get(yaw.upper(), (0, 1))
-    # cardinal only for clean block steps when walking
-    if abs(dx) and abs(dy):
-        # diagonal: prefer longer component as primary for "forward block"
-        pass
-    return (dx, dy, 0)
-
-
 def turn_yaw(yaw: str, steps: int = 1) -> str:
     # turn by 90° (2 steps of 8-way) for clean Minecraft feel
     order = _YAW_ORDER

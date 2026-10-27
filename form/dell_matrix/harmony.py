@@ -27,6 +27,11 @@ from typing import Any, Iterable, List, Set
 
 from form.dell_matrix.canonical_lifecycle import exclude_inactive_ideas
 
+# DELIBERATE DIFFERENCE (P3/TD-6): harmony keeps the [a-z0-9]+
+# tokenizer — its domain is idea-object properties, where short
+# values are content. The canonical growth/selection tokenizer
+# ([a-z0-9_]{3,}, text_metrics) is NOT used here; only the Jaccard
+# implementation is shared (see _pair_coherence).
 _TOKEN = re.compile(r"[a-z0-9]+")
 
 # Weight applied to near-duplicate pairs when computing the redundancy term.
@@ -73,13 +78,13 @@ def _idea_tokens(idea: Any) -> Set[str]:
 
 
 def _pair_coherence(ta: Set[str], tb: Set[str]) -> float:
-    """Pairwise coherence: Jaccard similarity of token sets."""
-    if not ta and not tb:
-        return 0.0
-    union = ta | tb
-    if not union:
-        return 0.0
-    return len(ta & tb) / len(union)
+    """Pairwise coherence: Jaccard similarity of token sets.
+
+    The Jaccard itself is the shared text_metrics implementation
+    (P3/TD-6); it is numerically identical to the former inline body
+    for every input, including both-empty (0.0)."""
+    from form.dell_matrix.text_metrics import jaccard
+    return jaccard(ta, tb)
 
 
 def _redundancy_weight(jac: float) -> float:

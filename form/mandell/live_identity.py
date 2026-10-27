@@ -94,13 +94,11 @@ def resolve_sources(units: Dict[str, Any], label: str) -> List[Any]:
 
 
 def _child_id(units: Dict[str, Any], base: str) -> str:
-    slug = re.sub(r"[^A-Za-z0-9_]+", "_", base).strip("_")[:28] or "child"
-    if slug not in units:
-        return slug
-    n = 2
-    while f"{slug}_{n}" in units:
-        n += 1
-    return f"{slug}_{n}"
+    # Canonical slug + dedup (form/idea_create.py, P3/TD-5). The child
+    # numbering convention is kept as a parameter: the first child with
+    # a base id IS the base, so collisions suffix from _2.
+    from form.idea_create import unique_unit_id
+    return unique_unit_id(units, base, suffix_start=2)
 
 
 def merge_live(program: Any, label: str) -> Dict[str, Any]:

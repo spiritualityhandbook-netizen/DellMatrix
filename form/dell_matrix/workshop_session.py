@@ -43,6 +43,16 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from form.dell_matrix.session_section import (
+    MISSING,
+    add_malformed,
+    append_step,
+    closed_record,
+    is_valid_step,
+    serialize_records_section,
+    validate_records_section,
+)
+
 _MAX_COMMANDS = 50
 _MAX_SESSIONS = 10
 
@@ -51,6 +61,9 @@ WORKSHOP_SECTION_VERSION = 1
 FAIL_PROTECTED = "PROTECTED_MATERIAL"
 FAIL_OUT_OF_SCOPE = "OUT_OF_SCOPE"
 FAIL_SAVE = "SAVE_FAILED"
+
+# The kit's record check, under this module's historical name.
+_is_valid_command = is_valid_step
 
 
 def known_workshop_ids() -> Set[str]:
@@ -75,19 +88,6 @@ def scope_stems(workshop_id: str) -> Set[str]:
         if cmd:
             stems.add(cmd.split()[0].lower())
     return stems
-
-
-def _is_valid_command(rec: Any) -> bool:
-    """Strict command record check. No coercion."""
-    if not isinstance(rec, dict):
-        return False
-    for k in ("kind", "time", "result"):
-        v = rec.get(k)
-        if not isinstance(v, str) or len(v) > 256:
-            return False
-    if len(rec.get("kind", "")) == 0 or len(rec.get("kind", "")) > 32:
-        return False
-    return True
 
 
 @dataclass
@@ -115,13 +115,8 @@ class WorkshopSession:
 
     def record(self, kind: str, result: str) -> None:
         """Record one command. Enforces the in-memory bound."""
-        self.commands.append({
-            "kind": str(kind)[:32],
-            "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "result": str(result)[:240],
-        })
-        if len(self.commands) > _MAX_COMMANDS:
-            self.commands = self.commands[-_MAX_COMMANDS:]
+        self.commands = append_step(self.commands, kind, result,
+                                    _MAX_COMMANDS)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -140,17 +135,7 @@ class WorkshopSession:
         session after successful persistence. On save failure the
         session remains active and usable; closed_copy() is idempotent.
         """
-        record = self.to_dict()
-        record["closed"] = time.strftime(
-            "%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        cmds = list(record.get("commands", []))
-        cmds.append({
-            "kind": "leave",
-            "time": record["closed"],
-            "result": "leave recorded",
-        })
-        record["commands"] = cmds[-_MAX_COMMANDS:]
-        return record
+        return closed_record(self.to_dict(), "commands", _MAX_COMMANDS)
 
     @staticmethod
     def validate(raw: Any, owner: str) -> Tuple[bool, str]:
@@ -184,20 +169,10 @@ class WorkshopSession:
 # Sentinel for absent section key (legacy). Distinct from explicit null,
 # which is malformed. Python maps JSON null to None, so the loader must
 # use data.get("workshop_sessions", _MISSING) to distinguish.
-_MISSING = object()
-
-
-def _add_malformed(malformed: Dict[str, Any], key: str, raw: Any, error: str) -> None:
-    """Add malformed evidence without overwriting earlier evidence."""
-    entry = {"raw": raw, "error": error}
-    if key in malformed:
-        existing = malformed[key]
-        if isinstance(existing, list):
-            existing.append(entry)
-        else:
-            malformed[key] = [existing, entry]
-    else:
-        malformed[key] = [entry]
+# _MISSING is the session_section kit's one sentinel (P3/TD-2), and
+# _add_malformed its one implementation.
+_MISSING = MISSING
+_add_malformed = add_malformed
 
 
 def validate_section(raw: Any, owner: str) -> Tuple[Dict[str, Dict[str, Any]], Optional[Dict[str, Any]]]:
@@ -209,69 +184,12 @@ def validate_section(raw: Any, owner: str) -> Tuple[Dict[str, Dict[str, Any]], O
     preserved by key; previously-preserved malformed evidence is carried
     through with same-key append. Never raises.
     """
-    if raw is _MISSING:
-        return {}, None
-    if raw is None:
-        malformed: Dict[str, Any] = {}
-        _add_malformed(malformed, "_section", None,
-                       "explicit null is malformed, not legacy absence")
-        return {}, malformed
-    if not isinstance(raw, dict):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, "section not an object")
-        return {}, malformed
-    version = raw.get("version")
-    if isinstance(version, bool) or not isinstance(version, int):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw,
-                       "section version must be int 1")
-        return {}, malformed
-    if version != WORKSHOP_SECTION_VERSION:
-        malformed = {}
-        _add_malformed(malformed, "_section", raw,
-                       f"unsupported section version {version}")
-        return {}, malformed
-    raw_sessions = raw.get("sessions")
-    if not isinstance(raw_sessions, dict):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, "sessions not an object")
-        return {}, malformed
-    valid: Dict[str, Dict[str, Any]] = {}
-    malformed = {}
-    for sid, rec in raw_sessions.items():
-        if not isinstance(sid, str):
-            _add_malformed(malformed, "_non_string_key", rec,
-                           "session key not a string")
-            continue
-        ok, err = WorkshopSession.validate(rec, owner)
-        if not ok:
-            _add_malformed(malformed, sid, rec, err)
-            continue
-        if not isinstance(rec, dict) or rec.get("session_id") != sid:
-            _add_malformed(malformed, sid, rec, "session key/ID mismatch")
-            continue
-        valid[sid] = dict(rec)
-    preserved = raw.get("malformed")
-    if isinstance(preserved, dict):
-        for k, v in preserved.items():
-            if not isinstance(k, str):
-                continue
-            if isinstance(v, list):
-                for entry in v:
-                    if isinstance(entry, dict):
-                        _add_malformed(malformed, k, entry.get("raw"),
-                                       entry.get("error", "preserved"))
-                    else:
-                        _add_malformed(malformed, k, entry, "preserved")
-            elif isinstance(v, dict) and "raw" in v:
-                _add_malformed(malformed, k, v.get("raw"),
-                               v.get("error", "preserved"))
-            else:
-                _add_malformed(malformed, k, v, "preserved")
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("started", "")),
-                     reverse=True)[:_MAX_SESSIONS]
-    return dict(ordered), (malformed if malformed else None)
+    return validate_records_section(
+        raw, version=WORKSHOP_SECTION_VERSION, kind="sessions",
+        validate_rec=lambda rec: WorkshopSession.validate(rec, owner),
+        id_field="session_id", max_keep=_MAX_SESSIONS,
+        sort_field="started", key_not_string="session key not a string",
+        mismatch="session key/ID mismatch")
 
 
 def serialize_section(sessions: Any, malformed: Any, owner: str) -> Dict[str, Any]:
@@ -281,47 +199,10 @@ def serialize_section(sessions: Any, malformed: Any, owner: str) -> Dict[str, An
     foreign-owner, unknown-workshop, key/ID-mismatched) are preserved in
     "malformed", never silently saved as valid or discarded. Never raises.
     """
-    valid: Dict[str, Dict[str, Any]] = {}
-    mal: Dict[str, Any] = {}
-    if isinstance(sessions, dict):
-        for sid, rec in sessions.items():
-            if not isinstance(sid, str):
-                _add_malformed(mal, "_non_string_key", rec,
-                               "session key not a string")
-                continue
-            ok, err = WorkshopSession.validate(rec, owner)
-            if not ok:
-                _add_malformed(mal, sid, rec,
-                               f"not serialized as valid: {err}")
-                continue
-            if not isinstance(rec, dict) or rec.get("session_id") != sid:
-                _add_malformed(mal, sid, rec,
-                               "not serialized as valid: key/ID mismatch")
-                continue
-            valid[sid] = dict(rec)
-    if isinstance(malformed, dict):
-        for k, v in malformed.items():
-            if not isinstance(k, str):
-                continue
-            if isinstance(v, list):
-                for entry in v:
-                    if isinstance(entry, dict):
-                        _add_malformed(mal, k, entry.get("raw"),
-                                       entry.get("error", "preserved"))
-                    else:
-                        _add_malformed(mal, k, entry, "preserved")
-            elif isinstance(v, dict) and "raw" in v:
-                _add_malformed(mal, k, v.get("raw"),
-                               v.get("error", "preserved"))
-            else:
-                _add_malformed(mal, k, v, "preserved")
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("started", "")),
-                     reverse=True)[:_MAX_SESSIONS]
-    section: Dict[str, Any] = {
-        "version": WORKSHOP_SECTION_VERSION,
-        "sessions": dict(ordered),
-    }
-    if mal:
-        section["malformed"] = mal
-    return section
+    return serialize_records_section(
+        sessions, malformed, version=WORKSHOP_SECTION_VERSION,
+        kind="sessions",
+        validate_rec=lambda rec: WorkshopSession.validate(rec, owner),
+        id_field="session_id", max_keep=_MAX_SESSIONS,
+        sort_field="started", key_not_string="session key not a string",
+        mismatch="not serialized as valid: key/ID mismatch")

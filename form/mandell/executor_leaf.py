@@ -38,7 +38,8 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
                     return {"ok": False, "error": errors[0], "messages": messages}
                 # Use typed name; conflict law: if legacy label differs, fail safely
                 typed_name = atom_args.get("name", "")
-                if label and label != typed_name and label != typed_name.replace(" ", "_")[:24]:
+                from form.idea_create import slug_id
+                if label and label != typed_name and label != slug_id(typed_name):
                     # Legacy label is the uid (underscored); typed name is human-readable.
                     # They refer to the same thing if uid matches. Only fail on true conflict.
                     err_msg = f"ARGUMENT_CONFLICT for 08[Create]: typed name='{typed_name}' vs legacy label='{label}'"
@@ -50,17 +51,12 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     new_program = None
 
     def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
-        raw_uid = name.replace(" ", "_")[:24] or "idea"
-        uid = raw_uid
-        # avoid collision — mirrors parse_and_place (form/dell_matrix/needs.py):
-        # raw-Mandell creation must dedup, never silently overwrite.
-        # (No attempt cap: n strictly increases over a finite unit set, so the
-        # loop always terminates; a cap-break would leave a colliding uid.)
-        base = uid
-        n = 1
-        while uid in program.cube.session.plane.units:
-            uid = f"{base}_{n}"
-            n += 1
+        # Canonical slug + collision dedup (form/idea_create.py, P3/TD-5):
+        # raw-Mandell creation produces the same id parse_and_place would
+        # for the same label, and dedups instead of silently overwriting.
+        from form.idea_create import slug_id, unique_unit_id
+        raw_uid = slug_id(name)
+        uid = unique_unit_id(program.cube.session.plane.units, name)
         program.place(uid, name.replace("_", " "), words=name, skin=skin)
         if uid == raw_uid:
             messages.append(f'Created idea: "{name}"')

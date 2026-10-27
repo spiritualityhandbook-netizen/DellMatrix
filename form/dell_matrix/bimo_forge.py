@@ -36,11 +36,24 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+from form.dell_matrix.session_section import (
+    MISSING,
+    add_malformed,
+    append_step,
+    closed_record,
+    is_valid_step,
+    serialize_records_section,
+    validate_records_section,
+)
+
 _MAX_STEPS = 50
 _MAX_SESSIONS = 10
 _MAX_CONFIGURATIONS = 10
 
 FORGE_SECTION_VERSION = 1
+
+# The kit's step check, under this module's historical name.
+_is_valid_step = is_valid_step
 
 FAIL_PROTECTED = "PROTECTED_MATERIAL"
 FAIL_OUT_OF_SCOPE = "OUT_OF_SCOPE"
@@ -112,19 +125,6 @@ def make_configuration(name: str, owner: str, slots: Dict[str, Any],
 # Session evidence (mirrors the workshop/studio strict schema)
 # ---------------------------------------------------------------------------
 
-def _is_valid_step(rec: Any) -> bool:
-    """Strict step record check. No coercion."""
-    if not isinstance(rec, dict):
-        return False
-    for k in ("kind", "time", "result"):
-        v = rec.get(k)
-        if not isinstance(v, str) or len(v) > 256:
-            return False
-    if len(rec.get("kind", "")) == 0 or len(rec.get("kind", "")) > 32:
-        return False
-    return True
-
-
 @dataclass
 class ForgeSession:
     """One closed or active forge session record + runtime staging.
@@ -175,13 +175,7 @@ class ForgeSession:
 
     def record(self, kind: str, result: str) -> None:
         """Record one step. Enforces the in-memory bound."""
-        self.steps.append({
-            "kind": str(kind)[:32],
-            "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "result": str(result)[:240],
-        })
-        if len(self.steps) > _MAX_STEPS:
-            self.steps = self.steps[-_MAX_STEPS:]
+        self.steps = append_step(self.steps, kind, result, _MAX_STEPS)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -194,17 +188,7 @@ class ForgeSession:
 
     def closed_copy(self) -> Dict[str, Any]:
         """Build the closed record WITHOUT mutating the session."""
-        record = self.to_dict()
-        record["closed"] = time.strftime(
-            "%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        steps = list(record.get("steps", []))
-        steps.append({
-            "kind": "leave",
-            "time": record["closed"],
-            "result": "leave recorded",
-        })
-        record["steps"] = steps[-_MAX_STEPS:]
-        return record
+        return closed_record(self.to_dict(), "steps", _MAX_STEPS)
 
     @staticmethod
     def validate(raw: Any, owner: str) -> Tuple[bool, str]:
@@ -235,203 +219,59 @@ class ForgeSession:
 
 # Sentinel for absent section key (legacy). Distinct from explicit null,
 # which is malformed. Loaders use data.get(<section>, _MISSING).
-_MISSING = object()
-
-
-def _add_malformed(malformed: Dict[str, Any], key: str, raw: Any, error: str) -> None:
-    """Add malformed evidence without overwriting earlier evidence."""
-    entry = {"raw": raw, "error": error}
-    if key in malformed:
-        existing = malformed[key]
-        if isinstance(existing, list):
-            existing.append(entry)
-        else:
-            malformed[key] = [existing, entry]
-    else:
-        malformed[key] = [entry]
-
-
-def _carry_preserved(raw: Any, malformed: Dict[str, Any]) -> None:
-    """Carry previously-preserved malformed evidence through, by key."""
-    preserved = raw.get("malformed") if isinstance(raw, dict) else None
-    if isinstance(preserved, dict):
-        for k, v in preserved.items():
-            if not isinstance(k, str):
-                continue
-            if isinstance(v, list):
-                for entry in v:
-                    if isinstance(entry, dict):
-                        _add_malformed(malformed, k, entry.get("raw"),
-                                       entry.get("error", "preserved"))
-                    else:
-                        _add_malformed(malformed, k, entry, "preserved")
-            elif isinstance(v, dict) and "raw" in v:
-                _add_malformed(malformed, k, v.get("raw"),
-                               v.get("error", "preserved"))
-            else:
-                _add_malformed(malformed, k, v, "preserved")
-
-
-def _section_shell(raw: Any, kind: str):
-    """Shared strict section pre-checks.
-
-    Returns (error, malformed) — error None means the section shell
-    (object, int version 1) is readable and per-record validation can
-    proceed against raw[kind].
-    """
-    if raw is None:
-        malformed: Dict[str, Any] = {}
-        _add_malformed(malformed, "_section", None,
-                       "explicit null is malformed, not legacy absence")
-        return "null", malformed
-    if not isinstance(raw, dict):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, "section not an object")
-        return "shape", malformed
-    version = raw.get("version")
-    if isinstance(version, bool) or not isinstance(version, int):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw,
-                       "section version must be int 1")
-        return "version", malformed
-    if version != FORGE_SECTION_VERSION:
-        malformed = {}
-        _add_malformed(malformed, "_section", raw,
-                       f"unsupported section version {version}")
-        return "version", malformed
-    if not isinstance(raw.get(kind), dict):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, f"{kind} not an object")
-        return "shape", malformed
-    return None, None
+# _MISSING is the session_section kit's one sentinel (P3/TD-2), and
+# _add_malformed its one implementation. Both forge sections (sessions
+# and configurations) delegate their mechanics to the kit; this module
+# keeps the two record schemas and the section constants.
+_MISSING = MISSING
+_add_malformed = add_malformed
 
 
 def validate_sessions_section(raw: Any, owner: str
                               ) -> Tuple[Dict[str, Dict[str, Any]],
                                          Optional[Dict[str, Any]]]:
     """Validate a persisted forge_sessions section. Never raises."""
-    if raw is _MISSING:
-        return {}, None
-    error, malformed = _section_shell(raw, "sessions")
-    if error is not None:
-        return {}, malformed
-    valid: Dict[str, Dict[str, Any]] = {}
-    malformed = {}
-    for sid, rec in raw["sessions"].items():
-        if not isinstance(sid, str):
-            _add_malformed(malformed, "_non_string_key", rec,
-                           "session key not a string")
-            continue
-        ok, err = ForgeSession.validate(rec, owner)
-        if not ok:
-            _add_malformed(malformed, sid, rec, err)
-            continue
-        if not isinstance(rec, dict) or rec.get("session_id") != sid:
-            _add_malformed(malformed, sid, rec, "session key/ID mismatch")
-            continue
-        valid[sid] = dict(rec)
-    _carry_preserved(raw, malformed)
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("started", "")),
-                     reverse=True)[:_MAX_SESSIONS]
-    return dict(ordered), (malformed if malformed else None)
+    return validate_records_section(
+        raw, version=FORGE_SECTION_VERSION, kind="sessions",
+        validate_rec=lambda rec: ForgeSession.validate(rec, owner),
+        id_field="session_id", max_keep=_MAX_SESSIONS,
+        sort_field="started", key_not_string="session key not a string",
+        mismatch="session key/ID mismatch")
 
 
 def serialize_sessions_section(sessions: Any, malformed: Any,
                                owner: str) -> Dict[str, Any]:
     """Serialize forge sessions with the strict schema. Never raises."""
-    valid: Dict[str, Dict[str, Any]] = {}
-    mal: Dict[str, Any] = {}
-    if isinstance(sessions, dict):
-        for sid, rec in sessions.items():
-            if not isinstance(sid, str):
-                _add_malformed(mal, "_non_string_key", rec,
-                               "session key not a string")
-                continue
-            ok, err = ForgeSession.validate(rec, owner)
-            if not ok:
-                _add_malformed(mal, sid, rec,
-                               f"not serialized as valid: {err}")
-                continue
-            if not isinstance(rec, dict) or rec.get("session_id") != sid:
-                _add_malformed(mal, sid, rec,
-                               "not serialized as valid: key/ID mismatch")
-                continue
-            valid[sid] = dict(rec)
-    _carry_preserved({"malformed": malformed} if isinstance(malformed, dict) else {}, mal)
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("started", "")),
-                     reverse=True)[:_MAX_SESSIONS]
-    section: Dict[str, Any] = {
-        "version": FORGE_SECTION_VERSION,
-        "sessions": dict(ordered),
-    }
-    if mal:
-        section["malformed"] = mal
-    return section
+    return serialize_records_section(
+        sessions, malformed, version=FORGE_SECTION_VERSION,
+        kind="sessions",
+        validate_rec=lambda rec: ForgeSession.validate(rec, owner),
+        id_field="session_id", max_keep=_MAX_SESSIONS,
+        sort_field="started", key_not_string="session key not a string",
+        mismatch="not serialized as valid: key/ID mismatch")
 
 
 def validate_configurations_section(raw: Any, owner: str
                                     ) -> Tuple[Dict[str, Dict[str, Any]],
                                                Optional[Dict[str, Any]]]:
     """Validate a persisted bimo_configurations section. Never raises."""
-    if raw is _MISSING:
-        return {}, None
-    error, malformed = _section_shell(raw, "configurations")
-    if error is not None:
-        return {}, malformed
-    valid: Dict[str, Dict[str, Any]] = {}
-    malformed = {}
-    for name, rec in raw["configurations"].items():
-        if not isinstance(name, str):
-            _add_malformed(malformed, "_non_string_key", rec,
-                           "configuration key not a string")
-            continue
-        ok, err = validate_configuration(rec, owner)
-        if not ok:
-            _add_malformed(malformed, name, rec, err)
-            continue
-        if not isinstance(rec, dict) or rec.get("name") != name:
-            _add_malformed(malformed, name, rec,
-                           "configuration key/name mismatch")
-            continue
-        valid[name] = dict(rec)
-    _carry_preserved(raw, malformed)
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("saved", "")),
-                     reverse=True)[:_MAX_CONFIGURATIONS]
-    return dict(ordered), (malformed if malformed else None)
+    return validate_records_section(
+        raw, version=FORGE_SECTION_VERSION, kind="configurations",
+        validate_rec=lambda rec: validate_configuration(rec, owner),
+        id_field="name", max_keep=_MAX_CONFIGURATIONS,
+        sort_field="saved",
+        key_not_string="configuration key not a string",
+        mismatch="configuration key/name mismatch")
 
 
 def serialize_configurations_section(configs: Any, malformed: Any,
                                      owner: str) -> Dict[str, Any]:
     """Serialize named configurations with the strict schema."""
-    valid: Dict[str, Dict[str, Any]] = {}
-    mal: Dict[str, Any] = {}
-    if isinstance(configs, dict):
-        for name, rec in configs.items():
-            if not isinstance(name, str):
-                _add_malformed(mal, "_non_string_key", rec,
-                               "configuration key not a string")
-                continue
-            ok, err = validate_configuration(rec, owner)
-            if not ok:
-                _add_malformed(mal, name, rec,
-                               f"not serialized as valid: {err}")
-                continue
-            if not isinstance(rec, dict) or rec.get("name") != name:
-                _add_malformed(mal, name, rec,
-                               "not serialized as valid: key/name mismatch")
-                continue
-            valid[name] = dict(rec)
-    _carry_preserved({"malformed": malformed} if isinstance(malformed, dict) else {}, mal)
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("saved", "")),
-                     reverse=True)[:_MAX_CONFIGURATIONS]
-    section: Dict[str, Any] = {
-        "version": FORGE_SECTION_VERSION,
-        "configurations": dict(ordered),
-    }
-    if mal:
-        section["malformed"] = mal
-    return section
+    return serialize_records_section(
+        configs, malformed, version=FORGE_SECTION_VERSION,
+        kind="configurations",
+        validate_rec=lambda rec: validate_configuration(rec, owner),
+        id_field="name", max_keep=_MAX_CONFIGURATIONS,
+        sort_field="saved",
+        key_not_string="configuration key not a string",
+        mismatch="not serialized as valid: key/name mismatch")

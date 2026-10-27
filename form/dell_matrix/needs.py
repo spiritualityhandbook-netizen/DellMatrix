@@ -24,19 +24,13 @@ import time
 
 def parse_and_place(program, raw: str) -> Dict[str, Any]:
     """Parse create line with detail:/goals: and place a strong idea."""
-    from form.idea_create import parse_create_line, slug_id, format_report
+    from form.idea_create import parse_create_line, unique_unit_id, format_report
     from form.dell_matrix.plane import Skin
 
     parsed = parse_create_line(raw)
     label = parsed["label"]
-    uid = slug_id(label)
-    # avoid collision (no attempt cap: n strictly increases over a finite unit
-    # set, so the loop always terminates; a cap-break would leave a colliding uid)
-    base = uid
-    n = 1
-    while uid in program.cube.session.plane.units:
-        uid = f"{base}_{n}"
-        n += 1
+    # Canonical slug + collision dedup (idea_create.unique_unit_id).
+    uid = unique_unit_id(program.cube.session.plane.units, label)
 
     u = program.place(
         uid,

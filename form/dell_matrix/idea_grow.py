@@ -42,20 +42,8 @@ except ImportError:
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.open import open_program
 
-_TOKEN = re.compile(r"[a-z0-9_]{3,}", re.I)
-
-
-def tokens_of(label: str, words: str) -> Set[str]:
-    raw = f"{label} {words}".lower()
-    return {m.group(0).lower() for m in _TOKEN.finditer(raw) if not m.group(0).startswith("pulled")}
-
-
-def jaccard(a: Set[str], b: Set[str]) -> float:
-    if not a or not b:
-        return 0.0
-    inter = len(a & b)
-    union = len(a | b)
-    return inter / union if union else 0.0
+from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens_of, jaccard
+# Canonical tokenization/Jaccard substrate: text_metrics (P3/TD-6).
 
 
 def distance(plane: Plane, a: str, b: str) -> float:
@@ -66,25 +54,33 @@ def distance(plane: Plane, a: str, b: str) -> float:
 
 
 def pair_affinity(plane: Plane, a: str, b: str) -> Dict[str, float]:
+    """Pair affinity, re-expressed on the canonical contract (P3/TD-4).
+
+    This experiment previously computed a second, incomparable
+    affinity formula (jaccard*0.6 + spatial*0.3 + scope*0.1, x0.15
+    out-of-scope). It now reports the canonical RingedGrowth
+    _affinity for the pair, adapted to this module's result shape:
+    "in_scope" reads the same enhance_scope relation the canonical
+    formula reads (1.0 in scope, else 0.0 — the canonical formula's
+    own in_scope term floors at 0.2), and "spatial" is derived from
+    the canonical distance. Scores here are the canonical scores,
+    comparable with RingedGrowth's by construction.
+    """
+    from form.dell_matrix.ringed_growth import _affinity
     ua, ub = plane.units.get(a), plane.units.get(b)
     if not ua or not ub:
         return {"affinity": 0.0}
-    ta, tb = tokens_of(ua.label, ua.words), tokens_of(ub.label, ub.words)
-    jac = jaccard(ta, tb)
-    dist = distance(plane, a, b)
-    spatial = 1.0 / (1.0 + dist)
+    aff = _affinity(plane, a, b)
     scope_a = set(plane.enhance_scope(a))
     can = 1.0 if b in scope_a else 0.0
-    practical = jac * 0.6 + spatial * 0.3 + can * 0.1
-    if can == 0.0:
-        practical *= 0.15
+    dist = aff["distance"]
     return {
-        "jaccard": jac,
+        "jaccard": aff["jaccard"],
         "distance": dist if dist != float("inf") else -1.0,
-        "spatial": spatial,
+        "spatial": 1.0 / (1.0 + dist),
         "in_scope": can,
-        "affinity": practical,
-        "shared_tokens": float(len(ta & tb)),
+        "affinity": aff["affinity"],
+        "shared_tokens": aff["shared"],
     }
 
 

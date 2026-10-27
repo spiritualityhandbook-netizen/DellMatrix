@@ -50,10 +50,27 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+from form.dell_matrix.session_section import (
+    MISSING,
+    add_malformed,
+    append_step,
+    carry_preserved,
+    closed_record,
+    collect_valid,
+    is_valid_step,
+    retention_order,
+    section_kind_check,
+    section_precheck,
+    serialize_records_section,
+)
+
 _MAX_STEPS = 50
 _MAX_SESSIONS = 10
 
 ONBOARDING_SECTION_VERSION = 1
+
+# The kit's step check, under this module's historical name.
+_is_valid_step = is_valid_step
 
 FAIL_PROTECTED = "PROTECTED_MATERIAL"
 FAIL_OUT_OF_SCOPE = "OUT_OF_SCOPE"
@@ -108,19 +125,6 @@ MOVES: List[Dict[str, Any]] = [
 MOVE_IDS = tuple(m["id"] for m in MOVES)
 
 
-def _is_valid_step(rec: Any) -> bool:
-    """Strict step record check. No coercion. Mirrors workshop schema."""
-    if not isinstance(rec, dict):
-        return False
-    for k in ("kind", "time", "result"):
-        v = rec.get(k)
-        if not isinstance(v, str) or len(v) > 256:
-            return False
-    if len(rec.get("kind", "")) == 0 or len(rec.get("kind", "")) > 32:
-        return False
-    return True
-
-
 @dataclass
 class OnboardingSession:
     """One closed or active onboarding session record.
@@ -148,13 +152,7 @@ class OnboardingSession:
 
     def record(self, kind: str, result: str) -> None:
         """Record one step. Enforces the in-memory bound."""
-        self.steps.append({
-            "kind": str(kind)[:32],
-            "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "result": str(result)[:240],
-        })
-        if len(self.steps) > _MAX_STEPS:
-            self.steps = self.steps[-_MAX_STEPS:]
+        self.steps = append_step(self.steps, kind, result, _MAX_STEPS)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -174,18 +172,12 @@ class OnboardingSession:
         session remains active and usable; closed_copy() is idempotent.
         """
         record = self.to_dict()
-        record["closed"] = time.strftime(
-            "%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         record["completed"] = bool(completed)
-        steps = list(record.get("steps", []))
-        steps.append({
-            "kind": "complete" if completed else "leave",
-            "time": record["closed"],
-            "result": "completed recorded" if completed
-                      else "leave recorded",
-        })
-        record["steps"] = steps[-_MAX_STEPS:]
-        return record
+        return closed_record(
+            record, "steps", _MAX_STEPS,
+            kind="complete" if completed else "leave",
+            result="completed recorded" if completed
+            else "leave recorded")
 
     @staticmethod
     def validate(raw: Any, owner: str) -> Tuple[bool, str]:
@@ -220,20 +212,12 @@ class OnboardingSession:
 # Sentinel for absent section key (legacy). Distinct from explicit null,
 # which is malformed. Python maps JSON null to None, so the loader must
 # use data.get("onboarding_sessions", _MISSING) to distinguish.
-_MISSING = object()
-
-
-def _add_malformed(malformed: Dict[str, Any], key: str, raw: Any, error: str) -> None:
-    """Add malformed evidence without overwriting earlier evidence."""
-    entry = {"raw": raw, "error": error}
-    if key in malformed:
-        existing = malformed[key]
-        if isinstance(existing, list):
-            existing.append(entry)
-        else:
-            malformed[key] = [existing, entry]
-    else:
-        malformed[key] = [entry]
+# _MISSING is the session_section kit's one sentinel (P3/TD-2), and
+# _add_malformed its one implementation. This module composes the kit
+# pieces directly because its section carries the extra ``begun`` fact
+# and returns restore meta alongside the records.
+_MISSING = MISSING
+_add_malformed = add_malformed
 
 
 def validate_section(raw: Any, owner: str
@@ -257,28 +241,8 @@ def validate_section(raw: Any, owner: str
     }
     if raw is _MISSING:
         return {}, None, meta
-    if raw is None:
-        malformed: Dict[str, Any] = {}
-        _add_malformed(malformed, "_section", None,
-                       "explicit null is malformed, not legacy absence")
-        meta["section_malformed"] = True
-        return {}, malformed, meta
-    if not isinstance(raw, dict):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, "section not an object")
-        meta["section_malformed"] = True
-        return {}, malformed, meta
-    version = raw.get("version")
-    if isinstance(version, bool) or not isinstance(version, int):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw,
-                       "section version must be int 1")
-        meta["section_malformed"] = True
-        return {}, malformed, meta
-    if version != ONBOARDING_SECTION_VERSION:
-        malformed = {}
-        _add_malformed(malformed, "_section", raw,
-                       f"unsupported section version {version}")
+    error, malformed = section_precheck(raw, ONBOARDING_SECTION_VERSION)
+    if error is not None:
         meta["section_malformed"] = True
         return {}, malformed, meta
     begun = raw.get("begun")
@@ -289,48 +253,20 @@ def validate_section(raw: Any, owner: str
         meta["section_malformed"] = True
         return {}, malformed, meta
     meta["begun"] = begun
-    raw_sessions = raw.get("sessions")
-    if not isinstance(raw_sessions, dict):
-        malformed = {}
-        _add_malformed(malformed, "_section", raw, "sessions not an object")
+    kind_malformed = section_kind_check(raw, "sessions")
+    if kind_malformed is not None:
         meta["section_malformed"] = True
-        return {}, malformed, meta
-    valid: Dict[str, Dict[str, Any]] = {}
+        return {}, kind_malformed, meta
     malformed = {}
-    for sid, rec in raw_sessions.items():
-        if not isinstance(sid, str):
-            _add_malformed(malformed, "_non_string_key", rec,
-                           "session key not a string")
-            continue
-        ok, err = OnboardingSession.validate(rec, owner)
-        if not ok:
-            _add_malformed(malformed, sid, rec, err)
-            continue
-        if not isinstance(rec, dict) or rec.get("session_id") != sid:
-            _add_malformed(malformed, sid, rec, "session key/ID mismatch")
-            continue
-        valid[sid] = dict(rec)
-    preserved = raw.get("malformed")
-    if isinstance(preserved, dict):
-        for k, v in preserved.items():
-            if not isinstance(k, str):
-                continue
-            if isinstance(v, list):
-                for entry in v:
-                    if isinstance(entry, dict):
-                        _add_malformed(malformed, k, entry.get("raw"),
-                                       entry.get("error", "preserved"))
-                    else:
-                        _add_malformed(malformed, k, entry, "preserved")
-            elif isinstance(v, dict) and "raw" in v:
-                _add_malformed(malformed, k, v.get("raw"),
-                               v.get("error", "preserved"))
-            else:
-                _add_malformed(malformed, k, v, "preserved")
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("started", "")),
-                     reverse=True)[:_MAX_SESSIONS]
-    return dict(ordered), (malformed if malformed else None), meta
+    valid = collect_valid(
+        raw["sessions"],
+        lambda rec: OnboardingSession.validate(rec, owner),
+        "session_id", malformed,
+        key_not_string="session key not a string",
+        mismatch="session key/ID mismatch")
+    carry_preserved(raw.get("malformed"), malformed)
+    return (retention_order(valid, "started", _MAX_SESSIONS),
+            (malformed if malformed else None), meta)
 
 
 def serialize_section(sessions: Any, malformed: Any, owner: str,
@@ -343,51 +279,14 @@ def serialize_section(sessions: Any, malformed: Any, owner: str,
     ``begun`` is written as a strict bool (only True begins onboarding;
     any other value serializes as False). Never raises.
     """
-    valid: Dict[str, Dict[str, Any]] = {}
-    mal: Dict[str, Any] = {}
-    if isinstance(sessions, dict):
-        for sid, rec in sessions.items():
-            if not isinstance(sid, str):
-                _add_malformed(mal, "_non_string_key", rec,
-                               "session key not a string")
-                continue
-            ok, err = OnboardingSession.validate(rec, owner)
-            if not ok:
-                _add_malformed(mal, sid, rec,
-                               f"not serialized as valid: {err}")
-                continue
-            if not isinstance(rec, dict) or rec.get("session_id") != sid:
-                _add_malformed(mal, sid, rec,
-                               "not serialized as valid: key/ID mismatch")
-                continue
-            valid[sid] = dict(rec)
-    if isinstance(malformed, dict):
-        for k, v in malformed.items():
-            if not isinstance(k, str):
-                continue
-            if isinstance(v, list):
-                for entry in v:
-                    if isinstance(entry, dict):
-                        _add_malformed(mal, k, entry.get("raw"),
-                                       entry.get("error", "preserved"))
-                    else:
-                        _add_malformed(mal, k, entry, "preserved")
-            elif isinstance(v, dict) and "raw" in v:
-                _add_malformed(mal, k, v.get("raw"),
-                               v.get("error", "preserved"))
-            else:
-                _add_malformed(mal, k, v, "preserved")
-    ordered = sorted(valid.items(),
-                     key=lambda kv: str(kv[1].get("started", "")),
-                     reverse=True)[:_MAX_SESSIONS]
-    section: Dict[str, Any] = {
-        "version": ONBOARDING_SECTION_VERSION,
-        "begun": begun is True,
-        "sessions": dict(ordered),
-    }
-    if mal:
-        section["malformed"] = mal
-    return section
+    return serialize_records_section(
+        sessions, malformed, version=ONBOARDING_SECTION_VERSION,
+        kind="sessions",
+        validate_rec=lambda rec: OnboardingSession.validate(rec, owner),
+        id_field="session_id", max_keep=_MAX_SESSIONS,
+        sort_field="started", key_not_string="session key not a string",
+        mismatch="not serialized as valid: key/ID mismatch",
+        extra={"begun": begun is True})
 
 
 def has_completed(sessions: Any) -> bool:

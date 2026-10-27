@@ -143,28 +143,6 @@ class KeyLedger:
         return led
 
 
-def radial_drift_candidates(
-    cells: Dict[Tuple[int, int, int], Any],
-    *,
-    shell_fn,
-    outer_shell: int = 6,
-    min_shell: int = 3,
-) -> List[Tuple[int, int, int]]:
-    """
-    Cells on outer shells are drift candidates (payload soft-forget).
-    Inner shells (near Zero/origin) are protected.
-    """
-    out = []
-    for coord, cell in cells.items():
-        try:
-            sh = int(shell_fn(*coord))
-        except Exception:
-            continue
-        if sh >= min_shell and sh >= outer_shell:
-            out.append(coord)
-    return out
-
-
 def apply_radial_soft_forget(lattice, ledger: KeyLedger, *,
                              outer_shell: int = 6) -> Dict[str, Any]:
     """
