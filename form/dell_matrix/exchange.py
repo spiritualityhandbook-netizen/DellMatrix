@@ -1,0 +1,329 @@
+"""Exchange v1 (master plan P9) — seed packets with receipts.
+
+The Fourth Piece (adopted 2026-10-26; grounding packet
+~/workspace/FOURTH_PIECE_EXCHANGE_GROUNDING_PACKET.md): seeds
+and Keeps travel between minds CARRYING THEIR RECEIPTS — the
+guess recorded before the test, the test method, the measured
+result, the mirror, the outcome — so a receiver inherits a
+warrant, not a claim, and their own gate still decides.
+
+Reception law (non-negotiable): an imported packet lands as a
+PENDING Nursery proposal under the receiver's own gate —
+STORED, never ELIGIBLE-by-default, never auto-learned.
+Replication is counted, never scored: the system shows how
+many receipts from how many distinct origins stand behind a
+Keep; humans judge. Chain lint labels missing links precisely
+("method absent") — absence of evidence is labeled, never
+silently upgraded (Positive Evidence Law).
+
+Deliberately NOT built (grounding packet section 7): no
+central registry/server, no global trust scores, no
+auto-learning, no identity beyond origin stamps, no
+marketplace. Transport is a file.
+
+Receipts are recorded when a run happens (record_receipt,
+persisted per proposal in the ``exchange_receipts`` section),
+assembled into the packet at export (build_packet), validated
+strictly at the boundary (validate_packet — closed shape,
+bounded, JSON data only, never evaluated), screened against
+the receiver's protected values at import, and displayed by
+lint at the gate.
+"""
+
+from __future__ import annotations
+
+import json
+import time
+import uuid
+from typing import Any, Dict, List, Tuple
+
+from form.dell_matrix.session_section import (
+    MISSING,
+    serialize_records_section,
+    validate_records_section,
+)
+
+PACKET_VERSION = 1
+REGISTRY_STAMP = "core1:00-50,core2:51-99"
+
+MAX_RECEIPTS = 50
+_MAX_RECEIPT_ENTRIES = 200
+
+_PACKET_KEYS = frozenset({"version", "seed", "manifest", "receipts"})
+_SEED_KEYS = frozenset({"label", "chain", "keep"})
+_MANIFEST_KEYS = frozenset(
+    {"author_origin", "created", "registry", "requirements"})
+RECEIPT_KEYS = frozenset(
+    {"origin", "guess", "test_method", "result", "mirror", "outcome"})
+
+_RECEIPT_ENTRY_KEYS = frozenset({
+    "entry_id", "owner", "ts", "pid", "origin", "guess",
+    "test_method", "result", "mirror", "outcome"})
+
+EXCHANGE_RECEIPTS_SECTION_VERSION = 1
+
+
+class ExchangeError(Exception):
+    """A packet or receipt failed validation at the boundary."""
+
+
+def _str(v: Any, limit: int, field: str) -> str:
+    if not isinstance(v, str) or len(v) > limit:
+        raise ExchangeError(f"{field} must be a string of "
+                            f"at most {limit} chars")
+    return v
+
+
+def _validate_receipt(r: Any) -> Dict[str, str]:
+    if not isinstance(r, dict) or set(r.keys()) != RECEIPT_KEYS:
+        raise ExchangeError("receipt keys mismatch")
+    out = {}
+    for k, limit in (("origin", 200), ("guess", 500),
+                     ("test_method", 1000), ("result", 1000),
+                     ("mirror", 1000), ("outcome", 500)):
+        out[k] = _str(r[k], limit, f"receipt.{k}")
+    if not out["origin"]:
+        raise ExchangeError("receipt.origin must be non-empty")
+    return out
+
+
+def validate_packet(data: Any) -> Dict[str, Any]:
+    """Strictly validate a seed packet. Raises ExchangeError.
+    Returns a normalized copy (only known keys, bounded)."""
+    if not isinstance(data, dict) or set(data.keys()) != _PACKET_KEYS:
+        raise ExchangeError("packet keys mismatch")
+    if data["version"] != PACKET_VERSION:
+        raise ExchangeError("unsupported packet version")
+    seed = data["seed"]
+    if not isinstance(seed, dict) or set(seed.keys()) != _SEED_KEYS:
+        raise ExchangeError("seed keys mismatch")
+    seed = {
+        "label": _str(seed["label"], 120, "seed.label"),
+        "chain": _str(seed["chain"], 4000, "seed.chain"),
+        "keep": _str(seed["keep"], 1000, "seed.keep"),
+    }
+    if not seed["label"]:
+        raise ExchangeError("seed.label must be non-empty")
+    man = data["manifest"]
+    if not isinstance(man, dict) or set(man.keys()) != _MANIFEST_KEYS:
+        raise ExchangeError("manifest keys mismatch")
+    reqs = man["requirements"]
+    if not isinstance(reqs, list) or len(reqs) > 8 or any(
+            not isinstance(x, str) or len(x) > 120 for x in reqs):
+        raise ExchangeError("manifest.requirements out of bounds")
+    man = {
+        "author_origin": _str(man["author_origin"], 200,
+                              "manifest.author_origin"),
+        "created": _str(man["created"], 32, "manifest.created"),
+        "registry": _str(man["registry"], 40, "manifest.registry"),
+        "requirements": list(reqs),
+    }
+    if not man["author_origin"]:
+        raise ExchangeError("manifest.author_origin must be non-empty")
+    receipts = data["receipts"]
+    if not isinstance(receipts, list) or len(receipts) > MAX_RECEIPTS:
+        raise ExchangeError("receipts out of bounds")
+    receipts = [_validate_receipt(r) for r in receipts]
+    return {"version": PACKET_VERSION, "seed": seed,
+            "manifest": man, "receipts": receipts}
+
+
+def lint_packet(packet: Dict[str, Any]) -> Dict[str, Any]:
+    """Chain lint: precise labels for missing links, plus the
+    replication count. Never a bare pass/fail, never a score."""
+    labels: List[str] = []
+    receipts = packet["receipts"]
+    if not receipts:
+        labels.append("no receipts")
+    field_absent = {"guess": "guess absent",
+                    "test_method": "method absent",
+                    "result": "result absent",
+                    "mirror": "mirror absent",
+                    "outcome": "outcome absent"}
+    for i, r in enumerate(receipts, 1):
+        for field, label in field_absent.items():
+            if not r[field].strip():
+                labels.append(f"receipt {i}: {label}")
+    distinct = len({r["origin"] for r in receipts})
+    return {
+        "labels": labels,
+        "complete": not labels,
+        "receipts": len(receipts),
+        "distinct_origins": distinct,
+    }
+
+
+def build_packet(program: Any, pid: str, *, chain: str = "",
+                 receipts=None,
+                 requirements=None) -> Dict[str, Any]:
+    """Assemble a packet for one of the program's proposals.
+    Receipts default to the ones recorded against the proposal
+    (record_receipt); an explicit list overrides."""
+    prop = program.nursery.proposals.get(pid)
+    if prop is None:
+        raise ExchangeError(f"unknown proposal {pid}")
+    if receipts is None:
+        receipts = [
+            {k: e[k] for k in RECEIPT_KEYS}
+            for e in receipts_for(program, pid)]
+    packet = {
+        "version": PACKET_VERSION,
+        "seed": {
+            "label": prop.label,
+            "chain": chain,
+            "keep": prop.detail or prop.words,
+        },
+        "manifest": {
+            "author_origin": prop.origin or f"host:{program.owner}",
+            "created": time.strftime(
+                "%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "registry": REGISTRY_STAMP,
+            "requirements": list(requirements or []),
+        },
+        "receipts": list(receipts),
+    }
+    return validate_packet(packet)
+
+
+def write_packet(packet: Dict[str, Any], path: str) -> None:
+    packet = validate_packet(packet)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(packet, f, indent=2, ensure_ascii=False)
+
+
+def read_packet(path: str) -> Dict[str, Any]:
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        raise ExchangeError(f"packet unreadable: {type(e).__name__}")
+    return validate_packet(data)
+
+
+def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
+    """Land a foreign packet as a PENDING proposal in the
+    receiver's nursery. Never confirms, never makes eligible.
+    Packet text is screened against the receiver's protected
+    values first (the dock's import discipline)."""
+    packet = validate_packet(packet)
+    from form.dell_matrix import inference_dock as _dock
+    protected = _dock.protected_values(program)
+    if protected:
+        blob = json.dumps(packet, ensure_ascii=False)
+        for val in protected:
+            if val and val in blob:
+                return {"ok": False, "reason": "protected_material",
+                        "detail": "Packet text carries receiver-"
+                                  "protected material; refused."}
+    lint = lint_packet(packet)
+    seed, man = packet["seed"], packet["manifest"]
+    origin = f"exchange:{man['author_origin']}"[:120]
+    lint_text = "; ".join(lint["labels"]) if lint["labels"] \
+        else "chain complete"
+    reason = (
+        f"exchange import from {man['author_origin']} · "
+        f"replication: {lint['receipts']} receipt(s), "
+        f"{lint['distinct_origins']} distinct origin(s) · "
+        f"lint: {lint_text}")[:160]
+    detail_lines = [f"KEEP: {seed['keep']}"]
+    if seed["chain"]:
+        detail_lines.append(f"SEED CHAIN: {seed['chain']}")
+    for i, r in enumerate(packet["receipts"], 1):
+        detail_lines.append(
+            f"RECEIPT {i} ({r['origin']}): guess: {r['guess']} · "
+            f"method: {r['test_method']} · result: {r['result']} · "
+            f"mirror: {r['mirror']} · outcome: {r['outcome']}")
+    prop = program.nursery.add(
+        seed["label"], words=seed["keep"][:240], origin=origin,
+        reason=reason, detail="\n".join(detail_lines)[:2000],
+        goals=[f"replication {lint['receipts']}x/"
+               f"{lint['distinct_origins']} origins"])
+    return {"ok": True, "pid": prop.id, "lint": lint,
+            "origin": origin}
+
+
+# --------------------------------------- recorded receipts section
+
+def _validate_receipt_entry(entry: Any, owner: str
+                            ) -> Tuple[bool, str]:
+    if not isinstance(entry, dict):
+        return False, "entry not an object"
+    if set(entry.keys()) != _RECEIPT_ENTRY_KEYS:
+        return False, "entry keys mismatch"
+    if entry["owner"] != owner:
+        return False, "entry owner mismatch"
+    for k, limit in (("entry_id", 64), ("ts", 32), ("pid", 120),
+                     ("origin", 200), ("guess", 500),
+                     ("test_method", 1000), ("result", 1000),
+                     ("mirror", 1000), ("outcome", 500)):
+        v = entry[k]
+        if not isinstance(v, str) or len(v) > limit:
+            return False, f"{k} invalid"
+    if not entry["entry_id"] or not entry["pid"] \
+            or not entry["origin"]:
+        return False, "entry identity fields must be non-empty"
+    return True, ""
+
+
+def validate_receipts_section(raw: Any, owner: str):
+    """Validate a persisted exchange_receipts section. Never
+    raises."""
+    return validate_records_section(
+        raw, version=EXCHANGE_RECEIPTS_SECTION_VERSION,
+        kind="entries",
+        validate_rec=lambda rec: _validate_receipt_entry(rec, owner),
+        id_field="entry_id", max_keep=_MAX_RECEIPT_ENTRIES,
+        sort_field="ts", key_not_string="entry key not a string",
+        mismatch="entry key/ID mismatch")
+
+
+def serialize_receipts_section(entries: Any, malformed: Any,
+                               owner: str) -> Dict[str, Any]:
+    """Serialize recorded receipts with the strict schema. Never
+    raises."""
+    return serialize_records_section(
+        entries, malformed,
+        version=EXCHANGE_RECEIPTS_SECTION_VERSION, kind="entries",
+        validate_rec=lambda rec: _validate_receipt_entry(rec, owner),
+        id_field="entry_id", max_keep=_MAX_RECEIPT_ENTRIES,
+        sort_field="ts", key_not_string="entry key not a string",
+        mismatch="not serialized as valid: key/ID mismatch")
+
+
+_MISSING = MISSING
+
+
+def record_receipt(program: Any, pid: str, receipt: Dict[str, str]
+                   ) -> Dict[str, Any]:
+    """Record one run's receipt against a proposal, at the time
+    the run happens. Persisted (best-effort save, mirroring dock
+    evidence discipline)."""
+    if pid not in program.nursery.proposals:
+        raise ExchangeError(f"unknown proposal {pid}")
+    r = _validate_receipt(receipt)
+    entry = {
+        "entry_id": uuid.uuid4().hex,
+        "owner": program.owner,
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "pid": pid,
+        **r,
+    }
+    entries = getattr(program, "exchange_receipts", None)
+    if entries is None:
+        entries = {}
+        program.exchange_receipts = entries
+    entries[entry["entry_id"]] = entry
+    while len(entries) > _MAX_RECEIPT_ENTRIES:
+        entries.pop(next(iter(entries)))
+    try:
+        program.save()
+    except Exception:
+        pass
+    return entry
+
+
+def receipts_for(program: Any, pid: str) -> List[Dict[str, Any]]:
+    out = [e for e in (getattr(program, "exchange_receipts", None)
+                       or {}).values() if e.get("pid") == pid]
+    out.sort(key=lambda e: e.get("ts", ""))
+    return out

@@ -63,6 +63,7 @@ Ideas / Growth
   create an idea called test
   grow ideas 2
   proposals | confirm <id> | confirm all | reject all
+  exchange export <id> <file> | exchange import <file>
   rank | lineage <id or label>
   groups | group create <name> | group add <id or label> to <name>
   group remove <id or label> from <name> | group show <name> | group delete <name>
@@ -184,6 +185,7 @@ Create — make and develop ideas
   create an idea called <name>
   grow ideas <n>
   proposals | confirm <id> | confirm all | reject all
+  exchange export <id> <file> | exchange import <file>
   rank | lineage <id or label>
   groups | group create <name> | group add <id or label> to <name>
   group remove <id or label> from <name> | group show <name> | group delete <name>
@@ -2424,6 +2426,49 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
 
     if lower in ("proposals", "nursery", "void", "pending"):
         _show_proposals(p)
+        return p
+
+    if lower.startswith("exchange "):
+        # P9 / Exchange v1: file-based seed packets with receipts.
+        # Export assembles a packet for a proposal (with its
+        # recorded receipts); import lands a foreign packet as a
+        # PENDING proposal under this matrix's own gate — never
+        # confirmed, never auto-learned.
+        from form.dell_matrix import exchange as _ex
+        parts = raw_line.split(None, 3)
+        try:
+            if len(parts) >= 4 and parts[1] == "export":
+                packet = _ex.build_packet(p, parts[2].strip())
+                _ex.write_packet(packet, parts[3].strip())
+                lint = _ex.lint_packet(packet)
+                _say(f"Exchange: exported {parts[2].strip()} → "
+                     f"{parts[3].strip()} "
+                     f"({lint['receipts']} receipt(s), "
+                     f"{lint['distinct_origins']} origin(s))")
+            elif len(parts) >= 3 and parts[1] == "import":
+                packet = _ex.read_packet(parts[2].strip())
+                out = _ex.import_packet(p, packet)
+                if out.get("ok"):
+                    lint = out["lint"]
+                    _say(f"Exchange: imported as PENDING proposal "
+                         f"{out['pid']} from {out['origin']} · "
+                         f"replication: {lint['receipts']} "
+                         f"receipt(s), {lint['distinct_origins']} "
+                         f"origin(s) · lint: "
+                         f"{'; '.join(lint['labels']) if lint['labels'] else 'chain complete'}")
+                    _say("It proposes; your gate decides. "
+                         "Review with: proposals")
+                else:
+                    _say(f"Exchange: import refused "
+                         f"({out.get('reason')}) — "
+                         f"{out.get('detail', '')}")
+            else:
+                _say("usage: exchange export <proposal-id> <file> | "
+                     "exchange import <file>")
+        except _ex.ExchangeError as e:
+            _say(f"Exchange: {e}")
+        except OSError as e:
+            _say(f"Exchange: file error ({e.strerror or 'io'})")
         return p
 
     if lower in ("lang list", "langs", "languages"):
