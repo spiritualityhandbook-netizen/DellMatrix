@@ -142,6 +142,30 @@ def run_all() -> bool:
         unit, err = lifecycle.resolve_idea(p, "NoSuchIdea")
         check("lifecycle_miss_is_honest",
               unit is None and err is not None and "Unknown idea" in err)
+        # Confirmed proposal + its plane unit share one ID (one
+        # entity): lifecycle must resolve it to the UNIT, by ID and
+        # by label, and fade must work on it. (Regression case: the
+        # canonical resolver returns the proposal record for a shared
+        # ID; mapping back by ID is required.)
+        prop = p.nursery.add("ConfirmedIdea", words="confirmed words")
+        cres = p.confirm_proposal(
+            prop.id, _producer="test",
+            _review_context=p.make_review_context(prop.id, "test"))
+        check("lifecycle_fixture_confirm_ok", cres.get("ok") is True,
+              f"cres={cres.get('error')}")
+        unit, err = lifecycle.resolve_idea(p, prop.id)
+        check("lifecycle_confirmed_resolves_by_id",
+              unit is not None and unit.id == prop.id and err is None,
+              f"err={err}")
+        unit, err = lifecycle.resolve_idea(p, "ConfirmedIdea")
+        check("lifecycle_confirmed_resolves_by_label",
+              unit is not None and unit.id == prop.id and err is None,
+              f"err={err}")
+        _p2, msg = lifecycle.do_fade(p, prop.id, "p1-dedup")
+        check("lifecycle_fade_on_confirmed_works",
+              "Faded" in msg
+              and lifecycle.get_presence(p, prop.id)["presence"] == "faded",
+              f"msg={msg}")
 
         # -- TD-3: live_identity canonical tiers + merge ambiguity.
         from form.mandell import live_identity

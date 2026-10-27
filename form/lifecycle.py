@@ -58,6 +58,15 @@ def resolve_idea(p, ref: str):
     res = resolve_lineage_ref(p, ref)
     if res.get("ok"):
         unit = res.get("unit")
+        if unit is None and res.get("proposal") is not None:
+            # Canonical precedence returns the PROPOSAL record when a
+            # confirmed proposal and its plane unit share one ID (one
+            # entity). For lifecycle that entity IS the placed idea:
+            # map back to the unit by ID. A proposal with no unit is
+            # genuinely not placed yet.
+            pid = getattr(res["proposal"], "id", None)
+            units = p.cube.session.plane.units
+            unit = units.get(pid) if pid else None
         if unit is not None:
             return unit, None
         return None, (f"'{ref}' names a nursery proposal, not a placed "
