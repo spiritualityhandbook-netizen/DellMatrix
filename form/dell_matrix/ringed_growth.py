@@ -390,7 +390,8 @@ class RingedGrowth:
     def run(self, plane: Plane, cycles: int = 1,
             graph: Optional[Any] = None,
             program: Any = None,
-            include_superseded: bool = False) -> Dict[str, Any]:
+            include_superseded: bool = False,
+            session: Any = None) -> Dict[str, Any]:
         """Run growth cycles over the plane's live units.
 
         graph: optional attached Phase-2 SemanticGraph (P3 R3.6). When
@@ -400,7 +401,26 @@ class RingedGrowth:
         behavior with the defined neutral 0.0. The graph is never
         mutated here. Backward compatible: existing callers pass no
         graph.
+
+        session (SD-3, master plan P6): an optional docked inference
+        session. Token affinity remains the pair PRE-FILTER (it
+        chooses and orders the pairs, as here), but when a docked
+        session is supplied, Solstice pair crosses are authored by
+        the docked mind through its SYNTHESIZE verb instead of
+        token recombination. A failed verb call falls back to the
+        token composition FOR THAT PAIR. Token-composed proposals
+        are labeled origin="growth:token" (body-pulse restores:
+        "growth:body") so the review gate can always tell which
+        mechanism authored a proposal; docked proposals carry the
+        dock's own "dock:..." origin. Single-parent Equinox /
+        Standstill drift stays token machinery in both modes —
+        it is not a pair synthesis.
         """
+        docked = session is not None \
+            and bool(getattr(session, "is_docked", False))
+        docked_new = 0
+        token_fallback = 0
+        docked_pairs: List[Dict[str, Any]] = []
         report: List[Dict[str, Any]] = []
         total_new = 0
         total_evo = 0
@@ -443,6 +463,7 @@ class RingedGrowth:
                             affinity=0.5,
                             reason=f"body_pulse vital_missing={organ}",
                             seed=self.seed,
+                            origin="growth:body",
                             # P3 R3.6: non-pair proposal — harmony/graph
                             # neutral 0.0 (no scored pair exists).
                         )
@@ -468,6 +489,7 @@ class RingedGrowth:
 
             new_this = 0
             evo_this = 0
+            docked_this = 0
 
             for a, b, aff in pairs:
                 gate = _ring_phase(aff["affinity"])
@@ -512,6 +534,24 @@ class RingedGrowth:
                 gcoh_vals.append(pair_gcoh)
 
                 if gate == "Solstice" and new_this < self.max_new:
+                    # SD-3: with a docked session, the docked mind
+                    # authors the cross through SYNTHESIZE (affinity
+                    # was only the pre-filter that picked this pair).
+                    # A failed verb call falls back to the token
+                    # composition below for this pair.
+                    if docked:
+                        receipt = session.synthesize([a, b])
+                        if receipt.get("ok"):
+                            new_this += 1
+                            total_new += 1
+                            docked_new += 1
+                            docked_this += 1
+                            docked_pairs.append({
+                                "a": a, "b": b,
+                                "affinity": aff["affinity"],
+                                "pid": receipt.get("pid")})
+                            continue
+                        token_fallback += 1
                     label = _combine_label(ua.label, ub.label)
                     words = (
                         f"[Ring:Evolve] Solstice resonance. "
@@ -534,6 +574,7 @@ class RingedGrowth:
                         seed=self.seed,
                         harmony=pair_harmony,
                         graph_coherence=pair_gcoh,
+                        origin="growth:token",
                     )
                     new_this += 1
                     total_new += 1
@@ -564,6 +605,7 @@ class RingedGrowth:
                         seed=self.seed,
                         harmony=pair_harmony,
                         graph_coherence=pair_gcoh,
+                        origin="growth:token",
                     )
                     evo_this += 1
                     total_evo += 1
@@ -576,6 +618,7 @@ class RingedGrowth:
                     "pairs_scanned": len(pairs),
                     "proposed_new": new_this,
                     "proposed_evolved": evo_this,
+                    "docked_new": docked_this,
                     "rings": list(RINGS),
                     "body": body_snapshots[-1],
                     "solstice_blocked": blocked,
@@ -589,6 +632,11 @@ class RingedGrowth:
             "cycles": cycles,
             "proposed_new": total_new,
             "proposed_evolved": total_evo,
+            # SD-3: which mechanism authored the pair crosses.
+            "growth_mode": "docked" if docked else "token",
+            "docked_new": docked_new,
+            "token_fallback": token_fallback,
+            "docked_pairs": docked_pairs,
             "fog_cut": fog_cut,
             "gates": gate_counts,
             "nursery": self.nursery.summary(),

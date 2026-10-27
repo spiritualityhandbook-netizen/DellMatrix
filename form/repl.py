@@ -3814,6 +3814,10 @@ _CONNECT_COMMANDS = (
     "                      environment, never entered here)",
     "  ask <prompt>        docked inference -> a PENDING Nursery",
     "                      proposal (never auto-confirmed)",
+    "  grow [n]            run growth: with a docked provider the",
+    "                      crosses are authored by the docked mind",
+    "                      (affinity only pre-filters the pairs);",
+    "                      otherwise token growth, labeled as such",
     "  help · leave        leave saves session evidence and exits",
 )
 
@@ -3995,6 +3999,45 @@ def _handle_connect_line(p, line: str, session):
                 reason = "failed"
             session.record("ask", f"rejected: {reason}")
             _say(f"Ask failed ({reason}): {out.get('detail') or ''}")
+        return p, session
+
+    if token == "grow":
+        # SD-3: growth from inside the connection. With a docked
+        # provider, pair crosses are authored by the docked mind
+        # (affinity pre-filters the pairs); without one, token
+        # growth runs and its proposals are labeled growth:token.
+        # Docking is lazy here exactly as for 'ask': the selected
+        # provider (default 'fake') docks on first use. A dock
+        # failure leaves growth on the token path, said out loud.
+        cycles = 1
+        if len(parts) >= 2:
+            try:
+                cycles = max(1, min(5, int(parts[1])))
+            except ValueError:
+                cycles = 1
+        if session.docked is None:
+            from form.dell_matrix.inference_dock import DockError, dock
+            try:
+                session.docked = dock(
+                    p, trusted_subject=f"connect:{p.owner}",
+                    provider=session.provider)
+            except DockError as e:
+                session.record("grow", f"dock failed: {FAIL_DOCK}")
+                _say(f"{FAIL_DOCK}: {e} — running token growth.")
+            except Exception as e:
+                session.record("grow", f"dock failed: {FAIL_DOCK}")
+                _say(f"{FAIL_DOCK}: {type(e).__name__} — running "
+                     f"token growth.")
+        out = p.grow_ideas(cycles, session=session.docked)
+        mode = out.get("growth_mode", "token")
+        session.record(
+            "grow", f"mode={mode} new={out.get('proposed_new', 0)} "
+                    f"evolved={out.get('proposed_evolved', 0)} "
+                    f"docked_new={out.get('docked_new', 0)} "
+                    f"fallback={out.get('token_fallback', 0)}")
+        _say(f"Growth ({mode}): {out.get('proposed_new', 0)} new + "
+             f"{out.get('proposed_evolved', 0)} evolved proposal(s) "
+             f"— all PENDING review.")
         return p, session
 
     session.record(token or "unknown", f"rejected: {FAIL_OUT_OF_SCOPE}")
