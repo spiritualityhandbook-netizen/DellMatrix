@@ -31,8 +31,10 @@ Not protection against malicious Python inside the trusted host.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+import time
 from typing import Any, Dict, List, Optional
 
 # ---------------------------------------------------------------- constants
@@ -124,11 +126,11 @@ _ORIGIN_CHARS = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._:/-")
 
 
-def _origin_segment(text) -> str:
+def _origin_segment(text, limit: int = 80) -> str:
     if not isinstance(text, str) or not text:
         return "unknown"
     return "".join(
-        ch if ch in _ORIGIN_CHARS else "_" for ch in text)[:80]
+        ch if ch in _ORIGIN_CHARS else "_" for ch in text)[:limit]
 
 
 # ---------------------------------------------------------------- bridge loading (lazy, optional)
@@ -496,16 +498,23 @@ class DockedSession:
     and undock() only. It cannot mint/attenuate/revoke/list grants and
     cannot confirm proposals — confirmation stays on the R6.1 bound
     endpoint after human review / issued authority.
+
+    SD-1 (master plan P4): the session carries a host-set task kind
+    and a persisted evidence record (form/dell_matrix/dock_session.py)
+    that links every proposal it creates back to this session. The
+    record is registered into program.dock_sessions at construction
+    and updated in place; it is evidence, never authority.
     """
 
     __slots__ = ("_program", "_subject", "_owner", "_provider_name",
                  "_provider", "_model_label", "_timeout_s",
-                 "_max_prompt_chars", "_max_response_chars", "_docked")
+                 "_max_prompt_chars", "_max_response_chars", "_docked",
+                 "_task", "_session_id", "_evidence", "_snap_name")
 
     def __init__(self, program, trusted_subject: str, owner,
                  provider_name: str, provider, model_label: str,
                  timeout_s: int, max_prompt_chars: int,
-                 max_response_chars: int):
+                 max_response_chars: int, task: str = "propose"):
         object.__setattr__(self, "_program", program)
         object.__setattr__(self, "_subject", trusted_subject)
         object.__setattr__(self, "_owner", owner)
@@ -516,6 +525,30 @@ class DockedSession:
         object.__setattr__(self, "_max_prompt_chars", max_prompt_chars)
         object.__setattr__(self, "_max_response_chars", max_response_chars)
         object.__setattr__(self, "_docked", True)
+        object.__setattr__(self, "_task", task)
+        object.__setattr__(self, "_snap_name", "")
+        # SD-1 session evidence: build the record and register it in
+        # program state immediately, so a proposal's session link is
+        # durable from the moment the proposal is — not only after a
+        # polite undock. Registration is best-effort on exotic program
+        # doubles (missing owner/state attrs); on a real Program it
+        # always lands.
+        from form.dell_matrix import dock_session as _ds
+        record_owner = owner if isinstance(owner, str) and owner \
+            else getattr(program, "owner", "") or ""
+        record = _ds.new_record(
+            record_owner, trusted_subject, provider_name,
+            model_label, task, "")
+        object.__setattr__(self, "_evidence", record)
+        object.__setattr__(self, "_session_id", record["session_id"])
+        try:
+            sessions = getattr(program, "dock_sessions", None)
+            if not isinstance(sessions, dict):
+                sessions = {}
+                program.dock_sessions = sessions
+            sessions[record["session_id"]] = record
+        except Exception:
+            pass
 
     @property
     def bound_subject(self) -> str:
@@ -526,16 +559,39 @@ class DockedSession:
         return self._provider_name
 
     @property
+    def task(self) -> str:
+        return self._task
+
+    @property
+    def session_id(self) -> str:
+        return self._session_id
+
+    @property
     def is_docked(self) -> bool:
         return bool(self._docked)
 
     def undock(self) -> None:
         """Disable the session. After this, propose() performs zero
-        provider calls."""
+        provider calls. Closes the evidence record and deregisters
+        the snap registration (SD-1)."""
         object.__setattr__(self, "_docked", False)
+        try:
+            from form.dell_matrix import dock_session as _ds
+            if self._evidence.get("closed") is None:
+                _ds.close_record(self._evidence)
+        except Exception:
+            pass
+        if self._snap_name:
+            try:
+                matrix = getattr(self._program, "matrix", None)
+                if matrix is not None and hasattr(matrix, "snap_out"):
+                    matrix.snap_out(self._snap_name)
+            except Exception:
+                pass
 
     def propose(self, prompt: str,
-                context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                context: Optional[Dict[str, Any]] = None,
+                reason: Optional[str] = None) -> Dict[str, Any]:
         """Run inference and create a PENDING Nursery proposal.
 
         Enforcement order (AMEND 2026-10-07):
@@ -544,11 +600,18 @@ class DockedSession:
         response bound enforced -> protected-output rejected ->
         schema validated -> Nursery.add (pending only).
 
-        Returns {"ok": True, "pid", "provider", "model"} (model is the
-        ACTUAL model identity reported by the transport) or
-        {"ok": False, "reason", "detail"} with bounded public
-        error messages. Denial/failure creates no proposal and mutates
-        no accepted state.
+        SD-1: `reason` is the host-supplied rationale recorded on the
+        proposal (bounded, protected-screened like the prompt). When
+        omitted, the dock derives a non-empty provenance reason from
+        the session's task/subject/provider/model, so every docked
+        proposal carries a reason. The session's task kind and the
+        evidence link are recorded in the session evidence record.
+
+        Returns {"ok": True, "pid", "provider", "model", "task",
+        "session_id"} (model is the ACTUAL model identity reported
+        by the transport) or {"ok": False, "reason", "detail"} with
+        bounded public error messages. Denial/failure creates no
+        proposal and mutates no accepted state.
         """
         if not self._docked:
             return {"ok": False, "reason": "undocked",
@@ -559,6 +622,13 @@ class DockedSession:
         if len(prompt) > self._max_prompt_chars:
             return {"ok": False, "reason": "prompt_too_large",
                     "detail": f"Prompt exceeds {self._max_prompt_chars} chars."}
+        if reason is not None:
+            if not isinstance(reason, str) or not reason.strip():
+                return {"ok": False, "reason": "bad_reason",
+                        "detail": "Reason must be a non-empty string."}
+            if len(reason) > 1000:
+                return {"ok": False, "reason": "bad_reason",
+                        "detail": "Reason exceeds 1000 chars."}
         # Bounded context validation BEFORE generation. Malformed /
         # cyclic / excessive context -> stable receipt, no provider
         # call, no proposal. Failures stay inside the failure boundary.
@@ -578,6 +648,10 @@ class DockedSession:
         if _screen_decoded_values(safe_ctx, prot):
             return {"ok": False, "reason": "protected_input",
                     "detail": "Context carries protected material; "
+                             "rejected before provider call."}
+        if reason is not None and contains_protected_decoded(reason, prot):
+            return {"ok": False, "reason": "protected_input",
+                    "detail": "Reason carries protected material; "
                              "rejected before provider call."}
         full_prompt = prompt
         if safe_ctx:
@@ -646,24 +720,65 @@ class DockedSession:
         # Truthful model identity: the ACTUAL model reported by the
         # transport, not merely the requested label. Computed before
         # Nursery.add so the proposal itself carries provenance
-        # (Phase E): origin = "dock:<provider>:<actual model>", with
-        # segments sanitized because model identity is untrusted
-        # transport-reported text.
+        # (Phase E, completed by SD-1): origin =
+        # "dock:<subject>:<provider>:<actual model>", with segments
+        # sanitized because model identity is untrusted
+        # transport-reported text. Segment limits keep the whole
+        # origin inside the Nursery's 120-char bound.
         actual_model = getattr(self._provider, "last_actual_model", None)
-        origin = "dock:{}:{}".format(
-            _origin_segment(self._provider_name),
-            _origin_segment(actual_model or self._model_label))
+        origin = "dock:{}:{}:{}".format(
+            _origin_segment(self._subject, 40),
+            _origin_segment(self._provider_name, 24),
+            _origin_segment(actual_model or self._model_label, 44))
+        # SD-1: every docked proposal carries a non-empty reason —
+        # the host-supplied rationale when given, else a derived
+        # provenance reason naming task, subject, provider, model.
+        chosen_reason = reason if reason is not None else (
+            f"docked {self._task} by {self._subject} via "
+            f"{self._provider_name} "
+            f"(model {actual_model or self._model_label})")
         # Canonical Nursery API. The proposal is PENDING: inference
         # never confirms, never mints authority.
         try:
             prop = self._program.nursery.add(
-                fields["label"], words=fields["words"], origin=origin)
+                fields["label"], words=fields["words"], origin=origin,
+                reason=chosen_reason)
         except Exception as e:
             return {"ok": False, "reason": "nursery_failure",
                     "detail": f"{type(e).__name__}"}
+        # SD-1 session evidence: link the proposal to this session
+        # (prompt digest + context snapshot id; never the full
+        # prompt). Evidence failure never unwrites the proposal —
+        # it is recorded best-effort, like registration.
+        try:
+            from form.dell_matrix import dock_session as _ds
+            snapshot_id = None
+            if safe_ctx:
+                snapshot_id = hashlib.sha256(json.dumps(
+                    safe_ctx, sort_keys=True).encode("utf-8")).hexdigest()
+            _ds.append_proposal(self._evidence, {
+                "pid": str(prop.id)[:80],
+                "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "task": self._task,
+                "reason": prop.reason,
+                "origin": prop.origin,
+                "prompt_hash": hashlib.sha256(
+                    full_prompt.encode("utf-8")).hexdigest(),
+                "prompt_summary": " ".join(prompt.split())[:80],
+                "prompt_chars": len(full_prompt),
+                "snapshot_id": snapshot_id,
+                "model": str(actual_model or self._model_label)[:120],
+            })
+        except Exception:
+            pass
         return {"ok": True, "pid": prop.id,
                 "provider": self._provider_name,
-                "model": actual_model or self._model_label}
+                "model": actual_model or self._model_label,
+                "task": self._task,
+                "session_id": self._session_id}
+
+
+_TASK_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
 
 
 def dock(program, trusted_subject: str, provider: str = "fake", *,
@@ -671,7 +786,8 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
          timeout_s: int = DEFAULT_TIMEOUT_S,
          max_prompt_chars: int = DEFAULT_MAX_PROMPT_CHARS,
          max_response_chars: int = DEFAULT_MAX_RESPONSE_CHARS,
-         fake_mode: str = "valid") -> DockedSession:
+         fake_mode: str = "valid",
+         task: str = "propose") -> DockedSession:
     """Create a docked inference session. TRUSTED HOST ONLY.
 
     `trusted_subject` is host-established (never model-supplied).
@@ -679,6 +795,13 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
     provider, otherwise a bridge provider name (lazy import; the
     bridge's auto-detection is never used to enable).
     Bounded timeouts and sizes are enforced.
+
+    SD-1: `task` is the host-set task kind carried by the session's
+    evidence and every proposal's derived reason (a bounded slug).
+    The session is registered through the program's snap contract
+    (DellMatrix.snap, kind "other"): a candidate the contract
+    rejects (e.g. Floor-hostile subject/payload) fails the dock —
+    no session is created.
     """
     if not isinstance(trusted_subject, str) or not trusted_subject:
         raise DockError("trusted_subject must be non-empty str")
@@ -686,6 +809,14 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
         raise DockError("trusted_subject exceeds 200 chars")
     if not isinstance(provider, str) or not provider:
         raise DockError("provider must be a non-empty str")
+    if len(provider) > 80:
+        raise DockError("provider exceeds 80 chars")
+    if model is not None and (not isinstance(model, str)
+                              or len(model) > 120):
+        raise DockError("model must be a string of at most 120 chars")
+    if not isinstance(task, str) or not _TASK_RE.match(task):
+        raise DockError("task must be a slug of 1..40 chars "
+                        "([a-z0-9_-], starting alphanumeric)")
     if not isinstance(timeout_s, int) or isinstance(timeout_s, bool) \
             or timeout_s <= 0 or timeout_s > 600:
         raise DockError("timeout_s must be an int in 1..600")
@@ -703,7 +834,32 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
             raise DockError(f"unknown provider {provider!r}")
         prov = _BridgeProvider(bridge_mod, provider, model)
         model_label = model or provider
-    return DockedSession(
+    session = DockedSession(
         program, trusted_subject, getattr(program, "owner", None),
         provider, prov, model_label, timeout_s, max_prompt_chars,
-        max_response_chars)
+        max_response_chars, task=task)
+    # SD-1 snap registration: the session attaches to the matrix
+    # through the same admission contract as foundation components.
+    # Rejection fails the dock and leaves no evidence record behind.
+    matrix = getattr(program, "matrix", None)
+    if matrix is not None:
+        from form.dell_matrix.snap import SnapCandidate
+        snap_name = "dock:{}:{}".format(
+            _origin_segment(trusted_subject, 40),
+            session.session_id[:8])
+        result = matrix.snap(SnapCandidate(
+            name=snap_name, kind="other",
+            payload={"subject": trusted_subject,
+                     "provider": provider, "task": task}))
+        if not result.ok:
+            try:
+                sessions = getattr(program, "dock_sessions", None)
+                if isinstance(sessions, dict):
+                    sessions.pop(session.session_id, None)
+            except Exception:
+                pass
+            raise DockError(
+                f"snap registration rejected: {result.reason}")
+        object.__setattr__(session, "_snap_name", snap_name)
+        session._evidence["snap_name"] = snap_name
+    return session

@@ -612,7 +612,8 @@ def test_canary_sensitivity():
 
 # ------------------------------------------------------- PE. action provenance
 # Post-GDP Phase E: a dock-drafted proposal carries its origin on the
-# proposal record itself ("dock:<provider>:<actual model>"), so the
+# proposal record itself ("dock:<subject>:<provider>:<actual model>"
+# since SD-1; Phase E carried provider+model only), so the
 # human at the review gate can tell model-drafted proposals from
 # human-typed ones. Absence is recorded as "" — never fabricated.
 
@@ -625,7 +626,7 @@ def test_provenance_origin_recorded():
     check("PE:propose_ok", r.get("ok") is True, str(r))
     pid = r["pid"]
     check("PE:dock_origin_exact",
-          p.nursery.proposals[pid].origin == "dock:fake:fake:valid",
+          p.nursery.proposals[pid].origin == "dock:agent-a:fake:fake:valid",
           p.nursery.proposals[pid].origin)
     # A directly-added (human-path) proposal asserts no provenance:
     # origin stays "" — recorded absence, not a fabricated source.
@@ -637,7 +638,7 @@ def test_provenance_origin_recorded():
     p2 = persist_rest.load(owner, activate=False)
     st = p2.nursery.proposals.get(pid)
     check("PE:origin_survives_save_load",
-          st is not None and st.origin == "dock:fake:fake:valid"
+          st is not None and st.origin == "dock:agent-a:fake:fake:valid"
           and st.status == "pending",
           str(getattr(st, "origin", None)))
     clean_owner(owner)
@@ -649,7 +650,7 @@ def test_provenance_legacy_record_loads_unrecorded():
     owner = "R62_PE_LEGACY"
     p = fresh_program(owner)
     prop = p.nursery.add("Legacy Shape", words="pre Phase E record",
-                         origin="dock:fake:fake:valid")
+                         origin="dock:agent-a:fake:fake:valid")
     path = f"form/state/nursery_{owner}.json"
     with open(path) as f:
         data = json.load(f)
@@ -691,9 +692,9 @@ def test_provenance_hostile_model_sanitized():
     check("PE:hostile_propose_ok", r.get("ok") is True, str(r))
     origin = p.nursery.proposals[r["pid"]].origin
     check("PE:hostile_origin_sanitized",
-          origin.startswith("dock:stub:")
+          origin.startswith("dock:agent-a:stub:")
           and "\n" not in origin and '"' not in origin
-          and " " not in origin and len(origin) <= 5 + 4 + 1 + 80,
+          and " " not in origin and len(origin) <= 5 + 7 + 1 + 4 + 1 + 44,
           origin)
     clean_owner(owner)
 
