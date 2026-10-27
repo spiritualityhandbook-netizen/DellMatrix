@@ -42,20 +42,31 @@ def resolve_idea(p, ref: str):
     """Resolve ref to a Unit idea by id or label.
 
     Returns (unit, error_message). If error_message is not None, resolution failed.
+
+    P1/TD-3: resolution delegates to the canonical
+    runtime_observe.resolve_lineage_ref (exact ID -> exact-case label
+    -> case-insensitive label, deduplicated, ambiguity-honest). The
+    previous first-match-wins label scan could silently fade/pin the
+    WRONG unit when two units share a label. Lifecycle applies to
+    placed plane units only: a ref that names a nursery proposal
+    (not yet a placed idea) is an honest non-match here.
     """
     if _is_protected(ref):
         return None, f"REFUSED: '{ref}' resolves to a protected evidence class. Lifecycle operations do not apply to canonical evidence."
 
-    units = p.cube.session.plane.units
-    # Try exact id match
-    if ref in units:
-        return units[ref], None
-    # Try label match (case-insensitive)
-    low = ref.lower()
-    for uid, unit in units.items():
-        label = getattr(unit, "label", "")
-        if label and label.lower() == low:
+    from form.mandell.runtime_observe import resolve_lineage_ref
+    res = resolve_lineage_ref(p, ref)
+    if res.get("ok"):
+        unit = res.get("unit")
+        if unit is not None:
             return unit, None
+        return None, (f"'{ref}' names a nursery proposal, not a placed "
+                      f"idea. Lifecycle operations apply to placed ideas.")
+    if res.get("status") == "ambiguous":
+        cands = ", ".join(
+            f"{c['id']} ({c['label']})" for c in res.get("matches", []))
+        return None, (f"Ambiguous idea: '{ref}' matches multiple "
+                      f"records: {cands}. Use the exact id.")
     return None, f"Unknown idea: '{ref}'"
 
 

@@ -50,10 +50,10 @@ ORGANS: Dict[str, Dict[str, Any]] = {
     "trading": {"role": "livelihood", "module": "form.trading", "dell": 89, "vital": False},
     "audit": {"role": "conscience", "module": "form.dell_matrix.incorporation_audit", "dell": 70, "vital": False},
     # sensory intake (hardware-gated)
-    "ear": {"role": "microphone", "module": "form.dell_matrix.sense_intake", "dell": 75, "vital": False, "hardware": "mic"},
-    "eye_cam": {"role": "camera", "module": "form.dell_matrix.sense_intake", "dell": 75, "vital": False, "hardware": "camera"},
-    "screen": {"role": "screen_share", "module": "form.dell_matrix.sense_intake", "dell": 75, "vital": False, "hardware": "screen"},
-    "content": {"role": "high_quality_intake", "module": "form.dell_matrix.sense_intake", "dell": 75, "vital": False, "hardware": None},
+    "ear": {"role": "microphone", "module": "form.dell_matrix.matrix_body", "dell": 75, "vital": False, "hardware": "mic"},
+    "eye_cam": {"role": "camera", "module": "form.dell_matrix.matrix_body", "dell": 75, "vital": False, "hardware": "camera"},
+    "screen": {"role": "screen_share", "module": "form.dell_matrix.matrix_body", "dell": 75, "vital": False, "hardware": "screen"},
+    "content": {"role": "high_quality_intake", "module": "form.dell_matrix.matrix_body", "dell": 75, "vital": False, "hardware": None},
 }
 
 

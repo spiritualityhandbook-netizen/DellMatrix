@@ -134,20 +134,20 @@ ORGAN_ATLAS: Dict[str, Dict[str, Any]] = {
         "source": "form first_person · walk look world",
     },
     "ear": {
-        "role": "microphone", "module": "form.dell_matrix.sense_intake", "dell": 75, "vital": False,
-        "hardware": "mic", "source": "sense_intake gated",
+        "role": "microphone", "module": "form.dell_matrix.matrix_body", "dell": 75, "vital": False,
+        "hardware": "mic", "source": "SenseIntake (ambient-gated)",
     },
     "eye_cam": {
-        "role": "camera", "module": "form.dell_matrix.sense_intake", "dell": 75, "vital": False,
-        "hardware": "camera", "source": "sense_intake gated",
+        "role": "camera", "module": "form.dell_matrix.matrix_body", "dell": 75, "vital": False,
+        "hardware": "camera", "source": "SenseIntake (ambient-gated)",
     },
     "screen": {
-        "role": "screen_share", "module": "form.dell_matrix.sense_intake", "dell": 75, "vital": False,
-        "hardware": "screen", "source": "sense_intake gated",
+        "role": "screen_share", "module": "form.dell_matrix.matrix_body", "dell": 75, "vital": False,
+        "hardware": "screen", "source": "SenseIntake (ambient-gated)",
     },
     "content": {
-        "role": "high_quality_intake", "module": "form.dell_matrix.sense_intake", "dell": 75, "vital": False,
-        "source": "sense_intake content always",
+        "role": "high_quality_intake", "module": "form.dell_matrix.matrix_body", "dell": 75, "vital": False,
+        "source": "SenseIntake content",
     },
     # --- identity / social / livelihood ---
     "personas": {

@@ -74,6 +74,12 @@ def run_all():
     # Dell 37: no leaf branch by design (production path is core_i_ops).
     check("d37 has no leaf branch (Nurture via core_i_ops)",
           re.search(r"(if|elif) primary == 37:", src) is None)
+    # P1/TD-1: NO HANDLED dell may regrow a leaf branch — the leaf arms
+    # diverged from core_i_ops (legacy checkpoints, fake rollback,
+    # success claims for refused capabilities). One authority only.
+    for n in sorted(core_i_ops.HANDLED):
+        check(f"d{n:02d} has no leaf branch (core_i_ops sole authority)",
+              re.search(rf"(if|elif) primary == {n}:", src) is None)
     # Honest refusals keep their standing + named error.
     check("d44 standing ACTIVE_REFUSAL",
           registry.execution_standing(44)["standing"] == "ACTIVE_REFUSAL")
