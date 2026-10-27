@@ -66,6 +66,21 @@ class DellMatrix:
         self.log.append(f"SNAP {candidate.name} → {port}")
         return result
 
+    def snap_out(self, name: str) -> bool:
+        """Remove a previously snapped entry by name (SD-1: the
+        undock analogue for dynamically registered sessions).
+        Returns True when an entry was removed."""
+        removed = False
+        for port in FOUNDATION_PORTS:
+            kept = [e for e in self.snapped.get(port, [])
+                    if e.get("name") != name]
+            if len(kept) != len(self.snapped.get(port, [])):
+                removed = True
+            self.snapped[port] = kept
+        if removed:
+            self.log.append(f"SNAP_OUT {name}")
+        return removed
+
     def list_port(self, port: str) -> List[Dict[str, Any]]:
         return list(self.snapped.get(port, []))
 

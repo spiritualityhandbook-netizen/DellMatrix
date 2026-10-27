@@ -580,6 +580,17 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         data.get("connection_sessions", _CN_MISSING), p.owner)
     p.connection_sessions = csessions
     p.connection_sessions_malformed = cmalformed2
+    # SD-1: restore dock session evidence with the same strict
+    # schema and sentinel distinction (absent = legacy, explicit
+    # null = malformed). Live DockedSession handles are runtime-only
+    # and never restored; the evidence records are.
+    from form.dell_matrix.dock_session import (
+        validate_section as validate_dock_section,
+        _MISSING as _DS_MISSING)
+    dsessions, dmalformed = validate_dock_section(
+        data.get("dock_sessions", _DS_MISSING), p.owner)
+    p.dock_sessions = dsessions
+    p.dock_sessions_malformed = dmalformed
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")
@@ -755,7 +766,7 @@ DURABLE_KEYS = (
     "mandell_language", "core_ii", "outcome_ledger", "spatial",
     "lifecycle", "agent_local", "agent_audit", "studio_sessions",
     "workshop_sessions", "onboarding_sessions", "forge_sessions",
-    "bimo_configurations", "connection_sessions",
+    "bimo_configurations", "connection_sessions", "dock_sessions",
 )
 
 

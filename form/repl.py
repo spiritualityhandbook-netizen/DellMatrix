@@ -488,6 +488,18 @@ def _show_proposals(p: Program) -> None:
     if not pending:
         _say("Nursery is empty.")
         return
+    # SD-1: join dock session evidence so review shows the task kind
+    # (and session) behind each docked proposal, next to its origin
+    # and reason. Typed proposals have no evidence entry — that
+    # absence is itself the distinction at review.
+    evidence = {}
+    for rec in (getattr(p, "dock_sessions", None) or {}).values():
+        if isinstance(rec, dict):
+            for entry in rec.get("proposals") or []:
+                if isinstance(entry, dict) and entry.get("pid"):
+                    evidence[entry["pid"]] = (
+                        entry.get("task") or rec.get("task") or "",
+                        rec.get("session_id") or "")
     _say(f"Nursery has {len(pending)} proposal(s):")
     for i, prop in enumerate(pending[:20], 1):
         aff = float(prop.get("affinity", 0))
@@ -496,6 +508,12 @@ def _show_proposals(p: Program) -> None:
         origin = prop.get("origin") or ""
         if origin:
             _say(f"      origin: {origin}")
+        reason = prop.get("reason") or ""
+        if reason:
+            _say(f"      reason: {reason}")
+        ev = evidence.get(prop["id"])
+        if ev:
+            _say(f"      task: {ev[0]} · session {ev[1][:8]}")
     _say("Type: confirm <id> | confirm all | reject all | rank | lineage <id or label>")
 
 

@@ -118,6 +118,8 @@ def serialize(program: Program) -> Dict[str, Any]:
         serialize_configurations_section as serialize_configurations_section)
     from form.dell_matrix.connection_session import (
         serialize_section as serialize_connection_section)
+    from form.dell_matrix.dock_session import (
+        serialize_section as serialize_dock_section)
     sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
@@ -289,6 +291,15 @@ def serialize(program: Program) -> Dict[str, Any]:
         "connection_sessions": serialize_connection_section(
             getattr(program, "connection_sessions", None),
             getattr(program, "connection_sessions_malformed", None),
+            program.owner,
+        ),
+        # SD-1: dock session evidence. Same strict schema contract,
+        # with one documented difference: a record may persist OPEN
+        # (closed = null) because docked proposals are durable the
+        # moment they land, so their session link must be too.
+        "dock_sessions": serialize_dock_section(
+            getattr(program, "dock_sessions", None),
+            getattr(program, "dock_sessions_malformed", None),
             program.owner,
         ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).
