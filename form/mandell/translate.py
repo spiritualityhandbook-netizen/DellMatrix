@@ -337,7 +337,8 @@ def translate(english: str) -> Intent:
         args: Dict[str, Any] = {}
         if action == "place":
             label = hit.get("label") or "idea"
-            uid = re.sub(r"[^a-z0-9]+", "_", label.lower())[:24] or "idea"
+            from form.idea_create import slug_id
+            uid = slug_id(label)
             args = {"id": uid, "label": label.replace("_", " "), "words": label}
         elif action == "grow":
             args = {"cycles": 1}
@@ -557,7 +558,8 @@ def translate(english: str) -> Intent:
         body = m.group(1).strip().strip("'")
         # strip detail/goals from id slug only
         label_only = re.split(r"\bdetail\s*:|\bgoals\s*:", body, maxsplit=1, flags=re.I)[0].strip()
-        uid = re.sub(r"[^a-z0-9]+", "_", label_only.lower())[:24] or "idea"
+        from form.idea_create import slug_id
+        uid = slug_id(label_only)
         # TOAM-I: preserve name argument in Seed (Dell 8 signature requires 'name')
         safe_name = (label_only or body[:48]).replace('"', '')
         return Intent(

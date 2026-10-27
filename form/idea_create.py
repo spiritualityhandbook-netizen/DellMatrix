@@ -85,6 +85,29 @@ def slug_id(label: str) -> str:
     return (s[:40] or "idea")
 
 
+def unique_unit_id(units: Any, label: str, *, prefix: str = "",
+                   suffix_start: int = 1) -> str:
+    """Canonical unique unit id for a label (P3/TD-5).
+
+    The one slug + collision-dedup implementation: slug_id(label),
+    with ``prefix`` prepended, collision-suffixed ``_n`` (n from
+    ``suffix_start``) until the id is free in ``units``. Entry paths
+    keep their prefixes and numbering conventions as parameters
+    instead of re-implementing slug rules — before P3 the same label
+    produced different ids depending on the door used (translate,
+    executor_leaf, live_visual, live_identity each had a variant).
+    No attempt cap: n strictly increases over a finite unit set, so
+    the loop always terminates.
+    """
+    base = prefix + slug_id(label)
+    uid = base
+    n = suffix_start
+    while uid in units:
+        uid = f"{base}_{n}"
+        n += 1
+    return uid
+
+
 def format_report(parsed: Dict[str, Any]) -> str:
     lines = [
         f"label:    {parsed.get('label')}",
