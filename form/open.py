@@ -1193,9 +1193,6 @@ class Program:
         from form.dell_matrix.code_evolution import develop_loop
         return develop_loop(self, cycles=cycles, internet=internet, grow_cycles=2)
 
-    def ce_ensure(self) -> Dict[str, Any]:
-        from form.dell_matrix.code_evolution import ensure_root
-        return ensure_root(self)
 
     def _next_open_xy(self) -> Tuple[float, float]:
         """Spiral search for an empty grid cell so new ideas do not stack on YOU/each other."""
@@ -1887,8 +1884,6 @@ class Program:
     def inspire_status(self) -> Dict[str, Any]:
         return self.inspire.status()
 
-    def command_cost(self, cmd: str) -> str:
-        return route_cost(cmd)
 
     def save(self, path: Optional[str] = None) -> str:
         from form.persist import save as persist_save

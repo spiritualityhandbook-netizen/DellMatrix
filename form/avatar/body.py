@@ -128,20 +128,6 @@ class Avatar:
     def turn_right(self, steps: int = 1) -> str:
         return self.turn(steps)
 
-    def pick_up(self, item: str) -> bool:
-        if self.body.holding is not None:
-            return False
-        self.body.holding = item
-        return True
-
-    def place_down(self) -> Optional[str]:
-        item = self.body.holding
-        self.body.holding = None
-        return item
-
-    def set_reach(self, tier: Reach) -> str:
-        self.body.reach = tier
-        return tier.name.lower()
 
     def read_body(self) -> BodyState:
         """Mind always reads real body state."""

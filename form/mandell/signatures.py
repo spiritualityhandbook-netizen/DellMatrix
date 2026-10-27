@@ -327,11 +327,6 @@ def has_signature(dell: int) -> bool:
     return dell in _SIGNATURES
 
 
-def list_signatures() -> List[int]:
-    """Dells with established signatures."""
-    return sorted(_SIGNATURES.keys())
-
-
 def lower_args_to_lab(dell: int, args: Dict[str, str]) -> str:
     """Lower typed SeedAtom.args to the existing lab representation.
 

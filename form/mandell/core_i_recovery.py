@@ -254,37 +254,6 @@ def _legacy_list(owner: str) -> List[str]:
     ]
 
 
-def list_checkpoints(owner: str) -> List[Dict[str, str]]:
-    """All known checkpoints: committed generations first, then legacy files.
-
-    Each entry: {"kind": "generation"|"legacy", "id": <gen id or path>,
-    "path": <manifest path or file path>}.
-    """
-    from form.mandell import checkpoint_generation as gen
-    out: List[Dict[str, str]] = []
-    try:
-        pointer = gen._read_pointer(owner)
-        seen = []
-        gid = pointer.get("generation_id")
-        if gid:
-            seen.append(gid)
-        prev = pointer.get("previous_generation_id")
-        if prev:
-            seen.append(prev)
-        for gid in seen:
-            try:
-                mpath = gen._manifest_path(owner, gid)
-                if os.path.isfile(mpath):
-                    out.append({"kind": "generation", "id": gid, "path": mpath})
-            except Exception:
-                continue
-    except Exception:
-        pass
-    for legacy in _legacy_list(owner):
-        out.append({"kind": "legacy", "id": legacy, "path": legacy})
-    return out
-
-
 def latest_checkpoint(owner: str) -> Optional[str]:
     """Return the latest committed checkpoint as a loadable program path.
 

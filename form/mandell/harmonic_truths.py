@@ -42,10 +42,6 @@ def truths() -> List[Dict[str, str]]:
     return [dict(t) for t in TRUTHS]
 
 
-def truth_ids() -> List[str]:
-    return [t["id"] for t in TRUTHS]
-
-
 def status() -> Dict:
     return {
         "truths": truths(),

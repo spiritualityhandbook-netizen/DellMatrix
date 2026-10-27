@@ -69,5 +69,3 @@ def resolve_manifest(n: int, term: str, context: str = "") -> ResolvedManifest:
     return ResolvedManifest(n, requested, canonical, canonical, 0.40, "unknown_or_ambiguous->canonical", False)
 
 
-def keep_modifier(res: ResolvedManifest) -> bool:
-    return res.kept_modifier and res.confidence >= CONFIDENCE_KEEP

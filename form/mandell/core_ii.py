@@ -65,11 +65,4 @@ def contract(n: int) -> Optional[Dict[str, Any]]:
     row = CORE_II.get(n)
     return None if not row else {"dell": n, **row, "namespace": "CORE_II", "maturity": "FORMALIZED"}
 
-def all_contracts() -> List[Dict[str, Any]]:
-    return [contract(n) for n in range(51, 100)]
 
-def family_index() -> Dict[str, List[int]]:
-    out: Dict[str, List[int]] = {}
-    for n, row in CORE_II.items():
-        out.setdefault(row["family"], []).append(n)
-    return out

@@ -654,5 +654,3 @@ def translate(english: str) -> Intent:
     )
 
 
-def translate_to_mandel(english: str) -> str:
-    return translate(english).mandel

@@ -246,18 +246,6 @@ def explain_seed(text: str) -> Dict[str, Any]:
     s = parse_seed(text)
     return {"ok": s.ok, "error": s.error, "mandel": s.as_mandel() if s.ok else "", "english": s.as_english() if s.ok else "", "atoms": [{"dell": a.dell, "term": a.term, "resolved": a.resolved_term, "confidence": a.confidence, "reason": a.resolve_reason} for a in s.atoms], "label": s.label, "raw": s.raw}
 
-def seed_from_dell_chain(dells: List[int], label: str = "", flows: Optional[List[str]] = None) -> Seed:
-    atoms = []
-    for n in dells:
-        d = get_dell(n)
-        if not d:
-            continue
-        atoms.append(SeedAtom(dell=n, term=d["name"], resolved_term=d["name"]))
-    fl_list = list(flows) if isinstance(flows, list) else []
-    while len(fl_list) < len(atoms) - 1:
-        fl_list.append(">")
-    return Seed(atoms=atoms, flows=fl_list[: max(0, len(atoms) - 1)], label=label, ok=bool(atoms))
-
 
 def define_cell(name: str, seed_text: str) -> Seed:
     text = seed_text or ""
