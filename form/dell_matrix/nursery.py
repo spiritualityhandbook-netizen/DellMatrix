@@ -124,6 +124,15 @@ class Proposal:
     # fabricated after the fact. Proposal(**record) fills the default
     # for pre-Phase-E nursery files.
     origin: str = ""
+    # SD-2 (master plan P5): authored content carried by semantic
+    # proposals (the dock's RELATE / SYNTHESIZE / FLAG verbs). The
+    # confirmation writer (confirm_lineage) already prefers
+    # prop.detail / prop.goals over its first-parent fallback, so a
+    # synthesized proposal's AUTHORED text — not a parent's — is
+    # what confirmation places. Defaults keep legacy nursery files
+    # loading unchanged (same additive pattern as origin).
+    detail: str = ""
+    goals: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -176,6 +185,8 @@ class Nursery:
         harmony: float = 0.0,
         graph_coherence: float = 0.0,
         origin: str = "",
+        detail: str = "",
+        goals: Optional[List[str]] = None,
     ) -> Proposal:
         """Add a proposal. ID = _slug(label, seed): deterministic given
         (seed, label, add-sequence) across processes (GDP-001 Phase 3, 3.1.4).
@@ -203,6 +214,9 @@ class Nursery:
             harmony=float(harmony),
             graph_coherence=float(graph_coherence),
             origin=origin[:120] if isinstance(origin, str) else "",
+            detail=detail[:2000] if isinstance(detail, str) else "",
+            goals=[g[:200] for g in (goals or [])
+                   if isinstance(g, str) and g.strip()][:8],
         )
         self.proposals[pid] = p
         try:

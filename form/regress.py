@@ -131,6 +131,10 @@ LIST = [
     # Master plan P4 / SD-1 — dock provenance completion (subject in
     # origin, reason + task, dock_sessions evidence, snap registration).
     "form.mandell.p4_sd1_test",
+    # Master plan P5 / SD-2 — semantic verbs RELATE/SYNTHESIZE/FLAG
+    # (extended schema, coordinator snapshot activation, IdeaLab40
+    # calibration against the probe corpus).
+    "form.mandell.p5_sd2_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",

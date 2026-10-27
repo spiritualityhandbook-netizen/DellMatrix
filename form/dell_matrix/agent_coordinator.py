@@ -708,6 +708,14 @@ class HostCoordinator:
                 "words": words,
                 "status": str(getattr(prop, "status", "") or "")[:64],
                 "revision_number": int(getattr(prop, "revision_number", 1) or 1),
+                # SD-2 (master plan P5): the canonical snapshot carries
+                # authored content so a docked semantic judge can see
+                # what an entry actually says, not only its label.
+                # Same bounds + the same outward sanitization below.
+                "detail": str(getattr(prop, "detail", "") or "")[:_MAX_STR_LEN],
+                "goals": [str(g)[:128] for g in
+                          (getattr(prop, "goals", None) or [])[:8]
+                          if isinstance(g, str)],
             })
         units: List[Dict[str, Any]] = []
         plane = getattr(getattr(program, "cube", None), "session", None)
@@ -720,6 +728,11 @@ class HostCoordinator:
                     "words": str(getattr(u, "words", "") or "")[:_MAX_STR_LEN],
                     "x": getattr(u, "x", 0),
                     "y": getattr(u, "y", 0),
+                    # SD-2: authored content, as for proposals above.
+                    "detail": str(getattr(u, "detail", "") or "")[:_MAX_STR_LEN],
+                    "goals": [str(g)[:128] for g in
+                              (getattr(u, "goals", None) or [])[:8]
+                              if isinstance(g, str)],
                 })
         snap = {
             "subject": subject,
