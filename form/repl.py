@@ -84,6 +84,7 @@ Knowledge / Learning
 Lattice / Perception / Looking
   cube | sphere | core | flower | toggle
   lattice | chord 0 0 | shell 0
+  drift [shell]                         soft-forget far-shell payloads (keys remain)
   flower geometry | vesica | verita     Flower of Life + Verita edges
   voynich | rings                       structural 5-ring metaphor (not decrypt)
   fractal | rule90 | orbit              Rule 90 · bounded/complex orbit
@@ -212,6 +213,7 @@ Explain — what happened
   outcomes · outcomes find <text> · outcome <seq>
   trace last · trace <seq>
   outcomes interaction <uuid>
+  corrections · what fixed <outcome-id>
   self | audit | status
 """.strip(),
     "save": """
@@ -244,7 +246,7 @@ Dell — execute capabilities via Mandell seeds
 System — configure and orient
 
   tutorial · onboard · mode beginner|builder|depth · first-run (new owners)
-  visual | live · help more
+  actions [mode] · visual | live · help more
 """.strip(),
 }
 
@@ -513,6 +515,21 @@ def _handle_lattice(p: Program, lower: str, raw: str) -> bool:
         _say(f"Form → core  (skin={p.lattice.perception.skin_name()})")
         _echo_seed(mandel="15[Map] :: core")
         return True
+    if lower == "drift" or lower.startswith("drift "):
+        # P3 wire: Program.radial_drift on the lattice surface —
+        # soft-forget far-shell payloads; keys remain (Existence rule).
+        parts = lower.split()
+        shell = 6
+        if len(parts) > 1:
+            try:
+                shell = int(parts[1])
+            except ValueError:
+                shell = 6
+        out = p.radial_drift(outer_shell=shell)
+        _say(f"Radial drift (shell >= {shell}): keyed={out.get('keyed')} "
+             f"soft-forgotten={out.get('soft_forgotten')} — keys remain, payloads soft-forgotten.")
+        _echo_seed(mandel=f"16[Decay] :: drift_{shell}")
+        return True
     if lower in ("flower", "to flower", "form flower"):
         n = p.lattice.plant_flower(2)
         geo = p.flower_geometry(2) if hasattr(p, "flower_geometry") else {}
@@ -750,11 +767,12 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
         _say(f"  interaction: {iid[:12] + '...' if iid and iid != 'UNKNOWN' else 'UNKNOWN'}")
         return True
 
-    # ODCG-I: correction candidate explanation
+    # ODCG-I: correction candidate explanation — routed through the
+    # runtime_observe projection (P3 wire: correction_candidates is
+    # the observe surface's single entry for both branches).
     if lower.startswith("what fixed "):
-        from form.mandell import correction_graph as cg
         oid = raw.strip()[11:].strip()
-        exp = cg.explain_correction(p, oid)
+        exp = ro.correction_candidates(p, oid)
         if not exp.get("ok"):
             _say(f"what fixed: {exp.get('explanation')}")
             return True
@@ -764,6 +782,15 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
             _say(f"  → {c['later_outcome_id']} [{c['confidence']}]")
         for unk in exp.get("what_we_do_not_know", []):
             _say(f"  unknown: {unk}")
+        return True
+
+    if lower == "corrections":
+        res = ro.correction_candidates(p)
+        _say(f"correction candidates: {res.get('count', 0)} recorded edge(s) "
+             f"(correlation, not proven causation)")
+        for e in (res.get("edges") or [])[:5]:
+            _say(f"  {e.get('earlier_outcome_id')} → {e.get('later_outcome_id')} "
+                 f"[{e.get('relationship')}]")
         return True
 
     if lower == "health":
@@ -1525,6 +1552,16 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
     if lower in ("help more", "help full", "more"):
         print()
         print(HELP_MORE)
+        print()
+        return p
+
+    if lower == "actions" or lower.startswith("actions "):
+        # P3 wire: the actions registry's own text renderer, at the
+        # program's current disclosure mode (or an explicitly named one).
+        from form.dell_matrix.actions_registry import help_lines
+        mode = lower[len("actions"):].strip() or getattr(p, "ux_mode", "builder")
+        print()
+        print(help_lines(mode))
         print()
         return p
 

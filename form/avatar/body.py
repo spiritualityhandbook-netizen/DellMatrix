@@ -141,7 +141,9 @@ class Avatar:
         )
 
     def status(self) -> Dict[str, Any]:
-        b = self.body
+        # P3 wire: status is built from read_body() — the mind's one
+        # read path over real body state — not from direct field reads.
+        b = self.read_body()
         return {
             "name": self.name,
             "pos": b.pos,

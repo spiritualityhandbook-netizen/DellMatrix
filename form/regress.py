@@ -125,6 +125,9 @@ LIST = [
     "form.greek_test",
     "form.dell_matrix.program_strength",
     "form.mandell.core_ii_smoke",
+    # Master plan P3 — Program-surface wiring closures (TD-2/4/5/6/7
+    # consolidation identities + wire-or-retire outcomes, REPL-level).
+    "form.dell_matrix.p3_wiring_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",

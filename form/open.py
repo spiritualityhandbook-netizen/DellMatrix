@@ -203,6 +203,10 @@ class Program:
         self.avatar = Avatar(name=self.owner)
         self.face = FaceController()
         self.kaomoji = build_default_registry()
+        # P3 wire: the face consults the kaomoji registry on set(), so
+        # `express <mood>` renders the mapped pack's face instead of
+        # only the built-in default glyphs.
+        self.face.registry = self.kaomoji
         # WO-5.1: Initialize session-scoped acceptance policy (default DENY).
         from form.dell_matrix.acceptance_policy import AcceptancePolicy
         self.acceptance_policy = AcceptancePolicy()
@@ -2043,6 +2047,9 @@ def smoke() -> bool:
     p.set_lattice_size(12)
     out = p.grow_ideas(1)
     rec("grow", out.get("ok") is True)
+    # P3 wire: Program.smoke_ux (A–E surface check) runs on the
+    # canonical smoke path — regress "form.open" and CI execute it.
+    rec("smoke_ux", p.smoke_ux())
     rec("truths", "truths" in p.status())
     rec("pulse constants", "subkey_pulse" in p.status().get("pulse", {}))
     paths = p.visual()
