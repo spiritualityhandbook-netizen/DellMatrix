@@ -1458,6 +1458,34 @@ class Program:
         return acceptance_data(pid, owner, content, parents,
                                goals=goals, revision=revision)
 
+    # -- SD-4 (P7): host endpoint bindings ----------------------------
+    # The Program is the single production entry for binding the
+    # host-side agent endpoints. Each delegates to its canonical
+    # module factory; the subject is established by the trusted
+    # host here, never by agent payload text.
+
+    def bind_agent_endpoint(self, trusted_subject: str):
+        """R6.1 confirm endpoint (agent_authority.bind_agent)."""
+        from form.dell_matrix.agent_authority import bind_agent
+        return bind_agent(self, trusted_subject)
+
+    def bind_rollback_endpoint(self, trusted_subject: str):
+        """R6.3 rollback endpoint (rollback_authority
+        .bind_rollback_agent) — activated as a production surface
+        in SD-4 alongside the Director endpoint."""
+        from form.dell_matrix.rollback_authority import (
+            bind_rollback_agent)
+        return bind_rollback_agent(self, trusted_subject)
+
+    def bind_director_endpoint(self, *, provider: str = "fake",
+                               subject: str = "director:dev"):
+        """SD-4 scoped Director session (director_session
+        .bind_director): recommendation records only, never a
+        confirmation."""
+        from form.dell_matrix.director_session import bind_director
+        return bind_director(self, provider=provider,
+                             subject=subject)
+
     def make_review_context(self, pid: str, reviewer: str,
                             operation: str = "confirm") -> dict:
         """Issue a bound review approval for a proposal.
