@@ -221,5 +221,16 @@ print(json.dumps({{"bathrooms": state.get("bathrooms"), "history": hist,
     return 0
 
 
+def smoke() -> bool:
+    """Entry point for regression runner (P2 registration).
+
+    The proof's verdict is one aggregate over its checks (each
+    printed above); the count line reports that single verdict.
+    """
+    ok = main() == 0
+    print(f"p1_r3_authoritative_proof smoke: {1 if ok else 0}/1")
+    return ok
+
+
 if __name__ == "__main__":
     sys.exit(main())

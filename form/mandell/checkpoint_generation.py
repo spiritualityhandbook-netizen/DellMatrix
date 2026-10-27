@@ -349,8 +349,25 @@ def commit_checkpoint(program, generation_id: Optional[str] = None,
     check_save_allowed(program, "checkpoint_generation.commit_checkpoint")
     owner = program.owner
     gen_id = generation_id or _new_generation_id()
-    sealed = _seal_members(program, gen_id, _fail_at=_fail_at)
-    _commit_pointer(owner, sealed, _fail_at=_fail_at)
+    # P2 (t11 closure): journal the checkpoint intent and preserve the
+    # live pair BEFORE the seal's first durable write. A crash between
+    # the seal's sequential nursery/program saves previously left a
+    # hybrid live pair with no recorded intent to converge from.
+    from form.mandell.core_i_recovery import (
+        write_checkpoint_intent, clear_checkpoint_intent,
+        recover_checkpoint_intent)
+    write_checkpoint_intent(owner, gen_id)
+    try:
+        sealed = _seal_members(program, gen_id, _fail_at=_fail_at)
+        _commit_pointer(owner, sealed, _fail_at=_fail_at)
+    except CheckpointCommitError:
+        # Converge eagerly: the failed seal may have overwritten one
+        # member of the live pair. Recovery restores the preserved
+        # pair (or proves the commit landed) before the error surfaces.
+        # A recovery failure raises RollbackRecoveryError (fail closed).
+        recover_checkpoint_intent(owner)
+        raise
+    clear_checkpoint_intent(owner)
     _check_fail("after_commit", _fail_at)  # crash here: new generation committed
     retention = _retain_current_and_previous(owner, keep_extra=keep_extra)
     return {

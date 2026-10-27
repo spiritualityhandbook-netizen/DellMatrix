@@ -117,7 +117,11 @@ finally:
 """ % PROV)
 
     # ---- MG3: fresh load with corrupt journal ---------------------------
-    run_phase("MG3-fresh-load-corrupt", """
+    # P2 repair: the nested fresh-process child previously inserted a
+    # hardcoded Phase-1 worktree path and so imported stale code from
+    # another tree (MG3 failed while the system was fail-closed).
+    # The child now inserts THIS tree's root, like every other phase.
+    run_phase("MG3-fresh-load-corrupt", ("""
 import json, os, shutil, subprocess, sys
 from form.mandell.idea import Idea, Provenance, ProvenanceSource
 from form.mandell.idea_persist import save_idea
@@ -141,7 +145,7 @@ try:
     import textwrap
     code = textwrap.dedent('''
         import sys
-        sys.path.insert(0, "/home/hatch/workspace/dellmatrix-gdp-phase1")
+        sys.path.insert(0, "__REPO__")
         from form.mandell.semantic_graph import SemanticGraph, GraphValidationError
         try:
             g = SemanticGraph.load("P2MG3")
@@ -157,7 +161,7 @@ finally:
     shutil.rmtree(os.path.join(BASE, f"ideas_{OWNER}"), ignore_errors=True)
     os.path.exists(graph_path(OWNER)) and os.remove(graph_path(OWNER))
     os.path.exists(graph_journal_path(OWNER)) and os.remove(graph_journal_path(OWNER))
-""" % PROV)
+""" % PROV).replace("__REPO__", REPO))
 
     # ---- MG4: owner sanitizer single authority --------------------------
     run_phase("MG4-sanitizer", """
@@ -181,5 +185,18 @@ print("RESULT "+json.dumps(r))
     print("P2 MICRO-GATE WORLD: ALL PASS" if not fails else f"FAILURES: {fails}", flush=True)
 
 
-if __name__ == "__main__":
+def smoke() -> bool:
+    """Entry point for regression runner (P2 registration).
+
+    main() previously exited 0 even when checks failed; the smoke
+    contract makes the harness's own verdict binding on its caller.
+    """
     main()
+    npass = sum(1 for _, ok in RESULTS if ok)
+    total = len(RESULTS)
+    print(f"p2_microgate_proof smoke: {npass}/{total}")
+    return total > 0 and npass == total
+
+
+if __name__ == "__main__":
+    sys.exit(0 if smoke() else 1)

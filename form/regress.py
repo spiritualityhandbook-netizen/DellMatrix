@@ -175,6 +175,23 @@ LIST = [
     "form.mandell.p4_lattice_environment_proof:smoke",
     "form.mandell.p4_susx100_proof:smoke",
     "form.mandell.p4_acceptance_circuit:smoke",
+    # P2 (evidence integrity): previously unregistered proof
+    # harnesses + invariants, now under the canonical regress.
+    "form.invariants:smoke",
+    "form.mandell.confirm_crash_matrix:smoke",
+    "form.mandell.lifecycle_totality_proof:smoke",
+    "form.mandell.p1_idea_circuit:smoke",
+    "form.mandell.p1_integrated_proof:smoke",
+    "form.mandell.p1_r2_checkpoint_proof:smoke",
+    "form.mandell.p1_r3_authoritative_proof:smoke",
+    "form.mandell.p1_r4_livematrix_proof:smoke",
+    "form.mandell.p2_acceptance_proof:smoke",
+    "form.mandell.p2_adversarial_proof:smoke",
+    "form.mandell.p2_microgate_proof:smoke",
+    "form.mandell.p2_r1_adversarial_proof:smoke",
+    "form.mandell.p2_susx100:smoke",
+    "form.mandell.english_brain_150_loop:smoke",
+    "form.mandell.regress_coverage_test:smoke",
 ]
 
 TIMEOUT_S = 900
@@ -189,13 +206,21 @@ def normalize(entry: str) -> str:
 
 
 def discovered_suites(src: str = ROOT) -> List[str]:
-    """Every tracked-style form/**/*_test.py suite as a normalized entry."""
+    """Every tracked-style form/**/*_test.py (and *_tests.py) suite.
+
+    P2: discovery previously matched only the singular ``_test.py``
+    suffix, so plural-named suites (phrase_tests, polyglot_tests) ran
+    only because they also appear in LIST — a silent-skip hole if a
+    plural suite were ever added without a LIST entry. Both suffixes
+    are discovered now; regress_coverage_test asserts the union of
+    LIST and discovery covers every test-like file on disk.
+    """
     out = []
     base = os.path.join(src, "form")
     for d, dirs, files in os.walk(base):
         dirs[:] = sorted(x for x in dirs if x not in _SKIP_DIRS and not (d == base and x == "state"))
         for f in sorted(files):
-            if f.endswith("_test.py"):
+            if f.endswith(("_test.py", "_tests.py")):
                 rel = os.path.relpath(os.path.join(d, f[:-3]), src)
                 out.append(normalize(rel.replace(os.sep, ".")))
     return out

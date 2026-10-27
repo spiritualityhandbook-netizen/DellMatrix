@@ -1464,6 +1464,236 @@ def clear_confirm_intent(owner: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Checkpoint-intent journal (Ten-Phase P2: closes confirm_crash_matrix t11)
+#
+# commit_checkpoint's seal overwrites the live nursery and program files
+# sequentially (stage 1) before the CURRENT pointer swap commits the new
+# generation. A crash inside that window leaves a live pair that is
+# neither the proven old pair nor the proven new pair — and, unlike a
+# confirmation, a bare checkpoint wrote no other journal, so recovery had
+# no recorded intent to converge from. That window was t11: documented
+# UNPROVEN since F9.
+#
+# Protocol (mirrors the confirmation journal; convergence restores
+# byte-exact preserved copies rather than inferring from visibility):
+#   1. Before any durable write, preserve byte copies of the live pair
+#      and atomically journal {generation_id, old fingerprints}.
+#   2. On pointer commit, delete the journal and the preserved copies.
+#   3. On recovery: a CURRENT pointer naming the journaled generation
+#      proves the commit landed -> clear only. Live fingerprints equal
+#      to the recorded old pair prove nothing was written -> clear only.
+#      Otherwise restore the preserved pair byte-exactly (verified
+#      against the recorded fingerprints), then clear.
+#   4. Corrupt journal or missing/mismatched preserved evidence ->
+#      fail closed (raise RollbackRecoveryError, journal preserved).
+
+CHECKPOINT_JOURNAL_VERSION = 1
+
+
+def _checkpoint_journal_path(owner: str) -> str:
+    """Path of the checkpoint intent journal for ``owner``."""
+    from form.persist import _STATE_DIR, _safe_owner
+    return os.path.join(_STATE_DIR, f"checkpoint_{_safe_owner(owner)}.journal.json")
+
+
+def _checkpoint_preserve_paths(owner: str):
+    """Byte-preserve paths for the pre-seal live (nursery, program) pair."""
+    from form.persist import _STATE_DIR, _safe_owner
+    safe = _safe_owner(owner)
+    return (
+        os.path.join(_STATE_DIR, f"checkpoint_preserve_{safe}_nursery.json"),
+        os.path.join(_STATE_DIR, f"checkpoint_preserve_{safe}_program.json"),
+    )
+
+
+def write_checkpoint_intent(owner: str, generation_id: str) -> None:
+    """Record intent to commit a checkpoint BEFORE any durable write.
+
+    Preserves byte copies of the current live nursery/program pair and
+    journals their fingerprints. Must be called before the seal's first
+    save. A pre-existing journal means an earlier checkpoint crashed and
+    its recovery has not run: fail closed rather than overwrite the
+    only convergence evidence.
+    """
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_json, atomic_write_bytes
+
+    jpath = _checkpoint_journal_path(owner)
+    if os.path.isfile(jpath):
+        raise RollbackRecoveryError(
+            "checkpoint intent: unrecovered checkpoint journal exists "
+            f"for owner {owner!r}; refusing to overwrite recovery evidence"
+        )
+    npath, ppath = owner_nursery_path(owner), _path(owner)
+    npres, ppres = _checkpoint_preserve_paths(owner)
+    for live, pres in ((npath, npres), (ppath, ppres)):
+        if os.path.isfile(live):
+            with open(live, "rb") as f:
+                atomic_write_bytes(pres, f.read())
+    journal = {
+        "journal_version": CHECKPOINT_JOURNAL_VERSION,
+        "operation": "checkpoint_commit",
+        "owner": owner,
+        "generation_id": generation_id,
+        "phase": "prepared",
+        "old_nursery_sha256": _sha256_file_absent(npath),
+        "old_program_sha256": _sha256_file_absent(ppath),
+    }
+    atomic_write_json(jpath, journal)
+
+
+def clear_checkpoint_intent(owner: str) -> None:
+    """Delete the checkpoint journal and preserved pair after commit."""
+    paths = [_checkpoint_journal_path(owner), *_checkpoint_preserve_paths(owner)]
+    for path in paths:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+
+def recover_checkpoint_intent(owner: str) -> str:
+    """Recover from recorded checkpoint intent (not inferred visibility).
+
+    Returns:
+        "none": No journal; nothing to recover.
+        "committed": The CURRENT pointer names the journaled
+            generation; the commit landed. Journal cleared.
+        "no_change": Live pair still matches the recorded old
+            fingerprints; the seal never wrote. Journal cleared.
+        "restored_preserved_pair": Live pair diverged from the old
+            pair and the pointer did not commit the journaled
+            generation; the preserved pre-seal pair was restored
+            byte-exactly and verified. Journal cleared.
+
+    Raises:
+        RollbackRecoveryError: Journal corrupt or preserved evidence
+            missing/mismatched (fail closed, journal preserved).
+    """
+    jpath = _checkpoint_journal_path(owner)
+    if not os.path.isfile(jpath):
+        return "none"
+
+    # --- Validate journal strictly BEFORE any mutation ---
+    try:
+        with open(jpath, encoding="utf-8") as f:
+            journal = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise RollbackRecoveryError(
+            f"checkpoint intent: corrupt journal (preserved): {exc}"
+        ) from exc
+    if not isinstance(journal, dict):
+        raise RollbackRecoveryError(
+            "checkpoint intent: journal is not a dict (preserved)"
+        )
+    _jv = journal.get("journal_version")
+    if not isinstance(_jv, int) or isinstance(_jv, bool) or _jv != CHECKPOINT_JOURNAL_VERSION:
+        raise RollbackRecoveryError(
+            f"checkpoint intent: unsupported version {journal.get('journal_version')} (preserved)"
+        )
+    if journal.get("owner") != owner:
+        raise RollbackRecoveryError(
+            f"checkpoint intent: owner mismatch journal={journal.get('owner')} expected={owner} (preserved)"
+        )
+    if journal.get("operation") != "checkpoint_commit":
+        raise RollbackRecoveryError(
+            f"checkpoint intent: unsupported operation {journal.get('operation')} (preserved)"
+        )
+    if journal.get("phase") != "prepared":
+        raise RollbackRecoveryError(
+            f"checkpoint intent: unexpected phase {journal.get('phase')} (preserved)"
+        )
+    generation_id = journal.get("generation_id")
+    if not generation_id or not isinstance(generation_id, str):
+        raise RollbackRecoveryError(
+            "checkpoint intent: missing or invalid generation_id (journal preserved)"
+        )
+    import re
+    _sha256_re = re.compile(r"^[0-9a-f]{64}$")
+    old_fps = {}
+    for key in ("old_nursery_sha256", "old_program_sha256"):
+        val = journal.get(key)
+        if val == "absent":
+            old_fps[key] = val
+            continue
+        if not isinstance(val, str) or not _sha256_re.match(val):
+            raise RollbackRecoveryError(
+                f"checkpoint intent: missing or invalid {key} (journal preserved)"
+            )
+        old_fps[key] = val
+
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.dell_matrix.atomic_write import atomic_write_bytes
+
+    # --- Did the commit land? The pointer is the commit boundary. ---
+    committed_gid = None
+    try:
+        from form.mandell import checkpoint_generation as _gen
+        committed_gid = _gen._read_pointer(owner).get("generation_id")
+    except Exception:
+        committed_gid = None
+    if committed_gid == generation_id:
+        clear_checkpoint_intent(owner)
+        return "committed"
+
+    npath, ppath = owner_nursery_path(owner), _path(owner)
+    members = (
+        (npath, old_fps["old_nursery_sha256"]),
+        (ppath, old_fps["old_program_sha256"]),
+    )
+    try:
+        current_fps = tuple(_sha256_file_absent(p) for p, _ in members)
+    except OSError as exc:
+        raise RollbackRecoveryError(
+            f"checkpoint intent: live pair unreadable (journal preserved): {exc}"
+        ) from exc
+    if current_fps == tuple(fp for _, fp in members):
+        clear_checkpoint_intent(owner)
+        return "no_change"
+
+    # --- Restore the preserved pre-seal pair byte-exactly ---
+    npres, ppres = _checkpoint_preserve_paths(owner)
+    for (live, old_fp), pres in zip(members, (npres, ppres)):
+        if old_fp == "absent":
+            # The member did not exist before the seal; the crashed
+            # seal created it. Restoring the old pair means absence.
+            try:
+                os.unlink(live)
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                raise RollbackRecoveryError(
+                    f"checkpoint intent: cannot remove seal-created {live} (journal preserved): {exc}"
+                ) from exc
+            continue
+        if not os.path.isfile(pres):
+            raise RollbackRecoveryError(
+                f"checkpoint intent: preserved copy missing for {live} (journal preserved)"
+            )
+        with open(pres, "rb") as f:
+            blob = f.read()
+        if hashlib.sha256(blob).hexdigest() != old_fp:
+            raise RollbackRecoveryError(
+                f"checkpoint intent: preserved copy fingerprint mismatch for {live} (journal preserved)"
+            )
+        atomic_write_bytes(live, blob)
+    try:
+        restored_fps = tuple(_sha256_file_absent(p) for p, _ in members)
+    except OSError as exc:
+        raise RollbackRecoveryError(
+            f"checkpoint intent: restored pair unreadable (journal preserved): {exc}"
+        ) from exc
+    if restored_fps != tuple(fp for _, fp in members):
+        raise RollbackRecoveryError(
+            "checkpoint intent: restored pair does not match recorded fingerprints (journal preserved)"
+        )
+    clear_checkpoint_intent(owner)
+    return "restored_preserved_pair"
+
+
+# ---------------------------------------------------------------------------
 # Rollback-intent journal (GDP_PHASE_6_R63_AUTHORITY_BOUND_ROLLBACK)
 def recover_confirmation_intent(owner: str) -> str:
     """Recover from recorded confirmation intent (not inferred visibility).

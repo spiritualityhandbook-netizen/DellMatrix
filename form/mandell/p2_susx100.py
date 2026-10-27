@@ -143,9 +143,15 @@ def main():
     for s, status, detail in fails[:10]:
         print(f"  seed {s}: {status} {detail}")
     if fails:
-        sys.exit(1)
+        return False
     print("SUSX100: ALL CLEAN")
+    return True
+
+
+def smoke() -> bool:
+    """Entry point for regression runner (P2 registration)."""
+    return main()
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(0 if main() else 1)

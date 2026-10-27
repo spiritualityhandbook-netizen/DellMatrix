@@ -88,9 +88,20 @@ def run_circuit():
         shutil.rmtree(d, ignore_errors=True)
 
 
-if __name__ == "__main__":
+def smoke() -> bool:
+    """Entry point for regression runner (P2 registration).
+
+    The circuit is one end-to-end verdict over its five cross-process
+    property checks (ID/state/faded/history/provenance); the count
+    line reports that single verdict.
+    """
     ok, detail = run_circuit()
     print(f"PUBLIC IDEA CIRCUIT: {'PASS' if ok else 'FAIL'}")
     if detail:
         print(detail)
-    sys.exit(0 if ok else 1)
+    print(f"p1_idea_circuit smoke: {1 if ok else 0}/1")
+    return ok
+
+
+if __name__ == "__main__":
+    sys.exit(0 if smoke() else 1)
