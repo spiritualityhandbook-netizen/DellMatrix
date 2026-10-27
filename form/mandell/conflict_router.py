@@ -38,16 +38,20 @@ never used as truth proxies.
 """
 from __future__ import annotations
 
+import re
 from typing import Dict, List, Set, Tuple
 
 from form.mandell.knowledge_selector import _token_seq
 
 CONFLICT_VERSION = 1
 
-# Explicit, bounded negation signals. Words are matched as whole tokens
-# (same normalization as the selector); n't-contractions are detected on
-# the raw lowercased text because the tokenizer splits "doesn't" into
-# "doesn"+"t".
+# Explicit, bounded negation signals. Words are matched as whole words
+# on the raw lowercased text — deliberately NOT via the selector's
+# similarity tokenizer: that tokenizer's {3,} minimum length erases
+# "no", which is a supported signal under the V1 contract (the TD-6
+# canonical-tokenizer adoption silently broke 'no' detection until
+# dcc_xiii caught it). n't-contractions are detected on the raw text
+# as well.
 NEGATION_WORDS = frozenset({"not", "no", "never", "none", "neither", "nor", "cannot"})
 
 # Both must hold for a shared content frame.
@@ -58,8 +62,8 @@ FRAME_SHARED_MIN = 2
 def _negation_evidence(text: str) -> List[str]:
     """Supported negation signals present in text (sorted, deterministic)."""
     low = (text or "").lower()
-    toks = set(_token_seq(low))
-    found = sorted(toks & NEGATION_WORDS)
+    words = set(re.findall(r"[a-z]+", low))
+    found = sorted(words & NEGATION_WORDS)
     if "n't" in low:
         found.append("n't")
     return sorted(set(found))
@@ -74,8 +78,10 @@ def _frame_tokens(text: str) -> Set[str]:
     low = (text or "").lower()
     frame = set(_token_seq(low)) - NEGATION_WORDS
     if "n't" in low:
-        # Tokenizer splits "doesn't" -> "doesn"+"t"; drop the residue so it
-        # cannot pollute frame similarity.
+        # Defensive: a tokenizer that splits "doesn't" -> "doesn"+"t"
+        # would leave a residue token; drop it so it cannot pollute
+        # frame similarity. (The canonical {3,} tokenizer never emits
+        # the residue.)
         frame.discard("t")
     return frame
 

@@ -88,6 +88,22 @@ def smoke() -> bool:
             harmony._TOKEN.pattern != tm.TOKEN_RE.pattern
             and harmony._pair_coherence({"a", "b"}, {"b", "c"})
             == tm.jaccard({"a", "b"}, {"b", "c"}))
+        # TD-6 blast-radius binding: the canonical {3,} tokenizer must
+        # not erase lexical signals other contracts own. DCC-XIII V1
+        # names "no" a supported negation signal; conflict_router
+        # detects negation on whole words, independent of the
+        # similarity tokenizer.
+        from form.mandell.conflict_router import detect_conflicts
+        rec("td6_negation_signal_preserved",
+            len(detect_conflicts([
+                {"id": "a", "text": "plant growth needs no water"},
+                {"id": "b", "text": "plant growth needs water"}])) == 1
+            and len(detect_conflicts([
+                {"id": "a", "text": "the sky is blue"},
+                {"id": "b", "text": "the sky is not blue"}])) == 1
+            and detect_conflicts([
+                {"id": "a", "text": "plant growth needs water"},
+                {"id": "b", "text": "plant growth needs water"}]) == [])
 
         # ── TD-7: one UTC format behind every _ts ────────────────────
         import form.utc_time as ut
