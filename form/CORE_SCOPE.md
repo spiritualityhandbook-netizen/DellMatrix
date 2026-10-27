@@ -31,8 +31,10 @@ create → grow → confirm → sphere → save → load → visual
 
 | Package | Role | Rule |
 |---------|------|------|
-| `form/trading/` | Sister trading tools | Optional. README SIDE lock. Do not import into open/repl. |
 | `form/llm/` | Local model bridge experiments | Optional. README SIDE lock. Offline acceptance must not depend on it. |
+
+(`form/trading/` was removed in master-plan P11: a sandbox
+project, excluded from program scope by Ace 2026-10-27.)
 
 **Lock:** Origin path never requires network, brokers, or external models.
 

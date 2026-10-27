@@ -154,6 +154,9 @@ LIST = [
     # contract set == publicly executable set, all nine operators
     # proven at the REPL path).
     "form.mandell.p10_flow_grammar_test",
+    # Master plan P11 — satellite disposition guards (sandbox
+    # matrices retired per Ace's ruling; useful survivors live).
+    "form.mandell.p11_satellites_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",

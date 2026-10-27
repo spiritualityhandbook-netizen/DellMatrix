@@ -111,16 +111,19 @@ def smoke() -> bool:
 
         # ── TD-7: one UTC format behind every _ts ────────────────────
         import form.utc_time as ut
-        from form.dell_matrix import nursery, shared_main, agent_coordinator
+        from form.dell_matrix import nursery, agent_coordinator
         from form.mandell import duobeta_learn, nbd_engine
         from form.duobeta import growth as duo_growth, selfgrow
-        stamps = [nursery._ts(), shared_main._ts(), duobeta_learn._ts(),
+        # (shared_main._ts() left this list in P11 when
+        # shared_main was retired; the remaining delegators
+        # still prove the one-format contract.)
+        stamps = [nursery._ts(), duobeta_learn._ts(),
                   nbd_engine._ts(), agent_coordinator._utcnow(),
                   duo_growth.DuoBeta._ts(object()),
                   selfgrow.SelfGrow._ts(object())]
         pat = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
         rec("td7_format_shared", ut.UTC_FORMAT == "%Y-%m-%dT%H:%M:%SZ"
-            and len(stamps) == 7 and all(pat.match(s) for s in stamps))
+            and len(stamps) == 6 and all(pat.match(s) for s in stamps))
 
         # ── Program-level wires ──────────────────────────────────────
         from form.open import open_program

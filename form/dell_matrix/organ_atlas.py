@@ -156,10 +156,8 @@ ORGAN_ATLAS: Dict[str, Dict[str, Any]] = {
         "role": "social_bond", "module": "form.dell_matrix.companion", "dell": 2, "vital": False,
         "source": "form companion · AI companion",
     },
-    "trading": {
-        "role": "livelihood", "module": "form.trading", "dell": 89, "vital": False,
-        "source": "form trading",
-    },
+    # (P11: the "trading" entry was removed with the
+    # form/trading sandbox package.)
     # --- pattern / adaptation / math tissue ---
     "fourier": {
         "role": "auditory_cortex", "module": "form.dell_matrix.fourier", "dell": 59, "vital": False,
