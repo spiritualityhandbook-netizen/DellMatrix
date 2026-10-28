@@ -21,8 +21,9 @@ All new development: **`form/`** (Python).
 
 See `form/CORE_SCOPE.md`:
 
-- `form/trading/` — optional sister tools
 - `form/llm/` — optional local-model experiments
+- (`form/trading/` — removed in master-plan P11; sandbox,
+  excluded from scope by Ace 2026-10-27.)
 
 Neither is required for offline acceptance:
 

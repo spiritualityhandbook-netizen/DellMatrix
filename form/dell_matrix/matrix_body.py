@@ -49,7 +49,9 @@ ORGANS: Dict[str, Dict[str, Any]] = {
     # higher / social
     "personas": {"role": "identity", "module": "form.dell_matrix.personas", "dell": 2, "vital": False},
     "neuroevo": {"role": "adaptation", "module": "form.dell_matrix.neuroevo", "dell": 88, "vital": False},
-    "trading": {"role": "livelihood", "module": "form.trading", "dell": 89, "vital": False},
+    # (P11: the "trading" organ entry was removed with the
+    # form/trading sandbox package — Ace excluded trading from
+    # the program scope 2026-10-27.)
     "audit": {"role": "conscience", "module": "form.dell_matrix.incorporation_audit", "dell": 70, "vital": False},
     # sensory intake (hardware-gated)
     "ear": {"role": "microphone", "module": "form.dell_matrix.matrix_body", "dell": 75, "vital": False, "hardware": "mic"},
