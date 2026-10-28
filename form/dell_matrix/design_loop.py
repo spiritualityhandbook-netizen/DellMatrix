@@ -115,7 +115,7 @@ def validate_section(raw: Any, owner: str
 
 
 def serialize_section(entries: Any, malformed: Any,
-                      owner: str) -> Dict[str, Any]:
+                      owner: str, extra: Any = None) -> Dict[str, Any]:
     """Serialize design-loop events with the strict schema. Never
     raises."""
     return serialize_records_section(
@@ -124,7 +124,8 @@ def serialize_section(entries: Any, malformed: Any,
         validate_rec=lambda rec: validate(rec, owner),
         id_field="entry_id", max_keep=_MAX_EVENTS,
         sort_field="ts", key_not_string="entry key not a string",
-        mismatch="not serialized as valid: key/ID mismatch")
+        mismatch="not serialized as valid: key/ID mismatch",
+        extra=extra)
 
 
 def record_event(program: Any, pid: str, event: str, **kw) -> Dict[str, Any]:

@@ -352,7 +352,8 @@ def validate_receipts_section(raw: Any, owner: str):
 
 
 def serialize_receipts_section(entries: Any, malformed: Any,
-                               owner: str) -> Dict[str, Any]:
+                               owner: str,
+                               extra: Any = None) -> Dict[str, Any]:
     """Serialize recorded receipts with the strict schema. Never
     raises."""
     return serialize_records_section(
@@ -361,7 +362,8 @@ def serialize_receipts_section(entries: Any, malformed: Any,
         validate_rec=lambda rec: _validate_receipt_entry(rec, owner),
         id_field="entry_id", max_keep=_MAX_RECEIPT_ENTRIES,
         sort_field="ts", key_not_string="entry key not a string",
-        mismatch="not serialized as valid: key/ID mismatch")
+        mismatch="not serialized as valid: key/ID mismatch",
+        extra=extra)
 
 
 _MISSING = MISSING
@@ -455,7 +457,8 @@ def validate_seeds_section(raw: Any, owner: str):
 
 
 def serialize_seeds_section(entries: Any, malformed: Any,
-                            owner: str) -> Dict[str, Any]:
+                            owner: str,
+                            extra: Any = None) -> Dict[str, Any]:
     """Serialize imported seed payloads with the strict schema.
     Never raises."""
     return serialize_records_section(
@@ -464,7 +467,8 @@ def serialize_seeds_section(entries: Any, malformed: Any,
         validate_rec=lambda rec: _validate_seed_entry(rec, owner),
         id_field="entry_id", max_keep=_MAX_SEED_ENTRIES,
         sort_field="ts", key_not_string="entry key not a string",
-        mismatch="not serialized as valid: key/ID mismatch")
+        mismatch="not serialized as valid: key/ID mismatch",
+        extra=extra)
 
 
 def record_seed_payload(program: Any, pid: str,

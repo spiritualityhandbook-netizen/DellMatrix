@@ -631,6 +631,48 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         data.get("exchange_seeds", _EX_MISSING), p.owner)
     p.exchange_seeds = xsentries
     p.exchange_seeds_malformed = xsmalformed
+    # PP2b (charter ruling B2): restore the eviction totals for
+    # the counted sections: the total stored in the section,
+    # plus any records the load-side retention just evicted (a
+    # file written before counting existed can hold more valid
+    # records than the bound; those drops are real evictions,
+    # counted here once — the next save persists the total and
+    # the trimmed population, so they are never recounted). A
+    # section whose shell failed validation is preserved as
+    # malformed evidence, not evicted, and counts nothing.
+    from form.persist import _counted_sections as _counted
+    from form.dell_matrix.session_section import (
+        collect_valid as _collect_valid)
+    _malformed_by_attr = {
+        "dock_sessions": dmalformed,
+        "director_records": drmalformed,
+        "unknowns": unk_malformed,
+        "design_loop": dlmalformed,
+        "exchange_receipts": exmalformed,
+        "exchange_seeds": xsmalformed,
+    }
+    for _key, _attr, _id_field, _sort, _max_keep, _vrec in \
+            _counted(p.owner):
+        _raw = data.get(_key)
+        _stored = 0
+        _load_drops = 0
+        if isinstance(_raw, dict):
+            _dt = _raw.get("dropped_total")
+            if isinstance(_dt, int) and not isinstance(_dt, bool) \
+                    and _dt >= 0:
+                _stored = _dt
+            _records = _raw.get(
+                "sessions" if _key == "dock_sessions" else "entries")
+            _shell_failed = "_section" in (
+                _malformed_by_attr.get(_attr) or {})
+            if isinstance(_records, dict) and not _shell_failed:
+                _pre = _collect_valid(
+                    _records, _vrec, _id_field, {},
+                    key_not_string="entry key not a string",
+                    mismatch="entry key/ID mismatch")
+                _kept = len(getattr(p, _attr, None) or {})
+                _load_drops = max(0, len(_pre) - _kept)
+        setattr(p, _attr + "_dropped_total", _stored + _load_drops)
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")

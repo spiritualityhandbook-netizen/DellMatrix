@@ -124,21 +124,37 @@ def exhaust_shells() -> Dict[str, Any]:
 
 
 def grow_from_root(program, cycles: int = 2) -> Dict[str, Any]:
-    """Grow lattice; confirm only proposals parented by code_evolution / decision_shells."""
+    """Grow lattice; confirm only proposals parented by code_evolution / decision_shells.
+
+    PP2b (charter ruling B3): the result ANNOUNCES what it did —
+    gate_flipped says whether this call turned the enhance gate
+    on, and every confirmation attempt is classified as applied
+    (confirmed_n), denied (the acceptance policy refused it) or
+    failed (any other non-ok outcome). Silence about a denied or
+    failed attempt is how an automatic path hides its footprint.
+    """
     roots = {ROOT_ID, "decision_shells"}
+    gate_flipped = False
     if hasattr(program, "enhance") and not program.enhance.on:
         program.enhance.turn_on()
+        gate_flipped = True
     out = program.grow_ideas(max(1, min(5, cycles)))
     confirmed = []
+    attempts = denied = failed = 0
     for prop in list(program.ranked_proposals())[:80]:
         parents = set(prop.get("parents") or [])
         words = (prop.get("words") or "").lower()
         lab = (prop.get("label") or "").lower()
         if parents & roots or "code evolution" in lab or "decision shell" in lab or "code evolution" in words:
             # WO-5.1: Pass producer ID. Denied by default without opt-in.
+            attempts += 1
             res = program.confirm_proposal(prop["id"], _producer="code_evolution")
             if res.get("ok"):
                 confirmed.append(res.get("label"))
+            elif res.get("reason") == "acceptance_policy_denied":
+                denied += 1
+            else:
+                failed += 1
         if len(confirmed) >= 24:
             break
     return {
@@ -147,6 +163,10 @@ def grow_from_root(program, cycles: int = 2) -> Dict[str, Any]:
         "confirmed": confirmed,
         "confirmed_n": len(confirmed),
         "pending": len(program.list_proposals()),
+        "gate_flipped": gate_flipped,
+        "confirm_attempts": attempts,
+        "confirm_denied": denied,
+        "confirm_failed": failed,
     }
 
 
@@ -265,9 +285,23 @@ def develop_loop(
     shell_report = exhaust_shells()
     log.append({"step": "exhaust_shells", "ok": shell_report.get("ok"), "passed": shell_report.get("passed")})
 
+    # PP2b (B3): aggregate the grow announcements so the loop's
+    # result states plainly what its automatic path attempted.
+    totals = {"gate_flips": 0, "confirm_attempts": 0,
+              "confirm_denied": 0, "confirm_applied": 0,
+              "confirm_failed": 0}
     for i in range(1, max(1, cycles) + 1):
         g = grow_from_root(program, cycles=grow_cycles)
-        log.append({"step": f"grow_{i}", "confirmed": g.get("confirmed_n"), "pending": g.get("pending")})
+        totals["gate_flips"] += 1 if g.get("gate_flipped") else 0
+        totals["confirm_attempts"] += g.get("confirm_attempts", 0)
+        totals["confirm_denied"] += g.get("confirm_denied", 0)
+        totals["confirm_applied"] += g.get("confirmed_n", 0)
+        totals["confirm_failed"] += g.get("confirm_failed", 0)
+        log.append({"step": f"grow_{i}", "confirmed": g.get("confirmed_n"), "pending": g.get("pending"),
+                    "gate_flipped": g.get("gate_flipped"),
+                    "confirm_attempts": g.get("confirm_attempts"),
+                    "confirm_denied": g.get("confirm_denied"),
+                    "confirm_failed": g.get("confirm_failed")})
         try:
             program.force_tick()
             program.pulse()
@@ -307,6 +341,12 @@ def develop_loop(
         "ideas": len(program.cube.session.plane.units),
         "generation": getattr(getattr(program, "duo", None), "generation", 0),
         "root": ROOT_ID,
+        # PP2b (B3): what the automatic path did, announced.
+        "gate_flips": totals["gate_flips"],
+        "confirm_attempts": totals["confirm_attempts"],
+        "confirm_denied": totals["confirm_denied"],
+        "confirm_applied": totals["confirm_applied"],
+        "confirm_failed": totals["confirm_failed"],
     }
 
 

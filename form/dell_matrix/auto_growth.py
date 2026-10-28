@@ -40,22 +40,50 @@ MIN_VERITA = 0.45
 MIN_COMBINED = 0.40
 
 
-def _load_ledger() -> List[Dict[str, Any]]:
+def _read_ledger_file():
+    """(rows, dropped_total) from the ledger file. Accepts the
+    legacy bare-list format (dropped_total 0) and the PP2b
+    object format. Never raises."""
     if not os.path.isfile(LEDGER_PATH):
-        return []
+        return [], 0
     try:
         with open(LEDGER_PATH, encoding="utf-8") as f:
             data = json.load(f)
-        return list(data) if isinstance(data, list) else []
     except Exception:
-        return []
+        return [], 0
+    if isinstance(data, list):
+        return list(data), 0
+    if isinstance(data, dict):
+        rows = data.get("rows")
+        dt = data.get("dropped_total")
+        if not isinstance(dt, int) or isinstance(dt, bool) or dt < 0:
+            dt = 0
+        return (list(rows) if isinstance(rows, list) else []), dt
+    return [], 0
+
+
+def _load_ledger() -> List[Dict[str, Any]]:
+    return _read_ledger_file()[0]
+
+
+def ledger_dropped_total() -> int:
+    """PP2b (charter ruling B2): how many ledger rows the
+    200-row bound has evicted, cumulatively — the loss is
+    measurable instead of silent."""
+    return _read_ledger_file()[1]
 
 
 def _save_ledger(rows: List[Dict[str, Any]]) -> None:
+    # PP2b (B2): count the rows the bound evicts; the total
+    # persists in the file alongside the retained rows.
+    _, prev_dropped = _read_ledger_file()
+    dropped_now = max(0, len(rows) - 200)
     rows = rows[-200:]
     try:
         with open(LEDGER_PATH, "w", encoding="utf-8") as f:
-            json.dump(rows, f, indent=2)
+            json.dump({"version": 1,
+                       "dropped_total": prev_dropped + dropped_now,
+                       "rows": rows}, f, indent=2)
     except OSError:
         pass  # never crash growth on ledger IO
 

@@ -71,6 +71,10 @@ def new_record(owner: str, subject: str, provider: str, model: str,
         "closed": None,
         "snap_name": snap_name,
         "proposals": [],
+        # PP2b (charter ruling B2): entries evicted by the
+        # proposals bound are counted, so the loss is measurable
+        # instead of silent.
+        "dropped": 0,
     }
 
 
@@ -84,7 +88,13 @@ def append_proposal(record: Dict[str, Any], entry: Dict[str, Any]) -> None:
     props = record.setdefault("proposals", [])
     props.append(entry)
     if len(props) > _MAX_PROPOSALS:
-        del props[: len(props) - _MAX_PROPOSALS]
+        excess = len(props) - _MAX_PROPOSALS
+        del props[:excess]
+        # PP2b (B2): count the eviction on the record itself.
+        cur = record.get("dropped")
+        record["dropped"] = (cur if isinstance(cur, int)
+                              and not isinstance(cur, bool)
+                              and cur >= 0 else 0) + excess
 
 
 def close_record(record: Dict[str, Any]) -> None:
@@ -147,6 +157,13 @@ def validate(raw: Any, owner: str) -> Tuple[bool, str]:
     for e in props:
         if not _is_valid_entry(e):
             return False, "session.proposals has an invalid entry"
+    # PP2b (B2): the eviction counter, when present, must be a
+    # non-negative int. Absent is legacy (pre-PP2b records).
+    dropped = raw.get("dropped")
+    if dropped is not None:
+        if not isinstance(dropped, int) or isinstance(dropped, bool) \
+                or dropped < 0:
+            return False, "session.dropped must be a non-negative int"
     return True, ""
 
 
@@ -169,7 +186,7 @@ def validate_section(raw: Any, owner: str
 
 
 def serialize_section(sessions: Any, malformed: Any,
-                      owner: str) -> Dict[str, Any]:
+                      owner: str, extra: Any = None) -> Dict[str, Any]:
     """Serialize dock sessions with the strict schema. Never raises."""
     return serialize_records_section(
         sessions, malformed, version=DOCK_SECTION_VERSION,
@@ -177,4 +194,5 @@ def serialize_section(sessions: Any, malformed: Any,
         validate_rec=lambda rec: validate(rec, owner),
         id_field="session_id", max_keep=_MAX_SESSIONS,
         sort_field="started", key_not_string="session key not a string",
-        mismatch="not serialized as valid: key/ID mismatch")
+        mismatch="not serialized as valid: key/ID mismatch",
+        extra=extra)
