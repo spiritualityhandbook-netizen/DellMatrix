@@ -1370,10 +1370,29 @@ def _handle_group_command(p: Program, lower: str, raw_line: str) -> None:
             return
         if not (res.get("ok") and "unit" in res):
             if res.get("ok") and "proposal" in res:
-                _say(f"'{ref}' is a nursery proposal, not a live idea — confirm it first, then add it.")
+                # Canonical precedence (resolve_lineage_ref) returns
+                # the PROPOSAL record when a confirmed proposal and
+                # its plane unit share one ID — one entity. Map back
+                # to the unit by ID, the lifecycle.py pattern
+                # (Director review repair, 2026-10-28: confirmed
+                # ideas were refused here as "not live").
+                prop = res["proposal"]
+                unit = plane.units.get(getattr(prop, "id", ""))
+                if unit is not None:
+                    res = {"ok": True, "unit": unit,
+                           "unit_id": prop.id}
+                elif getattr(prop, "status", "") == "confirmed":
+                    _say(f"'{ref}' is confirmed but has no live idea on the plane — it cannot be grouped.")
+                    return
+                elif getattr(prop, "status", "") == "rejected":
+                    _say(f"'{ref}' is a rejected proposal — it cannot be grouped.")
+                    return
+                else:
+                    _say(f"'{ref}' is a nursery proposal, not a live idea — confirm it first, then add it.")
+                    return
             else:
                 _say(f"No live idea for id or label: {ref}")
-            return
+                return
         uid = res["unit_id"]
         unit = res["unit"]
         if adding:
@@ -4061,7 +4080,8 @@ def _handle_connect_line(p, line: str, session):
             try:
                 session.docked = dock(
                     p, trusted_subject=f"connect:{p.owner}",
-                    provider=session.provider)
+                    provider=session.provider,
+                    defer_persistence=True)
             except DockError as e:
                 session.record("ask", f"rejected: {FAIL_DOCK}")
                 _say(f"{FAIL_DOCK}: {e}")
@@ -4105,7 +4125,8 @@ def _handle_connect_line(p, line: str, session):
             try:
                 session.docked = dock(
                     p, trusted_subject=f"connect:{p.owner}",
-                    provider=session.provider)
+                    provider=session.provider,
+                    defer_persistence=True)
             except DockError as e:
                 session.record("grow", f"dock failed: {FAIL_DOCK}")
                 _say(f"{FAIL_DOCK}: {e} — running token growth.")

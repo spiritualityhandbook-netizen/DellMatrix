@@ -172,6 +172,35 @@ print(s.session_id)
         s5.undock()
         _rec("field_snapshot_none_after_undock",
              s5.field_snapshot() is None)
+
+        # ── 6. The defer boundary: a host-owned session (the REPL
+        # Connected World pattern) does NOT persist evidence on an
+        # unsaved exit — its host's leave-save owns the boundary
+        # (the R7.6 EOF contract the immediate saves must not
+        # break). CROSS_PROCESS, separate owner.
+        owner2 = "RepairR1Defer"
+        _cleanup(owner2)
+        try:
+            _child(owner2, f"""
+import sys
+sys.path.insert(0, ".")
+from form.open import Program
+from form.dell_matrix import inference_dock as idock
+p = Program(owner="{owner2}")
+s = idock.dock(p, trusted_subject="connect:{owner2}",
+               provider="fake", task="propose",
+               defer_persistence=True)
+r = s.propose("propose an idea inside a host-owned session")
+assert r.get("ok"), r
+print(r["session_id"])
+""")
+            import glob as _g
+            state_file = _g.glob(os.path.join(
+                ROOT, "form", "state", f"program_{owner2}.json"))
+            _rec("deferred_session_saves_nothing_on_exit",
+                 state_file == [], f"files={state_file}")
+        finally:
+            _cleanup(owner2)
     finally:
         _cleanup(owner)
     passed = sum(1 for _, ok, _ in RESULTS if ok)

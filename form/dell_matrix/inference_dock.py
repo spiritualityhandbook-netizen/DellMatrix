@@ -607,12 +607,13 @@ class DockedSession:
                  "_provider", "_model_label", "_timeout_s",
                  "_max_prompt_chars", "_max_response_chars", "_docked",
                  "_task", "_session_id", "_evidence", "_snap_name",
-                 "_coordinator")
+                 "_coordinator", "_defer_persist")
 
     def __init__(self, program, trusted_subject: str, owner,
                  provider_name: str, provider, model_label: str,
                  timeout_s: int, max_prompt_chars: int,
-                 max_response_chars: int, task: str = "propose"):
+                 max_response_chars: int, task: str = "propose",
+                 defer_persistence: bool = False):
         object.__setattr__(self, "_program", program)
         object.__setattr__(self, "_subject", trusted_subject)
         object.__setattr__(self, "_owner", owner)
@@ -624,6 +625,8 @@ class DockedSession:
         object.__setattr__(self, "_max_response_chars", max_response_chars)
         object.__setattr__(self, "_docked", True)
         object.__setattr__(self, "_task", task)
+        object.__setattr__(self, "_defer_persist",
+                           bool(defer_persistence))
         object.__setattr__(self, "_snap_name", "")
         # SD-2: the field-snapshot coordinator is wired by dock()
         # (the trusted host entry) after construction; direct
@@ -892,7 +895,17 @@ class DockedSession:
         proposal immediately, so the evidence that gives it meaning
         must reach disk in the same moment — not only after a later
         explicit Program.save(). Mirrors design_loop.record_event's
-        best-effort save. Failure never unwrites a proposal."""
+        best-effort save. Failure never unwrites a proposal.
+
+        A host that owns the save boundary declares
+        defer_persistence (the REPL Connected World session: its
+        stage-then-save at `leave` commits the whole program —
+        gate changes included — while an EOF exit deliberately
+        persists nothing, the R7.6 contract). Deferred sessions
+        skip these saves; their host's boundary save carries the
+        evidence instead."""
+        if self._defer_persist:
+            return
         try:
             save = getattr(self._program, "save", None)
             if callable(save):
@@ -1146,7 +1159,8 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
          max_prompt_chars: int = DEFAULT_MAX_PROMPT_CHARS,
          max_response_chars: int = DEFAULT_MAX_RESPONSE_CHARS,
          fake_mode: str = "valid",
-         task: str = "propose") -> DockedSession:
+         task: str = "propose",
+         defer_persistence: bool = False) -> DockedSession:
     """Create a docked inference session. TRUSTED HOST ONLY.
 
     `trusted_subject` is host-established (never model-supplied).
@@ -1196,7 +1210,8 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
     session = DockedSession(
         program, trusted_subject, getattr(program, "owner", None),
         provider, prov, model_label, timeout_s, max_prompt_chars,
-        max_response_chars, task=task)
+        max_response_chars, task=task,
+        defer_persistence=defer_persistence)
     # SD-1 snap registration: the session attaches to the matrix
     # through the same admission contract as foundation components.
     # Rejection fails the dock and leaves no evidence record behind.
