@@ -163,6 +163,7 @@ LIST = [
     "form.mandell.repair_r1_test",
     "form.mandell.repair_r2_test",
     "form.mandell.repair_r3_test",
+    "form.mandell.pp1_stopwords_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",

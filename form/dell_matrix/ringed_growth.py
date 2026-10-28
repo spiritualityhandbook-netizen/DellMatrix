@@ -36,7 +36,7 @@ from form.dell_matrix.graph_harmony import (  # P3 R3.6: graph consumer (read-on
 )
 
 RINGS = ("Seed", "Token", "Body", "Lens", "Evolve")
-from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens_of as _tokens, jaccard as _jaccard
+from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens_of as _tokens, jaccard as _jaccard, content_tokens as _content_tokens
 # Canonical tokenization/Jaccard substrate: text_metrics (P3/TD-6).
 
 SOLSTICE_AFFINITY = 0.28
@@ -87,7 +87,9 @@ def _unit_blob(plane: Plane, uid: str) -> str:
 
 
 def _tokens_uid(plane: Plane, uid: str) -> Set[str]:
-    return {m.group(0).lower() for m in _TOKEN.finditer(_unit_blob(plane, uid))}
+    # PP1/D6: pair comparisons see CONTENT tokens only — connector
+    # words ("and", "the", ...) never count toward affinity.
+    return _content_tokens(_unit_blob(plane, uid))
 
 
 def _tension(a: Set[str], b: Set[str]) -> float:
@@ -175,8 +177,8 @@ def _goal_boost(plane: Plane, a: str, b: str) -> float:
     ua, ub = plane.units.get(a), plane.units.get(b)
     if not ua or not ub:
         return 0.0
-    ga = {t.lower() for g in (getattr(ua, "goals", []) or []) for t in _TOKEN.findall(g)}
-    gb = {t.lower() for g in (getattr(ub, "goals", []) or []) for t in _TOKEN.findall(g)}
+    ga = _content_tokens(" ".join(getattr(ua, "goals", []) or []))
+    gb = _content_tokens(" ".join(getattr(ub, "goals", []) or []))
     if not ga and not gb:
         return 0.0
     if not ga or not gb:

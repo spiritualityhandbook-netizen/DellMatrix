@@ -34,7 +34,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional, Set
 
-from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens as _tokens, token_seq as _token_seq, jaccard as _jaccard
+from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens as _tokens, token_seq as _token_seq, jaccard as _jaccard, content_tokens as _content_tokens
 # Canonical tokenization/Jaccard substrate: text_metrics (P3/TD-6).
 # This module tokenizes the same way RingedGrowth does — both delegate
 # to the one implementation above.
@@ -54,8 +54,10 @@ def _ordered_subseq(ctx_seq: List[str], unit_seq: List[str]) -> bool:
 
 
 def _unit_tokens(program: Any, uid: str) -> Set[str]:
-    """Get tokens for a cube unit (label + detail)."""
-    return _tokens(unit_text(program, uid))
+    """Tokens for a cube unit (label + detail) — CONTENT tokens
+    only (PP1/D6): selection scoring is a pair comparison, so
+    connector words never count toward it."""
+    return _content_tokens(unit_text(program, uid))
 
 
 def unit_text(program: Any, uid: str) -> str:
@@ -145,7 +147,10 @@ def select_for_context(
     eligibility; no-match still yields an empty selection.
     """
     context = (context or "").strip()
-    ctx_tokens = _tokens(context)
+    # PP1/D6: the scoring side of the comparison also sees content
+    # tokens only; ctx_seq/ctx_norm stay raw — phrase and order
+    # matching are exact signals, not similarity.
+    ctx_tokens = _content_tokens(context)
     ctx_seq = _token_seq(context)
     ctx_norm = _norm_text(context)
     
