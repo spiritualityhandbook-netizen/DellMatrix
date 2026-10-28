@@ -607,13 +607,14 @@ class DockedSession:
                  "_provider", "_model_label", "_timeout_s",
                  "_max_prompt_chars", "_max_response_chars", "_docked",
                  "_task", "_session_id", "_evidence", "_snap_name",
-                 "_coordinator", "_defer_persist")
+                 "_coordinator", "_defer_persist", "_bimo")
 
     def __init__(self, program, trusted_subject: str, owner,
                  provider_name: str, provider, model_label: str,
                  timeout_s: int, max_prompt_chars: int,
                  max_response_chars: int, task: str = "propose",
-                 defer_persistence: bool = False):
+                 defer_persistence: bool = False,
+                 bimo_config=None):
         object.__setattr__(self, "_program", program)
         object.__setattr__(self, "_subject", trusted_subject)
         object.__setattr__(self, "_owner", owner)
@@ -627,6 +628,12 @@ class DockedSession:
         object.__setattr__(self, "_task", task)
         object.__setattr__(self, "_defer_persist",
                            bool(defer_persistence))
+        # PP4: the worn Bimo configuration (a validated Forge
+        # record) or None. Identity/version evidence for the
+        # session; its personas frame prompts descriptively and
+        # grant nothing.
+        object.__setattr__(self, "_bimo",
+                           dict(bimo_config) if bimo_config else None)
         object.__setattr__(self, "_snap_name", "")
         # SD-2: the field-snapshot coordinator is wired by dock()
         # (the trusted host entry) after construction; direct
@@ -645,6 +652,7 @@ class DockedSession:
         record = _ds.new_record(
             record_owner, trusted_subject, provider_name,
             model_label, task, "")
+        record["bimo"] = bimo_config["name"] if bimo_config else ""
         object.__setattr__(self, "_evidence", record)
         object.__setattr__(self, "_session_id", record["session_id"])
         try:
@@ -667,6 +675,49 @@ class DockedSession:
     @property
     def task(self) -> str:
         return self._task
+
+    @property
+    def bimo(self) -> str:
+        """PP4: the worn Bimo configuration's name, or ""."""
+        return self._bimo["name"] if self._bimo else ""
+
+    @property
+    def bimo_config(self):
+        """PP4: a copy of the worn configuration record, or None."""
+        return dict(self._bimo) if self._bimo else None
+
+    def _bimo_framing(self) -> str:
+        """PP4: the worn configuration as prompt framing.
+
+        Personas DESCRIBE the working posture (who pilots, what
+        each filled slot focuses on, and their limits); they
+        grant nothing — proposals still land PENDING and
+        AcceptancePolicy is untouched. "" when unworn."""
+        cfg = self._bimo
+        if not cfg:
+            return ""
+        from form.dell_matrix import personas as _personas
+        lines = [f"[bimo: {cfg['name']}]"]
+        pilot = _personas.get_persona(cfg.get("pilot"))
+        if pilot:
+            lines.append(
+                f"pilot: {pilot['name']} ({pilot['category']})"
+                f" — {pilot['role']}")
+            lines.append(f"pilot focus: {pilot['focus']}")
+            if pilot.get("limits"):
+                lines.append(
+                    "pilot limits: " + ", ".join(pilot["limits"]))
+        for slot, pid in (cfg.get("slots") or {}).items():
+            if not pid:
+                continue
+            p = _personas.get_persona(pid)
+            if not p:
+                continue
+            line = f"slot {slot}: {p['name']} — {p['role']}"
+            if p.get("limits"):
+                line += "; limits: " + ", ".join(p["limits"])
+            lines.append(line)
+        return "\n".join(lines)[:1200]
 
     @property
     def session_id(self) -> str:
@@ -774,12 +825,22 @@ class DockedSession:
                     "detail": "Reason carries protected material; "
                              "rejected before provider call."}
         full_prompt = prompt
+        # PP4: a worn Bimo configuration frames the prompt. The
+        # framing counts toward the prompt bound (checked with
+        # the assembled text below), and the protected screen
+        # still runs over the exact outbound text.
+        framing = self._bimo_framing()
+        if framing:
+            full_prompt = framing + "\n\n" + full_prompt
         if safe_ctx:
             full_prompt += "\n\n[context]\n" + json.dumps(
                 safe_ctx, sort_keys=True)
             if len(full_prompt) > self._max_prompt_chars:
                 return {"ok": False, "reason": "prompt_too_large",
                         "detail": "Prompt+context exceeds bound."}
+        elif framing and len(full_prompt) > self._max_prompt_chars:
+            return {"ok": False, "reason": "prompt_too_large",
+                    "detail": "Prompt+framing exceeds bound."}
         # Protected-material screen on the exact outbound text,
         # in raw AND \uXXXX-decoded form. Key-name filtering alone is
         # insufficient: values (issued handles, credential values,
@@ -1093,6 +1154,11 @@ class DockedSession:
                     others, sort_keys=True)
         if concern:
             prompt += "\n\n[concern]\n" + concern
+        # PP4: the worn Bimo framing applies to verb prompts too,
+        # before the bound check and the protected screen.
+        framing = self._bimo_framing()
+        if framing:
+            prompt = framing + "\n\n" + prompt
         if len(prompt) > self._max_prompt_chars:
             return {"ok": False, "reason": "prompt_too_large",
                     "detail": "Verb prompt exceeds bound."}
@@ -1181,7 +1247,8 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
          max_response_chars: int = DEFAULT_MAX_RESPONSE_CHARS,
          fake_mode: str = "valid",
          task: str = "propose",
-         defer_persistence: bool = False) -> DockedSession:
+         defer_persistence: bool = False,
+         bimo: Optional[str] = None) -> DockedSession:
     """Create a docked inference session. TRUSTED HOST ONLY.
 
     `trusted_subject` is host-established (never model-supplied).
@@ -1196,6 +1263,13 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
     (DellMatrix.snap, kind "other"): a candidate the contract
     rejects (e.g. Floor-hostile subject/payload) fails the dock —
     no session is created.
+
+    PP4: `bimo` names a committed Bimo Forge configuration for
+    the session to wear. The record's identity is carried in the
+    session evidence, and its personas frame every prompt
+    (propose and the semantic verbs) descriptively — focus and
+    limits, never grants. A missing, staged-only, or invalid
+    configuration refuses the dock before anything is created.
     """
     if not isinstance(trusted_subject, str) or not trusted_subject:
         raise DockError("trusted_subject must be non-empty str")
@@ -1219,6 +1293,32 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
         if not isinstance(val, int) or isinstance(val, bool) or val <= 0 \
                 or val > 100000:
             raise DockError(f"{name} must be an int in 1..100000")
+    # PP4: resolve the worn Bimo configuration BEFORE anything
+    # is created. Only a COMMITTED Forge configuration can be
+    # worn (staged state is not a configuration), and the record
+    # must pass its closed schema — slots/pilot only, no grants
+    # or authority fields. Any failure refuses the dock with no
+    # session, no evidence record, no snap registration.
+    bimo_record = None
+    if bimo is not None:
+        from form.dell_matrix import bimo_forge as _forge
+        _name = _forge.normalize_config_name(bimo)
+        if _name is None:
+            raise DockError(
+                "bimo must be a canonical configuration name")
+        _configs = getattr(program, "bimo_configurations", None)
+        _rec = _configs.get(_name) if isinstance(_configs, dict) \
+            else None
+        if _rec is None:
+            raise DockError(
+                f"unknown bimo configuration {_name!r}: "
+                "not committed in the Forge")
+        _ok, _why = _forge.validate_configuration(
+            _rec, getattr(program, "owner", "") or "")
+        if not _ok:
+            raise DockError(
+                f"bimo configuration {_name!r} is invalid: {_why}")
+        bimo_record = dict(_rec)
     if provider == "fake":
         prov = FakeProvider(mode=fake_mode)
         model_label = f"fake:{fake_mode}"
@@ -1232,7 +1332,8 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
         program, trusted_subject, getattr(program, "owner", None),
         provider, prov, model_label, timeout_s, max_prompt_chars,
         max_response_chars, task=task,
-        defer_persistence=defer_persistence)
+        defer_persistence=defer_persistence,
+        bimo_config=bimo_record)
     # SD-1 snap registration: the session attaches to the matrix
     # through the same admission contract as foundation components.
     # Rejection fails the dock and leaves no evidence record behind.

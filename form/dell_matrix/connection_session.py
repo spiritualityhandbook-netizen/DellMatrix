@@ -93,6 +93,9 @@ class ConnectionSession:
     # Runtime-only (excluded from to_dict).
     provider: str = field(default="fake", repr=False)
     docked: Any = field(default=None, repr=False)
+    # PP4: the Bimo configuration name to wear on the next dock
+    # (runtime-only, like the provider selection).
+    bimo: Any = field(default=None, repr=False)
 
     @classmethod
     def open(cls, owner: str) -> "ConnectionSession":

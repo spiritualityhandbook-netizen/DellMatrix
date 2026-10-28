@@ -3965,6 +3965,9 @@ _CONNECT_COMMANDS = (
     "                      (default 'fake': deterministic, offline;",
     "                      credentials are read from the host",
     "                      environment, never entered here)",
+    "  bimo <name>|off     wear a committed Bimo Forge configuration",
+    "                      on the next dock (its personas frame the",
+    "                      prompts; they grant nothing)",
     "  ask <prompt>        docked inference -> a PENDING Nursery",
     "                      proposal (never auto-confirmed)",
     "  grow [n]            run growth: with a docked provider the",
@@ -3981,7 +3984,8 @@ def _connect_status(p, session) -> None:
          f"hosts allowed: {st.get('host_count', 0)}")
     _say(f"Provider: {session.provider} "
          f"({'offline deterministic' if session.provider == 'fake' else 'host bridge, explicit name'}) · "
-         f"docked: {'yes' if session.docked is not None else 'no'}")
+         f"docked: {'yes' if session.docked is not None else 'no'} · "
+         f"bimo: {session.bimo or 'unworn'}")
     pend = (p.nursery.summary() or {}).get("pending", 0)
     _say(f"Nursery proposals pending review: {pend}")
 
@@ -4122,6 +4126,29 @@ def _handle_connect_line(p, line: str, session):
         _say(f"Provider → {name}. It takes effect on the next 'ask'.")
         return p, session
 
+    if token == "bimo" and len(parts) == 2:
+        # PP4: mirror the provider selection — a name only, worn
+        # on the next dock; the configuration itself is resolved
+        # and validated by dock() at dock time.
+        name = parts[1]
+        if name != "off" and not all(
+                c.isalnum() or c in "_-" for c in name):
+            session.record("bimo", "rejected: invalid configuration name")
+            _say("Bimo rejected: a configuration is selected by a "
+                 "single name token only (or 'bimo off').")
+            return p, session
+        if session.docked is not None:
+            try:
+                session.docked.undock()
+            except Exception:
+                pass
+            session.docked = None
+        session.bimo = None if name == "off" else name
+        session.record("bimo", "configuration selected"
+                       if name != "off" else "configuration removed")
+        _say(f"Bimo → {name}. It takes effect on the next 'ask'.")
+        return p, session
+
     if token == "ask" and len(parts) >= 2:
         prompt = stripped.split(maxsplit=1)[1]
         if session.docked is None:
@@ -4130,7 +4157,8 @@ def _handle_connect_line(p, line: str, session):
                 session.docked = dock(
                     p, trusted_subject=f"connect:{p.owner}",
                     provider=session.provider,
-                    defer_persistence=True)
+                    defer_persistence=True,
+                    bimo=session.bimo)
             except DockError as e:
                 session.record("ask", f"rejected: {FAIL_DOCK}")
                 _say(f"{FAIL_DOCK}: {e}")
@@ -4175,7 +4203,8 @@ def _handle_connect_line(p, line: str, session):
                 session.docked = dock(
                     p, trusted_subject=f"connect:{p.owner}",
                     provider=session.provider,
-                    defer_persistence=True)
+                    defer_persistence=True,
+                    bimo=session.bimo)
             except DockError as e:
                 session.record("grow", f"dock failed: {FAIL_DOCK}")
                 _say(f"{FAIL_DOCK}: {e} — running token growth.")
