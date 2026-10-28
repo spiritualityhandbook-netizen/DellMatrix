@@ -63,10 +63,10 @@ ORGAN_ATLAS: Dict[str, Dict[str, Any]] = {
         "role": "brainstem", "module": "form.mandell.gate_discipline", "dell": 72, "vital": True,
         "source": "form mandell gate_discipline",
     },
-    "brain": {
-        "role": "cerebrum", "module": "form.dell_matrix.brain", "dell": 73, "vital": True,
-        "source": "form brain · think cycle",
-    },
+    # (P12: the "brain" entry was removed — its module
+    # form.dell_matrix.brain was retired in P8/SD-5 while the
+    # entry still claimed cerebrum/vital; a registry must not
+    # point at what does not exist.)
     "verita": {
         "role": "judgment", "module": "form.dell_matrix.verita", "dell": 62, "vital": True,
         "source": "form verita · solo + pair truth",
@@ -93,7 +93,7 @@ ORGAN_ATLAS: Dict[str, Dict[str, Any]] = {
         "source": "preform token workmem · context budget",
     },
     "stigmergic": {
-        "role": "trail_memory", "module": "src.core.stigmergic", "dell": 77, "vital": False,
+        "role": "trail_memory", "legacy_source": "src/core/stigmergic.js", "dell": 77, "vital": False,
         "source": "src stigmergic · externalized residue trails",
     },
     "harmonic_core": {
@@ -180,11 +180,11 @@ ORGAN_ATLAS: Dict[str, Dict[str, Any]] = {
         "source": "form neuroevo",
     },
     "neural_patterns": {
-        "role": "pattern_tissue", "module": "src.core.neural_patterns", "dell": 88, "vital": False,
+        "role": "pattern_tissue", "legacy_source": "src/core/neural_patterns.js", "dell": 88, "vital": False,
         "source": "src neural_patterns",
     },
     "dna_profile": {
-        "role": "genotype", "module": "src.core.dna_profile", "dell": 36, "vital": False,
+        "role": "genotype", "legacy_source": "src/core/dna_profile.js", "dell": 36, "vital": False,
         "source": "src dna_profile",
     },
     # --- conscience / drive / practice ---
