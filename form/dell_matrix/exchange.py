@@ -100,7 +100,11 @@ def validate_packet(data: Any) -> Dict[str, Any]:
     seed = {
         "label": _str(seed["label"], 120, "seed.label"),
         "chain": _str(seed["chain"], 4000, "seed.chain"),
-        "keep": _str(seed["keep"], 1000, "seed.keep"),
+        # Director review repair (2026-10-28): the keep bound is
+        # 2000, aligned with the Nursery detail bound — build_packet
+        # sources keep from Proposal.detail (<=2000), so a 1000
+        # bound made re-export of legitimately-kept ideas fail.
+        "keep": _str(seed["keep"], 2000, "seed.keep"),
     }
     if not seed["label"]:
         raise ExchangeError("seed.label must be non-empty")
@@ -238,6 +242,21 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
         reason=reason, detail="\n".join(detail_lines)[:2000],
         goals=[f"replication {lint['receipts']}x/"
                f"{lint['distinct_origins']} origins"])
+    # Director review repair (2026-10-28): PRESERVE the packet's
+    # receipts as first-class records in the receiver's receipts
+    # section, under the imported proposal. Before this, receipts
+    # existed only as text inside the bounded detail rendering —
+    # silently truncated there, absent from receipts_for, and
+    # missing from any re-export. Recording uses the canonical
+    # record_receipt path (each receipt keeps its own origin —
+    # provenance is never rewritten to the receiver).
+    try:
+        for r in packet["receipts"]:
+            record_receipt(program, prop.id, r)
+    except Exception as e:
+        raise ExchangeError(
+            f"import landed proposal {prop.id} but receipt "
+            f"recording failed: {type(e).__name__}") from e
     return {"ok": True, "pid": prop.id, "lint": lint,
             "origin": origin}
 
