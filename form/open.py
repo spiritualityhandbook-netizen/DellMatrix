@@ -1458,6 +1458,71 @@ class Program:
         return acceptance_data(pid, owner, content, parents,
                                goals=goals, revision=revision)
 
+    # -- PP3: the unknowns register --------------------------------
+    # Encountered unknowns are first-class state (form.dell_matrix
+    # .unknowns): recorded on encounter, closed only by an explicit
+    # act carrying evidence. Recording never answers anything.
+
+    def note_unknown_encounter(self, subject: str, question: str,
+                               source: str):
+        """Record an encountered unknown in memory (deduped by
+        subject+question while OPEN). Persistence rides this
+        program's normal saves. Returns the entry or None."""
+        from form.dell_matrix import unknowns as _unk
+        entry, _created = _unk.register_encounter(
+            self, subject, question, source)
+        return entry
+
+    def record_unknown(self, subject: str, question: str,
+                       source: str = "manual") -> dict:
+        """Explicitly record an unknown and persist it now
+        (best-effort save, the design-loop pattern)."""
+        from form.dell_matrix import unknowns as _unk
+        entry, created = _unk.register_encounter(
+            self, subject, question, source)
+        if entry is None:
+            return {"ok": False, "reason": "invalid_unknown"}
+        try:
+            self.save()
+        except Exception:
+            pass
+        return {"ok": True, "created": created,
+                "entry": dict(entry)}
+
+    def list_unknowns(self, status: str = None) -> list:
+        """Register entries (copies), OPEN first. status filters
+        to OPEN / RESOLVED / UNKNOWABLE when given."""
+        from form.dell_matrix import unknowns as _unk
+        return _unk.list_entries(self, status)
+
+    def resolve_unknown(self, entry_id: str, resolution: str,
+                        *, resolver: str) -> dict:
+        """Close an unknown as RESOLVED — only with the answer as
+        evidence and a named resolver. Persists on success."""
+        from form.dell_matrix import unknowns as _unk
+        out = _unk.close_entry(self, entry_id, "RESOLVED",
+                               resolution, resolver)
+        if out.get("ok"):
+            try:
+                self.save()
+            except Exception:
+                pass
+        return out
+
+    def mark_unknown_unknowable(self, entry_id: str, reason: str,
+                                *, resolver: str) -> dict:
+        """Close an unknown as UNKNOWABLE — only with the reason
+        as evidence and a named resolver. Persists on success."""
+        from form.dell_matrix import unknowns as _unk
+        out = _unk.close_entry(self, entry_id, "UNKNOWABLE",
+                               reason, resolver)
+        if out.get("ok"):
+            try:
+                self.save()
+            except Exception:
+                pass
+        return out
+
     # -- SD-4 (P7): host endpoint bindings ----------------------------
     # The Program is the single production entry for binding the
     # host-side agent endpoints. Each delegates to its canonical

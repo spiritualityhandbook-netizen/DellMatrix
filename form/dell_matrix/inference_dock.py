@@ -1018,8 +1018,29 @@ class DockedSession:
             "the specific concern and the evidence for it; if the "
             "entry is sound, say so and state what was checked."
             + self._SCHEMA_TAIL)
-        return self._verb("flag", [target], instruction,
-                          concern=concern, reason=reason)
+        out = self._verb("flag", [target], instruction,
+                         concern=concern, reason=reason)
+        if out.get("ok"):
+            # PP3: a flag is an encountered unknown — the judge
+            # could not verify this entry. Record it on the
+            # program's unknowns register (deduped); persistence
+            # follows this session's own persist discipline.
+            try:
+                prop = out.get("proposal") or {}
+                pid = prop.get("id") or out.get("id") \
+                    or out.get("pid") or ""
+                question = (concern or "").strip() or (
+                    "Docked judge flagged this entry as unverifiable"
+                    f" (flag proposal {pid}).")
+                note = getattr(self._program,
+                               "note_unknown_encounter", None)
+                if callable(note):
+                    note(f"entry {target}", question,
+                         f"dock:flag:{self._subject}")
+                    self._persist_state()
+            except Exception:
+                pass
+        return out
 
     def _verb(self, verb, targets, instruction, *, concern="",
               reason=None) -> Dict[str, Any]:

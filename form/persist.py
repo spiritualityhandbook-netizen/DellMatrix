@@ -122,6 +122,8 @@ def serialize(program: Program) -> Dict[str, Any]:
         serialize_section as serialize_dock_section)
     from form.dell_matrix.director_records import (
         serialize_section as serialize_director_section)
+    from form.dell_matrix.unknowns import (
+        serialize_section as serialize_unknowns_section)
     from form.dell_matrix.design_loop import (
         serialize_section as serialize_design_loop_section)
     from form.dell_matrix.exchange import (
@@ -314,6 +316,13 @@ def serialize(program: Program) -> Dict[str, Any]:
         "director_records": serialize_director_section(
             getattr(program, "director_records", None),
             getattr(program, "director_records_malformed", None),
+            program.owner,
+        ),
+        # PP3: the unknowns register (encountered unknowns with
+        # an evidence-gated discovery path; records only).
+        "unknowns": serialize_unknowns_section(
+            getattr(program, "unknowns", None),
+            getattr(program, "unknowns_malformed", None),
             program.owner,
         ),
         # SD-5: the inside-out loop ledger (filed / gate /

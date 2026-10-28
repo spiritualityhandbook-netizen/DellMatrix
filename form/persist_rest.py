@@ -600,6 +600,14 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         data.get("director_records", _DR_MISSING), p.owner)
     p.director_records = drecords
     p.director_records_malformed = drmalformed
+    # PP3: restore the unknowns register.
+    from form.dell_matrix.unknowns import (
+        validate_section as validate_unknowns_section,
+        _MISSING as _UNK_MISSING)
+    unk_entries, unk_malformed = validate_unknowns_section(
+        data.get("unknowns", _UNK_MISSING), p.owner)
+    p.unknowns = unk_entries
+    p.unknowns_malformed = unk_malformed
     # SD-5: restore the inside-out loop ledger.
     from form.dell_matrix.design_loop import (
         validate_section as validate_design_loop_section,
@@ -792,7 +800,7 @@ DURABLE_KEYS = (
     "workshop_sessions", "onboarding_sessions", "forge_sessions",
     "bimo_configurations", "connection_sessions", "dock_sessions",
     "director_records", "design_loop",
-    "director_records", "exchange_receipts",
+    "director_records", "exchange_receipts", "unknowns",
 )
 
 

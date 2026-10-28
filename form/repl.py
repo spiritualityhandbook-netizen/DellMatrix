@@ -64,6 +64,7 @@ Ideas / Growth
   grow ideas 2
   proposals | confirm <id> | confirm all | reject all
   exchange export <id> <file> | exchange import <file>
+  unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
   rank | lineage <id or label>
   groups | group create <name> | group add <id or label> to <name>
   group remove <id or label> from <name> | group show <name> | group delete <name>
@@ -186,6 +187,7 @@ Create — make and develop ideas
   grow ideas <n>
   proposals | confirm <id> | confirm all | reject all
   exchange export <id> <file> | exchange import <file>
+  unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
   rank | lineage <id or label>
   groups | group create <name> | group add <id or label> to <name>
   group remove <id or label> from <name> | group show <name> | group delete <name>
@@ -2488,6 +2490,53 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             _say(f"Exchange: {e}")
         except OSError as e:
             _say(f"Exchange: file error ({e.strerror or 'io'})")
+        return p
+
+    if lower == "unknowns" or lower.startswith("unknowns "):
+        # PP3: the unknowns register — what this matrix met and
+        # could not resolve (unparseable seeds, atoms that did not
+        # execute, entries a docked judge flagged). Listing is
+        # read-only; closing one is an authority act that must
+        # carry evidence (the answer, or why it cannot be known).
+        parts = raw_line.split(None, 3)
+        if len(parts) == 1 or (len(parts) == 2 and parts[1] == "all"):
+            show_all = len(parts) == 2
+            entries = p.list_unknowns(None if show_all else "OPEN")
+            counts = {}
+            for e in p.list_unknowns():
+                counts[e["status"]] = counts.get(e["status"], 0) + 1
+            _say(f"Unknowns: {counts.get('OPEN', 0)} open · "
+                 f"{counts.get('RESOLVED', 0)} resolved · "
+                 f"{counts.get('UNKNOWABLE', 0)} unknowable")
+            for e in entries:
+                _say(f"[{e['status']}] {e['subject']}")
+                _say(f"  id {e['entry_id']} · seen {e['seen']} · "
+                     f"via {e['source']} · opened {e['opened']}")
+                _say(f"  {e['question']}")
+                if e["status"] != "OPEN":
+                    _say(f"  → {e['resolution']} "
+                         f"(by {e['resolver']}, {e['closed']})")
+            if not entries:
+                _say("  (none" + ("" if show_all else " open") + ")")
+        elif len(parts) >= 4 and parts[1] in ("resolve", "unknowable"):
+            if parts[1] == "resolve":
+                out = p.resolve_unknown(parts[2].strip(),
+                                        parts[3].strip(),
+                                        resolver="repl:human")
+            else:
+                out = p.mark_unknown_unknowable(
+                    parts[2].strip(), parts[3].strip(),
+                    resolver="repl:human")
+            if out.get("ok"):
+                e = out["entry"]
+                _say(f"Unknowns: {parts[2].strip()} → {e['status']} "
+                     f"· {e['resolution']}")
+            else:
+                _say(f"Unknowns: refused ({out.get('reason')}) — "
+                     f"{out.get('detail', '')}")
+        else:
+            _say("usage: unknowns [all] | unknowns resolve <id> "
+                 "<answer> | unknowns unknowable <id> <reason>")
         return p
 
     if lower in ("lang list", "langs", "languages"):
