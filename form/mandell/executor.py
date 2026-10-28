@@ -13,9 +13,26 @@ from typing import Any, Dict
 from .seed import parse_seed
 
 
+def _note_unknown(program: Any, subject: str, question: str,
+                  source: str) -> None:
+    """PP3: record an encountered unknown on the program's register.
+    Best-effort by design — capture must never break execution
+    (the note_seed precedent below). Programs without the register
+    API are simply skipped."""
+    try:
+        note = getattr(program, "note_unknown_encounter", None)
+        if callable(note):
+            note(subject, question, source)
+    except Exception:
+        pass
+
+
 def execute_seed(program: Any, seed_text: str, _leaf: bool = False) -> Dict[str, Any]:
     s = parse_seed(seed_text)
     if not s.ok:
+        _note_unknown(program, f"seed: {seed_text[:160]}",
+                      f"Seed could not be parsed: {s.error}",
+                      "executor:parse")
         return {"ok": False, "error": s.error, "messages": [f"Seed error: {s.error}"]}
 
     from .core_i_ops import HANDLED, apply_core_i
@@ -82,7 +99,18 @@ def execute_seed(program: Any, seed_text: str, _leaf: bool = False) -> Dict[str,
         core_ii = primary is not None and 51 <= int(primary) <= 99
         if multi or core_ii:
             from .chain_exec import execute_chain
-            return execute_chain(program, s, seed_text)
+            out = execute_chain(program, s, seed_text)
+            # PP3: an atom that did not execute is an encountered
+            # unknown — record it (deduped) on the active program.
+            target = out.get("new_program") or program
+            for r in out.get("atom_results") or []:
+                if isinstance(r, dict) and r.get("skipped"):
+                    _note_unknown(
+                        target, f"seed: {seed_text[:160]}",
+                        f"Dell {r.get('dell')} did not execute: "
+                        f"{r.get('reason') or 'no reason recorded'}",
+                        "executor:skip")
+            return out
 
     from .executor_leaf import execute_seed as execute_leaf
     return execute_leaf(program, seed_text)
