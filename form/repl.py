@@ -65,6 +65,7 @@ Ideas / Growth
   proposals | confirm <id> | confirm all | reject all
   exchange export <id> <file> | exchange import <file>
   unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
+  flow                      show the last chain execution as a trace + frames
   rank | lineage <id or label>
   groups | group create <name> | group add <id or label> to <name>
   group remove <id or label> from <name> | group show <name> | group delete <name>
@@ -188,6 +189,7 @@ Create — make and develop ideas
   proposals | confirm <id> | confirm all | reject all
   exchange export <id> <file> | exchange import <file>
   unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
+  flow                      show the last chain execution as a trace + frames
   rank | lineage <id or label>
   groups | group create <name> | group add <id or label> to <name>
   group remove <id or label> from <name> | group show <name> | group delete <name>
@@ -2490,6 +2492,28 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             _say(f"Exchange: {e}")
         except OSError as e:
             _say(f"Exchange: file error ({e.strerror or 'io'})")
+        return p
+
+    if lower == "flow":
+        # PP5: render the last chain execution in this session —
+        # the static trace, then the animation frames in order
+        # (a terminal redraw sequence). Rendering only: nothing
+        # executes here, and the frames report exactly what the
+        # canonical execution reported.
+        last = getattr(p, "last_flow", None)
+        if not isinstance(last, dict):
+            _say("Flow: no chain has executed in this session yet.")
+        else:
+            from form.mandell.flow_visual import render_anim
+            anim = render_anim(str(last.get("seed_text", "")),
+                               last.get("atom_results") or [])
+            for ln in anim["trace"]:
+                _say(ln)
+            _say("  — animation frames —")
+            for i, frame in enumerate(anim["frames"]):
+                _say(f"  [frame {i}]")
+                for ln in str(frame).splitlines():
+                    _say(f"    {ln}")
         return p
 
     if lower == "unknowns" or lower.startswith("unknowns "):

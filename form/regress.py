@@ -169,6 +169,7 @@ LIST = [
     "form.mandell.repair_r4_test",
     "form.dell_matrix.pp2b_rulings_test",
     "form.dell_matrix.pp4_bimo_dock_test",
+    "form.mandell.pp5_flow_visual_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",

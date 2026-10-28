@@ -385,4 +385,19 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     _oks = [bool(r.get("ok", True)) for r in atom_results]
     _partial = bool(atom_results) and any(_oks) and not all(_oks)
     _any_skipped = any(bool(r.get("skipped", False)) for r in atom_results)
-    return {"ok": ok, "error": last_error, "seed": seed.as_mandel(), "english": seed.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": st.snap() if st is not None else {}}
+    result = {"ok": ok, "error": last_error, "seed": seed.as_mandel(), "english": seed.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": st.snap() if st is not None else {}}
+    # PP5: keep the last chain execution on the program
+    # (runtime-only) so the flow renderer can draw what actually
+    # ran. Best-effort — rendering support must never break
+    # execution.
+    try:
+        program.last_flow = {
+            "seed_text": seed_text,
+            "seed": result["seed"],
+            "atom_results": [dict(r) for r in atom_results],
+            "ok": ok,
+            "partial": _partial,
+        }
+    except Exception:
+        pass
+    return result
