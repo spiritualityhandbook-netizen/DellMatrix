@@ -101,6 +101,36 @@ def _serialize_lattice(program: Program) -> Dict[str, Any]:
     }
 
 
+def _counted_sections(owner: str):
+    """PP2b (charter ruling B2): the bounded kit sections whose
+    retention evictions are counted. Each row: (section key,
+    program attribute, id field, sort field, max keep, record
+    validator bound to the owner)."""
+    from form.dell_matrix import (
+        design_loop, director_records, dock_session, exchange,
+        unknowns)
+    return (
+        ("dock_sessions", "dock_sessions", "session_id", "started",
+         dock_session._MAX_SESSIONS,
+         lambda rec: dock_session.validate(rec, owner)),
+        ("director_records", "director_records", "entry_id", "ts",
+         director_records._MAX_ENTRIES,
+         lambda rec: director_records.validate(rec, owner)),
+        ("unknowns", "unknowns", "entry_id", "opened",
+         unknowns._MAX_ENTRIES,
+         lambda rec: unknowns.validate(rec, owner)),
+        ("design_loop", "design_loop", "entry_id", "ts",
+         design_loop._MAX_EVENTS,
+         lambda rec: design_loop.validate(rec, owner)),
+        ("exchange_receipts", "exchange_receipts", "entry_id", "ts",
+         exchange._MAX_RECEIPT_ENTRIES,
+         lambda rec: exchange._validate_receipt_entry(rec, owner)),
+        ("exchange_seeds", "exchange_seeds", "entry_id", "ts",
+         exchange._MAX_SEED_ENTRIES,
+         lambda rec: exchange._validate_seed_entry(rec, owner)),
+    )
+
+
 def serialize(program: Program) -> Dict[str, Any]:
     assert_floor_intact()
     # R6.4 directive §4: canonical hook — synchronize live agent
@@ -160,6 +190,44 @@ def serialize(program: Program) -> Dict[str, Any]:
     }
     main = program.main
     amb = program.ambient
+    # PP2b (charter ruling B2): eviction accounting for the
+    # bounded kit sections. Evictions are counted ONCE, at this
+    # persistence boundary: the in-memory register is trimmed to
+    # exactly what will be serialized, so re-serializing the
+    # same population can never recount a drop. The running
+    # total rides inside the section as "dropped_total" and is
+    # restored on load by persist_rest. Records preserved as
+    # malformed evidence are never counted as evictions.
+    from form.dell_matrix.session_section import (
+        collect_valid as _collect_valid,
+        retention_order as _retention_order)
+    _totals: Dict[str, int] = {}
+    for _key, _attr, _id_field, _sort, _max_keep, _vrec in \
+            _counted_sections(program.owner):
+        _entries = getattr(program, _attr, None)
+        _total = getattr(program, _attr + "_dropped_total", 0)
+        if not isinstance(_total, int) or isinstance(_total, bool) \
+                or _total < 0:
+            _total = 0
+        if isinstance(_entries, dict) and _entries:
+            _valid = _collect_valid(
+                _entries, _vrec, _id_field, {},
+                key_not_string="entry key not a string",
+                mismatch="entry key/ID mismatch", serialize=True)
+            _evictions = max(0, len(_valid) - _max_keep)
+            if _evictions:
+                _total += _evictions
+                # Trim to the kept valid records — but records
+                # that failed validation are NOT evictions: they
+                # stay in the register so the serializer below
+                # preserves them as malformed evidence.
+                _kept = _retention_order(_valid, _sort, _max_keep)
+                _invalid = {k: v for k, v in _entries.items()
+                            if k not in _valid}
+                _invalid.update(_kept)
+                setattr(program, _attr, _invalid)
+        setattr(program, _attr + "_dropped_total", _total)
+        _totals[_key] = _total
     return {
         "type": "DellMatrixProgramState",
         "version": VERSION,
@@ -311,6 +379,7 @@ def serialize(program: Program) -> Dict[str, Any]:
             getattr(program, "dock_sessions", None),
             getattr(program, "dock_sessions_malformed", None),
             program.owner,
+            extra={"dropped_total": _totals["dock_sessions"]},
         ),
         # SD-4: Director records (recommendations, evidence
         # requests, directive links, refusals). Records only —
@@ -319,6 +388,7 @@ def serialize(program: Program) -> Dict[str, Any]:
             getattr(program, "director_records", None),
             getattr(program, "director_records_malformed", None),
             program.owner,
+            extra={"dropped_total": _totals["director_records"]},
         ),
         # PP3: the unknowns register (encountered unknowns with
         # an evidence-gated discovery path; records only).
@@ -326,6 +396,7 @@ def serialize(program: Program) -> Dict[str, Any]:
             getattr(program, "unknowns", None),
             getattr(program, "unknowns_malformed", None),
             program.owner,
+            extra={"dropped_total": _totals["unknowns"]},
         ),
         # SD-5: the inside-out loop ledger (filed / gate /
         # implemented events per design proposal).
@@ -333,6 +404,7 @@ def serialize(program: Program) -> Dict[str, Any]:
             getattr(program, "design_loop", None),
             getattr(program, "design_loop_malformed", None),
             program.owner,
+            extra={"dropped_total": _totals["design_loop"]},
         ),
         # P9: Exchange receipts recorded against proposals
         # (run transcripts; assembled into packets at export).
@@ -340,6 +412,7 @@ def serialize(program: Program) -> Dict[str, Any]:
             getattr(program, "exchange_receipts", None),
             getattr(program, "exchange_receipts_malformed", None),
             program.owner,
+            extra={"dropped_total": _totals["exchange_receipts"]},
         ),
         # Completion-order residual repair: imported seed
         # payloads (the original label/chain/Keep/requirements a
@@ -349,6 +422,7 @@ def serialize(program: Program) -> Dict[str, Any]:
             getattr(program, "exchange_seeds", None),
             getattr(program, "exchange_seeds_malformed", None),
             program.owner,
+            extra={"dropped_total": _totals["exchange_seeds"]},
         ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).
         # Presence metadata for ideas. Uses existing persistence.
