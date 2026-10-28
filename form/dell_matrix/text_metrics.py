@@ -59,3 +59,61 @@ def jaccard(a: Set[str], b: Set[str]) -> float:
     inter = len(a & b)
     union = len(a | b)
     return inter / union if union else 0.0
+
+
+# ------------------------------------------------------------------
+# Stopwords (post-plan PP1 / Ace D6, 2026-10-28)
+#
+# Ace's rule: words may FIND candidate pairs, but connector words
+# — "and", "the", "if" — and other function words that hold no
+# meaning beyond connecting content words must not count IN the
+# pair comparisons. This set is the single authority for that
+# exclusion. It applies ONLY at pair-comparison call sites
+# (growth affinity, goal boost, knowledge-selection scoring),
+# via content_tokens()/content_tokens_of(). Raw tokenization
+# (tokens(), token_seq()) is unchanged: signal consumers —
+# negation/conflict detection, phrase and order matching — read
+# raw text or raw sequences and never this filter (the TD-6
+# blast-radius lesson: a similarity parameter must never starve
+# a signal detector).
+#
+# Curation rules:
+# - English function words only: articles, conjunctions,
+#   prepositions, pronouns, auxiliary/modal verbs, and common
+#   adverbs of manner/time that carry no topic content.
+# - Negation and contrast words are NEVER stopwords here —
+#   "no", "not", "nor", "never", "but", "yet" change meaning;
+#   excluding them from any comparison would hide opposition.
+# - Only words of length >= 3 are listed; shorter words never
+#   tokenize under TOKEN_RE anyway ("if", "of", "to", "in").
+STOPWORDS = frozenset({
+    "the", "and", "for", "with", "from", "into", "upon", "about",
+    "above", "after", "again", "against", "all", "any", "are",
+    "been", "before", "below", "between", "both", "can", "could",
+    "did", "does", "doing", "down", "during", "each", "few",
+    "further", "had", "has", "have", "having", "her", "here",
+    "hers", "herself", "him", "himself", "his", "how", "its",
+    "itself", "just", "may", "might", "more", "most", "must",
+    "off", "once", "only", "other", "our", "ours", "out", "over",
+    "own", "same", "she", "should", "some", "such", "than",
+    "that", "their", "theirs", "them", "themselves", "then",
+    "there", "these", "this", "those", "through", "too", "under",
+    "until", "very", "was", "were", "what", "when", "where",
+    "which", "while", "who", "whom", "why", "will", "would",
+    "you", "your", "yours", "yourself", "also", "because",
+    "become", "becomes", "became", "per", "via", "one", "two",
+    "get", "got", "make", "made", "like", "way", "thing",
+    "things", "much", "many", "well", "back", "even", "still",
+})
+
+
+def content_tokens(text: str) -> Set[str]:
+    """Canonical token set with stopwords removed — the set a
+    PAIR COMPARISON should see. A text of only stopwords yields
+    the empty set (no content = no basis for comparison)."""
+    return tokens(text) - STOPWORDS
+
+
+def content_tokens_of(label: str, words: str) -> Set[str]:
+    """content_tokens() over a unit's label + words."""
+    return content_tokens(f"{label} {words}")
