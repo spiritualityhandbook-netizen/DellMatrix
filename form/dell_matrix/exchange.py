@@ -28,6 +28,18 @@ strictly at the boundary (validate_packet — closed shape,
 bounded, JSON data only, never evaluated), screened against
 the receiver's protected values at import, and displayed by
 lint at the gate.
+
+Director completion order (2026-10-28) residual repair: the
+imported seed's ORIGINAL payload — label, chain, Keep and the
+manifest's declared requirements — is preserved as validated
+durable data in the ``exchange_seeds`` section, associated
+with the imported proposal. The Nursery proposal's detail is
+a human review RENDERING derived from that payload, never its
+source: export reads the stored original, so a packet survives
+A→B→C with its seed and requirements byte-identical. (The
+defect this repairs: export sourced the Keep from the
+formatted, bounded detail — prefix added, tail clipped — and
+chain/requirements were never stored at all.)
 """
 
 from __future__ import annotations
@@ -101,9 +113,12 @@ def validate_packet(data: Any) -> Dict[str, Any]:
         "label": _str(seed["label"], 120, "seed.label"),
         "chain": _str(seed["chain"], 4000, "seed.chain"),
         # Director review repair (2026-10-28): the keep bound is
-        # 2000, aligned with the Nursery detail bound — build_packet
-        # sources keep from Proposal.detail (<=2000), so a 1000
+        # 2000, aligned with the Nursery detail bound, so a 1000
         # bound made re-export of legitimately-kept ideas fail.
+        # Imported Keeps are additionally preserved verbatim in
+        # the exchange_seeds payload store (completion-order
+        # residual repair) — export never re-derives them from
+        # the rendered detail.
         "keep": _str(seed["keep"], 2000, "seed.keep"),
     }
     if not seed["label"]:
@@ -157,33 +172,62 @@ def lint_packet(packet: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def build_packet(program: Any, pid: str, *, chain: str = "",
+def build_packet(program: Any, pid: str, *, chain=None,
                  receipts=None,
                  requirements=None) -> Dict[str, Any]:
     """Assemble a packet for one of the program's proposals.
-    Receipts default to the ones recorded against the proposal
-    (record_receipt); an explicit list overrides."""
+
+    For an IMPORTED proposal the seed and manifest come from
+    the stored original payload (record_seed_payload) — never
+    from the proposal's rendered detail — so re-export is
+    byte-identical to what was imported. For a native proposal
+    the seed is the proposal itself (keep = detail or words).
+
+    Overrides are explicit: passing chain / receipts /
+    requirements replaces the corresponding field deliberately;
+    leaving one as None inherits the stored original (imported)
+    or the native default. There is no silent default that
+    erases an import."""
     prop = program.nursery.proposals.get(pid)
     if prop is None:
         raise ExchangeError(f"unknown proposal {pid}")
+    stored = seed_payload_for(program, pid)
     if receipts is None:
         receipts = [
             {k: e[k] for k in RECEIPT_KEYS}
             for e in receipts_for(program, pid)]
-    packet = {
-        "version": PACKET_VERSION,
-        "seed": {
+    if stored is not None:
+        seed = {
+            "label": stored["label"],
+            "chain": stored["chain"] if chain is None else chain,
+            "keep": stored["keep"],
+        }
+        manifest = {
+            "author_origin": stored["author_origin"],
+            "created": stored["created"],
+            "registry": stored["registry"],
+            "requirements": (list(stored["requirements"])
+                             if requirements is None
+                             else list(requirements)),
+        }
+    else:
+        seed = {
             "label": prop.label,
-            "chain": chain,
+            "chain": "" if chain is None else chain,
             "keep": prop.detail or prop.words,
-        },
-        "manifest": {
+        }
+        manifest = {
             "author_origin": prop.origin or f"host:{program.owner}",
             "created": time.strftime(
                 "%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "registry": REGISTRY_STAMP,
-            "requirements": list(requirements or []),
-        },
+            "requirements": (list(requirements)
+                             if requirements is not None else []),
+        }
+    packet = {
+        "version": PACKET_VERSION,
+        "seed": seed,
+        "manifest": manifest,
         "receipts": list(receipts),
     }
     return validate_packet(packet)
@@ -256,6 +300,17 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         raise ExchangeError(
             f"import landed proposal {prop.id} but receipt "
+            f"recording failed: {type(e).__name__}") from e
+    # Director completion order residual repair (2026-10-28):
+    # preserve the packet's ORIGINAL seed payload + declared
+    # requirements as durable data under the imported proposal.
+    # The detail above is only a rendering of it; export reads
+    # this record, so the seed survives re-export byte-exact.
+    try:
+        record_seed_payload(program, prop.id, packet)
+    except Exception as e:
+        raise ExchangeError(
+            f"import landed proposal {prop.id} but seed payload "
             f"recording failed: {type(e).__name__}") from e
     return {"ok": True, "pid": prop.id, "lint": lint,
             "origin": origin}
@@ -346,3 +401,122 @@ def receipts_for(program: Any, pid: str) -> List[Dict[str, Any]]:
                        or {}).values() if e.get("pid") == pid]
     out.sort(key=lambda e: e.get("ts", ""))
     return out
+
+
+# --------------------------------- imported seed payload section
+# The original seed + manifest of an imported packet, preserved
+# verbatim as durable data (Director completion order residual
+# repair). One record per imported proposal. The Nursery detail
+# is a rendering OF this record, never its source.
+
+_SEED_ENTRY_KEYS = frozenset({
+    "entry_id", "owner", "ts", "pid", "label", "chain", "keep",
+    "author_origin", "created", "registry", "requirements"})
+
+EXCHANGE_SEEDS_SECTION_VERSION = 1
+_MAX_SEED_ENTRIES = 200
+
+
+def _validate_seed_entry(entry: Any, owner: str
+                         ) -> Tuple[bool, str]:
+    if not isinstance(entry, dict):
+        return False, "entry not an object"
+    if set(entry.keys()) != _SEED_ENTRY_KEYS:
+        return False, "entry keys mismatch"
+    if entry["owner"] != owner:
+        return False, "entry owner mismatch"
+    for k, limit in (("entry_id", 64), ("ts", 32), ("pid", 120),
+                     ("label", 120), ("chain", 4000),
+                     ("keep", 2000), ("author_origin", 200),
+                     ("created", 32), ("registry", 40)):
+        v = entry[k]
+        if not isinstance(v, str) or len(v) > limit:
+            return False, f"{k} invalid"
+    if not entry["entry_id"] or not entry["pid"] \
+            or not entry["label"] or not entry["author_origin"]:
+        return False, "entry identity fields must be non-empty"
+    reqs = entry["requirements"]
+    if not isinstance(reqs, list) or len(reqs) > 8 or any(
+            not isinstance(x, str) or len(x) > 120 for x in reqs):
+        return False, "requirements invalid"
+    return True, ""
+
+
+def validate_seeds_section(raw: Any, owner: str):
+    """Validate a persisted exchange_seeds section. Never
+    raises."""
+    return validate_records_section(
+        raw, version=EXCHANGE_SEEDS_SECTION_VERSION,
+        kind="entries",
+        validate_rec=lambda rec: _validate_seed_entry(rec, owner),
+        id_field="entry_id", max_keep=_MAX_SEED_ENTRIES,
+        sort_field="ts", key_not_string="entry key not a string",
+        mismatch="entry key/ID mismatch")
+
+
+def serialize_seeds_section(entries: Any, malformed: Any,
+                            owner: str) -> Dict[str, Any]:
+    """Serialize imported seed payloads with the strict schema.
+    Never raises."""
+    return serialize_records_section(
+        entries, malformed,
+        version=EXCHANGE_SEEDS_SECTION_VERSION, kind="entries",
+        validate_rec=lambda rec: _validate_seed_entry(rec, owner),
+        id_field="entry_id", max_keep=_MAX_SEED_ENTRIES,
+        sort_field="ts", key_not_string="entry key not a string",
+        mismatch="not serialized as valid: key/ID mismatch")
+
+
+def record_seed_payload(program: Any, pid: str,
+                        packet: Dict[str, Any]) -> Dict[str, Any]:
+    """Preserve an imported packet's original seed + manifest
+    under the landed proposal. `packet` must already be
+    validated (import_packet validates at the boundary).
+    Persisted (best-effort save, the receipts discipline)."""
+    if pid not in program.nursery.proposals:
+        raise ExchangeError(f"unknown proposal {pid}")
+    seed, man = packet["seed"], packet["manifest"]
+    entry = {
+        "entry_id": uuid.uuid4().hex,
+        "owner": program.owner,
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "pid": pid,
+        "label": seed["label"],
+        "chain": seed["chain"],
+        "keep": seed["keep"],
+        "author_origin": man["author_origin"],
+        "created": man["created"],
+        "registry": man["registry"],
+        "requirements": list(man["requirements"]),
+    }
+    ok, why = _validate_seed_entry(entry, program.owner)
+    if not ok:
+        raise ExchangeError(f"seed payload invalid: {why}")
+    entries = getattr(program, "exchange_seeds", None)
+    if entries is None:
+        entries = {}
+        program.exchange_seeds = entries
+    entries[entry["entry_id"]] = entry
+    while len(entries) > _MAX_SEED_ENTRIES:
+        entries.pop(next(iter(entries)))
+    try:
+        program.save()
+    except Exception:
+        pass
+    return entry
+
+
+def seed_payload_for(program: Any, pid: str
+                     ) -> Any:
+    """The stored original payload for an imported proposal,
+    or None for a native proposal (or a pre-repair import,
+    whose original payload no longer exists — export then
+    falls back to the legacy detail rendering, as before)."""
+    best = None
+    for e in (getattr(program, "exchange_seeds", None)
+              or {}).values():
+        if e.get("pid") == pid:
+            if best is None or (e.get("ts") or "") >= \
+                    (best.get("ts") or ""):
+                best = e
+    return best

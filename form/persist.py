@@ -128,6 +128,8 @@ def serialize(program: Program) -> Dict[str, Any]:
         serialize_section as serialize_design_loop_section)
     from form.dell_matrix.exchange import (
         serialize_receipts_section as serialize_exchange_section)
+    from form.dell_matrix.exchange import (
+        serialize_seeds_section as serialize_exchange_seeds_section)
     sync_all_agents_to_program(program)
     from form.mandell.language import dump_language, language_of
     lang = language_of(program)
@@ -337,6 +339,15 @@ def serialize(program: Program) -> Dict[str, Any]:
         "exchange_receipts": serialize_exchange_section(
             getattr(program, "exchange_receipts", None),
             getattr(program, "exchange_receipts_malformed", None),
+            program.owner,
+        ),
+        # Completion-order residual repair: imported seed
+        # payloads (the original label/chain/Keep/requirements a
+        # packet arrived with; export reads these, not the
+        # rendered proposal detail).
+        "exchange_seeds": serialize_exchange_seeds_section(
+            getattr(program, "exchange_seeds", None),
+            getattr(program, "exchange_seeds_malformed", None),
             program.owner,
         ),
         # TPP-I: Temporal Presence Projection (NBD-Ω-048).

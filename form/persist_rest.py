@@ -623,6 +623,14 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         data.get("exchange_receipts", _EX_MISSING), p.owner)
     p.exchange_receipts = exentries
     p.exchange_receipts_malformed = exmalformed
+    # Completion-order residual repair: restore imported seed
+    # payloads (originals that export must reproduce exactly).
+    from form.dell_matrix.exchange import (
+        validate_seeds_section as validate_exchange_seeds_section)
+    xsentries, xsmalformed = validate_exchange_seeds_section(
+        data.get("exchange_seeds", _EX_MISSING), p.owner)
+    p.exchange_seeds = xsentries
+    p.exchange_seeds_malformed = xsmalformed
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
     try:
         lc_data = data.get("lifecycle")
@@ -801,6 +809,7 @@ DURABLE_KEYS = (
     "bimo_configurations", "connection_sessions", "dock_sessions",
     "director_records", "design_loop",
     "director_records", "exchange_receipts", "unknowns",
+    "exchange_seeds",
 )
 
 
