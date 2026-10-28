@@ -51,7 +51,8 @@ class DirectorSession:
     """Host-bound scoped Director endpoint. Created ONLY by the
     trusted host via bind_director()."""
 
-    __slots__ = ("_session", "_program", "_subject", "_scope_owner")
+    __slots__ = ("_session", "_program", "_subject", "_scope_owner",
+                 "_closed")
 
     def __init__(self, docked_session: Any, *, scope_owner: str):
         from form.dell_matrix.inference_dock import DockedSession
@@ -73,6 +74,7 @@ class DirectorSession:
         object.__setattr__(self, "_program", program)
         object.__setattr__(self, "_subject", subject)
         object.__setattr__(self, "_scope_owner", scope_owner)
+        object.__setattr__(self, "_closed", False)
 
     # -- read-only identity -------------------------------------------
     @property
@@ -88,6 +90,19 @@ class DirectorSession:
         return self._session.session_id
 
     # -- internal helpers ----------------------------------------------
+    def _is_closed(self) -> bool:
+        """Director review repair (2026-10-28): the endpoint dies
+        with its dock. Closed when this session undocked OR the
+        wrapped docked session was undocked by any other path."""
+        return bool(self._closed) or not self._session.is_docked
+
+    def _closed_refusal(self, pid: Any = "") -> Dict[str, Any]:
+        """Refusal for a closed session. Deliberately NOT recorded:
+        after undock the endpoint performs no reads and no writes,
+        not even refusal records."""
+        return {"ok": False, "reason": "session_closed",
+                "pid": pid if isinstance(pid, str) else ""}
+
     def _record(self, kind: str, *, pid: str = "", decision: str = "",
                 reason: str = "", note: str = "") -> Dict[str, Any]:
         entry = _records.new_entry(
@@ -129,12 +144,17 @@ class DirectorSession:
         """The scoped field snapshot (the wrapped session's
         coordinator snapshot over the SCOPE program only).
         Proposals are under "ideas", plane units under "units"
-        (the coordinator's key contract)."""
+        (the coordinator's key contract). A closed session reads
+        nothing and returns the empty snapshot."""
+        if self._is_closed():
+            return {}
         return self._session.field_snapshot() or {}
 
     def review(self, pid: str) -> Dict[str, Any]:
         """Read one in-scope proposal. Out-of-scope is refused and
         recorded."""
+        if self._is_closed():
+            return self._closed_refusal(pid)
         found = self._find_proposal(pid)
         if found is None:
             return self._refuse(pid, "out_of_scope")
@@ -146,6 +166,8 @@ class DirectorSession:
         confirms, rejects, or otherwise changes the proposal: the
         human gate decides, reading this as advice with
         provenance."""
+        if self._is_closed():
+            return self._closed_refusal(pid)
         if decision not in _records.DECISIONS:
             return self._refuse(pid, "invalid_decision")
         if not isinstance(reason, str) or not reason.strip():
@@ -166,6 +188,8 @@ class DirectorSession:
     def request_evidence(self, pid: str, what: str) -> Dict[str, Any]:
         """Record a request for more evidence about an in-scope
         proposal."""
+        if self._is_closed():
+            return self._closed_refusal(pid)
         if not isinstance(what, str) or not what.strip():
             return self._refuse(pid, "note_required")
         if len(what) > MAX_REASON_CHARS:
@@ -180,6 +204,8 @@ class DirectorSession:
         """File a directive as a PENDING proposal through the
         wrapped docked session, and record the link. The proposal
         carries the dock's provenance; it has no authority."""
+        if self._is_closed():
+            return self._closed_refusal("")
         out = self._session.propose(text, reason=reason or None)
         if not out.get("ok"):
             return out
@@ -191,7 +217,13 @@ class DirectorSession:
                 "model": out.get("model")}
 
     def undock(self) -> Dict[str, Any]:
-        return self._session.undock()
+        """Close the endpoint and the wrapped dock. Idempotent;
+        after this every allowlist method refuses (session_closed)
+        and nothing is read or written."""
+        if not self._closed:
+            object.__setattr__(self, "_closed", True)
+            self._session.undock()
+        return {"ok": True, "effect": "undocked"}
 
 
 def bind_director(program: Any, *, provider: str = "fake",

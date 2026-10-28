@@ -682,6 +682,7 @@ class DockedSession:
             from form.dell_matrix import dock_session as _ds
             if self._evidence.get("closed") is None:
                 _ds.close_record(self._evidence)
+                self._persist_state()
         except Exception:
             pass
         if self._snap_name:
@@ -885,6 +886,20 @@ class DockedSession:
             _origin_segment(self._provider_name, 24),
             _origin_segment(actual_model or self._model_label, 44))
 
+    def _persist_state(self) -> None:
+        """Best-effort durability for session evidence (Director
+        review repair, 2026-10-28): the Nursery autosaves a landed
+        proposal immediately, so the evidence that gives it meaning
+        must reach disk in the same moment — not only after a later
+        explicit Program.save(). Mirrors design_loop.record_event's
+        best-effort save. Failure never unwrites a proposal."""
+        try:
+            save = getattr(self._program, "save", None)
+            if callable(save):
+                save()
+        except Exception:
+            pass
+
     def _record_evidence(self, prop, *, task, prompt_text,
                          snapshot_id, actual_model) -> None:
         """SD-1 session evidence: link a landed proposal to this
@@ -906,6 +921,7 @@ class DockedSession:
                 "snapshot_id": snapshot_id,
                 "model": str(actual_model or self._model_label)[:120],
             })
+            self._persist_state()
         except Exception:
             pass
 
@@ -929,8 +945,11 @@ class DockedSession:
 
     def field_snapshot(self):
         """The canonical field snapshot for this session's subject,
-        or None when the host wired no coordinator (or it failed).
-        Bounded, detached, outward-sanitized by the coordinator."""
+        or None when the host wired no coordinator (or it failed),
+        or the session has undocked (Director review repair,
+        2026-10-28: an undocked session reads nothing)."""
+        if not self._docked:
+            return None
         coord = self._coordinator
         if coord is None:
             return None
@@ -1202,6 +1221,10 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
                 f"snap registration rejected: {result.reason}")
         object.__setattr__(session, "_snap_name", snap_name)
         session._evidence["snap_name"] = snap_name
+        # Director review repair (2026-10-28): the session record is
+        # durable from the moment the dock succeeds — a host that
+        # exits without an explicit save must not lose it.
+        session._persist_state()
     # SD-2 production activation: wire the canonical field-snapshot
     # coordinator and register this subject, so the session's
     # semantic verbs work from coordinator.snapshot_for. This is
