@@ -157,6 +157,9 @@ LIST = [
     # Master plan P11 — satellite disposition guards (sandbox
     # matrices retired per Ace's ruling; useful survivors live).
     "form.mandell.p11_satellites_test",
+    # Master plan P12 — final closure guards (registry truth,
+    # limitation honesty, README anchor, audit reconciliation).
+    "form.mandell.p12_closure_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",

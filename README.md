@@ -27,15 +27,17 @@ DellMatrix lets you create ideas, grow them into proposals, confirm the ones wor
 
 ## 2. Status
 
-**Production main:** `2f98844` (2026-10-26, post PR #106 merge — README Completion Program Phase N).
+**Production main:** `c6fd2fb` (2026-10-27, post PR #119 merge — Ten-Phase Master Plan P11).
 **Phase 5:** MERGED to production via PR #79 (merge `ea9b76a`); Director admission PASS.
 **Phase 6:** R6.1–R6.5 MERGED/CLOSED.
 **Phase 7:** R7.1 MERGED via PR #85 (Director admission PASS); R7.2–R7.7 MERGED via PRs #87–#92 (independent/Director certification outstanding — merged is not certified).
 **Post-GDP capability phases A–E:** MERGED via PRs #95–#99 (dock transport, interaction lookup, InternetGate hardening, KIE routability, action provenance).
-**README Completion Program H–N:** MERGED via PRs #100–#106 (lineage by label, resonance commands, DuoBeta cross-session, Spanish/French, launchers, projects, visual UX).
+**README Completion Program H–O:** MERGED via PRs #100–#107 (lineage by label, resonance commands, DuoBeta cross-session, Spanish/French, launchers, projects, visual UX, README truth reconciliation).
+**Phase F (replication):** MERGED via PR #108 — `form.regress --passk ENTRY K` re-runs a suite K times on fresh tree copies; green only at k/k.
+**Ten-Phase Master Plan P1–P11:** MERGED via PRs #109–#119 (dedup + baseline closure, evidence integrity, surface wiring, the semantic-docking program SD-1..SD-5 as P4–P8, Exchange v1 as P9, flow-grammar conformance as P10, satellite disposition as P11). P12 (final audit + closure) is the remaining phase. Independent/Director certification of P1–P11 is outstanding — merged is not certified.
 
-All §2 claims below were verified on or before production main `2f98844`
-(2026-10-26) unless labeled otherwise. Walkthroughs originally executed on `f3c9007`
+All §2 claims below were verified on or before production main `c6fd2fb`
+(2026-10-27) unless labeled otherwise. Walkthroughs originally executed on `f3c9007`
 (2026-10-04) are retained as dated historical evidence where noted.
 Phase-5 behaviors (§6.7) are production behavior as of `ea9b76a`.
 
@@ -69,6 +71,14 @@ Phase-5 behaviors (§6.7) are production behavior as of `ea9b76a`.
 | InternetGate posture | **WORKING / VERIFIED** | Auto-enable hardened off by default; external access fails closed (Phase C, PR #97) |
 | Windows/Mac launchers | **PARTIAL (split)** | Mac `Launch DellMatrix.command`: **VERIFIED** — executed end-to-end in a terminal; executable bit fixed (Phase L, PR #104). Windows `Launch DellMatrix.bat`: present and structurally verified; NOT executed (no Windows environment available) |
 | Spanish/French commands | **WORKING / VERIFIED** | `es`/`spanish` and `fr`/`french` run the core loop; language maps at exact parity (41 intents each); unmapped phrases answer honestly and execute nothing (Phase K, PR #103) |
+| Dock provenance (SD-1) | **WORKING / VERIFIED** | Every docked proposal carries a full origin stamp (`dock:<subject>:<provider>:<model>`), a non-empty reason, its session's task kind, and a persisted dock-session evidence record (prompt hash, context snapshot hash) shown at review (P4, PR #112; `p4_sd1_test` 19/19) |
+| Semantic verbs (SD-2) | **WORKING / VERIFIED** | A docked AI can `relate`, `synthesize` (authored detail/goals from both parents — confirmed crosses no longer inherit only the first parent's content), and `flag`, plus read a redacted `field_snapshot`; every judgment lands as a PENDING proposal under the human gate (P5, PR #113; `p5_sd2_test` 24/24) |
+| Docked growth (SD-3) | **WORKING / VERIFIED** | In connect mode, `grow` routes Solstice pair crosses through the docked AI's synthesize; token composition is the labeled fallback (`growth:token` origin) and drift stays token machinery (P6, PR #114; `p6_sd3_test` 10/10) |
+| Scoped Director dock (SD-4) | **WORKING / VERIFIED** | A Director bound to one scope can review, recommend, request evidence, and file directive proposals; its accept is a recorded **recommendation, never a confirmation** — proposal status is never changed by it; out-of-scope access is refused and the refusal is recorded (P7, PR #115; `p7_sd4_test` 17/17) |
+| Inside-out design loop (SD-5) | **WORKING / VERIFIED** | Docked AIs file `kind=design` proposals; the loop ledger (`design_loop` section) assembles the full chain per proposal — filed → Director recommendation → human gate → implemented (PR + merge SHA) — and the REPL review surface prints Director recommendations under proposals (P8, PR #116; `p8_sd5_test` 12/12; the first full loop turn shipped in PR #116 itself) |
+| Exchange v1 | **WORKING / VERIFIED** | `exchange export <id> <file>` / `exchange import <file>`: seed packets carry receipts (guess/test/mirror/outcome); chain lint labels missing links precisely; import lands PENDING under the receiver's own gate with replication counted, never scored; authority keys in a packet are refused at the boundary (P9, PR #117; `p9_exchange_test` 11/11, cross-process two-owner proof) |
+| Flow grammar | **WORKING / VERIFIED** | All nine flow operators (`> >> >>> : :: :> <: <:> <<[Delta]`) execute with the canonical chain semantics at the public REPL path — the parsed set, the contract set, and the executable set are the same set (P10, PR #118; `p10_flow_grammar_test` 12/12) |
+| Regression suite | **WORKING / VERIFIED** | `python3 -m form.regress` runs 159 registered suites; the master-plan phases each added their proof suite (159/159 green at `c6fd2fb`, forward / twice / reverse) |
 
 ---
 
@@ -120,7 +130,7 @@ flowchart TD
 
 The nursery tracks proposal status (`pending` → `confirmed`). The plane holds confirmed Ideas as spatial units. On `save`, both are written to disk. On restart, `load` restores state from the disk files.
 
-**Crash recovery (MERGED via PR #77, 2026-10-05):** If the process crashes mid-confirmation, the intent-journal recovery mechanism converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state). This is production behavior on current main `2f98844` (mechanism unchanged since PR #77).
+**Crash recovery (MERGED via PR #77, 2026-10-05):** If the process crashes mid-confirmation, the intent-journal recovery mechanism converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state). This is production behavior on current main `c6fd2fb` (mechanism unchanged since PR #77).
 
 ---
 
@@ -165,8 +175,14 @@ You'll see a banner and a `you>` prompt. Type `tutorial` for a guided walkthroug
 | Supersede (API) | `supersede_proposal(p, old_id, ...)` | New revision; old marked superseded | `form/mandell/supersession.py` | API and REPL both verified with genuine ID |
 | Outcomes | `outcomes` | Honest empty ("No outcomes recorded") or list | `form/repl.py` | Walkthrough verified |
 | Compose perspectives | `compose_views(program, [(viewer, mode), ...])` | Unified read-only view; each component attributed with viewer/mode/status | `form/dell_matrix/perspective_views.py` | R7.1 52/52, MERGED |
+| Dock + semantic verbs | `connect` mode `ask`; API `DockedSession.propose/relate/synthesize/flag` | PENDING proposals with origin stamps, reasons, and persisted dock-session evidence | `form/dell_matrix/inference_dock.py`, `form/dell_matrix/dock_session.py` | `p4_sd1_test`, `p5_sd2_test` |
+| Director review | API `bind_director_endpoint`; shown in `proposals` review | Scoped recommendations recorded (never confirmations); printed under the proposal at human review | `form/dell_matrix/director_session.py`, `form/dell_matrix/design_loop.py` | `p7_sd4_test`, `p8_sd5_test` |
+| Exchange | `exchange export <id> <file>`, `exchange import <file>` | Packet file with receipts; import lands PENDING with replication counts + lint labels | `form/dell_matrix/exchange.py` | `p9_exchange_test` |
+| Flow chains | Seed lines with any of the 9 flow operators | Canonical chain semantics (gating, skip-to-Join, context/route binding, delta checkpoints) | `form/mandell/chain_exec.py`, `form/mandell/control_runtime.py` | `p10_flow_grammar_test`, `cac_i_test` K |
 
-> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call. Historical walkthroughs (2026-10-04) ran on SHA `f3c9007`; current production is main `2f98844` (2026-10-26).
+> Removed in the master plan (recorded, not silently): the `form/trading/` sandbox package, the `network_main`/`shared_main` sync island, and `plant_to_dev` (P11, PR #119); a dormant free-matrix cluster (P8, PR #116). `form/ancient/` is archived in place with a pointer README.
+
+> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call. Historical walkthroughs (2026-10-04) ran on SHA `f3c9007`; current production is main `c6fd2fb` (2026-10-27).
 
 ---
 
