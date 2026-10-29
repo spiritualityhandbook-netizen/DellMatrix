@@ -201,8 +201,12 @@ _register(OperatorSignature(
         Role(name="predicate", type="string", required=False,
              description="Selection predicate (empty selects all)"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:18-21",
-    output="Sets st.selected to matching IDs; publishes to last_result",
+    derived_from="form/mandell/query_ops.py:apply_query:14-18",
+    output="Sets st.selected to matching IDs; publishes to last_result. "
+           "Select never fails: an empty match is a successful empty "
+           "selection (matched=False, count=0). The scope printed in "
+           "its message is state recorded by Dell 53, not a filter — "
+           "the universe is always the whole plane",
     failures="None established (empty predicate selects all)",
 ))
 # Existing encoding: lab = predicate (or "" for all)

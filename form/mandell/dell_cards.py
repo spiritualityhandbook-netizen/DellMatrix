@@ -102,6 +102,22 @@ DEEP_NOTES: Dict[int, str] = {
          "law; English patch is blocked_with_reason; patches "
          "persist. This closes the store-mutation cluster "
          "84-88."),
+    51: ("Deep contract proven (D1 circuit 9, "
+         "d1_dell51_select_test): the universe is the whole "
+         "plane (program.cube.session.plane.units, insertion "
+         "order; a fresh plane already holds 'welcome'); no "
+         "predicate selects all, a predicate filters by "
+         "case-insensitive substring OR underscore-prefix "
+         "(a spaced predicate matches the underscored id by "
+         "prefix); Select REPLACES the selection, never "
+         "appends, and NEVER FAILS — a no-match predicate is "
+         "a successful empty selection (matched=False, "
+         "count=0); the scope in its message is a label "
+         "recorded by Dell 53, NOT a filter — the universe "
+         "stays the whole plane (pinned as-is; scoping "
+         "semantics are an architecture decision); English "
+         "select routes and executes (not blocked); the "
+         "selection persists."),
 }
 
 
