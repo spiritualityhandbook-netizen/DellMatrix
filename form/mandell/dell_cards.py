@@ -76,6 +76,18 @@ DEEP_NOTES: Dict[int, str] = {
          "blocked_with_reason (operand-confirmation policy) at "
          "the route and at the REPL, and negated English never "
          "becomes a delete intent; deletions persist."),
+    87: ("Deep contract proven (D1 circuit 7, "
+         "d1_dell87_replace_test): identity rename old>new; an "
+         "occupied destination REFUSES (replace_occupied:{new}, "
+         "zero mutation — the MPC-012 §0 / MPC-011 J-decision in "
+         "the executor's comment; the deliberate contrast with "
+         "Dell 85 Move, which overwrites); replace_missing:{old} "
+         "for an absent source (bare form: replace_missing:); "
+         "empty new and new == old are no-op successes; "
+         "signature failures text + derived_from range synced "
+         "to the code in the same circuit (the refusal was "
+         "missing from the signature); English replace is "
+         "blocked_with_reason; renames persist."),
 }
 
 
