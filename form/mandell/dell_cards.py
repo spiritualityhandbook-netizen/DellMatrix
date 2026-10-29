@@ -163,6 +163,19 @@ DEEP_NOTES: Dict[int, str] = {
          "51's selection and last_result reads any previous "
          "Dell's cell, both proven live; no English surface "
          "('compare...' becomes the Dell 9 question intent)."),
+    58: ("Deep contract proven (D1 circuit 13, "
+         "d1_dell58_match_test): DESTRUCTIVE narrowing of "
+         "the selection by pattern (the dual of Dell 54's "
+         "read-only search); chained Matches intersect; "
+         "empty pattern is the identity; Match never fails; "
+         "matched carries the list (as 54); DIVERGENCE "
+         "PINNED: Match uses a raw lowercase substring, NOT "
+         "the shared predicate engine — the spaced pattern "
+         "'garden gate' matches [garden_gate] under Select "
+         "but NOTHING under Match (' ' != '_'); same text, "
+         "two engines, different answers — recorded for the "
+         "Director as a unification decision; no English "
+         "surface; the narrowed selection persists."),
 }
 
 
