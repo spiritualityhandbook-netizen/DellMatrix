@@ -67,8 +67,11 @@ def _register(sig: OperatorSignature) -> None:
 
 # Dell 8 (Create) — derived from executor_leaf.py:place_idea
 # def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
-#     uid = name.replace(" ", "_")[:24] or "idea"
+#     uid = unique_unit_id(units, name)  # canonical slug + dedup
 #     program.place(uid, name.replace("_", " "), words=name, skin=skin)
+# slug rules live in form/idea_create.py (slug_id: lowercase,
+# non-alnum runs -> "_", 40-char cap, fallback "idea";
+# unique_unit_id suffixes _1, _2, ... on collision).
 _register(OperatorSignature(
     dell=8,
     name="Create",
@@ -79,9 +82,21 @@ _register(OperatorSignature(
              description="Visual skin for the idea",
              values=["CUBE", "SPHERE", "UNKNOWN"]),  # Skin enum values from code
     ],
-    derived_from="form/mandell/executor_leaf.py:place_idea",
-    output="Creates idea with uid, name, words, skin",
-    failures="UNKNOWN",
+    derived_from="form/mandell/executor_leaf.py:place_idea:53-64",
+    output="Creates a plane unit: id = canonical slug of the "
+           "name (form/idea_create.slug_id), collision-deduped "
+           "(_1, _2, ...) — an existing unit is never "
+           "overwritten; label = name with '_' -> ' ', "
+           "words = the name as passed. Skin is NOT set from "
+           "the typed role: created units always carry "
+           "Skin.CUBE (see failures).",
+    failures="ARGUMENT_CONFLICT (typed name vs a differing "
+             "legacy label); MISSING_REQUIRED: name; "
+             "UNKNOWN_ROLE. SKIN ROLE UNENFORCED (D1 circuit "
+             "15 exhibit): validate() checks no enum values "
+             "and the executor arm never passes skin to "
+             "place_idea, so skin='SPHERE' and even "
+             "skin='TRIANGLE' are accepted and ignored.",
 ))
 
 

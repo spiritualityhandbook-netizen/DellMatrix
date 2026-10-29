@@ -163,6 +163,26 @@ DEEP_NOTES: Dict[int, str] = {
          "51's selection and last_result reads any previous "
          "Dell's cell, both proven live; no English surface "
          "('compare...' becomes the Dell 9 question intent)."),
+    8: (
+        "D1 circuit 15 DEEP NOTE: Create mints plane units "
+        "through the leaf executor's place_idea with the "
+        "canonical slug (lowercase, non-alnum runs to '_', "
+        "40-char cap, fallback 'idea') and collision DEDUP "
+        "(_1, _2, ...) — an existing unit is never "
+        "overwritten; label is the name with '_' -> ' ', "
+        "words is the name as passed. Typed law: name "
+        "required, label/name conflicts fail with "
+        "ARGUMENT_CONFLICT. EXHIBIT: the SKIN role is "
+        "doubly unenforced — validate() checks no enum "
+        "values anywhere (skin is the registry's only enum "
+        "role) and the executor never passes skin, so every "
+        "created unit is Skin.CUBE whatever was asked. "
+        "Creation is in-memory until Dell 10 saves; "
+        "Program.load restores. In the REPL, English 'create "
+        "a garden' takes the strong-idea door: the whole "
+        "phrase becomes the name (id create_a_garden) with "
+        "a strength report; the typed-chain Mandell line "
+        "printed beside it is an echo, not the execution."),
     67: (
         "D1 circuit 14 DEEP NOTE: Any answers whether AT "
         "LEAST ONE selected id matches the shared predicate "
