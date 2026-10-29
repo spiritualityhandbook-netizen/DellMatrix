@@ -145,6 +145,8 @@ _register(OperatorSignature(
 # Dell 87 (Replace) — derived from spectrum_ops.py:apply_spectrum (n==87)
 #   old, _, new = lab.partition(">")
 #   if old not in st.store: ok=False, err=f"replace_missing:{old}"
+#   elif new and new != old and new in st.store:
+#       ok=False, err=f"replace_occupied:{new}"  (zero mutation)
 #   else: st.store[new or old] = st.store.pop(old)
 _register(OperatorSignature(
     dell=87,
@@ -155,9 +157,12 @@ _register(OperatorSignature(
         Role(name="new", type="string", required=False,
              description="New key (if empty, uses old — legacy no-op fallback)"),
     ],
-    derived_from="form/mandell/spectrum_ops.py:apply_spectrum:143-154",
-    output="Atomically substitutes st.store[old] with st.store[new or old]",
-    failures="replace_missing:{old} (old not in store)",
+    derived_from="form/mandell/spectrum_ops.py:apply_spectrum:176-207",
+    output="Renames st.store[old] to st.store[new or old] (identity "
+           "preserved); an occupied destination refuses with zero mutation",
+    failures="replace_missing:{old} (old not in store), "
+             "replace_occupied:{new} (destination occupied — refuses, "
+             "zero mutation)",
 ))
 # NOTE: Empty new → uses old (st.store[old] = st.store.pop(old), effectively no-op).
 # This is legacy fallback behavior, not meaningful optionality.
