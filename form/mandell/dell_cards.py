@@ -118,6 +118,21 @@ DEEP_NOTES: Dict[int, str] = {
          "semantics are an architecture decision); English "
          "select routes and executes (not blocked); the "
          "selection persists."),
+    54: ("Deep contract proven (D1 circuit 10, "
+         "d1_dell54_query_test): READ-ONLY search of the "
+         "current selection — the universe is st.selected "
+         "only, never the plane (an idea placed after the "
+         "Select is invisible); the selection is "
+         "byte-identical after any query (contrast Dell 58, "
+         "which rewrites it); matched carries the hits LIST "
+         "itself, not a bool (contrast Dell 51); confidence "
+         "is exactly 1.0 with hits, 0.0 without; Query never "
+         "fails (empty selection and no-match are valid "
+         "empty results); there is NO English surface — "
+         "'query garden' becomes the Dell 9 question intent "
+         "and is refused, 'find garden' goes to Dell 56; "
+         "the seed line and typed invocation are the only "
+         "paths."),
 }
 
 
