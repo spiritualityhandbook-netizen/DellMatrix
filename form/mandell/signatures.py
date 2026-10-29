@@ -222,8 +222,11 @@ _register(OperatorSignature(
         Role(name="predicate", type="string", required=False,
              description="Query predicate (empty queries all selected)"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:24-27",
-    output="Publishes matching IDs to last_result; st.selected unchanged",
+    derived_from="form/mandell/query_ops.py:apply_query:24-28",
+    output="Publishes matching IDs to last_result; st.selected unchanged. "
+           "The universe is the current selection only — never the "
+           "plane. matched carries the hits list itself (not a bool); "
+           "confidence is 1.0 when hits exist, else 0.0",
     failures="None established (empty result is valid)",
 ))
 # Existing encoding: lab = predicate (or "" for all)
