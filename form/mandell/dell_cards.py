@@ -37,6 +37,23 @@ from .registry import DELLS, get_dell
 from .signatures import get_signature
 
 
+# Deep-contract notes from D1 deepening circuits: one entry per
+# Dell whose full contract (arguments, outputs, failures, state,
+# persistence, English path) has been derived and proven beyond
+# this survey. Keyed by Dell number; text is evidence, kept short.
+DEEP_NOTES: Dict[int, str] = {
+    84: ("Deep contract proven (D1 circuit 4, "
+         "d1_dell84_copy_test): store[copy_<src>] = deepcopy of "
+         "the source; the destination is derived, never a caller "
+         "argument; a missing source copies the name string "
+         "itself; fallback order lab -> selected[0] -> \"object\"; "
+         "publishes last_result; copies persist across save/load; "
+         "English \"copy A\" routes its typed source through the "
+         "generalized route (router arg-loss defect found and "
+         "fixed in the same circuit)."),
+}
+
+
 def english_named_dells() -> set:
     """Dells translate() can name in an Intent (static scan of
     Intent returns — the circuit-1 measurement)."""
@@ -86,6 +103,7 @@ def build_card(n: int, owner: str, state_dir: str,
         "typed_signature": None,
         "english_named": n in named,
         "bare": {"outcome": "error", "error": "not probed"},
+        "deep_note": DEEP_NOTES.get(n, ""),
     }
     if sig is not None:
         card["typed_signature"] = {
@@ -177,4 +195,10 @@ def render_cards_md(cards: List[Dict[str, Any]]) -> str:
             f"- derived_from: {sig['derived_from']}",
             "",
         ]
+    noted = [c for c in cards if c.get("deep_note")]
+    if noted:
+        lines += ["## Deep-contract notes (D1 deepening circuits)", ""]
+        for c in noted:
+            lines += [f"### {c['dell']:02d}[{c['name']}]",
+                      f"- {c['deep_note']}", ""]
     return "\n".join(lines) + "\n"

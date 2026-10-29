@@ -562,6 +562,41 @@ def _route_generalized(program: Any, intent: Any, parsed: Any, action: str,
             messages=[], state_note="no state change (not routed)",
             error=f"Mandell parse failed: {seed.error}", new_program=None,
         )
+    # D1 circuit 4: typed arguments must survive this reconstruction.
+    # The rebuilt seed above carries only the label; without this step
+    # the atom's typed args (e.g. 84[Copy](source="A")) were silently
+    # dropped, and the executor fell back to defaults — for Copy that
+    # meant copying "object" instead of the requested source while the
+    # receipt reported success. Effective args: the original parsed
+    # atom's args for the resolved Dell (arguments as carried by the
+    # Mandell composition itself), else the Intent's argument dict
+    # FILTERED to the Dell's signature roles — Intent.args also
+    # carries non-role channels (e.g. "label", the seed-label
+    # channel, which the rebuilt seed already carries via :: label);
+    # sweeping those onto the atom makes chain_exec's validation
+    # reject the route (UNKNOWN_ROLE: label — SSI-I spine). Only
+    # signature roles may ride the typed channel. chain_exec
+    # validates the result and lowers it to the lab; an args/label
+    # mismatch fails there as ARGUMENT_CONFLICT rather than
+    # silently choosing.
+    _eff_args: Dict[str, str] = {}
+    for _atom in (getattr(parsed, "atoms", None) or []):
+        if getattr(_atom, "dell", None) == bres.dell and getattr(_atom, "args", None):
+            _eff_args = {str(k): str(v) for k, v in dict(_atom.args).items()}
+            break
+    if not _eff_args and arguments:
+        from .signatures import get_signature as _get_sig
+        _sig = _get_sig(bres.dell)
+        if _sig is not None:
+            _roles = {r.name for r in (_sig.roles or [])}
+            _eff_args = {str(k): str(v) for k, v in dict(arguments).items()
+                         if v is not None and str(k) in _roles}
+    if _eff_args and seed.atoms:
+        seed.atoms[0].args = dict(_eff_args)
+        _disp = ", ".join(
+            f'{k}="{v}"' for k, v in _eff_args.items())
+        seed_text = (f"{bres.dell:02d}[{bres.name}]({_disp})"
+                     + (f" :: {label}" if label else ""))
     try:
         out = execute_chain(program, seed, seed_text)
     except Exception as exc:  # fail safe: report, do not propagate
