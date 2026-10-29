@@ -81,11 +81,13 @@ def smoke() -> bool:
     _rec("flow_limitation_resolved",
          by_id["FLOW_PARTIAL_IMPLEMENTATION"]["status"]
          == "RESOLVED")
-    _rec("unverified_limitations_stay_marked_stale",
+    _rec("probed_limitations_carry_the_d1_probe_sha",
          by_id["ARGUMENT_LOSS"]["last_verified_against"]
-         .startswith("b4b7af19")
+         .startswith("eb3389c1")
          and by_id["ENGLISH_UNREACHABLE_OPERATION"]
-         ["last_verified_against"].startswith("b4b7af19"))
+         ["last_verified_against"].startswith("eb3389c1")
+         and os.path.exists(os.path.join(
+             root, "form", "mandell", "d1_stale_probes_test.py")))
 
     # --- README anchor ---
     readme = open(os.path.join(root, "README.md")).read()

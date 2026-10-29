@@ -5,39 +5,43 @@
 # P12 re-verification (2026-10-27, against c6fd2fb): FLOW_PARTIAL_
 # IMPLEMENTATION is RESOLVED (P10, PR #118). CONDITIONAL_SEMANTIC_LOSS
 # and LEGACY_ONLY_SIGNATURE were re-probed and keep their statuses
-# with refreshed evidence. ARGUMENT_LOSS and ENGLISH_UNREACHABLE_
-# OPERATION were NOT re-verified — no canonical probe reproduces
-# their original measurements — so their last_verified_against
-# deliberately stays at the old SHA; treat those two claims as
-# stale until a probe exists. Guarded by p12_closure_test.
+# with refreshed evidence.
+#
+# D1 re-verification (2026-10-28, against eb3389c): ARGUMENT_LOSS
+# and ENGLISH_UNREACHABLE_OPERATION now have a canonical probe —
+# form/mandell/d1_stale_probes_test.py reproduces both
+# measurements at exact current source and pins them; their
+# last_verified_against names the probe base. If translate.py
+# changes, the probe fails loudly: that failure is the
+# re-verification trigger. Guarded by p12_closure_test.
 
 LIMITATIONS = [
     {
         "id": "ARGUMENT_LOSS",
         "capability": "English translation",
         "limitation": "Multi-word arguments may lose case; translation lowercases",
-        "evidence": "copy A → source='a' (store has 'A')",
-        "cause": "translate() uses raw_lower for matching",
+        "evidence": "D1 probe (d1_stale_probes_test) at eb3389c: copy A → source='a'; copy My Field Notes → 'my field notes'; find-idea/trace labels lowercased; place path id/label lowercased. Loss is site-specific: the nurture path (add idea Test) preserves case.",
+        "cause": "translate() captures arguments from raw_lower at the losing sites instead of the raw text",
         "affected_path": "form/mandell/translate.py",
         "severity": "MEDIUM",
         "workaround": "Use lowercase keys or direct Mandell",
         "status": "KNOWN",
-        "last_verified_against": "b4b7af1904415b0765434aaef2c134181a7e8c9f",
-        "mitigation": "None yet",
+        "last_verified_against": "eb3389c122f301006b10fa770173ea08c2066d7d",
+        "mitigation": "None yet at the losing sites; the nurture path already captures case-preserved",
         "resolution": "Preserve case in argument extraction",
     },
     {
         "id": "ENGLISH_UNREACHABLE_OPERATION",
         "capability": "English → Dell",
         "limitation": "Many Dells lack English patterns",
-        "evidence": "Calculated at runtime via translate() coverage",
+        "evidence": "D1 probe (d1_stale_probes_test) at eb3389c: static Intent scan of translate() names 29 Dells; 71 of 100 have no Intent path in translate(); dynamic sample (84/86/87/35/9/37) routes as statically read. A separate action tier (save/checkpoint/grow/ledger) returns dell=None for the intent router — operational closure is a distinct dimension from named-Dell reachability.",
         "cause": "Patterns added incrementally, not systematically",
         "affected_path": "form/mandell/translate.py",
         "severity": "MEDIUM",
         "workaround": "Use direct Mandell syntax",
         "status": "IN_PROGRESS",
-        "last_verified_against": "b4b7af1904415b0765434aaef2c134181a7e8c9f",
-        "mitigation": "14 Dells now reachable via English",
+        "last_verified_against": "eb3389c122f301006b10fa770173ea08c2066d7d",
+        "mitigation": "29 Dells reachable by name via translate() (probe-measured at eb3389c; supersedes the earlier '14' figure, which counted typed signatures — a different evidence dimension)",
         "resolution": "Systematic English coverage",
     },
     {
