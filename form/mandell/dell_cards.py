@@ -148,6 +148,21 @@ DEEP_NOTES: Dict[int, str] = {
          "operand ('get A' reads 'a') — pinned at the route "
          "and in the literal REPL as the circuit-3 residual "
          "surfacing on the read path."),
+    57: ("Deep contract proven (D1 circuit 12, "
+         "d1_dell57_compare_test): typed comparison over "
+         "resolved operands (literals, store keys, count, "
+         "selected, last_result); a lab without an operator "
+         "head is rewritten to eq: of its first two tokens "
+         "(further tokens dropped); type_mismatch is the "
+         "ONE hard failure (the atom fails) while a missing "
+         "operand is soft (atom ok, cell error='missing'); "
+         "the cell carries a mode (number/string/boolean/"
+         "missing/type_mismatch); a bare Compare is vacuous "
+         "truth (empty == empty); Compare is the query "
+         "cluster's composition reader — count reads Dell "
+         "51's selection and last_result reads any previous "
+         "Dell's cell, both proven live; no English surface "
+         "('compare...' becomes the Dell 9 question intent)."),
 }
 
 
