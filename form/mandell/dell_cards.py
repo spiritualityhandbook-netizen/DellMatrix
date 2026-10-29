@@ -51,6 +51,19 @@ DEEP_NOTES: Dict[int, str] = {
          "English \"copy A\" routes its typed source through the "
          "generalized route (router arg-loss defect found and "
          "fixed in the same circuit)."),
+    85: ("Deep contract proven (D1 circuit 5, "
+         "d1_dell85_move_test): store[dest] = store.pop(src) — "
+         "the same object relocates (identity, not a copy); lab "
+         "is src>dest, partition on the first \">\"; an existing "
+         "destination is overwritten; dest == src is a named "
+         "no-op success (\"Move same identity\", fresh matched "
+         "result cell); failures malformed_move / move_missing "
+         "publish failure cells; NOT in the English blocked set "
+         "(86/87/88 are) — the English route executes \"move A "
+         "to B\" with its operands and the moved state persists; "
+         "at the REPL surface, however, the word \"move\" is "
+         "captured by avatar navigation, so the REPL user path "
+         "for 85 is the Mandell seed line."),
 }
 
 
