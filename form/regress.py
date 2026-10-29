@@ -180,6 +180,7 @@ LIST = [
     "form.mandell.d1_dell51_select_test",
     "form.mandell.d1_dell54_query_test",
     "form.mandell.d1_dell56_get_test",
+    "form.mandell.d1_dell57_compare_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",

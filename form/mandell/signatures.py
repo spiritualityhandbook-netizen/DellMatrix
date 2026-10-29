@@ -287,9 +287,17 @@ _register(OperatorSignature(
         Role(name="expression", type="string", required=True,
              description="Predicate expression (e.g., 'eq: x 5')"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:39-43",
-    output="Publishes comparison result to last_result",
-    failures="type_mismatch (incompatible types)",
+    derived_from="form/mandell/query_ops.py:apply_query:45-53",
+    output="Publishes comparison result to last_result (value = "
+           "the bool, plus a mode field: number / string / "
+           "boolean / missing / type_mismatch). Operands resolve "
+           "from literals, store keys (bare or store:), count "
+           "(the selection size), selected, context, and "
+           "last_result (the previous cell's matched)",
+    failures="type_mismatch (incompatible operand types — the "
+             "atom FAILS, ok=False); a missing operand is soft: "
+             "the atom stays ok=True and the cell carries "
+             "error=\"missing\"",
 ))
 # Existing encoding: lab = expression
 
