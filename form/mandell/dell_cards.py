@@ -163,6 +163,35 @@ DEEP_NOTES: Dict[int, str] = {
          "51's selection and last_result reads any previous "
          "Dell's cell, both proven live; no English surface "
          "('compare...' becomes the Dell 9 question intent)."),
+    67: (
+        "D1 circuit 14 DEEP NOTE: Any answers whether AT "
+        "LEAST ONE selected id matches the shared predicate "
+        "engine; value = matched = the hit, count = "
+        "selection size, source 'any'. On an empty selection "
+        "Any is False for every predicate; a bare predicate "
+        "on a non-empty selection is True, so bare Any reads "
+        "as 'is the selection non-empty'. Read-only. Dell 69 "
+        "is its exact De Morgan dual (proven in the 67/69 "
+        "suites). No English surface; typed form agrees."),
+    68: (
+        "D1 circuit 14 DEEP NOTE: All answers whether EVERY "
+        "selected id matches the shared predicate engine; "
+        "value = matched = the hit, count = selection size, "
+        "source 'all'. On an empty selection All is True "
+        "for every predicate — VACUOUS truth, the classical "
+        "dual of Dell 67's empty-False; a bare predicate is "
+        "True on any selection. Read-only. No English "
+        "surface; typed form agrees."),
+    69: (
+        "D1 circuit 14 DEEP NOTE: None answers whether NO "
+        "selected id matches the shared predicate engine; "
+        "value = matched = the hit, count = selection size, "
+        "source 'none'. None is the exact DE MORGAN dual of "
+        "Dell 67: None(lab) == not Any(lab) on every state "
+        "(proven across four predicates); on an empty "
+        "selection None is True, and a bare predicate makes "
+        "None True exactly when the selection is empty. "
+        "Read-only. No English surface; typed form agrees."),
     58: ("Deep contract proven (D1 circuit 13, "
          "d1_dell58_match_test): DESTRUCTIVE narrowing of "
          "the selection by pattern (the dual of Dell 54's "

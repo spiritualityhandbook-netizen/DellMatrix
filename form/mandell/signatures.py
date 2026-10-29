@@ -317,8 +317,10 @@ _register(OperatorSignature(
         Role(name="predicate", type="string", required=False,
              description="Predicate (empty checks non-empty selection)"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:48-51",
-    output="Publishes boolean to last_result",
+    derived_from="form/mandell/query_ops.py:apply_query:65-69",
+    output="Publishes boolean to last_result (value = matched = "
+           "the hit; count = selection size). Read-only. On an "
+           "empty selection Any is False for every predicate",
     failures="None established",
 ))
 # Existing encoding: lab = predicate (or "")
@@ -332,8 +334,11 @@ _register(OperatorSignature(
         Role(name="predicate", type="string", required=False,
              description="Predicate (empty checks all)"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:52-55",
-    output="Publishes boolean to last_result",
+    derived_from="form/mandell/query_ops.py:apply_query:70-74",
+    output="Publishes boolean to last_result (value = matched = "
+           "the hit; count = selection size). Read-only. On an "
+           "empty selection All is True for every predicate "
+           "(vacuous truth)",
     failures="None established",
 ))
 # Existing encoding: lab = predicate (or "")
@@ -347,8 +352,11 @@ _register(OperatorSignature(
         Role(name="predicate", type="string", required=False,
              description="Predicate (empty checks empty selection)"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:56-59",
-    output="Publishes boolean to last_result",
+    derived_from="form/mandell/query_ops.py:apply_query:75-79",
+    output="Publishes boolean to last_result (value = matched = "
+           "the hit; count = selection size). Read-only. None is "
+           "exactly not-Any on the same state (De Morgan pair "
+           "with Dell 67); on an empty selection None is True",
     failures="None established",
 ))
 # Existing encoding: lab = predicate (or "")

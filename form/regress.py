@@ -182,6 +182,9 @@ LIST = [
     "form.mandell.d1_dell56_get_test",
     "form.mandell.d1_dell57_compare_test",
     "form.mandell.d1_dell58_match_test",
+    "form.mandell.d1_dell67_any_test",
+    "form.mandell.d1_dell68_all_test",
+    "form.mandell.d1_dell69_none_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",
