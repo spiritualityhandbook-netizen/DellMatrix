@@ -180,8 +180,9 @@ _register(OperatorSignature(
         Role(name="value", type="string", required=True,
              description="New value (may be empty string)"),
     ],
-    derived_from="form/mandell/spectrum_ops.py:apply_spectrum:155-166",
-    output="Sets st.store[key] = value (partial targeted modification)",
+    derived_from="form/mandell/spectrum_ops.py:apply_spectrum:208-227",
+    output="Sets st.store[key] = value (partial targeted modification; "
+           "update-only — an absent key fails, it is never created)",
     failures="patch_miss:{key} (key not in store)",
 ))
 # NOTE: Empty value is allowed (st.store[key] = ""). Value must be present

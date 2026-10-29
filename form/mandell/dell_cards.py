@@ -88,6 +88,20 @@ DEEP_NOTES: Dict[int, str] = {
          "to the code in the same circuit (the refusal was "
          "missing from the signature); English replace is "
          "blocked_with_reason; renames persist."),
+    88: ("Deep contract proven (D1 circuit 8, "
+         "d1_dell88_patch_test): UPDATE-ONLY targeted write — "
+         "an absent key fails patch_miss:{key} and is never "
+         "created (the contrast with Dell 55 Set, which "
+         "creates); first '=' splits, the value keeps further "
+         "'=' characters and is stored RAW (key stripped, "
+         "value not); an empty value is legal ('' stored, key "
+         "survives); patching replaces the value's type "
+         "wholesale (a list cell becomes the raw string); "
+         "signature derived_from synced to the real arm "
+         "(208-227) and its output now states the update-only "
+         "law; English patch is blocked_with_reason; patches "
+         "persist. This closes the store-mutation cluster "
+         "84-88."),
 }
 
 

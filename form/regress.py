@@ -176,6 +176,7 @@ LIST = [
     "form.mandell.d1_dell85_move_test",
     "form.mandell.d1_dell86_delete_test",
     "form.mandell.d1_dell87_replace_test",
+    "form.mandell.d1_dell88_patch_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",
