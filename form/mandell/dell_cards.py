@@ -133,6 +133,21 @@ DEEP_NOTES: Dict[int, str] = {
          "and is refused, 'find garden' goes to Dell 56; "
          "the seed line and typed invocation are the only "
          "paths."),
+    56: ("Deep contract proven (D1 circuit 11, "
+         "d1_dell56_get_test): a THREE-STATE read — ok "
+         "(matched=True), empty (stored \"\" — matched=False, "
+         "error=\"empty\"), missing (matched=False, "
+         "error=\"missing\") — and the atom returns ok=True "
+         "in ALL three states; the miss lives in the result "
+         "cell, not the atom (contrast Dell 86, whose missing "
+         "key fails the atom); bare Get falls back to the "
+         "LAST INSERTED store key (\"\" on an empty store); "
+         "values return by identity; Get never mutates the "
+         "store; English get/find DO reach 56, but the "
+         "documented ARGUMENT_LOSS residual lowercases the "
+         "operand ('get A' reads 'a') — pinned at the route "
+         "and in the literal REPL as the circuit-3 residual "
+         "surfacing on the read path."),
 }
 
 
