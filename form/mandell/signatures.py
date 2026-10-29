@@ -242,10 +242,19 @@ _register(OperatorSignature(
         Role(name="key", type="string", required=True,
              description="Store key to retrieve"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:29-38",
-    output="Publishes st.store[key] to last_result; read-only",
-    failures="missing (key not in store; matched=False, no mutation)",
+    derived_from="form/mandell/query_ops.py:apply_query:35-44",
+    output="Publishes st.store[key] to last_result; read-only. "
+           "Three-state read: ok (matched=True), empty (stored "
+           "\"\" — matched=False, error=\"empty\"), missing (key "
+           "absent — matched=False, error=\"missing\"). The atom "
+           "itself returns ok=True in all three states; the miss "
+           "lives in the result cell",
+    failures="missing (key not in store), empty (stored value is "
+             "\"\"), both reported in the result cell with "
+             "matched=False; no mutation",
 ))
+# NOTE: The seed path falls back to the last inserted store key
+# when lab is empty; the typed role stays required.
 # Existing encoding: lab = key
 # NOTE: Read-only. Never mutates store.
 
