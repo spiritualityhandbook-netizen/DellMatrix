@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+"""D1 proof cards — a survey of every Dell in the registry.
+
+One card per registry entry (the Director's D1 denominator:
+100 entries), each card carrying only MEASURED dimensions:
+
+- identity: number, name, manor, namespace (from the
+  registry itself);
+- typed signature: present (with roles, output and failures
+  from signatures.get_signature) or absent — signature
+  presence is its own dimension, never merged with the
+  others;
+- English reachability: whether translate() names this Dell
+  in any Intent it can return (the circuit-1 static scan) —
+  English-pattern presence, again its own dimension;
+- bare invocation: the OBSERVED outcome of executing the
+  Dell's bare seed (NN[Name], no operands) through the
+  canonical public executor on an empty field — executed, or
+  failed with the executor's own reason. This is
+  operational evidence for the bare case only; a failure
+  here usually names the missing operand or precondition,
+  which is precisely what the card records.
+
+Cards are regenerated from live probes; the committed
+DELL_PROOF_CARDS.md is the renderer's output, and the D1
+suite fails if the document drifts from a fresh survey.
+"""
+from __future__ import annotations
+
+import ast
+import glob
+import os
+import shutil
+from typing import Any, Dict, List
+
+from .registry import DELLS, get_dell
+from .signatures import get_signature
+
+
+def english_named_dells() -> set:
+    """Dells translate() can name in an Intent (static scan of
+    Intent returns — the circuit-1 measurement)."""
+    path = os.path.join(os.path.dirname(__file__), "translate.py")
+    tree = ast.parse(open(path, encoding="utf-8").read())
+    dells = set()
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Call)
+                and getattr(node.func, "id", "") == "Intent"
+                and len(node.args) >= 2
+                and isinstance(node.args[1], ast.Constant)
+                and isinstance(node.args[1].value, int)):
+            dells.add(node.args[1].value)
+    return dells
+
+
+def _cleanup(owner: str, state_dir: str) -> None:
+    for pat in (f"program_{owner}.json", f"nursery_{owner}.json",
+                f"checkpoint_{owner}_*", f"confirm_{owner}.journal.json",
+                f"checkpoint_{owner}.journal.json", f"gen_{owner}_*",
+                f"current_{owner}.json"):
+        for f in glob.glob(os.path.join(state_dir, pat)):
+            try:
+                os.remove(f)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                raise
+    for d in glob.glob(os.path.join(state_dir, f"ideas_{owner}*")):
+        if os.path.isdir(d):
+            shutil.rmtree(d)
+
+
+def build_card(n: int, owner: str, state_dir: str,
+               named: set) -> Dict[str, Any]:
+    """Probe one Dell. The caller owns cleanup of `owner`."""
+    from form.open import Program
+    from .executor import execute_seed
+
+    entry = get_dell(n)  # registry view: adds dell + namespace
+    sig = get_signature(n)
+    card: Dict[str, Any] = {
+        "dell": n,
+        "name": entry["name"],
+        "manor": entry["manor"],
+        "namespace": entry["namespace"],
+        "typed_signature": None,
+        "english_named": n in named,
+        "bare": {"outcome": "error", "error": "not probed"},
+    }
+    if sig is not None:
+        card["typed_signature"] = {
+            "roles": [
+                {"name": r.name, "type": r.type,
+                 "required": bool(r.required)}
+                for r in (sig.roles or [])
+            ],
+            "output": sig.output,
+            "failures": sig.failures,
+            "derived_from": sig.derived_from,
+        }
+    p = Program(owner)
+    r = execute_seed(p, f"{n:02d}[{entry['name']}]")
+    if r.get("ok"):
+        card["bare"] = {"outcome": "executed", "error": ""}
+    else:
+        ars = r.get("atom_results") or []
+        reason = ""
+        if ars:
+            reason = str(ars[0].get("reason")
+                         or ars[0].get("error") or "")
+        card["bare"] = {
+            "outcome": "failed",
+            "error": reason or str(r.get("error") or ""),
+        }
+    return card
+
+
+def build_all_cards(owner_prefix: str = "D1Card",
+                    state_dir: str = None) -> List[Dict[str, Any]]:
+    if state_dir is None:
+        state_dir = os.path.join(os.path.dirname(__file__), "..",
+                                 "state")
+    named = english_named_dells()
+    cards = []
+    for n in sorted(DELLS):
+        owner = f"{owner_prefix}{n}"
+        _cleanup(owner, state_dir)
+        try:
+            cards.append(build_card(n, owner, state_dir, named))
+        finally:
+            _cleanup(owner, state_dir)
+    return cards
+
+
+def render_cards_md(cards: List[Dict[str, Any]]) -> str:
+    executed = [c for c in cards if c["bare"]["outcome"] == "executed"]
+    failed = [c for c in cards if c["bare"]["outcome"] != "executed"]
+    typed = [c for c in cards if c["typed_signature"] is not None]
+    named = [c for c in cards if c["english_named"]]
+    lines = [
+        "# Dell Proof Cards (D1 survey)",
+        "",
+        "Generated by form/mandell/dell_cards.py from live probes; "
+        "the D1 suite fails if this document drifts from a fresh "
+        "survey. Dimensions are kept separate by design: a typed "
+        "signature is not English reachability, and neither is a "
+        "bare-invocation outcome.",
+        "",
+        f"- Registry entries: {len(cards)}",
+        f"- Typed signatures: {len(typed)}",
+        f"- Named by translate() English patterns: {len(named)}",
+        f"- Bare invocation executed (empty field): {len(executed)}",
+        f"- Bare invocation failed with a named reason: {len(failed)}",
+        "",
+        "| Dell | Name | Typed | English-named | Bare outcome |",
+        "|------|------|-------|---------------|--------------|",
+    ]
+    for c in cards:
+        bare = ("executed" if c["bare"]["outcome"] == "executed"
+                else f"failed: {c['bare']['error']}")
+        lines.append(
+            f"| {c['dell']:02d} | {c['name']} | "
+            f"{'yes' if c['typed_signature'] else 'no'} | "
+            f"{'yes' if c['english_named'] else 'no'} | {bare} |")
+    lines += ["", "## Typed signatures (roles / output / failures)", ""]
+    for c in typed:
+        sig = c["typed_signature"]
+        roles = ", ".join(
+            f"{r['name']}:{r['type']}"
+            f"{' (required)' if r['required'] else ''}"
+            for r in sig["roles"]) or "none"
+        lines += [
+            f"### {c['dell']:02d}[{c['name']}] — {c['manor']}",
+            f"- roles: {roles}",
+            f"- output: {sig['output']}",
+            f"- failures: {sig['failures']}",
+            f"- derived_from: {sig['derived_from']}",
+            "",
+        ]
+    return "\n".join(lines) + "\n"
