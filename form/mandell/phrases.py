@@ -234,6 +234,12 @@ def match_phrase(english: str) -> Optional[Dict[str, str]]:
         m = re.match(pattern, lower, re.I)
         if not m:
             continue
+        # D1 circuit 3 (ARGUMENT_LOSS fix): routing matched on the
+        # lowercased text; recover the captures from the original
+        # text so a label the user capitalized keeps its case.
+        m_raw = re.match(pattern, text, re.I)
+        if m_raw:
+            m = m_raw
         label = ""
         n = "1"
         if m.lastindex:

@@ -139,6 +139,17 @@ def translate(english: str) -> Intent:
     # DCC-VI: operational capabilities on RAW text (before english_brain
     # rewrites "add idea X" -> "create an idea called X").
     raw_lower = text.lower().strip()
+    # D1 circuit 3 (ARGUMENT_LOSS fix): routing matches run on the
+    # lowercased text, but arguments that NAME user data (ids, keys,
+    # labels, words) must keep the user's case — a store that has
+    # 'A' is not found by source='a'. Sites below therefore
+    # re-match their pattern against orig_text (the entry text,
+    # pre-normalization) or the current text with re.IGNORECASE
+    # and take captures from that match — the add-idea site's
+    # m_orig precedent, generalized. Routing keywords, direction
+    # words, closed vocabularies and store-key normalizations are
+    # deliberately left lowercased.
+    orig_text = text
     # MPC-001 Track C2: SEMANTIC LOSS GUARD (safety critical).
     # If English contains conditional/qualifying clauses that would be
     # silently dropped by translation, return UNKNOWN rather than executing
@@ -206,29 +217,34 @@ def translate(english: str) -> Intent:
     # which would also match "trace lineage <id>" / "trace dependency <id>").
     m = re.search(r"\btrace\s+lineage\s+(\S+)", raw_lower)
     if m:
+        m = re.search(r"\btrace\s+lineage\s+(\S+)", orig_text, re.IGNORECASE) or m
         return Intent("discover", 35, "Discover", {},
                       f"35[Discover] :: trace_lineage {m.group(1)}", text)
     # DCC-XV: dependency trace — historical lineage + current dependency status.
     m = re.search(r"\btrace\s+dependency\s+(\S+)", raw_lower)
     if m:
+        m = re.search(r"\btrace\s+dependency\s+(\S+)", orig_text, re.IGNORECASE) or m
         return Intent("discover", 35, "Discover", {},
                       f"35[Discover] :: trace_dependency {m.group(1)}", text)
     # DCC-XVI: revision trace — which accepted version replaces which
     # (revision ancestry, not derivation ancestry).
     m = re.search(r"\btrace\s+revision\s+(\S+)", raw_lower)
     if m:
+        m = re.search(r"\btrace\s+revision\s+(\S+)", orig_text, re.IGNORECASE) or m
         return Intent("discover", 35, "Discover", {},
                       f"35[Discover] :: trace_revision {m.group(1)}", text)
     # DCC-XIX: conflict trace — detection evidence + operator disposition
     # for one stable conflict ID (before bare \btrace\b).
     m = re.search(r"\btrace\s+conflict\s+(\S+)", raw_lower)
     if m:
+        m = re.search(r"\btrace\s+conflict\s+(\S+)", orig_text, re.IGNORECASE) or m
         return Intent("discover", 35, "Discover", {},
                       f"35[Discover] :: trace_conflict {m.group(1)}", text)
     # DCC-XX: outcome trace — one exact outcome by stable ID; list recent
     # outcomes; outcomes involving a specific knowledge ID.
     m = re.search(r"\btrace\s+outcome\s+(\S+)", raw_lower)
     if m:
+        m = re.search(r"\btrace\s+outcome\s+(\S+)", orig_text, re.IGNORECASE) or m
         return Intent("discover", 35, "Discover", {},
                       f"35[Discover] :: trace_outcome {m.group(1)}", text)
     if re.search(r"\blist\s+outcomes\b", raw_lower):
@@ -239,6 +255,7 @@ def translate(english: str) -> Intent:
                       "35[Discover] :: list_outcomes", text)
     m = re.search(r"\boutcomes\s+for\s+idea\s+(\S+)", raw_lower)
     if m:
+        m = re.search(r"\boutcomes\s+for\s+idea\s+(\S+)", orig_text, re.IGNORECASE) or m
         return Intent("discover", 35, "Discover", {},
                       f"35[Discover] :: outcomes_for_idea {m.group(1)}", text)
     if re.search(r"\btrace\b", raw_lower):
@@ -250,6 +267,7 @@ def translate(english: str) -> Intent:
         return Intent("discover", 35, "Discover", {}, "35[Discover] :: count_confirmed", text)
     m = re.search(r"\bfind\s+idea\s+(.+)$", raw_lower)
     if m:
+        m = re.search(r"\bfind\s+idea\s+(.+)$", orig_text, re.IGNORECASE) or m
         query = m.group(1).strip()[:60]
         if query:
             return Intent("discover", 35, "Discover", {},
@@ -259,6 +277,7 @@ def translate(english: str) -> Intent:
     # "use idea" pattern (both start with an idea verb + id).
     m = re.search(r"\bsupersede\s+idea\s+(\S+)\s+with\s+(.+)$", raw_lower)
     if m:
+        m = re.search(r"\bsupersede\s+idea\s+(\S+)\s+with\s+(.+)$", orig_text, re.IGNORECASE) or m
         old_id = m.group(1).strip()
         words = m.group(2).strip()[:240]
         if old_id and words:
@@ -269,18 +288,21 @@ def translate(english: str) -> Intent:
     # are accepted here and refused honestly by the handler.
     m = re.search(r"\bresolve\s+conflict\s+(\S+)\s+prefer\s+(\S+)", raw_lower)
     if m:
+        m = re.search(r"\bresolve\s+conflict\s+(\S+)\s+prefer\s+(\S+)", orig_text, re.IGNORECASE) or m
         cid, fav = m.group(1).strip(), m.group(2).strip()
         if cid and fav:
             return Intent("nurture", 37, "Nurture", {},
                          f"37[Nurture] :: resolve_conflict {cid} prefer {fav}", text)
     m = re.search(r"\bresolve\s+conflict\s+(\S+)\s+coexist\b", raw_lower)
     if m:
+        m = re.search(r"\bresolve\s+conflict\s+(\S+)\s+coexist\b", orig_text, re.IGNORECASE) or m
         cid = m.group(1).strip()
         if cid:
             return Intent("nurture", 37, "Nurture", {},
                          f"37[Nurture] :: resolve_conflict {cid} coexist", text)
     m = re.search(r"\bclear\s+conflict\s+resolution\s+(\S+)", raw_lower)
     if m:
+        m = re.search(r"\bclear\s+conflict\s+resolution\s+(\S+)", orig_text, re.IGNORECASE) or m
         cid = m.group(1).strip()
         if cid:
             return Intent("nurture", 37, "Nurture", {},
@@ -288,14 +310,16 @@ def translate(english: str) -> Intent:
     # DCC-VIII: explicit knowledge consumption.
     m = re.search(r"\buse\s+idea\s+(\S+)(?:\s+to\s+(\w+))?", raw_lower)
     if m:
+        m = re.search(r"\buse\s+idea\s+(\S+)(?:\s+to\s+(\w+))?", orig_text, re.IGNORECASE) or m
         pid = m.group(1).strip()
-        target = m.group(2) or "grow"
+        target = (m.group(2) or "grow").lower()
         if pid:
             return Intent("nurture", 37, "Nurture", {},
                          f"37[Nurture] :: use_idea {pid} to {target}", text)
     # DCC-IX: contextual knowledge selection.
     m = re.search(r"\bgrow\s+using\s+knowledge\s+about\s+(.+)$", raw_lower)
     if m:
+        m = re.search(r"\bgrow\s+using\s+knowledge\s+about\s+(.+)$", orig_text, re.IGNORECASE) or m
         context = m.group(1).strip()[:80]
         if context:
             return Intent("nurture", 37, "Nurture", {},
@@ -311,11 +335,13 @@ def translate(english: str) -> Intent:
                       f"37[Nurture] :: {label_orig}", text)
     m = re.search(r"\bconfirm\s+(\S+)$", raw_lower)
     if m:
+        m = re.search(r"\bconfirm\s+(\S+)$", orig_text, re.IGNORECASE) or m
         pid = m.group(1).strip()
         return Intent("nurture", 37, "Nurture", {"pid": pid, "op": "confirm"},
                       f"37[Nurture] :: confirm {pid}", text)
     m = re.search(r"\breject\s+(\S+)$", raw_lower)
     if m:
+        m = re.search(r"\breject\s+(\S+)$", orig_text, re.IGNORECASE) or m
         pid = m.group(1).strip()
         return Intent("nurture", 37, "Nurture", {"pid": pid, "op": "reject"},
                       f"37[Nurture] :: reject {pid}", text)
@@ -407,37 +433,41 @@ def translate(english: str) -> Intent:
     def _strip_article(s: str) -> str:
         s = s.strip()
         for art in ("the ", "a ", "an "):
-            if s.startswith(art):
+            if s[:len(art)].lower() == art:
                 return s[len(art):].strip()
         return s
     m = re.search(r"\bmove\s+(.+?)\s+to\s+(\S+)\s*$", raw_lower)
     if m:
+        m = re.search(r"\bmove\s+(.+?)\s+to\s+(\S+)\s*$", orig_text, re.IGNORECASE) or m
         src = _strip_article(m.group(1))
         dst = m.group(2).strip()
-        if src and dst and src not in ("forward", "ahead", "left", "right", "up", "down"):
+        if src and dst and src.lower() not in ("forward", "ahead", "left", "right", "up", "down"):
             return Intent("move", 85, "Move",
                          {"source": src, "destination": dst},
                          f'85[Move](source="{src}", destination="{dst}")', text)
     m = re.search(r"\bcopy\s+(.+?)\s*$", raw_lower)
     if m:
+        m = re.search(r"\bcopy\s+(.+?)\s*$", orig_text, re.IGNORECASE) or m
         src = _strip_article(m.group(1))
         # Don't capture trailing clauses ("and rename...")
-        src = re.split(r"\s+and\s+", src)[0].strip()
+        src = re.split(r"\s+and\s+", src, flags=re.IGNORECASE)[0].strip()
         if src:
             return Intent("copy", 84, "Copy",
                          {"source": src},
                          f'84[Copy](source="{src}")', text)
     m = re.search(r"\bdelete\s+(.+?)\s*$", raw_lower)
     if m:
+        m = re.search(r"\bdelete\s+(.+?)\s*$", orig_text, re.IGNORECASE) or m
         key = _strip_article(m.group(1))
         # Don't capture conditionals ("if it's empty")
-        key = re.split(r"\s+if\s+", key)[0].strip()
+        key = re.split(r"\s+if\s+", key, flags=re.IGNORECASE)[0].strip()
         if key:
             return Intent("delete", 86, "Delete",
                          {"key": key},
                          f'86[Delete](key="{key}")', text)
     m = re.search(r"\breplace\s+(\S+)\s+with\s+(.+)$", raw_lower)
     if m:
+        m = re.search(r"\breplace\s+(\S+)\s+with\s+(.+)$", orig_text, re.IGNORECASE) or m
         old = _strip_article(m.group(1))
         new = _strip_article(m.group(2).strip()[:60])
         if old and new:
@@ -446,6 +476,7 @@ def translate(english: str) -> Intent:
                          f'87[Replace](old="{old}", new="{new}")', text)
     m = re.search(r"\bpatch\s+(\S+)\s+to\s+(.+)$", raw_lower)
     if m:
+        m = re.search(r"\bpatch\s+(\S+)\s+to\s+(.+)$", orig_text, re.IGNORECASE) or m
         key = _strip_article(m.group(1))
         val = m.group(2).strip()[:60]
         if key and val:
@@ -504,6 +535,7 @@ def translate(english: str) -> Intent:
     # Preserves distinctions: select vs query vs match vs get.
     m = re.search(r"\bselect\s+(.+?)\s*$", raw_lower)
     if m:
+        m = re.search(r"\bselect\s+(.+?)\s*$", orig_text, re.IGNORECASE) or m
         pred = _strip_article(m.group(1))
         if pred and not _is_ambiguous_find(pred):
             # Use typed format (validates via new signature)
@@ -513,6 +545,7 @@ def translate(english: str) -> Intent:
                          f'51[Select](predicate="{safe_pred}")', text)
     m = re.search(r"\bsearch\s+for\s+(.+?)\s*$", raw_lower)
     if m:
+        m = re.search(r"\bsearch\s+for\s+(.+?)\s*$", orig_text, re.IGNORECASE) or m
         pat = _strip_article(m.group(1))
         if pat:
             safe_pat = pat.replace('"', '')[:60]
@@ -552,7 +585,7 @@ def translate(english: str) -> Intent:
     if re.search(r"\b(how\s+do\s+i\s+look)\b", lower):
         return Intent("avatar_status", 9, "Show", {}, "09[Show] :: avatar", text)
 
-    m = re.search(r"(?:create|add|make|new|place|plant)\s+(?:an?\s+)?(?:idea\s+)?(?:called\s+)?(.+)$", lower)
+    m = re.search(r"(?:create|add|make|new|place|plant)\s+(?:an?\s+)?(?:idea\s+)?(?:called\s+)?(.+)$", text, re.IGNORECASE)
     if m:
         # Keep original casing from text for label body; strong parse happens in handlers
         body = m.group(1).strip().strip("'")
@@ -578,7 +611,7 @@ def translate(english: str) -> Intent:
     # DCC-III: expanded semantic vocabulary (all route through Dell authority).
     # Note: stamp/cycle/form (with args) checked before bare nouns to avoid
     # substring matches (e.g. "test" in "test-mark").
-    m = re.search(r"\b(stamp|mark)\s+(.+)$", lower)
+    m = re.search(r"\b(stamp|mark)\s+(.+)$", text, re.IGNORECASE)
     if m:
         mark = m.group(2).strip()[:48] or "mark"
         return Intent("stamp", 34, "Stamp", {"mark": mark}, f"34[Stamp] :: {mark}", text)
