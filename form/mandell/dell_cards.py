@@ -64,6 +64,18 @@ DEEP_NOTES: Dict[int, str] = {
          "at the REPL surface, however, the word \"move\" is "
          "captured by avatar navigation, so the REPL user path "
          "for 85 is the Mandell seed line."),
+    86: ("Deep contract proven (D1 circuit 6, "
+         "d1_dell86_delete_test): key = the whole lab; store "
+         "wins over groups for a shared name (two deletes peel "
+         "store, then group); NO_AUTHORITATIVE_RESULT — even a "
+         "successful delete publishes an explicit non-matched "
+         "result cell, distinct from the failure cell that "
+         "carries delete_missing:{key} (empty key: "
+         "delete_missing:empty — signature failures text synced "
+         "to this truth in the same circuit); English delete is "
+         "blocked_with_reason (operand-confirmation policy) at "
+         "the route and at the REPL, and negated English never "
+         "becomes a delete intent; deletions persist."),
 }
 
 

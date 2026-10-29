@@ -127,7 +127,7 @@ _register(OperatorSignature(
 #   key = lab
 #   if key in st.store: st.store.pop(key)
 #   elif key in st.groups: st.groups.pop(key)
-#   else: ok=False, err=f"delete_missing:{key}"
+#   else: ok=False, err=f"delete_missing:{key or 'empty'}"
 _register(OperatorSignature(
     dell=86,
     name="Delete",
@@ -137,7 +137,8 @@ _register(OperatorSignature(
     ],
     derived_from="form/mandell/spectrum_ops.py:apply_spectrum:126-142",
     output="Removes key from st.store or st.groups",
-    failures="delete_missing:{key} (key not found)",
+    failures="delete_missing:{key} (key not found); empty key "
+             "reports delete_missing:empty",
 ))
 # NOTE: No selected/default fallback in code. Key is required for typed invocation.
 
