@@ -64,7 +64,14 @@ def smoke() -> bool:
 
     p = _P()
     msgs = []
+    # R1 corrected contract: scope names are "plane" or an
+    # existing group — group first, then scope to it; an
+    # unknown scope name refuses and leaves the scope unchanged.
+    execute_core_ii(p, 82, "Group", "Nursery", msgs)
     execute_core_ii(p, 53, "Scope", "Nursery", msgs)
+    refused = execute_core_ii(p, 53, "Scope", "Nowhere", msgs)
+    rec("runtime_scope_unknown_refused",
+        refused.get("ok") is False and p.core_ii.scope == "Nursery")
     execute_core_ii(p, 51, "Select", "nursery", msgs)
     execute_core_ii(p, 70, "Count", "", msgs)
     rec("runtime_scope", p.core_ii.scope == "Nursery")
@@ -96,6 +103,9 @@ def smoke() -> bool:
     rec("try_revert", "t" not in p5.core_ii.store and p5.core_ii.try_depth == 0)
 
     p6 = _P()
+    # R1: the chain scopes to "nursery" — the group must exist
+    # first under the corrected scope contract.
+    execute_core_ii(p6, 82, "Group", "nursery", [])
     seed = parse_seed("53[Scope] > 51[Select] > 52[Filter] > 70[Count] :: nursery")
     out = execute_chain(p6, seed, seed.raw)
     rec("chain_ok", out["ok"] and out.get("chain_ran") == [53, 51, 52, 70])

@@ -63,6 +63,27 @@ def _pred(label: str, uid: str) -> bool:
     lab = (label or "").lower(); u = str(uid).lower()
     return True if not lab else lab in u or u.startswith(lab.replace(" ", "_"))
 
+# D1 reconciliation R1 (Director ruling, 2026-10-29): scope is a
+# real selection boundary, not a label. Supported scope names are
+# defined explicitly: "plane" (the whole plane — the default) or
+# the name of an existing group in st.groups (that group's
+# membership, intersected with the plane in plane order). Any
+# other scope value is unknown and must refuse, never silently
+# widen to the whole plane.
+def scope_supported(st: Any) -> List[str]:
+    return ["plane"] + sorted(st.groups.keys())
+
+def scope_universe(st: Any, program: Any):
+    """(ids, err): the canonical membership for st.scope."""
+    ids = _ids(program)
+    if st.scope == "plane":
+        return ids, ""
+    members = st.groups.get(st.scope)
+    if members is None:
+        return None, f"scope_unknown:{st.scope}"
+    member_set = set(members)
+    return [i for i in ids if i in member_set], ""
+
 def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[str]) -> Dict[str, Any]:
     st = attach(program); lab = label or ""; ok = True; err = ""
     def mark():
@@ -76,7 +97,16 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
         if n in QUERY_DELLS:
             ok, err = apply_query(n, st, program, lab, term, messages, _ids, _pred, shot)
         elif n == 53:
-            st.scope = lab or "plane"; messages.append(f"Scope -> {st.scope}")
+            name = lab or "plane"
+            if name == "plane" or name in st.groups:
+                st.scope = name
+                messages.append(f"Scope -> {st.scope}")
+            else:
+                ok = False
+                err = f"scope_unknown:{name}"
+                messages.append(
+                    f"Scope refused: unknown scope {name!r} "
+                    f"(supported: {', '.join(scope_supported(st))})")
         elif n == 60:
             from .control_runtime import ControlFrame, eval_condition
             taken = eval_condition(st, program, lab or "true")

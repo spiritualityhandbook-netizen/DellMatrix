@@ -69,7 +69,7 @@ def control_a_identity():
 
 # ------------------------------------------------- B: accessible execution
 ACCESSIBLE_LABELS = {
-    51: "", 52: "", 53: "myscope", 54: "", 55: "kb=kv", 56: "kb",
+    51: "", 52: "", 53: "plane", 54: "", 55: "kb=kv", 56: "kb",
     57: "eq:1 1", 58: "", 59: "primary", 60: "true", 61: "", 62: "",
     63: "", 64: "true", 65: "false", 66: "", 67: "", 68: "", 69: "",
     70: "", 71: "", 72: "max", 73: "gte:count 0", 74: "w=2.5",
@@ -93,7 +93,9 @@ def control_b_accessible():
         check(f"B.exec.{n}", r.routed and r.ok and r.namespace == "CORE_II",
               f"routed={r.routed} ok={r.ok} err={r.error}")
     # Observable state proofs (spot).
-    check("B.state.scope", st.scope == "myscope", st.scope)
+    # R1: the spine's scope write uses the supported "plane"
+    # scope (arbitrary names refuse under the corrected contract).
+    check("B.state.scope", st.scope == "plane", st.scope)
     check("B.state.moved", st.store.get("kb2") == "kv" and "kb" not in st.store,
           dict(st.store))
     check("B.state.weights", abs(sum(st.weights.values()) - 1.0) < 1e-9 or not st.weights,

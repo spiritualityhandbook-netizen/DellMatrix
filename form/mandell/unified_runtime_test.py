@@ -127,6 +127,9 @@ def smoke() -> bool:
 
     p = open_program("Sc")
     execute_seed(p, "36[Inject]")
+    # R1 corrected contract: a scope name must be "plane" or an
+    # existing group — create the group, then scope to it.
+    execute_seed(p, "82[Group] :: frame")
     execute_seed(p, "53[Scope] :: frame")
     rec("boundary_36_53_distinct", p.core_ii.scope == "frame")
 

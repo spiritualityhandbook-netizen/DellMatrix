@@ -206,7 +206,7 @@ _register(OperatorSignature(
 
 
 # Dell 51 (Select) — derived from query_ops.py:apply_query (n==51)
-#   ids = ids_fn(program)
+#   ids, scope_err = scope_universe(st, program)  # R1: scope-bound
 #   st.selected = list(ids) if not lab else [i for i in ids if pred_fn(lab, i)]
 #   st.last_result = result_cell(value=list(st.selected), ...)
 _register(OperatorSignature(
@@ -216,13 +216,17 @@ _register(OperatorSignature(
         Role(name="predicate", type="string", required=False,
              description="Selection predicate (empty selects all)"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:14-18",
+    derived_from="form/mandell/query_ops.py:apply_query:14-22",
     output="Sets st.selected to matching IDs; publishes to last_result. "
-           "Select never fails: an empty match is a successful empty "
-           "selection (matched=False, count=0). The scope printed in "
-           "its message is state recorded by Dell 53, not a filter — "
-           "the universe is always the whole plane",
-    failures="None established (empty predicate selects all)",
+           "An empty match is a successful empty selection "
+           "(matched=False, count=0) — predicate outcomes never fail. "
+           "The universe is scope-bound (R1): the whole plane under "
+           "scope 'plane', or the named group's membership under a "
+           "group scope set by Dell 53. Select's one failure mode is "
+           "a dangling/unknown scope state (scope_unknown refusal)",
+    failures="scope_unknown:{scope} when the scope state names "
+             "no supported scope (the only refusal; empty "
+             "predicate selects all of the scoped universe)",
 ))
 # Existing encoding: lab = predicate (or "" for all)
 
