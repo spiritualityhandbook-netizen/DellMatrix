@@ -83,8 +83,8 @@ def smoke() -> bool:
          == "RESOLVED")
     _rec("probed_limitations_carry_the_d1_probe_sha",
          by_id["ARGUMENT_LOSS"]["last_verified_against"]
-         .startswith("c573b703")
-         and by_id["ARGUMENT_LOSS"]["status"] == "MITIGATED"
+         .startswith("84d60d8a")
+         and by_id["ARGUMENT_LOSS"]["status"] == "RESOLVED"
          and by_id["ENGLISH_UNREACHABLE_OPERATION"]
          ["last_verified_against"].startswith("eb3389c1")
          and os.path.exists(os.path.join(

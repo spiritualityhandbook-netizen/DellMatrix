@@ -9,8 +9,15 @@ precedent, generalized) and this suite became the fix's
 proof: the named extraction sites now preserve case, the
 guards still hold, and the one residual (english_brain's
 canonical rewrites produce lowercased paraphrase text — a
-generation layer, not extraction) is pinned as observed so
-the record's MITIGATED status stays honest.
+generation layer, not extraction) was pinned as observed
+so the record's MITIGATED status stayed honest.
+D1 reconciliation R5 (Director ruling) then repaired the
+residual end to end: the brain now extracts operands from
+the original case-preserved text on the paraphrase,
+synonym and learned paths, and translate's get/find sites
+capture store keys verbatim. The residual pin below is
+now the corrected contract and the record reads RESOLVED
+(verified against the R5 base, 84d60d8).
 
 The ENGLISH_UNREACHABLE measurements are unchanged from
 circuit 1 (the fix touched capture case, not routing).
@@ -30,6 +37,7 @@ from form.mandell.limitation_knowledge import LIMITATIONS  # noqa: E402
 
 ENG_PROBE_BASE = "eb3389c122f301006b10fa770173ea08c2066d7d"
 FIX_PROBE_BASE = "c573b7036082105467128722c668baede2386ff3"
+R5_PROBE_BASE = "84d60d8afc61364e4c106d1a59f5d7298f104b2f"
 
 RESULTS = []
 
@@ -101,19 +109,22 @@ def main():
          n1.dell == 37 and n1.args.get("label") == "Test",
          str(n1.args))
     g56 = translate("get My Key")
-    _rec("deliberate normalizations kept: store keys + slugs",
-         g56.args.get("key") == "my_key"
+    _rec("R5: store keys captured verbatim (case + spaces); "
+         "idea slugs still deliberately slugged",
+         g56.args.get("key") == "My Key"
          and translate("create an idea called Test").args.get("id")
          == "test",
          str(g56.args))
     brain = translate("plant Garden Gate")
-    _rec("residual pinned: brain canonical rewrites still lowercase",
-         brain.args.get("label") == "garden gate",
+    _rec("R5 corrected: brain canonical rewrites preserve "
+         "operand case end to end",
+         brain.args.get("label") == "Garden Gate",
          str(brain.args))
-    _rec("record: ARGUMENT_LOSS MITIGATED at fix probe base",
-         by_id["ARGUMENT_LOSS"]["status"] == "MITIGATED"
+    _rec("record: ARGUMENT_LOSS RESOLVED at R5 probe base "
+         "(was MITIGATED at the circuit-3 fix base)",
+         by_id["ARGUMENT_LOSS"]["status"] == "RESOLVED"
          and by_id["ARGUMENT_LOSS"]["last_verified_against"]
-         == FIX_PROBE_BASE)
+         == R5_PROBE_BASE)
 
     # --- Guards preserved.
     g1 = translate("delete the plan if empty")

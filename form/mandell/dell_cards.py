@@ -156,11 +156,11 @@ DEEP_NOTES: Dict[int, str] = {
          "key fails the atom); bare Get falls back to the "
          "LAST INSERTED store key (\"\" on an empty store); "
          "values return by identity; Get never mutates the "
-         "store; English get/find DO reach 56, but the "
-         "documented ARGUMENT_LOSS residual lowercases the "
-         "operand ('get A' reads 'a') — pinned at the route "
-         "and in the literal REPL as the circuit-3 residual "
-         "surfacing on the read path."),
+         "store; English get/find DO reach 56 with the "
+         "operand preserved (R5: 'get A' reads 'A' — the "
+         "circuit-3 ARGUMENT_LOSS residual that lowercased "
+         "the operand on this read path is repaired end to "
+         "end and the limitation record reads RESOLVED)."),
     57: ("Deep contract proven (D1 circuit 12, "
          "d1_dell57_compare_test): typed comparison over "
          "resolved operands (literals, store keys, count, "
