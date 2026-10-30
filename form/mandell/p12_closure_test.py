@@ -93,7 +93,7 @@ def smoke() -> bool:
     # --- README anchor ---
     readme = open(os.path.join(root, "README.md")).read()
     _rec("readme_anchor_current",
-         "**Production main:** `c6fd2fb`" in readme
+         "**Production main:** `11933da`" in readme
          and "current production is main `2f98844`" not in readme)
 
     # --- audit reconciliation spot facts ---
