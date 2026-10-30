@@ -86,9 +86,14 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
                 resolved_args[k] = resolved_v
             # Conflict law: if both typed args and legacy lab present with different values,
             # fail safely rather than silently choosing.
+            # AF-1: a chainlink member term is a link slot, not a legacy
+            # lab — it never counts as the legacy side of a conflict.
             typed_lab = lower_args_to_lab(n, resolved_args)
-            if payload and payload != typed_lab:
-                err_msg = f"ARGUMENT_CONFLICT for {n:02d}[{shown}]: typed args lower to '{typed_lab}' but legacy lab is '{payload}'"
+            legacy = payload
+            if getattr(atom, "origin", "") == "chainlink":
+                legacy = seed.label or ""
+            if legacy and legacy != typed_lab:
+                err_msg = f"ARGUMENT_CONFLICT for {n:02d}[{shown}]: typed args lower to '{typed_lab}' but legacy lab is '{legacy}'"
                 messages.append(err_msg)
                 return program, {"ok": False, "error": "ARGUMENT_CONFLICT", "messages": messages}
             payload = typed_lab
@@ -100,6 +105,14 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
         return program, out
     if 0 <= n <= 50:
         leaf = f"{n:02d}[{atom.term}]"
+        if atom_args:
+            # AF-1: carry typed args into the leaf re-execution so the
+            # leaf path's own TOAM authority (e.g. Dell 8 validation +
+            # wiring in executor_leaf) sees exactly what the single-atom
+            # path sees. Arg values originate from the seed parser's
+            # quoted-string grammar, so re-emission parses identically.
+            leaf += "(" + ", ".join(
+                f'{k}="{v}"' for k, v in atom_args.items()) + ")"
         if seed.label:
             leaf += f" :: {seed.label}"
         out = execute_seed(program, leaf, _leaf=True)

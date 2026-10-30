@@ -221,9 +221,9 @@ def parse_seed(text: str) -> Seed:
             for k in range(ln):
                 if atoms:
                     out_flows.append(flow)
-                atoms.append(_atom(proto[0]["dell"], proto[0]["members"][k], label, "chainlink"))
+                atoms.append(_atom(proto[0]["dell"], proto[0]["members"][k], label, "chainlink", proto[0].get("args", {})))
                 out_flows.append(flow)
-                atoms.append(_atom(proto[1]["dell"], proto[1]["members"][k], label, "chainlink"))
+                atoms.append(_atom(proto[1]["dell"], proto[1]["members"][k], label, "chainlink", proto[1].get("args", {})))
             return Seed(atoms=atoms, flows=out_flows, label=label, raw=raw, ok=True)
 
     for i, item in enumerate(proto):
