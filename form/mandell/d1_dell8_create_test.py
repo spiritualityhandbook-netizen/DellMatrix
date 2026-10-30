@@ -17,11 +17,15 @@ registry's idea-minting Dell and runs on the LEAF executor
   roles fail (UNKNOWN_ROLE), and a legacy label that
   differs from the typed name (and from its slug) fails
   with ARGUMENT_CONFLICT and creates nothing.
-- EXHIBIT (pinned, Director decision): the skin role is
-  doubly unenforced — validate() checks no enum values
-  anywhere, and the executor arm never passes skin to
-  place_idea. skin='SPHERE' and skin='TRIANGLE' are both
-  accepted; the unit always carries Skin.CUBE.
+- SKIN (corrected contract, D1 reconciliation R4 —
+  Director ruling replaced the circuit-15 exhibit):
+  validate() checks enum membership for roles declaring
+  values, and the executor resolves the typed skin and
+  passes it to place_idea. skin='SPHERE' mints a SPHERE
+  unit; skin='TRIANGLE' (not a canonical Skin member)
+  refuses with INVALID_VALUE before any mutation. The
+  accepted set derives from the canonical Skin enum —
+  it has NO UNKNOWN member.
 - Symbiosis seam: a created idea is immediately visible
   to Core II — Select (51) finds it on the plane.
 - Persistence: creation is in-memory until Dell 10 (Save)
@@ -165,18 +169,23 @@ def main():
          r.get("ok") is False and "UNKNOWN_ROLE" in str(
              r.get("error")), str(r.get("error")))
 
-    # -- 5: EXHIBIT — the skin role is doubly unenforced
+    # -- 5: SKIN — enforced and wired (R4 corrected contract)
     r = _run(p, '08[Create](name="Sphere Wish", skin="SPHERE")')
     us = _units(p).get("sphere_wish")
-    _rec("EXHIBIT: skin='SPHERE' accepted but the unit is CUBE",
+    _rec("skin='SPHERE' is wired through: the unit carries "
+         "Skin.SPHERE",
          r.get("ok") is True and us is not None
-         and str(us.skin) == "Skin.CUBE",
+         and str(us.skin) == "Skin.SPHERE",
          f"skin={us.skin}" if us else "missing")
+    before = set(_units(p))
     r = _run(p, '08[Create](name="Bad Skin", skin="TRIANGLE")')
-    _rec("EXHIBIT: skin='TRIANGLE' (not an enum value) is "
-         "accepted too — validate() checks no enum values",
-         r.get("ok") is True and "bad_skin" in _units(p),
-         str(r.get("ok")))
+    _rec("skin='TRIANGLE' (not a canonical Skin member) "
+         "refuses with INVALID_VALUE and creates nothing",
+         r.get("ok") is False
+         and "INVALID_VALUE" in str(r.get("error"))
+         and "bad_skin" not in _units(p)
+         and set(_units(p)) == before,
+         str(r.get("error")))
 
     # -- 6: symbiosis seam — Core II Select sees the new idea
     _run(p, "51[Select] :: garden")
@@ -223,11 +232,11 @@ def main():
 
     # -- 9: docs pins
     sig = get_signature(8)
-    _rec("signature synced (place_idea:53-64; failures name "
-         "the conflict + the skin exhibit)",
-         "place_idea:53-64" in sig.derived_from
+    _rec("signature synced (place_idea:60-71; failures name "
+         "the conflict + the INVALID_VALUE skin refusal)",
+         "place_idea:60-71" in sig.derived_from
          and "ARGUMENT_CONFLICT" in sig.failures
-         and "UNENFORCED" in sig.failures)
+         and "INVALID_VALUE" in sig.failures)
     _rec("proof card carries the circuit-15 deep note",
          "dedup" in DEEP_NOTES[8].lower()
          and "skin" in DEEP_NOTES[8].lower())

@@ -52,6 +52,17 @@ class OperatorSignature:
         for k in args:
             if k not in role_names:
                 errors.append(f"UNKNOWN_ROLE: {k}")
+        # Enum membership: a role declaring values (type "enum")
+        # accepts exactly those values — anything else is
+        # refused here, before any mutation (D1 reconciliation
+        # R4, Director ruling: the accepted set derives from
+        # the canonical enum; no silent substitution).
+        for r in self.roles:
+            if r.type == "enum" and r.values and r.name in args:
+                if args[r.name] not in r.values:
+                    errors.append(
+                        f"INVALID_VALUE: {r.name}={args[r.name]} "
+                        f"not in {r.values}")
         # Duplicate roles (can't happen in dict, but check for safety)
         return errors
 
@@ -72,6 +83,12 @@ def _register(sig: OperatorSignature) -> None:
 # slug rules live in form/idea_create.py (slug_id: lowercase,
 # non-alnum runs -> "_", 40-char cap, fallback "idea";
 # unique_unit_id suffixes _1, _2, ... on collision).
+# Skin role values derive from the canonical Skin enum
+# (form/dell_matrix/plane.py) — the enum has NO UNKNOWN
+# member; the accepted set is exactly its member names
+# (D1 reconciliation R4, Director ruling).
+from form.dell_matrix.plane import Skin as _Skin  # noqa: E402
+
 _register(OperatorSignature(
     dell=8,
     name="Create",
@@ -80,23 +97,24 @@ _register(OperatorSignature(
              description="Name of the idea to create"),
         Role(name="skin", type="enum", required=False,
              description="Visual skin for the idea",
-             values=["CUBE", "SPHERE", "UNKNOWN"]),  # Skin enum values from code
+             values=[s.name for s in _Skin]),
     ],
-    derived_from="form/mandell/executor_leaf.py:place_idea:53-64",
+    derived_from="form/mandell/executor_leaf.py:place_idea:60-71",
     output="Creates a plane unit: id = canonical slug of the "
            "name (form/idea_create.slug_id), collision-deduped "
            "(_1, _2, ...) — an existing unit is never "
            "overwritten; label = name with '_' -> ' ', "
-           "words = the name as passed. Skin is NOT set from "
-           "the typed role: created units always carry "
-           "Skin.CUBE (see failures).",
+           "words = the name as passed. A typed skin is "
+           "resolved against the canonical Skin enum and "
+           "passed to place_idea, so the unit carries the "
+           "requested skin; the untyped label path defaults "
+           "to Skin.CUBE.",
     failures="ARGUMENT_CONFLICT (typed name vs a differing "
              "legacy label); MISSING_REQUIRED: name; "
-             "UNKNOWN_ROLE. SKIN ROLE UNENFORCED (D1 circuit "
-             "15 exhibit): validate() checks no enum values "
-             "and the executor arm never passes skin to "
-             "place_idea, so skin='SPHERE' and even "
-             "skin='TRIANGLE' are accepted and ignored.",
+             "UNKNOWN_ROLE; INVALID_VALUE: skin=<value> not "
+             "in the canonical Skin enum names — refused by "
+             "validate() BEFORE any mutation, with no silent "
+             "CUBE substitution (D1 reconciliation R4).",
 ))
 
 
