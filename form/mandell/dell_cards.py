@@ -241,6 +241,46 @@ DEEP_NOTES: Dict[int, str] = {
          "exactly as under Select — same text, one engine, "
          "same answer; no English "
          "surface; the narrowed selection persists."),
+    0: ("D1 circuit 16 DEEP NOTE: Nova is a message-only "
+        "locked floor — the exact line 'Nova is cheat/edge "
+        "only — floor stays locked.' and NO state change: "
+        "plane census, avatar, and history all untouched."),
+    1: ("D1 circuit 16 DEEP NOTE: Initiate is message-only: "
+        "'Initiated. owner=<owner>' — it names the program "
+        "owner and mutates nothing."),
+    2: ("D1 circuit 16 DEEP NOTE: Persona is a pure read of "
+        "avatar_status — the message is exactly '<look>  "
+        "<describe>'; it reflects whatever state other "
+        "Dells wrote (after Transform turns the avatar, "
+        "Persona reports the new facing)."),
+    3: ("D1 circuit 16 DEEP NOTE: Logic prints the four "
+        "live constraints; a label is echoed as a noted "
+        "rule and written to program history via note_seed "
+        "('03[Logic] :: <label>'); bare Logic notes "
+        "'constraints'."),
+    4: ("D1 circuit 16 DEEP NOTE: Transform dispatches on "
+        "substrings of the lowered label — left/right "
+        "rotate the avatar, sit/stand set posture, jump "
+        "lands back at STAND, toggle flips the lattice "
+        "form (cube <-> sphere); an unrecognized label is "
+        "a named no-op ('Transform ready.') that changes "
+        "nothing."),
+    5: ("D1 circuit 16 DEEP NOTE: Tone maps the lowered "
+        "label through an expression table (joy/smile, "
+        "calm, focus, soft, intense, curious, neutral); "
+        "any other label — and a bare Tone — falls back "
+        "to NEUTRAL. Never an error."),
+    6: ("D1 circuit 16 DEEP NOTE: Cycle runs grow_ideas "
+        "with n = the digit label clamped to 1..5 (bare "
+        "= 1); growth PROPOSES only — the live plane "
+        "census is unchanged (the growth gate) — and "
+        "note_seed records the clamped n in history."),
+    7: ("D1 circuit 16 DEEP NOTE: Link mints a plane unit "
+        "through Create's place_idea machinery under the "
+        "name 'link_<label or link>' — canonical slug id, "
+        "label with '_' -> ' ', words = the name as "
+        "passed, Skin.CUBE, collision dedup; the unit is "
+        "immediately selectable by Core II Select."),
 }
 
 
