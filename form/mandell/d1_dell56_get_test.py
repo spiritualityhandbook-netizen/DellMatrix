@@ -28,15 +28,15 @@ Pinned consequences:
     insertion order, not alphabetical, not most-recently
     read.
 
-English: Get IS reachable ("get A" / "find A" -> 56), but
-the known ARGUMENT_LOSS residual (limitation_knowledge,
-circuit 3: MITIGATED) lowercases the operand on the
-English path — "get A" looks up 'a'. Against a store
-holding only 'A', the routed Get honestly publishes a
-missing cell for 'a' and the stored value is untouched;
-against a lowercase key it returns the value. Pinned as
-the documented residual surfacing on the read path,
-including in the literal REPL.
+English: Get IS reachable ("get A" / "find A" -> 56).
+The old ARGUMENT_LOSS residual (limitation_knowledge,
+circuit 3: MITIGATED) lowercased the operand on the
+English path — "get A" looked up 'a'. D1 reconciliation
+R5 repaired that end to end: the English operand is
+preserved, so "get A" reads 'A' and returns its value,
+at the route and in the literal REPL; the record now
+reads RESOLVED. (Historical residual evidence stays in
+the circuit-11 commit.)
 
 Signature sync in this circuit: derived_from 29-38 ->
 35-44; failures text gains the empty state; output text
@@ -176,7 +176,7 @@ def main():
          f"value={lr.get('value')!r}")
     _cleanup(owner)
 
-    # English: reachable, with the documented case residual.
+    # English: reachable, operand case preserved (R5).
     owner = "D156Eng"
     p = _fresh(owner)
     st = _store(p)
@@ -189,11 +189,11 @@ def main():
     execute_seed(p, "55[Set] :: A=hello")
     r = _english(p, "get A")
     lr = st.last_result or {}
-    _rec("english_get_uppercase_shows_argument_loss_residual",
-         r.ok and lr.get("error") == "missing"
-         and lr.get("predicate") == "a"
+    _rec("english_get_uppercase_preserves_the_key_R5",
+         r.ok and lr.get("value") == "hello"
+         and lr.get("predicate") == "A"
          and st.store.get("A") == "hello",
-         f"pred={lr.get('predicate')!r} error={lr.get('error')}")
+         f"pred={lr.get('predicate')!r} value={lr.get('value')!r}")
     _cleanup(owner)
 
     # REAL_USER_PATH: the literal REPL, both surfaces.
@@ -207,8 +207,8 @@ def main():
     rc, out, store = _repl(
         "D156ReplEng",
         "55[Set] :: A=hello\nget A\n10[Keep]\n")
-    _rec("repl_english_get_shows_the_same_residual",
-         rc == 0 and "Get a=MISSING" in out
+    _rec("repl_english_get_preserves_the_key_R5",
+         rc == 0 and "Get A='hello'" in out
          and store.get("A") == "hello",
          f"rc={rc}")
 

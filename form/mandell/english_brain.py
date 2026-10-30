@@ -530,7 +530,7 @@ def strip_politeness(text: str) -> str:
     return _MULTI_SPACE.sub(" ", t).strip()
 
 
-def _apply_paraphrase(lower: str) -> Optional[str]:
+def _apply_paraphrase(lower: str, original: str = "") -> Optional[str]:
     # learned first
     if lower in _LEARNED:
         return _LEARNED[lower]
@@ -538,6 +538,15 @@ def _apply_paraphrase(lower: str) -> Optional[str]:
         m = re.match(pat, lower, re.I)
         if not m:
             continue
+        # R5 (ARGUMENT_LOSS end-to-end): the template is system
+        # scaffolding, but the captured groups are USER operands
+        # — take them from the case-preserved original text.
+        # The patterns carry no case-sensitive constructs and
+        # match with re.I, so the parallel match on the original
+        # succeeds exactly when the shadow match does; fall
+        # back to the shadow groups if it ever does not.
+        mo = re.match(pat, original, re.I) if original else None
+        src = mo or m
         out = tmpl
         # replace {1}..{n} from match groups; missing optional groups → empty
         for i in range(1, 6):
@@ -545,8 +554,8 @@ def _apply_paraphrase(lower: str) -> Optional[str]:
             if token not in out:
                 continue
             g = ""
-            if m.lastindex and i <= m.lastindex:
-                g = (m.group(i) or "").strip()
+            if src.lastindex and i <= src.lastindex:
+                g = (src.group(i) or "").strip()
             out = out.replace(token, g)
         out = _MULTI_SPACE.sub(" ", out).strip()
         # tidy "grow ideas" with trailing empty count
@@ -556,13 +565,20 @@ def _apply_paraphrase(lower: str) -> Optional[str]:
     return None
 
 
-def _synonym_rewrite(lower: str) -> str:
+def _synonym_rewrite(lower: str, original: str = "") -> str:
     """Rewrite leading verb if we know a synonym → prefer create/grow/etc phrasing."""
     parts = lower.split(None, 1)
     if not parts:
         return lower
     head = parts[0]
     rest = parts[1] if len(parts) > 1 else ""
+    # R5 (ARGUMENT_LOSS end-to-end): only the command head is
+    # canonicalized; the operand tail is USER data and is taken
+    # from the case-preserved original text. Closed-vocabulary
+    # comparisons (directions, phrasal tails) still use the
+    # lowered rest; branches embedding the operand use rest_op.
+    oparts = original.split(None, 1) if original else []
+    rest_op = oparts[1] if len(oparts) > 1 else rest
     canon = VERB_MAP.get(head)
     if not canon or canon == head:
         return lower
@@ -612,7 +628,7 @@ def _synonym_rewrite(lower: str) -> str:
     }
     if canon in ("create",) and rest:
         # "spawn business plan" → create an idea called business plan
-        rest2 = re.sub(r"^(?:an?\s+)?(?:idea\s+)?(?:called\s+|named\s+)?", "", rest).strip()
+        rest2 = re.sub(r"^(?:an?\s+)?(?:idea\s+)?(?:called\s+|named\s+)?", "", rest_op, flags=re.I).strip()
         return f"create an idea called {rest2}" if rest2 else "create an idea called idea"
     if canon == "grow":
         m = re.search(r"(\d+)", rest)
@@ -622,18 +638,18 @@ def _synonym_rewrite(lower: str) -> str:
     if canon == "turn" and rest in ("left", "right"):
         return f"turn {rest}"
     if canon == "attend":
-        q = rest.strip() or "growth seed"
+        q = rest_op.strip() or "growth seed"
         return f"attend {q}"
     if canon == "glyph" and rest:
-        return f"glyph {rest}"
+        return f"glyph {rest_op}"
     if canon in starters and not rest:
         return starters[canon]
     if canon == "zoom" and rest:
-        return f"zoom {rest}"
+        return f"zoom {rest_op}"
     if canon == "weather" and rest:
-        return f"weather {rest}"
+        return f"weather {rest_op}"
     if canon in starters:
-        return starters[canon] if not rest else f"{starters[canon]} {rest}".strip()
+        return starters[canon] if not rest else f"{starters[canon]} {rest_op}".strip()
     return lower
 
 
@@ -649,10 +665,10 @@ def normalize_english(text: str) -> Tuple[str, str]:
     lower = stripped.lower().strip()
     if lower in _LEARNED:
         return _LEARNED[lower], "learned"
-    para = _apply_paraphrase(lower)
+    para = _apply_paraphrase(lower, stripped)
     if para:
         return para, "paraphrase"
-    syn = _synonym_rewrite(lower)
+    syn = _synonym_rewrite(lower, stripped)
     if syn != lower:
         return syn, "synonym"
     if stripped != raw:

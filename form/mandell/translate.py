@@ -147,8 +147,10 @@ def translate(english: str) -> Intent:
     # pre-normalization) or the current text with re.IGNORECASE
     # and take captures from that match — the add-idea site's
     # m_orig precedent, generalized. Routing keywords, direction
-    # words, closed vocabularies and store-key normalizations are
-    # deliberately left lowercased.
+    # words and closed vocabularies are deliberately left
+    # lowercased. (R5: store keys joined the preserved class —
+    # the get/find sites below capture them verbatim, because
+    # Dell 55 stores lab keys raw; see the R5 note there.)
     orig_text = text
     # MPC-001 Track C2: SEMANTIC LOSS GUARD (safety critical).
     # If English contains conditional/qualifying clauses that would be
@@ -501,33 +503,37 @@ def translate(english: str) -> Intent:
         return any(marker in pl for marker in ambiguous_markers)
     # get <key> → Dell56 (specific object retrieval)
     # MPC-002: Updated to typed format (validates via new signature)
+    # D1 reconciliation R5 (ARGUMENT_LOSS end-to-end): the key is
+    # a USER OPERAND. Detection runs on raw_lower, but the capture
+    # is re-matched against orig_text (the circuit-3 precedent)
+    # and preserved exactly — case AND spaces. Store keys are
+    # raw: Dell 55 writes the lab key verbatim, so the old
+    # slug normalization (lowercase + underscores) made 'A'
+    # unreadable as 'a' and spaced keys unreachable entirely.
     m = re.search(r"\bget\s+(.+?)\s*$", raw_lower)
     if m:
-        key = _strip_article(m.group(1))
+        mo = re.search(r"\bget\s+(.+?)\s*$", orig_text, re.IGNORECASE)
+        key = _strip_article((mo or m).group(1))
         # Don't capture "get up", "get going" (phrasal verbs)
-        if key and key not in ("up", "going", "down", "out") and not _is_ambiguous_find(key):
-            # Convert to store key format (spaces → underscores, like Create does)
-            store_key = re.sub(r"[^a-z0-9]+", "_", key.lower()).strip("_")
-            if store_key:
-                return Intent("get", 56, "Get",
-                             {"key": store_key},
-                             f'56[Get](key="{store_key}")', text)
+        if key and key.lower() not in ("up", "going", "down", "out") and not _is_ambiguous_find(key):
+            return Intent("get", 56, "Get",
+                         {"key": key},
+                         f'56[Get](key="{key}")', text)
     # find <key> → Dell56 ONLY for specific object (definite, no ambiguity markers)
-    # MPC-002: Updated to typed format
+    # MPC-002: Updated to typed format; R5: operand preserved as for get.
     m = re.search(r"\bfind\s+(.+?)\s*$", raw_lower)
     if m:
-        phrase = m.group(1).strip()
+        mo = re.search(r"\bfind\s+(.+?)\s*$", orig_text, re.IGNORECASE)
+        phrase = (mo or m).group(1).strip()
         # Must have definite article or be a simple noun phrase
         # Must NOT have ambiguity markers
         if phrase and not _is_ambiguous_find(phrase):
             key = _strip_article(phrase)
             # Only if it's a simple object reference (no "about", no complex clauses)
-            if key and " " not in key or (key and len(key.split()) <= 3):
-                store_key = re.sub(r"[^a-z0-9]+", "_", key.lower()).strip("_")
-                if store_key and len(store_key.split("_")) <= 3:
-                    return Intent("find", 56, "Get",
-                                 {"key": store_key},
-                                 f'56[Get](key="{store_key}")', text)
+            if key and len(key.split()) <= 3:
+                return Intent("find", 56, "Get",
+                             {"key": key},
+                             f'56[Get](key="{key}")', text)
 
     # MPC-002: Bounded English for retrieval family (51, 58).
     # Dell51 Select: "select X" → typed predicate
