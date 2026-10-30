@@ -15,10 +15,11 @@ Pinned consequences:
   - Query is READ-ONLY: st.selected is byte-identical
     after any query, matching or not. (Contrast Dell 58
     Match, which rewrites the selection.)
-  - matched carries the HITS LIST ITSELF, not a bool —
-    unlike Dell 51, whose matched is bool(selected). An
-    empty query therefore reports matched=[] (falsy, but
-    a list). Consumers must not assume a bool here.
+  - matched is a BOOLEAN (standardized by reconciliation
+    R2, Director ruling 2026-10-29, superseding circuit
+    10's list pin): matched = bool(hits); the hit IDs live
+    in value and the quantity in count, family-consistent
+    with Dell 51. An empty query reports matched=False.
   - confidence is exactly 1.0 when hits exist, else 0.0.
   - Query never fails: empty selection and no-match both
     return ok=True with value=[] and confidence 0.0.
@@ -33,8 +34,10 @@ surface fact, not changed.
 
 Signature sync in this circuit: derived_from 24-27 ->
 24-28 (the arm includes its message line), and the
-output text now states the selection-only universe and
-the matched-is-a-list fact.
+output text states the selection-only universe. (R1
+later shifted the arm to 28-32; R2 standardized the
+matched type to Boolean — both syncs are reflected in
+the current signature.)
 
 Labels: seed execution PUBLIC_ENTRY_PATH; translate +
 route_intent = the REPL's routing authority; the final
@@ -135,10 +138,10 @@ def main():
     before = list(st.selected)
     r = execute_seed(p, "54[Query]")
     lr = st.last_result or {}
-    _rec("query_all_publishes_hits_and_matched_is_the_list",
+    _rec("query_all_publishes_hits_and_matched_is_bool",
          r.get("ok") and lr.get("value") == before
-         and lr.get("matched") == before
-         and isinstance(lr.get("matched"), list)
+         and lr.get("matched") is True
+         and isinstance(lr.get("matched"), bool)
          and lr.get("confidence") == 1.0
          and lr.get("source") == "query"
          and lr.get("predicate") == "*",
@@ -157,7 +160,7 @@ def main():
     lr = st.last_result or {}
     _rec("query_no_match_valid_empty_zero_confidence",
          r.get("ok") and lr.get("value") == []
-         and lr.get("matched") == [] and lr.get("confidence") == 0.0,
+         and lr.get("matched") is False and lr.get("confidence") == 0.0,
          f"ok={r.get('ok')} conf={lr.get('confidence')}")
     p.place("late_idea", "Late Idea")
     r = execute_seed(p, "54[Query]")
@@ -206,8 +209,8 @@ def main():
     from form.mandell.dell_cards import DEEP_NOTES
     sig = get_signature(54)
     _rec("signature_matches_code",
-         sig.derived_from.endswith("24-28")
-         and "not a bool" in sig.output,
+         sig.derived_from.endswith("28-32")
+         and "Boolean" in sig.output,
          sig.derived_from)
     _rec("proof_card_carries_the_deep_note",
          54 in DEEP_NOTES and "matched" in DEEP_NOTES[54],

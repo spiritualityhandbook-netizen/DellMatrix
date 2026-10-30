@@ -8,8 +8,9 @@ signature (role pattern, optional):
   st.selected = [i for i in st.selected
                  if pat in str(i).lower()] if pat
                 else list(st.selected)
-  cell = value=list(selected), matched=list(selected)
-         (the LIST, as Dell 54), count, source="match",
+  cell = value=list(selected), matched=bool(selected)
+         (standardized by reconciliation R2; the IDs live
+         in value, the quantity in count), source="match",
          predicate=pat or "*"
 
 Pinned consequences:
@@ -28,7 +29,7 @@ Pinned consequences:
   - Case-insensitive (pattern and ids both lowercased).
   - Empty pattern is the identity: selection unchanged.
   - Match never fails: a no-match pattern is a valid
-    empty selection (ok=True, matched=[]).
+    empty selection (ok=True, matched=False).
   - The narrowed selection persists (core_ii durable).
 
 English: no surface — "match garden" / "filter garden"
@@ -38,6 +39,8 @@ and the REPL. The seed line is the REPL user path.
 Signature sync in this circuit: derived_from 44-47 ->
 54-59; output now states the destructive narrowing, the
 matched-is-a-list fact, and the raw-substring divergence.
+(R2 later standardized matched to bool; R3 owns the
+engine divergence.)
 
 Labels: seed execution PUBLIC_ENTRY_PATH; translate +
 route_intent = the REPL's routing authority; the final
@@ -126,10 +129,11 @@ def main():
     p, st = _seeded(owner)
     r = execute_seed(p, "58[Match] :: garden")
     lr = st.last_result or {}
-    _rec("match_narrows_and_publishes_the_list",
+    _rec("match_narrows_and_publishes_bool_matched",
          r.get("ok") and st.selected == ["garden_gate", "garden_path"]
-         and lr.get("matched") == st.selected
-         and isinstance(lr.get("matched"), list)
+         and lr.get("value") == st.selected
+         and lr.get("matched") is True
+         and isinstance(lr.get("matched"), bool)
          and lr.get("count") == 2 and lr.get("source") == "match",
          f"selected={st.selected}")
     execute_seed(p, "51[Select]")
@@ -154,7 +158,7 @@ def main():
     r = execute_seed(p, "58[Match] :: zzz")
     lr = st.last_result or {}
     _rec("no_match_is_valid_empty_never_a_failure",
-         r.get("ok") and st.selected == [] and lr.get("matched") == [],
+         r.get("ok") and st.selected == [] and lr.get("matched") is False,
          f"ok={r.get('ok')} selected={st.selected}")
     execute_seed(p, "51[Select]")
     execute_seed(p, "58[Match] :: garden")
@@ -214,7 +218,7 @@ def main():
     from form.mandell.dell_cards import DEEP_NOTES
     sig = get_signature(58)
     _rec("signature_matches_code",
-         sig.derived_from.endswith("54-59")
+         sig.derived_from.endswith("58-63")
          and "RAW" in sig.output,
          sig.derived_from)
     _rec("proof_card_carries_the_deep_note",
