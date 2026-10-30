@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # R6.4 Delta-20 — AMEND-4 Reconciliation
 
 **Directive:** GDP_PHASE_6_R64_FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT (MODE=C)

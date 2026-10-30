@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # NBD Equation (Mandell)
 
 ## Seed
@@ -24,6 +26,4 @@ Symbol | Meaning |
 
 Dynamic: as $L_t$ rises, $\lambda$ falls, ranking shifts — equation stays fixed.
 
-```bash
-python -m form.mandell.nbd_equation
-```
+> Module note (2026-10-30): there is no `form/mandell/nbd_equation.py` in this tree at commit 11933da — the equation above is the design formula, not a runnable module. The live NBD decision-support code is `form/mandell/nbd_engine.py` (NBDE-I: read-only DISCOVER / CLASSIFY / SCORE / COMPARE / RANK / EXPLAIN / PROPOSE) with `form/mandell/nbd_candidates.py`.

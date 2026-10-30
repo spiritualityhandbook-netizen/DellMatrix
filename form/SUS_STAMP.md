@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # SUS Stamp — Form stack
 
 **Floor:** Alpha · Delta · Omega · Omni LOCKED  

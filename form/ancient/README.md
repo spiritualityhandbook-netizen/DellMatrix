@@ -1,3 +1,5 @@
+> STATUS: ARCHIVED — not in use. Preserved under form/ancient/ by master-plan P11 (2026-10-27); nothing in the live runtime imports it. See form/LEGACY.md.
+
 # form/ancient — ARCHIVED (master plan P11, 2026-10-27)
 
 This directory is historical material, not live code.

@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Visual Control Language forms — intake
 
 Policy: `form/MODE_FORM.md` (high‑S only).

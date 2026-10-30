@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # R6.5 PROOF CONTRACT — Separation Enforcement
 
 **Directive:** GDP_PHASE_6_R65_SEPARATION_ENFORCEMENT (MODE=C)

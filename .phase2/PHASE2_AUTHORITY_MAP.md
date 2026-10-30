@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # PHASE2_AUTHORITY_MAP (draft skeleton — fill from examination reports)
 
 ## The one canonical question

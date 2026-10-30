@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # DELLMATRIX EQUATION LEDGER
 
 **Program:** DELLMATRIX_GDP_001 · **Phase:** 0 — Integrity & Semantic Foundation

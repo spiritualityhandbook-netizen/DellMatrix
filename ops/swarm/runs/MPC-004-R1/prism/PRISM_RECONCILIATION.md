@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # PRISM RECONCILIATION — MPC-004-R1 Dell Operational Truth Baseline
 
 **Role:** PRISM (reconciliation/synthesis). **Read-only. Authorizes nothing.**

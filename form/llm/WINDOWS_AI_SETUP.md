@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Link Gemini · Grok · Claude · Copilot · AI Studio on Windows
 
 These are **cloud AIs** (API or CLI), not local model downloads.  
@@ -44,21 +46,22 @@ cd $env:USERPROFILE\Documents\DellMatrix
 python -m form.llm.cli --detect
 ```
 
-## 4. Enhance her matrix / trading session
+## 4. Enhance her matrix session
 
 ```powershell
 python -m form.llm.cli --matrix --owner Sister --provider grok
 python -m form.llm.cli --matrix --owner Sister --provider claude
 python -m form.llm.cli --matrix --owner Sister --provider gemini
-python -m form.llm.cli --matrix --owner Sister --all "Rank risks and next paper trades; not advice"
+python -m form.llm.cli --matrix --owner Sister --all "Rank next steps; not advice"
 ```
 
-## 5. Daily chain (market evolve + AI enhance)
+## 5. Daily chain (AI enhance)
 
 ```powershell
-python -m form.trading.cli --owner Sister daily
 python -m form.llm.cli --matrix --owner Sister --all "Daily brief from matrix status"
 ```
+
+(The `form.trading.cli` market-evolve step from the original chain is gone: the `form/trading/` package was removed in master-plan P11 — see `form/CORE_SCOPE.md`.)
 
 ## 6. What “universal enhance” means here
 
@@ -68,8 +71,6 @@ python -m form.llm.cli --matrix --owner Sister --all "Daily brief from matrix st
 | Grok | `XAI_API_KEY` → xAI API |
 | Claude | `ANTHROPIC_API_KEY` → Anthropic API |
 | Copilot | `gh` CLI authenticated / token |
-| Dell Matrix | Always local plane + trading paper |
+| Dell Matrix | Always local plane |
 
-AIs **suggest**; the matrix **stores and evolves** structure. She decides paper/live orders.
-
-**Not financial advice.**
+AIs **suggest**; the matrix **stores and evolves** structure. She decides.

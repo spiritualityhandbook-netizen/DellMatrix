@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # Button + Path full coverage enhance loop × 150
 
 **Runner:** `python -m form.dell_matrix.button_path_enhance_loop --cycles 150`  

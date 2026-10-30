@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Code Evolution — sealed Nova chronicle (high-S form)
 
 **Tier:** Worldwide idea first · absorb into DEV only what runs today  
@@ -65,7 +67,7 @@ Full 3D matrix navigation runtime remains **PROJECTED_NOT_FACT**.
 
 `form/dell_matrix/decision_shells.py`
 
-- Ternary · Fuzzy · soft_gate  
+- Ternary · soft_gate (no `Fuzzy` symbol exists in `decision_shells.py` or anywhere in `form/` at this commit)  
 - VariableShell · ProbabilisticShell · ConstructiveShell · ResourceShell  
 - GrowthResidue  
 - OpenShell · prefer_open()  

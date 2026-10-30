@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # Video harvest — 2026-08-08
 
 Analyzed six links → high-value ideas → modules on GitHub.

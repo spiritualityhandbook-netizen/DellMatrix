@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Program strength — function + usability
 
 Gates every aspect of the program for **working ends** and **usable guidance**.

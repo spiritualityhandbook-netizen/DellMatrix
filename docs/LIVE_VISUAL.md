@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Live two-way visual — A+ (Phases A–E)
 
 **Status:** Implemented (opt-in). Snapshot `visual` remains default.

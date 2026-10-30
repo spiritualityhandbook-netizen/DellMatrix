@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # Track B — Free Matrix UI (PRIMARY)
 
 **Operator choice:** B primary · do everything else **except C (trading)**.

@@ -1,3 +1,5 @@
+> STATUS: EXTERNAL REFERENCE — third-party material vendored for reference. NOT part of DellMatrix, NOT in use by the runtime.
+
 Introduction — The Nature of Code
 
 Source: https://natureofcode.com/introduction/

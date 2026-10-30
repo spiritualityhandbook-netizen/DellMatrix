@@ -1,3 +1,5 @@
+> STATUS: NOT IN USE — preform/src are earlier generations of DellMatrix, retained as design history and reference. The production runtime is form/ (verified at commit 11933da, 2026-10-30). This file does not describe current behavior.
+
 # preform/ — LEGACY (final)
 
 **Status: LEGACY · frozen · not live Form · residual closed 2026-08-01**

@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Foundation Status — living map
 
 **Floor:** Alpha · Delta · Omega · Omni (LOCKED)
@@ -9,14 +11,14 @@
 | Module | Path | Role |
 |--------|------|------|
 | Mandell Floor | form/mandell/ | Language lock |
-| Registry / Manifest | form/mandell/ | Dell 00–50 |
+| Registry / Manifest | form/mandell/ | Dell 00–99 (Core I 00–50 + Core II 51–99) |
 | **Translate** | form/mandell/translate.py | **English → Mandell** |
 | DellMatrix host | form/dell_matrix/core.py | Snap + verify |
-| Plane | plane.py | Geometric surface |
-| Visual | visual.py | Offline interactive HTML |
-| IdeaGrow | idea_grow.py | Growth cycles |
-| Open / REPL | open.py · repl.py | One program + front door |
-| Persist | persist.py | Save / checkpoint |
+| Plane | form/dell_matrix/plane.py | Geometric surface |
+| Visual | form/dell_matrix/visual.py | Offline interactive HTML |
+| Growth (`grow ideas`) | form/open.py (`Program.grow_ideas`) · form/grow.py | Growth cycles |
+| Open / REPL | form/open.py · form/repl.py | One program + front door |
+| Persist | form/persist.py | Save / checkpoint |
 | SelfGrow | form/duobeta/selfgrow.py | Curriculum growth |
 
 ## How to run

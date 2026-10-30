@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # LEGACY — Do Not Use for New Work
 
 Unified freeze map for dual-era and pre-Form material.

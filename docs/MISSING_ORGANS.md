@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # Missing organs — densify from this repo
 
 **Important:** On a **full clone** of https://github.com/spiritualityhandbook-netizen/DellMatrix the vital spine **exists and is strong** (plane, pillars, harmonic_lattice, ringed_growth, english_brain, nursery, forces, nature_code, brain, verita, floor_spirit, internet_gate, auto_growth, matrix_awake, …).

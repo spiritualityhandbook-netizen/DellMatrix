@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # What the program needs — implemented
 
 Assessed gaps that blocked a complete Origin path, now first-class.

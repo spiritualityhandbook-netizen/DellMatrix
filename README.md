@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # DellMatrix
 
 **An offline idea environment with a structured language for working with thoughts.**
@@ -27,17 +29,21 @@ DellMatrix lets you create ideas, grow them into proposals, confirm the ones wor
 
 ## 2. Status
 
-**Production main:** `c6fd2fb` (2026-10-27, post PR #119 merge — Ten-Phase Master Plan P11).
+**Production main:** `11933da` (2026-10-30, post PR #155 merge — full 100-Dell registry proof circuits complete).
 **Phase 5:** MERGED to production via PR #79 (merge `ea9b76a`); Director admission PASS.
 **Phase 6:** R6.1–R6.5 MERGED/CLOSED.
 **Phase 7:** R7.1 MERGED via PR #85 (Director admission PASS); R7.2–R7.7 MERGED via PRs #87–#92 (independent/Director certification outstanding — merged is not certified).
 **Post-GDP capability phases A–E:** MERGED via PRs #95–#99 (dock transport, interaction lookup, InternetGate hardening, KIE routability, action provenance).
 **README Completion Program H–O:** MERGED via PRs #100–#107 (lineage by label, resonance commands, DuoBeta cross-session, Spanish/French, launchers, projects, visual UX, README truth reconciliation).
 **Phase F (replication):** MERGED via PR #108 — `form.regress --passk ENTRY K` re-runs a suite K times on fresh tree copies; green only at k/k.
-**Ten-Phase Master Plan P1–P11:** MERGED via PRs #109–#119 (dedup + baseline closure, evidence integrity, surface wiring, the semantic-docking program SD-1..SD-5 as P4–P8, Exchange v1 as P9, flow-grammar conformance as P10, satellite disposition as P11). P12 (final audit + closure) is the remaining phase. Independent/Director certification of P1–P11 is outstanding — merged is not certified.
+**Ten-Phase Master Plan P1–P12:** MERGED via PRs #109–#120 (dedup + baseline closure, evidence integrity, surface wiring, the semantic-docking program SD-1..SD-5 as P4–P8, Exchange v1 as P9, flow-grammar conformance as P10, satellite disposition as P11, final audit + closure as P12).
+**Post-plan packets PP1–PP5:** MERGED via PRs #122–#124 and #126–#128 (stopwords, autonomy charter, unknowns, docked Bimo configuration, flow visuals). **Exchange residual repair:** MERGED via PR #125.
+**Director Mode D review (2026-10-28):** 29 of 31 segments certified with noted exceptions. The Exchange segment (PR #117 line) and the P12 audit segment (PR #120 line) were declined; the Exchange residual repair is merged (PR #125) and both await Director re-ruling. Merged is not certified.
+**D1 deep-contract circuits + full-registry proof:** MERGED via PRs #129–#155 — per-Dell circuits for the typed set plus reconciliation repairs R1–R5 (PRs #129–#148), then registry circuits 16–22 completing proof cards for all 100 Dells (PRs #149–#155). Merged, not certified.
 
-All §2 claims below were verified on or before production main `c6fd2fb`
-(2026-10-27) unless labeled otherwise. Walkthroughs originally executed on `f3c9007`
+All §2 table rows below were verified on or before production main `c6fd2fb`
+(2026-10-27) unless labeled otherwise; the phase-status lines above are current
+at production main `11933da` (2026-10-30). Walkthroughs originally executed on `f3c9007`
 (2026-10-04) are retained as dated historical evidence where noted.
 Phase-5 behaviors (§6.7) are production behavior as of `ea9b76a`.
 
@@ -78,7 +84,7 @@ Phase-5 behaviors (§6.7) are production behavior as of `ea9b76a`.
 | Inside-out design loop (SD-5) | **WORKING / VERIFIED** | Docked AIs file `kind=design` proposals; the loop ledger (`design_loop` section) assembles the full chain per proposal — filed → Director recommendation → human gate → implemented (PR + merge SHA) — and the REPL review surface prints Director recommendations under proposals (P8, PR #116; `p8_sd5_test` 12/12; the first full loop turn shipped in PR #116 itself) |
 | Exchange v1 | **WORKING / VERIFIED** | `exchange export <id> <file>` / `exchange import <file>`: seed packets carry receipts (guess/test/mirror/outcome); chain lint labels missing links precisely; import lands PENDING under the receiver's own gate with replication counted, never scored; authority keys in a packet are refused at the boundary (P9, PR #117; `p9_exchange_test` 11/11, cross-process two-owner proof) |
 | Flow grammar | **WORKING / VERIFIED** | All nine flow operators (`> >> >>> : :: :> <: <:> <<[Delta]`) execute with the canonical chain semantics at the public REPL path — the parsed set, the contract set, and the executable set are the same set (P10, PR #118; `p10_flow_grammar_test` 12/12) |
-| Regression suite | **WORKING / VERIFIED** | `python3 -m form.regress` runs 159 registered suites; the master-plan phases each added their proof suite (159/159 green at `c6fd2fb`, forward / twice / reverse) |
+| Regression suite | **WORKING / VERIFIED** | `python3 -m form.regress` runs 198 registered suites (LIST in `form/regress.py`); the master-plan phases each added their proof suite (159/159 green at `c6fd2fb`, forward / twice / reverse) |
 
 ---
 
@@ -107,9 +113,9 @@ flowchart TD
 ```
 
 **Autonomy note:** Most commands require you to type them, but DellMatrix has autonomous paths with different defaults:
-- `auto_growth.py`: The `AutoGrowth` dataclass defaults to `auto=True, internet=True`. When instantiated with defaults, it can automatically propose and confirm ideas based on quality thresholds (`_should_auto_confirm` checks `floor_accept`, `verita_score`, `combined` score, and grade). It calls `p.confirm_proposal()` without per-proposal user input. Callers can set `auto=False` to disable.
+- `form/dell_matrix/auto_growth.py`: The `AutoGrowth` dataclass defaults to `auto=False, internet=True` (code comment: "WO-5.1: Default OFF. Automated acceptance requires explicit opt-in."). With `auto` explicitly enabled, it can automatically propose and confirm ideas based on quality thresholds (`_should_auto_confirm` returns False unless `auto` is on; then it checks `floor_accept`, `verita_score`, `combined` score, and grade). Confirmation goes through the owner Program's `confirm_proposal()`; AutoGrowth never mutates confirmation status itself.
 - REPL `auto confirm on`: The `Program.auto_confirm_grow` attribute defaults to `False`. When the user types `auto confirm on`, every subsequent `grow` command automatically confirms all nursery proposals.
-- Default posture: REPL interaction is human-controlled by default; the `AutoGrowth` class is opt-out (defaults on) when instantiated directly.
+- Default posture: REPL interaction is human-controlled by default; the `AutoGrowth` class is opt-in (defaults off) even when instantiated directly.
 
 ### (b) Proposal lifecycle and persistence
 
@@ -130,7 +136,7 @@ flowchart TD
 
 The nursery tracks proposal status (`pending` → `confirmed`). The plane holds confirmed Ideas as spatial units. On `save`, both are written to disk. On restart, `load` restores state from the disk files.
 
-**Crash recovery (MERGED via PR #77, 2026-10-05):** If the process crashes mid-confirmation, the intent-journal recovery mechanism converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state). This is production behavior on current main `c6fd2fb` (mechanism unchanged since PR #77).
+**Crash recovery (MERGED via PR #77, 2026-10-05):** If the process crashes mid-confirmation, the intent-journal recovery mechanism converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state). This is production behavior on current main `11933da` (mechanism unchanged since PR #77).
 
 ---
 
@@ -160,7 +166,7 @@ You'll see a banner and a `you>` prompt. Type `tutorial` for a guided walkthroug
 | Action | User entrypoint | Observable result | Implementation source | Test |
 |--------|----------------|-------------------|----------------------|------|
 | Create idea | `create an idea called <name>` | Idea stored; coaching on strength/detail/goals | `form/repl.py`, `form/dell_matrix/` | Walkthrough verified |
-| Grow proposals | `grow ideas N` | Proposals in nursery (count varies; observed 1 from `grow ideas 2`) | Dell 13 via `form/grow.py` | Walkthrough verified |
+| Grow proposals | `grow ideas N` | Proposals in nursery (count varies; observed 1 from `grow ideas 2`) | `Program.grow_ideas` in `form/open.py` (`form/grow.py` is the self-grow entry shim to `form/duobeta/selfgrow`) | Walkthrough verified |
 | List proposals | `proposals` | Pending proposals with IDs | `form/dell_matrix/nursery.py` | Walkthrough verified |
 | Confirm | `confirm <id>` / `confirm all` | Proposal confirmed; Idea on plane | `form/dell_matrix/confirm_lineage.py` | Walkthrough verified |
 | Inspect | `look`, `page`, `rank` | Affinity-ordered idea display | `form/dell_matrix/first_person.py` | Walkthrough verified |
@@ -182,7 +188,7 @@ You'll see a banner and a `you>` prompt. Type `tutorial` for a guided walkthroug
 
 > Removed in the master plan (recorded, not silently): the `form/trading/` sandbox package, the `network_main`/`shared_main` sync island, and `plant_to_dev` (P11, PR #119); a dormant free-matrix cluster (P8, PR #116). `form/ancient/` is archived in place with a pointer README.
 
-> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call. Historical walkthroughs (2026-10-04) ran on SHA `f3c9007`; current production is main `c6fd2fb` (2026-10-27).
+> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call. Historical walkthroughs (2026-10-04) ran on SHA `f3c9007`; current production is main `11933da` (2026-10-30).
 
 ---
 

@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Core I 00-50 — maturity from runtime
 
 Dispatch lives in `executor_leaf.py`. Closable recovery/measure/external arms run through `core_i_ops.py`. Front door stays `execute_seed`.

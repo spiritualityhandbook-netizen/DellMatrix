@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Local open-source models → Dell Matrix
 
 Run models **on her PC** (no cloud required for this path).
@@ -52,9 +54,10 @@ python -m form.llm.cli --matrix --owner Sister --provider ollama
 ## Daily offline chain
 
 ```powershell
-python -m form.trading.cli --owner Sister daily
 python -m form.llm.cli --matrix --owner Sister --provider ollama "Daily brief; not advice"
 ```
+
+(The `form.trading.cli` step from the original chain is gone: the `form/trading/` package was removed in master-plan P11 — see `form/CORE_SCOPE.md`.)
 
 ## Local vs cloud
 

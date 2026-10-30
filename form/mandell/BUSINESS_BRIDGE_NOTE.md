@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # Personal test surface — Ultimate Stain & Seal (US&S)
 
 Date: 2026-08-01  

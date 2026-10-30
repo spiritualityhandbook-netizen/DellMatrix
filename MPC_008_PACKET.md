@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # MPC-008 COMPLETION PACKET
 SEMANTIC AUTHORITY RESOLUTION + RESUME/MACRO PRODUCT CORRECTION
 

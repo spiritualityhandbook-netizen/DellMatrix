@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # GDP-001 Phase 1 — Migration / Compatibility Matrix
 
 **Date:** 2026-10-03

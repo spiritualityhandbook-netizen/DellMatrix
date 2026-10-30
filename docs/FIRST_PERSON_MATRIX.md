@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # First-person matrix walk
 
 You are **inside** the lattice — always at the **centerpoint of a cell** (block or sphere dual).  

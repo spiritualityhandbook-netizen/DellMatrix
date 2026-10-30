@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # MPC_011_PACKET — DELL37 RECONCILIATION + CLAUDE EXTERNAL-AUDIT DIFFERENTIAL
 # (CLOSED per MPC-012 §0: Dell87 refusal + /cmd hardening applied below)
 

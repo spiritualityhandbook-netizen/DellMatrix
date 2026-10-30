@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Tutorial — DellMatrix (average user)
 
 Offline. About 2 minutes.

@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # Handoff — Code Evolution (other chat)
 
 Develop Code Evolution **outside** this DEV session if you want; return to merge high-S results.

@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # Phase 2 Research Ledger — claim | source | strength | relevance | verdict | DellMatrix consequence
 
 | # | Claim | Source | Strength | Relevance | Verdict | DellMatrix consequence |

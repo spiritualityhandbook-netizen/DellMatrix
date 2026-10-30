@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # GDP_PHASE_2_CERTIFICATION_PACKET
 
 **Phase:** GDP-001 Phase 2 — Fractal Semantic Graph  
