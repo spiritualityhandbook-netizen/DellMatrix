@@ -230,13 +230,12 @@ DEEP_NOTES: Dict[int, str] = {
          "the selection by pattern (the dual of Dell 54's "
          "read-only search); chained Matches intersect; "
          "empty pattern is the identity; Match never fails; "
-         "matched is a Boolean (as 54; R2 standardization); DIVERGENCE "
-         "PINNED: Match uses a raw lowercase substring, NOT "
-         "the shared predicate engine — the spaced pattern "
-         "'garden gate' matches [garden_gate] under Select "
-         "but NOTHING under Match (' ' != '_'); same text, "
-         "two engines, different answers — recorded for the "
-         "Director as a unification decision; no English "
+         "matched is a Boolean (as 54; R2 standardization); "
+         "the pattern test is the SHARED predicate engine "
+         "(unified by reconciliation R3): the spaced pattern "
+         "'garden gate' matches [garden_gate] under Match "
+         "exactly as under Select — same text, one engine, "
+         "same answer; no English "
          "surface; the narrowed selection persists."),
 }
 
