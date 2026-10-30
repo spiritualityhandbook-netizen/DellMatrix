@@ -266,6 +266,7 @@ LIST = [
     "form.mandell.english_brain_150_loop:smoke",
     "form.mandell.regress_coverage_test:smoke",
     "form.af1_chain_args_test:smoke",
+    "form.af2_delimiter_addressing_test:smoke",
 ]
 
 TIMEOUT_S = 900
