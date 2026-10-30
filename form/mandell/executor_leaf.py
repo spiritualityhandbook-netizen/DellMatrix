@@ -25,6 +25,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     label = s.label or ""
     # TOAM-I C3: For Dell 8 with typed args, use the 'name' arg as the label.
     # This wires the typed representation to the existing Create authority.
+    create_skin = Skin.CUBE
     if primary == 8 and s.atoms:
         atom_args = getattr(s.atoms[0], "args", None) or {}
         if atom_args:
@@ -48,6 +49,12 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
                 if typed_name:
                     label = typed_name
                     messages.append(f"TOAM: typed name='{typed_name}' wired to Create")
+                # R4: skin was enum-validated above (validate()
+                # refuses non-members before any mutation), so
+                # this resolution cannot fail; wire it through.
+                if "skin" in atom_args:
+                    create_skin = Skin[atom_args["skin"]]
+                    messages.append(f"TOAM: typed skin='{atom_args['skin']}' wired to Create")
     new_program = None
 
     def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
@@ -122,7 +129,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     elif primary == 7:
         place_idea(f"link_{label or 'link'}")
     elif primary == 8:
-        place_idea(label or "idea")
+        place_idea(label or "idea", skin=create_skin)
     elif primary == 9:
         lab = (label or "").lower()
         if "embed" in terms or "visual" in lab or 47 in [a.dell for a in s.atoms]:
