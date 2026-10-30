@@ -346,6 +346,102 @@ DEEP_NOTES: Dict[int, str] = {
          "CURRENT lattice form (it reports the form "
          "Map set), and the save tip naming Dell 10; "
          "the label (or 'close') is noted to history."),
+    21: ("D1 circuit 18 DEEP NOTE: Merge (live_identity "
+         "authority) resolves sources from the label's "
+         "tokens (id, exact label, case-insensitive "
+         "label; joiners skipped); one resolved source "
+         "fails missing_source, an ambiguous token "
+         "fails ambiguous_source; the child is "
+         "merge_<p1>_<p2> (repeats dedup to _2) with "
+         "parents/origin recorded and parents "
+         "unmutated. EXHIBIT: with zero resolved "
+         "sources and >=2 units, Merge silently falls "
+         "back to the LAST TWO units — a bare Merge "
+         "merges them instead of requiring sources."),
+    22: ("D1 circuit 18 DEEP NOTE: Split "
+         "(live_identity authority) splits the first "
+         "resolved source into <src>_a/<src>_b "
+         "('split <src>' words, parents [source], "
+         "origin split), parent preserved; an "
+         "ambiguous label fails ambiguous_source. "
+         "EXHIBIT: with no resolved source Split "
+         "silently falls back to the LAST unit — a "
+         "bare or misspelled Split splits whatever "
+         "came last instead of failing."),
+    23: ("D1 circuit 18 DEEP NOTE: Lock is the "
+         "sandbox switch — sandbox_on applies the "
+         "sandbox to every live unit "
+         "(sandboxed=True), 'Sandbox ON.'; the "
+         "mechanism is the sandbox, not a per-unit "
+         "freeze."),
+    24: ("D1 circuit 18 DEEP NOTE: Unlock releases "
+         "the sandbox — sandbox_off, every unit "
+         "sandboxed=False, 'Sandbox OFF.'"),
+    25: ("D1 circuit 18 DEEP NOTE: Pulse pulses the "
+         "enhance engine ('Pulse sent.'); with "
+         "enhance OFF the scores are untouched; the "
+         "labels 'on'/'enhance_on' turn enhance ON "
+         "instead ('Enhance ON.')."),
+    26: ("D1 circuit 18 DEEP NOTE: Temp resolves "
+         "cold/cool -> enhance OFF, hot/heat -> "
+         "enhance ON + pulse (the pulse scores every "
+         "live unit), anything else incl. bare -> "
+         "warm (enhance ON); the resolved label is "
+         "noted to history."),
+    27: ("D1 circuit 18 DEEP NOTE: Checkpoint "
+         "(core_i_ops) writes a committed generation "
+         "via Checkpoint Generation V1, returns its "
+         "id ('Checkpoint written: generation <id>') "
+         "and records it in last_core_i."),
+    28: ("D1 circuit 18 DEEP NOTE: Rollback "
+         "(core_i_ops) is authority-mediated — a bare "
+         "Dell-28 seed is DENIED with zero mutation "
+         "(acceptance_policy_denied with a checkpoint "
+         "present, rollback_target_invalid without "
+         "one); only the mediated path (freeze + "
+         "grant + confirm_rollback) restores the "
+         "checkpointed plane."),
+    29: ("D1 circuit 18 DEEP NOTE: Compress mints "
+         "compress_<distilled> as SEED, where "
+         "distilled = distill_label(label): tokens "
+         ">2 chars, lowercased, deduped, max 4 "
+         "(empty label -> 'distill'); 'Compressed "
+         "→ <distilled>'."),
+    30: ("D1 circuit 18 DEEP NOTE: Expand's source "
+         "is the label, or (bare) the LAST unit's "
+         "'<label> <words>'; it mints expand_<source "
+         "underscored, truncated to 24 chars> as "
+         "CUBE and reports the full expansion."),
+    31: ("D1 circuit 18 DEEP NOTE: Simulate is a "
+         "dry-run status read (owner/ideas/"
+         "history_len from the pre-run status); "
+         "units, scores and sandbox are unchanged."),
+    32: ("D1 circuit 18 DEEP NOTE: Pause idles the "
+         "avatar ('Paused.'); a label containing "
+         "'enhance' turns enhance OFF instead "
+         "('Enhance OFF.', avatar untouched)."),
+    33: ("D1 circuit 18 DEEP NOTE: Resume walks the "
+         "avatar; if enhance was OFF it is turned ON "
+         "('Resumed walk + enhance ON.'), otherwise "
+         "'Resumed walk.'; noted to history."),
+    34: ("D1 circuit 18 DEEP NOTE: Stamp (core_i_ops) "
+         "records last_stamp {mark, UTC ts} — the "
+         "label is the mark (bare = 'stamp') — and "
+         "echoes 'Stamp: <mark> @ <ts>'; last_core_i "
+         "records dell 34."),
+    35: ("D1 circuit 18 DEEP NOTE: Discover "
+         "(core_i_ops) is a sourced read family: the "
+         "default read returns the avatar line + "
+         "ideas/nursery counts and records "
+         "last_discover {ids in plane order, count, "
+         "nursery}; named reads count_nursery, "
+         "list_pending, compare_nursery, trace and "
+         "find_idea <q> each record a sourced "
+         "last_discover."),
+    36: ("D1 circuit 18 DEEP NOTE: Inject mints the "
+         "RAW label as SEED via place_idea (bare = "
+         "'inject'), announces 'Injected into scope: "
+         "<name>' and notes the name to history."),
 }
 
 
