@@ -23,6 +23,17 @@ from .core_ii_exec import attach, execute_core_ii
 from .registry import get_dell, namespace_of
 
 
+def _eff_label(atom: Any, seed: Any) -> str:
+    """AF-2: an atom's effective label is its own segment label
+    when its segment carried one, else the seed's (last segment's)
+    label. This preserves the historical trailing-label shape —
+    every atom falls back to the shared trailing label — while a
+    mid-chain segment label now stays with its own atom instead of
+    being swallowed into (or overwritten by) the trailing one."""
+    lab = getattr(atom, "label", "") or ""
+    return lab if lab else (getattr(seed, "label", "") or "")
+
+
 def _flow_at(seed: Any, index: int) -> str:
     flows = list(getattr(seed, "flows", []) or [])
     if 0 <= index < len(flows):
@@ -39,7 +50,7 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
     ns = namespace_of(n)
     d = get_dell(n) or {}
     canon = str(d.get("name", "")).lower()
-    payload = seed.label or ""
+    payload = _eff_label(atom, seed)
     if raw_term and raw_term.lower() != canon:
         payload = raw_term
     # TOAM-I C3: Wire typed args into production execution.
@@ -91,7 +102,7 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
             typed_lab = lower_args_to_lab(n, resolved_args)
             legacy = payload
             if getattr(atom, "origin", "") == "chainlink":
-                legacy = seed.label or ""
+                legacy = _eff_label(atom, seed)
             if legacy and legacy != typed_lab:
                 err_msg = f"ARGUMENT_CONFLICT for {n:02d}[{shown}]: typed args lower to '{typed_lab}' but legacy lab is '{legacy}'"
                 messages.append(err_msg)
@@ -113,8 +124,9 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
             # quoted-string grammar, so re-emission parses identically.
             leaf += "(" + ", ".join(
                 f'{k}="{v}"' for k, v in atom_args.items()) + ")"
-        if seed.label:
-            leaf += f" :: {seed.label}"
+        _leaf_label = _eff_label(atom, seed)
+        if _leaf_label:
+            leaf += f" :: {_leaf_label}"
         out = execute_seed(program, leaf, _leaf=True)
         for msg in out.get("messages") or []:
             if msg.startswith("Mandell:") or msg.startswith("English:"):
@@ -189,7 +201,7 @@ def _payload_cond(atom: Any, seed: Any, n: int) -> str:
     canon = str((get_dell(n) or {}).get("name", "")).lower()
     if raw_term and raw_term.lower() != canon:
         return raw_term
-    return seed.label or ""
+    return _eff_label(atom, seed)
 
 
 def execute_range(program, seed, atoms, start, end, depth, messages, ran, skipped, state):

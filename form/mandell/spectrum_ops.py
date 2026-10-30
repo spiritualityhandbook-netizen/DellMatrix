@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from typing import Any, Dict, List, Tuple
 
-from .predicate import result_cell
+from .predicate import partition_existing_key, result_cell
 
 SPECTRUM_DELLS = set(range(80, 100))
 COMPOSE_BOUND = 8
@@ -119,7 +119,7 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                                      source="copy", predicate=lab or "*",
                                      trace="84")
     elif n == 85:
-        src, _, dest = lab.partition(">")
+        src, dest = partition_existing_key(st.store, lab, ">")
         src, dest = src.strip(), dest.strip()
         if not src or not dest:
             ok, err = False, "malformed_move"
@@ -178,7 +178,7 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                                          error=f"delete_missing:{key or 'empty'}",
                                          trace="86")
     elif n == 87:
-        old, _, new = lab.partition(">")
+        old, new = partition_existing_key(st.store, lab, ">")
         old, new = old.strip(), new.strip()
         if old not in st.store:
             ok, err = False, f"replace_missing:{old}"
@@ -210,7 +210,7 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                                              source="replace", predicate=lab or "*",
                                              trace="87")
     elif n == 88:
-        key, _, val = lab.partition("=")
+        key, val = partition_existing_key(st.store, lab, "=")
         key = key.strip()
         if key not in st.store:
             ok, err = False, f"patch_miss:{key}"

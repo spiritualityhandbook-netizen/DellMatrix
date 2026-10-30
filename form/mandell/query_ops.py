@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple
 
-from .predicate import eval_predicate, result_cell, validate_bound
+from .predicate import eval_predicate, partition_existing_key, result_cell, validate_bound
 
 QUERY_DELLS = {51, 52, 54, 55, 56, 57, 58, 59, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79}
 
@@ -31,7 +31,7 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
         st.last_result = result_cell(value=hits, matched=bool(hits), count=len(hits), source="query", predicate=lab or "*", confidence=1.0 if hits else 0.0, trace="54")
         messages.append(f"Query scope={st.scope} hits={len(hits)} q={lab or '*'}")
     elif n == 55:
-        key, _, val = lab.partition("=")
+        key, val = partition_existing_key(st.store, lab, "=")
         key = (key or "value").strip()
         shot_fn()
         st.store[key] = val.strip() if val.strip() else ("" if "=" in lab else "1")

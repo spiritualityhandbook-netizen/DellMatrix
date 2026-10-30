@@ -15,6 +15,37 @@ MAX_BOUND = 64
 DEFAULT_BOUND = 8
 
 
+def partition_existing_key(store: Any, lab: str, delim: str) -> Tuple[str, str]:
+    """AF-2: split a store-address label at the LONGEST EXISTING key.
+
+    Store keys may themselves contain the delimiter (a key 'x=y'
+    created through a Move destination, a key 'x>y' likewise).
+    Addressing such a key with the legacy first-delimiter split
+    aims at a fragment ('x') and orphans the real key. Resolution:
+    try split positions from the rightmost delimiter to the
+    leftmost; the first left candidate that EXISTS in the store
+    wins (candidates are nested prefixes, so the longest existing
+    match is unique). If no candidate exists, the legacy
+    first-delimiter partition is returned unchanged — creation
+    semantics and error identities are exactly as before.
+    Cost: O(#delimiters) dict lookups; no store scan."""
+    positions = []
+    start = 0
+    while True:
+        i = lab.find(delim, start)
+        if i < 0:
+            break
+        positions.append(i)
+        start = i + len(delim)
+    if not positions:
+        return lab, ""
+    for i in reversed(positions):
+        if lab[:i].strip() in store:
+            return lab[:i], lab[i + len(delim):]
+    i = positions[0]
+    return lab[:i], lab[i + len(delim):]
+
+
 def classify_value(value: Any) -> Tuple[str, Any]:
     if isinstance(value, bool):
         return "boolean", value

@@ -53,6 +53,11 @@ class SeedAtom:
     origin: str = "atom"
     # TOAM-I: typed role/value arguments. Empty dict = no arguments (backward compat).
     args: Dict[str, str] = field(default_factory=dict)
+    # AF-2: this atom's own segment label (the ":: label" written
+    # directly after this atom in a multi-segment seed). Empty when
+    # the segment carried no label; consumers fall back to Seed.label
+    # (the LAST segment's label) — see chain_exec._eff_label.
+    label: str = ""
     def as_mandel(self) -> str:
         width = 3 if self.dell > 99 else 2
         shown = self.resolved_term or self.term
@@ -78,6 +83,21 @@ class Seed:
     def as_mandel(self) -> str:
         if not self.atoms:
             return ""
+        # AF-2: when a NON-final atom carries its own segment label,
+        # reconstruct segment-first (each label stays with its atom)
+        # so the string round-trips through parse_seed unchanged.
+        # Otherwise keep the historical shape: one trailing label.
+        if any(a.label for a in self.atoms[:-1]):
+            parts = []
+            for i, atom in enumerate(self.atoms):
+                if i:
+                    flow = self.flows[i - 1] if i - 1 < len(self.flows) else ">"
+                    parts.append(f" {flow} ")
+                s = atom.as_mandel()
+                if atom.label:
+                    s += f" :: {atom.label}"
+                parts.append(s)
+            return "".join(parts)
         parts = [self.atoms[0].as_mandel()]
         for i, flow in enumerate(self.flows):
             if i + 1 < len(self.atoms):
@@ -139,27 +159,56 @@ def _resolve_term(n: int, term: str, label: str) -> tuple:
     return resolved_term, conf, reason
 
 
-def _atom(n: int, term: str, label: str, origin: str, args: Optional[Dict[str, str]] = None) -> SeedAtom:
+def _atom(n: int, term: str, label: str, origin: str, args: Optional[Dict[str, str]] = None, seg_label: str = "") -> SeedAtom:
     resolved, conf, reason = _resolve_term(n, term, label)
     return SeedAtom(
         dell=n, term=term, resolved_term=resolved,
         confidence=conf, resolve_reason=reason, origin=origin,
-        args=args or {},
+        args=args or {}, label=seg_label,
     )
+
+
+def _scan_label_end(body: str, start: int) -> tuple:
+    """AF-2 segment rule (same authority as flow_executor
+    ._tokenize_program): a label ends at the next flow operator
+    that is followed by an atom, or at end of text. Flow operators
+    NOT followed by an atom are label DATA (e.g. Cause's
+    'rain > flood'). A second '::' inside a label is an embedded
+    label marker, not data: returns (embedded_index, -1) style
+    signal via the second element. Returns (end, embedded) with
+    exactly one of them >= 0 meaningful: end >= 0 is the label
+    end; embedded >= 0 is the position of the inner '::'."""
+    i = start
+    n = len(body)
+    while i < n:
+        m = _FLOW.match(body, i)
+        if m:
+            op = m.group(0)
+            after = m.end()
+            while after < n and body[after].isspace():
+                after += 1
+            if _ATOM.match(body, after):
+                return i, -1
+            if op == "::":
+                return -1, i
+            i = m.end()
+            continue
+        i += 1
+    return n, -1
 
 
 def parse_seed(text: str) -> Seed:
     raw = (text or "").strip()
     if not raw:
         return _fail(raw, "empty")
-    label = ""
+    # AF-2: segment-first parsing. Each atom segment is
+    #   atom [args] ["::" label]
+    # where the label ends at the next flow operator followed by
+    # an atom (flow_executor._tokenize_program's rule — ONE segment
+    # authority, not two). A "::" followed by an atom is the
+    # DeepFlowBy flow operator, never a label marker. Seed.label is
+    # the LAST segment's label (single-atom seeds are unchanged).
     body = raw
-    if "::" in raw:
-        head, _, rest = raw.rpartition("::")
-        rest_s = rest.strip()
-        if rest_s and not _ATOM.match(rest_s):
-            label = rest_s
-            body = head.strip()
     proto: List[Dict[str, Any]] = []
     flows: List[str] = []
     pos = 0
@@ -180,8 +229,6 @@ def parse_seed(text: str) -> Seed:
             members = split_manifest_set(inner, raw)
             if isinstance(members, Seed):
                 return members
-            proto.append({"dell": n, "members": members})
-            last_was_atom = True
             pos = m.end()
             # TOAM-I: parse optional argument list (role="value", ...)
             args: Dict[str, str] = {}
@@ -190,7 +237,28 @@ def parse_seed(text: str) -> Seed:
                 for pair in _ARG_PAIR.finditer(am.group(1)):
                     args[pair.group(1)] = pair.group(2)
                 pos = am.end()
-            proto[-1]["args"] = args
+            # AF-2: optional segment label.
+            seg_label = ""
+            p2 = pos
+            while p2 < body_len and body[p2].isspace():
+                p2 += 1
+            if body[p2:p2 + 2] == "::":
+                after = p2 + 2
+                while after < body_len and body[after].isspace():
+                    after += 1
+                if not _ATOM.match(body, after):
+                    end, embedded = _scan_label_end(body, p2 + 2)
+                    if embedded >= 0:
+                        if not body[p2 + 2:embedded].strip():
+                            return _fail(raw, "too many flow operators")
+                        return _fail(raw, f"unexpected at {after}: {body[after:after + 12]!r}")
+                    seg_label = body[p2 + 2:end].strip()
+                    if not seg_label:
+                        return _fail(raw, "too many flow operators")
+                    pos = end
+            proto.append({"dell": n, "members": members,
+                          "args": args, "label": seg_label})
+            last_was_atom = True
             continue
         m2 = _FLOW.match(body, pos)
         if m2:
@@ -209,6 +277,7 @@ def parse_seed(text: str) -> Seed:
         return _fail(raw, "no Dell atoms found")
     if len(flows) > len(proto) - 1:
         return _fail(raw, "too many flow operators")
+    label = proto[-1]["label"]
     atoms: List[SeedAtom] = []
     out_flows: List[str] = []
 
@@ -221,9 +290,9 @@ def parse_seed(text: str) -> Seed:
             for k in range(ln):
                 if atoms:
                     out_flows.append(flow)
-                atoms.append(_atom(proto[0]["dell"], proto[0]["members"][k], label, "chainlink", proto[0].get("args", {})))
+                atoms.append(_atom(proto[0]["dell"], proto[0]["members"][k], proto[0]["label"] or label, "chainlink", proto[0].get("args", {}), proto[0]["label"]))
                 out_flows.append(flow)
-                atoms.append(_atom(proto[1]["dell"], proto[1]["members"][k], label, "chainlink", proto[1].get("args", {})))
+                atoms.append(_atom(proto[1]["dell"], proto[1]["members"][k], proto[1]["label"] or label, "chainlink", proto[1].get("args", {}), proto[1]["label"]))
             return Seed(atoms=atoms, flows=out_flows, label=label, raw=raw, ok=True)
 
     for i, item in enumerate(proto):
@@ -236,7 +305,7 @@ def parse_seed(text: str) -> Seed:
                     out_flows.append(flows[i - 1])
                 else:
                     out_flows.append(">")
-            atoms.append(_atom(item["dell"], term, label, origin, item_args))
+            atoms.append(_atom(item["dell"], term, item["label"] or label, origin, item_args, item["label"]))
     return Seed(atoms=atoms, flows=out_flows, label=label, raw=raw, ok=True)
 
 def looks_like_seed(text: str) -> bool:
