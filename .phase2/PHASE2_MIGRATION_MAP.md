@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # PHASE2_MIGRATION_MAP (final)
 
 | Existing structure | Classification | Fate in Phase 2 |

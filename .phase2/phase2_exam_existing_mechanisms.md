@@ -1,3 +1,7 @@
+> EDITOR'S NOTE (2026-10-30, docs accuracy pass at commit 11933da): this exam's MECHANISM claims were spot-verified against current code and hold — Unit lineage fields (parents/origin/lineage_version) are at form/dell_matrix/plane.py:60-62; _affinity's weights (harmonic 0.40 + jaccard 0.22 + spatial 0.13 + in-scope 0.13, form/dell_matrix/ringed_growth.py) match; neighbors/relation_middle are at plane.py:226/239. Its LINE references have drifted (e.g. _affinity is now defined at ringed_growth.py:199, not 124-148): trust the mechanisms, not the line numbers. It remains a Phase-2-era record, bannered below.
+
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # PHASE 2 EXAMINATION — EXISTING MECHANISM MAP
 
 **Scope:** relationship / lineage / graph-like mechanisms in the current codebase.

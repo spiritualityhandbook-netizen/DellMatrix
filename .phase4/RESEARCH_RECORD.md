@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # GDP-001 Phase 4 — External Research Record
 
 **Date:** 2026-10-04 · **Phase:** 4 (Living Spatial Matrix)

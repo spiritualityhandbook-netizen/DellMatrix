@@ -1,3 +1,5 @@
+> STATUS: NOT IN USE — preform/src are earlier generations of DellMatrix, retained as design history and reference. The production runtime is form/ (verified at commit 11933da, 2026-10-30). This file does not describe current behavior.
+
 # Manual · Flow · Leight · Loure · DDECC (Phase 2 Page 3)
 
 Status: **FORMALIZED**

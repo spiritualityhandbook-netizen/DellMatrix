@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # Video Lupe5 Analysis → DellMatrix (NBD)
 
 **Mode:** dev · Lupe5 (five conceptual passes per phase)  

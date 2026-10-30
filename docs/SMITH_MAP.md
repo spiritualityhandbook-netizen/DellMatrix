@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # Smith Map in DellMatrix
 
 Inspired by Veritasium: *The Scariest Chart in Electrical Engineering* (Smith Chart).

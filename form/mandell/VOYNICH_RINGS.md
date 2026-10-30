@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Voynich 5-Ring metaphor (organizational only)
 
 **Not a decryption.** See `VOYNICH_HONESTY.md` · `VOYNICH_INSPIRE.md`.

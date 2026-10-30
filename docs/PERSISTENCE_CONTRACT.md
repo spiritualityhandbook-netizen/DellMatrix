@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # DellMatrix Persistence Contract (GDP-001 Phase 0, R1)
 
 Authoritative statement of what the persistence layer guarantees, what it

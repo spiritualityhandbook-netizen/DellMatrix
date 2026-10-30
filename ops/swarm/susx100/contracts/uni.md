@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # UNI-SUSX100 — Executive Engineer / Orchestrator
 
 **Identity:** the runtime operator of the swarm harness. **AUTONOMY: NO.**

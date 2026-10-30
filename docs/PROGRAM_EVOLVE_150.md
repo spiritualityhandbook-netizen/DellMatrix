@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # Program self-understanding + evolve — 150 loop
 
 The program **knows itself structurally** (not consciousness) and **evolves** generation by generation while closing cold surfaces.

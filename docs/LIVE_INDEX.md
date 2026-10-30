@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Live Index — DellMatrix (DEV)
 
 **DellMatrix = developer matrix.** Blank mirrors capabilities, not personal lore.
@@ -38,6 +40,6 @@
 | `form.mandell.latinmandell` | Depth / explain |
 
 **Profiles:** `python launch.py` · `Ace` · `Worldwide` · `Friend`  
-**Not authority:** `preform/` · `src/` · `trading/` · `llm/`  
+**Not authority:** `preform/` · `src/` · `llm/`  
 **Visual:** snapshot default · **live** = opt-in two-way with User+AI movement and directional vision  
 **Main auto-evolve:** specified, not coded

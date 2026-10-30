@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # True Lore Identifier — future goal
 
 **Status:** Worldwide-matrix idea · not shipped product · not auto-loaded into Blank personal data  

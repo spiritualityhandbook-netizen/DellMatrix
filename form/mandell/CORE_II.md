@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Core II runtime
 
 Status: **FORMALIZED**. Certification is the passing 51-99 contract suite on the same HEAD.

@@ -1,6 +1,10 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Dell Matrix Plane — Visual / Perspective Goal (Form)
 
 Status: LOCKED from user directive
+
+Realization note (2026-10-30): this is the design-goal statement. The eight display skins below are live code — the `Skin` enum in `form/dell_matrix/plane.py` (CUBE · SPHERE · SEED · FLOWER · BUILDING · WORDS · CIRCLE · CORE) — and perspective composition is live as the R7.1 view composition / Perspective Studio (see root README §7.5). The perspective-mode table remains the goal description those mechanisms serve.
 
 ## Holdable was a metaphor
 Not a physical toy in the hand. Means: **control perspective** and **location on the plane**.

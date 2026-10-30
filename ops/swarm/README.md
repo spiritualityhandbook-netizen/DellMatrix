@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # ops/swarm — DellMatrix Multi-Agent Production Orchestration
 
 **Status:** bootstrap (MPC-004 / SWARM-BOOT-001)

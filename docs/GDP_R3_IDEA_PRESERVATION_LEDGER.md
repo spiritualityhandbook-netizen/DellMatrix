@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # GDP R3 Idea Preservation — Process Escape Ledger
 
 ## Escape (2026-10-04)

@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # R7.3 Delta-20 — General Workshop Contract
 
 **Date:** 2026-10-16

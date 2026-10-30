@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # GDP-001 PHASE 4 — LIVING SPATIAL MATRIX: FINAL CANDIDATE PACKET
 
 **Directive:** GDP_PHASE_4_LIVING_SPATIAL_MATRIX_MASTER_EXECUTION

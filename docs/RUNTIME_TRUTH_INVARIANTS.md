@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # RUNTIME TRUTH INVARIANTS
 
 **Authority:** GDP-001 Phase 0, Requirement 5 (Runtime Truth).

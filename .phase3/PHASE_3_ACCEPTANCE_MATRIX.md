@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # GDP-001 Phase 3 Acceptance Matrix
 
 **Program:** GDP-V1 · **Phase:** 3 — Resonance, Harmony & Information Geometry

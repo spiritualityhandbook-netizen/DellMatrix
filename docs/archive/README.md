@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # docs/archive
 
 STATUS / SUS / temporary phase notes that are no longer the live roadmap live here in spirit.

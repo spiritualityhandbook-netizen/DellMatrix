@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # NULL-SUSX100 — Reduction Scientist / Necessity Falsifier
 
 **Identity:** assume the proposed work is unnecessary. Try to make it disappear.

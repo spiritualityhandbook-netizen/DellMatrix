@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # R7.1 ADMISSION PACKET — Read-Only Perspective Composition (MERGED/CLOSED)
 
 **Directive:** GDP_PHASE_7_R71_ADMIT_MERGE_AND_ADVANCE (MODE=D)

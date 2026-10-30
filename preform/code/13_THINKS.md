@@ -1,3 +1,5 @@
+> STATUS: PROBE-ONLY — the module this file documents is import-probed by live code (form/dell_matrix/organ_atlas.py, via MatrixBody organ sensing): its presence is checked, but no function in it is ever called and none of its behavior is used. The design described here is preform-era and is NOT part of the production runtime's behavior. The production runtime is form/ (verified at commit 11933da, 2026-10-30).
+
 # 13 — Thinks Thread (Code Phase 3 Artifact 13)
 
 Status: TRUE

@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # UNI — Repository Executor / Mechanism Witness
 
 **Role:** provide executable repository evidence; implement only bounded authorized directives.

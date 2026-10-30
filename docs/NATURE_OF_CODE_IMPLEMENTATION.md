@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Nature of Code → DellMatrix (full per-chapter map)
 
 **Source:** Daniel Shiffman, *The Nature of Code* (Chapters 0–11)  

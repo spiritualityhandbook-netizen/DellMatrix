@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Inspire Pack — offline video-distilled capabilities
 
 Study of public YouTube links → **useful offline patterns only**.  

@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # ARGUS — Adversarial Verification
 
 **Role:** assume the current conclusion, worker packet, and implementation may be wrong. Attack them.

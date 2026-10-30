@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # R7.2 ADMISSION PACKET — Perspective Studio (FINISH-BOUNDARIES, CONSOLIDATED)
 
 **Directive:** GDP_R72_FINISH_EXISTING_BOUNDARIES_AND_EXECUTABLE_EVIDENCE (MODE=C)

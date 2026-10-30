@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Avenue ends — no loose ends
 
 Every user path must finish on a **useful end page** or **closed usage message**.

@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # form/ Matrices — Ported from src/ (LEGACY)
 
 **Date:** 2026-08-06  

@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Sacred Geometry Layer
 
 **Module:** `form/dell_matrix/sacred_geometry.py`  

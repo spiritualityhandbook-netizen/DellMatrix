@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Core Form scope
 
 ## In core (Mandell Origin path)
@@ -7,14 +9,14 @@ Required for the Origin loop and offline acceptance:
 - `form/open.py`, `form/repl.py`, `form/__main__.py` (entry points)
 - `form/persist.py`, `form/persist_rest.py`, `form/persist_core_ii.py` (save/load v7)
 - `form/accept.py`, `form/regress.py` (acceptance + canonical regression)
-- `form/realize.py` (full operator-path demonstration), `form/give_blank.py` (blank-cube entry),
-  `form/idea_create.py`, `form/grow.py`
+- `form/give_blank.py` (blank-cube entry),
+  `form/idea_create.py`, `form/grow.py` (self-grow entry shim to `form/duobeta/selfgrow`)
 - `form/mandell/` (floor, seed, registry, phrases, executor, polyglot, …)
 - `form/dell_matrix/` (plane, lattice, growth, nursery, visual, gates,
   forces, personas, view_rooms, workshops, pillars, matrices_hub, ascii_bodies)
 - `form/avatar/`
 - `form/duobeta/` (generation ledger as used by Program)
-- `form/worldwide/` (live via code evolution)
+- `form/worldwide/` (ideas catalog `WORLDWIDE_IDEAS.py`; the `plant_to_dev` planter was removed in master-plan P11)
 - `form/invariants.py`
 
 Ported matrices (from frozen `src/`, reimplemented — not imported):

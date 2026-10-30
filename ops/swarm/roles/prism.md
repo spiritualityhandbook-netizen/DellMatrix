@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # PRISM — Reconciliation / Synthesis
 
 **Role:** reconcile Oracle, Argus, Null, Uni, repository, and CI evidence into one coherent picture — without erasing disagreement.

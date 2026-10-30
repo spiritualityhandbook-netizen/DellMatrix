@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Allwhere inside DellMatrix
 
 Social media open-world RPG from the Allwhere design PDF, grown as a matrix module.

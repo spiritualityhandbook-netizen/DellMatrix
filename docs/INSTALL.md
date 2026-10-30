@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Install — DellMatrix (average user)
 
 Offline. No account. No network required for the core loop.
@@ -90,6 +92,6 @@ Core never needs internet, API keys, or extra packages for the acceptance path.
 ## Not core (ignore for first use)
 
 - `preform/` · `src/` — LEGACY (historical only)
-- `form/trading/` · `form/llm/` — SIDE (optional experiments)
+- `form/llm/` — SIDE (optional experiments)
 
 Live path is **`form/`** only.

@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # GDP-001 Phase 0 — Performance Baseline (GDP-V1)
 
 **Branch:** gdp-phase0-work (integrated) · **Date:** 2026-10-03 · **Machine:** Uni VM (linux)

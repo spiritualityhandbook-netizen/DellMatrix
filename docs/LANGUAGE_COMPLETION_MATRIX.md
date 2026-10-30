@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # LANGUAGE COMPLETION MATRIX — GDP-001 Phase 0, Requirement 2
 
 **Branch:** `gdp-p0r2` · **Base:** `1c90cecf9e5bbbf6bda055f3157ecada299f6840` (post-PR-#69)

@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # preform/ LEGACY — residual closed (final)
 
 Date: 2026-08-01 (NBD Block 1 complete)

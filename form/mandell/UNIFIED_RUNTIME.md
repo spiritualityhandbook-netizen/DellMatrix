@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Mandell 00-99 unified runtime
 
 One address space. Two execution bodies. One front door: `execute_seed`.
@@ -7,7 +9,7 @@ One address space. Two execution bodies. One front door: `execute_seed`.
 | 00-50 CORE_I | `executor_leaf.py` | single-atom leaf; multi-atom via `chain_exec` `_leaf=True` |
 | 51-99 CORE_II | `query_ops` · `control_runtime` · `spectrum_ops` | `chain_exec` → `execute_core_ii` |
 
-151+ names in `address_space.py` are reserved labels, not 00-99 activation.
+49 reserved domain aliases in `address_space.py` (`RESERVED_DOMAIN`, numbers in the 100–999 range, first key 151) are reserved labels, not 00-99 activation. Numbers 100–999 stay unallocated until a concept earns a number.
 
 ## Dispatch
 

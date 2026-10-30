@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/. (Repo-authored work record that happens to sit inside the vendored Nature of Code folder; reclassified 2026-10-30.)
+
 English Brain Integration Plan — Nature of Code
 
 Goal: Turn chapter notes into high-quality paraphrase seeds that expand

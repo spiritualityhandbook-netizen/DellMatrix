@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # form/llm/ — SIDE PACKAGE (not core Origin)
 
 **Not required for Mandell Origin or offline acceptance.**

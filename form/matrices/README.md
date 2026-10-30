@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Matrix profiles
 
 Same runtime (`form/`). Different **owners / state**.
@@ -11,14 +13,6 @@ Same runtime (`form/`). Different **owners / state**.
 
 ### Worldwide → DEV (development)
 
-Plant world ideas into Worldwide **and** import them into the DEV Operator matrix:
-
-```bash
-python -m form.worldwide.plant_to_dev
-python -m form.worldwide.plant_to_dev --dev-only
-```
-
-Catalog: `form/worldwide/WORLDWIDE_IDEAS.py`  
-DEV session then holds those ideas with detail + goals for active development.
+The automatic planter is **gone**: `form/worldwide/plant_to_dev.py` was removed in master-plan P11. What remains is the catalog, `form/worldwide/WORLDWIDE_IDEAS.py`. To develop a catalog idea today, create and confirm it manually in a session (Worldwide or DEV) through the normal create → grow → confirm path; there is no one-command plant/import step in this tree.
 
 See `form/MATRIX_ARCHITECTURE.md`.

@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
 # R7.3 ADMISSION PACKET — General Workshop Contract
 
 **Circuit:** R7.3 General Workshop Contract (Phase 7)

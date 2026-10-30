@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Mandel Lang — Core Architectural Personas (V7)
 
 Pedagogical / role layer over Origin. Not a second runtime.

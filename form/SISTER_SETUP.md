@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # Put a blank matrix on her computer
 
 ## On your machine (prepare)
@@ -38,10 +40,10 @@ python -m form.repl --owner Sister
 Then:
 
 ```text
-matrix> tutorial
-matrix> place my1 MyFirstIdea what I care about
-matrix> show
-matrix> save
+you> tutorial
+you> place my1 MyFirstIdea what I care about
+you> show
+you> save
 ```
 
 ## Rules to tell her
@@ -57,4 +59,4 @@ matrix> save
 > They have been removed. Do not use them.
 
 Only after she’s comfortable, use whatever current sharing mechanism
-the live system provides (see `matrix> help`).
+the live system provides (type `help` at the `you>` prompt).

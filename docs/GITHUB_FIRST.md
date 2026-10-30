@@ -1,3 +1,5 @@
+> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
+
 # GitHub First — DellMatrix law
 
 **Repo:** https://github.com/spiritualityhandbook-netizen/DellMatrix  
@@ -36,6 +38,8 @@ DellMatrix must live in **GitHub** so it can be cloned, run, and grown anywhere 
 | `form/dell_matrix/matrix_awake.py` | Stay-on heartbeat + text/speak |
 | `docs/MATRIX_AWAKE_VISION.md` | Vision |
 | `docs/MISSING_ORGANS.md` | Organ densify list |
+
+**Accuracy note (2026-10-30):** the spine rows for `form/dell_matrix/floor_spirit.py`, `form/dell_matrix/delta_pressure.py`, `form/dell_matrix/brain.py`, and `form/dell_matrix/matrix_awake.py` are stale — those files do not exist under `form/` at commit 11933da.
 
 ## Operator note
 

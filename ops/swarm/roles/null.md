@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — GDP-era process artifact, preserved as evidence; it does NOT describe the current workflow or current system behavior. The live system is under form/.
+
 # NULL — Necessity Falsification
 
 **Role:** assume new implementation is unnecessary. Try to prove it.
