@@ -281,6 +281,71 @@ DEEP_NOTES: Dict[int, str] = {
         "label with '_' -> ' ', words = the name as "
         "passed, Skin.CUBE, collision dedup; the unit is "
         "immediately selectable by Core II Select."),
+    9: ("D1 circuit 17 DEEP NOTE: Show dispatches on the "
+        "label — bare Show returns the literal token "
+        "'__RENDER__'; 'avatar' returns exactly '<look>  "
+        "<describe>' of live avatar_status; 'lattice' "
+        "returns the lattice ASCII render; 'visual' "
+        "reports 'Visual ready.' plus the UI html path."),
+    10: ("D1 circuit 17 DEEP NOTE: Keep saves the "
+         "session — 'Session saved.', 'ideas=<census> "
+         "nursery=<pending>', 'file=<program_<owner>.json>' "
+         "— and Program.load restores the saved plane "
+         "exactly (units minted by Bind and Map survive)."),
+    11: ("D1 circuit 17 DEEP NOTE: Architect is a schema "
+         "read of live state — owner, idea census, "
+         "lattice size and CURRENT form, cell count — "
+         "and notes '11[Architect]' to history."),
+    12: ("D1 circuit 17 DEEP NOTE: Test runs five live "
+         "checks (floor, lattice, growth, nursery, "
+         "ideas); on a healthy program all PASS and the "
+         "summary is 'Test: 5/5', noted to history."),
+    13: ("D1 circuit 17 DEEP NOTE: Loop runs ringed "
+         "growth for cycles = the digit label else 1, "
+         "with NO upper clamp (label 7 runs 7 cycles — "
+         "the contrast with Dell 06 Cycle's 1..5 clamp); "
+         "growth proposes only, the live census is "
+         "unchanged while nursery pending grows."),
+    14: ("D1 circuit 17 DEEP NOTE: Bind mints a plane "
+         "unit through place_idea with the RAW label — "
+         "no prefix (the contrast with 07 Link's "
+         "'link_<label>'): bare Bind mints 'bind', "
+         "repeats dedup, Skin.CUBE."),
+    15: ("D1 circuit 17 DEEP NOTE: Map — a label in "
+         "{cube, sphere, core, flower} sets the lattice "
+         "form ('Form → <name>'); any other label mints "
+         "a unit via place_idea with the form unchanged; "
+         "bare Map reports 'Mapped units=<census>'."),
+    16: ("D1 circuit 17 DEEP NOTE: Decay resolves the "
+         "factor from the numeric label clamped to "
+         "0.1..1.0 (bare/non-numeric = 0.9) and notes "
+         "the resolved factor; with enhance ON the "
+         "resonance scores are multiplied by it. "
+         "EXHIBIT: with enhance OFF the gate refuses "
+         "and scores are unchanged, yet the message "
+         "still claims 'Scores decayed' — the message "
+         "overclaims the effect."),
+    17: ("D1 circuit 17 DEEP NOTE: Shadow is "
+         "message-only — the track id is 'shadow_' + "
+         "the label (spaces to '_', case kept, label "
+         "truncated to 20 chars; bare = 'shadow_bg'), "
+         "announced as parallel/not-live; the live "
+         "census is unchanged and the id is noted."),
+    18: ("D1 circuit 17 DEEP NOTE: Mirror reads the "
+         "live plane — header 'Mirror: <N> live ideas' "
+         "plus one bullet '<uid>: <label> [<skin>]' "
+         "per unit, CAPPED at 16 bullets while the "
+         "header keeps the true total."),
+    19: ("D1 circuit 17 DEEP NOTE: Drive sets "
+         "locomotion and steps the avatar — bare/walk "
+         "steps 1 ('Walked to <pos>.'), a label "
+         "containing 'run' steps 2 ('Ran to <pos>.'), "
+         "'stop' sets idle in place ('Stopped.')."),
+    20: ("D1 circuit 17 DEEP NOTE: Alpha is the close "
+         "read — 'Alpha close:', the idea census, the "
+         "CURRENT lattice form (it reports the form "
+         "Map set), and the save tip naming Dell 10; "
+         "the label (or 'close') is noted to history."),
 }
 
 
