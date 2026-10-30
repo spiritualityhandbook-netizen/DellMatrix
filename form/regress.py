@@ -194,6 +194,7 @@ LIST = [
     "form.mandell.d1_registry_leaf_test",
     "form.mandell.d1_registry_leaf2_test",
     "form.mandell.d1_registry_leaf3_test",
+    "form.mandell.d1_registry_leaf4_test",
     # P3 R3.4 — geometry authority unification (GDP-001 Phase 3, Stream C):
     # verita.vesica_strength delegates to sacred_geometry.vesica (EQ-GEO-001).
     "form.mandell.p3_r34_geometry_proof",
