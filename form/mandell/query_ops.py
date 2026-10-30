@@ -12,7 +12,11 @@ QUERY_DELLS = {51, 52, 54, 55, 56, 57, 58, 59, 67, 68, 69, 70, 71, 72, 73, 74, 7
 def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: List[str], ids_fn, pred_fn, shot_fn) -> Tuple[bool, str]:
     ok, err = True, ""
     if n == 51:
-        ids = ids_fn(program)
+        from .core_ii_exec import scope_universe
+        ids, scope_err = scope_universe(st, program)
+        if scope_err:
+            messages.append(f"Select refused: {scope_err}")
+            return False, scope_err
         st.selected = list(ids) if not lab else [i for i in ids if pred_fn(lab, i)]
         st.last_result = result_cell(value=list(st.selected), matched=bool(st.selected), count=len(st.selected), source="select", predicate=lab or "*", trace="51")
         messages.append(f"Select scope={st.scope} n={len(st.selected)}")

@@ -102,6 +102,10 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
         if members and not st.selected:
             st.selected = list(members)
         messages.append(f"Ungroup {name} released={len(members)}")
+        if name and st.scope == name:
+            messages.append(
+                f"Ungroup warning: scope {name!r} is now undefined; "
+                "Select will refuse until the scope is reset")
     elif n == 84:
         src = lab or (st.selected[0] if st.selected else "object")
         dest = f"copy_{src}"

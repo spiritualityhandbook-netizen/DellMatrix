@@ -24,12 +24,14 @@ Pinned consequences:
     count=0) — the signature's "None established" failures
     is exact. An empty selection is a result, not an error.
   - Select REPLACES the selection; it never appends.
-  - The message prints "Select scope={st.scope}" but the
-    scope (set by Dell 53) does NOT filter the universe:
-    after scoping to 'vault', Select still returns every
-    plane id. The scope is a recorded label, not a filter.
-    Behavior pinned as-is; changing scoping semantics is
-    an architecture decision, not a D1 fix.
+  - Scope (Dell 53) is a real filter since reconciliation
+    R1 (Director ruling 2026-10-29, superseding circuit
+    9's label pin): the universe is the plane under scope
+    'plane', or the named group's membership under a group
+    scope. An unknown scope name refuses at Dell 53, and
+    Select refuses on a dangling scope — Select's only
+    failure mode; predicate outcomes still never fail.
+    The full R1 proof lives in d1_recon1_scope_test.
   - The selection persists (core_ii durable state).
 
 English: Select is NOT in the blocked set — "select
@@ -154,13 +156,26 @@ def main():
     _rec("select_replaces_never_appends",
          st.selected == ["river_stone"],
          f"selected={st.selected}")
-    execute_seed(p, "53[Scope] :: vault")
+    r53 = execute_seed(p, "53[Scope] :: vault")
     r = execute_seed(p, "51[Select]")
-    _rec("scope_is_a_label_not_a_filter",
-         r.get("ok") and "garden_gate" in st.selected
+    _rec("unknown_scope_refused_and_default_plane_remains",
+         r53.get("ok") is False
+         and "scope_unknown" in str(r53.get("error"))
+         and st.scope == "plane"
+         and r.get("ok") and "garden_gate" in st.selected
          and "river_stone" in st.selected
-         and any("scope=vault" in m for m in r.get("messages") or []),
-         f"n={len(st.selected)}")
+         and any("scope=plane" in m for m in r.get("messages") or []),
+         f"scope={st.scope} n={len(st.selected)}")
+    # Corrected contract (R1): a group scope DOES filter.
+    execute_seed(p, "51[Select] :: garden")
+    execute_seed(p, "82[Group] :: greens")
+    execute_seed(p, "53[Scope] :: greens")
+    execute_seed(p, "51[Select]")
+    _rec("group_scope_filters_the_universe",
+         st.selected == ["garden_gate", "garden_path"]
+         and st.scope == "greens",
+         f"selected={st.selected}")
+    execute_seed(p, "53[Scope] :: plane")
     r = execute_seed(p, '51[Select](predicate="garden")')
     _rec("typed_args_select",
          r.get("ok") and st.selected == ["garden_gate", "garden_path"],
@@ -211,8 +226,9 @@ def main():
     from form.mandell.dell_cards import DEEP_NOTES
     sig = get_signature(51)
     _rec("signature_derived_from_matches_code",
-         sig.derived_from.endswith("14-18")
-         and "never fails" in sig.output,
+         sig.derived_from.endswith("14-22")
+         and "scope-bound" in sig.output
+         and "scope_unknown" in sig.failures,
          sig.derived_from)
     _rec("proof_card_carries_the_deep_note",
          51 in DEEP_NOTES and "scope" in DEEP_NOTES[51],

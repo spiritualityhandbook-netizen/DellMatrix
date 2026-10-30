@@ -28,6 +28,9 @@ def smoke() -> bool:
     rec("branch_true_scope_untouched", p.core_ii.scope == "plane")
 
     p = open_program("BFA")
+    # R1: the false arm writes scope "FalseArm" as its marker —
+    # under the corrected scope contract the group must exist.
+    execute_seed(p, "82[Group] :: FalseArm")
     out = execute_seed(p, "60[false] > 80[TrueArm] > 59[Else] > 53[FalseArm] > 61[Join]")
     rec("branch_false_arm_exact", 53 in out.get("chain_ran", []) and 80 in out.get("chain_skipped", []))
     rec("unchosen_arm_no_mutation", p.core_ii.context == "" and p.core_ii.scope == "FalseArm")
@@ -92,6 +95,7 @@ def smoke() -> bool:
     rec("loop_bound_failure", ctrl(p).get("status") == "bounded" and out.get("error") == "bound_reached")
 
     p = open_program("ParD")
+    execute_seed(p, "82[Group] :: FalseArm")
     out = execute_seed(p, "62[Parallel] > 80[TrueArm] > 53[FalseArm] > 61[Join]")
     rec("parallel_distinct_results", p.core_ii.context == "TrueArm" and p.core_ii.scope == "FalseArm")
 

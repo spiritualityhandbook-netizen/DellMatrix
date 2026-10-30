@@ -21,6 +21,9 @@ from form.mandell.core_ii_exec import CoreIIState, attach, execute_core_ii
 
 def _fill(program) -> None:
     msgs: list = []
+    # R1 corrected contract: a scope name must be "plane" or an
+    # existing group — create the group first, then scope to it.
+    execute_core_ii(program, 82, "Group", "test_scope", msgs)
     execute_core_ii(program, 53, "Scope", "test_scope", msgs)
     execute_core_ii(program, 55, "Set", "alpha=1", msgs)
     execute_core_ii(program, 82, "Group", "test_group", msgs)
