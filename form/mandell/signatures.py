@@ -241,11 +241,12 @@ _register(OperatorSignature(
         Role(name="predicate", type="string", required=False,
              description="Query predicate (empty queries all selected)"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:24-28",
+    derived_from="form/mandell/query_ops.py:apply_query:28-32",
     output="Publishes matching IDs to last_result; st.selected unchanged. "
            "The universe is the current selection only — never the "
-           "plane. matched carries the hits list itself (not a bool); "
-           "confidence is 1.0 when hits exist, else 0.0",
+           "plane. matched is a Boolean (bool of the hits; R2 "
+           "standardization) — the IDs live in value, the quantity "
+           "in count; confidence is 1.0 when hits exist, else 0.0",
     failures="None established (empty result is valid)",
 ))
 # Existing encoding: lab = predicate (or "" for all)
@@ -288,9 +289,10 @@ _register(OperatorSignature(
         Role(name="pattern", type="string", required=False,
              description="Substring pattern (empty matches all)"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:54-59",
+    derived_from="form/mandell/query_ops.py:apply_query:58-63",
     output="Sets st.selected to pattern matches; publishes to "
-           "last_result (matched carries the list, as Dell 54). "
+           "last_result (matched is a Boolean, as Dell 54; the "
+           "IDs live in value). "
            "DESTRUCTIVE narrowing: dropped ids leave the "
            "selection. The pattern test is a RAW lowercase "
            "substring — not the shared predicate engine: a "
