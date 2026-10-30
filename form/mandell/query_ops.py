@@ -56,11 +56,10 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
             ok, err = False, "type_mismatch"
         messages.append(f"Compare {expr} matched={cmpd.get('matched')} mode={cmpd.get('mode')} err={cmpd.get('error')}")
     elif n == 58:
-        pat = lab.lower()
         ids = list(st.selected)
-        st.selected = [i for i in ids if pat in str(i).lower()] if pat else list(ids)
-        st.last_result = result_cell(value=list(st.selected), matched=bool(st.selected), count=len(st.selected), source="match", predicate=pat or "*", trace="58")
-        messages.append(f"Match pattern={pat or '*'} hits={len(st.selected)}")
+        st.selected = [i for i in ids if pred_fn(lab, i)] if lab else list(ids)
+        st.last_result = result_cell(value=list(st.selected), matched=bool(st.selected), count=len(st.selected), source="match", predicate=lab or "*", trace="58")
+        messages.append(f"Match pattern={lab or '*'} hits={len(st.selected)}")
     elif n == 59:
         dest = lab or "primary"
         st.route = dest

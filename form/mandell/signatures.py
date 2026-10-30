@@ -289,15 +289,16 @@ _register(OperatorSignature(
         Role(name="pattern", type="string", required=False,
              description="Substring pattern (empty matches all)"),
     ],
-    derived_from="form/mandell/query_ops.py:apply_query:58-63",
+    derived_from="form/mandell/query_ops.py:apply_query:58-62",
     output="Sets st.selected to pattern matches; publishes to "
            "last_result (matched is a Boolean, as Dell 54; the "
            "IDs live in value). "
            "DESTRUCTIVE narrowing: dropped ids leave the "
-           "selection. The pattern test is a RAW lowercase "
-           "substring — not the shared predicate engine: a "
-           "spaced pattern ('garden gate') does NOT match the "
-           "underscored id where Select/Query would",
+           "selection. The pattern test is the SHARED predicate "
+           "engine (as Select/Query): case-insensitive substring "
+           "OR underscore-prefix, so a spaced pattern "
+           "('garden gate') matches the underscored id "
+           "(unified by reconciliation R3)",
     failures="None established (empty result is valid)",
 ))
 # Existing encoding: lab = pattern (or "" for all)

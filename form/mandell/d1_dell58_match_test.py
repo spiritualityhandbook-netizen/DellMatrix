@@ -4,10 +4,11 @@
 Derived from query_ops.apply_query (n==58) and its typed
 signature (role pattern, optional):
 
-  pat = lab.lower()
   st.selected = [i for i in st.selected
-                 if pat in str(i).lower()] if pat
+                 if pred_fn(lab, i)] if lab
                 else list(st.selected)
+  (The shared predicate engine since reconciliation R3;
+  circuit 13's raw-substring form is superseded.)
   cell = value=list(selected), matched=bool(selected)
          (standardized by reconciliation R2; the IDs live
          in value, the quantity in count), source="match",
@@ -17,12 +18,13 @@ Pinned consequences:
   - Match REWRITES the selection (the destructive dual of
     Dell 54 Query's read-only search). Dropped ids leave
     the selection; chained Matches intersect.
-  - The pattern test is a RAW substring on the lowercased
-    id — Match does NOT use the shared predicate engine
-    (_pred) that Select/Query use. DIVERGENCE, proven in
-    one pair of checks: the spaced pattern 'garden gate'
-    selects [garden_gate] under Dell 51's predicate but
-    matches NOTHING under Dell 58, because ' ' != '_'.
+  - The pattern test is the SHARED predicate engine
+    (_pred) that Select/Query use (unified by
+    reconciliation R3, superseding circuit 13's raw
+    substring): case-insensitive substring OR
+    underscore-prefix, so the spaced pattern 'garden
+    gate' retains [garden_gate] under Match exactly as
+    it selects it under Dell 51. One engine, one answer.
     Same text, two engines, different answers. Pinned
     as-is and recorded for the Director: unifying the
     matching semantics is an architecture decision.
@@ -141,13 +143,14 @@ def main():
     _rec("match_is_case_insensitive",
          st.selected == ["garden_gate", "garden_path"],
          f"selected={st.selected}")
-    # The divergence pair: same text, two engines.
+    # The agreement pair (R3): same text, one engine.
     execute_seed(p, "51[Select] :: garden gate")
     via_select = list(st.selected)
     execute_seed(p, "51[Select]")
     execute_seed(p, "58[Match] :: garden gate")
-    _rec("spaced_pattern_diverges_from_predicate_engine",
-         via_select == ["garden_gate"] and st.selected == [],
+    _rec("spaced_pattern_agrees_with_predicate_engine",
+         via_select == ["garden_gate"]
+         and st.selected == ["garden_gate"],
          f"select={via_select} match={st.selected}")
     execute_seed(p, "51[Select]")
     before = list(st.selected)
@@ -218,8 +221,8 @@ def main():
     from form.mandell.dell_cards import DEEP_NOTES
     sig = get_signature(58)
     _rec("signature_matches_code",
-         sig.derived_from.endswith("58-63")
-         and "RAW" in sig.output,
+         sig.derived_from.endswith("58-62")
+         and "SHARED predicate" in sig.output,
          sig.derived_from)
     _rec("proof_card_carries_the_deep_note",
          58 in DEEP_NOTES and "garden gate" in DEEP_NOTES[58],
