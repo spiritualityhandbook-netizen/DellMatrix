@@ -270,6 +270,7 @@ LIST = [
     "form.af34_exchange_counters_test:smoke",
     "form.af5_session_bounds_test:smoke",
     "form.af6_import_batching_test:smoke",
+    "form.mandell.symbiosis_ledger_test:smoke",
 ]
 
 TIMEOUT_S = 900
