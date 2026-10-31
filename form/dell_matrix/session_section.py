@@ -186,6 +186,24 @@ def retention_order(valid: Dict[str, Dict[str, Any]], sort_field: str,
     return dict(ordered)
 
 
+def oldest_key(entries: Dict[str, Dict[str, Any]],
+               sort_field: str = "ts") -> str:
+    """DAF-05: the one explicit eviction victim — the oldest
+    record by ``sort_field``. Ties (timestamps have one-second
+    resolution, so ties are routine) break by iteration order:
+    writers append, and the stable sorts in retention_order /
+    collect_valid preserve insertion order within a tie group
+    across save/load, so the first-iterated record among the
+    oldest timestamp is the first-inserted one. Dict order as a
+    whole (newest-group-first after a load) is never the
+    authority — only the timestamp decides across groups."""
+    min_ts = min(str(e.get(sort_field, "")) for e in entries.values())
+    for k, e in entries.items():
+        if str(e.get(sort_field, "")) == min_ts:
+            return k
+    raise AssertionError("oldest_key on a non-empty mapping")
+
+
 def validate_records_section(raw: Any, *, version: int, kind: str,
                              validate_rec: RecordValidator,
                              id_field: str, max_keep: int,
