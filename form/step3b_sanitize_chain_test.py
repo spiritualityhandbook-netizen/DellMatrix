@@ -135,6 +135,20 @@ def main():
          all(MARKER not in blob for blob in surf4.values()))
     _cleanup(o4)
 
+    # ---------- Sibling sweep: leaf note_seed label (Dell 3 Logic) ----------
+    # Logic records its label via Program.note_seed — a history
+    # writer that only the program-level redaction flag protects
+    # (the CoreII mark() sanitization cannot reach it).
+    o4b = "step3bleafDD"
+    _cleanup(o4b)
+    p4b = Program(owner=o4b)
+    r4b = observe_seed_execution(
+        p4b, f"41[Sanitize] > 03[Logic] :: password={MARKER}")
+    surf4b = _surfaces(p4b, r4b)
+    _rec("leaf-note_seed chain: marker absent from all surfaces",
+         all(MARKER not in blob for blob in surf4b.values()))
+    _cleanup(o4b)
+
     # ---------- Legacy label form ----------
     o5 = "step3blegEE"
     _cleanup(o5)
