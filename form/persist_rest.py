@@ -228,6 +228,13 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     # links) from the enclosing journal.
     from form.mandell.core_i_recovery import recover_supersede_intent
     recover_supersede_intent(owner)
+    # Exchange import recovery (DAF-06, step 5b). An import spans
+    # the nursery file and the program file; its journal is the
+    # recorded intent. Resolve it here — complete imports stand,
+    # partial/aborted imports are removed and verified — before
+    # any state is exposed. No journal: no-op.
+    from form.dell_matrix.exchange import recover_exchange_import
+    recover_exchange_import(owner)
     path = path or _path(owner)
     if not os.path.isfile(path):
         p = open_program(owner)
