@@ -44,6 +44,7 @@ chain/requirements were never stored at all.)
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 import uuid
@@ -72,6 +73,26 @@ _MANIFEST_KEYS = frozenset(
 # the native/rendered fallback. Absence is never upgraded to a
 # claim — an unflagged packet's provenance is unknown.
 _PROVENANCE_VALUES = frozenset({"original", "reconstructed"})
+
+
+def _oldest_key(entries: Dict[str, Any]) -> str:
+    """DAF-05: the shared explicit eviction policy (oldest by ts,
+    ties by insertion order) — see session_section.oldest_key.
+    The shared loader returns records newest-first, so raw dict
+    order must never choose the victim."""
+    from form.dell_matrix.session_section import oldest_key
+    return oldest_key(entries)
+
+
+def _receipts_digest(receipts: List[Dict[str, str]]) -> str:
+    """DAF-04: order-insensitive digest of a receipt multiset —
+    the durable provenance witness stamped on the seed record at
+    import, checked again at export."""
+    canon = sorted(
+        json.dumps({k: r[k] for k in sorted(RECEIPT_KEYS)},
+                   sort_keys=True, ensure_ascii=False)
+        for r in receipts)
+    return hashlib.sha256("\n".join(canon).encode("utf-8")).hexdigest()
 
 
 def _bump_dropped(program: Any, attr: str, n: int = 1) -> None:
@@ -219,10 +240,32 @@ def build_packet(program: Any, pid: str, *, chain=None,
     if prop is None:
         raise ExchangeError(f"unknown proposal {pid}")
     stored = seed_payload_for(program, pid)
+    if stored is None and (prop.origin or "").startswith("exchange:"):
+        # DAF-06: an exchange import without its original seed
+        # record is a damaged/partial import, not a native
+        # proposal — never let it export as a reconstruction.
+        raise ExchangeError(
+            f"proposal {pid} is an exchange import without its "
+            "original seed record (incomplete import); export refused")
     if receipts is None:
+        current = receipts_for(program, pid)
+        if stored is not None and "receipts_expected" in stored:
+            # DAF-04: the import stamped its receipt provenance
+            # on the seed record; an export whose inherited
+            # receipts no longer match it is incomplete and must
+            # refuse rather than present a truncated chain as
+            # complete. (An explicit receipts override is a
+            # deliberate caller act and is not checked.)
+            cur = [{k: e[k] for k in RECEIPT_KEYS} for e in current]
+            if len(cur) != stored["receipts_expected"] \
+                    or _receipts_digest(cur) != stored["receipts_hash"]:
+                raise ExchangeError(
+                    f"receipt provenance incomplete for {pid}: "
+                    f"expected {stored['receipts_expected']} "
+                    f"receipt(s), present {len(cur)}; export refused")
         receipts = [
             {k: e[k] for k in RECEIPT_KEYS}
-            for e in receipts_for(program, pid)]
+            for e in current]
     if stored is not None:
         seed = {
             "label": stored["label"],
@@ -282,6 +325,45 @@ def read_packet(path: str) -> Dict[str, Any]:
     return validate_packet(data)
 
 
+def _preflight_import(program: Any, packet: Dict[str, Any]) -> None:
+    """DAF-04/DAF-06: refuse an import BEFORE any mutation when
+    landing it would break a live proposal's provenance.
+
+    Seeds: the landing always records one seed payload; at cap
+    with no non-live victim, record_seed_payload would fail
+    closed AFTER the proposal landed (the DAF-06 partial
+    import) — refuse here instead, with the same error.
+    Receipts: bounded admission/backpressure — if the incoming
+    receipts would force eviction (oldest-first) of any receipt
+    belonging to a live Nursery proposal, refuse here. Evicting
+    only non-live proposals' receipts stays permitted and
+    counted, exactly as the direct writers behave."""
+    live = getattr(program.nursery, "proposals", {}) or {}
+    seeds = getattr(program, "exchange_seeds", None) or {}
+    if len(seeds) >= _MAX_SEED_ENTRIES and not any(
+            isinstance(e, dict) and e.get("pid") not in live
+            for e in seeds.values()):
+        raise ExchangeError(
+            "exchange_seeds is full and every retained "
+            "payload belongs to a live proposal; refusing "
+            "to evict a live original")
+    need = len(packet["receipts"])
+    entries = getattr(program, "exchange_receipts", None) or {}
+    overflow = len(entries) + need - _MAX_RECEIPT_ENTRIES
+    if overflow > 0:
+        # Would-be victims under the shared oldest-first policy
+        # (ts, then insertion order — session_section.oldest_key).
+        indexed = list(enumerate(entries.values()))
+        indexed.sort(key=lambda iv: (str(iv[1].get("ts", "")), iv[0]))
+        victims = [e for _, e in indexed[:overflow]]
+        if any(e.get("pid") in live for e in victims):
+            raise ExchangeError(
+                "exchange_receipts capacity: importing "
+                f"{need} receipt(s) would evict receipt(s) of a "
+                "live proposal; import refused before mutation "
+                "(bounded admission)")
+
+
 def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
     """Land a foreign packet as a PENDING proposal in the
     receiver's nursery. Never confirms, never makes eligible.
@@ -297,6 +379,10 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
                 return {"ok": False, "reason": "protected_material",
                         "detail": "Packet text carries receiver-"
                                   "protected material; refused."}
+    # DAF-04/DAF-06 preflight: capacity and provenance capacity
+    # across every owner the landing will touch, BEFORE the
+    # durable nursery landing. A refusal here mutates nothing.
+    _preflight_import(program, packet)
     lint = lint_packet(packet)
     seed, man = packet["seed"], packet["manifest"]
     origin = f"exchange:{man['author_origin']}"[:120]
@@ -320,33 +406,55 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
         reason=reason, detail="\n".join(detail_lines)[:2000],
         goals=[f"replication {lint['receipts']}x/"
                f"{lint['distinct_origins']} origins"])
-    # Director review repair (2026-10-28): PRESERVE the packet's
-    # receipts as first-class records in the receiver's receipts
-    # section, under the imported proposal. Before this, receipts
-    # existed only as text inside the bounded detail rendering —
-    # silently truncated there, absent from receipts_for, and
-    # missing from any re-export. Recording uses the canonical
-    # record_receipt path (each receipt keeps its own origin —
-    # provenance is never rewritten to the receiver).
     try:
-        for r in packet["receipts"]:
-            record_receipt(program, prop.id, r, _defer_save=True)
-    except Exception as e:
-        raise ExchangeError(
-            f"import landed proposal {prop.id} but receipt "
-            f"recording failed: {type(e).__name__}") from e
-    # Director completion order residual repair (2026-10-28):
-    # preserve the packet's ORIGINAL seed payload + declared
-    # requirements as durable data under the imported proposal.
-    # The detail above is only a rendering of it; export reads
-    # this record, so the seed survives re-export byte-exact.
-    try:
-        record_seed_payload(program, prop.id, packet,
-                            _defer_save=True)
-    except Exception as e:
-        raise ExchangeError(
-            f"import landed proposal {prop.id} but seed payload "
-            f"recording failed: {type(e).__name__}") from e
+        # Director review repair (2026-10-28): PRESERVE the packet's
+        # receipts as first-class records in the receiver's receipts
+        # section, under the imported proposal. Before this, receipts
+        # existed only as text inside the bounded detail rendering —
+        # silently truncated there, absent from receipts_for, and
+        # missing from any re-export. Recording uses the canonical
+        # record_receipt path (each receipt keeps its own origin —
+        # provenance is never rewritten to the receiver).
+        try:
+            for r in packet["receipts"]:
+                record_receipt(program, prop.id, r, _defer_save=True)
+        except Exception as e:
+            raise ExchangeError(
+                f"import landed proposal {prop.id} but receipt "
+                f"recording failed: {type(e).__name__}") from e
+        # Director completion order residual repair (2026-10-28):
+        # preserve the packet's ORIGINAL seed payload + declared
+        # requirements as durable data under the imported proposal.
+        # The detail above is only a rendering of it; export reads
+        # this record, so the seed survives re-export byte-exact.
+        try:
+            record_seed_payload(program, prop.id, packet,
+                                _defer_save=True)
+        except Exception as e:
+            raise ExchangeError(
+                f"import landed proposal {prop.id} but seed payload "
+                f"recording failed: {type(e).__name__}") from e
+    except Exception:
+        # DAF-06: a post-landing failure must not leave a durable
+        # partial import. Roll back every owner this import
+        # touched — the proposal (persisted by nursery.add at
+        # once), its receipts, its seed payload — then let the
+        # honest error propagate. Evictions the recording already
+        # performed against non-live records are real losses and
+        # stay counted; they are never silently un-counted.
+        for attr in ("exchange_receipts", "exchange_seeds"):
+            entries = getattr(program, attr, None)
+            if isinstance(entries, dict):
+                for k in [k for k, e in entries.items()
+                          if isinstance(e, dict)
+                          and e.get("pid") == prop.id]:
+                    del entries[k]
+        program.nursery.proposals.pop(prop.id, None)
+        try:
+            program.nursery.save()
+        except Exception:
+            pass
+        raise
     # AF-6: the writers above deferred their per-record saves;
     # this boundary save carries the whole import's durability
     # (one full save per import, best-effort as before).
@@ -434,7 +542,7 @@ def record_receipt(program: Any, pid: str, receipt: Dict[str, str],
         program.exchange_receipts = entries
     entries[entry["entry_id"]] = entry
     while len(entries) > _MAX_RECEIPT_ENTRIES:
-        entries.pop(next(iter(entries)))
+        entries.pop(_oldest_key(entries))
         _bump_dropped(program, "exchange_receipts_dropped_total")
     if not _defer_save:
         try:
@@ -460,6 +568,10 @@ def receipts_for(program: Any, pid: str) -> List[Dict[str, Any]]:
 _SEED_ENTRY_KEYS = frozenset({
     "entry_id", "owner", "ts", "pid", "label", "chain", "keep",
     "author_origin", "created", "registry", "requirements"})
+# DAF-04: receipt provenance (expected count + multiset digest)
+# is an OPTIONAL pair on the seed entry — legacy entries without
+# it stay valid and simply carry no provenance claim.
+_SEED_PROVENANCE_KEYS = frozenset({"receipts_expected", "receipts_hash"})
 
 EXCHANGE_SEEDS_SECTION_VERSION = 1
 _MAX_SEED_ENTRIES = 200
@@ -469,8 +581,19 @@ def _validate_seed_entry(entry: Any, owner: str
                          ) -> Tuple[bool, str]:
     if not isinstance(entry, dict):
         return False, "entry not an object"
-    if set(entry.keys()) != _SEED_ENTRY_KEYS:
+    if not _SEED_ENTRY_KEYS <= set(entry.keys()) \
+            <= _SEED_ENTRY_KEYS | _SEED_PROVENANCE_KEYS:
         return False, "entry keys mismatch"
+    if ("receipts_expected" in entry) != ("receipts_hash" in entry):
+        return False, "receipt provenance keys must appear as a pair"
+    if "receipts_expected" in entry:
+        exp = entry["receipts_expected"]
+        if not isinstance(exp, int) or isinstance(exp, bool) \
+                or not 0 <= exp <= MAX_RECEIPTS:
+            return False, "receipts_expected invalid"
+        h = entry["receipts_hash"]
+        if not isinstance(h, str) or len(h) != 64:
+            return False, "receipts_hash invalid"
     if entry["owner"] != owner:
         return False, "entry owner mismatch"
     for k, limit in (("entry_id", 64), ("ts", 32), ("pid", 120),
@@ -541,6 +664,11 @@ def record_seed_payload(program: Any, pid: str,
         "created": man["created"],
         "registry": man["registry"],
         "requirements": list(man["requirements"]),
+        # DAF-04: stamp the packet's receipt provenance on the
+        # durable seed record, so a later export can substantiate
+        # (or refuse) the proposal's receipt completeness.
+        "receipts_expected": len(packet["receipts"]),
+        "receipts_hash": _receipts_digest(packet["receipts"]),
     }
     ok, why = _validate_seed_entry(entry, program.owner)
     if not ok:
@@ -558,10 +686,18 @@ def record_seed_payload(program: Any, pid: str,
         # has left the Nursery (oldest first); if every retained
         # payload is live, fail closed and store nothing new.
         live = getattr(program.nursery, "proposals", {}) or {}
-        victim = next(
-            (k for k, e in entries.items()
-             if e.get("pid") not in live),
-            None)
+        # DAF-05: the victim is the OLDEST non-live payload under
+        # the shared policy (oldest ts; ties by insertion order)
+        # — never the raw dict-first entry, whose identity flips
+        # with load order.
+        cands = [(k, e) for k, e in entries.items()
+                 if e.get("pid") not in live]
+        if cands:
+            min_ts = min(str(e.get("ts", "")) for _, e in cands)
+            victim = next(k for k, e in cands
+                          if str(e.get("ts", "")) == min_ts)
+        else:
+            victim = None
         if victim is None:
             del entries[entry["entry_id"]]
             raise ExchangeError(

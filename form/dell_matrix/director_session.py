@@ -113,9 +113,13 @@ class DirectorSession:
             entries = {}
             self._program.director_records = entries
         entries[entry["entry_id"]] = entry
-        # Bounded: keep the newest _MAX (dict order = insert order).
+        # Bounded: keep the newest _MAX. DAF-05: the victim is
+        # chosen by the shared explicit oldest-first policy —
+        # dict order after a reload is newest-first, not insert
+        # order, and must never choose the victim.
+        from form.dell_matrix.session_section import oldest_key
         while len(entries) > _records._MAX_ENTRIES:
-            entries.pop(next(iter(entries)))
+            entries.pop(oldest_key(entries))
             # AF-4: count the eviction at the moment/place of
             # loss (PP2b B2), as the other bounded writers do.
             total = getattr(self._program,

@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from form.dell_matrix.session_section import (
     MISSING,
+    oldest_key,
     serialize_records_section,
     validate_records_section,
 )
@@ -138,7 +139,10 @@ def record_event(program: Any, pid: str, event: str, **kw) -> Dict[str, Any]:
         program.design_loop = entries
     entries[entry["entry_id"]] = entry
     while len(entries) > _MAX_EVENTS:
-        entries.pop(next(iter(entries)))
+        # DAF-05: evict under the shared explicit oldest-first
+        # policy; dict order after a reload is newest-first and
+        # must never choose the victim.
+        entries.pop(oldest_key(entries))
         # AF-4: count the eviction at the moment/place of loss
         # (PP2b B2); the serialize backstop never sees a
         # population this writer already trimmed to the cap.
