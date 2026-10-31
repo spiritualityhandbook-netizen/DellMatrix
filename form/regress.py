@@ -24,9 +24,11 @@ import os
 import re
 import secrets
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 from typing import Iterable, List, Optional, Tuple
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -271,6 +273,7 @@ LIST = [
     "form.af5_session_bounds_test:smoke",
     "form.af6_import_batching_test:smoke",
     "form.mandell.symbiosis_ledger_test:smoke",
+    "form.daf09_timeout_tree_test:smoke",
 ]
 
 TIMEOUT_S = 900
@@ -330,6 +333,99 @@ def _copy_tree(src: str) -> str:
     return dst
 
 
+def _descendant_pids(root_pid: int) -> List[int]:
+    """All live descendant PIDs of root_pid, from /proc parent links.
+
+    Snapshot BEFORE any kill: once the parent dies its children are
+    reparented and the tree can no longer be reconstructed. Returns []
+    where /proc is unavailable (the process-group kill still applies).
+    """
+    children = {}
+    try:
+        entries = os.listdir("/proc")
+    except OSError:
+        return []
+    for name in entries:
+        if not name.isdigit():
+            continue
+        try:
+            with open(os.path.join("/proc", name, "stat"), "rb") as fh:
+                stat = fh.read()
+            # comm is parenthesised and may contain spaces/parens; ppid
+            # is the field right after state, parsed from the last ')'.
+            tail = stat[stat.rfind(b")") + 2:].split()
+            ppid = int(tail[1])
+        except (OSError, ValueError, IndexError):
+            continue
+        children.setdefault(ppid, []).append(int(name))
+    out, stack = [], list(children.get(root_pid, []))
+    while stack:
+        pid = stack.pop()
+        out.append(pid)
+        stack.extend(children.get(pid, []))
+    return out
+
+
+def _kill_process_tree(proc: "subprocess.Popen") -> None:
+    """DAF-09: kill the WHOLE tree rooted at proc, then reap proc.
+
+    The entry runs in its own session/process group (start_new_session),
+    so killpg reaches ordinary descendants; the /proc descendant snapshot
+    additionally reaches descendants that left the group without leaving
+    the tree. Only PIDs in that snapshot / group are signalled — never
+    unrelated processes. Bounded: one SIGKILL pass plus a bounded reap.
+    """
+    root = proc.pid
+    descendants = _descendant_pids(root)
+    if os.name == "posix":
+        try:
+            os.killpg(os.getpgid(root), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            pass
+    for pid in descendants:
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            pass
+    try:
+        proc.kill()
+    except (ProcessLookupError, OSError):
+        pass
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        pass
+    # Reap any descendant that was our direct child is impossible (they
+    # are not); SIGKILL is final, so no further waiting is required for
+    # the verdict. Give the kernel a brief bounded moment so a following
+    # liveness check in the same process observes the kills.
+    deadline = time.monotonic() + 2.0
+    while descendants and time.monotonic() < deadline:
+        alive = []
+        for pid in descendants:
+            try:
+                with open(f"/proc/{pid}/stat", "rb") as fh:
+                    stat = fh.read()
+                if stat[stat.rfind(b")") + 2:].split()[0:1] == [b"Z"]:
+                    continue  # zombie: dead, awaiting its parent's reap
+            except OSError:
+                continue
+            try:
+                os.kill(pid, 0)
+                alive.append(pid)
+            except (ProcessLookupError, PermissionError, OSError):
+                pass
+        if not alive:
+            break
+        descendants = alive
+        time.sleep(0.05)
+
+
+class _Completed:
+    def __init__(self, returncode, stdout, stderr):
+        self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
+
+
 def run_entry(entry: str, cwd: str) -> Tuple[bool, str]:
     mod, _, fn = normalize(entry).partition(":")
     token = secrets.token_hex(8)  # proves the function RETURNED True (an early sys.exit(0) cannot print it)
@@ -339,11 +435,18 @@ def run_entry(entry: str, cwd: str) -> Tuple[bool, str]:
             "sys.exit(0 if r is True else 1)")
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
     env.pop("PYTHONPATH", None)
+    proc = subprocess.Popen([sys.executable, "-B", "-c", code], cwd=cwd, env=env,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            text=True, start_new_session=True)
     try:
-        r = subprocess.run([sys.executable, "-B", "-c", code], cwd=cwd, env=env,
-                           capture_output=True, text=True, timeout=TIMEOUT_S)
+        stdout, stderr = proc.communicate(timeout=TIMEOUT_S)
     except subprocess.TimeoutExpired:
+        _kill_process_tree(proc)
         return False, "TIMEOUT"
+    except KeyboardInterrupt:
+        _kill_process_tree(proc)
+        raise
+    r = _Completed(proc.returncode, stdout, stderr)
     hits = _NM.findall(r.stdout)
     n, m = (int(hits[-1][0]), int(hits[-1][1])) if hits else (0, 0)
     tb = "Traceback (most recent call last)" in (r.stdout + r.stderr)
