@@ -21,8 +21,9 @@ DIRECTOR_FINDINGS_REGISTER.md (Uni workspace).
 | DIRECTOR_REPORT_STEP3B_DAF02.md | Order step 3b (post-step-5 wave a) | DAF-02 re-presentation: Sanitize chain redaction carry-through (PR #168, merge 1ab1afe) | DECLINED AS COMPLETE (Mode D, 2026-10-31, at 1ab1afe) — Query disclosure repaired, but redaction sanitizes executable state in place (last_result + Revert corrupted); DAF-02 remains OPEN; step 3c forthcoming (canonical state unchanged, redact only detached evidence copies). |
 | DIRECTOR_REPORT_DAF09_ADDENDUM.md | DAF-09 addendum (post-step-5 wave b) | Widened DAF-09 coverage: session-escaping descendants + cancellation (PR #170, merge f1c0205) | PARTIALLY CERTIFIED (Mode D, 2026-10-31, at f1c0205) — SIGINT CANCELLATION CERTIFIED within the tested Linux scope (cleanup + KeyboardInterrupt propagation passed both independent runs). SESSION-ESCAPE CERTIFICATION WITHHELD: the Director's independent runs returned 15/16 then 14/16 against Uni's 16/16, and the conflicting local results are unresolved. NEW GAP recorded: the tracker retains bare numeric PIDs without process-identity protection (PID-reuse could signal an unrelated process; mock-confirmed, no real bystander signalled). A bounded DAF-09 identity-safe-signalling follow-up is forthcoming (after step 3c, before step 5b); it re-presents the session-escape coverage only — cancellation is already certified and is not re-opened. |
 
-Forthcoming, in order: step 3c (DAF-02 semantic-preservation
-follow-up, third DAF-02 presentation), the DAF-09
+| DIRECTOR_REPORT_STEP3C_DAF02.md | Order step 3c (post-step-5 wave a, cont.) | DAF-02 third presentation: canonical state + rollback checkpoints unchanged by Sanitize; redaction on detached evidence copies only (PR #173, merge bd71c1e) | SUBMITTED — awaiting ruling. IMPLEMENTED-VERIFIED by Uni (STEP3C 24/24, mutants killed, regress 210/210 x3, exact-head CI SUCCESS before merge, fresh-clone 210/210 GREEN); not certified. |
+
+Forthcoming, in order: the DAF-09
 identity-safe-signalling follow-up (re-presents the
 session-escape coverage only), step 5b
 (DAF-06 durability follow-up, re-presents A1), steps 6-11
