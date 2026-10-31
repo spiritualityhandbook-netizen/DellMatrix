@@ -20,12 +20,33 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-from urllib.request import Request, urlopen
+from urllib.request import Request, build_opener, HTTPRedirectHandler
 from urllib.error import URLError, HTTPError
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse
 import json
 import time
 import re
+
+FETCH_LOG_CAP = 40
+
+
+class _GateRedirectHandler(HTTPRedirectHandler):
+    """DAF-03: every redirect hop is authorized by the gate BEFORE
+    any connection to the new destination is made. A hop to a host
+    that is not allowed (or carrying userinfo, or a non-http(s)
+    scheme) raises instead of connecting — zero requests reach the
+    blocked destination."""
+
+    def __init__(self, gate: "InternetGate") -> None:
+        super().__init__()
+        self._gate = gate
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not self._gate._host_ok(newurl):
+            raise URLError(
+                f"redirect blocked by gate: host not allowed "
+                f"({self._gate._log_url(newurl)})")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 DEFAULT_HOSTS = [
     "en.wikipedia.org", "api.wikimedia.org", "www.wikidata.org",
@@ -101,16 +122,61 @@ class InternetGate:
         return g
 
     def _host_ok(self, url: str) -> bool:
-        m = re.match(r"^https?://([^/]+)", url.strip(), re.I)
-        if not m:
+        """DAF-03: canonical URL parsing. The ACTUAL destination is
+        authorized: scheme must be http/https, userinfo is rejected
+        outright (https://allowed:pass@evil/ parses to host evil —
+        the old regex validated the userinfo instead), and the
+        parsed hostname must be an allowed host or its subdomain."""
+        try:
+            parts = urlparse((url or "").strip())
+        except ValueError:
             return False
-        host = m.group(1).lower().split(":")[0]
-        if host in self.allowed_hosts:
-            return True
+        if parts.scheme.lower() not in ("http", "https"):
+            return False
+        if parts.username is not None or parts.password is not None:
+            return False
+        host = (parts.hostname or "").lower()
+        if not host:
+            return False
         for h in self.allowed_hosts:
-            if host.endswith("." + h) or host == h:
+            if host == h or host.endswith("." + h):
                 return True
         return False
+
+    @staticmethod
+    def _log_url(url: str) -> str:
+        """URL shape safe for logs/receipts: no userinfo, no query,
+        no fragment (DAF-10 redaction)."""
+        try:
+            parts = urlparse((url or "").strip())
+        except ValueError:
+            return ""
+        host = (parts.hostname or "").lower()
+        netloc = host
+        try:
+            if parts.port:
+                netloc = f"{host}:{parts.port}"
+        except ValueError:
+            netloc = host
+        return f"{parts.scheme}://{netloc}{parts.path}" if host else ""
+
+    @staticmethod
+    def _safe_error(text: str) -> str:
+        """Strip any userinfo embedded in an error string."""
+        return re.sub(r"://[^/@\s]+@", "://[REDACTED]@", str(text or ""))
+
+    def _append_log(self, entry: Dict[str, Any]) -> None:
+        """DAF-10: ONE append-and-trim path for success AND failure,
+        so the fetch log never exceeds FETCH_LOG_CAP."""
+        self.fetch_log.append(entry)
+        while len(self.fetch_log) > FETCH_LOG_CAP:
+            self.fetch_log.pop(0)
+
+    def _open(self, req: Request):
+        """Open through the gate's redirect-authorizing opener —
+        the only transport path (fetch_url and _json_get alike)."""
+        opener = build_opener(_GateRedirectHandler(self))
+        return opener.open(req, timeout=self.timeout_s)
 
     def allow_host(self, host: str) -> str:
         h = (host or "").strip().lower().split("/")[0].split(":")[0]
@@ -128,7 +194,7 @@ class InternetGate:
             return {
                 "ok": False,
                 "error": f"host not allowed · allow_host first · sample={self.allowed_hosts[:4]}",
-                "url": url,
+                "url": self._log_url(url),
             }
         try:
             req = Request(
@@ -138,7 +204,7 @@ class InternetGate:
                     "Accept": "text/html,application/json,text/plain,*/*",
                 },
             )
-            with urlopen(req, timeout=self.timeout_s) as resp:
+            with self._open(req) as resp:
                 raw = resp.read(self.max_bytes)
                 ctype = resp.headers.get("Content-Type", "")
                 code = getattr(resp, "status", 200)
@@ -152,27 +218,35 @@ class InternetGate:
                 "bytes": len(raw), "preview": plain[:1200], "ts": time.time(),
             }
             self.last_fetch = entry
-            self.fetch_log.append({"url": url, "ok": True, "bytes": len(raw), "ts": entry["ts"]})
-            while len(self.fetch_log) > 40:
-                self.fetch_log.pop(0)
+            self._append_log({"url": self._log_url(url), "ok": True, "bytes": len(raw), "ts": entry["ts"]})
             return entry
         except (URLError, HTTPError, TimeoutError, OSError) as e:
-            entry = {"ok": False, "url": url, "error": f"{type(e).__name__}: {e}", "ts": time.time()}
+            entry = {"ok": False, "url": self._log_url(url),
+                     "error": self._safe_error(f"{type(e).__name__}: {e}"),
+                     "ts": time.time()}
             self.last_fetch = entry
-            self.fetch_log.append({"url": url, "ok": False, "error": str(e), "ts": entry["ts"]})
+            self._append_log({"url": self._log_url(url), "ok": False,
+                              "error": self._safe_error(str(e)), "ts": entry["ts"]})
             return entry
 
     def _json_get(self, url: str) -> Dict[str, Any]:
         if not self.on:
             return {"ok": False, "error": "OFF"}
+        # DAF-03: _json_get is a public transport entry point and
+        # goes through the SAME gate (host authorization + per-hop
+        # redirect validation) as fetch_url — no side door.
+        if not self._host_ok(url):
+            return {"ok": False, "url": self._log_url(url),
+                    "error": "host not allowed"}
         try:
             req = Request(url, headers={"User-Agent": "DellMatrix/AutoGrowth", "Accept": "application/json"})
-            with urlopen(req, timeout=self.timeout_s) as resp:
+            with self._open(req) as resp:
                 raw = resp.read(self.max_bytes)
             data = json.loads(raw.decode("utf-8", errors="replace"))
             return {"ok": True, "url": url, "data": data}
         except Exception as e:
-            return {"ok": False, "url": url, "error": f"{type(e).__name__}: {e}"}
+            return {"ok": False, "url": self._log_url(url),
+                    "error": self._safe_error(f"{type(e).__name__}: {e}")}
 
     def research_topic(self, topic: str) -> Dict[str, Any]:
         if not self.on:

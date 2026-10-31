@@ -274,6 +274,7 @@ LIST = [
     "form.af6_import_batching_test:smoke",
     "form.mandell.symbiosis_ledger_test:smoke",
     "form.daf09_timeout_tree_test:smoke",
+    "form.step3_security_test:smoke",
 ]
 
 TIMEOUT_S = 900

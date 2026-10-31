@@ -175,6 +175,19 @@ def observe_seed_execution(program: Any, seed_text: str,
     messages = list(out.get("messages") or [])
     ok = bool(out.get("ok", False))
     error = str(out.get("error") or "")
+    # DAF-02/B5: a Sanitize execution's receipt must never carry the
+    # raw seed or raw echoes into the persisted outcome ledger. The
+    # executors already redact their own surfaces; the receipt is
+    # redacted here as the observation boundary, using the shared
+    # redactor, so mandell/input/messages/state_note stay clean
+    # even if a future executor surface regresses.
+    _receipt_raw = raw
+    if dell == 41 or any(int(getattr(a, "dell", -1)) == 41
+                         for a in (parsed.atoms or [])):
+        from .redaction import sanitize_text
+        _receipt_raw = sanitize_text(raw)
+        messages = [sanitize_text(m) for m in messages]
+        error = sanitize_text(error)
     state_note = "; ".join(messages[-3:]) if messages else ("executed" if ok else "failed")
     # ARGUS 3.3b: carry the chain's atom results so the Outcome ledger does
     # not falsely record atom_results=[] / partial_completion=False.
@@ -182,8 +195,8 @@ def observe_seed_execution(program: Any, seed_text: str,
     _oks = [bool(r.get("ok", True)) for r in _atom_results]
     _partial = bool(out.get("partial", False)) or (bool(_atom_results) and any(_oks) and not all(_oks))
     _capture(program, _RawReceipt(
-        action=action, mandell=raw, dell=dell,
-        semantic=f"{action}[{name}]", input=raw,
+        action=action, mandell=_receipt_raw, dell=dell,
+        semantic=f"{action}[{name}]", input=_receipt_raw,
         routed=True, ok=ok, error=error if not ok else "",
         messages=messages, state_note=state_note,
         atom_results=_atom_results, partial=_partial,

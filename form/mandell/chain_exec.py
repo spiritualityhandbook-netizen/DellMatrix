@@ -389,8 +389,12 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
 
 
 def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
-    messages = [f"Mandell: {seed.as_mandel()}", f"English: {seed.as_english()}"]
-    messages.append(f"Chain atoms={len(seed.atoms)} label={seed.label or ''}")
+    # DAF-02/B5: echoes of a chain containing Dell 41[Sanitize] are
+    # built from the redacted seed copy (identity for other chains).
+    from .redaction import redacted_seed, sanitize_text, has_sanitize
+    _echo = redacted_seed(seed)
+    messages = [f"Mandell: {_echo.as_mandel()}", f"English: {_echo.as_english()}"]
+    messages.append(f"Chain atoms={len(seed.atoms)} label={_echo.label or ''}")
     ran = []
     skipped = []
     state = {"ok": True, "error": "", "new_program": None}
@@ -410,14 +414,14 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     _oks = [bool(r.get("ok", True)) for r in atom_results]
     _partial = bool(atom_results) and any(_oks) and not all(_oks)
     _any_skipped = any(bool(r.get("skipped", False)) for r in atom_results)
-    result = {"ok": ok, "error": last_error, "seed": seed.as_mandel(), "english": seed.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": st.snap() if st is not None else {}}
+    result = {"ok": ok, "error": last_error, "seed": _echo.as_mandel(), "english": _echo.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": st.snap() if st is not None else {}}
     # PP5: keep the last chain execution on the program
     # (runtime-only) so the flow renderer can draw what actually
     # ran. Best-effort — rendering support must never break
     # execution.
     try:
         program.last_flow = {
-            "seed_text": seed_text,
+            "seed_text": sanitize_text(seed_text) if has_sanitize(seed) else seed_text,
             "seed": result["seed"],
             "atom_results": [dict(r) for r in atom_results],
             "ok": ok,
