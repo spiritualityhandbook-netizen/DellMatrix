@@ -259,6 +259,30 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
         if out.get("new_program") is not None:
             program = out["new_program"]
             state["new_program"] = program
+            # Step 3b: the Sanitize redaction flag rides a program swap.
+            try:
+                from .redaction import has_sanitize as _hs
+                if _hs(seed):
+                    program._chain_sanitize_redact = True
+            except Exception:
+                pass
+        # Step 3b: under a Sanitize chain, the atom's result-cell
+        # DESCRIPTOR fields (predicate/error — evidence about the
+        # operand, not the operand's value) are sanitized as soon
+        # as the atom completes, so no later trace can echo them
+        # raw. The value field and all execution state keep the
+        # real operand for downstream atoms.
+        try:
+            from .redaction import has_sanitize as _hs2, sanitize_text as _st2
+            if _hs2(seed):
+                _st = attach(program)
+                _lr = getattr(_st, "last_result", None)
+                if isinstance(_lr, dict):
+                    for _k in ("predicate", "error"):
+                        if isinstance(_lr.get(_k), str):
+                            _lr[_k] = _st2(_lr[_k])
+        except Exception:
+            pass
         last_ok = bool(out.get("ok", True))
         # DIRECTOR DECISION 1: atom record carries unified truth —
         # ok=False, skipped=True, reason=<explicit> for unexecuted atoms.
@@ -398,21 +422,59 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
 def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     # DAF-02/B5: echoes of a chain containing Dell 41[Sanitize] are
     # built from the redacted seed copy (identity for other chains).
-    from .redaction import redacted_seed, sanitize_text, has_sanitize
+    # Step 3b (DAF-02 reopened): the redaction requirement is also
+    # CARRIED through the chain — every atom trace appended to the
+    # messages list is sanitized at append time, history/traces
+    # writers see the transient _chain_sanitize_redact flag, and
+    # returned evidence is sanitized before it leaves. Operands
+    # execute unchanged; only evidence surfaces are redacted.
+    from .redaction import (RedactingMessages, redacted_seed,
+                            sanitize_evidence, sanitize_text, has_sanitize)
+    _redact = has_sanitize(seed)
     _echo = redacted_seed(seed)
-    messages = [f"Mandell: {_echo.as_mandel()}", f"English: {_echo.as_english()}"]
+    messages = (RedactingMessages if _redact else list)(
+        [f"Mandell: {_echo.as_mandel()}", f"English: {_echo.as_english()}"])
     messages.append(f"Chain atoms={len(seed.atoms)} label={_echo.label or ''}")
     ran = []
     skipped = []
     state = {"ok": True, "error": "", "new_program": None}
     attach(program)
-    program, _results = execute_range(program, seed, list(seed.atoms), 0, len(seed.atoms), 0, messages, ran, skipped, state)
+    if _redact:
+        try:
+            program._chain_sanitize_redact = True
+        except Exception:
+            pass
+    try:
+        program, _results = execute_range(program, seed, list(seed.atoms), 0, len(seed.atoms), 0, messages, ran, skipped, state)
+    finally:
+        if _redact:
+            for _p in (program, state.get("new_program")):
+                try:
+                    if _p is not None:
+                        _p._chain_sanitize_redact = False
+                except Exception:
+                    pass
     new_program = state.get("new_program")
     if new_program is not None:
         program = new_program
     ok = bool(state.get("ok", True))
     last_error = state.get("error") or ""
+    if _redact:
+        last_error = sanitize_text(last_error)
     st = getattr(program, "core_ii", None)
+    if _redact and st is not None:
+        # Chain complete: no downstream atom in this chain can
+        # consume last_result/frames, so their evidence form is
+        # sanitized in full before anything can return or persist
+        # it. Execution state (store/selected/groups) is NOT
+        # touched — those are operands, not evidence.
+        try:
+            st.last_result = sanitize_evidence(dict(st.last_result or {}))
+            st.last_frame = sanitize_evidence(dict(st.last_frame or {}))
+            st.last_control = sanitize_evidence(dict(st.last_control or {}))
+            st.frames = sanitize_evidence(list(st.frames or []))
+        except Exception:
+            pass
     # EOC-I: per-node evidence (additive; existing keys unchanged).
     atom_results = [dict(r) for r in (_results or []) if isinstance(r, dict)]
     # DIRECTOR DECISION 1: aggregate chain Outcome must expose
@@ -421,7 +483,12 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     _oks = [bool(r.get("ok", True)) for r in atom_results]
     _partial = bool(atom_results) and any(_oks) and not all(_oks)
     _any_skipped = any(bool(r.get("skipped", False)) for r in atom_results)
-    result = {"ok": ok, "error": last_error, "seed": _echo.as_mandel(), "english": _echo.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": st.snap() if st is not None else {}}
+    if _redact:
+        atom_results = sanitize_evidence(atom_results)
+    _snap = st.snap() if st is not None else {}
+    if _redact:
+        _snap = sanitize_evidence(_snap)
+    result = {"ok": ok, "error": last_error, "seed": _echo.as_mandel(), "english": _echo.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": _snap}
     # PP5: keep the last chain execution on the program
     # (runtime-only) so the flow renderer can draw what actually
     # ran. Best-effort — rendering support must never break

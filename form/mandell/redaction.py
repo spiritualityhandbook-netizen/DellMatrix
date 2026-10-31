@@ -49,6 +49,37 @@ def has_sanitize(parsed: Any) -> bool:
                for a in (getattr(parsed, "atoms", None) or []))
 
 
+def sanitize_evidence(obj: Any) -> Any:
+    """Deep copy of an evidence structure with every string run
+    through ``sanitize_text``. Evidence only — never applied to
+    execution operands or live execution state (store, selected),
+    so a Sanitize chain still executes with its real operands
+    (step 3b: DAF-02 chain follow-up)."""
+    if isinstance(obj, str):
+        return sanitize_text(obj)
+    if isinstance(obj, dict):
+        return {k: sanitize_evidence(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [sanitize_evidence(v) for v in obj]
+    return obj
+
+
+class RedactingMessages(list):
+    """Step 3b: a chain-messages list that sanitizes every string
+    at append time. A chain containing Dell 41[Sanitize] carries
+    its redaction requirement through EVERY atom trace built on
+    this list (TOAM lines, Query scope lines, leaf sub-messages,
+    control messages) without touching the operands those atoms
+    execute with — one shared authority, no per-site copies."""
+
+    def append(self, item: Any) -> None:
+        super().append(sanitize_text(item) if isinstance(item, str) else item)
+
+    def extend(self, items: Any) -> None:
+        for item in items:
+            self.append(item)
+
+
 def redacted_seed(parsed: Any) -> Any:
     """Echo-safe copy of a parsed seed (identity if no Sanitize)."""
     if parsed is None or not has_sanitize(parsed):

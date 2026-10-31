@@ -103,10 +103,16 @@ def execute_seed(program: Any, seed_text: str, _leaf: bool = False) -> Dict[str,
             # PP3: an atom that did not execute is an encountered
             # unknown — record it (deduped) on the active program.
             target = out.get("new_program") or program
+            # Step 3b: a skipped atom in a Sanitize chain must not
+            # carry the raw seed text into the unknown register.
+            _subj = f"seed: {seed_text[:160]}"
+            if any(int(getattr(a, "dell", -1)) == 41 for a in s.atoms):
+                from .redaction import sanitize_text as _stx
+                _subj = _stx(_subj)
             for r in out.get("atom_results") or []:
                 if isinstance(r, dict) and r.get("skipped"):
                     _note_unknown(
-                        target, f"seed: {seed_text[:160]}",
+                        target, _subj,
                         f"Dell {r.get('dell')} did not execute: "
                         f"{r.get('reason') or 'no reason recorded'}",
                         "executor:skip")
