@@ -330,7 +330,7 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
     # provenance is never rewritten to the receiver).
     try:
         for r in packet["receipts"]:
-            record_receipt(program, prop.id, r)
+            record_receipt(program, prop.id, r, _defer_save=True)
     except Exception as e:
         raise ExchangeError(
             f"import landed proposal {prop.id} but receipt "
@@ -341,11 +341,19 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
     # The detail above is only a rendering of it; export reads
     # this record, so the seed survives re-export byte-exact.
     try:
-        record_seed_payload(program, prop.id, packet)
+        record_seed_payload(program, prop.id, packet,
+                            _defer_save=True)
     except Exception as e:
         raise ExchangeError(
             f"import landed proposal {prop.id} but seed payload "
             f"recording failed: {type(e).__name__}") from e
+    # AF-6: the writers above deferred their per-record saves;
+    # this boundary save carries the whole import's durability
+    # (one full save per import, best-effort as before).
+    try:
+        program.save()
+    except Exception:
+        pass
     return {"ok": True, "pid": prop.id, "lint": lint,
             "origin": origin}
 
@@ -403,11 +411,13 @@ def serialize_receipts_section(entries: Any, malformed: Any,
 _MISSING = MISSING
 
 
-def record_receipt(program: Any, pid: str, receipt: Dict[str, str]
-                   ) -> Dict[str, Any]:
+def record_receipt(program: Any, pid: str, receipt: Dict[str, str],
+                   _defer_save: bool = False) -> Dict[str, Any]:
     """Record one run's receipt against a proposal, at the time
     the run happens. Persisted (best-effort save, mirroring dock
-    evidence discipline)."""
+    evidence discipline). `_defer_save` is private: only a host
+    that owns the save boundary (import_packet) may defer, and
+    that host saves once at its end (AF-6)."""
     if pid not in program.nursery.proposals:
         raise ExchangeError(f"unknown proposal {pid}")
     r = _validate_receipt(receipt)
@@ -426,10 +436,11 @@ def record_receipt(program: Any, pid: str, receipt: Dict[str, str]
     while len(entries) > _MAX_RECEIPT_ENTRIES:
         entries.pop(next(iter(entries)))
         _bump_dropped(program, "exchange_receipts_dropped_total")
-    try:
-        program.save()
-    except Exception:
-        pass
+    if not _defer_save:
+        try:
+            program.save()
+        except Exception:
+            pass
     return entry
 
 
@@ -507,11 +518,14 @@ def serialize_seeds_section(entries: Any, malformed: Any,
 
 
 def record_seed_payload(program: Any, pid: str,
-                        packet: Dict[str, Any]) -> Dict[str, Any]:
+                        packet: Dict[str, Any],
+                        _defer_save: bool = False) -> Dict[str, Any]:
     """Preserve an imported packet's original seed + manifest
     under the landed proposal. `packet` must already be
     validated (import_packet validates at the boundary).
-    Persisted (best-effort save, the receipts discipline)."""
+    Persisted (best-effort save, the receipts discipline).
+    `_defer_save`: same private boundary rule as
+    record_receipt (AF-6)."""
     if pid not in program.nursery.proposals:
         raise ExchangeError(f"unknown proposal {pid}")
     seed, man = packet["seed"], packet["manifest"]
@@ -556,10 +570,11 @@ def record_seed_payload(program: Any, pid: str,
                 "to evict a live original")
         entries.pop(victim)
         _bump_dropped(program, "exchange_seeds_dropped_total")
-    try:
-        program.save()
-    except Exception:
-        pass
+    if not _defer_save:
+        try:
+            program.save()
+        except Exception:
+            pass
     return entry
 
 
