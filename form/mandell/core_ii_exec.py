@@ -128,11 +128,16 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             except Exception: pass
     def shot():
         append_snapshot(st)
-        # Snapshots are evidence copies: under a Sanitize chain the
-        # appended copy is sanitized; live state is untouched.
-        if getattr(program, "_chain_sanitize_redact", False) and st.snapshots:
-            from .redaction import sanitize_evidence
-            st.snapshots[-1] = sanitize_evidence(st.snapshots[-1])
+        # Step 3c (DAF-02, Director Mode D): snapshots are NOT
+        # sanitized, even under a Sanitize chain. A snapshot is a
+        # rollback checkpoint — Revert restores live state from
+        # it — so it is executable state, not display evidence.
+        # Step 3b sanitized the appended copy in place and the
+        # Director's probe showed Revert then restoring
+        # "password=[REDACTED]" instead of the original value.
+        # The snapshot stays exactly as a non-Sanitize control
+        # leaves it; redaction applies only to detached outward
+        # copies at their own boundaries.
     try:
         from .query_ops import QUERY_DELLS, apply_query
         if n in QUERY_DELLS:
