@@ -338,14 +338,35 @@ def _copy_tree(src: str) -> str:
     return dst
 
 
-def _descendant_pids(root_pid: int) -> List[int]:
-    """All live descendant PIDs of root_pid, from /proc parent links.
+def _proc_starttime(pid: int) -> Optional[int]:
+    """The /proc start-time fingerprint of ONE process instance.
+
+    Field 22 of /proc/<pid>/stat (clock ticks since boot). A PID is
+    recycled by the kernel; (pid, starttime) identifies the instance
+    that was actually witnessed. None when unreadable (process gone
+    or /proc unavailable).
+    """
+    try:
+        with open(f"/proc/{pid}/stat", "rb") as fh:
+            stat = fh.read()
+        # comm is parenthesised and may contain spaces/parens; fields
+        # after the last ')' start at field 3 (state), so field 22
+        # (starttime) is tail index 19.
+        return int(stat[stat.rfind(b")") + 2:].split()[19])
+    except (OSError, ValueError, IndexError):
+        return None
+
+
+def _descendant_identities(root_pid: int) -> List[Tuple[int, Optional[int]]]:
+    """All live descendants of root_pid as (pid, starttime) identities,
+    from /proc parent links.
 
     Snapshot BEFORE any kill: once the parent dies its children are
     reparented and the tree can no longer be reconstructed. Returns []
     where /proc is unavailable (the process-group kill still applies).
     """
     children = {}
+    starttimes = {}
     try:
         entries = os.listdir("/proc")
     except OSError:
@@ -356,19 +377,92 @@ def _descendant_pids(root_pid: int) -> List[int]:
         try:
             with open(os.path.join("/proc", name, "stat"), "rb") as fh:
                 stat = fh.read()
-            # comm is parenthesised and may contain spaces/parens; ppid
-            # is the field right after state, parsed from the last ')'.
             tail = stat[stat.rfind(b")") + 2:].split()
             ppid = int(tail[1])
+            starttime = int(tail[19])
         except (OSError, ValueError, IndexError):
             continue
-        children.setdefault(ppid, []).append(int(name))
+        pid = int(name)
+        children.setdefault(ppid, []).append(pid)
+        starttimes[pid] = starttime
     out, stack = [], list(children.get(root_pid, []))
     while stack:
         pid = stack.pop()
-        out.append(pid)
+        out.append((pid, starttimes.get(pid)))
         stack.extend(children.get(pid, []))
     return out
+
+
+def _pidfd_send_signal(fd: int, sig: int) -> None:
+    """pidfd_send_signal(2) via ctypes (os has pidfd_open but, on
+    Python 3.12, no send wrapper). Raises OSError on failure — notably
+    ESRCH when the pinned instance is already dead, in which case the
+    signal is delivered to NOBODY, never to a PID reuser."""
+    import ctypes
+
+    libc = ctypes.CDLL(None, use_errno=True)
+    res = libc.syscall(424, fd, sig, None, 0)  # SYS_pidfd_send_signal
+    if res != 0:
+        err = ctypes.get_errno()
+        raise OSError(err, os.strerror(err))
+
+
+def _signal_identity(pid: int, starttime: Optional[int], sig: int) -> bool:
+    """Signal ONLY the witnessed process instance (pid, starttime).
+
+    Identity-safe signalling (DAF-09 follow-up): a bare PID from a
+    historical witness set proves nothing — the PID may have been
+    recycled by an unrelated process. Refuse (return False) when the
+    identity is missing or the process now at that PID is a different
+    instance. Prefer a pidfd: once opened it pins the instance, so a
+    signal can never land on a reuser; the starttime is re-verified
+    after the open to close the capture->open race. Without pidfd
+    support, fall back to kill(2) only after the same verification.
+    """
+    if starttime is None:
+        return False
+    if _proc_starttime(pid) != starttime:
+        return False  # different instance (or gone): never signal
+    if hasattr(os, "pidfd_open"):
+        fd = None
+        try:
+            fd = os.pidfd_open(pid)
+        except OSError:
+            fd = None
+        if fd is not None:
+            try:
+                if _proc_starttime(pid) != starttime:
+                    return False
+                _pidfd_send_signal(fd, sig)
+                return True
+            except OSError:
+                return False
+            finally:
+                os.close(fd)
+    try:
+        os.kill(pid, sig)
+        return True
+    except (ProcessLookupError, PermissionError, OSError):
+        return False
+
+
+def _identity_alive(pid: int, starttime: Optional[int]) -> bool:
+    """True only while THE WITNESSED INSTANCE is alive and non-zombie.
+
+    A recycled PID (different starttime) is not our process: it reads
+    dead for our purposes, never as a survivor.
+    """
+    if starttime is None:
+        return False
+    try:
+        with open(f"/proc/{pid}/stat", "rb") as fh:
+            stat = fh.read()
+        tail = stat[stat.rfind(b")") + 2:].split()
+        if tail[0:1] == [b"Z"]:
+            return False
+        return int(tail[19]) == starttime
+    except (OSError, ValueError, IndexError):
+        return False
 
 
 def _communicate_tracked(proc: "subprocess.Popen") -> Tuple[str, str]:
@@ -383,16 +477,21 @@ def _communicate_tracked(proc: "subprocess.Popen") -> Tuple[str, str]:
     Only witnessed descendants are ever added — never a process
     matched by name or cmdline. Bounded: one /proc scan per poll
     slice (0.1s), only while this entry runs.
+
+    DAF-09 follow-up: what is witnessed is an IDENTITY — (pid,
+    starttime) — never a bare PID. A bare PID proves nothing at kill
+    time (it may have been recycled); the identity is what the kill
+    path is allowed to signal.
     """
-    seen: List[int] = []
+    seen: List[Tuple[int, Optional[int]]] = []
     seen_set = set()
     deadline = time.monotonic() + TIMEOUT_S
     while True:
-        for pid in _descendant_pids(proc.pid):
-            if pid not in seen_set:
-                seen_set.add(pid)
-                seen.append(pid)
-        proc._witnessed_descendants = list(seen)
+        for ident in _descendant_identities(proc.pid):
+            if ident not in seen_set:
+                seen_set.add(ident)
+                seen.append(ident)
+        proc._witnessed_identities = list(seen)
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise subprocess.TimeoutExpired(proc.args, TIMEOUT_S)
@@ -413,22 +512,31 @@ def _kill_process_tree(proc: "subprocess.Popen") -> None:
     the snapshot) but were seen while still attached. Only PIDs in
     those sets / group are signalled — never unrelated processes.
     Bounded: one SIGKILL pass plus a bounded reap.
+
+    DAF-09 follow-up: the snapshot and witnessed sets carry
+    IDENTITIES (pid + starttime), and every non-group signal goes
+    through _signal_identity — a process is signalled only when it
+    is provably the witnessed instance. The process-group kill is
+    session-scoped by construction (the entry runs in its own
+    session), not history-based, and is unchanged.
     """
     root = proc.pid
-    descendants = _descendant_pids(root)
-    for pid in getattr(proc, "_witnessed_descendants", []):
-        if pid not in descendants:
-            descendants.append(pid)
+    identities = _descendant_identities(root)
+    known = set(identities)
+    for ident in getattr(proc, "_witnessed_identities", []):
+        if ident not in known:
+            known.add(ident)
+            identities.append(ident)
+    # Legacy bare-PID entries (proc._witnessed_descendants) carry no
+    # identity and are NEVER signalled: historical PID membership is
+    # not proof of identity (DAF-09 follow-up, Director directive).
     if os.name == "posix":
         try:
             os.killpg(os.getpgid(root), signal.SIGKILL)
         except (ProcessLookupError, PermissionError, OSError):
             pass
-    for pid in descendants:
-        try:
-            os.kill(pid, signal.SIGKILL)
-        except (ProcessLookupError, PermissionError, OSError):
-            pass
+    for pid, starttime in identities:
+        _signal_identity(pid, starttime, signal.SIGKILL)
     try:
         proc.kill()
     except (ProcessLookupError, OSError):
@@ -440,26 +548,15 @@ def _kill_process_tree(proc: "subprocess.Popen") -> None:
     # Reap any descendant that was our direct child is impossible (they
     # are not); SIGKILL is final, so no further waiting is required for
     # the verdict. Give the kernel a brief bounded moment so a following
-    # liveness check in the same process observes the kills.
+    # liveness check in the same process observes the kills. Liveness
+    # is identity-aware: a recycled PID is not our survivor.
     deadline = time.monotonic() + 2.0
-    while descendants and time.monotonic() < deadline:
-        alive = []
-        for pid in descendants:
-            try:
-                with open(f"/proc/{pid}/stat", "rb") as fh:
-                    stat = fh.read()
-                if stat[stat.rfind(b")") + 2:].split()[0:1] == [b"Z"]:
-                    continue  # zombie: dead, awaiting its parent's reap
-            except OSError:
-                continue
-            try:
-                os.kill(pid, 0)
-                alive.append(pid)
-            except (ProcessLookupError, PermissionError, OSError):
-                pass
+    while identities and time.monotonic() < deadline:
+        alive = [ident for ident in identities
+                 if _identity_alive(ident[0], ident[1])]
         if not alive:
             break
-        descendants = alive
+        identities = alive
         time.sleep(0.05)
 
 
