@@ -19,7 +19,7 @@ from .control_runtime import (
     find_else,
     find_join,
 )
-from .core_ii_exec import attach, execute_core_ii
+from .core_ii_exec import append_snapshot, attach, execute_core_ii
 from .registry import get_dell, namespace_of
 
 
@@ -190,7 +190,7 @@ def _apply_flow(st: Any, flow: str, prev_ok: bool, prev_atom: Any, next_atom: An
         messages.append(f"DynamicFlow {st.refs.get('from')}->{st.route}")
         return "run"
     if flow == "<<[Delta]":
-        st.snapshots.append(st.snap())
+        append_snapshot(st)
         messages.append(f"DeltaFlow checkpoint snapshots={len(st.snapshots)}")
         return "run"
     return "run"

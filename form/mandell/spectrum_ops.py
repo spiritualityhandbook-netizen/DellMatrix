@@ -11,6 +11,7 @@ SPECTRUM_DELLS = set(range(80, 100))
 COMPOSE_BOUND = 8
 ACTIVE_TX = ("open", "failed", "caught")
 TERMINAL_TX = ("committed", "reverted")
+TERMINAL_TX_KEEP = 16
 
 
 def _ckpt(st: Any) -> Dict[str, Any]:
@@ -61,6 +62,25 @@ def _open_tx(st: Any) -> List[Dict[str, Any]]:
 
 def _active(frames: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [f for f in frames if f.get("status") in ACTIVE_TX]
+
+
+def _prune_tx(st: Any) -> None:
+    """AF-5: prune TERMINAL frames only, keeping the newest
+    TERMINAL_TX_KEEP plus ALL active frames (an un-terminated
+    Try stack is user state, not garbage). The newest terminal
+    frame is the refusal-identity witness for Commit/Revert
+    and is always retained. Pruned count lands in the
+    session-only st.tx_dropped_total, which also keeps frame
+    ids monotonic: id = tx{tx_dropped_total + len(frames)}."""
+    frames = _open_tx(st)
+    terminal_idx = [i for i, f in enumerate(frames)
+                    if f.get("status") in TERMINAL_TX]
+    excess = len(terminal_idx) - TERMINAL_TX_KEEP
+    if excess <= 0:
+        return
+    drop = set(terminal_idx[:excess])
+    st.tx = [f for i, f in enumerate(frames) if i not in drop]
+    st.tx_dropped_total = getattr(st, "tx_dropped_total", 0) + excess
 
 
 def _sync_depth(st: Any) -> None:
@@ -271,8 +291,9 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
             _fail_open_tx(st, err)
     elif n == 93:
         frames = _open_tx(st)
-        frame = {"id": f"tx{len(frames)}", "checkpoint": _ckpt(st), "staged_changes": [], "status": "open", "error": "", "depth": len(_active(frames))}
+        frame = {"id": f"tx{getattr(st, 'tx_dropped_total', 0) + len(frames)}", "checkpoint": _ckpt(st), "staged_changes": [], "status": "open", "error": "", "depth": len(_active(frames))}
         frames.append(frame)
+        _prune_tx(st)
         _sync_depth(st)
         messages.append(f"Try id={frame['id']} depth={frame['depth']}")
     elif n == 94:
@@ -302,6 +323,7 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
             frame["status"] = "committed"
             frame["accepted"] = copy.deepcopy(dict(st.store))
             st.staged.append({"op": "commit", "id": frame["id"], "accepted": True})
+            _prune_tx(st)
             _sync_depth(st)
             messages.append(f"Commit {frame['id']} accepted")
     elif n == 96:
@@ -311,6 +333,7 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
             frame = active[-1]
             _restore(st, frame.get("checkpoint") or {})
             frame["status"] = "reverted"
+            _prune_tx(st)
             _sync_depth(st)
             messages.append(f"Revert {frame['id']} exact")
         elif frames and frames[-1].get("status") == "committed":
