@@ -32,8 +32,12 @@ Form A (longest-existing-key partition):
    'x=y'; no fragment key 'x' is created.
 7. HT-04 inverted: Move and Replace address the existing key
    'x>y' as their source.
-8. Longest wins: when both 'x' and 'x=y' exist, Patch aims at
-   'x=y'.
+8. SUPERSEDED by DAF-01 (Director audit 2026-10-31, which
+   declined AF-2 as a complete repair): when both 'x' and 'x=y'
+   exist, the legacy label 'x=y=9' is AMBIGUOUS — longest-wins
+   was a guess that can mutate a neighbor the caller did not
+   name. It now refuses before mutation (ambiguous_patch,
+   store unchanged); the typed form patches 'x=y' losslessly.
 9. Legacy fallback: when only the shorter key exists, the
    first-delimiter split is unchanged (Patch 'x=y=2' patches x;
    Move 'x>y>z' moves x to the literal destination 'y>z').
@@ -162,13 +166,21 @@ def main():
          and "x>y" not in p.core_ii.store,
          f"ok={r.get('ok')} err={r.get('error')} store={dict(p.core_ii.store)}")
 
-    # 8. Longest wins when both prefixes exist
+    # 8. DAF-01 supersedes longest-wins: both prefixes exist ->
+    # legacy label is ambiguous and refuses with zero mutation;
+    # the typed form resolves the same intent losslessly.
     p = fresh()
     execute_seed(p, "55[Set] :: x=short")
     execute_seed(p, "55[Set] :: a=real")
     execute_seed(p, "85[Move] :: a>x=y")
+    _before = dict(p.core_ii.store)
     r = execute_seed(p, "88[Patch] :: x=y=9")
-    _rec("longest existing key wins", r.get("ok")
+    _rec("legacy ambiguous patch refuses, zero mutation",
+         not r.get("ok") and "ambiguous_patch" in str(r.get("error"))
+         and dict(p.core_ii.store) == _before,
+         f"ok={r.get('ok')} err={r.get('error')} store={dict(p.core_ii.store)}")
+    r = execute_seed(p, '88[Patch](key="x=y", value="9")')
+    _rec("typed patch addresses x=y losslessly", r.get("ok")
          and p.core_ii.store.get("x=y") == "9"
          and p.core_ii.store.get("x") == "short",
          f"store={dict(p.core_ii.store)}")

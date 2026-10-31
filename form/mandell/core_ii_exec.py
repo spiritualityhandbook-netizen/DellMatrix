@@ -108,7 +108,9 @@ def scope_universe(st: Any, program: Any):
     member_set = set(members)
     return [i for i in ids if i in member_set], ""
 
-def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[str]) -> Dict[str, Any]:
+def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[str], roles: Any = None) -> Dict[str, Any]:
+    # DAF-01: roles = validated typed arguments carried losslessly
+    # from chain_exec (None on every legacy/direct path).
     st = attach(program); lab = label or ""; ok = True; err = ""
     def mark():
         st.traces.append(f"{n:02d}[{term}]::{lab}")
@@ -120,7 +122,7 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
     try:
         from .query_ops import QUERY_DELLS, apply_query
         if n in QUERY_DELLS:
-            ok, err = apply_query(n, st, program, lab, term, messages, _ids, _pred, shot)
+            ok, err = apply_query(n, st, program, lab, term, messages, _ids, _pred, shot, roles=roles)
         elif n == 53:
             name = lab or "plane"
             if name == "plane" or name in st.groups:
@@ -186,7 +188,7 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             messages.append(f"ForEach n={len(ids)} op={lab or 'identity'} empty_ok={len(ids)==0}")
         elif 80 <= n <= 99:
             from .spectrum_ops import apply_spectrum
-            ok, err = apply_spectrum(n, st, program, lab, term, messages, _ids, shot)
+            ok, err = apply_spectrum(n, st, program, lab, term, messages, _ids, shot, roles=roles)
         else:
             ok=False; err=f"unmapped:{n}"; messages.append(f"Core II Dell {n} unmapped")
     except Exception as exc:

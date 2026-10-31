@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from typing import Any, Dict, List, Tuple
 
-from .predicate import partition_existing_key, result_cell
+from .predicate import partition_store_operand, result_cell
 
 SPECTRUM_DELLS = set(range(80, 100))
 COMPOSE_BOUND = 8
@@ -102,7 +102,15 @@ def _fail_open_tx(st: Any, err: str) -> None:
     _sync_depth(st)
 
 
-def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages: List[str], ids_fn, shot_fn) -> Tuple[bool, str]:
+def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages: List[str], ids_fn, shot_fn, roles: Any = None) -> Tuple[bool, str]:
+    # DAF-01: `roles` carries the validated typed arguments
+    # losslessly from chain_exec. When present for Move/Replace/
+    # Patch, operand resolution uses the roles directly — the
+    # delimiter-flattened lab is never re-split, so a value or
+    # destination containing '=' or '>' cannot retarget the
+    # operation onto a colliding neighbor key. The handlers
+    # below remain the only executors; roles change only how
+    # their operands are resolved.
     ok, err = True, ""
     if n == 80:
         st.context = lab or st.scope
@@ -139,9 +147,18 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                                      source="copy", predicate=lab or "*",
                                      trace="84")
     elif n == 85:
-        src, dest = partition_existing_key(st.store, lab, ">")
-        src, dest = src.strip(), dest.strip()
-        if not src or not dest:
+        if roles is not None:
+            src, dest, _amb = roles.get("source", ""), roles.get("destination", ""), False
+        else:
+            src, dest, _amb = partition_store_operand(st.store, lab, ">")
+            src, dest = src.strip(), dest.strip()
+        if _amb:
+            ok, err = False, "ambiguous_move"
+            messages.append("Move ambiguous — use typed roles (source=..., destination=...)")
+            st.last_result = result_cell(value=None, matched=False, source="move",
+                                         predicate=lab or "*", error="ambiguous_move",
+                                         trace="85")
+        elif not src or not dest:
             ok, err = False, "malformed_move"
             messages.append("Move malformed")
             # C2: Failed producer must not expose a successful result.
@@ -198,9 +215,19 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                                          error=f"delete_missing:{key or 'empty'}",
                                          trace="86")
     elif n == 87:
-        old, new = partition_existing_key(st.store, lab, ">")
-        old, new = old.strip(), new.strip()
-        if old not in st.store:
+        if roles is not None:
+            old, new, _amb = roles.get("old", ""), roles.get("new", ""), False
+        else:
+            old, new, _amb = partition_store_operand(st.store, lab, ">")
+            old, new = old.strip(), new.strip()
+        if _amb:
+            ok, err = False, "ambiguous_replace"
+            messages.append("Replace ambiguous — use typed roles (old=..., new=...)")
+            st.last_result = result_cell(value=None, matched=False, source="replace",
+                                         predicate=lab or "*",
+                                         error="ambiguous_replace",
+                                         trace="87")
+        elif old not in st.store:
             ok, err = False, f"replace_missing:{old}"
             messages.append(f"Replace miss {old}")
             st.last_result = result_cell(value=None, matched=False, source="replace",
@@ -230,9 +257,19 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                                              source="replace", predicate=lab or "*",
                                              trace="87")
     elif n == 88:
-        key, val = partition_existing_key(st.store, lab, "=")
-        key = key.strip()
-        if key not in st.store:
+        if roles is not None:
+            key, val, _amb = roles.get("key", ""), roles.get("value", ""), False
+        else:
+            key, val, _amb = partition_store_operand(st.store, lab, "=")
+            key = key.strip()
+        if _amb:
+            ok, err = False, "ambiguous_patch"
+            messages.append("Patch ambiguous — use typed roles (key=..., value=...)")
+            st.last_result = result_cell(value=None, matched=False, source="patch",
+                                         predicate=lab or "*",
+                                         error="ambiguous_patch",
+                                         trace="88")
+        elif key not in st.store:
             ok, err = False, f"patch_miss:{key}"
             messages.append(f"Patch miss {key}")
             st.last_result = result_cell(value=None, matched=False, source="patch",

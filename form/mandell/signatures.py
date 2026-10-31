@@ -152,7 +152,9 @@ _register(OperatorSignature(
     ],
     derived_from="form/mandell/spectrum_ops.py:apply_spectrum:110-125",
     output="Moves st.store[src] to st.store[dest]; identity preserved",
-    failures="malformed_move (missing src/dest), move_missing (src not in store)",
+    failures="malformed_move (missing src/dest), move_missing (src not in store), "
+             "ambiguous_move (legacy label only: two or more existing keys are valid "
+             "splits — refuses before mutation; typed roles are lossless)",
 ))
 # Existing encoding: lab = "source>destination"
 
@@ -195,7 +197,9 @@ _register(OperatorSignature(
            "preserved); an occupied destination refuses with zero mutation",
     failures="replace_missing:{old} (old not in store), "
              "replace_occupied:{new} (destination occupied — refuses, "
-             "zero mutation)",
+             "zero mutation), ambiguous_replace (legacy label only: two or "
+             "more existing keys are valid splits — refuses before mutation; "
+             "typed roles are lossless)",
 ))
 # NOTE: Empty new → uses old (st.store[old] = st.store.pop(old), effectively no-op).
 # This is legacy fallback behavior, not meaningful optionality.
@@ -216,12 +220,38 @@ _register(OperatorSignature(
     derived_from="form/mandell/spectrum_ops.py:apply_spectrum:208-227",
     output="Sets st.store[key] = value (partial targeted modification; "
            "update-only — an absent key fails, it is never created)",
-    failures="patch_miss:{key} (key not in store)",
+    failures="patch_miss:{key} (key not in store), ambiguous_patch "
+             "(legacy label only: two or more existing keys are valid splits "
+             "— refuses before mutation; typed roles are lossless)",
 ))
 # NOTE: Empty value is allowed (st.store[key] = ""). Value must be present
 # in the partition but can be empty string.
 # Existing encoding: lab = "key=value"
 
+
+# Dell 55 (Set) — derived from query_ops.py:apply_query (n==55)
+#   key, val = partition(lab, "="); st.store[key] = val
+#   (creation AND update: an absent key is created)
+# Registered by DAF-01 (Director order step 4): Set is a
+# delimiter consumer like Patch, so its typed roles must be
+# carried losslessly too — before this registration typed Set
+# args were silently dropped by chain_exec's signature gate.
+_register(OperatorSignature(
+    dell=55,
+    name="Set",
+    roles=[
+        Role(name="key", type="string", required=True,
+             description="Store key to set (created if absent)"),
+        Role(name="value", type="string", required=False,
+             description="Value to store (may be empty string)"),
+    ],
+    derived_from="form/mandell/query_ops.py:apply_query (n==55)",
+    output="Sets st.store[key] = value (create or overwrite)",
+    failures="ambiguous_set (legacy label only: two or more "
+             "existing keys are valid splits of the label — "
+             "refuses before mutation; typed roles are lossless)",
+))
+# Existing encoding: lab = "key=value"
 
 # Dell 51 (Select) — derived from query_ops.py:apply_query (n==51)
 #   ids, scope_err = scope_universe(st, program)  # R1: scope-bound
@@ -443,6 +473,9 @@ def lower_args_to_lab(dell: int, args: Dict[str, str]) -> str:
         key = args.get("key", "")
         val = args.get("value", "")
         return f"{key}={val}"
+    elif dell == 55:
+        # Set: lab = "key=value"
+        return f"{args.get('key', '')}={args.get('value', '')}"
     elif dell == 51:
         # Select: lab = predicate (or "" for all)
         return args.get("predicate", "")

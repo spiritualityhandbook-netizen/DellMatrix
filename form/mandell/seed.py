@@ -221,6 +221,13 @@ def parse_seed(text: str) -> Seed:
             break
         m = _ATOM.match(body, pos)
         if m:
+            # DAF-07: atom/operator alternation is enforced BEFORE
+            # execution. Two atoms with no flow operator between
+            # them are a structured parse refusal — previously this
+            # shape reached the assembly loop with flows shorter
+            # than proto-1 and escaped as an IndexError.
+            if proto and last_was_atom:
+                return _fail(raw, "missing flow operator between atoms")
             n = int(m.group(1))
             inner = m.group(2)
             d = get_dell(n)
@@ -234,7 +241,14 @@ def parse_seed(text: str) -> Seed:
             args: Dict[str, str] = {}
             am = _ARGS.match(body, pos)
             if am:
+                # DAF-07: duplicate named roles refuse BEFORE the
+                # argument dictionary is constructed — previously
+                # the second value silently overwrote the first.
+                _seen_roles = set()
                 for pair in _ARG_PAIR.finditer(am.group(1)):
+                    if pair.group(1) in _seen_roles:
+                        return _fail(raw, f"duplicate role '{pair.group(1)}'")
+                    _seen_roles.add(pair.group(1))
                     args[pair.group(1)] = pair.group(2)
                 pos = am.end()
             # AF-2: optional segment label.
