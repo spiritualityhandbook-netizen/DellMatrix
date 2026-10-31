@@ -4,6 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
+TRACES_CAP = 512
+SNAPSHOTS_CAP = 64
+
 @dataclass
 class CoreIIState:
     scope: str = "plane"
@@ -38,6 +41,12 @@ class CoreIIState:
     control_steps: int = 0
     last_result: Dict[str, Any] = field(default_factory=dict)
     tx: List[Dict[str, Any]] = field(default_factory=list)
+    # AF-5: session-only dropped counters (never durable — the
+    # collections reset on load, so a durable counter would
+    # false-witness session loss across a reload).
+    traces_dropped_total: int = 0
+    snapshots_dropped_total: int = 0
+    tx_dropped_total: int = 0
     def snap(self) -> Dict[str, Any]:
         return {"scope": self.scope, "selected": list(self.selected), "store": dict(self.store),
                 "groups": {k: list(v) for k, v in self.groups.items()}, "defs": dict(self.defs),
@@ -46,6 +55,21 @@ class CoreIIState:
                 "route": self.route, "branch": dict(self.branch), "last_assert": self.last_assert,
                 "last_guard": self.last_guard, "last_frame": dict(self.last_frame),
                 "control_steps": self.control_steps}
+
+def _trim_oldest(items: list, cap: int) -> int:
+    """Drop the oldest entries beyond cap; return the count."""
+    excess = len(items) - cap
+    if excess > 0:
+        del items[:excess]
+        return excess
+    return 0
+
+def append_snapshot(st: CoreIIState) -> None:
+    """AF-5: the ONE snapshot append path (shot() and the
+    chain_exec DeltaFlow checkpoint both route here). Bottom-
+    trim preserves Revert's top-of-stack contract."""
+    st.snapshots.append(st.snap())
+    st.snapshots_dropped_total += _trim_oldest(st.snapshots, SNAPSHOTS_CAP)
 
 def attach(program: Any) -> CoreIIState:
     st = getattr(program, "core_ii", None)
@@ -88,10 +112,11 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
     st = attach(program); lab = label or ""; ok = True; err = ""
     def mark():
         st.traces.append(f"{n:02d}[{term}]::{lab}")
+        st.traces_dropped_total += _trim_oldest(st.traces, TRACES_CAP)
         if hasattr(program, "note_seed"):
             try: program.note_seed(n, term, lab or term)
             except Exception: pass
-    def shot(): st.snapshots.append(st.snap())
+    def shot(): append_snapshot(st)
     try:
         from .query_ops import QUERY_DELLS, apply_query
         if n in QUERY_DELLS:

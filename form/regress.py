@@ -268,6 +268,7 @@ LIST = [
     "form.af1_chain_args_test:smoke",
     "form.af2_delimiter_addressing_test:smoke",
     "form.af34_exchange_counters_test:smoke",
+    "form.af5_session_bounds_test:smoke",
 ]
 
 TIMEOUT_S = 900
