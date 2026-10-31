@@ -370,17 +370,54 @@ def _descendant_pids(root_pid: int) -> List[int]:
     return out
 
 
+def _communicate_tracked(proc: "subprocess.Popen") -> Tuple[str, str]:
+    """communicate() with a deadline, witnessing the tree while waiting.
+
+    DAF-09 addendum: a descendant that leaves BOTH the ppid tree
+    (reparented when its parent exits early) and the process group
+    (setsid) is invisible to a kill-time snapshot. Snapshot the
+    descendant set periodically DURING the wait and stash the union
+    on the proc object, so _kill_process_tree can still reach every
+    process that was witnessed as a tree member while attached.
+    Only witnessed descendants are ever added — never a process
+    matched by name or cmdline. Bounded: one /proc scan per poll
+    slice (0.1s), only while this entry runs.
+    """
+    seen: List[int] = []
+    seen_set = set()
+    deadline = time.monotonic() + TIMEOUT_S
+    while True:
+        for pid in _descendant_pids(proc.pid):
+            if pid not in seen_set:
+                seen_set.add(pid)
+                seen.append(pid)
+        proc._witnessed_descendants = list(seen)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise subprocess.TimeoutExpired(proc.args, TIMEOUT_S)
+        try:
+            return proc.communicate(timeout=min(0.1, remaining))
+        except subprocess.TimeoutExpired:
+            continue
+
+
 def _kill_process_tree(proc: "subprocess.Popen") -> None:
     """DAF-09: kill the WHOLE tree rooted at proc, then reap proc.
 
     The entry runs in its own session/process group (start_new_session),
     so killpg reaches ordinary descendants; the /proc descendant snapshot
     additionally reaches descendants that left the group without leaving
-    the tree. Only PIDs in that snapshot / group are signalled — never
-    unrelated processes. Bounded: one SIGKILL pass plus a bounded reap.
+    the tree; the witnessed set from _communicate_tracked additionally
+    reaches descendants that escaped BOTH (setsid + reparented before
+    the snapshot) but were seen while still attached. Only PIDs in
+    those sets / group are signalled — never unrelated processes.
+    Bounded: one SIGKILL pass plus a bounded reap.
     """
     root = proc.pid
     descendants = _descendant_pids(root)
+    for pid in getattr(proc, "_witnessed_descendants", []):
+        if pid not in descendants:
+            descendants.append(pid)
     if os.name == "posix":
         try:
             os.killpg(os.getpgid(root), signal.SIGKILL)
@@ -443,7 +480,7 @@ def run_entry(entry: str, cwd: str) -> Tuple[bool, str]:
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             text=True, start_new_session=True)
     try:
-        stdout, stderr = proc.communicate(timeout=TIMEOUT_S)
+        stdout, stderr = _communicate_tracked(proc)
     except subprocess.TimeoutExpired:
         _kill_process_tree(proc)
         return False, "TIMEOUT"
