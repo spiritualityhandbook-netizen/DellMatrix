@@ -306,6 +306,17 @@ def build_outcome(program: Any, receipt: Any,
     semantic = str(getattr(receipt, "semantic", "") or "")
     result = _result_of(receipt)
 
+    # DAF-02/B5: the ledger is the persistence boundary. A receipt
+    # for Dell 41[Sanitize] is stored ONLY in sanitized form —
+    # mandell, input, messages, state_note, and error pass through
+    # the shared redactor regardless of which capture path built
+    # the receipt, so a Sanitize execution can never persist the
+    # secret-shaped values it exists to redact.
+    _sanitize_receipt = dell_n == 41
+    if _sanitize_receipt:
+        from .redaction import sanitize_text
+        mandell = sanitize_text(mandell)
+
     # DCC-XX-C1: attribute provenance only to the call that produced
     # it. A stale last_nurture from a previous call is ignored.
     nurture = getattr(program, "last_nurture", None) if nurture_fresh else None
@@ -335,6 +346,9 @@ def build_outcome(program: Any, receipt: Any,
     messages = getattr(receipt, "messages", None) or []
     if not isinstance(messages, list):
         messages = [messages]
+    if _sanitize_receipt:
+        from .redaction import sanitize_text as _st
+        messages = [_st(str(m)) for m in messages]
 
     record: Dict[str, Any] = {
         "outcome_version": OUTCOME_VERSION,
@@ -345,11 +359,11 @@ def build_outcome(program: Any, receipt: Any,
         "mandell": mandell,
         "dell": dell_n,
         "semantic": semantic,
-        "input": _bound(getattr(receipt, "input", ""), _MAX_INPUT),
+        "input": _bound(sanitize_text(str(getattr(receipt, "input", "") or "")) if _sanitize_receipt else getattr(receipt, "input", ""), _MAX_INPUT),
         "result": result,
-        "error": _bound(getattr(receipt, "error", ""), _MAX_ERROR),
+        "error": _bound(sanitize_text(str(getattr(receipt, "error", "") or "")) if _sanitize_receipt else getattr(receipt, "error", ""), _MAX_ERROR),
         "messages": [_bound(m, _MAX_MESSAGE) for m in messages[:_MAX_MESSAGES]],
-        "state_note": _bound(getattr(receipt, "state_note", ""), _MAX_STATE_NOTE),
+        "state_note": _bound(sanitize_text(str(getattr(receipt, "state_note", "") or "")) if _sanitize_receipt else getattr(receipt, "state_note", ""), _MAX_STATE_NOTE),
         "knowledge": knowledge,
         "conflicts": conflict["conflicts"],
         "policy_exclusions": conflict["policy_exclusions"],

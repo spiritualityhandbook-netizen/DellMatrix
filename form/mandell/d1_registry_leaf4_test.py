@@ -28,9 +28,10 @@ through the public seed path:
   last_core_i.
 - 41 Sanitize: the OUT line redacts password/secret/
   token/api_key/bearer values and 12+ digit numbers.
-  PINNED EXHIBIT: the IN line echoes the RAW label —
-  the secrets Sanitize just redacted are printed
-  verbatim in its own first output line.
+  DAF-02/B5 (Director FIX, step 3): the IN line shows
+  the SANITIZED representation — Sanitize no longer
+  discloses the raw values it redacts (the former
+  raw-echo exhibit is the defect DAF-02 closed).
 - 42 Retry: replays the LAST noted history entry —
   on an empty history "Retry: history empty."; else
   "Retry last: <entry>" plus a real replay_exec
@@ -260,13 +261,14 @@ def main():
                          "token=[REDACTED] "
                          "api_key=[REDACTED] [REDACTED_NUM] "
                          "normal", str(_msgs(r)))
-    _rec("41 Sanitize EXHIBIT: the IN line echoes the "
-         "RAW label — the secrets the OUT line redacted "
-         "are printed verbatim in Sanitize's own first "
-         "output line",
-         _msgs(r)[0] == "Sanitize in:  password: hunter2 "
-                        "token=abc123 api_key=XYZ789 "
-                        "1234567890123 normal",
+    _rec("41 Sanitize DAF-02/B5: the IN line shows the "
+         "SANITIZED representation — the secrets the OUT "
+         "line redacts are NOT printed verbatim anywhere "
+         "in Sanitize's own output",
+         _msgs(r)[0] == "Sanitize in:  password=[REDACTED] "
+                        "token=[REDACTED] "
+                        "api_key=[REDACTED] [REDACTED_NUM] "
+                        "normal",
          str(_msgs(r)))
     r = _run(p, "41[Sanitize] :: hello world")
     ok_clean = _msgs(r) == ["Sanitize in:  hello world",

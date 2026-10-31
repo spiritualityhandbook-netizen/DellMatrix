@@ -19,7 +19,14 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     if not s.ok:
         return {"ok": False, "error": s.error, "messages": [f"Seed error: {s.error}"]}
 
-    messages = [f"Mandell: {s.as_mandel()}", f"English: {s.as_english()}"]
+    # DAF-02/B5: for a seed containing Dell 41[Sanitize], EVERY echo
+    # of the seed (generic Mandell/English lines, returned seed /
+    # english metadata) is built from the redacted copy, so the raw
+    # secret-shaped input never reaches a surface. Other seeds are
+    # returned unchanged by redacted_seed (identity).
+    from .redaction import redacted_seed
+    _echo = redacted_seed(s)
+    messages = [f"Mandell: {_echo.as_mandel()}", f"English: {_echo.as_english()}"]
     primary = s.primary_dell()
     terms = {a.term.lower() for a in s.atoms}
     label = s.label or ""
@@ -355,14 +362,14 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         if hasattr(program, "note_seed"):
             program.note_seed(39, "Schema", "valid" if ok else "invalid")
     elif primary == 41:
+        # DAF-02/B5: the IN line shows the SANITIZED representation,
+        # never the raw input — Sanitize must not disclose the very
+        # values its OUT line redacts. Redaction semantics are the
+        # shared authority in form/mandell/redaction.py.
+        from .redaction import sanitize_text
         raw = label or ""
-        cleaned = re.sub(
-            r"(?i)(password|secret|token|api[_-]?key|bearer)\s*[:=]?\s*\S+",
-            r"\1=[REDACTED]",
-            raw,
-        )
-        cleaned = re.sub(r"\b\d{12,}\b", "[REDACTED_NUM]", cleaned)
-        messages.append(f"Sanitize in:  {raw or '(empty)'}")
+        cleaned = sanitize_text(raw)
+        messages.append(f"Sanitize in:  {cleaned or '(empty)'}")
         messages.append(f"Sanitize out: {cleaned or '(empty)'}")
         if hasattr(program, "note_seed"):
             program.note_seed(41, "Sanitize")
@@ -465,8 +472,8 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
                         primary, "reserved/not-active")
             return {
                 "ok": False,
-                "seed": s.as_mandel(),
-                "english": s.as_english(),
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
                 "primary": primary,
                 "messages": [f"Dell {primary}[{name}] refused: no executor on this path."],
                 "new_program": new_program,
@@ -480,8 +487,8 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
 
     return {
         "ok": True,
-        "seed": s.as_mandel(),
-        "english": s.as_english(),
+        "seed": _echo.as_mandel(),
+        "english": _echo.as_english(),
         "primary": primary,
         "messages": messages,
         "new_program": new_program,
