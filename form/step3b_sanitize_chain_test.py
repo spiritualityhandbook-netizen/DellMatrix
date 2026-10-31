@@ -55,13 +55,18 @@ def _cleanup(owner):
 
 
 def _surfaces(p, r):
+    # Step 3c amendment (DAF-02, Director Mode D): these are the
+    # DETACHED outward-facing evidence surfaces. Live canonical
+    # state (last_result / frames) is deliberately NOT a surface
+    # here — step 3c proved it must keep the real values exactly
+    # as a non-Sanitize control leaves them (it is executable
+    # state, not evidence); its exact-equality contract lives in
+    # form/step3c_sanitize_state_test.py.
     st = getattr(p, "core_ii", None)
     return {
         "result": json.dumps(r, default=str),
         "messages": "\n".join(str(m) for m in r.get("messages", [])),
         "traces": "\n".join(str(t) for t in (st.traces if st else [])),
-        "last_result": json.dumps(st.last_result if st else {}, default=str),
-        "frames": json.dumps((st.frames if st else []) + [st.last_frame if st else {}], default=str),
         "history": json.dumps(list(p.history), default=str),
         "outcome": json.dumps(p.outcome_records, default=str),
         "last_flow": json.dumps(getattr(p, "last_flow", {}), default=str),
@@ -89,8 +94,8 @@ def main():
          any("Query scope=" in m and "[REDACTED]" in m
              for m in r.get("messages", [])))
     st = getattr(p, "core_ii", None)
-    _rec("last_result predicate is the redacted form",
-         st is not None and st.last_result.get("predicate") == "password=[REDACTED]",
+    _rec("live last_result keeps the REAL predicate (step 3c)",
+         st is not None and st.last_result.get("predicate") == f"password={MARKER}",
          str(st.last_result if st else None))
     path = p.save()
     with open(path, encoding="utf-8", errors="replace") as fh:

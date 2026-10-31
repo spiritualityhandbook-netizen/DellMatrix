@@ -266,23 +266,18 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
                     program._chain_sanitize_redact = True
             except Exception:
                 pass
-        # Step 3b: under a Sanitize chain, the atom's result-cell
-        # DESCRIPTOR fields (predicate/error — evidence about the
-        # operand, not the operand's value) are sanitized as soon
-        # as the atom completes, so no later trace can echo them
-        # raw. The value field and all execution state keep the
-        # real operand for downstream atoms.
-        try:
-            from .redaction import has_sanitize as _hs2, sanitize_text as _st2
-            if _hs2(seed):
-                _st = attach(program)
-                _lr = getattr(_st, "last_result", None)
-                if isinstance(_lr, dict):
-                    for _k in ("predicate", "error"):
-                        if isinstance(_lr.get(_k), str):
-                            _lr[_k] = _st2(_lr[_k])
-        except Exception:
-            pass
+        # Step 3c (DAF-02, Director Mode D): NO in-place
+        # sanitization of the atom's result cell. last_result is
+        # EXECUTABLE state — downstream atoms resolve operands
+        # from it (predicate included) — so the live cell keeps
+        # the real values exactly as a non-Sanitize control
+        # leaves them. Step 3b sanitized predicate/error here in
+        # place; the Director's probes showed a later Set using
+        # last_result then copied "password=[REDACTED]" as data.
+        # Disclosure is handled at the detached evidence
+        # boundaries (RedactingMessages traces, the sanitized
+        # returned snapshot/atom_results, history/outcome
+        # writers), never by rewriting canonical state.
         last_ok = bool(out.get("ok", True))
         # DIRECTOR DECISION 1: atom record carries unified truth —
         # ok=False, skipped=True, reason=<explicit> for unexecuted atoms.
@@ -462,19 +457,20 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     if _redact:
         last_error = sanitize_text(last_error)
     st = getattr(program, "core_ii", None)
-    if _redact and st is not None:
-        # Chain complete: no downstream atom in this chain can
-        # consume last_result/frames, so their evidence form is
-        # sanitized in full before anything can return or persist
-        # it. Execution state (store/selected/groups) is NOT
-        # touched — those are operands, not evidence.
-        try:
-            st.last_result = sanitize_evidence(dict(st.last_result or {}))
-            st.last_frame = sanitize_evidence(dict(st.last_frame or {}))
-            st.last_control = sanitize_evidence(dict(st.last_control or {}))
-            st.frames = sanitize_evidence(list(st.frames or []))
-        except Exception:
-            pass
+    # Step 3c (DAF-02, Director Mode D): NO in-place sanitization
+    # of canonical state at chain end either. last_result /
+    # last_frame / last_control / frames are EXECUTABLE state —
+    # later executions resolve operands from last_result and
+    # Revert restores from frame/snapshot checkpoints — so they
+    # keep the real values exactly as a non-Sanitize control
+    # leaves them. Step 3b sanitized them in place here; the
+    # Director's probes showed a later Set using last_result
+    # copying "password=[REDACTED]" as data and Revert restoring
+    # a redacted value. Disclosure is handled below on DETACHED
+    # copies only: atom_results and the returned core_ii
+    # snapshot are sanitized before they leave, and messages /
+    # traces / history / saved JSON are redacted at their own
+    # writers.
     # EOC-I: per-node evidence (additive; existing keys unchanged).
     atom_results = [dict(r) for r in (_results or []) if isinstance(r, dict)]
     # DIRECTOR DECISION 1: aggregate chain Outcome must expose
