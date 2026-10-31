@@ -269,6 +269,7 @@ LIST = [
     "form.af2_delimiter_addressing_test:smoke",
     "form.af34_exchange_counters_test:smoke",
     "form.af5_session_bounds_test:smoke",
+    "form.af6_import_batching_test:smoke",
 ]
 
 TIMEOUT_S = 900
