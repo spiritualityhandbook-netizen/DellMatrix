@@ -2,8 +2,11 @@
 """D1 circuit 2 — per-Dell proof cards over the full registry.
 
 The Director's D1 denominator is the active Form registry:
-100 entries, 14 typed signatures — without implying the rest
-have defined contracts. This suite regenerates every card
+100 entries, 15 typed signatures (the original 14 plus Dell
+55 Set, registered by Director order step 4 / DAF-01 so its
+typed operands are carried losslessly like Patch's) —
+without implying the rest have defined contracts. This
+suite regenerates every card
 from live probes (dell_cards.build_all_cards) and pins the
 survey distribution, so the accounting cannot drift silently:
 
@@ -73,8 +76,8 @@ def main():
                  for c in cards))
 
     typed = {n for n in range(100) if get_signature(n) is not None}
-    _rec("typed signatures: exactly the 14, cards agree",
-         len(typed) == 14
+    _rec("typed signatures: exactly the 15, cards agree",
+         len(typed) == 15
          and {c["dell"] for c in cards
               if c["typed_signature"] is not None} == typed,
          f"typed={sorted(typed)}")

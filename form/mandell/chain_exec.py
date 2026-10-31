@@ -55,6 +55,12 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
         payload = raw_term
     # TOAM-I C3: Wire typed args into production execution.
     # If atom has typed args, validate and lower to lab format.
+    # DAF-01: the validated+resolved roles ALSO ride to the
+    # canonical handler as structured data (roles_arg) — the
+    # lowered lab remains for trace/conflict compatibility, but
+    # delimiter-bearing role values are never recovered by
+    # re-splitting it.
+    roles_arg = None
     atom_args = getattr(atom, "args", None) or {}
     if atom_args and 51 <= n <= 99:
         from form.mandell.signatures import get_signature, lower_args_to_lab, has_signature
@@ -108,11 +114,12 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
                 messages.append(err_msg)
                 return program, {"ok": False, "error": "ARGUMENT_CONFLICT", "messages": messages}
             payload = typed_lab
+            roles_arg = dict(resolved_args)
             messages.append(f"TOAM: typed args lowered to lab='{payload}'")
     term = shown
     messages.append(f"-- {n:02d}[{term}] ns={ns}")
     if 51 <= n <= 99:
-        out = execute_core_ii(program, n, term, payload, messages)
+        out = execute_core_ii(program, n, term, payload, messages, roles=roles_arg)
         return program, out
     if 0 <= n <= 50:
         leaf = f"{n:02d}[{atom.term}]"

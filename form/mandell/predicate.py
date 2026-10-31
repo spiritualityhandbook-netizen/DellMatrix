@@ -15,19 +15,23 @@ MAX_BOUND = 64
 DEFAULT_BOUND = 8
 
 
-def partition_existing_key(store: Any, lab: str, delim: str) -> Tuple[str, str]:
-    """AF-2: split a store-address label at the LONGEST EXISTING key.
+def partition_store_operand(store: Any, lab: str, delim: str) -> Tuple[str, str, bool]:
+    """DAF-01: split a legacy store-address label, with an
+    ambiguity verdict. Returns (left, right, ambiguous).
 
-    Store keys may themselves contain the delimiter (a key 'x=y'
-    created through a Move destination, a key 'x>y' likewise).
-    Addressing such a key with the legacy first-delimiter split
-    aims at a fragment ('x') and orphans the real key. Resolution:
-    try split positions from the rightmost delimiter to the
-    leftmost; the first left candidate that EXISTS in the store
-    wins (candidates are nested prefixes, so the longest existing
-    match is unique). If no candidate exists, the legacy
-    first-delimiter partition is returned unchanged — creation
-    semantics and error identities are exactly as before.
+    AF-2 semantics preserved where they are determinate: split
+    positions are tried rightmost-to-leftmost and an EXISTING
+    left candidate wins — but only when EXACTLY ONE split
+    candidate exists in the store. When TWO OR MORE candidates
+    exist (e.g. both 'a' and 'a=b' for the label 'a=b=NEW'),
+    the label is genuinely ambiguous: longest-wins was a guess
+    that mutates a neighbor the caller may not have named (the
+    Director's DAF-01 counterexample, which declined AF-2 as a
+    complete repair). Ambiguous labels must refuse before
+    mutation; the explicit quoting grammar that resolves them
+    is the typed role form (role="value"). When no candidate
+    exists, the legacy first-delimiter partition is returned —
+    creation semantics and error identities unchanged.
     Cost: O(#delimiters) dict lookups; no store scan."""
     positions = []
     start = 0
@@ -38,12 +42,24 @@ def partition_existing_key(store: Any, lab: str, delim: str) -> Tuple[str, str]:
         positions.append(i)
         start = i + len(delim)
     if not positions:
-        return lab, ""
-    for i in reversed(positions):
-        if lab[:i].strip() in store:
-            return lab[:i], lab[i + len(delim):]
+        return lab, "", False
+    existing = [i for i in positions if lab[:i].strip() in store]
+    if len(existing) >= 2:
+        i = positions[0]
+        return lab[:i], lab[i + len(delim):], True
+    if len(existing) == 1:
+        i = existing[0]
+        return lab[:i], lab[i + len(delim):], False
     i = positions[0]
-    return lab[:i], lab[i + len(delim):]
+    return lab[:i], lab[i + len(delim):], False
+
+
+def partition_existing_key(store: Any, lab: str, delim: str) -> Tuple[str, str]:
+    """AF-2 compatibility wrapper over partition_store_operand
+    (drops the ambiguity verdict; internal consumers use the
+    verdict-bearing form so ambiguous labels can refuse)."""
+    left, right, _ambiguous = partition_store_operand(store, lab, delim)
+    return left, right
 
 
 def classify_value(value: Any) -> Tuple[str, Any]:

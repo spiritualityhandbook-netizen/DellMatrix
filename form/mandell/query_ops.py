@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple
 
-from .predicate import eval_predicate, partition_existing_key, result_cell, validate_bound
+from .predicate import eval_predicate, partition_store_operand, result_cell, validate_bound
 
 QUERY_DELLS = {51, 52, 54, 55, 56, 57, 58, 59, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79}
 
 
-def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: List[str], ids_fn, pred_fn, shot_fn) -> Tuple[bool, str]:
+def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: List[str], ids_fn, pred_fn, shot_fn, roles: Any = None) -> Tuple[bool, str]:
+    # DAF-01: `roles` carries validated typed arguments losslessly
+    # from chain_exec; Set (55) resolves its key/value from roles
+    # when present instead of re-splitting the flattened lab.
     ok, err = True, ""
     if n == 51:
         from .core_ii_exec import scope_universe
@@ -31,11 +34,24 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
         st.last_result = result_cell(value=hits, matched=bool(hits), count=len(hits), source="query", predicate=lab or "*", confidence=1.0 if hits else 0.0, trace="54")
         messages.append(f"Query scope={st.scope} hits={len(hits)} q={lab or '*'}")
     elif n == 55:
-        key, val = partition_existing_key(st.store, lab, "=")
-        key = (key or "value").strip()
-        shot_fn()
-        st.store[key] = val.strip() if val.strip() else ("" if "=" in lab else "1")
-        messages.append(f"Set {key}={st.store[key]}")
+        if roles is not None:
+            key = roles.get("key", "") or "value"
+            shot_fn()
+            st.store[key] = roles.get("value", "")
+            messages.append(f"Set {key}={st.store[key]}")
+        else:
+            key, val, _amb = partition_store_operand(st.store, lab, "=")
+            if _amb:
+                ok, err = False, "ambiguous_set"
+                messages.append("Set ambiguous — use typed roles (key=..., value=...)")
+                st.last_result = result_cell(value=None, matched=False, source="set",
+                                             predicate=lab or "*", error="ambiguous_set",
+                                             trace="55")
+            else:
+                key = (key or "value").strip()
+                shot_fn()
+                st.store[key] = val.strip() if val.strip() else ("" if "=" in lab else "1")
+                messages.append(f"Set {key}={st.store[key]}")
     elif n == 56:
         key = lab or (list(st.store)[-1] if st.store else "")
         if key not in st.store:
