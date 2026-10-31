@@ -276,6 +276,7 @@ LIST = [
     "form.daf09_timeout_tree_test:smoke",
     "form.step3_security_test:smoke",
     "form.step3b_sanitize_chain_test:smoke",
+    "form.step3c_sanitize_state_test:smoke",
     "form.step4_operand_transport_test:smoke",
     "form.step5_exchange_boundary_test:smoke",
 ]
