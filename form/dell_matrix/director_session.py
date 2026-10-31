@@ -116,6 +116,14 @@ class DirectorSession:
         # Bounded: keep the newest _MAX (dict order = insert order).
         while len(entries) > _records._MAX_ENTRIES:
             entries.pop(next(iter(entries)))
+            # AF-4: count the eviction at the moment/place of
+            # loss (PP2b B2), as the other bounded writers do.
+            total = getattr(self._program,
+                            "director_records_dropped_total", 0)
+            if not isinstance(total, int) \
+                    or isinstance(total, bool) or total < 0:
+                total = 0
+            self._program.director_records_dropped_total = total + 1
         try:
             self._program.save()
         except Exception:

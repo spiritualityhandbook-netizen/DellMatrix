@@ -65,6 +65,26 @@ _PACKET_KEYS = frozenset({"version", "seed", "manifest", "receipts"})
 _SEED_KEYS = frozenset({"label", "chain", "keep"})
 _MANIFEST_KEYS = frozenset(
     {"author_origin", "created", "registry", "requirements"})
+# AF-3: provenance is an OPTIONAL manifest field (back-compat:
+# legacy packets without it still validate). It states how the
+# seed in THIS packet was sourced at export: "original" = the
+# stored imported payload, byte-identical; "reconstructed" =
+# the native/rendered fallback. Absence is never upgraded to a
+# claim — an unflagged packet's provenance is unknown.
+_PROVENANCE_VALUES = frozenset({"original", "reconstructed"})
+
+
+def _bump_dropped(program: Any, attr: str, n: int = 1) -> None:
+    """AF-4: count a writer-side eviction at the moment and
+    place of loss (PP2b B2). The serialize boundary in
+    persist.py remains a backstop for populations trimmed
+    elsewhere; writers that trim to the cap before save would
+    otherwise make that backstop unreachable."""
+    total = getattr(program, attr, 0)
+    if not isinstance(total, int) or isinstance(total, bool) \
+            or total < 0:
+        total = 0
+    setattr(program, attr, total + n)
 RECEIPT_KEYS = frozenset(
     {"origin", "guess", "test_method", "result", "mirror", "outcome"})
 
@@ -124,7 +144,9 @@ def validate_packet(data: Any) -> Dict[str, Any]:
     if not seed["label"]:
         raise ExchangeError("seed.label must be non-empty")
     man = data["manifest"]
-    if not isinstance(man, dict) or set(man.keys()) != _MANIFEST_KEYS:
+    if not isinstance(man, dict) \
+            or not _MANIFEST_KEYS <= set(man.keys()) \
+            <= _MANIFEST_KEYS | {"provenance"}:
         raise ExchangeError("manifest keys mismatch")
     reqs = man["requirements"]
     if not isinstance(reqs, list) or len(reqs) > 8 or any(
@@ -137,6 +159,11 @@ def validate_packet(data: Any) -> Dict[str, Any]:
         "registry": _str(man["registry"], 40, "manifest.registry"),
         "requirements": list(reqs),
     }
+    if "provenance" in data["manifest"]:
+        prov = data["manifest"]["provenance"]
+        if prov not in _PROVENANCE_VALUES:
+            raise ExchangeError("manifest.provenance invalid")
+        man["provenance"] = prov
     if not man["author_origin"]:
         raise ExchangeError("manifest.author_origin must be non-empty")
     receipts = data["receipts"]
@@ -209,6 +236,9 @@ def build_packet(program: Any, pid: str, *, chain=None,
             "requirements": (list(stored["requirements"])
                              if requirements is None
                              else list(requirements)),
+            # AF-3: the seed came from the stored original
+            # payload — say so on the packet itself.
+            "provenance": "original",
         }
     else:
         seed = {
@@ -223,6 +253,10 @@ def build_packet(program: Any, pid: str, *, chain=None,
             "registry": REGISTRY_STAMP,
             "requirements": (list(requirements)
                              if requirements is not None else []),
+            # AF-3: no stored original exists for this proposal;
+            # the seed is the native/rendered source. Label it
+            # reconstructed — never let it pass as an original.
+            "provenance": "reconstructed",
         }
     packet = {
         "version": PACKET_VERSION,
@@ -391,6 +425,7 @@ def record_receipt(program: Any, pid: str, receipt: Dict[str, str]
     entries[entry["entry_id"]] = entry
     while len(entries) > _MAX_RECEIPT_ENTRIES:
         entries.pop(next(iter(entries)))
+        _bump_dropped(program, "exchange_receipts_dropped_total")
     try:
         program.save()
     except Exception:
@@ -502,7 +537,25 @@ def record_seed_payload(program: Any, pid: str,
         program.exchange_seeds = entries
     entries[entry["entry_id"]] = entry
     while len(entries) > _MAX_SEED_ENTRIES:
-        entries.pop(next(iter(entries)))
+        # AF-3: a payload whose proposal is still live in the
+        # Nursery is the ONLY original that proposal's export
+        # can reproduce — evicting it silently degraded every
+        # later re-export. Evict only payloads whose proposal
+        # has left the Nursery (oldest first); if every retained
+        # payload is live, fail closed and store nothing new.
+        live = getattr(program.nursery, "proposals", {}) or {}
+        victim = next(
+            (k for k, e in entries.items()
+             if e.get("pid") not in live),
+            None)
+        if victim is None:
+            del entries[entry["entry_id"]]
+            raise ExchangeError(
+                "exchange_seeds is full and every retained "
+                "payload belongs to a live proposal; refusing "
+                "to evict a live original")
+        entries.pop(victim)
+        _bump_dropped(program, "exchange_seeds_dropped_total")
     try:
         program.save()
     except Exception:
