@@ -139,6 +139,14 @@ def record_event(program: Any, pid: str, event: str, **kw) -> Dict[str, Any]:
     entries[entry["entry_id"]] = entry
     while len(entries) > _MAX_EVENTS:
         entries.pop(next(iter(entries)))
+        # AF-4: count the eviction at the moment/place of loss
+        # (PP2b B2); the serialize backstop never sees a
+        # population this writer already trimmed to the cap.
+        total = getattr(program, "design_loop_dropped_total", 0)
+        if not isinstance(total, int) or isinstance(total, bool) \
+                or total < 0:
+            total = 0
+        program.design_loop_dropped_total = total + 1
     try:
         program.save()
     except Exception:
