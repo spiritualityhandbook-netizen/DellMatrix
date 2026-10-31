@@ -327,6 +327,16 @@ class Program:
             self.history = self.history[-self.history_max :]
 
     def note_seed(self, dell: int, term: str, label: str = "") -> None:
+        # Step 3b (DAF-02 chain follow-up): while a chain containing
+        # Dell 41[Sanitize] executes, chain_exec sets the transient
+        # _chain_sanitize_redact flag on the program; every history
+        # writer in that window records the sanitized label, so the
+        # secret never reaches history (or the saved program JSON)
+        # in the first place. Execution operands are untouched.
+        if label and getattr(self, "_chain_sanitize_redact", False):
+            from form.mandell.redaction import sanitize_text
+
+            label = sanitize_text(label)
         body = f"{dell:02d}[{term}]"
         if label:
             body = f"{body} :: {label[:40]}"

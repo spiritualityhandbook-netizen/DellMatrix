@@ -113,12 +113,26 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
     # from chain_exec (None on every legacy/direct path).
     st = attach(program); lab = label or ""; ok = True; err = ""
     def mark():
-        st.traces.append(f"{n:02d}[{term}]::{lab}")
+        # Step 3b (DAF-02 chain follow-up): under a Sanitize chain's
+        # redaction flag, the trace line and the history label carry
+        # the sanitized lab; the handler still executes with the
+        # real lab (payload semantics preserved).
+        _lab_shown = lab
+        if lab and getattr(program, "_chain_sanitize_redact", False):
+            from .redaction import sanitize_text
+            _lab_shown = sanitize_text(lab)
+        st.traces.append(f"{n:02d}[{term}]::{_lab_shown}")
         st.traces_dropped_total += _trim_oldest(st.traces, TRACES_CAP)
         if hasattr(program, "note_seed"):
-            try: program.note_seed(n, term, lab or term)
+            try: program.note_seed(n, term, _lab_shown or term)
             except Exception: pass
-    def shot(): append_snapshot(st)
+    def shot():
+        append_snapshot(st)
+        # Snapshots are evidence copies: under a Sanitize chain the
+        # appended copy is sanitized; live state is untouched.
+        if getattr(program, "_chain_sanitize_redact", False) and st.snapshots:
+            from .redaction import sanitize_evidence
+            st.snapshots[-1] = sanitize_evidence(st.snapshots[-1])
     try:
         from .query_ops import QUERY_DELLS, apply_query
         if n in QUERY_DELLS:
