@@ -34,8 +34,17 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
         st.last_result = result_cell(value=hits, matched=bool(hits), count=len(hits), source="query", predicate=lab or "*", confidence=1.0 if hits else 0.0, trace="54")
         messages.append(f"Query scope={st.scope} hits={len(hits)} q={lab or '*'}")
     elif n == 55:
+        # Step 9 (B14): Set participates in the shared
+        # diff-baseline mechanism — the same authority the
+        # spectrum writers use (spectrum_ops._note_mutation
+        # with a pre-mutation _ckpt), called after every
+        # refusal check and immediately before the mutation.
+        # A refused Set captures no baseline and mutates
+        # nothing.
+        from .spectrum_ops import _ckpt as _diff_ckpt, _note_mutation as _note_diff
         if roles is not None:
             key = roles.get("key", "") or "value"
+            _note_diff(st, "set", lab, _diff_ckpt(st))
             shot_fn()
             st.store[key] = roles.get("value", "")
             messages.append(f"Set {key}={st.store[key]}")
@@ -49,6 +58,7 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
                                              trace="55")
             else:
                 key = (key or "value").strip()
+                _note_diff(st, "set", lab, _diff_ckpt(st))
                 shot_fn()
                 st.store[key] = val.strip() if val.strip() else ("" if "=" in lab else "1")
                 messages.append(f"Set {key}={st.store[key]}")

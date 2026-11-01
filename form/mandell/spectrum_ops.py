@@ -88,6 +88,14 @@ def _sync_depth(st: Any) -> None:
 
 
 def _note_mutation(st: Any, op: str, lab: str, pre: Dict[str, Any]) -> None:
+    """Step 9 (B14): the ONE shared diff-baseline authority.
+    Every store writer — Set (55, via query_ops) and the
+    spectrum writers 84-88 — calls this with pre=_ckpt(st)
+    captured after all refusal checks and immediately
+    before its mutation. It sets the standalone baseline
+    (st.diff_baseline) that Diff reads when no transaction
+    frame is active, and records the mutation on the
+    innermost active frame's staged_changes ledger."""
     st.diff_baseline = pre
     frames = _active(_open_tx(st))
     if frames:
@@ -318,6 +326,17 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                                          source="patch", predicate=lab or "*",
                                          trace="88")
     elif n == 89:
+        # Step 9 (B13/B14): one baseline lifecycle for every
+        # writer. An active transaction frame's checkpoint
+        # governs; otherwise the standalone baseline captured
+        # by _note_mutation immediately before the most
+        # recent store mutation (Set 55 included). There is
+        # NO fallback to the current state: with no baseline
+        # captured in this session Diff refuses
+        # baseline_missing and claims NO change-set (changed
+        # is None, never []). Reading Diff never captures,
+        # replaces, or clears a baseline, so repeated reads
+        # return the identical result.
         frames = _active(_open_tx(st))
         if frames:
             before = frames[-1].get("checkpoint") or _ckpt(st)
@@ -326,12 +345,17 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
             before = st.diff_baseline
             source = "immediate"
         else:
-            before = _ckpt(st)
-            source = "current"
+            before = None
+            source = "missing"
         after = _ckpt(st)
-        changed = [k for k in set(list(before.get("store", {})) + list(after.get("store", {}))) if before.get("store", {}).get(k) != after.get("store", {}).get(k)]
-        st.last_diff = {"before": before.get("store", {}), "after": after.get("store", {}), "changed": changed, "label": lab, "baseline": source}
-        messages.append(f"Diff changed={changed} baseline={source}")
+        if before is None:
+            ok, err = False, "baseline_missing"
+            st.last_diff = {"before": None, "after": after.get("store", {}), "changed": None, "label": lab, "baseline": "missing", "available": False, "error": "baseline_missing"}
+            messages.append("Diff baseline_missing (no baseline captured)")
+        else:
+            changed = [k for k in set(list(before.get("store", {})) + list(after.get("store", {}))) if before.get("store", {}).get(k) != after.get("store", {}).get(k)]
+            st.last_diff = {"before": before.get("store", {}), "after": after.get("store", {}), "changed": changed, "label": lab, "baseline": source}
+            messages.append(f"Diff changed={changed} baseline={source}")
     elif n == 90:
         messages.append(f"Trace last {min(8, len(st.traces))}:")
         for item in st.traces[-8:]:

@@ -15,8 +15,9 @@ survey distribution, so the accounting cannot drift silently:
   present-or-absent; bare outcome executed-or-failed-with-
   reason). Dimensions are asserted separately — a card may
   not borrow strength from another dimension.
-- The bare-invocation distribution observed at survey time:
-  84 executed; exactly 16 failed, each with its recorded
+- The bare-invocation distribution as amended by the
+  Director-order circuits (steps 6 and 9 most recently):
+  80 executed; exactly 20 failed, each with its recorded
   reason. (Bare invocation on an empty field in this
   runtime — operand/precondition failures are expected and
   are what the cards exist to record.)
@@ -59,6 +60,10 @@ EXPECTED_BARE_FAILURES = {
     86: "delete_missing:empty",
     87: "replace_missing:",
     88: "patch_miss:",
+    # Step 9 (B13): bare Diff on an empty field has no
+    # baseline and honestly refuses baseline_missing
+    # instead of claiming a vacuous empty change-set.
+    89: "baseline_missing",
     94: "catch_illegal",
     95: "commit_without_try",
     98: "alias_missing",
@@ -95,8 +100,8 @@ def main():
 
     failed = {c["dell"]: c["bare"]["error"]
               for c in cards if c["bare"]["outcome"] != "executed"}
-    _rec("bare invocation: 81 executed, 19 named failures",
-         len(failed) == 19
+    _rec("bare invocation: 80 executed, 20 named failures",
+         len(failed) == 20
          and all(failed.get(n, "").startswith(prefix)
                  for n, prefix in EXPECTED_BARE_FAILURES.items())
          and set(failed) == set(EXPECTED_BARE_FAILURES),
