@@ -282,6 +282,7 @@ LIST = [
     "form.step5b_exchange_durability_test:smoke",
     "form.step6_leaf_honesty_test:smoke",
     "form.step7_control_verdicts_test:smoke",
+    "form.step8_transactions_test:smoke",
 ]
 
 TIMEOUT_S = 900

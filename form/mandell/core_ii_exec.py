@@ -232,6 +232,15 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             ok=False; err=f"unmapped:{n}"; messages.append(f"Core II Dell {n} unmapped")
     except Exception as exc:
         ok=False; err=str(exc); st.last_error=err; messages.append(f"Core II fail {n}: {err}")
-    if not ok: st.last_error = err or st.last_error
+    if not ok:
+        st.last_error = err or st.last_error
+        # Step 8 (B15): the canonical outcome hook — every
+        # executed Core II failure (query, scope, Join,
+        # spectrum, composition, exception) marks the
+        # innermost active transaction frame failed, first
+        # root cause preserved. st.last_error stays a global
+        # diagnostic only; it owns nothing (B16).
+        from .spectrum_ops import note_atom_failure
+        note_atom_failure(st, err)
     mark()
     return {"ok": ok, "error": err, "dell": n, "core_ii": st.snap(), "result": dict(st.last_result or {})}

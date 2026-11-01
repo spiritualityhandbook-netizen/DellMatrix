@@ -94,12 +94,43 @@ def _note_mutation(st: Any, op: str, lab: str, pre: Dict[str, Any]) -> None:
         frames[-1].setdefault("staged_changes", []).append({"op": op, "lab": lab})
 
 
-def _fail_open_tx(st: Any, err: str) -> None:
+def note_atom_failure(st: Any, err: str) -> None:
+    """Step 8 (B15/B16): the ONE canonical outcome hook. Every
+    executed atom failure — leaf, Core II, or composition —
+    marks the INNERMOST active transaction frame failed.
+    The first root cause is preserved in frame["error"]: a
+    later failure on an already-failed frame (including a
+    commit_illegal raised by a Commit attempt on that frame)
+    is recorded in frame["extra_errors"] as additional
+    evidence only and never overwrites the root cause. A
+    failure after a Catch consumed the frame's error is a new
+    root cause (the caught error survives in caught_error).
+    Lawful skips and false-predicates-as-data never reach
+    this hook — callers fire it only on ok=False outcomes."""
+    if not err:
+        return
     frames = _active(_open_tx(st))
-    if frames:
-        frames[-1]["status"] = "failed"
-        frames[-1]["error"] = err
+    if not frames:
+        return
+    frame = frames[-1]
+    if frame.get("status") == "failed":
+        # Idempotent re-notes: the same outcome may reach this
+        # hook from both the Core II tail and the chain layer;
+        # an error already recorded (as root cause or as extra
+        # evidence) is never recorded twice.
+        if err != frame.get("error") \
+                and err not in frame.get("extra_errors", []):
+            frame.setdefault("extra_errors", []).append(err)
+    else:
+        frame["status"] = "failed"
+        frame["error"] = err
     _sync_depth(st)
+
+
+def _fail_open_tx(st: Any, err: str) -> None:
+    # Assert/Guard keep their in-handler call, which now
+    # delegates to the canonical hook (one authority, B15).
+    note_atom_failure(st, err)
 
 
 def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages: List[str], ids_fn, shot_fn, roles: Any = None) -> Tuple[bool, str]:
@@ -335,16 +366,26 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
         messages.append(f"Try id={frame['id']} depth={frame['depth']}")
     elif n == 94:
         frames = _open_tx(st)
-        captured = st.last_error or lab or ""
         active = _active(frames)
         if not active:
             ok, err = False, "catch_illegal"
             messages.append("Catch illegal")
         else:
-            active[-1]["status"] = "caught"
-            active[-1]["error"] = captured
-            _sync_depth(st)
-            messages.append(f"Catch {captured or '(no error)'}")
+            # Step 8 (B16): Catch consumes THIS frame's error —
+            # never the sticky global st.last_error and never
+            # its own label. A frame with no error of its own
+            # reports that explicitly and consumes nothing:
+            # its status and error stay exactly as they were.
+            frame = active[-1]
+            captured = frame.get("error") or ""
+            if frame.get("status") == "failed" or captured:
+                frame["status"] = "caught"
+                frame["caught_error"] = captured
+                frame["error"] = captured
+                _sync_depth(st)
+                messages.append(f"Catch {captured}")
+            else:
+                messages.append("Catch (no error)")
     elif n == 95:
         frames = _open_tx(st)
         active = _active(frames)

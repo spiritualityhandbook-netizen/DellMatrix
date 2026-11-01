@@ -168,6 +168,28 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
                                f"atom not executed (chain continues per policy)"}
 
 
+def _note_chain_failure(program: Any, out: Dict[str, Any]) -> None:
+    """Step 8 (B15): chain-side call site of the ONE canonical
+    outcome hook (spectrum_ops.note_atom_failure). Covers leaf
+    atoms and pre-execution chain failures (TOAM validation,
+    reference, argument conflict) that never reach
+    execute_core_ii; Core II outcomes are re-noted
+    idempotently (the hook preserves the first root cause and
+    never duplicates the same error). Lawful skips carry
+    skipped=True and are NOT failures — an atom that never
+    ran cannot fail a frame."""
+    if out.get("ok", True) or out.get("skipped"):
+        return
+    err = out.get("error") or ""
+    if not err:
+        return
+    try:
+        from form.mandell.spectrum_ops import note_atom_failure
+        note_atom_failure(attach(program), err)
+    except Exception:
+        pass
+
+
 def _apply_flow(st: Any, flow: str, prev_ok: bool, prev_atom: Any, next_atom: Any, messages: List[str]) -> str:
     name = FLOW_CONTRACT.get(flow, "FlowTo")
     st.flow_taken.append(f"{flow}:{name}")
@@ -276,6 +298,7 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
             st = attach(program)
             continue
         program, out = _run_atom(program, atom, seed, messages)
+        _note_chain_failure(program, out)
         if out.get("skipped"):
             skipped.append(n)
         else:
@@ -320,6 +343,7 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
     atom = atoms[head]
     n = int(atom.dell)
     program, head_out = _run_atom(program, atom, seed, messages)
+    _note_chain_failure(program, head_out)
     ran.append(n)
     # Step 7 (DAF-08): the head occurrence's receipt is returned
     # to execute_range (which inserts it in atom order); it is
