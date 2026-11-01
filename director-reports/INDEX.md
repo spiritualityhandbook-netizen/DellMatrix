@@ -16,7 +16,7 @@ Latest dispositions (supersede SUBMITTED labels below; original submission summa
 | Step 7 | CERTIFIED WITH NOTED EXCEPTIONS | Preserve stated Join/partial semantics; final composition proof remains |
 | Step 8 | PARTIAL | DIR-F14 repeated Catch; B15 and bounded B17 supported |
 
-Process tooling is implemented on this PR, awaiting Uni's independent review/integration and acknowledgment. Production runtime remains Uni-owned. No whole-program certificate is issued.
+Process tooling was integrated by PR #191 (merged at 13e1df6); Uni's acknowledgment (responses/UNI-ACK-2026-11-01.md) was accepted by the Director's Mode D INDEX review at 13e1df6. Production runtime remains Uni-owned. No whole-program certificate is issued.
 
 
 Per-circuit certification submissions under the Director's
@@ -53,8 +53,10 @@ DIRECTOR_FINDINGS_REGISTER.md (Uni workspace).
 | DIRECTOR_REPORT_STEP7_CONTROL_VERDICTS.md | Order step 7 | Control verdicts B7 Join / B8 Until / B9 ForEach + DAF-08 receipts (PR #186, merge 625bb69) | SUBMITTED — awaiting ruling. Occurrence-complete atom-ordered control receipts (lawful skips recorded, never failures); closing Join evaluates the block's actual results with root-cause error preserved (no vacuous incoming=0); Until empty condition agrees across surfaces (true, zero iterations) with bound exposed; ForEach plane fallback deleted. Suite 28/28, mutants M1-M5 killed exactly, regress 213/213 x3 on the candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 213/213 GREEN. |
 
 | DIRECTOR_REPORT_STEP8_TRANSACTIONS.md | Order step 8 | Transactions B15 failed-frame / B16 Catch / B17 Commit wording (PR #188, merge 1607f33) | SUBMITTED — awaiting ruling. One canonical failed-frame hook (first root cause preserved, later failures to extra_errors); Catch frame-owned (no-error Catch reports '(no error)', consumes nothing); Commit mark/accept wording + checkpoint scope, no atomic/ACID claims. Suite 22/22, mutants M1/M1b/M2-M5 killed, regress 214/214 x3 on the candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 214/214 GREEN. |
+| DIRECTOR_REPORT_STEP9_DIFF.md | Order step 9 | Diff B13 baseline_missing / B14 Set in shared baseline lifecycle (PR #190, merge 2abf04c) | SUBMITTED — awaiting ruling. Vacuous 'current' fallback deleted (no baseline -> ok=False baseline_missing, changed unknown); Set captures via the shared _note_mutation lifecycle on both branches; baseline session-only by design. Suite 17/17, mutants M1-M4 killed exactly, regress 215/215 x3 on the candidate (re-run on the refreshed candidate after the docs-only main merge), exact-head CI SUCCESS in a separate step before merge, fresh-clone 215/215 GREEN. |
 
-Forthcoming, in order: steps 9-11
+Forthcoming, in order: repair circuits
+DIR-F12 / DIR-F13 / DIR-F14 and steps 10-11
 per-circuit reports, step 13 sweep re-derivation, step 14
 consolidated index packet (A2 reconciled closure + remaining
 typed-Dell and full-registry re-rulings).
