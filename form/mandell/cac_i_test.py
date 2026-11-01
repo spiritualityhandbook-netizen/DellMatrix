@@ -362,7 +362,7 @@ def control_l_core_i():
     p = fresh_program("cac1_L")
     execute_seed(p, "08[Create] :: a")
     execute_seed(p, "08[Create] :: b")
-    out = execute_seed(p, "21[Merge] :: ab")
+    out = execute_seed(p, "21[Merge] :: a + b")
     check("L.dell21", out.get("ok"), out.get("error"))
     out = execute_seed(p, "22[Split] :: a")
     check("L.dell22", out.get("ok"), out.get("error"))

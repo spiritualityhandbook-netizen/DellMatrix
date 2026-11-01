@@ -22,10 +22,13 @@ here, per Dell, through the public seed path:
   nursery, ideas) all PASS on a healthy program:
   "Test: 5/5", noted to history as "5/5".
 - 13 Loop: ringed growth with cycles = the digit
-  label else 1, and NO upper clamp (label 7 runs 7
-  cycles — the deliberate contrast with Dell 06 Cycle,
-  which clamps to 1..5); growth PROPOSES only (live
-  census unchanged, nursery pending grows).
+  label else 1. B2 (Director FIX, step 6): Loop now
+  uses Cycle's 1..5 clamp (label 7 executes 5), reports
+  requested/executed counts and any clamp, and refuses
+  non-digit labels invalid_loop_count with zero growth
+  (the former unclamped / silent-fallback behavior was
+  the B2 defect); growth PROPOSES only (live census
+  unchanged, nursery pending grows).
 - 14 Bind: mints a plane unit through place_idea with
   the RAW label (no prefix, unlike 07 Link): bare Bind
   mints "bind"; repeats dedup.
@@ -37,10 +40,10 @@ here, per Dell, through the public seed path:
   0.1..1.0 (default 0.9 for bare/non-numeric); with
   enhance ON the resonance scores are multiplied by
   the factor; note_seed records the resolved factor.
-  PINNED EXHIBIT: with enhance OFF the gate refuses
-  the decay (scores unchanged) but the leaf message
-  still claims "Scores decayed" — the message
-  overclaims the effect (see packet).
+  B1 (Director FIX, step 6): with enhance OFF the gate
+  refusal is reported as a refusal (ok=False, scores
+  unchanged, no "Scores decayed" claim) — the former
+  overclaiming message was the B1 defect.
 - 17 Shadow: message-only parallel track — the id is
   "shadow_" + the label (spaces -> '_', case kept,
   truncated to 20 chars; bare = "shadow_bg"); the
@@ -284,9 +287,12 @@ def main():
     p.enhance.state.scores["garden_gate"] = 1.0
     p.enhance.state.scores["stone"] = 2.0
     r = _run(p, "16[Decay] :: 0.5")
-    _rec("16 Decay EXHIBIT: enhance OFF — the gate refuses, "
-         "scores are UNCHANGED, yet the message claims decay",
-         _msgs(r) == ["Scores decayed ×0.5."]
+    _rec("16 Decay (B1, step 6): enhance OFF — the gate refusal is "
+         "reported honestly, scores UNCHANGED, no decay claimed",
+         r.get("ok") is False
+         and r.get("error") == "enhance OFF"
+         and _msgs(r) == ["Decay refused: enhance OFF — "
+                          "scores unchanged."]
          and p.enhance.state.scores["garden_gate"] == 1.0
          and p.enhance.state.scores["stone"] == 2.0,
          str(_msgs(r)))
@@ -359,7 +365,7 @@ def main():
          total > 16 and m[0] == f"Mirror: {total} live ideas"
          and len(bullets) == 16, f"{m[0]} bullets={len(bullets)}")
 
-    # -- 13 Loop (isolated owner): unclamped ringed growth
+    # -- 13 Loop (isolated owner): B2 clamped ringed growth
     owner3 = "D1RegLeaf2Loop"
     q = _program(owner3)
     _run(q, "08[Create] :: Garden Gate")
@@ -367,25 +373,34 @@ def main():
     before_units = set(_units(q))
     r = _run(q, "13[Loop]")
     _rec("13 Loop: bare Loop runs 1 cycle — growth proposes "
-         "(nursery +3 for 3 units), live census unchanged",
+         "(nursery +3 for 3 units), live census unchanged, "
+         "requested/executed reported",
          _msgs(r) == ["Ringed growth: +0 new +3 evolved",
+                      "Loop: requested 1, executed 1.",
                       "Nursery pending: 3"]
          and set(_units(q)) == before_units, str(_msgs(r)))
     r = _run(q, "13[Loop] :: 7")
-    _rec("13 Loop: label 7 runs 7 cycles UNCLAMPED (+21 "
-         "evolved) — the contrast with 06 Cycle's 1..5 clamp",
-         _msgs(r) == ["Ringed growth: +0 new +21 evolved",
-                      "Nursery pending: 24"]
+    _rec("13 Loop (B2, step 6): label 7 is CLAMPED to Cycle's "
+         "1..5 bound (+15 evolved) and the clamp is reported",
+         _msgs(r) == ["Ringed growth: +0 new +15 evolved",
+                      "Loop: requested 7, executed 5. "
+                      "(clamped to 1..5)",
+                      "Nursery pending: 18"]
          and set(_units(q)) == before_units, str(_msgs(r)))
     r = _run(q, "13[Loop] :: bogus")
-    _rec("13 Loop: a non-digit label falls back to 1 cycle",
-         _msgs(r)[0] == "Ringed growth: +0 new +3 evolved",
+    _rec("13 Loop (B2, step 6): a non-digit label refuses "
+         "invalid_loop_count with zero growth",
+         r.get("ok") is False
+         and r.get("error") == "invalid_loop_count"
+         and _msgs(r) == ["Loop refused: invalid count 'bogus' — "
+                          "no cycles run."]
+         and q.nursery.summary()["pending"] == 18,
          str(_msgs(r)))
     # symbiosis: Keep's nursery line counts Loop's proposals
     r = _run(q, "10[Keep]")
     _rec("symbiosis: Keep (10) counts Loop's (13) proposals "
-         "in its nursery line (27 pending)",
-         _msgs(r)[1].endswith("nursery=27"), str(_msgs(r)))
+         "in its nursery line (18 pending)",
+         _msgs(r)[1].endswith("nursery=18"), str(_msgs(r)))
     _cleanup(owner3)
 
     # -- REAL_USER_PATH: literal REPL seed lines

@@ -47,11 +47,11 @@ through the public seed path:
   bridge function belongs to Dell 45, not 44.)
 - 45 Translate: bridge(label) — an English phrase
   reports its Mandell seed and English gloss; it is
-  a REPORT, nothing executes or mutates. PINNED
-  EXHIBIT: bare Translate translates the empty string
-  through the translate() fallback and reports it as
-  a Show intent — mandel "09[Show] :: unknown" —
-  instead of saying there was nothing to translate.
+  a REPORT, nothing executes or mutates. B6 (Director
+  FIX, step 6): bare Translate reports
+  nothing_to_translate (ok=False) with no fabricated
+  Show intent — the former empty-string Show report
+  was the B6 defect.
 - 46 Rank: "Ranked <n> proposals:" plus one line per
   PENDING proposal, affinity-descending (equal
   affinities keep insertion order), format
@@ -242,13 +242,15 @@ def main():
                       "english: Show (Render / output)"],
          str(_msgs(r)))
     r = _run(p, "45[Translate]")
-    _rec("45 Translate EXHIBIT: bare Translate reports "
-         "the empty input as a Show intent — mandel "
-         "'09[Show] :: unknown' — instead of reporting "
-         "that there was nothing to translate",
-         _msgs(r) == ["mandel: 09[Show] :: unknown",
-                      "english: Show (Render / output) "
-                      "→ unknown"], str(_msgs(r)))
+    _rec("45 Translate (B6, step 6): bare Translate reports "
+         "nothing_to_translate — no fabricated Show intent, "
+         "zero mutation",
+         r.get("ok") is False
+         and r.get("error") == "nothing_to_translate"
+         and _msgs(r) == ["Translate: nothing_to_translate — "
+                          "no input, nothing executed."]
+         and list(_units(p)) == before,
+         str(_msgs(r)))
 
     # -- 41 Sanitize: redaction + the echo exhibit
     r = _run(p, "41[Sanitize] :: password: hunter2 "

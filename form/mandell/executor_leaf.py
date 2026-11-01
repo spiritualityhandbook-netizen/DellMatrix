@@ -179,12 +179,34 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         if hasattr(program, "note_seed"):
             program.note_seed(12, "Test", f"{ok_n}/{len(checks)}")
     elif primary == 13:
-        cycles = int(label) if label.isdigit() else 1
-        out = program.grow_ideas(max(1, cycles))
+        # B2 (Director FIX, step 6): Loop uses Cycle's finite 1..5
+        # bound, reports requested vs executed counts and any clamp,
+        # and refuses malformed/non-numeric labels explicitly instead
+        # of silently running one cycle. No growth on refusal.
+        raw_label = (label or "").strip()
+        if raw_label and not raw_label.isdigit():
+            return {
+                "ok": False,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": messages + [
+                    f"Loop refused: invalid count '{raw_label}' — "
+                    f"no cycles run."],
+                "new_program": new_program,
+                "error": "invalid_loop_count",
+            }
+        requested = int(raw_label) if raw_label else 1
+        executed = max(1, min(requested, 5))
+        out = program.grow_ideas(executed)
         messages.append(
             f"Ringed growth: +{out.get('proposed_new', 0)} new "
             f"+{out.get('proposed_evolved', 0)} evolved"
         )
+        _count_line = f"Loop: requested {requested}, executed {executed}."
+        if executed != requested:
+            _count_line += " (clamped to 1..5)"
+        messages.append(_count_line)
         messages.append(f"Nursery pending: {out.get('nursery', {}).get('pending', 0)}")
     elif primary == 14:
         place_idea(label or "bind")
@@ -201,14 +223,44 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         factor = 0.9
         if label.replace(".", "", 1).isdigit():
             factor = max(0.1, min(1.0, float(label)))
+        # B1 (Director FIX, step 6): the gate's verdict is the truth.
+        # When EnhanceGate.decay refuses (enhance OFF), report the
+        # refusal, leave scores unchanged, and never claim decay.
+        # The manual fallback respects the same gate — it must not
+        # become a bypass around it.
+        _decay_res = None
         if hasattr(program.enhance, "decay"):
-            program.enhance.decay(factor)
-            messages.append(f"Scores decayed ×{factor}.")
-        else:
+            _decay_res = program.enhance.decay(factor)
+        if _decay_res is not None and not _decay_res.get("ok"):
+            _reason = _decay_res.get("reason") or "enhance OFF"
+            return {
+                "ok": False,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": messages + [
+                    f"Decay refused: {_reason} — scores unchanged."],
+                "new_program": new_program,
+                "error": _reason,
+            }
+        if _decay_res is None:
+            if not getattr(program.enhance, "on", False):
+                return {
+                    "ok": False,
+                    "seed": _echo.as_mandel(),
+                    "english": _echo.as_english(),
+                    "primary": primary,
+                    "messages": messages + [
+                        "Decay refused: enhance OFF — scores unchanged."],
+                    "new_program": new_program,
+                    "error": "enhance OFF",
+                }
             st = program.enhance.state
             for k in list(st.scores.keys()):
                 st.scores[k] = float(st.scores[k]) * factor
             messages.append(f"Scores decayed ×{factor} (manual).")
+        else:
+            messages.append(f"Scores decayed ×{factor}.")
         if hasattr(program, "note_seed"):
             program.note_seed(16, "Decay", str(factor))
     elif primary == 17:
@@ -393,6 +445,20 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         if hasattr(program, "note_seed"):
             program.note_seed(43, "Fallback")
     elif primary == 45:
+        # B6 (Director FIX, step 6): empty input has nothing to
+        # translate — report it; never fabricate a Show intent.
+        if not (label or "").strip():
+            return {
+                "ok": False,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": messages + [
+                    "Translate: nothing_to_translate — no input, "
+                    "nothing executed."],
+                "new_program": new_program,
+                "error": "nothing_to_translate",
+            }
         from form.mandell.bridge import bridge
         rep = bridge(label or "")
         messages.append(f"mandel: {rep.get('mandel')}")
