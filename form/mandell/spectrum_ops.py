@@ -353,7 +353,15 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
             st.last_diff = {"before": None, "after": after.get("store", {}), "changed": None, "label": lab, "baseline": "missing", "available": False, "error": "baseline_missing"}
             messages.append("Diff baseline_missing (no baseline captured)")
         else:
-            changed = [k for k in set(list(before.get("store", {})) + list(after.get("store", {}))) if before.get("store", {}).get(k) != after.get("store", {}).get(k)]
+            # DIR-F15: membership change alone is a change.
+            # Plain .get(k) equality conflates an absent key
+            # with a key stored as None (both read None), so
+            # a None-valued key added or removed vanished
+            # from changed. Membership is compared first;
+            # keys present on both sides fall back to value
+            # equality (a retained None is NOT a change).
+            _bs, _as = before.get("store", {}), after.get("store", {})
+            changed = [k for k in set(list(_bs) + list(_as)) if (k in _bs) != (k in _as) or _bs.get(k) != _as.get(k)]
             st.last_diff = {"before": before.get("store", {}), "after": after.get("store", {}), "changed": changed, "label": lab, "baseline": source}
             messages.append(f"Diff changed={changed} baseline={source}")
     elif n == 90:

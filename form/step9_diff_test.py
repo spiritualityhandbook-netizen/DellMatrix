@@ -37,6 +37,14 @@ plus the direct execute_core_ii entry and save/load:
   its store but reports baseline_missing until its
   next mutation captures a fresh baseline.
 
+- DIR-F15: the Diff comparator distinguishes MEMBERSHIP
+  change from value equality. A key present with value
+  None on one side and absent on the other is a change
+  (addition and removal, immediate and transaction
+  baselines); a None retained on both sides is not.
+  None values are seeded directly into state (the store
+  is Dict[str, Any]; no public string writer emits None).
+
 Labels: INTEGRATION / PUBLIC_ENTRY (real Program via
 form.open.Program, public executor; one direct
 execute_core_ii leg; one save/load leg).
@@ -335,6 +343,124 @@ def main() -> bool:
          and receipts[0].get("error") == "baseline_missing",
          str(receipts))
     _cleanup(owner7)
+
+    # -- DIR-F15: membership vs stored None. Seeding note:
+    #    the store is Dict[str, Any] and admits None by
+    #    design; no public string writer emits None (Set is
+    #    string-only), so None values are seeded DIRECTLY
+    #    into state — the Director's own probe method. This
+    #    is a state-seeding claim, NOT a public-writer claim.
+    from form.mandell.spectrum_ops import _ckpt as _ckpt15
+
+    # W1 immediate removal (the Director's reproducer)
+    owner8 = "Step9DiffF15Rem"
+    p8 = _program(owner8)
+    st8 = p8.core_ii
+    st8.store["nullable"] = None
+    _run(p8, "86[Delete] :: nullable")
+    r = _run(p8, "89[Diff]")
+    _rec("DIR-F15 W1 null-valued removal on the immediate "
+         "baseline is a membership change: changed lists "
+         "the removed None key",
+         r.get("ok") is True
+         and st8.last_diff.get("changed") == ["nullable"]
+         and st8.last_diff.get("before") == {"nullable": None}
+         and st8.last_diff.get("after") == {}
+         and st8.last_diff.get("baseline") == "immediate",
+         str(st8.last_diff))
+    _cleanup(owner8)
+
+    # W2 immediate addition: baseline seeded from a store
+    #    without the key, then the None key appears
+    owner9 = "Step9DiffF15Add"
+    p9 = _program(owner9)
+    st9 = p9.core_ii
+    st9.diff_baseline = _ckpt15(st9)
+    st9.store["nullable"] = None
+    r = _run(p9, "89[Diff]")
+    _rec("DIR-F15 W2 null-valued addition on the immediate "
+         "baseline is a membership change",
+         r.get("ok") is True
+         and st9.last_diff.get("changed") == ["nullable"]
+         and st9.last_diff.get("before") == {}
+         and st9.last_diff.get("after") == {"nullable": None},
+         str(st9.last_diff))
+    _cleanup(owner9)
+
+    # W3 transaction removal
+    owner10 = "Step9DiffF15TxRem"
+    p10 = _program(owner10)
+    st10 = p10.core_ii
+    st10.store["nullable"] = None
+    _run(p10, "93[Try]")
+    _run(p10, "86[Delete] :: nullable")
+    r = _run(p10, "89[Diff]")
+    _rec("DIR-F15 W3 null-valued removal against the "
+         "transaction checkpoint is a membership change",
+         r.get("ok") is True
+         and st10.last_diff.get("changed") == ["nullable"]
+         and st10.last_diff.get("baseline") == "transaction",
+         str(st10.last_diff))
+    _cleanup(owner10)
+
+    # W4 transaction addition
+    owner11 = "Step9DiffF15TxAdd"
+    p11 = _program(owner11)
+    st11 = p11.core_ii
+    _run(p11, "93[Try]")
+    st11.store["nullable"] = None
+    r = _run(p11, "89[Diff]")
+    _rec("DIR-F15 W4 null-valued addition against the "
+         "transaction checkpoint is a membership change",
+         r.get("ok") is True
+         and st11.last_diff.get("changed") == ["nullable"]
+         and st11.last_diff.get("baseline") == "transaction",
+         str(st11.last_diff))
+    _cleanup(owner11)
+
+    # W5 retained None is NOT a change (over-broad guard)
+    owner12 = "Step9DiffF15Retain"
+    p12 = _program(owner12)
+    st12 = p12.core_ii
+    st12.store["nullable"] = None
+    _run(p12, "55[Set] :: a=1")
+    r = _run(p12, "89[Diff]")
+    _rec("DIR-F15 W5 a None value retained unchanged on "
+         "both sides is absent from changed",
+         r.get("ok") is True
+         and st12.last_diff.get("changed") == ["a"],
+         str(st12.last_diff))
+    _cleanup(owner12)
+
+    # W6 null -> value transition (guard, passes pre-fix)
+    owner13 = "Step9DiffF15N2V"
+    p13 = _program(owner13)
+    st13 = p13.core_ii
+    st13.store["nullable"] = None
+    _run(p13, "88[Patch] :: nullable=x")
+    r = _run(p13, "89[Diff]")
+    _rec("DIR-F15 W6 null-to-value transition is reported",
+         r.get("ok") is True
+         and st13.last_diff.get("changed") == ["nullable"]
+         and st13.last_diff.get("after") == {"nullable": "x"},
+         str(st13.last_diff))
+    _cleanup(owner13)
+
+    # W7 value -> null transition (guard, passes pre-fix)
+    owner14 = "Step9DiffF15V2N"
+    p14 = _program(owner14)
+    st14 = p14.core_ii
+    st14.store["nullable"] = "v"
+    st14.diff_baseline = _ckpt15(st14)
+    st14.store["nullable"] = None
+    r = _run(p14, "89[Diff]")
+    _rec("DIR-F15 W7 value-to-null transition is reported",
+         r.get("ok") is True
+         and st14.last_diff.get("changed") == ["nullable"]
+         and st14.last_diff.get("before") == {"nullable": "v"}
+         and st14.last_diff.get("after") == {"nullable": None},
+         str(st14.last_diff))
+    _cleanup(owner14)
 
     # -- Wording: the cards carry the new contract
     from form.mandell.dell_cards import DEEP_NOTES
