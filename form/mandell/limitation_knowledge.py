@@ -71,6 +71,7 @@ LIMITATIONS = [
         "last_verified_against": "c6fd2fb2d2195b4c44149ff883a5c492c8be0847",
         "mitigation": "Retrieval + query families typed",
         "resolution": "Continue systematic typing",
+        "dated_correction": "Step 11 correction, 2026-11-01: the typed count is now 15, not 14 — step 4 registered Dell 55's typed signature (proof-cards header already records 15). The original '43 Dells lack typed signatures' figure is irreconcilable with its own evidence: 100 - 14 = 86 untyped at probe time, and the verified current count (executed at step 11) is 15 typed / 85 untyped. What the 43 originally counted could not be established from the record and is NOT restated as fact. The 2026-10-27 evidence line and the limitation field above are preserved unrewritten as historical record; this correction is appended, per the Director's step 11 discipline.",
     },
     {
         "id": "FLOW_PARTIAL_IMPLEMENTATION",

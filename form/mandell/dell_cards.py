@@ -158,7 +158,17 @@ DEEP_NOTES: Dict[int, str] = {
          "Join closing a control block evaluates the "
          "completed block's actual results (published "
          "to last_frame before it runs) — no vacuous "
-         "incoming=0 verdict when children ran."),
+         "incoming=0 verdict when children ran. STEP 11 "
+         "(Q1/Q2 settlement, the canonical home for this "
+         "pairing): an EMPTY executed child set is a "
+         "successful Join under both policies ('all' and "
+         "'any') — that is Join's deliberate policy, NOT "
+         "Dell 67 Any's rule: Any on an empty selection is "
+         "False. And on chain receipts, partial marks "
+         "occurrence-level incompleteness (an omission OR "
+         "a failure among the atoms), while ok is the "
+         "separate success verdict — never infer failure "
+         "from partial alone."),
     62: ("D1 circuit 20 DEEP NOTE: Parallel parses "
          "its label as a comma list (bare defaults "
          "['a', 'b']) and is offline_deterministic; "
