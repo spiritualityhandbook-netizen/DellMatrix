@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "id": "REPLACE-CIRCUIT-ID",
+  "scope": "REPLACE bounded behavior and exclusions",
+  "authority_ref": "REPLACE recorded Ace/Director directive reference",
+  "author": "Uni",
+  "lane": "runtime",
+  "report_ref": "REPLACE immutable HTTPS report URL",
+  "delivery": "VERIFIED",
+  "review": "SUBMITTED",
+  "target": {
+    "head": "REPLACE_FULL_RUNTIME_SHA",
+    "tree": "REPLACE_FULL_TREE_SHA"
+  },
+  "environment": {
+    "os": "REPLACE",
+    "python": "REPLACE",
+    "architecture": "REPLACE",
+    "isolation": "REPLACE synthetic owner / clean checkout",
+    "sensitivity": "REPLACE timing/filesystem/provider dependencies or none"
+  },
+  "owners": [
+    {
+      "name": "REPLACE canonical owner",
+      "state_class": "executable",
+      "boundary": "REPLACE public call -> mutation -> persistence -> consumer",
+      "oracle": "REPLACE exact state and receipt comparison"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E1",
+      "kind": "EXECUTED",
+      "head": "REPLACE_FULL_RUNTIME_SHA",
+      "result": "PASS",
+      "artifact": "REPLACE immutable HTTPS log/artifact",
+      "sha256": "REPLACE_64_HEX_ARTIFACT_DIGEST",
+      "executor": "Uni",
+      "command": "REPLACE exact command",
+      "assertion": "REPLACE named assertion and expected state",
+      "exit_code": 0
+    }
+  ],
+  "claims": [
+    {
+      "id": "C1",
+      "text": "REPLACE bounded claim",
+      "level": "EXECUTED",
+      "evidence_ids": [
+        "E1"
+      ]
+    }
+  ],
+  "stateful": true,
+  "failure_matrix": [],
+  "cleanup": {
+    "status": "NOT_APPLICABLE",
+    "evidence_id": ""
+  },
+  "findings": [],
+  "discrepancies": [],
+  "anticipated_probes": [],
+  "questions": [],
+  "acknowledgments": [],
+  "certification": {
+    "status": "UNKNOWN",
+    "actor": "",
+    "ruling_ref": "",
+    "head": "",
+    "exceptions": []
+  },
+  "merge_authority_ref": "REPLACE immutable authority URL",
+  "ci": {
+    "required": [
+      "Form smoke",
+      "Python package"
+    ],
+    "runs": []
+  },
+  "regression": {},
+  "merge": {
+    "sha": "",
+    "tree": "",
+    "fresh_clone_result": "",
+    "fresh_clone_ref": ""
+  },
+  "next_action": "REPLACE owner + next authorized action"
+}

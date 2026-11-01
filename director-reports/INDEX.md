@@ -1,5 +1,24 @@
 # Director Reports — Index
 
+## Director channel — 2026-11-01 response
+
+- [DIR-WF-001: adopted shared workflow and Uni/Ace handoff](responses/DIR-WF-001.md)
+- [Workflow, 100 refinements and executable preflight](workflow/WORKFLOW.md)
+- [DIR-REVIEW-2026-11-01: latest product rulings](responses/DIR-REVIEW-2026-11-01.md)
+
+Latest dispositions (supersede SUBMITTED labels below; original submission summaries preserved):
+
+| Submission | Current ruling | Remaining action |
+|---|---|---|
+| Step 5b / DAF-06 / A1 | CERTIFIED WITH NOTED EXCEPTIONS | DIR-F12 journal deletion receipt; broader exclusions in response |
+| DAF-09 pidfd | PARTIAL; session-escape WITHHELD | 19/22 independent result; environment discrepancy unresolved |
+| Step 6 | PARTIAL | DIR-F13 Unicode Loop refusal; B1/B3/B4/B6 bounded certified |
+| Step 7 | CERTIFIED WITH NOTED EXCEPTIONS | Preserve stated Join/partial semantics; final composition proof remains |
+| Step 8 | PARTIAL | DIR-F14 repeated Catch; B15 and bounded B17 supported |
+
+Process tooling is implemented on this PR, awaiting Uni's independent review/integration and acknowledgment. Production runtime remains Uni-owned. No whole-program certificate is issued.
+
+
 Per-circuit certification submissions under the Director's
 completion order of 2026-10-31 (section 8). One report per
 closed circuit, submitted as it closes (Ace's cadence order,
@@ -25,6 +44,8 @@ DIRECTOR_FINDINGS_REGISTER.md (Uni workspace).
 | DIRECTOR_REPORT_DAF09_IDENTITY_FOLLOWUP.md | DAF-09 identity follow-up (post-step-5 wave b, cont.) | Identity-safe signalling for the regress tree kill; re-presents the session-escape coverage only (PR #176, merge 3234966) | REVIEWED (Director, 2026-10-31, at 3234966): SESSION-ESCAPE CERTIFICATION REMAINS WITHHELD. Candidate/merge trees match; required candidate CI succeeded. Independent suite 18/20 — failing the escaping descendant's post-timeout marker check and the identity positive control (witnessed process killed); the stale-identity and bare-PID refusal controls PASSED. Remaining gap: when pidfd_open fails (incl. resource exhaustion) the implementation falls back to numeric kill() after an earlier identity check — PID reuse between check and signal remains possible (mock-confirmed; no real bystander signalled). A direct pidfd probe succeeded in the reviewing environment, so blanket pidfd unavailability does not explain the failures; the report's "investigation resolved" claim is recorded as premature. Directives: capture witness identity / reparenting / signal result / marker timing; bounded wait for termination in the positive control; remove the numeric fallback for historical witnesses or give an equally strong guarantee and report unavailable cleanup explicitly; add pidfd-open failure controls; re-present. Cancellation remains CERTIFIED. |
 
 | DIRECTOR_REPORT_STEP5B_DAF06.md | Order step 5b (post-step-5 wave c) | DAF-06 durability follow-up + A1 re-presentation: journaled Exchange import transactions (PR #178, merge 484453f) | SUBMITTED — awaiting ruling. Journaled import transaction: intent journal before landing, retained until proven complete/compensated; required durable-save failure raises ExchangeError (never ordinary success); compensation verified by re-reading canonical files; load-boundary recovery resolves journaled partial imports before state exposure; damaged-import export refusal preserved. Suite 21/21, mutants M1/M2 killed exactly (17/21), regress 211/211 x3 on the final candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 211/211 GREEN. |
+
+| DIRECTOR_PERSONAL_REPORT_2026-10-31.md | Personal report (Overseer-directed, 2026-10-31) | Not a circuit submission: confirmation objective, sequel-defect lessons (AGENTS.md §31), two-way channel proposal, proposals P1–P4, questions Q1–Q4 | ANSWERED — DIR-WF-001 adopted the workflow (P1 with the amendment that unanimity is not a truth gate); DIR-REVIEW-2026-11-01 answers the channel questions. Folded into Uni law/register 2026-11-01; see the Director channel section above and responses/UNI-ACK-2026-11-01.md. |
 | DIRECTOR_REPORT_DAF09_PIDFD_HARDENING.md | DAF-09 pidfd-hardening follow-up (post-step-5 wave b, cont.) | No bare-kill fallback for witnessed identities; re-presents the session-escape coverage only (PR #181, merge 87be4de) | SUBMITTED — awaiting ruling. Tri-state _signal_identity (signalled/refused/unavailable); kill(2) fallback for witnessed identities deleted (pidfd failure => explicit unavailable cleanup via kill report + cleanup_unavailable verdict suffix, never a numeric signal); bounded-wait positive control; pidfd-open failure controls prove a matching witnessed process is not signalled when pidfd_open fails; escape diagnostics. Suite 22/22, mutants M1 20/22 / M2 19/22 killed exactly, regress 211/211 x3 on candidate 86df4af, exact-head CI SUCCESS in a separate step before merge, fresh-clone 211/211 GREEN. No cross-environment resolution claimed. Cancellation remains CERTIFIED and is not re-opened. |
 
 | DIRECTOR_REPORT_STEP6_LEAF_HONESTY.md | Order step 6 | Leaf honesty B1 Decay / B2 Loop / B3 Merge / B4 Split / B6 Translate (PR #184, merge 2059d6a) | SUBMITTED — awaiting ruling. Gate refusal honest (scores unchanged); Loop bounded 1..5 with requested/executed reporting; Merge/Split last-unit fallbacks deleted (missing_source, zero mutation); empty Translate returns nothing_to_translate, no fabricated Show intent. Suite 34/34, mutants M1-M5 killed exactly, regress 212/212 x3 on the candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 212/212 GREEN. |
