@@ -408,43 +408,49 @@ def _pidfd_send_signal(fd: int, sig: int) -> None:
         raise OSError(err, os.strerror(err))
 
 
-def _signal_identity(pid: int, starttime: Optional[int], sig: int) -> bool:
+def _signal_identity(pid: int, starttime: Optional[int], sig: int) -> str:
     """Signal ONLY the witnessed process instance (pid, starttime).
 
     Identity-safe signalling (DAF-09 follow-up): a bare PID from a
     historical witness set proves nothing — the PID may have been
-    recycled by an unrelated process. Refuse (return False) when the
-    identity is missing or the process now at that PID is a different
-    instance. Prefer a pidfd: once opened it pins the instance, so a
-    signal can never land on a reuser; the starttime is re-verified
-    after the open to close the capture->open race. Without pidfd
-    support, fall back to kill(2) only after the same verification.
+    recycled by an unrelated process. Returns a tri-state outcome:
+
+    - "signalled": the signal was delivered through a pidfd, which
+      pins the witnessed instance, after re-verifying the starttime
+      following the open (closing the capture->open race).
+    - "refused": the identity is missing or the process now at that
+      PID is a different instance (or the pinned instance is already
+      dead — pidfd_send_signal delivered the signal to NOBODY, never
+      to a PID reuser). Nothing was signalled.
+    - "unavailable": pidfd signalling could not be attempted at all
+      (no os.pidfd_open, or pidfd_open failed). Nothing was signalled.
+
+    There is NO kill(2) fallback for witnessed identities (DAF-09
+    pidfd-hardening follow-up, Director Mode D ruling at 3234966;
+    AGENTS.md law: no silent downgrade from a verified primitive).
+    The earlier starttime check cannot close the check->kill PID-reuse
+    window, so when the pidfd path is unavailable the cleanup is
+    reported unavailable instead of degrading to a bare-PID signal.
     """
     if starttime is None:
-        return False
+        return "refused"
     if _proc_starttime(pid) != starttime:
-        return False  # different instance (or gone): never signal
-    if hasattr(os, "pidfd_open"):
-        fd = None
-        try:
-            fd = os.pidfd_open(pid)
-        except OSError:
-            fd = None
-        if fd is not None:
-            try:
-                if _proc_starttime(pid) != starttime:
-                    return False
-                _pidfd_send_signal(fd, sig)
-                return True
-            except OSError:
-                return False
-            finally:
-                os.close(fd)
+        return "refused"  # different instance (or gone): never signal
+    if not hasattr(os, "pidfd_open"):
+        return "unavailable"
     try:
-        os.kill(pid, sig)
-        return True
-    except (ProcessLookupError, PermissionError, OSError):
-        return False
+        fd = os.pidfd_open(pid)
+    except OSError:
+        return "unavailable"
+    try:
+        if _proc_starttime(pid) != starttime:
+            return "refused"
+        _pidfd_send_signal(fd, sig)
+        return "signalled"
+    except OSError:
+        return "refused"  # pinned instance already dead: nobody signalled
+    finally:
+        os.close(fd)
 
 
 def _identity_alive(pid: int, starttime: Optional[int]) -> bool:
@@ -502,6 +508,13 @@ def _communicate_tracked(proc: "subprocess.Popen") -> Tuple[str, str]:
             continue
 
 
+# Diagnostics from the most recent _kill_process_tree call:
+# {"signalled": [(pid, starttime), ...], "refused": [...],
+#  "unavailable": [...]}. Read by run_entry (which holds no proc
+# handle at its return site) and by the DAF-09 suite.
+_LAST_KILL_REPORT = None
+
+
 def _kill_process_tree(proc: "subprocess.Popen") -> None:
     """DAF-09: kill the WHOLE tree rooted at proc, then reap proc.
 
@@ -520,7 +533,16 @@ def _kill_process_tree(proc: "subprocess.Popen") -> None:
     is provably the witnessed instance. The process-group kill is
     session-scoped by construction (the entry runs in its own
     session), not history-based, and is unchanged.
+
+    DAF-09 pidfd-hardening follow-up: the per-identity outcomes are
+    collected into a kill report, stashed as proc._kill_report and
+    as the module-level _LAST_KILL_REPORT (diagnostics for callers
+    like run_entry, which has no proc handle at its return site, and
+    for the suite). An identity whose pidfd could not be opened is
+    reported "unavailable" — explicitly, never silently downgraded
+    to a bare-PID signal.
     """
+    global _LAST_KILL_REPORT
     root = proc.pid
     identities = _descendant_identities(root)
     known = set(identities)
@@ -536,8 +558,12 @@ def _kill_process_tree(proc: "subprocess.Popen") -> None:
             os.killpg(os.getpgid(root), signal.SIGKILL)
         except (ProcessLookupError, PermissionError, OSError):
             pass
+    report = {"signalled": [], "refused": [], "unavailable": []}
     for pid, starttime in identities:
-        _signal_identity(pid, starttime, signal.SIGKILL)
+        outcome = _signal_identity(pid, starttime, signal.SIGKILL)
+        report[outcome].append((pid, starttime))
+    proc._kill_report = report
+    _LAST_KILL_REPORT = report
     try:
         proc.kill()
     except (ProcessLookupError, OSError):
@@ -582,9 +608,22 @@ def run_entry(entry: str, cwd: str) -> Tuple[bool, str]:
         stdout, stderr = _communicate_tracked(proc)
     except subprocess.TimeoutExpired:
         _kill_process_tree(proc)
-        return False, "TIMEOUT"
+        why = "TIMEOUT"
+        # Pidfd-hardening: unavailable cleanup is explicit in the
+        # verdict, never silent. In an environment where pidfd works
+        # the unavailable set is empty and why stays exactly "TIMEOUT".
+        unavail = getattr(proc, "_kill_report", {}).get("unavailable", [])
+        if unavail:
+            pids = ",".join(str(pid) for pid, _ in unavail)
+            why += f" cleanup_unavailable={len(unavail)}:{pids}"
+        return False, why
     except KeyboardInterrupt:
         _kill_process_tree(proc)
+        unavail = getattr(proc, "_kill_report", {}).get("unavailable", [])
+        if unavail:
+            pids = ",".join(str(pid) for pid, _ in unavail)
+            print(f"REGRESS cleanup_unavailable={len(unavail)}:{pids}",
+                  flush=True)
         raise
     r = _Completed(proc.returncode, stdout, stderr)
     hits = _NM.findall(r.stdout)
