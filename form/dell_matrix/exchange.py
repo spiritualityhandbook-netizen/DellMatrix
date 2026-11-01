@@ -539,26 +539,48 @@ def _compensate_import(program: Any, pid: str) -> Tuple[bool, List[str]]:
     return complete, errors
 
 
+def _dispose_import_journal(owner: str, outcome: str) -> None:
+    """Dispose of the import journal after a recovery outcome, or
+    raise: disposal is a SEPARATE fact from the outcome itself
+    (DIR-F12). A failed unlink never reads as successful disposal
+    — the journal is recovery evidence, retained on disk, and the
+    caller fails closed so a later load can retry disposal."""
+    if _clear_import_journal(owner):
+        return
+    raise ExchangeError(
+        "exchange import recovery established "
+        f"'{outcome}' but the import journal could not be "
+        "cleared; recovery evidence retained for retry",
+        details={"stage": "recovery", "journal_retained": True,
+                 "recovery_outcome": outcome})
+
+
 def _fail_import(program: Any, journal: Dict[str, Any], pid: str,
                  stage: str, cause: BaseException) -> ExchangeError:
     """Compensate a failed import and build the honest error:
     compensation status and journal retention are part of the
-    result, never swallowed."""
+    result, never swallowed. Compensation completeness and
+    journal disposal are SEPARATE facts (DIR-F12): verified
+    compensation stays "complete" when true, and journal_retained
+    reports the actual outcome of the disposal attempt."""
     complete, errors = _compensate_import(program, pid)
-    details = {"stage": stage,
-               "compensation": "complete" if complete else "incomplete",
-               "journal_retained": not complete,
-               "compensation_errors": errors}
     if complete:
-        _clear_import_journal(program.owner)
+        cleared = _clear_import_journal(program.owner)
     else:
+        cleared = False
         _mark_journal_incomplete(program.owner, journal, stage,
                                  cause, errors)
+    retained = not cleared
+    details = {"stage": stage,
+               "compensation": "complete" if complete else "incomplete",
+               "journal_retained": retained,
+               "journal_disposal": "cleared" if cleared else "retained",
+               "compensation_errors": errors}
     return ExchangeError(
         f"exchange import failed at {stage}: "
         f"{type(cause).__name__}: {cause} "
         f"(compensation {details['compensation']}"
-        f"{'; journal retained' if not complete else ''})",
+        f"{'; journal retained' if retained else ''})",
         details=details)
 
 
@@ -629,16 +651,16 @@ def recover_exchange_import(owner: str) -> str:
             and len(receipts) == journal["receipts_expected"] \
             and _receipts_digest(receipts) == journal["receipts_hash"]
         if complete:
-            _clear_import_journal(owner)
+            _dispose_import_journal(owner, "completed")
             return "completed"
 
     if pid is None:
-        _clear_import_journal(owner)
+        _dispose_import_journal(owner, "no_target")
         return "no_target"
     st = _durable_import_state(owner, pid)
     if not st["proposal_present"] and not st["seed_present"] \
             and st["receipts_count"] == 0:
-        _clear_import_journal(owner)
+        _dispose_import_journal(owner, "already_absent")
         return "already_absent"
     if pid in nursery_raw:
         del nursery_raw[pid]
@@ -659,7 +681,7 @@ def recover_exchange_import(owner: str) -> str:
             "exchange import recovery could not establish removal "
             f"of partial import {pid}; evidence retained",
             details={"stage": "recovery", "journal_retained": True})
-    _clear_import_journal(owner)
+    _dispose_import_journal(owner, "removed")
     return "removed"
 
 
@@ -747,8 +769,17 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
             reason=reason, detail=detail_text,
             goals=[f"replication {lint['receipts']}x/"
                    f"{lint['distinct_origins']} origins"])
-    except Exception:
-        _clear_import_journal(owner)
+    except Exception as e:
+        # DIR-F12: disposal is a separate fact — if the journal
+        # cannot be cleared, its retention must surface, not hide
+        # behind the landing failure.
+        if not _clear_import_journal(owner):
+            raise ExchangeError(
+                "exchange import landing failed and the import "
+                "journal could not be cleared; recovery evidence "
+                f"retained ({type(e).__name__}: {e})",
+                details={"stage": "journal_clear",
+                         "journal_retained": True}) from e
         raise
     journal["pid"] = prop.id
     journal["phase"] = "landed"
@@ -803,9 +834,14 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         raise _fail_import(program, journal, prop.id,
                            "final_save", e) from e
-    _clear_import_journal(owner)
+    # DIR-F12: the landing is durably complete at this point, so
+    # a failed journal disposal must NOT convert success into a
+    # failure (or trigger compensation of a complete import) —
+    # but it is a separate fact and is reported as such; the
+    # retained journal is resolved by load-boundary recovery.
+    cleared = _clear_import_journal(owner)
     return {"ok": True, "pid": prop.id, "lint": lint,
-            "origin": origin}
+            "origin": origin, "journal_retained": not cleared}
 
 
 # --------------------------------------- recorded receipts section

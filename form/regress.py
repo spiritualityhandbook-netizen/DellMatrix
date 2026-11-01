@@ -284,6 +284,7 @@ LIST = [
     "form.step7_control_verdicts_test:smoke",
     "form.step8_transactions_test:smoke",
     "form.step9_diff_test:smoke",
+    "form.dirf12_journal_receipt_test:smoke",
 ]
 
 TIMEOUT_S = 900
