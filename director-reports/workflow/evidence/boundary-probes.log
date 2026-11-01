@@ -1,0 +1,7 @@
+{"python": "3.12.14", "platform": "Linux-6.18.57-x86_64-with-glibc2.39", "pid": 6, "self_starttime": 142}
+journal deletion failure receipt: {"compensation": "complete", "compensation_errors": [], "journal_retained": false, "stage": "final_save"}
+unicode Loop raised: ValueError invalid literal for int() with base 10: '²'
+93[Try] True ['Try id=tx0 depth=0']
+86[Delete] :: absent False ['Delete miss absent']
+94[Catch] True ['Catch delete_missing:absent']
+94[Catch] True ['Catch delete_missing:absent']

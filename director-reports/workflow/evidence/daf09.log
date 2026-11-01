@@ -1,0 +1,4 @@
+FAIL no post-timeout write from escaping grandchild: pid=11 kill_report=no_kill_report identity_now=None marker=exists
+FAIL identity positive control: witnessed instance killed: pid=15 kill_report=refused
+FAIL pidfd failure: unavailable cleanup reported explicitly: report={'signalled': [], 'refused': [(22, None)], 'unavailable': []}
+DAF09_TIMEOUT_TREE: 19/22
