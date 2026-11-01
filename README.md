@@ -1,470 +1,581 @@
-> STATUS: IN USE — describes live code in form/ at commit 11933da. Doc verified against code 2026-10-30.
-
 # DellMatrix
 
-**An offline idea environment with a structured language for working with thoughts.**
+**A local-first idea environment with a structured language — Mandell — for thinking with a computer, and with AI, without losing control of what counts as true.**
 
-DellMatrix lets you create ideas, grow them into proposals, confirm the ones worth keeping, inspect how they relate, and save everything to disk — all through plain English commands in a terminal, with no network required.
+DellMatrix is a working program you run in a terminal. You create ideas, grow them into
+proposals, review and confirm the ones worth keeping, connect and inspect them, run small
+structured programs over them, save everything to disk, and pick it up again later — offline,
+with no account and no network required. An AI can be *docked* into the environment to help,
+but it works under strict rules: everything it suggests arrives as a pending proposal, and
+only a human confirms, commits, or teaches the system anything.
 
-> **Scope honesty:** This README describes what the code at the reviewed production SHA actually does, based on executed walkthroughs. Section 2 lists exactly what is working, partial, in repair, or planned. Nothing here claims more than the evidence supports. Full source/evidence map: [docs/README_EVIDENCE_MAP.md](docs/README_EVIDENCE_MAP.md).
-
----
-
-## 1. What DellMatrix Is
-
-**Mandell** is a structured language of operators ("Dells"), flow, and math/nature patterns. It is designed to be readable by people and executable by machines — a bridge language for human-computer collaboration.
-
-**DellMatrix** is the host environment that runs Mandell. It provides:
-
-- **An idea workspace** — create ideas, give them words, detail, and goals
-- **A nursery** — grow ideas into proposals, review them, confirm or reject
-- **A plane** — confirmed ideas become visible "units" you can inspect spatially
-- **Persistence** — save your work to disk, reload it later, recover from crashes
-- **Learning hooks** — DuoBeta observation and policy-gated learning
-- **Visual export** — generate an offline HTML view of your idea space
-
-**Present runtime vs. planned vision:** Today DellMatrix is a working terminal-based idea environment (see §2). Parts of the long-term vision are now implemented and verified: projects as named groups, interchangeable perspectives, cross-session learning, and an interactive visual layer. What remains planned (deep group-in-group nesting, candidate connections) is labeled PLANNED in §2 and §7, not described as implemented.
+> **How to read this README.** Sections 1–6 explain the whole program — what it is, why it
+> exists, every major component, and worked examples. Every example in §6 was executed
+> against the code at commit `c94e223` on 2026-11-01; outputs are real, trimmed only for
+> length. Sections 7–10 give status, architecture, tests, and honest limitations. DellMatrix
+> is under active development: it is a real, tested, working system, and it is **not**
+> claimed to be a finished consumer product.
 
 ---
 
-## 2. Status
+## 1. Why DellMatrix Exists
 
-**Production main:** `11933da` (2026-10-30, post PR #155 merge — full 100-Dell registry proof circuits complete).
-**Phase 5:** MERGED to production via PR #79 (merge `ea9b76a`); Director admission PASS.
-**Phase 6:** R6.1–R6.5 MERGED/CLOSED.
-**Phase 7:** R7.1 MERGED via PR #85 (Director admission PASS); R7.2–R7.7 MERGED via PRs #87–#92 (independent/Director certification outstanding — merged is not certified).
-**Post-GDP capability phases A–E:** MERGED via PRs #95–#99 (dock transport, interaction lookup, InternetGate hardening, KIE routability, action provenance).
-**README Completion Program H–O:** MERGED via PRs #100–#107 (lineage by label, resonance commands, DuoBeta cross-session, Spanish/French, launchers, projects, visual UX, README truth reconciliation).
-**Phase F (replication):** MERGED via PR #108 — `form.regress --passk ENTRY K` re-runs a suite K times on fresh tree copies; green only at k/k.
-**Ten-Phase Master Plan P1–P12:** MERGED via PRs #109–#120 (dedup + baseline closure, evidence integrity, surface wiring, the semantic-docking program SD-1..SD-5 as P4–P8, Exchange v1 as P9, flow-grammar conformance as P10, satellite disposition as P11, final audit + closure as P12).
-**Post-plan packets PP1–PP5:** MERGED via PRs #122–#124 and #126–#128 (stopwords, autonomy charter, unknowns, docked Bimo configuration, flow visuals). **Exchange residual repair:** MERGED via PR #125.
-**Director Mode D review (2026-10-28):** 29 of 31 segments certified with noted exceptions. The Exchange segment (PR #117 line) and the P12 audit segment (PR #120 line) were declined; the Exchange residual repair is merged (PR #125) and both await Director re-ruling. Merged is not certified.
-**D1 deep-contract circuits + full-registry proof:** MERGED via PRs #129–#155 — per-Dell circuits for the typed set plus reconciliation repairs R1–R5 (PRs #129–#148), then registry circuits 16–22 completing proof cards for all 100 Dells (PRs #149–#155). Merged, not certified.
+Working with ideas — your own, or an AI's — has three recurring problems:
 
-All §2 table rows below were verified on or before production main `c6fd2fb`
-(2026-10-27) unless labeled otherwise; the phase-status lines above are current
-at production main `11933da` (2026-10-30). Walkthroughs originally executed on `f3c9007`
-(2026-10-04) are retained as dated historical evidence where noted.
-Phase-5 behaviors (§6.7) are production behavior as of `ea9b76a`.
+1. **Ideas evaporate.** A good thought in a chat window or a notebook margin has no address,
+   no history, and no way to be built on. Next week it is gone or unfindable.
+2. **AI output has no receipts.** A language model can generate fifty suggestions in a
+   minute. Which ones did you actually accept? Why? What did they replace? In a normal chat,
+   observation, suggestion, and fact blur together — and the blur quietly becomes "truth."
+3. **Tools want your data on their servers.** Most thinking tools are cloud services. Your
+   half-formed ideas — often the most valuable ones — live on someone else's machine.
 
-| Area | Status | Evidence |
-|------|--------|----------|
-| REPL launch (`python launch.py`, `python3 -m form.repl`) | **WORKING / VERIFIED** | Launched, `you>` prompt, EOF exits cleanly |
-| Create idea (`create an idea called X`) | **WORKING / VERIFIED** | Idea created with coaching on strength/detail/goals |
-| Grow ideas (`grow ideas N`) | **WORKING / VERIFIED** | Proposals generated in nursery |
-| Review proposals (`proposals`) | **WORKING / VERIFIED** | Lists pending proposals with IDs |
-| Confirm (`confirm <id>`, `confirm all`) | **WORKING / VERIFIED** | Proposal confirmed, Idea placed on plane |
-| Inspect (`look`, `page`, `rank`) | **WORKING / VERIFIED** | Affinity-ordered display, lineage shown |
-| Shapes (`sphere`, `lattice`) | **WORKING / VERIFIED** | Skin/form change, grid render |
-| Save / reload (`save`, `--load`) | **WORKING / VERIFIED** | Files written, state survives restart |
-| Visual export (`visual`) | **WORKING / VERIFIED** | Offline HTML file generated; interactive (see Rich visual UX row) |
-| Tutorial (`tutorial`) | **WORKING / VERIFIED** | Walks the acceptance path |
-| Help (`help`, 9 categories) | **WORKING / VERIFIED** | create, knowledge, learn, explain, save, recover, look, dell, system |
-| DuoBeta learn (`learn propose/inspect/gate/ledger`) | **WORKING / VERIFIED** | Real policy gating within session |
-| Python API (`open_program`, `confirm_proposal`, `persist_rest`, `supersede_proposal`) | **WORKING / VERIFIED** | Direct API calls tested |
-| Offline operation | **WORKING / VERIFIED** | No network calls in tested paths; stdlib-only core deps |
-| Resonance/harmony commands | **WORKING / VERIFIED** | Direct user commands `resonance`, `resonance <id or label>`, `harmony` over canonical active nodes (Phase I, PR #101; `resonance_command_test` 17/17) |
-| DuoBeta cross-session learning | **WORKING / VERIFIED** | Full lifecycle across separate OS processes — execute, `save`, restart `--load`, propose, gate, apply — proven by `duobeta_cross_session_test` 21/21 (Phase J, PR #102). Persistence is via explicit `save`/`load`; a plain start is a fresh in-memory program |
-| REPL `supersede` command | **WORKING / VERIFIED** | `supersede idea <id> with <words>` works with genuine confirmed ID; fails gracefully on unknown/non-confirmed ID |
-| `lineage` by label | **WORKING / VERIFIED** | `lineage <id or label>`: exact ID, exact label, or case-insensitive label; multiple distinct matches report ambiguity honestly (Phase H, PR #100) |
-| Confirmation atomicity | **WORKING / VERIFIED** | Intent-journal recovery merged via [PR #77](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/77) (2026-10-05); crash converges to complete OLD or NEW state |
-| Perspectives | **WORKING / VERIFIED** | Plane perspective/zoom persisted; R7.1 `compose_views`; R7.2 Perspective Studio (§7.5) |
-| Projects (named groups) | **WORKING / VERIFIED** | A project is a named Plane sandbox group: `groups`, `group create/add/remove/show/delete`; membership scopes enhancement within the group (Phase M, PR #105). Group-in-group nesting is NOT implemented |
-| Rich visual UX | **WORKING / VERIFIED (scoped)** | Snapshot export is interactive offline: click-to-inspect + filter/search; the page's script is verified by executed DOM-logic tests (`visual_ux_test` 17/17, Phase N, PR #106). Live bridge is interactive on localhost, verified at HTTP level. Pixel rendering in a named commercial browser was not executed in the build environment |
-| Connected inference (`connect`) | **WORKING / VERIFIED (scoped)** | Public connect path runs the dock over real HTTP, proven against a local provider-shaped double (Phase A, PR #95); dock output lands as pending proposals with origin stamps (Phase E, PR #99). A live third-party provider run was not executed in the build environment |
-| Outcome interaction lookup | **WORKING / VERIFIED** | `outcomes interaction <seq>` resolves a recorded interaction by sequence (Phase B, PR #96) |
-| Knowledge routability (KIE) | **WORKING / VERIFIED** | Stored knowledge completes the eligibility → selection → routing path under the hard laws (Phase D, PR #98) |
-| InternetGate posture | **WORKING / VERIFIED** | Auto-enable hardened off by default; external access fails closed (Phase C, PR #97) |
-| Windows/Mac launchers | **PARTIAL (split)** | Mac `Launch DellMatrix.command`: **VERIFIED** — executed end-to-end in a terminal; executable bit fixed (Phase L, PR #104). Windows `Launch DellMatrix.bat`: present and structurally verified; NOT executed (no Windows environment available) |
-| Spanish/French commands | **WORKING / VERIFIED** | `es`/`spanish` and `fr`/`french` run the core loop; language maps at exact parity (41 intents each); unmapped phrases answer honestly and execute nothing (Phase K, PR #103) |
-| Dock provenance (SD-1) | **WORKING / VERIFIED** | Every docked proposal carries a full origin stamp (`dock:<subject>:<provider>:<model>`), a non-empty reason, its session's task kind, and a persisted dock-session evidence record (prompt hash, context snapshot hash) shown at review (P4, PR #112; `p4_sd1_test` 19/19) |
-| Semantic verbs (SD-2) | **WORKING / VERIFIED** | A docked AI can `relate`, `synthesize` (authored detail/goals from both parents — confirmed crosses no longer inherit only the first parent's content), and `flag`, plus read a redacted `field_snapshot`; every judgment lands as a PENDING proposal under the human gate (P5, PR #113; `p5_sd2_test` 24/24) |
-| Docked growth (SD-3) | **WORKING / VERIFIED** | In connect mode, `grow` routes Solstice pair crosses through the docked AI's synthesize; token composition is the labeled fallback (`growth:token` origin) and drift stays token machinery (P6, PR #114; `p6_sd3_test` 10/10) |
-| Scoped Director dock (SD-4) | **WORKING / VERIFIED** | A Director bound to one scope can review, recommend, request evidence, and file directive proposals; its accept is a recorded **recommendation, never a confirmation** — proposal status is never changed by it; out-of-scope access is refused and the refusal is recorded (P7, PR #115; `p7_sd4_test` 17/17) |
-| Inside-out design loop (SD-5) | **WORKING / VERIFIED** | Docked AIs file `kind=design` proposals; the loop ledger (`design_loop` section) assembles the full chain per proposal — filed → Director recommendation → human gate → implemented (PR + merge SHA) — and the REPL review surface prints Director recommendations under proposals (P8, PR #116; `p8_sd5_test` 12/12; the first full loop turn shipped in PR #116 itself) |
-| Exchange v1 | **WORKING / VERIFIED** | `exchange export <id> <file>` / `exchange import <file>`: seed packets carry receipts (guess/test/mirror/outcome); chain lint labels missing links precisely; import lands PENDING under the receiver's own gate with replication counted, never scored; authority keys in a packet are refused at the boundary (P9, PR #117; `p9_exchange_test` 11/11, cross-process two-owner proof) |
-| Flow grammar | **WORKING / VERIFIED** | All nine flow operators (`> >> >>> : :: :> <: <:> <<[Delta]`) execute with the canonical chain semantics at the public REPL path — the parsed set, the contract set, and the executable set are the same set (P10, PR #118; `p10_flow_grammar_test` 12/12) |
-| Regression suite | **WORKING / VERIFIED** | `python3 -m form.regress` runs 198 registered suites (LIST in `form/regress.py`); the master-plan phases each added their proof suite (159/159 green at `c6fd2fb`, forward / twice / reverse) |
+DellMatrix is built around the opposite commitments:
+
+- **Everything has an address and a history.** Ideas are named units with lineage: you can
+  always ask what something came from, what replaced it, and what changed.
+- **Suggestion is not acceptance.** Anything the system or an AI proposes sits in a
+  *nursery* as PENDING until a human reviews and confirms it. Observation is not learning;
+  storage is not truth. The program enforces that separation mechanically, not by politeness.
+- **Your machine, your state.** The core runs fully offline on plain JSON files you can
+  read, copy, and back up yourself.
+- **A language a human and a machine can both read.** Mandell is the shared notation:
+  small numbered operators with fixed meanings, so a chain of thought can be written down,
+  re-run, tested, and argued about — on paper (it works with a pen) or in the program.
 
 ---
 
-## 3. How It Works
-
-### (a) From English input to executed result
+## 2. The Big Picture
 
 ```mermaid
 flowchart TD
-    A["You type English\nat the you> prompt"] --> B["REPL dispatcher\n(form/repl.py)"]
-    B --> C{"Command type?"}
-    C -->|"Read-only: help, look,\nproposals, outcomes"| D["Direct handler"]
-    C -->|"Learn: learn ..."| E["DuoBeta policy gate"]
-    C -->|"Mandell flow: > or :"| F["Mandell executor"]
-    C -->|"Other English"| G["translate() → intent"]
-    G --> H["_execute_intent"]
-    D --> I["Program state"]
-    E --> I
-    F --> I
-    H --> I
-    I --> J["Render result\nto terminal"]
-    I --> K["Optional: save\nto disk"]
+    H["You — the human<br/>root commands, review, confirm,<br/>commit, the learning gate"]
+    R["Terminal REPL<br/>plain English commands"]
+    M["Mandell executor<br/>seeds, chains, Dells"]
+    P["Program<br/>Plane of ideas · Nursery of proposals<br/>Core II state: store, selection, groups"]
+    D["Disk<br/>JSON state, checkpoints,<br/>intent journals"]
+    AI["Docked AI (optional)<br/>proposes, relates, synthesizes —<br/>never confirms"]
+    DB["DuoBeta<br/>observation + policy-gated learning"]
+    EX["Exchange<br/>idea packets with receipts<br/>to other people / machines"]
 
-    style A fill:#e1f5e1
-    style I fill:#fff3e0
+    H --> R
+    R --> M
+    M --> P
+    P --> D
+    AI -->|"pending proposals only"| P
+    P --> DB
+    P --> EX
+    EX -->|"imports land as pending<br/>under your gate"| P
+
+    style H fill:#e1f5e1
+    style P fill:#fff3e0
 ```
 
-**Autonomy note:** Most commands require you to type them, but DellMatrix has autonomous paths with different defaults:
-- `form/dell_matrix/auto_growth.py`: The `AutoGrowth` dataclass defaults to `auto=False, internet=True` (code comment: "WO-5.1: Default OFF. Automated acceptance requires explicit opt-in."). With `auto` explicitly enabled, it can automatically propose and confirm ideas based on quality thresholds (`_should_auto_confirm` returns False unless `auto` is on; then it checks `floor_accept`, `verita_score`, `combined` score, and grade). Confirmation goes through the owner Program's `confirm_proposal()`; AutoGrowth never mutates confirmation status itself.
-- REPL `auto confirm on`: The `Program.auto_confirm_grow` attribute defaults to `False`. When the user types `auto confirm on`, every subsequent `grow` command automatically confirms all nursery proposals.
-- Default posture: REPL interaction is human-controlled by default; the `AutoGrowth` class is opt-in (defaults off) even when instantiated directly.
-
-### (b) Proposal lifecycle and persistence
-
-```mermaid
-flowchart TD
-    A["Idea created\n(create ...)"] --> B["Proposal in nursery\n(status: pending)"]
-    B --> C{"Review"}
-    C -->|"confirm <id>"| D["Proposal confirmed\nIdea placed on plane"]
-    C -->|"reject"| E["Proposal rejected"]
-    D --> F["save"]
-    F --> G["Disk: nursery + program\nJSON files"]
-    G --> H["Restart"]
-    H --> I["Reload: state restored\nfrom disk files"]
-
-    style D fill:#e1f5e1
-    style I fill:#fff3e0
-```
-
-The nursery tracks proposal status (`pending` → `confirmed`). The plane holds confirmed Ideas as spatial units. On `save`, both are written to disk. On restart, `load` restores state from the disk files.
-
-**Crash recovery (MERGED via PR #77, 2026-10-05):** If the process crashes mid-confirmation, the intent-journal recovery mechanism converges to either the complete OLD state or the complete NEW state (not necessarily the exact pre-crash state). This is production behavior on current main `11933da` (mechanism unchanged since PR #77).
+The human is not a user clicking through someone else's workflow — the human is the
+**sovereign** of the system. The program (and any docked AI) does the tireless work:
+tracking state, running chains, keeping receipts, enforcing the gates. The human keeps
+the four steps that matter: the root command, the review, the Commit, and the learning gate.
 
 ---
 
-## 4. Quick Start
+## 3. The Components
 
-**Requirements:** Python 3.10+, no third-party packages for the core loop (see `requirements.txt`). Tested on Linux; the Mac launcher is executed and verified, the Windows launcher is structurally verified only (see §2).
+### 3.1 Mandell — the language
 
-**Docs:** [INSTALL](docs/INSTALL.md) · [START_HERE](docs/START_HERE.md) · [TUTORIAL](docs/TUTORIAL.md)
+A Mandell **seed** is one instruction. It names an operator (a **Dell**) by number and
+name, and gives it a label — the thing it acts on:
+
+```
+55[Set]:: city=dallas
+```
+
+This says: *Dell 55, Set, with the label `city=dallas`* — store the value `dallas` under
+the key `city`. Seeds join into **chains** with flow operators, so one line can describe
+a whole small program:
+
+```
+55[Set]:: a=1 > 56[Get]:: a
+```
+
+Nine flow operators are canonical (`> >> >>> : :: :> <: <:> <<[Delta]`): they control
+sequencing, gating, branching, and checkpointing inside a chain. A chain reports honestly
+per atom: an atom that was skipped or refused is reported as skipped/refused — never as
+if it had run.
+
+Mandell has three layers of expression, and DellMatrix uses each where it is cheapest
+and clearest:
+
+- **English** for novel or ambiguous intent (`create an idea called tidal library`).
+- **Explicit references** — stable IDs, keys, and labels — for pointing at exact things.
+- **Mandell** for semantic control: operations whose meaning must be exact, repeatable,
+  and testable.
+
+### 3.2 The 100 Dells
+
+There are exactly 100 numbered operators. **Core I (00–50)** is the idea-lifecycle and
+general-operations core; **Core II (51–99)** is the state-and-computation core that works
+over the program's working state (a key–value store, a current selection of ideas, groups,
+definitions, and the last result).
+
+**Core I — ideas, flow, and general operations**
+
+| # | Dell | What it does |
+|---|------|--------------|
+| 00 | Nova | Origin / fresh start |
+| 01 | Initiate | Root command / entry point |
+| 02 | Persona | Identity / role |
+| 03 | Logic | Rules / constraints |
+| 04 | Transform | Convert / reshape |
+| 05 | Tone | Vibe / style |
+| 06 | Cycle | Rhythm / timing |
+| 07 | Link | Connect / reference |
+| 08 | Create | Instantiate something new |
+| 09 | Show | Render / output |
+| 10 | Keep | Pin / persist |
+| 11 | Architect | Schema / blueprint |
+| 12 | Test | Validate / assert |
+| 13 | Loop | Iterate |
+| 14 | Bind | Attach / semantic edge |
+| 15 | Map | Coordinate / index |
+| 16 | Decay | Discard / expire |
+| 17 | Shadow | Background parallel |
+| 18 | Mirror | Compare / diff |
+| 19 | Drive | Direction / intensity |
+| 20 | Alpha | Close / finalize |
+| 21 | Merge | Two → one |
+| 22 | Split | One → parts |
+| 23 | Lock | Sandbox switch over units (not a security lock) |
+| 24 | Unlock | Release lock |
+| 25 | Pulse | Broadcast outward |
+| 26 | Temp | Cold / Warm / Hot planes |
+| 27 | Checkpoint | Snapshot state |
+| 28 | Rollback | Authority-mediated checkpoint restore (bare use is denied) |
+| 29 | Compress | Shrink payload |
+| 30 | Expand | Unfold |
+| 31 | Simulate | Dry-run |
+| 32 | Pause | Halt |
+| 33 | Resume | Continue |
+| 34 | Stamp | Time/order mark |
+| 35 | Discover | Scan structure |
+| 36 | Inject | Load into scope |
+| 37 | Nurture | Nursery lifecycle |
+| 38 | Distill | Summarize |
+| 39 | Schema | Validate shape |
+| 40 | TokenCount | Cost measure |
+| 41 | Sanitize | Strip secrets (redaction happens on evidence copies; live state is never scrubbed in place) |
+| 42 | Retry | Re-attempt |
+| 43 | Fallback | Safe path |
+| 44 | Bridge | Honest refusal — no external tool provider is bound |
+| 45 | Translate | English ↔ Mandell |
+| 46 | Rank | Score |
+| 47 | Embed | Honest refusal — no embedding provider is bound |
+| 48 | Macro | Shortcut sequence |
+| 49 | Profile | Benchmark |
+| 50 | Manifest | Make real / bring into form |
+
+Two Core I Dells (44 Bridge, 47 Embed) are **honest refusals by design**: rather than
+pretend to call an external tool or an embedding model that is not connected, they refuse
+and say why. That pattern — refuse honestly instead of fabricating — runs through the
+whole system.
+
+**Core II — working state and computation**
+
+| # | Dell | What it does |
+|---|------|--------------|
+| 51 | Select | Choose the working set of ideas |
+| 52 | Filter | Narrow the selection by a predicate |
+| 53 | Scope | Limit what an operation may see |
+| 54 | Query | Ask the selection a question |
+| 55 | Set | Write a key in the store |
+| 56 | Get | Read a key from the store |
+| 57 | Compare | Compare values |
+| 58 | Match | Pattern-match |
+| 59 | Route | Send flow down a branch (Branch/Else boundary is documented on its card) |
+| 60 | Branch | Conditional fork |
+| 61 | Join | Rejoin parallel/branch results — an empty child set is a successful Join by design |
+| 62 | Parallel | Run branches side by side |
+| 63 | Sequence | Run steps in order |
+| 64 | Until | Repeat until a condition holds |
+| 65 | While | Repeat while a condition holds |
+| 66 | ForEach | Apply to each selected item |
+| 67 | Any | True if any item satisfies (an empty set is False — deliberately different from Join) |
+| 68 | All | True if all items satisfy |
+| 69 | None | True if no item satisfies |
+| 70 | Count | Count the current selection |
+| 71 | Measure | Cardinality of the selected set — a count, not a property measurement |
+| 72 | Limit | Bound a result set |
+| 73 | Threshold | Compare against a bound |
+| 74 | Weight | Attach weights |
+| 75 | Normalize | Bring values to a common scale |
+| 76 | Resolve | Resolve a name/ID to its target (refuses malformed input honestly) |
+| 77 | Infer | Draw a bounded inference |
+| 78 | Cause | Record a causal claim |
+| 79 | Depend | Record a dependency |
+| 80 | Context | Read/set working context |
+| 81 | Reference | Point at a value by reference |
+| 82 | Group | Put selected items into a named group |
+| 83 | Ungroup | Remove a group (a missing name is refused, not silently ignored) |
+| 84 | Copy | Copy a store key or item |
+| 85 | Move | Move/rename a key — overwrites an occupied destination |
+| 86 | Delete | Delete a key or item |
+| 87 | Replace | Replace a key — *refuses* an occupied destination (the mirror-image contract of Move) |
+| 88 | Patch | Update only an existing key (`patch_miss` if absent) |
+| 89 | Diff | Exact change-set against the baseline (membership changes count, including keys set to empty/none values) |
+| 90 | Trace | Show how a result was produced |
+| 91 | Assert | Check a condition and report |
+| 92 | Guard | Refuse unless a condition holds |
+| 93 | Try | Open a transaction frame |
+| 94 | Catch | Consume the frame's pending error — once; a second Catch with no new failure reports no error |
+| 95 | Commit | Accept the frame's work as the new live state (a mark/accept of live state — not a database-style atomic staging claim) |
+| 96 | Revert | Abandon the frame's work back to its checkpoint |
+| 97 | Define | Define a named seed sequence |
+| 98 | Alias | Give a Dell or definition another name |
+| 99 | Compose | Publish a composition — only after its define-run actually succeeds |
+
+Every Dell has a **proof card** (`form/mandell/DELL_PROOF_CARDS.md`) and a runtime entry
+(`form/mandell/DELL_RUNTIME.md`) stating its tested contract. Fifteen Dells carry typed
+argument signatures (8, 51, 54–58, 67–69, 84–88); the rest take label-based arguments.
+In 2026 the full registry went through per-Dell deep-contract testing circuits and a
+complete pairwise pass: every Dell was exercised against every other Dell in both
+directions (9,900 ordered pairs) plus standalone, on a frozen baseline.
+
+### 3.3 Ideas, the Nursery, and the human gate
+
+The lifecycle of a thought in DellMatrix:
+
+1. **Create** — an idea is born with words, optional detail and goals, and a stable ID
+   derived from its label (`tidal library` → `tidal_library`).
+2. **Grow** — the system generates related proposals into the **Nursery**. A proposal is
+   a candidate: `pending`, visible, and powerless until reviewed.
+3. **Review** — you list proposals, inspect them, and see their provenance (who or what
+   produced them — you, the token machinery, or a docked AI, with origin stamps).
+4. **Confirm or reject** — confirmation is a deliberate human act, backed by an
+   acceptance policy: approvals are issued, recorded, checked at the commit boundary,
+   and revocable. A forged, stale, or cross-session approval is denied. Confirmed ideas
+   land on the **Plane**.
+5. **Supersede** — a confirmed idea can be replaced by a newer revision; the old one is
+   marked superseded and its history preserved, never silently edited.
+
+Nothing skips the gate. Auto-confirmation exists only as an explicit opt-in you switch
+on yourself; the default posture is human-controlled.
+
+### 3.4 The Plane
+
+Confirmed ideas live on the **Plane**: a spatial surface where each idea is a unit with a
+position, a skin/shape (cube, sphere, seed, flower, building, words, circle, core), and
+connections. You inspect it with `look`, `page`, and `rank` (affinity-ordered),
+`resonance` and `harmony` (which ideas resonate around a center), and `lineage` (where
+an idea came from, by ID or by label). **Projects** are named groups of units on the
+plane; membership scopes operations like enhancement to that group. Perspectives let
+you view the same plane from different positions and modes, and compose several views
+into one attributed, read-only picture.
+
+### 3.5 Persistence and crash safety
+
+State lives in JSON files under `form/state/` — one set per owner. `save` writes the
+program and nursery; starting with `--load` restores them. The persistence layer is
+built to **fail closed**: if a state file is truncated or corrupt, the program refuses
+to expose a half-loaded state rather than inventing one.
+
+Two mechanisms deserve plain explanation:
+
+- **Checkpoints and generations.** A checkpoint is a snapshot of program + nursery.
+  Rollback restores a snapshot by *copying it into independent live state* — live state
+  never aliases the sealed snapshot, so later edits can't rewrite history.
+- **Intent journals.** Operations like confirmation and Exchange import write a small
+  journal *before* mutating. If the process crashes mid-operation, the next load reads
+  the journal and converges to either the complete old state or the complete new state
+  — never a durable half-import that reports success. (Exchange import additionally
+  refuses to run while a previous import's journal is unresolved.)
+
+### 3.6 Knowledge, outcomes, and DuoBeta learning
+
+DellMatrix keeps seven stages of influence strictly separate, and the code enforces the
+separations:
+
+```
+STORED → ELIGIBLE → SELECTED → ROUTABLE → USED → OBSERVED → LEARNED
+```
+
+Stored knowledge does not automatically influence behavior. Eligibility laws are hard
+gates that run before any soft ranking; an explicit user choice cannot bypass them.
+An **outcome** (what happened when something was tried) is an *observation*, not a
+truth, and observation never becomes learning on its own.
+
+**DuoBeta** is the learning subsystem: it observes outcomes, forms learning *proposals*,
+and applies them only through its policy gate — which the human controls, across
+sessions, via explicit `save`/`load`. Learning cannot manufacture evidence, resurrect
+excluded candidates, or change accepted truth. Its ledger records proposals, gates, and
+applications so the whole lifecycle can be audited afterward.
+
+### 3.7 The inference dock — AI as a guest
+
+An AI connects through the **dock** (`connect`). The dock is a proposal inlet, nothing
+more:
+
+- Every docked proposal carries a full origin stamp (`dock:<subject>:<provider>:<model>`),
+  a non-empty reason, and a persisted session-evidence record (prompt and context hashes).
+- A docked AI gets semantic verbs: `relate` (propose a connection), `synthesize`
+  (author a cross of two parents, with detail/goals drawn from both), and `flag`
+  (raise a concern) — plus a **redacted** snapshot of the field to read. Secrets are
+  stripped from what the dock can see and from what it files (Dell 41 Sanitize's
+  redaction is applied to evidence copies — the redactor never scrubs live state).
+- A scoped **Director** role can review within one scope, recommend, and file directive
+  proposals. Its "accept" is a recorded *recommendation* — it cannot confirm anything.
+- The design loop closes the circle: docked AIs can file `kind=design` proposals for
+  improving DellMatrix itself, and the loop ledger tracks each one from filing through
+  human decision to the implementing change.
+
+Honest scope: the connect path is proven end-to-end against a local provider-shaped
+double. A live third-party provider session was not executed in the build environment,
+and the shipped token machinery — not a docked model — is what computes the built-in
+affinity/resonance scores.
+
+### 3.8 Exchange — ideas that travel
+
+**Exchange** moves ideas between minds (two programs, two machines, two people) without
+moving authority:
+
+- `exchange export <id> <file>` writes a **packet**: the seed/idea plus its *receipts* —
+  the chain of guess → test → mirror → gate → outcome that produced it.
+- `exchange import <file>` validates the packet (authority keys smuggled in a packet are
+  refused at the boundary), runs a capacity preflight, journals the import, and lands
+  the idea as a **PENDING proposal under the receiver's own gate**. Replication — the
+  receiver actually re-running and confirming it — is the warrant, not the sender's say-so.
+- Failed imports never report success: if a required durable save fails, the import
+  fails observably, compensation is verified by re-reading the canonical files, and any
+  retained journal is reported rather than hidden.
+
+Exchange v1 is file-based and bilateral: no central server, no global trust scores, no
+auto-learning.
+
+### 3.9 Safety posture
+
+- **Sanitize (41)** redacts secrets from observer messages, exported packets, and dock
+  views — always on detached copies, so redaction can never corrupt live state.
+- **InternetGate** is off by default and fails closed; redirects are re-authorized per
+  hop and credentials-in-URL are rejected outright.
+- **Workshops and the Perspective Studio** are scoped environments: inside one, only
+  its own commands run, out-of-scope commands (including mutations like `confirm`) are
+  rejected before dispatch, input is screened for protected material, and sessions
+  persist only on an explicit, successful `leave`.
+- **Regression hygiene:** the test harness kills its own timed-out process trees using
+  identity-verified signalling (pidfd + start-time), and reports — never hides — any
+  cleanup it could not perform.
+
+---
+
+## 4. What You Can Use It For
+
+- **A personal idea lab.** Capture thoughts as units instead of paragraphs lost in a
+  notes app. Grow variations, confirm the keepers, supersede the ones that evolve, and
+  ask `lineage` months later why a decision looks the way it does.
+- **Thinking with an AI — with receipts.** Dock an AI and let it generate, relate, and
+  synthesize at machine speed, while every suggestion waits in the nursery with an
+  origin stamp and a reason. You keep a clean record of what *you* decided, which is
+  exactly the record a raw chat log cannot give you.
+- **A decision log that can't quietly rewrite itself.** Checkpoints, intent journals,
+  and supersession mean history is append-and-replace-openly, never edited in place.
+  Diff (89) tells you exactly what changed between two moments — including keys that
+  were deleted or set to empty, not just keys whose values differ.
+- **Teaching structured thinking.** Mandell works on paper: a seed is one numbered
+  operator, a chain is a line of them. Students can write a chain in a notebook, argue
+  about what it *should* do, then run it and compare. "Easy to understand, hard to use
+  and master" is by design.
+- **A programmable workshop for small, exact jobs.** Core II is a tiny state machine
+  you can drive with one-liners: maintain a store, select and filter sets, branch,
+  transact with Try/Catch/Commit, define reusable sequences with Define/Compose —
+  all with per-step receipts instead of silent side effects.
+- **Exchanging tested ideas, not just claims.** Send a collaborator an Exchange packet:
+  your idea *plus the evidence chain that produced it*. They import it as a pending
+  proposal, re-run it under their own gate, and confirm only if it replicates.
+- **Offline and field work.** The core loop needs no network, no account, and no
+  third-party packages. State is plain JSON you can carry on a USB stick.
+
+---
+
+## 5. Getting Started
+
+**Requirements:** Python 3.10+ and nothing else for the core loop (see
+`requirements.txt`). Tested on Linux; a Mac launcher is provided and verified; a
+Windows launcher is provided and structurally verified (not executed — see §9).
 
 ```bash
-# Clone and launch
 git clone https://github.com/spiritualityhandbook-netizen/DellMatrix
 cd DellMatrix
 python launch.py YourName
 ```
 
-You'll see a banner and a `you>` prompt. Type `tutorial` for a guided walkthrough, or `help` for command categories.
+You will see a banner and a `you>` prompt. Type `tutorial` for a guided walkthrough,
+or `help` for the nine command categories (`create`, `knowledge`, `learn`, `explain`,
+`save`, `recover`, `look`, `dell`, `system`). To reopen saved work:
 
-**Offline:** The core loop (create → grow → confirm → inspect → save) makes no network calls. Optional features under `form/llm` may need extras; they are not part of the core loop.
+```bash
+python3 -m form.repl --owner YourName --load
+```
 
-**Generated output:** `save` writes JSON files under `form/state/`. `visual` generates `DellMatrix_UI.html` in the repo root (a generated, git-ignored output file, not a tracked deliverable).
+Spanish and French command sets are available (`es`/`spanish`, `fr`/`french`) at exact
+parity for the core loop; a phrase with no mapping is answered honestly and executes
+nothing. More detail: [docs/INSTALL.md](docs/INSTALL.md) ·
+[docs/START_HERE.md](docs/START_HERE.md) · [docs/TUTORIAL.md](docs/TUTORIAL.md)
 
 ---
 
-## 5. Capabilities
+## 6. Worked Examples
 
-| Action | User entrypoint | Observable result | Implementation source | Test |
-|--------|----------------|-------------------|----------------------|------|
-| Create idea | `create an idea called <name>` | Idea stored; coaching on strength/detail/goals | `form/repl.py`, `form/dell_matrix/` | Walkthrough verified |
-| Grow proposals | `grow ideas N` | Proposals in nursery (count varies; observed 1 from `grow ideas 2`) | `Program.grow_ideas` in `form/open.py` (`form/grow.py` is the self-grow entry shim to `form/duobeta/selfgrow`) | Walkthrough verified |
-| List proposals | `proposals` | Pending proposals with IDs | `form/dell_matrix/nursery.py` | Walkthrough verified |
-| Confirm | `confirm <id>` / `confirm all` | Proposal confirmed; Idea on plane | `form/dell_matrix/confirm_lineage.py` | Walkthrough verified |
-| Inspect | `look`, `page`, `rank` | Affinity-ordered idea display | `form/dell_matrix/first_person.py` | Walkthrough verified |
-| Lineage | `lineage <proposal-id or label>` | Ancestry/derivation shown | `form/dell_matrix/lineage.py`, `form/mandell/runtime_observe.py` | Verified by ID and by label |
-| Shapes | `sphere`, `lattice` | Visual form change + grid | `form/dell_matrix/` spatial | Walkthrough verified |
-| Save / reload | `save`, `python3 -m form.repl --load` | JSON files; state survives restart | `form/persist.py`, `form/persist_rest.py` | Walkthrough verified |
-| Visual export | `visual` | `DellMatrix_UI.html` generated (interactive offline) | REPL `visual` handler | File verified; script verified by executed DOM-logic tests; browser pixel rendering not executed in build environment |
-| Resonance / harmony | `resonance`, `resonance <id or label>`, `harmony` | Ranked resonance candidates / harmony view over active nodes | `form/mandell/runtime_observe.py` | Verified (`resonance_command_test`) |
-| Projects (groups) | `groups`, `group create/add/remove/show/delete` | Named group created; members listed; enhancement scoped to group | `form/dell_matrix/plane.py` (Sandbox), REPL group handler | Verified (`projects_groups_test`) |
-| Tutorial | `tutorial` | Guided acceptance path | `form/repl.py` | Walkthrough verified |
-| DuoBeta learn | `learn propose/inspect/gate/ledger` | Policy-gated learning within session | `form/duobeta/` | Walkthrough verified |
-| Supersede (API) | `supersede_proposal(p, old_id, ...)` | New revision; old marked superseded | `form/mandell/supersession.py` | API and REPL both verified with genuine ID |
-| Outcomes | `outcomes` | Honest empty ("No outcomes recorded") or list | `form/repl.py` | Walkthrough verified |
-| Compose perspectives | `compose_views(program, [(viewer, mode), ...])` | Unified read-only view; each component attributed with viewer/mode/status | `form/dell_matrix/perspective_views.py` | R7.1 52/52, MERGED |
-| Dock + semantic verbs | `connect` mode `ask`; API `DockedSession.propose/relate/synthesize/flag` | PENDING proposals with origin stamps, reasons, and persisted dock-session evidence | `form/dell_matrix/inference_dock.py`, `form/dell_matrix/dock_session.py` | `p4_sd1_test`, `p5_sd2_test` |
-| Director review | API `bind_director_endpoint`; shown in `proposals` review | Scoped recommendations recorded (never confirmations); printed under the proposal at human review | `form/dell_matrix/director_session.py`, `form/dell_matrix/design_loop.py` | `p7_sd4_test`, `p8_sd5_test` |
-| Exchange | `exchange export <id> <file>`, `exchange import <file>` | Packet file with receipts; import lands PENDING with replication counts + lint labels | `form/dell_matrix/exchange.py` | `p9_exchange_test` |
-| Flow chains | Seed lines with any of the 9 flow operators | Canonical chain semantics (gating, skip-to-Join, context/route binding, delta checkpoints) | `form/mandell/chain_exec.py`, `form/mandell/control_runtime.py` | `p10_flow_grammar_test`, `cac_i_test` K |
+All examples executed 2026-11-01 at commit `c94e223`. Terminal banners and trace
+chatter are trimmed; the behavior shown is the behavior run.
 
-> Removed in the master plan (recorded, not silently): the `form/trading/` sandbox package, the `network_main`/`shared_main` sync island, and `plant_to_dev` (P11, PR #119); a dormant free-matrix cluster (P8, PR #116). `form/ancient/` is archived in place with a pointer README.
-
-> A module's existence is not proof of usable integration. Every row above was verified by actually running the command or API call. Historical walkthroughs (2026-10-04) ran on SHA `f3c9007`; current production is main `11933da` (2026-10-30).
-
----
-
-## 6. Walkthroughs
-
-> **Historical evidence (2026-10-04):** Each walkthrough below was executed on SHA `f3c9007` with a temporary owner; state was cleaned up afterward. REPL sessions used piped stdin. These remain valid as historical evidence of the production behavior at that SHA. The Phase-5 candidate they predate has since merged (PR #79); capabilities proven later carry their own dated evidence in §2.
-
-### 6.1 Create, store, reload
+### 6.1 The English loop: create → grow → review → confirm → save
 
 ```
-you> create an idea called my first thought
-# → Idea created. Coaching: add detail: and goals: for strength.
+you> create an idea called tidal library
+  Created idea: "tidal library" id=tidal_library
 
-you> save
-# → State written to form/state/
-
-# Restart: python3 -m form.repl --owner <name> --load
-# → Idea present after reload. VERIFIED.
-```
-
-### 6.2 Propose, review, confirm
-
-```
-you> grow ideas 3
-# → 3 proposals in nursery.
+you> grow ideas 2
+  Nursery has 1 proposal(s)     ← growth is generative; the count varies
 
 you> proposals
-# → Lists: <id1>, <id2>, <id3> (copy an ID)
+  …lists each pending proposal with its ID and origin…
 
-you> confirm <id1>
-# → Proposal confirmed; Idea placed on plane.
+you> confirm <id>                ← or: confirm all
+  Proposal confirmed; the idea is placed on the Plane.
 
-you> look
-# → Confirmed Idea visible. VERIFIED.
+you> look                        ← the confirmed idea is visible on the Plane
+
+you> save
+  Session saved.  file=form/state/program_<YourName>.json
 ```
 
-**How to obtain proposal IDs:** Run `proposals` first; the output lists IDs. Pass one to `confirm`. `confirm all` confirms everything pending.
+Restart with `--load` and the idea is still there. Nothing in this loop touches the
+network.
 
-### 6.3 Inspect relationships
+### 6.2 Your first Mandell seeds: a store, a read, an exact diff
 
-```
-you> lineage <proposal-id or label>
-# → Shows derivation/ancestry for that proposal. VERIFIED by ID and by
-#    label (exact or case-insensitive; ambiguous labels list candidates).
-
-you> rank
-# → Ideas ordered by affinity. VERIFIED.
-```
-
-### 6.4 Resonance / harmony candidates
-
-Resonance and harmony are direct user commands (Phase I, PR #101), computed over canonical **active** nodes only (superseded/excluded records never appear):
-
-```
-you> resonance
-# → Ranked resonance candidates for the current center. VERIFIED.
-
-you> resonance <id or label>
-# → Resonance view centered on that node. VERIFIED.
-
-you> harmony
-# → Harmony view of the current candidate set. VERIFIED.
-```
-
-The underlying scoring machinery (`resonance_rank`, affinity) also drives `rank`/`page` ordering:
+Via the Python API (the same executor the REPL routes seeds to):
 
 ```python
-# Python API - complete executable example:
-from form.dell_matrix.first_person import resonance_rank
-nodes = [
-    {"id": "idea1", "x": 1.0, "y": 2.0, "f": 0.0},
-    {"id": "idea2", "x": 5.0, "y": 5.0, "f": 1.0},
-]
-ranked = resonance_rank(nodes, center=(0, 0, 0), scores={"idea1": 0.9, "idea2": 0.5})
-# → Returns scored candidates ordered by resonance. idea1 ranks higher (closer + higher score).
-assert ranked[0]["id"] == "idea1"
-```
-
-### 6.5 Supersession and history
-
-Supersession (replacing a confirmed idea with a newer revision) works via both the Python API and the REPL command (with a genuine confirmed proposal ID):
-
-> Supersession requires explicit authorization (human opt-in or approval) — production behavior since PR #79.
-
-```python
-# VERIFIED working on production (Python API) - complete end-to-end:
 from form.open import open_program
-from form.mandell.supersession import supersede_proposal
-p = open_program("Owner")
-p.acceptance_policy.grant_opt_in("Owner", scope="supersede")  # Phase-5: explicit authorization
-# 1. Create and confirm the predecessor
-pr = p.nursery.add('Original Idea', words='initial content')
-ctx = p.make_review_context(pr.id, "Owner")
-p.confirm_proposal(pr.id, _producer="Owner", _review_context=ctx)
-old_id = pr.id
-# 2. Supersede it (returns a receipt dict)
-receipt = supersede_proposal(p, old_id, words="revised content", _producer="Owner")
-assert receipt["ok"] is True
-assert receipt["old_id"] == old_id
-assert receipt["revision_number"] == 2
-new_id = receipt["new_id"]
-# → Old marked superseded; new revision active; history preserved.
+from form.mandell.executor import execute_seed
+from form.mandell.core_ii_exec import attach
+
+p = open_program("You")
+st = attach(p)                      # Core II working state
+
+execute_seed(p, "55[Set]:: city=dallas")
+execute_seed(p, "55[Set]:: mood=bright")
+print(st.store)                     # {'city': 'dallas', 'mood': 'bright'}
+
+execute_seed(p, "56[Get]:: city")
+print(st.last_result["value"])      # 'dallas'   (matched: True)
+
+execute_seed(p, "55[Set]:: mood=calm")
+r = execute_seed(p, "89[Diff]")
+print(r["messages"][-1])            # Diff changed=['mood'] baseline=immediate
+print(st.last_diff["changed"])      # ['mood'] — with before/after snapshots kept
 ```
 
+Diff compares against a baseline that every store writer refreshes (the pre-state of
+the most recent successful writer, or the transaction checkpoint inside a Try frame).
+If no baseline exists, Diff refuses honestly (`baseline_missing`) instead of claiming
+"nothing changed" — and merely *reading* Diff never creates a baseline.
+
+### 6.3 Chains: one line, several steps
+
+```python
+r = execute_seed(p, "55[Set]:: a=1 > 56[Get]:: a")
+print(r["ok"], r["chain_ran"])      # True [55, 56]
+print(st.last_result["value"])      # 1 (an int — Set parses the value)
 ```
-you> supersede idea <id> with <words>
-# → VERIFIED working with genuine confirmed ID. Fails gracefully on
-#   unknown/non-confirmed ID (not a broken command).
+
+Each atom's result is reported individually in `r["atom_results"]`. If an atom is
+skipped or refused, the chain says so (`ok=False, skipped=True` with a reason) — a
+chain continuing past an atom never upgrades that atom to "ran."
+
+### 6.4 Transactions: Try / Catch / Commit
+
+```python
+execute_seed(p, "93[Try]")                    # open a frame
+r = execute_seed(p, "86[Delete]:: nothere")   # deleting an absent key fails
+print(r["ok"])                                # False — the frame records the failure
+execute_seed(p, "94[Catch]")                  # consumes the pending error (archived to history)
+execute_seed(p, "94[Catch]")                  # no new failure → reports no error; history preserved
+execute_seed(p, "95[Commit]")                 # accept the frame
 ```
 
-*Historical note (2026-10-04): An earlier draft labeled the REPL command BROKEN based on a test with an unconfirmed ID. Retesting with a genuine confirmed proposal ID shows it works.*
+A failure inside a frame marks the *innermost* active frame and preserves the first
+root cause. A new failure after a Catch becomes a new pending root cause — the old one
+stays in the caught-history, it is never re-reported as if it just happened.
 
-History: `history` shows recent entries. Crash recovery uses intent journals to distinguish interrupted operations from historical records (production behavior, merged via PR #77 — see §2).
+### 6.5 The proposal lifecycle in code
 
-### 6.6 Visual output
+```python
+from form.open import open_program
+
+p = open_program("You")
+pr = p.nursery.add("Harbor lights", words="a lighthouse that catalogs tides")
+print(pr.id, pr.status)                       # harbor_lights_…  pending
+
+ctx = p.make_review_context(pr.id, reviewer="human:you")   # the human gate
+p.confirm_proposal(pr.id, _producer="you", _review_context=ctx)
+print(pr.status)                              # confirmed
+```
+
+Without a genuine human review context, `confirm_proposal` is denied — that denial is
+the product working as designed, not an error path.
+
+### 6.6 Exchange, in brief
 
 ```
-you> visual
-# → Generates DellMatrix_UI.html (offline, no network): an interactive
-#    snapshot — click a node to inspect it, filter/search nodes by
-#    label, word, skin, or id. VERIFIED file created; the page's script
-#    behavior is verified by executed DOM-logic tests
-#    (visual_ux_test). Pixel rendering in a named commercial browser
-#    was not executed in the build environment.
+you> exchange export <idea-id> packet.json    ← idea + receipts to a file
+      (on the other machine)
+you> exchange import packet.json              ← lands PENDING in the receiver's nursery
+you> proposals                                ← review it like any other proposal
+you> confirm <id>                             ← only if it earns it, under your gate
 ```
 
 ---
 
-## 6.7 Phase-5: Acceptance Authorization and Lifecycle Coherence
+## 7. Status — What Is Proven, What Is Not
 
-Phase 5 hardened the acceptance boundary and lifecycle interpretation.
-All claims verified by executed tests (see evidence map).
+DellMatrix is developed under an Overseer → Director → Uni engineering process with an
+unusual rule: **claims may not exceed executed evidence**, and an independent Director
+reviews and certifies work in bounded scopes. Merged code is not the same thing as
+certified code, and this README keeps the two separate.
 
-**Acceptance policy** (`form/dell_matrix/acceptance_policy.py`):
-- Session IDs are collision-resistant (uuid4).
-- Acceptance data uses canonical JSON + SHA-256 (identity, owner, content,
-  parents, goals, revision metadata). No delimiter concatenation.
-- Approval issuance is recorded; a matching dict alone is not evidence.
-  Forged, stale, cross-session, and revoked approvals are denied.
-- Revocation is supported; retry means re-issuance after re-review.
-- Commit-boundary revalidation: live permission and data hash checked
-  immediately before the protected mutation.
-- Supersession binds predecessor version + successor payload. The
-  successor's confirmation is derived via a constrained, recorded
-  relationship (not a general bypass); revoked parents invalidate
-  unfinished children.
+**Verified working (executed evidence):** the full English REPL loop; create / grow /
+review / confirm / supersede; save / load across processes; the 100-Dell registry with
+per-Dell proof cards; Core II state operations, chains, and transactions; checkpoints
+and intent-journal crash recovery; DuoBeta's gated learning lifecycle across sessions;
+the inference dock against a local provider-shaped double (origin stamps, semantic
+verbs, scoped Director recommendations, the design loop); Exchange v1 including
+journaled, fail-closed import; the visual export (interactive offline HTML; the page's
+script is covered by executed DOM-logic tests); Spanish/French core loop; workshops and
+the Perspective Studio; a regression harness of **220 suites** (`form/regress.py`)
+covering all of the above, run forward, twice, and in reverse order per release cycle.
 
-**Lifecycle** (`form/dell_matrix/canonical_lifecycle.py`):
-- Acceptance, revision, participation, and projection are distinct.
-- Revision validated first; faded presence never masks malformed data.
-- Malformed records excluded in all contexts with explicit reasons.
-- Fade/unfade preserves identity, content, acceptance, and revision links.
-- Unfade/pin cannot reactivate superseded truth.
+**Certification picture (Director rulings, 2026-10-31 → 2026-11-01):** the security
+circuits (sanitize/redaction, InternetGate), the operand-mutation and Exchange
+durability repairs, control-verdict and Diff contracts, and several bounded per-Dell
+contracts are certified *with noted exceptions, at exact commits, in bounded scopes*.
+Other areas are implemented and verified by the project's own suites but await
+Director re-ruling; a consolidated admission packet is in preparation. Per-circuit
+reports live in [`director-reports/`](director-reports/) with `INDEX.md` as the entry
+point. Nothing in this README sums bounded certificates into a whole-program claim.
 
-**Learning** (DuoBeta):
-- Influence OFF restores baseline in all consumers.
-- Learning cannot manufacture evidence, resurrect excluded candidates,
-  or change accepted truth.
-
----
-
-## 7. Vision (Planned)
-
-The long-term vision — each item states its current standing:
-
-- **Projects grouping related work** — IMPLEMENTED: a project is a named group (§2, Phase M). **Nested ideas** (ideas containing sub-ideas, group-in-group nesting) remain PLANNED
-- **Preserved history** — IMPLEMENTED for the learning lifecycle: DuoBeta proposals, gates, and applications persist across sessions via explicit `save`/`load` (§2, Phase J); full revision chains are visible via `lineage`
-- **Interchangeable perspectives** — IMPLEMENTED: persisted plane perspectives, `compose_views`, Perspective Studio (§7.5)
-- **Richer visual layers** — IMPLEMENTED (scoped): interactive offline snapshot + localhost live bridge (§6.6, §2)
-- **Candidate connections** — PLANNED: the system suggesting related ideas for your acceptance is not implemented
-- **Human-controlled acceptance** — IMPLEMENTED and load-bearing: nothing is confirmed, superseded, or learned without your explicit approval
-
-Diagrams or mock examples of PLANNED items are conceptual only. The current system (§2, §6) is the honest baseline.
-
----
-
-## 7.5 R7.2: Perspective Studio (MERGED via PR #87 — not independently certified)
-
-A scoped REPL workshop for composing perspective views and inspecting
-their meaning. Read-only: the studio composes views via R7.1
-`compose_views`; it cannot confirm, grant, or mutate.
-
-**Exact syntax:**
-
-```
-studio> compose [{"id":"v1","role":"user","pos":[0,0],"facing":"E","mode":"whole"}]
-Composed 1 view(s) [REAL]:
-[v1/whole] status=REAL source=program
-  Whole plane · 3 nodes
-  skins: {...}
-  · label [skin]
-
-studio> legend
-Layout legend (descriptive only):
-  epistemic_status: Verification standing of the view; not accepted truth.
-  observations: The attributed observation report from the compositor.
-  requested_mode: The observation mode requested.
-  source: Provenance of the observation data.
-  viewer: Attribution: which viewer specification produced this component.
-
-studio> leave
-Studio session saved (a1b2c3d4...). Exited.
-```
-
-**Spec schema:** JSON array (max 8 entries, max 8KB). Each spec is an
-object with `id` (string, required), `role` (string), `pos` ([x, y]
-finite numbers, required), `facing` (N/S/E/W/NE/NW/SE/SW),
-`mode` (first/third/parts/whole, optional). Malformed specs are
-rejected with fixed codes. A spec carrying a non-matching `owner`
-is rejected.
-
-**While in studio** (prompt shows `studio> `): only `compose`, `legend`,
-`help`, `leave` are accepted. All other commands — including `reissue`
-and mutations like `confirm` — are rejected as out-of-scope before
-normal dispatch. The studio gate is enforced ahead of all non-exit
-input handlers.
-
-**Protection:** Compose input is screened for protected material
-(grant handles, credentials) via R6.2 utilities before reflection or
-recording. Screening covers raw text, escaped sequences, and decoded
-keys/values. The public `PerspectiveStudio.compose` API enforces the
-same screening on structured input and on the detached result before
-release — direct API callers get identical enforcement. Screening
-failure rejects (fail-closed). Rejections use fixed codes; raw input
-is never reflected.
-
-**Persistence:** `leave` stages the closed session record, then saves
-via the canonical save. The studio exits only after successful save.
-On save failure, prior records are restored and the studio remains
-active for retry. Reload restores closed records, never active mode.
-One strict schema governs serialization and restoration: an absent
-section is legacy, an explicit null is malformed, and malformed
-records are preserved as evidence (never silently saved as valid or
-discarded). EOF/quit without `leave` does NOT persist the session;
-this is stated explicitly.
-
-**Evidence bounds:** The 50 most recent commands per session are
-retained (enforced during recording); at most 10 sessions are kept.
-Rejected attempts are recorded with safe codes. This is a retained
-window, not complete history.
-
----
-
-## 7.6 R7.3: General Workshop Contract (MERGED via PR #88 — not independently certified)
-
-All seven workshops (matrix, perspective, mandel, persona, bimo,
-psalms, forces) are real scoped environments in the REPL:
-
-```
-you> workshop matrix
-Entered Matrix Workshop: ...
-Scoped session: only this workshop's commands run here. 'leave' saves the session and exits.
-workshop:matrix> cube        ← dispatches (in scope)
-workshop:matrix> confirm     ← rejected: out of scope
-workshop:matrix> leave       ← session saved; exited
-```
-
-**Contract:** The scoped command set is derived from the workshop's
-own registry entry (`form/dell_matrix/workshops.py`) — the menu shown
-and the set enforced are one source. In-scope commands route through
-the same public dispatcher as outside; a workshop grants no authority.
-Out-of-scope lines (including `say`-prefixed lines and staged
-reissues) are rejected before dispatch. Only one scoped environment
-(the studio included) may be active at a time. Input is screened for
-protected material before recording; session evidence records only
-command stems and fixed result codes — never raw lines.
-
-**Persistence:** `leave` stages the closed record, clears the active
-workshop flag, then saves canonically; on save failure everything is
-restored and the session is retained for retry. EOF/quit without
-`leave` do NOT persist the session; this is stated explicitly.
-Evidence uses the strict shared section schema: an absent section is
-legacy, an explicit null is malformed, and malformed records are
-preserved as evidence. Bounds: 50 commands per session, 10 sessions.
-
----
+**Explicitly not claimed:**
+- "User-ready" as a finished consumer product.
+- A live third-party AI provider session through the dock (proven against a local
+  double only).
+- Sustained real-world use, or Exchange between two physical machines (proven
+  cross-process between two owners on one machine).
+- Pixel-perfect rendering of the visual export in a named commercial browser
+  (file generation and script behavior are tested; a named-browser render was not
+  executed in the build environment).
+- One regression-harness question — cleanup of session-escaped processes — is an open
+  cross-environment investigation: local suites pass, an independent environment
+  reproduced intermittent failures, and per project law the discrepancy is recorded
+  as **UNRESOLVED** rather than argued away.
 
 ---
 
@@ -473,60 +584,70 @@ preserved as evidence. Bounds: 50 commands per session, 10 sessions.
 | Path | Role |
 |------|------|
 | `form/` | **Live runtime** (Python). All imports resolve here. This is the only active code. |
-| `form/repl.py` | REPL front door: `run()` starts the `you>` loop; `_dispatch_public_line` routes commands |
-| `form/open.py` | `Program` class and `open_program()` — the central state object |
-| `form/mandell/` | Mandell language: `translate.py`, executor, checkpoint/recovery, supersession |
-| `form/dell_matrix/` | Dells, nursery, plane, spatial, lineage, persistence helpers |
+| `form/repl.py` | REPL front door: the `you>` loop and command dispatch |
+| `form/open.py` | `Program` — the central state object — and `open_program()` |
+| `form/mandell/` | The Mandell language: `registry.py` (the 100 Dells), `executor.py`, `chain_exec.py`, `core_ii_exec.py` (Core II state machine), `translate.py`, checkpoint/recovery, supersession, redaction |
+| `form/dell_matrix/` | Nursery, plane, spatial views, acceptance policy, lifecycle, inference dock, Exchange, workshops |
 | `form/duobeta/` | DuoBeta learning: observation, policy gates, ledger |
-| `form/persist.py`, `form/persist_rest.py` | Disk persistence (JSON under `form/state/`) |
-| `src/` | **Frozen legacy** (JavaScript). Per `src/README.md`: "Do not extend." Only historical interest. |
-| `preform/` | Historical notes/docs. Zero imports from `form/`. |
-| `docs/` | Documentation (large; currency varies — prefer this README for current truth) |
-| `launch.py` | Root launcher → `form.repl.run()` |
-
-**Registry note:** The canonical operator registry is `form/mandell/registry.py` — the "True Dell registry" with numbered operators (CORE_I 00-50, CORE_II 51-99). English commands route through `form/repl.py::_dispatch_public_line` → `form/mandell/translate.py::translate()` → `_execute_intent`. `form/dell_matrix/actions_registry.py` provides UI action lists (`actions_flat`, `actions_for_mode`) for visual modes, not the language operator definitions. The `help` command lists 9 categories: `create`, `knowledge`, `learn`, `explain`, `save`, `recover`, `look`, `dell`, `system`.
+| `form/persist.py`, `form/persist_rest.py` | Disk persistence (JSON under `form/state/`), load-time recovery hooks |
+| `form/regress.py` | The regression harness (220 registered suites) |
+| `director-reports/` | Per-circuit evidence reports submitted for Director certification; `INDEX.md` is the entry point |
+| `docs/` | Documentation (large; currency varies — this README is the current-truth summary) |
+| `docs/README_EVIDENCE_MAP.md` | Claim-by-claim source/evidence map behind earlier README revisions |
+| `launch.py` | Root launcher → `form.repl` |
+| `src/` | **Frozen legacy** (JavaScript). Do not extend. |
+| `preform/` | Historical design notes, including the visual/cardinal-direction Mandell material. Zero imports from `form/`. |
 
 ---
 
-## 9. Limitations, Tests, Contributing, Glossary
+## 9. Tests and Honest Limitations
 
-### Honest limitations
-- `lineage` by label reports ambiguity when several distinct records share a label; use the ID to disambiguate.
-- DuoBeta persistence follows the explicit `save`/`load` contract: a plain REPL start is a fresh in-memory program and EOF does not autosave.
-- The Windows launcher (`.bat`) has not been executed — no Windows environment was available; the Mac launcher is executed and verified.
-- A live third-party inference provider run through the dock was not executed in the build environment; the connect path is proven against a local provider-shaped double.
-- Pixel rendering of the visual export in a named commercial browser was not executed in the build environment; the page's script behavior is verified by executed DOM-logic tests.
-- Group-in-group nesting (projects within projects) is not implemented; a project is one named group of units.
-- R7.2–R7.7 and the Post-GDP / README-program phases are merged but have no independent (Director) certification.
-- Confirmation crash recovery is production behavior (merged via PR #77).
-- "User-ready" is not claimed. See §2 for the scoped status table.
-
-### Phase 5 (merged to production)
-Phase-5 acceptance authorization, lifecycle coherence, and learning bounds (§6.7) were admitted via [PR #79](https://github.com/spiritualityhandbook-netizen/DellMatrix/pull/79) (merge `ea9b76a`, 2026-10-07; Director admission PASS). The main branch described by this README **includes** Phase-5 changes.
-
-### Test commands
 ```bash
-python3 -m form.regress --twice        # full suite, forward, twice
-python3 -m form.regress --order rev    # full suite, reverse order
+python3 -m form.regress                # full suite, forward
+python3 -m form.regress --twice        # forward, twice
+python3 -m form.regress --order rev    # reverse order
 ```
 
-**Phase-5 tests (on production main):** The following modules merged with Phase 5 (PR #79) and are runnable on current main:
-```bash
-python3 -m form.mandell.wo51_adversarial_test  # acceptance adversarial
-python3 -m form.mandell.wo52_coherence_test   # lifecycle coherence
-python3 -m form.mandell.d20_reference_test    # Delta-20 reference model
-```
+**Limitations, stated plainly:**
+- Persistence is explicit: a plain REPL start is a fresh in-memory program; EOF does
+  not autosave. `save` / `--load` is the contract.
+- `lineage` by label reports ambiguity when several distinct records share a label;
+  use the ID to disambiguate.
+- Group-in-group nesting (projects within projects) is not implemented; a project is
+  one named group of units.
+- The system suggesting candidate connections on its own is planned, not implemented.
+- The Windows launcher has not been executed (no Windows environment available); the
+  Mac launcher is executed and verified.
+- Bridge (44) and Embed (47) refuse by design until a real provider is bound.
+- Some documentation under `docs/` predates the current runtime; where a doc and this
+  README disagree about behavior, the code — and the test that exercises it — wins.
 
 ### Contributing
-Issues and PRs are welcome. Please verify claims against the code before documenting them — see this README's method (§1, evidence map). Do not modify `src/` (frozen).
 
-### Glossary
-- **Dell** — a Mandell operator (a structured action like Create, Map, Grow).
-- **Mandell** — the bridge language: structured operations readable by people, executable by machines.
-- **Nursery** — where ideas grow into proposals awaiting review.
-- **Plane** — the spatial surface where confirmed Ideas live as units.
-- **Proposal** — a candidate idea in the nursery (`pending` → `confirmed`/`rejected`).
-- **Supersession** — replacing a confirmed idea with a newer revision (old marked superseded, history preserved).
-- **DuoBeta** — the learning subsystem: observation with policy-gated learning.
-- **Checkpoint** — an atomic snapshot of program + nursery state (generation-based).
-- **Intent journal** — a crash-recovery record distinguishing interrupted operations from history.
+Issues and PRs are welcome. The house rule is the project's rule: verify claims
+against the code before documenting them, keep claims at or below the executed path,
+and do not modify `src/` (frozen).
+
+---
+
+## 10. Glossary
+
+- **Dell** — one of the 100 Mandell operators; a numbered, named, testable action.
+- **Seed** — a single Mandell instruction: `NN[Name]:: label`.
+- **Chain** — seeds joined by flow operators into one executable line.
+- **Mandell / Mandellistics** — the language, and the discipline of using it:
+  operators, flow, gates, and receipts.
+- **Nursery** — where candidate ideas wait as pending proposals.
+- **Proposal** — a candidate with provenance; `pending` → `confirmed` / `rejected`.
+- **Plane** — the spatial surface where confirmed ideas live as units.
+- **Store** — Core II's key–value working memory (`Set`/`Get`/…).
+- **Selection** — the current working set of ideas Core II set-operations act on.
+- **Baseline** — the snapshot Diff compares against; refreshed by writers, never by reading Diff.
+- **Frame** — a Try/Catch/Commit transaction scope with its own pending-error slot and caught-history.
+- **Checkpoint** — a sealed snapshot of program + nursery (a generation).
+- **Intent journal** — a write-ahead record that lets a crashed operation converge to old-or-new, never half.
+- **Supersession** — replacing a confirmed idea with a newer revision, history preserved.
+- **Dock** — the AI inlet: proposals with origin stamps, never authority.
+- **DuoBeta** — the learning subsystem: observation in, policy-gated proposals, human-gated application.
+- **Exchange** — file-based transfer of ideas *with their receipts*, imported as pending under the receiver's gate.
+- **Honest refusal** — the system's pattern of declining, with a reason, instead of fabricating a result.
