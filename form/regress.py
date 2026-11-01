@@ -286,6 +286,7 @@ LIST = [
     "form.step9_diff_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
+    "form.dirf14_catch_consumed_test:smoke",
 ]
 
 TIMEOUT_S = 900
