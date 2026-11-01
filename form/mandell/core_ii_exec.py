@@ -164,9 +164,21 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             from .control_runtime import ControlFrame
             policy = (lab or "all").lower()
             incoming = list((st.last_frame or {}).get("results") or [])
-            fails = [r for r in incoming if not r.get("ok", True)]
+            # Step 7 (B7/DAF-08): Join evaluates EXECUTED results.
+            # A skipped occurrence (lawful conditional skip, flow
+            # skip, zero-iteration body) is an omission, not a
+            # failure — it never counts as a Join failure; the
+            # chain layer publishes the completed block's actual
+            # results to last_frame before the closing Join runs.
+            # A previous Join's own receipt (owned_by) is a verdict,
+            # not a child execution — excluding it avoids counting
+            # one failure twice, since the failed children that
+            # produced that verdict are themselves in the results.
+            executed = [r for r in incoming
+                        if not r.get("skipped") and "owned_by" not in r]
+            fails = [r for r in executed if not r.get("ok", True)]
             if policy in ("any",):
-                join_ok = (not incoming) or any(r.get("ok", True) for r in incoming)
+                join_ok = (not executed) or any(r.get("ok", True) for r in executed)
             else:
                 join_ok = not fails
             frame = ControlFrame(id=f"jn{len(st.frames)}", kind="join", condition=policy, status="ok" if join_ok else "fail", policy=policy, results=incoming)
@@ -189,10 +201,15 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             messages.append(f"Sequence {lab or 'ordered'}")
         elif n == 64:
             from .control_runtime import ControlFrame, eval_condition, bound_of
-            pred = eval_condition(st, program, lab or "false")
-            frame = ControlFrame(id=f"un{len(st.frames)}", kind="until", condition=lab or "false", status="ready" if not pred else "zero")
+            # Step 7 (B8): the chain controller owns Until condition
+            # semantics — an EMPTY condition evaluates true
+            # (zero-iteration boundary) in eval_condition, so the
+            # core arm must not substitute "false" for it. Both
+            # surfaces now agree on bare Until.
+            pred = eval_condition(st, program, lab)
+            frame = ControlFrame(id=f"un{len(st.frames)}", kind="until", condition=lab, status="ready" if not pred else "zero")
             st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
-            messages.append(f"Until cond={lab or 'false'} already={pred} bound={bound_of(st)}")
+            messages.append(f"Until cond={lab or 'true'} already={pred} bound={bound_of(st)}")
         elif n == 65:
             from .control_runtime import ControlFrame, eval_condition, bound_of
             pred = eval_condition(st, program, lab or "true")
@@ -201,7 +218,10 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             messages.append(f"While cond={lab or 'true'} already={pred} bound={bound_of(st)}")
         elif n == 66:
             from .control_runtime import ControlFrame
-            ids = list(st.selected or _ids(program))
+            # Step 7 (B9): empty selection means zero iterations —
+            # the plane-id fallback is DELETED, so the core arm
+            # agrees with the chain layer ("empty selection valid").
+            ids = list(st.selected or [])
             frame = ControlFrame(id=f"fe{len(st.frames)}", kind="foreach", status="pending", body=list(range(len(ids))))
             st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
             messages.append(f"ForEach n={len(ids)} op={lab or 'identity'} empty_ok={len(ids)==0}")
