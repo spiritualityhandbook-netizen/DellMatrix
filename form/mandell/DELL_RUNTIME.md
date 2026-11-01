@@ -56,9 +56,9 @@ Multi-atom seeds that include CORE_I still execute those CORE_I atoms via `_leaf
 | 82 | Group | collect |
 | 83 | Ungroup | inverse of group |
 | 84 | Copy | duplicate, original intact |
-| 85 | Move | relocate, identity preserved |
+| 85 | Move | relocate (overwrites an existing destination) |
 | 86 | Delete | controlled remove |
-| 87 | Replace | atomic swap |
+| 87 | Replace | key rename (refuses an occupied destination) |
 | 88 | Patch | partial update |
 | 89 | Diff | change-set snapshot |
 | 90 | Trace | provenance log |
