@@ -29,7 +29,9 @@ DIRECTOR_FINDINGS_REGISTER.md (Uni workspace).
 
 | DIRECTOR_REPORT_STEP6_LEAF_HONESTY.md | Order step 6 | Leaf honesty B1 Decay / B2 Loop / B3 Merge / B4 Split / B6 Translate (PR #184, merge 2059d6a) | SUBMITTED — awaiting ruling. Gate refusal honest (scores unchanged); Loop bounded 1..5 with requested/executed reporting; Merge/Split last-unit fallbacks deleted (missing_source, zero mutation); empty Translate returns nothing_to_translate, no fabricated Show intent. Suite 34/34, mutants M1-M5 killed exactly, regress 212/212 x3 on the candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 212/212 GREEN. |
 
-Forthcoming, in order: steps 6-11
+| DIRECTOR_REPORT_STEP7_CONTROL_VERDICTS.md | Order step 7 | Control verdicts B7 Join / B8 Until / B9 ForEach + DAF-08 receipts (PR #186, merge 625bb69) | SUBMITTED — awaiting ruling. Occurrence-complete atom-ordered control receipts (lawful skips recorded, never failures); closing Join evaluates the block's actual results with root-cause error preserved (no vacuous incoming=0); Until empty condition agrees across surfaces (true, zero iterations) with bound exposed; ForEach plane fallback deleted. Suite 28/28, mutants M1-M5 killed exactly, regress 213/213 x3 on the candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 213/213 GREEN. |
+
+Forthcoming, in order: steps 8-11
 per-circuit reports, step 13 sweep re-derivation, step 14
 consolidated index packet (A2 reconciled closure + remaining
 typed-Dell and full-registry re-rulings).
