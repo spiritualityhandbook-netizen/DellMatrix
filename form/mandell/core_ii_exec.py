@@ -20,6 +20,13 @@ class CoreIIState:
     snapshots: List[Dict[str, Any]] = field(default_factory=list)
     last_error: str = ""
     last_diff: Dict[str, Any] = field(default_factory=dict)
+    # Step 9 (B14): the shared Diff baseline — a _ckpt dict
+    # captured by spectrum_ops._note_mutation immediately
+    # before the most recent store mutation (any writer).
+    # Session-only: never serialized (not in CORE_II_DURABLE),
+    # so a save/load-restored state has baseline None and
+    # Diff reports baseline_missing until the next mutation.
+    diff_baseline: Any = None
     traces: List[str] = field(default_factory=list)
     weights: Dict[str, float] = field(default_factory=dict)
     context: str = ""

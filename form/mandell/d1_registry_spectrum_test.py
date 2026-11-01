@@ -11,18 +11,20 @@ With this circuit every one of the 100 Dells has a
 proven standalone contract. Contracts proven here,
 per Dell, through the public seed path:
 
-- 89 Diff: reports the store change-set against a
-  baseline chosen by state: an active transaction's
-  checkpoint ("transaction"), else the pre-mutation
-  checkpoint captured by the last spectrum mutation
-  84-88 ("immediate"), else the current state itself
-  ("current"). PINNED EXHIBIT: the "current" baseline
-  compares the store to itself, so it is vacuous
-  (changed=[] by construction), and Dell 55 Set —
-  the store's everyday writer — captures no baseline
-  at all, so a Set write is invisible to Diff until
-  some other baseline exists; against an older
-  "immediate" baseline the same Set write DOES show.
+- 89 Diff: reports the store change-set against ONE
+  baseline lifecycle (step 9, B13/B14): an active
+  transaction's checkpoint ("transaction"), else the
+  pre-mutation checkpoint captured by the most recent
+  store mutation through the shared _note_mutation
+  authority — Dell 55 Set and spectrum writers 84-88
+  alike ("immediate"). With no baseline captured in
+  this session Diff REFUSES baseline_missing
+  (changed=None, available=False) and claims no
+  change-set — it never compares the store to itself.
+  Reading Diff never captures, replaces, or clears a
+  baseline; the baseline is session-only, so a
+  save/load-restored state reports baseline_missing
+  until its next mutation.
 - 90 Trace: prints the last <=8 entries of the
   execution trace buffer ("NN[Term]::label" per
   executed Core II atom; Trace's own entry lands
@@ -67,10 +69,10 @@ per Dell, through the public seed path:
   wholesale, and appends to st.staged. PINNED
   EXHIBIT: there is no staging isolation — mutations
   inside a Try are live immediately, and the
-  staged_changes ledger records ONLY spectrum
-  mutations (84-88); Dell 55 Set writes inside a
-  transaction are never staged. Commit is a
-  mark/accept mechanism, not atomic staging.
+  staged_changes ledger records every store mutation
+  through the shared baseline authority (Set 55 and
+  spectrum writers 84-88 alike; step 9, B14). Commit
+  is a mark/accept mechanism, not atomic staging.
 - 96 Revert: on an active frame it restores the
   frame checkpoint EXACTLY (values rolled back, new
   keys removed, selection/groups/defs restored) and
@@ -183,23 +185,34 @@ def main():
     p = _program(owner)
     st = _st(p)
 
-    # -- 89 Diff: vacuous default, Set blindness, Copy baseline
+    # -- 89 Diff: missing baseline, Set visibility, Copy baseline
     r = _run(p, "89[Diff]")
-    _rec("89 Diff EXHIBIT: with no baseline captured, "
-         "Diff compares the store to itself — "
-         "baseline=current and changed=[] by "
-         "construction (a vacuous diff)",
-         r.get("ok") is True
-         and _msgs(r) == ["Diff changed=[] baseline=current"]
-         and st.last_diff.get("baseline") == "current"
-         and st.last_diff.get("changed") == [],
+    _rec("89 Diff (step 9, B13): with no baseline "
+         "captured, Diff REFUSES baseline_missing — "
+         "no empty-change-set claim (changed=None, "
+         "available=False), and the read itself "
+         "captures no baseline",
+         r.get("ok") is False
+         and r.get("error") == "baseline_missing"
+         and _msgs(r) == ["Diff baseline_missing "
+                          "(no baseline captured)"]
+         and st.last_diff.get("baseline") == "missing"
+         and st.last_diff.get("changed") is None
+         and st.last_diff.get("available") is False
+         and getattr(st, "diff_baseline", None) is None,
          str(_msgs(r)))
     _run(p, "55[Set] :: a=1")
     r = _run(p, "89[Diff]")
-    _rec("89 Diff EXHIBIT: a Set (55) write captures "
-         "no baseline — the store changed but Diff "
-         "still reports baseline=current, changed=[]",
-         _msgs(r) == ["Diff changed=[] baseline=current"]
+    _rec("89 Diff (step 9, B14): a Set (55) write "
+         "captures the shared baseline — Diff reports "
+         "changed=['a'] baseline=immediate with no "
+         "other writer involved",
+         _msgs(r) == ["Diff changed=['a'] "
+                      "baseline=immediate"]
+         and st.last_diff.get("before", {}).get("a")
+         is None
+         and st.last_diff.get("after", {}).get("a")
+         == "1"
          and st.store.get("a") == "1", str(_msgs(r)))
     _run(p, "84[Copy] :: a")
     r = _run(p, "89[Diff]")
@@ -300,25 +313,27 @@ def main():
          .get("store", {}).get("a") == "1",
          str(_msgs(r)))
     _run(p, "55[Set] :: txkey=tv")
-    _rec("95 Commit EXHIBIT: a Set (55) write inside "
-         "the transaction is LIVE immediately but is "
-         "never added to staged_changes — the staging "
-         "ledger records only spectrum mutations",
+    _rec("95 Commit (step 9, B14): a Set (55) write "
+         "inside the transaction is LIVE immediately "
+         "AND is added to staged_changes through the "
+         "shared baseline authority, like every other "
+         "store writer",
          st.store.get("txkey") == "tv"
-         and st.tx[-1].get("staged_changes") == [],
+         and st.tx[-1].get("staged_changes")
+         == [{"op": "set", "lab": "txkey=tv"}],
          str(st.tx[-1].get("staged_changes")))
     r = _run(p, "89[Diff]")
     _rec("89 Diff: inside a transaction the baseline "
          "is the frame checkpoint — the Set write "
-         "Diff was blind to outside now shows as "
-         "changed=['txkey'] baseline=transaction",
+         "shows as changed=['txkey'] "
+         "baseline=transaction",
          _msgs(r) == ["Diff changed=['txkey'] "
                       "baseline=transaction"],
          str(_msgs(r)))
     r = _run(p, "95[Commit]")
     _rec("95 Commit: an open frame commits — status "
          "committed, accepted is the whole CURRENT "
-         "store (wholesale, incl. the unstaged Set "
+         "store (wholesale, incl. the Set "
          "write), and the commit lands in st.staged",
          _msgs(r) == ["Commit tx0 accepted"]
          and st.tx[-1].get("status") == "committed"
@@ -624,8 +639,9 @@ def main():
     r = _run(cp, "89[Diff]")
     _rec("93/89 symbiosis: a spectrum mutation "
          "inside a transaction IS staged "
-         "({'op': 'copy', 'lab': 'base'} — the "
-         "contrast with Set) and Diff reads the "
+         "({'op': 'copy', 'lab': 'base'} — Set is "
+         "staged the same way since step 9) and Diff "
+         "reads the "
          "change against the frame checkpoint",
          staged == [{"op": "copy", "lab": "base"}]
          and _msgs(r) == ["Diff changed=['copy_base'] "
