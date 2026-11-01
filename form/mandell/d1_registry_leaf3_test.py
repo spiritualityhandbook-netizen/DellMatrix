@@ -18,19 +18,20 @@ public seed path:
   merges dedup to _2), label = the raw label or
   "<P1> + <P2>", words "merge <p1> <p2>", parents
   recorded, origin merge, and the parents are NOT
-  mutated or destroyed. PINNED EXHIBIT: with zero
-  resolved sources and >=2 units, Merge silently falls
-  back to the LAST TWO units — a bare Merge merges
-  them instead of requiring named sources.
+  mutated or destroyed. B3 (Director FIX, step 6):
+  with zero resolved sources Merge refuses
+  missing_source with zero mutation — the former
+  silent fallback to the LAST TWO units was the
+  B3 defect.
 - 22 Split (live_identity authority): the first
   resolved source splits into <src>_a / <src>_b
   ("<label> A/B", words "split <src>", parents
   [source], origin split); the parent is preserved;
-  an ambiguous label fails ambiguous_source. PINNED
-  EXHIBIT: with no resolved source, Split silently
-  falls back to the LAST unit — a bare Split, and
-  even a misspelled label, split whatever came last
-  instead of failing.
+  an ambiguous label fails ambiguous_source. B4
+  (Director FIX, step 6): with no resolved source,
+  Split refuses missing_source with zero mutation —
+  the former silent fallback to the LAST unit (bare
+  and misspelled labels alike) was the B4 defect.
 - 23 Lock: the sandbox switch — sandbox_on applies
   the sandbox to every live unit (sandboxed=True),
   "Sandbox ON." (the registry name is Lock; the
@@ -479,21 +480,22 @@ def main():
          == ["merge_garden_gate_stone"], str(_msgs(r)))
     _cleanup(owner)
 
-    # -- 21 Merge EXHIBIT: bare Merge falls back to the
-    #    last two units (dedicated owner)
+    # -- 21 Merge (B3, step 6): bare Merge refuses
+    #    missing_source (dedicated owner)
     owner_m = "D1RegLeaf3Merge"
     q = _program(owner_m)
     _run(q, "08[Create] :: A One")
     _run(q, "08[Create] :: B Two")
+    before_m = list(_units(q))
     r = _run(q, "21[Merge]")
-    mc = _units(q).get("merge_a_one_b_two")
-    _rec("21 Merge EXHIBIT: bare Merge with >=2 units "
-         "silently merges the LAST TWO units (fallback "
-         "sources) instead of requiring named sources — "
-         "the child label is '<P1> + <P2>'",
-         _msgs(r) == ["Merged → merge_a_one_b_two "
-                      "parents=['a_one', 'b_two']"]
-         and mc is not None and mc.label == "A One + B Two",
+    _rec("21 Merge (B3, step 6): bare Merge with >=2 units "
+         "refuses missing_source with zero mutation — it no "
+         "longer silently merges the LAST TWO units",
+         r.get("ok") is False
+         and r.get("error") == "missing_source"
+         and _msgs(r) == ["Merge failed: missing_source"]
+         and list(_units(q)) == before_m
+         and "merge_a_one_b_two" not in _units(q),
          str(_msgs(r)))
     _run(q, "08[Create] :: Twin")
     _run(q, "08[Create] :: Twin")
@@ -511,22 +513,28 @@ def main():
          f"{r.get('error')} / {r2.get('error')}")
     _cleanup(owner_m)
 
-    # -- 22 Split EXHIBIT: unknown/bare labels fall back
-    #    to the last unit (dedicated owner)
+    # -- 22 Split (B4, step 6): unknown/bare labels refuse
+    #    missing_source (dedicated owner)
     owner_s = "D1RegLeaf3Split"
     q = _program(owner_s)
     _run(q, "08[Create] :: Solo")
+    before_s = list(_units(q))
     r = _run(q, "22[Split] :: nosuchthing")
-    _rec("22 Split EXHIBIT: an unknown label silently "
-         "splits the LAST unit instead of failing",
-         _msgs(r) == ["Split → solo_a + solo_b"]
-         and "solo_a" in _units(q) and "solo_b" in _units(q),
+    _rec("22 Split (B4, step 6): an unknown label refuses "
+         "missing_source with zero mutation — it no longer "
+         "silently splits the LAST unit",
+         r.get("ok") is False
+         and r.get("error") == "missing_source"
+         and list(_units(q)) == before_s
+         and "solo_a" not in _units(q),
          str(_msgs(r)))
     r = _run(q, "22[Split]")
-    _rec("22 Split EXHIBIT: bare Split splits the last "
-         "unit too (now solo_b, the newest unit)",
-         _msgs(r) == ["Split → solo_b_a + solo_b_b"]
-         and "solo_b_a" in _units(q), str(_msgs(r)))
+    _rec("22 Split (B4, step 6): bare Split refuses "
+         "missing_source too, zero mutation",
+         r.get("ok") is False
+         and r.get("error") == "missing_source"
+         and list(_units(q)) == before_s,
+         str(_msgs(r)))
     _cleanup(owner_s)
 
     # -- 30 Expand: bare Expand reads the last unit

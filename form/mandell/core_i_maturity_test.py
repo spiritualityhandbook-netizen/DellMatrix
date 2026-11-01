@@ -130,7 +130,7 @@ def smoke() -> bool:
     p = open_program("Str")
     execute_seed(p, "08[Create] :: a")
     execute_seed(p, "08[Create] :: b")
-    execute_seed(p, "21[Merge] :: ab")
+    execute_seed(p, "21[Merge] :: a + b")
     rec("merge_does_not_destroy_parents", "a" in p.cube.session.plane.units and "b" in p.cube.session.plane.units and any(uid.startswith("ab") or "merge" in uid or uid == "ab" for uid in p.cube.session.plane.units))
     before = set(p.cube.session.plane.units)
     execute_seed(p, "22[Split] :: a")

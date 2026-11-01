@@ -110,11 +110,10 @@ def merge_live(program: Any, label: str) -> Dict[str, Any]:
                           + ", ".join(ambiguous),
                 "created": []}
     if len(sources) < 2:
-        vals = list(units.values())
-        if not sources and len(vals) >= 2:
-            sources = vals[-2:]
-        else:
-            return {"ok": False, "error": "missing_source", "created": []}
+        # B3 (Director FIX, step 6): fewer than two resolved required
+        # sources refuses missing_source — a zero-source invocation
+        # must NOT silently choose the last two units.
+        return {"ok": False, "error": "missing_source", "created": []}
     parent_ids = [u.id for u in sources]
     versions = [int(getattr(u, "lineage_version", 1) or 1) for u in sources]
     snap = {u.id: (u.label, u.words, list(getattr(u, "parents", []) or []), int(getattr(u, "lineage_version", 1) or 1)) for u in sources}
@@ -150,8 +149,9 @@ def split_live(program: Any, label: str) -> Dict[str, Any]:
                           + ", ".join(ambiguous),
                 "created": []}
     source = sources[0] if sources else None
-    if source is None and units:
-        source = list(units.values())[-1]
+    # B4 (Director FIX, step 6): no resolved source refuses
+    # missing_source — bare, unknown or misspelled labels must NEVER
+    # silently select the last unit.
     if source is None:
         return {"ok": False, "error": "missing_source", "created": []}
     before = (source.id, source.label, list(source.parents), int(source.lineage_version))

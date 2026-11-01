@@ -136,6 +136,12 @@ _HINT_ACTION = {
 
 def translate(english: str) -> Intent:
     text = english.strip()
+    # B6 (Director FIX, step 6): empty input reports
+    # nothing_to_translate — no fabricated Show intent, no side
+    # effects. This guard sits at the entry so bridge(), the leaf
+    # Dell-45 arm and the English paths all inherit it.
+    if not text:
+        return Intent("nothing_to_translate", None, "", {}, "", "")
     # DCC-VI: operational capabilities on RAW text (before english_brain
     # rewrites "add idea X" -> "create an idea called X").
     raw_lower = text.lower().strip()

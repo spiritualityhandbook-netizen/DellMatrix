@@ -91,11 +91,13 @@ def t_dup_2122_single_authority() -> None:
         "integration")
 
     # Success case: two ideas; both paths must merge through live_identity.
+    # B3 (step 6): sources are named explicitly — a bare Merge no longer
+    # falls back to the last two units.
     for p in (p1, p2):
         p.place("u1", "Alpha", words="one")
         p.place("u2", "Beta", words="two")
-    r_front = front.execute_seed(p1, "21[Merge]")
-    r_leaf = leaf.execute_seed(p2, "21[Merge]")
+    r_front = front.execute_seed(p1, "21[Merge] :: u1 + u2")
+    r_leaf = leaf.execute_seed(p2, "21[Merge] :: u1 + u2")
     def _merged_parents(p):
         return sorted([u.id for u in p.cube.session.plane.units.values()
                        if list(getattr(u, "parents", []) or []) == ["u1", "u2"]])

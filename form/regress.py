@@ -280,6 +280,7 @@ LIST = [
     "form.step4_operand_transport_test:smoke",
     "form.step5_exchange_boundary_test:smoke",
     "form.step5b_exchange_durability_test:smoke",
+    "form.step6_leaf_honesty_test:smoke",
 ]
 
 TIMEOUT_S = 900
