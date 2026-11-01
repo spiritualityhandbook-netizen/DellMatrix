@@ -11,6 +11,29 @@ from .seed import parse_seed
 from .registry import get_dell
 
 
+# DIR-F13: the ONE count grammar for leaf count labels (Dells 6/13/48).
+# A count is valid iff it is 1..9 ASCII decimal digits, checked BEFORE
+# any int() conversion. str.isdigit() is NOT proof int() succeeds:
+# it accepts superscripts (int() raises) and non-ASCII decimal digits
+# (int() silently accepts them, an unrecorded grammar expansion), and
+# oversized digit strings raise past CPython's conversion limit
+# before any clamp can run. Non-ASCII digits and oversized strings
+# are therefore refused/defaulted by callers — never converted.
+_MAX_COUNT_DIGITS = 9
+_ASCII_DIGITS = frozenset("0123456789")
+
+
+def _parse_count(text: str):
+    """Return the int value of a count label, or None if the label is
+    not in the count grammar (empty, non-ASCII, non-digit, oversized).
+    int() is only ever called on a validated bounded ASCII string."""
+    if not text or len(text) > _MAX_COUNT_DIGITS:
+        return None
+    if not text.isascii() or any(c not in _ASCII_DIGITS for c in text):
+        return None
+    return int(text)
+
+
 def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     from form.dell_matrix.plane import Skin
     from form.avatar import Locomotion, Posture, Expression
@@ -126,7 +149,12 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         face = program.face.set(expr)
         messages.append(f"{face}  tone={expr.value}")
     elif primary == 6:
-        n = int(label) if label.isdigit() else 1
+        # DIR-F13: count grammar via _parse_count; labels outside it
+        # (non-ASCII digits, oversized, non-numeric) take Cycle's
+        # existing default of 1 instead of raising inside int().
+        n = _parse_count((label or "").strip())
+        if n is None:
+            n = 1
         n = max(1, min(n, 5))
         out = program.grow_ideas(n)
         messages.append(f"Cycle x{n}: +{out.get('proposed_new', 0)} new +{out.get('proposed_evolved', 0)} evolved")
@@ -184,7 +212,12 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         # and refuses malformed/non-numeric labels explicitly instead
         # of silently running one cycle. No growth on refusal.
         raw_label = (label or "").strip()
-        if raw_label and not raw_label.isdigit():
+        # DIR-F13: the count grammar is _parse_count (ASCII digits,
+        # bounded length, checked before conversion). Labels outside
+        # it — malformed, non-ASCII digits, oversized — take the B2
+        # refusal below; int() never sees an unvalidated string.
+        _parsed = _parse_count(raw_label) if raw_label else 1
+        if raw_label and _parsed is None:
             return {
                 "ok": False,
                 "seed": _echo.as_mandel(),
@@ -196,7 +229,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
                 "new_program": new_program,
                 "error": "invalid_loop_count",
             }
-        requested = int(raw_label) if raw_label else 1
+        requested = _parsed
         executed = max(1, min(requested, 5))
         out = program.grow_ideas(executed)
         messages.append(
@@ -222,7 +255,14 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     elif primary == 16:
         factor = 0.9
         if label.replace(".", "", 1).isdigit():
-            factor = max(0.1, min(1.0, float(label)))
+            # DIR-F13 sibling guard: isdigit() also accepts characters
+            # float() cannot parse (e.g. superscript two). An
+            # unparseable factor keeps the default 0.9, exactly as a
+            # non-digit label does; it must never raise.
+            try:
+                factor = max(0.1, min(1.0, float(label)))
+            except ValueError:
+                factor = 0.9
         # B1 (Director FIX, step 6): the gate's verdict is the truth.
         # When EnhanceGate.decay refuses (enhance OFF), report the
         # refusal, leave scores unchanged, and never claim decay.
@@ -476,8 +516,12 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         lab = (label or "").lower()
         n = 3
         for tok in lab.replace("_", " ").split():
-            if tok.isdigit():
-                n = int(tok)
+            # DIR-F13: tokens outside the count grammar keep the
+            # current n (macro's existing default semantics); they
+            # must never raise inside int().
+            _tok_n = _parse_count(tok)
+            if _tok_n is not None:
+                n = _tok_n
         if "replay" in lab or "replay" in terms:
             if hasattr(program, "replay_exec"):
                 out = program.replay_exec(n)
@@ -489,7 +533,10 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
                 for item in program.replay(n):
                     messages.append(f"  · {item}")
         else:
-            n = int(label) if label.isdigit() else 5
+            # DIR-F13: same grammar; out-of-grammar labels take
+            # macro's existing default of 5 instead of raising.
+            _lab_n = _parse_count((label or "").strip())
+            n = _lab_n if _lab_n is not None else 5
             messages.append(program.macro_seed(n))
     elif primary == 49:
         st = program.status()
