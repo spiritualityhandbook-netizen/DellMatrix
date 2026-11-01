@@ -33,6 +33,19 @@ Follow-up (Director Mode D, 2026-10-31 — identity-safe signalling):
    pidfile before exiting, so the attachment window no longer
    presumes fixture-startup speed in the running environment
    (the escape contract itself is unchanged).
+Pidfd-hardening follow-up (Director Mode D ruling at 3234966,
+where his independent runs returned 18/20):
+8. NO silent downgrade: when pidfd_open fails, a witnessed identity
+   is NOT signalled through the bare kill(2) fallback (that fallback
+   is deleted — a PID reused between the earlier identity check and
+   the kill would be hit). The identity is reported in the kill
+   report's "unavailable" set instead, and the process survives.
+   The identity positive control waits BOUNDEDLY for termination
+   (poll loop, 5s deadline) instead of sampling poll() once —
+   an immediate sample of an asynchronous effect is a race, not a
+   test. Escape checks carry diagnostics (kill-report membership,
+   identity state, marker timing) naming which link broke.
+   Cancellation checks are untouched (already certified).
 Fixtures are synthetic modules written into this (private-copy)
 tree and removed afterwards; marker state lives in a temp dir.
 """
@@ -138,7 +151,14 @@ def main():
         with open(grandchild_script, "w") as fh:
             fh.write(
                 "import os, time\n"
-                f"open({esc_pidfile!r}, 'w').write(str(os.getpid()))\n"
+                # Pidfile carries the grandchild's IDENTITY (pid +
+                # /proc starttime), captured by the process itself,
+                # so post-timeout diagnostics can name the witnessed
+                # identity exactly instead of re-reading a possibly
+                # dead/recycled pid after the fact.
+                "_st = open('/proc/self/stat', 'rb').read()\n"
+                "_start = _st[_st.rfind(b')') + 2:].split()[19].decode()\n"
+                f"open({esc_pidfile!r}, 'w').write(str(os.getpid()) + ' ' + _start)\n"
                 "time.sleep(3)\n"
                 f"open({esc_marker!r}, 'w').write('ESCAPED_WRITE')\n"
                 "time.sleep(30)\n"
@@ -175,16 +195,34 @@ def main():
         esc_pid = None
         esc_start = None
         if os.path.exists(esc_pidfile):
-            esc_pid = int(open(esc_pidfile).read().strip())
-            esc_start = R._proc_starttime(esc_pid)
+            _parts = open(esc_pidfile).read().strip().split()
+            esc_pid = int(_parts[0])
+            if len(_parts) > 1:
+                esc_start = int(_parts[1])
+            else:  # legacy pid-only pidfile
+                esc_start = R._proc_starttime(esc_pid)
         _rec("escaping grandchild had started (pid recorded)",
              esc_pid is not None)
         time.sleep(4)
+        # Diagnostics (pidfd-hardening directive): identify WHICH
+        # link broke — never witnessed / witnessed-not-signalled /
+        # signalled-but-alive / timing — from the kill report of the
+        # timeout handling plus the identity's current state.
+        _report = getattr(R, "_LAST_KILL_REPORT", None) or {}
+        _ident = (esc_pid, esc_start)
+        _membership = "no_kill_report"
+        for _bucket in ("signalled", "refused", "unavailable"):
+            if _ident in _report.get(_bucket, []):
+                _membership = _bucket
+        _cur_start = R._proc_starttime(esc_pid) if esc_pid else None
+        _diag = (f"pid={esc_pid} kill_report={_membership} "
+                 f"identity_now={'same' if _cur_start == esc_start else _cur_start} "
+                 f"marker={'exists' if os.path.exists(esc_marker) else 'absent'}")
         _rec("no post-timeout write from escaping grandchild",
-             not os.path.exists(esc_marker))
+             not os.path.exists(esc_marker), _diag)
         _rec("escaping grandchild is dead",
              esc_pid is not None and not _pid_alive(esc_pid),
-             f"pid={esc_pid}")
+             _diag)
         if (esc_pid is not None and _pid_alive(esc_pid)
                 and R._proc_starttime(esc_pid) == esc_start):
             # Cleanup guard is identity-checked too (follow-up): only
@@ -277,9 +315,22 @@ def main():
                                    "import time; time.sleep(30)"])
         try:
             v_ident = (victim.pid, R._proc_starttime(victim.pid))
-            R._kill_process_tree(_control_root([v_ident]))
+            _vroot = _control_root([v_ident])
+            R._kill_process_tree(_vroot)
+            # Bounded wait (AGENTS.md law 31.1): termination is an
+            # asynchronous effect — poll to a stated deadline instead
+            # of sampling once. The Director's independent runs failed
+            # this control 18/20 on the immediate-poll version.
+            _dl = time.monotonic() + 5
+            while victim.poll() is None and time.monotonic() < _dl:
+                time.sleep(0.05)
+            _vreport = getattr(_vroot, "_kill_report", {}) or {}
+            _vmembership = next(
+                (b for b in ("signalled", "refused", "unavailable")
+                 if v_ident in _vreport.get(b, [])), "not_in_report")
             _rec("identity positive control: witnessed instance killed",
-                 victim.poll() is not None, f"pid={victim.pid}")
+                 victim.poll() is not None,
+                 f"pid={victim.pid} kill_report={_vmembership}")
         finally:
             if victim.poll() is None:
                 victim.terminate()
@@ -320,6 +371,43 @@ def main():
             if by2.poll() is None:
                 by2.terminate()
             by2.wait(timeout=10)
+
+        # --- Pidfd-hardening check 8: no silent downgrade ---
+        # pidfd_open is forced to fail. A live witnessed process with
+        # a MATCHING identity must NOT be signalled through any bare
+        # kill(2) fallback (the fallback is deleted): it survives,
+        # and the cleanup shortfall is reported explicitly in the
+        # kill report's unavailable set.
+        hvictim = subprocess.Popen([sys.executable, "-c",
+                                    "import time; time.sleep(30)"])
+        try:
+            h_ident = (hvictim.pid, R._proc_starttime(hvictim.pid))
+            hroot = _control_root([h_ident])
+            _real_pidfd_open = os.pidfd_open
+
+            def _pidfd_boom(pid, flags=0):
+                raise OSError(24, "Too many open files (injected)")
+
+            os.pidfd_open = _pidfd_boom
+            try:
+                R._kill_process_tree(hroot)
+            finally:
+                os.pidfd_open = _real_pidfd_open
+            # Brief bounded confirmation of survival: the process
+            # must still be alive after the kill attempt settles.
+            _dl = time.monotonic() + 0.5
+            while hvictim.poll() is None and time.monotonic() < _dl:
+                time.sleep(0.05)
+            _rec("pidfd failure: matching identity NOT signalled via fallback",
+                 hvictim.poll() is None, f"pid={hvictim.pid}")
+            _hreport = getattr(hroot, "_kill_report", {}) or {}
+            _rec("pidfd failure: unavailable cleanup reported explicitly",
+                 h_ident in _hreport.get("unavailable", []),
+                 f"report={_hreport}")
+        finally:
+            if hvictim.poll() is None:
+                hvictim.terminate()
+            hvictim.wait(timeout=10)
 
         ok2, why2 = R.run_entry(f"form.{FAST_FIXTURE}:smoke", src_root)
         _rec("fast entry still GREEN via same path", ok2 is True,
