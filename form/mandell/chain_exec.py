@@ -34,6 +34,16 @@ def _eff_label(atom: Any, seed: Any) -> str:
     return lab if lab else (getattr(seed, "label", "") or "")
 
 
+def _skip_receipt(n: int, reason: str) -> Dict[str, Any]:
+    """Step 7 (DAF-08): occurrence-level receipt for an atom that
+    did NOT execute for a lawful/control reason. Shape follows
+    Director Decision 1 (ok=False, skipped=True, explicit reason)
+    with error="" — a lawful conditional skip is not a failure,
+    and Join failure counting excludes skipped receipts."""
+    return {"dell": int(n), "ok": False, "skipped": True,
+            "error": "", "reason": reason}
+
+
 def _flow_at(seed: Any, index: int) -> str:
     flows = list(getattr(seed, "flows", []) or [])
     if 0 <= index < len(flows):
@@ -234,6 +244,14 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
             if action == "over":
                 while i < end and int(atoms[i].dell) != 61:
                     skipped.append(int(atoms[i].dell))
+                    # Step 7 (DAF-08): a FlowOver-skipped occurrence
+                    # gets its own receipt, in atom order — the
+                    # aggregates derive from atom_results, so a
+                    # skipped list entry alone left any_skipped and
+                    # partial contradicting chain_skipped.
+                    results.append(_skip_receipt(
+                        int(atoms[i].dell),
+                        "skipped by FlowOver (>>> — skip forward to Join); not executed"))
                     messages.append(f"skipped by FlowOver {int(atoms[i].dell)}")
                     i += 1
                 continue
@@ -244,9 +262,15 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
                 state["error"] = "depth_bound"
                 results.append({"dell": n, "ok": False, "error": "depth_bound"})
                 return program, results
-            program, chunk = _run_control(program, seed, atoms, i, end, depth, messages, ran, skipped, state)
+            program, chunk, head_receipt = _run_control(program, seed, atoms, i, end, depth, messages, ran, skipped, state)
+            # Step 7 (DAF-08): the control HEAD occurrence carries
+            # its own receipt, inserted here (its caller) so the
+            # frame's results list inside _run_control keeps its
+            # established body+join shape while atom_results is
+            # occurrence-complete and atom-ordered.
+            results.append(head_receipt)
             results.extend(chunk)
-            last_ok = all(r.get("ok", True) for r in chunk) if chunk else True
+            last_ok = all(r.get("ok", True) for r in [head_receipt] + chunk) if chunk or head_receipt else True
             join_at = find_join(atoms, i + 1, end)
             i = join_at + 1 if join_at < end and int(getattr(atoms[join_at], "dell", -1)) == 61 else join_at
             st = attach(program)
@@ -297,6 +321,13 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
     n = int(atom.dell)
     program, head_out = _run_atom(program, atom, seed, messages)
     ran.append(n)
+    # Step 7 (DAF-08): the head occurrence's receipt is returned
+    # to execute_range (which inserts it in atom order); it is
+    # NOT part of the frame's results (body + join shape kept).
+    head_receipt = {"dell": n, "ok": bool(head_out.get("ok", True)),
+                    "error": head_out.get("error") or "",
+                    "skipped": bool(head_out.get("skipped", False)),
+                    "reason": head_out.get("reason") or head_out.get("error") or ""}
     st = attach(program)
     join_at = find_join(atoms, head + 1, limit)
     kind = {60: "branch", 62: "parallel", 63: "sequence", 64: "until", 65: "while", 66: "foreach"}[n]
@@ -315,6 +346,9 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
             messages.append("Branch multiple else — fail explicit")
             for j in range(head + 1, join_at):
                 skipped.append(int(atoms[j].dell))
+                results.append(_skip_receipt(
+                    int(atoms[j].dell),
+                    "branch body not executed — multiple else markers (multiple_else)"))
         else:
             taken = eval_condition(st, program, cond or "true")
             true_end = else_at if else_kind == "one" else join_at
@@ -322,6 +356,16 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
             messages.append(f"control Branch taken={taken} else={else_kind}")
             if taken:
                 program, results = execute_range(program, seed, atoms, head + 1, true_end, depth + 1, messages, ran, skipped, state)
+                # Step 7 (DAF-08): unchosen occurrences get receipts
+                # in atom order (Else marker before the false arm);
+                # the chain_skipped list order is unchanged.
+                if else_kind == "one":
+                    results.append(_skip_receipt(
+                        59, "else marker — branch arm separator; not executed as Route"))
+                for j in range(false_start, join_at):
+                    results.append(_skip_receipt(
+                        int(atoms[j].dell),
+                        "branch arm not taken; not executed"))
                 for j in range(false_start, join_at):
                     skipped.append(int(atoms[j].dell))
                 if else_kind == "one":
@@ -329,9 +373,15 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
             else:
                 for j in range(head + 1, true_end):
                     skipped.append(int(atoms[j].dell))
+                    results.append(_skip_receipt(
+                        int(atoms[j].dell),
+                        "branch arm not taken; not executed"))
                 if else_kind == "one":
                     skipped.append(59)
-                    program, results = execute_range(program, seed, atoms, false_start, join_at, depth + 1, messages, ran, skipped, state)
+                    results.append(_skip_receipt(
+                        59, "else marker — branch arm separator; not executed as Route"))
+                    program, _false_results = execute_range(program, seed, atoms, false_start, join_at, depth + 1, messages, ran, skipped, state)
+                    results.extend(_false_results)
                 else:
                     status = "skipped"
                     messages.append("unchosen branch not executed")
@@ -348,9 +398,21 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
         if n == 64 and pred0:
             status = "zero"
             messages.append("Until already true — zero iterations")
+            # Step 7 (DAF-08): zero-iteration body occurrences are
+            # recorded, not omitted — one skipped receipt each.
+            for j in range(head + 1, join_at):
+                skipped.append(int(atoms[j].dell))
+                results.append(_skip_receipt(
+                    int(atoms[j].dell),
+                    "until condition already true — zero iterations; body occurrence not executed"))
         elif n == 65 and not pred0:
             status = "zero"
             messages.append("While already false — zero iterations")
+            for j in range(head + 1, join_at):
+                skipped.append(int(atoms[j].dell))
+                results.append(_skip_receipt(
+                    int(atoms[j].dell),
+                    "while condition already false — zero iterations; body occurrence not executed"))
         else:
             while iterations < loop_limit:
                 if n == 64 and eval_condition(st, program, cond):
@@ -391,6 +453,13 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
         if not members:
             status = "empty"
             messages.append("ForEach empty selection valid")
+            # Step 7 (DAF-08/B9): empty selection = zero iterations;
+            # body occurrences are recorded as skipped, not omitted.
+            for j in range(head + 1, join_at):
+                skipped.append(int(atoms[j].dell))
+                results.append(_skip_receipt(
+                    int(atoms[j].dell),
+                    "foreach empty selection — zero iterations; body occurrence not executed"))
         for mid in members:
             st.context = str(mid)
             st.route = str(mid)
@@ -404,14 +473,38 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
         st.context = prev_ctx
         st.route = prev_route
     if join_at < limit and int(getattr(atoms[join_at], "dell", -1)) == 61:
+        # Step 7 (B7): publish the completed block's ACTUAL results
+        # to last_frame BEFORE the Join atom runs — the core Join
+        # arm reads its incoming from last_frame, so running the
+        # Join first (the old order) made its verdict vacuous
+        # (incoming=0) whenever children had run.
+        st = attach(program)
+        st.last_frame = {"kind": kind, "condition": cond, "status": status,
+                         "iterations": iterations, "results": list(results),
+                         "error": err, "depth": depth}
         program, jout = _run_atom(program, atoms[join_at], seed, messages)
         ran.append(61)
-        results.append({"dell": 61, "ok": bool(jout.get("ok", True)), "error": jout.get("error") or "", "owned_by": kind})
+        join_receipt = {"dell": 61, "ok": bool(jout.get("ok", True)), "error": jout.get("error") or "", "owned_by": kind}
+        results.append(join_receipt)
+        if not join_receipt["ok"]:
+            # The frame verdict represents the Join failure; the
+            # chain's state error keeps the FIRST root cause
+            # (join_fail never overwrites an earlier atom error).
+            if status == "ok":
+                status = "fail"
+            err = err or "join_fail"
+            if state.get("ok", True):
+                state["ok"] = False
+                state["error"] = "join_fail"
     st = attach(program)
     st.last_frame = {"kind": kind, "condition": cond, "status": status, "iterations": iterations, "results": results, "error": err, "depth": depth}
+    if n in (64, 65):
+        # Step 7 (B8): the frame exposes the bound alongside the
+        # actual iterations.
+        st.last_frame["bound"] = bound_of(st)
     st.last_control = dict(st.last_frame)
     st.frames.append(dict(st.last_frame))
-    return program, results
+    return program, results, head_receipt
 
 
 def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
@@ -476,6 +569,16 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     # DIRECTOR DECISION 1: aggregate chain Outcome must expose
     # partial/skipped/failure state honestly. partial=True when some atoms
     # executed and others did not (mirrors RouteReceipt.partial semantics).
+    # Step 7 (DAF-08) documented semantics: atom_results is now
+    # occurrence-complete (control heads, unchosen Branch arms, Else
+    # markers, FlowOver skips and zero-iteration bodies all carry
+    # receipts), and the aggregates derive from those records alone.
+    # partial means OCCURRENCE-LEVEL INCOMPLETENESS — at least one
+    # occurrence executed successfully and at least one occurrence
+    # did not execute (lawful conditional skip, flow skip, reserved)
+    # or failed. partial is NOT a failure verdict: a lawful
+    # Branch/FlowOver/zero-iteration chain can be ok=True AND
+    # partial=True with any_skipped=True; `ok` is governed by state.
     _oks = [bool(r.get("ok", True)) for r in atom_results]
     _partial = bool(atom_results) and any(_oks) and not all(_oks)
     _any_skipped = any(bool(r.get("skipped", False)) for r in atom_results)

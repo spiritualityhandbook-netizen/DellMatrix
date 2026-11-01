@@ -35,32 +35,33 @@ per Dell, through the public seed path:
   st.last_frame — policy "all" (default) fails with
   join_fail if any incoming result failed, "any"
   passes if at least one did (or none came in).
-  PINNED EXHIBIT: the Join that CLOSES a control
-  block runs before the block's results are written
-  to last_frame, so it always reports incoming=0 —
-  its verdict is vacuous inside its own block; the
-  real verdict lands when Join is invoked again
-  afterwards, against the finished block's results.
+  STEP 7 (B7/DAF-08): the Join that CLOSES a control
+  block evaluates the completed block's ACTUAL results
+  (the chain layer publishes them to last_frame before
+  the Join runs) — no vacuous incoming=0 verdict when
+  children ran; a Join invoked again afterwards sees
+  the finished block's results the same way.
 - 62 Parallel: single-atom arm parses the label as
   a comma list (bare defaults ["a", "b"]) and is
   "offline_deterministic"; in a chain the body runs
   sequentially, a sibling failure is captured (the
   remaining body still runs) and the chain reports
-  the failure. PINNED: the parallel last_control
-  status stays "ok" even when a captured sibling
-  failed (the failure lives in results + the chain
-  aggregate, not the frame status).
+  the failure. STEP 7 (B7): the parallel last_control
+  status is "fail" when a captured sibling failed —
+  the closing Join's verdict is represented in the
+  frame, with the chain error keeping the root cause.
 - 63 Sequence: in a chain the body runs in written
   order to Join; the last writer wins shared state.
 - 64 Until: loops the body until the condition
   holds; a body that makes the condition true exits
   after 1 iteration; a condition that never holds
   fails bound_reached at the Limit bound (default
-  8). PINNED EXHIBIT: bare Until's two layers
-  disagree — the core arm reports cond=false /
-  already=False while the chain layer evaluates the
-  empty condition as true and reports "already
-  true — zero iterations" (status zero, ok=True).
+  8). STEP 7 (B8): bare Until's two layers AGREE —
+  the empty condition is true in both surfaces, so
+  the core arm reports cond=true / already=True and
+  the chain reports "already true — zero
+  iterations" (status zero, ok=True); the frame
+  exposes bound + iterations.
 - 65 While: loops while the condition holds; bare
   While (condition defaults true) with an empty
   body fails bound_reached honestly; a false
@@ -70,11 +71,12 @@ per Dell, through the public seed path:
 - 66 ForEach: in a chain it iterates the CURRENT
   selection in order, binding each member (results
   carry the member), and restores route afterwards.
-  PINNED EXHIBIT: on an empty selection the core
-  arm reports n=1 (it falls back to the plane ids)
-  while the chain layer reports "empty selection
-  valid" with status empty and 0 iterations — the
-  body never runs.
+  STEP 7 (B9): on an empty selection BOTH surfaces
+  report zero iterations — the core arm reports
+  n=0 / empty_ok=True (no plane-id fallback) and
+  the chain layer reports "empty selection valid"
+  with status empty and 0 iterations — the body
+  never runs.
 
 Cluster symbiosis: Filter narrows Select's (51)
 selection and Count (70) counts the filtered set;
@@ -335,14 +337,14 @@ def main():
          and qs.last_control.get("status") == "zero",
          str(_msgs(r)))
     r = _run(q, "64[Until]")
-    _rec("64 Until EXHIBIT: bare Until's two layers "
-         "disagree — the core arm prints 'Until "
-         "cond=false already=False bound=8' while the "
+    _rec("64 Until STEP 7 (B8): bare Until's two layers "
+         "AGREE — the core arm prints 'Until "
+         "cond=true already=True bound=8' and the "
          "chain layer prints 'Until already true — "
-         "zero iterations' and closes ok=True / "
+         "zero iterations', closing ok=True / "
          "status zero with an EMPTY condition",
          r.get("ok") is True
-         and "Until cond=false already=False bound=8"
+         and "Until cond=true already=True bound=8"
          in _msgs(r)
          and "Until already true — zero iterations"
          in _msgs(r)
@@ -367,15 +369,15 @@ def main():
     f = _program(owner_f)
     fs = _st(f)
     r = _run(f, "66[ForEach]")
-    _rec("66 ForEach EXHIBIT: on an empty selection "
-         "the core arm reports 'ForEach n=1 "
-         "op=identity empty_ok=False' (it falls back "
-         "to the plane ids) while the chain layer "
+    _rec("66 ForEach STEP 7 (B9): on an empty selection "
+         "BOTH surfaces agree — the core arm reports "
+         "'ForEach n=0 op=identity empty_ok=True' "
+         "(no plane-id fallback) and the chain layer "
          "reports 'ForEach empty selection valid', "
          "status empty, 0 iterations — the body "
          "never runs",
          r.get("ok") is True
-         and "ForEach n=1 op=identity empty_ok=False"
+         and "ForEach n=0 op=identity empty_ok=True"
          in _msgs(r)
          and "ForEach empty selection valid" in _msgs(r)
          and fs.last_control.get("status") == "empty"
@@ -429,20 +431,21 @@ def main():
     r = _run(j, "62[Parallel] > 91[false] > 80[TrueArm] > "
                 "61[Join]")
     join_msg = [m for m in _msgs(r) if m.startswith("Join ")]
-    _rec("61 Join EXHIBIT: the Join closing a Parallel "
-         "block reports incoming=0 (it runs before the "
-         "block's results reach last_frame) — and the "
-         "parallel frame status stays 'ok' (PINNED) "
-         "even though a sibling failed; the chain "
-         "aggregate still reports assert_fail and the "
-         "surviving sibling still ran",
-         join_msg == ["Join policy=all ok=True incoming=0 "
-                      "fails=0"]
+    _rec("61 Join STEP 7 (B7): the Join closing a Parallel "
+         "block evaluates the block's ACTUAL results "
+         "(incoming=2, fails=1, ok=False) — and the "
+         "parallel frame status is 'fail', representing "
+         "the captured sibling failure; the chain "
+         "aggregate still reports assert_fail (the root "
+         "cause, not join_fail) and the surviving "
+         "sibling still ran",
+         join_msg == ["Join policy=all ok=False incoming=2 "
+                      "fails=1"]
          and r.get("ok") is False
          and r.get("error") == "assert_fail"
          and js.context == "TrueArm"
          and js.last_control.get("kind") == "parallel"
-         and js.last_control.get("status") == "ok"
+         and js.last_control.get("status") == "fail"
          and any(not x.get("ok", True)
                  for x in js.last_control.get("results", [])),
          str(_msgs(r)))
