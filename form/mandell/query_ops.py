@@ -168,15 +168,35 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
             st.last_result = result_cell(value=dict(st.weights), matched=True, count=len(st.weights), source="normalize", trace="75")
             messages.append(f"Normalize n={len(st.weights)} sum={sum(st.weights.values()):.6f}")
     elif n == 76:
-        from .manifest_resolver import resolve_manifest
-        try:
-            num = int(lab.split()[0]) if lab[:1].isdigit() else n
-        except Exception:
-            num = n
-        res = resolve_manifest(num, term, lab)
-        conf = max(0.0, min(1.0, float(getattr(res, "confidence", 0.0) or 0.0)))
-        st.last_result = result_cell(value=getattr(res, "resolved", term), matched=True, source="resolve", predicate=str(getattr(res, "requested", term)), confidence=conf, trace="76")
-        messages.append(f"Resolve dell={res.dell} req={res.requested}->{res.resolved} conf={conf:.2f} {res.reason}")
+        # Step 10 (B11): Resolve resolves its LABEL (the operand
+        # after ::) against the active Dell registry — never
+        # Resolve's own term via the manifest fallback, which
+        # published matched=True at conf 0.40 for any unknown
+        # label. Hit/miss shapes follow the Get (56) precedent:
+        # the atom itself succeeds (ok stays True); the CELL
+        # carries the honest outcome. Hits only for dells 0-99:
+        # reserved records are honest misses. registry.lookup
+        # is hardened, so digit-like labels never raise here.
+        from .registry import lookup as _dell_lookup
+        label = (lab or "").strip()
+        if not label:
+            st.last_result = result_cell(value=None, matched=False, source="resolve", predicate="", confidence=0.0, error="target_required", trace="76")
+            messages.append("Resolve =MISSING target_required")
+        else:
+            rec = _dell_lookup(label)
+            dell_no = rec.get("dell") if isinstance(rec, dict) else None
+            is_hit = (
+                isinstance(dell_no, int)
+                and 0 <= dell_no <= 99
+                and rec.get("status") != "RESERVED_NOT_ACTIVE"
+                and rec.get("namespace") in ("CORE_I", "CORE_II")
+            )
+            if is_hit:
+                st.last_result = result_cell(value=rec["name"], matched=True, source="resolve", predicate=label, confidence=1.0, trace="76")
+                messages.append(f"Resolve {label}={rec['name']} dell={dell_no} conf=1.00")
+            else:
+                st.last_result = result_cell(value=None, matched=False, source="resolve", predicate=label, confidence=0.0, error="missing", trace="76")
+                messages.append(f"Resolve {label}=MISSING")
     elif n == 77:
         evidence = lab or "evidence"
         prior = dict(st.last_result or {})

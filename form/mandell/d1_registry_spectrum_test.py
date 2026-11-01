@@ -107,9 +107,12 @@ per Dell, through the public seed path:
   self-reference compose_cycle, nesting deeper than
   the bound (st.limit, default 8) compose_depth, and
   a failing body propagates its own error.
-  PINNED EXHIBIT: a composition whose define-mode
-  run FAILS is still stored, and re-running it
-  fails the same way.
+  Step 10 (B18, superseding the original
+  stored-despite-failure exhibit): a composition
+  whose define-mode run FAILS is NOT stored --
+  publication is run-before-publish -- and the
+  message states "not published"; a failed
+  redefinition retains the prior body.
 
 Cluster symbiosis: Diff reads Copy's baseline and
 Try's checkpoint; Assert's failure is what fails
@@ -593,23 +596,26 @@ def main():
          and cst.selected == ["welcome"], str(_msgs(r)))
     _run(cp, "86[Delete] :: ComposeStep")
     r = _run(cp, "99[Compose] :: bad=86")
-    _rec("99 Compose EXHIBIT: define-mode with a "
+    _rec("99 Compose: define-mode with a "
          "FAILING body propagates the body's own "
          "error (delete_missing:ComposeStep) — yet "
-         "the composition is still stored",
+         "the composition is NOT stored (step 10 / "
+         "B18 run-before-publish; the original "
+         "stored-despite-failure exhibit is superseded)",
          r.get("ok") is False
          and r.get("error")
          == "delete_missing:ComposeStep"
-         and _msgs(r) == ["Compose bad=86 ran=[86]"]
-         and cst.compositions.get("bad") == "86",
+         and _msgs(r) == ["Compose bad=86 ran=[86] "
+                          "not published"]
+         and "bad" not in cst.compositions,
          str(_msgs(r)))
     r = _run(cp, "99[Compose] :: bad")
-    _rec("99 Compose: re-running the stored failing "
-         "composition fails the same way",
+    _rec("99 Compose: executing a name whose define "
+         "failed (never stored) fails "
+         "malformed_composition",
          r.get("ok") is False
-         and r.get("error")
-         == "delete_missing:ComposeStep"
-         and _msgs(r) == ["Compose exec bad ran=[86]"],
+         and r.get("error") == "malformed_composition"
+         and _msgs(r) == ["Compose malformed_composition"],
          str(_msgs(r)))
     for i in range(9, 0, -1):
         nxt = "55" if i == 9 else f"d{i + 1}"

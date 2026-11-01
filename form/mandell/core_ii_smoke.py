@@ -114,7 +114,11 @@ def smoke() -> bool:
     p7 = _P()
     execute_core_ii(p7, 97, "Define", "Complete=35>18>39>12", [])
     execute_core_ii(p7, 98, "Alias", "Done=Complete", [])
-    execute_core_ii(p7, 99, "Compose", "Complete=35>18>39>12", [])
+    # Step 10 (B18): Compose now runs BEFORE publishing, so the
+    # define body must actually run on this stub harness (no
+    # cube, so CORE_I atoms cannot run here). A CORE_II-only
+    # body (Select > Count) runs cleanly on the stub's units.
+    execute_core_ii(p7, 99, "Compose", "Complete=51>70", [])
     rec("higher_order", "Complete" in p7.core_ii.defs and "Done" in p7.core_ii.aliases and "Complete" in p7.core_ii.compositions)
 
     p8 = _P()

@@ -35,13 +35,16 @@ per Dell, through the public seed path:
   place and is idempotent; on an empty (or zero-sum)
   weight set it reports zero_set, matched=False,
   while the atom stays ok=True.
-- 76 Resolve: resolves the Dell NAME in its own
-  bracket term via the manifest resolver. PINNED
-  EXHIBIT: a non-numeric label is ignored entirely
-  (":: Select" and ":: bogusname" both resolve
-  Resolve itself, conf 1.00); only a leading-digit
-  label changes the target dell (":: 51" resolves
-  Select at conf 0.40).
+- 76 Resolve: resolves its LABEL against the active
+  Dell registry (Director order step 10 / B11,
+  superseding the original manifest exhibit, which
+  resolved Resolve's own bracket term and ignored
+  non-numeric labels): ":: Select" and ":: 51" both
+  hit Select at conf 1.00; an unknown label is an
+  honest miss (matched=False, conf 0.00,
+  error="missing"); bare Resolve is a miss with
+  error="target_required". The atom stays ok=True;
+  the result cell carries the outcome (Get precedent).
 - 77 Infer: NEVER a fact — matched=False,
   projected=True, fact=False on every call; the
   conclusion is the label verbatim; confidence is
@@ -75,9 +78,12 @@ per Dell, through the public seed path:
   the selection is empty; ungrouping the ACTIVE
   scope group prints the R1 scope warning and
   leaves the scope dangling — Select then refuses
-  scope_unknown until the scope is reset. PINNED
-  EXHIBIT: ungrouping a name that does not exist is
-  ok=True with released=0 — a silent no-op success.
+  scope_unknown until the scope is reset. Step 10
+  (B12, superseding the original silent-no-op
+  exhibit): ungrouping a name that does not exist
+  REFUSES ok=False err=ungroup_missing:<name> with
+  zero mutation; an existing EMPTY group still
+  ungroups ok=True released=0.
 
 Cluster symbiosis: Filter (52) narrows what Count
 (70) and Measure (71) report; Set's (55) store is
@@ -320,31 +326,33 @@ def main():
 
     # -- 76 Resolve
     r = _run(p, "76[Resolve]")
-    _rec("76 Resolve: bare Resolve resolves its own "
-         "bracket term at conf 1.00 (canonical)",
-         _msgs(r) == ["Resolve dell=76 req=Resolve->"
-                      "Resolve conf=1.00 canonical"]
-         and st.last_result.get("value") == "Resolve"
-         and st.last_result.get("confidence") == 1.0,
+    _rec("76 Resolve: bare Resolve is an honest "
+         "target_required miss (step 10 / B11) — the "
+         "atom stays ok, the cell carries the miss",
+         r.get("ok") is True
+         and _msgs(r) == ["Resolve =MISSING target_required"]
+         and st.last_result.get("value") is None
+         and st.last_result.get("matched") is False
+         and st.last_result.get("confidence") == 0.0
+         and st.last_result.get("error") == "target_required",
          str(_msgs(r)))
     r = _run(p, "76[Resolve] :: Select")
     r2 = _run(p, "76[Resolve] :: bogusname")
-    _rec("76 Resolve EXHIBIT: a non-numeric label "
-         "is ignored entirely — ':: Select' and "
-         "':: bogusname' both resolve Resolve itself",
-         _msgs(r) == _msgs(r2)
-         == ["Resolve dell=76 req=Resolve->Resolve "
-             "conf=1.00 canonical"],
+    _rec("76 Resolve: the label IS the target — "
+         "':: Select' hits Select at conf 1.00 while "
+         "':: bogusname' is an honest miss (step 10)",
+         _msgs(r) == ["Resolve Select=Select dell=51 "
+                      "conf=1.00"]
+         and _msgs(r2) == ["Resolve bogusname=MISSING"],
          str((_msgs(r), _msgs(r2))))
     r = _run(p, "76[Resolve] :: 51")
-    _rec("76 Resolve: only a leading-digit label "
-         "changes the target dell — ':: 51' resolves "
-         "Select at conf 0.40",
-         _msgs(r) == ["Resolve dell=51 req=Resolve->"
-                      "Select conf=0.40 "
-                      "unknown_or_ambiguous->canonical"]
+    _rec("76 Resolve: a numeric label resolves its "
+         "dell at conf 1.00 — ':: 51' is Select, "
+         "never the old 0.40 manifest fallback",
+         _msgs(r) == ["Resolve 51=Select dell=51 "
+                      "conf=1.00"]
          and st.last_result.get("value") == "Select"
-         and st.last_result.get("confidence") == 0.4,
+         and st.last_result.get("confidence") == 1.0,
          str(_msgs(r)))
 
     # -- 77 Infer (confidence inheritance in main owner)
@@ -483,11 +491,13 @@ def main():
          str((_msgs(r), _msgs(r2))))
     _run(p, "53[Scope] :: plane")
     r = _run(p, "83[Ungroup] :: nosuch")
-    _rec("83 Ungroup EXHIBIT: ungrouping a name "
-         "that does not exist is ok=True with "
-         "released=0 — a silent no-op success",
-         r.get("ok") is True
-         and _msgs(r) == ["Ungroup nosuch released=0"],
+    _rec("83 Ungroup: ungrouping a name that does "
+         "not exist REFUSES ungroup_missing:nosuch "
+         "(step 10 / B12; the original silent-no-op "
+         "exhibit is superseded)",
+         r.get("ok") is False
+         and r.get("error") == "ungroup_missing:nosuch"
+         and _msgs(r) == ["Ungroup missing nosuch"],
          str(_msgs(r)))
     _cleanup(owner)
 

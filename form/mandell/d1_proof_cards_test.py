@@ -16,9 +16,9 @@ survey distribution, so the accounting cannot drift silently:
   reason). Dimensions are asserted separately — a card may
   not borrow strength from another dimension.
 - The bare-invocation distribution as amended by the
-  Director-order circuits (steps 6 and 9 most recently):
-  80 executed; exactly 20 failed, each with its recorded
-  reason. (Bare invocation on an empty field in this
+  Director-order circuits (steps 6, 9 and 10 most
+  recently): 79 executed; exactly 21 failed, each with
+  its recorded reason. (Bare invocation on an empty field in this
   runtime — operand/precondition failures are expected and
   are what the cards exist to record.)
 - The committed DELL_PROOF_CARDS.md equals a fresh render.
@@ -64,6 +64,10 @@ EXPECTED_BARE_FAILURES = {
     # baseline and honestly refuses baseline_missing
     # instead of claiming a vacuous empty change-set.
     89: "baseline_missing",
+    # Step 10 (B12): bare Ungroup with no groups at all
+    # honestly refuses ungroup_missing:empty instead of
+    # a silent released=0 success.
+    83: "ungroup_missing:empty",
     94: "catch_illegal",
     95: "commit_without_try",
     98: "alias_missing",
@@ -100,8 +104,8 @@ def main():
 
     failed = {c["dell"]: c["bare"]["error"]
               for c in cards if c["bare"]["outcome"] != "executed"}
-    _rec("bare invocation: 80 executed, 20 named failures",
-         len(failed) == 20
+    _rec("bare invocation: 79 executed, 21 named failures",
+         len(failed) == 21
          and all(failed.get(n, "").startswith(prefix)
                  for n, prefix in EXPECTED_BARE_FAILURES.items())
          and set(failed) == set(EXPECTED_BARE_FAILURES),
