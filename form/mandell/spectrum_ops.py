@@ -400,12 +400,22 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
             # its own label. A frame with no error of its own
             # reports that explicitly and consumes nothing:
             # its status and error stay exactly as they were.
+            # DIR-F14: pending and consumed are distinct state.
+            # frame["error"] is the PENDING slot; on consumption
+            # it is EMPTIED and the error moves to the archive
+            # (caught_error = latest, caught_history = every
+            # catch in order). A later Catch therefore finds
+            # nothing pending and reports "Catch (no error)";
+            # a failure noted after the Catch is a new pending
+            # root cause (note_atom_failure, B15) and never
+            # erases the archive.
             frame = active[-1]
             captured = frame.get("error") or ""
             if frame.get("status") == "failed" or captured:
                 frame["status"] = "caught"
                 frame["caught_error"] = captured
-                frame["error"] = captured
+                frame.setdefault("caught_history", []).append(captured)
+                frame["error"] = ""
                 _sync_depth(st)
                 messages.append(f"Catch {captured}")
             else:

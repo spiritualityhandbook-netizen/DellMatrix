@@ -375,13 +375,17 @@ def main():
     _rec("94 Catch: Catch marks the frame 'caught' "
          "and consumes the FRAME's error as "
          "caught_error — symbiosis: Catch reads "
-         "Delete's failure from the frame it failed",
+         "Delete's failure from the frame it failed; "
+         "DIR-F14: the pending slot (error) is EMPTIED "
+         "on consumption — the error survives only in "
+         "the archive (caught_error/caught_history)",
          _msgs(r) == ["Catch delete_missing:nosuchkey"]
          and st.tx[-1].get("status") == "caught"
          and st.tx[-1].get("caught_error")
          == "delete_missing:nosuchkey"
-         and st.tx[-1].get("error")
-         == "delete_missing:nosuchkey", str(_msgs(r)))
+         and st.tx[-1].get("caught_history")
+         == ["delete_missing:nosuchkey"]
+         and st.tx[-1].get("error") == "", str(_msgs(r)))
     r = _run(p, "95[Commit]")
     _rec("95 Commit: a caught frame may commit "
          "(commit is legal from open and caught)",
@@ -416,8 +420,9 @@ def main():
          "frame captures the original assert_fail",
          _msgs(r) == ["Catch assert_fail"]
          and st.tx[-1].get("status") == "caught"
-         and st.tx[-1].get("error") == "assert_fail"
+         and st.tx[-1].get("error") == ""
          and st.tx[-1].get("caught_error") == "assert_fail"
+         and st.tx[-1].get("caught_history") == ["assert_fail"]
          and "commit_illegal"
          in st.tx[-1].get("extra_errors", []),
          str(_msgs(r)))
