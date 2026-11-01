@@ -108,8 +108,22 @@ def lookup(name_or_num) -> Optional[Dict[str, Any]]:
     if isinstance(name_or_num, int):
         return get_dell(name_or_num)
     s = str(name_or_num).strip()
-    if s.isdigit():
-        return get_dell(int(s))
+    if s.isascii() and s.isdigit():
+        # Step 10 (B11, DIR-F13 failure class): only ASCII digits
+        # reach int() — s.isdigit() alone is True for characters
+        # like superscript-two, whose int() raises — and the
+        # length bound keeps oversized digit strings away from
+        # the interpreter's int-conversion limit. Oversized or
+        # non-ASCII digit-like labels are honest misses (None),
+        # never crashes. No previously-successful resolution
+        # changes: ASCII digit strings of sane length convert
+        # exactly as before (leading zeros included).
+        if len(s) > 10:
+            return None
+        try:
+            return get_dell(int(s))
+        except ValueError:
+            return None
     if s in NAMED:
         return get_dell(NAMED[s])
     for n, d in DELLS.items():

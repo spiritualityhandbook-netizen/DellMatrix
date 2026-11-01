@@ -164,7 +164,23 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
         st.groups[name] = list(st.selected or ids_fn(program))
         messages.append(f"Group {name} n={len(st.groups[name])}")
     elif n == 83:
-        name = lab or (list(st.groups)[-1] if st.groups else "")
+        # Step 10 (B12): a NAMED missing group is a refusal,
+        # not a silent released=0 success — pop(name, []) made
+        # "no such group" indistinguishable from an existing
+        # empty group. Bare Ungroup keeps its meaning (last
+        # group); bare with no groups at all refuses as empty.
+        if lab:
+            name = lab
+            if name not in st.groups:
+                ok, err = False, f"ungroup_missing:{name}"
+                messages.append(f"Ungroup missing {name}")
+                return ok, err
+        elif st.groups:
+            name = list(st.groups)[-1]
+        else:
+            ok, err = False, "ungroup_missing:empty"
+            messages.append("Ungroup missing (no groups)")
+            return ok, err
         members = st.groups.pop(name, [])
         if members and not st.selected:
             st.selected = list(members)
@@ -501,11 +517,24 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                 ok, err = False, "malformed_composition"
                 messages.append(f"Compose malformed {body}")
             else:
-                st.compositions[name] = body
+                # Step 10 (B18): run BEFORE publishing. The old
+                # order stored the body first, so a failed
+                # define-run still published the name, and a
+                # failed redefinition destroyed the prior valid
+                # body. Now a name is published/replaced only
+                # when its define-run succeeds. The run's own
+                # effects persist (no rollback is implied or
+                # performed here); failure keeps the run's error
+                # and states the publication outcome honestly.
+                had_prior = name in st.compositions
                 out = _run_compose(program, parsed)
                 if not out.get("ok", True):
                     ok, err = False, out.get("error") or "compose_fail"
-                messages.append(f"Compose {name}={body} ran={out.get('chain_ran')}")
+                    retained = "; previous definition retained" if had_prior else ""
+                    messages.append(f"Compose {name}={body} ran={out.get('chain_ran')} not published{retained}")
+                else:
+                    st.compositions[name] = body
+                    messages.append(f"Compose {name}={body} ran={out.get('chain_ran')}")
         else:
             resolved = _resolve_name(st, name) or name
             body = st.compositions.get(name) or st.compositions.get(resolved) or st.defs.get(resolved, "")
