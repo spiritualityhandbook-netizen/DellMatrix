@@ -41,7 +41,13 @@ RESULTS = []
 # Bare-invocation failures observed at survey (empty field):
 # every one names its missing operand or precondition.
 EXPECTED_BARE_FAILURES = {
+    # Step 6 (B1/B4/B6): bare Decay now honestly refuses on the
+    # enhance gate, bare Split refuses missing_source, and bare
+    # Translate reports nothing_to_translate.
+    16: "enhance OFF",
     21: "missing_source",
+    22: "missing_source",
+    45: "nothing_to_translate",
     28: "rollback_target_invalid",
     37: "add idea requires a label",
     44: "bridge_unavailable",
@@ -89,8 +95,8 @@ def main():
 
     failed = {c["dell"]: c["bare"]["error"]
               for c in cards if c["bare"]["outcome"] != "executed"}
-    _rec("bare invocation: 84 executed, 16 named failures",
-         len(failed) == 16
+    _rec("bare invocation: 81 executed, 19 named failures",
+         len(failed) == 19
          and all(failed.get(n, "").startswith(prefix)
                  for n, prefix in EXPECTED_BARE_FAILURES.items())
          and set(failed) == set(EXPECTED_BARE_FAILURES),
