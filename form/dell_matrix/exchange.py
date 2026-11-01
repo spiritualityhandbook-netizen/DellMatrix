@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
 import uuid
 from typing import Any, Dict, List, Tuple
@@ -117,7 +118,18 @@ EXCHANGE_RECEIPTS_SECTION_VERSION = 1
 
 
 class ExchangeError(Exception):
-    """A packet or receipt failed validation at the boundary."""
+    """A packet or receipt failed validation at the boundary.
+
+    `details` (DAF-06 follow-up, step 5b): optional structured
+    evidence for failures whose compensation state matters —
+    stage, compensation status, journal retention. The string
+    message remains the human-readable summary; details never
+    replace it."""
+
+    def __init__(self, message: str = "", *,
+                 details: Dict[str, Any] = None):
+        super().__init__(message)
+        self.details: Dict[str, Any] = dict(details) if details else {}
 
 
 def _str(v: Any, limit: int, field: str) -> str:
@@ -364,6 +376,293 @@ def _preflight_import(program: Any, packet: Dict[str, Any]) -> None:
                 "(bounded admission)")
 
 
+# ----------------------- import transaction journal (DAF-06, step 5b)
+# An import spans TWO durable files (the nursery file, written by
+# nursery.add at landing, and the program file, written by the one
+# final save) with no shared atomicity. The bridge is recorded
+# intent: a journal written BEFORE landing, retained until the
+# transaction is proven complete or proven compensated, and
+# resolved at load by recover_exchange_import — never by inferred
+# visibility (the GDP_R3 recovery law). One journal per owner: an
+# unresolved journal refuses the next import (fail closed).
+
+_IMPORT_JOURNAL_VERSION = 1
+
+
+def _import_journal_path(owner: str) -> str:
+    from form.persist import _safe_owner
+    state = os.path.join(os.path.dirname(__file__), "..", "state")
+    return os.path.join(
+        state, f"exchange_import_{_safe_owner(owner)}.journal.json")
+
+
+def _write_import_journal(owner: str, journal: Dict[str, Any]) -> None:
+    from form.dell_matrix.atomic_write import atomic_write_json
+    atomic_write_json(_import_journal_path(owner), journal)
+
+
+def _read_import_journal(owner: str) -> Any:
+    """The retained import journal for owner, or None. A present
+    but unreadable/malformed journal raises ExchangeError — the
+    evidence is preserved, never silently dropped."""
+    path = _import_journal_path(owner)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            journal = json.load(f)
+    except Exception as e:
+        raise ExchangeError(
+            f"exchange import journal for {owner} is unreadable "
+            f"({type(e).__name__}); recovery evidence preserved",
+            details={"stage": "journal_read", "journal_retained": True}
+        ) from e
+    if not isinstance(journal, dict) \
+            or journal.get("kind") != "exchange_import" \
+            or journal.get("version") != _IMPORT_JOURNAL_VERSION \
+            or journal.get("owner") != owner:
+        raise ExchangeError(
+            f"exchange import journal for {owner} is malformed; "
+            "recovery evidence preserved",
+            details={"stage": "journal_read", "journal_retained": True})
+    return journal
+
+
+def _clear_import_journal(owner: str) -> bool:
+    try:
+        os.remove(_import_journal_path(owner))
+        return True
+    except OSError:
+        return False
+
+
+def _mark_journal_incomplete(owner: str, journal: Dict[str, Any],
+                             stage: str, cause: BaseException,
+                             compensation_errors: List[str]) -> None:
+    """Retain the journal as compensation_incomplete evidence.
+    Best-effort: if even this write fails, the in-progress journal
+    already on disk still identifies the transaction."""
+    journal["status"] = "compensation_incomplete"
+    journal["failure"] = {
+        "stage": stage,
+        "error": f"{type(cause).__name__}: {cause}"[:300],
+        "compensation_errors": list(compensation_errors)[:6],
+    }
+    try:
+        _write_import_journal(owner, journal)
+    except Exception:
+        pass
+
+
+def _raw_state_files(owner: str) -> Tuple[Any, Any]:
+    """(nursery_raw, program_raw) parsed from the canonical files;
+    a missing file reads as {} and a malformed one raises — a
+    durability verdict is never taken from unreadable state."""
+    from form.persist import _path
+    from form.dell_matrix.nursery import owner_nursery_path
+    raws = []
+    for path in (owner_nursery_path(owner), _path(owner)):
+        if not os.path.isfile(path):
+            raws.append({})
+            continue
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            raise ExchangeError(f"durable state file {path} is not "
+                                "an object; cannot verify import state")
+        raws.append(data)
+    return raws[0], raws[1]
+
+
+def _section_entries(program_raw: Any, section: str) -> Dict[str, Any]:
+    raw = program_raw.get(section)
+    if not isinstance(raw, dict):
+        return {}
+    entries = raw.get("entries")
+    return entries if isinstance(entries, dict) else {}
+
+
+def _durable_import_state(owner: str, pid: str) -> Dict[str, Any]:
+    """What the canonical files actually hold for one import:
+    proposal presence (nursery file) and seed/receipt entries
+    (program file). This — not a save call returning — is the
+    durability evidence compensation is judged by."""
+    nursery_raw, program_raw = _raw_state_files(owner)
+    from form.dell_matrix.nursery import DISPOSITION_SECTION_KEY
+    proposals = {k: v for k, v in nursery_raw.items()
+                 if k != DISPOSITION_SECTION_KEY
+                 and isinstance(v, dict)}
+    seeds = [e for e in _section_entries(program_raw,
+                                         "exchange_seeds").values()
+             if isinstance(e, dict) and e.get("pid") == pid]
+    receipts = [e for e in _section_entries(
+        program_raw, "exchange_receipts").values()
+        if isinstance(e, dict) and e.get("pid") == pid]
+    return {"proposal_present": pid in proposals,
+            "seed_present": bool(seeds),
+            "receipts_count": len(receipts)}
+
+
+def _compensate_import(program: Any, pid: str) -> Tuple[bool, List[str]]:
+    """Roll a landed import back and PROVE the rollback durable.
+
+    Removes the proposal and this import's receipt/seed entries
+    in memory, persists through BOTH save boundaries, then judges
+    completeness by re-reading the canonical files: complete only
+    when the durable state holds no trace of the import. Save
+    errors are collected, never suppressed. (Evictions of
+    non-live records performed during recording remain real,
+    counted losses — the step 5 contract.)"""
+    errors: List[str] = []
+    for attr in ("exchange_receipts", "exchange_seeds"):
+        entries = getattr(program, attr, None)
+        if isinstance(entries, dict):
+            for k in [k for k, e in entries.items()
+                      if isinstance(e, dict) and e.get("pid") == pid]:
+                del entries[k]
+    program.nursery.proposals.pop(pid, None)
+    try:
+        program.nursery.save()
+    except Exception as e:
+        errors.append(f"nursery.save: {type(e).__name__}")
+    try:
+        program.save()
+    except Exception as e:
+        errors.append(f"program.save: {type(e).__name__}")
+    try:
+        st = _durable_import_state(program.owner, pid)
+        complete = not st["proposal_present"] \
+            and not st["seed_present"] and st["receipts_count"] == 0
+    except Exception as e:
+        errors.append(f"verify: {type(e).__name__}")
+        complete = False
+    return complete, errors
+
+
+def _fail_import(program: Any, journal: Dict[str, Any], pid: str,
+                 stage: str, cause: BaseException) -> ExchangeError:
+    """Compensate a failed import and build the honest error:
+    compensation status and journal retention are part of the
+    result, never swallowed."""
+    complete, errors = _compensate_import(program, pid)
+    details = {"stage": stage,
+               "compensation": "complete" if complete else "incomplete",
+               "journal_retained": not complete,
+               "compensation_errors": errors}
+    if complete:
+        _clear_import_journal(program.owner)
+    else:
+        _mark_journal_incomplete(program.owner, journal, stage,
+                                 cause, errors)
+    return ExchangeError(
+        f"exchange import failed at {stage}: "
+        f"{type(cause).__name__}: {cause} "
+        f"(compensation {details['compensation']}"
+        f"{'; journal retained' if not complete else ''})",
+        details=details)
+
+
+def recover_exchange_import(owner: str) -> str:
+    """Load-boundary recovery for a retained import journal.
+
+    Called by persist_rest.load before the loaded state is
+    exposed (with the other recorded-intent recoveries). No
+    journal -> "none". A journal whose import is durably COMPLETE
+    (proposal + seed payload + receipt provenance all present and
+    matching the journal) had committed before the interruption:
+    clear the journal, change nothing ("completed"). Any other
+    journaled import is partial or aborted: remove its proposal
+    and exchange entries from the canonical files, verify by
+    re-reading, then clear the journal ("removed" /
+    "already_absent"). Malformed evidence, an ambiguous target,
+    or a failed write/verify raises — state is not exposed over
+    unresolved recovery evidence. Unjournaled state is never
+    touched (recorded-intent law)."""
+    journal = _read_import_journal(owner)
+    if journal is None:
+        return "none"
+    from form.persist import _path
+    from form.dell_matrix.nursery import (
+        DISPOSITION_SECTION_KEY, owner_nursery_path)
+    from form.dell_matrix.atomic_write import atomic_write_json
+
+    nursery_raw, program_raw = _raw_state_files(owner)
+    proposals = {k: v for k, v in nursery_raw.items()
+                 if k != DISPOSITION_SECTION_KEY
+                 and isinstance(v, dict)}
+    pid = journal.get("pid")
+    if pid is None:
+        cands = [k for k, v in proposals.items()
+                 if v.get("label") == journal.get("label")
+                 and v.get("origin") == journal.get("origin")
+                 and hashlib.sha256(
+                     str(v.get("detail", "")).encode("utf-8")
+                 ).hexdigest() == journal.get("detail_sha256")]
+        if len(cands) > 1:
+            raise ExchangeError(
+                "exchange import recovery: multiple proposals match "
+                "the journaled intent; refusing to guess",
+                details={"stage": "recovery", "journal_retained": True})
+        pid = cands[0] if cands else None
+
+    if pid is not None \
+            and journal.get("status") != "compensation_incomplete":
+        seed = next((e for e in _section_entries(
+            program_raw, "exchange_seeds").values()
+            if isinstance(e, dict) and e.get("pid") == pid), None)
+        receipts = [{k: e[k] for k in RECEIPT_KEYS}
+                    for e in _section_entries(
+                        program_raw, "exchange_receipts").values()
+                    if isinstance(e, dict) and e.get("pid") == pid
+                    and all(k in e for k in RECEIPT_KEYS)]
+        js, jm = journal["seed"], journal["manifest"]
+        complete = pid in proposals and seed is not None \
+            and all(seed.get(k) == js[k]
+                    for k in ("label", "chain", "keep")) \
+            and all(seed.get(k) == jm[k] for k in
+                    ("author_origin", "created", "registry")) \
+            and list(seed.get("requirements") or []) \
+            == list(jm["requirements"]) \
+            and seed.get("receipts_expected") \
+            == journal["receipts_expected"] \
+            and seed.get("receipts_hash") == journal["receipts_hash"] \
+            and len(receipts) == journal["receipts_expected"] \
+            and _receipts_digest(receipts) == journal["receipts_hash"]
+        if complete:
+            _clear_import_journal(owner)
+            return "completed"
+
+    if pid is None:
+        _clear_import_journal(owner)
+        return "no_target"
+    st = _durable_import_state(owner, pid)
+    if not st["proposal_present"] and not st["seed_present"] \
+            and st["receipts_count"] == 0:
+        _clear_import_journal(owner)
+        return "already_absent"
+    if pid in nursery_raw:
+        del nursery_raw[pid]
+        atomic_write_json(owner_nursery_path(owner), nursery_raw)
+    touched = False
+    for section in ("exchange_receipts", "exchange_seeds"):
+        entries = _section_entries(program_raw, section)
+        for k in [k for k, e in entries.items()
+                  if isinstance(e, dict) and e.get("pid") == pid]:
+            del entries[k]
+            touched = True
+    if touched:
+        atomic_write_json(_path(owner), program_raw)
+    st = _durable_import_state(owner, pid)
+    if st["proposal_present"] or st["seed_present"] \
+            or st["receipts_count"]:
+        raise ExchangeError(
+            "exchange import recovery could not establish removal "
+            f"of partial import {pid}; evidence retained",
+            details={"stage": "recovery", "journal_retained": True})
+    _clear_import_journal(owner)
+    return "removed"
+
+
 def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
     """Land a foreign packet as a PENDING proposal in the
     receiver's nursery. Never confirms, never makes eligible.
@@ -401,11 +700,63 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
             f"RECEIPT {i} ({r['origin']}): guess: {r['guess']} · "
             f"method: {r['test_method']} · result: {r['result']} · "
             f"mirror: {r['mirror']} · outcome: {r['outcome']}")
-    prop = program.nursery.add(
-        seed["label"], words=seed["keep"][:240], origin=origin,
-        reason=reason, detail="\n".join(detail_lines)[:2000],
-        goals=[f"replication {lint['receipts']}x/"
-               f"{lint['distinct_origins']} origins"])
+    # DAF-06 (step 5b): the landing below is a transaction across
+    # two durable files. Record intent in the import journal
+    # BEFORE landing; an unresolved journal from an earlier import
+    # refuses this one (fail closed until a load/restart recovery
+    # resolves the evidence).
+    detail_text = "\n".join(detail_lines)[:2000]
+    owner = program.owner
+    if _read_import_journal(owner) is not None:
+        raise ExchangeError(
+            "unresolved exchange import recovery evidence for "
+            f"{owner}; load/restart recovery must resolve it "
+            "before another import",
+            details={"stage": "journal", "journal_retained": True})
+    journal: Dict[str, Any] = {
+        "version": _IMPORT_JOURNAL_VERSION,
+        "kind": "exchange_import",
+        "owner": owner,
+        "import_id": uuid.uuid4().hex,
+        "phase": "intent",
+        "status": "in_progress",
+        "pid": None,
+        "label": seed["label"],
+        "origin": origin,
+        "detail_sha256": hashlib.sha256(
+            detail_text.encode("utf-8")).hexdigest(),
+        "seed": {"label": seed["label"], "chain": seed["chain"],
+                 "keep": seed["keep"]},
+        "manifest": {"author_origin": man["author_origin"],
+                     "created": man["created"],
+                     "registry": man["registry"],
+                     "requirements": list(man["requirements"])},
+        "receipts_expected": len(packet["receipts"]),
+        "receipts_hash": _receipts_digest(packet["receipts"]),
+    }
+    try:
+        _write_import_journal(owner, journal)
+    except Exception as e:
+        raise ExchangeError(
+            f"exchange import journal could not be written: "
+            f"{type(e).__name__}; import refused before landing",
+            details={"stage": "journal"}) from e
+    try:
+        prop = program.nursery.add(
+            seed["label"], words=seed["keep"][:240], origin=origin,
+            reason=reason, detail=detail_text,
+            goals=[f"replication {lint['receipts']}x/"
+                   f"{lint['distinct_origins']} origins"])
+    except Exception:
+        _clear_import_journal(owner)
+        raise
+    journal["pid"] = prop.id
+    journal["phase"] = "landed"
+    try:
+        _write_import_journal(owner, journal)
+    except Exception as e:
+        raise _fail_import(program, journal, prop.id,
+                           "journal_update", e) from e
     try:
         # Director review repair (2026-10-28): PRESERVE the packet's
         # receipts as first-class records in the receiver's receipts
@@ -434,34 +785,25 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
             raise ExchangeError(
                 f"import landed proposal {prop.id} but seed payload "
                 f"recording failed: {type(e).__name__}") from e
-    except Exception:
-        # DAF-06: a post-landing failure must not leave a durable
-        # partial import. Roll back every owner this import
-        # touched — the proposal (persisted by nursery.add at
-        # once), its receipts, its seed payload — then let the
-        # honest error propagate. Evictions the recording already
-        # performed against non-live records are real losses and
-        # stay counted; they are never silently un-counted.
-        for attr in ("exchange_receipts", "exchange_seeds"):
-            entries = getattr(program, attr, None)
-            if isinstance(entries, dict):
-                for k in [k for k, e in entries.items()
-                          if isinstance(e, dict)
-                          and e.get("pid") == prop.id]:
-                    del entries[k]
-        program.nursery.proposals.pop(prop.id, None)
-        try:
-            program.nursery.save()
-        except Exception:
-            pass
-        raise
+    except Exception as e:
+        # DAF-06 (step 5b): a post-landing failure must not leave a
+        # durable partial import, and the rollback itself must be
+        # proven, not assumed — compensate across every owner this
+        # import touched and report the compensation state in the
+        # error's details; incomplete compensation retains the
+        # journal for load-boundary recovery.
+        raise _fail_import(program, journal, prop.id,
+                           "record", e) from e
     # AF-6: the writers above deferred their per-record saves;
     # this boundary save carries the whole import's durability
-    # (one full save per import, best-effort as before).
+    # (one full save per import). Step 5b: a failure here is an
+    # import failure — never ordinary success.
     try:
         program.save()
-    except Exception:
-        pass
+    except Exception as e:
+        raise _fail_import(program, journal, prop.id,
+                           "final_save", e) from e
+    _clear_import_journal(owner)
     return {"ok": True, "pid": prop.id, "lint": lint,
             "origin": origin}
 
