@@ -59,8 +59,10 @@ DIRECTOR_FINDINGS_REGISTER.md (Uni workspace).
 | DIRECTOR_REPORT_DIRF14.md | Repair circuit (Ruling #7) | DIR-F14 Catch consumed-error split (PR #198, merge 19388d2) | SUBMITTED — awaiting ruling (held for the Director's return, Trinity mode). Catch consumption empties the frame pending slot and archives the error append-only in caught_history (caught_error = latest, step-8 contract preserved); a second Catch reports no error and consumes nothing; a new post-Catch failure, even with an identical error string, is a new pending root cause. Suite 25/25 (failing-first 14/25), mutants M1 18/25 / M2 17/25 killed, regress 218/218 x3 on the candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 218/218 GREEN. |
 | DIRECTOR_REPORT_DIRF15.md | Repair circuit (DIR-STEP9 exception) | DIR-F15 Diff absent-key vs stored-None comparator (PR #200, merge 8eb76e5) | SUBMITTED — awaiting ruling (held for the Director's return, Trinity mode). The canonical Diff comparator reports a key when membership differs OR value differs: a stored None added/removed is a change, a retained None is not; changed stays a plain key list. Suite STEP9_DIFF 24/24 (failing-first 20/24, exactly W1-W4), defect-restoring mutant 20/24 killed, regress 218/218 x3 on the candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 218/218 GREEN. Closes the exception carved out of the step 9 certificate. |
 
+| DIRECTOR_REPORT_STEP10_CONSISTENCY.md | Order step 10 | Consistency B11 Resolve / B12 Ungroup / B18 Compose (PR #202, merge e15c6a0) | SUBMITTED — awaiting ruling (held for the Director's return, Trinity mode). Hardened registry.lookup (superscript/oversized labels are misses, never ValueError); Resolve via hardened lookup with Get-shaped hit/miss cells; Ungroup honest refusals with zero mutation; Compose run-before-publish with prior body retained. Suite STEP10_CONSISTENCY 34/34, mutants M-R/M-U/M-C killed, regress 219/219 x3 on the candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 219/219 GREEN. |
+
 Forthcoming, in order:
-steps 10-11
+step 11
 per-circuit reports, step 13 sweep re-derivation, step 14
 consolidated index packet (A2 reconciled closure + remaining
 typed-Dell and full-registry re-rulings).
