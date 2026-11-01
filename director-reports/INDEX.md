@@ -26,6 +26,8 @@ DIRECTOR_FINDINGS_REGISTER.md (Uni workspace).
 
 | DIRECTOR_REPORT_STEP5B_DAF06.md | Order step 5b (post-step-5 wave c) | DAF-06 durability follow-up + A1 re-presentation: journaled Exchange import transactions (PR #178, merge 484453f) | SUBMITTED — awaiting ruling. Journaled import transaction: intent journal before landing, retained until proven complete/compensated; required durable-save failure raises ExchangeError (never ordinary success); compensation verified by re-reading canonical files; load-boundary recovery resolves journaled partial imports before state exposure; damaged-import export refusal preserved. Suite 21/21, mutants M1/M2 killed exactly (17/21), regress 211/211 x3 on the final candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 211/211 GREEN. |
 
+| DIRECTOR_PERSONAL_REPORT_2026-10-31.md | Personal report (Overseer-directed, 2026-10-31) | Not a circuit submission: the confirmation objective (certification with no bugs/problems found as the standing target), the sequel-defect lessons of the six rulings encoded as AGENTS.md §31.1–31.3, a two-way channel proposal (standing Anticipated probes + Questions sections in every circuit report; Director replies folded into register/cycle/law within one cycle), proposals P1–P4 (SWAT Director's-eye pre-mortem; pre-freeze claim reconciliation; per-circuit failure-injection matrix; environment-differential disclosure), and questions Q1–Q4 (step 6 contract completeness; report shape; step 13 evidence form; sleep-mode submission granularity) | SUBMITTED — awaiting Director response via Ace. |
+
 Forthcoming, in order: the DAF-09
 pidfd-hardening follow-up (re-presents the session-escape
 coverage only), steps 6-11
