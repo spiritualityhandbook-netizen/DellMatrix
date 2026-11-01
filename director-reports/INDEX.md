@@ -61,8 +61,9 @@ DIRECTOR_FINDINGS_REGISTER.md (Uni workspace).
 
 | DIRECTOR_REPORT_STEP10_CONSISTENCY.md | Order step 10 | Consistency B11 Resolve / B12 Ungroup / B18 Compose (PR #202, merge e15c6a0) | SUBMITTED — awaiting ruling (held for the Director's return, Trinity mode). Hardened registry.lookup (superscript/oversized labels are misses, never ValueError); Resolve via hardened lookup with Get-shaped hit/miss cells; Ungroup honest refusals with zero mutation; Compose run-before-publish with prior body retained. Suite STEP10_CONSISTENCY 34/34, mutants M-R/M-U/M-C killed, regress 219/219 x3 on the candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 219/219 GREEN. |
 
+| DIRECTOR_REPORT_STEP11_CONTRACTS.md | Order step 11 | Public-contract wording B10 Measure / B17 Commit / B19 Route-Else / B20 Move-Replace / B21 Lock-Rollback-Bridge-Embed, C1/C2 (PR #204, merge 195fafa) | SUBMITTED — awaiting ruling (held for the Director's return, Trinity mode). Wording-only: cardinality-only Measure; live mark/accept Commit, no atomic staged isolation; Route Else boundary in Branch chains; Move overwrites vs Replace refuses occupied; sandbox Lock; authority-mediated Rollback; honest Bridge/Embed refusals; card 61 the single home of Join-vs-Any + partial/ok; limitation entry corrected by appended dated correction only (historical line byte-intact). Suite 31/31, mutants M1/M2 killed, regress 220/220 x3 on the candidate, exact-head CI SUCCESS in a separate step before merge, fresh-clone 220/220 GREEN. |
+
 Forthcoming, in order:
-step 11
-per-circuit reports, step 13 sweep re-derivation, step 14
+step 13 sweep re-derivation, step 14
 consolidated index packet (A2 reconciled closure + remaining
 typed-Dell and full-registry re-rulings).
