@@ -43,19 +43,20 @@ per Dell, through the public seed path:
   state checkpoint; ids are monotonic (tx0, tx1,
   ...) over the frame history; depth = the number of
   already-active frames; try_depth tracks the active
-  count. PINNED EXHIBIT: only Assert/Guard failures
-  mark a frame "failed" — an ordinary atom failure
-  (Delete of a missing key) leaves the frame "open";
-  the failure is visible only via st.last_error.
+  count. STEP 8 (B15): EVERY executed atom failure
+  marks the innermost active frame "failed" via the
+  canonical outcome hook (previously only
+  Assert/Guard did; an ordinary Delete failure left
+  the frame "open" and could commit as clean).
 - 94 Catch: illegal with no active frame
-  (catch_illegal). Otherwise marks the innermost
-  active frame "caught" and records the captured
-  error. PINNED EXHIBIT: the captured error is
-  st.last_error, which is STICKY — it is never
-  cleared by success, so Catch can capture an error
-  raised before/outside the transaction (even the
-  commit_illegal raised by a failed Commit attempt
-  on the same frame moments earlier).
+  (catch_illegal). Otherwise consumes the innermost
+  active frame's OWN error and marks it "caught".
+  STEP 8 (B16): Catch never reads the sticky global
+  st.last_error — a pre-transaction error is not
+  captured, the first root cause is preserved (a
+  failed Commit attempt's commit_illegal lands in
+  extra_errors only), and a frame with no error
+  reports "Catch (no error)" and consumes nothing.
 - 95 Commit: with no frame ever/at all it fails
   commit_without_try; on a terminal (committed/
   reverted) frame it fails commit_illegal; on a
@@ -341,26 +342,29 @@ def main():
                            "transaction"],
          str((_msgs(r), _msgs(r2))))
 
-    # -- ordinary failure does NOT fail the frame; Catch via last_error
+    # -- step 8 (B15/B16): ordinary failure DOES fail the frame;
+    #    Catch consumes the frame's own error
     _run(p, "93[Try]")
     r = _run(p, "86[Delete] :: nosuchkey")
-    _rec("93 Try EXHIBIT: an ordinary atom failure "
-         "(Delete of a missing key) does NOT mark the "
-         "frame failed — it stays 'open'; only "
-         "st.last_error shows the failure (contrast "
-         "Assert/Guard, which fail the frame)",
+    _rec("93 Try (step 8 B15): an ordinary atom failure "
+         "(Delete of a missing key) marks the frame "
+         "'failed' through the canonical outcome hook, "
+         "with the failure as the frame's root-cause "
+         "error (previously the frame stayed 'open')",
          r.get("ok") is False
-         and st.tx[-1].get("status") == "open"
-         and st.tx[-1].get("error") == ""
+         and st.tx[-1].get("status") == "failed"
+         and st.tx[-1].get("error") == "delete_missing:nosuchkey"
          and st.last_error == "delete_missing:nosuchkey",
          str(st.tx[-1]))
     r = _run(p, "94[Catch]")
     _rec("94 Catch: Catch marks the frame 'caught' "
-         "and captures st.last_error as the frame "
-         "error — symbiosis: Catch reads Delete's "
-         "failure",
+         "and consumes the FRAME's error as "
+         "caught_error — symbiosis: Catch reads "
+         "Delete's failure from the frame it failed",
          _msgs(r) == ["Catch delete_missing:nosuchkey"]
          and st.tx[-1].get("status") == "caught"
+         and st.tx[-1].get("caught_error")
+         == "delete_missing:nosuchkey"
          and st.tx[-1].get("error")
          == "delete_missing:nosuchkey", str(_msgs(r)))
     r = _run(p, "95[Commit]")
@@ -375,7 +379,8 @@ def main():
     _run(p, "91[Assert] :: false")
     _rec("91/93 symbiosis: an Assert failure inside "
          "a transaction marks the frame 'failed' "
-         "(the _fail_open_tx path Delete never takes)",
+         "(the same canonical hook every atom uses, "
+         "step 8 B15)",
          st.tx[-1].get("status") == "failed"
          and st.tx[-1].get("error") == "assert_fail",
          str(st.tx[-1]))
@@ -389,14 +394,17 @@ def main():
          and st.tx[-1].get("status") == "failed",
          str(_msgs(r)))
     r = _run(p, "94[Catch]")
-    _rec("94 Catch EXHIBIT: Catch captures the "
-         "STICKY last_error — which the failed Commit "
-         "attempt just overwrote, so Catch on this "
-         "frame captures 'commit_illegal', not the "
-         "original assert_fail",
-         _msgs(r) == ["Catch commit_illegal"]
+    _rec("94 Catch (step 8 B16): Catch preserves the "
+         "FIRST root cause — the failed Commit attempt "
+         "recorded commit_illegal only as additional "
+         "evidence (extra_errors), so Catch on this "
+         "frame captures the original assert_fail",
+         _msgs(r) == ["Catch assert_fail"]
          and st.tx[-1].get("status") == "caught"
-         and st.tx[-1].get("error") == "commit_illegal",
+         and st.tx[-1].get("error") == "assert_fail"
+         and st.tx[-1].get("caught_error") == "assert_fail"
+         and "commit_illegal"
+         in st.tx[-1].get("extra_errors", []),
          str(_msgs(r)))
     r = _run(p, "96[Revert]")
     r2 = _run(p, "96[Revert]")
@@ -458,14 +466,15 @@ def main():
     _run(bp, "86[Delete] :: ghost")
     _run(bp, "93[Try]")
     r = _run(bp, "94[Catch]")
-    _rec("94 Catch EXHIBIT: Catch inside a brand-new "
-         "transaction captures a STALE error — the "
-         "Delete failure raised before the Try even "
-         "opened (last_error is never cleared by "
-         "success or by Try)",
-         _msgs(r) == ["Catch delete_missing:ghost"]
-         and bst.tx[-1].get("error")
-         == "delete_missing:ghost", str(_msgs(r)))
+    _rec("94 Catch (step 8 B16): Catch inside a "
+         "brand-new transaction does NOT capture the "
+         "STALE pre-Try Delete error — the new frame "
+         "has clean error state, so Catch reports "
+         "'(no error)' explicitly, consumes nothing, "
+         "and the frame stays open with error ''",
+         _msgs(r) == ["Catch (no error)"]
+         and bst.tx[-1].get("status") == "open"
+         and bst.tx[-1].get("error") == "", str(_msgs(r)))
     _run(bp, "96[Revert]")
     cell_before = dict(bst.last_result)
     r = _run(bp, "97[Define] :: greet=hello world")
