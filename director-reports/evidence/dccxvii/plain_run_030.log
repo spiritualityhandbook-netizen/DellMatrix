@@ -1,0 +1,50 @@
+Traceback (most recent call last):
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/dell_matrix/atomic_write.py", line 243, in _atomic_replace
+    os.replace(tmp, path)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/hatch/workspace/nbd-omega-dccxvii/form/state/graph_DCCXVII_R.e663fc0eb704.g_gb4e0c7da39b7445e.json.dmtmp.34177.6b2cd739' -> '/home/hatch/workspace/nbd-omega-dccxvii/form/state/graph_DCCXVII_R.e663fc0eb704.g_gb4e0c7da39b7445e.json'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/mandell/checkpoint_generation.py", line 225, in _seal_members
+    atomic_write_bytes(_member_path(owner, kind, generation_id), blob)
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/dell_matrix/atomic_write.py", line 177, in atomic_write_bytes
+    dir_fsynced = _atomic_replace(path, blob, fail)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/dell_matrix/atomic_write.py", line 249, in _atomic_replace
+    raise AtomicWriteError(f"atomic replace failed; canonical untouched: {exc}") from exc
+form.dell_matrix.atomic_write.AtomicWriteError: atomic replace failed; canonical untouched: [Errno 2] No such file or directory: '/home/hatch/workspace/nbd-omega-dccxvii/form/state/graph_DCCXVII_R.e663fc0eb704.g_gb4e0c7da39b7445e.json.dmtmp.34177.6b2cd739' -> '/home/hatch/workspace/nbd-omega-dccxvii/form/state/graph_DCCXVII_R.e663fc0eb704.g_gb4e0c7da39b7445e.json'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/mandell/dcc_xvii_test.py", line 1036, in <module>
+    sys.exit(0 if smoke() else 1)
+                  ^^^^^^^
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/mandell/dcc_xvii_test.py", line 1013, in smoke
+    control_r_determinism()
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/mandell/dcc_xvii_test.py", line 387, in control_r_determinism
+    p.confirm_proposal(pr.id, _producer="dccxvii")
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/open.py", line 1709, in confirm_proposal
+    return _confirm_proposal(self, pid, _auth=_auth)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/dell_matrix/confirm_lineage.py", line 368, in confirm_proposal
+    commit_checkpoint(program)
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/mandell/checkpoint_generation.py", line 361, in commit_checkpoint
+    sealed = _seal_members(program, gen_id, _fail_at=_fail_at)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hatch/workspace/nbd-omega-dccxvii/form/mandell/checkpoint_generation.py", line 227, in _seal_members
+    raise CheckpointCommitError(f"member copy failed for {kind}; commit aborted: {exc}") from exc
+form.mandell.checkpoint_generation.CheckpointCommitError: member copy failed for graph; commit aborted: atomic replace failed; canonical untouched: [Errno 2] No such file or directory: '/home/hatch/workspace/nbd-omega-dccxvii/form/state/graph_DCCXVII_R.e663fc0eb704.g_gb4e0c7da39b7445e.json.dmtmp.34177.6b2cd739' -> '/home/hatch/workspace/nbd-omega-dccxvii/form/state/graph_DCCXVII_R.e663fc0eb704.g_gb4e0c7da39b7445e.json'
+  A normal save: GREEN
+  B serialization failure: GREEN
+  C temp-write failure: GREEN
+  G repeated saves: GREEN
+  H large payload (2446927 bytes): GREEN
+  I unicode/escaping: GREEN
+  J legacy load: GREEN
+  K corrupt canonical: GREEN
+  L IO failures: GREEN
+  P/Q owner + temp isolation: GREEN
