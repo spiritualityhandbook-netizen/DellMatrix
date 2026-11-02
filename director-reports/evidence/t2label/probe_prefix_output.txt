@@ -1,0 +1,10 @@
+EVIDENCE E1 — T2 label-identity probe, PRE-FIX
+command: python3 director-reports/evidence/t2label/t2label_probe.py
+probe: t2label_probe.py against BASE main ec78242 (pre-fix), 2026-11-02T14:10:41+00:00
+plant stored idea == full label? False (stored len 80), stage=branch
+node a: stage=branch source=growth_force
+node b: stage=branch source=growth_force
+unique control: stage=branch source=growth_force
+plant-conflict: stage=seed source=growth_force
+PROBE: FAIL
+probe exit=1
