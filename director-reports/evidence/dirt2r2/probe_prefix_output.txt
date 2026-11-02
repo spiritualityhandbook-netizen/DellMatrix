@@ -1,0 +1,6 @@
+[FAIL] R2-1 omitted node B never receives A's stage — B got stage='branch' source='growth_force'; A stage='branch'
+[FAIL] R2-2 legacy prefix-only match stays ambiguous — B got stage='branch' source='growth_force'
+[FAIL] R2-3 both-visible: A resolves to A's own stage — A got None/'ambiguous', own='branch'
+[FAIL] R2-4 both-visible: B resolves to B's own stage (seed) — B got None/'ambiguous'
+[FAIL] R2-5 plant() twice on one identity keeps one record — plants=2
+=== dirt2r2 probe: 0/5 ===
