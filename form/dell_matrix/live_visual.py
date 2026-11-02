@@ -226,6 +226,8 @@ def _state_payload(program) -> Dict[str, Any]:
             view_nodes = filter_nodes_for_room(
                 getattr(program, "active_view", "growth"), nodes,
                 owner=program.owner, scores=scores,
+                plants=list(program.forces.growth.plants)
+                if getattr(program, "forces", None) is not None else None,
             )
         except Exception:
             view_nodes = nodes
