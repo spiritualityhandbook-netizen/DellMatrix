@@ -54,7 +54,13 @@ tri-state docstring updated (refused = identity missing/changed
 or ESRCH at open-or-send; unavailable = open or send failure
 that does not prove the instance gone). No numeric fallback
 introduced or restored. Fix commit b9789bb (PR #217), merged
-as dd80a0e; merge tree identical to the candidate tree.
+as 6dab0d6; merge tree cc1316c, identical to the candidate
+tree. (CORRECTION 2, 2026-11-02: the merge identifiers in the
+original submission — "dd80a0e" / tree "0971e37" — do not
+exist; they came from a non-terminal readout. GitHub-verified
+merge: 6dab0d6, 2026-11-02T12:57:26Z. Every fresh-clone result
+below was run at that head and stands; only the label was
+wrong. See evidence/dirf16/ERRATA.md.)
 
 ## Tests
 
@@ -79,7 +85,7 @@ as dd80a0e; merge tree identical to the candidate tree.
 - Full regression on b9789bb: 221/221 PASS x3 (forward /
   --twice / --order rev). Exact-head CI on b9789bb: COMPLETE
   SUCCESS (Python package + Form smoke). Fresh-clone regress
-  at merge dd80a0e: 221/221 GREEN; probe re-run in the fresh
+  at merge 6dab0d6: 221/221 GREEN; probe re-run in the fresh
   clone: PASS.
 
 ## Evidence files (director-reports/evidence/dirf16/)
@@ -87,9 +93,9 @@ as dd80a0e; merge tree identical to the candidate tree.
 | ID | File | SHA-256 (first 16) | What it shows |
 |----|------|--------------------|----------------|
 | E1 | probe_prefix_output.txt | cba5907618915eec | failing-first at 5ce5074 |
-| E2 | probe_postfix_output.txt | 0aa44f2ed2b73220 | passed-after at merge dd80a0e (fresh clone) |
+| E2 | probe_postfix_output.txt | 0aa44f2ed2b73220 | passed-after at merge 6dab0d6 (fresh clone; header inside the file carries the retracted dd80a0e label — see ERRATA.md) |
 | E3 | dirf16_probe.py | cd456b192b80891a | the injection probe source (repo root resolved from its own path; run from the repo root) |
-| E4 | suite_postfix_output.txt | 96d6edd255c0330a | suite 31/31 at merge dd80a0e (fresh clone) |
+| E4 | suite_postfix_output.txt | 96d6edd255c0330a | suite 31/31 at merge 6dab0d6 (fresh clone; header label errata — see ERRATA.md) |
 | E5 | suite_mutant_output.txt | 76d8a1b38c186935 | mutant 28/31, exact failures |
 
 Environment limits: Linux x86-64 VM, Python 3.12, /proc +
