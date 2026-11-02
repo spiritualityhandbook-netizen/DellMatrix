@@ -1,0 +1,2260 @@
+{
+"block": "block_74",
+"rows": [
+{
+"pair": "70->40",
+"a_seed": "70[Count]",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "70->41",
+"a_seed": "70[Count]",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "70->42",
+"a_seed": "70[Count]",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "70->43",
+"a_seed": "70[Count]",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "70->44",
+"a_seed": "70[Count]",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "70->45",
+"a_seed": "70[Count]",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0013,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "70->46",
+"a_seed": "70[Count]",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "70->47",
+"a_seed": "70[Count]",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "70->48",
+"a_seed": "70[Count]",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "70->49",
+"a_seed": "70[Count]",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0008,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "71->40",
+"a_seed": "71[Measure] :: data:count",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "71->41",
+"a_seed": "71[Measure] :: data:count",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "71->42",
+"a_seed": "71[Measure] :: data:count",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "71->43",
+"a_seed": "71[Measure] :: data:count",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "71->44",
+"a_seed": "71[Measure] :: data:count",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "71->45",
+"a_seed": "71[Measure] :: data:count",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "71->46",
+"a_seed": "71[Measure] :: data:count",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "71->47",
+"a_seed": "71[Measure] :: data:count",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "71->48",
+"a_seed": "71[Measure] :: data:count",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "71->49",
+"a_seed": "71[Measure] :: data:count",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "72->40",
+"a_seed": "72[Limit] :: 4",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.limit"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "72->41",
+"a_seed": "72[Limit] :: 4",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.limit"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "72->42",
+"a_seed": "72[Limit] :: 4",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.limit"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "72->43",
+"a_seed": "72[Limit] :: 4",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.limit"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "72->44",
+"a_seed": "72[Limit] :: 4",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.limit"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "72->45",
+"a_seed": "72[Limit] :: 4",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.limit"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0013,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "72->46",
+"a_seed": "72[Limit] :: 4",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.limit"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "72->47",
+"a_seed": "72[Limit] :: 4",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.limit"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "72->48",
+"a_seed": "72[Limit] :: 4",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.limit"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "72->49",
+"a_seed": "72[Limit] :: 4",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.limit"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "73->40",
+"a_seed": "73[Threshold] :: gte:count 1",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "73->41",
+"a_seed": "73[Threshold] :: gte:count 1",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "73->42",
+"a_seed": "73[Threshold] :: gte:count 1",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "73->43",
+"a_seed": "73[Threshold] :: gte:count 1",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "73->44",
+"a_seed": "73[Threshold] :: gte:count 1",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "73->45",
+"a_seed": "73[Threshold] :: gte:count 1",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "73->46",
+"a_seed": "73[Threshold] :: gte:count 1",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "73->47",
+"a_seed": "73[Threshold] :: gte:count 1",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "73->48",
+"a_seed": "73[Threshold] :: gte:count 1",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "73->49",
+"a_seed": "73[Threshold] :: gte:count 1",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0009,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "74->40",
+"a_seed": "74[Weight] :: count=0.5",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "74->41",
+"a_seed": "74[Weight] :: count=0.5",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "74->42",
+"a_seed": "74[Weight] :: count=0.5",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "74->43",
+"a_seed": "74[Weight] :: count=0.5",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "74->44",
+"a_seed": "74[Weight] :: count=0.5",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "74->45",
+"a_seed": "74[Weight] :: count=0.5",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0013,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "74->46",
+"a_seed": "74[Weight] :: count=0.5",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "74->47",
+"a_seed": "74[Weight] :: count=0.5",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "74->48",
+"a_seed": "74[Weight] :: count=0.5",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "74->49",
+"a_seed": "74[Weight] :: count=0.5",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "75->40",
+"a_seed": "75[Normalize]",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "75->41",
+"a_seed": "75[Normalize]",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "75->42",
+"a_seed": "75[Normalize]",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "75->43",
+"a_seed": "75[Normalize]",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "75->44",
+"a_seed": "75[Normalize]",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "75->45",
+"a_seed": "75[Normalize]",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "75->46",
+"a_seed": "75[Normalize]",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "75->47",
+"a_seed": "75[Normalize]",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "75->48",
+"a_seed": "75[Normalize]",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "75->49",
+"a_seed": "75[Normalize]",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.weights"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "76->40",
+"a_seed": "76[Resolve] :: 70",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "76->41",
+"a_seed": "76[Resolve] :: 70",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "76->42",
+"a_seed": "76[Resolve] :: 70",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "76->43",
+"a_seed": "76[Resolve] :: 70",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "76->44",
+"a_seed": "76[Resolve] :: 70",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "76->45",
+"a_seed": "76[Resolve] :: 70",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "76->46",
+"a_seed": "76[Resolve] :: 70",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "76->47",
+"a_seed": "76[Resolve] :: 70",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "76->48",
+"a_seed": "76[Resolve] :: 70",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "76->49",
+"a_seed": "76[Resolve] :: 70",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "77->40",
+"a_seed": "77[Infer] :: garden",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "77->41",
+"a_seed": "77[Infer] :: garden",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "77->42",
+"a_seed": "77[Infer] :: garden",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "77->43",
+"a_seed": "77[Infer] :: garden",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "77->44",
+"a_seed": "77[Infer] :: garden",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "77->45",
+"a_seed": "77[Infer] :: garden",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "77->46",
+"a_seed": "77[Infer] :: garden",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "77->47",
+"a_seed": "77[Infer] :: garden",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "77->48",
+"a_seed": "77[Infer] :: garden",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "77->49",
+"a_seed": "77[Infer] :: garden",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0009,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "78->40",
+"a_seed": "78[Cause] :: a > b",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.causes",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "78->41",
+"a_seed": "78[Cause] :: a > b",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.causes",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "78->42",
+"a_seed": "78[Cause] :: a > b",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.causes",
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "78->43",
+"a_seed": "78[Cause] :: a > b",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.causes",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "78->44",
+"a_seed": "78[Cause] :: a > b",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.causes",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "78->45",
+"a_seed": "78[Cause] :: a > b",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.causes",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "78->46",
+"a_seed": "78[Cause] :: a > b",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.causes",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "78->47",
+"a_seed": "78[Cause] :: a > b",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.causes",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "78->48",
+"a_seed": "78[Cause] :: a > b",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.causes",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "78->49",
+"a_seed": "78[Cause] :: a > b",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.causes",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "79->40",
+"a_seed": "79[Depend] :: a > b",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.deps",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "79->41",
+"a_seed": "79[Depend] :: a > b",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.deps",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "79->42",
+"a_seed": "79[Depend] :: a > b",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.deps",
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "79->43",
+"a_seed": "79[Depend] :: a > b",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.deps",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "79->44",
+"a_seed": "79[Depend] :: a > b",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.deps",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "79->45",
+"a_seed": "79[Depend] :: a > b",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.deps",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "79->46",
+"a_seed": "79[Depend] :: a > b",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.deps",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "79->47",
+"a_seed": "79[Depend] :: a > b",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.deps",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "79->48",
+"a_seed": "79[Depend] :: a > b",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.deps",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "79->49",
+"a_seed": "79[Depend] :: a > b",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.deps",
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+}
+],
+"secs": 0.3
+}

@@ -1,0 +1,2202 @@
+{
+"block": "block_55",
+"rows": [
+{
+"pair": "50->51",
+"a_seed": "50[Manifest] :: Census Form",
+"b_seed": "51[Select] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "50->52",
+"a_seed": "50[Manifest] :: Census Form",
+"b_seed": "52[Filter] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "50->53",
+"a_seed": "50[Manifest] :: Census Form",
+"b_seed": "53[Scope] :: plane",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "50->54",
+"a_seed": "50[Manifest] :: Census Form",
+"b_seed": "54[Query] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "50->55",
+"a_seed": "50[Manifest] :: Census Form",
+"b_seed": "55[Set] :: probe=1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"probe"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.store']"
+},
+{
+"pair": "50->56",
+"a_seed": "50[Manifest] :: Census Form",
+"b_seed": "56[Get] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "50->57",
+"a_seed": "50[Manifest] :: Census Form",
+"b_seed": "57[Compare] :: eq data real",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "50->58",
+"a_seed": "50[Manifest] :: Census Form",
+"b_seed": "58[Match] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "50->59",
+"a_seed": "50[Manifest] :: Census Form",
+"b_seed": "59[Route] :: alt",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.route']"
+},
+{
+"pair": "51->50",
+"a_seed": "51[Select] :: garden",
+"b_seed": "50[Manifest] :: Census Form",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "51->52",
+"a_seed": "51[Select] :: garden",
+"b_seed": "52[Filter] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "51->53",
+"a_seed": "51[Select] :: garden",
+"b_seed": "53[Scope] :: plane",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "51->54",
+"a_seed": "51[Select] :: garden",
+"b_seed": "54[Query] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "51->55",
+"a_seed": "51[Select] :: garden",
+"b_seed": "55[Set] :: probe=1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"probe"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.store']"
+},
+{
+"pair": "51->56",
+"a_seed": "51[Select] :: garden",
+"b_seed": "56[Get] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "51->57",
+"a_seed": "51[Select] :: garden",
+"b_seed": "57[Compare] :: eq data real",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "51->58",
+"a_seed": "51[Select] :: garden",
+"b_seed": "58[Match] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "51->59",
+"a_seed": "51[Select] :: garden",
+"b_seed": "59[Route] :: alt",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.route']"
+},
+{
+"pair": "52->50",
+"a_seed": "52[Filter] :: gate",
+"b_seed": "50[Manifest] :: Census Form",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "52->51",
+"a_seed": "52[Filter] :: gate",
+"b_seed": "51[Select] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "52->53",
+"a_seed": "52[Filter] :: gate",
+"b_seed": "53[Scope] :: plane",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "52->54",
+"a_seed": "52[Filter] :: gate",
+"b_seed": "54[Query] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "52->55",
+"a_seed": "52[Filter] :: gate",
+"b_seed": "55[Set] :: probe=1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"probe"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.store']"
+},
+{
+"pair": "52->56",
+"a_seed": "52[Filter] :: gate",
+"b_seed": "56[Get] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "52->57",
+"a_seed": "52[Filter] :: gate",
+"b_seed": "57[Compare] :: eq data real",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "52->58",
+"a_seed": "52[Filter] :: gate",
+"b_seed": "58[Match] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "52->59",
+"a_seed": "52[Filter] :: gate",
+"b_seed": "59[Route] :: alt",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.route']"
+},
+{
+"pair": "53->50",
+"a_seed": "53[Scope] :: plane",
+"b_seed": "50[Manifest] :: Census Form",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "53->51",
+"a_seed": "53[Scope] :: plane",
+"b_seed": "51[Select] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "53->52",
+"a_seed": "53[Scope] :: plane",
+"b_seed": "52[Filter] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "53->54",
+"a_seed": "53[Scope] :: plane",
+"b_seed": "54[Query] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "53->55",
+"a_seed": "53[Scope] :: plane",
+"b_seed": "55[Set] :: probe=1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"probe"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.store']"
+},
+{
+"pair": "53->56",
+"a_seed": "53[Scope] :: plane",
+"b_seed": "56[Get] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "53->57",
+"a_seed": "53[Scope] :: plane",
+"b_seed": "57[Compare] :: eq data real",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "53->58",
+"a_seed": "53[Scope] :: plane",
+"b_seed": "58[Match] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "53->59",
+"a_seed": "53[Scope] :: plane",
+"b_seed": "59[Route] :: alt",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.route']"
+},
+{
+"pair": "54->50",
+"a_seed": "54[Query] :: garden",
+"b_seed": "50[Manifest] :: Census Form",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "54->51",
+"a_seed": "54[Query] :: garden",
+"b_seed": "51[Select] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "54->52",
+"a_seed": "54[Query] :: garden",
+"b_seed": "52[Filter] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "54->53",
+"a_seed": "54[Query] :: garden",
+"b_seed": "53[Scope] :: plane",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "54->55",
+"a_seed": "54[Query] :: garden",
+"b_seed": "55[Set] :: probe=1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"probe"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.store']"
+},
+{
+"pair": "54->56",
+"a_seed": "54[Query] :: garden",
+"b_seed": "56[Get] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "54->57",
+"a_seed": "54[Query] :: garden",
+"b_seed": "57[Compare] :: eq data real",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "54->58",
+"a_seed": "54[Query] :: garden",
+"b_seed": "58[Match] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "54->59",
+"a_seed": "54[Query] :: garden",
+"b_seed": "59[Route] :: alt",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.route']"
+},
+{
+"pair": "55->50",
+"a_seed": "55[Set] :: probe=1",
+"b_seed": "50[Manifest] :: Census Form",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.store"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0009,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "55->51",
+"a_seed": "55[Set] :: probe=1",
+"b_seed": "51[Select] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.store"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "55->52",
+"a_seed": "55[Set] :: probe=1",
+"b_seed": "52[Filter] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.store"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "55->53",
+"a_seed": "55[Set] :: probe=1",
+"b_seed": "53[Scope] :: plane",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.store"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "55->54",
+"a_seed": "55[Set] :: probe=1",
+"b_seed": "54[Query] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.store"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "55->56",
+"a_seed": "55[Set] :: probe=1",
+"b_seed": "56[Get] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.store"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "55->57",
+"a_seed": "55[Set] :: probe=1",
+"b_seed": "57[Compare] :: eq data real",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.store"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "55->58",
+"a_seed": "55[Set] :: probe=1",
+"b_seed": "58[Match] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.store"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "55->59",
+"a_seed": "55[Set] :: probe=1",
+"b_seed": "59[Route] :: alt",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.store"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.route']"
+},
+{
+"pair": "56->50",
+"a_seed": "56[Get] :: data",
+"b_seed": "50[Manifest] :: Census Form",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "56->51",
+"a_seed": "56[Get] :: data",
+"b_seed": "51[Select] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "56->52",
+"a_seed": "56[Get] :: data",
+"b_seed": "52[Filter] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "56->53",
+"a_seed": "56[Get] :: data",
+"b_seed": "53[Scope] :: plane",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "56->54",
+"a_seed": "56[Get] :: data",
+"b_seed": "54[Query] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "56->55",
+"a_seed": "56[Get] :: data",
+"b_seed": "55[Set] :: probe=1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"probe"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.store']"
+},
+{
+"pair": "56->57",
+"a_seed": "56[Get] :: data",
+"b_seed": "57[Compare] :: eq data real",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "56->58",
+"a_seed": "56[Get] :: data",
+"b_seed": "58[Match] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "56->59",
+"a_seed": "56[Get] :: data",
+"b_seed": "59[Route] :: alt",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.route']"
+},
+{
+"pair": "57->50",
+"a_seed": "57[Compare] :: eq data real",
+"b_seed": "50[Manifest] :: Census Form",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "57->51",
+"a_seed": "57[Compare] :: eq data real",
+"b_seed": "51[Select] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "57->52",
+"a_seed": "57[Compare] :: eq data real",
+"b_seed": "52[Filter] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "57->53",
+"a_seed": "57[Compare] :: eq data real",
+"b_seed": "53[Scope] :: plane",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "57->54",
+"a_seed": "57[Compare] :: eq data real",
+"b_seed": "54[Query] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "57->55",
+"a_seed": "57[Compare] :: eq data real",
+"b_seed": "55[Set] :: probe=1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"probe"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.store']"
+},
+{
+"pair": "57->56",
+"a_seed": "57[Compare] :: eq data real",
+"b_seed": "56[Get] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "57->58",
+"a_seed": "57[Compare] :: eq data real",
+"b_seed": "58[Match] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "57->59",
+"a_seed": "57[Compare] :: eq data real",
+"b_seed": "59[Route] :: alt",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.route']"
+},
+{
+"pair": "58->50",
+"a_seed": "58[Match] :: gate",
+"b_seed": "50[Manifest] :: Census Form",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "58->51",
+"a_seed": "58[Match] :: gate",
+"b_seed": "51[Select] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "58->52",
+"a_seed": "58[Match] :: gate",
+"b_seed": "52[Filter] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "58->53",
+"a_seed": "58[Match] :: gate",
+"b_seed": "53[Scope] :: plane",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "58->54",
+"a_seed": "58[Match] :: gate",
+"b_seed": "54[Query] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "58->55",
+"a_seed": "58[Match] :: gate",
+"b_seed": "55[Set] :: probe=1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"probe"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.store']"
+},
+{
+"pair": "58->56",
+"a_seed": "58[Match] :: gate",
+"b_seed": "56[Get] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "58->57",
+"a_seed": "58[Match] :: gate",
+"b_seed": "57[Compare] :: eq data real",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "58->59",
+"a_seed": "58[Match] :: gate",
+"b_seed": "59[Route] :: alt",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.route']"
+},
+{
+"pair": "59->50",
+"a_seed": "59[Route] :: alt",
+"b_seed": "50[Manifest] :: Census Form",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "59->51",
+"a_seed": "59[Route] :: alt",
+"b_seed": "51[Select] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "59->52",
+"a_seed": "59[Route] :: alt",
+"b_seed": "52[Filter] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+},
+{
+"pair": "59->53",
+"a_seed": "59[Route] :: alt",
+"b_seed": "53[Scope] :: plane",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "59->54",
+"a_seed": "59[Route] :: alt",
+"b_seed": "54[Query] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "59->55",
+"a_seed": "59[Route] :: alt",
+"b_seed": "55[Set] :: probe=1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"b_writes_net": [
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"probe"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.store']"
+},
+{
+"pair": "59->56",
+"a_seed": "59[Route] :: alt",
+"b_seed": "56[Get] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "59->57",
+"a_seed": "59[Route] :: alt",
+"b_seed": "57[Compare] :: eq data real",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "59->58",
+"a_seed": "59[Route] :: alt",
+"b_seed": "58[Match] :: gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result",
+"core_ii.route"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.selected"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.selected']"
+}
+],
+"secs": 0.2
+}

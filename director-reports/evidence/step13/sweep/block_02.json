@@ -1,0 +1,2106 @@
+{
+"block": "block_02",
+"rows": [
+{
+"pair": "00->20",
+"a_seed": "00[Nova] :: census",
+"b_seed": "20[Alpha]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "00->21",
+"a_seed": "00[Nova] :: census",
+"b_seed": "21[Merge] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "missing_source",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0009,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "00->22",
+"a_seed": "00[Nova] :: census",
+"b_seed": "22[Split] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "00->23",
+"a_seed": "00[Nova] :: census",
+"b_seed": "23[Lock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "00->24",
+"a_seed": "00[Nova] :: census",
+"b_seed": "24[Unlock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "00->25",
+"a_seed": "00[Nova] :: census",
+"b_seed": "25[Pulse]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "00->26",
+"a_seed": "00[Nova] :: census",
+"b_seed": "26[Temp] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "00->27",
+"a_seed": "00[Nova] :: census",
+"b_seed": "27[Checkpoint] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2257,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "00->28",
+"a_seed": "00[Nova] :: census",
+"b_seed": "28[Rollback]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "rollback_target_invalid",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.001,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "00->29",
+"a_seed": "00[Nova] :: census",
+"b_seed": "29[Compress] :: garden gate path",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "01->20",
+"a_seed": "01[Initiate] :: census",
+"b_seed": "20[Alpha]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "01->21",
+"a_seed": "01[Initiate] :: census",
+"b_seed": "21[Merge] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "missing_source",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "01->22",
+"a_seed": "01[Initiate] :: census",
+"b_seed": "22[Split] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "01->23",
+"a_seed": "01[Initiate] :: census",
+"b_seed": "23[Lock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "01->24",
+"a_seed": "01[Initiate] :: census",
+"b_seed": "24[Unlock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "01->25",
+"a_seed": "01[Initiate] :: census",
+"b_seed": "25[Pulse]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "01->26",
+"a_seed": "01[Initiate] :: census",
+"b_seed": "26[Temp] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "01->27",
+"a_seed": "01[Initiate] :: census",
+"b_seed": "27[Checkpoint] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1801,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "01->28",
+"a_seed": "01[Initiate] :: census",
+"b_seed": "28[Rollback]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "rollback_target_invalid",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "01->29",
+"a_seed": "01[Initiate] :: census",
+"b_seed": "29[Compress] :: garden gate path",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "02->20",
+"a_seed": "02[Persona]",
+"b_seed": "20[Alpha]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "02->21",
+"a_seed": "02[Persona]",
+"b_seed": "21[Merge] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "missing_source",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "02->22",
+"a_seed": "02[Persona]",
+"b_seed": "22[Split] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "02->23",
+"a_seed": "02[Persona]",
+"b_seed": "23[Lock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "02->24",
+"a_seed": "02[Persona]",
+"b_seed": "24[Unlock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "02->25",
+"a_seed": "02[Persona]",
+"b_seed": "25[Pulse]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "02->26",
+"a_seed": "02[Persona]",
+"b_seed": "26[Temp] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "02->27",
+"a_seed": "02[Persona]",
+"b_seed": "27[Checkpoint] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1848,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "02->28",
+"a_seed": "02[Persona]",
+"b_seed": "28[Rollback]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "rollback_target_invalid",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "02->29",
+"a_seed": "02[Persona]",
+"b_seed": "29[Compress] :: garden gate path",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "03->20",
+"a_seed": "03[Logic] :: garden",
+"b_seed": "20[Alpha]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "03->21",
+"a_seed": "03[Logic] :: garden",
+"b_seed": "21[Merge] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "missing_source",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "03->22",
+"a_seed": "03[Logic] :: garden",
+"b_seed": "22[Split] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "03->23",
+"a_seed": "03[Logic] :: garden",
+"b_seed": "23[Lock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "03->24",
+"a_seed": "03[Logic] :: garden",
+"b_seed": "24[Unlock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "03->25",
+"a_seed": "03[Logic] :: garden",
+"b_seed": "25[Pulse]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "03->26",
+"a_seed": "03[Logic] :: garden",
+"b_seed": "26[Temp] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "03->27",
+"a_seed": "03[Logic] :: garden",
+"b_seed": "27[Checkpoint] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1834,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "03->28",
+"a_seed": "03[Logic] :: garden",
+"b_seed": "28[Rollback]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "rollback_target_invalid",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "03->29",
+"a_seed": "03[Logic] :: garden",
+"b_seed": "29[Compress] :: garden gate path",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "04->20",
+"a_seed": "04[Transform] :: garden",
+"b_seed": "20[Alpha]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "04->21",
+"a_seed": "04[Transform] :: garden",
+"b_seed": "21[Merge] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "missing_source",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "04->22",
+"a_seed": "04[Transform] :: garden",
+"b_seed": "22[Split] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "04->23",
+"a_seed": "04[Transform] :: garden",
+"b_seed": "23[Lock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "04->24",
+"a_seed": "04[Transform] :: garden",
+"b_seed": "24[Unlock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "04->25",
+"a_seed": "04[Transform] :: garden",
+"b_seed": "25[Pulse]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "04->26",
+"a_seed": "04[Transform] :: garden",
+"b_seed": "26[Temp] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "04->27",
+"a_seed": "04[Transform] :: garden",
+"b_seed": "27[Checkpoint] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1931,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "04->28",
+"a_seed": "04[Transform] :: garden",
+"b_seed": "28[Rollback]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "rollback_target_invalid",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "04->29",
+"a_seed": "04[Transform] :: garden",
+"b_seed": "29[Compress] :: garden gate path",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "05->20",
+"a_seed": "05[Tone] :: garden",
+"b_seed": "20[Alpha]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "05->21",
+"a_seed": "05[Tone] :: garden",
+"b_seed": "21[Merge] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "missing_source",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "05->22",
+"a_seed": "05[Tone] :: garden",
+"b_seed": "22[Split] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "05->23",
+"a_seed": "05[Tone] :: garden",
+"b_seed": "23[Lock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "05->24",
+"a_seed": "05[Tone] :: garden",
+"b_seed": "24[Unlock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "05->25",
+"a_seed": "05[Tone] :: garden",
+"b_seed": "25[Pulse]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "05->26",
+"a_seed": "05[Tone] :: garden",
+"b_seed": "26[Temp] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "05->27",
+"a_seed": "05[Tone] :: garden",
+"b_seed": "27[Checkpoint] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2428,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "05->28",
+"a_seed": "05[Tone] :: garden",
+"b_seed": "28[Rollback]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "rollback_target_invalid",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "05->29",
+"a_seed": "05[Tone] :: garden",
+"b_seed": "29[Compress] :: garden gate path",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "06->20",
+"a_seed": "06[Cycle] :: 2",
+"b_seed": "20[Alpha]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"nursery"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.23,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "06->21",
+"a_seed": "06[Cycle] :: 2",
+"b_seed": "21[Merge] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "missing_source",
+"a_writes_net": [
+"nursery"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2339,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "06->22",
+"a_seed": "06[Cycle] :: 2",
+"b_seed": "22[Split] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"nursery"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2363,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "06->23",
+"a_seed": "06[Cycle] :: 2",
+"b_seed": "23[Lock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"nursery"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2321,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "06->24",
+"a_seed": "06[Cycle] :: 2",
+"b_seed": "24[Unlock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"nursery"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.282,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "06->25",
+"a_seed": "06[Cycle] :: 2",
+"b_seed": "25[Pulse]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"nursery"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.232,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "06->26",
+"a_seed": "06[Cycle] :: 2",
+"b_seed": "26[Temp] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"nursery"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2319,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "06->27",
+"a_seed": "06[Cycle] :: 2",
+"b_seed": "27[Checkpoint] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"nursery"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.4887,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "06->28",
+"a_seed": "06[Cycle] :: 2",
+"b_seed": "28[Rollback]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "rollback_target_invalid",
+"a_writes_net": [
+"nursery"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2376,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "06->29",
+"a_seed": "06[Cycle] :: 2",
+"b_seed": "29[Compress] :: garden gate path",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"nursery"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2277,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "07->20",
+"a_seed": "07[Link] :: garden_gate",
+"b_seed": "20[Alpha]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "07->21",
+"a_seed": "07[Link] :: garden_gate",
+"b_seed": "21[Merge] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "missing_source",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "07->22",
+"a_seed": "07[Link] :: garden_gate",
+"b_seed": "22[Split] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "07->23",
+"a_seed": "07[Link] :: garden_gate",
+"b_seed": "23[Lock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "07->24",
+"a_seed": "07[Link] :: garden_gate",
+"b_seed": "24[Unlock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "07->25",
+"a_seed": "07[Link] :: garden_gate",
+"b_seed": "25[Pulse]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "07->26",
+"a_seed": "07[Link] :: garden_gate",
+"b_seed": "26[Temp] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "07->27",
+"a_seed": "07[Link] :: garden_gate",
+"b_seed": "27[Checkpoint] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1782,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "07->28",
+"a_seed": "07[Link] :: garden_gate",
+"b_seed": "28[Rollback]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "rollback_target_invalid",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "07->29",
+"a_seed": "07[Link] :: garden_gate",
+"b_seed": "29[Compress] :: garden gate path",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "08->20",
+"a_seed": "08[Create] :: Census Idea",
+"b_seed": "20[Alpha]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "08->21",
+"a_seed": "08[Create] :: Census Idea",
+"b_seed": "21[Merge] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "missing_source",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "08->22",
+"a_seed": "08[Create] :: Census Idea",
+"b_seed": "22[Split] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0008,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "08->23",
+"a_seed": "08[Create] :: Census Idea",
+"b_seed": "23[Lock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "08->24",
+"a_seed": "08[Create] :: Census Idea",
+"b_seed": "24[Unlock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "08->25",
+"a_seed": "08[Create] :: Census Idea",
+"b_seed": "25[Pulse]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "08->26",
+"a_seed": "08[Create] :: Census Idea",
+"b_seed": "26[Temp] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "08->27",
+"a_seed": "08[Create] :: Census Idea",
+"b_seed": "27[Checkpoint] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1843,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "08->28",
+"a_seed": "08[Create] :: Census Idea",
+"b_seed": "28[Rollback]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "rollback_target_invalid",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "08->29",
+"a_seed": "08[Create] :: Census Idea",
+"b_seed": "29[Compress] :: garden gate path",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "09->20",
+"a_seed": "09[Show] :: garden_gate",
+"b_seed": "20[Alpha]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "09->21",
+"a_seed": "09[Show] :: garden_gate",
+"b_seed": "21[Merge] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "missing_source",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "09->22",
+"a_seed": "09[Show] :: garden_gate",
+"b_seed": "22[Split] :: garden_gate",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "09->23",
+"a_seed": "09[Show] :: garden_gate",
+"b_seed": "23[Lock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "09->24",
+"a_seed": "09[Show] :: garden_gate",
+"b_seed": "24[Unlock]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "09->25",
+"a_seed": "09[Show] :: garden_gate",
+"b_seed": "25[Pulse]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "09->26",
+"a_seed": "09[Show] :: garden_gate",
+"b_seed": "26[Temp] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "09->27",
+"a_seed": "09[Show] :: garden_gate",
+"b_seed": "27[Checkpoint] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.186,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "09->28",
+"a_seed": "09[Show] :: garden_gate",
+"b_seed": "28[Rollback]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "rollback_target_invalid",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "09->29",
+"a_seed": "09[Show] :: garden_gate",
+"b_seed": "29[Compress] :: garden gate path",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['plane']"
+}
+],
+"secs": 4.6
+}

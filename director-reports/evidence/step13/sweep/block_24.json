@@ -1,0 +1,2050 @@
+{
+"block": "block_24",
+"rows": [
+{
+"pair": "20->40",
+"a_seed": "20[Alpha]",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "20->41",
+"a_seed": "20[Alpha]",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "20->42",
+"a_seed": "20[Alpha]",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "20->43",
+"a_seed": "20[Alpha]",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "20->44",
+"a_seed": "20[Alpha]",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0003,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "20->45",
+"a_seed": "20[Alpha]",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "20->46",
+"a_seed": "20[Alpha]",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "20->47",
+"a_seed": "20[Alpha]",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "20->48",
+"a_seed": "20[Alpha]",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "20->49",
+"a_seed": "20[Alpha]",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "21->40",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0003,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->41",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->42",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "42[Retry]",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->43",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "43[Fallback] :: census",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->44",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "21->45",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "45[Translate] :: garden",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0011,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->46",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "46[Rank]",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->47",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "47[Embed] :: garden",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0003,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "21->48",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "48[Macro] :: 2",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->49",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "49[Profile]",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "22->40",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "22->41",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "22->42",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0009,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "22->43",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "22->44",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "22->45",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0013,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "22->46",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "22->47",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "22->48",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "22->49",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0009,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "23->40",
+"a_seed": "23[Lock]",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "23->41",
+"a_seed": "23[Lock]",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "23->42",
+"a_seed": "23[Lock]",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "23->43",
+"a_seed": "23[Lock]",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "23->44",
+"a_seed": "23[Lock]",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0003,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "23->45",
+"a_seed": "23[Lock]",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0011,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "23->46",
+"a_seed": "23[Lock]",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "23->47",
+"a_seed": "23[Lock]",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "23->48",
+"a_seed": "23[Lock]",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "23->49",
+"a_seed": "23[Lock]",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0008,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "24->40",
+"a_seed": "24[Unlock]",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "24->41",
+"a_seed": "24[Unlock]",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "24->42",
+"a_seed": "24[Unlock]",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "24->43",
+"a_seed": "24[Unlock]",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "24->44",
+"a_seed": "24[Unlock]",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0003,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "24->45",
+"a_seed": "24[Unlock]",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0014,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "24->46",
+"a_seed": "24[Unlock]",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "24->47",
+"a_seed": "24[Unlock]",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0003,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "24->48",
+"a_seed": "24[Unlock]",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "24->49",
+"a_seed": "24[Unlock]",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "25->40",
+"a_seed": "25[Pulse]",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "25->41",
+"a_seed": "25[Pulse]",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "25->42",
+"a_seed": "25[Pulse]",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "25->43",
+"a_seed": "25[Pulse]",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "25->44",
+"a_seed": "25[Pulse]",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0003,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "25->45",
+"a_seed": "25[Pulse]",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0011,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "25->46",
+"a_seed": "25[Pulse]",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "25->47",
+"a_seed": "25[Pulse]",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "25->48",
+"a_seed": "25[Pulse]",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "25->49",
+"a_seed": "25[Pulse]",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "26->40",
+"a_seed": "26[Temp] :: census",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "26->41",
+"a_seed": "26[Temp] :: census",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "26->42",
+"a_seed": "26[Temp] :: census",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "26->43",
+"a_seed": "26[Temp] :: census",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "26->44",
+"a_seed": "26[Temp] :: census",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "26->45",
+"a_seed": "26[Temp] :: census",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0011,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "26->46",
+"a_seed": "26[Temp] :: census",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "26->47",
+"a_seed": "26[Temp] :: census",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0003,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "26->48",
+"a_seed": "26[Temp] :: census",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "26->49",
+"a_seed": "26[Temp] :: census",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "27->40",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1816,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "27->41",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1807,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "27->42",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1855,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "27->43",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2422,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "27->44",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1887,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "27->45",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1797,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "27->46",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1848,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "27->47",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1809,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "27->48",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2359,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "27->49",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1874,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "28->40",
+"a_seed": "28[Rollback]",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->41",
+"a_seed": "28[Rollback]",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->42",
+"a_seed": "28[Rollback]",
+"b_seed": "42[Retry]",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->43",
+"a_seed": "28[Rollback]",
+"b_seed": "43[Fallback] :: census",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->44",
+"a_seed": "28[Rollback]",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "28->45",
+"a_seed": "28[Rollback]",
+"b_seed": "45[Translate] :: garden",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0013,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->46",
+"a_seed": "28[Rollback]",
+"b_seed": "46[Rank]",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->47",
+"a_seed": "28[Rollback]",
+"b_seed": "47[Embed] :: garden",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "28->48",
+"a_seed": "28[Rollback]",
+"b_seed": "48[Macro] :: 2",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->49",
+"a_seed": "28[Rollback]",
+"b_seed": "49[Profile]",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0009,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "29->40",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "29->41",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "29->42",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"plane"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['plane']"
+},
+{
+"pair": "29->43",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "29->44",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "29->45",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "29->46",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "29->47",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "29->48",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "29->49",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0008,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+}
+],
+"secs": 2.2
+}

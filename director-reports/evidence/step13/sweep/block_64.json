@@ -1,0 +1,2373 @@
+{
+"block": "block_64",
+"rows": [
+{
+"pair": "60->40",
+"a_seed": "60[pass]",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "60->41",
+"a_seed": "60[pass]",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "60->42",
+"a_seed": "60[pass]",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.frames"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.frames']"
+},
+{
+"pair": "60->43",
+"a_seed": "60[pass]",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "60->44",
+"a_seed": "60[pass]",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "60->45",
+"a_seed": "60[pass]",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0013,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "60->46",
+"a_seed": "60[pass]",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "60->47",
+"a_seed": "60[pass]",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "60->48",
+"a_seed": "60[pass]",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "60->49",
+"a_seed": "60[pass]",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0008,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "61->40",
+"a_seed": "61[Join]",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "61->41",
+"a_seed": "61[Join]",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "61->42",
+"a_seed": "61[Join]",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.frames', 'core_ii.last_frame']"
+},
+{
+"pair": "61->43",
+"a_seed": "61[Join]",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "61->44",
+"a_seed": "61[Join]",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "61->45",
+"a_seed": "61[Join]",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0013,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "61->46",
+"a_seed": "61[Join]",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "61->47",
+"a_seed": "61[Join]",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "61->48",
+"a_seed": "61[Join]",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "61->49",
+"a_seed": "61[Join]",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "62->40",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "62->41",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "62->42",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.frames"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.frames']"
+},
+{
+"pair": "62->43",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "62->44",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "62->45",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "62->46",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "62->47",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "62->48",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "62->49",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "63->40",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "63->41",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "63->42",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.frames"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.frames']"
+},
+{
+"pair": "63->43",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "63->44",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "63->45",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0015,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "63->46",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "63->47",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "63->48",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "63->49",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0011,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "64->40",
+"a_seed": "64[Until] :: true",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "64->41",
+"a_seed": "64[Until] :: true",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "64->42",
+"a_seed": "64[Until] :: true",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.frames"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.frames']"
+},
+{
+"pair": "64->43",
+"a_seed": "64[Until] :: true",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "64->44",
+"a_seed": "64[Until] :: true",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "64->45",
+"a_seed": "64[Until] :: true",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0014,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "64->46",
+"a_seed": "64[Until] :: true",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "64->47",
+"a_seed": "64[Until] :: true",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "64->48",
+"a_seed": "64[Until] :: true",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "64->49",
+"a_seed": "64[Until] :: true",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0008,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "65->40",
+"a_seed": "65[While] :: false",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "65->41",
+"a_seed": "65[While] :: false",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "65->42",
+"a_seed": "65[While] :: false",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.frames"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.frames']"
+},
+{
+"pair": "65->43",
+"a_seed": "65[While] :: false",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "65->44",
+"a_seed": "65[While] :: false",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "65->45",
+"a_seed": "65[While] :: false",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0013,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "65->46",
+"a_seed": "65[While] :: false",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "65->47",
+"a_seed": "65[While] :: false",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "65->48",
+"a_seed": "65[While] :: false",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "65->49",
+"a_seed": "65[While] :: false",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0008,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "66->40",
+"a_seed": "66[ForEach]",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "66->41",
+"a_seed": "66[ForEach]",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "66->42",
+"a_seed": "66[ForEach]",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.frames', 'core_ii.last_control', 'core_ii.last_frame']"
+},
+{
+"pair": "66->43",
+"a_seed": "66[ForEach]",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "66->44",
+"a_seed": "66[ForEach]",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "66->45",
+"a_seed": "66[ForEach]",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0012,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "66->46",
+"a_seed": "66[ForEach]",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "66->47",
+"a_seed": "66[ForEach]",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "66->48",
+"a_seed": "66[ForEach]",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "66->49",
+"a_seed": "66[ForEach]",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "67->40",
+"a_seed": "67[Any] :: gate",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "67->41",
+"a_seed": "67[Any] :: gate",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "67->42",
+"a_seed": "67[Any] :: gate",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "67->43",
+"a_seed": "67[Any] :: gate",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "67->44",
+"a_seed": "67[Any] :: gate",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "67->45",
+"a_seed": "67[Any] :: gate",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0011,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "67->46",
+"a_seed": "67[Any] :: gate",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "67->47",
+"a_seed": "67[Any] :: gate",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "67->48",
+"a_seed": "67[Any] :: gate",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "67->49",
+"a_seed": "67[Any] :: gate",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0008,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "68->40",
+"a_seed": "68[All] :: gate",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "68->41",
+"a_seed": "68[All] :: gate",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "68->42",
+"a_seed": "68[All] :: gate",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "68->43",
+"a_seed": "68[All] :: gate",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "68->44",
+"a_seed": "68[All] :: gate",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "68->45",
+"a_seed": "68[All] :: gate",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0011,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "68->46",
+"a_seed": "68[All] :: gate",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "68->47",
+"a_seed": "68[All] :: gate",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "68->48",
+"a_seed": "68[All] :: gate",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "68->49",
+"a_seed": "68[All] :: gate",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "69->40",
+"a_seed": "69[None] :: zzz",
+"b_seed": "sha256:ed2bfe6c62c62f42 len:14",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "69->41",
+"a_seed": "69[None] :: zzz",
+"b_seed": "sha256:93fe199d6988ddd8 len:43",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "69->42",
+"a_seed": "69[None] :: zzz",
+"b_seed": "42[Retry]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "69->43",
+"a_seed": "69[None] :: zzz",
+"b_seed": "43[Fallback] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "69->44",
+"a_seed": "69[None] :: zzz",
+"b_seed": "44[Bridge] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "bridge_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "bridge_unavailable"
+},
+{
+"pair": "69->45",
+"a_seed": "69[None] :: zzz",
+"b_seed": "45[Translate] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0011,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "69->46",
+"a_seed": "69[None] :: zzz",
+"b_seed": "46[Rank]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "69->47",
+"a_seed": "69[None] :: zzz",
+"b_seed": "47[Embed] :: garden",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "embed_unavailable",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "embed_unavailable"
+},
+{
+"pair": "69->48",
+"a_seed": "69[None] :: zzz",
+"b_seed": "48[Macro] :: 2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+},
+{
+"pair": "69->49",
+"a_seed": "69[None] :: zzz",
+"b_seed": "49[Profile]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes []"
+}
+],
+"secs": 0.3
+}
