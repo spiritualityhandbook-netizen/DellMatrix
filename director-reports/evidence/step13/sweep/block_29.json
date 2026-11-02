@@ -1,0 +1,2306 @@
+{
+"block": "block_29",
+"rows": [
+{
+"pair": "20->90",
+"a_seed": "20[Alpha]",
+"b_seed": "90[Trace]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "20->91",
+"a_seed": "20[Alpha]",
+"b_seed": "91[Assert] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_assert"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_assert']"
+},
+{
+"pair": "20->92",
+"a_seed": "20[Alpha]",
+"b_seed": "92[Guard] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "20->93",
+"a_seed": "20[Alpha]",
+"b_seed": "93[Try]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.try_depth",
+"core_ii.tx"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.try_depth', 'core_ii.tx']"
+},
+{
+"pair": "20->94",
+"a_seed": "20[Alpha]",
+"b_seed": "94[Catch]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "catch_illegal",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "catch_illegal"
+},
+{
+"pair": "20->95",
+"a_seed": "20[Alpha]",
+"b_seed": "95[Commit]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "commit_without_try",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "commit_without_try"
+},
+{
+"pair": "20->96",
+"a_seed": "20[Alpha]",
+"b_seed": "96[Revert]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs",
+"core_ii.groups",
+"core_ii.selected",
+"core_ii.store",
+"core_ii.weights"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs', 'core_ii.groups', 'core_ii.selected', 'core_ii.store', 'core_ii.weights']"
+},
+{
+"pair": "20->97",
+"a_seed": "20[Alpha]",
+"b_seed": "97[Define] :: x=y",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs']"
+},
+{
+"pair": "20->98",
+"a_seed": "20[Alpha]",
+"b_seed": "98[Alias] :: al=note",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.aliases"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.aliases']"
+},
+{
+"pair": "20->99",
+"a_seed": "20[Alpha]",
+"b_seed": "99[Compose] :: censuscomp=70",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.compositions",
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.compositions', 'core_ii.last_result']"
+},
+{
+"pair": "21->90",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "90[Trace]",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->91",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "91[Assert] :: true",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_assert"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->92",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "92[Guard] :: true",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->93",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "93[Try]",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.try_depth",
+"core_ii.tx"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->94",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "94[Catch]",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": false,
+"b_error": "catch_illegal",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "catch_illegal"
+},
+{
+"pair": "21->95",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "95[Commit]",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": false,
+"b_error": "commit_without_try",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "commit_without_try"
+},
+{
+"pair": "21->96",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "96[Revert]",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs",
+"core_ii.groups",
+"core_ii.selected",
+"core_ii.store",
+"core_ii.weights"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0003,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->97",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "97[Define] :: x=y",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->98",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "98[Alias] :: al=note",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.aliases"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "21->99",
+"a_seed": "21[Merge] :: garden_gate",
+"b_seed": "99[Compose] :: censuscomp=70",
+"a_ok": false,
+"a_error": "missing_source",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.compositions",
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "missing_source"
+},
+{
+"pair": "22->90",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "90[Trace]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "22->91",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "91[Assert] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_assert"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_assert']"
+},
+{
+"pair": "22->92",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "92[Guard] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "22->93",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "93[Try]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.try_depth",
+"core_ii.tx"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.try_depth', 'core_ii.tx']"
+},
+{
+"pair": "22->94",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "94[Catch]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "catch_illegal",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "catch_illegal"
+},
+{
+"pair": "22->95",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "95[Commit]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "commit_without_try",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "commit_without_try"
+},
+{
+"pair": "22->96",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "96[Revert]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.defs",
+"core_ii.groups",
+"core_ii.selected",
+"core_ii.store",
+"core_ii.weights"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs', 'core_ii.groups', 'core_ii.selected', 'core_ii.store', 'core_ii.weights']"
+},
+{
+"pair": "22->97",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "97[Define] :: x=y",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.defs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs']"
+},
+{
+"pair": "22->98",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "98[Alias] :: al=note",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.aliases"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.aliases']"
+},
+{
+"pair": "22->99",
+"a_seed": "22[Split] :: garden_gate",
+"b_seed": "99[Compose] :: censuscomp=70",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.compositions",
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0008,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.compositions', 'core_ii.last_result']"
+},
+{
+"pair": "23->90",
+"a_seed": "23[Lock]",
+"b_seed": "90[Trace]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "23->91",
+"a_seed": "23[Lock]",
+"b_seed": "91[Assert] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_assert"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_assert']"
+},
+{
+"pair": "23->92",
+"a_seed": "23[Lock]",
+"b_seed": "92[Guard] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "23->93",
+"a_seed": "23[Lock]",
+"b_seed": "93[Try]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.try_depth",
+"core_ii.tx"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.try_depth', 'core_ii.tx']"
+},
+{
+"pair": "23->94",
+"a_seed": "23[Lock]",
+"b_seed": "94[Catch]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "catch_illegal",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "catch_illegal"
+},
+{
+"pair": "23->95",
+"a_seed": "23[Lock]",
+"b_seed": "95[Commit]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "commit_without_try",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "commit_without_try"
+},
+{
+"pair": "23->96",
+"a_seed": "23[Lock]",
+"b_seed": "96[Revert]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs",
+"core_ii.groups",
+"core_ii.selected",
+"core_ii.store",
+"core_ii.weights"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs', 'core_ii.groups', 'core_ii.selected', 'core_ii.store', 'core_ii.weights']"
+},
+{
+"pair": "23->97",
+"a_seed": "23[Lock]",
+"b_seed": "97[Define] :: x=y",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs']"
+},
+{
+"pair": "23->98",
+"a_seed": "23[Lock]",
+"b_seed": "98[Alias] :: al=note",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.aliases"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.aliases']"
+},
+{
+"pair": "23->99",
+"a_seed": "23[Lock]",
+"b_seed": "99[Compose] :: censuscomp=70",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.compositions",
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.compositions', 'core_ii.last_result']"
+},
+{
+"pair": "24->90",
+"a_seed": "24[Unlock]",
+"b_seed": "90[Trace]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "24->91",
+"a_seed": "24[Unlock]",
+"b_seed": "91[Assert] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_assert"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_assert']"
+},
+{
+"pair": "24->92",
+"a_seed": "24[Unlock]",
+"b_seed": "92[Guard] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "24->93",
+"a_seed": "24[Unlock]",
+"b_seed": "93[Try]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.try_depth",
+"core_ii.tx"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.try_depth', 'core_ii.tx']"
+},
+{
+"pair": "24->94",
+"a_seed": "24[Unlock]",
+"b_seed": "94[Catch]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "catch_illegal",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "catch_illegal"
+},
+{
+"pair": "24->95",
+"a_seed": "24[Unlock]",
+"b_seed": "95[Commit]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "commit_without_try",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "commit_without_try"
+},
+{
+"pair": "24->96",
+"a_seed": "24[Unlock]",
+"b_seed": "96[Revert]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs",
+"core_ii.groups",
+"core_ii.selected",
+"core_ii.store",
+"core_ii.weights"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs', 'core_ii.groups', 'core_ii.selected', 'core_ii.store', 'core_ii.weights']"
+},
+{
+"pair": "24->97",
+"a_seed": "24[Unlock]",
+"b_seed": "97[Define] :: x=y",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs']"
+},
+{
+"pair": "24->98",
+"a_seed": "24[Unlock]",
+"b_seed": "98[Alias] :: al=note",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.aliases"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.aliases']"
+},
+{
+"pair": "24->99",
+"a_seed": "24[Unlock]",
+"b_seed": "99[Compose] :: censuscomp=70",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.compositions",
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.compositions', 'core_ii.last_result']"
+},
+{
+"pair": "25->90",
+"a_seed": "25[Pulse]",
+"b_seed": "90[Trace]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "25->91",
+"a_seed": "25[Pulse]",
+"b_seed": "91[Assert] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_assert"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_assert']"
+},
+{
+"pair": "25->92",
+"a_seed": "25[Pulse]",
+"b_seed": "92[Guard] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "25->93",
+"a_seed": "25[Pulse]",
+"b_seed": "93[Try]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.try_depth",
+"core_ii.tx"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.try_depth', 'core_ii.tx']"
+},
+{
+"pair": "25->94",
+"a_seed": "25[Pulse]",
+"b_seed": "94[Catch]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "catch_illegal",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "catch_illegal"
+},
+{
+"pair": "25->95",
+"a_seed": "25[Pulse]",
+"b_seed": "95[Commit]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "commit_without_try",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "commit_without_try"
+},
+{
+"pair": "25->96",
+"a_seed": "25[Pulse]",
+"b_seed": "96[Revert]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs",
+"core_ii.groups",
+"core_ii.selected",
+"core_ii.store",
+"core_ii.weights"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs', 'core_ii.groups', 'core_ii.selected', 'core_ii.store', 'core_ii.weights']"
+},
+{
+"pair": "25->97",
+"a_seed": "25[Pulse]",
+"b_seed": "97[Define] :: x=y",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs']"
+},
+{
+"pair": "25->98",
+"a_seed": "25[Pulse]",
+"b_seed": "98[Alias] :: al=note",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.aliases"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.aliases']"
+},
+{
+"pair": "25->99",
+"a_seed": "25[Pulse]",
+"b_seed": "99[Compose] :: censuscomp=70",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.compositions",
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.compositions', 'core_ii.last_result']"
+},
+{
+"pair": "26->90",
+"a_seed": "26[Temp] :: census",
+"b_seed": "90[Trace]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "26->91",
+"a_seed": "26[Temp] :: census",
+"b_seed": "91[Assert] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_assert"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_assert']"
+},
+{
+"pair": "26->92",
+"a_seed": "26[Temp] :: census",
+"b_seed": "92[Guard] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "26->93",
+"a_seed": "26[Temp] :: census",
+"b_seed": "93[Try]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.try_depth",
+"core_ii.tx"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.try_depth', 'core_ii.tx']"
+},
+{
+"pair": "26->94",
+"a_seed": "26[Temp] :: census",
+"b_seed": "94[Catch]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "catch_illegal",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "catch_illegal"
+},
+{
+"pair": "26->95",
+"a_seed": "26[Temp] :: census",
+"b_seed": "95[Commit]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "commit_without_try",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "commit_without_try"
+},
+{
+"pair": "26->96",
+"a_seed": "26[Temp] :: census",
+"b_seed": "96[Revert]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs",
+"core_ii.groups",
+"core_ii.selected",
+"core_ii.store",
+"core_ii.weights"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs', 'core_ii.groups', 'core_ii.selected', 'core_ii.store', 'core_ii.weights']"
+},
+{
+"pair": "26->97",
+"a_seed": "26[Temp] :: census",
+"b_seed": "97[Define] :: x=y",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs']"
+},
+{
+"pair": "26->98",
+"a_seed": "26[Temp] :: census",
+"b_seed": "98[Alias] :: al=note",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.aliases"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.aliases']"
+},
+{
+"pair": "26->99",
+"a_seed": "26[Temp] :: census",
+"b_seed": "99[Compose] :: censuscomp=70",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.compositions",
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.compositions', 'core_ii.last_result']"
+},
+{
+"pair": "27->90",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "90[Trace]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1863,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "27->91",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "91[Assert] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_assert"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2027,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_assert']"
+},
+{
+"pair": "27->92",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "92[Guard] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2255,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "27->93",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "93[Try]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.try_depth",
+"core_ii.tx"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2242,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.try_depth', 'core_ii.tx']"
+},
+{
+"pair": "27->94",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "94[Catch]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "catch_illegal",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2584,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "catch_illegal"
+},
+{
+"pair": "27->95",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "95[Commit]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "commit_without_try",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2114,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "commit_without_try"
+},
+{
+"pair": "27->96",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "96[Revert]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs",
+"core_ii.groups",
+"core_ii.selected",
+"core_ii.store",
+"core_ii.weights"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.1921,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs', 'core_ii.groups', 'core_ii.selected', 'core_ii.store', 'core_ii.weights']"
+},
+{
+"pair": "27->97",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "97[Define] :: x=y",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1866,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs']"
+},
+{
+"pair": "27->98",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "98[Alias] :: al=note",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.aliases"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.1832,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.aliases']"
+},
+{
+"pair": "27->99",
+"a_seed": "27[Checkpoint] :: census",
+"b_seed": "99[Compose] :: censuscomp=70",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.compositions",
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.2741,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.compositions', 'core_ii.last_result']"
+},
+{
+"pair": "28->90",
+"a_seed": "28[Rollback]",
+"b_seed": "90[Trace]",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->91",
+"a_seed": "28[Rollback]",
+"b_seed": "91[Assert] :: true",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_assert"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->92",
+"a_seed": "28[Rollback]",
+"b_seed": "92[Guard] :: true",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->93",
+"a_seed": "28[Rollback]",
+"b_seed": "93[Try]",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.try_depth",
+"core_ii.tx"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->94",
+"a_seed": "28[Rollback]",
+"b_seed": "94[Catch]",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": false,
+"b_error": "catch_illegal",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "catch_illegal"
+},
+{
+"pair": "28->95",
+"a_seed": "28[Rollback]",
+"b_seed": "95[Commit]",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": false,
+"b_error": "commit_without_try",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "commit_without_try"
+},
+{
+"pair": "28->96",
+"a_seed": "28[Rollback]",
+"b_seed": "96[Revert]",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs",
+"core_ii.groups",
+"core_ii.selected",
+"core_ii.store",
+"core_ii.weights"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0025,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->97",
+"a_seed": "28[Rollback]",
+"b_seed": "97[Define] :: x=y",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.defs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->98",
+"a_seed": "28[Rollback]",
+"b_seed": "98[Alias] :: al=note",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.aliases"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "28->99",
+"a_seed": "28[Rollback]",
+"b_seed": "99[Compose] :: censuscomp=70",
+"a_ok": false,
+"a_error": "rollback_target_invalid",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [],
+"b_writes_net": [
+"core_ii.compositions",
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "rollback_target_invalid"
+},
+{
+"pair": "29->90",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "90[Trace]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result']"
+},
+{
+"pair": "29->91",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "91[Assert] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_assert"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_assert']"
+},
+{
+"pair": "29->92",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "92[Guard] :: true",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes []"
+},
+{
+"pair": "29->93",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "93[Try]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.try_depth",
+"core_ii.tx"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.try_depth', 'core_ii.tx']"
+},
+{
+"pair": "29->94",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "94[Catch]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "catch_illegal",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "catch_illegal"
+},
+{
+"pair": "29->95",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "95[Commit]",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "commit_without_try",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "INTENDED_CLASH",
+"q1": "designed refusal (catalogued)",
+"q2": "commit_without_try"
+},
+{
+"pair": "29->96",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "96[Revert]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.defs",
+"core_ii.groups",
+"core_ii.selected",
+"core_ii.store",
+"core_ii.weights"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs', 'core_ii.groups', 'core_ii.selected', 'core_ii.store', 'core_ii.weights']"
+},
+{
+"pair": "29->97",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "97[Define] :: x=y",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.defs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.defs']"
+},
+{
+"pair": "29->98",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "98[Alias] :: al=note",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.aliases"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.aliases']"
+},
+{
+"pair": "29->99",
+"a_seed": "29[Compress] :: garden gate path",
+"b_seed": "99[Compose] :: censuscomp=70",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"plane"
+],
+"b_writes_net": [
+"core_ii.compositions",
+"core_ii.last_result"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.compositions', 'core_ii.last_result']"
+}
+],
+"secs": 2.4
+}
