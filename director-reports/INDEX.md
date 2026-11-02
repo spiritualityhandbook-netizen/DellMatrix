@@ -66,7 +66,9 @@ DIRECTOR_FINDINGS_REGISTER.md (Uni workspace).
 
 | DIRECTOR_REPORT_STEP13_REDERIVATION.md | Order step 13 | Gate 0 reconciliation + full 9,900-pair re-derivation at the repaired freeze (freeze c94e223, code head 195fafa) | SUBMITTED — awaiting ruling (held for the Director's return, Trinity mode). Census recomputed at the freeze (standalone diff 3/100: 13 sensitivity narrowed; 16/83 honest refusals). Raw sweep DEFECT 0 / SEAM 0; v4 overlay (R5/R6 designed prefixes + R86/41 baseline correction, 454+2 before-asserted changes) -> FINAL F 1989, FI 6375, IC 1528, UNIQUE 8 (exactly the historical genuine residue), identity 89/11/0. Diff vs ledger v1: 369 changes, all residuals mechanism-explained (13 sensitivity; 93->55 Step 8 tx channel). Ledger v2 frozen (de5354f0…), v1 untouched as historical PRE_AF. |
 
+| DIRECTOR_REPORT_STEP14_ADMISSION.md | Order step 14 | Admission packet (INDEX over per-circuit reports): requests A1, A2 (#120 reconciled closure), typed-set (A3a, 15 signatures) and full-registry (A3b) re-rulings by exact scope, plus per-circuit rulings on the SUBMITTED reports (DAF-09 pidfd hardening, DIR-F12/F13/F14/F15, steps 10/11/13); ledger v2 as pairwise evidence at freeze c26799f | SUBMITTED — awaiting ruling (held for the Director's return, Trinity mode). Index only: no new behavioral claims; DAF-09 session-escape discrepancy carried UNRESOLVED and NOT requested; loose ends (§4 of the packet) stated on the record. |
+
 Forthcoming, in order:
-step 14
-consolidated index packet (A2 reconciled closure + remaining
-typed-Dell and full-registry re-rulings).
+step 15
+Ace elementary completion report (Director-order step 15;
+follows the step 14 admission packet, which is SUBMITTED).
