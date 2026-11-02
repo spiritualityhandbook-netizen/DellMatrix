@@ -20,6 +20,7 @@ executed GREEN. Anything else is RED (exit 1).
 from __future__ import annotations
 
 import argparse
+import errno
 import os
 import re
 import secrets
@@ -429,10 +430,12 @@ def _signal_identity(pid: int, starttime: Optional[int], sig: int) -> str:
       following the open (closing the capture->open race).
     - "refused": the identity is missing or the process now at that
       PID is a different instance (or the pinned instance is already
-      dead — pidfd_send_signal delivered the signal to NOBODY, never
-      to a PID reuser). Nothing was signalled.
+      dead — pidfd_open or pidfd_send_signal ESRCH: the signal was
+      delivered to NOBODY, never to a PID reuser). Nothing was
+      signalled.
     - "unavailable": pidfd signalling could not be attempted at all
-      (no os.pidfd_open, or pidfd_open failed). Nothing was signalled.
+      (no os.pidfd_open, or pidfd_open failed for a reason other
+      than the instance being gone). Nothing was signalled.
 
     There is NO kill(2) fallback for witnessed identities (DAF-09
     pidfd-hardening follow-up, Director Mode D ruling at 3234966;
@@ -449,7 +452,16 @@ def _signal_identity(pid: int, starttime: Optional[int], sig: int) -> str:
         return "unavailable"
     try:
         fd = os.pidfd_open(pid)
-    except OSError:
+    except OSError as exc:
+        if getattr(exc, "errno", None) == errno.ESRCH:
+            # The witnessed instance died between the starttime
+            # pre-read above and this open (instrumented DAF-09
+            # investigation, run7: errno 3 with pre-read MATCH —
+            # frequently the instance was already group-killed).
+            # That is the already-dead class — the same fact
+            # pidfd_send_signal ESRCH reports one syscall later —
+            # not a pidfd-availability failure. Nobody signalled.
+            return "refused"
         return "unavailable"
     try:
         if _proc_starttime(pid) != starttime:
