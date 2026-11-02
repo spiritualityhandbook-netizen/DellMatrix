@@ -102,3 +102,24 @@ properties stand as published (row counts, class totals,
 the exact 369-change v1→v2 diff). Nothing in this record
 argues whole-program certification (order #5 remains gated
 on its own conditions), and DAF-09 (order #4) is untouched.
+
+## Addendum (2026-11-02, per RDI-2026-11-02) — verifier defect corrected
+
+Reviewing PR #228, the Director caught a defect in the
+bundled verifier (`evidence/step13/step13_checksum_reconcile.py`):
+it compared the bundle's v2 ledger against a copy at a
+machine-specific `~/workspace/...` path and, when that path
+was absent, printed the comparison as "(skipped)" while
+still returning RECONCILED. The ledger checksum computation
+itself was and is separate and unaffected.
+
+Correction (same PR as this addendum): the machine-specific
+path is removed. The copy check is now repository-relative —
+the bundle file's SHA-256 must equal the published digest
+stated in Part 1 — and there are no optional comparisons:
+every check participates in the verdict, and a missing input
+prints UNVERIFIED and fails the run (exit 1, NOT RECONCILED).
+Verified post-fix: full run RECONCILED / exit 0; negative
+control (v2 file removed) UNVERIFIED / NOT RECONCILED /
+exit 1. Rule recorded: a skipped comparison is never a
+verified comparison.
