@@ -10,6 +10,14 @@ production path (Program.view_status).
 
 All Program fixtures use disposable-copy isolation (unique owners)
 with canonical-path cleanup that fails loudly.
+
+Label-identity addendum (DIR-2026-11-02-R1 Priority 3): plant()
+stores idea=label[:80], so two distinct labels sharing that
+prefix collapse to one plant key. The lens must not attribute
+one plant's stage to another node: colliding keys and
+stage-conflicted keys report stage=None, stage_source=
+"ambiguous". Unique labels, agreeing duplicate plants, and
+identical-label duplicate nodes still resolve normally.
 """
 
 from __future__ import annotations
@@ -107,6 +115,67 @@ def part_lens() -> None:
           "stage" not in out[0] and out[0].get("view_tag") == "water")
 
 
+def part_ambiguous() -> None:
+    from form.dell_matrix.view_rooms import filter_nodes_for_room
+    from form.dell_matrix.forces import GrowthForce
+
+    prefix = "P" * 80
+    label_a = prefix + " alpha-unique"
+    label_b = prefix + " beta-different"
+    gf = GrowthForce()
+    gf.plant(label_a)
+    for _ in range(4):
+        gf.grow_all(2.0)
+    grown = gf.plants[0]["stage"]
+    check("ambiguous: fixture plant grew and stored truncated key",
+          grown != "seed" and gf.plants[0]["idea"] == prefix,
+          f"stage={grown} idea_len={len(gf.plants[0]['idea'])}")
+
+    out = filter_nodes_for_room(
+        "growth",
+        [{"id": "a", "label": label_a, "score": 0.0},
+         {"id": "b", "label": label_b, "score": 0.0}],
+        plants=gf.plants)
+    check("ambiguous: planted node under a collided key claims no stage",
+          out[0].get("stage") is None
+          and out[0].get("stage_source") == "ambiguous",
+          f"{out[0].get('stage')}/{out[0].get('stage_source')}")
+    check("ambiguous: unplanted sibling cannot steal the plant's stage",
+          out[1].get("stage") is None
+          and out[1].get("stage_source") == "ambiguous",
+          f"{out[1].get('stage')}/{out[1].get('stage_source')}")
+
+    out = filter_nodes_for_room(
+        "growth", [{"id": "d", "label": "Duo", "score": 0.0}],
+        plants=[{"idea": "Duo", "stage": "seed"},
+                {"idea": "Duo", "stage": "branch"}])
+    check("ambiguous: plants disagreeing on one key -> no stage claim",
+          out[0].get("stage") is None
+          and out[0].get("stage_source") == "ambiguous",
+          f"{out[0].get('stage')}/{out[0].get('stage_source')}")
+
+    out = filter_nodes_for_room(
+        "growth", [{"id": "e", "label": "Pair", "score": 0.0}],
+        plants=[{"idea": "Pair", "stage": "branch"},
+                {"idea": "Pair", "stage": "branch"}])
+    check("ambiguous: agreeing duplicate plants still resolve",
+          out[0].get("stage") == "branch"
+          and out[0].get("stage_source") == "growth_force",
+          f"{out[0].get('stage')}/{out[0].get('stage_source')}")
+
+    gf2 = GrowthForce()
+    gf2.plant("Twin")
+    out = filter_nodes_for_room(
+        "growth",
+        [{"id": "t1", "label": "Twin", "score": 0.0},
+         {"id": "t2", "label": "Twin", "score": 0.0}],
+        plants=gf2.plants)
+    check("ambiguous: identical-label duplicate nodes are one identity",
+          all(n.get("stage") == "seed"
+              and n.get("stage_source") == "growth_force" for n in out),
+          f"{[(n.get('stage'), n.get('stage_source')) for n in out]}")
+
+
 def part_production_path() -> None:
     from form.open import Program
     owner = unique_owner("vrgrowth")
@@ -140,6 +209,7 @@ def part_production_path() -> None:
 
 def _run_all() -> int:
     part_lens()
+    part_ambiguous()
     part_production_path()
     passed = sum(1 for _, ok in CHECKS if ok)
     print(f"=== view-rooms growth referent: {passed}/{len(CHECKS)} ===")

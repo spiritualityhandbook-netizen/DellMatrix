@@ -93,6 +93,15 @@ def filter_nodes_for_room(
     the node carries no stage claim: stage=None with
     stage_source="unplanted" (a plant list was supplied) or
     stage_source="unavailable" (none was).
+
+    Identity limit (T2 label-identity, DIR-2026-11-02-R1 P3):
+    plant() stores idea=label[:80], so the truncated key is the
+    only textual identity a plant carries. When that key cannot
+    pick out ONE node — two distinct full labels in the node
+    list collapse to it, or the supplied plants disagree on its
+    stage — attribution would be a guess, so the node carries
+    stage=None with stage_source="ambiguous" instead of another
+    plant's stage presented as fact.
     """
     scores = scores or {}
     room = (room_id or "growth").lower()
@@ -106,23 +115,41 @@ def filter_nodes_for_room(
     if room == "growth":
         stages = ["seed", "sprout", "stem", "branch", "leaf", "fruit"]
         stage_by_label: Dict[str, str] = {}
+        conflicted: set = set()
         if plants is not None:
             for p in plants:
-                idea = str(p.get("idea") or "")
+                # plant() stores idea=label[:80]; key plants the
+                # same way nodes are keyed below.
+                idea = str(p.get("idea") or "")[:80]
                 stage = str(p.get("stage") or "")
-                if idea and stage in stages and idea not in stage_by_label:
-                    stage_by_label[idea] = stage
+                if idea and stage in stages:
+                    if idea in stage_by_label:
+                        if stage_by_label[idea] != stage:
+                            conflicted.add(idea)
+                    else:
+                        stage_by_label[idea] = stage
+        # Distinct FULL labels per truncated key in this node
+        # list: >1 distinct label on one key means the key cannot
+        # identify which node a plant belongs to.
+        labels_by_key: Dict[str, set] = {}
+        for n in nodes:
+            full = str(n.get("label") or "")
+            labels_by_key.setdefault(full[:80], set()).add(full)
+        collided = {k for k, s in labels_by_key.items() if len(s) > 1}
         out = []
         for n in nodes:
             # GrowthForce.plant stores idea=label[:80]; match on that key.
             key = str(n.get("label") or "")[:80]
-            stage = stage_by_label.get(key)
-            if stage is not None:
-                source = "growth_force"
-            elif plants is not None:
-                source = "unplanted"
+            if key in conflicted or key in collided:
+                stage, source = None, "ambiguous"
             else:
-                source = "unavailable"
+                stage = stage_by_label.get(key)
+                if stage is not None:
+                    source = "growth_force"
+                elif plants is not None:
+                    source = "unplanted"
+                else:
+                    source = "unavailable"
             out.append({**n, "stage": stage, "stage_source": source,
                         "view_tag": "growth"})
         return out
