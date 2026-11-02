@@ -434,9 +434,12 @@ def _signal_identity(pid: int, starttime: Optional[int], sig: int) -> str:
       dead — pidfd_open or pidfd_send_signal ESRCH: the signal was
       delivered to NOBODY, never to a PID reuser). Nothing was
       signalled.
-    - "unavailable": pidfd signalling could not be attempted at all
-      (no os.pidfd_open, or pidfd_open failed for a reason other
-      than the instance being gone). Nothing was signalled.
+    - "unavailable": pidfd signalling failed without proving the
+      instance gone (no os.pidfd_open; pidfd_open or
+      pidfd_send_signal failed with an errno other than ESRCH, or
+      with no errno). The process may still be alive and cleanup
+      genuinely failed — reported explicitly, never as "refused"
+      (DIR-F16: send failures are not identity facts).
 
     There is NO kill(2) fallback for witnessed identities (DAF-09
     pidfd-hardening follow-up, Director Mode D ruling at 3234966;
@@ -469,8 +472,17 @@ def _signal_identity(pid: int, starttime: Optional[int], sig: int) -> str:
             return "refused"
         _pidfd_send_signal(fd, sig)
         return "signalled"
-    except OSError:
-        return "refused"  # pinned instance already dead: nobody signalled
+    except OSError as exc:
+        if getattr(exc, "errno", None) == errno.ESRCH:
+            # Pinned instance died between the post-open starttime
+            # re-verification and the send: the signal was delivered
+            # to NOBODY, never to a PID reuser. Already-dead class.
+            return "refused"
+        # DIR-F16: any other send failure (EPERM, ENOSYS, EINVAL,
+        # errno-less) does NOT prove the instance gone — signalling
+        # was attempted and failed, so cleanup is unavailable and
+        # must surface as such through the kill report / verdict.
+        return "unavailable"
     finally:
         os.close(fd)
 
