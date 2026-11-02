@@ -30,6 +30,7 @@ for step 13, and are not included.
 | gate0_census_main.json | c22888180be21cd2a5c3a2e5e6e48b2f2c6c3cf2cd1ac439adcff0ab1bf9f677 | 21664 |
 | gate1_pilot.py | ac2f3ce30870ef361f676b13a4358aabd7596c5583f9a0d8abdf0539efd8c833 | 8758 |
 | gate2_sweep.py | f1910d63d959106fe7277a7b8a6c6ea28978a94b540dd72498359576c6e12610 | 7396 |
+| gate4_ledger_freeze.py | d99b3c3e647e80ffbbc916dcdb349299f573a3fa87dc467d524a4027ef8692ff | 5312 |
 | gate4_ledger_v1.json | d419220707b26da7c4a35cb34ff0a55cdc320cb64852026a7d9cc36503b39c3c | 4755847 |
 | gate4_ledger_v2.json | 061472c9232bd29be3c6ab8ca25136288dd4507ec9f5f5cc7411408e34388c90 | 4777994 |
 | step13_ground.md | c74a48002e5af01e1f741fe7e8512a0730c936737f0fdae6eb038bc37eecf533 | 15304 |
@@ -142,3 +143,31 @@ Digests computed at publication time from the
 files as copied from the originating workspaces;
 the originating circuits' packets (included) are
 the claim documents for these artifacts.
+
+## Verification notes (computed at publication, reproducible
+## from this bundle alone)
+
+- Ledger v1 canonical hash REPRODUCES: sha256 of the
+  canonical JSON (sort_keys, separators (",", ":")) of the
+  ledger object minus its ledger_sha256 field ==
+  43fe6967ecb980ce... == the embedded value. Method:
+  gate4_ledger_freeze.py (included, v1's builder).
+- Ledger v2's embedded ledger_sha256 ==
+  de5354f0254cf87b1f3e0d1df30006d70eb846ffdc774b989e0bb4a0cfc2bafd,
+  string-identical to the value quoted in
+  DIRECTOR_REPORT_STEP13_REDERIVATION.md. It does NOT
+  reproduce under v1's minus-field canonical method, and the
+  v2 freeze builder was not preserved as a file — that is a
+  stated limit, not a hidden one.
+- What DOES verify for v2 from this bundle: exactly 9,900
+  rows + 100 identity rows; row class counts == the reported
+  FINAL totals (FUNCTIONAL 1,989 / FUNCTIONAL_INDEPENDENT
+  6,375 / INTENDED_CLASH 1,528 / UNIQUE_CANDIDATE 8);
+  identity counts == 89 IDEMPOTENT / 11 HONEST_REFUSAL; the
+  recomputed v1->v2 pair diff is exactly 369 changes,
+  matching diff_vs_v1.json (included) and the packet;
+  step13_rederived.json (included) carries the raw/final
+  totals and the pair_changes chain.
+- File-bytes SHA-256 digests are in the table above; the
+  canonical content hash and the file-bytes hash are
+  different objects and are not interchangeable.
