@@ -1,0 +1,11 @@
+EVIDENCE E2 — T2 label-identity probe, POST-FIX
+command: python3 director-reports/evidence/t2label/t2label_probe.py
+revision: merge head 7486963 (PR #220) in a fresh clone
+probe: t2label_probe.py at MERGE head 7486963 (fresh clone), 2026-11-02T08:29:29-06:00
+plant stored idea == full label? False (stored len 80), stage=branch
+node a: stage=None source=ambiguous
+node b: stage=None source=ambiguous
+unique control: stage=branch source=growth_force
+plant-conflict: stage=None source=ambiguous
+PROBE: PASS
+probe exit=0
