@@ -1,0 +1,4 @@
+EVIDENCE E4 — DIR-F16 suite, POST-FIX
+suite: python3 -m form.daf09_timeout_tree_test at merge head dd80a0e (fresh clone), 2026-11-02T07:09:48-06:00
+DAF09_TIMEOUT_TREE: 31/31
+suite exit=0

@@ -1,0 +1,9 @@
+EVIDENCE E1 — DIR-F16 probe, PRE-FIX
+command: python3 director-reports/evidence/dirf16/dirf16_probe.py
+revision: base main 5ce50744083d99e40ccc2ba4904c3ef692afd9e1 (scratch clone)
+probe: dirf16_probe.py against BASE main 5ce5074 (pre-fix), 2026-11-02T06:58:03-06:00
+send-EPERM: ('refused', 'alive=True')
+send-ENOSYS: ('refused', 'alive=True')
+send-ESRCH: ('refused', 'alive=True')
+PROBE: FAIL
+probe exit=1
