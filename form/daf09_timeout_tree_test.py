@@ -46,6 +46,18 @@ where his independent runs returned 18/20):
    test. Escape checks carry diagnostics (kill-report membership,
    identity state, marker timing) naming which link broke.
    Cancellation checks are untouched (already certified).
+ESRCH-at-open follow-up (instrumented investigation, 2026-11-01):
+9. pidfd_open raising ESRCH means the witnessed instance died
+   between the starttime pre-read and the open (run7 evidence:
+   errno 3, pre-read MATCH, instance already group-killed). That
+   is the already-dead "refused" class — the same fact
+   pidfd_send_signal ESRCH reports post-open — NOT pidfd
+   unavailability: bucketing it "unavailable" appended a spurious
+   cleanup_unavailable suffix to exact TIMEOUT verdicts although
+   cleanup had succeeded. Other open errnos (the EMFILE control
+   in check 8) stay "unavailable". This corrects a local
+   classification defect only; the Director's cross-environment
+   discrepancy remains unresolved and no claim widens.
 Fixtures are synthetic modules written into this (private-copy)
 tree and removed afterwards; marker state lives in a temp dir.
 """
@@ -408,6 +420,41 @@ def main():
             if hvictim.poll() is None:
                 hvictim.terminate()
             hvictim.wait(timeout=10)
+
+        # --- ESRCH-at-open check 9: gone instance is "refused" ---
+        # pidfd_open is forced to raise ESRCH for a witnessed
+        # identity whose starttime pre-read MATCHES. ESRCH at open
+        # is the already-dead class (the instance died between the
+        # pre-read and the open), so the identity must land in the
+        # kill report's "refused" set — never "unavailable", which
+        # is reserved for pidfd-availability failures (EMFILE
+        # control above). The assertion is on the BUCKET only:
+        # under the injected failure nobody is signalled, and the
+        # victim's survival here proves nothing about death.
+        evictim = subprocess.Popen([sys.executable, "-c",
+                                    "import time; time.sleep(30)"])
+        try:
+            e_ident = (evictim.pid, R._proc_starttime(evictim.pid))
+            eroot = _control_root([e_ident])
+            _real_pidfd_open2 = os.pidfd_open
+
+            def _pidfd_esrch(pid, flags=0):
+                raise OSError(3, "No such process (injected)")
+
+            os.pidfd_open = _pidfd_esrch
+            try:
+                R._kill_process_tree(eroot)
+            finally:
+                os.pidfd_open = _real_pidfd_open2
+            _ereport = getattr(eroot, "_kill_report", {}) or {}
+            _rec("ESRCH at pidfd_open: gone instance refused, not unavailable",
+                 e_ident in _ereport.get("refused", [])
+                 and e_ident not in _ereport.get("unavailable", []),
+                 f"report={_ereport}")
+        finally:
+            if evictim.poll() is None:
+                evictim.terminate()
+            evictim.wait(timeout=10)
 
         ok2, why2 = R.run_entry(f"form.{FAST_FIXTURE}:smoke", src_root)
         _rec("fast entry still GREEN via same path", ok2 is True,
