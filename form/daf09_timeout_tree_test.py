@@ -58,6 +58,17 @@ ESRCH-at-open follow-up (instrumented investigation, 2026-11-01):
    in check 8) stay "unavailable". This corrects a local
    classification defect only; the Director's cross-environment
    discrepancy remains unresolved and no claim widens.
+DIR-F16 follow-up (Director DIR-2026-11-02-R1):
+10. The SEND boundary classifies by errno, symmetric with the open
+    boundary in check 9: pidfd_send_signal raising ESRCH means the
+    pinned instance died after the post-open re-verification —
+    "refused" (signal delivered to nobody). ANY other send error
+    (EPERM, ENOSYS, errno-less) does not prove the instance gone:
+    the outcome is "unavailable" and, at the consumer, the identity
+    lands in the kill report's "unavailable" set so the timeout
+    verdict surfaces cleanup_unavailable instead of hiding a failed
+    cleanup behind "refused". A live victim under injected send
+    failure is never signalled and survives.
 Fixtures are synthetic modules written into this (private-copy)
 tree and removed afterwards; marker state lives in a temp dir.
 """
@@ -455,6 +466,64 @@ def main():
             if evictim.poll() is None:
                 evictim.terminate()
             evictim.wait(timeout=10)
+
+        # --- DIR-F16 check 10: send-boundary error classes ---
+        # _pidfd_send_signal is forced to raise at the send boundary
+        # for a LIVE witnessed identity. ESRCH keeps the already-dead
+        # "refused" class; EPERM / ENOSYS must class "unavailable"
+        # (the instance is not proven gone — cleanup failed), and at
+        # the consumer the identity must land in the kill report's
+        # "unavailable" set. Under every injection nobody is
+        # signalled, so the victim survives each sub-check.
+        import errno as _errno
+
+        def _send_boom(err):
+            def _raise(fd, sig):
+                if err is None:
+                    raise OSError("injected send failure (no errno)")
+                raise OSError(err, os.strerror(err))
+            return _raise
+
+        svictim = subprocess.Popen([sys.executable, "-c",
+                                    "import time; time.sleep(30)"])
+        try:
+            s_ident = (svictim.pid, R._proc_starttime(svictim.pid))
+            _real_send = R._pidfd_send_signal
+            for _name, _err, _want in (
+                    ("EPERM", _errno.EPERM, "unavailable"),
+                    ("ENOSYS", _errno.ENOSYS, "unavailable"),
+                    ("ESRCH", _errno.ESRCH, "refused")):
+                R._pidfd_send_signal = _send_boom(_err)
+                try:
+                    _outcome = R._signal_identity(
+                        s_ident[0], s_ident[1], signal.SIGKILL)
+                finally:
+                    R._pidfd_send_signal = _real_send
+                _rec(f"DIR-F16 send-{_name}: outcome is {_want}",
+                     _outcome == _want,
+                     f"outcome={_outcome}")
+                _rec(f"DIR-F16 send-{_name}: live victim not signalled",
+                     svictim.poll() is None)
+            # Consumer: the same EPERM injection through
+            # _kill_process_tree must bucket the identity as
+            # unavailable, not refused.
+            sroot = _control_root([s_ident])
+            R._pidfd_send_signal = _send_boom(_errno.EPERM)
+            try:
+                R._kill_process_tree(sroot)
+            finally:
+                R._pidfd_send_signal = _real_send
+            _sreport = getattr(sroot, "_kill_report", {}) or {}
+            _rec("DIR-F16 consumer: send-EPERM identity in unavailable set",
+                 s_ident in _sreport.get("unavailable", [])
+                 and s_ident not in _sreport.get("refused", []),
+                 f"report={_sreport}")
+            _rec("DIR-F16 consumer: victim survives failed cleanup",
+                 svictim.poll() is None)
+        finally:
+            if svictim.poll() is None:
+                svictim.terminate()
+            svictim.wait(timeout=10)
 
         ok2, why2 = R.run_entry(f"form.{FAST_FIXTURE}:smoke", src_root)
         _rec("fast entry still GREEN via same path", ok2 is True,
