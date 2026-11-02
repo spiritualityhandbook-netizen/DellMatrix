@@ -243,6 +243,7 @@ LIST = [
     "form.mandell.launchers_test:smoke",
     "form.mandell.projects_groups_test:smoke",
     "form.mandell.visual_ux_test:smoke",
+    "form.mandell.view_rooms_growth_test:smoke",
     "form.mandell.passk_test:smoke",
     "form.mandell.p1_dedup_test:smoke",
     "form.mandell.p4_lifecycle_gravity_proof:smoke",

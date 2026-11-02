@@ -778,12 +778,16 @@ class Program:
     def view_status(self) -> Dict[str, Any]:
         room = get_room(self.active_view) or get_room("growth")
         nodes = self.nodes_payload()
-        filtered = filter_nodes_for_room(self.active_view, nodes, owner=self.owner, scores=self.scores())
+        # T2: growth stages come from the canonical GrowthForce plants.
+        plants = []
+        if getattr(self, "forces", None) is not None:
+            plants = list(self.forces.growth.plants)
+        filtered = filter_nodes_for_room(self.active_view, nodes, owner=self.owner, scores=self.scores(), plants=plants)
         return {
             "active": room,
             "rooms": list_rooms(),
             "nodes": filtered,
-            "ascii": render_room_ascii(self.active_view, nodes),
+            "ascii": render_room_ascii(self.active_view, nodes, plants=plants),
         }
 
     def personas_status(self) -> Dict[str, Any]:

@@ -82,8 +82,18 @@ def filter_nodes_for_room(
     *,
     owner: str = "",
     scores: Optional[Dict[str, float]] = None,
+    plants: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
-    """Apply view-room lens to a node list (does not mutate plane)."""
+    """Apply view-room lens to a node list (does not mutate plane).
+
+    Growth room (T2, workshop/theater circuit): a node's stage is
+    the stage of its GrowthForce plant — the canonical growth
+    authority (forces.GrowthForce plants node labels and grows
+    them). Score never invents a stage. When no plant matches,
+    the node carries no stage claim: stage=None with
+    stage_source="unplanted" (a plant list was supplied) or
+    stage_source="unavailable" (none was).
+    """
     scores = scores or {}
     room = (room_id or "growth").lower()
     if room == "personal":
@@ -95,14 +105,26 @@ def filter_nodes_for_room(
         return [{**n, "view_tag": "shared"} for n in ranked]
     if room == "growth":
         stages = ["seed", "sprout", "stem", "branch", "leaf", "fruit"]
+        stage_by_label: Dict[str, str] = {}
+        if plants is not None:
+            for p in plants:
+                idea = str(p.get("idea") or "")
+                stage = str(p.get("stage") or "")
+                if idea and stage in stages and idea not in stage_by_label:
+                    stage_by_label[idea] = stage
         out = []
         for n in nodes:
-            sc = float(scores.get(n.get("id"), n.get("score") or 0))
-            idx = min(len(stages) - 1, int(sc * 2))
-            skin = str(n.get("skin") or "")
-            if skin in ("seed", "flower"):
-                idx = max(idx, 1)
-            out.append({**n, "stage": stages[idx], "view_tag": "growth"})
+            # GrowthForce.plant stores idea=label[:80]; match on that key.
+            key = str(n.get("label") or "")[:80]
+            stage = stage_by_label.get(key)
+            if stage is not None:
+                source = "growth_force"
+            elif plants is not None:
+                source = "unplanted"
+            else:
+                source = "unavailable"
+            out.append({**n, "stage": stage, "stage_source": source,
+                        "view_tag": "growth"})
         return out
     if room == "water":
         return [{**n, "form": "stream" if float(n.get("score") or 0) < 0.5 else "pool", "view_tag": "water"} for n in nodes]
@@ -122,10 +144,11 @@ def filter_nodes_for_room(
     return list(nodes)
 
 
-def render_room_ascii(room_id: str, nodes: List[Dict[str, Any]], limit: int = 12) -> List[str]:
+def render_room_ascii(room_id: str, nodes: List[Dict[str, Any]], limit: int = 12,
+                      plants: Optional[List[Dict[str, Any]]] = None) -> List[str]:
     room = get_room(room_id) or VIEW_ROOMS["growth"]
     lines = [f"{room['emoji']} View room: {room['name']} — {room['description']}"]
-    filtered = filter_nodes_for_room(room["id"], nodes)
+    filtered = filter_nodes_for_room(room["id"], nodes, plants=plants)
     if not filtered:
         lines.append("  (empty)")
         return lines
@@ -141,9 +164,14 @@ def smoke() -> bool:
     print("=== VIEW ROOMS SMOKE ===")
     nodes = [{"id": "a", "label": "Alpha", "skin": "seed", "score": 0.2}]
     ok = len(list_rooms()) == 7 and get_room("water") is not None
+    # No plants supplied: no stage may be claimed (T2).
     g = filter_nodes_for_room("growth", nodes)
-    ok = ok and g[0].get("stage") in ("seed", "sprout", "stem", "branch", "leaf", "fruit")
-    print(f"[{'PASS' if ok else 'FAIL'}] 7 rooms + growth stage")
+    ok = ok and g[0].get("stage") is None and g[0].get("stage_source") == "unavailable"
+    # With a GrowthForce plant, the stage is the plant's own stage.
+    plants = [{"idea": "Alpha", "stage": "branch"}]
+    g = filter_nodes_for_room("growth", nodes, plants=plants)
+    ok = ok and g[0].get("stage") == "branch" and g[0].get("stage_source") == "growth_force"
+    print(f"[{'PASS' if ok else 'FAIL'}] 7 rooms + growth stage from GrowthForce plants only")
     return ok
 
 
