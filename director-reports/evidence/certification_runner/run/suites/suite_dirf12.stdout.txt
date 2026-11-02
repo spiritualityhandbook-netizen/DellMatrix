@@ -1,0 +1,21 @@
+[PASS] W1: final-save failure raises
+[PASS] W1: compensation still verified complete
+[PASS] W1: journal_retained reported truthfully (True)
+[PASS] W1: journal file actually present on disk
+[PASS] W1: restart after restored unlink exposes no partial
+[PASS] W1: journal cleared by recovery retry
+[PASS] W1: retry import succeeds, no journal retained
+[PASS] W2: landing itself succeeds (ok=True, not compensated)
+[PASS] W2: journal_retained surfaced in the result
+[PASS] W2: journal file actually present on disk
+[PASS] W3: load fails closed while journal disposal impossible
+[PASS] W3: journal still present after failed recovery disposal
+[PASS] W3: restored unlink -> load succeeds, journal cleared
+[PASS] W3: completed import stands intact after recovery
+[PASS] W4: setup keeps step5b incomplete-compensation contract
+[PASS] W4: setup journal retained as compensation_incomplete
+[PASS] W4: recovery with broken unlink raises (no false disposal)
+[PASS] W4: journal still present after failed recovery disposal
+[PASS] W4: restored unlink -> partial gone, journal cleared
+[PASS] W4: retry after recovery succeeds
+DIRF12_JOURNAL_RECEIPT: 20/20

@@ -1,0 +1,3 @@
+[PASS] stored-None removal is a membership change -- last_diff={'before': {'nullable': None}, 'after': {}, 'changed': ['nullable'], 'label': '', 'baseline': 'immediate'}
+[PASS] retained None is absent from changed -- last_diff={'before': {'nullable': None}, 'after': {'nullable': None, 'a': '1'}, 'changed': ['a'], 'label': '', 'baseline': 'immediate'}
+=== probe_dirf15_absent_vs_none: 2/2 ===

@@ -1,0 +1,27 @@
+[PASS] growth: fixture plant actually grew past seed
+[PASS] growth: planted node stage is the plant's stage (score 0)
+[PASS] growth: score cannot move a planted node's stage
+[PASS] growth: unplanted node claims no stage
+[PASS] growth: no plants supplied -> no stage claim
+[PASS] growth: non-canonical plant stage is not passed through
+[PASS] growth: other rooms untouched (water has no stage field)
+[PASS] ambiguous: fixture plant grew and stored truncated key
+[PASS] r2: planted node under a formerly-collided key resolves by exact identity
+[PASS] r2: unplanted sibling cannot steal the plant's stage
+[PASS] ambiguous: plants disagreeing on one key -> no stage claim
+[PASS] ambiguous: agreeing duplicate plants still resolve
+[PASS] ambiguous: identical-label duplicate nodes are one identity
+[PASS] r2: plant() retains exact identity alongside truncated key
+[PASS] r2: omitted node B never receives A's stage
+[PASS] r2: legacy prefix-only match stays ambiguous (node B)
+[PASS] r2: legacy prefix-only match stays ambiguous (node A)
+[PASS] r2: agreeing legacy stages still do not prove identity
+[PASS] r2: both-visible node A resolves to A's own plant
+[PASS] r2: both-visible node B resolves to B's own plant
+[PASS] r2: exact-identity plants disagreeing -> ambiguous
+[PASS] r2: plant() twice on one identity keeps one record
+[PASS] r2: ForceField.tick does not duplicate a long-label plant
+[PASS] r2 production: view_status omitted sibling claims no stage
+[PASS] production: view_status planted node carries plant stage
+[PASS] production: view_status unplanted node claims no stage
+=== view-rooms growth referent: 26/26 ===
