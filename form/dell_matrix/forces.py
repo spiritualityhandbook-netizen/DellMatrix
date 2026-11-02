@@ -134,9 +134,26 @@ class GrowthForce(ForceMatrix):
             self.intensity = 0.65
 
     def plant(self, idea: str, planter: str = "Operator") -> Dict[str, Any]:
+        full = str(idea)
+        # DIR-T2-R2 (C-Q3): one exact identity = one plant record.
+        # Re-planting an identity that already exists returns its
+        # record instead of appending a divergent duplicate — dedupe
+        # call sites compare full labels against truncated keys and
+        # would otherwise re-plant long labels on every invocation.
+        for existing in self.plants:
+            known_full = existing.get("idea_full")
+            if known_full:
+                if known_full == full:
+                    return existing
+            elif existing.get("idea") == full:
+                return existing
         plant = {
             "id": f"plant-{len(self.plants)+1}",
-            "idea": str(idea)[:80],
+            "idea": full[:80],
+            # Exact identity retained alongside the truncated
+            # display key (C-Q3): the growth lens may attribute a
+            # stage only where identity is proven, never by prefix.
+            "idea_full": full,
             "planter": planter,
             "stage": "seed",
             "height": 0.0,
