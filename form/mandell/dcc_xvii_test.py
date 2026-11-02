@@ -787,9 +787,13 @@ def _run_u_scenario(scen: str) -> bool:
         # the kill landed mid-write depended on the parent being scheduled
         # within ~0.7s, so a late kill silently turned the run into "save
         # completed" while B still demanded G1 (observed flake: CI run
-        # 41493670559 rev leg + local U-probe iter 2; canonical held a
+        # 41493670559 rev leg; canonical held a
         # COMPLETE G2 -- the product contract held, the test's timing
-        # premise did not). Now the kill is triggered by an OBSERVED state
+        # premise did not). [The earlier claim of a local U-probe
+        # iteration-2 reproduction was RETRACTED 2026-11-02: that event
+        # was a concurrent-campaign artifact — see the corrected
+        # investigation packet in director-reports/evidence/dccxvii/.]
+        # Now the kill is triggered by an OBSERVED state
         # (temp present with >= one chunk flushed, child alive), the
         # interruption is VERIFIED after the kill (rc == -SIGKILL, temp
         # still present and partial), and a verified miss retries with a
