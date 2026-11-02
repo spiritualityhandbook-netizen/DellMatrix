@@ -119,6 +119,46 @@ def part_all_workshops():
               and next(iter(recs.values()))["workshop"] == wid)
 
 
+def part_focus_honesty():
+    # T6 (workshop/theater circuit, 2026-11-01): the registry's
+    # topic list was named "can_edit" — a permission claim no
+    # code enforced or performed (zero readers in form/; the
+    # scoped gate derives from "commands" via scope_stems).
+    # It is now "focus_areas": descriptive only, values
+    # preserved verbatim from the pre-fix lists.
+    from form.dell_matrix.workshops import WORKSHOPS, list_workshops
+    from form.dell_matrix.workshop_session import scope_stems
+    expected = {
+        "matrix": ["form", "shell-view", "sphere-mode",
+                   "flower-mode", "grid-snap"],
+        "perspective": ["dual", "page", "lens", "persona", "view-room"],
+        "mandel": ["commands", "syntax", "explain"],
+        "persona": ["directives", "abilities", "limits",
+                    "personality", "emoji", "role"],
+        "bimo": ["slots", "fusion-rules", "docking", "pilot"],
+        "psalms": ["content", "theme", "archetype", "strength"],
+        "forces": ["intensity", "active-set", "weather"],
+    }
+    check("focus: no entry carries can_edit",
+          all("can_edit" not in w for w in WORKSHOPS.values()))
+    check("focus: every entry has non-empty string focus_areas",
+          all(isinstance(w.get("focus_areas"), list)
+              and len(w["focus_areas"]) > 0
+              and all(isinstance(t, str) for t in w["focus_areas"])
+              for w in WORKSHOPS.values()))
+    check("focus: values preserved verbatim for all seven",
+          {wid: w.get("focus_areas") for wid, w in WORKSHOPS.items()}
+          == expected)
+    payload = list_workshops()
+    check("focus: list_workshops payload has focus_areas, no can_edit",
+          all("focus_areas" in w and "can_edit" not in w for w in payload)
+          and len(payload) == 7)
+    check("focus: scope stems still derived from commands only",
+          scope_stems("matrix") == {"cube", "sphere", "core", "flower",
+                                    "lattice", "shell", "snap", "matrices"},
+          f"{sorted(scope_stems('matrix'))}")
+
+
 def part_semantics_differ():
     # Outside: create dispatches. Inside matrix: same line is rejected
     # and no idea is created (draft 7.1.3 — commands differ inside).
@@ -328,6 +368,7 @@ def part_one_environment():
 def _run_all() -> int:
     part_scope_routing()
     part_all_workshops()
+    part_focus_honesty()
     part_semantics_differ()
     part_leave_honesty()
     part_save_failure()

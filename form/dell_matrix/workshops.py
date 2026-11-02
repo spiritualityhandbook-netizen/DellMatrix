@@ -3,6 +3,15 @@
 Workshop Rooms — form/ runtime (ported + expanded from src/snapins/workshops.js).
 
 Matrix · Perspective · Mandel · Persona · BIMO · Psalms · Forces
+
+Registry fields are descriptive data. In particular "focus_areas"
+lists the topics a workshop is about; it is NOT a permission and
+grants no edit capability — nothing reads it for enforcement.
+The scoped workshop gate is derived from each workshop's
+"commands" menu only (form.dell_matrix.workshop_session.
+scope_stems). This field was named "can_edit" until the T6
+honesty repair (2026-11-01): the old name claimed editability
+that no code enforced or performed.
 """
 
 from __future__ import annotations
@@ -14,7 +23,7 @@ WORKSHOPS: Dict[str, Dict[str, Any]] = {
         "id": "matrix",
         "name": "Matrix Workshop",
         "description": "Flower of Life / sphere mode, shells, grid snap",
-        "can_edit": ["form", "shell-view", "sphere-mode", "flower-mode", "grid-snap"],
+        "focus_areas": ["form", "shell-view", "sphere-mode", "flower-mode", "grid-snap"],
         "commands": [
             {"label": "Cube form", "cmd": "cube"},
             {"label": "Sphere form", "cmd": "sphere"},
@@ -32,7 +41,7 @@ WORKSHOPS: Dict[str, Dict[str, Any]] = {
         "id": "perspective",
         "name": "Perspective Workshop",
         "description": "Duals, view rooms, page zoom, vision lenses",
-        "can_edit": ["dual", "page", "lens", "persona", "view-room"],
+        "focus_areas": ["dual", "page", "lens", "persona", "view-room"],
         "commands": [
             {"label": "Toggle dual", "cmd": "toggle"},
             {"label": "Look", "cmd": "look"},
@@ -49,7 +58,7 @@ WORKSHOPS: Dict[str, Dict[str, Any]] = {
         "id": "mandel",
         "name": "Mandel Workshop",
         "description": "Language bridge — explain, seeds, polyglot",
-        "can_edit": ["commands", "syntax", "explain"],
+        "focus_areas": ["commands", "syntax", "explain"],
         "commands": [
             {"label": "Explain create", "cmd": "explain create"},
             {"label": "Patterns", "cmd": "patterns"},
@@ -62,7 +71,7 @@ WORKSHOPS: Dict[str, Dict[str, Any]] = {
         "id": "persona",
         "name": "Persona Workshop",
         "description": "Full roster + persona matrix — directives, abilities, lenses",
-        "can_edit": ["directives", "abilities", "limits", "personality", "emoji", "role"],
+        "focus_areas": ["directives", "abilities", "limits", "personality", "emoji", "role"],
         "commands": [
             {"label": "Full roster", "cmd": "personas"},
             {"label": "Persona matrix", "cmd": "matrix personas"},
@@ -85,7 +94,7 @@ WORKSHOPS: Dict[str, Dict[str, Any]] = {
         "id": "bimo",
         "name": "BIMO Workshop",
         "description": "Fusion body — dock all personas into slots, fuse multi-thread guidance",
-        "can_edit": ["slots", "fusion-rules", "docking", "pilot"],
+        "focus_areas": ["slots", "fusion-rules", "docking", "pilot"],
         "commands": [
             {"label": "BIMO status", "cmd": "bimo"},
             {"label": "Dock defaults", "cmd": "bimo defaults"},
@@ -102,7 +111,7 @@ WORKSHOPS: Dict[str, Dict[str, Any]] = {
         "id": "psalms",
         "name": "Psalms Workshop",
         "description": "Ancient structural operators — ledger, reverse walk, tokens (not decipherment)",
-        "can_edit": ["content", "theme", "archetype", "strength"],
+        "focus_areas": ["content", "theme", "archetype", "strength"],
         "commands": [
             {"label": "Ancient view", "cmd": "view ancient_psalms"},
             {"label": "Persona Ancient", "cmd": "persona the_ancient"},
@@ -114,7 +123,7 @@ WORKSHOPS: Dict[str, Dict[str, Any]] = {
         "id": "forces",
         "name": "Forces Workshop",
         "description": "Nature forces — water, growth, breath, gravity, time, weather",
-        "can_edit": ["intensity", "active-set", "weather"],
+        "focus_areas": ["intensity", "active-set", "weather"],
         "commands": [
             {"label": "Forces status", "cmd": "forces"},
             {"label": "Force tick", "cmd": "force tick"},
