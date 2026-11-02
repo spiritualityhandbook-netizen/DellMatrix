@@ -70,6 +70,8 @@ DIRECTOR_FINDINGS_REGISTER.md (Uni workspace).
 
 | DIRECTOR_REPORT_STEP14_ADMISSION.md | Order step 14 | Admission packet (INDEX over per-circuit reports): requests A1, A2 (#120 reconciled closure), typed-set (A3a, 15 signatures) and full-registry (A3b) re-rulings by exact scope, plus per-circuit rulings on the SUBMITTED reports (DAF-09 pidfd hardening, DIR-F12/F13/F14/F15, steps 10/11/13); ledger v2 as pairwise evidence at freeze c26799f | SUBMITTED — awaiting ruling (held for the Director's return, Trinity mode). Index only: no new behavioral claims; DAF-09 session-escape discrepancy carried UNRESOLVED and NOT requested; loose ends (§4 of the packet) stated on the record. |
 
+| DIRECTOR_REPORT_WS_THEATER_T6.md | Workshop/theater circuit, item T6 (sleep-mode NBD) | can_edit honesty: descriptive registry field renamed focus_areas, values verbatim; scoped gate unchanged (commands via scope_stems) (PR #212, merge 91780c5) | SUBMITTED — held for the Director's return (sleep mode; nothing certified). workshops.py only (rename x7 + descriptive-only header note); traced at f850fd8: zero key-specific readers, no persisted schema, gate derives from commands only. Suite r73 76/76 (71 preserved + part_focus_honesty 5); mutant (one can_edit restored) 72/76 killed exactly; regress 220/220 x3 on candidate 99ffa3b (merge tree 501a383 == candidate tree); exact-head CI SUCCESS in a separate step before merge (package 41395607728; smoke 41395607717); fresh-clone at merge 220/220 GREEN. Out-of-repo consumers of the renamed payload key UNKNOWN. Remaining still-live items (T2 next) not covered. |
+
 Forthcoming, in order:
 step 15
 Ace elementary completion report (Director-order step 15;
