@@ -287,6 +287,11 @@ Two mechanisms deserve plain explanation:
   the journal and converges to either the complete old state or the complete new state
   — never a durable half-import that reports success. (Exchange import additionally
   refuses to run while a previous import's journal is unresolved.)
+- **Confirmation atomicity.** The same journal mechanism covers confirmation itself:
+  a crash mid-confirmation converges to the complete old or the complete new state,
+  so a proposal is never left half-confirmed. (This is a statement about the
+  confirmation flow's crash behavior — it is separate from Dell 95 Commit, whose
+  contract is the mark/accept wording in §3.2.)
 
 ### 3.6 Knowledge, outcomes, and DuoBeta learning
 
@@ -542,6 +547,12 @@ DellMatrix is developed under an Overseer → Director → Uni engineering proce
 unusual rule: **claims may not exceed executed evidence**, and an independent Director
 reviews and certifies work in bounded scopes. Merged code is not the same thing as
 certified code, and this README keeps the two separate.
+
+**Production main:** `11933da` — the anchor recorded by the P12 closure audit
+(2026-10-30, full 100-Dell registry proof complete). Main has since advanced beyond
+that anchor through the Director's completion-order circuits (§7, certification
+picture); the anchor line is retained because the P12 audit's reconciliation is
+stated against it.
 
 **Verified working (executed evidence):** the full English REPL loop; create / grow /
 review / confirm / supersede; save / load across processes; the 100-Dell registry with
