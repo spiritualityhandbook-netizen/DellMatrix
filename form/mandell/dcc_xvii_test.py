@@ -781,24 +781,96 @@ def _run_u_scenario(scen: str) -> bool:
     open(pa, "w").write(fill(_SCRIPT_A))
     open(pb, "w").write(fill(_SCRIPT_B))
     if scen == "sigkill_mid_write":
-        proc = subprocess.Popen([sys.executable, pa], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        npath_s = owner_nursery_path(owner)
-        deadline = time.time() + 60
+        # SIGKILL-during-write choreography (repaired 2026-11-02). The old
+        # version polled for the temp file, slept a fixed 0.5s, killed, and
+        # let process B assert mid-write outcomes unconditionally: whether
+        # the kill landed mid-write depended on the parent being scheduled
+        # within ~0.7s, so a late kill silently turned the run into "save
+        # completed" while B still demanded G1 (observed flake: CI run
+        # 41493670559 rev leg + local U-probe iter 2; canonical held a
+        # COMPLETE G2 -- the product contract held, the test's timing
+        # premise did not). Now the kill is triggered by an OBSERVED state
+        # (temp present with >= one chunk flushed, child alive), the
+        # interruption is VERIFIED after the kill (rc == -SIGKILL, temp
+        # still present and partial), and a verified miss retries with a
+        # fresh attempt instead of asserting against the wrong generation.
+        # Bounded per AGENTS 31.1: 60s observation deadline, 3 attempts;
+        # exhaustion is a loud harness failure with diagnostics, never a
+        # false contract verdict. B's assertions are unchanged and run
+        # only once the mid-write kill is proven.
         import glob as _g
-        while time.time() < deadline:
-            if _g.glob(npath_s + ".dmtmp.*"):
+        import signal as _signal
+
+        npath_s = owner_nursery_path(owner)
+
+        def _sigkill_attempt() -> str:
+            wipe_owner(owner)
+            for stale in (res, out, res + ".size", res + ".g1"):
+                try:
+                    os.unlink(stale)
+                except OSError:
+                    pass
+            proc = subprocess.Popen([sys.executable, pa], stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, text=True)
+            state = "no_window"
+            deadline = time.monotonic() + 60
+            while time.monotonic() < deadline:
+                if proc.poll() is not None:
+                    state = "a_died"
+                    break
+                tmps = _g.glob(npath_s + ".dmtmp.*")
+                if tmps:
+                    try:
+                        size = os.path.getsize(tmps[0])
+                    except OSError:
+                        size = 0
+                    if size >= 65536:  # >= first slow_write chunk flushed
+                        proc.kill()  # SIGKILL provably mid temp-write
+                        state = "killed"
+                        break
+                time.sleep(0.005)
+            if state == "no_window" and proc.poll() is None:
+                proc.kill()  # cleanup only; the window was never observed
+            try:
+                _, a_err = proc.communicate(timeout=15)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                _, a_err = proc.communicate(timeout=15)
+            if state == "a_died":
+                print(f"    U.{scen}: process A exited before the mid-write "
+                      f"window (rc={proc.returncode})")
+                if a_err:
+                    print("    stderr:", a_err[-400:])
+                return "a_died"
+            if state != "killed":
+                return "missed"
+            # Verify the interruption actually landed mid-write.
+            tmps = _g.glob(npath_s + ".dmtmp.*")
+            try:
+                expected = int(open(res + ".size").read())
+            except (OSError, ValueError):
+                expected = None
+            try:
+                tsize = os.path.getsize(tmps[0]) if len(tmps) == 1 else None
+            except OSError:
+                tsize = None
+            if not (proc.returncode == -_signal.SIGKILL and tsize is not None
+                    and expected is not None and 0 < tsize < expected):
+                print(f"    U.{scen}: kill missed the write window "
+                      f"(rc={proc.returncode}, temp_size={tsize}, "
+                      f"expected={expected}); retrying")
+                return "missed"
+            return "interrupted"
+
+        outcome = "missed"
+        for _attempt in range(3):
+            outcome = _sigkill_attempt()
+            if outcome != "missed":
                 break
-            if proc.poll() is not None:
-                break
-            time.sleep(0.05)
-        time.sleep(0.5)
-        if proc.poll() is None:
-            proc.kill()  # SIGKILL mid temp-write
-        try:
-            proc.wait(timeout=15)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait(timeout=15)
+        if outcome != "interrupted":
+            print(f"    U.{scen}: SIGKILL mid-write could not be established "
+                  f"in 3 bounded attempts ({outcome})")
+            return False
     else:
         ra = subprocess.run([sys.executable, pa], capture_output=True, text=True, timeout=180)
         if scen.startswith("crash_") and ra.returncode != 42:
