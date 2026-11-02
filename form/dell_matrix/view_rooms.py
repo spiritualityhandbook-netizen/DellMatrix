@@ -94,14 +94,27 @@ def filter_nodes_for_room(
     stage_source="unplanted" (a plant list was supplied) or
     stage_source="unavailable" (none was).
 
-    Identity limit (T2 label-identity, DIR-2026-11-02-R1 P3):
-    plant() stores idea=label[:80], so the truncated key is the
-    only textual identity a plant carries. When that key cannot
-    pick out ONE node — two distinct full labels in the node
-    list collapse to it, or the supplied plants disagree on its
-    stage — attribution would be a guess, so the node carries
-    stage=None with stage_source="ambiguous" instead of another
-    plant's stage presented as fact.
+    Identity (T2 label-identity + DIR-T2-R2): a stage is
+    attributed only where plant-to-node identity is PROVEN.
+    plant() retains the exact identity as idea_full alongside
+    the truncated display key idea=label[:80] (C-Q3), so:
+    - a plant whose idea_full equals the node's full label is
+      that node's plant (agreeing exact plants resolve;
+      disagreeing ones report "ambiguous");
+    - a legacy plant without idea_full resolves exactly only
+      where its stored key equals the node's full label;
+    - a plant whose idea_full differs from the node's label is
+      provably another unit's plant and contributes nothing —
+      an unplanted sibling never inherits its stage, even when
+      it is the only node visible (DIR-T2-R2);
+    - a legacy plant matching only by truncated prefix proves
+      nothing, so the node reports "ambiguous" — agreeing
+      stages do not prove identity (C-Q4).
+    Residual limits: two distinct units sharing one identical
+    full label remain one lens identity (no unit id reaches
+    this boundary), and a legacy record whose stored key is
+    exactly 80 chars is indistinguishable from a genuine
+    80-char label under the stored-key rule.
     """
     scores = scores or {}
     room = (room_id or "growth").lower()
@@ -114,42 +127,45 @@ def filter_nodes_for_room(
         return [{**n, "view_tag": "shared"} for n in ranked]
     if room == "growth":
         stages = ["seed", "sprout", "stem", "branch", "leaf", "fruit"]
-        stage_by_label: Dict[str, str] = {}
-        conflicted: set = set()
+        # Proven-identity candidates: full node label -> stages of
+        # plants whose identity is proven for that exact label.
+        exact_stages: Dict[str, set] = {}
+        # Truncated keys carrying legacy plants (no idea_full):
+        # such a plant proves identity only for a node whose full
+        # label equals its stored key (handled via exact_stages);
+        # for any longer label on the same key it is prefix-only.
+        legacy_keys: set = set()
         if plants is not None:
             for p in plants:
-                # plant() stores idea=label[:80]; key plants the
-                # same way nodes are keyed below.
-                idea = str(p.get("idea") or "")[:80]
                 stage = str(p.get("stage") or "")
-                if idea and stage in stages:
-                    if idea in stage_by_label:
-                        if stage_by_label[idea] != stage:
-                            conflicted.add(idea)
-                    else:
-                        stage_by_label[idea] = stage
-        # Distinct FULL labels per truncated key in this node
-        # list: >1 distinct label on one key means the key cannot
-        # identify which node a plant belongs to.
-        labels_by_key: Dict[str, set] = {}
-        for n in nodes:
-            full = str(n.get("label") or "")
-            labels_by_key.setdefault(full[:80], set()).add(full)
-        collided = {k for k, s in labels_by_key.items() if len(s) > 1}
+                if stage not in stages:
+                    continue
+                full = p.get("idea_full")
+                if isinstance(full, str) and full:
+                    exact_stages.setdefault(full, set()).add(stage)
+                else:
+                    stored = str(p.get("idea") or "")[:80]
+                    if stored:
+                        exact_stages.setdefault(stored, set()).add(stage)
+                        legacy_keys.add(stored)
         out = []
         for n in nodes:
-            # GrowthForce.plant stores idea=label[:80]; match on that key.
-            key = str(n.get("label") or "")[:80]
-            if key in conflicted or key in collided:
-                stage, source = None, "ambiguous"
-            else:
-                stage = stage_by_label.get(key)
-                if stage is not None:
-                    source = "growth_force"
-                elif plants is not None:
-                    source = "unplanted"
+            label = str(n.get("label") or "")
+            proven = exact_stages.get(label)
+            if proven:
+                if len(proven) == 1:
+                    stage, source = next(iter(proven)), "growth_force"
                 else:
-                    source = "unavailable"
+                    # Proven plants for this very label disagree.
+                    stage, source = None, "ambiguous"
+            elif label[:80] in legacy_keys and label not in exact_stages:
+                # Only a prefix-only legacy plant could be this
+                # node's: identity unprovable (C-Q4).
+                stage, source = None, "ambiguous"
+            elif plants is not None:
+                stage, source = None, "unplanted"
+            else:
+                stage, source = None, "unavailable"
             out.append({**n, "stage": stage, "stage_source": source,
                         "view_tag": "growth"})
         return out
