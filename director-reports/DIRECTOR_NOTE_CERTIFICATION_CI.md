@@ -7,9 +7,16 @@ Certification remains the Director's act on this evidence.
 
 ## Mechanism
 
-- PR #233 (branch `uni/certification-ci`) adds exactly one
-  file: `.github/workflows/certification.yml`. **The PR is
-  not merged and is not to be merged.**
+- PR #233 (branch `uni/certification-ci`) contains three
+  files in its final diff: `.github/workflows/certification.yml`
+  (the execution mechanism), this note, and the INDEX.md row
+  recording it. **The PR is not merged and is not to be
+  merged.** (CORRECTION 2026-11-02, per DIR-CERT-2026-11-02:
+  this section originally stated the PR "adds exactly one
+  file" — true when only the workflow had been committed,
+  false for the final diff once this note and the INDEX row
+  were added. Corrected; the executed tree was unaffected,
+  since the checkout is pinned to the frozen base.)
 - The workflow checks out the **frozen base
   `e0769adf98179f4bebc9322705b3c2bd3b8a014c`** (pinned; a
   guard step fails the job if HEAD differs). The branch's own
