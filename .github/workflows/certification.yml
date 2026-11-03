@@ -1,0 +1,165 @@
+# Director certification run — CI-only execution mechanism.
+#
+# DIRECTOR — CERTIFICATION EXECUTION UNBLOCK (2026-11-02).
+# This workflow exists so the certification runner executes on
+# GitHub-hosted infrastructure under Director review, since the
+# Director's own environment cannot retrieve the repository.
+#
+# Rules bound to this workflow:
+#   * The checkout is PINNED to the frozen base
+#     e0769adf98179f4bebc9322705b3c2bd3b8a014c. The runner and
+#     all production code execute exactly as at that revision;
+#     nothing on the PR branch (including this file) enters the
+#     executed tree.
+#   * director-reports/certification_runner.py runs UNMODIFIED,
+#     sequentially, in one job.
+#   * All raw evidence is uploaded as a workflow artifact EVEN
+#     ON FAILURE, together with the manifest verification
+#     result and the execution metadata (job URL, checkout SHA,
+#     Python version, runner image, per-item exit codes).
+#   * The containing PR is NOT to be merged. This workflow is
+#     an execution instrument, not a certificate; certification
+#     is the Director's act on the preserved evidence.
+name: Director certification run
+
+on:
+  pull_request:
+    types: [opened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      PINNED_SHA: e0769adf98179f4bebc9322705b3c2bd3b8a014c
+      EVIDENCE_DIR: ${{ github.workspace }}/certification_evidence
+      POST_DIR: ${{ github.workspace }}/certification_meta_post
+    steps:
+      - name: Checkout frozen base (pinned SHA)
+        uses: actions/checkout@v4
+        with:
+          ref: e0769adf98179f4bebc9322705b3c2bd3b8a014c
+
+      - name: Verify checkout is exactly the pinned base
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "checked_out_head=$actual"
+          if [ "$actual" != "$PINNED_SHA" ]; then
+            echo "FATAL: checkout $actual != pinned base $PINNED_SHA"
+            exit 1
+          fi
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Record execution metadata (inside evidence, pre-run)
+        run: |
+          mkdir -p "$EVIDENCE_DIR" "$POST_DIR"
+          {
+            echo "purpose: Director certification execution (CI-only; PR not to be merged)"
+            echo "job_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "run_id: ${{ github.run_id }}"
+            echo "run_attempt: ${{ github.run_attempt }}"
+            echo "workflow_ref: ${{ github.workflow_ref }}"
+            echo "triggering_branch: ${{ github.head_ref }}"
+            echo "pinned_checkout_sha: $PINNED_SHA"
+            echo "actual_head: $(git rev-parse HEAD)"
+            echo "runner_os: ${{ runner.os }}"
+            echo "runner_arch: ${{ runner.arch }}"
+            echo "runner_name: ${{ runner.name }}"
+            echo "image_os: ${ImageOS:-unknown}"
+            echo "image_version: ${ImageVersion:-unknown}"
+            echo "uname: $(uname -a)"
+            echo "os_release: $(grep '^PRETTY_NAME=' /etc/os-release || true)"
+            echo "python_version: $(python3 --version 2>&1)"
+            echo "python_executable: $(command -v python3)"
+            echo "started_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } | tee "$EVIDENCE_DIR/execution_meta.txt"
+
+      - name: Run certification runner (unmodified, sequential)
+        run: |
+          set +e
+          python3 director-reports/certification_runner.py \
+            --out "$EVIDENCE_DIR"
+          code=$?
+          echo "$code" > "$POST_DIR/runner_exit.txt"
+          echo "certification runner exit code: $code"
+          exit 0
+
+      - name: Verify SHA-256 manifest
+        if: always()
+        run: |
+          set +e
+          cd "$EVIDENCE_DIR"
+          if [ -f MANIFEST.sha256 ]; then
+            sha256sum -c MANIFEST.sha256 > "$POST_DIR/manifest_verify.txt" 2>&1
+            code=$?
+            python3 - << 'PYEOF' >> "$POST_DIR/manifest_verify.txt" 2>&1
+          import hashlib, os, sys
+          bad = []
+          checked = 0
+          for line in open("MANIFEST.sha256"):
+              line = line.strip()
+              if not line or line.startswith("#"):
+                  continue
+              digest, rel = line.split(None, 1)
+              rel = rel.strip().lstrip("*")
+              h = hashlib.sha256()
+              with open(rel, "rb") as fh:
+                  for chunk in iter(lambda: fh.read(65536), b""):
+                      h.update(chunk)
+              checked += 1
+              if h.hexdigest() != digest:
+                  bad.append(rel)
+          print("strict digest check: %d files, %d mismatched" % (checked, len(bad)))
+          for rel in bad:
+              print("MISMATCH: %s" % rel)
+          sys.exit(1 if bad else 0)
+          PYEOF
+            pcode=$?
+            echo "sha256sum -c exit: $code ; strict python check exit: $pcode" \
+              >> "$POST_DIR/manifest_verify.txt"
+            if [ "$code" -ne 0 ] || [ "$pcode" -ne 0 ]; then
+              echo 1 > "$POST_DIR/manifest_exit.txt"
+            else
+              echo 0 > "$POST_DIR/manifest_exit.txt"
+            fi
+          else
+            echo "MANIFEST.sha256 MISSING — runner did not complete" \
+              > "$POST_DIR/manifest_verify.txt"
+            echo 1 > "$POST_DIR/manifest_exit.txt"
+          fi
+          cat "$POST_DIR/manifest_verify.txt"
+          exit 0
+
+      - name: Upload complete raw evidence artifact (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-evidence-run-${{ github.run_id }}
+          path: |
+            certification_evidence/
+            certification_meta_post/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Job verdict (fails the job if runner or manifest failed)
+        if: always()
+        run: |
+          rcode="$(cat "$POST_DIR/runner_exit.txt" 2>/dev/null || echo missing)"
+          mcode="$(cat "$POST_DIR/manifest_exit.txt" 2>/dev/null || echo missing)"
+          echo "runner_exit=$rcode manifest_exit=$mcode"
+          echo "Evidence artifact: certification-evidence-run-${{ github.run_id }}"
+          echo "Job URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ "$rcode" != "0" ] || [ "$mcode" != "0" ]; then
+            echo "CERTIFICATION RUN JOB: FAILED (diagnostics preserved in artifact)"
+            exit 1
+          fi
+          echo "CERTIFICATION RUN JOB: all 12 items exit 0, manifest verified."
+          echo "Execution only — certification is the Director's act."
