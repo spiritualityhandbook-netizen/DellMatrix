@@ -71,7 +71,12 @@ a seed when you press RUN, and never on its own.
   → stem → branch → leaf → fruit). Plants whose identity the
   lens cannot prove are grouped last under "NO STAGE CLAIM"
   — the Studio never invents a stage.
-- **Console** tab — the raw session log.
+- **Console** tab — the session log: each run's seed, its
+  full result, and a one-line summary (OK / PARTIAL / FAILED
+  with atom and skipped counts) taken from that run's real
+  receipts; runs whose results carry no per-atom receipts say
+  so instead of inventing counts. **Clear console** empties
+  the log view only — receipts and program history stay.
 - **Receipts** (bottom) — every run this session, newest
   first, with honest ok / failed / skipped verdicts.
 

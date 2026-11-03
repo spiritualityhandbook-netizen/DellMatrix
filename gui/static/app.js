@@ -68,6 +68,39 @@ function logConsole(text) {
   el.scrollTop = el.scrollHeight;
 }
 
+/* One-line per-run console summary, derived ONLY from the same
+   result object addReceipt consumes. Status uses addReceipt's
+   own classification (partial when the result says partial or
+   any_skipped, else ok / failed). Atom and skipped counts come
+   from result.atom_results when the result carries per-atom
+   receipts; results without them (single-atom Core I leaf runs)
+   get NO counts — the summary says so instead of inferring a
+   count the engine never reported. A top-level skipped result
+   reports its own reason, mirroring addReceipt. */
+function summarizeResult(result) {
+  if (!result || typeof result !== "object") return "— no result object returned";
+  const partial = !!(result.partial || result.any_skipped);
+  let line = "— " + (partial ? "PARTIAL" : result.ok ? "OK" : "FAILED");
+  if (Array.isArray(result.atom_results)) {
+    const total = result.atom_results.length;
+    const skipped = result.atom_results.filter((r) => r && r.skipped).length;
+    line += " · " + total + " atom" + (total === 1 ? "" : "s")
+      + " · " + skipped + " skipped";
+  } else {
+    line += " · no per-atom receipts in result";
+    if (result.skipped) line += " · skipped: " + (result.reason || "honest refusal");
+  }
+  if (result.error) line += " · " + result.error;
+  return line;
+}
+
+/* Clear is view-only: it empties the console log element and
+   nothing else — receipts, program history and the history
+   tail below the console are untouched. */
+function clearConsole() {
+  $("#console-log").textContent = "";
+}
+
 function setStatus(mode, text) {
   const led = $("#status-led");
   led.className = "led led-" + mode;
@@ -450,6 +483,7 @@ async function execute() {
     if (state.lastParse) renderChain(state.lastParse);
     showResult(data.result);
     logConsole(JSON.stringify(data.result, null, 2));
+    logConsole(summarizeResult(data.result));
     setStatus("idle", "done · " + (data.result.ok ? "ok" : "failed — see receipts"));
   } catch (err) {
     setStatus("error", "server error: " + err.message);
@@ -622,5 +656,6 @@ document.addEventListener("DOMContentLoaded", () => {
     tab.addEventListener("click", () => switchView(tab.dataset.view));
   }
   $("#growth-refresh").addEventListener("click", loadGrowth);
+  $("#console-clear").addEventListener("click", clearConsole);
   init();
 });
