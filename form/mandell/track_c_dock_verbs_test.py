@@ -90,6 +90,21 @@ class ScriptedJudge:
             return json.dumps({
                 "label": "Bloated", "words": "w", "detail": "x" * 3000,
                 "goals": [], "reason": "r", "parents": ids})
+        if prompt.startswith("[verb:relate_field]") and targets:
+            t = targets[0]
+            return json.dumps({
+                "label": f"Field relation: {labels[0]}",
+                "words": (f"{labels[0]} relates across the field to: "
+                          + ", ".join(labels[1:])),
+                "detail": ("Token pre-filter candidates were judged; "
+                           "only entries sharing the target's "
+                           "substance are claimed as relatives."),
+                "goals": [],
+                "reason": "Candidates were token-pre-selected by the "
+                          "host; false positives rejected — the "
+                          "listed parents are the entries judged "
+                          "genuinely related to the target.",
+                "parents": ids})
         if prompt.startswith("[verb:comprehend]") and targets:
             t = targets[0]
             detail = str(t.get("detail", ""))
@@ -176,6 +191,106 @@ def smoke() -> bool:
              callable(getattr(s, "comprehend", None)))
         if not callable(getattr(s, "comprehend", None)):
             return _finish(owners)
+
+        # --- relate_field: field-wide relatability ------------------
+        # Runs BEFORE the comprehend calls so the field is exactly
+        # the seeded entries (comprehend proposals are legitimate
+        # field entries too and would be candidates themselves).
+        _rec("relate_field_verb_present",
+             callable(getattr(s, "relate_field", None)))
+        if callable(getattr(s, "relate_field", None)):
+            # A true relative, still PENDING (affinity surfaces cannot
+            # score Nursery ideas at all — the dock verb must see it).
+            bike = p.nursery.add(
+                "BikeShareDock", words="BikeShareDock",
+                detail="Neighbors share one bike through a booking "
+                       "calendar and split repair costs by miles",
+                goals=["cheaper transport for the block"])
+            # An unrelated entry: zero token overlap with the target.
+            zebra = p.nursery.add(
+                "ZebraQuilt", words="ZebraQuilt",
+                detail="Striped fabric panels stitched for winter "
+                       "warmth and cozy blankets",
+                goals=["warm bedding"])
+            # limit=1 on the clean field: only the top-ranked
+            # candidate (the true relative) reaches the judge.
+            r = s.relate_field(unit, limit=1)
+            rf1 = [pm for pm in judge.prompts
+                   if pm.startswith("[verb:relate_field]")]
+            _rec("relate_field_limit_one_top_candidate_only",
+                 r["ok"] and len(rf1) == 1
+                 and "BikeShareDock" in rf1[0]
+                 and "RainBarrelMesh" not in rf1[0]
+                 and "ZebraQuilt" not in rf1[0], str(r)[:120])
+            # Default call: ONE PENDING evolved proposal; the judge's
+            # parents are a subset of the entries it was shown and
+            # include the target and the true relative.
+            judge.prompts.clear()
+            n_before = len(p.nursery.proposals)
+            r = s.relate_field(unit)
+            prop = p.nursery.proposals.get(r.get("pid", ""))
+            rf_prompts = [pm for pm in judge.prompts
+                          if pm.startswith("[verb:relate_field]")]
+            shown_ids = set()
+            if rf_prompts and "[targets]\n" in rf_prompts[0]:
+                blob = rf_prompts[0].split("[targets]\n", 1)[1] \
+                    .split("\n\n[", 1)[0]
+                shown_ids = {t.get("uid") or t.get("pid")
+                             for t in json.loads(blob)}
+            _rec("relate_field_lands_one_pending_evolved",
+                 r["ok"] and r.get("verb") == "relate_field"
+                 and prop is not None and prop.status == "pending"
+                 and prop.kind == "evolved"
+                 and len(p.nursery.proposals) == n_before + 1,
+                 str(r)[:160])
+            _rec("relate_field_parents_subset_of_shown",
+                 prop is not None and set(prop.parents) <= shown_ids
+                 and unit in prop.parents and bike.id in prop.parents,
+                 f"parents={getattr(prop, 'parents', None)}")
+            _rec("relate_field_prefilter_picks_true_relative",
+                 len(rf_prompts) == 1 and "BikeShareDock" in rf_prompts[0]
+                 and "ZebraQuilt" not in rf_prompts[0],
+                 (rf_prompts[0][:200] if rf_prompts else "no prompt"))
+            _rec("relate_field_pending_idea_is_candidate",
+                 bool(rf_prompts) and bike.id in rf_prompts[0])
+            # No candidate clears the pre-filter: honest receipt,
+            # ZERO provider calls, nothing lands.
+            calls = judge.calls
+            n_before = len(p.nursery.proposals)
+            r = s.relate_field(zebra.id)
+            _rec("relate_field_no_candidates_receipt",
+                 not r["ok"] and r["reason"] == "no_candidates"
+                 and judge.calls == calls
+                 and len(p.nursery.proposals) == n_before,
+                 str(r)[:140])
+            # Bad limit + unknown target: fail closed, no calls.
+            calls = judge.calls
+            r = s.relate_field(unit, limit=0)
+            r2 = s.relate_field("no_such_id")
+            _rec("relate_field_bad_limit_and_unknown_target",
+                 not r["ok"] and r["reason"] == "bad_limit"
+                 and not r2["ok"] and r2["reason"] == "unknown_target"
+                 and judge.calls == calls, str(r)[:120])
+            # Hostile + bloated judges rejected, nothing lands.
+            for mode, name in (
+                    ("hostile", "relate_field_hostile_rejected"),
+                    ("bloat", "relate_field_bloat_rejected")):
+                hj = ScriptedJudge(mode=mode)
+                hs = _judge_session(p, o, hj)
+                n_before = len(p.nursery.proposals)
+                r = hs.relate_field(unit)
+                _rec(name,
+                     not r["ok"] and r["reason"] == "invalid_output"
+                     and len(p.nursery.proposals) == n_before,
+                     str(r)[:120])
+                hs.undock()
+            ev = [e for rec in p.dock_sessions.values()
+                  for e in rec["proposals"]
+                  if e["task"] == "relate_field"]
+            _rec("relate_field_evidence_recorded",
+                 len(ev) >= 2
+                 and all(e["snapshot_id"] and len(e["snapshot_id"]) == 64
+                         for e in ev), f"entries={len(ev)}")
 
         # --- comprehend a plane unit --------------------------------
         n_before = len(p.nursery.proposals)
@@ -273,6 +388,11 @@ def smoke() -> bool:
         _rec("comprehend_undocked_no_call",
              not r["ok"] and r["reason"] == "undocked"
              and judge.calls == calls, str(r)[:120])
+        if callable(getattr(s, "relate_field", None)):
+            r = s.relate_field(unit)
+            _rec("relate_field_undocked_no_call",
+                 not r["ok"] and r["reason"] == "undocked"
+                 and judge.calls == calls, str(r)[:120])
 
         # --- no coordinator: fail closed ----------------------------
         o2 = "TrackCNoCoord"
@@ -287,6 +407,11 @@ def smoke() -> bool:
         _rec("comprehend_fail_closed_without_coordinator",
              not r["ok"] and r["reason"] == "snapshot_unavailable"
              and judge2.calls == 0, str(r)[:160])
+        if callable(getattr(s2, "relate_field", None)):
+            r = s2.relate_field(lone)
+            _rec("relate_field_fail_closed_without_coordinator",
+                 not r["ok"] and r["reason"] == "snapshot_unavailable"
+                 and judge2.calls == 0, str(r)[:160])
     finally:
         pass
     return _finish(owners)

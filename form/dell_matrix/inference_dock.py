@@ -591,7 +591,7 @@ class DockedSession:
 
     Created by dock() with a host-established subject. Exposes
     propose(), the SD-2 semantic verbs (relate / synthesize / flag /
-    comprehend), field_snapshot(), and undock(). Every verb lands PENDING
+    comprehend / relate_field), field_snapshot(), and undock(). Every verb lands PENDING
     proposals only. It cannot mint/attenuate/revoke/list grants and
     cannot confirm proposals — confirmation stays on the R6.1 bound
     endpoint after human review / issued authority.
@@ -1135,6 +1135,122 @@ class DockedSession:
         return self._verb("comprehend", [target], instruction,
                           reason=reason)
 
+    # Track C build 2: the relate_field host pre-filter. A plain
+    # token-overlap ranker over an entry's own snapshot text —
+    # honestly a PRE-FILTER that picks which entries the docked
+    # judge sees, never a semantic judgment and NOT
+    # ringed_growth._affinity (that scores plane units for growth
+    # rings; a different contract, GDP-001). Nursery/PENDING ideas
+    # are candidates here even though affinity cannot score them.
+    _PREFILTER_STOPWORDS = frozenset({
+        "a", "an", "the", "and", "or", "of", "to", "in", "on",
+        "for", "by", "with", "is", "are", "it", "its", "as", "at",
+        "be", "this", "that", "from", "into", "one"})
+
+    @classmethod
+    def _field_tokens(cls, entry) -> set:
+        parts = [str(entry.get("label", "") or ""),
+                 str(entry.get("words", "") or ""),
+                 str(entry.get("detail", "") or "")]
+        goals = entry.get("goals") or []
+        if isinstance(goals, (list, tuple)):
+            parts.extend(str(g) for g in goals)
+        elif goals:
+            parts.append(str(goals))
+        return {t for t in re.findall(r"[a-z0-9]+", " ".join(parts).lower())
+                if len(t) >= 2 and t not in cls._PREFILTER_STOPWORDS}
+
+    def relate_field(self, target, limit=5, *,
+                     reason=None) -> Dict[str, Any]:
+        """Judge one entry's relatability against the WHOLE field;
+        land ONE PENDING proposal naming its genuine relatives.
+
+        Track C build 2: relate() is pairwise and caller-targeted,
+        and the only field-wide ranking was the deterministic
+        affinity pre-filter inside RingedGrowth over plane units.
+        Here the host pre-selects up to `limit` candidates by
+        token overlap (label/words/detail/goals — see
+        _field_tokens), then ONE _verb call lets the docked judge
+        decide which candidates genuinely relate; false positives
+        must be rejected in the judge's reason. If no candidate
+        clears the pre-filter, an honest no_candidates receipt is
+        returned and the provider is never called."""
+        if not self._docked:
+            return {"ok": False, "reason": "undocked",
+                    "detail": "Session is undocked: zero provider calls."}
+        if isinstance(limit, bool) or not isinstance(limit, int) \
+                or not (1 <= limit <= 20):
+            return {"ok": False, "reason": "bad_limit",
+                    "detail": "limit must be an int in 1..20."}
+        if reason is not None:
+            if not isinstance(reason, str) or not reason.strip():
+                return {"ok": False, "reason": "bad_reason",
+                        "detail": "Reason must be a non-empty string."}
+            if len(reason) > 1000:
+                return {"ok": False, "reason": "bad_reason",
+                        "detail": "Reason exceeds 1000 chars."}
+        coord = self._coordinator
+        if coord is None:
+            return {"ok": False, "reason": "snapshot_unavailable",
+                    "detail": "No field-snapshot coordinator is wired "
+                              "to this session."}
+        try:
+            snap = coord.snapshot_for(self._subject)
+        except Exception:
+            return {"ok": False, "reason": "snapshot_unavailable",
+                    "detail": "Field snapshot could not be built."}
+        index: Dict[str, Any] = {}
+        for e in snap.get("units", []):
+            if isinstance(e, dict) and e.get("uid"):
+                index[str(e["uid"])] = e
+        for e in snap.get("ideas", []):
+            if isinstance(e, dict) and e.get("pid"):
+                index[str(e["pid"])] = e
+        entry = index.get(target)
+        if entry is None:
+            return {"ok": False, "reason": "unknown_target",
+                    "detail": "Target is not in the field snapshot."}
+        target_tokens = self._field_tokens(entry)
+        scored = []
+        for cid, cand in index.items():
+            if cid == target:
+                continue
+            overlap = len(target_tokens & self._field_tokens(cand))
+            if overlap > 0:
+                scored.append((-overlap, cid))
+        scored.sort()
+        # The SD-2 schema bounds a proposal's parents at
+        # MAX_PARENTS, and the judge's parents must be a subset of
+        # the entries it is shown — so at most MAX_PARENTS - 1
+        # candidates can go to the judge, however large `limit` is.
+        shown = min(limit, MAX_PARENTS - 1)
+        candidates = [cid for _, cid in scored[:shown]]
+        if not candidates:
+            return {"ok": False, "reason": "no_candidates",
+                    "detail": "No field entry shares any content token "
+                              "with the target under the host token "
+                              "pre-filter; the provider was not called.",
+                    "verb": "relate_field", "task": "relate_field"}
+        instruction = (
+            "[verb:relate_field] You are a docked semantic judge "
+            "inside DellMatrix. The FIRST field entry below is the "
+            "target; the rest are candidates pre-selected by a "
+            "deterministic token-overlap host pre-filter over "
+            "label/words/detail/goals. That pre-filter is NOT a "
+            "semantic judgment: some candidates may be false "
+            "positives that merely share words. Judge which "
+            "candidates GENUINELY relate to the target (same "
+            "meaning, complementary, or meaningfully conflicting) "
+            "and author ONE proposal expressing the target's real "
+            "relations across the field. Your \"parents\" must "
+            "list ONLY the target and the candidates you judge "
+            "genuinely related, and your reason must say which "
+            "pre-selected candidates you rejected as false "
+            "positives and why."
+            + self._SCHEMA_TAIL)
+        return self._verb("relate_field", [target] + candidates,
+                          instruction, reason=reason)
+
     def _verb(self, verb, targets, instruction, *, concern="",
               reason=None) -> Dict[str, Any]:
         """Shared verb path: snapshot -> resolve targets -> prompt
@@ -1247,7 +1363,8 @@ class DockedSession:
         actual_model = getattr(self._provider, "last_actual_model", None)
         origin = self._origin_for(actual_model)
         chosen_reason = reason if reason is not None else fields["reason"]
-        kind = "evolved" if verb in ("relate", "synthesize") else "new"
+        kind = "evolved" if verb in (
+            "relate", "synthesize", "relate_field") else "new"
         try:
             prop = self._program.nursery.add(
                 fields["label"], words=fields["words"], kind=kind,
