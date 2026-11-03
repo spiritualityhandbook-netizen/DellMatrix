@@ -88,8 +88,11 @@ a seed when you press RUN, and never on its own.
   full result, and a one-line summary (OK / PARTIAL / FAILED
   with atom and skipped counts) taken from that run's real
   receipts; runs whose results carry no per-atom receipts say
-  so instead of inventing counts. **Clear console** empties
-  the log view only — receipts and program history stay.
+  so instead of inventing counts. Click a run's seed line
+  (or focus it and press Enter) to load that seed back into
+  the editor, exactly like a receipt — loading never runs
+  it. **Clear console** empties the log view only — receipts
+  and program history stay.
 - **Receipts** (bottom) — every run this session, newest
   first, with honest ok / failed / skipped verdicts. Click
   a receipt (or focus it and press Enter) to load its seed
