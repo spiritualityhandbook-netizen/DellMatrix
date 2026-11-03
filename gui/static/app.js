@@ -285,6 +285,12 @@ function renderChainSoon() {
 
 /* ---------- Store + state ---------- */
 
+function storeTypeOf(v) {
+  if (v === null) return "null";
+  if (Array.isArray(v)) return "list";
+  return typeof v;  // string | number | boolean | object
+}
+
 function renderStore(storeData) {
   const el = $("#store");
   const keys = Object.keys(storeData || {});
@@ -297,11 +303,32 @@ function renderStore(storeData) {
   const table = document.createElement("table");
   table.className = "store-table";
   for (const k of keys.sort()) {
+    const v = storeData[k];
+    const full = typeof v === "object" ? JSON.stringify(v) : String(v);
     const tr = document.createElement("tr");
     const tdK = document.createElement("td"); tdK.className = "store-k"; tdK.textContent = k;
+    const tdT = document.createElement("td"); tdT.className = "store-t";
+    const tag = document.createElement("span");
+    tag.className = "type-tag type-" + storeTypeOf(v);
+    tag.textContent = storeTypeOf(v);
+    tdT.appendChild(tag);
     const tdV = document.createElement("td"); tdV.className = "store-v";
-    tdV.textContent = typeof storeData[k] === "object" ? JSON.stringify(storeData[k]) : String(storeData[k]);
-    tr.appendChild(tdK); tr.appendChild(tdV);
+    if (full.length > 80) {
+      const span = document.createElement("span");
+      span.textContent = full.slice(0, 80) + "…";
+      const btn = document.createElement("button");
+      btn.className = "store-expand";
+      btn.textContent = "expand";
+      btn.addEventListener("click", () => {
+        const open = btn.textContent === "collapse";
+        span.textContent = open ? full.slice(0, 80) + "…" : full;
+        btn.textContent = open ? "expand" : "collapse";
+      });
+      tdV.appendChild(span); tdV.appendChild(btn);
+    } else {
+      tdV.textContent = full;
+    }
+    tr.appendChild(tdK); tr.appendChild(tdT); tr.appendChild(tdV);
     table.appendChild(tr);
   }
   el.appendChild(table);
@@ -386,6 +413,24 @@ function showResult(result) {
 
 /* ---------- Growth view ---------- */
 
+/* Canonical growth stages, in order (form.dell_matrix.forces
+   _STAGES; the lens in view_rooms attributes a stage only where
+   plant identity is proven). Nodes without a proven stage are
+   grouped last, under their honest stage_source — never assigned
+   a stage the lens did not give them. */
+const STAGE_ORDER = ["seed", "sprout", "stem", "branch", "leaf", "fruit"];
+
+function groupByStage(nodes) {
+  const groups = new Map();
+  for (const stage of STAGE_ORDER) groups.set(stage, []);
+  groups.set("__none__", []);
+  for (const node of nodes || []) {
+    if (node.stage && groups.has(node.stage)) groups.get(node.stage).push(node);
+    else groups.get("__none__").push(node);
+  }
+  return [...groups.entries()].filter(([, items]) => items.length);
+}
+
 async function loadGrowth() {
   const el = $("#growth");
   el.innerHTML = "<p class='dim'>loading the field…</p>";
@@ -397,14 +442,28 @@ async function loadGrowth() {
       el.innerHTML = "<p class='dim'>No plants in this owner's field yet. Growth appears as ideas are planted and grown.</p>";
       return;
     }
-    for (const node of nodes) {
-      const card = document.createElement("div");
-      card.className = "plant";
-      card.innerHTML = "<div class='plant-label'></div><div class='plant-stage'></div>";
-      card.querySelector(".plant-label").textContent = node.label || node.id;
-      card.querySelector(".plant-stage").textContent =
-        node.stage ? ("stage: " + node.stage + (node.stage_source ? " · " + node.stage_source : "")) : "stage: —";
-      el.appendChild(card);
+    for (const [stage, items] of groupByStage(nodes)) {
+      const section = document.createElement("div");
+      section.className = "growth-group";
+      const head = document.createElement("div");
+      head.className = "growth-group-head";
+      head.textContent = stage === "__none__"
+        ? "NO STAGE CLAIM — identity not proven"
+        : stage.toUpperCase() + " · " + items.length;
+      section.appendChild(head);
+      const cards = document.createElement("div");
+      cards.className = "growth-cards";
+      for (const node of items) {
+        const card = document.createElement("div");
+        card.className = "plant";
+        card.innerHTML = "<div class='plant-label'></div><div class='plant-stage'></div>";
+        card.querySelector(".plant-label").textContent = node.label || node.id;
+        card.querySelector(".plant-stage").textContent =
+          node.stage ? ("stage: " + node.stage + (node.stage_source ? " · " + node.stage_source : "")) : "stage: —";
+        cards.appendChild(card);
+      }
+      section.appendChild(cards);
+      el.appendChild(section);
     }
   } catch (err) {
     el.innerHTML = "<p class='dim'>Growth unavailable: " + err.message + "</p>";
@@ -437,8 +496,30 @@ async function init() {
   }
 }
 
+function clearSelection() {
+  state.selected = null;
+  renderRack($("#rack-search").value);
+  if (state.lastParse) renderChain(state.lastParse);
+  $("#inspector").innerHTML = "<p class='dim'>Select a Dell in the rack, or run a seed.</p>";
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   $("#rack-search").addEventListener("input", (e) => renderRack(e.target.value));
+  document.addEventListener("keydown", (e) => {
+    const tag = (e.target && e.target.tagName) || "";
+    const typing = tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT";
+    if (e.key === "/" && !typing) {
+      e.preventDefault();
+      $("#rack-search").focus();
+      $("#rack-search").select();
+    } else if (e.key === "Escape") {
+      // Esc clears selection states: rack filter, Dell selection,
+      // and focus — it never touches the seed text itself.
+      if ($("#rack-search").value) { $("#rack-search").value = ""; renderRack(""); }
+      if (state.selected) clearSelection();
+      if (typing && e.target.blur) e.target.blur();
+    }
+  });
   $("#seed-editor").addEventListener("input", renderChainSoon);
   $("#seed-editor").addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); execute(); }
@@ -464,6 +545,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (state.lastParse) renderChain(state.lastParse);
       state.receipts = [];
       $("#receipts").innerHTML = "<p class='dim'>No runs yet for this owner.</p>";
+      if (!$("#view-growth").classList.contains("view-hidden")) loadGrowth();
       logConsole("Switched owner to " + owner);
     } catch (err) { setStatus("error", err.message); }
   });
