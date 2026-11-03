@@ -55,7 +55,10 @@ a seed when you press RUN, and never on its own.
   skipped with its reason) and a verdict chip summarises the
   chain (OK / PARTIAL / FAILED). Runs that carry no per-atom
   receipts leave the canvas neutral — outcomes are never
-  inferred. Click a card to inspect its Dell.
+  inferred. Click a card to inspect its Dell. Cards are
+  width-capped and long argument values wrap inside the
+  card instead of stretching the canvas sideways — text
+  wraps, it is never truncated or hidden.
 - **Seed Editor** — write Mandell seeds; Ctrl+Enter runs.
 - **Examples** — the dropdown over the editor loads one of
   14 shipped example seeds, from a single Create to full

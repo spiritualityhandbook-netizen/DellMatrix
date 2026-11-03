@@ -133,10 +133,15 @@ button.atom:focus-visible, #rack-search:focus-visible, #owner-input:focus-visibl
     radial-gradient(circle, #23242b 1px, transparent 1px);
   background-size: 22px 22px;
 }
+/* Card width is capped and chip/verdict/label text may break
+   anywhere: a real seed can carry a very long unbreakable arg
+   value (verified via /api/parse), and an uncapped card would
+   stretch the whole canvas into horizontal scroll. Text wraps —
+   it is never truncated, so no value is hidden. */
 .atom {
   background: linear-gradient(#26272e, #1d1e24);
   border: 1px solid var(--edge); border-top: 3px solid var(--accent);
-  border-radius: 8px; padding: 10px 14px; min-width: 110px;
+  border-radius: 8px; padding: 10px 14px; min-width: 110px; max-width: 300px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.35);
   transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
 }
@@ -152,7 +157,7 @@ button.atom:focus-visible, #rack-search:focus-visible, #owner-input:focus-visibl
 .atom-fail { border-top-color: var(--fail); background: linear-gradient(#2e2226, #1d1e24); box-shadow: 0 4px 14px rgba(0,0,0,0.35), 0 0 0 1px rgba(248, 113, 113, 0.3); }
 .atom-skipped { border-top-color: var(--skip); border-style: dashed; opacity: 0.88; }
 .atom-selected { box-shadow: 0 4px 14px rgba(0,0,0,0.35), 0 0 0 2px var(--accent); }
-.atom-verdict { margin-top: 7px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.02em; }
+.atom-verdict { margin-top: 7px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.02em; overflow-wrap: anywhere; }
 .atom-ok .atom-verdict { color: var(--ok); }
 .atom-fail .atom-verdict { color: var(--fail); }
 .atom-skipped .atom-verdict { color: var(--skip); }
@@ -175,13 +180,13 @@ button.atom:hover { border-color: var(--faint); transform: translateY(-2px); box
 .arg-chip {
   font-family: var(--mono); font-size: 10px; color: var(--teal);
   background: rgba(45, 212, 191, 0.1); border: 1px solid rgba(45, 212, 191, 0.35);
-  border-radius: 8px; padding: 1px 7px;
+  border-radius: 8px; padding: 1px 7px; max-width: 100%; overflow-wrap: anywhere;
 }
 .atom-origin {
   margin-top: 6px; font-size: 9px; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--faint);
 }
-.chain-label { font-family: var(--mono); font-size: 11px; color: var(--faint); width: 100%; }
+.chain-label { font-family: var(--mono); font-size: 11px; color: var(--faint); width: 100%; overflow-wrap: anywhere; }
 .parse-error {
   border: 1px solid var(--fail); color: var(--fail);
   background: rgba(248, 113, 113, 0.08); border-radius: 6px;
