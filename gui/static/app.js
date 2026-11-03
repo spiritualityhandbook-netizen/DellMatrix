@@ -7,7 +7,60 @@ const state = {
   dells: new Map(),       // num -> dell record
   selected: null,         // selected dell record
   receipts: [],           // session receipts, newest first
+  lastParse: null,        // last canonical parse rendered on the canvas
+  lastOutcome: null,      // per-atom outcomes of the last run (see below)
+  lastRunSeed: null,      // exact seed text the last outcome belongs to
 };
+
+/* Per-atom outcome evidence. Chain executions return
+   result.atom_results: [{dell, ok, skipped, error, reason}] in
+   execution order. Outcomes are matched to canvas cards by
+   walking both lists in order on dell number — a card only
+   gets a verdict when a real receipt names its Dell. Results
+   without atom_results (single-atom Core I leaf runs) carry no
+   per-atom evidence, so the canvas stays neutral rather than
+   painting an inferred outcome. */
+function buildOutcome(result) {
+  if (!result || !Array.isArray(result.atom_results)) return null;
+  return { receipts: result.atom_results.slice(), used: new Set(),
+           ok: !!result.ok, partial: !!result.partial };
+}
+
+function outcomeFor(outcome, dellNum) {
+  if (!outcome) return null;
+  for (let i = 0; i < outcome.receipts.length; i++) {
+    if (outcome.used.has(i)) continue;
+    if (outcome.receipts[i] && outcome.receipts[i].dell === dellNum) {
+      outcome.used.add(i);
+      return outcome.receipts[i];
+    }
+  }
+  return null;
+}
+
+function renderVerdict() {
+  const el = $("#canvas-verdict");
+  const outcome = state.lastOutcome;
+  const current = $("#seed-editor").value.trim();
+  if (!outcome || current !== state.lastRunSeed) {
+    el.className = "verdict verdict-hidden";
+    el.textContent = "";
+    return;
+  }
+  const total = outcome.receipts.length;
+  const skipped = outcome.receipts.filter((r) => r && r.skipped).length;
+  const failed = outcome.receipts.filter((r) => r && !r.ok && !r.skipped).length;
+  if (outcome.partial || skipped > 0) {
+    el.className = "verdict verdict-partial";
+    el.textContent = "◐ PARTIAL — " + skipped + " skipped of " + total + " atoms";
+  } else if (outcome.ok && failed === 0) {
+    el.className = "verdict verdict-ok";
+    el.textContent = "✓ CHAIN OK — " + total + " atom" + (total === 1 ? "" : "s");
+  } else {
+    el.className = "verdict verdict-fail";
+    el.textContent = "✗ FAILED — " + failed + " of " + total + " atoms";
+  }
+}
 
 function logConsole(text) {
   const el = $("#console-log");
@@ -61,6 +114,7 @@ function renderRack(filter) {
 function selectDell(dell, insert) {
   state.selected = dell;
   renderRack($("#rack-search").value);
+  if (state.lastParse) renderChain(state.lastParse);
   const insp = $("#inspector");
   insp.innerHTML = "";
   const title = document.createElement("div");
@@ -104,10 +158,15 @@ let parseSeq = 0;
 let parseTimer = null;
 
 function renderChain(parse) {
+  state.lastParse = parse;
+  if (state.lastOutcome) state.lastOutcome.used = new Set();  // re-match per render
   const chain = $("#chain");
   chain.innerHTML = "";
+  renderVerdict();
   if (!parse) {
-    chain.innerHTML = "<p class='dim'>The canvas mirrors your seed. Start typing, or click a Dell.</p>";
+    chain.innerHTML = "<div class='canvas-empty'><p class='canvas-empty-title'>The canvas is empty</p>"
+      + "<p class='dim'>Type a seed below, load an example, or click a Dell in the rack — "
+      + "the chain appears here exactly as the engine parses it.</p></div>";
     return;
   }
   if (!parse.ok) {
@@ -128,6 +187,13 @@ function renderChain(parse) {
     card.className = "atom";
     card.type = "button";
     const dell = state.dells.get(atom.num);
+    if (state.selected && state.selected.num === atom.num) card.classList.add("atom-selected");
+    const receipt = outcomeFor(state.lastOutcome, atom.num);
+    if (receipt) {
+      if (receipt.skipped) card.classList.add("atom-skipped");
+      else if (receipt.ok) card.classList.add("atom-ok");
+      else card.classList.add("atom-fail");
+    }
     const head = document.createElement("div");
     head.className = "atom-head";
     head.innerHTML = "<span class='atom-num'></span><span class='atom-name'></span>";
@@ -158,6 +224,18 @@ function renderChain(parse) {
       badge.className = "atom-origin";
       badge.textContent = atom.origin;
       card.appendChild(badge);
+    }
+    if (receipt) {
+      const verdict = document.createElement("div");
+      verdict.className = "atom-verdict";
+      if (receipt.skipped) {
+        verdict.textContent = "⊘ skipped — " + (receipt.reason || receipt.error || "honest refusal");
+      } else if (receipt.ok) {
+        verdict.textContent = "✓ ran";
+      } else {
+        verdict.textContent = "✗ " + (receipt.error || "failed");
+      }
+      card.appendChild(verdict);
     }
     card.addEventListener("click", () => { if (dell) selectDell(dell, false); });
     chain.appendChild(card);
@@ -194,6 +272,13 @@ async function refreshParse() {
 }
 
 function renderChainSoon() {
+  // Any edit makes the last run's outcome stale: unpaint it now so
+  // no card keeps a verdict for a seed that no longer matches.
+  if (state.lastOutcome) {
+    state.lastOutcome = null;
+    state.lastRunSeed = null;
+    if (state.lastParse) renderChain(state.lastParse);
+  }
   clearTimeout(parseTimer);
   parseTimer = setTimeout(refreshParse, 150);
 }
@@ -249,13 +334,14 @@ function addReceipt(seed, result) {
   for (const r of state.receipts.slice(0, 50)) {
     const row = document.createElement("div");
     const ok = r.result && r.result.ok;
-    row.className = "receipt " + (ok ? "receipt-ok" : "receipt-fail");
+    const partial = !!(r.result && (r.result.partial || r.result.any_skipped));
+    row.className = "receipt " + (partial ? "receipt-partial" : ok ? "receipt-ok" : "receipt-fail");
     const skipped = r.result && r.result.skipped ? " · skipped: " + (r.result.reason || "honest refusal") : "";
     const err = r.result && r.result.error ? " · " + r.result.error : "";
     row.innerHTML = "<span class='receipt-when'></span><span class='receipt-seed'></span><span class='receipt-verdict'></span>";
     row.querySelector(".receipt-when").textContent = r.when;
     row.querySelector(".receipt-seed").textContent = r.seed;
-    row.querySelector(".receipt-verdict").textContent = (ok ? "OK" : "FAILED") + skipped + err;
+    row.querySelector(".receipt-verdict").textContent = (partial ? "PARTIAL" : ok ? "OK" : "FAILED") + skipped + err;
     el.appendChild(row);
   }
 }
@@ -273,6 +359,9 @@ async function execute() {
     });
     addReceipt(seed, data.result);
     applyState(data.state);
+    state.lastOutcome = buildOutcome(data.result);
+    state.lastRunSeed = seed;
+    if (state.lastParse) renderChain(state.lastParse);
     showResult(data.result);
     logConsole(JSON.stringify(data.result, null, 2));
     setStatus("idle", "done · " + (data.result.ok ? "ok" : "failed — see receipts"));
@@ -370,6 +459,9 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ owner }),
       });
       applyState(data.state);
+      state.lastOutcome = null;
+      state.lastRunSeed = null;
+      if (state.lastParse) renderChain(state.lastParse);
       state.receipts = [];
       $("#receipts").innerHTML = "<p class='dim'>No runs yet for this owner.</p>";
       logConsole("Switched owner to " + owner);
