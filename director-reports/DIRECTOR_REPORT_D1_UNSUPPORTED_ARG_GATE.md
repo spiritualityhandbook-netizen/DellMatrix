@@ -126,10 +126,12 @@ parser, Core I, or `flow_executor` code changed (Q-D3, Q-D4).
   **225/225 GREEN in both passes** (exit 0, `regress_twice.log`);
   `--order rev` **225/225 GREEN** (exit 0, `regress_rev.log`). The
   new suite's entry reads 45/45 in every leg.
-- **Evidence bundle:** 15 files at
+- **Evidence bundle:** 16 files at
   `director-reports/evidence/d1-unsupported-arg-gate/` with
-  `MANIFEST.md` (SHA-256, 15/15 verified at assembly; manifest
-  digest `33f900b0dac57105c5c5cb5bd68a085a4b3ecdc39c400c268f7a175640de4bcd`).
+  `MANIFEST.md` (SHA-256, 16/16 verified; manifest digest
+  `048d7c8311e4ab915587560cbe22324429510c5eb2a8b163f236ea3d82a7f8a1`;
+  the bundle was extended by the Submission Verification addendum
+  to include the fresh-clone regress log).
 
 ## Anticipated probes
 
@@ -177,6 +179,24 @@ parser, Core I, or `flow_executor` code changed (Q-D3, Q-D4).
 Exact-head CI on the submission head and a fresh-clone run at that
 head are executed after the PR opens; their verdicts are appended
 to this section by a documentation-only addendum commit (the
-addendum changes no code, tests, or evidence files) before
-certification is requested. The PR description records the final
-head and its CI state.
+addendum changes no code or tests) before certification is
+requested. The PR description records the final head and its CI
+state.
+
+### Addendum — verification verdicts (2026-11-03)
+
+- **Submission head verified:** `44905d6f90c205d4d64f01ae0f30dc16c9910d8c`,
+  tree `03ef51bd5a932d254472fffb585d99883cc5052f` (PR #253 OPEN,
+  MERGEABLE, base `0f6dcb8` — confirmed by direct `gh pr view`).
+- **Exact-head CI on `44905d6`:** Python package run `41677891772`
+  — **SUCCESS**; Form smoke run `41677891668` — **SUCCESS** (both
+  verified by direct `gh run view` on the exact head, terminal
+  state).
+- **Fresh-clone at `44905d6`:** cloned from GitHub, checked out at
+  the exact head/tree above; full regress **225/225 GREEN**,
+  exit 0, the new suite's entry 45/45 (`freshclone_regress.log`,
+  added to the evidence bundle with this addendum; manifest
+  regenerated 16/16).
+- This addendum commit is documentation-only (this report + the
+  bundle's fresh-clone log + manifest). CI on the resulting final
+  head is verified separately and recorded in the PR description.

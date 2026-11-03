@@ -6,6 +6,7 @@ Generated 2026-11-03 by Uni from the workspace evidence dir
 (~/workspace/goals/dellmatrix-capability-circuits/hidden_files/d1_unsupported_arg_gate/).
 Verify: sha256sum -c MANIFEST.md from this directory (this file itself excluded).
 
+fed2fed081406e076481d3cfd097e674616a5f37fa20bd5100166f0b0c821191  freshclone_regress.log
 a5786a0345edde1056d2961cd9a616f10f5432d4517760c26a5327b30b0f4eae  green_run.log
 d7e60a539e3e6c1ae2f12a0cbd8e3c9db69107d04fcb1c21a87d752eb96a5298  green_run_v2.log
 8430e3164b543aa0d8b95b0bb1a787938954a8fc812e3b43238f55244c4e64d0  mutant_m1.log
