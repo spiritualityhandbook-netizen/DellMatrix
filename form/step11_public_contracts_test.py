@@ -40,6 +40,12 @@ Contracts proven here (wording circuit — mechanisms unchanged):
   The correction states the verified current count (15 typed /
   85 untyped, executed this suite) and that the original "43"
   figure reconciles with neither 100-14 nor 100-15.
+  Version note (D1-TYPED-52-53, 2026-11-03, Director wake
+  review): a second dated correction is appended to the same
+  entry recording 17 typed / 83 untyped after Dells 52/53 were
+  registered; the step-11 sentences above stand unrewritten
+  for their frozen scope, and this suite now pins the live
+  count at 17 with both corrections present.
 
 Labels: INTEGRATION / PUBLIC_ENTRY (real Program for B19).
 """
@@ -236,8 +242,11 @@ def _limitation_correction() -> None:
     typed = [n for n in range(100) if get_signature(n)]
     _rec("Limitation: dated step-11 correction appended",
          "2026-11-01" in corr and "step 11" in corr.lower(), corr[:80])
-    _rec("Limitation: correction states verified current count 15/85",
-         len(typed) == 15 and "15" in corr and "85" in corr,
+    _rec("Limitation: corrections state verified current count "
+         "17/83 (2026-11-03 append; 2026-11-01 correction intact)",
+         len(typed) == 17 and "17" in corr and "83" in corr
+         and "15" in corr and "85" in corr
+         and "2026-11-03" in corr and "D1-TYPED-52-53" in corr,
          f"typed={len(typed)} corr={corr[:80]}")
     _rec("Limitation: correction names '43' as irreconcilable",
          "43" in corr and "reconcil" in corr.lower(), corr[:80])

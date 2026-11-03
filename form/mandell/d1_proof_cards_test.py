@@ -5,7 +5,10 @@ The Director's D1 denominator is the active Form registry:
 100 entries, 15 typed signatures (the original 14 plus Dell
 55 Set, registered by Director order step 4 / DAF-01 so its
 typed operands are carried losslessly like Patch's) —
-without implying the rest have defined contracts. This
+without implying the rest have defined contracts. The count
+is 17 since D1-TYPED-52-53 (2026-11-03, Director wake
+review): Dells 52 (Filter) and 53 (Scope) registered on the
+same terms; this suite pins the live count. This
 suite regenerates every card
 from live probes (dell_cards.build_all_cards) and pins the
 survey distribution, so the accounting cannot drift silently:
@@ -91,8 +94,8 @@ def main():
                  for c in cards))
 
     typed = {n for n in range(100) if get_signature(n) is not None}
-    _rec("typed signatures: exactly the 15, cards agree",
-         len(typed) == 15
+    _rec("typed signatures: exactly the 17, cards agree",
+         len(typed) == 17
          and {c["dell"] for c in cards
               if c["typed_signature"] is not None} == typed,
          f"typed={sorted(typed)}")
