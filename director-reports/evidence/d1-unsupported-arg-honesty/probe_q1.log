@@ -1,0 +1,32 @@
+legacy 82[Group] :: greens -> ok=True groups=['greens']
+[CONFIRMED] Q1-82-legacy: legacy label creates group 'greens'
+  (cleanup ArgHonQ1G1: 1 entries removed)
+typed single 82[Group](name=greens) -> ok=True groups=['group'] atom0={'dell': 82, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}
+[CONFIRMED] Q1-82-typed-single: typed arg dropped: ok=True, group created under the DEFAULT name 'group', not 'greens'
+  (cleanup ArgHonQ1G2: 1 entries removed)
+typed bogus 82[Group](bogus=x) -> ok=True error='' groups=['group']
+[CONFIRMED] Q1-82-typed-bogus: no UNKNOWN_ROLE refusal exists for an untyped Dell: bogus role silently accepted
+  (cleanup ArgHonQ1G3: 1 entries removed)
+typed+label 82[Group](name=greens) :: blues -> ok=True groups=['blues']
+[CONFIRMED] Q1-82-typed-plus-label: legacy label silently WINS over typed args
+  (cleanup ArgHonQ1G4: 1 entries removed)
+typed chain 51>>82(name=greens) -> ok=True groups=['group'] atom_results=[{'dell': 51, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 82, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}]
+[CONFIRMED] Q1-82-typed-chain: same silent drop inside a chain; atom receipt reports ok=True with no arg mention
+  (cleanup ArgHonQ1G5: 1 entries removed)
+legacy 97[Define] :: tempo=120 -> ok=True defs={'tempo': '120'}
+[CONFIRMED] Q1-97-legacy: legacy label defines tempo=120
+  (cleanup ArgHonQ1D1: 0 entries removed)
+typed 97[Define](name=tempo, meaning=120) -> ok=True defs={'def': ''}
+[CONFIRMED] Q1-97-typed: typed args dropped: ok=True, definition lands under the default name, not 'tempo'
+  (cleanup ArgHonQ1D2: 0 entries removed)
+legacy 78[Cause] :: rain>flood -> ok=True causes=[('rain', 'flood')]
+[CONFIRMED] Q1-78-legacy: legacy label records the relation
+  (cleanup ArgHonQ1C1: 0 entries removed)
+typed 78[Cause](cause=rain, effect=flood) -> ok=False error='malformed_relation' causes=[]
+[CONFIRMED] Q1-78-typed: args dropped; the handler then fails on the EMPTY label with 'malformed_relation' — an error that never mentions the supplied arguments
+  (cleanup ArgHonQ1C2: 0 entries removed)
+chain 60[Branch](bogus=x) :: true >> Set >> Join -> ok=True store={'k': 'v'}
+[CONFIRMED] Q1-60-control-head: control heads share _run_atom: typed args on an untyped control head are dropped identically
+  (cleanup ArgHonQ1B1: 0 entries removed)
+
+Q1 SUMMARY: 10/10 expectations confirmed

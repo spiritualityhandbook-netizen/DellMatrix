@@ -1,0 +1,34 @@
+parse '55[Set] :: playlist (draft) mix' -> ok=True error='' args={} label='playlist (draft) mix'
+[CONFIRMED] Q6-label-parens: ok=True error='' args={} label='playlist (draft) mix'
+parse '55[Set] :: note=a=b' -> ok=True error='' args={} label='note=a=b'
+[CONFIRMED] Q6-label-equals: ok=True error='' args={} label='note=a=b'
+parse '55[Set] :: say "hi" = loud' -> ok=True error='' args={} label='say "hi" = loud'
+[CONFIRMED] Q6-label-quotes: ok=True error='' args={} label='say "hi" = loud'
+parse '52[Filter] :: predicate="garden"' -> ok=True error='' args={} label='predicate="garden"'
+[CONFIRMED] Q6-argshaped-label: ok=True error='' args={} label='predicate="garden"'
+parse '08[Create] (garden)' -> ok=False error="unexpected at 11: '(garden)'"
+[CONFIRMED] Q6-bare-parens-space: ok=False error="unexpected at 11: '(garden)'"
+parse '08[Create](garden)' -> ok=False error="unexpected at 10: '(garden)'"
+[CONFIRMED] Q6-bare-parens-bare: ok=False error="unexpected at 10: '(garden)'"
+parse '55[Set] (key="a")' -> ok=False error='unexpected at 8: \'(key="a")\''
+[CONFIRMED] Q6-spaced-args: ok=False error='unexpected at 8: \'(key="a")\''
+parse '55[Set](key=5)' -> ok=False error="unexpected at 7: '(key=5)'"
+[CONFIRMED] Q6-unquoted: ok=False error="unexpected at 7: '(key=5)'"
+parse '55[Set](key="a", value="x=y")' -> ok=True error='' args={'key': 'a', 'value': 'x=y'}
+[CONFIRMED] Q6-value-equals: ok=True error='' args={'key': 'a', 'value': 'x=y'}
+parse '55[Set](key="a", value="with, comma")' -> ok=True error='' args={'key': 'a', 'value': 'with, comma'}
+[CONFIRMED] Q6-value-comma: ok=True error='' args={'key': 'a', 'value': 'with, comma'}
+parse '55[Set](key="a", value="f(x)")' -> ok=True error='' args={'key': 'a', 'value': 'f(x)'}
+[CONFIRMED] Q6-value-parens: ok=True error='' args={'key': 'a', 'value': 'f(x)'}
+parse '55[Set](key="a", value="")' -> ok=True error='' args={'key': 'a', 'value': ''}
+[CONFIRMED] Q6-value-empty: ok=True error='' args={'key': 'a', 'value': ''}
+manifest 82[Group•Collect](name=g) -> atoms=[(82, 'Group', {'name': 'g'}), (82, 'Collect', {'name': 'g'})]
+[CONFIRMED] Q6-manifest-args-shared: a ManifestSet's typed args ride on every member atom — a per-atom gate sees them per member
+twin '=' in value: legacy={'a': 'x=y'} typed={'a': 'x=y'}
+[CONFIRMED] Q6-twin-equals-value: typed lowering of a value containing '=' is lossless vs the legacy label form
+  (cleanup ArgHonQ6T1: 0 entries removed)
+trailing label: ok=True groups=['shared']
+[CONFIRMED] Q6-trailing-label-wins: an untyped atom with BOTH typed args and a trailing label executes on the LABEL today — the gate proposal must classify this shape explicitly (it is a typed call, not a legacy call: args != {})
+  (cleanup ArgHonQ6T2: 1 entries removed)
+
+Q6 SUMMARY: 15/15 expectations confirmed

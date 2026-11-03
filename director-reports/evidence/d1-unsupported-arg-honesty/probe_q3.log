@@ -1,0 +1,34 @@
+parse 03[Logic](bogus=x) -> ok=True args={'bogus': 'x'}
+[CONFIRMED] Q3-parse: Core I atoms PARSE typed args (shared grammar); the question is purely what execution does
+  (cleanup ArgHonQ3P0: 0 entries removed)
+bare ok=True; typed ok=True same_body=True
+[CONFIRMED] Q3-leaf-ignore: single-atom leaf: args on an unvalidated Core I Dell are silently ignored (identical body)
+  (cleanup ArgHonQ3L1: 0 entries removed)
+05[Tone](bogus=x) :: joy -> ok=True tone_msgs=['(^_^)  tone=joy']
+[CONFIRMED] Q3-leaf-label-drives: the LABEL drives execution; the typed arg is never consulted
+  (cleanup ArgHonQ3L2: 0 entries removed)
+08[Create](bogus=x) -> ok=False error='MISSING_REQUIRED: name' units=['welcome']
+[CONFIRMED] Q3-create-unknown-role: Dell 8 is the exception: its leaf TOAM block validates and refuses before mutation (surfaced error is MISSING_REQUIRED — same validate() precedence as the chain gate)
+08[Create](name=named, bogus=y) -> ok=False error='UNKNOWN_ROLE: bogus' units=['welcome']
+[CONFIRMED] Q3-create-unknown-role-surfaced: with the required role present, the unknown role surfaces as UNKNOWN_ROLE, still zero mutation
+  (cleanup ArgHonQ3L3: 0 entries removed)
+create typed -> ok=True units=['welcome', 'typed_garden'] skin=sphere; bad skin -> ok=False error="INVALID_VALUE: skin=BANANA not in ['CUBE', 'SPHERE', 'SEED', 'FLOWER', 'BUILDING', 'WORDS', 'CIRCLE', 'CORE']" units=['welcome', 'typed_garden']
+[CONFIRMED] Q3-create-enum: typed name+skin wire through; a non-enum skin refuses INVALID_VALUE with no unit created — the only wrong-value-type refusal in Core I
+  (cleanup ArgHonQ3L4: 1 entries removed)
+08[Create](name=alpha) :: beta -> ok=False error='ARGUMENT_CONFLICT' units=['welcome']
+[CONFIRMED] Q3-create-conflict: typed name vs a differing legacy label refuses ARGUMENT_CONFLICT (leaf variant of the law)
+  (cleanup ArgHonQ3L5: 0 entries removed)
+27 typed -> ok=True gen='gce6c819766a64e5c'; 27 bare -> ok=True gen='gf1ddb9b7835442c1'
+[CONFIRMED] Q3-coreiops-ignore: front-door core_i_ops intercept: apply_core_i reads seed.label only — args silently ignored for HANDLED Dells (27/28/34/35/37/40/44/47)
+  (cleanup ArgHonQ3H1: 22 entries removed)
+34 typed -> ok=True err=''; 34 bare -> ok=True err=''
+[CONFIRMED] Q3-stamp-ignore: second HANDLED witness (34[Stamp]): identical outcome with and without typed args
+  (cleanup ArgHonQ3H2: 0 entries removed)
+chain 03(bogus) > Set -> ok=True atoms=[{'dell': 3, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] store={'k': 'v'}
+[CONFIRMED] Q3-chain-ignore: chain path AF-1 re-emits the args into the leaf re-execution, which ignores them identically
+  (cleanup ArgHonQ3C1: 0 entries removed)
+chain 08(bogus) > Set -> ok=False atoms=[{'dell': 8, 'ok': False, 'error': 'MISSING_REQUIRED: name', 'skipped': False, 'reason': 'MISSING_REQUIRED: name'}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] units=['welcome'] store={'k': 'v'}
+[CONFIRMED] Q3-chain-create-refusal: chained Dell 8 IS validated (leaf refusal surfaces as the atom's ok=False receipt) and FlowTo continues to the next atom
+  (cleanup ArgHonQ3C2: 0 entries removed)
+
+Q3 SUMMARY: 11/11 expectations confirmed
