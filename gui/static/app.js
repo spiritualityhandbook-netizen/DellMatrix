@@ -468,6 +468,22 @@ function renderChainSoon() {
 
 /* ---------- Store + state ---------- */
 
+/* Store row click-to-load: clicking a store row (or focusing
+   it and pressing Enter/Space) loads a Get seed for that row's
+   key into the editor — 56[Get] :: <key>, the canonical fetch
+   from the shipped examples library. The seed is built from
+   the store record's own key (the /api/state payload), never
+   from the row's rendered text. Loading goes through
+   reloadReceiptSeed, the one load-not-run path: it NEVER
+   executes — fetching the value stays the user's sovereign
+   step (RUN button / Ctrl+Enter) — and the staleness rule
+   clears the previous run's verdicts, since a Get seed is
+   different text from whatever ran last. */
+function storeGetSeed(key) {
+  if (typeof key !== "string" || !key) return null;
+  return "56[Get] :: " + key;
+}
+
 function storeTypeOf(v) {
   if (v === null) return "null";
   if (Array.isArray(v)) return "list";
@@ -489,6 +505,17 @@ function renderStore(storeData) {
     const v = storeData[k];
     const full = typeof v === "object" ? JSON.stringify(v) : String(v);
     const tr = document.createElement("tr");
+    tr.className = "store-row";
+    tr.title = "Load a Get seed for this key into the editor — does not run it";
+    tr.tabIndex = 0;
+    tr.addEventListener("click", () => { const s = storeGetSeed(k); if (s) reloadReceiptSeed(s); });
+    tr.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        const s = storeGetSeed(k);
+        if (s) reloadReceiptSeed(s);
+      }
+    });
     const tdK = document.createElement("td"); tdK.className = "store-k"; tdK.textContent = k;
     const tdT = document.createElement("td"); tdT.className = "store-t";
     const tag = document.createElement("span");

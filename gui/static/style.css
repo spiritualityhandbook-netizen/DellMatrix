@@ -265,6 +265,9 @@ button.atom:hover { border-color: var(--faint); transform: translateY(-2px); box
 #store { overflow-y: auto; }
 .store-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .store-table td { padding: 5px 12px; border-bottom: 1px solid #22232a; vertical-align: top; }
+.store-row { cursor: pointer; }
+.store-row:hover td { background: var(--panel-2); }
+.store-row:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
 .store-k { font-family: var(--mono); color: var(--teal); white-space: nowrap; }
 .store-v { color: var(--dim); font-family: var(--mono); word-break: break-word; }
 .store-t { white-space: nowrap; width: 1%; }

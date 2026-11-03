@@ -74,6 +74,9 @@ a seed when you press RUN, and never on its own.
 - **Store** (right) — the program's live key/value store,
   with a type tag per value (string / number / boolean /
   list / object / null) and expand/collapse for long values.
+  Click a row (or focus it and press Enter) to load a
+  `56[Get] :: <key>` seed for that key into the editor —
+  loading never runs it; fetching stays your RUN step.
 - **Growth** tab — the owner's growth field through the
   canonical lens, grouped by stage in order (seed → sprout
   → stem → branch → leaf → fruit). Plants whose identity the
