@@ -160,6 +160,24 @@ value), /api/growth — **8/8 PASS** (`browser_acceptance.log`), plus
 static contract verification that app.js calls exactly the five API
 paths and injects the token header.
 
+**Addendum (2026-11-03, post-submission, parent-run attempt 2):**
+the parent agent ran the managed-browser session this section
+called for, against the hardened server at this PR's final head
+(c3d3254, VM loopback :8791, reachability verified from the VM:
+`GET /` 200, `/api/dells` returned the registry). The managed
+browser rejected direct loopback navigation before any network
+access, and loopback-resolving public hostnames returned
+ERR_CONNECTION_REFUSED from the browser's own network environment
+(a public site loaded normally in the same session). Mechanism:
+the managed browser does not share this VM's loopback. Acceptance
+steps 2–6 were not performed and remain UNVERIFIED; real-browser
+acceptance stays OUTSTANDING after two mechanistically distinct
+blocked routes. Full record:
+`evidence/studio-security/browser_acceptance_attempt2.log`.
+Remaining routes: a human opening the Studio in their own browser
+(a genuine REAL_USER_PATH check), or a future environment with a
+launchable Chromium for the preserved CDP driver.
+
 ## 5. Regression evidence — read this section carefully
 
 Local full-list runs (private copies, sequential):
