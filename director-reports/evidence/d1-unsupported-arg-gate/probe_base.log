@@ -1,0 +1,13 @@
+baseline units: ['welcome']
+argshaped-label Group ok: True groups: ['predicate="garden"']
+parens-label Group ok: True groups: ['playlist (draft) mix', 'predicate="garden"']
+legacy Cause ok: True err:  causes: [('rain', 'flood')]
+legacy Define ok: True defs: {'tempo': '120'}
+J3 ok: False err: MISSING_REQUIRED: key
+J3 atom_results: [{'dell': 63, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': False, 'error': 'MISSING_REQUIRED: key', 'skipped': False, 'reason': 'MISSING_REQUIRED: key'}, {'dell': 61, 'ok': False, 'error': 'join_fail', 'owned_by': 'sequence'}]
+J3 last_frame status/err: fail join_fail
+While base ok: False store: {'k': 'v'} control_steps: 8 frame iterations: 8 frame status: bounded
+ForEach base ok: True store: {'k': 'v'} frame iterations: 2
+Branch base ok: True store: {'a': '1'}
+Branch base receipts: [{'dell': 60, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 59, 'ok': False, 'skipped': True, 'error': '', 'reason': 'else marker — branch arm separator; not executed as Route'}, {'dell': 55, 'ok': False, 'skipped': True, 'error': '', 'reason': 'branch arm not taken; not executed'}, {'dell': 61, 'ok': True, 'error': '', 'owned_by': 'branch'}]
+PROBE_BASE_DONE
