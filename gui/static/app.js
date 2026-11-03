@@ -101,6 +101,67 @@ function clearConsole() {
   $("#console-log").textContent = "";
 }
 
+/* ---------- Seed editor syntax tinting ----------
+   Display-only underlay: a <pre> behind the (transparent-text)
+   textarea, painted by highlightSeed. The tokenizer is a TEXT
+   PATTERN highlighter — it executes nothing, decides nothing,
+   and is not a parser: the flow canvas above stays the one
+   canonical parse surface (/api/parse). Its contract is
+   visible-text fidelity: stripping the spans from its output
+   returns the exact input text, and every character of user
+   text is HTML-escaped before any span is added. */
+function escapeHtml(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+const TINT_RE = /("(?:[^"\\]|\\.)*")|(\d+)\[([^\]]*)\]|(<:>|>>>|<<|>>|:>|<:|::|>|<|:)|([A-Za-z_][\w-]*)(=)|(\b\d+(?:\.\d+)?\b)/g;
+
+function highlightSeed(text) {
+  if (!text) return "";
+  let out = "";
+  let last = 0;
+  TINT_RE.lastIndex = 0;
+  let m;
+  while ((m = TINT_RE.exec(text)) !== null) {
+    out += escapeHtml(text.slice(last, m.index));
+    if (m[1] !== undefined) {
+      out += "<span class='hl-string'>" + escapeHtml(m[1]) + "</span>";
+    } else if (m[2] !== undefined) {
+      out += "<span class='hl-num'>" + escapeHtml(m[2]) + "</span>"
+        + "<span class='hl-bracket'>[</span>"
+        + "<span class='hl-name'>" + escapeHtml(m[3]) + "</span>"
+        + "<span class='hl-bracket'>]</span>";
+    } else if (m[4] !== undefined) {
+      out += "<span class='hl-flow'>" + escapeHtml(m[4]) + "</span>";
+    } else if (m[5] !== undefined) {
+      out += "<span class='hl-arg'>" + escapeHtml(m[5]) + "</span>"
+        + "<span class='hl-flow'>=</span>";
+    } else if (m[7] !== undefined) {
+      out += "<span class='hl-number'>" + escapeHtml(m[7]) + "</span>";
+    }
+    last = m.index + m[0].length;
+    if (m[0].length === 0) TINT_RE.lastIndex++;
+  }
+  out += escapeHtml(text.slice(last));
+  // A trailing newline collapses in a <pre>; the pad keeps the
+  // underlay's height (and scroll sync) matched to the textarea.
+  if (text.endsWith("\n")) out += " ";
+  return out;
+}
+
+/* Repaint the underlay from the editor's current text and keep
+   its scroll position locked to the textarea's. */
+function syncHighlight() {
+  const editor = $("#seed-editor");
+  const pre = $("#seed-highlight");
+  const code = $("#seed-highlight-code");
+  if (!editor || !pre || !code) return;
+  code.innerHTML = highlightSeed(editor.value);
+  pre.scrollTop = editor.scrollTop;
+  pre.scrollLeft = editor.scrollLeft;
+}
+
 function setStatus(mode, text) {
   const led = $("#status-led");
   led.className = "led led-" + mode;
@@ -220,6 +281,7 @@ function insertTextAtCaret(editor, token) {
 
 function insertDell(dell) {
   insertTextAtCaret($("#seed-editor"), dellToken(dell));
+  syncHighlight();
   refreshParse();
 }
 
@@ -576,6 +638,7 @@ function switchView(name) {
 }
 
 async function init() {
+  syncHighlight();
   try {
     const data = await api("/api/dells");
     for (const dell of data.dells) state.dells.set(dell.num, dell);
@@ -623,14 +686,15 @@ document.addEventListener("DOMContentLoaded", () => {
     $("#seed-editor").classList.remove("editor-drop-target");
   });
   $("#seed-editor").addEventListener("drop", handleEditorDrop);
-  $("#seed-editor").addEventListener("input", renderChainSoon);
+  $("#seed-editor").addEventListener("input", () => { syncHighlight(); renderChainSoon(); });
+  $("#seed-editor").addEventListener("scroll", syncHighlight);
   $("#seed-editor").addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); execute(); }
   });
   $("#execute-btn").addEventListener("click", execute);
-  $("#clear-btn").addEventListener("click", () => { $("#seed-editor").value = ""; refreshParse(); });
+  $("#clear-btn").addEventListener("click", () => { $("#seed-editor").value = ""; syncHighlight(); refreshParse(); });
   $("#examples").addEventListener("change", (e) => {
-    if (e.target.value) { $("#seed-editor").value = e.target.value; refreshParse(); }
+    if (e.target.value) { $("#seed-editor").value = e.target.value; syncHighlight(); refreshParse(); }
     e.target.value = "";
   });
   $("#owner-apply").addEventListener("click", async () => {

@@ -60,6 +60,11 @@ a seed when you press RUN, and never on its own.
   card instead of stretching the canvas sideways — text
   wraps, it is never truncated or hidden.
 - **Seed Editor** — write Mandell seeds; Ctrl+Enter runs.
+  The text is syntax-tinted as you type: Dell numbers and
+  names, flow operators, argument names, quoted strings and
+  numbers each get their own color. The tinting is a display
+  pattern highlighter only — the flow canvas above remains
+  the canonical parse of your seed.
 - **Examples** — the dropdown over the editor loads one of
   14 shipped example seeds, from a single Create to full
   Create → Nurture → Show arcs. Every shipped example is
