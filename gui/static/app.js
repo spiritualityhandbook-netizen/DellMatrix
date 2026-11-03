@@ -105,8 +105,20 @@ function renderRack(filter) {
       item.className = "dell" + (state.selected && state.selected.num === dell.num ? " dell-selected" : "");
       item.innerHTML = "<span class='dell-num'>" + String(dell.num).padStart(2, "0") + "</span>"
         + "<span class='dell-name'>" + dell.name + "</span>";
-      item.title = dell.manor || dell.name;
+      item.title = (dell.manor || dell.name) + " — click to insert, or drag into the seed editor";
+      item.draggable = true;
       item.addEventListener("click", () => selectDell(dell, true));
+      item.addEventListener("dragstart", (e) => {
+        if (!e.dataTransfer) return;
+        e.dataTransfer.setData(DELL_DRAG_TYPE, String(dell.num));
+        e.dataTransfer.setData("text/plain", dellToken(dell));
+        e.dataTransfer.effectAllowed = "copy";
+        item.classList.add("dell-dragging");
+      });
+      item.addEventListener("dragend", () => {
+        item.classList.remove("dell-dragging");
+        $("#seed-editor").classList.remove("editor-drop-target");
+      });
       group.appendChild(item);
     }
     rack.appendChild(group);
@@ -147,14 +159,51 @@ function selectDell(dell, insert) {
   if (insert) insertDell(dell);
 }
 
-function insertDell(dell) {
-  const editor = $("#seed-editor");
-  const token = String(dell.num).padStart(2, "0") + "[" + dell.name + "] :: ";
-  const start = editor.selectionStart || editor.value.length;
+/* Rack drag-and-drop: a drag carries ONLY the Dell's number
+   under a Studio-specific MIME type. The drop handler resolves
+   that number against the canonical rack registry (state.dells)
+   and rebuilds the token itself — dragged text is never trusted
+   as seed text. The text/plain payload exists only so the drag
+   has a readable fallback outside the editor; the editor's drop
+   path ignores it when the Dell number resolves. */
+const DELL_DRAG_TYPE = "application/x-dellmatrix-dell";
+
+function dellToken(dell) {
+  return String(dell.num).padStart(2, "0") + "[" + dell.name + "] :: ";
+}
+
+/* Insert text at the editor's caret (or at the end when the
+   caret position is unknown) and leave the caret right after
+   the inserted text. Works on any editor-shaped object, which
+   keeps the caret contract directly testable. */
+function insertTextAtCaret(editor, token) {
+  const start = typeof editor.selectionStart === "number"
+    ? editor.selectionStart : editor.value.length;
   editor.value = editor.value.slice(0, start) + token + editor.value.slice(start);
-  editor.focus();
+  if (typeof editor.focus === "function") editor.focus();
   editor.selectionStart = editor.selectionEnd = start + token.length;
+  return start + token.length;
+}
+
+function insertDell(dell) {
+  insertTextAtCaret($("#seed-editor"), dellToken(dell));
   refreshParse();
+}
+
+function isDellDrag(e) {
+  return !!(e.dataTransfer && Array.from(e.dataTransfer.types || [])
+    .includes(DELL_DRAG_TYPE));
+}
+
+function handleEditorDrop(e) {
+  if (!isDellDrag(e)) return;
+  e.preventDefault();
+  $("#seed-editor").classList.remove("editor-drop-target");
+  const num = parseInt(e.dataTransfer.getData(DELL_DRAG_TYPE), 10);
+  const dell = state.dells.get(num);
+  if (!dell) return;  // a number the rack does not hold inserts nothing
+  selectDell(dell, false);
+  insertDell(dell);
 }
 
 /* ---------- Flow canvas ----------
@@ -530,6 +579,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (typing && e.target.blur) e.target.blur();
     }
   });
+  $("#seed-editor").addEventListener("dragover", (e) => {
+    if (!isDellDrag(e)) return;
+    e.preventDefault();  // allow the drop; non-Dell drags keep native behavior
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    $("#seed-editor").classList.add("editor-drop-target");
+  });
+  $("#seed-editor").addEventListener("dragleave", () => {
+    $("#seed-editor").classList.remove("editor-drop-target");
+  });
+  $("#seed-editor").addEventListener("drop", handleEditorDrop);
   $("#seed-editor").addEventListener("input", renderChainSoon);
   $("#seed-editor").addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); execute(); }
