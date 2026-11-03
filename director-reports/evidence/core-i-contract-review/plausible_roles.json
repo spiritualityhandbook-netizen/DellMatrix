@@ -1,0 +1,72 @@
+[
+ {
+  "case": "05 typed expression=calm, label joy",
+  "seed": "05[Tone](expression=\"calm\") :: joy",
+  "ok": true,
+  "error": "",
+  "messages": [
+   "(^_^)  tone=joy"
+  ]
+ },
+ {
+  "case": "05 bare, label joy",
+  "seed": "05[Tone] :: joy",
+  "ok": true,
+  "error": "",
+  "messages": [
+   "(^_^)  tone=joy"
+  ]
+ },
+ {
+  "case": "04 typed direction=left, no label",
+  "seed": "04[Transform](direction=\"left\")",
+  "ok": true,
+  "error": "",
+  "messages": [
+   "Transform ready."
+  ]
+ },
+ {
+  "case": "04 bare, label left",
+  "seed": "04[Transform] :: left",
+  "ok": true,
+  "error": "",
+  "messages": [
+   "Turned left. Facing NW."
+  ]
+ },
+ {
+  "case": "06 typed cycles=3, no label",
+  "seed": "06[Cycle](cycles=\"3\")",
+  "ok": true,
+  "error": "",
+  "messages": [
+   "Cycle x1: +0 new +0 evolved",
+   "rings: Seed \u2192 Token \u2192 Body \u2192 Lens \u2192 Evolve"
+  ]
+ },
+ {
+  "case": "06 bare, label 3",
+  "seed": "06[Cycle] :: 3",
+  "ok": true,
+  "error": "",
+  "messages": [
+   "Cycle x3: +0 new +0 evolved",
+   "rings: Seed \u2192 Token \u2192 Body \u2192 Lens \u2192 Evolve"
+  ]
+ },
+ {
+  "case": "03 typed bogus + label rule",
+  "seed": "03[Logic](bogus=\"x\") :: my rule",
+  "ok": true,
+  "error": "",
+  "messages": [
+   "Logic constraints (live):",
+   "  \u00b7 Floor locked (Alpha \u00b7 Delta \u00b7 Omega \u00b7 Omni)",
+   "  \u00b7 Growth never auto-writes live matrix (Nursery only)",
+   "  \u00b7 RingedGrowth is sole public growth entrypoint",
+   "  \u00b7 Origin offline \u2014 no network required for acceptance",
+   "  \u00b7 noted rule: my rule"
+  ]
+ }
+]

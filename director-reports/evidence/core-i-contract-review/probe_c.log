@@ -1,0 +1,9 @@
+  [PASS] Tone label drove (tone=joy present)
+  [PASS] Tone typed expression=calm did NOT drive (no tone=calm anywhere)
+  [PASS] Stamp used default mark, not typedmark
+  [FAIL] Nurture typed label did not satisfy label requirement
+  [PASS] Dell 8 valid typed args work in REPL (Repl Wish)
+  [PASS] Dell 8 invalid skin refused in REPL (INVALID_VALUE)
+  [FAIL] Core II gate refusal visible in REPL (UNSUPPORTED_ARGS) — the asymmetry at the real user surface
+  transcript: /home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/core_i_contract_review/repl_transcript.txt (2234 chars, rc=0)
+PROBE C DONE

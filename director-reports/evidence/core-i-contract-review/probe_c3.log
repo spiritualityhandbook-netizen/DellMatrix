@@ -1,0 +1,5 @@
+  TokenCount lines: ['ideas=1 history=0 cells=0 pending=0', 'ideas=1 history=0 cells=0 pending=1']
+  [PASS] after typed-label 37: pending=0 (nothing added)
+  [PASS] label-driven 37 added the idea ('Added idea' printed)
+  [PASS] after label 37: pending=1
+PROBE C3 DONE

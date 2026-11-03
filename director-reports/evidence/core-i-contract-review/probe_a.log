@@ -1,0 +1,101 @@
+BASELINE: 0 non-probe state files hashed
+
+== SECTION 1: single-atom census (bare vs bogus-typed) ==
+  00[Nova      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  01[Initiate  ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  02[Persona   ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  03[Logic     ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  04[Transform ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  05[Tone      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  06[Cycle     ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  07[Link      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  08[Create    ] surf=leaf          parsed=True bare_ok=True typed_ok=False -> VALIDATED (see battery)
+  09[Show      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  10[Keep      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  11[Architect ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  12[Test      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  13[Loop      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  14[Bind      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  15[Map       ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  16[Decay     ] surf=leaf          parsed=True bare_ok=False typed_ok=False -> IGNORED
+  17[Shadow    ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  18[Mirror    ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  19[Drive     ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  20[Alpha     ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  21[Merge     ] surf=live_identity parsed=True bare_ok=False typed_ok=False -> IGNORED
+  22[Split     ] surf=live_identity parsed=True bare_ok=False typed_ok=False -> IGNORED
+  23[Lock      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  24[Unlock    ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  25[Pulse     ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  26[Temp      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  27[Checkpoint] surf=intercept     parsed=True bare_ok=True typed_ok=True -> !! DIFFERS  bare=(True, '', '{"groups": [], "history_len": 0, "last_core_i": {"dell": 27, "generation_id": "<V>", "ok": true}, "last_measure": null, "last_nurture": null, "last_stamp": null, "nursery_pending": 0, "store": {}, "units": ["welcome:Skin.WORDS"]}', '["Checkpoint written: generation gc0cd2014ad054f0e"]') typed=(True, '', '{"groups": [], "history_len": 0, "last_core_i": {"dell": 27, "generation_id": "<V>", "ok": true}, "last_measure": null, "last_nurture": null, "last_stamp": null, "nursery_pending": 0, "store": {}, "units": ["welcome:Skin.WORDS"]}', '["Checkpoint written: generation gda8a30632e6f4f86"]')
+  28[Rollback  ] surf=intercept     parsed=True bare_ok=False typed_ok=False -> IGNORED
+  29[Compress  ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  30[Expand    ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  31[Simulate  ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  32[Pause     ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  33[Resume    ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  34[Stamp     ] surf=intercept     parsed=True bare_ok=True typed_ok=True -> IGNORED
+  35[Discover  ] surf=intercept     parsed=True bare_ok=True typed_ok=True -> IGNORED
+  36[Inject    ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  37[Nurture   ] surf=intercept     parsed=True bare_ok=False typed_ok=False -> IGNORED
+  38[Distill   ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  39[Schema    ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  40[TokenCount] surf=intercept     parsed=True bare_ok=True typed_ok=True -> IGNORED
+  41[Sanitize  ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  42[Retry     ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  43[Fallback  ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  44[Bridge    ] surf=intercept     parsed=True bare_ok=False typed_ok=False -> IGNORED
+  45[Translate ] surf=leaf          parsed=True bare_ok=False typed_ok=False -> IGNORED
+  46[Rank      ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  47[Embed     ] surf=intercept     parsed=True bare_ok=False typed_ok=False -> IGNORED
+  48[Macro     ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  49[Profile   ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+  50[Manifest  ] surf=leaf          parsed=True bare_ok=True typed_ok=True -> IGNORED
+
+== SECTION 2: Dell 8 [Create] exception battery ==
+  valid name+skin                    ok=True error=''
+  unknown role                       ok=False error='UNKNOWN_ROLE: bogus'
+    units after unknown-role: {"groups": [], "history_len": 0, "last_core_i": null, "last_measure": null, "last_nurture": null, "last_stamp": null, "nursery_pending": 0, "store": {}, "units": ["welcome:Skin.WORDS"]}
+  invalid enum skin                  ok=False error="INVALID_VALUE: skin=TRIANGLE not in ['CUBE', 'SPHERE', 'SEED', 'FLOWER', 'BUILDING', 'WORDS', 'CIRCLE', 'CORE']"
+  missing required name              ok=False error='MISSING_REQUIRED: name'
+  precedence missing+unknown         ok=False error='MISSING_REQUIRED: name'
+  precedence unknown+invalid         ok=False error='UNKNOWN_ROLE: bogus'
+  conflict typed vs label            ok=False error='ARGUMENT_CONFLICT'
+  typed name == label slug           ok=True error=''
+  duplicate role at parse            parse_ok=False error="duplicate role 'name'"
+
+== SECTION 3: intercept deep-dive (plausible roles) ==
+  34 typed mark                                ok=True error=''
+  34 typed mark + label                        ok=True error=''
+    last_stamp={'mark': 'labelmark', 'ts': '<V>'}
+  37 typed label, no seed label                ok=False error='add idea requires a label'
+  37 bogus + seed label                        ok=True error=''
+    last_nurture={'action': 'add', 'label': 'labelidea', 'ok': True, 'pid': 'labelidea_7727'}
+  44 typed capability                          ok=False error='bridge_unavailable'
+    last_core_i={'capability': 'external', 'dell': 44, 'error': 'bridge_unavailable', 'ok': False, 'permission': 'offline_origin'}
+  44 bogus + label capability                  ok=False error='bridge_unavailable'
+  47 typed provider                            ok=False error='embed_unavailable'
+    last_core_i={'dell': 47, 'error': 'embed_unavailable', 'ok': False, 'provider': '', 'representation': 'none'}
+  27 typed stamp                               ok=True error=''
+  28 typed generation                          ok=False error='rollback_target_invalid'
+  40 typed unit                                ok=True error=''
+    last_measure={'cells': 0, 'history': 0, 'ideas': 1, 'pending': 0, 'unit': 'approx_units', 'value': 8}
+  35 typed query                               ok=True error=''
+  21 bare, no label (setup)                    ok=False error='missing_source'
+  21 typed, no label (setup)                   ok=False error='missing_source'
+  21 bare + label (setup)                      ok=False error='missing_source'
+  21 typed + label (setup)                     ok=False error='missing_source'
+  22 bare + label (setup)                      ok=True error=''
+  22 typed + label (setup)                     ok=True error=''
+
+== SECTION 4: plausible-role exhibits (role names a user would guess — several mirror the English Intent arg names) ==
+  05 typed expression=calm, label joy            ok=True msgs=['(^_^)  tone=joy']
+  05 bare, label joy                             ok=True msgs=['(^_^)  tone=joy']
+  04 typed direction=left, no label              ok=True msgs=['Transform ready.']
+  04 bare, label left                            ok=True msgs=['Turned left. Facing NW.']
+  06 typed cycles=3, no label                    ok=True msgs=['Cycle x1: +0 new +0 evolved', 'rings: Seed → Token → Body → Lens → Evolve']
+  06 bare, label 3                               ok=True msgs=['Cycle x3: +0 new +0 evolved', 'rings: Seed → Token → Body → Lens → Evolve']
+  03 typed bogus + label rule                    ok=True msgs=['Logic constraints (live):', '  · Floor locked (Alpha · Delta · Omega · Omni)', '  · Growth never auto-writes live matrix (Nursery only)']
+
+PROBE A DONE
