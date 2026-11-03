@@ -45,7 +45,7 @@
       </div>
       <div class="panel editor-panel">
         <div class="panel-head"><span class="panel-title">SEED EDITOR</span>
-          <span class="hint">Ctrl+Enter to run</span></div>
+          <span class="hint">Ctrl+Enter to run · / searches the rack · Esc clears selection</span></div>
         <textarea id="seed-editor" rows="4" spellcheck="false"
           placeholder="Type a seed — e.g.  08[Create] :: Alpha&#10;or click a Dell in the rack to insert it."></textarea>
         <div class="editor-bar">
@@ -59,8 +59,14 @@
             <option value="08[Create] :: vista >> 09[Show]">08 Create :: vista >> 09 Show — make it, then show it</option>
             <option value="55[Set] :: tempo=120">55 Set — store a value</option>
             <option value="56[Get] :: tempo">56 Get — fetch it back</option>
+            <option value="55[Set] :: tempo=120 >> 56[Get] :: tempo">55 Set >> 56 Get — store it, fetch it back</option>
             <option value="54[Query] :: tempo">54 Query — inspect the store</option>
             <option value="89[Diff]">89 Diff — what changed?</option>
+            <option value="02[Grow] > 70[Count]">02 Grow > 70 Count — grow, then count</option>
+            <option value="01[Initiate] > 15[Map] >> 09[Show] :: Open">01 Initiate > 15 Map >> 09 Show — open the map</option>
+            <option value="05[Tone] :: calm">05 Tone — set the tone to calm</option>
+            <option value="07[Link] :: Garden Gate">07 Link — link to the Garden Gate</option>
+            <option value="08[Create] :: Alpha >> 37[Nurture] :: sprout >> 09[Show]">08 Create >> 37 Nurture >> 09 Show — the full arc</option>
           </select>
         </div>
       </div>
