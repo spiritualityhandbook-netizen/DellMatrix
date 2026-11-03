@@ -278,6 +278,73 @@ _register(OperatorSignature(
 ))
 # Existing encoding: lab = predicate (or "" for all)
 
+# Dell 52 (Filter) — derived from query_ops.py:apply_query (n==52)
+#   before = list(st.selected)
+#   st.selected = [i for i in before if pred_fn(lab, i)] if lab else list(before)
+#   st.last_result = result_cell(..., source="filter", predicate=lab or "*")
+# Registered by D1-TYPED-52-53 (Director wake review 2026-11-03):
+# before this registration typed Filter args were silently
+# dropped by chain_exec's signature gate — the predicate never
+# reached the handler and the selection passed through
+# un-narrowed under ok=True (same defect class DAF-01 repaired
+# for Dell 55). The handler consumes the WHOLE label via the
+# shared predicate engine and never re-splits it, so lowering
+# is lossless and no roles transport is required.
+_register(OperatorSignature(
+    dell=52,
+    name="Filter",
+    roles=[
+        Role(name="predicate", type="string", required=False,
+             description="Filter predicate (empty keeps the whole selection)"),
+    ],
+    derived_from="form/mandell/query_ops.py:apply_query (n==52)",
+    output="Sets st.selected to the subset of the current "
+           "selection matching the predicate (shared predicate "
+           "engine); publishes to last_result (source='filter'). "
+           "An empty match is a successful empty narrowing "
+           "(matched=False, count=0); an empty predicate is the "
+           "identity filter",
+    failures="None established at the handler (predicate "
+             "outcomes never fail). Typed invocation adds the "
+             "gate's refusals before mutation: UNKNOWN_ROLE, "
+             "ARGUMENT_CONFLICT (typed predicate vs a differing "
+             "legacy label)",
+))
+# Existing encoding: lab = predicate (or "" for identity)
+
+# Dell 53 (Scope) — derived from core_ii_exec.py:execute_core_ii (n==53)
+#   name = lab or "plane"
+#   if name == "plane" or name in st.groups: st.scope = name
+#   else: ok=False, err=f"scope_unknown:{name}"
+# Registered by D1-TYPED-52-53 (Director wake review 2026-11-03):
+# before this registration typed Scope args were silently
+# dropped by the gate — 53[Scope](name="greens") executed as a
+# bare Scope (scope stayed "plane", ok=True) and a typed Scope
+# to a missing group silently succeeded instead of meeting the
+# handler's fail-closed refusal. The handler consumes the
+# WHOLE label as the scope name and never re-splits it, so
+# lowering is lossless and no roles transport is required.
+_register(OperatorSignature(
+    dell=53,
+    name="Scope",
+    roles=[
+        Role(name="name", type="string", required=False,
+             description="Scope name: 'plane' or an existing group (empty = 'plane')"),
+    ],
+    derived_from="form/mandell/core_ii_exec.py:execute_core_ii (n==53)",
+    output="Sets st.scope to the named scope. The scope is a "
+           "real selection boundary for later atoms (R1): "
+           "'plane' (or an empty name) is the whole plane; a "
+           "group name restricts the universe to that group's "
+           "membership",
+    failures="scope_unknown:{name} — fail-closed (R1): a name "
+             "that is neither 'plane' nor an existing group "
+             "refuses BEFORE the scope changes. Typed "
+             "invocation adds the gate's UNKNOWN_ROLE / "
+             "ARGUMENT_CONFLICT refusals before mutation",
+))
+# Existing encoding: lab = scope name (or "" for "plane")
+
 # Dell 54 (Query) — derived from query_ops.py:apply_query (n==54)
 #   ids = list(st.selected)
 #   hits = [i for i in ids if pred_fn(lab, i)] if lab else list(ids)
@@ -479,6 +546,12 @@ def lower_args_to_lab(dell: int, args: Dict[str, str]) -> str:
     elif dell == 51:
         # Select: lab = predicate (or "" for all)
         return args.get("predicate", "")
+    elif dell == 52:
+        # Filter: lab = predicate (or "" for identity)
+        return args.get("predicate", "")
+    elif dell == 53:
+        # Scope: lab = scope name (or "" for "plane")
+        return args.get("name", "")
     elif dell == 54:
         # Query: lab = predicate (or "" for all)
         return args.get("predicate", "")

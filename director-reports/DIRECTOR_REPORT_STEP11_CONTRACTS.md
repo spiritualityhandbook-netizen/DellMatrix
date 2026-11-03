@@ -25,3 +25,29 @@ Status: SUBMITTED evidence only, not certified. Uni does not self-certify. (Trin
 ## Questions for the Director
 Q1. Should the LEGACY_ONLY_SIGNATURE entry's "limitation" field itself be amended, or is the appended dated_correction the right audit shape? (Unblocks: nothing operational — the correction is already the public record; recommended: keep the append — silently rewriting the field would falsify the historical claim's provenance.)
 Q2. Is the bounded step 11 ruling as requested above acceptable — B10/B17/B19-B21 wording certified within the presented surfaces, C1 recorded verified-consistent, C2 deferred as ruled? (Unblocks: the step 14 index packet's step 11 row; recommended: yes — every wording claim is failing-first, mutant-killed, and regress x3 green at the merge.)
+
+---
+
+## VERSION NOTE — appended 2026-11-03 (circuit D1-TYPED-52-53)
+
+This report and the Step 11 certification it records stand for
+their frozen scope: at the certified candidate the verified
+typed-signature count was 15, and the wording above is the
+historical record of that ruling. It is NOT edited by this note.
+
+On 2026-11-03 the Director's wake review authorized circuit
+D1-TYPED-52-53, which registered typed signatures for Dell 52
+(Filter, role "predicate") and Dell 53 (Scope, role "name"),
+derived from their handler contracts, repairing the silent
+typed-argument loss the chain_exec signature gate caused for
+both Dells. The LIVE typed-signature count is therefore now
+17 typed / 83 untyped (verified by execution in
+form/d1_typed_52_53_test.py and the updated live pins in
+form/step11_public_contracts_test.py and
+form/mandell/d1_proof_cards_test.py). A second dated
+correction recording the change was appended to the
+limitation_knowledge LEGACY_ONLY_SIGNATURE entry, per this
+circuit's discipline: appends only — the 2026-10-27 evidence
+line, the original limitation field, and the 2026-11-01
+step 11 correction remain byte-intact, as does every word
+above this note.
