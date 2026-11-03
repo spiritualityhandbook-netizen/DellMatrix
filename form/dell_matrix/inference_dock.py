@@ -590,8 +590,8 @@ class DockedSession:
     """Host-created inference session. The ONLY inference-facing surface.
 
     Created by dock() with a host-established subject. Exposes
-    propose(), the SD-2 semantic verbs (relate / synthesize / flag),
-    field_snapshot(), and undock(). Every verb lands PENDING
+    propose(), the SD-2 semantic verbs (relate / synthesize / flag /
+    comprehend), field_snapshot(), and undock(). Every verb lands PENDING
     proposals only. It cannot mint/attenuate/revoke/list grants and
     cannot confirm proposals — confirmation stays on the R6.1 bound
     endpoint after human review / issued authority.
@@ -1004,7 +1004,8 @@ class DockedSession:
     # The docked mind performs the field's semantic work: RELATE
     # judges how entries connect, SYNTHESIZE authors a genuinely new
     # idea from several entries, FLAG surfaces false claims and
-    # conflicts. Every verb works from the canonical field snapshot
+    # conflicts, COMPREHEND makes one entry's meaning inspectable.
+    # Every verb works from the canonical field snapshot
     # (agent_coordinator.snapshot_for, wired by dock()), enforces the
     # same screens as propose(), validates the extended semantic
     # schema (reason REQUIRED, parents bounded to the field), and
@@ -1102,6 +1103,37 @@ class DockedSession:
             except Exception:
                 pass
         return out
+
+    def comprehend(self, target, *, reason=None) -> Dict[str, Any]:
+        """Make one field entry's MEANING inspectable; land a
+        PENDING proposal carrying a structured meaning breakdown.
+
+        Track C build 1: SD-2's verbs judged relations, synthesis
+        and truth, but nothing answered "what does this entry
+        mean" — idea.py's explain() is property provenance, not
+        semantics. The breakdown is authored ONLY from the entry's
+        own snapshot text; anything beyond it is inference and the
+        judge must mark it as such in the reason. Kind "new" via
+        the shared _verb mapping; parents == [target] enforced by
+        the same validation as every other verb."""
+        instruction = (
+            "[verb:comprehend] You are a docked semantic judge "
+            "inside DellMatrix. Make the field entry below's "
+            "meaning inspectable. Set \"words\" to a plain-language "
+            "statement of what the entry means. Set \"detail\" to "
+            "a structured breakdown with exactly these sections: "
+            "\"Claim:\" what the entry asserts; \"Mechanism:\" how "
+            "it says that works; \"Implications:\" what follows if "
+            "it holds, including its stated goals; \"Assumptions:\" "
+            "the premises and dependencies it takes for granted; "
+            "\"Unknowns:\" what its text leaves open. Draw ONLY "
+            "from the entry's own text (label, words, detail, "
+            "goals) — import no outside facts; where your reading "
+            "goes beyond the text, mark that as inference in your "
+            "reason."
+            + self._SCHEMA_TAIL)
+        return self._verb("comprehend", [target], instruction,
+                          reason=reason)
 
     def _verb(self, verb, targets, instruction, *, concern="",
               reason=None) -> Dict[str, Any]:

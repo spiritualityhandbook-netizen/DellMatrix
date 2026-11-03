@@ -138,6 +138,11 @@ LIST = [
     # (extended schema, coordinator snapshot activation, IdeaLab40
     # calibration against the probe corpus).
     "form.mandell.p5_sd2_test",
+    # Track C build 1 — COMPREHEND verb on the existing dock
+    # authority (SD-2 _verb machinery: meaning breakdown as ONE
+    # PENDING proposal, kind new, parents == [target]; plane units
+    # and PENDING nursery ideas both comprehensible).
+    "form.mandell.track_c_dock_verbs_test",
     # Master plan P6 / SD-3 — growth demotion (docked SYNTHESIZE
     # routing for pair crosses, labeled token fallback, REPL
     # connect grow).
