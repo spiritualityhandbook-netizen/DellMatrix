@@ -90,47 +90,112 @@ function insertDell(dell) {
   editor.value = editor.value.slice(0, start) + token + editor.value.slice(start);
   editor.focus();
   editor.selectionStart = editor.selectionEnd = start + token.length;
-  renderChain();
+  refreshParse();
 }
 
-/* ---------- Flow canvas ---------- */
+/* ---------- Flow canvas ----------
+   The canvas renders the CANONICAL parse from /api/parse
+   (form.mandell.seed.parse_seed): real atoms, real flow
+   operators, arguments and segment labels. A parse refusal
+   is shown with the parser's own reason — the canvas never
+   guesses a chain the engine would reject. */
 
-const ATOM_RE = /(\d{1,3})\[([^\]]+)\]\s*(?:::)?\s*([^\n]*)/g;
+let parseSeq = 0;
+let parseTimer = null;
 
-function parseAtoms(text) {
-  const atoms = [];
-  let m;
-  ATOM_RE.lastIndex = 0;
-  while ((m = ATOM_RE.exec(text)) !== null) {
-    atoms.push({ num: parseInt(m[1], 10), name: m[2].trim(), operand: (m[3] || "").trim() });
-  }
-  return atoms;
-}
-
-function renderChain() {
+function renderChain(parse) {
   const chain = $("#chain");
-  const atoms = parseAtoms($("#seed-editor").value);
   chain.innerHTML = "";
-  if (!atoms.length) {
+  if (!parse) {
     chain.innerHTML = "<p class='dim'>The canvas mirrors your seed. Start typing, or click a Dell.</p>";
     return;
   }
-  atoms.forEach((atom, i) => {
+  if (!parse.ok) {
+    const box = document.createElement("div");
+    box.className = "parse-error";
+    box.textContent = "Seed does not parse: " + (parse.error || "unknown refusal");
+    chain.appendChild(box);
+    return;
+  }
+  parse.atoms.forEach((atom, i) => {
     if (i > 0) {
       const link = document.createElement("div");
       link.className = "atom-link";
-      link.textContent = "➜";
+      link.textContent = parse.flows[i - 1] || ">";
       chain.appendChild(link);
     }
-    const card = document.createElement("div");
+    const card = document.createElement("button");
     card.className = "atom";
+    card.type = "button";
     const dell = state.dells.get(atom.num);
-    card.innerHTML = "<div class='atom-num'></div><div class='atom-name'></div><div class='atom-op'></div>";
-    card.querySelector(".atom-num").textContent = String(atom.num).padStart(2, "0");
-    card.querySelector(".atom-name").textContent = dell ? dell.name : atom.name;
-    card.querySelector(".atom-op").textContent = atom.operand || "·";
+    const head = document.createElement("div");
+    head.className = "atom-head";
+    head.innerHTML = "<span class='atom-num'></span><span class='atom-name'></span>";
+    head.querySelector(".atom-num").textContent = String(atom.num).padStart(2, "0");
+    head.querySelector(".atom-name").textContent = atom.name || (dell ? dell.name : "?");
+    card.appendChild(head);
+    const sub = document.createElement("div");
+    sub.className = "atom-op";
+    const bits = [];
+    if (atom.term && atom.term !== atom.name) bits.push(atom.term);
+    if (atom.label) bits.push(":: " + atom.label);
+    sub.textContent = bits.length ? bits.join("  ") : "·";
+    card.appendChild(sub);
+    const argKeys = Object.keys(atom.args || {});
+    if (argKeys.length) {
+      const args = document.createElement("div");
+      args.className = "atom-args";
+      for (const k of argKeys) {
+        const chip = document.createElement("span");
+        chip.className = "arg-chip";
+        chip.textContent = k + "=\"" + atom.args[k] + "\"";
+        args.appendChild(chip);
+      }
+      card.appendChild(args);
+    }
+    if (atom.origin && atom.origin !== "atom") {
+      const badge = document.createElement("div");
+      badge.className = "atom-origin";
+      badge.textContent = atom.origin;
+      card.appendChild(badge);
+    }
+    card.addEventListener("click", () => { if (dell) selectDell(dell, false); });
     chain.appendChild(card);
   });
+  if (parse.label && parse.atoms.length > 1) {
+    const tail = document.createElement("div");
+    tail.className = "chain-label";
+    tail.textContent = "label: " + parse.label;
+    chain.appendChild(tail);
+  }
+}
+
+async function refreshParse() {
+  const text = $("#seed-editor").value;
+  const seq = ++parseSeq;
+  if (!text.trim()) { renderChain(null); return; }
+  try {
+    const data = await api("/api/parse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seed: text }),
+    });
+    if (seq !== parseSeq) return;  // a newer edit already won
+    renderChain(data.parse);
+  } catch (err) {
+    if (seq !== parseSeq) return;
+    const chain = $("#chain");
+    chain.innerHTML = "";
+    const box = document.createElement("div");
+    box.className = "parse-error";
+    box.textContent = "Parse unavailable: " + err.message;
+    chain.appendChild(box);
+  }
+}
+
+function renderChainSoon() {
+  clearTimeout(parseTimer);
+  parseTimer = setTimeout(refreshParse, 150);
 }
 
 /* ---------- Store + state ---------- */
@@ -162,6 +227,13 @@ function applyState(st) {
   state.owner = st.owner;
   $("#owner-input").value = st.owner;
   renderStore(st.store);
+  const hist = $("#history-tail");
+  if (hist) {
+    const tail = st.history_tail || [];
+    hist.textContent = tail.length
+      ? tail.map((h) => typeof h === "object" ? JSON.stringify(h) : String(h)).join("\n")
+      : "(no program history yet)";
+  }
   setStatus("idle", "engine ready · owner " + st.owner
     + " · store " + st.store_count + " · plants " + st.plant_count
     + " · history " + st.history_count);
@@ -267,7 +339,7 @@ async function init() {
     const data = await api("/api/dells");
     for (const dell of data.dells) state.dells.set(dell.num, dell);
     renderRack("");
-    renderChain();
+    refreshParse();
     const st = await api("/api/state");
     applyState(st.state);
     logConsole("DellMatrix Studio connected. 100 Dells in the rack.");
@@ -278,14 +350,14 @@ async function init() {
 
 document.addEventListener("DOMContentLoaded", () => {
   $("#rack-search").addEventListener("input", (e) => renderRack(e.target.value));
-  $("#seed-editor").addEventListener("input", renderChain);
+  $("#seed-editor").addEventListener("input", renderChainSoon);
   $("#seed-editor").addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); execute(); }
   });
   $("#execute-btn").addEventListener("click", execute);
-  $("#clear-btn").addEventListener("click", () => { $("#seed-editor").value = ""; renderChain(); });
+  $("#clear-btn").addEventListener("click", () => { $("#seed-editor").value = ""; refreshParse(); });
   $("#examples").addEventListener("change", (e) => {
-    if (e.target.value) { $("#seed-editor").value = e.target.value; renderChain(); }
+    if (e.target.value) { $("#seed-editor").value = e.target.value; refreshParse(); }
     e.target.value = "";
   });
   $("#owner-apply").addEventListener("click", async () => {

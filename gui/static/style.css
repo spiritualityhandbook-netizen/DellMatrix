@@ -118,7 +118,32 @@ body {
 .atom-num { font-family: var(--mono); color: var(--accent); font-size: 11px; }
 .atom-name { font-weight: 800; font-size: 15px; margin: 2px 0; }
 .atom-op { color: var(--dim); font-family: var(--mono); font-size: 11px; word-break: break-all; }
-.atom-link { color: var(--teal); font-size: 16px; }
+.atom-link { color: var(--teal); font-size: 16px; font-family: var(--mono); font-weight: 700; }
+button.atom { font-family: var(--sans); color: var(--ink); text-align: left; cursor: pointer; }
+button.atom:hover { border-color: var(--faint); }
+.atom-head { display: flex; gap: 8px; align-items: baseline; }
+.atom-args { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.arg-chip {
+  font-family: var(--mono); font-size: 10px; color: var(--teal);
+  background: rgba(45, 212, 191, 0.1); border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: 8px; padding: 1px 7px;
+}
+.atom-origin {
+  margin-top: 6px; font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--faint);
+}
+.chain-label { font-family: var(--mono); font-size: 11px; color: var(--faint); width: 100%; }
+.parse-error {
+  border: 1px solid var(--fail); color: var(--fail);
+  background: rgba(248, 113, 113, 0.08); border-radius: 6px;
+  padding: 10px 14px; font-family: var(--mono); font-size: 12px;
+}
+#history-tail {
+  flex: 0 1 30%; overflow: auto; margin: 0; padding: 12px;
+  font-family: var(--mono); font-size: 11px; color: var(--dim);
+  background: #0c0d10; white-space: pre-wrap; word-break: break-word;
+  border-top: 1px solid var(--edge);
+}
 
 .editor-panel { flex: 0 0 auto; }
 #seed-editor {
