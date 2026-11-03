@@ -38,6 +38,7 @@ from form.dell_matrix.view_rooms import filter_nodes_for_room  # noqa: E402
 from form.mandell.core_ii import CORE_II  # noqa: E402
 from form.mandell.executor import execute_seed  # noqa: E402
 from form.mandell.registry import DELLS  # noqa: E402
+from form.mandell.seed import parse_seed  # noqa: E402
 from form.open import open_program  # noqa: E402
 
 _LOCK = threading.RLock()
@@ -115,6 +116,39 @@ def _state_snapshot(program):
                     "stage": p.get("stage")} for p in plants[:200]],
         "plant_count": len(plants),
         "history_count": len(getattr(program, "history", []) or []),
+        "history_tail": [_safe(h)
+                         for h in list(getattr(program, "history", [])
+                                       or [])[-10:]],
+    }
+
+
+def _parse_payload(seed_text):
+    """Parse a seed with the canonical parser (form.mandell.seed)
+    so the Studio canvas renders the REAL chain — atoms, flow
+    operators, arguments, segment labels — never a frontend guess.
+    A parse refusal is data (ok=False + the parser's own reason),
+    not a server error."""
+    seed = parse_seed(seed_text or "")
+    atoms = []
+    for atom in seed.atoms:
+        entry = DELLS.get(atom.dell) or {}
+        atoms.append({
+            "num": atom.dell,
+            "name": entry.get("name", ""),
+            "term": atom.term,
+            "resolved": atom.resolved_term,
+            "confidence": atom.confidence,
+            "reason": atom.resolve_reason,
+            "origin": atom.origin,
+            "args": dict(atom.args or {}),
+            "label": atom.label,
+        })
+    return {
+        "ok": bool(seed.ok),
+        "error": seed.error or "",
+        "label": seed.label,
+        "atoms": atoms,
+        "flows": list(seed.flows),
     }
 
 
@@ -229,6 +263,16 @@ class _Handler(BaseHTTPRequestHandler):
             except (ValueError, UnicodeDecodeError):
                 self._send_json({"ok": False, "error": "request body is not JSON"},
                                 status=400)
+                return
+            if path == "/api/parse":
+                seed_text = body.get("seed")
+                if not isinstance(seed_text, str):
+                    self._send_json({"ok": False,
+                                     "error": "seed must be a string"},
+                                    status=400)
+                    return
+                self._send_json({"ok": True,
+                                 "parse": _parse_payload(seed_text)})
                 return
             if path == "/api/execute":
                 seed = body.get("seed")
