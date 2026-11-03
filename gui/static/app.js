@@ -87,6 +87,7 @@ function renderRack(filter) {
   const rack = $("#rack");
   rack.innerHTML = "";
   const needle = (filter || "").trim().toLowerCase();
+  let matched = 0;
   for (const core of ["I", "II"]) {
     const group = document.createElement("div");
     group.className = "rack-group";
@@ -99,6 +100,7 @@ function renderRack(filter) {
       if (needle && !(dell.name.toLowerCase().includes(needle)
           || String(dell.num).padStart(2, "0").includes(needle)
           || (dell.manor || "").toLowerCase().includes(needle))) continue;
+      matched++;
       const item = document.createElement("button");
       item.className = "dell" + (state.selected && state.selected.num === dell.num ? " dell-selected" : "");
       item.innerHTML = "<span class='dell-num'>" + String(dell.num).padStart(2, "0") + "</span>"
@@ -108,6 +110,14 @@ function renderRack(filter) {
       group.appendChild(item);
     }
     rack.appendChild(group);
+  }
+  if (matched === 0) {
+    const none = document.createElement("p");
+    none.className = "dim";
+    none.textContent = needle
+      ? "No Dells match \"" + needle + "\". Press Esc to clear the search."
+      : "No Dells loaded — is the Studio server running?";
+    rack.appendChild(none);
   }
 }
 
