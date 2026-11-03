@@ -624,6 +624,40 @@ def _canary():
     _cleanup(owner)
 
 
+def _manifest_set():
+    from form.mandell.executor import execute_seed
+    owner = "GateMS"
+    p = _fresh(owner)
+    _setup(p)
+    before = _snap(p)
+    # ManifestSet (seed.split_manifest_set, separator •):
+    # the set expands to one atom PER MEMBER and the set's
+    # args ride every member atom (PR #252, Q6) — so a typed
+    # ManifestSet refuses once per member.
+    r = execute_seed(p, '82[Alpha•Beta](zzrole="zzvalue")')
+    ars = _receipts(r)
+    _rec("ManifestSet with typed args: EVERY member atom "
+         "refuses at the gate (exact receipts, zero mutation)",
+         not r.get("ok") and r.get("error") == "UNSUPPORTED_ARGS: zzrole"
+         and len(ars) == 2
+         and all(a.get("ok") is False and a.get("skipped") is False
+                 and a.get("error") == "UNSUPPORTED_ARGS: zzrole"
+                 for a in ars)
+         and _snap(p) == before,
+         f"ok={r.get('ok')} err={r.get('error')} ars={ars}")
+    r = execute_seed(p, "82[Alpha•Beta] :: legacy")
+    ars = _receipts(r)
+    _rec("legacy ManifestSet (no args) executes as on base "
+         "(both member groups created)",
+         r.get("ok") and len(ars) == 2
+         and all(a.get("ok") is True for a in ars)
+         and "UNSUPPORTED_ARGS" not in _errs(r)
+         and {"Alpha", "Beta"} <= set((_st(p).groups or {}).keys()),
+         f"ok={r.get('ok')} ars={ars} "
+         f"groups={sorted((_st(p).groups or {}).keys())}")
+    _cleanup(owner)
+
+
 def _repl():
     owner = "GateRepl"
     _cleanup(owner)
@@ -672,6 +706,7 @@ def main() -> bool:
     _heads()
     _join()
     _canary()
+    _manifest_set()
     _repl()
     total = len(RESULTS)
     passed = sum(1 for _, ok, _ in RESULTS if ok)
