@@ -1,0 +1,18 @@
+purpose: Director certification execution (CI-only; PR not to be merged)
+job_url: https://github.com/spiritualityhandbook-netizen/DellMatrix/actions/runs/41555532846
+run_id: 41555532846
+run_attempt: 1
+workflow_ref: spiritualityhandbook-netizen/DellMatrix/.github/workflows/certification.yml@refs/pull/233/merge
+triggering_branch: uni/certification-ci
+pinned_checkout_sha: e0769adf98179f4bebc9322705b3c2bd3b8a014c
+actual_head: e0769adf98179f4bebc9322705b3c2bd3b8a014c
+runner_os: Linux
+runner_arch: X64
+runner_name: GitHub Actions 1000003456
+image_os: ubuntu26
+image_version: 20261026.180.1
+uname: Linux runnervmnwato 7.0.0-1017-azure #17-Ubuntu SMP PREEMPT Thu Sep 24 15:54:51 UTC 2026 x86_64 GNU/Linux
+os_release: PRETTY_NAME="Ubuntu 26.04.1 LTS"
+python_version: Python 3.11.17
+python_executable: /opt/hostedtoolcache/Python/3.11.17/x64/bin/python3
+started_utc: 2026-11-03T00:49:13Z
