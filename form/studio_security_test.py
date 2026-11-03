@@ -12,7 +12,9 @@ Contract under test (gui/server.py hardening):
     bound port; missing Host rejected (DNS-rebinding defense).
   * Origin discipline on POST — a present Origin must be this
     server's own loopback origin (foreign origin / foreign port /
-    "null" rejected).
+    "null" rejected; an omitted port resolves to 80, so it is
+    rejected whenever the bound port is non-default — Director
+    Mode C correction, 2026-11-03).
   * Content-Type discipline — POST /api/* requires application/json.
   * Per-launch session token — minted per server module load, served
     only inside the index page (no-store), required as the
@@ -230,6 +232,21 @@ def run_all():
             {"seed": "55[Set] :: pwned=1", "owner": a},
             headers={**auth, "Origin": "null"})
         check("Origin 'null' is rejected 403", status == 403)
+        # Director Mode C correction (2026-11-03): an Origin with
+        # NO explicit port resolves to the HTTP default port 80,
+        # which is not this server's bound (non-default) port, so
+        # a valid token must not save it — one case asserting the
+        # Director's shape: refuse 403 AND zero mutation. (The
+        # exact port-8765 instance is proven by the correction
+        # probe in the circuit evidence bundle.)
+        status, _, _ = _json_req(
+            port, "POST", "/api/execute",
+            {"seed": "55[Set] :: pwned=1", "owner": a},
+            headers={**auth, "Origin": "http://127.0.0.1"})
+        check("Origin without a port is rejected 403 without "
+              "mutation on a non-default port (implicit port = 80)",
+              status == 403 and _store(port, a) == before
+              and "pwned" not in _store(port, a))
         check("no rejected execute ever mutated the store",
               _store(port, a) == before)
 

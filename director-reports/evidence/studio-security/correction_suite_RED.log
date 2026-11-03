@@ -1,0 +1,32 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/hatch/workspace/nbd-omega-studiosec/form/studio_security_test.py", line 363, in <module>
+    run_all()
+  File "/home/hatch/workspace/nbd-omega-studiosec/form/studio_security_test.py", line 246, in run_all
+    check("Origin without a port is rejected 403 without "
+  File "/home/hatch/workspace/nbd-omega-studiosec/form/studio_security_test.py", line 66, in check
+    raise AssertionError(name)
+AssertionError: Origin without a port is rejected 403 without mutation on a non-default port (implicit port = 80)
+[PASS] GET / 200 serves the Studio page
+[PASS] index page carries a per-launch session token
+[PASS] token-bearing index is served Cache-Control: no-store
+[PASS] browser-shaped execute (own Origin + token) succeeds
+[PASS] the stored value is visible afterwards
+[PASS] no-Origin tooling execute with token succeeds
+[PASS] GET /api/dells needs no token and lists 100 Dells
+[PASS] foreign Host is rejected 403
+[PASS] suffix-trick Host is rejected 403
+[PASS] loopback Host with the wrong port is rejected 403
+[PASS] missing Host is rejected 403
+[PASS] localhost Host is accepted
+[PASS] [::1] Host is accepted
+[PASS] cross-origin execute is rejected 403
+[PASS] cross-origin execute mutated nothing
+[PASS] simple-request (text/plain) execute is rejected
+[PASS] simple-request execute mutated nothing
+[PASS] token-carrying text/plain execute is rejected 415
+[PASS] the text/plain rejection mutated nothing
+[PASS] Origin from a foreign port is rejected 403
+[PASS] Origin 'null' is rejected 403
+[FAIL] Origin without a port is rejected 403 without mutation on a non-default port (implicit port = 80)

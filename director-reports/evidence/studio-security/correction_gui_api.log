@@ -1,0 +1,27 @@
+[PASS] GET / 200
+[PASS] index carries the Studio wordmark
+[PASS] GET /app.js 200 + outcome-painting code shipped
+[PASS] GET /style.css 200 + studio theme shipped
+[PASS] unknown path is an honest 404
+[PASS] /api/dells 200 with exactly 100 Dells
+[PASS] dell numbers are 0..99 in order
+[PASS] every dell name matches the canonical registry
+[PASS] core split is I for 00-50, II for 51-99
+[PASS] parse of a valid seed is ok with the real atom
+[PASS] unparseable seed is an honest refusal, not a guess
+[PASS] non-string seed is a 400 with an error
+[PASS] execute Set ok
+[PASS] execute response state shows the stored value
+[PASS] /api/state round-trips the store for the owner
+[PASS] reserved Dell is reported skipped with its reason
+[PASS] the executed atom in the same chain is honestly ok
+[PASS] index ships at least 14 example seeds
+[PASS] every shipped example executes ok=True
+[PASS] fixture plant actually grew past seed
+[PASS] /api/growth node stage equals the plant's own stage
+[PASS] /api/growth is honestly empty for a plantless owner
+[PASS] switching to owner B shows B's own empty store
+[PASS] switching back to A keeps A's store intact
+[PASS] empty seed is a 400 with an error, not a crash
+[PASS] non-JSON body is a 400 with an error, not a crash
+GUI-API: 26/26 GREEN

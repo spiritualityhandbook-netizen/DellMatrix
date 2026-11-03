@@ -269,7 +269,13 @@ class _Handler(BaseHTTPRequestHandler):
             port = parsed.port
         except ValueError:
             return False
-        return port is None or port == self._bound_port()
+        # Director Mode C correction (2026-11-03): an omitted
+        # port resolves to the HTTP default port 80 — it is not
+        # a wildcard. Compare the EFFECTIVE port with the bound
+        # server port, so a no-port Origin is accepted only when
+        # this server is itself bound to port 80.
+        effective_port = port if port is not None else 80
+        return effective_port == self._bound_port()
 
     def _token_ok(self):
         given = self.headers.get("X-Studio-Token") or ""
