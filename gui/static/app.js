@@ -64,7 +64,36 @@ function renderVerdict() {
 
 function logConsole(text) {
   const el = $("#console-log");
-  el.textContent += text + "\n";
+  // Append a text NODE, never textContent += : assigning
+  // textContent would flatten the console's element children
+  // (the clickable run lines below) into plain text and kill
+  // their handlers on the very next log line.
+  el.appendChild(document.createTextNode(text + "\n"));
+  el.scrollTop = el.scrollHeight;
+}
+
+/* The run line is the console's one interactive entry: it
+   shows the seed exactly as the plain log always did
+   ("> seed"), and clicking it — or focusing it and pressing
+   Enter/Space — reloads that seed into the editor through
+   reloadReceiptSeed, the same load-not-run path the
+   receipts use. The handler closes over the run's own seed
+   string, never the rendered line. Reload NEVER executes:
+   running stays the user's sovereign step. Every other
+   console entry stays plain, non-interactive text. */
+function logConsoleRun(seed) {
+  const el = $("#console-log");
+  const line = document.createElement("span");
+  line.className = "console-run";
+  line.textContent = "> " + seed;
+  line.title = "Load this seed into the editor — does not run it";
+  line.tabIndex = 0;
+  line.addEventListener("click", () => reloadReceiptSeed(seed));
+  line.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reloadReceiptSeed(seed); }
+  });
+  el.appendChild(line);
+  el.appendChild(document.createTextNode("\n"));
   el.scrollTop = el.scrollHeight;
 }
 
@@ -576,7 +605,7 @@ async function execute() {
   const seed = $("#seed-editor").value.trim();
   if (!seed) { setStatus("idle", "type a seed first"); return; }
   setStatus("busy", "running…");
-  logConsole("> " + seed);
+  logConsoleRun(seed);
   try {
     const data = await api("/api/execute", {
       method: "POST",
