@@ -233,8 +233,11 @@ whole system.
 | 99 | Compose | Publish a composition — only after its define-run actually succeeds |
 
 Every Dell has a **proof card** (`form/mandell/DELL_PROOF_CARDS.md`) and a runtime entry
-(`form/mandell/DELL_RUNTIME.md`) stating its tested contract. Fifteen Dells carry typed
-argument signatures (8, 51, 54–58, 67–69, 84–88); the rest take label-based arguments.
+(`form/mandell/DELL_RUNTIME.md`) stating its tested contract. Seventeen Dells carry typed
+argument signatures (8, 51–58, 67–69, 84–88); the rest take label-based arguments.
+(Typed count corrected 2026-11-03: Dells 52 and 53 registered in circuit
+D1-TYPED-52-53 — CERTIFIED WITH NOTED EXCEPTION by the Director — moving the
+live count from fifteen to seventeen.)
 In 2026 the full registry went through per-Dell deep-contract testing circuits and a
 complete pairwise pass: every Dell was exercised against every other Dell in both
 directions (9,900 ordered pairs) plus standalone, on a frozen baseline.
