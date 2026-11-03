@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DellMatrix Studio</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="transport">
+  <div class="brand"><span class="omega">Ω</span> DELLMATRIX <span class="studio">STUDIO</span></div>
+  <div class="transport-center">
+    <span id="status-led" class="led led-idle" title="engine status"></span>
+    <span id="status-text" class="status-text">connecting…</span>
+  </div>
+  <div class="transport-right">
+    <label class="owner-label" for="owner-input">OWNER</label>
+    <input id="owner-input" type="text" value="Operator" spellcheck="false">
+    <button id="owner-apply" class="btn btn-ghost">Open</button>
+  </div>
+</header>
+
+<main id="layout">
+  <aside id="rack-panel" class="panel">
+    <div class="panel-head">
+      <span class="panel-title">DELL RACK</span>
+      <input id="rack-search" type="text" placeholder="search dells…" spellcheck="false">
+    </div>
+    <div id="rack"></div>
+  </aside>
+
+  <section id="center-panel">
+    <nav id="view-tabs">
+      <button class="tab tab-active" data-view="studio">Studio</button>
+      <button class="tab" data-view="growth">Growth</button>
+      <button class="tab" data-view="console">Console</button>
+    </nav>
+
+    <div id="view-studio" class="view">
+      <div class="panel canvas-panel">
+        <div class="panel-head"><span class="panel-title">FLOW CANVAS</span>
+          <span id="canvas-hint" class="hint">your seed, as a chain of Dells</span></div>
+        <div id="chain"></div>
+      </div>
+      <div class="panel editor-panel">
+        <div class="panel-head"><span class="panel-title">SEED EDITOR</span>
+          <span class="hint">Ctrl+Enter to run</span></div>
+        <textarea id="seed-editor" rows="4" spellcheck="false"
+          placeholder="Type a seed — e.g.  08[Create] :: Alpha&#10;or click a Dell in the rack to insert it."></textarea>
+        <div class="editor-bar">
+          <button id="execute-btn" class="btn btn-run">▶ RUN SEED</button>
+          <button id="clear-btn" class="btn btn-ghost">Clear</button>
+          <select id="examples" class="examples">
+            <option value="">Load an example seed…</option>
+            <option value="08[Create] :: Alpha">08 Create — make an idea</option>
+            <option value="55[Set] :: tempo=120">55 Set — store a value</option>
+            <option value="56[Get] :: tempo">56 Get — fetch it back</option>
+            <option value="54[Query] :: tempo">54 Query — inspect the store</option>
+            <option value="89[Diff]">89 Diff — what changed?</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-growth" class="view view-hidden">
+      <div class="panel growth-panel">
+        <div class="panel-head"><span class="panel-title">GROWTH FIELD</span>
+          <button id="growth-refresh" class="btn btn-ghost">Refresh</button></div>
+        <div id="growth"></div>
+      </div>
+    </div>
+
+    <div id="view-console" class="view view-hidden">
+      <div class="panel console-panel">
+        <div class="panel-head"><span class="panel-title">CONSOLE</span></div>
+        <pre id="console-log"></pre>
+      </div>
+    </div>
+  </section>
+
+  <aside id="right-dock">
+    <div class="panel" id="inspector-panel">
+      <div class="panel-head"><span class="panel-title">INSPECTOR</span></div>
+      <div id="inspector"><p class="dim">Select a Dell in the rack, or run a seed.</p></div>
+    </div>
+    <div class="panel" id="store-panel">
+      <div class="panel-head"><span class="panel-title">STORE</span>
+        <span id="store-count" class="hint"></span></div>
+      <div id="store"></div>
+    </div>
+  </aside>
+</main>
+
+<footer id="receipts-panel" class="panel">
+  <div class="panel-head"><span class="panel-title">RECEIPTS</span>
+    <span class="hint">every run this session — newest first</span></div>
+  <div id="receipts"><p class="dim">No runs yet. Your executions will land here with their receipts.</p></div>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>
