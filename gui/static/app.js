@@ -523,8 +523,53 @@ function addReceipt(seed, result) {
     row.querySelector(".receipt-when").textContent = r.when;
     row.querySelector(".receipt-seed").textContent = r.seed;
     row.querySelector(".receipt-verdict").textContent = (partial ? "PARTIAL" : ok ? "OK" : "FAILED") + skipped + err;
+    // Click-to-reload: the handler closes over r.seed — the
+    // session record of what was actually run — never the
+    // row's rendered (ellipsized) text.
+    row.title = "Load this seed into the editor — does not run it";
+    row.tabIndex = 0;
+    row.addEventListener("click", () => reloadReceiptSeed(r.seed));
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reloadReceiptSeed(r.seed); }
+    });
     el.appendChild(row);
   }
+}
+
+/* ---------- Receipt reload ----------
+   Clicking a receipt reloads its seed into the editor so a
+   past run can be inspected, edited and re-run. Reload is a
+   pure editor action: it NEVER executes — running the seed
+   stays the user's sovereign step (RUN button / Ctrl+Enter).
+   If the reloaded seed is not the latest run's seed, that
+   run's per-atom outcome is cleared first — the same
+   staleness rule the editor's input path applies — so no
+   canvas card can keep a verdict earned by different text.
+   Reloading the latest run's own seed keeps its outcome:
+   the verdicts genuinely belong to that exact text. */
+function prepareReceiptReload(seed) {
+  if (typeof seed !== "string" || !seed) return false;
+  if (seed !== state.lastRunSeed) {
+    state.lastOutcome = null;
+    state.lastRunSeed = null;
+  }
+  return true;
+}
+
+function loadReceiptSeed(editor, seed) {
+  if (!editor || typeof seed !== "string" || !seed) return false;
+  editor.value = seed;
+  if (typeof editor.focus === "function") editor.focus();
+  editor.selectionStart = editor.selectionEnd = seed.length;
+  return true;
+}
+
+function reloadReceiptSeed(seed) {
+  if (!prepareReceiptReload(seed)) return;
+  switchView("studio");
+  if (!loadReceiptSeed($("#seed-editor"), seed)) return;
+  syncHighlight();
+  refreshParse();
 }
 
 async function execute() {

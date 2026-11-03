@@ -86,7 +86,10 @@ a seed when you press RUN, and never on its own.
   so instead of inventing counts. **Clear console** empties
   the log view only — receipts and program history stay.
 - **Receipts** (bottom) — every run this session, newest
-  first, with honest ok / failed / skipped verdicts.
+  first, with honest ok / failed / skipped verdicts. Click
+  a receipt (or focus it and press Enter) to load its seed
+  back into the editor for inspection, editing or re-running
+  — loading never runs it; pressing RUN stays your step.
 
 ## Keyboard shortcuts
 

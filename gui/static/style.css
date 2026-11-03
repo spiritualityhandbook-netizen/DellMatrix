@@ -313,7 +313,10 @@ button.atom:hover { border-color: var(--faint); transform: translateY(-2px); box
 .receipt {
   display: flex; gap: 12px; padding: 4px 12px; font-size: 12px;
   border-left: 3px solid var(--faint); align-items: baseline;
+  cursor: pointer;
 }
+.receipt:hover { background: var(--panel-2); }
+.receipt:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
 .receipt-ok { border-left-color: var(--ok); }
 .receipt-fail { border-left-color: var(--fail); }
 .receipt-partial { border-left-color: var(--skip); }
