@@ -299,6 +299,8 @@ LIST = [
     "form.step11_public_contracts_test:smoke",
     # DellMatrix Studio GUI API suite (P5): real HTTP over gui.server.
     "form.gui_api_test:smoke",
+    # Studio security suite: adversarial callers against gui.server.
+    "form.studio_security_test:smoke",
 ]
 
 TIMEOUT_S = 900

@@ -65,12 +65,29 @@ def _cleanup(owner):
         shutil.rmtree(ideas)
 
 
+_TOKEN = None
+
+
 def _req(base, method, path, body=None, raw=None):
+    # Harness transport speaks the legitimate client's protocol
+    # (Studio security circuit): POSTs carry the per-launch session
+    # token served inside the index page, exactly as the browser
+    # does. All checks and assertions below are unchanged.
+    global _TOKEN
     data = raw
     headers = {}
     if body is not None:
         data = json.dumps(body).encode("utf-8")
         headers["Content-Type"] = "application/json"
+    if raw is not None:
+        headers["Content-Type"] = "application/json"
+    if method == "POST":
+        if _TOKEN is None:
+            _, page0 = _req(base, "GET", "/")
+            found = re.search(
+                r'name="studio-token"\s+content="([^"]+)"', page0)
+            _TOKEN = found.group(1) if found else ""
+        headers["X-Studio-Token"] = _TOKEN
     req = urllib.request.Request(base + path, data=data, headers=headers,
                                  method=method)
     try:
