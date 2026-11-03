@@ -631,6 +631,50 @@ function groupByStage(nodes) {
   return [...groups.entries()].filter(([, items]) => items.length);
 }
 
+/* Plant inspector: shows ONLY the facts /api/growth returned
+   for this node — the view_rooms lens output, verbatim. A node
+   whose stage is null has NO proven stage: the inspector says
+   so plainly and never fills one in (DIR-T2-R2 honesty). The
+   score row appears only when the payload actually carries a
+   number — nothing is inferred or defaulted. Inspecting is
+   display-only: it never executes, plants, or mutates. */
+function plantFacts(node) {
+  const rows = [["Node", node.id || "—"],
+                ["Label", node.label || "—"],
+                ["Stage", node.stage ? node.stage : "— no stage claim"],
+                ["Stage source", node.stage_source || "—"]];
+  if (typeof node.score === "number") rows.push(["Score", String(node.score)]);
+  return rows;
+}
+
+function inspectPlant(node, card) {
+  if (!node || typeof node !== "object") return false;
+  for (const c of document.querySelectorAll(".plant")) {
+    c.classList.remove("plant-selected");
+  }
+  if (card) card.classList.add("plant-selected");
+  const insp = $("#inspector");
+  insp.innerHTML = "";
+  const title = document.createElement("div");
+  title.className = "insp-title";
+  title.textContent = "Plant — " + (node.label || node.id || "unnamed");
+  insp.appendChild(title);
+  for (const [k, v] of plantFacts(node)) {
+    const row = document.createElement("div");
+    row.className = "insp-row";
+    row.innerHTML = "<span class='insp-k'></span><span class='insp-v'></span>";
+    row.querySelector(".insp-k").textContent = k;
+    row.querySelector(".insp-v").textContent = v;
+    insp.appendChild(row);
+  }
+  const note = document.createElement("p");
+  note.className = "dim";
+  note.textContent = "Facts as returned by /api/growth (the view_rooms lens). "
+    + "A plant with no proven stage shows no stage claim — nothing is inferred.";
+  insp.appendChild(note);
+  return true;
+}
+
 async function loadGrowth() {
   const el = $("#growth");
   el.innerHTML = "<p class='dim'>loading the field…</p>";
@@ -660,6 +704,15 @@ async function loadGrowth() {
         card.querySelector(".plant-label").textContent = node.label || node.id;
         card.querySelector(".plant-stage").textContent =
           node.stage ? ("stage: " + node.stage + (node.stage_source ? " · " + node.stage_source : "")) : "stage: —";
+        card.tabIndex = 0;
+        card.title = "Inspect this plant's proven facts";
+        card.addEventListener("click", () => inspectPlant(node, card));
+        card.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            inspectPlant(node, card);
+          }
+        });
         cards.appendChild(card);
       }
       section.appendChild(cards);

@@ -78,7 +78,12 @@ a seed when you press RUN, and never on its own.
   canonical lens, grouped by stage in order (seed → sprout
   → stem → branch → leaf → fruit). Plants whose identity the
   lens cannot prove are grouped last under "NO STAGE CLAIM"
-  — the Studio never invents a stage.
+  — the Studio never invents a stage. Click a plant card
+  (or focus it and press Enter) to inspect its proven facts
+  in the inspector: node id, label, stage, stage source and
+  score, exactly as `/api/growth` returned them — a plant
+  with no proven stage shows "no stage claim", and
+  inspecting never changes anything.
 - **Console** tab — the session log: each run's seed, its
   full result, and a one-line summary (OK / PARTIAL / FAILED
   with atom and skipped counts) taken from that run's real
