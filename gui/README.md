@@ -39,8 +39,12 @@ a seed when you press RUN, and never on its own.
 - **Transport bar** — engine status LED, owner switcher.
 - **Dell Rack** (left) — all 100 Dells, Core I (00–50) and
   Core II (51–99), searchable by name, number or manor.
-  Click one to insert it into the seed editor. A search with
-  no matches says so (Esc clears it).
+  Click one to insert it into the seed editor at the caret,
+  or drag one into the editor — the drop inserts the same
+  token at the caret and selects the Dell. A drag carries
+  only the Dell's number; the editor resolves it against the
+  rack registry, so dragged text is never trusted as a seed.
+  A search with no matches says so (Esc clears it).
 - **Flow Canvas** (center) — your seed drawn as a chain of
   Dell cards, live as you type. The drawing is the engine's
   own parse (`/api/parse` → `form.mandell.seed.parse_seed`):

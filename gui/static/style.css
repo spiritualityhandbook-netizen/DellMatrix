@@ -106,6 +106,8 @@ button.atom:focus-visible, #rack-search:focus-visible, #owner-input:focus-visibl
   outline: 2px solid var(--teal); outline-offset: 1px;
 }
 .dell-selected { background: var(--accent-soft); border-color: var(--accent); }
+.dell[draggable="true"] { cursor: grab; }
+.dell-dragging { opacity: 0.45; cursor: grabbing; }
 .dell-num { font-family: var(--mono); color: var(--accent); font-size: 12px; min-width: 22px; }
 .dell-name { font-weight: 600; }
 
@@ -200,6 +202,10 @@ button.atom:hover { border-color: var(--faint); transform: translateY(-2px); box
   caret-color: var(--accent);
 }
 #seed-editor::selection { background: rgba(255, 140, 26, 0.35); }
+#seed-editor.editor-drop-target {
+  box-shadow: inset 0 0 0 2px var(--teal);
+  background: #0e1512;
+}
 #seed-editor::placeholder { color: var(--faint); }
 .editor-bar { display: flex; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--edge); align-items: center; }
 .examples {
