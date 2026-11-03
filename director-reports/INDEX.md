@@ -91,3 +91,4 @@ Forthcoming, in order:
 step 15
 Ace elementary completion report (Director-order step 15;
 follows the step 14 admission packet, which is SUBMITTED).
+| DIRECTOR_NOTE_CERTIFICATION_CI.md | Certification execution on GitHub-hosted CI (CERTIFICATION EXECUTION UNBLOCK, 2026-11-02) — PR #233 (NOT merged), checkout pinned to frozen base e0769adf, runner unmodified: run 41555532846, **12/12 items exit 0** (8 suites + 4 boundary probes), manifest verified in CI (31 files, 0 mismatches) and on Uni's downloaded copy; artifact certification-evidence-run-41555532846. SUBMITTED for Director review; no certification declared. |
