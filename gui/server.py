@@ -79,8 +79,17 @@ def _get_program(owner: str):
 
 
 def _plants(program):
+    # ForceField is a dataclass of forces; the plants live on its
+    # GrowthForce: program.forces.growth.plants. (A flat
+    # forces.plants does not exist — reading it silently yielded
+    # an empty field in the first P1 smoke.)
     forces = getattr(program, "forces", None)
-    plants = getattr(forces, "plants", []) if forces is not None else []
+    if forces is None:
+        return []
+    growth = getattr(forces, "growth", None)
+    plants = getattr(growth, "plants", None)
+    if plants is None:
+        plants = getattr(forces, "plants", [])
     return [p for p in (plants or []) if isinstance(p, dict)]
 
 
