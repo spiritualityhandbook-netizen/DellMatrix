@@ -1,0 +1,24 @@
+# SHA-256 MANIFEST — D1-UNSUPPORTED-ARG-GATE evidence bundle
+
+Circuit: D1-UNSUPPORTED-ARG-GATE (Director MODE C repair, ruling on PR #252).
+Base: 0f6dcb8d4d701c6fd6b47d60da709520a6289404. Code head: 7328cef9b0ed8d93e23ec82c42d7776a5e2eb41a.
+Generated 2026-11-03 by Uni from the workspace evidence dir
+(~/workspace/goals/dellmatrix-capability-circuits/hidden_files/d1_unsupported_arg_gate/).
+Verify: sha256sum -c MANIFEST.md from this directory (this file itself excluded).
+
+fed2fed081406e076481d3cfd097e674616a5f37fa20bd5100166f0b0c821191  freshclone_regress.log
+a5786a0345edde1056d2961cd9a616f10f5432d4517760c26a5327b30b0f4eae  green_run.log
+d7e60a539e3e6c1ae2f12a0cbd8e3c9db69107d04fcb1c21a87d752eb96a5298  green_run_v2.log
+8430e3164b543aa0d8b95b0bb1a787938954a8fc812e3b43238f55244c4e64d0  mutant_m1.log
+5d6777aa5fe589ac7186c58174ac6dab2ffb84adfef741d53916239b4de3c451  mutant_m2.log
+794cdba5422d7697164954b8f3be8baf8d37ab3d24ba99a04c321cb209ac1edc  mutant_m3.log
+6e1c6791f81e730052e996914efdaccbb4324ec7ca2d9808fc473f98f811db67  mutant_m4.log
+d6cb4827f9285f54b3faa0d23f4531a693fcef52d27fb8d7105fe2960cf73b1b  mutant_m5.log
+394a51ed8125665ad43e9597327f281401b1d43d78c2d31751353b593e991032  post_mutant_green.log
+e880d2d0b5d9a7a255aa1a64092434dc4af327aa548de4739473a1a1a8270cae  probe_base.log
+25db692345e3acdf8e8997496a44ea50711e872c80aa414560949b849926cbcc  probe_base.py
+3765521cdec8ea94f9adbe3fe7ca5b273381c3de51bccf0eb0ca7c83b33268d3  red_run.log
+67a607dbb2ee1a01c1115c765bffc731c0bade99fc23e81edfd9795a3513a8db  red_run_v2.log
+7ce58ece5dc1d6b41318ead7bd8badff8e603d19ea63862d156c4b007c7c709a  regress_fwd.log
+a19b1d3ec2fa721513f5e35e38480da49df12b22ffff8c812ea56e65a1df8ede  regress_rev.log
+89ea11418be73c5d98fcc6699119eb9e7f5966b95188fc1ad58df5415b27985f  regress_twice.log

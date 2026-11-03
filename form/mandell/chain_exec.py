@@ -126,6 +126,24 @@ def _run_atom(program: Any, atom: Any, seed: Any, messages: List[str]) -> Tuple[
             payload = typed_lab
             roles_arg = dict(resolved_args)
             messages.append(f"TOAM: typed args lowered to lab='{payload}'")
+        else:
+            # D1-UNSUPPORTED-ARG-GATE (Director MODE C repair,
+            # 2026-11-03): typed args on an UNREGISTERED Core II
+            # Dell refuse BEFORE the handler executes. Previously
+            # the args were never read and the atom executed on
+            # the legacy payload — silent success under a
+            # default, label-wins, or a misleading handler
+            # failure (PR #252 investigation, Q1). Diagnostics
+            # name sorted role NAMES only; raw argument values
+            # are never echoed (Director amendment).
+            roles = ", ".join(sorted(atom_args))
+            messages.append(
+                f"TOAM: Dell {n:02d}[{shown}] has no registered "
+                f"typed signature; typed arguments refused "
+                f"before execution (roles: {roles})")
+            return program, {"ok": False,
+                             "error": f"UNSUPPORTED_ARGS: {roles}",
+                             "messages": messages}
     term = shown
     messages.append(f"-- {n:02d}[{term}] ns={ns}")
     if 51 <= n <= 99:
@@ -360,7 +378,29 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
     iterations = 0
     status = "ok"
     err = ""
-    if n == 60:
+    head_err = head_out.get("error") or ""
+    if head_err.startswith("UNSUPPORTED_ARGS"):
+        # D1 gate, Q-D2 Option A: a refused control head never
+        # runs its body on the label condition (that would be
+        # the same dishonesty class the gate exists to close).
+        # Body occurrences receipt honest skips, the frame
+        # fails, zero iterations; the Join below still closes
+        # the frame and publishes this status. An earlier root
+        # cause in state is never overwritten.
+        status = "fail"
+        err = head_err
+        state["ok"] = False
+        if not state.get("error"):
+            state["error"] = head_err
+        messages.append(
+            f"control head {n:02d} refused ({head_err}) — body not executed")
+        for j in range(head + 1, join_at):
+            skipped.append(int(atoms[j].dell))
+            results.append(_skip_receipt(
+                int(atoms[j].dell),
+                f"control head refused: {head_err}; "
+                f"body occurrence not executed"))
+    elif n == 60:
         else_kind, else_at = find_else(atoms, head + 1, join_at)
         if else_kind == "multi":
             status = "fail"
@@ -516,10 +556,21 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
             # (join_fail never overwrites an earlier atom error).
             if status == "ok":
                 status = "fail"
-            err = err or "join_fail"
-            if state.get("ok", True):
-                state["ok"] = False
-                state["error"] = "join_fail"
+            join_err = join_receipt["error"] or ""
+            if join_err.startswith("UNSUPPORTED_ARGS"):
+                # D1 gate: the Join atom itself was refused
+                # before execution — frame/chain error names
+                # that refusal rather than masking it as a
+                # generic join_fail.
+                err = err or join_err
+                if state.get("ok", True):
+                    state["ok"] = False
+                    state["error"] = join_err
+            else:
+                err = err or "join_fail"
+                if state.get("ok", True):
+                    state["ok"] = False
+                    state["error"] = "join_fail"
     st = attach(program)
     st.last_frame = {"kind": kind, "condition": cond, "status": status, "iterations": iterations, "results": results, "error": err, "depth": depth}
     if n in (64, 65):
