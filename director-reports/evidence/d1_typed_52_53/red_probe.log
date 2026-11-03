@@ -1,0 +1,14 @@
+P1 typed Filter: ok=True selected=['welcome', 'garden_gate', 'garden_fern', 'river_stone'] expected_if_typed=['garden_gate', 'garden_fern']
+P2 legacy Filter: ok=True selected=['garden_gate', 'garden_fern']
+P3 bogus role Filter: ok=True err=
+P4 setup: groups=['greens'] scope=plane
+P5 typed Scope existing group: ok=True scope=plane
+P6 typed Scope missing group: ok=True err= scope=plane
+P7 legacy Scope: ok=True scope=greens
+P8 legacy Scope missing: ok=False err=scope_unknown:nope
+---
+DEFECT CONFIRMED: P1 typed Filter arg silently dropped (ok=True, selection un-narrowed)
+DEFECT CONFIRMED: P3 bogus role silently executed (ok=True)
+DEFECT CONFIRMED: P5 typed Scope arg silently dropped (ok=True, scope stayed 'plane')
+DEFECT CONFIRMED: P6 typed Scope to missing group silently accepted (ok=True, no scope_unknown refusal)
+DEFECTS DEMONSTRATED: 4/4 typed probes (legacy controls all correct)

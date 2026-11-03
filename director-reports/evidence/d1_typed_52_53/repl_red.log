@@ -1,0 +1,8 @@
+you>   Mandell: 51[Select]
+  English: Select (Select target(s) from current scope)
+  -- 51[Select] ns=CORE_II
+  Select scope=plane n=2
+you>   Mandell: 52[Filter](predicate="garden")
+  English: Filter (Reduce a set by conditions)
+  -- 52[Filter] ns=CORE_II
+  Filter 2->2 cond=*
