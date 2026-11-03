@@ -1,0 +1,12 @@
+Independent certification run
+=============================
+started_utc: 2026-11-03T00:49:14.154300+00:00
+repo_root: /home/runner/work/DellMatrix/DellMatrix
+revision_sha: e0769adf98179f4bebc9322705b3c2bd3b8a014c
+python: 3.11.17 (main, Oct  1 2026, 14:33:19) [GCC 15.2.0]
+python_executable: /opt/hostedtoolcache/Python/3.11.17/x64/bin/python3
+platform: Linux-7.0.0-1017-azure-x86_64-with-glibc2.43
+runner_file: /home/runner/work/DellMatrix/DellMatrix/director-reports/certification_runner.py
+runner_sha256: dc988ad38123d75a47a9352ae3c8b6b5af6df83edb351cfec3c594e68a6afcf1
+per_item_timeout_s: 900
+items run sequentially; suites are subprocesses (python3 -m <module>) from the repo root; probes are the sources preserved under probe_sources/.
