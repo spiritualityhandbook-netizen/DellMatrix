@@ -274,3 +274,64 @@ Verified head `66050cf83fbef3a9b7aa0763beb08d0be734e53a`, tree
 suites 35/35 + 26/26; full regress per §5). This report and the
 evidence bundle were committed on top; production code is
 identical between the verified head and the submission head.
+
+## Correction (Director Mode C, 2026-11-03)
+
+**Disposition received: CONDITIONAL ACCEPTANCE — design accepted
+for a trusted, single-user localhost environment; two corrections
+required before merge.** The four design questions are resolved
+(token retained; network-deployment claims prohibited; untrusted
+local processes out of scope; automated Chromium/CDP counts as
+valid browser evidence when it genuinely runs the interface).
+Browser acceptance itself remains OPEN. Both corrections are
+executed below; nothing else was changed.
+
+**Finding 1 (Director's words):** "*_origin_ok() permits an
+Origin without an explicit port even when the server runs on a
+non-default port. That does not bypass the separate session-token
+check, but it contradicts the stated same-port security rule.*"
+
+Fix (`gui/server.py::_origin_ok`, the only production-code
+change): an omitted Origin port now resolves to the HTTP default
+**80**, and the *effective* port is compared with the bound
+server port — a no-port Origin is accepted only when the server
+is itself bound to port 80. Host-header handling, the token
+model, and GET posture are untouched.
+
+Failing-first, on the Director's exact case (probe preserved in
+the bundle: `correction_origin_probe.py`, real server bound to
+port **8765**, valid session token, `Origin: http://127.0.0.1`
+with no port, POST `/api/execute`):
+
+- RED (pre-fix): **HTTP 200, store mutated** (`corrprobe` key
+  landed) — `correction_probe_RED.log`.
+- GREEN (post-fix): **HTTP 403, store snapshot unchanged** —
+  `correction_probe_GREEN.log`.
+
+The case is also added to `form/studio_security_test.py` (suite
+35 → **36**; suite-level RED captured pre-fix in
+`correction_suite_RED.log`). Post-fix: **studio_security 36/36**
+(`correction_suite_GREEN.log`); **gui_api 26/26** with unchanged
+assertions (`correction_gui_api.log`); legitimate same-origin
+behavior (explicit matching port + token) preserved — the
+suite's browser-shaped happy paths all pass.
+
+**Finding 2 (Director's words):** "*The additional MANIFEST.md
+self-reference is invalid and should be removed. It does not
+indicate corruption of the other files.*"
+
+Fix: the `MANIFEST.md` self-hash line is removed. The manifest
+now lists **27 evidence files** (the original 21 plus the
+correction probe script and its five run logs), every one of the
+**21 previously verified digests preserved verbatim** (asserted
+by recompute during regeneration), MANIFEST.md itself excluded,
+and `sha256sum -c MANIFEST.md` run from the bundle directory
+verifies **27/27 OK, exit 0**.
+
+**Corrected code head:** `20ebbcb16466d37c78b415743ef93e46e3979a2e`,
+tree `da785fda6b8d6d926c891aea122bda7150a980be`. This addendum and
+the INDEX status update are documentation-only on top of it; the
+final submission head's exact-head CI (all three checks) is
+verified by direct `gh` query and recorded in the circuit
+envelope. PR remains UNMERGED — merge authorization follows the
+Director's verification of the corrected head.
