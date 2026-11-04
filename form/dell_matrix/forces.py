@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+import copy
 import time
 
 
@@ -439,7 +440,14 @@ class ForceField:
             "active": list(self.active),
             "water": {"streams": len(self.water.streams), "pools": len(self.water.pools),
                       "intensity": self.water.intensity, "evolution_level": self.water.evolution_level},
-            "growth": {"plants": len(self.growth.plants), "intensity": self.growth.intensity,
+            # SM-39 persistence closure: the legacy "plants" count is
+            # retained for older readers, and the full records ride
+            # alongside it — a count alone cannot restore identity,
+            # stage or history, and from_dict must never fabricate
+            # records from one.
+            "growth": {"plants": len(self.growth.plants),
+                       "plant_records": copy.deepcopy(self.growth.plants),
+                       "intensity": self.growth.intensity,
                        "evolution_level": self.growth.evolution_level},
             "breath": {"phase": self.breath.phase, "cycle": self.breath.cycle,
                        "evolution_level": self.breath.evolution_level},
@@ -461,6 +469,34 @@ class ForceField:
         g = data.get("growth") or {}
         ff.growth.intensity = float(g.get("intensity", ff.growth.intensity))
         ff.growth.evolution_level = float(g.get("evolution_level", 1.0))
+        # SM-39 persistence closure: restore the plant records when
+        # the payload carries them. Legacy payloads have only the
+        # count — plants stay empty; a count is never expanded into
+        # invented records. Records are restored verbatim except for
+        # identity discipline, mirroring plant()'s own rules: a
+        # record needs a proven identity (a non-empty unit_id, else
+        # its full label), malformed records are skipped, and a
+        # duplicate identity keeps the FIRST record — never a merge.
+        records = g.get("plant_records")
+        if isinstance(records, list):
+            restored: List[Dict[str, Any]] = []
+            seen: set = set()
+            for rec in records:
+                if not isinstance(rec, dict):
+                    continue
+                uid = rec.get("unit_id")
+                if isinstance(uid, str) and uid:
+                    key = ("uid", uid)
+                else:
+                    full = rec.get("idea_full") or rec.get("idea") or ""
+                    if not (isinstance(full, str) and full):
+                        continue
+                    key = ("label", full)
+                if key in seen:
+                    continue
+                seen.add(key)
+                restored.append(copy.deepcopy(rec))
+            ff.growth.plants = restored
         b = data.get("breath") or {}
         ff.breath.phase = str(b.get("phase") or "inhale")
         ff.breath.cycle = int(b.get("cycle") or 0)
