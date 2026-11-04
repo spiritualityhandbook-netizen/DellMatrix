@@ -11,7 +11,11 @@ name: Studio Browser Acceptance
 # substitute anywhere in this workflow.
 #
 # Scoped triggers: manual dispatch (usable once this file is on
-# the default branch) + pull requests touching the Studio surface.
+# the default branch) + pull requests touching the Studio surface
+# or the Form runtime Studio drives (gui/server.py imports
+# form.open, form.mandell.executor/registry/seed/core_ii and
+# form.dell_matrix.view_rooms; a Form-only change can break the
+# Studio surface with no gui/** file touched).
 # It does NOT run on ordinary pushes to main.
 
 on:
@@ -19,6 +23,7 @@ on:
   pull_request:
     paths:
       - "gui/**"
+      - "form/**"
       - ".github/workflows/studio-browser-acceptance.yml"
 
 permissions:
