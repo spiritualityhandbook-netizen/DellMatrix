@@ -1,0 +1,6 @@
+Carry-over verification, planning base 2740c22cbece8f57eb0d312027f9a5817ef1944c
+git diff b6dd46b1fa1ae48aa5387ec8f474a421e86e4b87..2740c22 over the Track D layer files
+(sleep-run grounding base b6dd46b -> planning base 2740c22):
+EXIT=0 (empty stat above = all listed files byte-identical across the range)
+
+gui/server.py DID change in range (Studio security + browser circuits); _growth_payload at HEAD re-read directly for this packet (gui/server.py:219-229, plants-only, Gap 3 still open).

@@ -1,0 +1,473 @@
+{
+ "note": "Compact extract of census_state.json (full 11745-owner dump in the circuit's hidden_files). Counts aggregate every worktree's form/state copies; test/campaign owners dominate by construction.",
+ "operator_owner": {
+  "checkpoints": 0,
+  "graph_contains": 0,
+  "graph_entries": 0,
+  "idea_id_shapes": {},
+  "ideas": 0,
+  "program_files": 17,
+  "proposals": {},
+  "state_dirs": 41,
+  "units": 21
+ },
+ "owners_with_both_units_and_ideas": {
+  "R3AUTH": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 30
+   },
+   "ideas": 30,
+   "program_files": 6,
+   "proposals": {},
+   "state_dirs": 6,
+   "units": 6
+  },
+  "r63a_manual1": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "non-uuid": 1
+   },
+   "ideas": 1,
+   "program_files": 1,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 2
+  },
+  "r63a_replay5": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 3,
+   "idea_id_shapes": {
+    "non-uuid": 6
+   },
+   "ideas": 6,
+   "program_files": 3,
+   "proposals": {},
+   "state_dirs": 3,
+   "units": 9
+  }
+ },
+ "owners_with_canonical_ideas": {
+  "MFTEST": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 1
+   },
+   "ideas": 1,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "OWNER_B": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 1
+   },
+   "ideas": 1,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "P2D": {
+   "checkpoints": 0,
+   "graph_contains": 3,
+   "graph_entries": 4,
+   "idea_id_shapes": {
+    "uuid": 4
+   },
+   "ideas": 4,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "P2DBG": {
+   "checkpoints": 0,
+   "graph_contains": 1,
+   "graph_entries": 2,
+   "idea_id_shapes": {
+    "uuid": 2
+   },
+   "ideas": 2,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "P2DBG2": {
+   "checkpoints": 0,
+   "graph_contains": 1,
+   "graph_entries": 3,
+   "idea_id_shapes": {
+    "uuid": 2
+   },
+   "ideas": 2,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "P2DBG3": {
+   "checkpoints": 0,
+   "graph_contains": 3,
+   "graph_entries": 3,
+   "idea_id_shapes": {
+    "uuid": 3
+   },
+   "ideas": 3,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "P2ROOT": {
+   "checkpoints": 0,
+   "graph_contains": 2,
+   "graph_entries": 2,
+   "idea_id_shapes": {
+    "uuid": 3
+   },
+   "ideas": 3,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "P2SMOKE": {
+   "checkpoints": 0,
+   "graph_contains": 5,
+   "graph_entries": 6,
+   "idea_id_shapes": {
+    "uuid": 4
+   },
+   "ideas": 4,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "R2PROOF": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 4
+   },
+   "ideas": 4,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 2,
+   "units": 0
+  },
+  "R3AUTH": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 30
+   },
+   "ideas": 30,
+   "program_files": 6,
+   "proposals": {},
+   "state_dirs": 6,
+   "units": 6
+  },
+  "R4ALBUM": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 9
+   },
+   "ideas": 9,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 4,
+   "units": 0
+  },
+  "R4HOUSE": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 9
+   },
+   "ideas": 9,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 4,
+   "units": 0
+  },
+  "argus_dbg_a11": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 1,
+   "idea_id_shapes": {
+    "uuid": 2
+   },
+   "ideas": 2,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "argus_r1_a10": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 2,
+   "idea_id_shapes": {
+    "uuid": 20
+   },
+   "ideas": 20,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "argus_r1_a11a": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 1,
+   "idea_id_shapes": {
+    "uuid": 10
+   },
+   "ideas": 10,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "argus_r1_a11b": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 1,
+   "idea_id_shapes": {
+    "uuid": 10
+   },
+   "ideas": 10,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "argus_r1_a12": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 3,
+   "idea_id_shapes": {
+    "uuid": 25
+   },
+   "ideas": 25,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "argus_r1_a14": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 2,
+   "idea_id_shapes": {
+    "uuid": 10
+   },
+   "ideas": 10,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "argus_r1_a16": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 2,
+   "idea_id_shapes": {
+    "uuid": 15
+   },
+   "ideas": 15,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "argus_r1_a5": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 10
+   },
+   "ideas": 10,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "argus_r1_a8": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 1,
+   "idea_id_shapes": {
+    "uuid": 10
+   },
+   "ideas": 10,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "argus_r1_a9": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 1,
+   "idea_id_shapes": {
+    "uuid": 10
+   },
+   "ideas": 10,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "owner_a": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 1
+   },
+   "ideas": 1,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "owner_b": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 1
+   },
+   "ideas": 1,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "proof_ckpt": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "uuid": 1
+   },
+   "ideas": 1,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  },
+  "r63a_manual1": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "non-uuid": 1
+   },
+   "ideas": 1,
+   "program_files": 1,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 2
+  },
+  "r63a_replay5": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 3,
+   "idea_id_shapes": {
+    "non-uuid": 6
+   },
+   "ideas": 6,
+   "program_files": 3,
+   "proposals": {},
+   "state_dirs": 3,
+   "units": 9
+  },
+  "w3_owner": {
+   "checkpoints": 0,
+   "graph_contains": 0,
+   "graph_entries": 0,
+   "idea_id_shapes": {
+    "non-uuid": 1
+   },
+   "ideas": 1,
+   "program_files": 0,
+   "proposals": {},
+   "state_dirs": 1,
+   "units": 0
+  }
+ },
+ "summary": {
+  "owners_total": 11745,
+  "owners_units_no_ideas": 9153,
+  "owners_with_both": 3,
+  "owners_with_ideas": 28,
+  "owners_with_units": 9156,
+  "total_graph_contains": 16,
+  "total_ideas": 205,
+  "total_units": 21799
+ },
+ "top_unit_owners": [
+  [
+   352,
+   "Strength"
+  ],
+  [
+   232,
+   "RT"
+  ],
+  [
+   216,
+   "cac1_L"
+  ],
+  [
+   68,
+   "TxIso"
+  ],
+  [
+   68,
+   "SavR"
+  ],
+  [
+   68,
+   "LdCp"
+  ],
+  [
+   68,
+   "CpA"
+  ],
+  [
+   52,
+   "DCCX_H"
+  ],
+  [
+   52,
+   "DCCVEngPersist"
+  ],
+  [
+   52,
+   "DCCVEng"
+  ]
+ ]
+}
