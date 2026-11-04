@@ -112,5 +112,14 @@ def run_all():
     print(f"SM-11 intent-args: {len(CHECKS)}/{len(CHECKS)} checks passed")
 
 
+def smoke() -> bool:
+    try:
+        run_all()
+        return True
+    except Exception as e:
+        print(f"SM11 SMOKE FAILED: {e}")
+        return False
+
+
 if __name__ == "__main__":
     run_all()
