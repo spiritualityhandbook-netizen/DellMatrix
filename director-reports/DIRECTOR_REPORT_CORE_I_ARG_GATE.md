@@ -174,6 +174,26 @@ signatures were added; no parser changes; no Core II changes;
   gui_api suite staying green (it uses no unregistered Core I
   args).
 
+## Verification addendum (2026-11-03, post-submission)
+
+- **Base advance during the circuit:** while this circuit ran,
+  main advanced by PR #257 (rulings archive, docs-only) to
+  8426334. The branch was merged up; the single conflict was in
+  director-reports/INDEX.md and was resolved by hand — main's
+  updated Core I review row and its ruling row kept, this
+  circuit's row placed after them. The merged tree's form/ and
+  gui/ content is byte-identical to the verified submission
+  (diff = 0 lines), so the regression and fresh-clone verdicts
+  above stand for the code; the new suite and AF-1 were also
+  re-spot-checked on the merged tree (92/92, 13/13).
+- **Exact-head CI at merged head
+  4f19c8987c2bd5e96de032dd96a2b5f5af180b2d** (direct gh query,
+  terminal state): build (3.10) PASS, build (3.11) PASS
+  (package run 41756189488), Form smoke PASS 15m43s (run
+  41756189556). PR #259 MERGEABLE at that head.
+- This addendum is docs-only; CI is re-verified at the final
+  head carrying it before the circuit closes.
+
 ## Questions for the Director
 
 1. **Certification scope:** does this circuit certify as the
