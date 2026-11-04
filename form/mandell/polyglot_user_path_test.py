@@ -124,14 +124,19 @@ def _run_language(code: str, spec: dict) -> None:
               out[-600:])
         check(f"{code}: idea created under its translated label",
               f'Created idea: "{label}"' in out, out[-600:])
+        # SM-11 correction (2026-11-03): the grow phrases below ask
+        # for 2 cycles ("crece 2" / "grandis 2"). These assertions
+        # previously expected exactly 1 proposal — they passed only
+        # because translate() silently dropped the count to 1 cycle.
+        # With the count honored, 2 cycles stage 2 proposals.
         check(f"{code}: grow stages a nursery proposal",
-              "Nursery pending: 1" in out, out[-600:])
+              "Nursery pending: 2" in out, out[-600:])
         check(f"{code}: proposals lists the staged proposal",
-              "Nursery has 1 proposal(s)" in out, out[-600:])
+              "Nursery has 2 proposal(s)" in out, out[-600:])
         check(f"{code}: rank ranks the proposal",
-              "Ranked 1 proposals" in out, out[-600:])
+              "Ranked 2 proposals" in out, out[-600:])
         check(f"{code}: confirm all confirms it",
-              "Confirmed 1 proposal(s)" in out, out[-600:])
+              "Confirmed 2 proposal(s)" in out, out[-600:])
         check(f"{code}: show renders the created idea",
               f"{label}@" in out, out[-600:])
         check(f"{code}: save persists the session",
