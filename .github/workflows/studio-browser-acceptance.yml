@@ -1,0 +1,125 @@
+name: Studio Browser Acceptance
+
+# Real-browser acceptance for DellMatrix Studio: a genuine Chromium
+# and the real Studio server share this runner's loopback, and
+# gui/browser_acceptance.py drives the actual interface over CDP
+# (example select -> RUN click -> DOM verdicts -> screenshot).
+# Ruled valid technical browser evidence by the Director (Studio
+# security certification, 2026-11-03) when it genuinely runs the
+# interface. It is AUTOMATED BROWSER (CDP) evidence — not a human
+# session, not REAL_USER_PATH. API replay is not used as a
+# substitute anywhere in this workflow.
+#
+# Scoped triggers: manual dispatch (usable once this file is on
+# the default branch) + pull requests touching the Studio surface.
+# It does NOT run on ordinary pushes to main.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "gui/**"
+      - ".github/workflows/studio-browser-acceptance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  browser-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Locate or install Chromium
+        id: chrome
+        run: |
+          set -euo pipefail
+          CHROME=""
+          for c in google-chrome google-chrome-stable chromium chromium-browser; do
+            if command -v "$c" >/dev/null 2>&1; then
+              CHROME="$(command -v "$c")"; break
+            fi
+          done
+          if [ -z "$CHROME" ]; then
+            echo "No Chromium on PATH; installing google-chrome-stable"
+            curl -fsSL -o /tmp/chrome.deb \
+              https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq /tmp/chrome.deb
+            CHROME="$(command -v google-chrome)"
+          fi
+          echo "path=$CHROME" >> "$GITHUB_OUTPUT"
+          "$CHROME" --version
+
+      - name: Start Studio server (loopback only, no --allow-remote)
+        run: |
+          set -euo pipefail
+          mkdir -p browser-evidence
+          nohup python3 -m gui.server --owner BrowserCI --port 8765 \
+            > browser-evidence/server.log 2>&1 &
+          echo $! > browser-evidence/server.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8765/api/dells >/dev/null 2>&1; then
+              echo "server ready"; exit 0
+            fi
+            sleep 1
+          done
+          echo "server did not become ready"
+          cat browser-evidence/server.log
+          exit 1
+
+      - name: Start Chromium headless (debugging on loopback only)
+        run: |
+          set -euo pipefail
+          CHROME="${{ steps.chrome.outputs.path }}"
+          start_browser() {
+            rm -rf /tmp/chrome-profile
+            "$CHROME" "$1" --no-sandbox --disable-gpu \
+              --disable-dev-shm-usage \
+              --remote-debugging-address=127.0.0.1 \
+              --remote-debugging-port=9333 \
+              --window-size=1440,1000 \
+              --user-data-dir=/tmp/chrome-profile \
+              about:blank > browser-evidence/chrome.log 2>&1 &
+            echo $! > browser-evidence/chrome.pid
+            for i in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:9333/json/version >/dev/null 2>&1; then
+                return 0
+              fi
+              sleep 1
+            done
+            return 1
+          }
+          if start_browser "--headless=new"; then
+            echo "chromium up (headless=new)"
+          elif start_browser "--headless"; then
+            echo "chromium up (headless)"
+          else
+            echo "chromium failed to start"
+            cat browser-evidence/chrome.log
+            exit 1
+          fi
+          curl -fsS http://127.0.0.1:9333/json/version \
+            | tee browser-evidence/chrome_version.json
+
+      - name: Run the browser acceptance driver
+        run: |
+          set -o pipefail
+          PAGE_URL=http://127.0.0.1:8765/ CDP_PORT=9333 \
+          BROWSER_ACC_OUT=$PWD/browser-evidence \
+            python3 gui/browser_acceptance.py 2>&1 \
+            | tee browser-evidence/driver.log
+
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-browser-acceptance
+          path: browser-evidence/
+          if-no-files-found: warn
