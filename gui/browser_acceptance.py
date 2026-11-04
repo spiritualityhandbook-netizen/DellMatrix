@@ -492,6 +492,33 @@ def main():
                "document.querySelector('#growth').textContent"))[:200])
     click_element('[data-view="studio"]')
 
+    # SM-54: an UNPLANTED plane unit must also be carded by the
+    # Growth view — the payload serves canonical plane nodes through
+    # the lens, not a plant-fabricated inventory. Its card must claim
+    # no stage ("stage: —"), the honest unplanted verdict.
+    UNPLANTED_LABEL = "Sm54Unplanted%s" % uniq
+    run_seed("08[Create] :: %s" % UNPLANTED_LABEL, 8, 1)
+    click_element('[data-view="growth"]')
+    unplanted_card = wait_eval(
+        "(() => { const labels = [...document.querySelectorAll("
+        "'#growth .plant-label')].map(e => e.textContent);"
+        " return labels.includes(%s); })()" % json.dumps(UNPLANTED_LABEL),
+        20)
+    expect("Growth view cards an unplanted plane unit "
+           "(canonical nodes, not plant fabrication)",
+           bool(unplanted_card),
+           repr(cdp.eval(
+               "document.querySelector('#growth').textContent"))[:200])
+    unplanted_stage = cdp.eval(
+        "(() => { const cards = [...document.querySelectorAll("
+        "'#growth .plant')]; const c = cards.find(x => x.querySelector("
+        "'.plant-label').textContent === %s); return c ? c.querySelector("
+        "'.plant-stage').textContent : null; })()"
+        % json.dumps(UNPLANTED_LABEL))
+    expect("unplanted unit's card claims no stage",
+           unplanted_stage == "stage: —", repr(unplanted_stage))
+    click_element('[data-view="studio"]')
+
     # Console: one summary line per run, derived from receipts —
     # OK, FAILED and the PARTIAL line with its skipped count must
     # all be present; Clear empties the log (view-only).

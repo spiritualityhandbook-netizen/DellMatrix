@@ -210,25 +210,89 @@ def run_all():
                 bad.append(seed)
         check("every shipped example executes ok=True", not bad)
 
-        # --- /api/growth lens fidelity --------------------------
+        # --- /api/growth truthfulness (SM-54, DIR-SUS-WAKE P1) ---
+        # Nodes are the canonical plane units (Program.nodes_payload)
+        # through the view_rooms lens — never fabricated from plants.
+        # The pre-SM-54 payload invented one node per plant, so an
+        # unplanted plane idea could never appear and a plant with no
+        # plane unit appeared as a node. Both directions are pinned
+        # here. (The earlier "honestly empty for a plantless owner"
+        # check encoded the fabricated behavior and is replaced: a
+        # plantless owner still HAS plane units, and truthfulness
+        # shows them as unplanted instead of hiding them. Genuinely
+        # empty means zero plane units.)
         prog = studio._get_program(a)
         growth = prog.forces.growth
-        growth.plant("GuiApiFixture")
+        canonical = {n["label"]: n for n in prog.nodes_payload()}
+        check("fixture unit Alpha is a canonical plane node",
+              "Alpha" in canonical)
+        growth.plant("Alpha")
         for _ in range(4):
             growth.grow_all(2.0)
-        plant_stage = growth.plants[-1]["stage"]
+        alpha_rec = [p for p in growth.plants
+                     if p.get("idea_full") == "Alpha"][-1]
+        plant_stage = alpha_rec["stage"]
         check("fixture plant actually grew past seed",
               plant_stage != "seed")
+        growth.plant("GhostPlantNoUnit")
         status, payload = _json(base, "GET", f"/api/growth?owner={a}")
         nodes = (payload.get("growth") or {}).get("nodes") or []
-        mine = [n for n in nodes if n.get("label") == "GuiApiFixture"]
+        by_label = {n.get("label"): n for n in nodes}
+        check("growth nodes are exactly the canonical plane units",
+              {n.get("id") for n in nodes}
+              == {n["id"] for n in prog.nodes_payload()})
+        mine = by_label.get("Alpha")
         check("/api/growth node stage equals the plant's own stage",
-              len(mine) == 1 and mine[0].get("stage") == plant_stage
-              and mine[0].get("stage_source") == "growth_force")
+              mine is not None and mine.get("stage") == plant_stage
+              and mine.get("stage_source") == "growth_force")
+        check("plant without a plane unit fabricates no node",
+              "GhostPlantNoUnit" not in by_label)
+        unplanted = [n for n in nodes if n.get("label") != "Alpha"]
+        check("unplanted plane units appear with no stage claim",
+              len(unplanted) >= 1 and all(
+                  n.get("stage") is None
+                  and n.get("stage_source") == "unplanted"
+                  for n in unplanted))
         status, payload = _json(base, "GET", f"/api/growth?owner={b}")
-        check("/api/growth is honestly empty for a plantless owner",
-              (payload.get("growth") or {}).get("nodes") == []
+        bprog = studio._get_program(b)
+        bnodes = (payload.get("growth") or {}).get("nodes") or []
+        check("plantless owner's units appear unplanted, not hidden",
+              {n.get("id") for n in bnodes}
+              == {n["id"] for n in bprog.nodes_payload()}
+              and len(bnodes) >= 1 and all(
+                  n.get("stage") is None
+                  and n.get("stage_source") == "unplanted"
+                  for n in bnodes)
               and (payload.get("growth") or {}).get("plant_count") == 0)
+
+        # --- _growth_payload three-state honesty (unit level) ----
+        import types as _types
+
+        class _Stub:
+            def __init__(self, nodes, forces):
+                self._nodes = nodes
+                self.forces = forces
+
+            def nodes_payload(self):
+                return [dict(n) for n in self._nodes]
+
+        one = [{"id": "u1", "label": "L1", "score": 0.0}]
+        p_unavail = studio._growth_payload(_Stub(one, None))
+        check("growth force unavailable reads unavailable, "
+              "not unplanted",
+              len(p_unavail["nodes"]) == 1
+              and p_unavail["nodes"][0].get("stage") is None
+              and p_unavail["nodes"][0].get("stage_source")
+              == "unavailable")
+        empty_forces = _types.SimpleNamespace(
+            growth=_types.SimpleNamespace(plants=[]))
+        p_empty = studio._growth_payload(_Stub([], empty_forces))
+        check("zero plane units is genuinely empty",
+              p_empty["nodes"] == [] and p_empty["plant_count"] == 0)
+        p_unpl = studio._growth_payload(_Stub(one, empty_forces))
+        check("force present with no matching plant reads unplanted",
+              len(p_unpl["nodes"]) == 1
+              and p_unpl["nodes"][0].get("stage_source") == "unplanted")
 
         # --- /api/owner isolation -------------------------------
         status, payload = _json(base, "POST", "/api/owner", {"owner": b})
