@@ -76,9 +76,21 @@ class WaterForce(ForceMatrix):
         if self.intensity == 0.5:
             self.intensity = 0.7
 
+    def _next_id(self, prefix: str) -> str:
+        """The next stream/river id. Historically len-based, which
+        is exact while records are never removed; after the Water
+        persistence repair, records survive reload, so minting
+        additionally skips any id already present — an identifier
+        is never reused while its record lives."""
+        n = len(self.streams) + 1
+        taken = {s.get("id") for s in self.streams}
+        while f"{prefix}-{n}" in taken:
+            n += 1
+        return f"{prefix}-{n}"
+
     def flow(self, idea: str, source: str = "local") -> Dict[str, Any]:
         stream = {
-            "id": f"stream-{len(self.streams)+1}",
+            "id": self._next_id("stream"),
             "idea": str(idea)[:80],
             "source": source,
             "volume": 1.0,
@@ -95,7 +107,7 @@ class WaterForce(ForceMatrix):
             return None
         a, b = active[-2], active[-1]
         merged = {
-            "id": f"river-{len(self.streams)+1}",
+            "id": self._next_id("river"),
             "idea": f"{a['idea']} ⇄ {b['idea']}",
             "source": "merge",
             "volume": a["volume"] + b["volume"],
@@ -438,7 +450,16 @@ class ForceField:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "active": list(self.active),
+            # Water persistence repair (Director disposition
+            # 2026-11-04, the SM-39 pattern): the legacy counts are
+            # retained for older readers, and the full stream
+            # records ride alongside. Pools alias stream objects in
+            # memory (settle appends the same dict), so pools
+            # serialize as stream-id references — never as second
+            # copies that could diverge on restore.
             "water": {"streams": len(self.water.streams), "pools": len(self.water.pools),
+                      "stream_records": copy.deepcopy(self.water.streams),
+                      "pool_ids": [s.get("id") for s in self.water.pools],
                       "intensity": self.water.intensity, "evolution_level": self.water.evolution_level},
             # SM-39 persistence closure: the legacy "plants" count is
             # retained for older readers, and the full records ride
@@ -466,6 +487,41 @@ class ForceField:
         w = data.get("water") or {}
         ff.water.intensity = float(w.get("intensity", ff.water.intensity))
         ff.water.evolution_level = float(w.get("evolution_level", 1.0))
+        # Water persistence repair: restore the stream records
+        # when the payload carries them. Legacy payloads have only
+        # the counts — streams stay empty; a count is never
+        # expanded into invented records. Identity discipline
+        # mirrors plant(): a record needs a non-empty string id,
+        # malformed records are skipped, a duplicate id keeps the
+        # FIRST record. Pools are rebuilt by re-linking to the
+        # restored stream objects by id (the in-memory aliasing
+        # settle() creates); a pool id with no restored stream is
+        # skipped, never fabricated. Without an explicit pool_ids
+        # list, pool membership derives from the restored records'
+        # own form == "pool" — still the same objects.
+        srecs = w.get("stream_records")
+        if isinstance(srecs, list):
+            restored_streams: List[Dict[str, Any]] = []
+            by_id: Dict[str, Any] = {}
+            for rec in srecs:
+                if not isinstance(rec, dict):
+                    continue
+                rid = rec.get("id")
+                if not (isinstance(rid, str) and rid):
+                    continue
+                if rid in by_id:
+                    continue
+                kept = copy.deepcopy(rec)
+                by_id[rid] = kept
+                restored_streams.append(kept)
+            ff.water.streams = restored_streams
+            pool_ids = w.get("pool_ids")
+            if isinstance(pool_ids, list):
+                ff.water.pools = [by_id[pid] for pid in pool_ids
+                                  if pid in by_id]
+            else:
+                ff.water.pools = [s for s in restored_streams
+                                  if s.get("form") == "pool"]
         g = data.get("growth") or {}
         ff.growth.intensity = float(g.get("intensity", ff.growth.intensity))
         ff.growth.evolution_level = float(g.get("evolution_level", 1.0))
