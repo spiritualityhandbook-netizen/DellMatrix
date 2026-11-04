@@ -1,0 +1,4 @@
+graph files scanned: 9827
+total relationship entries: 54
+entry types: {'contains': 16, 'depends_on': 20, 'related_to': 18}
+nonempty graph files: [('graph_P2D.json', 4), ('graph_P2SMOKE.json', 6), ('graph_P2DBG.json', 2), ('graph_P2DBG2.json', 3), ('graph_P2DBG3.json', 3), ('graph_P2A6E.json', 2), ('graph_P2ROOT.json', 2), ('graph_argus_dbg_a11.json', 1), ('graph_argus_r1_a8.json', 1), ('graph_argus_r1_a9.json', 1), ('graph_argus_r1_a10.json', 2), ('graph_argus_r1_a11a.json', 1)]
