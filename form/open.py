@@ -1347,6 +1347,19 @@ class Program:
     def list_proposals(self) -> List[Dict[str, Any]]:
         return [p.to_dict() for p in self.nursery.pending()]
 
+    # ── Track D TD-1: Unit -> canonical Idea binding (S1) ────────
+    # Binding foundation only: no containment operations (TD-2 is
+    # not authorized). SemanticGraph remains the sole containment
+    # authority; bind performs zero graph writes.
+
+    def bind_unit_to_idea(self, unit_id: str, *, subject: str) -> Dict[str, Any]:
+        from form.mandell.unit_binding import bind_unit_to_idea as _bind
+        return _bind(self, unit_id, subject=subject)
+
+    def binding_census(self) -> Dict[str, Any]:
+        from form.mandell.unit_binding import binding_census as _census
+        return _census(self)
+
     def harmony_of(self, ideas) -> float:
         """Harmony of an idea set (GDP-001 Phase 3, R3.2.5 public path).
 

@@ -616,6 +616,21 @@ def runtime_state(program: Any) -> Dict[str, Any]:
     except Exception:
         pass
 
+    # Track D TD-1 binding summary (read-only census; never binds).
+    binding: Dict[str, Any] = {"status": "not_recorded"}
+    try:
+        if hasattr(program, "binding_census"):
+            c = program.binding_census()
+            binding = {"status": "known",
+                       "units": c.get("units"),
+                       "bound": c.get("bound"),
+                       "unbound": c.get("unbound"),
+                       "invalid": len(c.get("invalid") or []),
+                       "unreferenced_ideas":
+                           len(c.get("unreferenced_idea_ids") or [])}
+    except Exception:
+        pass
+
     return {
         "ok": True,
         "owner": owner,
@@ -624,6 +639,7 @@ def runtime_state(program: Any) -> Dict[str, Any]:
         "conflicts": conflicts,
         "outcomes": outcomes,
         "duobeta": duobeta,
+        "binding": binding,
         "last_execution": last_execution,
         "ephemeral_note": "action_stack/last_nurture/last_checkpoint/_last_result are EPHEMERAL_BY_DESIGN and not shown",
     }

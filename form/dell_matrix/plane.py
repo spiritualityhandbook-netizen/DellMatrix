@@ -60,6 +60,10 @@ class Unit:
     parents: List[str] = field(default_factory=list)
     origin: str = "placed"
     lineage_version: int = 1
+    # Track D TD-1 (S1 binding): optional pointer to the unit's
+    # canonical Idea. Recorded mapping only — containment authority
+    # remains SemanticGraph; this field grants no graph semantics.
+    idea_id: Optional[str] = None
 
     def display(self) -> str:
         box = f"[box:{self.sandbox_id}]" if self.sandboxed else "[connected]"
@@ -109,6 +113,7 @@ class Plane:
         origin: str = "placed",
         lineage_version: Optional[int] = None,
         restore: bool = False,
+        idea_id: Optional[str] = None,
     ) -> Unit:
         from form.dell_matrix.lineage import assign_lineage
         rec = assign_lineage(self.units, parents, origin=origin, lineage_version=lineage_version, child_id=id, restore=restore or (lineage_version is not None))
@@ -128,6 +133,7 @@ class Plane:
             parents=list(rec["parents"]),
             origin=str(rec["origin"]),
             lineage_version=int(rec["lineage_version"]),
+            idea_id=idea_id,
         )
         self.units[id] = u
         return u
