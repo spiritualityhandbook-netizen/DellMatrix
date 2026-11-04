@@ -1887,9 +1887,10 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         if which in ("growth", "grow"):
             p.forces.activate("growth")
             for u in list(p.cube.session.plane.units.values())[:8]:
-                known = {pl["idea"] for pl in p.forces.growth.plants}
-                if u.label not in known:
-                    p.forces.growth.plant(u.label, p.owner)
+                known = {pl.get("unit_id") for pl in p.forces.growth.plants
+                         if pl.get("unit_id")}
+                if u.id not in known:
+                    p.forces.growth.plant(u.label, p.owner, unit_id=u.id)
             p.forces.growth.grow_all(0.6)
             for line in p.forces.growth.map()[:8]:
                 _say(line)
