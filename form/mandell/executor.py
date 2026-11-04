@@ -35,6 +35,43 @@ def execute_seed(program: Any, seed_text: str, _leaf: bool = False) -> Dict[str,
                       "executor:parse")
         return {"ok": False, "error": s.error, "messages": [f"Seed error: {s.error}"]}
 
+    # CORE-I-UNSUPPORTED-ARG-GATE (Director MODE C repair, Core I
+    # contract ruling on PR #256, 2026-11-03): typed args on an
+    # UNREGISTERED Core I Dell refuse BEFORE any dispatch. The
+    # judgment is per EXECUTING atom: this funnel only ever
+    # dispatches a single atom itself (intercept, live_identity,
+    # or leaf), so the gate fires only for a single-atom seed and
+    # inspects THAT atom's args. Multi-atom seeds are never judged
+    # here — chain_exec re-enters this entry point per Core I atom
+    # (_leaf=True) with that atom's own args, so a mixed chain is
+    # never rejected for another atom's sake (the Director's
+    # per-atom correction; the reverse AF-1 parity defect).
+    # Diagnostics name sorted role NAMES only; raw argument
+    # values are never echoed (Q-C2 boundary, as certified for
+    # Core II in PR #253).
+    if len(s.atoms) == 1:
+        _atom0 = s.atoms[0]
+        _n0 = int(_atom0.dell)
+        _args0 = getattr(_atom0, "args", None) or {}
+        if _args0 and 0 <= _n0 <= 50:
+            from .signatures import has_signature
+            if not has_signature(_n0):
+                from .redaction import redacted_seed
+                _echo = redacted_seed(s)
+                _roles = ", ".join(sorted(_args0))
+                _term0 = getattr(_atom0, "term", "") or ""
+                return {
+                    "ok": False,
+                    "error": f"UNSUPPORTED_ARGS: {_roles}",
+                    "messages": [
+                        f"Mandell: {_echo.as_mandel()}",
+                        f"English: {_echo.as_english()}",
+                        f"TOAM: Dell {_n0:02d}[{_term0}] has no "
+                        f"registered typed signature; typed "
+                        f"arguments refused before execution "
+                        f"(roles: {_roles})"],
+                }
+
     from .core_i_ops import HANDLED, apply_core_i
     primary = s.primary_dell()
     if primary in HANDLED and len(s.atoms) == 1:
