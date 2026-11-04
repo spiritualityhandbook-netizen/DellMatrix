@@ -306,6 +306,8 @@ LIST = [
     "form.gui_api_test:smoke",
     # Studio security suite: adversarial callers against gui.server.
     "form.studio_security_test:smoke",
+    # SM-39 persistence closure: growth plant records survive save/load.
+    "form.growth_persistence_test:smoke",
 ]
 
 TIMEOUT_S = 900
