@@ -1,0 +1,19 @@
+FAIL sweep 27[Checkpoint]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err= mutated=False
+FAIL sweep 28[Rollback]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=rollback_target_invalid mutated=False
+FAIL sweep 34[Stamp]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err= mutated=False
+FAIL sweep 35[Discover]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err= mutated=False
+FAIL sweep 37[Nurture]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=add idea requires a label mutated=False
+FAIL sweep 40[TokenCount]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err= mutated=False
+FAIL sweep 44[Bridge]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=bridge_unavailable mutated=False
+FAIL sweep 47[Embed]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=embed_unavailable mutated=False
+FAIL parity 37[Nurture]: chain receipt refusal == single refusal; FlowTo partner executes :: single_err=add idea requires a label mine=[{'dell': 37, 'ok': False, 'error': 'add idea requires a label', 'skipped': False, 'reason': 'add idea requires a label'}] partner=[{'dell': 70, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}]
+FAIL intercept 27[Checkpoint]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=True err=
+FAIL intercept 28[Rollback]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=False err=rollback_target_invalid
+FAIL intercept 34[Stamp]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=True err=
+FAIL intercept 35[Discover]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=True err=
+FAIL intercept 37[Nurture]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=False err=add idea requires a label
+FAIL intercept 40[TokenCount]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=True err=
+FAIL intercept 44[Bridge]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=False err=bridge_unavailable
+FAIL intercept 47[Embed]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=False err=embed_unavailable
+FAIL canary intercept 37[Nurture]: refusal names the role, NEVER the raw value :: err=add idea requires a label blob_has_canary=False gate_lines=[]
+CORE_I_ARG_GATE: 74/92

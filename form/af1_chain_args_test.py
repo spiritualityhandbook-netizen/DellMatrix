@@ -23,6 +23,17 @@ Contract proven here (public entry path, execute_seed):
 6. Single-atom behavior unchanged (valid + invalid).
 7. Untyped Core I atom carrying args in a chain behaves
    exactly as the single-atom path (args ignored, ok).
+
+AMENDMENT (2026-11-03, Director Core I contract ruling on
+PR #256): check 7's silent-success parity is REPLACED by
+refusal parity under the CORE-I-UNSUPPORTED-ARG-GATE repair.
+The historical expectation above stands as the record of the
+AF-1-era contract; the CURRENT contract is: an unregistered
+Core I atom carrying typed args refuses with UNSUPPORTED_ARGS
+on BOTH the single-atom and chained paths, identically
+(per executing atom — never whole-chain). The amendment is
+expressly authorized by that ruling; no other AF-1 check is
+altered.
 """
 import os
 import shutil
@@ -137,13 +148,24 @@ def main():
     _rec("single invalid unchanged",
          not r.get("ok") and "INVALID_VALUE" in str(r.get("error")),
          str(r.get("error")))
-    # 7. untyped Core I with args: chain == single
+    # 7. untyped Core I with args: chain == single.
+    # AMENDED 2026-11-03 (Director ruling on PR #256): refusal
+    # parity replaces silent-success parity — both paths refuse
+    # UNSUPPORTED_ARGS, per executing atom.
     p = fresh()
     r1 = execute_seed(p, '43[Fallback](note="hi")')
     p = fresh()
     r2 = execute_seed(p, '43[Fallback](note="hi") > 70[Count]')
-    _rec("untyped args parity", r1.get("ok") == r2.get("ok") and r2.get("ok"),
-         f"single={r1.get('ok')} chain={r2.get('ok')} err={r2.get('error')}")
+    _r2_43 = [a for a in (r2.get("atom_results") or [])
+              if a.get("dell") == 43]
+    _rec("untyped args refusal parity (amended 2026-11-03)",
+         r1.get("ok") is False
+         and str(r1.get("error")) == "UNSUPPORTED_ARGS: note"
+         and r2.get("ok") is False
+         and len(_r2_43) == 1
+         and _r2_43[0].get("error") == "UNSUPPORTED_ARGS: note",
+         f"single={r1.get('ok')}/{r1.get('error')} "
+         f"chain={r2.get('ok')}/{r2.get('error')} rec={_r2_43}")
 
     _cleanup(owner)
     passed = sum(1 for _, ok_, _ in RESULTS if ok_)

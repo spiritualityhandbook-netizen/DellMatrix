@@ -1,0 +1,7 @@
+FAIL parity 43[Fallback]: chain receipt refusal == single refusal; FlowTo partner executes :: single_err=UNSUPPORTED_ARGS: probe mine=[] partner=[]
+FAIL parity 37[Nurture]: chain receipt refusal == single refusal; FlowTo partner executes :: single_err=UNSUPPORTED_ARGS: probe mine=[] partner=[]
+FAIL parity 21[Merge]: chain receipt refusal == single refusal; FlowTo partner executes :: single_err=UNSUPPORTED_ARGS: probe mine=[] partner=[]
+FAIL parity 05[Tone]: chain receipt refusal == single refusal; FlowTo partner executes :: single_err=UNSUPPORTED_ARGS: probe mine=[] partner=[]
+FAIL mixed (Director's example): 03[Logic] > 55[Set](typed) executes fully, Set NOT refused, effect stands :: ok=False err=UNSUPPORTED_ARGS: key, value store={}
+FAIL manifestset: EVERY member refuses per-atom (UNSUPPORTED_ARGS), zero mutation :: recs=[]
+CORE_I_ARG_GATE: 86/92

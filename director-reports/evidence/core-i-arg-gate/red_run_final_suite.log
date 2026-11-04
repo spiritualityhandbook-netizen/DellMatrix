@@ -1,0 +1,93 @@
+FAIL sweep 00[Nova]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 01[Initiate]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 02[Persona]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 03[Logic]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 04[Transform]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 05[Tone]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 06[Cycle]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 07[Link]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=True
+FAIL sweep 09[Show]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 10[Keep]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 11[Architect]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 12[Test]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 13[Loop]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 14[Bind]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=True
+FAIL sweep 15[Map]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 16[Decay]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=enhance OFF mutated=False
+FAIL sweep 17[Shadow]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 18[Mirror]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 19[Drive]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 20[Alpha]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 21[Merge]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=missing_source mutated=False
+FAIL sweep 22[Split]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=missing_source mutated=False
+FAIL sweep 23[Lock]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 24[Unlock]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 25[Pulse]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 26[Temp]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 27[Checkpoint]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err= mutated=False
+FAIL sweep 28[Rollback]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=rollback_target_invalid mutated=False
+FAIL sweep 29[Compress]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=True
+FAIL sweep 30[Expand]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=True
+FAIL sweep 31[Simulate]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 32[Pause]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 33[Resume]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 34[Stamp]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err= mutated=False
+FAIL sweep 35[Discover]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err= mutated=False
+FAIL sweep 36[Inject]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=True
+FAIL sweep 37[Nurture]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=add idea requires a label mutated=False
+FAIL sweep 38[Distill]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=True
+FAIL sweep 39[Schema]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 40[TokenCount]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err= mutated=False
+FAIL sweep 41[Sanitize]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 42[Retry]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 43[Fallback]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 44[Bridge]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=bridge_unavailable mutated=False
+FAIL sweep 45[Translate]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=nothing_to_translate mutated=False
+FAIL sweep 46[Rank]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 47[Embed]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=False err=embed_unavailable mutated=False
+FAIL sweep 48[Macro]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 49[Profile]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL sweep 50[Manifest]: single-atom typed args refuse UNSUPPORTED_ARGS, zero mutation :: ok=True err=None mutated=False
+FAIL parity 43[Fallback]: chain receipt refusal == single refusal; FlowTo partner executes :: single_err=None mine=[{'dell': 43, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] partner=[{'dell': 70, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}]
+FAIL parity 37[Nurture]: chain receipt refusal == single refusal; FlowTo partner executes :: single_err=add idea requires a label mine=[{'dell': 37, 'ok': False, 'error': 'add idea requires a label', 'skipped': False, 'reason': 'add idea requires a label'}] partner=[{'dell': 70, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}]
+FAIL parity 21[Merge]: chain receipt refusal == single refusal; FlowTo partner executes :: single_err=missing_source mine=[{'dell': 21, 'ok': False, 'error': 'missing_source', 'skipped': False, 'reason': 'missing_source'}] partner=[{'dell': 70, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}]
+FAIL parity 05[Tone]: chain receipt refusal == single refusal; FlowTo partner executes :: single_err=None mine=[{'dell': 5, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] partner=[{'dell': 70, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}]
+FAIL mixed reversed: Set effect stands, Tone refuses per-atom :: store={'a': '1'} tone=[{'dell': 5, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}]
+FAIL mixed sandwich: Core I refusal is per-atom; both Core II effects stand :: store={'a': '1', 'b': '2'} mid=[{'dell': 43, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}]
+FAIL intercept 27[Checkpoint]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=True err=
+FAIL intercept 28[Rollback]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=False err=rollback_target_invalid
+FAIL intercept 34[Stamp]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=True err=
+FAIL intercept 35[Discover]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=True err=
+FAIL intercept 37[Nurture]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=False err=add idea requires a label
+FAIL intercept 40[TokenCount]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=True err=
+FAIL intercept 44[Bridge]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=False err=bridge_unavailable
+FAIL intercept 47[Embed]: typed args refuse at the funnel, before apply_core_i, zero mutation :: ok=False err=embed_unavailable
+FAIL live 21[Merge]: typed args refuse before merge/split runs, zero mutation :: ok=False err=missing_source
+FAIL live 22[Split]: typed args refuse before merge/split runs, zero mutation :: ok=False err=missing_source
+FAIL manifestset: EVERY member refuses per-atom (UNSUPPORTED_ARGS), zero mutation :: recs=[{'dell': 43, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 43, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}]
+FAIL canary leaf 05[Tone]: refusal names the role, NEVER the raw value :: err=None blob_has_canary=False gate_lines=[]
+FAIL canary intercept 37[Nurture]: refusal names the role, NEVER the raw value :: err=add idea requires a label blob_has_canary=False gate_lines=[]
+FAIL canary sanitize 41[Sanitize]: refusal names the role, NEVER the raw value :: err=None blob_has_canary=False gate_lines=[]
+FAIL repl: Core I typed args refuse visibly (REAL_USER_PATH) — the printed TOAM refusal lines for 05 and 06 :: ew +0 evolved
+  rings: Seed → Token → Body → Lens → Evolve
+you>   Mandell: 08[Create](name="Repl Wish", skin="SPHERE")
+  English: Create (Instantiate)
+  TOAM: typed name='Repl Wish' wired to Create
+  TOAM: typed skin='SPHERE' wired to Create
+  Created idea: "Repl Wish"
+you>   Mandell: 03[Logic] > 55[Set](key="tempo", value="120")
+  English: Logic (Rules / constraints) then Set (Assign an explicit value/state)
+  Chain atoms=2 label=
+  -- 03[Logic] ns=CORE_I
+  Logic constraints (live):
+    · Floor locked (Alpha · Delta · Omega · Omni)
+    · Growth never auto-writes live matrix (Nursery only)
+    · RingedGrowth is sole public growth entrypoint
+    · Origin offline — no network required for acceptance
+  TOAM: typed args lowered to lab='tempo=120'
+  -- 55[Set] ns=CORE_II
+  Set tempo=120
+you> 
+
+
+CORE_I_ARG_GATE: 21/92
