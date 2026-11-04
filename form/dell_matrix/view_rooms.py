@@ -110,9 +110,13 @@ def filter_nodes_for_room(
     - a legacy plant matching only by truncated prefix proves
       nothing, so the node reports "ambiguous" — agreeing
       stages do not prove identity (C-Q4).
-    Residual limits: two distinct units sharing one identical
-    full label remain one lens identity (no unit id reaches
-    this boundary), and a legacy record whose stored key is
+    SM-39 unit identity: a plant carrying unit_id attributes
+    ONLY to the node whose id equals it — two distinct units
+    sharing one identical full label keep separate stages, and
+    a uid-keyed plant never attributes by label. Plants without
+    unit_id keep the label rules above (legacy compatibility).
+
+    Residual limit: a legacy record whose stored key is
     exactly 80 chars is indistinguishable from a genuine
     80-char label under the stored-key rule.
     """
@@ -135,10 +139,15 @@ def filter_nodes_for_room(
         # label equals its stored key (handled via exact_stages);
         # for any longer label on the same key it is prefix-only.
         legacy_keys: set = set()
+        uid_stages: Dict[str, set] = {}
         if plants is not None:
             for p in plants:
                 stage = str(p.get("stage") or "")
                 if stage not in stages:
+                    continue
+                puid = p.get("unit_id")
+                if isinstance(puid, str) and puid:
+                    uid_stages.setdefault(puid, set()).add(stage)
                     continue
                 full = p.get("idea_full")
                 if isinstance(full, str) and full:
@@ -151,6 +160,16 @@ def filter_nodes_for_room(
         out = []
         for n in nodes:
             label = str(n.get("label") or "")
+            nid = str(n.get("id") or "")
+            uid_proven = uid_stages.get(nid) if nid else None
+            if uid_proven:
+                if len(uid_proven) == 1:
+                    stage, source = next(iter(uid_proven)), "growth_force"
+                else:
+                    stage, source = None, "ambiguous"
+                out.append({**n, "stage": stage, "stage_source": source,
+                            "view_tag": "growth"})
+                continue
             proven = exact_stages.get(label)
             if proven:
                 if len(proven) == 1:

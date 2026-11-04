@@ -22,6 +22,17 @@ are additive.
 | Step 11 (public contracts) | evidence/step11/ | evidence/step11/EVIDENCE.md |
 | DIR-F16 (send-boundary classes) | evidence/dirf16/ | in DIRECTOR_REPORT_DIRF16.md |
 | T2 label identity | evidence/t2label/ | in DIRECTOR_REPORT_T2_LABEL_IDENTITY.md |
+| DIR-CERT-2026-11-02 certification execution (PR #233 CI-only mechanism, unmerged; frozen revision e0769adf, run 41555532846, 12/12 items exit 0) | evidence/certification_ci/ | evidence/certification_ci/EVIDENCE.md |
+| Certification runner | evidence/certification_runner/ | evidence/certification_runner/EVIDENCE.md |
+| Core I arg gate | evidence/core-i-arg-gate/ | evidence/core-i-arg-gate/MANIFEST.sha256 |
+| Core I contract review | evidence/core-i-contract-review/ | evidence/core-i-contract-review/MANIFEST.sha256 |
+| D1 unsupported-arg gate | evidence/d1-unsupported-arg-gate/ | evidence/d1-unsupported-arg-gate/MANIFEST.md |
+| D1 unsupported-arg honesty (investigation probes; bundle carries no EVIDENCE/MANIFEST file) | evidence/d1-unsupported-arg-honesty/ | probe logs in the bundle (probe_q1.log et al.) |
+| D1 typed 52/53 | evidence/d1_typed_52_53/ | evidence/d1_typed_52_53/EVIDENCE.md |
+| DCC-XVII | evidence/dccxvii/ | evidence/dccxvii/EVIDENCE.md |
+| DIR-T2-R2 | evidence/dirt2r2/ | evidence/dirt2r2/EVIDENCE.md |
+| Studio browser acceptance | evidence/studio-browser-acceptance/ | evidence/studio-browser-acceptance/MANIFEST.sha256 |
+| Studio security | evidence/studio-security/ | evidence/studio-security/MANIFEST.md |
 
 Per-circuit bundles from DIR-F16 onward ship with their
 reports in the same pattern.

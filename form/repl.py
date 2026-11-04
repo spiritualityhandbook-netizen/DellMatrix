@@ -1279,6 +1279,21 @@ def _apply_seed_result(p: Program, result: dict) -> Program:
             print(p.render())
         else:
             _say(msg)
+    # SM-16: a failed seed execution must never be silent in the REPL.
+    # Some handlers return ok=False with an error but no message carrying
+    # it (Dell 37 bare Nurture: "add idea requires a label" never printed).
+    # Surface the error here, at the public display boundary, unless a
+    # message already conveys it (underscores normalized, case-folded),
+    # so visible failures are not printed twice.
+    if not result.get("ok", True):
+        _err = str(result.get("error") or "").strip()
+        if _err:
+            _norm = _err.replace("_", " ").lower()
+            _shown = any(
+                _norm in str(m).replace("_", " ").lower()
+                for m in (result.get("messages") or []))
+            if not _shown:
+                _say(f"Error: {_err}")
     if result.get("new_program") is not None:
         p2 = result["new_program"]
         print()
@@ -1872,9 +1887,10 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         if which in ("growth", "grow"):
             p.forces.activate("growth")
             for u in list(p.cube.session.plane.units.values())[:8]:
-                known = {pl["idea"] for pl in p.forces.growth.plants}
-                if u.label not in known:
-                    p.forces.growth.plant(u.label, p.owner)
+                known = {pl.get("unit_id") for pl in p.forces.growth.plants
+                         if pl.get("unit_id")}
+                if u.id not in known:
+                    p.forces.growth.plant(u.label, p.owner, unit_id=u.id)
             p.forces.growth.grow_all(0.6)
             for line in p.forces.growth.map()[:8]:
                 _say(line)

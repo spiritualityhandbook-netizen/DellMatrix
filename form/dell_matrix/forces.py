@@ -133,20 +133,36 @@ class GrowthForce(ForceMatrix):
         if self.intensity == 0.5:
             self.intensity = 0.65
 
-    def plant(self, idea: str, planter: str = "Operator") -> Dict[str, Any]:
+    def plant(self, idea: str, planter: str = "Operator",
+              unit_id: str = None) -> Dict[str, Any]:
         full = str(idea)
-        # DIR-T2-R2 (C-Q3): one exact identity = one plant record.
-        # Re-planting an identity that already exists returns its
-        # record instead of appending a divergent duplicate — dedupe
-        # call sites compare full labels against truncated keys and
-        # would otherwise re-plant long labels on every invocation.
-        for existing in self.plants:
-            known_full = existing.get("idea_full")
-            if known_full:
-                if known_full == full:
+        uid = str(unit_id) if unit_id else None
+        # SM-39: when a unit id is supplied it IS the identity —
+        # two distinct units sharing one identical full label are
+        # two plants, and re-planting the same unit returns its
+        # own record. Without a unit id, the DIR-T2-R2 (C-Q3)
+        # label rule below applies unchanged, but only against
+        # other label-keyed records: a label-only call must not
+        # collapse into a uid-keyed record it cannot prove is its.
+        if uid:
+            for existing in self.plants:
+                if existing.get("unit_id") == uid:
                     return existing
-            elif existing.get("idea") == full:
-                return existing
+        else:
+            # DIR-T2-R2 (C-Q3): one exact identity = one plant record.
+            # Re-planting an identity that already exists returns its
+            # record instead of appending a divergent duplicate — dedupe
+            # call sites compare full labels against truncated keys and
+            # would otherwise re-plant long labels on every invocation.
+            for existing in self.plants:
+                if existing.get("unit_id"):
+                    continue
+                known_full = existing.get("idea_full")
+                if known_full:
+                    if known_full == full:
+                        return existing
+                elif existing.get("idea") == full:
+                    return existing
         plant = {
             "id": f"plant-{len(self.plants)+1}",
             "idea": full[:80],
@@ -160,6 +176,8 @@ class GrowthForce(ForceMatrix):
             "age": 0,
             "history": [{"stage": "seed"}],
         }
+        if uid:
+            plant["unit_id"] = uid
         self.plants.append(plant)
         self.record({"type": "planted", "idea": plant["idea"]})
         return plant
@@ -363,10 +381,18 @@ class ForceField:
             report["breath"] = self.breath.heartbeat(len(nodes))
             report["forces"].append("breath")
         if "growth" in self.active:
-            known = {p["idea"] for p in self.growth.plants}
+            known = {p["idea"] for p in self.growth.plants
+                     if not p.get("unit_id")}
+            known_uids = {p["unit_id"] for p in self.growth.plants
+                          if p.get("unit_id")}
             for n in nodes[:8]:
                 lab = str(n.get("label") or "")
-                if lab and lab not in known:
+                nid = str(n.get("id") or "")
+                if nid:
+                    if lab and nid not in known_uids:
+                        self.growth.plant(lab, owner, unit_id=nid)
+                        known_uids.add(nid)
+                elif lab and lab not in known:
                     self.growth.plant(lab, owner)
                     known.add(lab)
             # plant body restore labels when vital missing

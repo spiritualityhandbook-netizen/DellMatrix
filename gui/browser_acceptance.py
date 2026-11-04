@@ -356,6 +356,165 @@ def main():
     status1 = cdp.eval("document.querySelector('#status-text').textContent")
     print("status after run:", status1, flush=True)
 
+    # ---- SM-49 extended coverage --------------------------------
+    # Growth, Console, failed chains, skipped atoms, PARTIAL — all
+    # through the same real UI path as the happy path above: set the
+    # editor through its own input event, wait for the canonical
+    # parse, press RUN with the real mouse pipeline. Scenario seeds
+    # were established at the executor level first (Cycle 22/23
+    # probes); the assertions below are the browser-level proof.
+    # Labels carry a per-run suffix so a Create can never collide
+    # with a previous run's persisted owner state.
+    uniq = "%d" % (int(time.time()) % 1000000)
+    FAIL_SEED = '61[Join](bogus="1")'
+    LEAF_FAIL_SEED = "37[Nurture]"
+    PARTIAL_SEED = ("08[Create] :: Sm49Partial%s >> 37[Nurture]"
+                    " >> 09[Show]" % uniq)
+    GROWTH_LABEL = "Sm49Growth%s" % uniq
+    GROWTH_SEED = "08[Create] :: %s >> 13[Loop] :: 1" % GROWTH_LABEL
+
+    def click_element(selector):
+        rect = cdp.eval(
+            "(() => { const b = document.querySelector(%s);"
+            " if (!b) return null;"
+            " b.scrollIntoView({block: 'center'});"
+            " const r = b.getBoundingClientRect();"
+            " return {x: r.x + r.width / 2, y: r.y + r.height / 2};"
+            " })()" % json.dumps(selector))
+        if not rect:
+            return False
+        for ev_type, buttons in (("mouseMoved", 0), ("mousePressed", 1),
+                                 ("mouseReleased", 0)):
+            params = {"type": ev_type, "x": rect["x"], "y": rect["y"],
+                      "button": "left", "buttons": buttons}
+            if ev_type != "mouseMoved":
+                params["clickCount"] = 1
+            cdp.call("Input.dispatchMouseEvent", params)
+        return True
+
+    def run_seed(seed, first_num, atom_count):
+        cdp.eval(
+            "(() => { const e = document.querySelector('#seed-editor');"
+            " e.value = %s;"
+            " e.dispatchEvent(new Event('input', {bubbles: true}));"
+            " return e.value; })()" % json.dumps(seed))
+        parsed = wait_eval(
+            "(() => { const a = document.querySelectorAll('#chain .atom');"
+            " return a.length === %d && a[0] && a[0].querySelector('.atom-num')"
+            " && a[0].querySelector('.atom-num').textContent === %s; })()"
+            % (atom_count, json.dumps("%02d" % first_num)), 10)
+        if not parsed:
+            return False
+        return click_element("#execute-btn")
+
+    # Failed chain: an unsupported-args Core II Dell carries
+    # per-atom receipts, so the canvas paints a real FAILED verdict.
+    run_seed(FAIL_SEED, 61, 1)
+    fail_verdict = wait_eval(
+        "(() => { const v = document.querySelector('#canvas-verdict');"
+        " return v && v.className.includes('verdict-fail')"
+        " && v.textContent.includes('FAILED') && v.textContent; })()", 20)
+    expect("failed chain verdict shows FAILED from real receipts",
+           bool(fail_verdict),
+           repr(cdp.eval(
+               "document.querySelector('#canvas-verdict').textContent")))
+    fail_cards = cdp.eval(
+        "document.querySelectorAll('#chain .atom-fail').length")
+    expect("failed atom painted atom-fail from its receipt",
+           fail_cards == 1, "fail=%r" % fail_cards)
+
+    # Failed Core I leaf: a bare 37[Nurture] failure carries no
+    # per-atom receipts by design, so no canvas verdict may be
+    # inferred — the failure is proven at the receipts surface,
+    # with its honest error text.
+    run_seed(LEAF_FAIL_SEED, 37, 1)
+    leaf_receipt = wait_eval(
+        "(() => { const rows = document.querySelectorAll("
+        "'#receipts .receipt-fail');"
+        " return [...rows].some(r => r.textContent.includes("
+        "'add idea requires a label')); })()", 20)
+    expect("bare Dell 37 failure is recorded as a FAILED receipt"
+           " with its error text", bool(leaf_receipt),
+           repr(cdp.eval(
+               "document.querySelector('#receipts').textContent"))[:200])
+    leaf_hidden = cdp.eval(
+        "document.querySelector('#canvas-verdict').className")
+    expect("leaf failure paints no inferred canvas verdict"
+           " (verdict stays hidden, no per-atom receipts)",
+           "verdict-hidden" in (leaf_hidden or ""), repr(leaf_hidden))
+
+    # PARTIAL + skipped: Create succeeds, bare Nurture fails, and
+    # FlowThru skips Show — one ok, one fail, one skipped card.
+    run_seed(PARTIAL_SEED, 8, 3)
+    partial_verdict = wait_eval(
+        "(() => { const v = document.querySelector('#canvas-verdict');"
+        " return v && v.className.includes('verdict-partial')"
+        " && v.textContent.includes('1 skipped of 3')"
+        " && v.textContent; })()", 20)
+    expect("PARTIAL verdict shows '1 skipped of 3 atoms'",
+           bool(partial_verdict),
+           repr(cdp.eval(
+               "document.querySelector('#canvas-verdict').textContent")))
+    card_counts = cdp.eval(
+        "({ok: document.querySelectorAll('#chain .atom-ok').length,"
+        " fail: document.querySelectorAll('#chain .atom-fail').length,"
+        " skipped: document.querySelectorAll('#chain .atom-skipped')"
+        ".length})")
+    expect("PARTIAL chain paints one ok, one fail, one skipped card",
+           card_counts == {"ok": 1, "fail": 1, "skipped": 1},
+           repr(card_counts))
+    skipped_text = cdp.eval(
+        "[...document.querySelectorAll('#chain .atom-verdict')]"
+        ".map(v => v.textContent).join(' | ')")
+    expect("skipped atom's verdict reads 'skipped' with its reason",
+           "skipped" in (skipped_text or ""), repr(skipped_text)[:200])
+
+    # Growth: Create + Loop plants the new unit through the real
+    # growth path; the Growth view must card it under its exact
+    # label (exact identity, not a stage inference).
+    run_seed(GROWTH_SEED, 8, 2)
+    growth_verdict = wait_eval(
+        "(() => { const v = document.querySelector('#canvas-verdict');"
+        " return v && v.className.includes('verdict-ok')"
+        " && v.textContent; })()", 20)
+    expect("growth chain verdict shows CHAIN OK", bool(growth_verdict),
+           repr(cdp.eval(
+               "document.querySelector('#canvas-verdict').textContent")))
+    click_element('[data-view="growth"]')
+    growth_card = wait_eval(
+        "(() => { const labels = [...document.querySelectorAll("
+        "'#growth .plant-label')].map(e => e.textContent);"
+        " return labels.includes(%s); })()" % json.dumps(GROWTH_LABEL),
+        20)
+    expect("Growth view cards the grown unit under its exact label",
+           bool(growth_card),
+           repr(cdp.eval(
+               "document.querySelector('#growth').textContent"))[:200])
+    click_element('[data-view="studio"]')
+
+    # Console: one summary line per run, derived from receipts —
+    # OK, FAILED and the PARTIAL line with its skipped count must
+    # all be present; Clear empties the log (view-only).
+    click_element('[data-view="console"]')
+    console_text = wait_eval(
+        "document.querySelector('#console-log').textContent"
+        " && document.querySelector('#console-log').textContent", 10)
+    expect("console records an OK run summary",
+           "— OK" in (console_text or ""), repr(console_text)[:200])
+    expect("console records a FAILED run summary",
+           "— FAILED" in (console_text or ""), repr(console_text)[:200])
+    expect("console records the PARTIAL summary with '1 skipped'",
+           "— PARTIAL" in (console_text or "")
+           and "1 skipped" in (console_text or ""),
+           repr(console_text)[:300])
+    click_element("#console-clear")
+    cleared = cdp.eval(
+        "(document.querySelector('#console-log').textContent || '')"
+        ".trim()")
+    expect("console Clear empties the log", cleared == "",
+           "len=%d" % len(cleared or ""))
+    click_element('[data-view="studio"]')
+
     # ---- console errors (raw capture kept for audit) ------------
     raw_errors = []
     for ev in cdp.events:

@@ -874,9 +874,10 @@ class Program:
         """IAC-I: Canonical growth-force activation. Extracted from live_visual."""
         self.forces.activate("growth")
         for u in list(self.cube.session.plane.units.values())[:8]:
-            known = {pl["idea"] for pl in self.forces.growth.plants}
-            if u.label not in known:
-                self.forces.growth.plant(u.label, self.owner)
+            known = {pl.get("unit_id") for pl in self.forces.growth.plants
+                     if pl.get("unit_id")}
+            if u.id not in known:
+                self.forces.growth.plant(u.label, self.owner, unit_id=u.id)
         self.forces.growth.grow_all(0.6)
         lines = self.forces.growth.map()[:8]
         self.note_seed(25, "Pulse", "force_growth")
@@ -1305,9 +1306,10 @@ class Program:
         # Nature forces grow in parallel (visible stages)
         if hasattr(self, "forces"):
             for uid, u in list(plane.units.items())[:12]:
-                known = {p["idea"] for p in self.forces.growth.plants}
-                if u.label not in known:
-                    self.forces.growth.plant(u.label, self.owner)
+                known = {p.get("unit_id") for p in self.forces.growth.plants
+                         if p.get("unit_id")}
+                if uid not in known:
+                    self.forces.growth.plant(u.label, self.owner, unit_id=uid)
             for _ in range(max(1, cycles)):
                 self.forces.growth.grow_all(0.5)
             if "water" in self.forces.active:
