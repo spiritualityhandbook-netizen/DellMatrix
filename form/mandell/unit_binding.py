@@ -36,6 +36,33 @@ Binding protocol (per unit, idempotent, ordered for failure):
 Provenance source is HUMAN: TD-1's authorized surface is the
 sovereign user's Program operation, and `subject` names the actual
 invoker in the shell's provenance.
+
+TD-1-R1 (Director directive 2026-11-04) — conflict and corruption
+guard, closing two source-review findings on the protocol above:
+
+  F1 (corrupt state): bind reads the canonical state file once at
+  entry. A file that exists but cannot be read or parsed refuses
+  the bind with state_unreadable BEFORE any mint — the bind never
+  proceeds toward a save that would silently overwrite corrupt
+  state, and the corrupt bytes are left exactly as found.
+
+  F2 (concurrent writers): the entry read's SHA-256 fingerprint
+  is a compare-and-swap token. Because a bind's save rewrites
+  the WHOLE program state, any intervening save invalidates
+  this instance. Immediately before the pointer is committed,
+  the file is re-read; a changed fingerprint (including
+  absent->present and present->absent transitions) fails the
+  bind — the minted shell is reported as a census-visible
+  orphan and the winning writer's persisted state is untouched.
+  Disclosed residual: between the gate re-read and the atomic
+  rename inside the save itself, a racing save can still land;
+  the guard detects every interleaving that completes before
+  the gate, and narrows the undetectable window to that rename.
+
+  Reconciliation: when the in-memory pointer and the canonical
+  persisted pointer for a unit disagree, the persisted record
+  is canonical — bind refuses with a conflict naming both,
+  rather than trusting memory into an already_bound answer.
 """
 from __future__ import annotations
 
@@ -55,13 +82,17 @@ class BindingRefused(Exception):
 
 
 class BindingFailed(Exception):
-    """The mint succeeded but the Program save failed. The pointer
-    was rolled back; `orphan_idea_id` names the shell left as
-    census-visible history."""
+    """The mint succeeded but the commit did not complete (Program
+    save failure, or the TD-1-R1 concurrency gate refused the
+    commit). The pointer was rolled back or never set;
+    `orphan_idea_id` names the shell left as census-visible
+    history; `detail` carries the machine-readable evidence."""
 
-    def __init__(self, message: str, orphan_idea_id: str = None):
+    def __init__(self, message: str, orphan_idea_id: str = None,
+                 **detail: Any):
         super().__init__(message)
         self.orphan_idea_id = orphan_idea_id
+        self.detail = detail
 
 
 def _plane(program):
@@ -81,21 +112,43 @@ def _validate_pointer(owner: str, idea_id: str) -> str:
     return "ok" if idea.id == idea_id else "invalid"
 
 
-def _persisted_pointer(owner: str, unit_id: str):
-    """The pointer the canonical state file currently carries for
-    this unit, or None. An unreadable state file yields None here;
-    the Program's own fail-closed load law governs that case, and
-    the guarded save that follows a bind would refuse separately."""
+def _read_persisted_state(owner: str):
+    """One read of the canonical state file (TD-1-R1).
+
+    Returns (status, fingerprint, data):
+      status "absent"    — no state file; fingerprint None.
+      status "unreadable" — the file exists but cannot be read or
+        parsed; fingerprint is the hash of the bytes as found (or
+        None when even the read failed); data None. Bind refuses
+        this state before minting (finding F1): a bind must never
+        proceed toward a save that would silently overwrite it.
+      status "ok"        — parsed JSON; fingerprint = SHA-256 of
+        the exact bytes read; data = the parsed record.
+    The fingerprint is the compare-and-swap token for the commit
+    gate (finding F2)."""
+    import hashlib
     from form.persist import _path
     path = _path(owner)
     if not os.path.isfile(path):
-        return None
+        return "absent", None, None
     try:
-        with open(path, encoding="utf-8") as f:
-            raw = json.load(f)
-    except (OSError, ValueError):
-        return None
-    units = (raw.get("plane") or {}).get("units") or {}
+        with open(path, "rb") as f:
+            blob = f.read()
+    except OSError:
+        return "unreadable", None, None
+    fingerprint = hashlib.sha256(blob).hexdigest()
+    try:
+        data = json.loads(blob.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        return "unreadable", fingerprint, None
+    if not isinstance(data, dict):
+        return "unreadable", fingerprint, None
+    return "ok", fingerprint, data
+
+
+def _pointer_in(data, unit_id: str):
+    """The pointer a parsed state record carries for this unit."""
+    units = (data.get("plane") or {}).get("units") or {}
     rec = units.get(unit_id) or {}
     ptr = rec.get("idea_id")
     return ptr if isinstance(ptr, str) and ptr else None
@@ -121,7 +174,53 @@ def bind_unit_to_idea(program, unit_id: str, *, subject: str) -> Dict[str, Any]:
             unit_id=unit_id)
     owner = program.owner
     existing = getattr(unit, "idea_id", None)
+
+    # TD-1-R1: one canonical read at entry. Unreadable state
+    # refuses before anything else (F1) — never proceed toward a
+    # save that would silently overwrite it.
+    state_status, entry_fingerprint, state_data = \
+        _read_persisted_state(owner)
+    if state_status == "unreadable":
+        raise BindingRefused(
+            "state_unreadable",
+            f"persisted program state for owner {owner!r} exists "
+            f"but cannot be read or parsed; refusing to bind "
+            f"before any mint — the bytes are left as found",
+            unit_id=unit_id)
+    persisted = _pointer_in(state_data, unit_id) \
+        if state_status == "ok" else None
+
+    # TD-1-R1 baseline (F2): an instance stamped at load/save time
+    # (persist_rest) with the state version it derives from must
+    # still be current. If the canonical file has moved — another
+    # writer saved, or the file vanished — this instance's whole
+    # view is stale and any bind from it is refused until reload.
+    # Unstamped instances (constructed, not loaded) carry no
+    # baseline; the commit-gate CAS below still guards their save.
+    stamp = getattr(program, "_td_state_fingerprint", None)
+    if stamp is not None and entry_fingerprint != stamp:
+        raise BindingRefused(
+            "conflict",
+            f"this instance's program state is stale: the "
+            f"canonical state file changed since this instance "
+            f"loaded/saved it (or vanished); reload before binding",
+            unit_id=unit_id, persisted_idea_id=persisted,
+            in_memory_idea_id=existing)
+
     if existing:
+        # Reconciliation (R1): the persisted record is canonical.
+        # If it names a DIFFERENT Idea for this unit, memory and
+        # disk have split — refuse, naming both, instead of
+        # trusting memory into an already_bound answer.
+        if persisted and persisted != existing:
+            raise BindingRefused(
+                "conflict",
+                f"unit {unit_id!r}: in-memory pointer {existing!r} "
+                f"disagrees with the canonical persisted pointer "
+                f"{persisted!r}; persisted state is canonical — "
+                f"reload before binding",
+                unit_id=unit_id, persisted_idea_id=persisted,
+                in_memory_idea_id=existing)
         state = _validate_pointer(owner, existing)
         if state == "ok":
             return {"status": "already_bound", "unit_id": unit_id,
@@ -133,7 +232,6 @@ def bind_unit_to_idea(program, unit_id: str, *, subject: str) -> Dict[str, Any]:
             f"{state}; refusing to rebind (H1)",
             unit_id=unit_id, idea_id=existing)
 
-    persisted = _persisted_pointer(owner, unit_id)
     if persisted:
         raise BindingRefused(
             "conflict",
@@ -159,6 +257,23 @@ def bind_unit_to_idea(program, unit_id: str, *, subject: str) -> Dict[str, Any]:
         "bridge_bind", None, None,
         f"canonical shell established for unit {unit_id}", prov)
     save_idea(idea, owner)
+
+    # TD-1-R1 commit gate (F2): re-read the canonical state and
+    # compare fingerprints with the entry read. A bind's save
+    # rewrites the whole program state, so ANY intervening save
+    # (or the file appearing/vanishing) invalidates this
+    # instance: fail here, before the pointer is set, leaving the
+    # winning writer's persisted state untouched. Residual
+    # window disclosed in the module docstring.
+    gate_status, gate_fingerprint, _ = _read_persisted_state(owner)
+    if gate_status == "unreadable" or gate_fingerprint != entry_fingerprint:
+        raise BindingFailed(
+            f"concurrent state change detected at the commit gate "
+            f"for unit {unit_id!r} (entry state {state_status!r}, "
+            f"gate state {gate_status!r}); refusing to overwrite — "
+            f"shell {idea.id} remains as census-visible history; "
+            f"reload before binding",
+            orphan_idea_id=idea.id, reason="concurrent_save")
 
     unit.idea_id = idea.id
     try:

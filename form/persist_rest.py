@@ -41,6 +41,17 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
     path = path or _path(program.owner)
     data = serialize(program)
     atomic_write_json(path, data, _fail_at=_fail_at)
+    # TD-1-R1: stamp the saver with the version it just wrote (the
+    # canonical state's SHA-256), so unit binding can detect that
+    # the file has since moved under this instance. Best-effort:
+    # a stamp failure never fails the save itself.
+    try:
+        import hashlib as _hl
+        with open(path, "rb") as _f:
+            program._td_state_fingerprint = _hl.sha256(
+                _f.read()).hexdigest()
+    except Exception:
+        program._td_state_fingerprint = None
     return path
 
 
@@ -274,11 +285,18 @@ def _load_impl(owner: str, path: str, nursery, activate: bool) -> Program:
         raise ProgramLoadError(
             f"program member file missing: {os.path.basename(path)} (refusing to fabricate state)"
         )
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
+    with open(path, "rb") as f:
+        _blob = f.read()
+    data = json.loads(_blob.decode("utf-8"))
     resolved = _validate_program_data(data, owner)
     lang = parse_language(data)
     p = _prepare_program(resolved, data, _nursery=nursery)
+    if nursery is None:
+        # TD-1-R1: stamp the loaded instance with the version it
+        # derives from (live path only — staged generation members
+        # are not a baseline for canonical-state binding).
+        import hashlib as _hl
+        p._td_state_fingerprint = _hl.sha256(_blob).hexdigest()
     p.language = lang
     if nursery is None:
         from form.dell_matrix.nursery import owner_nursery_path
