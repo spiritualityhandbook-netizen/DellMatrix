@@ -1,0 +1,90 @@
+{
+  "label": "AUTOMATED BROWSER (CDP) \u2014 genuine Chromium run; not a human session; not REAL_USER_PATH",
+  "page_url": "http://127.0.0.1:8765/",
+  "browser": "Chrome/156.0.8078.47",
+  "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+  "checks": [
+    {
+      "name": "page title is the Studio",
+      "pass": true,
+      "detail": "'DellMatrix Studio'"
+    },
+    {
+      "name": "transport, rack, editor, canvas, receipts, RUN, examples all in the DOM",
+      "pass": true,
+      "detail": "missing=[]"
+    },
+    {
+      "name": "served page carries the per-launch session token (not the placeholder)",
+      "pass": true,
+      "detail": "len=43"
+    },
+    {
+      "name": "frontend init completed (engine ready status)",
+      "pass": true,
+      "detail": "'engine ready \u00b7 owner BrowserCI \u00b7 store 0 \u00b7 plants 0 \u00b7 history 0'"
+    },
+    {
+      "name": "Dell Rack renders exactly 100 Dells",
+      "pass": true,
+      "detail": "count=100"
+    },
+    {
+      "name": "both Core I and Core II rack groups render",
+      "pass": true,
+      "detail": "'CORE I \u2014 ACTION SPINE \u00b7 00\u201350 | CORE II \u2014 INSTRUCTION ARCHITECTURE \u00b7 51\u201399'"
+    },
+    {
+      "name": "example select loads its seed into the editor",
+      "pass": true,
+      "detail": "'55[Set] :: tempo=120 >> 56[Get] :: tempo'"
+    },
+    {
+      "name": "canvas renders the canonical parse (2 atoms)",
+      "pass": true,
+      "detail": "count=2"
+    },
+    {
+      "name": "no outcome painted before the run",
+      "pass": true,
+      "detail": "painted=0"
+    },
+    {
+      "name": "chain verdict shows CHAIN OK from the run's receipts",
+      "pass": true,
+      "detail": "'\u2713 CHAIN OK \u2014 2 atoms'"
+    },
+    {
+      "name": "both atoms painted atom-ok from real receipts",
+      "pass": true,
+      "detail": "ok=2"
+    },
+    {
+      "name": "per-atom verdicts read 'ran'",
+      "pass": true,
+      "detail": "['\u2713 ran', '\u2713 ran']"
+    },
+    {
+      "name": "store panel shows the executed value (tempo = 120)",
+      "pass": true,
+      "detail": "'tempostring120'"
+    },
+    {
+      "name": "receipts panel records the run as OK",
+      "pass": true,
+      "detail": "rows=1"
+    },
+    {
+      "name": "zero console errors / page exceptions (favicon excluded)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "screenshot is a real PNG of the page",
+      "pass": true,
+      "detail": "bytes=159387 dims=(1440, 857)"
+    }
+  ],
+  "passed": 16,
+  "total": 16
+}
