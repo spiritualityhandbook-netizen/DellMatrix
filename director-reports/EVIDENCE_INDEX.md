@@ -22,6 +22,7 @@ are additive.
 | Step 11 (public contracts) | evidence/step11/ | evidence/step11/EVIDENCE.md |
 | DIR-F16 (send-boundary classes) | evidence/dirf16/ | in DIRECTOR_REPORT_DIRF16.md |
 | T2 label identity | evidence/t2label/ | in DIRECTOR_REPORT_T2_LABEL_IDENTITY.md |
+| DIR-CERT-2026-11-02 certification execution (PR #233 CI-only mechanism, unmerged; frozen revision e0769adf, run 41555532846, 12/12 items exit 0) | evidence/certification_ci/ | evidence/certification_ci/EVIDENCE.md |
 
 Per-circuit bundles from DIR-F16 onward ship with their
 reports in the same pattern.
