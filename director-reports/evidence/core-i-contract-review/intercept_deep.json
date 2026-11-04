@@ -1,0 +1,327 @@
+[
+ {
+  "case": "34 typed mark",
+  "seed": "34[Stamp](mark=\"typedmark\")",
+  "ok": true,
+  "error": "",
+  "last_core_i": {
+   "dell": 34,
+   "ok": true,
+   "value": {
+    "mark": "stamp",
+    "ts": "<V>"
+   }
+  },
+  "last_stamp": {
+   "mark": "stamp",
+   "ts": "<V>"
+  },
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "34 typed mark + label",
+  "seed": "34[Stamp](mark=\"typedmark\") :: labelmark",
+  "ok": true,
+  "error": "",
+  "last_core_i": {
+   "dell": 34,
+   "ok": true,
+   "value": {
+    "mark": "labelmark",
+    "ts": "<V>"
+   }
+  },
+  "last_stamp": {
+   "mark": "labelmark",
+   "ts": "<V>"
+  },
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "37 typed label, no seed label",
+  "seed": "37[Nurture](label=\"typedidea\")",
+  "ok": false,
+  "error": "add idea requires a label",
+  "last_core_i": null,
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "37 bogus + seed label",
+  "seed": "37[Nurture](bogus=\"x\") :: labelidea",
+  "ok": true,
+  "error": "",
+  "last_core_i": {
+   "dell": 37,
+   "ok": true,
+   "value": {
+    "action": "add",
+    "label": "labelidea",
+    "ok": true,
+    "pid": "labelidea_7727"
+   }
+  },
+  "last_stamp": null,
+  "last_nurture": {
+   "action": "add",
+   "label": "labelidea",
+   "ok": true,
+   "pid": "labelidea_7727"
+  },
+  "last_measure": null,
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "44 typed capability",
+  "seed": "44[Bridge](capability=\"typedcap\")",
+  "ok": false,
+  "error": "bridge_unavailable",
+  "last_core_i": {
+   "capability": "external",
+   "dell": 44,
+   "error": "bridge_unavailable",
+   "ok": false,
+   "permission": "offline_origin"
+  },
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "44 bogus + label capability",
+  "seed": "44[Bridge](bogus=\"x\") :: labelcap",
+  "ok": false,
+  "error": "bridge_unavailable",
+  "last_core_i": {
+   "capability": "labelcap",
+   "dell": 44,
+   "error": "bridge_unavailable",
+   "ok": false,
+   "permission": "offline_origin"
+  },
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "47 typed provider",
+  "seed": "47[Embed](provider=\"typedprov\")",
+  "ok": false,
+  "error": "embed_unavailable",
+  "last_core_i": {
+   "dell": 47,
+   "error": "embed_unavailable",
+   "ok": false,
+   "provider": "",
+   "representation": "none"
+  },
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "27 typed stamp",
+  "seed": "27[Checkpoint](stamp=\"typedstamp\")",
+  "ok": true,
+  "error": "",
+  "last_core_i": {
+   "dell": 27,
+   "generation_id": "<V>",
+   "ok": true
+  },
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "28 typed generation",
+  "seed": "28[Rollback](generation=\"gen-x\")",
+  "ok": false,
+  "error": "rollback_target_invalid",
+  "last_core_i": {
+   "dell": 28,
+   "error": "rollback_target_invalid",
+   "ok": false
+  },
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "40 typed unit",
+  "seed": "40[TokenCount](unit=\"tokens\")",
+  "ok": true,
+  "error": "",
+  "last_core_i": {
+   "dell": 40,
+   "ok": true,
+   "value": {
+    "cells": 0,
+    "history": 0,
+    "ideas": 1,
+    "pending": 0,
+    "unit": "approx_units",
+    "value": 8
+   }
+  },
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": {
+   "cells": 0,
+   "history": 0,
+   "ideas": 1,
+   "pending": 0,
+   "unit": "approx_units",
+   "value": 8
+  },
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "35 typed query",
+  "seed": "35[Discover](query=\"typedq\")",
+  "ok": true,
+  "error": "",
+  "last_core_i": {
+   "dell": 35,
+   "ok": true,
+   "value": {
+    "count": 1,
+    "ids": [
+     "welcome"
+    ],
+    "nursery": 0
+   }
+  },
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "21 bare, no label (setup)",
+  "seed": "21[Merge]",
+  "ok": false,
+  "error": "missing_source",
+  "last_core_i": null,
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "alpha_one:Skin.CUBE",
+   "beta_two:Skin.CUBE",
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "21 typed, no label (setup)",
+  "seed": "21[Merge](bogus=\"x\")",
+  "ok": false,
+  "error": "missing_source",
+  "last_core_i": null,
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "alpha_one:Skin.CUBE",
+   "beta_two:Skin.CUBE",
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "21 bare + label (setup)",
+  "seed": "21[Merge] :: alpha_one",
+  "ok": false,
+  "error": "missing_source",
+  "last_core_i": null,
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "alpha_one:Skin.CUBE",
+   "beta_two:Skin.CUBE",
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "21 typed + label (setup)",
+  "seed": "21[Merge](bogus=\"x\") :: alpha_one",
+  "ok": false,
+  "error": "missing_source",
+  "last_core_i": null,
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "alpha_one:Skin.CUBE",
+   "beta_two:Skin.CUBE",
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "22 bare + label (setup)",
+  "seed": "22[Split] :: alpha_one",
+  "ok": true,
+  "error": "",
+  "last_core_i": null,
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "alpha_one:Skin.CUBE",
+   "alpha_one_a:Skin.CUBE",
+   "alpha_one_b:Skin.CUBE",
+   "beta_two:Skin.CUBE",
+   "welcome:Skin.WORDS"
+  ]
+ },
+ {
+  "case": "22 typed + label (setup)",
+  "seed": "22[Split](bogus=\"x\") :: alpha_one",
+  "ok": true,
+  "error": "",
+  "last_core_i": null,
+  "last_stamp": null,
+  "last_nurture": null,
+  "last_measure": null,
+  "units": [
+   "alpha_one:Skin.CUBE",
+   "alpha_one_a:Skin.CUBE",
+   "alpha_one_b:Skin.CUBE",
+   "beta_two:Skin.CUBE",
+   "welcome:Skin.WORDS"
+  ]
+ }
+]

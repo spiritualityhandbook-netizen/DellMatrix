@@ -1,0 +1,55 @@
+[
+ {
+  "case": "valid name+skin",
+  "seed": "08[Create](name=\"Wish One\", skin=\"SPHERE\")",
+  "ok": true,
+  "error": ""
+ },
+ {
+  "case": "unknown role",
+  "seed": "08[Create](name=\"Wish One\", bogus=\"x\")",
+  "ok": false,
+  "error": "UNKNOWN_ROLE: bogus"
+ },
+ {
+  "case": "invalid enum skin",
+  "seed": "08[Create](name=\"Wish One\", skin=\"TRIANGLE\")",
+  "ok": false,
+  "error": "INVALID_VALUE: skin=TRIANGLE not in ['CUBE', 'SPHERE', 'SEED', 'FLOWER', 'BUILDING', 'WORDS', 'CIRCLE', 'CORE']"
+ },
+ {
+  "case": "missing required name",
+  "seed": "08[Create](skin=\"SPHERE\")",
+  "ok": false,
+  "error": "MISSING_REQUIRED: name"
+ },
+ {
+  "case": "precedence missing+unknown",
+  "seed": "08[Create](bogus=\"x\")",
+  "ok": false,
+  "error": "MISSING_REQUIRED: name"
+ },
+ {
+  "case": "precedence unknown+invalid",
+  "seed": "08[Create](name=\"W\", skin=\"TRIANGLE\", bogus=\"x\")",
+  "ok": false,
+  "error": "UNKNOWN_ROLE: bogus"
+ },
+ {
+  "case": "conflict typed vs label",
+  "seed": "08[Create](name=\"Wish One\") :: other_label",
+  "ok": false,
+  "error": "ARGUMENT_CONFLICT"
+ },
+ {
+  "case": "typed name == label slug",
+  "seed": "08[Create](name=\"Wish One\") :: wish_one",
+  "ok": true,
+  "error": ""
+ },
+ {
+  "case": "duplicate role at parse",
+  "ok": false,
+  "error": "duplicate role 'name'"
+ }
+]

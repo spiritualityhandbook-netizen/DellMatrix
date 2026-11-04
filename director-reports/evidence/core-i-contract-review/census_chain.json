@@ -1,0 +1,716 @@
+[
+ {
+  "dell": 0,
+  "name": "Nova",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 1,
+  "name": "Initiate",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 2,
+  "name": "Persona",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 3,
+  "name": "Logic",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 4,
+  "name": "Transform",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 5,
+  "name": "Tone",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 6,
+  "name": "Cycle",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 7,
+  "name": "Link",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 8,
+  "name": "Create",
+  "surface": "leaf",
+  "single": [
+   false,
+   "MISSING_REQUIRED"
+  ],
+  "chain": [
+   false,
+   "MISSING_REQUIRED"
+  ],
+  "parity": true
+ },
+ {
+  "dell": 9,
+  "name": "Show",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 10,
+  "name": "Keep",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 11,
+  "name": "Architect",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 12,
+  "name": "Test",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 13,
+  "name": "Loop",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 14,
+  "name": "Bind",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 15,
+  "name": "Map",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 16,
+  "name": "Decay",
+  "surface": "leaf",
+  "single": [
+   false,
+   "enhance OFF"
+  ],
+  "chain": [
+   false,
+   "enhance OFF"
+  ],
+  "parity": true
+ },
+ {
+  "dell": 17,
+  "name": "Shadow",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 18,
+  "name": "Mirror",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 19,
+  "name": "Drive",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 20,
+  "name": "Alpha",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 21,
+  "name": "Merge",
+  "surface": "live_identity",
+  "single": [
+   false,
+   "missing_source"
+  ],
+  "chain": [
+   false,
+   "missing_source"
+  ],
+  "parity": true
+ },
+ {
+  "dell": 22,
+  "name": "Split",
+  "surface": "live_identity",
+  "single": [
+   false,
+   "missing_source"
+  ],
+  "chain": [
+   false,
+   "missing_source"
+  ],
+  "parity": true
+ },
+ {
+  "dell": 23,
+  "name": "Lock",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 24,
+  "name": "Unlock",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 25,
+  "name": "Pulse",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 26,
+  "name": "Temp",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 27,
+  "name": "Checkpoint",
+  "surface": "intercept",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 28,
+  "name": "Rollback",
+  "surface": "intercept",
+  "single": [
+   false,
+   "rollback_target_invalid"
+  ],
+  "chain": [
+   false,
+   "rollback_target_invalid"
+  ],
+  "parity": true
+ },
+ {
+  "dell": 29,
+  "name": "Compress",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 30,
+  "name": "Expand",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 31,
+  "name": "Simulate",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 32,
+  "name": "Pause",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 33,
+  "name": "Resume",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 34,
+  "name": "Stamp",
+  "surface": "intercept",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 35,
+  "name": "Discover",
+  "surface": "intercept",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 36,
+  "name": "Inject",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 37,
+  "name": "Nurture",
+  "surface": "intercept",
+  "single": [
+   false,
+   "add idea requires a label"
+  ],
+  "chain": [
+   false,
+   "add idea requires a label"
+  ],
+  "parity": true
+ },
+ {
+  "dell": 38,
+  "name": "Distill",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 39,
+  "name": "Schema",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 40,
+  "name": "TokenCount",
+  "surface": "intercept",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 41,
+  "name": "Sanitize",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 42,
+  "name": "Retry",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 43,
+  "name": "Fallback",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 44,
+  "name": "Bridge",
+  "surface": "intercept",
+  "single": [
+   false,
+   "bridge_unavailable"
+  ],
+  "chain": [
+   false,
+   "bridge_unavailable"
+  ],
+  "parity": true
+ },
+ {
+  "dell": 45,
+  "name": "Translate",
+  "surface": "leaf",
+  "single": [
+   false,
+   "nothing_to_translate"
+  ],
+  "chain": [
+   false,
+   "nothing_to_translate"
+  ],
+  "parity": true
+ },
+ {
+  "dell": 46,
+  "name": "Rank",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 47,
+  "name": "Embed",
+  "surface": "intercept",
+  "single": [
+   false,
+   "embed_unavailable"
+  ],
+  "chain": [
+   false,
+   "embed_unavailable"
+  ],
+  "parity": true
+ },
+ {
+  "dell": 48,
+  "name": "Macro",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 49,
+  "name": "Profile",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ },
+ {
+  "dell": 50,
+  "name": "Manifest",
+  "surface": "leaf",
+  "single": [
+   true,
+   ""
+  ],
+  "chain": [
+   true,
+   ""
+  ],
+  "parity": true
+ }
+]

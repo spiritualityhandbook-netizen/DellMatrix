@@ -1,0 +1,13 @@
+== D2.1: flow_executor, composable control (10[Keep] > 12[Test]) ==
+  parsed OK: '10[Keep] > 12[Test]' -> 2 nodes
+  REFUSED: '10[Keep](bogus="x") > 12[Test]' -> ValueError: expected flow at 8: '(bogus="x") > 12[Tes'
+== D2.2: translate sweep — args only ever on registered Dells ==
+  args emitted: 'create an idea called garden' -> Dell 8 args={'name': 'garden'} registered=True
+  args emitted: 'make a sphere called orb' -> Dell 8 args={'name': 'sphere called orb'} registered=True
+  args emitted: 'copy data to backup' -> Dell 84 args={'source': 'data to backup'} registered=True
+  args emitted: 'delete the key temp' -> Dell 86 args={'key': 'key temp'} registered=True
+  args emitted: 'replace old with new' -> Dell 87 args={'old': 'old', 'new': 'new'} registered=True
+  args emitted: 'get the key data' -> Dell 56 args={'key': 'key data'} registered=True
+  args emitted: 'move data to archive' -> Dell 85 args={'source': 'data', 'destination': 'archive'} registered=True
+  unregistered-arg emissions: NONE
+PROBE D2 DONE
