@@ -1279,6 +1279,21 @@ def _apply_seed_result(p: Program, result: dict) -> Program:
             print(p.render())
         else:
             _say(msg)
+    # SM-16: a failed seed execution must never be silent in the REPL.
+    # Some handlers return ok=False with an error but no message carrying
+    # it (Dell 37 bare Nurture: "add idea requires a label" never printed).
+    # Surface the error here, at the public display boundary, unless a
+    # message already conveys it (underscores normalized, case-folded),
+    # so visible failures are not printed twice.
+    if not result.get("ok", True):
+        _err = str(result.get("error") or "").strip()
+        if _err:
+            _norm = _err.replace("_", " ").lower()
+            _shown = any(
+                _norm in str(m).replace("_", " ").lower()
+                for m in (result.get("messages") or []))
+            if not _shown:
+                _say(f"Error: {_err}")
     if result.get("new_program") is not None:
         p2 = result["new_program"]
         print()

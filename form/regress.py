@@ -183,6 +183,7 @@ LIST = [
     "form.d1_typed_52_53_test",
     "form.d1_unsupported_arg_gate_test",
     "form.core_i_arg_gate_test",
+    "form.repl_seed_error_visibility_test",
     "form.mandell.d1_dell84_copy_test",
     "form.mandell.d1_dell85_move_test",
     "form.mandell.d1_dell86_delete_test",
