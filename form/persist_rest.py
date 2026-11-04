@@ -20,6 +20,84 @@ from form.persist_core_ii import restore_core_ii
 from form.persist import serialize, _path, _cp_path, _safe_owner, _STATE_DIR, VERSION
 
 
+class StaleStateSaveError(Exception):
+    """TD-1-R2: a canonical save was refused because the saver's
+    state version stamp no longer matches the canonical file —
+    another writer saved newer state (possibly including a newer
+    unit binding) and this instance's whole-state rewrite would
+    silently overwrite it. Reload before saving. No bytes were
+    written."""
+
+
+def _current_fingerprint(path: str):
+    import hashlib as _hl
+    if not os.path.isfile(path):
+        return None
+    with open(path, "rb") as f:
+        return _hl.sha256(f.read()).hexdigest()
+
+
+def _refuse_if_stale(program: Program, target: str) -> None:
+    """Refuse a canonical save that would silently overwrite
+    NEWER VALID state. Two refusal shapes: the file parses and
+    its fingerprint moved since this instance's stamp (a newer
+    generation — possibly carrying a newer binding — would be
+    lost), or the file vanished under a stamped instance
+    (fail-closed, mirroring bind's baseline rule).
+
+    Two deliberate allowances, both bounded to 'nothing readable
+    to lose': an ABSENT file (the save creates state where none
+    exists; a delete-then-replace by another writer leaves a
+    file behind, which the fingerprint rule above then catches),
+    and a file that exists but does NOT parse (corrupt bytes
+    carry no binding; a live instance is the only recovery
+    source, and its save is the repair — the load law still
+    refuses to LOAD such a file, and bind still refuses to mint
+    over it). Both allowances are disclosed in the R2 Director
+    report. Bind's own baseline rule is stricter and unchanged:
+    a bind never resurrects a vanished file."""
+    stamp = getattr(program, "_td_state_fingerprint", None)
+    if stamp is None:
+        return
+    if not os.path.isfile(target):
+        return
+    with open(target, "rb") as f:
+        blob = f.read()
+    import hashlib as _hl
+    if _hl.sha256(blob).hexdigest() == stamp:
+        return
+    try:
+        parsed = json.loads(blob.decode("utf-8"))
+        if not isinstance(parsed, dict):
+            raise ValueError("state root is not an object")
+    except (UnicodeDecodeError, ValueError):
+        return  # corrupt bytes: no newer state to protect
+    raise StaleStateSaveError(
+        f"stale instance for owner {program.owner!r}: the "
+        f"canonical state changed since this instance "
+        f"loaded/saved it; refusing to overwrite newer state "
+        f"(reload before saving)")
+
+
+def _write_program_file(program: Program, target: str,
+                        _fail_at: Optional[str]) -> str:
+    from form.dell_matrix.atomic_write import atomic_write_json
+    data = serialize(program)
+    atomic_write_json(target, data, _fail_at=_fail_at)
+    # TD-1-R1: stamp the saver with the version it just wrote (the
+    # canonical state's SHA-256), so unit binding can detect that
+    # the file has since moved under this instance. Best-effort:
+    # a stamp failure never fails the save itself.
+    try:
+        import hashlib as _hl
+        with open(target, "rb") as _f:
+            program._td_state_fingerprint = _hl.sha256(
+                _f.read()).hexdigest()
+    except Exception:
+        program._td_state_fingerprint = None
+    return target
+
+
 def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str] = None) -> str:
     """Persist the program via Persistence V2 (crash-safe atomic replacement; DCC-XVII).
 
@@ -33,26 +111,33 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
     compensation/rollback was incomplete rejects the save with
     RollbackRecoveryError until verified restoration or reconstruction.
     No bytes are written on rejection.
+
+    TD-1-R2 (atomic owner-state commit protection): a save to the
+    CANONICAL owner path runs inside the owner-state lock
+    (form.owner_state_lock), and under that lock a saver whose
+    version stamp no longer matches the canonical file is refused
+    with StaleStateSaveError — an ordinary save can no longer
+    silently overwrite newer state, including a newer unit
+    binding. Unstamped instances (fresh, constructed, or restored
+    through checkpoint/generation paths) carry no baseline and
+    save as before. Saves to non-canonical paths (explicit temp
+    or checkpoint files) are outside the transaction: they are
+    not the canonical state. Journaled recovery/import writes
+    that bypass this funnel entirely (Exchange import,
+    core_i_recovery) are likewise outside R2's fence — a boundary
+    stated in the R2 Director report, not silently expanded.
     """
     from form.mandell.core_i_recovery import check_save_allowed
     check_save_allowed(program, "persist_rest.save")
-    from form.dell_matrix.atomic_write import atomic_write_json
-
-    path = path or _path(program.owner)
-    data = serialize(program)
-    atomic_write_json(path, data, _fail_at=_fail_at)
-    # TD-1-R1: stamp the saver with the version it just wrote (the
-    # canonical state's SHA-256), so unit binding can detect that
-    # the file has since moved under this instance. Best-effort:
-    # a stamp failure never fails the save itself.
-    try:
-        import hashlib as _hl
-        with open(path, "rb") as _f:
-            program._td_state_fingerprint = _hl.sha256(
-                _f.read()).hexdigest()
-    except Exception:
-        program._td_state_fingerprint = None
-    return path
+    target = path or _path(program.owner)
+    canonical = os.path.abspath(target) == os.path.abspath(
+        _path(program.owner))
+    if not canonical:
+        return _write_program_file(program, target, _fail_at)
+    from form.owner_state_lock import owner_state_lock
+    with owner_state_lock(program.owner):
+        _refuse_if_stale(program, target)
+        return _write_program_file(program, target, _fail_at)
 
 
 def checkpoint(program: Program, *, _fail_at: Optional[str] = None) -> str:

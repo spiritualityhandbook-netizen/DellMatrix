@@ -157,11 +157,42 @@ def _pointer_in(data, unit_id: str):
 def bind_unit_to_idea(program, unit_id: str, *, subject: str) -> Dict[str, Any]:
     """Bind one Plane unit to a canonical Idea shell (S1, lazy).
 
+    TD-1-R2: the whole validation-to-commit span runs inside the
+    owner-state lock (form.owner_state_lock), so the checks below
+    and the final Program save are one enforceable transaction —
+    no writer using the canonical funnel can interleave. A lock
+    that stays busy past the bounded wait refuses the bind as
+    state_locked before any mutation. Writers outside the funnel
+    (journaled Exchange import / recovery writes) are outside
+    R2's fence; the R1 fingerprint gate remains as the detector
+    for exactly those paths.
+
     Returns a receipt dict on success (status 'bound' or
     'already_bound'). Raises BindingRefused / BindingFailed per the
     module contract; on any raise the unit's pointer is unchanged
     (rollback) and no graph write has occurred.
     """
+    if not isinstance(subject, str) or not subject.strip():
+        raise BindingRefused(
+            "subject_required",
+            "bind requires the real invoking subject for provenance")
+    from form.owner_state_lock import (OwnerLockBusy,
+                                       owner_state_lock)
+    try:
+        with owner_state_lock(program.owner):
+            return _bind_in_transaction(program, unit_id,
+                                        subject=subject)
+    except OwnerLockBusy as exc:
+        raise BindingRefused(
+            "state_locked",
+            f"owner state is locked by another writer and the "
+            f"bounded wait expired; refusing to bind: {exc}",
+            unit_id=unit_id) from exc
+
+
+def _bind_in_transaction(program, unit_id: str, *,
+                         subject: str) -> Dict[str, Any]:
+    """The TD-1/R1 bind protocol, executed under the R2 lock."""
     if not isinstance(subject, str) or not subject.strip():
         raise BindingRefused(
             "subject_required",

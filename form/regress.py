@@ -312,6 +312,7 @@ LIST = [
     # Track D TD-1: Unit -> Idea binding foundation (S1).
     "form.track_d_td1_test:smoke",
     "form.track_d_td1_r1_test:smoke",
+    "form.track_d_td1_r2_test:smoke",
 ]
 
 TIMEOUT_S = 900
