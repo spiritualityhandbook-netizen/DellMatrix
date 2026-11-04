@@ -178,3 +178,19 @@ and `sha256sum -c` verifies cleanly).
    certificate, or should a follow-up circuit add the
    Growth/Console views and a PARTIAL/failing verdict path
    before this item is called complete?
+
+---
+
+## Addendum — merge resolution against advanced main (2026-11-03)
+
+After submission, main advanced (PR #257 archival merge, 8426334) and
+this branch went CONFLICTING on director-reports/INDEX.md only (the
+archival status updates and this report's row occupy adjacent lines).
+Resolved by merge commit 8e33690: the INDEX now carries both the
+archived ruling rows/status updates and this report's row, verbatim.
+Verified: `git diff b60a368..8e33690 -- gui/ .github/ form/` is EMPTY
+— no product, workflow, or test content changed; the browser evidence
+executed at b60a368 covers byte-identical product code at the
+resolved head. The browser-acceptance workflow was additionally
+re-dispatched at the resolved head for an exact-head run (see PR
+checks).
