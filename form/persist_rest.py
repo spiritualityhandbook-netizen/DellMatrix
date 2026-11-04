@@ -370,6 +370,10 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         unit = plane.units[uid]
         unit.sandboxed = bool(u.get("sandboxed", False))
         unit.sandbox_id = u.get("sandbox_id")
+        # Track D TD-1: restore the binding pointer verbatim. Loading
+        # never validates-away or rebinds it — a dangling pointer is
+        # H1 state, surfaced by binding_census, refused by bind.
+        unit.idea_id = u.get("idea_id")
     for sid, entry in data.get("plane", {}).get("sandboxes", {}).items():
         # Phase M: current shape is {"label": ..., "members": [...]};
         # legacy saves stored a bare member list — accept both.

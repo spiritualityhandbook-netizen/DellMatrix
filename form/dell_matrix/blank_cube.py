@@ -30,14 +30,14 @@ class BlankCube:
         self.session = MatrixSession(name=self.owner)
         if not self.clean:
             self.session.place("welcome", "Welcome", words="Blank cube on Dell Matrix. Place ideas with detail and goals.", detail="Starter surface — same capabilities as DEV, no personal lore.", goals=["learn the acceptance path", "add ideas with detail and goals"], skin=Skin.WORDS, x=0, y=0)
-    def place_idea(self, id: str, label: str, *, words: str = "", detail: str = "", goals: Optional[List[str]] = None, skin: Skin = Skin.CUBE, x: float = 0.0, y: float = 0.0, parents: Optional[List[str]] = None, origin: str = "placed", lineage_version: Optional[int] = None):
-        return self.session.place(id, label, words=words, detail=detail, goals=goals or [], skin=skin, x=x, y=y, parents=parents, origin=origin, lineage_version=lineage_version)
+    def place_idea(self, id: str, label: str, *, words: str = "", detail: str = "", goals: Optional[List[str]] = None, skin: Skin = Skin.CUBE, x: float = 0.0, y: float = 0.0, parents: Optional[List[str]] = None, origin: str = "placed", lineage_version: Optional[int] = None, idea_id: Optional[str] = None):
+        return self.session.place(id, label, words=words, detail=detail, goals=goals or [], skin=skin, x=x, y=y, parents=parents, origin=origin, lineage_version=lineage_version, idea_id=idea_id)
     def status(self) -> Dict[str, Any]:
         p = self.session.plane
         return {"level": self.level, "owner": self.owner, "contact": self.contact, "created": self.created, "floor": list(FLOOR), "enhance_on": self.enhance_on, "clean": self.clean, "perspective": p.perspective.value, "units": {i: u.display() for i, u in p.units.items()}, "sandboxes": {i: sb.member_ids for i, sb in p.sandboxes.items()}, "blank": True}
     def export(self) -> Dict[str, Any]:
         plane = self.session.plane
-        units = {uid: {"label": u.label, "words": u.words, "detail": getattr(u, "detail", "") or "", "goals": list(getattr(u, "goals", []) or []), "skin": u.skin.value, "x": u.x, "y": u.y, "sandboxed": u.sandboxed, "sandbox_id": u.sandbox_id, "parents": list(getattr(u, "parents", []) or []), "origin": getattr(u, "origin", "placed") or "placed", "lineage_version": int(getattr(u, "lineage_version", 1) or 1)} for uid, u in plane.units.items()}
+        units = {uid: {"label": u.label, "words": u.words, "detail": getattr(u, "detail", "") or "", "goals": list(getattr(u, "goals", []) or []), "skin": u.skin.value, "x": u.x, "y": u.y, "sandboxed": u.sandboxed, "sandbox_id": u.sandbox_id, "parents": list(getattr(u, "parents", []) or []), "origin": getattr(u, "origin", "placed") or "placed", "lineage_version": int(getattr(u, "lineage_version", 1) or 1), "idea_id": getattr(u, "idea_id", None)} for uid, u in plane.units.items()}
         return {"type": "BlankCubePack", "version": 4, "level": self.level, "owner": self.owner, "contact": self.contact, "created": self.created, "floor": list(FLOOR), "enhance_on": self.enhance_on, "give": {"title": "Dell Matrix Blank Cube", "rules": ["Floor Alpha·Delta·Omega·Omni never changes", "Your cube is yours — Main sync does not overwrite it", "Ideas need detail + goals so growth is aimed", "Same capabilities as DEV — no personal Ace/Worldwide lore included"]}, "plane": {"perspective": plane.perspective.value, "units": units, "sandboxes": {s: list(sb.member_ids) for s, sb in plane.sandboxes.items()}}}
     def write_pack(self, path: Optional[str] = None) -> str:
         path = path or os.path.join(_PACK_DIR, f"blank_{self.owner}.json")
@@ -62,6 +62,7 @@ class BlankCube:
             unit = plane.units[uid]
             unit.sandboxed = bool(u.get("sandboxed", False))
             unit.sandbox_id = u.get("sandbox_id")
+            unit.idea_id = u.get("idea_id")
         for sid, members in data.get("plane", {}).get("sandboxes", {}).items():
             plane.box(list(members), sid)
         b.enhance_on = bool(data.get("enhance_on", False))

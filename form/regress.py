@@ -308,6 +308,8 @@ LIST = [
     "form.studio_security_test:smoke",
     # SM-39 persistence closure: growth plant records survive save/load.
     "form.growth_persistence_test:smoke",
+    # Track D TD-1: Unit -> Idea binding foundation (S1).
+    "form.track_d_td1_test:smoke",
 ]
 
 TIMEOUT_S = 900

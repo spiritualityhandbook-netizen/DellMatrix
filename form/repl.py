@@ -852,6 +852,11 @@ def _handle_ros_command(p: Program, raw: str) -> bool:
         _say(f"  last execution: {le.get('status')}"
              + (f" · {le.get('operation')}[{le.get('dell')}] {le.get('result')}"
                 if le.get("status") == "known" else ""))
+        b = (s.get("binding") or {})
+        if b.get("status") == "known":
+            _say(f"  binding: bound={b.get('bound')} "
+                 f"unbound={b.get('unbound')} invalid={b.get('invalid')} "
+                 f"unreferenced_ideas={b.get('unreferenced_ideas')}")
         return True
 
     # ── NBDE-I (NBD-Ω-009): read-only NBD inspection ───

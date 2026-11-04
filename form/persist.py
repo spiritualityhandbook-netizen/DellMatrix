@@ -178,6 +178,8 @@ def serialize(program: Program) -> Dict[str, Any]:
             "parents": list(getattr(u, "parents", []) or []),
             "origin": getattr(u, "origin", "placed") or "placed",
             "lineage_version": int(getattr(u, "lineage_version", 1) or 1),
+            # Track D TD-1: the Unit -> canonical Idea binding pointer.
+            "idea_id": getattr(u, "idea_id", None),
         }
         for uid, u in plane.units.items()
     }
