@@ -866,6 +866,8 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
         else:
             # Default: add idea with label
             if not lab:
+                messages.append(
+                    "Add idea failed: add idea requires a label")
                 return {**base, "ok": False, "error": "add idea requires a label"}
             proposal = program.nursery.add(lab)
             program.last_nurture = {"action": "add", "pid": proposal.id,
