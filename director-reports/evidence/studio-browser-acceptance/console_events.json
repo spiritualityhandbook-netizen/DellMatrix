@@ -1,0 +1,10 @@
+{
+  "raw_error_candidates": [
+    {
+      "kind": "log",
+      "text": "{\"entry\": {\"source\": \"network\", \"level\": \"error\", \"text\": \"Failed to load resource: the server responded with a status of 404 (Not Found)\", \"timestamp\": 1793754013239.467, \"url\": \"http://127.0.0.1:8765/favicon.ico\", \"networkRequestId\": \"2509.8\"}}"
+    }
+  ],
+  "excluded_as_favicon_only": 1,
+  "app_errors": []
+}

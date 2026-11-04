@@ -1,0 +1,23 @@
+LOCAL VALIDATION (API-LEVEL ONLY — NOT browser evidence)
+Executed on this VM before the first CI run, to validate the
+driver's assertion EXPECTATIONS against the real server (the VM
+cannot launch Chromium; the runner is the browser environment).
+
+1. Driver compiles: python3 -m py_compile gui/browser_acceptance.py OK
+   Workflow YAML parses OK (yaml.safe_load).
+2. Server launched locally: python3 -m gui.server --owner
+   BrowserLocal --port 8765 (loopback default), killed by PID after.
+   - Served / carries a substituted per-launch token in the
+     studio-token meta (NOT the __STUDIO_TOKEN__ placeholder).
+   - GET /api/dells -> ok=True, count=100.
+   - POST /api/parse (token header, as app.js sends) for the
+     driver's example seed "55[Set] :: tempo=120 >> 56[Get] :: tempo"
+     -> parse ok=True, atoms=[55, 56].
+   - POST /api/execute (same seed) -> ok=True,
+     atom_results=[(55, True), (56, True)], store={'tempo': '120'}.
+   These are the exact values the browser assertions then verified
+   through the DOM on the runner (rack 100; 2 atoms; 2 atom-ok;
+   CHAIN OK; store shows tempo/120).
+3. Driver failure path, local: with no CDP listener it prints
+   "[FAIL] CDP target list reachable" and exits 1 (bounded wait),
+   i.e. the driver fails closed rather than passing vacuously.
