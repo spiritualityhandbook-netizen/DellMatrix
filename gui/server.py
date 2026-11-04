@@ -17,6 +17,16 @@ the user's explicit actions.
 
 Launch:
     python3 -m gui.server [--owner NAME] [--port 8765] [--host 127.0.0.1]
+
+Local security posture (Studio security circuit, 2026-11-03): the
+server is a loopback service and defends that boundary explicitly —
+a Host allowlist defeats DNS rebinding, a per-launch session token
+(served only inside the index page) plus Origin and Content-Type
+discipline defeat cross-origin request forgery from web content in
+the user's browser, and request bodies are size-capped before they
+are read. Binding a non-loopback host refuses to start unless
+--allow-remote is also given, and that combination is NOT certified
+safe — it only makes the exposure a deliberate act.
 """
 
 from __future__ import annotations
@@ -24,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import secrets
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -44,6 +55,40 @@ from form.open import open_program  # noqa: E402
 _LOCK = threading.RLock()
 _PROGRAMS: dict = {}
 _ACTIVE_OWNER = "Operator"
+
+# --- local security controls (see module docstring) ----------------
+# Per-launch session token: minted once per server process, served
+# only inside the index page, required on every POST /api/*. It
+# defeats web-borne forgery (a cross-origin page can neither read
+# the token nor set the header without a preflight this server
+# never grants). A local process able to fetch the page can obtain
+# it — excluding untrusted local processes needs OS-level auth and
+# is out of this circuit's claim.
+_SESSION_TOKEN = secrets.token_urlsafe(32)
+_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+# Largest legitimate request body measured at circuit time: 113
+# bytes (longest shipped example seed, wrapped as JSON). The cap
+# leaves ~580x headroom while bounding a single request's memory.
+_MAX_BODY_BYTES = 65536
+_REQUEST_TIMEOUT_S = 30
+_ALLOW_REMOTE = False  # set by main() only via --allow-remote
+
+
+def _split_host(value):
+    """Split a Host/Origin authority into (hostname, port|None)."""
+    value = (value or "").strip()
+    if value.startswith("["):
+        end = value.find("]")
+        if end < 0:
+            return value.lower(), None
+        rest = value[end + 1:]
+        port = int(rest[1:]) if rest.startswith(":") \
+            and rest[1:].isdigit() else None
+        return value[1:end].lower(), port
+    if value.count(":") == 1:
+        name, _, port = value.partition(":")
+        return name.lower(), (int(port) if port.isdigit() else None)
+    return value.lower(), None
 
 _STATIC_FILES = {
     "/": ("index.html", "text/html; charset=utf-8"),
@@ -189,6 +234,56 @@ class _Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # keep the console quiet
         pass
 
+    def setup(self):
+        self.request.settimeout(_REQUEST_TIMEOUT_S)
+        super().setup()
+
+    # -- security guards -------------------------------------------
+    def _bound_port(self):
+        try:
+            return int(self.server.server_address[1])
+        except Exception:
+            return None
+
+    def _host_ok(self):
+        if _ALLOW_REMOTE:
+            return True
+        host = self.headers.get("Host")
+        if host is None:
+            return False
+        name, port = _split_host(host)
+        if name not in _LOOPBACK_HOSTS:
+            return False
+        return port is None or port == self._bound_port()
+
+    def _origin_ok(self):
+        origin = self.headers.get("Origin")
+        if origin is None:
+            return True  # non-browser tooling; the token is the gate
+        parsed = urlparse(origin)
+        if parsed.scheme != "http" or not parsed.hostname:
+            return False  # covers Origin: null and foreign schemes
+        if parsed.hostname.lower() not in _LOOPBACK_HOSTS:
+            return False
+        try:
+            port = parsed.port
+        except ValueError:
+            return False
+        # Director Mode C correction (2026-11-03): an omitted
+        # port resolves to the HTTP default port 80 — it is not
+        # a wildcard. Compare the EFFECTIVE port with the bound
+        # server port, so a no-port Origin is accepted only when
+        # this server is itself bound to port 80.
+        effective_port = port if port is not None else 80
+        return effective_port == self._bound_port()
+
+    def _token_ok(self):
+        given = self.headers.get("X-Studio-Token") or ""
+        return secrets.compare_digest(given, _SESSION_TOKEN)
+
+    def _refuse(self, status, error):
+        self._send_json({"ok": False, "error": error}, status=status)
+
     def _send_json(self, payload, status=200):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
@@ -207,9 +302,17 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_json({"ok": False, "error": "static file missing: %s" % name},
                             status=404)
             return
+        is_index = name == "index.html"
+        if is_index:
+            # The session token rides ONLY in the index page, which
+            # is served no-store so the token is not cached to disk.
+            body = body.replace(b"__STUDIO_TOKEN__",
+                                _SESSION_TOKEN.encode("ascii"))
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        if is_index:
+            self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
 
@@ -223,6 +326,9 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         try:
+            if not self._host_ok():
+                self._refuse(403, "host not allowed")
+                return
             parsed = urlparse(self.path)
             path = parsed.path
             query = parse_qs(parsed.query)
@@ -254,9 +360,41 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
+            if not self._host_ok():
+                self._refuse(403, "host not allowed")
+                return
             parsed = urlparse(self.path)
             path = parsed.path
-            length = int(self.headers.get("Content-Length") or 0)
+            # Header discipline BEFORE the body is read: a refused
+            # request never costs a body read or a state touch.
+            raw_length = self.headers.get("Content-Length")
+            if raw_length is None:
+                length = 0
+            else:
+                try:
+                    length = int(raw_length)
+                except (TypeError, ValueError):
+                    self._refuse(400, "malformed Content-Length")
+                    return
+                if length < 0:
+                    self._refuse(400, "malformed Content-Length")
+                    return
+                if length > _MAX_BODY_BYTES:
+                    self._refuse(413, "request body too large")
+                    return
+            if path.startswith("/api/"):
+                ctype = (self.headers.get("Content-Type") or "")
+                ctype = ctype.split(";")[0].strip().lower()
+                if ctype != "application/json":
+                    self._refuse(415, "Content-Type must be "
+                                      "application/json")
+                    return
+                if not self._token_ok():
+                    self._refuse(401, "missing or invalid session token")
+                    return
+                if not self._origin_ok():
+                    self._refuse(403, "origin not allowed")
+                    return
             raw = self.rfile.read(length) if length > 0 else b"{}"
             try:
                 body = json.loads(raw.decode("utf-8")) if raw else {}
@@ -308,14 +446,31 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def main(argv=None):
-    global _ACTIVE_OWNER
+    global _ACTIVE_OWNER, _ALLOW_REMOTE
     ap = argparse.ArgumentParser(
         description="DellMatrix Studio — local GUI server")
     ap.add_argument("--owner", default="Operator",
                     help="program owner to open first (default: Operator)")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--host", default="127.0.0.1")
+    ap.add_argument("--allow-remote", action="store_true",
+                    help="permit a non-loopback --host (NOT certified "
+                         "safe; see the startup warning)")
     args = ap.parse_args(argv)
+    host_name, _ = _split_host(args.host)
+    if host_name not in _LOOPBACK_HOSTS:
+        if not args.allow_remote:
+            print("Refusing to start: --host %s is not loopback. "
+                  "Studio is a local application; pass --allow-remote "
+                  "to override deliberately." % args.host,
+                  file=sys.stderr, flush=True)
+            return 2
+        _ALLOW_REMOTE = True
+        print("WARNING: Studio is bound to %s — network-reachable. "
+              "The session token still gates POSTs, but the Host "
+              "allowlist is off, so DNS-rebinding protection does "
+              "not apply. This posture is NOT certified safe."
+              % args.host, flush=True)
     _ACTIVE_OWNER = args.owner
     _get_program(args.owner)  # fail fast if the program cannot open
     server = ThreadingHTTPServer((args.host, args.port), _Handler)

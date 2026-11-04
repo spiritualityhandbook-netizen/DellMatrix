@@ -1,0 +1,126 @@
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 58172)
+Traceback (most recent call last):
+  File "/tmp/studiosec-base/gui/server.py", line 262, in do_POST
+    body = json.loads(raw.decode("utf-8")) if raw else {}
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/decoder.py", line 353, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ^^^^^^^^^^^^^^^^^^^^^^
+json.decoder.JSONDecodeError: Unterminated string starting at: line 1 column 10 (char 9)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/tmp/studiosec-base/gui/server.py", line 264, in do_POST
+    self._send_json({"ok": False, "error": "request body is not JSON"},
+  File "/tmp/studiosec-base/gui/server.py", line 198, in _send_json
+    self.wfile.write(body)
+  File "/usr/lib/python3.12/socketserver.py", line 840, in write
+    self._sock.sendall(b)
+BrokenPipeError: [Errno 32] Broken pipe
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/socketserver.py", line 692, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.12/socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.12/socketserver.py", line 761, in __init__
+    self.handle()
+  File "/usr/lib/python3.12/http/server.py", line 436, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.12/http/server.py", line 424, in handle_one_request
+    method()
+  File "/tmp/studiosec-base/gui/server.py", line 306, in do_POST
+    self._send_json({"ok": False, "error": "%s: %s"
+  File "/tmp/studiosec-base/gui/server.py", line 197, in _send_json
+    self.end_headers()
+  File "/usr/lib/python3.12/http/server.py", line 538, in end_headers
+    self.flush_headers()
+  File "/usr/lib/python3.12/http/server.py", line 542, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+  File "/usr/lib/python3.12/socketserver.py", line 840, in write
+    self._sock.sendall(b)
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 50458)
+Traceback (most recent call last):
+  File "/tmp/studiosec-base/gui/server.py", line 230, in do_GET
+    self._send_static(path)
+  File "/tmp/studiosec-base/gui/server.py", line 214, in _send_static
+    self.wfile.write(body)
+  File "/usr/lib/python3.12/socketserver.py", line 840, in write
+    self._sock.sendall(b)
+BrokenPipeError: [Errno 32] Broken pipe
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/socketserver.py", line 692, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.12/socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.12/socketserver.py", line 761, in __init__
+    self.handle()
+  File "/usr/lib/python3.12/http/server.py", line 436, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.12/http/server.py", line 424, in handle_one_request
+    method()
+  File "/tmp/studiosec-base/gui/server.py", line 252, in do_GET
+    self._send_json({"ok": False, "error": "%s: %s"
+  File "/tmp/studiosec-base/gui/server.py", line 197, in _send_json
+    self.end_headers()
+  File "/usr/lib/python3.12/http/server.py", line 538, in end_headers
+    self.flush_headers()
+  File "/usr/lib/python3.12/http/server.py", line 542, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+  File "/usr/lib/python3.12/socketserver.py", line 840, in write
+    self._sock.sendall(b)
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+[PASS] GET / 200 serves the Studio page
+[FAIL] index page carries a per-launch session token
+[FAIL] token-bearing index is served Cache-Control: no-store
+[PASS] browser-shaped execute (own Origin + token) succeeds
+[PASS] the stored value is visible afterwards
+[PASS] no-Origin tooling execute with token succeeds
+[PASS] GET /api/dells needs no token and lists 100 Dells
+[FAIL] foreign Host is rejected 403
+[FAIL] suffix-trick Host is rejected 403
+[FAIL] loopback Host with the wrong port is rejected 403
+[FAIL] missing Host is rejected 403
+[PASS] localhost Host is accepted
+[PASS] [::1] Host is accepted
+[FAIL] cross-origin execute is rejected 403
+[FAIL] cross-origin execute mutated nothing
+[FAIL] simple-request (text/plain) execute is rejected
+[FAIL] simple-request execute mutated nothing
+[FAIL] token-carrying text/plain execute is rejected 415
+[FAIL] the text/plain rejection mutated nothing
+[FAIL] Origin from a foreign port is rejected 403
+[FAIL] Origin 'null' is rejected 403
+[FAIL] no rejected execute ever mutated the store
+[FAIL] tokenless execute is rejected 401
+[FAIL] wrong-token execute is rejected 401
+[FAIL] token rejections mutated nothing
+[FAIL] tokenless owner switch is rejected 401
+[FAIL] active owner unchanged after tokenless switch attempt
+[FAIL] session token never appears in /app.js
+[FAIL] session token never appears in error bodies
+[FAIL] oversized body is refused 413 BEFORE being read
+[FAIL] malformed Content-Length is a 400, never a 500
+[PASS] negative Content-Length is a 400
+[FAIL] slow-drip connection is closed by the server timeout
+[PASS] dot-dot path stays 404
+[PASS] encoded traversal path stays 404
+STUDIO-SEC: 0/0 GREEN
+BASE RESULT: 10/35 pass, 25 RED

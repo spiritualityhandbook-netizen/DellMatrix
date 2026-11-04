@@ -197,7 +197,20 @@ function setStatus(mode, text) {
   $("#status-text").textContent = text;
 }
 
+/* Per-launch session token: the server mints it at startup and
+   serves it only inside this page (see the studio-token meta tag);
+   every POST carries it so cross-origin web content — which can
+   neither read this page nor set the header — cannot drive the
+   local Studio through the user's browser. */
+const STUDIO_TOKEN =
+  (document.querySelector('meta[name="studio-token"]') || {}).content || "";
+
 async function api(path, options) {
+  options = options || {};
+  if ((options.method || "GET").toUpperCase() === "POST") {
+    options.headers = Object.assign({}, options.headers,
+                                    { "X-Studio-Token": STUDIO_TOKEN });
+  }
   const res = await fetch(path, options);
   const data = await res.json().catch(() => ({ ok: false, error: "bad JSON from server" }));
   if (!data.ok) throw new Error(data.error || ("HTTP " + res.status));

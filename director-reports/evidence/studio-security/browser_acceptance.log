@@ -1,0 +1,26 @@
+BROWSER ENGINE CHECK: /opt/meta-chromium/chrome refuses direct launch —
+'Hatch WebGL domain policy is required for browser startup' (daemon-supplied
+policy; harness-managed browser, not directly launchable by this agent).
+No other browser engine exists on this VM (searched). FALLBACK per circuit
+scope: exact UI API sequence replayed against the hardened server.
+LABEL: INTEGRATION (API-level). Browser acceptance REMAINS OUTSTANDING.
+---
+[PASS] UI step 1: GET / 200 + token meta present 
+[PASS] UI step 2: GET /app.js 200 
+[PASS] UI step 3: GET /api/dells -> 100 dells 
+[PASS] UI step 4: GET /api/state 200 for owner 
+[PASS] UI step 5: POST /api/parse -> 2 atoms 
+[PASS] UI step 6: POST /api/execute ok with 2 atom receipts, both ok 
+[PASS] UI step 6b: execute response state shows tempo=120 
+[PASS] UI step 7: GET /api/growth 200 
+UI-SEQUENCE: 8/8
+---
+STATIC FRONTEND CONTRACT:
+1
+api("/api/dells"
+api("/api/execute"
+api("/api/growth?owner="
+api("/api/owner"
+api("/api/parse"
+api("/api/state"
+__STUDIO_TOKEN__
