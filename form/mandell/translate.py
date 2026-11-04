@@ -375,7 +375,16 @@ def translate(english: str) -> Intent:
             uid = slug_id(label)
             args = {"id": uid, "label": label.replace("_", " "), "words": label}
         elif action == "grow":
-            args = {"cycles": 1}
+            # SM-11: the phrase pattern captures an explicit count
+            # ("grow 3", "grow ideas 2", "evolve ideas 4") into the
+            # hit label. That count must reach Intent.args — the
+            # router's _seed_grow carries it into the Mandell label,
+            # and Dell 13 clamps/reports it (1..5). Previously this
+            # branch hard-coded 1 and the digit-aware branch below
+            # was unreachable, so the user's count was silently
+            # dropped while execution reported success.
+            _lbl = str(hit.get("label") or "")
+            args = {"cycles": max(1, int(_lbl)) if _lbl.isdigit() else 1}
         elif action == "turn":
             args = {"direction": "left" if "left" in hint else "right"}
         elif action == "express":
@@ -386,7 +395,13 @@ def translate(english: str) -> Intent:
                 expr = "focus"
             args = {"expression": expr}
         elif action == "walk":
-            args = {"steps": 1}
+            # SM-11: same dropped-count class — the walk phrase
+            # pattern captures an explicit step count ("walk 2",
+            # "walk forward 3") into the hit label; the REPL walk
+            # handler reads steps from Intent.args. Hard-coding 1
+            # silently dropped the user's count.
+            _lbl = str(hit.get("label") or "")
+            args = {"steps": int(_lbl) if _lbl.isdigit() else 1}
         elif action == "strafe":
             args = {"direction": "left" if "left" in lower else "right"}
         elif action == "zoom":
@@ -399,8 +414,6 @@ def translate(english: str) -> Intent:
             if hit.get("label") and str(hit["label"]).isdigit():
                 n = int(hit["label"])
             args = {"cycles": n}
-        elif action == "grow" and hit.get("label") and str(hit["label"]).isdigit():
-            args = {"cycles": int(hit["label"])}
         elif action == "form":
             # DCC-III: extract form name from hint (form_sphere) or mandel.
             form_name = "cube"
