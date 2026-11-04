@@ -221,7 +221,7 @@ def _growth_payload(program):
     nodes = []
     for i, p in enumerate(plants):
         label = p.get("idea_full") or p.get("idea") or ""
-        nodes.append({"id": "plant-%d" % i, "label": label, "score": 0.0})
+        nodes.append({"id": p.get("unit_id") or "plant-%d" % i, "label": label, "score": 0.0})
     if not nodes:
         return {"nodes": [], "plant_count": 0}
     viewed = filter_nodes_for_room("growth", nodes, plants=plants)
