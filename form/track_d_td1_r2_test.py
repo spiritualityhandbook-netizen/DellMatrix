@@ -176,6 +176,22 @@ def run_all():
               on_disk.cube.session.plane.units["r2-alpha"].idea_id
               == receipt["idea_id"])
 
+        # -- 1b. a CURRENT instance may deliberately clear a
+        # pointer and save (TD-1's round-trip pattern; the false
+        # positive full regression caught at 234/235) --------------
+        current = persist_rest.load(OWNER, activate=False)
+        current.cube.session.plane.units["r2-alpha"].idea_id = None
+        persist_rest.save(current)
+        cleared = persist_rest.load(OWNER, activate=False)
+        check("a current instance may deliberately clear a "
+              "pointer and save it",
+              cleared.cube.session.plane.units["r2-alpha"].idea_id
+              is None)
+        restored = cleared.bind_unit_to_idea("r2-alpha",
+                                             subject="Ace")
+        check("the unit rebinds after the deliberate clear",
+              restored["status"] == "bound")
+
         # -- 2. current / fresh instances save normally ------------
         inst_b2 = persist_rest.load(OWNER, activate=False)
         persist_rest.save(inst_b2)

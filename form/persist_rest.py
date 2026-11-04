@@ -48,17 +48,38 @@ def _persisted_bindings(target: str) -> dict:
             if isinstance(rec, dict) and rec.get("idea_id")}
 
 
+def _current_fingerprint(path: str):
+    import hashlib as _hl
+    if not os.path.isfile(path):
+        return None
+    with open(path, "rb") as f:
+        return _hl.sha256(f.read()).hexdigest()
+
+
 def _refuse_if_binding_loss(program: Program, target: str) -> None:
     """The save-side contract, scoped by regression evidence to
     the Director's exact words. All canonical saves serialize
-    through the owner lock; the REFUSAL is keyed to bindings —
-    not to any state change — because legitimate product flows
-    (snapshot restore, generation rollback, two-instance
-    authoring of unbound state) save over changed canonical
-    state by design, and their whole-state semantics are theirs.
-    What no save may ever do silently is lose a binding: any
-    persisted (unit -> idea_id) the saver's state does not carry
-    identically refuses the save."""
+    through the owner lock; the REFUSAL guards one harm — a
+    binding silently lost to a writer that never saw it:
+
+    * A CURRENT instance (its R1 version stamp matches the
+      canonical file it last loaded/saved) is authoritative:
+      its in-memory bindings ARE the latest intent, including
+      deliberately clearing a pointer — TD-1's own round-trip
+      contract does exactly that, and refusing it was a false
+      positive found by full regression (234/235, TD-1 red in
+      all three legs while green standalone).
+    * A STALE or UNSTAMPED instance may save only if it carries
+      every persisted (unit -> idea_id) binding identically.
+      Losing or re-pointing one it never saw refuses the save.
+
+    Legitimate whole-state flows (snapshot restore, generation
+    rollback, two-instance authoring of unbound state) pass the
+    stale-path comparison because they carry — or never had —
+    the bindings; nothing is exempted by name."""
+    stamp = getattr(program, "_td_state_fingerprint", None)
+    if stamp is not None and _current_fingerprint(target) == stamp:
+        return
     persisted = _persisted_bindings(target)
     if not persisted:
         return
