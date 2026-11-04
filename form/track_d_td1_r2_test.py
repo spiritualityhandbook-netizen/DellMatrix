@@ -17,9 +17,14 @@ a race gets an EXPLICIT refusal, reloads, retries, and succeeds
 the final state can carry both bindings, never that two stale
 writers both succeed in one pass.
 
-Checks 1 (stale ordinary save) is the failing-first point: on
-pre-R2 code the stale save succeeds silently and the binding is
-gone. The race checks use GENUINE subprocesses (CROSS_PROCESS)
+Check 1 (a stale save that would lose a binding) is the
+failing-first point: on pre-R2 code that save succeeds silently
+and the binding is gone. Check 0b pins the narrowed contract's
+other half: a stale save losing NO binding proceeds — the
+refusal is keyed to bindings (the harm the Director named),
+after regression showed the general stale refusal breaking
+legitimate snapshot-restore / rollback / unbound-authoring
+flows. The race checks use GENUINE subprocesses (CROSS_PROCESS)
 coordinated by barrier files with bounded waits — no sleeps as
 synchronization, no seam injection.
 
@@ -58,7 +63,8 @@ def _paths(owner):
     safe = _safe_owner(owner)
     return {
         "program": os.path.join(_STATE_DIR, f"program_{safe}.json"),
-        "lock": os.path.join(_STATE_DIR, f"program_{safe}.json.lock"),
+        "lock": os.path.join(_STATE_DIR, ".locks",
+                             f"program_{safe}.json.lock"),
         "ideas": os.path.join(_STATE_DIR, f"ideas_{safe}"),
         "graph": os.path.join(_STATE_DIR, f"graph_{safe}.json"),
         "graph_journal": os.path.join(
@@ -139,16 +145,31 @@ def run_all():
         graph_before = (_file_hash(p["graph"]),
                         _file_hash(p["graph_journal"]))
 
-        # -- 1. stale ordinary save refused (FAILING-FIRST) --------
+        # -- 0b. narrowed contract: a stale save losing NO binding
+        # proceeds (the refusal is keyed to bindings — the harm
+        # the Director named — not to any state change; snapshot
+        # restore / rollback / unbound authoring flows keep their
+        # whole-state semantics).
+        pre_a = persist_rest.load(OWNER, activate=False)
+        pre_b = persist_rest.load(OWNER, activate=False)
+        pre_a.place("r2-ephemeral", "Ephemeral")
+        persist_rest.save(pre_a)
+        persist_rest.save(pre_b)  # stale, but no binding exists yet
+        after = persist_rest.load(OWNER, activate=False)
+        check("a stale save that loses no binding proceeds "
+              "(refusal is binding-keyed)",
+              "r2-ephemeral" not in after.cube.session.plane.units)
+
+        # -- 1. stale save losing a BINDING refused (FAILING-FIRST) -
         inst_a = persist_rest.load(OWNER, activate=False)
         inst_b = persist_rest.load(OWNER, activate=False)
         receipt = inst_a.bind_unit_to_idea("r2-alpha", subject="Ace")
         hash_after_bind = _file_hash(p["program"])
         try:
             persist_rest.save(inst_b)
-            check("stale ordinary save is refused", False)
-        except persist_rest.StaleStateSaveError:
-            check("stale ordinary save is refused",
+            check("stale save losing a binding is refused", False)
+        except persist_rest.BindingLossSaveError:
+            check("stale save losing a binding is refused",
                   _file_hash(p["program"]) == hash_after_bind)
         on_disk = persist_rest.load(OWNER, activate=False)
         check("the newer binding survives the stale save attempt",

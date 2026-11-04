@@ -76,11 +76,18 @@ def _held() -> dict:
 
 
 def lock_path_for(owner: str) -> str:
-    """The lock file for an owner: beside the canonical state
-    file, derived from the same single authority (persist._path).
-    Never unlinked by this module."""
-    from form.persist import _path
-    return _path(owner) + ".lock"
+    """The lock file for an owner: in the state directory's
+    `.locks/` subfolder, named from the canonical state file via
+    the same single authority (persist._path). Never unlinked by
+    this module. The subfolder keeps owner-cleanup contracts
+    intact: suites that remove an owner's `program_<owner>*`
+    files are not silently handed a new residue class (found by
+    regression, TD-1-R2)."""
+    from form.persist import _STATE_DIR, _path
+    folder = os.path.join(_STATE_DIR, ".locks")
+    os.makedirs(folder, exist_ok=True)
+    return os.path.join(folder,
+                        os.path.basename(_path(owner)) + ".lock")
 
 
 def _acquire_fd(fd: int, path: str, timeout: float) -> None:

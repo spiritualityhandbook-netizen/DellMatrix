@@ -20,63 +20,61 @@ from form.persist_core_ii import restore_core_ii
 from form.persist import serialize, _path, _cp_path, _safe_owner, _STATE_DIR, VERSION
 
 
-class StaleStateSaveError(Exception):
-    """TD-1-R2: a canonical save was refused because the saver's
-    state version stamp no longer matches the canonical file —
-    another writer saved newer state (possibly including a newer
-    unit binding) and this instance's whole-state rewrite would
-    silently overwrite it. Reload before saving. No bytes were
-    written."""
+class BindingLossSaveError(Exception):
+    """TD-1-R2: a canonical save was refused because it would
+    silently drop or re-point a persisted unit->Idea binding —
+    the exact harm the Director's R2 directive names ('ordinary
+    Program saves must not bypass it or silently overwrite a
+    newer binding'). Reload so the binding is carried, then save.
+    No bytes were written."""
 
 
-def _current_fingerprint(path: str):
-    import hashlib as _hl
-    if not os.path.isfile(path):
-        return None
-    with open(path, "rb") as f:
-        return _hl.sha256(f.read()).hexdigest()
-
-
-def _refuse_if_stale(program: Program, target: str) -> None:
-    """Refuse a canonical save that would silently overwrite
-    NEWER VALID state. Two refusal shapes: the file parses and
-    its fingerprint moved since this instance's stamp (a newer
-    generation — possibly carrying a newer binding — would be
-    lost), or the file vanished under a stamped instance
-    (fail-closed, mirroring bind's baseline rule).
-
-    Two deliberate allowances, both bounded to 'nothing readable
-    to lose': an ABSENT file (the save creates state where none
-    exists; a delete-then-replace by another writer leaves a
-    file behind, which the fingerprint rule above then catches),
-    and a file that exists but does NOT parse (corrupt bytes
-    carry no binding; a live instance is the only recovery
-    source, and its save is the repair — the load law still
-    refuses to LOAD such a file, and bind still refuses to mint
-    over it). Both allowances are disclosed in the R2 Director
-    report. Bind's own baseline rule is stricter and unchanged:
-    a bind never resurrects a vanished file."""
-    stamp = getattr(program, "_td_state_fingerprint", None)
-    if stamp is None:
-        return
+def _persisted_bindings(target: str) -> dict:
+    """{unit_id: idea_id} for bindings readable in the canonical
+    file. Absent or unparseable state yields {} — unreadable
+    bytes carry no binding to lose (a live instance's save over
+    them is the repair; the load law and bind's F1 rule still
+    refuse their own operations over corruption)."""
     if not os.path.isfile(target):
-        return
-    with open(target, "rb") as f:
-        blob = f.read()
-    import hashlib as _hl
-    if _hl.sha256(blob).hexdigest() == stamp:
+        return {}
+    try:
+        with open(target, "rb") as f:
+            data = json.loads(f.read().decode("utf-8"))
+        units = (data.get("plane") or {}).get("units") or {}
+    except (OSError, UnicodeDecodeError, ValueError,
+            AttributeError):
+        return {}
+    return {u: rec["idea_id"] for u, rec in units.items()
+            if isinstance(rec, dict) and rec.get("idea_id")}
+
+
+def _refuse_if_binding_loss(program: Program, target: str) -> None:
+    """The save-side contract, scoped by regression evidence to
+    the Director's exact words. All canonical saves serialize
+    through the owner lock; the REFUSAL is keyed to bindings —
+    not to any state change — because legitimate product flows
+    (snapshot restore, generation rollback, two-instance
+    authoring of unbound state) save over changed canonical
+    state by design, and their whole-state semantics are theirs.
+    What no save may ever do silently is lose a binding: any
+    persisted (unit -> idea_id) the saver's state does not carry
+    identically refuses the save."""
+    persisted = _persisted_bindings(target)
+    if not persisted:
         return
     try:
-        parsed = json.loads(blob.decode("utf-8"))
-        if not isinstance(parsed, dict):
-            raise ValueError("state root is not an object")
-    except (UnicodeDecodeError, ValueError):
-        return  # corrupt bytes: no newer state to protect
-    raise StaleStateSaveError(
-        f"stale instance for owner {program.owner!r}: the "
-        f"canonical state changed since this instance "
-        f"loaded/saved it; refusing to overwrite newer state "
-        f"(reload before saving)")
+        saver_units = program.cube.session.plane.units
+    except AttributeError:
+        return
+    lost = sorted(
+        u for u, iid in persisted.items()
+        if getattr(saver_units.get(u), "idea_id", None) != iid)
+    if lost:
+        raise BindingLossSaveError(
+            f"save for owner {program.owner!r} would silently "
+            f"lose persisted unit binding(s) {lost}: the saver "
+            f"does not carry them (reload so the bindings are "
+            f"carried, then save)")
 
 
 def _write_program_file(program: Program, target: str,
@@ -114,18 +112,17 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
 
     TD-1-R2 (atomic owner-state commit protection): a save to the
     CANONICAL owner path runs inside the owner-state lock
-    (form.owner_state_lock), and under that lock a saver whose
-    version stamp no longer matches the canonical file is refused
-    with StaleStateSaveError — an ordinary save can no longer
-    silently overwrite newer state, including a newer unit
-    binding. Unstamped instances (fresh, constructed, or restored
-    through checkpoint/generation paths) carry no baseline and
-    save as before. Saves to non-canonical paths (explicit temp
-    or checkpoint files) are outside the transaction: they are
-    not the canonical state. Journaled recovery/import writes
-    that bypass this funnel entirely (Exchange import,
-    core_i_recovery) are likewise outside R2's fence — a boundary
-    stated in the R2 Director report, not silently expanded.
+    (form.owner_state_lock) — no canonical save bypasses the
+    transaction — and under that lock a save that would silently
+    drop or re-point a persisted unit binding is refused with
+    BindingLossSaveError (see _refuse_if_binding_loss for the
+    contract and its regression-driven scoping). Saves to
+    non-canonical paths (explicit temp or checkpoint files) are
+    outside the transaction: they are not the canonical state.
+    Journaled recovery/import writes that bypass this funnel
+    entirely (Exchange import, core_i_recovery) are likewise
+    outside R2's fence — a boundary stated in the R2 Director
+    report, not silently expanded.
     """
     from form.mandell.core_i_recovery import check_save_allowed
     check_save_allowed(program, "persist_rest.save")
@@ -136,7 +133,7 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
         return _write_program_file(program, target, _fail_at)
     from form.owner_state_lock import owner_state_lock
     with owner_state_lock(program.owner):
-        _refuse_if_stale(program, target)
+        _refuse_if_binding_loss(program, target)
         return _write_program_file(program, target, _fail_at)
 
 
