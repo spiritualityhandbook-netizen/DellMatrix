@@ -216,15 +216,38 @@ def _dells_payload():
     return out
 
 
+def _growth_available(program):
+    """True when the growth force's plant list is actually readable.
+
+    Mirrors _plants()' own resolution chain. The distinction matters:
+    the view_rooms lens stamps stage_source="unavailable" when no
+    plant list is supplied and "unplanted" when an empty/present list
+    proves no plant matches — passing [] for a force that cannot be
+    read at all would fabricate the stronger claim.
+    """
+    forces = getattr(program, "forces", None)
+    if forces is None:
+        return False
+    growth = getattr(forces, "growth", None)
+    if growth is not None and getattr(growth, "plants", None) is not None:
+        return True
+    return getattr(forces, "plants", None) is not None
+
+
 def _growth_payload(program):
+    # SM-54 (DIR-SUS-WAKE-2026-11-04 P1): nodes are the canonical
+    # plane units from Program.nodes_payload() through the view_rooms
+    # growth lens — the same projection every other lens consumer
+    # uses. The previous implementation fabricated one node per plant,
+    # which hid every unplanted plane idea and invented nodes for
+    # plants that have no plane unit. Plants now do exactly one job:
+    # the lens attributes a stage to a node only where plant-to-node
+    # identity is proven (unit_id, or the DIR-T2-R2 label rules).
     plants = _plants(program)
-    nodes = []
-    for i, p in enumerate(plants):
-        label = p.get("idea_full") or p.get("idea") or ""
-        nodes.append({"id": p.get("unit_id") or "plant-%d" % i, "label": label, "score": 0.0})
-    if not nodes:
-        return {"nodes": [], "plant_count": 0}
-    viewed = filter_nodes_for_room("growth", nodes, plants=plants)
+    nodes = program.nodes_payload() if hasattr(program, "nodes_payload") else []
+    viewed = filter_nodes_for_room(
+        "growth", nodes,
+        plants=plants if _growth_available(program) else None)
     return {"nodes": _safe(viewed), "plant_count": len(plants)}
 
 
