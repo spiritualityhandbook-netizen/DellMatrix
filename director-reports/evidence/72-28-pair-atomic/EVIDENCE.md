@@ -36,9 +36,12 @@ b893931 is the code that merged.
 All produced at code head b893931 unless noted; SHA-256 in
 MANIFEST.sha256.
 
-- probe_run1.log / probe_run2.log — the pristine-code crash
-  probe, two identical runs (the two-run claim). probe_run3.log
-  — a third run from the fresh-clone replay.
+- probe_run2.log / probe_run3.log — the pristine-code crash
+  probe, the two identical confirming runs (H1-A/H1-B HYBRID;
+  CP1-CP3 OLD_ONLY; CP4/CP0 NEW_PAIR). probe_run1.log — an
+  earlier grounding run retained for completeness: the crash
+  seams were not yet calibrated (CRASH_NOT_OBSERVED verdicts,
+  CP0 COMMIT_FAILED); it is NOT one of the confirming runs.
 - mr28_probe.py — the probe source, extracted verbatim from
   commit 132f39b (its only committed form).
 - suite_run1.log — suite 45/45 at b893931.

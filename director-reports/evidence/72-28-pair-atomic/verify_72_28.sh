@@ -94,8 +94,8 @@ echo "== step 3: suite at final PR head"
 run_suite "$FINAL_SHA" final
 
 echo "== step 4: original probe at final head"
-git show "$PROBE_SHA:mr28_probe.py" > "$WORK/mr28_probe.py" || fail "extract probe"
-python3 "$WORK/mr28_probe.py" > "$WORK/probe.log" 2>&1
+git show "$PROBE_SHA:mr28_probe.py" > mr28_probe.py || fail "extract probe"
+python3 mr28_probe.py parent > "$WORK/probe.log" 2>&1
 rc=$?
 tail -2 "$WORK/probe.log"
 [ $rc -eq 0 ] || fail "probe exit $rc"
