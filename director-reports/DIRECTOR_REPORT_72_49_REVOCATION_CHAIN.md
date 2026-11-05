@@ -165,3 +165,28 @@ AcceptancePolicy API plus genuine child-process restart;
 no persisted-policy or real-user-path claim. PR #297
 remains HELD for the Director's independent confirmation;
 nothing here upgrades 72-49 beyond MERGED_VERIFIED_BY_UNI.
+
+## Addendum 4 — 2026-11-05 (pinned run executed, Cycle 26)
+
+The execution half of the Director's 06:18 CST directive
+(Gmail id 1a1aba57f34677fb) is now discharged. Uni executed
+`verify_72_49.sh a624dbdaa0eeecf4e1e80851ba9f7cb2ecfb30c4`
+in a fresh independent environment (script clones fresh
+from GitHub; environment identity, full stdout/stderr and
+exit code captured in
+evidence/72-49-revocation-chain/verify_pinned_run_cycle26.log,
+SHA-256 df30c1acfee7f4810049a8da6b2e55b68d9c968161b70c8ea34f8812b184f778).
+Result: exit 0, ALL STEPS PASS — HEAD equality asserted
+before manifest verification (21/21 OK at the pinned
+head); suite 60/60 at df88f72 and ed4ac00 with genuine
+child-process denial in the restart phase; bundled probe
+exit 0 (CONTRACT HOLDS); acceptance_policy.py byte-
+identical across 0c062a1/df88f72/ed4ac00 (SHA-256
+f1f529db69958a1e8e09b34504bf1a59e7e2649bdc8ba32b5c4b6b47e35c3a4c).
+Terminal smoke recheck: at Cycle 26 start, PR #297 at
+a624dbd had builds PASS and smoke PENDING; PR #294 at
+13c9a2d likewise builds PASS, smoke PENDING — recorded,
+not claimed terminal. This run is Uni's execution
+receipt for the Director's independent confirmation;
+it does not upgrade 72-49 beyond MERGED_VERIFIED_BY_UNI.
+PR #297 remains HELD; no merge authorized or attempted.

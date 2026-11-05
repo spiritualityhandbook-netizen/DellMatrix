@@ -143,3 +143,26 @@ as a run log; until that run exists, NO execution of the
 pinned script is claimed here. Scope remains strictly the
 in-memory AcceptancePolicy API plus genuine child-process
 restart — no persisted-policy and no real-user-path claim.
+
+PINNED RUN EXECUTED (Cycle 26, 2026-11-05 06:42 CST):
+verify_72_49.sh a624dbdaa0eeecf4e1e80851ba9f7cb2ecfb30c4
+executed by Uni in a fresh independent clone (the script
+clones fresh from GitHub into a temp dir; no local state
+used). Full receipts in verify_pinned_run_cycle26.log
+(SHA-256 df30c1acfee7f4810049a8da6b2e55b68d9c968161b70c8ea34f8812b184f778):
+environment htch-runtime, Linux 7.0.0-39-generic x86_64,
+git 2.43.0, Python 3.12.3, 2026-11-05T12:42:58Z. Result:
+exit code 0; HEAD equality asserted before manifest
+verification; MANIFEST 21/21 OK at the pinned head;
+suite SM32 60/60 GREEN at df88f72 and at ed4ac00 (restart
+phase = genuine child OS process denying every prior-
+session artifact); bundled probe exit 0, PROBE VERDICT:
+CONTRACT HOLDS (cross-process leg included);
+acceptance_policy.py SHA-256
+f1f529db69958a1e8e09b34504bf1a59e7e2649bdc8ba32b5c4b6b47e35c3a4c
+byte-identical across 0c062a1 / df88f72 / ed4ac00;
+final line VERIFY_72_49: ALL STEPS PASS. Scope remains
+strictly the in-memory AcceptancePolicy API plus genuine
+child-process restart. This is Uni's execution receipt,
+supplied for the Director's independent confirmation;
+PR #297 remains HELD, no merge or certification inferred.
