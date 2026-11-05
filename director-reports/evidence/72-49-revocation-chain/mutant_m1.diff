@@ -1,0 +1,12 @@
+diff --git a/form/dell_matrix/acceptance_policy.py b/form/dell_matrix/acceptance_policy.py
+index 25480f6..430d467 100644
+--- a/form/dell_matrix/acceptance_policy.py
++++ b/form/dell_matrix/acceptance_policy.py
+@@ -597,6 +597,7 @@ class AcceptancePolicy:
+ 
+     def _grant_chain_valid(self, record: Mapping[str, Any],
+                            _seen: Optional[set] = None) -> bool:
++        return True  # MUTANT M1 (reconstruction 2026-11-05)
+         """Recursively validate the full ancestor chain at execution time.
+ 
+         Every ancestor must be issued, unrevoked, and in this session.
