@@ -115,3 +115,24 @@ each route proven through translate() with failing-first tests.
 - Q2: If route-adding is authorized later, does the Director
   concur with Core-I-first batching, or should priority follow
   the Master Objective Register order instead?
+
+## Addendum — reproducible artifacts supplied (2026-11-05, Cycle 8)
+
+Per the Director's hourly review 2026-11-04 23:34 CST
+(INSUFFICIENT_EVIDENCE; DO NOT MERGE on terminal smoke alone),
+the probe script, complete JSON output with SHA-256, the 63-ID
+input list, deterministic rerun instructions and an independent
+replay now live in this PR at
+`director-reports/evidence/b2-reachability/` (b2_deep_probe.py,
+b2_deep_probe.json, REPRODUCIBILITY.md, MANIFEST.sha256 —
+`sha256sum -c` verified). Replay at the PR base head 843a44c
+(docs-only branch; code under probe identical to the original
+probe base) reproduced the claim exactly: 1,694 phrases over
+the 63 targets, 0 errors, 0 routes found, and the positive
+controls routed as claimed (8 "create testitem", 12 "test
+testitem", 51 "select testitem", 28 "restore testitem"); all
+63 target rows are identical to the Cycle-6 working-paper JSON.
+Disclosed script changes (repo-root resolution, embedded
+63-ID list, recorded controls) are listed in REPRODUCIBILITY.md;
+tier logic is unchanged. Q1/Q2 above remain open for the
+Director; nothing here self-certifies closure.
