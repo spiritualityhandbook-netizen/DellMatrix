@@ -97,14 +97,37 @@ def _unit(program, unit_id: str):
 
 
 def _isolation_key(unit):
-    """Sandbox isolation key (TD7). An inconsistent unit
-    (sandboxed with no id) keys as (True, None) and therefore
-    differs from every unsandboxed unit — fail closed."""
+    """Sandbox isolation key (TD7): (sandboxed, sandbox_id) for a
+    sandboxed unit, (False, None) for an unsandboxed one."""
     sandboxed = bool(getattr(unit, "sandboxed", False))
     return (sandboxed, getattr(unit, "sandbox_id", None) if sandboxed else None)
 
 
+def _malformed_sandbox(unit):
+    """A unit is malformed when it claims sandbox isolation but
+    carries no valid sandbox id (missing, empty, or not a string).
+    Two such units key identically as (True, None), so key equality
+    alone can never refuse them — F1 (Director review 2026-11-04):
+    malformed endpoints are refused outright, before any mint,
+    regardless of the other endpoint."""
+    if not bool(getattr(unit, "sandboxed", False)):
+        return False
+    sid = getattr(unit, "sandbox_id", None)
+    return not (isinstance(sid, str) and sid != "")
+
+
 def _check_sandbox(child, parent, partial):
+    for unit in (child, parent):
+        if _malformed_sandbox(unit):
+            raise ContainmentRefused(
+                "sandbox_boundary",
+                f"unit {unit.id!r} claims sandbox isolation but has "
+                f"no valid sandbox_id "
+                f"({getattr(unit, 'sandbox_id', None)!r}); refusing "
+                f"malformed sandboxed endpoint before any binding",
+                unit_id=unit.id,
+                child_unit_id=child.id, parent_unit_id=parent.id,
+                partial_bindings=list(partial))
     if _isolation_key(child) != _isolation_key(parent):
         raise ContainmentRefused(
             "sandbox_boundary",
