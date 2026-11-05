@@ -1,0 +1,172 @@
+verify-72-28	Set up job	﻿2026-11-05T16:12:52.9937276Z Current runner version: '2.338.2'
+verify-72-28	Set up job	2026-11-05T16:12:52.9959074Z ##[group]Runner Image Provisioner
+verify-72-28	Set up job	2026-11-05T16:12:52.9959810Z Hosted Compute Agent
+verify-72-28	Set up job	2026-11-05T16:12:52.9960358Z Version: 20261028.624
+verify-72-28	Set up job	2026-11-05T16:12:52.9960929Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+verify-72-28	Set up job	2026-11-05T16:12:52.9961550Z Build Date: 2026-10-28T21:51:42Z
+verify-72-28	Set up job	2026-11-05T16:12:52.9962168Z Worker ID: {709bb741-63da-4d83-a501-c3ed77e2c3d6}
+verify-72-28	Set up job	2026-11-05T16:12:52.9962750Z Region: westus
+verify-72-28	Set up job	2026-11-05T16:12:52.9963235Z Cloud: Azure
+verify-72-28	Set up job	2026-11-05T16:12:52.9963700Z ##[endgroup]
+verify-72-28	Set up job	2026-11-05T16:12:52.9965020Z ##[group]Operating System
+verify-72-28	Set up job	2026-11-05T16:12:52.9965635Z Ubuntu
+verify-72-28	Set up job	2026-11-05T16:12:52.9966062Z 26.04.1
+verify-72-28	Set up job	2026-11-05T16:12:52.9966517Z LTS
+verify-72-28	Set up job	2026-11-05T16:12:52.9966954Z ##[endgroup]
+verify-72-28	Set up job	2026-11-05T16:12:52.9967442Z ##[group]Runner Image
+verify-72-28	Set up job	2026-11-05T16:12:52.9967972Z Image: ubuntu-26.04
+verify-72-28	Set up job	2026-11-05T16:12:52.9968446Z Version: 20261101.186.1
+verify-72-28	Set up job	2026-11-05T16:12:52.9969292Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261101.186/images/ubuntu/Ubuntu2604-Readme.md
+verify-72-28	Set up job	2026-11-05T16:12:52.9970769Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261101.186
+verify-72-28	Set up job	2026-11-05T16:12:52.9971588Z ##[endgroup]
+verify-72-28	Set up job	2026-11-05T16:12:52.9972570Z ##[group]GITHUB_TOKEN Permissions
+verify-72-28	Set up job	2026-11-05T16:12:52.9974128Z Contents: read
+verify-72-28	Set up job	2026-11-05T16:12:52.9974842Z Metadata: read
+verify-72-28	Set up job	2026-11-05T16:12:52.9975723Z Packages: read
+verify-72-28	Set up job	2026-11-05T16:12:52.9976186Z ##[endgroup]
+verify-72-28	Set up job	2026-11-05T16:12:52.9977878Z Secret source: Actions
+verify-72-28	Set up job	2026-11-05T16:12:52.9978856Z Cache mode: write
+verify-72-28	Set up job	2026-11-05T16:12:52.9979418Z Prepare workflow directory
+verify-72-28	Set up job	2026-11-05T16:12:53.0240413Z Prepare all required actions
+verify-72-28	Set up job	2026-11-05T16:12:53.0279446Z Getting action download info
+verify-72-28	Set up job	2026-11-05T16:12:53.3755330Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+verify-72-28	Set up job	2026-11-05T16:12:53.5267606Z Complete job name: verify-72-28
+verify-72-28	Check out the supplement head (script source only)	﻿2026-11-05T16:12:53.6019484Z ##[group]Run actions/checkout@v4
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6020176Z with:
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6020606Z   repository: spiritualityhandbook-netizen/DellMatrix
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6023610Z   token: ***
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6023972Z   ssh-strict: true
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6024341Z   ssh-user: git
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6024865Z   persist-credentials: true
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6025270Z   clean: true
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6025636Z   sparse-checkout-cone-mode: true
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6026069Z   fetch-depth: 1
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6026428Z   fetch-tags: false
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6026797Z   show-progress: true
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6027167Z   lfs: false
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6027592Z   submodules: false
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6028013Z   set-safe-directory: true
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6028434Z   allow-unsafe-pr-checkout: false
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.6029083Z ##[endgroup]
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8536052Z Syncing repository: spiritualityhandbook-netizen/DellMatrix
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8538106Z ##[group]Getting Git version info
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8539124Z Working directory is '/home/runner/work/DellMatrix/DellMatrix'
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8540210Z [command]/usr/bin/git version
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8547709Z git version 2.56.0
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8562895Z ##[endgroup]
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8574961Z Temporarily overriding HOME='/home/runner/work/_temp/2fcb9a1e-6c1d-41a1-9a06-3b66ded968b1' before making global git config changes
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8576136Z Adding repository directory to the temporary git global config as a safe directory
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8578603Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/DellMatrix/DellMatrix
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8636182Z Deleting the contents of '/home/runner/work/DellMatrix/DellMatrix'
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8639903Z ##[group]Initializing the repository
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8643571Z [command]/usr/bin/git init /home/runner/work/DellMatrix/DellMatrix
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8763629Z hint: Using 'master' as the name for the initial branch. This default branch name
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8765122Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8766366Z hint: to use in all of your new repositories, which will suppress this warning,
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8767232Z hint: call:
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8767649Z hint:
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8768147Z hint: 	git config --global init.defaultBranch <name>
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8768657Z hint:
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8769125Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8770023Z hint: 'development'. The just-created branch can be renamed via this command:
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8770608Z hint:
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8770952Z hint: 	git branch -m <name>
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8771342Z hint:
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8771962Z hint: Disable this message with "git config set advice.defaultBranchName false"
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8776456Z Initialized empty Git repository in /home/runner/work/DellMatrix/DellMatrix/.git/
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8787036Z [command]/usr/bin/git remote add origin https://github.com/spiritualityhandbook-netizen/DellMatrix
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8834069Z ##[endgroup]
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8834927Z ##[group]Disabling automatic garbage collection
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8838380Z [command]/usr/bin/git config --local gc.auto 0
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8867330Z ##[endgroup]
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8868044Z ##[group]Setting up auth
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8873672Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.8902173Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.9315863Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.9356488Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.9590156Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.9619218Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.9862202Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.9896673Z ##[endgroup]
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.9897487Z ##[group]Fetching the repository
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:53.9904311Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +83d18ca0c67722626781b0b62f61713454b57289:refs/remotes/origin/uni/72-28-evidence-supplement
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.3806525Z From https://github.com/spiritualityhandbook-netizen/DellMatrix
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.3809210Z  * [new ref]         83d18ca0c67722626781b0b62f61713454b57289 -> origin/uni/72-28-evidence-supplement
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.3814145Z ##[endgroup]
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.3816178Z ##[group]Determining the checkout info
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.3818130Z ##[endgroup]
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.3819381Z [command]/usr/bin/git sparse-checkout disable
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.3863013Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.3889554Z ##[group]Checking out the ref
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.3899086Z [command]/usr/bin/git checkout --progress --force -B uni/72-28-evidence-supplement refs/remotes/origin/uni/72-28-evidence-supplement
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.4967967Z Switched to a new branch 'uni/72-28-evidence-supplement'
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.4970989Z branch 'uni/72-28-evidence-supplement' set up to track 'origin/uni/72-28-evidence-supplement'.
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.4986216Z ##[endgroup]
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.5026073Z [command]/usr/bin/git log -1 --format=%H
+verify-72-28	Check out the supplement head (script source only)	2026-11-05T16:12:55.5047104Z 83d18ca0c67722626781b0b62f61713454b57289
+verify-72-28	Run pinned verification at the exact pushed head	﻿2026-11-05T16:12:55.5299114Z ##[group]Run bash director-reports/evidence/72-28-pair-atomic/verify_72_28.sh "83d18ca0c67722626781b0b62f61713454b57289"
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:55.5302089Z ^[[36;1mbash director-reports/evidence/72-28-pair-atomic/verify_72_28.sh "83d18ca0c67722626781b0b62f61713454b57289"^[[0m
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:55.5352704Z shell: /usr/bin/bash -e {0}
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:55.5353706Z ##[endgroup]
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:55.5527475Z == verify_72_28: env: host=runnervmwuk1x python=Python 3.14.4 date=2026-11-05T16:12:55Z
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:55.5531574Z == pins: code=b8939310b3fb0dc9049cb98a33cd1e28d0d26ebb final=2fefcdceea1c28251c53ca90028772ebb5713a1e merge=a585a6ddba9fb2128a3cc927bd4bf826c1a83fb8 supplement=83d18ca0c67722626781b0b62f61713454b57289
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7029382Z == step 1: pinned supplement checkout + HEAD equality + manifest
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7926904Z EVIDENCE.md: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7927525Z verify_72_28.sh: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7929262Z mr28_probe.py: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7929585Z fresh_clone.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7930001Z mutant_m1.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7930301Z mutant_m2.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7930616Z mutant_m3.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7930896Z probe_run1.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7931216Z probe_run2.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7931563Z probe_run3.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7931914Z regress_chain.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7932240Z regress_leg1.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7932594Z regress_leg2.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7933030Z regress_leg3.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7933418Z suite_post_revert.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7933766Z suite_run1.log: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7934100Z mutant_m1_recon.diff: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7934628Z mutant_m2_recon.diff: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7934979Z mutant_m3_recon.diff: OK
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7939239Z PASS step 1
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:56.7940984Z == step 2: suite at executed code head
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:59.0796306Z [PASS] CP0: old pair members still present
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:59.0796987Z SM35: 45/45 GREEN
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:59.0813939Z PASS suite at code (b8939310b3fb0dc9049cb98a33cd1e28d0d26ebb)
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:12:59.0814906Z == step 3: suite at final PR head
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:01.2141118Z [PASS] CP0: old pair members still present
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:01.2141493Z SM35: 45/45 GREEN
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:01.2157396Z PASS suite at final (2fefcdceea1c28251c53ca90028772ebb5713a1e)
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:01.2157932Z == step 4: original probe at final head
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:03.2892891Z  }
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:03.2893167Z ]
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:03.2896420Z PASS step 4
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:03.2896853Z == step 5: byte identity across heads
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:03.2998836Z   form/sm35_pair_atomic_test.py code=4c39cbc430e4a5165d301e09c1b6cbc9f07280aae869f866bf61a5fb85a26717 final=4c39cbc430e4a5165d301e09c1b6cbc9f07280aae869f866bf61a5fb85a26717 merge=4c39cbc430e4a5165d301e09c1b6cbc9f07280aae869f866bf61a5fb85a26717
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:03.3101328Z   form/persist_rest.py code=ac5d711da630355e57d3d7175052ad04b765cd8c823a95dfb884990e159ccd21 final=ac5d711da630355e57d3d7175052ad04b765cd8c823a95dfb884990e159ccd21 merge=ac5d711da630355e57d3d7175052ad04b765cd8c823a95dfb884990e159ccd21
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:03.3199178Z   form/mandell/checkpoint_generation.py code=6d43f9040a1300b3875832f79565c3af9abfb778dd3c876d79f21bb573084568 final=6d43f9040a1300b3875832f79565c3af9abfb778dd3c876d79f21bb573084568 merge=6d43f9040a1300b3875832f79565c3af9abfb778dd3c876d79f21bb573084568
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:03.3200599Z PASS step 5
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:03.3200990Z == step 6: mutant re-executions at final head (supplement executions)
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:04.8772104Z PASS mutant M1 killed at signature: CP3: checkpoint verdict is OLD_ONLY
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:06.6950635Z PASS mutant M2 killed at signature: CP4: checkpoint verdict is NEW_PAIR
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:07.3634236Z PASS mutant M3 killed at signature: H1-B: ordinary program-first crash exposes HYBRID pair
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:07.3635069Z PASS step 6
+verify-72-28	Run pinned verification at the exact pushed head	2026-11-05T16:13:07.3635243Z ALL STEPS PASS
+verify-72-28	Post Check out the supplement head (script source only)	﻿2026-11-05T16:13:07.3747670Z Post job cleanup.
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4437604Z [command]/usr/bin/git version
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4476948Z git version 2.56.0
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4509055Z Temporarily overriding HOME='/home/runner/work/_temp/2869256c-1ebd-4243-bf77-1a3243583cca' before making global git config changes
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4510028Z Adding repository directory to the temporary git global config as a safe directory
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4513232Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/DellMatrix/DellMatrix
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4548081Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4581177Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4864677Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4897987Z http.https://github.com/.extraheader
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4901558Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.4937255Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.5216425Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+verify-72-28	Post Check out the supplement head (script source only)	2026-11-05T16:13:07.5236281Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+verify-72-28	Complete job	﻿2026-11-05T16:13:07.5612431Z Cleaning up orphan processes
+verify-72-28	Complete job	2026-11-05T16:13:07.5938736Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -204,3 +204,19 @@ reconciliation demanded.
   E); CP2's two recovery call sites remain unchanged pending
   a separately scoped review. No Part B or Q1 implementation
   is authorized by anything in this supplement.
+
+### Addendum 1 receipt — independent CI execution (2026-11-05)
+
+The verify-72-28 GitHub Actions workflow executed
+verify_72_28.sh at supplement head 83d18ca0 on a GitHub-hosted
+runner (run 42062153339, conclusion SUCCESS; runner
+runnervmwuk1x, Python 3.14.4): manifest verified, suite
+45/45 at b893931 and at 2fefcdc, probe exit 0, byte identity
+across b893931/2fefcdc/a585a6d, and all three mutant
+re-executions killed at the original CP3/CP4/H1-B
+signatures — ALL STEPS PASS. Full log:
+evidence/72-28-pair-atomic/verify_72_28_ci_run.log. The job
+re-executes at the final supplement head on this receipts
+push; that run is the receipt for the final head. This is
+independent execution evidence for the Director's scoped
+confirmation decision; it is not itself a confirmation.
