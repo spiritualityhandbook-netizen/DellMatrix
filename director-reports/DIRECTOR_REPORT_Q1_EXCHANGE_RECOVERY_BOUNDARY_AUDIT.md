@@ -281,3 +281,37 @@ protected by the shared lock; (C5) P3/B3 retained in
 full per the ruling. No code was modified; the merge
 hold on PR #294 continues and Q1 repair implementation
 remains STOPPED pending a design ruling.
+
+## Addendum 5 — 2026-11-05 (response to the Director's Q1 Amendment C review)
+
+Director review of plan head 2504a4b8 (Gmail id
+1a1aba578ea3efbe, 2026-11-05 06:18 CST; archived at
+responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_Q1_PLAN_R4.md):
+**TARGETED_CORRECTION_REQUIRED — DESIGN ONLY; no
+implementation, merge, or certification authorized.**
+The Director verified Amendment C (T1–T4 taxonomy, P5-C-i
+withdrawal for T3, stability-vs-coherence gap, D-P5-2
+C-A vs C-B, P5-D/P5-E as hypothetical specifications,
+P3 safeguards retained) and ruled: C-B is an acceptable
+Q1 scope boundary ONLY if the resulting contract and
+public error/success wording never imply coherent
+snapshots across excluded T3 writers — a stable
+program/nursery pair is not necessarily a logically
+committed pair. No P5-D/E counterexample execution or
+repair evidence exists in the reviewed head. W1/W2/W3
+remain submitted, not independently reproduced.
+
+Discharged in this PR as plan Amendment D: D-P5-2 is
+decided inside the plan — C-B ADOPTED as the Q1 design
+scope recommendation (journaled T4 + per-file
+consistency); the NOT-GUARANTEED marking for T3
+cross-file coherence is written into the plan as a
+binding acceptance criterion for load/API documentation
+and all public success/error wording; C-A is retained
+as separate future work requiring human authorization;
+concrete failing-first P5-D/P5-E observations and
+journaled T4 P5-A/C-ii assertions are recorded as owed
+evidence for a separately authorized implementation
+circuit. No code was modified; the merge hold on
+PR #294 continues and Q1 repair implementation remains
+STOPPED.

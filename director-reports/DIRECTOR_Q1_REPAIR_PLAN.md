@@ -1053,3 +1053,91 @@ plan head for a design ruling. Decisions requested:
 writer-taxonomy correction and that B3/P3 stands
 retained. The #294 MERGE HOLD continues; Q1 repair
 implementation remains STOPPED pending that ruling.
+
+## Amendment D — response to the Director's Q1 Amendment C review (2026-11-05 06:18 CST)
+
+Director review of plan head 2504a4b8 (Gmail id
+1a1aba578ea3efbe, 2026-11-05 06:18 CST; archived verbatim at
+responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_Q1_PLAN_R4.md):
+**TARGETED_CORRECTION_REQUIRED — DESIGN ONLY.** Verified by
+the Director: Amendment C's T1–T4 writer taxonomy, the
+withdrawal of the P5-C-i pair-coherence assertion for T3,
+the fingerprint-stability vs cross-file-coherence gap,
+D-P5-2 (C-A vs C-B), P5-D/P5-E labeled hypothetical
+specifications (not executed probes), and P3 journal
+identity safeguards retained. No implementation, merge, or
+certification is authorized by the review. W1/W2/W3 remain
+SUBMITTED, not independently reproduced.
+
+### D1. D-P5-2 decided as the design recommendation: C-B
+
+Per the Director's directive ("Proceed with C-B as the Q1
+design scope recommendation"), decision D-P5-2 is closed
+inside this plan: **C-B is adopted.** Q1's repair scope is
+the journaled T4 transactions (import / recovery) plus
+per-file consistency for every other load. T3
+caller-composed two-step pair updates are EXCLUDED from
+Q1's coherence scope.
+
+### D2. Mandatory NOT-GUARANTEED marking (binding wording)
+
+The Director's condition on accepting C-B: the resulting
+contract and public error/success wording must NEVER imply
+coherent snapshots across excluded T3 writers. Any
+implementation circuit, and the load/API documentation it
+touches, MUST carry this marking in substance:
+
+- Cross-file (program + nursery) pair coherence across T3
+  writers is **NOT GUARANTEED**.
+- A stable program/nursery pair is NOT necessarily a
+  logically committed pair; fingerprint equality proves
+  stability at an instant, never transaction coherence
+  (the Director's finding, retained verbatim in substance).
+- Pair coherence is claimed ONLY against T4 journaled
+  transactions, where a transaction/intent boundary
+  exists; every other load's guarantee is per-file
+  consistency (each file a complete generation or a
+  fail-closed refusal), nothing more.
+- No success or error message, docstring, or acceptance
+  criterion may describe an unvalidated or per-file load
+  as exposing a coherent pair snapshot.
+
+This marking is an acceptance criterion for the future
+implementation circuit, not optional documentation polish.
+
+### D3. C-A deferred — separate work, human authorization
+
+C-A (serializing T3 pair updates through a canonical
+pair-save funnel / spanning transaction) is retained as
+SEPARATE FUTURE WORK requiring human authorization
+(Ace/Director). It is not part of Q1, and it overlaps the
+72-28 Part B question (ordinary-save pair atomicity),
+whose repair likewise remains unruled. Nothing in this
+plan builds, prototypes, or pre-authorizes C-A.
+
+### D4. Evidence owed when an implementation circuit is presented
+
+The Director orders, for the moment a SEPARATELY
+AUTHORIZED implementation circuit is presented:
+concrete FAILING-FIRST P5-D and P5-E observations
+(executed two-process counterexamples with disk-byte
+verdicts — not the C4 specifications alone) and journaled
+T4 assertions for P5-A and P5-C-ii. Until that circuit
+exists, P5-D/P5-E remain hypothetical specifications and
+no P5-D/E counterexample execution or repair evidence
+exists — this plan does not claim otherwise.
+
+### D5. Retained and disposition
+
+P3/B3 (trusted entry snapshot, disposal-time import_id
+identity check, N0–N3 per-case demonstrations) and B0
+(the A4 success predicate is PROPOSED DESIGN, not an
+executed guarantee) are retained unchanged.
+
+No code was modified by this amendment; no probe was
+executed. The plan, as corrected by Amendment D, is
+presented as ONE new frozen plan head for a design
+ruling. The #294 MERGE HOLD continues; Q1 repair
+implementation remains STOPPED pending a separately
+authorized implementation circuit and the Director's
+ruling on this head.
