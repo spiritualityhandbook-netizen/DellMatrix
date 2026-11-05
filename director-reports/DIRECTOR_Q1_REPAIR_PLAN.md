@@ -18,7 +18,17 @@ TARGETED_CORRECTION_REQUIRED, plan only): see Amendment B
 at the end of this document (P5 consistency boundary +
 P5-R fail-closed validation + adversarial probe spec; P3
 trusted entry snapshot + pid=None/no_target evidence cases;
-A4 predicate labeled proposed design only).**
+A4 predicate labeled proposed design only). **Further
+corrected under the Director's Amendment B review at head
+2bf7d9a4 (Gmail id 1a1ab862b9532954, 2026-11-05 05:44 CST
+— TARGETED_CORRECTION_REQUIRED, plan only, hold
+implementation and merge): see Amendment C at the end of
+this document (writer taxonomy corrected by transaction
+shape T1–T4; B2 P5-C-i rationale and B1 soundness claim
+withdrawn for two-step T3 writers; contract decision
+D-P5-2 — serialize T3 as a separate circuit vs exclude
+T3 and narrow the load contract, recommended; P5-D/P5-E
+counterexample spec; P3 retained).**
 
 ## Scope (bounded, exactly the ruled circuit)
 
@@ -820,4 +830,226 @@ acknowledgement that B3's snapshot + per-case
 demonstrations satisfy the P3 correction; and the
 standing R1–R4 / Q1-1 design question for the repair
 shape as a whole. The #294 MERGE HOLD continues; Q1 repair
+implementation remains STOPPED pending that ruling.
+
+## Amendment C — response to the Director's Q1 Amendment B review (2026-11-05 05:44 CST)
+
+Director review of the corrected plan at head 2bf7d9a4
+(Gmail id 1a1ab862b9532954, 2026-11-05 05:44 CST; archived
+at responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_Q1_PLAN_R3.md)
+ruled **TARGETED_CORRECTION_REQUIRED — PLAN ONLY; HOLD
+implementation and merge; no certification.** Verified by
+the Director: the bounded diff is documentation/evidence,
+exact-head CI SUCCESS (3/3), and Amendment B's withdrawals,
+P5-R proposal, probe specs, and P3 snapshot anchoring are
+design specifications, not executed repairs.
+
+**The finding is accepted, and Uni verified it
+independently against source at the audited base before
+drafting this amendment** (source unchanged at 2bf7d9a4;
+PR #294 is docs-only):
+
+- `persist_rest.save`, canonical path
+  (form/persist_rest.py:150–159): the `owner_state_lock`
+  context wraps ONLY `_refuse_if_binding_loss` and
+  `_write_program_file` — i.e., the program file's own
+  write. The lock is RELEASED when `save()` returns. It
+  never spans any following write.
+- `Nursery.save` (form/dell_matrix/nursery.py:278ff):
+  takes NO `owner_state_lock` at all. Its only concurrency
+  guard is a per-instance on-disk signature check
+  (`_disk_sig` vs `self._seen`, NurseryConflictError),
+  followed by a direct `atomic_write_json` of the nursery
+  file.
+- Therefore a logical update performed as
+  `persist_rest.save(...)` followed by `Nursery.save()`
+  (or the reverse order) is TWO independent single-file
+  transactions with a durable, observable intermediate
+  state between them, during which NO lock is held by
+  anyone. Callers composing the pair this way exist at
+  the audited base, e.g. form/dell_matrix/
+  confirm_lineage.py (persist_rest.save at :419/:461 with
+  nursery.save at :424/:459) and the Exchange import path
+  itself (exchange.py:525, program.nursery.save inside
+  the import sequence whose program half is a separate
+  save).
+
+### C1. Corrected writer taxonomy (supersedes B1's table)
+
+B1's table listed writers by file touched and "lock
+today," which invited the false inference that a LOCKED
+program save plus a following nursery save inherits the
+lock. The taxonomy is now by TRANSACTION SHAPE:
+
+| Class | Shape | Lock / intent spanning the whole shape | Examples at audited base |
+|---|---|---|---|
+| T1 | Single-file write | The write itself is the transaction; canonical program saves hold `owner_state_lock` for that one write only | `persist_rest.save` (program file) |
+| T2 | Single-file write, unlocked | Per-instance signature check only; no owner lock | `Nursery.save` (nursery file) |
+| T3 | Caller-composed TWO-STEP logical pair update: a T1 and a T2 (either order) issued as one logical operation | **NONE.** No lock, journal, or intent record spans the two steps; the intermediate pair (one file new, one old) is durable and observable | confirm_lineage pair saves; the ordinary save path characterized independently by the 72-28 probes (H1 CONFIRMED both orders at main ed4ac00: an interrupted T3 leaves a hybrid live pair a fresh load exposes) |
+| T4 | Journaled transaction with an intent record and a recovery path | The journal/intent IS the transaction boundary (its lock discipline is A1's subject) | Exchange import/recovery; checkpoint seal (72-28 CP0–CP4: never hybrid) |
+
+Only T4 has a transaction-level pair boundary today.
+T3 has none, and no wording in this plan may describe a
+T3 update as "lock-held," "in-scope for the shared lock,"
+or protected by P5-R validation.
+
+### C2. Withdrawals (Amendment B text superseded)
+
+1. **B2's P5-C-i repaired-code PASS rationale is
+   WITHDRAWN.** It claimed the shared lock prevents /
+   validates C-i because "S holds it; L's validation
+   cannot pass mid-save." For a T3 saver that is false:
+   after `persist_rest.save` returns, S holds nothing,
+   and L's validation can pass in the inter-step window
+   and ratify the intermediate hybrid as coherent.
+2. **B1 step 3's soundness claim is WITHDRAWN as applied
+   to T3 writers.** It asserted every in-scope pair
+   writer "holds that same lock across its pair
+   mutations, so none was mid-transaction at that
+   instant." A T3 writer holds the lock across NEITHER
+   step jointly; at the validation instant it can be
+   exactly mid-logical-transaction with no lock held.
+   The claim survives ONLY for T4 transactions after the
+   A1 repair (repaired import/recovery holding the lock
+   across their whole transaction) and for T1's single
+   file.
+3. **The general principle, stated plainly:** fingerprint
+   equality across a read window proves the pair was
+   STABLE during that window — no completed replacement
+   intervened. Stability is not transaction-level
+   coherence: a stable intermediate state of a T3 update
+   is still an intermediate state. Equality of
+   fingerprints at validation cannot prove semantic pair
+   coherence for any writer without a common transaction.
+
+### C3. The precise proposed contract (decision D-P5-2)
+
+The Director's two offered shapes, made precise:
+
+- **Option C-A — serialize T3.** A canonical pair-save
+  funnel holds `owner_state_lock` across BOTH single-file
+  writes of a logical pair update (the T1 save joins
+  reentrantly; Nursery.save is invoked inside the same
+  lock acquisition), and every in-scope caller composing
+  a pair update is migrated to the funnel. Only then may
+  a load claim pair coherence against T3 writers, and
+  only for funnel users; direct T1/T2 callers remain
+  outside the claim. This is a REAL scope expansion
+  beyond the Q1 Exchange/recovery boundary: it touches
+  persist_rest, Nursery, and their callers, and it
+  overlaps the 72-28 Part B question (ordinary-path pair
+  atomicity), which the Director has not ruled a repair
+  for either. C-A therefore cannot be folded into the Q1
+  repair by Uni's choice; it needs its own ruling.
+- **Option C-B — exclude T3 and narrow the contract
+  (RECOMMENDED for the Q1 circuit).** The load contract
+  after the Q1 repair is stated as exactly:
+  (i) per-file consistency for every load — each file
+  exposed is one complete file generation
+  (atomic_write's contract); (ii) pair coherence is
+  claimed ONLY against T4 transactions (Exchange
+  import/recovery under the A1 lock discipline, and the
+  checkpoint seal) — the writers the Q1 repair actually
+  serializes, where a transaction boundary exists to
+  validate against; (iii) T3 two-step updates are
+  EXPLICITLY EXCLUDED: a load concurrent with a T3
+  update may expose its intermediate pair, and that
+  exposure is a documented contract boundary, not a
+  defect the Q1 repair claims to close; (iv) P5-R
+  lock-light validation is retained ONLY as a detector
+  for the T4 scope (journal appearance + fingerprint
+  drift during the read window → locked retry / fail
+  closed); it is NOT represented as proving coherence
+  against T2/T3 writers. The unlocked-Nursery case in
+  C4/P5-E is the standing counterexample that fixes this
+  boundary.
+
+**Decision requested (D-P5-2):** rule C-B as the Q1 load
+contract (recommended), or rule C-A as a separately
+scoped circuit (in which case the Q1 repair proceeds
+under C-B's contract in the interim, and C-A is queued
+with the 72-28 Part B question). The earlier D-P5
+decision is superseded by D-P5-2; P5-R as originally
+scoped in Amendment B is NOT presented for adoption.
+
+### C4. Deterministic two-process counterexample SPEC (specification only — not executed by this amendment)
+
+Harness law as in B2 (genuine child OS processes,
+isolated owner/state dir, seams pause only at real code
+boundaries and change no logic, verdicts from disk bytes
++ the loader's exposed state, two identical runs
+required). Both cases are T3; NEITHER is protected by the
+shared lock, and this plan does not call them protected.
+
+- **P5-D — the inter-step window.** Writer W performs
+  one logical pair update as a T3: it adds a unit whose
+  program-side record references a nursery proposal,
+  calls `persist_rest.save(program)` to completion, and
+  the seam pauses W AFTER save() has returned (lock
+  released, program file = new generation) and BEFORE
+  `Nursery.save()` is called (nursery file = old
+  generation). Loader L then runs a full
+  `persist_rest.load`. Assert the ACTUAL result.
+  Predicted verdict on current code (HYPOTHESIS, argued
+  from C1's source facts, not a finding): L succeeds and
+  exposes the intermediate pair — program-new /
+  nursery-old. Asserted additionally against the FUTURE
+  repaired code as a contract test: under C-B, L exposing
+  that pair is CONTRACT-CONFORMING (T3 excluded) and the
+  test pins the boundary so it can never be silently
+  upgraded to a coherence claim; under a future C-A
+  funnel, the same seam placed around the funnel call
+  must instead show L blocked/retried or exposed only to
+  a complete pair generation. The counterexample's
+  force: any validation that PASSES in this window
+  (P5-R as written in Amendment B would, the pair being
+  stable) is thereby proven to certify stability, not
+  coherence.
+- **P5-E — unlocked nursery write completed BEFORE
+  fingerprint capture.** Writer W performs the
+  nursery-first half of a T3 update via a direct
+  `Nursery.save()` and it COMPLETES; only then does
+  loader L begin (journal probe + initial fingerprints
+  F1). W's program half has not run. L validates.
+  Predicted verdict (HYPOTHESIS, same status as P5-D):
+  every fingerprint agrees at every step — the write is
+  indistinguishable from a quiescent state — yet the
+  exposed pair is the T3 intermediate (nursery-new /
+  program-old). No fingerprint scheme can detect this
+  case; detection would require a transaction/intent
+  record the T3 writer never wrote. P5-E is the reason
+  C3 claims detection only where a transaction boundary
+  exists.
+
+### C5. What is retained unchanged
+
+- **P3 (B3) is retained in full:** the trusted entry
+  snapshot S captured under the lock, the disposal-time
+  `import_id` identity check, and the N0–N3 per-case
+  re-established-outcome demonstrations. The Director's
+  review ordered them retained; nothing in the P5
+  correction touches them (P3 governs the T4 journal
+  path, where a transaction boundary exists).
+- B0 (A4 predicate = proposed design only), the A1 lock
+  call graph for the T4 import/recovery transaction, the
+  scope split (A2: SemanticGraph / per-Idea /
+  core_i_recovery remain separate proposals), and the
+  B4 evidence contract — extended so the repair circuit's
+  failing-first set includes P5-D and P5-E with the
+  C-B/C-A verdict semantics of C4, and mutant M5 is
+  re-scoped: P5-R validation removed must be killed by
+  the T4-scope probes (P5-A / P5-C-ii), NOT by P5-D/E,
+  which pin the contract boundary rather than the
+  validation.
+
+### C6. Disposition
+
+No code was modified by this amendment; no probe was
+executed; P5-D/P5-E predictions are labeled hypotheses
+for the repair circuit's failing-first run. The plan, as
+corrected by Amendment C, is presented as ONE new frozen
+plan head for a design ruling. Decisions requested:
+**D-P5-2** (C3); acknowledgement that C1/C2 satisfy the
+writer-taxonomy correction and that B3/P3 stands
+retained. The #294 MERGE HOLD continues; Q1 repair
 implementation remains STOPPED pending that ruling.

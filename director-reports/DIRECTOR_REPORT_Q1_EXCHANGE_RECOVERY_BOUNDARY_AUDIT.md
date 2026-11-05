@@ -237,3 +237,47 @@ DESIGN, not an executed guarantee. Scope split preserved.
 No code was modified; the merge hold on PR #294 continues
 and Q1 repair implementation remains STOPPED pending a
 design ruling on the corrected plan.
+
+## Addendum 4 — 2026-11-05 (response to the Director's Q1 Amendment B review)
+
+Director review of the corrected plan head 2bf7d9a4
+(Gmail id 1a1ab862b9532954, 2026-11-05 05:44 CST; archived
+at responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_Q1_PLAN_R3.md):
+**TARGETED_CORRECTION_REQUIRED — PLAN ONLY; HOLD
+implementation and merge; no certification.** The Director
+verified the bounded docs-only diff and exact-head CI
+SUCCESS (3/3), and found: Amendment B's P5-C-i assumes a
+canonical program save followed by Nursery.save is one
+lock-held pair transaction — it is not (persist_rest.save
+holds owner_state_lock only during _write_program_file;
+Nursery.save writes directly with no such lock), so P5-R
+validation can ratify the intermediate program-new /
+nursery-old pair as coherent; fingerprint equality proves
+stability at an instant, not transaction-level coherence;
+and an unlocked Nursery.save completed before fingerprint
+capture cannot be guaranteed detected.
+
+Uni verified the finding independently against source at
+the audited base (persist_rest.py:150–159; nursery.py:278ff)
+before drafting. Amendment C appended to
+DIRECTOR_Q1_REPAIR_PLAN.md answers it: (C1) writer taxonomy
+corrected by transaction shape (T1 single-file locked,
+T2 single-file unlocked, T3 caller-composed two-step pair
+update with NO spanning lock/intent, T4 journaled
+transaction); (C2) B2's P5-C-i PASS rationale and B1's
+in-scope-writer soundness claim WITHDRAWN as applied to
+T3 writers; (C3) precise contract presented for decision
+D-P5-2 — C-A serialize T3 via a pair-save funnel (a scope
+expansion overlapping 72-28 Part B; needs its own ruling)
+vs C-B exclude T3 and narrow the load contract to
+per-file consistency + pair coherence only against T4
+journaled transactions (RECOMMENDED for Q1); (C4)
+deterministic two-process counterexample SPEC P5-D
+(pause after persist_rest.save releases its lock, before
+Nursery.save) and P5-E (unlocked Nursery.save completed
+before fingerprint capture) — specification only,
+predictions labeled hypotheses, neither case called
+protected by the shared lock; (C5) P3/B3 retained in
+full per the ruling. No code was modified; the merge
+hold on PR #294 continues and Q1 repair implementation
+remains STOPPED pending a design ruling.
