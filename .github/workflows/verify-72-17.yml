@@ -1,0 +1,110 @@
+name: verify-72-17
+
+# Independent verification for the 72-17 Show-sentinel correction
+# (Director review 2026-11-05, INSUFFICIENT_EVIDENCE on PR #304):
+# at the PR's exact head, in a fresh clone —
+#   1. the evidence manifest resolves (sha256sum -c, exit code shown);
+#   2. the bounded surface probe re-runs (front door / REPL /
+#      Studio API transport / chain);
+#   3. the REAL BROWSER probe runs: an externally started Chromium
+#      (same pattern as studio-browser-acceptance) drives the actual
+#      Studio UI — control seed, then bare 09[Show] — and reads the
+#      user-visible #console-log DOM text. AUTOMATED BROWSER (CDP)
+#      evidence; not a human session.
+# Artifacts are uploaded for archival into the evidence bundle.
+
+on:
+  pull_request:
+    paths:
+      - "director-reports/evidence/72-17-show-sentinel/**"
+      - ".github/workflows/verify-72-17.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-72-17:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Assert head + verify manifest
+        working-directory: director-reports/evidence/72-17-show-sentinel
+        run: |
+          echo "HEAD under verification: $GITHUB_SHA"
+          sha256sum -c MANIFEST.sha256
+          echo "manifest_exit=$?"
+
+      - name: Re-run the bounded surface probe
+        run: |
+          set -o pipefail
+          python3 director-reports/evidence/72-17-show-sentinel/q17_probe.py 2>&1 \
+            | tee verify_q17_probe.log
+
+      - name: Locate or install Chromium
+        id: chrome
+        run: |
+          set -euo pipefail
+          CHROME=""
+          for c in google-chrome google-chrome-stable chromium chromium-browser; do
+            if command -v "$c" >/dev/null 2>&1; then
+              CHROME="$(command -v "$c")"; break
+            fi
+          done
+          if [ -z "$CHROME" ]; then
+            curl -fsSL -o /tmp/chrome.deb \
+              https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq /tmp/chrome.deb
+            CHROME="$(command -v google-chrome)"
+          fi
+          echo "path=$CHROME" >> "$GITHUB_OUTPUT"
+          "$CHROME" --version
+
+      - name: Start Chromium headless (debugging on loopback only)
+        run: |
+          set -euo pipefail
+          CHROME="${{ steps.chrome.outputs.path }}"
+          rm -rf /tmp/chrome-profile-q17
+          "$CHROME" --headless=new --no-sandbox --disable-gpu \
+            --disable-dev-shm-usage \
+            --remote-debugging-address=127.0.0.1 \
+            --remote-debugging-port=9444 \
+            --window-size=1400,1000 \
+            --user-data-dir=/tmp/chrome-profile-q17 \
+            about:blank > verify_chrome.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:9444/json/version >/dev/null 2>&1; then
+              echo "chromium up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "chromium failed to start"; cat verify_chrome.log; exit 1
+
+      - name: Run the real-browser Studio probe
+        run: |
+          set -o pipefail
+          Q17_CDP_PORT=9444 Q17_PINNED_SHA=$GITHUB_SHA \
+            python3 director-reports/evidence/72-17-show-sentinel/q17_browser_probe.py 2>&1 \
+            | tee verify_q17_browser_probe.log
+
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-72-17-evidence
+          path: |
+            verify_q17_probe.log
+            verify_q17_browser_probe.log
+            verify_chrome.log
+            director-reports/evidence/72-17-show-sentinel/browser_console_log.txt
+            director-reports/evidence/72-17-show-sentinel/browser_screenshot.png
+            director-reports/evidence/72-17-show-sentinel/browser_assertions.json
+          if-no-files-found: warn

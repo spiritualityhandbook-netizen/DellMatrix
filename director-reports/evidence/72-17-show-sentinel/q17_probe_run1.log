@@ -1,0 +1,27 @@
+FAIL S1.bare_show_sentinel :: messages=['Mandell: 09[Show]', 'English: Show (Render / output)', '__RENDER__'] ok=True
+PASS S1.lattice_control :: lattice messages head='Mandell: 09[Show] :: lattice'
+PASS S1.avatar_control :: avatar messages=['Mandell: 09[Show] :: avatar', 'English: Show (Render / output) → avatar', '(·_·)  Q17PROBE is at (0, 0), facing N, stand, idle']
+PASS S2.repl_no_sentinel :: sentinel absent from REPL stdout
+PASS S2.repl_render_shown :: render board header present
+Traceback (most recent call last):
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/director-reports/evidence/72-17-show-sentinel/q17_probe.py", line 98, in <module>
+    with urllib.request.urlopen(req, timeout=30) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 521, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 630, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 559, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 639, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 401: Unauthorized
