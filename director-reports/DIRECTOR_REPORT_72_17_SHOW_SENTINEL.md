@@ -115,3 +115,104 @@ place the token can surface unsubstituted.
 - Q-17.2: Should the structured-directive pattern (R-B),
   if chosen, be stated as a general law (machine directives
   never travel in human message lists) for future Dells?
+
+---
+
+## Addendum 1 — Targeted correction (2026-11-05, answering the Director's 13:47 CST review, INSUFFICIENT_EVIDENCE on head 41e2b94)
+
+The review's central finding is correct and is owned
+without qualification: **the original PR's MANIFEST.sha256
+listed three probe logs that were not in the PR.** Cause:
+the repository's `.gitignore` carries `*.log`; the bundle
+commit used a plain `git add -A`, which silently skipped
+them, and the PR tree was never inspected for their
+presence before submission. The logs existed locally the
+whole time. This is the same failure class the 72-28 cycle
+had already banked ("force-add evidence files") — the rule
+was known and not applied. Correction, per required point:
+
+**1. Raw logs committed; manifest verifiable.** All three
+original logs are now committed (force-added past the
+ignore rule), calibration run labeled as such in the
+bundle. The on-disk originals hash-verify against the
+originally committed manifest — the manifest was accurate;
+its files were missing. Verification command, run in
+`director-reports/evidence/72-17-show-sentinel/`:
+
+```
+sha256sum -c MANIFEST.sha256   # exit 0, every entry OK
+```
+
+The bundle also gains: `q17_probe_run4.log` (the bounded
+probe re-run at this correction, exit 0, classification
+unchanged) and the manifest is regenerated over the full
+bundle at the frozen correction head. The verify-72-17 CI
+workflow re-runs this same `sha256sum -c` at the exact head
+and prints its exit code.
+
+**2. Real browser/UI assertion.** Supplied as
+`q17_browser_probe.py` + `.github/workflows/verify-72-17.yml`,
+following the repository's own ruled-valid pattern
+(studio-browser-acceptance): an externally started real
+Chromium drives the actual Studio UI over CDP — genuine DOM,
+real input events, zero driver-issued API calls; the page's
+own app.js carries the per-launch session token, so the
+authenticated path is the user's path. Flow: control seed
+(55[Set]>>56[Get]) first — assertion B1: its user-visible
+`#console-log` text contains NO `__RENDER__`; then bare
+`09[Show]` — assertion B2: the console text DOES contain
+`__RENDER__`; B3: the served token is a real per-launch
+token. Raw outputs (full console text, screenshot,
+assertions JSON with browser product + pinned SHA) are
+uploaded as the run's artifacts and archived into this
+bundle by a supplement records PR referencing the frozen
+head, without amending it. Environment honesty: the probe
+could NOT be executed on Uni's local VM — the only local
+Chromium is the harness build, which refuses direct launch
+("Hatch WebGL domain policy is required"), and the runtime
+browser cannot reach this VM's loopback. Both local attempts
+are preserved, labeled, as `browser_probe_run1.log` (probe
+path defect, fixed) and `browser_probe_run2.log`
+(SETUP_FAILED, no CDP targets). The CI execution at the
+frozen head is therefore the browser evidence of record —
+AUTOMATED BROWSER (CDP), not a human session, not
+REAL_USER_PATH. The REPL-absence control remains q17_probe
+S2 (cross-process, re-run as run4).
+
+**3. Call sites verified at the pinned head (41e2b94).**
+Frontend: `gui/static/app.js` line 661, inside `execute()`:
+`logConsole(JSON.stringify(data.result, null, 2));` —
+`logConsole` (line 65) appends a text node to `#console-log`
+and scrolls it into view: user-visible by construction.
+REPL interceptor: `form/repl.py` line 1284, inside
+`_apply_seed_result`: `if msg == "__RENDER__": print();
+print(p.render())`. Additional surfaces census (unchanged
+from the report): live_visual.py raw collection remains
+STATIC-ONLY; all other consumers are listed under point 4.
+
+**4. R-B compatibility with all known consumers.**
+Sentinel touchpoints at the pinned head — producer:
+`executor_leaf.py:180` (only); runtime consumer of the
+token's VALUE: `repl.py:1284` (only); documentation:
+`dell_cards.py:464`; pinned test expectation:
+`d1_registry_leaf2_test.py:143` (asserts the current
+contract; an R-B circuit updates it deliberately).
+`messages` consumers and their R-B posture: chain_exec
+(aggregates atom messages — opaque passthrough, unaffected);
+execution_observer / operator_bridge / semantic_router /
+runtime_observe (copy or truncate messages as records —
+opaque, unaffected); live_visual (collects messages for
+display — loses only a non-human token; its render still
+prints via the same `_apply_seed_result` it already calls);
+flow_executor (own result shape, opaque); gui/server.py
+(JSON passthrough, no inspection); app.js (display only —
+under R-B its dump simply stops containing the token; no
+frontend change required). **Answer: R-B is compatible with
+every known consumer.** The only deliberate migrations are
+the producer, the REPL's check (keyed to the new structured
+field), the dell card's note, and the one pinned test. No
+consumer parses `messages` for the token besides the REPL.
+Consistent with the Director's design guidance, R-B is the
+candidate architecture; per his order, NOTHING is
+implemented here — the Studio defect remains OPEN and this
+PR remains HELD for re-review.
