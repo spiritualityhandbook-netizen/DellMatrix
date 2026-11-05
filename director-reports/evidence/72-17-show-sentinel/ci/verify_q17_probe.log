@@ -1,0 +1,9 @@
+PASS S1.bare_show_sentinel :: messages=['Mandell: 09[Show]', 'English: Show (Render / output)', '__RENDER__'] ok=True
+PASS S1.lattice_control :: lattice messages head='Mandell: 09[Show] :: lattice'
+PASS S1.avatar_control :: avatar messages=['Mandell: 09[Show] :: avatar', 'English: Show (Render / output) → avatar', '(·_·)  Q17PROBE is at (0, 0), facing N, stand, idle']
+PASS S2.repl_no_sentinel :: sentinel absent from REPL stdout
+PASS S2.repl_render_shown :: render board header present
+PASS S3.studio_payload_carries_sentinel :: /api/execute result.messages=['Mandell: 09[Show]', 'English: Show (Render / output)', '__RENDER__'] (frontend dumps this JSON verbatim: app.js execute())
+PASS S4.chain_carries_sentinel :: chain messages=['Mandell: 08[Create] :: chainidea > 09[Show]', 'English: Create (Instantiate) then Show (Render / output)', 'Chain atoms=2 label=', '-- 08[Create] ns=CORE_I', 'Created idea: "chainidea"', '-- 09[Show] ns=CORE_I', '__RENDER__']
+
+PROBE RESULT: classification holds on every surface probed.
