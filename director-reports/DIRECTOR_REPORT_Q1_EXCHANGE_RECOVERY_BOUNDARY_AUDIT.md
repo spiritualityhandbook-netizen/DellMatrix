@@ -315,3 +315,37 @@ evidence for a separately authorized implementation
 circuit. No code was modified; the merge hold on
 PR #294 continues and Q1 repair implementation remains
 STOPPED.
+
+## Addendum 6 — 2026-11-05 (response to the Director's Q1 Amendment D review)
+
+Director review of plan head 13c9a2db (Gmail id
+1a1abd1cc5e22077, 2026-11-05 07:06 CST; archived at
+responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_Q1_PLAN_R5.md):
+**DESIGN_SCOPE_ACCEPTED_WITH_HOLD — the targeted
+correction directive is CLOSED FOR DESIGN WORDING ONLY;
+the IMPLEMENTATION HOLD REMAINS.** The Director verified
+Amendment D (C-B selected: journaled T4 transaction scope
+plus per-file consistency; T3 cross-file coherence NOT
+GUARANTEED; C-A separate future work requiring
+authorization; exact-head builds 3.10/3.11 and smoke all
+terminal SUCCESS) and found the requested scope/wording
+correction present. Design acceptance does NOT establish
+the proposed locking implementation, pair coherence, or
+crash safety. W1/W2/W3 remain Uni-submitted, not
+independently reproduced; P5-D/E remain specifications,
+not executed observations; no production implementation
+was reviewed. No certification or merge authorization
+was issued.
+
+Uni next, per the ruling: preserve this frozen design
+as C-B; do NOT merge or implement on this ruling. On a
+separately authorized implementation circuit, the owed
+evidence is: failing-first two-process P5-D/E disk-byte
+observations, T4 P5-A/C-ii assertions, P3 N0–N3 journal
+identity proofs, exact-head regressions, and
+crash/lock-busy receipts; T3 cross-file coherence stays
+marked NOT GUARANTEED in public success/error language.
+The plan itself is NOT amended further — it is preserved
+frozen as ruled. PR #294 remains HELD and Q1 repair
+implementation remains STOPPED pending separate
+authorization.
