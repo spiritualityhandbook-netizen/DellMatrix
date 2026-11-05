@@ -20,6 +20,103 @@ from form.persist_core_ii import restore_core_ii
 from form.persist import serialize, _path, _cp_path, _safe_owner, _STATE_DIR, VERSION
 
 
+class BindingLossSaveError(Exception):
+    """TD-1-R2: a canonical save was refused because it would
+    silently drop or re-point a persisted unit->Idea binding —
+    the exact harm the Director's R2 directive names ('ordinary
+    Program saves must not bypass it or silently overwrite a
+    newer binding'). Reload so the binding is carried, then save.
+    No bytes were written."""
+
+
+def _persisted_bindings(target: str) -> dict:
+    """{unit_id: idea_id} for bindings readable in the canonical
+    file. Absent or unparseable state yields {} — unreadable
+    bytes carry no binding to lose (a live instance's save over
+    them is the repair; the load law and bind's F1 rule still
+    refuse their own operations over corruption)."""
+    if not os.path.isfile(target):
+        return {}
+    try:
+        with open(target, "rb") as f:
+            data = json.loads(f.read().decode("utf-8"))
+        units = (data.get("plane") or {}).get("units") or {}
+    except (OSError, UnicodeDecodeError, ValueError,
+            AttributeError):
+        return {}
+    return {u: rec["idea_id"] for u, rec in units.items()
+            if isinstance(rec, dict) and rec.get("idea_id")}
+
+
+def _current_fingerprint(path: str):
+    import hashlib as _hl
+    if not os.path.isfile(path):
+        return None
+    with open(path, "rb") as f:
+        return _hl.sha256(f.read()).hexdigest()
+
+
+def _refuse_if_binding_loss(program: Program, target: str) -> None:
+    """The save-side contract, scoped by regression evidence to
+    the Director's exact words. All canonical saves serialize
+    through the owner lock; the REFUSAL guards one harm — a
+    binding silently lost to a writer that never saw it:
+
+    * A CURRENT instance (its R1 version stamp matches the
+      canonical file it last loaded/saved) is authoritative:
+      its in-memory bindings ARE the latest intent, including
+      deliberately clearing a pointer — TD-1's own round-trip
+      contract does exactly that, and refusing it was a false
+      positive found by full regression (234/235, TD-1 red in
+      all three legs while green standalone).
+    * A STALE or UNSTAMPED instance may save only if it carries
+      every persisted (unit -> idea_id) binding identically.
+      Losing or re-pointing one it never saw refuses the save.
+
+    Legitimate whole-state flows (snapshot restore, generation
+    rollback, two-instance authoring of unbound state) pass the
+    stale-path comparison because they carry — or never had —
+    the bindings; nothing is exempted by name."""
+    stamp = getattr(program, "_td_state_fingerprint", None)
+    if stamp is not None and _current_fingerprint(target) == stamp:
+        return
+    persisted = _persisted_bindings(target)
+    if not persisted:
+        return
+    try:
+        saver_units = program.cube.session.plane.units
+    except AttributeError:
+        return
+    lost = sorted(
+        u for u, iid in persisted.items()
+        if getattr(saver_units.get(u), "idea_id", None) != iid)
+    if lost:
+        raise BindingLossSaveError(
+            f"save for owner {program.owner!r} would silently "
+            f"lose persisted unit binding(s) {lost}: the saver "
+            f"does not carry them (reload so the bindings are "
+            f"carried, then save)")
+
+
+def _write_program_file(program: Program, target: str,
+                        _fail_at: Optional[str]) -> str:
+    from form.dell_matrix.atomic_write import atomic_write_json
+    data = serialize(program)
+    atomic_write_json(target, data, _fail_at=_fail_at)
+    # TD-1-R1: stamp the saver with the version it just wrote (the
+    # canonical state's SHA-256), so unit binding can detect that
+    # the file has since moved under this instance. Best-effort:
+    # a stamp failure never fails the save itself.
+    try:
+        import hashlib as _hl
+        with open(target, "rb") as _f:
+            program._td_state_fingerprint = _hl.sha256(
+                _f.read()).hexdigest()
+    except Exception:
+        program._td_state_fingerprint = None
+    return target
+
+
 def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str] = None) -> str:
     """Persist the program via Persistence V2 (crash-safe atomic replacement; DCC-XVII).
 
@@ -33,26 +130,32 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
     compensation/rollback was incomplete rejects the save with
     RollbackRecoveryError until verified restoration or reconstruction.
     No bytes are written on rejection.
+
+    TD-1-R2 (atomic owner-state commit protection): a save to the
+    CANONICAL owner path runs inside the owner-state lock
+    (form.owner_state_lock) — no canonical save bypasses the
+    transaction — and under that lock a save that would silently
+    drop or re-point a persisted unit binding is refused with
+    BindingLossSaveError (see _refuse_if_binding_loss for the
+    contract and its regression-driven scoping). Saves to
+    non-canonical paths (explicit temp or checkpoint files) are
+    outside the transaction: they are not the canonical state.
+    Journaled recovery/import writes that bypass this funnel
+    entirely (Exchange import, core_i_recovery) are likewise
+    outside R2's fence — a boundary stated in the R2 Director
+    report, not silently expanded.
     """
     from form.mandell.core_i_recovery import check_save_allowed
     check_save_allowed(program, "persist_rest.save")
-    from form.dell_matrix.atomic_write import atomic_write_json
-
-    path = path or _path(program.owner)
-    data = serialize(program)
-    atomic_write_json(path, data, _fail_at=_fail_at)
-    # TD-1-R1: stamp the saver with the version it just wrote (the
-    # canonical state's SHA-256), so unit binding can detect that
-    # the file has since moved under this instance. Best-effort:
-    # a stamp failure never fails the save itself.
-    try:
-        import hashlib as _hl
-        with open(path, "rb") as _f:
-            program._td_state_fingerprint = _hl.sha256(
-                _f.read()).hexdigest()
-    except Exception:
-        program._td_state_fingerprint = None
-    return path
+    target = path or _path(program.owner)
+    canonical = os.path.abspath(target) == os.path.abspath(
+        _path(program.owner))
+    if not canonical:
+        return _write_program_file(program, target, _fail_at)
+    from form.owner_state_lock import owner_state_lock
+    with owner_state_lock(program.owner):
+        _refuse_if_binding_loss(program, target)
+        return _write_program_file(program, target, _fail_at)
 
 
 def checkpoint(program: Program, *, _fail_at: Optional[str] = None) -> str:

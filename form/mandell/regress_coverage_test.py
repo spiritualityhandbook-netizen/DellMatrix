@@ -40,6 +40,7 @@ from form import regress  # noqa: E402
 # file path); registering them as standalone suites would run them
 # outside the parent context that gives their checks meaning.
 ALLOWLIST = {
+    "form.track_d_td1_r2_child": "child process support for the registered track_d_td1_r2 suite",
     "form.mandell.r61_child": "child process support for the registered r61 suite",
     "form.mandell.r62_child": "child process support spawned by path from r62_docking_test",
     "form.mandell.r64_child": "child process support for the registered r64 suites",
