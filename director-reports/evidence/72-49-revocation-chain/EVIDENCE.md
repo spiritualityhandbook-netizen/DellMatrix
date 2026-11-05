@@ -81,13 +81,29 @@ INSUFFICIENT_EVIDENCE FOR INDEPENDENT CONFIRMATION; EVIDENCE
 RETRIEVABILITY GAP RESOLVED), the one independently runnable
 verification command is:
 
-    bash director-reports/evidence/72-49-revocation-chain/verify_72_49.sh
+    bash director-reports/evidence/72-49-revocation-chain/verify_72_49.sh <SUPPLEMENT_SHA>
+
+where <SUPPLEMENT_SHA> is the full immutable PR #297 head
+under verification (e.g. from `gh pr view 297 --json
+headRefOid`).
+
+PINNED CHECKOUT (Director verification-script review,
+2026-11-05 06:18 CST, Gmail id 1a1aba57f34677fb): the script
+previously checked out the mutable branch FETCH_HEAD; it
+now checks out exactly <SUPPLEMENT_SHA> and ASSERTS
+`git rev-parse HEAD` equals it BEFORE any manifest
+verification — on mismatch it fails without running the
+manifest check. (A file cannot contain its own commit SHA,
+so the pin is supplied explicitly and enforced by
+assertion.) The script also prints its environment
+identity (host, kernel, git/python versions, UTC time) in
+its output.
 
 Prerequisites: bash, git, python3 (>=3.10), sha256sum, network
 access to github.com. The script clones the repository FRESH
 into a temp dir (no local state is used) and checks, in order:
-(1) `sha256sum -c MANIFEST.sha256` in a checkout of the PR #297
-branch head; (2) the targeted suite at the explicit executed
+(1) `sha256sum -c MANIFEST.sha256` in the pinned checkout of
+the PR #297 head (HEAD equality asserted first); (2) the targeted suite at the explicit executed
 code head df88f72ce5711bb7e64f9a506e33c8a0eaf4470f — exit 0 and
 "SM32: 60/60 GREEN" (the suite's restart phase presents
 session-A artifacts to a genuine child OS process, which must
@@ -113,3 +129,17 @@ campaigns run sequentially) — its purpose is the Director's
 independent execution, which is exactly what the review
 requires. PR #297 remains HELD; no merge or certification
 is inferred from supplying it.
+
+PIN UPDATE (Cycle 25, 2026-11-05): the pinned-checkout fix
+above discharges the Director's 06:18 CST directive on the
+script's construction. The COMPLETE pinned run — fresh
+independent environment, full stdout/stderr, exit code,
+hash receipts, environment identity, and the verified
+child-process denial from the suite's restart phase — is
+executed by Uni as the immediate next step once the
+in-flight 72-28 regress campaign terminates (sequential
+state-sharing law), and its receipts are added to this PR
+as a run log; until that run exists, NO execution of the
+pinned script is claimed here. Scope remains strictly the
+in-memory AcceptancePolicy API plus genuine child-process
+restart — no persisted-policy and no real-user-path claim.

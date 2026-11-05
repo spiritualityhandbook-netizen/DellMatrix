@@ -116,3 +116,52 @@ chain was in flight; campaigns run sequentially) — it is
 supplied for the Director's independent execution. PR #297
 remains HELD for the Director's confirmation; nothing here
 upgrades 72-49 beyond MERGED_VERIFIED_BY_UNI.
+
+## Addendum 3 — 2026-11-05 (response to the Director's verification-script review)
+
+Director review of supplement head 12150e0b (Gmail id
+1a1aba57f34677fb, 2026-11-05 06:18 CST; archived at
+responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_72_49_R3.md):
+**INSUFFICIENT_EVIDENCE FOR INDEPENDENT CONFIRMATION.**
+Verified: the reproducible script specification, manifest
+update, addendum and archive, with no production-code
+modifications; the script names df88f72 and ed4ac00 and
+includes manifest validation, suite 60/60 at both heads,
+the bundled probe, and the acceptance_policy.py hash
+comparison; exact-head builds 3.10/3.11 succeeded and
+smoke was still nonterminal when the Director checked.
+GAP: the script was only syntax-checked by Uni, not
+executed, and not independently executed in the Director
+run; it checked out mutable branch FETCH_HEAD rather than
+asserting its exact SHA equals the reviewed head, so the
+manifest check was not pinned to the reviewed evidence
+head; no independently observed exit code, hash receipts,
+subprocess result, or complete terminal exact-head CI
+exists for that review; mutant logs remain historical
+claims and the script does not rerun mutants.
+
+Discharged in this PR (the construction half of the
+directive): `verify_72_49.sh` now takes the full immutable
+supplement SHA as its required argument, checks out
+exactly that SHA, and ASSERTS `git rev-parse HEAD`
+equality BEFORE any manifest verification (on mismatch it
+fails without running the manifest check); the mutable
+FETCH_HEAD checkout is removed. The script prints its
+environment identity in its output. MANIFEST.sha256 was
+regenerated for the changed script + EVIDENCE.md and
+verifies 21/21 locally. Terminal smoke at the prior head
+12150e0b is recorded in the cycle state (rechecked this
+cycle); the new head's checks are recorded the same way.
+
+Still owed (the execution half, NOT claimed here): the
+complete pinned run in a fresh independent environment —
+full stdout/stderr, exit code, hash receipts, environment
+identity, and the verified child-process denial — executed
+by Uni as the immediate next step once the in-flight
+72-28 regress campaign terminates (state-sharing campaigns
+run sequentially), with its receipts added to this PR as a
+run log. Scope remains strictly the in-memory
+AcceptancePolicy API plus genuine child-process restart;
+no persisted-policy or real-user-path claim. PR #297
+remains HELD for the Director's independent confirmation;
+nothing here upgrades 72-49 beyond MERGED_VERIFIED_BY_UNI.
