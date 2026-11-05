@@ -190,3 +190,69 @@ not claimed terminal. This run is Uni's execution
 receipt for the Director's independent confirmation;
 it does not upgrade 72-49 beyond MERGED_VERIFIED_BY_UNI.
 PR #297 remains HELD; no merge authorized or attempted.
+
+## Addendum 5 — 2026-11-05 (independent CI execution, Cycle 28)
+
+Director review of head b900c8e9 (Gmail id
+1a1abd1d6bcf7784, 2026-11-05 07:06 CST; archived at
+responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_72_49_R4.md):
+**INSUFFICIENT_EVIDENCE FOR INDEPENDENT
+ALL_AI_CONFIRMATION_PASS; RECEIPT GAP CLOSED AS
+SUBMITTED.** The Cycle 26 pinned run is Uni's recorded
+execution, not Director-independent execution or
+independently computed hashes, and its transcript ran
+at a624dbd rather than the final documentation head.
+UNI NEXT: retain the PR #297 HOLD; obtain an
+independently executed pinned script (or separately
+trusted reproducible CI job) with verified exit code,
+manifest hashes and child-process denial; distinguish
+original mutants from reconstructions; keep the claim
+bounded to the in-memory AcceptancePolicy API and
+genuine subprocess restart. No merge or certification
+authorized.
+
+Discharged in this PR via the separately trusted CI
+route the ruling names: `.github/workflows/verify-72-49.yml`
+— on every push to uni/72-49-evidence-supplement, a
+GitHub-hosted ubuntu-latest runner (an environment Uni
+does not control) executes verify_72_49.sh pinned to
+the exact pushed head SHA and uploads the full script
+log as a workflow artifact; the job's exit code is the
+script's exit code.
+
+First independent run: GitHub Actions run 42036425446
+(https://github.com/spiritualityhandbook-netizen/DellMatrix/actions/runs/42036425446),
+at supplement head 5ef44c601f9de48bdac4c7e7fb35db227463b9a7,
+conclusion SUCCESS (script exit code 0). Environment
+identity from the log itself: host runnervmwuk1x,
+Linux 7.0.0-1019-azure x86_64, git 2.56.0, Python
+3.14.4, 2026-11-05T13:31:01Z — distinct from Uni's VM
+(htch-runtime, Python 3.12.3). The runner independently
+computed: HEAD equality asserted at 5ef44c6 BEFORE
+manifest verification; MANIFEST.sha256 22/22 OK; suite
+SM32 60/60 GREEN at df88f72 and at ed4ac00 (restart
+phase = genuine child OS process denying every
+prior-session artifact); bundled probe exit 0, PROBE
+VERDICT: CONTRACT HOLDS; acceptance_policy.py SHA-256
+f1f529db69958a1e8e09b34504bf1a59e7e2649bdc8ba32b5c4b6b47e35c3a4c
+byte-identical across 0c062a1 / df88f72 / ed4ac00;
+final line VERIFY_72_49: ALL STEPS PASS. Full log:
+evidence/72-49-revocation-chain/verify_72_49_ci_run.log
+(SHA-256 b9da1070b7f80cd9ecf039c09c1ea4ccd3a45e3fd35fa9a9f07105832bdcfeea),
+also retrievable as the run's workflow artifact.
+
+This receipts commit itself is a new supplement head,
+so the same job re-executes the pinned script at the
+final head automatically; that run's id and conclusion
+are visible on PR #297's checks and are recorded in
+the cycle state — the final head is therefore also
+covered by an independent run, not only by CI builds.
+The original/reconstructed mutant distinction is
+unchanged (originals mutant_m{1,2,3}.log; labeled
+reconstructions mutant_m{1,2,3}_recon.log). Scope
+remains strictly the in-memory AcceptancePolicy API
+plus genuine child-process restart — no persisted
+policy, no real-user-path claim. PR #297 remains HELD;
+independent confirmation and any certification remain
+the Director's. Nothing here upgrades 72-49 beyond
+MERGED_VERIFIED_BY_UNI.

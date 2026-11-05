@@ -196,3 +196,24 @@ remains strictly the in-memory AcceptancePolicy API plus
 genuine child-process restart. PR #297 remains HELD; a
 CI PASS is independent execution evidence for the
 Director, not a merge or a certification.
+
+CI RUN EXECUTED (Cycle 28, 2026-11-05): GitHub Actions
+run 42036425446, at supplement head
+5ef44c601f9de48bdac4c7e7fb35db227463b9a7, conclusion
+SUCCESS — the job's exit code is the script's, so the
+pinned script exited 0 on the GitHub-hosted runner.
+Environment from the log: host runnervmwuk1x, Linux
+7.0.0-1019-azure x86_64, git 2.56.0, Python 3.14.4,
+2026-11-05T13:31:01Z. The runner independently computed
+HEAD equality at 5ef44c6 before manifest verification,
+MANIFEST 22/22 OK, suite 60/60 at df88f72 and ed4ac00
+with child-process denial, probe CONTRACT HOLDS, and
+acceptance_policy.py byte identity
+(f1f529db69958a1e8e09b34504bf1a59e7e2649bdc8ba32b5c4b6b47e35c3a4c);
+final line VERIFY_72_49: ALL STEPS PASS. Full log in
+this bundle: verify_72_49_ci_run.log (SHA-256
+b9da1070b7f80cd9ecf039c09c1ea4ccd3a45e3fd35fa9a9f07105832bdcfeea);
+also the run's workflow artifact on GitHub. The
+receipts commit carrying this section is a new head,
+and the same job re-executes at that final head; its
+run is on PR #297's checks. PR #297 remains HELD.
