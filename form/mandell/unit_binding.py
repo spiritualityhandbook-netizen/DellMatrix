@@ -5,7 +5,8 @@ approved. A Plane Unit gains an optional `idea_id` pointer to a
 canonical Idea; SemanticGraph remains the ONLY containment
 authority — this module performs NO graph writes and grants the
 pointer no graph semantics. TD-1 is binding only: no containment
-operations live here (TD-2, not yet authorized).
+operations live here (TD-2 containment lives in
+form/mandell/unit_containment.py, authorized 2026-11-04).
 
 Binding protocol (per unit, idempotent, ordered for failure):
 

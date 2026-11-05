@@ -313,6 +313,8 @@ LIST = [
     "form.track_d_td1_test:smoke",
     "form.track_d_td1_r1_test:smoke",
     "form.track_d_td1_r2_test:smoke",
+    # Track D TD-2: canonical Idea containment operations.
+    "form.track_d_td2_test:smoke",
 ]
 
 TIMEOUT_S = 900

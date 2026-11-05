@@ -1348,9 +1348,10 @@ class Program:
         return [p.to_dict() for p in self.nursery.pending()]
 
     # ── Track D TD-1: Unit -> canonical Idea binding (S1) ────────
-    # Binding foundation only: no containment operations (TD-2 is
-    # not authorized). SemanticGraph remains the sole containment
-    # authority; bind performs zero graph writes.
+    # Binding foundation only: bind itself performs no containment
+    # operations and zero graph writes. Containment lives in the
+    # TD-2 methods below. SemanticGraph remains the sole
+    # containment authority.
 
     def bind_unit_to_idea(self, unit_id: str, *, subject: str) -> Dict[str, Any]:
         from form.mandell.unit_binding import bind_unit_to_idea as _bind
@@ -1359,6 +1360,31 @@ class Program:
     def binding_census(self) -> Dict[str, Any]:
         from form.mandell.unit_binding import binding_census as _census
         return _census(self)
+
+    # ── Track D TD-2: canonical Idea containment operations ─────
+    # Program-level nest / promote / reparent through TD-1
+    # bindings. SemanticGraph remains the sole containment
+    # authority; these methods store no containment state.
+
+    def nest_units(self, child_unit_id: str, parent_unit_id: str,
+                   *, subject: str) -> Dict[str, Any]:
+        from form.mandell.unit_containment import nest_units as _nest
+        return _nest(self, child_unit_id, parent_unit_id, subject=subject)
+
+    def promote_unit(self, unit_id: str, *, subject: str) -> Dict[str, Any]:
+        from form.mandell.unit_containment import promote_unit as _promote
+        return _promote(self, unit_id, subject=subject)
+
+    def reparent_unit(self, child_unit_id: str, new_parent_unit_id: str,
+                      *, subject: str) -> Dict[str, Any]:
+        from form.mandell.unit_containment import reparent_unit as _reparent
+        return _reparent(self, child_unit_id, new_parent_unit_id,
+                        subject=subject)
+
+    def containment_view(self, unit_id: str) -> Dict[str, Any]:
+        from form.mandell.unit_containment import (
+            containment_view as _view)
+        return _view(self, unit_id)
 
     def harmony_of(self, ideas) -> float:
         """Harmony of an idea set (GDP-001 Phase 3, R3.2.5 public path).

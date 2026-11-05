@@ -67,6 +67,7 @@ Ideas / Growth
   unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
   flow                      show the last chain execution as a trace + frames
   rank | lineage <id or label>
+  nest <id> under <id> | promote <id> | reparent <id> to <id> | containment <id>
   groups | group create <name> | group add <id or label> to <name>
   group remove <id or label> from <name> | group show <name> | group delete <name>
   resonance [id or label] | harmony
@@ -191,6 +192,7 @@ Create — make and develop ideas
   unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
   flow                      show the last chain execution as a trace + frames
   rank | lineage <id or label>
+  nest <id> under <id> | promote <id> | reparent <id> to <id> | containment <id>
   groups | group create <name> | group add <id or label> to <name>
   group remove <id or label> from <name> | group show <name> | group delete <name>
   resonance [id or label] | harmony
@@ -1469,6 +1471,158 @@ def _handle_group_command(p: Program, lower: str, raw_line: str) -> None:
          "group delete <name> | groups")
 
 
+def _resolve_containment_ref(p: Program, ref: str):
+    """Resolve a containment command's unit reference: exact unit
+    id first, then an exact label, then a unique case-insensitive
+    label. Returns (unit, None) or (None, error_message)."""
+    plane = p.cube.session.plane
+    if ref in plane.units:
+        return plane.units[ref], None
+    exact = [u for u in plane.units.values() if u.label == ref]
+    if len(exact) == 1:
+        return exact[0], None
+    if len(exact) > 1:
+        ids = ", ".join(sorted(u.id for u in exact))
+        return None, f"label '{ref}' matches {len(exact)} units — use the ID: {ids}"
+    low = [u for u in plane.units.values() if u.label.lower() == ref.lower()]
+    if len(low) == 1:
+        return low[0], None
+    if len(low) > 1:
+        ids = ", ".join(sorted(u.id for u in low))
+        return None, f"label '{ref}' matches {len(low)} units — use the ID: {ids}"
+    return None, f"no unit with id or label '{ref}'"
+
+
+def _handle_containment_command(p: Program, raw_line: str) -> bool:
+    """Track D TD-2 REPL surface (REPL-first per the Director's
+    directive): nest <child> under <parent> | promote <unit> |
+    reparent <child> to <parent> | containment <unit>.
+
+    Returns True when the line is a containment command (handled,
+    including honest refusals — every refusal is printed with its
+    kind; nothing fails invisibly). The invoking subject for
+    provenance is the program owner: the sovereign user at this
+    REPL. Containment itself lives in Program/unit_containment;
+    SemanticGraph remains the sole containment authority."""
+    line = (raw_line or "").strip()
+    low = line.lower()
+    verb = low.split(None, 1)[0] if low.split() else ""
+    if verb not in ("nest", "promote", "reparent", "containment"):
+        return False
+    from form.mandell import unit_containment as _uc
+    subject = getattr(p, "owner", "Operator")
+
+    def _ref(tok):
+        unit, err = _resolve_containment_ref(p, tok)
+        if unit is None:
+            _say(f"Containment refused (unit_not_found): {err}")
+        return unit
+
+    def _report_refusal(exc):
+        if isinstance(exc, _uc.ContainmentRefused):
+            _say(f"Containment refused ({exc.kind}): {exc}")
+            partial = (exc.detail or {}).get("partial_bindings") or []
+            if partial:
+                _say(f"  bound before refusal (kept, retry converges): "
+                     f"{[b['unit_id'] for b in partial]}")
+        else:
+            _say(f"Containment failed: {exc}")
+            partial = (exc.detail or {}).get("partial_bindings") or []
+            if partial:
+                _say(f"  bound before failure (kept, retry converges): "
+                     f"{[b['unit_id'] for b in partial]}")
+
+    if verb == "nest":
+        m = re.match(r"(?i)^nest\s+(\S+)\s+(?:under|inside|in|into)\s+(\S+)$", line) \
+            or re.match(r"(?i)^nest\s+(\S+)\s+(\S+)$", line)
+        if not m:
+            _say("usage: nest <child id or label> under <parent id or label>")
+            return True
+        child, parent = _ref(m.group(1)), _ref(m.group(2))
+        if child is None or parent is None:
+            return True
+        try:
+            r = p.nest_units(child.id, parent.id, subject=subject)
+        except (_uc.ContainmentRefused, _uc.ContainmentFailed) as exc:
+            _report_refusal(exc)
+            return True
+        if r.get("status") == "already_nested":
+            _say(f"Already nested: {child.label} is under {parent.label}")
+        else:
+            _say(f"Nested {child.label} under {parent.label}")
+        return True
+
+    if verb == "reparent":
+        m = re.match(r"(?i)^reparent\s+(\S+)\s+(?:to\s+)?(\S+)$", line)
+        if not m:
+            _say("usage: reparent <child id or label> to <parent id or label>")
+            return True
+        child, parent = _ref(m.group(1)), _ref(m.group(2))
+        if child is None or parent is None:
+            return True
+        try:
+            r = p.reparent_unit(child.id, parent.id, subject=subject)
+        except (_uc.ContainmentRefused, _uc.ContainmentFailed) as exc:
+            _report_refusal(exc)
+            return True
+        if r.get("status") == "already_parented":
+            _say(f"Already there: {child.label} is under {parent.label}")
+        else:
+            _say(f"Reparented {child.label} to {parent.label}")
+        return True
+
+    if verb == "promote":
+        m = re.match(r"(?i)^promote\s+(\S+)$", line)
+        if not m:
+            _say("usage: promote <unit id or label>")
+            return True
+        unit = _ref(m.group(1))
+        if unit is None:
+            return True
+        try:
+            r = p.promote_unit(unit.id, subject=subject)
+        except (_uc.ContainmentRefused, _uc.ContainmentFailed) as exc:
+            _report_refusal(exc)
+            return True
+        if r.get("status") == "already_top_level":
+            _say(f"Already top level: {unit.label}")
+        else:
+            _say(f"Promoted {unit.label} to top level")
+        return True
+
+    # verb == "containment": derived read, by label breadcrumb.
+    m = re.match(r"(?i)^containment\s+(\S+)$", line)
+    if not m:
+        _say("usage: containment <unit id or label>")
+        return True
+    unit = _ref(m.group(1))
+    if unit is None:
+        return True
+    try:
+        view = p.containment_view(unit.id)
+    except _uc.ContainmentRefused as exc:
+        _report_refusal(exc)
+        return True
+    if not view.get("bound"):
+        _say(f"Containment · {unit.label} ({unit.id}): unbound — "
+             f"top level (binds lazily on first nest)")
+        return True
+    if view.get("is_top_level") is None:
+        _say(f"Containment · {unit.label} ({unit.id}): binding target "
+             f"is {view.get('idea_state')} — structure unavailable")
+        return True
+    path = [a.get("label") or a["idea_id"] for a in view["ancestors"]]
+    path.append(unit.label)
+    _say(f"Containment · {unit.label} ({unit.id})")
+    _say(f"  path: {' > '.join(path)}")
+    kids = view.get("children") or []
+    if kids:
+        _say(f"  children: {', '.join(k.get('label') or k['idea_id'] for k in kids)}")
+    else:
+        _say("  children: —")
+    return True
+
+
 def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = False,
                   interaction_id: Optional[str] = None) -> Program:
     # MPC-008: macro-definition capability is not established. A request to
@@ -1482,6 +1636,10 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             and not re.search(r"\bidea\b", raw_line, re.IGNORECASE):
         _say("Macro definition is not supported in this build.")
         _echo_seed(mandel="09[Show] :: unknown")
+        return p
+    # Track D TD-2: containment commands are claimed on the raw
+    # line, before English normalization can rewrite the verbs.
+    if not _normalized and raw_line and _handle_containment_command(p, raw_line):
         return p
     # EIC-I: interaction_id is accepted (not minted) here, forwarded to
     # route_intent calls. None = UNKNOWN (direct/API callers).
