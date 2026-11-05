@@ -34,3 +34,12 @@ runner — genuine Chromium, real DOM, real input events.
 Not a human session; not REAL_USER_PATH. PR #304 remains
 HELD for the Director's re-review; the Studio defect
 remains OPEN; nothing here implements R-A/R-B/R-C.
+
+Precision note on the assertions file: its `pinned_sha`
+field reads 74cbdcbe9490 — the workflow passed $GITHUB_SHA,
+which on pull_request events is the ephemeral merge-ref
+commit, not the PR head. The run's head_sha in the Actions
+record (and the checkout the probe executed against) is
+cc8ea8b53ea7bfc8d22fc58ff9669b008fc06986; the receipt above
+uses the Actions record. The workflow's pin variable should
+read the PR head SHA; noted for any reuse of the pattern.
