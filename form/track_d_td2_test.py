@@ -14,7 +14,11 @@ pinned here:
     LifecycleState.ACTIVE (TD4); missing/corrupt pointers refuse
     as target_missing / target_invalid with no silent replacement.
   * Sandbox isolation (TD7): endpoints whose isolation keys
-    (sandboxed, sandbox_id) differ refuse BEFORE any mint.
+    (sandboxed, sandbox_id) differ refuse BEFORE any mint. A
+    MALFORMED sandboxed endpoint (sandboxed with a missing or
+    empty sandbox_id) refuses outright regardless of the other
+    endpoint — two malformed units key identically (F1 repair,
+    Director review 2026-11-04).
   * Single parent: nest under a different parent refuses
     (second_parent) — moving requires explicit reparent. Same
     parent nest is idempotent. Self-nest and cycles refuse.
@@ -232,6 +236,64 @@ def run_all():
                   e.kind == "sandbox_boundary")
         plane.unbox("td2-sb-a")
         plane.unbox("td2-sb-b")
+
+        # -- F1: malformed sandboxed endpoints refuse (Director
+        # review 2026-11-04) — sandboxed with a missing/empty id
+        # keys as (True, None); two such units compare EQUAL, so
+        # key equality alone let them nest. Any malformed endpoint
+        # must refuse before mint, regardless of the other side.
+        for uid, label in (("td2-f1-a", "F1 A"), ("td2-f1-b", "F1 B"),
+                           ("td2-f1-empty", "F1 Empty"),
+                           ("td2-f1-valid", "F1 Valid")):
+            prog.place(uid, label)
+        for uid in ("td2-f1-a", "td2-f1-b"):
+            plane.units[uid].sandboxed = True
+            plane.units[uid].sandbox_id = None
+        plane.units["td2-f1-empty"].sandboxed = True
+        plane.units["td2-f1-empty"].sandbox_id = ""
+        plane.box(["td2-f1-valid"], sandbox_id="sb-ok")
+        n_ideas = len(list_idea_ids(OWNER))
+        n_graph = len(_graph_log(OWNER))
+
+        def _f1_clean():
+            return (len(list_idea_ids(OWNER)) == n_ideas
+                    and len(_graph_log(OWNER)) == n_graph
+                    and all(plane.units[u].idea_id is None for u in
+                            ("td2-f1-a", "td2-f1-b", "td2-f1-empty",
+                             "td2-f1-valid")))
+
+        try:
+            prog.nest_units("td2-f1-a", "td2-f1-b", subject="Ace")
+            check("F1 both-malformed nest refuses", False)
+        except uc.ContainmentRefused as e:
+            check("F1 both-malformed nest refuses BEFORE any mint",
+                  e.kind == "sandbox_boundary" and _f1_clean())
+        try:
+            prog.nest_units("td2-f1-empty", "td2-house", subject="Ace")
+            check("F1 empty-string sandbox id refuses", False)
+        except uc.ContainmentRefused as e:
+            check("F1 empty-string sandbox id refuses BEFORE any mint",
+                  e.kind == "sandbox_boundary" and _f1_clean())
+        try:
+            prog.nest_units("td2-f1-valid", "td2-f1-a", subject="Ace")
+            check("F1 mixed valid/malformed nest refuses", False)
+        except uc.ContainmentRefused as e:
+            check("F1 mixed valid/malformed nest refuses BEFORE mint",
+                  e.kind == "sandbox_boundary" and _f1_clean())
+        try:
+            prog.reparent_unit("td2-f1-a", "td2-f1-valid", subject="Ace")
+            check("F1 malformed reparent refuses", False)
+        except uc.ContainmentRefused as e:
+            check("F1 malformed reparent refuses BEFORE any mint",
+                  e.kind == "sandbox_boundary" and _f1_clean())
+        # same-valid-sandbox behavior is preserved (covered above by
+        # td2-sb-a/td2-sb-b); malformed units unboxed nest normally:
+        for uid in ("td2-f1-a", "td2-f1-b", "td2-f1-empty"):
+            plane.units[uid].sandboxed = False
+            plane.units[uid].sandbox_id = None
+        rf1 = prog.nest_units("td2-f1-a", "td2-f1-b", subject="Ace")
+        check("F1 units nest normally once unboxed",
+              rf1.get("status") == "nested")
 
         # -- lifecycle: non-ACTIVE Ideas refuse ------------------------------
         prog.bind_unit_to_idea("td2-arch", subject="Ace")
