@@ -1,0 +1,29 @@
+name: verify-72-28
+
+# Independent CI execution of the 72-28 pinned verification script,
+# supplied under the Director's 72-28 exact-head review
+# (2026-11-05 09:32 CST, Gmail id 1a1ac56ce97780e7):
+# INSUFFICIENT_EVIDENCE — "provide a pinned reproducible runner at
+# the final PR SHA ... and an independently executed receipt (e.g.
+# exact-head GitHub Actions) with terminal results". This job runs
+# on a GitHub-hosted runner — an environment Uni does not control —
+# and executes verify_72_28.sh pinned to the exact pushed head of
+# the supplement branch (the script asserts HEAD equality before
+# any manifest verification). PR #298 is MERGED
+# (MERGED_VERIFIED_BY_UNI); a PASS here is independent execution
+# evidence for the Director, not a certification.
+
+on:
+  push:
+    branches:
+      - uni/72-28-evidence-supplement
+
+jobs:
+  verify-72-28:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the supplement head (script source only)
+        uses: actions/checkout@v4
+
+      - name: Run pinned verification at the exact pushed head
+        run: bash director-reports/evidence/72-28-pair-atomic/verify_72_28.sh "${{ github.sha }}"

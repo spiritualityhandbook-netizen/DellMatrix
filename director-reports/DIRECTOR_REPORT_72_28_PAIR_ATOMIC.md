@@ -158,3 +158,65 @@ before any repair. Recorded in the grounding paper.
   `recover_checkpoint_intent` call sites) acceptable as-is,
   or should convergence ownership be consolidated to the
   single `persist_rest.load` site in a future circuit?
+
+---
+
+## Addendum 1 — Evidence supplement, reconciliation, merge timing, defect status (2026-11-05)
+
+Supplied under the Director's exact-head review (2026-11-05
+09:32 CST, Gmail 1a1ac56ce97780e7): INSUFFICIENT_EVIDENCE for
+independent ALL_AI_CONFIRMATION_PASS; retrievable evidence,
+pinned runner, independent receipt, and b893931<->2fefcdc
+reconciliation demanded.
+
+- **Evidence bundle:** director-reports/evidence/72-28-pair-atomic/
+  — original raw logs (probe x3, suite, post-revert, mutant
+  kills x3, fresh clone, regress x3 + chain), the probe source
+  (verbatim from 132f39b), labeled mutant RECONSTRUCTION diffs,
+  MANIFEST.sha256, and verify_72_28.sh (fresh clone; pinned
+  head asserted before manifest verification; suite at
+  b893931 and 2fefcdc; probe at 2fefcdc; byte identity of the
+  suite and both product files across b893931/2fefcdc/a585a6d;
+  three mutant re-executions at 2fefcdc asserting the original
+  CP3/CP4/H1-B signatures). The verify-72-28 GitHub Actions
+  workflow executes the script at the exact pushed supplement
+  head as the independent receipt.
+- **Reconciliation:** b893931 -> 2fefcdc changed NO code under
+  test (documentation + a merge of main + removal of a
+  swept-in working paper; byte identity asserted by the
+  script, step 5). Executions at b893931 are executions of
+  the merged code.
+- **Bounded wording (accepted corrections):** H1 demonstrates
+  the crash between two separate ordinary saves — a bounded
+  ordering, not all crash schedules. "Never hybrid" is
+  bounded to the CP0-CP4 seams and tested assumptions.
+- **Merge timing (recorded plainly):** the review's "Hold PR
+  #298" was sent 09:32 CST while Form smoke was in progress;
+  the main session merged #298 at ~09:37 CST on terminal-green
+  CI under the hard gate, BEFORE the email was processed
+  (09:49, via heartbeat) — the same timing pattern as PR #296.
+  PR #298 therefore stands as MERGED_VERIFIED_BY_UNI only;
+  no confirmation is claimed or inferred from the merge.
+- **Defect status (Mode A assessment, 2026-11-05, Ace-relayed):**
+  the demonstrated everyday-save defect remains OPEN; this
+  proof circuit's closure does not close it. Part B is
+  DEFERRED into the Q1 transaction design (PR #294 Amendment
+  E); CP2's two recovery call sites remain unchanged pending
+  a separately scoped review. No Part B or Q1 implementation
+  is authorized by anything in this supplement.
+
+### Addendum 1 receipt — independent CI execution (2026-11-05)
+
+The verify-72-28 GitHub Actions workflow executed
+verify_72_28.sh at supplement head 83d18ca0 on a GitHub-hosted
+runner (run 42062153339, conclusion SUCCESS; runner
+runnervmwuk1x, Python 3.14.4): manifest verified, suite
+45/45 at b893931 and at 2fefcdc, probe exit 0, byte identity
+across b893931/2fefcdc/a585a6d, and all three mutant
+re-executions killed at the original CP3/CP4/H1-B
+signatures — ALL STEPS PASS. Full log:
+evidence/72-28-pair-atomic/verify_72_28_ci_run.log. The job
+re-executes at the final supplement head on this receipts
+push; that run is the receipt for the final head. This is
+independent execution evidence for the Director's scoped
+confirmation decision; it is not itself a confirmation.

@@ -1,0 +1,149 @@
+H1-A: HYBRID
+H1-B: HYBRID
+CP1: OLD_ONLY
+CP2: OLD_ONLY
+CP3: OLD_ONLY
+CP4: NEW_PAIR
+CP0: NEW_PAIR
+RESULTS_JSON [
+ {
+  "case": "H1-A",
+  "verdict": "HYBRID",
+  "view": {
+   "outcome": "loaded",
+   "new_prop": true,
+   "old_prop": true,
+   "new_unit": false,
+   "old_unit": true,
+   "pre_load_shas": {
+    "nursery_sha": "1d286a8033148f212a55a926310434a763a663505bb87ab75f0b3d2ecae02b05",
+    "program_sha": "fce39a2a0bd20399c8e372580fcd3f261861b2d02a223dc70e3296f620bf6b49"
+   },
+   "post_load_shas": {
+    "nursery_sha": "1d286a8033148f212a55a926310434a763a663505bb87ab75f0b3d2ecae02b05",
+    "program_sha": "fce39a2a0bd20399c8e372580fcd3f261861b2d02a223dc70e3296f620bf6b49"
+   }
+  },
+  "load_rewrote_files": false
+ },
+ {
+  "case": "H1-B",
+  "verdict": "HYBRID",
+  "view": {
+   "outcome": "loaded",
+   "new_prop": false,
+   "old_prop": true,
+   "new_unit": true,
+   "old_unit": true,
+   "pre_load_shas": {
+    "nursery_sha": "4359c69a7d60b8f63897a59c9caef893be2b2911933861e55c353e5038df1791",
+    "program_sha": "32c35567fd866c932d7e74e36c86f5bc1007141b69541506e49a468731b6ba6d"
+   },
+   "post_load_shas": {
+    "nursery_sha": "4359c69a7d60b8f63897a59c9caef893be2b2911933861e55c353e5038df1791",
+    "program_sha": "32c35567fd866c932d7e74e36c86f5bc1007141b69541506e49a468731b6ba6d"
+   }
+  },
+  "load_rewrote_files": false
+ },
+ {
+  "case": "CP1",
+  "verdict": "OLD_ONLY",
+  "view": {
+   "outcome": "loaded",
+   "new_prop": false,
+   "old_prop": true,
+   "new_unit": false,
+   "old_unit": true,
+   "pre_load_shas": {
+    "nursery_sha": "ae09f5215c4f34b102df86d474e55fb6e7d09e350447240586b8754ce68d1094",
+    "program_sha": "b629fa1fb87f16b6b811b6d9064ba78ac64c338781dab054acf185c58388a2e8"
+   },
+   "post_load_shas": {
+    "nursery_sha": "ae09f5215c4f34b102df86d474e55fb6e7d09e350447240586b8754ce68d1094",
+    "program_sha": "b629fa1fb87f16b6b811b6d9064ba78ac64c338781dab054acf185c58388a2e8"
+   }
+  },
+  "load_rewrote_files": false
+ },
+ {
+  "case": "CP2",
+  "verdict": "OLD_ONLY",
+  "view": {
+   "outcome": "loaded",
+   "new_prop": false,
+   "old_prop": true,
+   "new_unit": false,
+   "old_unit": true,
+   "pre_load_shas": {
+    "nursery_sha": "2a5535e76b8e56d0f5391c2979dc016d6545c1674e96d69c4ec9ea1cde080e90",
+    "program_sha": "01da40f0cb239978f2e0ef8fe7fa8d1b76a14464687ecc67b9154ab808fb0a7b"
+   },
+   "post_load_shas": {
+    "nursery_sha": "1132e1746ffc5989891d0dcc94faa7de49a701b4c7e264be84e321a749042b17",
+    "program_sha": "01da40f0cb239978f2e0ef8fe7fa8d1b76a14464687ecc67b9154ab808fb0a7b"
+   }
+  },
+  "load_rewrote_files": true
+ },
+ {
+  "case": "CP3",
+  "verdict": "OLD_ONLY",
+  "view": {
+   "outcome": "loaded",
+   "new_prop": false,
+   "old_prop": true,
+   "new_unit": false,
+   "old_unit": true,
+   "pre_load_shas": {
+    "nursery_sha": "2a5535e76b8e56d0f5391c2979dc016d6545c1674e96d69c4ec9ea1cde080e90",
+    "program_sha": "9bd054609e8c8019a270fd7daf499cc4be0bf7996599624e7ad1cc3d30812e98"
+   },
+   "post_load_shas": {
+    "nursery_sha": "1132e1746ffc5989891d0dcc94faa7de49a701b4c7e264be84e321a749042b17",
+    "program_sha": "b72908c2bd0bb43ff9cb6ea197acb1b1af1b0b058fb1fa45576f28395dc0be16"
+   }
+  },
+  "load_rewrote_files": true
+ },
+ {
+  "case": "CP4",
+  "verdict": "NEW_PAIR",
+  "view": {
+   "outcome": "loaded",
+   "new_prop": true,
+   "old_prop": true,
+   "new_unit": true,
+   "old_unit": true,
+   "pre_load_shas": {
+    "nursery_sha": "7dd17daaa885d235c81c8f03584ac9e0e49d7cec8d783620f371c76df3af23f1",
+    "program_sha": "8a451def71c0904ea747a31d90f45eecb2c8a696ddafb4d72d386a00a6c06e28"
+   },
+   "post_load_shas": {
+    "nursery_sha": "7dd17daaa885d235c81c8f03584ac9e0e49d7cec8d783620f371c76df3af23f1",
+    "program_sha": "8a451def71c0904ea747a31d90f45eecb2c8a696ddafb4d72d386a00a6c06e28"
+   }
+  },
+  "load_rewrote_files": false
+ },
+ {
+  "case": "CP0",
+  "verdict": "NEW_PAIR",
+  "view": {
+   "outcome": "loaded",
+   "new_prop": true,
+   "old_prop": true,
+   "new_unit": true,
+   "old_unit": true,
+   "pre_load_shas": {
+    "nursery_sha": "2aab6d6da37a943c98316d9f1d88f8500766098fece1ee096bfbcafbfe61d141",
+    "program_sha": "32cd28426954c6de30b3b75d2427130f76a981e492ede288e6ac0e13a192a850"
+   },
+   "post_load_shas": {
+    "nursery_sha": "2aab6d6da37a943c98316d9f1d88f8500766098fece1ee096bfbcafbfe61d141",
+    "program_sha": "32cd28426954c6de30b3b75d2427130f76a981e492ede288e6ac0e13a192a850"
+   }
+  },
+  "load_rewrote_files": false
+ }
+]
