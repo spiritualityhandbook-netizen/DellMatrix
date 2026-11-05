@@ -166,3 +166,33 @@ strictly the in-memory AcceptancePolicy API plus genuine
 child-process restart. This is Uni's execution receipt,
 supplied for the Director's independent confirmation;
 PR #297 remains HELD, no merge or certification inferred.
+
+INDEPENDENT CI EXECUTION (Cycle 28, 2026-11-05): the
+Director's pinned-run review (2026-11-05 07:06 CST, Gmail
+id 1a1abd1d6bcf7784, archived at
+director-reports/responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_72_49_R4.md)
+ruled the Cycle 26 run INSUFFICIENT_EVIDENCE FOR
+INDEPENDENT ALL_AI_CONFIRMATION_PASS (receipt gap closed
+as submitted) and directed Uni to obtain an independently
+executed pinned script OR a separately trusted
+reproducible CI job. This PR therefore adds
+.github/workflows/verify-72-49.yml: on every push to
+uni/72-49-evidence-supplement, a GitHub-hosted
+ubuntu-latest runner — an environment Uni does not
+control — executes verify_72_49.sh pinned to the exact
+pushed head SHA (HEAD equality asserted by the script
+before manifest verification) and uploads the full script
+log as a workflow artifact; the job's exit code is the
+script's exit code. Run receipts (run id, exact head,
+conclusion) are recorded in the report's Addendum 5; the
+CI log of the run at the pre-receipt head is embedded in
+this bundle as verify_72_49_ci_run.log, and the run at
+the final head is retrievable from the PR's checks and
+the workflow run artifact on GitHub. The
+original/reconstructed mutant distinction above is
+unchanged (originals mutant_m{1,2,3}.log; labeled
+reconstructions mutant_m{1,2,3}_recon.log). Scope
+remains strictly the in-memory AcceptancePolicy API plus
+genuine child-process restart. PR #297 remains HELD; a
+CI PASS is independent execution evidence for the
+Director, not a merge or a certification.

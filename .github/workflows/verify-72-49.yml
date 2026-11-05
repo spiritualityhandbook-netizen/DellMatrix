@@ -1,0 +1,46 @@
+name: verify-72-49
+
+# Independent CI execution of the 72-49 pinned verification script,
+# supplied under the Director's 72-49 pinned-run receipt review
+# (2026-11-05 07:06 CST, Gmail id 1a1abd1d6bcf7784): "Obtain
+# independently executed pinned script (or separately trusted
+# reproducible CI job) with verified exit code, manifest hashes
+# and child-process denial". This job runs on a GitHub-hosted
+# runner — an environment Uni does not control — and executes
+# verify_72_49.sh pinned to the exact pushed head of the
+# supplement branch (the script asserts HEAD equality before
+# any manifest verification). The full script log is uploaded
+# as a workflow artifact; the job's exit code is the script's
+# exit code. PR #297 remains HELD; a PASS here is independent
+# execution evidence for the Director, not a merge or a
+# certification.
+
+on:
+  push:
+    branches:
+      - uni/72-49-evidence-supplement
+
+jobs:
+  verify-72-49:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the supplement head (script source only)
+        uses: actions/checkout@v4
+
+      - name: Run pinned verification at the exact pushed head
+        shell: bash
+        run: |
+          echo "independent executor: GitHub Actions run ${{ github.run_id }} (attempt ${{ github.run_attempt }})"
+          echo "pinned supplement head: ${{ github.sha }}"
+          bash director-reports/evidence/72-49-revocation-chain/verify_72_49.sh "${{ github.sha }}" > verify_72_49_ci.log 2>&1
+          rc=$?
+          cat verify_72_49_ci.log
+          echo "VERIFY_72_49_CI_EXIT_CODE=$rc"
+          exit $rc
+
+      - name: Upload the verification log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-72-49-${{ github.sha }}
+          path: verify_72_49_ci.log
