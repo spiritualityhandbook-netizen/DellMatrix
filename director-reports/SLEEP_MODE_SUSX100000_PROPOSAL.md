@@ -55,10 +55,16 @@ not contend for state.
    is worked — or claimed — from stale paper.
 2. **Dependency-ordered circuits.** Each item (or coherent
    cluster) runs the full circuit discipline: ground
-   (discover/verify/classify) → SWAT Director's-eye pre-mortem →
-   failing-first where a defect is claimed → build → mutants →
-   regression ×3 sequential → PR → exact-head CI → merge only
-   under the hard terminal-green gate → per-circuit record.
+   (discover/verify/classify) → failing-first where a defect is
+   claimed → build → mutants → regression ×3 sequential → PR →
+   exact-head CI → merge only under the hard terminal-green
+   gate → per-circuit record. **SWAT pre-mortems are applied
+   where practical, not on everything** (Ace's calibration,
+   2026-11-04): full Director's-eye SWAT for novel mechanisms,
+   cross-cutting or stateful changes, and anything whose failure
+   would be expensive to unwind; routine, well-trodden items
+   take a proportionate falsification pass instead. Judgment is
+   recorded per item so the choice is auditable.
 3. **State discipline.** State-sharing campaigns sequential or
    isolated (§ standing rule); chain logs durable under the
    goal's hidden_files; truncated/interim output is never a
