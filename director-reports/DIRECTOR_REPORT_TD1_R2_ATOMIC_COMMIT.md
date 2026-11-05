@@ -22,14 +22,18 @@ stayed unauthorized until it closes.
 repository's first file lock, deliberately singular (used by both
 callers below, never re-implemented per caller):
 
-- A kernel-held `flock` per owner on a lock file beside the
-  canonical state file (`program_<owner>.json.lock`), derived
-  from the same `persist._path` authority. Different owners use
-  different files and never block each other.
+- A kernel-held `flock` per owner on a lock file in the state
+  directory's `.locks/` subfolder, named from the canonical state
+  file via the same `persist._path` authority. Different owners
+  use different files and never block each other.
 - **The lock file is NEVER unlinked**: unlinking a lock file
   splits the lock across inodes and silently re-opens the race.
   Kernel-held also means a holder that dies — including SIGKILL —
   releases automatically; there is no stale-lock file to guess at.
+  (The subfolder placement is a regression finding: a lock file
+  sitting beside the state file was flagged as residue by three
+  suites' owner-cleanup contracts. The never-unlink rule is
+  unchanged; only the folder moved.)
 - **Bounded acquisition**: 10.0 s of polling, then
   `OwnerLockBusy`. An unbounded wait turns contention into a
   hang; a zero wait turns normal contention into spurious
@@ -50,45 +54,42 @@ before any mutation. R1's fingerprint gate is retained, now as
 the detector for writers outside the funnel (below).
 
 **Ordinary saves** (`persist_rest.save`): a save to the
-CANONICAL owner path runs inside the same lock, and under it a
-saver whose version stamp no longer matches the canonical file's
-valid state is refused with `StaleStateSaveError` — an ordinary
-save can no longer silently overwrite newer state, including a
-newer binding. Unstamped instances (fresh, constructed,
-checkpoint-restored) carry no baseline and save as before;
-non-canonical paths (explicit temp/checkpoint files) are outside
-the transaction, as they are not the canonical state.
+CANONICAL owner path runs inside the same lock — no canonical
+save bypasses the transaction — and under it a binding guard
+refuses the one silent harm the directive names. The guard is
+currency-aware (this shape is the product of two full-regression
+rounds, detailed under Evidence):
 
-**Two bounded allowances on the stale rule, disclosed:**
-an ABSENT canonical file (nothing exists to protect — a
-delete-then-replace by another writer leaves a file behind,
-which the fingerprint rule then catches), and a file that exists
-but does NOT parse (corrupt bytes carry no readable state and no
-binding to lose; a live instance is the only recovery source and
-its save is the repair). Bind's own rules are stricter and
-unchanged: bind still refuses to mint over corruption (F1) and
-never resurrects a vanished file. These allowances exist because
-the first R2 draft refused both — and the R1 suite's own
-corrupt-state REPAIR step (rewriting canonical state from a live
-instance after external corruption) proved to be a legitimate
-recovery flow the stricter rule broke. The mechanism was
-corrected, not the suite.
+- A **current** instance (its R1 version stamp matches the
+  canonical file it last loaded/saved) is authoritative: its
+  in-memory bindings are the latest intent, including
+  deliberately clearing a pointer, and it saves freely.
+- A **stale or unstamped** instance may save only if it carries
+  every persisted (unit → idea_id) binding identically; losing
+  or re-pointing one it never saw raises `BindingLossSaveError`.
+- Absent or unparseable canonical state carries no readable
+  bindings, so a live instance's save over corrupt bytes remains
+  the repair path (load still refuses to load such a file; bind
+  still refuses to mint over it).
+
+Non-canonical paths (explicit temp or checkpoint files) are
+outside the transaction: they are not the canonical state.
 
 ## "No lost bindings" — pinned meaning
 
 The lock serializes writers; it does not merge them. The loser
 of a race receives an EXPLICIT refusal, reloads, retries, and
-succeeds. Verified end state (check 9): after the retry, the
-canonical state carries BOTH bindings. R2 never claims both
+succeeds. Verified end state (suite check 9): after the retry,
+the canonical state carries BOTH bindings. R2 never claims both
 racing writers succeed in one pass.
 
 ## Evidence (labels per the realism ladder)
 
 - **Failing-first:** on pristine main, the new suite fails at
   check 1 — a stale instance's ordinary save proceeds silently
-  (the exact lost-update the Director cited). Behavioral, not
-  import-level.
-- **Suite `form/track_d_td1_r2_test.py`: 20/20** (registered,
+  and the binding is lost (the exact defect the Director cited).
+  Behavioral, not import-level.
+- **Suite `form/track_d_td1_r2_test.py`: 23/23** (registered,
   canonical count 235), including **CROSS_PROCESS** evidence:
   genuine subprocesses coordinated by barrier files with bounded
   waits — same-unit race (exactly one binds, exactly one shell
@@ -99,15 +100,36 @@ racing writers succeed in one pass.
   contender's bounded busy, an ordinary save provably unable to
   bypass a held lock, re-entrant bind+save under an outer lock,
   two-owner non-blocking, a failed commit releasing the lock,
-  the corrupt-save repair allowance, F1 re-pinned under the
-  lock, and zero SemanticGraph writes (file hashes).
-- **Mutants, three, each killed by its own target:** stamp
-  refusal removed → check 1 dies; lock removed from bind → the
+  the binding-keyed refusal and its narrowed other half (a stale
+  save losing NO binding proceeds), a current instance's
+  deliberate pointer-clear saving cleanly, F1 re-pinned under
+  the lock, and zero SemanticGraph writes (file hashes).
+- **Mutants, four, each killed by its own target:** binding
+  guard removed → check 1 dies; lock removed from bind → the
   state_locked check dies (bind charges into a doomed save and
   fails as BindingFailed instead of refusing cleanly); lock
-  removed from save → the save-bypass check dies.
-- **Neighbors unchanged:** TD-1 24/24, TD-1-R1 10/10.
-- **Regression ×3 and exact-head CI:** [FINAL NUMBERS AT FREEZE]
+  removed from save → the save-bypass check dies; currency
+  bypass removed → the deliberate-clear check dies with the
+  exact BindingLossSaveError signature full regression caught.
+- **Regression rounds (the scoping evidence, reported in full):**
+  Round 1 (general stale refusal): **229/235 RED** — six suites
+  in three classes, each classified: legitimate whole-state
+  flows (snapshot restore, generation rollback, unbound
+  two-instance authoring) broken by the over-broad refusal;
+  lock-file residue; one coverage registration. The save rule
+  was narrowed to the directive's exact harm (bindings).
+  Round 2 (binding-keyed refusal): **234/235 RED in all three
+  legs**, sole red TD-1 — deterministic in-chain, green via its
+  `__main__` path, red via `smoke()`; root-caused to TD-1's
+  round-trip contract deliberately clearing a pointer before
+  saving. The guard became currency-aware (above).
+  Round 3 (final): **235/235 GREEN ×3** (fwd / `--twice` /
+  `--order rev`). TD-1 24/24 and R1 10/10 unchanged throughout.
+  (TD-1's `__main__` count assertion also fails on pristine
+  main; `smoke()` is its regress contract and is green on both —
+  pre-existing, out of scope, noted for the record.)
+- **Exact-head CI:** runs on this frozen candidate; merging is
+  gated on its terminal PASS under the hard merge gate.
 
 ## Boundary — what the fence does NOT cover (stated, not implied)
 
@@ -126,16 +148,24 @@ Also same-machine scope only: kernel flock coordinates
 processes on one machine/filesystem; no multi-host claim
 (mirroring atomic_write's own stated boundary).
 
+One further honest limit of the save-side guard: it protects
+BINDINGS, not all state. Two stale instances authoring unbound
+state remain last-writer-wins under the lock's serialization —
+that is the pre-R2 product semantics for unbound state, and the
+directive's named harm is the binding. If the Director wants
+general lost-update refusal for all state, the legitimate-flow
+classifications from Round 1 are the design input for that
+separate decision (Q3).
+
 ## SWAT pre-mortem outcomes (abridged)
 
 Fork bombs / self-deadlock: bind's inner save joins by depth
 count (check 7). REPL/Studio hangs: acquisition is bounded at
 10 s with an honest busy error instead of an infinite wait.
-Suites that save from two instances alternately: the full
-regression ×3 is the arbiter — any suite depending on a stale
-save surfacing as a refusal rather than a pass is reported
-above, not quietly exempted. Lock-file litter: one small file
-per owner, never unlinked by design.
+Suites saving from two instances alternately: classified by the
+regression rounds above — currency decides, no suite is exempted
+by name. Lock-file litter: one small file per owner in `.locks/`,
+never unlinked by design.
 
 ## Anticipated probes
 
@@ -144,12 +174,14 @@ per owner, never unlinked by design.
   regression covers checkpoint suites.
 - **"What stops two threads in one process racing?"**
   Re-entrancy is per-thread: different threads contend for the
-  real kernel lock (check 4 proves a contending thread's busy
-  refusal).
-- **"Why is the corrupt-save allowance not a hole?"** It
-  applies only when the on-disk bytes do not parse as state at
-  all — there is no newer binding in unreadable bytes to lose;
-  overwriting VALID newer state is refused unconditionally.
+  real kernel lock (suite check 4 proves a contending thread's
+  busy refusal; check 4b proves a save cannot bypass a held
+  lock).
+- **"Why is the corrupt-save path not a hole?"** The guard
+  compares bindings; unreadable bytes carry none. Overwriting
+  VALID newer state while dropping its bindings is refused
+  unconditionally for any writer that did not itself produce
+  the current version.
 - **"Is the 10 s bound right for the Studio server?"** Saves
   and binds are short transactions; the bound only fires under
   pathological contention, where an honest refusal beats a hang.
@@ -163,3 +195,7 @@ per owner, never unlinked by design.
 - **Q2.** With the concurrent-write guarantee closed, is TD-1
   now certifiable, and is TD-2 (owner-visible binding surface)
   authorized to proceed?
+- **Q3.** Is binding-scoped lost-update protection the intended
+  permanent save contract, or should general stale-state refusal
+  be designed separately against the Round 1 flow
+  classifications?
