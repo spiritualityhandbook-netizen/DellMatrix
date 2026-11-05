@@ -1,0 +1,77 @@
+DellMatrix Studio connected. 100 Dells in the rack.
+> 55[Set] :: tempo=120 >> 56[Get] :: tempo
+{
+  "ok": true,
+  "error": "",
+  "seed": "55[Set] :: tempo=120 >> 56[Get] :: tempo",
+  "english": "Set (Assign an explicit value/state) then Get (Retrieve explicit value/state) → tempo",
+  "primary": 55,
+  "messages": [
+    "Mandell: 55[Set] :: tempo=120 >> 56[Get] :: tempo",
+    "English: Set (Assign an explicit value/state) then Get (Retrieve explicit value/state) → tempo",
+    "Chain atoms=2 label=tempo",
+    "-- 55[Set] ns=CORE_II",
+    "Set tempo=120",
+    "-- 56[Get] ns=CORE_II",
+    "Get tempo='120' status=ok"
+  ],
+  "new_program": null,
+  "chain_ran": [
+    55,
+    56
+  ],
+  "chain_skipped": [],
+  "atom_results": [
+    {
+      "dell": 55,
+      "ok": true,
+      "error": "",
+      "skipped": false,
+      "reason": ""
+    },
+    {
+      "dell": 56,
+      "ok": true,
+      "error": "",
+      "skipped": false,
+      "reason": ""
+    }
+  ],
+  "partial": false,
+  "any_skipped": false,
+  "core_ii": {
+    "scope": "plane",
+    "selected": [],
+    "store": {
+      "tempo": "120"
+    },
+    "groups": {},
+    "defs": {},
+    "aliases": {},
+    "compositions": {},
+    "staged": 0,
+    "try_depth": 0,
+    "context": "",
+    "route": "primary",
+    "branch": {},
+    "last_assert": "",
+    "last_guard": "ALLOW",
+    "last_frame": {},
+    "control_steps": 0
+  }
+}
+— OK · 2 atoms · 0 skipped
+> 09[Show]
+{
+  "ok": true,
+  "seed": "09[Show]",
+  "english": "Show (Render / output)",
+  "primary": 9,
+  "messages": [
+    "Mandell: 09[Show]",
+    "English: Show (Render / output)",
+    "__RENDER__"
+  ],
+  "new_program": null
+}
+— OK · no per-atom receipts in result

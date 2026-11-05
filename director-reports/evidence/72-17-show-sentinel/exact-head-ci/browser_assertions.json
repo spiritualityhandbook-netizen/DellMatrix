@@ -1,0 +1,23 @@
+{
+  "browser": "Chrome/156.0.8078.79",
+  "python": "3.11.18",
+  "pinned_sha": "cc8ea8b53ea7bfc8d22fc58ff9669b008fc06986",
+  "page_url": "http://127.0.0.1:8973/",
+  "checks": [
+    {
+      "name": "B3.session_token_real",
+      "pass": true,
+      "detail": "token length=43"
+    },
+    {
+      "name": "B1.control_no_sentinel",
+      "pass": true,
+      "detail": "control dump clean"
+    },
+    {
+      "name": "B2.show_sentinel_visible_in_console",
+      "pass": true,
+      "detail": "sentinel present in user-visible console text after bare 09[Show]"
+    }
+  ]
+}

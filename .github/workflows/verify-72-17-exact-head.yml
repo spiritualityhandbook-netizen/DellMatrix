@@ -1,0 +1,130 @@
+name: verify-72-17-exact-head
+
+# Exact-head verification for the FROZEN PR #304 candidate
+# cc8ea8b53ea7bfc8d22fc58ff9669b008fc06986, per the Director's
+# 2026-11-05 TARGETED_CORRECTION_REQUIRED on the 72-17
+# supplement: run 42103309741 executed at the ephemeral
+# pull-request MERGE REF (74cbdcbe), not at the PR head, so
+# exact-head execution identity was not proven.
+#
+# This workflow does not touch PR #304. Its own checkout only
+# hosts the workflow; the code under verification is a SECOND,
+# pinned checkout of the immutable head SHA into pinned/, and
+# the job asserts `git rev-parse HEAD` equality there BEFORE
+# any manifest check or probe runs. Head runs and merge-ref
+# runs stay distinct, permanently.
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/verify-72-17-exact-head.yml"
+      - "director-reports/evidence/72-17-show-sentinel/EXACT_HEAD_RUN.md"
+
+permissions:
+  contents: read
+
+env:
+  PINNED_SHA: cc8ea8b53ea7bfc8d22fc58ff9669b008fc06986
+
+jobs:
+  verify-72-17-exact-head:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Host checkout (workflow only — NOT the code under test)
+        uses: actions/checkout@v4
+
+      - name: Pinned checkout of the frozen PR #304 head
+        uses: actions/checkout@v4
+        with:
+          ref: cc8ea8b53ea7bfc8d22fc58ff9669b008fc06986
+          path: pinned
+
+      - name: ASSERT exact-head identity before anything else
+        working-directory: pinned
+        run: |
+          ACTUAL="$(git rev-parse HEAD)"
+          echo "expected: $PINNED_SHA"
+          echo "actual:   $ACTUAL"
+          test "$ACTUAL" = "$PINNED_SHA"
+          echo "EXACT_HEAD_ASSERTION: PASS"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Manifest verification at the pinned head
+        working-directory: pinned/director-reports/evidence/72-17-show-sentinel
+        run: |
+          sha256sum -c MANIFEST.sha256
+          echo "manifest_exit=$?"
+
+      - name: Bounded surface probe at the pinned head
+        working-directory: pinned
+        run: |
+          set -o pipefail
+          python3 director-reports/evidence/72-17-show-sentinel/q17_probe.py 2>&1 \
+            | tee ../exact_q17_probe.log
+
+      - name: Locate or install Chromium
+        id: chrome
+        run: |
+          set -euo pipefail
+          CHROME=""
+          for c in google-chrome google-chrome-stable chromium chromium-browser; do
+            if command -v "$c" >/dev/null 2>&1; then
+              CHROME="$(command -v "$c")"; break
+            fi
+          done
+          if [ -z "$CHROME" ]; then
+            curl -fsSL -o /tmp/chrome.deb \
+              https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq /tmp/chrome.deb
+            CHROME="$(command -v google-chrome)"
+          fi
+          echo "path=$CHROME" >> "$GITHUB_OUTPUT"
+          "$CHROME" --version
+
+      - name: Start Chromium headless (debugging on loopback only)
+        run: |
+          set -euo pipefail
+          CHROME="${{ steps.chrome.outputs.path }}"
+          rm -rf /tmp/chrome-profile-q17x
+          "$CHROME" --headless=new --no-sandbox --disable-gpu \
+            --disable-dev-shm-usage \
+            --remote-debugging-address=127.0.0.1 \
+            --remote-debugging-port=9444 \
+            --window-size=1400,1000 \
+            --user-data-dir=/tmp/chrome-profile-q17x \
+            about:blank > exact_chrome.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:9444/json/version >/dev/null 2>&1; then
+              echo "chromium up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "chromium failed to start"; cat exact_chrome.log; exit 1
+
+      - name: Real-browser Studio probe at the pinned head
+        working-directory: pinned
+        run: |
+          set -o pipefail
+          Q17_CDP_PORT=9444 Q17_PINNED_SHA=$PINNED_SHA \
+            python3 director-reports/evidence/72-17-show-sentinel/q17_browser_probe.py 2>&1 \
+            | tee ../exact_q17_browser_probe.log
+
+      - name: Upload exact-head evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-72-17-exact-head-evidence
+          path: |
+            exact_q17_probe.log
+            exact_q17_browser_probe.log
+            exact_chrome.log
+            pinned/director-reports/evidence/72-17-show-sentinel/browser_console_log.txt
+            pinned/director-reports/evidence/72-17-show-sentinel/browser_screenshot.png
+            pinned/director-reports/evidence/72-17-show-sentinel/browser_assertions.json
+          if-no-files-found: warn
