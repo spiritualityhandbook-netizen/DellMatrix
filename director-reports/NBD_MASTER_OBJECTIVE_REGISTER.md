@@ -160,3 +160,13 @@ All V items: **authorization = NOT AUTHORIZED — submitted for Director routing
 ## Register maintenance
 
 This register is reconciled against the source set named in `NBD_OBJECTIVE_RECONCILIATION.md` §1. It is a living planning document: statuses change only on new verified evidence or a Director ruling, recorded with the same evidence discipline used to build it.
+
+---
+
+## SUPERSESSION — 2026-11-04 21:25 CST (Director hourly review, PR #289)
+
+Appended per the Director's instruction; the as-of text above is NOT rewritten.
+
+- **G-08 is now ACTIVE / OVERSEER GO RECEIVED.** Ace said "SLEEP MODE SUS 100,000 — GO" at 2026-11-04 21:20 CST. The run (SUSX100,000) is RUNNING under hidden_files/SUSX100000_DIRECTIVE.md, NBD-ordered from this register, until Ace says "wake up." The "DEFERRED — NOT STARTED" status in the G table above is superseded as of the GO.
+- **This register is ACCEPTED WITH NOTED EXCEPTIONS (document inventory scope only)** — Director hourly review of PR #289, exact head 2112dd9. Not a certificate of full historical completeness (the §1 coverage limit stands; the primary-text census remains open), not runtime certification, not a merge authorization.
+- Standing fences reaffirmed in the same review: TD-2 = one frozen candidate; DAF-09 unresolved; V-13 (neural) deferred; 72-64 README drift open.
