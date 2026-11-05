@@ -201,3 +201,39 @@ crash-after-intent; scope split preserved) are answered in
 the Amendment section appended to
 DIRECTOR_Q1_REPAIR_PLAN.md, which is presented as one
 frozen plan head for a new ruling. No code was modified.
+
+## Addendum 3 — 2026-11-05 (response to the Director's Q1 amended-plan review)
+
+Director review of the amended plan head ce8c8a40 (Gmail
+id 1a1ab339e516a634, 2026-11-05 04:14 CST; archived at
+responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_Q1_PLAN_R2.md):
+**TARGETED_CORRECTION_REQUIRED — plan only; NO
+implementation or merge authorization; no certification.**
+The Director verified the Amendment (lock call graph,
+reentrancy rationale, absent-journal cases, durable-success
+predicate, outcome table, proposed commands) and exact-head
+CI SUCCESS, and records W1/W2/W3 as submitted, not
+independently reproduced.
+
+Remaining findings are answered in Amendment B appended
+to DIRECTOR_Q1_REPAIR_PLAN.md: (1) P5 — the precise
+consistency boundary (per-file atomicity only; a None
+journal probe proves nothing about the pair or later
+instants), the A5 "coherent older generation" wording
+WITHDRAWN, the guarantee explicitly narrowed, a fail-closed
+lock-light validation design (P5-R, decision D-P5
+requested), and an adversarial two-process probe SPEC
+(load vs first journal write / journal disposal / canonical
+saves — specification only, predicted current-code verdicts
+labeled hypotheses, not findings); (2) P3 — a trusted entry
+snapshot S captured under the lock (journal identity +
+content-match fields + resolved_pid; the pre-lock probe is
+untrusted), a disposal-time import_id identity check, and
+per-case re-established-outcome demonstrations for the
+pid=None cases N0–N3 (no_target requires content match
+still 0 PLUS orphan-attribution verification; absence alone
+is never proof); (3) the A4 predicate is labeled PROPOSED
+DESIGN, not an executed guarantee. Scope split preserved.
+No code was modified; the merge hold on PR #294 continues
+and Q1 repair implementation remains STOPPED pending a
+design ruling on the corrected plan.

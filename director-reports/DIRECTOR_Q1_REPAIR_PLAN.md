@@ -11,7 +11,14 @@ TARGETED_CORRECTION_REQUIRED, plan review only, NO
 implementation or merge authorization): see the Amendment
 section at the end of this document for the call graph, lock
 ordering, outcome table, and bounded verification commands
-the ruling ordered.**
+the ruling ordered. **Further corrected under the Director's
+review of the amended plan at head ce8c8a40 (Gmail id
+1a1ab339e516a634, 2026-11-05 04:14 CST —
+TARGETED_CORRECTION_REQUIRED, plan only): see Amendment B
+at the end of this document (P5 consistency boundary +
+P5-R fail-closed validation + adversarial probe spec; P3
+trusted entry snapshot + pid=None/no_target evidence cases;
+A4 predicate labeled proposed design only).**
 
 ## Scope (bounded, exactly the ruled circuit)
 
@@ -448,3 +455,369 @@ for a new ruling. Risks R1–R4 stand as written. No code was
 modified by this amendment; no implementation, merge, or
 certification is claimed or requested beyond the ruling on
 the amended plan.
+
+## Amendment B — corrected plan, response to the Director's Q1 amended-plan review (2026-11-05)
+
+Director review of the amended plan at head ce8c8a40
+(Gmail id 1a1ab339e516a634, 2026-11-05 04:14 CST; archived
+at responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_Q1_PLAN_R2.md)
+ruled **TARGETED_CORRECTION_REQUIRED — PLAN ONLY; NO
+implementation or merge authorization; no certification.**
+Verified by the Director: the Amendment's lock call graph,
+reentrancy rationale, absent-journal cases, durable-success
+predicate, outcome table, and proposed test commands; exact-
+head CI SUCCESS; no product-code change. W1/W2/W3 remain
+submitted audit evidence, not independently reproduced.
+
+Remaining findings, answered in order: (1) P5's no-journal
+fast path lacks a precise consistency boundary — B1/B2;
+(2) P3's journal-absent recovery lacks a trusted entry
+snapshot and per-case re-established outcomes for
+pid=None/no_target — B3; (3) the A4 predicate's status —
+B0. All code references below are to the audited base
+8e0784c, re-read for this amendment; PR #294 is docs-only,
+so the audited code is unchanged at ce8c8a40.
+
+### B0. Status of the A4 predicate — proposed design only
+
+The Director is correct, and this plan now states it
+without qualification: **the A4 `IMPORT_DURABLE` predicate
+is a PROPOSED DESIGN, not an executed guarantee.** No code
+in the repository implements it as the importer's success
+gate today (`import_packet` at the audited base returns
+ok=True after `program.save()` + journal disposal, with no
+post-save completeness re-read — exchange.py:842ff); no
+test, probe, or mutant has exercised the predicate as
+specified in A4. It becomes a guarantee only if the future
+repair circuit implements it and its evidence contract
+(A7, extended in B4) passes and the Director certifies that
+scope. Everywhere this plan says "the predicate holds /
+must hold," read "the design requires the predicate to be
+evaluated and to hold" — a requirement on future code, not
+a property of current code.
+
+### B1. P5 — the precise consistency boundary, the narrowed guarantee, and the fail-closed validation (P5-R)
+
+**Definitions.** The canonical pair is (nursery file at
+`owner_nursery_path(owner)`, program file at
+`persist._path(owner)`). A *file generation* is the byte
+content installed by one `atomic_write_json` call. A *pair
+generation* is a pair of file generations that coexisted
+as the durable result of one completed transaction
+boundary (a completed import, a completed recovery, or a
+quiescent state with no transaction in flight).
+
+**What the existing mechanisms actually prove** (source-
+grounded, audited base):
+
+- `atomic_write_json` (form/dell_matrix/atomic_write.py)
+  guarantees, per single file: a reader sees the previous
+  complete generation or the new complete generation,
+  never a torn file. Its own contract states the limit
+  verbatim in substance: "Not a database: no transactions
+  across multiple files." It proves NOTHING about a pair.
+- `_read_import_journal(owner) is None`
+  (exchange.py:404ff) proves exactly one fact: at the
+  probe instant, no file existed at the journal path. It
+  proves nothing about any later instant, nothing about
+  either canonical file's generation, and nothing about a
+  writer whose first journal write has not landed yet.
+- The fast path takes NO lock. It therefore does not
+  serialize against even the writers that DO take
+  `owner_state_lock` today: `persist_rest.save` on the
+  canonical path (persist_rest.py:156) can replace the
+  program file while a fast-path load is between its
+  journal probe and its pair reads, and the load cannot
+  tell.
+- `persist_rest.load` reads the pair at two separate
+  moments: the program file in `_load_impl`, and the live
+  nursery file later, during Program preparation
+  (`_prepare_program` → Program construction against the
+  owner's live nursery file). Nothing ties those two reads
+  to one pair generation. (Load's own docstring already
+  states the intended contract for the rollback gate — "a
+  reader never accepts a hybrid program/nursery pair";
+  the Exchange fast path is precisely where that contract
+  is currently unguarded.)
+
+**Concurrent writers at the audited base** (the boundary
+is stated against this exact set):
+
+| Writer | Pair files touched | Lock today |
+|---|---|---|
+| `import_packet` | journal write → nursery via `Nursery.save` → program via `program.save()` → journal clear | journal/nursery/journal-clear UNLOCKED; program save locked |
+| `recover_exchange_import` (journal present) | nursery + program via direct `atomic_write_json`, then journal dispose | UNLOCKED |
+| `persist_rest.save` (canonical) | program file only | LOCKED |
+| `Nursery.save` (direct callers) | nursery file only | UNLOCKED |
+| `core_i_recovery` recoveries | own journals/files — OUT OF SCOPE per A2, boundary unchanged | — |
+
+**Withdrawn claim.** A5's first bullet said a no-journal
+load probing during an import's Phase 0 "exposes that
+older generation coherently." That wording is WITHDRAWN
+as unproven: Phase 0 mutates nothing, but the load's pair
+reads happen AFTER the probe, and the importer can pass
+from Phase 0 into journal-write → nursery landing →
+program save while those reads are in flight. The exposed
+pair can then be nursery-generation N+1 with
+program-generation N (proposal present, its seed/receipts
+absent) or the reverse skew across an ordinary save —
+a hybrid pair that never existed as a completed
+transaction's result.
+
+**Narrowed guarantee (what P5 may claim after this
+correction, and no more).** A lock-free no-journal load,
+WITHOUT the validation in P5-R below, guarantees only:
+(i) each individual file it reads is one complete file
+generation (atomic_write's per-file contract), and
+(ii) Exchange recovery itself wrote nothing. It does NOT
+guarantee the pair is a pair generation. Any wording in
+the original P5 or A5 that implies pair coherence for the
+unvalidated fast path is superseded by this paragraph.
+
+**P5-R — fail-closed validation (the design this
+corrected plan proposes).** The fast path becomes
+lock-LIGHT, not lock-free; the "clean reads stay clean"
+preference is preserved as "no lock is held while reading,"
+not as "no lock is ever taken":
+
+1. Probe: `j1 = _read_import_journal(owner)`. Present →
+   the locked A1 recovery path, unchanged. Absent →
+   capture pair fingerprints F1 = (SHA-256 of the nursery
+   file's bytes or ABSENT, SHA-256 of the program file's
+   bytes or ABSENT).
+2. Read the pair exactly as load does today (program file,
+   then live nursery file), retaining the SHA-256 of the
+   bytes actually consumed for each file.
+3. Validate under a brief `owner_state_lock(owner)`
+   acquisition (bounded wait; `OwnerLockBusy` /
+   `OwnerLockUnavailable` → the load FAILS CLOSED and
+   exposes nothing — §31.2, no unlocked fallback):
+   under the lock, re-probe the journal and re-fingerprint
+   both files from disk. Exposure is authorized only if
+   ALL of: journal still absent; disk fingerprints equal
+   F1; disk fingerprints equal the consumed bytes'
+   fingerprints. The lock is then released; the loaded
+   in-memory state is the validated pair.
+   Soundness, scoped exactly: at the validation instant,
+   under the one lock, the disk pair IS the consumed pair
+   and no journal exists; every in-scope pair writer
+   (repaired import, repaired recovery, canonical save)
+   holds that same lock across its pair mutations, so none
+   was mid-transaction at that instant, and the consumed
+   pair is therefore a pair generation. Fingerprint
+   equality across steps 1–3 additionally proves no
+   completed replacement intervened between the initial
+   capture and validation.
+4. Any validation failure (journal appeared, either
+   fingerprint differs) → discard the consumed pair and
+   perform ONE locked retry: acquire the lock, run
+   recovery's probe under the lock (journal present →
+   the A1 recovery transaction), read the pair under the
+   lock, release, expose. If the retry cannot complete
+   (lock busy/unavailable, journal still unresolved), the
+   load fails closed. There is no second retry and no
+   unvalidated exposure.
+5. Boundary of the proof, stated plainly: writers
+   OUTSIDE the repaired scope can still replace a file
+   between validation and a later re-read — in particular
+   direct `Nursery.save` callers and the out-of-scope
+   `core_i_recovery` paths (A2). P5-R DETECTS their
+   completed writes that land before the validation
+   instant (fingerprint mismatch → locked retry/fail
+   closed); it does not and cannot prevent them, and the
+   guarantee above is claimed only against the in-scope
+   writer set. A write-and-byte-identical-restore cycle
+   completed entirely inside the step 1–3 window is
+   indistinguishable by fingerprinting; P5-R closes it
+   only insofar as in-scope writers cannot execute such a
+   cycle without holding the lock validation waits for —
+   for out-of-scope writers this residual is DISCLOSED,
+   not claimed away.
+
+**Decision requested (D-P5).** The Director is asked to
+rule P5-R (lock-light validation; pair coherence claimed
+only as scoped above) versus the alternative the review
+offered: keep loads fully lock-free and accept the
+narrowed guarantee as the whole contract (per-file
+atomicity only; hybrid pairs possible under concurrency
+and explicitly not promised against). This plan
+RECOMMENDS P5-R: pair coherence is load's own stated
+contract, and the cost is one brief bounded lock
+acquisition per load. Absent a ruling for the alternative,
+the repair circuit implements P5-R.
+
+### B2. Adversarial two-process probe SPEC for P5 (specification only — not executed by this amendment)
+
+Harness law for all three sub-probes (repair-circuit
+failing-first evidence; the audit probe `q1_probe.py` is
+the precedent): two GENUINE child OS processes; an
+isolated per-probe state directory/owner; coordination
+seams ONLY pause a process at a real code boundary (the
+named call sites below) and change no logic; no lock is
+held by a seam unless the code under test holds it;
+verdicts are computed from the bytes on disk and the
+loader's exposed state, never from a participant's memory;
+two full runs must produce identical verdicts.
+
+- **P5-A — load races the FIRST journal write.**
+  Setup: quiescent pair, no journal. Loader L calls
+  `persist_rest.load`; seam pauses L immediately after
+  `recover_exchange_import` returns "none" (the fast-path
+  decision point). Importer I then runs a complete
+  `import_packet` (journal write → nursery landing →
+  journal pid update → deferred records → program save →
+  journal clear). L resumes and finishes loading.
+  Verdict: FAIL if L exposes a hybrid pair (nursery holds
+  the imported proposal while the program side lacks its
+  seed/receipts, or the program side holds them while the
+  proposal is absent) or any pair other than the exact
+  pre-import pair or the exact post-import pair. Repaired-
+  code PASS requires: pre-import pair exactly, OR
+  post-import pair exactly, OR one locked retry, OR a
+  fail-closed load error — never a hybrid.
+- **P5-B — load races journal DISPOSAL.** Two sub-cases,
+  seam at `_clear_import_journal` in each of its disposing
+  callers: (B-i) importer success path (exchange.py:842):
+  I pauses after the journal file is removed and before
+  `import_packet` returns; L runs a full load in the
+  window — it must expose the exact post-import pair
+  (disposal is not a state change; the pair was already
+  durable). (B-ii) recovery path (`_dispose_import_journal`,
+  exchange.py:542ff): R has established outcome "removed"
+  for a partial import and written both canonical files;
+  R pauses after the unlink, before returning; L loads —
+  it must expose the exact recovered pair and must NOT
+  raise a spurious disposal error (the W2 linkage).
+  Verdict FAIL on any hybrid pair, any spurious error, or
+  L resurrecting the removed proposal.
+- **P5-C — load races CANONICAL SAVES.** (C-i) Locked
+  saver: process S runs `persist_rest.save` for a program
+  whose logical update also requires a following
+  `Nursery.save`; seam pauses S after the program file's
+  atomic replacement, before the nursery replacement; L
+  loads in the window. (C-ii) Unlocked nursery saver: S
+  replaces the nursery file via `Nursery.save` while L is
+  between its program read and its nursery read (seam at
+  L's pair-read boundary). Verdict FAIL if L exposes a
+  hybrid pair without detection. Repaired-code PASS:
+  C-i is prevented/validated by the shared lock (S holds
+  it; L's validation cannot pass mid-save); C-ii — an
+  out-of-scope writer — must at minimum be DETECTED
+  (fingerprint mismatch → locked retry or fail closed);
+  silently exposing the hybrid is FAIL even though
+  prevention is out of scope.
+  Status of expectations: on CURRENT code the predicted
+  verdicts are FAIL for P5-A and P5-C (no lock, no
+  validation — argued from the code above) and PASS for
+  P5-B-i. These are HYPOTHESES for the repair circuit's
+  failing-first run, NOT confirmed findings; this
+  amendment executed no probe.
+
+### B3. P3 — trusted entry snapshot and the pid=None / no_target evidence cases
+
+**Trusted entry snapshot S.** The pre-lock probe copy is
+UNTRUSTED: it may decide only whether to acquire the lock
+(A1 step 1–3); it never decides an outcome and never
+authorizes a disposal. The FIRST action after lock
+acquisition in recovery is to capture S, and every
+subsequent decision in that recovery is taken from S and
+from fresh under-lock re-reads, never from the probe:
+
+```
+S = {
+  journal:        parsed journal dict as read under the lock,
+  journal_sha256: SHA-256 of the journal file's raw bytes,
+  import_id:      journal["import_id"],
+  nursery_sha256: SHA-256 of the nursery file's bytes (or ABSENT),
+  program_sha256: SHA-256 of the program file's bytes (or ABSENT),
+  candidates:     pid=None content-match result computed on the
+                  under-lock nursery snapshot (B3 cases below),
+  resolved_pid:   the single candidate, when exactly one exists,
+}
+```
+
+**Disposal-time identity check (new, binding on the
+design).** Immediately before any disposal counts as
+accomplished, recovery re-reads the journal under the
+lock: present with `import_id == S.import_id` → unlink;
+unlink failure raises `ExchangeError` exactly as today
+(retained from A3, unchanged). Present with a DIFFERENT
+`import_id` → that file is another transaction's evidence:
+recovery MUST NOT dispose it, MUST NOT treat its own
+outcome as disposed, and raises `ExchangeError`
+(journal_retained; state not exposed). Absent → disposal
+counts as accomplished ONLY via the re-establishment
+demonstration for the decided outcome (table below),
+computed on a fresh under-lock re-read and tied to S
+(the same journal fields, the same resolved_pid) — never
+from absence alone, and never from the probe copy.
+
+**The pid=None cases.** At the audited base a journal has
+`pid: None` from `_write_import_journal(phase="intent")`
+until the post-landing update writes the resolved pid
+(exchange.py:736ff, 786ff). Recovery resolves the target
+by content match over the nursery snapshot: label ==
+journal label AND origin == journal origin AND
+SHA-256(detail) == journal `detail_sha256`
+(exchange.py:617ff). The cases, with the re-established
+outcome each must DEMONSTRATE (from S + a final under-lock
+re-read) before a "no_target" or absent-journal disposal
+stands:
+
+| Case | Snapshot facts | Decided outcome | Required demonstration before disposal stands |
+|---|---|---|---|
+| N0 | candidates == 0; journal status "in_progress" | no_target | Final re-read content match is STILL 0 candidates against S's label/origin/detail_sha256; AND no attributable orphan entries: by `import_packet`'s call order, record_receipt/record_seed_payload run only AFTER a successful nursery landing and the journal's pid update, so a never-landed import can have left no seed/receipt entries — this step verifies the premise instead of assuming it: every exchange_seeds/exchange_receipts entry present in the final program file must carry a pid that IS a proposal in the final nursery snapshot or was already present in S's program snapshot as a pre-existing entry. Any unattributable entry CONTRADICTS no_target → raise, journal retained, state not exposed. Absence of the journal alone demonstrates none of this. |
+| N1 | candidates == 0; journal status "compensation_incomplete" | no_target ONLY on proof | S's journal `failure` record (stage + compensation_errors, written by `_mark_journal_incomplete`) is carried into the recovery result; final re-read content match still 0; AND the orphan check from N0 passes with one addition: any orphan seed/receipt entries found are attributed by their own `pid` field — if such entries exist, the case is NOT no_target: that pid becomes the resolved_pid and the resolved-pid path (removal + durable verify) governs. If attribution is impossible → raise, journal retained. |
+| N2 | candidates == 1 | resolved-pid outcome (completed / removed / already_absent per the existing decision logic) | The outcome's own demonstration, tied to S.resolved_pid (not a fresh search, which could resolve differently on changed state): "completed" → the A4 predicate (B0: proposed design) on a fresh re-read for S.resolved_pid; "removed" → `_durable_import_state(owner, S.resolved_pid)` shows proposal absent, seed absent, receipts 0 on the final re-read; "already_absent" → the same all-absent demonstration. For the journal-absent-at-disposal variant (A3's three reachable paths), the SAME demonstration for the SAME S.resolved_pid is what counts disposal as accomplished. |
+| N3 | candidates > 1 | NO outcome — raise | Existing behavior retained: `ExchangeError` (refusing to guess), journal retained, state not exposed, S's candidate list recorded in the error details. N3 has NO absent-journal re-establishment path: if the journal later disappears, only an in-scope disposer could have removed it (the complete caller set of `_clear_import_journal` / `_dispose_import_journal` at the audited base is inside exchange.py: importer success, importer landing-failure, `_fail_import`, and recovery disposal itself), and a recovery that never disposed cannot claim the outcome from that absence — a subsequent load takes a NEW snapshot and decides from it; it does not inherit N3 as resolved. External deletion of the journal file is outside the model (the same boundary as external deletion of any canonical file) and is disclosed as such. |
+
+**What changes from A3.** A3's rule ("absence counts only
+with durable re-establishment") is retained but is now
+anchored: the re-establishment is computed against the
+TRUSTED snapshot S (journal identity + content-match
+fields + resolved_pid captured under the lock), the
+disposal-time identity check forbids disposing another
+transaction's journal, and N0/N1 replace "no_target by
+content match" with content match PLUS the orphan-
+attribution verification. The present-file unlink-failure
+refusal is unchanged.
+
+### B4. Evidence contract additions (for the future repair circuit; nothing here is executed by this amendment)
+
+- The B2 probe spec (P5-A, P5-B-i/ii, P5-C-i/ii) joins
+  A7's commands as mandatory failing-first evidence: the
+  probe must FAIL on unrepaired code where B2 predicts
+  failure and PASS on repaired code, two runs with
+  identical verdicts, before any merge consideration.
+- P3 suite checks for N0, N1 (incl. the orphan-attribution
+  branch), N2 (each outcome), N3 — each asserting the
+  demonstration was actually computed (e.g., by fault
+  injection that makes the final re-read contradict the
+  outcome and requires the raise).
+- Mutants added: M4 — disposal trusts the pre-lock probe
+  copy / skips the import_id identity check (killed by a
+  journal-swap check: journal replaced by a different
+  import_id between snapshot and disposal must raise and
+  must not dispose); M5 — P5-R validation removed (killed
+  by P5-A and P5-C); M6 — N0 orphan check removed (killed
+  by the N1 orphan-attribution check).
+- A4's predicate checks remain as specified in A4/A7,
+  labeled proposed-design requirements until implemented.
+
+### B5. Scope and disposition
+
+Scope split preserved verbatim (A2): SemanticGraph,
+per-Idea, and `core_i_recovery` locking remain separate
+audited proposals; B1's boundary table lists them only to
+mark the boundary. No code was modified by this
+amendment; no implementation, merge, or certification is
+claimed or requested. The plan, as corrected by Amendment
+B, is presented as ONE new frozen plan head for a design
+ruling. Decisions requested: **D-P5** (B1: adopt P5-R
+lock-light validation — recommended — or rule the
+narrowed per-file-only guarantee as the whole contract);
+acknowledgement that B3's snapshot + per-case
+demonstrations satisfy the P3 correction; and the
+standing R1–R4 / Q1-1 design question for the repair
+shape as a whole. The #294 MERGE HOLD continues; Q1 repair
+implementation remains STOPPED pending that ruling.
