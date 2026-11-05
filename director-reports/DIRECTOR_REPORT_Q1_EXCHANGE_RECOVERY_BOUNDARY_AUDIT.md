@@ -176,3 +176,28 @@ This addendum changes PR #294's head; per review #4's own
 rule the new head needs re-review. The merge hold therefore
 CONTINUES until the Director rules on the replay + plan.
 Nothing here is certified; no code was modified.
+
+## Addendum 2 — 2026-11-05 (response to Director hourly review #6)
+
+Director review #6 (Gmail id 1a1aafa42fa6c5e7, 2026-11-05
+03:11 CST; archived at
+responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_Q1_PLAN.md)
+reviewed the revised head 1b27019b: **TARGETED CORRECTION
+REQUIRED — plan review only; NO implementation or merge
+authorization.** The Director verified the docs-only diff
+and all-terminal exact-head CI, and records W1/W2/W3 as
+"submitted, not independently reproduced" — this report
+does not label them independently certified. Merge hold
+CONTINUES.
+
+Required plan corrections (lock acquisition boundaries +
+call graph + lock-order proof + two-process deadlock/
+timeout test; the reachable journal-absent path for P3 with
+durable-evidence idempotence and the present-file
+unlink-failure refusal retained; the P4 durable success
+predicate defined and checked before any success return;
+P5 analyses of no-journal-load-vs-starting-import and
+crash-after-intent; scope split preserved) are answered in
+the Amendment section appended to
+DIRECTOR_Q1_REPAIR_PLAN.md, which is presented as one
+frozen plan head for a new ruling. No code was modified.
