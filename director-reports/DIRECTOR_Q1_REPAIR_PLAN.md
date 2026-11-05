@@ -1141,3 +1141,129 @@ ruling. The #294 MERGE HOLD continues; Q1 repair
 implementation remains STOPPED pending a separately
 authorized implementation circuit and the Director's
 ruling on this head.
+
+## Amendment E — 72-28 incorporated per the Director's Mode A assessment (2026-11-05)
+
+Director Mode A assessment on 72-28 (2026-11-05, relayed by
+Ace via copy-paste; archived at
+responses/DIRECTOR_MODE_A_ASSESSMENT_2026-11-05_72_28.md):
+the everyday-save defect demonstrated by 72-28 stays OPEN —
+closing the proof circuit does not close the product defect.
+Directive: keep PR #294 on hold; incorporate the 72-28
+findings into Q1's transaction design, explicitly
+distinguish ordinary saves from checkpoints, and provide a
+failing-first regression for hybrid-state visibility. Do not
+automatically merge Q1 merely because its design is
+accepted. No certification or merge authorization issued.
+
+### E1. What 72-28 demonstrated (evidence, not hypothesis)
+
+72-28 (SM-35; PR #298 merged as MERGED_VERIFIED_BY_UNI,
+merge a585a6d; evidence supplement PR #299) proved with
+genuine child-process crash probes (two identical runs) and
+suite form/sm35_pair_atomic_test.py (45/45 at b893931):
+
+- An interrupted ORDINARY pair save (crash between the
+  program save and the nursery save, either order) leaves a
+  HYBRID live pair that a fresh load EXPOSES — no recovery,
+  no refusal (H1-A/H1-B).
+- The CHECKPOINT seal path never exposed a hybrid at the
+  enumerated seams CP0-CP4 (OLD_ONLY via preserved-pair
+  restore, or NEW_PAIR).
+
+Director disposition on the proof itself:
+INSUFFICIENT_EVIDENCE for independent confirmation
+(2026-11-05 09:32 CST review; supplement supplied in PR
+#299). The findings are incorporated here as Uni's
+demonstrated results pending that confirmation.
+
+### E2. Ordinary saves vs checkpoints — the design distinction
+
+The transaction design now states the distinction the
+findings turn on:
+
+| | Ordinary save (persist_rest.save + nursery save, caller-composed) | Checkpoint seal (commit_checkpoint) |
+|---|---|---|
+| Intent journal | NONE | write_checkpoint_intent BEFORE the first durable write |
+| Preserved pair | NONE | live pair preserved pre-seal |
+| Load-time recovery | recover_checkpoint_intent runs, but with no journal for this write there is nothing to converge from | journal drives restore/convergence (recover_checkpoint_intent; second call site form/open.py:255 — unchanged per the 72-28 review, pending separately scoped review) |
+| Crash between the two file writes | hybrid pair EXPOSED on fresh load (demonstrated, E1) | never hybrid at CP0-CP4 (demonstrated, E1) |
+| Q1 class | T3 (caller-composed two-step pair update) | T4-like journaled transaction |
+
+Consequences for this plan:
+
+1. Amendment D's C-B adoption is UNCHANGED, and D2's
+   NOT-GUARANTEED marking is strengthened from a design
+   boundary to a DEMONSTRATED behavior for the ordinary-save
+   path: cross-file pair coherence across T3 writers is not
+   merely unguaranteed, it is observably violated by an
+   interrupted ordinary save.
+2. The Q1 repair scope (journaled T4 transactions plus
+   per-file consistency) does NOT fix the ordinary-save
+   hybrid exposure. No wording in this plan, the audit
+   report, or any implementation circuit may imply it does.
+3. The only designed route to ordinary-save pair atomicity
+   remains C-A (canonical pair-save funnel / spanning
+   transaction), retained by D3 as separate future work
+   requiring human authorization. 72-28 Part B is the same
+   question and is DEFERRED into this design per the Mode A
+   directive — it is not separately tracked anymore.
+
+### E3. Failing-first regression for hybrid-state visibility (provided, RED)
+
+Artifact: director-reports/evidence/q1-audit/
+q1_hybrid_visibility_probe.py — an evidence-bundle probe
+(adapted from the 72-28 probe geometry: genuine child OS
+processes, os._exit(42) between the two ordinary saves,
+fresh-process load, on-disk hash classification). It asserts
+the post-repair C-A contract: after an interrupted ordinary
+pair save, a fresh load must expose OLD_ONLY or NEW_PAIR,
+never HYBRID. Inconclusive verdicts (setup/crash/view
+failure) exit 2 — never a pass.
+
+Executed at this plan head's base (main a585a6d code),
+2026-11-05, two runs, identical:
+
+- q1_hybrid_visibility_run1.log: H1-A HYBRID, H1-B HYBRID,
+  "CONTRACT VIOLATED", exit 1.
+- q1_hybrid_visibility_run2.log: identical, exit 1.
+
+This RED is the expected failing-first state. The probe is
+NOT product code, is NOT registered in form/regress.py, and
+changes no behavior. When a C-A circuit is separately
+authorized, this probe is its failing-first seed: the
+circuit's acceptance requires it green (exit 0) plus the
+SM-35 suite still green. Under C-B as adopted, the probe
+stays RED by design and the D2 marking governs all public
+wording.
+
+### E4. Status and disposition (Amendment E)
+
+- The everyday-save hybrid defect is OPEN (Director ruling,
+  Mode A). 72-28's proof circuit is closed; the defect is
+  not.
+- PR #294 remains HELD. Design acceptance — including any
+  future acceptance of this amendment — is NOT a merge
+  authorization (the Director's explicit warning, recorded;
+  Ace's standing rule merges Director CONFIRMATIONS, and an
+  accept-with-hold is not one).
+- Q1 repair implementation remains STOPPED pending a
+  separately authorized implementation circuit. Amendment E
+  changes design and evidence only: no product code was
+  modified; the one executed artifact is the E3 probe,
+  whose RED result is recorded above.
+
+### E5. Questions for the Director (added by Amendment E)
+
+Q-E1. With 72-28 incorporated, should the eventual
+implementation authorization be sought for C-B alone
+(journaled T4 scope, ordinary-save hybrid exposure left
+OPEN under the D2 marking), or should C-A be scoped as a
+companion circuit so the demonstrated defect has a repair
+path on the register?
+Q-E2. Is the E3 probe's contract (fresh load exposes
+OLD_ONLY or NEW_PAIR after an interrupted ordinary save)
+the correct acceptance shape for a future C-A circuit, or
+should C-A's contract additionally require that the hybrid
+never reaches disk-visible state at any instant (a stronger
+property than load-time convergence)?
