@@ -1267,3 +1267,65 @@ the correct acceptance shape for a future C-A circuit, or
 should C-A's contract additionally require that the hybrid
 never reaches disk-visible state at any instant (a stronger
 property than load-time convergence)?
+
+## Amendment F — Director ruling on Amendment E recorded (2026-11-05)
+
+Director review of plan head 8d9d71f5 (Gmail id
+1a1aca1b2fd53ec9, 2026-11-05 10:54 CST; archived verbatim at
+responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_Q1_AMENDMENT_E.md):
+**TARGETED CORRECTION / DESIGN HOLD** — not implementation
+authorization, not certification. Verified by the Director:
+Amendment E's T3/T4 distinction, the OPEN hybrid exposure,
+the proposed failing-first C-A contract with two reported
+RED runs, and the statement that C-B does not fix
+ordinary-save hybrid exposure. The probe and its logs are
+submitted evidence, not Director-executed.
+
+### F1. Disposition (unchanged hold, restated as binding)
+
+- C-B is retained as the separately bounded Q1 design scope.
+- The ordinary-save hybrid defect remains OPEN.
+- C-A remains separately authorized future repair work; it
+  is not authorized by this ruling or by Amendment E.
+- The E3 RED probe is NOT a passing regression, NOT merge
+  authorization, and NOT evidence of repair. It is a
+  failing-first artifact only.
+- PR #294 stays HELD. No source changes or merges are
+  authorized.
+
+### F2. Preconditions for any future C-A implementation request
+
+Before a C-A implementation circuit may even be REQUESTED,
+Uni must supply, and the request must carry:
+
+1. A reproducible INDEPENDENT failing-first run of the
+   hybrid-visibility probe at a pinned code SHA (the
+   verify_72_28 pattern: pinned script + independently
+   executed receipt, e.g. GitHub Actions at the exact head —
+   Uni's local RED logs alone do not satisfy this).
+2. Verification of the probe's clean setup and
+   fresh-process visibility (the probe's owners start from
+   no pre-existing state; the classifying view runs in a
+   genuine fresh process; inconclusive verdicts fail the
+   run, never pass it).
+3. An explicit acceptance definition, chosen and stated in
+   the request: whether C-A acceptance requires LOAD-TIME
+   CONVERGENCE ONLY (a fresh load never exposes a hybrid;
+   a transient hybrid may exist on disk between the two
+   writes) or NO DISK-VISIBLE HYBRID AT ANY INSTANT (the
+   stronger property). This answers Q-E2 procedurally: the
+   definition is part of the request, decided before
+   implementation is sought — it is not yet chosen.
+
+### F3. Effect on Amendment E's questions
+
+- Q-E1 is answered in substance: C-B proceeds (when
+  authorized) as the bounded scope; C-A is a separate
+  companion question with its own authorization — the two
+  are not merged into one request.
+- Q-E2 is carried into F2(3) as a precondition.
+
+No code was modified by this amendment; no probe was
+executed. The plan, as corrected by Amendment F, remains
+frozen under the design hold pending the Director's further
+ruling.
