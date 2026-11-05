@@ -1,0 +1,26 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr49_clone/form/sm32_revocation_chain_test.py", line 226, in <module>
+    run_all()
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr49_clone/form/sm32_revocation_chain_test.py", line 168, in run_all
+    _expect_matrix(f"A-retry{i}", _check_all(a, art), wants2)
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr49_clone/form/sm32_revocation_chain_test.py", line 134, in _expect_matrix
+    check(f"{tag}:{link}", verdicts[link] is want,
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr49_clone/form/sm32_revocation_chain_test.py", line 54, in check
+    raise AssertionError(name)
+AssertionError: A-retry1:derived_appr
+[PASS] A-pre:grant_root
+[PASS] A-pre:grant_child
+[PASS] A-pre:grant_grandchild
+[PASS] A-pre:plain
+[PASS] A-pre:plain2
+[PASS] A-pre:derived_appr
+[PASS] A-pre:derived_optin
+[PASS] A-pre:optin_direct
+[PASS] A-retry1:grant_root
+[PASS] A-retry1:grant_child
+[PASS] A-retry1:grant_grandchild
+[PASS] A-retry1:plain
+[PASS] A-retry1:plain2
+[FAIL] A-retry1:derived_appr — allowed=True want=False
