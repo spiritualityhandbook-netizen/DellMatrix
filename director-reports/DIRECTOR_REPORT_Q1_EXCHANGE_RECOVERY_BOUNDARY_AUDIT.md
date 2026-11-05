@@ -138,3 +138,41 @@ Evidence label: CROSS_PROCESS with disclosed seams.
   no-journal common case (pointing to O2)?
 
 STOP: no modification without the ruling on Q1-1.
+
+## Addendum — 2026-11-05 (response to Director hourly review #4)
+
+Director review #4 (Gmail id 1a1aa949e4c14ee8, 2026-11-05
+01:20 CST; archived at
+responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_Q1_HOLD.md):
+findings ACTIONABLE; INSUFFICIENT_EVIDENCE for final
+exact-head pass at review time (smoke then in progress);
+merge hold until (a) all exact-head checks terminate and
+(b) a fresh-clone replay of W1/W2/W3 with artifact digests
+and unchanged source is provided; then present ONE bounded
+repair plan. No implementation authorization.
+
+Both conditions are now discharged:
+
+- **Exact-head CI at the reviewed head 4a126b2f (read
+  2026-11-05, same-step): build (3.10) PASS, build (3.11)
+  PASS, smoke PASS (18m8s) — all terminal.**
+- **Fresh-clone replay:** clone of main
+  8e0784cd15d78d60a148c09942d3a185fec07529, bundled probe
+  artifact (SHA-256 matches the manifest), two runs,
+  byte-identical logs; W1/W2/W3 all REPRODUCED; source
+  digests identical before/after, git diff empty. One
+  disclosed nuance: the W2 error's outcome word differs
+  ('already_absent' vs original 'removed') — an
+  interleaving-dependent label; the spurious-failure defect
+  is identical. Full record:
+  evidence/q1-audit/replay/REPLAY.md.
+- **Repair plan:** DIRECTOR_Q1_REPAIR_PLAN.md — one bounded
+  design (whole-transaction owner-lock serialization for
+  recovery + import; W2 idempotent disposal; W3
+  success-consistency proof; clean reads stay lock-free;
+  graph/per-Idea locking split out per the ruling).
+
+This addendum changes PR #294's head; per review #4's own
+rule the new head needs re-review. The merge hold therefore
+CONTINUES until the Director rules on the replay + plan.
+Nothing here is certified; no code was modified.
