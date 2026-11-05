@@ -318,6 +318,10 @@ LIST = [
     # 72-49 (= SM-32): AcceptancePolicy revocation-chain invalidation
     # across restart + retry as one contract.
     "form.sm32_revocation_chain_test:smoke",
+    # 72-28 (= SM-35): Program/Nursery pair-atomicity — checkpoint
+    # path never hybrid across crash points; ordinary path bounded
+    # statement (per-file atomicity only).
+    "form.sm35_pair_atomic_test:smoke",
 ]
 
 TIMEOUT_S = 900

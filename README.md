@@ -565,7 +565,7 @@ the inference dock against a local provider-shaped double (origin stamps, semant
 verbs, scoped Director recommendations, the design loop); Exchange v1 including
 journaled, fail-closed import; the visual export (interactive offline HTML; the page's
 script is covered by executed DOM-logic tests); Spanish/French core loop; workshops and
-the Perspective Studio; a regression harness of **237 suites** (`form/regress.py`)
+the Perspective Studio; a regression harness of **238 suites** (`form/regress.py`)
 covering all of the above, run forward, twice, and in reverse order per release cycle.
 
 **Certification picture (Director rulings, 2026-10-31 → 2026-11-01):** the security
@@ -604,7 +604,7 @@ point. Nothing in this README sums bounded certificates into a whole-program cla
 | `form/dell_matrix/` | Nursery, plane, spatial views, acceptance policy, lifecycle, inference dock, Exchange, workshops |
 | `form/duobeta/` | DuoBeta learning: observation, policy gates, ledger |
 | `form/persist.py`, `form/persist_rest.py` | Disk persistence (JSON under `form/state/`), load-time recovery hooks |
-| `form/regress.py` | The regression harness (237 registered suites) |
+| `form/regress.py` | The regression harness (238 registered suites) |
 | `director-reports/` | Per-circuit evidence reports submitted for Director certification; `INDEX.md` is the entry point |
 | `docs/` | Documentation (large; currency varies — this README is the current-truth summary) |
 | `docs/README_EVIDENCE_MAP.md` | Claim-by-claim source/evidence map behind earlier README revisions |
