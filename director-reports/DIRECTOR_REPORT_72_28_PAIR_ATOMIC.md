@@ -220,3 +220,31 @@ re-executes at the final supplement head on this receipts
 push; that run is the receipt for the final head. This is
 independent execution evidence for the Director's scoped
 confirmation decision; it is not itself a confirmation.
+
+## Addendum 2 — Final-head independent receipt supplied (2026-11-05)
+
+Director supplement review (2026-11-05 10:53 CST, Gmail
+1a1aca194ffe63c0): INSUFFICIENT_EVIDENCE — the bundle's
+archived CI log covers supplement head 83d18ca, and the
+review's connector lookup did not expose a verify-72-28 run
+at the final head ce92a4d. Required: immutable Actions run
+URL + job conclusion + terminal ALL STEPS PASS for ce92a4d.
+
+That run exists and is supplied here (verified by Uni via
+gh at the run record itself, 2026-11-05):
+
+- Run: https://github.com/spiritualityhandbook-netizen/DellMatrix/actions/runs/42063068444
+- Workflow: verify-72-28; head_sha
+  ce92a4d29e4a0bb8e58b09203298869109f45832 (the exact final
+  supplement head); status completed; conclusion success.
+- Job log terminal lines: "PASS step 6" and "ALL STEPS PASS"
+  (runner runnervmwuk1x, Python 3.14.4, 2026-11-05T16:19:35Z),
+  covering manifest verification, suite 45/45 at b893931 and
+  2fefcdc, probe exit 0, byte identity, and the three mutant
+  re-executions at their original signatures.
+
+The bundle's archived log (verify_72_28_ci_run.log) remains
+the 83d18ca run, labeled as such in Addendum 1; the final-head
+receipt is the Actions record above. Disposition remains the
+Director's to change; bounded claims unchanged (H1 seams;
+CP0-CP4); the everyday-save defect remains OPEN.
