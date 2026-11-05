@@ -315,6 +315,9 @@ LIST = [
     "form.track_d_td1_r2_test:smoke",
     # Track D TD-2: canonical Idea containment operations.
     "form.track_d_td2_test:smoke",
+    # 72-49 (= SM-32): AcceptancePolicy revocation-chain invalidation
+    # across restart + retry as one contract.
+    "form.sm32_revocation_chain_test:smoke",
 ]
 
 TIMEOUT_S = 900
