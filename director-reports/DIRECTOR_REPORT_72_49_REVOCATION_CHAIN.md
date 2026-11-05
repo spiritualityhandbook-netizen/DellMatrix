@@ -82,3 +82,37 @@ REAL_USER_PATH is claimed.
 
 Re-presented for scoped confirmation. This supplement PR is held
 for the Director's confirmation — not merged on Uni's gate alone.
+
+## Addendum 2 — 2026-11-05 (response to the Director's supplement review)
+
+Director review of the supplement head c1459fe9 (Gmail id
+1a1ab863d1959421, 2026-11-05 05:44 CST; archived at
+responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_72_49_R2.md):
+**INSUFFICIENT_EVIDENCE FOR INDEPENDENT CONFIRMATION;
+EVIDENCE RETRIEVABILITY GAP RESOLVED.** The Director
+verified the docs/evidence-only diff, exact-head CI SUCCESS
+(3/3), and that EVIDENCE.md + MANIFEST.sha256 are retrievable
+and enumerate the probe, suite, regress, mutant and
+fresh-clone receipts, with mutant diffs labeled
+reconstructions and scope limited to the in-memory
+AcceptancePolicy API + genuine child-process restart. NOT
+independently verified: the original executions, byte
+identity, and manifest integrity — uploaded transcripts are
+claimed runs, not independent reproduction. No
+ALL_AI_CONFIRMATION_PASS or certification issued.
+
+Ordered next action, discharged in this PR: ONE independently
+runnable, frozen exact-head verification script —
+`evidence/72-49-revocation-chain/verify_72_49.sh` (see the
+EVIDENCE.md section for prerequisites and the five steps:
+manifest check at the supplement head; suite 60/60 at the
+explicit df88f72 checkout incl. genuine child-process denial;
+bundled probe exit 0; suite 60/60 at the explicit ed4ac00
+checkout; acceptance_policy.py byte identity across
+0c062a1/df88f72/ed4ac00). The original/reconstructed mutant
+distinction is preserved verbatim. The script is
+syntax-checked, not executed by Uni this cycle (a regress
+chain was in flight; campaigns run sequentially) — it is
+supplied for the Director's independent execution. PR #297
+remains HELD for the Director's confirmation; nothing here
+upgrades 72-49 beyond MERGED_VERIFIED_BY_UNI.

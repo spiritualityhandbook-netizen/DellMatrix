@@ -71,3 +71,45 @@ API and a genuine child-process restart. It does NOT claim
 persisted-policy proof (no persisted policy exists) and does NOT
 claim REAL_USER_PATH. Test realism: INTEGRATION with a genuine
 CROSS_PROCESS leg.
+
+## Independent verification script (supplied 2026-11-05, Cycle 24)
+
+Under the Director's supplement review (2026-11-05 05:44 CST,
+Gmail id 1a1ab863d1959421, archived at
+`director-reports/responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_72_49_R2.md`:
+INSUFFICIENT_EVIDENCE FOR INDEPENDENT CONFIRMATION; EVIDENCE
+RETRIEVABILITY GAP RESOLVED), the one independently runnable
+verification command is:
+
+    bash director-reports/evidence/72-49-revocation-chain/verify_72_49.sh
+
+Prerequisites: bash, git, python3 (>=3.10), sha256sum, network
+access to github.com. The script clones the repository FRESH
+into a temp dir (no local state is used) and checks, in order:
+(1) `sha256sum -c MANIFEST.sha256` in a checkout of the PR #297
+branch head; (2) the targeted suite at the explicit executed
+code head df88f72ce5711bb7e64f9a506e33c8a0eaf4470f — exit 0 and
+"SM32: 60/60 GREEN" (the suite's restart phase presents
+session-A artifacts to a genuine child OS process, which must
+deny every one — the child-process denial check); (3) the
+bundled probe against the df88f72 checkout — exit 0, no FAIL
+lines (66/66 expectations incl. the cross-process leg);
+(4) the targeted suite at the explicit merged head
+ed4ac00fba08b81a7194dfd9d76618d07c74ec21 — same expectations;
+(5) SHA-256 byte identity of
+form/dell_matrix/acceptance_policy.py across base 0c062a1,
+code head df88f72 and merged head ed4ac00. Exit 0 only if
+every step passes.
+
+The original/reconstructed mutant distinction is preserved:
+mutant_m{1,2,3}.log are the original Cycle 15 kill logs;
+mutant_m{1,2,3}_recon.log are the labeled Cycle 19
+reconstructions. The script does not apply mutants.
+
+Status of the script itself: syntax-checked (`bash -n`) at
+submission; it was NOT executed by Uni in Cycle 24 (a
+main-session regress chain was in flight and state-sharing
+campaigns run sequentially) — its purpose is the Director's
+independent execution, which is exactly what the review
+requires. PR #297 remains HELD; no merge or certification
+is inferred from supplying it.
