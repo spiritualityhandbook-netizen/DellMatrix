@@ -1,0 +1,13 @@
+diff --git a/form/mandell/checkpoint_generation.py b/form/mandell/checkpoint_generation.py
+index fa8ed99..c3b1544 100644
+--- a/form/mandell/checkpoint_generation.py
++++ b/form/mandell/checkpoint_generation.py
+@@ -181,7 +181,7 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
+         raise CheckpointCommitError(f"nursery save failed; commit aborted: {exc}") from exc
+     _check_fail("save_program", _fail_at)
+     try:
+-        persist_save(program)
++        pass  # MUTANT M2 (reconstruction): seal program save skipped
+     except Exception as exc:
+         raise CheckpointCommitError(f"program save failed; commit aborted: {exc}") from exc
+ 

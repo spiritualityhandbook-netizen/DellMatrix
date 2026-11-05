@@ -1,0 +1,64 @@
+H1-A: OLD_ONLY
+H1-B: CRASH_NOT_OBSERVED
+CP1: CRASH_NOT_OBSERVED
+CP2: CRASH_NOT_OBSERVED
+CP3: CRASH_NOT_OBSERVED
+CP4: CRASH_NOT_OBSERVED
+CP0: COMMIT_FAILED
+RESULTS_JSON [
+ {
+  "case": "H1-A",
+  "verdict": "OLD_ONLY",
+  "view": {
+   "outcome": "loaded",
+   "new_prop": false,
+   "old_prop": false,
+   "new_unit": false,
+   "old_unit": true,
+   "pre_load_shas": {
+    "nursery_sha": "b85414385022e335c92871746388b8222cba545157a95df54d9de7e5734fc123",
+    "program_sha": "b35456c93853dd7a81941aca8106e0d24b1523f615f4a9e2e31c779f8216928a"
+   },
+   "post_load_shas": {
+    "nursery_sha": "b85414385022e335c92871746388b8222cba545157a95df54d9de7e5734fc123",
+    "program_sha": "b35456c93853dd7a81941aca8106e0d24b1523f615f4a9e2e31c779f8216928a"
+   }
+  },
+  "load_rewrote_files": false
+ },
+ {
+  "case": "H1-B",
+  "verdict": "CRASH_NOT_OBSERVED",
+  "rc": 1,
+  "detail": "hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 122, in child_h1b\n    _stage_new_pair_in_memory(p)\n  File \"/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 101, in _stage_new_pair_in_memory\n    old = p.nursery.proposals[\"mr28-old\"]\n          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\nKeyError: 'mr28-old'\n"
+ },
+ {
+  "case": "CP1",
+  "verdict": "CRASH_NOT_OBSERVED",
+  "rc": 1,
+  "detail": "orkspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 132, in child_checkpoint\n    _stage_new_pair_in_memory(p)\n  File \"/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 101, in _stage_new_pair_in_memory\n    old = p.nursery.proposals[\"mr28-old\"]\n          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\nKeyError: 'mr28-old'\n"
+ },
+ {
+  "case": "CP2",
+  "verdict": "CRASH_NOT_OBSERVED",
+  "rc": 1,
+  "detail": "orkspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 132, in child_checkpoint\n    _stage_new_pair_in_memory(p)\n  File \"/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 101, in _stage_new_pair_in_memory\n    old = p.nursery.proposals[\"mr28-old\"]\n          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\nKeyError: 'mr28-old'\n"
+ },
+ {
+  "case": "CP3",
+  "verdict": "CRASH_NOT_OBSERVED",
+  "rc": 1,
+  "detail": "orkspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 132, in child_checkpoint\n    _stage_new_pair_in_memory(p)\n  File \"/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 101, in _stage_new_pair_in_memory\n    old = p.nursery.proposals[\"mr28-old\"]\n          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\nKeyError: 'mr28-old'\n"
+ },
+ {
+  "case": "CP4",
+  "verdict": "CRASH_NOT_OBSERVED",
+  "rc": 1,
+  "detail": "orkspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 132, in child_checkpoint\n    _stage_new_pair_in_memory(p)\n  File \"/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 101, in _stage_new_pair_in_memory\n    old = p.nursery.proposals[\"mr28-old\"]\n          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\nKeyError: 'mr28-old'\n"
+ },
+ {
+  "case": "CP0",
+  "verdict": "COMMIT_FAILED",
+  "detail": "orkspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 132, in child_checkpoint\n    _stage_new_pair_in_memory(p)\n  File \"/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/mr28_probe.py\", line 101, in _stage_new_pair_in_memory\n    old = p.nursery.proposals[\"mr28-old\"]\n          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\nKeyError: 'mr28-old'\n"
+ }
+]
