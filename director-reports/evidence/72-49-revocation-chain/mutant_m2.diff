@@ -1,0 +1,12 @@
+diff --git a/form/dell_matrix/acceptance_policy.py b/form/dell_matrix/acceptance_policy.py
+index 25480f6..a819b64 100644
+--- a/form/dell_matrix/acceptance_policy.py
++++ b/form/dell_matrix/acceptance_policy.py
+@@ -685,6 +685,7 @@ class AcceptancePolicy:
+                 "grant_seq": rec.get("seq")}
+ 
+     def _source_chain_valid(self, record: Mapping[str, Any]) -> bool:
++        return True  # MUTANT M2 (reconstruction 2026-11-05)
+         """Validate a derived approval's source chain at execution time.
+ 
+         Director 2026-10-05 (final): a revoked parent approval or a

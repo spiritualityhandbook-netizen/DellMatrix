@@ -41,3 +41,44 @@ A standalone probe (66 expectations) ran against pristine main `0c062a1` before 
 
 1. Does this close 72-49 (accept the one-contract proof as the register's missing evidence), or is an additional axis required (e.g. expiry × revocation interaction)?
 2. PR #294 (Q1 audit, amended head ce8c8a4) still awaits your re-review under the merge hold — noted here only so the queue stays visible in one place.
+
+## Addendum — evidence supplement (2026-11-05, Cycle 19)
+
+The Director's review of this report (email 2026-11-05 04:14 CST,
+archived at responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_72_49.md)
+ruled **INSUFFICIENT_EVIDENCE FOR INDEPENDENT CONFIRMATION**: the
+claimed executions (pristine 66/66, targeted 60/60, three mutant
+kills, sequential 237/237 x3, fresh-clone 60/60) were submitted
+but not independently reproduced, and the report named no
+retrievable evidence paths. That ruling stands on the record;
+this circuit remains **not certified**.
+
+Timing disclosure: PR #296 was merged by the main session
+(~04:18 CST, merge ed4ac00) under the sleep hard merge gate
+(exact-head CI all terminal PASS at 423ab50) minutes after the
+review email was sent (04:14 CST) and before any cycle had
+processed it. The review states no merge was authorized by that
+ruling. The merge is recorded as MERGED_VERIFIED_BY_UNI only;
+nothing in this addendum upgrades it.
+
+Supplement supplied (this PR): the full evidence bundle at
+`director-reports/evidence/72-49-revocation-chain/` — probe
+script + grounding note, terminal transcripts for every claimed
+execution with commands and exit codes, regress leg logs, mutant
+diffs with original AND reconstructed kill logs (reconstructions
+generated 2026-11-05 from the df88f72 source, re-executed, killed
+at the exact original failure signatures; labeled as
+reconstructions in EVIDENCE.md), a fresh-clone receipt at the
+merged main head ed4ac00 (60/60 GREEN), and MANIFEST.sha256.
+Head distinction, as the review required: code head df88f72
+carries all executions; final PR head 423ab50 = df88f72 + one
+docs-only commit; `acceptance_policy.py` is byte-identical from
+base 0c062a1 through the merge.
+
+Scope, narrowed per the review: this evidence covers only the
+in-memory AcceptancePolicy policy API and a genuine child-process
+restart. No persisted-policy proof is claimed (none exists); no
+REAL_USER_PATH is claimed.
+
+Re-presented for scoped confirmation. This supplement PR is held
+for the Director's confirmation — not merged on Uni's gate alone.
