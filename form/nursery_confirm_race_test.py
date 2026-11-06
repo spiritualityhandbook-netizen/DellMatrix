@@ -414,6 +414,98 @@ def case_baseline_unreadable():
         _clean(owner)
 
 
+# ---------------------------------------------------------------- D1S
+def case_single_worker_baseline_unreadable():
+    """Director correction round 2 (2026-11-06, on PR head
+    616449f): a SINGLE worker with an otherwise healthy checkpoint
+    whose baseline generation read fails must be REFUSED before
+    any commit — the earlier D1B case could not see this defect
+    because its stale loser was refused independently by the
+    nursery guard, while the lone worker's commit simply
+    succeeded (commit_checkpoint ran once, confirm returned ok).
+    Required: explicit refusal, zero checkpoint calls, proposal
+    still pending after fresh-process reload, intent journal
+    preserved as recovery evidence, owner lock released (a fresh
+    instance's retry of the same proposal succeeds)."""
+    from form.open import open_program
+    import form.mandell.checkpoint_generation as cg
+    owner = _owner("D1S")
+    _clean(owner)
+    try:
+        p0 = open_program(owner)
+        pid_a = p0.nursery.add("First Idea", words="alpha").id
+        ra = _confirm(p0, pid_a)
+        check("D1S.setup_checkpoint_established", ra["ok"], str(ra))
+        worker = open_program(owner)
+        pid = worker.nursery.add("Race Idea", words="alpha beta").id
+        commits = {"n": 0}
+        orig_commit = cg.commit_checkpoint
+
+        def counting_commit(program, *a, **kw):
+            commits["n"] += 1
+            return orig_commit(program, *a, **kw)
+
+        fault, wrap = _pointer_fault(fire_on_call=1)
+        orig_rp = cg._read_pointer
+        cg._read_pointer = wrap(orig_rp, lambda: False)
+        cg.commit_checkpoint = counting_commit
+        fault["armed"] = True
+        try:
+            r = _confirm(worker, pid)
+        finally:
+            cg._read_pointer = orig_rp
+            cg.commit_checkpoint = orig_commit
+        check("D1S.refused_baseline_unverifiable",
+              not r["ok"] and r["reason"] == "baseline_unverifiable",
+              str(r))
+        check("D1S.zero_commit_calls", commits["n"] == 0,
+              str(commits))
+        rel = _reload_fresh(owner, pid)
+        check("D1S.reload_still_pending_no_unit",
+              rel["status"] == "pending" and not rel["unit"]
+              and rel["label_count"] == 0, str(rel))
+        check("D1S.journal_preserved_as_evidence",
+              rel["journal_pid"] == pid, str(rel))
+        fresh = open_program(owner)
+        r2 = _confirm(fresh, pid)
+        check("D1S.lock_released_retry_succeeds", r2["ok"], str(r2))
+    finally:
+        _clean(owner)
+
+
+# ---------------------------------------------------------------- D1P
+def case_pointer_classification():
+    """Director correction round 2: the CURRENT pointer path
+    holding a DIRECTORY or a DANGLING SYMLINK is present but
+    unreadable — never proven absence. Proven absence is only a
+    pointer path that does not exist at all. At 616449f both
+    sabotage shapes returned ('absent', None) because absence
+    was inferred from isfile() on the resolved path."""
+    import form.mandell.checkpoint_generation as cg
+    owner = _owner("D1P")
+    _clean(owner)
+    try:
+        path = cg._pointer_path(owner)
+        st, _gen = cg.committed_generation_state(owner)
+        check("D1P.missing_pointer_proven_absent", st == "absent", st)
+        os.makedirs(path)
+        try:
+            st2, _g2 = cg.committed_generation_state(owner)
+            check("D1P.directory_pointer_unreadable",
+                  st2 == "unreadable", st2)
+        finally:
+            os.rmdir(path)
+        os.symlink(path + ".missing-target", path)
+        try:
+            st3, _g3 = cg.committed_generation_state(owner)
+            check("D1P.dangling_symlink_unreadable",
+                  st3 == "unreadable", st3)
+        finally:
+            os.unlink(path)
+    finally:
+        _clean(owner)
+
+
 # ---------------------------------------------------------------- L1
 def case_legacy_first_confirm():
     """Clean legacy behavior: an owner with NO established
@@ -582,6 +674,8 @@ def main():
     case_interleaved_commit()
     case_interleaved_unreadable_pointer()
     case_baseline_unreadable()
+    case_single_worker_baseline_unreadable()
+    case_pointer_classification()
     case_legacy_first_confirm()
     case_concurrent(1)
     case_concurrent(2)
