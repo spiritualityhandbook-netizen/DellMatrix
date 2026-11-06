@@ -32,12 +32,22 @@ pins the register's missing evidence at the PROGRAM level:
     shows pending / no unit: a reported-success confirmation is
     lost. The winner's committed state must survive the loser's
     refused attempt.
+  - D1U interleaved commit + unreadable CURRENT pointer at the
+    loser's compensation recheck (Director correction
+    2026-11-06): an OSError injected on the pointer read must not
+    be collapsed into 'not advanced' — the winner must survive
+    and recovery evidence must be preserved on the loser.
   - D2 true concurrent cross-process race (barrier-synchronised
     workers, both loaded + authorised before either confirms):
-    combined contract — exactly one worker reports ok AND the
-    canonical reload shows confirmed + the Idea exactly once.
-    At the unrepaired head every probed run violated it
-    (8/8: double-ok, or ok+conflict with the winner lost).
+    combined contract — both workers ready before release, both
+    exit zero, both leave valid receipts, exactly one reports ok
+    and the other the documented nursery_conflict refusal, AND
+    the canonical reload shows confirmed + the Idea exactly
+    once. At the unrepaired head every probed run violated the
+    outcome half (8/8: double-ok, or ok+conflict with the winner
+    lost); the receipt half was vacuous (a worker exiting early
+    still passed) until the 2026-11-06 strengthening, whose
+    rejection of sabotaged races is pinned by D2M.
 
 Labels: CROSS_PROCESS for D2 (fresh OS processes against the real
 Program authority); the rest INTEGRATION / REAL_PROGRAM.
@@ -227,11 +237,220 @@ def case_interleaved_commit():
         _clean(owner)
 
 
+_FRESH_RELOAD = r"""
+import json, os, sys
+sys.path.insert(0, %(REPO)r)
+owner, pid = sys.argv[1:3]
+from form.mandell.core_i_recovery import _confirm_journal_path
+jp = _confirm_journal_path(owner)
+journal = None
+if os.path.exists(jp):
+    try:
+        journal = json.loads(open(jp).read()).get("proposal_id")
+    except Exception:
+        journal = "UNREADABLE"
+from form.dell_matrix.nursery import Nursery, owner_nursery_path
+from form import persist_rest
+n = Nursery.load(owner_nursery_path(owner))
+status = n.proposals[pid].status if pid in n.proposals else "ABSENT"
+p = persist_rest.load(owner, activate=False)
+units = p.cube.session.plane.units
+print(json.dumps({
+    "status": status, "unit": pid in units,
+    "label_count": sum(1 for u in units.values()
+                       if u.label == "Race Idea"),
+    "journal_pid": journal}))
+"""
+
+
+def _reload_fresh(owner, pid):
+    """Reload in a FRESH OS process: proposal status, unit
+    presence/count, and confirm-journal disposition."""
+    out = subprocess.run(
+        [sys.executable, "-c", _FRESH_RELOAD % {"REPO": REPO},
+         owner, pid],
+        cwd=REPO, capture_output=True, text=True, timeout=120)
+    return json.loads(out.stdout.strip().splitlines()[-1])
+
+
+def _pointer_fault(*, fire_after_winner=False, fire_on_call=None):
+    """Build a _read_pointer wrapper injecting OSError into the
+    generation-identity reads made by confirm_proposal (routed
+    through current_generation_id at the original head, through
+    committed_generation_state after the repair). Modes:
+    fire_on_call=N — raise on the Nth such call after arming;
+    fire_after_winner — raise on every such call made after the
+    interleaved winner's confirm has completed (i.e. exactly the
+    loser's compensation recheck)."""
+    import traceback
+    state = {"n": 0, "armed": False}
+
+    def wrap(orig_rp, winner_done):
+        def counting_rp(owner_):
+            stack = [f.name for f in traceback.extract_stack()]
+            routed = ("current_generation_id" in stack
+                      or "committed_generation_state" in stack)
+            if (state["armed"] and routed
+                    and "confirm_proposal" in stack):
+                state["n"] += 1
+                if fire_on_call is not None and state["n"] == fire_on_call:
+                    raise OSError("INJECTED_POINTER_READ_FAILURE")
+                if fire_after_winner and winner_done():
+                    raise OSError("INJECTED_POINTER_READ_FAILURE")
+            return orig_rp(owner_)
+        return counting_rp
+
+    return state, wrap
+
+
+# ---------------------------------------------------------------- D1U
+def case_interleaved_unreadable_pointer():
+    """Director correction 2026-11-06: the loser's compensation
+    recheck reads the committed generation through a best-effort
+    accessor; inject OSError on exactly that read (at the original
+    head: the third _read_pointer call routed through
+    confirm_proposal -> current_generation_id — loser baseline,
+    winner baseline, loser recheck). The accessor collapses the
+    failure to None, the recheck concludes 'not advanced', and the
+    loser restores stale baseline bytes: the winner's successful
+    confirmation disappears on reload. The repair must distinguish
+    proven absence / verified identity / unreadable pointer, and
+    on uncertainty preserve recovery evidence (the affected
+    instance is fenced recovery-required; no stale journal is
+    left misrepresenting the durable state)."""
+    from form.open import open_program
+    import form.mandell.checkpoint_generation as cg
+    owner = _owner("D1U")
+    _clean(owner)
+    try:
+        pid = open_program(owner).nursery.add(
+            "Race Idea", words="alpha beta").id
+        loser, winner = open_program(owner), open_program(owner)
+        state = {"fired": False, "winner": None}
+        fault, wrap = _pointer_fault(fire_after_winner=True)
+        orig_commit = cg.commit_checkpoint
+
+        def intercept(program, *a, **kw):
+            if not state["fired"]:
+                state["fired"] = True
+                state["winner"] = _confirm(winner, pid)
+            return orig_commit(program, *a, **kw)
+
+        orig_rp = cg._read_pointer
+        cg._read_pointer = wrap(
+            orig_rp, lambda: state["winner"] is not None)
+        cg.commit_checkpoint = intercept
+        fault["armed"] = True
+        try:
+            rl = _confirm(loser, pid)
+        finally:
+            cg.commit_checkpoint = orig_commit
+            cg._read_pointer = orig_rp
+        check("D1U.winner_confirm_ok",
+              bool(state["winner"] and state["winner"]["ok"]),
+              str(state["winner"]))
+        check("D1U.loser_refused_conflict",
+              not rl["ok"] and rl["reason"] == "nursery_conflict",
+              str(rl))
+        rel = _reload_fresh(owner, pid)
+        check("D1U.winner_survives_unreadable_recheck",
+              rel["status"] == "confirmed" and rel["unit"]
+              and rel["label_count"] == 1, str(rel))
+        req = getattr(loser, "_recovery_required", None)
+        check("D1U.recovery_evidence_preserved",
+              isinstance(req, dict) and pid in req
+              and "unreadable" in str(req[pid].get("reason", "")),
+              str(req))
+        check("D1U.journal_disposition_clean",
+              rel["journal_pid"] is None, str(rel))
+    finally:
+        _clean(owner)
+
+
+# ---------------------------------------------------------------- D1B
+def case_baseline_unreadable():
+    """Companion to D1U (Director work order: cover failure
+    reading the baseline as well as failure rechecking it). The
+    winner has already committed. The loser's confirm then fails
+    to READ the committed generation at baseline capture (OSError
+    on the first identity-routed pointer read of its attempt):
+    compensation is unverifiable, so the attempt must fail
+    closed — loser refused, winner's durable state untouched,
+    and the loser's confirm intent journal left in place as
+    recovery evidence (verified from a fresh process). The
+    owner lock must be released: a fresh instance confirms a
+    new proposal immediately afterwards."""
+    from form.open import open_program
+    import form.mandell.checkpoint_generation as cg
+    owner = _owner("D1B")
+    _clean(owner)
+    try:
+        pid = open_program(owner).nursery.add(
+            "Race Idea", words="alpha beta").id
+        loser, winner = open_program(owner), open_program(owner)
+        rw = _confirm(winner, pid)
+        check("D1B.winner_confirm_ok", rw["ok"], str(rw))
+        fault, wrap = _pointer_fault(fire_on_call=1)
+        orig_rp = cg._read_pointer
+        cg._read_pointer = wrap(orig_rp, lambda: False)
+        fault["armed"] = True
+        try:
+            rl = _confirm(loser, pid)
+        finally:
+            cg._read_pointer = orig_rp
+        check("D1B.loser_refused_not_ok", not rl["ok"], str(rl))
+        rel = _reload_fresh(owner, pid)
+        check("D1B.winner_survives_baseline_failure",
+              rel["status"] == "confirmed" and rel["unit"]
+              and rel["label_count"] == 1, str(rel))
+        check("D1B.journal_preserved_as_evidence",
+              rel["journal_pid"] == pid, str(rel))
+        fresh = open_program(owner)
+        pid2 = fresh.nursery.add("Second Idea", words="gamma").id
+        r2 = _confirm(fresh, pid2)
+        check("D1B.lock_released_followup_confirm_ok", r2["ok"],
+              str(r2))
+    finally:
+        _clean(owner)
+
+
+# ---------------------------------------------------------------- L1
+def case_legacy_first_confirm():
+    """Clean legacy behavior: an owner with NO established
+    checkpoint (proven absence of the CURRENT pointer) confirms
+    its first proposal cleanly — the tri-state repair must not
+    turn legitimate absence into a failure."""
+    from form.open import open_program
+    from form.mandell.checkpoint_generation import (
+        CheckpointNotEstablished, _read_pointer)
+    owner = _owner("LEG")
+    _clean(owner)
+    try:
+        p = open_program(owner)
+        pid = p.nursery.add("Race Idea", words="alpha beta").id
+        try:
+            _read_pointer(owner)
+            st = "established"
+        except CheckpointNotEstablished:
+            st = "absent"
+        check("L1.pointer_proven_absent_before_confirm",
+              st == "absent", st)
+        r = _confirm(p, pid)
+        check("L1.first_confirm_ok", r["ok"], str(r))
+        rel = _reload_fresh(owner, pid)
+        check("L1.reload_confirmed_once",
+              rel["status"] == "confirmed" and rel["unit"]
+              and rel["label_count"] == 1, str(rel))
+    finally:
+        _clean(owner)
+
+
 # ---------------------------------------------------------------- D2
 _WORKER = r"""
 import json, os, sys, time
 sys.path.insert(0, %(REPO)r)
 owner, pid, barrier, ready, outp = sys.argv[1:6]
+sabotage = sys.argv[6] if len(sys.argv) > 6 else ""
 from form.open import open_program
 p = open_program(owner)
 ctx = p.make_review_context(pid, "test")
@@ -240,6 +459,13 @@ deadline = time.time() + 60
 while not os.path.exists(barrier):
     if time.time() > deadline: sys.exit(3)
     time.sleep(0.02)
+if sabotage == "exit17":
+    sys.exit(17)
+if sabotage == "raise":
+    res = {"ok": False, "reason": "raised:RuntimeError"}
+    open(outp, "w").write(json.dumps(res))
+    print(json.dumps(res))
+    sys.exit(0)
 try:
     r = p.confirm_proposal(pid, _producer="test", _review_context=ctx)
     res = {"ok": r.get("ok") is True, "reason": r.get("reason")}
@@ -250,7 +476,9 @@ print(json.dumps(res))
 """
 
 
-def case_concurrent(attempt):
+def _race_facts(sabotage=("", "")):
+    """Run one barrier-synchronised two-worker race and return the
+    raw facts (readiness, exit codes, receipts, reload state)."""
     from form.open import open_program
     owner = _owner("CON")
     _clean(owner)
@@ -264,7 +492,7 @@ def case_concurrent(attempt):
             procs.append(subprocess.Popen(
                 [sys.executable, "-c", _WORKER % {"REPO": REPO},
                  owner, pid, barrier, os.path.join(tmp, f"ready{k}"),
-                 os.path.join(tmp, f"out{k}.json")],
+                 os.path.join(tmp, f"out{k}.json"), sabotage[k]],
                 cwd=REPO, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, text=True))
         deadline = time.time() + 60
@@ -272,11 +500,14 @@ def case_concurrent(attempt):
                 os.path.exists(os.path.join(tmp, f"ready{k}"))
                 for k in range(2)):
             time.sleep(0.05)
+        both_ready = all(
+            os.path.exists(os.path.join(tmp, f"ready{k}"))
+            for k in range(2))
         open(barrier, "w").write("go")
-        results = []
+        rcs = []
         for prc in procs:
             prc.communicate(timeout=120)
-            results.append(prc.returncode)
+            rcs.append(prc.returncode)
         outs = []
         for k in range(2):
             try:
@@ -284,24 +515,77 @@ def case_concurrent(attempt):
                     open(os.path.join(tmp, f"out{k}.json")).read()))
             except Exception:  # noqa: BLE001
                 outs.append({"ok": None, "reason": "no-output"})
-        n_ok = sum(1 for o in outs if o.get("ok") is True)
-        rel = _reload(owner, pid)
-        check(f"D2.concurrent_exactly_one_ok[{attempt}]", n_ok == 1,
-              f"workers={outs}")
-        check(f"D2.concurrent_winner_preserved[{attempt}]",
-              rel["status"] == "confirmed" and rel["unit"]
-              and rel["label_count"] == 1, f"{outs} reload={rel}")
+        rel = _reload_fresh(owner, pid)
+        return {"both_ready": both_ready, "rcs": rcs, "outs": outs,
+                "reload": rel}
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
         _clean(owner)
+
+
+def _race_predicates(f):
+    """The D2 acceptance contract, as named predicates. Strengthened
+    by the Director's 2026-11-06 correction: at the prior head a
+    worker exiting 17 after the barrier (no receipt at all) still
+    passed, because exit codes were collected but never asserted
+    and a missing receipt parsed as ok=None."""
+    outs = f["outs"]
+    valid = all(isinstance(o.get("ok"), bool) for o in outs)
+    winners = [o for o in outs if o.get("ok") is True]
+    losers = [o for o in outs if o.get("ok") is False]
+    return {
+        "both_ready": bool(f["both_ready"]),
+        "both_exit_zero": f["rcs"] == [0, 0],
+        "both_valid_receipts": valid,
+        "exactly_one_ok_one_conflict": (
+            len(winners) == 1 and len(losers) == 1
+            and losers[0].get("reason") == "nursery_conflict"),
+        "winner_preserved": (
+            f["reload"]["status"] == "confirmed" and f["reload"]["unit"]
+            and f["reload"]["label_count"] == 1),
+    }
+
+
+def case_concurrent(attempt):
+    f = _race_facts()
+    p = _race_predicates(f)
+    detail = f"rcs={f['rcs']} outs={f['outs']} reload={f['reload']}"
+    check(f"D2.both_ready_before_release[{attempt}]",
+          p["both_ready"], detail)
+    check(f"D2.both_exit_zero[{attempt}]", p["both_exit_zero"], detail)
+    check(f"D2.both_valid_receipts[{attempt}]",
+          p["both_valid_receipts"], detail)
+    check(f"D2.exactly_one_ok_one_conflict[{attempt}]",
+          p["exactly_one_ok_one_conflict"], detail)
+    check(f"D2.concurrent_winner_preserved[{attempt}]",
+          p["winner_preserved"], detail)
+
+
+def case_concurrent_mutants():
+    """The strengthened contract must REJECT sabotaged races: a
+    worker that exits 17 after the barrier without confirming (the
+    Director's mutant) and a worker whose confirm raised. At the
+    prior head the first of these was accepted."""
+    f = _race_facts(sabotage=("", "exit17"))
+    p = _race_predicates(f)
+    check("D2M.missing_worker_rejected", not all(p.values()),
+          f"predicates={p} rcs={f['rcs']} outs={f['outs']}")
+    f2 = _race_facts(sabotage=("", "raise"))
+    p2 = _race_predicates(f2)
+    check("D2M.raised_worker_rejected", not all(p2.values()),
+          f"predicates={p2} rcs={f2['rcs']} outs={f2['outs']}")
 
 
 def main():
     case_nursery()
     case_program_sequential()
     case_interleaved_commit()
+    case_interleaved_unreadable_pointer()
+    case_baseline_unreadable()
+    case_legacy_first_confirm()
     case_concurrent(1)
     case_concurrent(2)
+    case_concurrent_mutants()
     check("cleanup.no_errors", not _CLEANUP_ERRORS, str(_CLEANUP_ERRORS))
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"nursery_confirm_race_test: {passed}/{len(RESULTS)} PASS")
