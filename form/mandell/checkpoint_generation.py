@@ -223,7 +223,11 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
         _check_fail(f"member_{kind}", _fail_at)
         try:
             atomic_write_bytes(_member_path(owner, kind, generation_id), blob)
-        except AtomicWriteError as exc:
+        except (AtomicWriteError, OSError) as exc:
+            # 72-29 (D3): broaden to OSError so a member-copy failure
+            # from any write path aborts through CheckpointCommitError
+            # (and thus commit_checkpoint's eager-convergence handler),
+            # never as a raw OSError bypassing it.
             raise CheckpointCommitError(f"member copy failed for {kind}; commit aborted: {exc}") from exc
         # Fingerprint validation: the sealed bytes are exactly what we sealed.
         if _sha256_file(_member_path(owner, kind, generation_id)) != fps[kind]:
@@ -252,7 +256,8 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
     _check_fail("manifest", _fail_at)
     try:
         atomic_write_json(_manifest_path(owner, generation_id), manifest)
-    except AtomicWriteError as exc:
+    except (AtomicWriteError, OSError) as exc:
+        # 72-29 (D3): see the member-copy wrap above.
         raise CheckpointCommitError(f"manifest write failed; commit aborted: {exc}") from exc
     _check_fail("after_members", _fail_at)  # crash here: members+manifest sealed, pointer still old
     return {
@@ -274,7 +279,8 @@ def _commit_pointer(owner: str, sealed: Dict[str, Any], _fail_at: Optional[str] 
     }
     try:
         atomic_write_json(_pointer_path(owner), pointer)
-    except AtomicWriteError as exc:
+    except (AtomicWriteError, OSError) as exc:
+        # 72-29 (D3): see the member-copy wrap above.
         raise CheckpointCommitError(f"pointer commit failed: {exc}") from exc
     return pointer
 
@@ -357,9 +363,17 @@ def commit_checkpoint(program, generation_id: Optional[str] = None,
         write_checkpoint_intent, clear_checkpoint_intent,
         recover_checkpoint_intent)
     write_checkpoint_intent(owner, gen_id)
+    dir_fsynced = False
     try:
         sealed = _seal_members(program, gen_id, _fail_at=_fail_at)
         _commit_pointer(owner, sealed, _fail_at=_fail_at)
+        # 72-29 (D2): directory-sync degradation must be observable at
+        # the checkpoint layer. atomic_write records the pointer
+        # write's directory-fsync outcome on the function object
+        # (its documented explicit-degradation surface); capture it
+        # immediately, before any later write overwrites it, and
+        # carry it on the commit receipt below. Additive only.
+        dir_fsynced = bool(getattr(atomic_write_json, "_last_dir_fsynced", False))
     except CheckpointCommitError:
         # Converge eagerly: the failed seal may have overwritten one
         # member of the live pair. Recovery restores the preserved
@@ -377,6 +391,7 @@ def commit_checkpoint(program, generation_id: Optional[str] = None,
         "owner": owner,
         "members": sealed["members"],
         "committed": True,
+        "dir_fsynced": dir_fsynced,
         "retention": retention,
     }
 
@@ -460,6 +475,15 @@ def _load_generation(owner: str, generation_id: str,
     manifest = _read_manifest(owner, generation_id)
     member_paths = {}
     for kind in _MEMBER_KINDS:
+        # 72-29 (D1): _read_manifest tolerates a pre-Phase-2 manifest
+        # with no graph member ("graph cleared"); skip it here too
+        # instead of dereferencing it into a raw KeyError that escapes
+        # load_checkpoint's CheckpointLoadError recovery. The graph
+        # member is only fingerprint-validated here, never consumed,
+        # so an absent graph spec is semantically safe to skip; all
+        # other kinds stay fail-closed.
+        if kind == "graph" and kind not in manifest["members"]:
+            continue
         spec = manifest["members"][kind]
         mpath = os.path.join(_STATE_DIR, spec["file"])
         if not os.path.isfile(mpath):
