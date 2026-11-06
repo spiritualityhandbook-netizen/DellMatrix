@@ -180,3 +180,51 @@ with R-2 vs R-3 as the Director's architectural call.
 - Q-16.3: Is the 2-of-9 flow classification (DCC-IV's FLOW_CLASSIFICATION)
   a deliberate product contract to preserve under any remedy, or
   superseded by chain_exec's nine-operator FLOW_CONTRACT ownership?
+
+## Addendum 1 — Mode A assessment folded in (2026-11-05)
+
+Director classification (Mode A, Ace-relayed, archived at
+`responses/DIRECTOR_MODE_A_ASSESSMENT_2026-11-05_72_16.md`):
+**Semantic authority divergence — OPEN.** The Director's
+recommendation prefers routing both execution paths through the
+canonical parser and operand semantics (the R-2 direction) over a
+narrow Loop-only patch (R-1), because a narrow patch leaves the
+`>>>`, `:`, and typed-argument inconsistencies unresolved. This is
+recorded as guidance for the future repair proposal; **no repair,
+merge, or certification is authorized**, and PR #307 stays HELD.
+
+Required evidence — supplied in this supplement:
+
+1. **Exact-head reproduction of the 16/16 checks** —
+   `.github/workflows/verify-72-16.yml` checks out the PR head SHA
+   explicitly and asserts `git rev-parse HEAD` equality BEFORE any
+   probe runs (the 72-17 merge-ref lesson), then verifies the
+   bundle manifest and runs both probes at that head. The run at
+   the supplement head is the reproduction of record; its receipt
+   is archived under `evidence/72-16-flow-authority/ci/`.
+2. **Public-entry routing proof** — `q16_entrypoints_probe.py`
+   E1–E3 execute through real entry points (REPL process, REPL
+   English composition, live Studio server over HTTP) and record
+   which semantics executed each program.
+3. **Operand-preservation regression** — the same probe: the
+   `13[Loop] :: 3` operand is preserved at every supported public
+   entry point (E1 REPL seed, E3 Studio API, E4 execute_seed front
+   door) and the English entry's operand is preserved through the
+   composer→flow path (E2, `06[Cycle] :: 3`, count=3 executed).
+   **One exception, stated plainly:** the direct flow-API layer
+   (E5) still rewrites `:: 3` to `:: 1` — that rewrite IS the OPEN
+   divergence under review, pinned by E5 as a failing-first marker
+   for the future repair. If "every supported entry point" is
+   intended to include the internal flow API as a supported entry,
+   the regression cannot pass until the (unauthorized) repair
+   lands — see Q-16.4. Probe totals: q16 16/16 and entrypoints 6/6,
+   two identical local runs each, manifest verified.
+
+- Q-16.4: Does "every supported entry point" include the direct
+  flow_executor API? Uni's reading: the supported entries are the
+  public ones (REPL, English composition, Studio, front door) —
+  all preserve the operand today; the flow API is the internal
+  layer whose divergence is the OPEN item itself. If the Director
+  intends the API to count as supported, the preservation
+  regression stands as failing-first (E5) until a repair is
+  authorized.
