@@ -219,7 +219,7 @@ def _atomic_replace(path: str, blob: bytes, fail: Optional[str]) -> bool:
                 f.write(blob)
             f.flush()
             os.fsync(f.fileno())
-    except BaseException:
+    except BaseException as exc:
         # Ordinary failure: best-effort cleanup of OUR temp. The injected
         # "temp_write" path raises above and is intentionally left in place.
         if fail != "temp_write":
@@ -227,6 +227,18 @@ def _atomic_replace(path: str, blob: bytes, fail: Optional[str]) -> bool:
                 os.unlink(tmp)
             except OSError:
                 pass
+        # 72-29 (D3): a real write/fsync OSError must surface as the
+        # helper's documented error type, never raw — callers key
+        # their abort/convergence handling on AtomicWriteError, and a
+        # raw OSError would bypass it. AtomicWriteError itself (incl.
+        # the injected temp_write failure) passes through unchanged;
+        # non-OSError exceptions (KeyboardInterrupt etc.) are not
+        # write failures and propagate as-is.
+        if isinstance(exc, AtomicWriteError):
+            raise
+        if isinstance(exc, OSError):
+            raise AtomicWriteError(
+                f"atomic write failed; canonical untouched: {exc}") from exc
         raise
 
     if fail == "crash_before_replace":
