@@ -425,10 +425,15 @@ def translate(english: str) -> Intent:
         elif action == "strafe":
             args = {"direction": "left" if "left" in lower else "right"}
         elif action == "zoom":
-            args = {"ref": hit.get("label") or ""}
+            # 72-06 Class D: the mandel now carries the operand
+            # ("15[Map] :: zoom {label}"); the old {"ref": ...} arg
+            # had no consumer anywhere in form/ or gui/ — retired.
+            args = {}
         elif action == "weather":
-            m = re.search(r"weather\s+(\w+)", lower)
-            args = {"condition": m.group(1) if m else "clear"}
+            # 72-06 Class D: same — operand rides the mandel
+            # ("25[Pulse] :: weather {label}"); {"condition": ...}
+            # was dead (no consumer) — retired.
+            args = {}
         elif action == "english_expand":
             n = 50
             if hit.get("label"):
