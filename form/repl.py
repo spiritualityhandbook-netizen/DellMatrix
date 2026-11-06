@@ -1282,10 +1282,19 @@ def _handle_macro_rank(p: Program, lower: str, raw: str) -> bool:
 def _apply_seed_result(p: Program, result: dict) -> Program:
     for msg in result.get("messages") or []:
         if msg == "__RENDER__":
+            # Legacy interception, kept for any stale producer; the
+            # 72-17 R-B executor no longer places the token in messages.
             print()
             print(p.render())
         else:
             _say(msg)
+    # 72-17 R-B: the render directive arrives as a structured field.
+    # Bare Show (the only producer) has no tail messages after the
+    # echoes, so rendering after the message loop preserves the
+    # token's old position exactly.
+    if result.get("directive") == "render":
+        print()
+        print(p.render())
     # SM-16: a failed seed execution must never be silent in the REPL.
     # Some handlers return ok=False with an error but no message carrying
     # it (Dell 37 bare Nurture: "add idea requires a label" never printed).
