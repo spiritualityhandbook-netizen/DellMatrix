@@ -87,6 +87,54 @@ def serialize_core_ii(program: Any) -> Dict[str, Any]:
     }
 
 
+def _validate_core_ii_member(raw: Any) -> None:
+    """Strict version contract for a PRESENT core_ii member (72-36).
+
+    Mirrors the envelope contract in persist_rest
+    (_validate_envelope_version) for the nested member. Raises
+    ProgramLoadError LOUDLY; runs before any binding and before
+    the present:False shortcut, inside the staged load, so a
+    refusal changes no binding and writes no file.
+
+    Policy (evidence: the member's writer has stamped
+    CORE_II_STATE_VERSION since its first commit, 3e541a9; no
+    other value was ever emitted — the proven legacy shape is
+    the ABSENT member, which never reaches this validator):
+      member not an object        -> REJECT (wrong shape is
+                                     malformed, not proven absence)
+      version field missing       -> REJECT (a present member was
+                                     always emitted with a version)
+      version not an exact int    -> REJECT (covers "1", null,
+                                     float, and bool: True == 1 in
+                                     Python, so bool is excluded
+                                     explicitly)
+      version != 1 (the only
+        proven historical value)  -> REJECT (unknown schema)
+    """
+    from form.persist_rest import ProgramLoadError
+
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"core_ii member is not an object "
+            f"({type(raw).__name__}): refusing load"
+        )
+    if "version" not in raw:
+        raise ProgramLoadError(
+            "core_ii member has no version field: refusing load"
+        )
+    v = raw["version"]
+    if isinstance(v, bool) or not isinstance(v, int):
+        raise ProgramLoadError(
+            f"core_ii member has non-integer version {v!r}: "
+            f"refusing load"
+        )
+    if v != CORE_II_STATE_VERSION:
+        raise ProgramLoadError(
+            f"core_ii member version {v} is not supported "
+            f"(supported: {CORE_II_STATE_VERSION}): refusing load"
+        )
+
+
 def restore_core_ii(program: Any, data: Optional[Dict[str, Any]] = None) -> None:
     from form.mandell.core_ii_exec import CoreIIState, attach
 
@@ -94,8 +142,10 @@ def restore_core_ii(program: Any, data: Optional[Dict[str, Any]] = None) -> None
     raw = None
     if isinstance(data, dict) and "core_ii" in data:
         raw = data.get("core_ii")
-    elif isinstance(data, dict) and data.get("version") == CORE_II_STATE_VERSION and "present" in data:
+        _validate_core_ii_member(raw)
+    elif isinstance(data, dict) and "present" in data:
         raw = data
+        _validate_core_ii_member(raw)
     if not isinstance(raw, dict) or raw.get("present") is False:
         program.core_ii = CoreIIState()
         return
