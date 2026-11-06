@@ -3,9 +3,14 @@
 Circuit: 72-31 (SM-31) — §6.6 persistence batch, Sleep Protocol v2.
 Authorization: Director Mode A directive of 2026-11-06 (Ace relay;
 archived responses/DIRECTOR_MODE_A_DIRECTIVE_2026-11-06_72_31_GO.md),
-as corrected by the Director's CORRECTION_REQUIRED ruling of
-2026-11-06 (archived
-responses/DIRECTOR_MODE_A_RULING_2026-11-06_72_31_CORRECTION_REQUIRED.md).
+as corrected by the Director's CORRECTION_REQUIRED rulings of
+2026-11-06 — round 1 (archived
+responses/DIRECTOR_MODE_A_RULING_2026-11-06_72_31_CORRECTION_REQUIRED.md),
+round 2 (archived
+responses/DIRECTOR_MODE_A_RULING_2026-11-06_72_31_CORRECTION2.md;
+Q-31R.2 answered there: FIX, bounded to 72-31), and round 3
+(archived
+responses/DIRECTOR_MODE_A_RULING_2026-11-06_72_31_CORRECTION3.md).
 Work through a MERGE-READY PR; merge only on the Director's
 exact-head ruling relayed through Ace. Assessment issues direction
 and no merge authorization. Timers paused; email watermark frozen
@@ -13,11 +18,17 @@ at 2026-11-06 06:26 CST throughout.
 Base: main 77c1b0fc68b328a3ae770993837e68e3a6242e3e (PR #313 merge).
 Branch: uni/72-31-nursery-confirm-race.
 Candidate history: original repair head 3c905e3caaf1da855146ec940a93577df6a48011
-(CORRECTION_REQUIRED — superseded); corrected code SHA
-756916ce6b5eed86de2f21ce5664847307eb4c04 (commits b1939e7 production,
-756916c suite, on top of 3c905e3); final PR head adds records only —
-the product-code diff between the corrected code SHA and the PR head
-is empty.
+(CORRECTION_REQUIRED round 1 — superseded); round-1 corrected code
+SHA 756916ce6b5eed86de2f21ce5664847307eb4c04 (commits b1939e7
+production, 756916c suite, on top of 3c905e3); records head 616449f
+(CORRECTION_REQUIRED round 2 — superseded); round-2 code head
+79c3c46de6780f0406830dda88bf07bad20f7c39 (commits f534a3f
+production, 79c3c46 suite; Director-verified, then
+CORRECTION_REQUIRED round 3, classification only — superseded);
+round-3 FINAL code SHA 506823e26ad8b0a96cb34ed1b8a6f3388dbfd238
+(commits b8f31c4 production, 506823e suite). The final PR head adds
+records only — the product-code diff between the final code SHA
+506823e and the PR head is empty.
 CI execution identity: the PR workflows execute the pull-request
 merge ref of the final PR head (the #306 lesson: that ref, not the
 branch head, is what CI runs); the concrete run IDs at the final
@@ -152,6 +163,122 @@ Suite (`form/nursery_confirm_race_test.py`, 21 -> 42 checks):
   three legs (fwd / fwd-twice / rev, LEG_RC=0 x3, CHAIN_DONE),
   with the strengthened suite showing 42/42 inside the regression.
 
+## Correction round 2 — baseline refusal + pointer-shape classification
+
+Ruling (Mode A, 2026-11-06 ~09:40 CST; archived
+responses/DIRECTOR_MODE_A_RULING_2026-11-06_72_31_CORRECTION2.md):
+Q-31R.1 CORRECTION_REQUIRED at records head 616449f, on two probes
+the Director reran at the exact head. Q-31R.2 answered in the same
+ruling: **FIX, bounded to 72-31**; broader save-path changes retain
+their separate gate.
+
+1. **Lone worker, unreadable baseline, healthy checkpoint: the
+   confirm COMMITTED and succeeded.** `commit_checkpoint` ran once;
+   reload showed the proposal confirmed with one unit. Required:
+   explicit refusal with ZERO commit calls. Root cause: baseline
+   capture failure only set `_baseline_ok=False`; the flow
+   proceeded to commit anyway. Uni's D1B case had masked it — its
+   stale loser was refused independently by the nursery guard, so
+   the suite was green while the lone-worker path was broken (a
+   test whose subject is refused for an independent reason proves
+   nothing about the path under test).
+2. **CURRENT as a directory or a dangling symlink classified
+   `("absent", None)`.** Absence was inferred from `isfile`-style
+   existence probing; a present-but-unreadable pointer shape must
+   be `unreadable`, never absent.
+
+Repair (commits f534a3f production + 79c3c46 suite; code head
+79c3c46de6780f0406830dda88bf07bad20f7c39):
+
+- New `BaselineUnverifiableError(RuntimeError)` in
+  `form/dell_matrix/confirm_lineage.py`, raised as the first
+  statement inside the commit try — before any `commit_checkpoint`
+  call — when baseline capture failed. The existing handler reverts
+  in-memory staging, preserves the intent journal, releases the
+  lock, and returns `{ok: False, reason: "baseline_unverifiable"}`.
+- `committed_generation_state` gates absence on `os.path.lexists`:
+  a path that exists in any shape is never classified absent from
+  an existence probe (superseded by round 3's error-preserving
+  lookup; see below).
+- New suite cases (42 -> 51 checks): **D1S** — the lone-worker
+  refusal: exact refusal reason, zero commit calls (counting
+  wrapper), fresh-process reload shows the proposal pending with
+  no unit, the intent journal preserved naming the pid, the owner
+  lock released (a fresh instance's retry of the SAME proposal
+  succeeds). **D1P** — pointer-shape classification: missing ->
+  absent (control), directory -> unreadable, dangling symlink ->
+  unreadable.
+- Failing-first at 616449f: **44/51**, failing exactly the five
+  D1S outcome checks and the two D1P classification checks — the
+  Director's probes verbatim.
+- Mutants killed exactly: refusal removed -> 46/51 (D1S only);
+  classification reverted -> 49/51 (D1P only). Both reverted by
+  inverse edit, tree verified clean.
+- Neighbours: confirm_crash_matrix 21/21.
+- The Director verified the round-2 head himself (2026-11-06
+  ~09:58 CST): reproduced 51/51; refusal, journal, retry,
+  directory and dangling-symlink cases all confirmed.
+- T3 at 79c3c46 (run6, sequential, isolated state): TERMINAL GREEN
+  **244/244** on all three legs (fwd / fwd-twice / rev). Legs 1-2
+  completed in the original chain; leg 3 was killed mid-suite by
+  a runtime restart (2026-11-06 ~10:13 CST; partial log preserved)
+  and rerun to TERMINAL GREEN — disclosed here, not hidden in the
+  count.
+
+## Correction round 3 — absence requires positive proof (EACCES)
+
+Ruling (Mode A, 2026-11-06 ~09:58 CST; archived
+responses/DIRECTOR_MODE_A_RULING_2026-11-06_72_31_CORRECTION3.md):
+CORRECTION_REQUIRED at 79c3c46. The `lexists` gate itself hides
+lookup ERRORS: with a real CURRENT file whose parent directory
+loses search permission, `os.lstat` raises PermissionError
+(EACCES, as a non-root user) yet `committed_generation_state`
+returned `("absent", None)`. Classification defect only; the
+Director observed no lost confirmation in his run.
+
+Repair (commits b8f31c4 production + 506823e suite; FINAL code SHA
+506823e26ad8b0a96cb34ed1b8a6f3388dbfd238):
+
+- `committed_generation_state` now opens with an error-preserving
+  `os.lstat` on the pointer path: `FileNotFoundError` -> absent
+  (the ONLY absence proof); any other lookup exception ->
+  unreadable; then `_read_pointer` success -> verified, any read
+  failure after the entry was observed -> unreadable.
+- New suite cases (51 -> 57 checks): **D1PE** — the real-filesystem
+  EACCES case. This VM's suite runs as root (uid 0), where EACCES
+  cannot occur, so the case copies `form/` to a world-traversable
+  /tmp tree and runs the classification as user `nobody`
+  (`setpriv --reuid=nobody --regid=nogroup --clear-groups`): the
+  worker proves PermissionError (errno 13) on a direct `os.lstat`
+  of the pointer, then asserts the classification is unreadable.
+  **D1SE** — the same EACCES fault carried through a lone-worker
+  confirm (an `os.lstat` wrapper raising PermissionError only for
+  the owner's pointer path; faithful at both code versions because
+  `lexists` internally calls `os.lstat` and swallows the OSError):
+  refusal `baseline_unverifiable`, zero commit calls, proposal
+  pending on fresh-process reload. Missing-file, directory,
+  dangling-link and successful-retry controls retained.
+- Failing-first at 79c3c46: **53/57**, failing exactly
+  `D1PE.classified` and the three D1SE checks. The lexists mutant
+  (round-3 repair reverted to the `lexists` gate) is killed with
+  the identical 53/57 profile; reverted by inverse edit.
+- Neighbours: confirm_crash_matrix 21/21 ·
+  checkpoint_generation_stress 15/15 · graph_journal_crash 12/12.
+- Fresh clone (clean clone from GitHub, checkout at the final
+  code SHA 506823e, HEAD verified, tree clean): suite **57/57
+  PASS**.
+- T3 at 506823e (run7, sequential, isolated state): TERMINAL
+  GREEN **244/244** on all three legs (fwd / fwd-twice / rev,
+  LEG_RC=0 x3, CHAIN_DONE), with the 57-check suite inside the
+  regression.
+
+Round-2/3 lesson, generalized: a helper that collapses distinct
+outcomes into one value (best-effort None, `lexists` False,
+`isfile` False) must never feed an identity or absence decision.
+Absence requires positive proof (FileNotFoundError from an
+error-preserving lookup); every other outcome is uncertainty,
+and uncertainty fails closed.
+
 ## Scoreboard correction + register reconciliation (Director-ordered)
 
 - **OCI tool bug (Uni's, owned).** `oci.py` matched register status
@@ -167,8 +294,8 @@ Suite (`form/nursery_confirm_race_test.py`, 21 -> 42 checks):
   53.6%).
 - **Register rows reconciled in this PR** (bounded; statuses change
   only where delivered evidence + a Director ruling already closed
-  the item): 72-31 gains this repair note (stays PARTIAL — Q-31R.1/
-  Q-31R.2 outstanding); **72-64 -> COMPLETED** (its whole content
+  the item): 72-31 gains this repair note (stays PARTIAL — Q-31R.1
+  outstanding at the final head; Q-31R.2 answered FIX bounded); **72-64 -> COMPLETED** (its whole content
   was the README/docs refresh: PR #301, Director bounded PASS
   2026-11-05, merged 3a29e35; the README already points at the
   canonical LIST — the row's 'refresh counts' action was obsolete);
@@ -193,8 +320,9 @@ Suite (`form/nursery_confirm_race_test.py`, 21 -> 42 checks):
   family, 3 classes (PR #313). GATED — DD-06 everyday-save hybrid
   pair (C-A circuit), DD-07 Q1 family W1/W2/W3 (PR #294 hold),
   DD-08 72-16 semantic divergence (R-2 review authorized).
-  IN VERIFICATION — DD-09 72-31 confirm-race family (D-A/D-B/D1U,
-  this PR). Reconciled dial: 9 families — 5 fixed (9 classes),
+  IN VERIFICATION — DD-09 72-31 confirm-race family (D-A/D-B/D1U
+  plus the round-2 baseline-refusal and round-2/3
+  pointer-classification classes, this PR). Reconciled dial: 9 families — 5 fixed (9 classes),
   3 gated (5 classes), 1 in verification. No repaired-defect
   percentage is claimed.
 
@@ -231,21 +359,22 @@ held as the census record. Whole-program certification withheld.
   correct disposition is absence (no stale intent misrepresenting
   durable state) plus the loser's instance-level recovery mark.
 - *Could the tri-state reader misclassify a torn pointer read as
-  'absent'?* No: absence is returned only for
-  CheckpointNotEstablished, raised solely when the pointer file
-  does not exist. Corrupt JSON, wrong version, owner mismatch and
-  OS errors all land in 'unreadable'.
+  'absent'?* No: after round 3, absence is returned only when the
+  error-preserving `os.lstat` on the pointer path raises
+  FileNotFoundError. Lookup errors (EACCES included), directory or
+  dangling-symlink shapes, corrupt JSON, wrong version, owner
+  mismatch and read OS errors all land in 'unreadable'.
 
 ## Questions for the Director
 
 - **Q-31R.1** — Exact-head ruling on this PR (through Ace, per the
-  directive): confirm the bounded repair (D-A/D-B at 3c905e3 as
-  corrected by the tri-state compensation at 756916c, with the
-  strengthened 42-check race proof) so the merge may proceed under
-  your ruling — or state the correction required.
-- **Q-31R.2** — FIX-vs-GATE classification: the repair touches the
-  checkpoint-transaction commit path used by confirm, though it
-  does not alter the everyday Program/Nursery pair save. Uni
-  classified it FIX under the 06:26 ruling's own routing and your
-  manual GO. Confirm the classification stands, or reassign the
-  lane for the record.
+  directive): confirm the bounded repair at the final head (code
+  SHA 506823e: D-A/D-B at 3c905e3, tri-state compensation at
+  756916c, baseline refusal at 79c3c46, error-preserving pointer
+  classification at 506823e; 57-check race proof; T3 TERMINAL
+  GREEN 244/244 x3 at both corrected heads) so the merge may
+  proceed under your ruling — or state the correction required.
+- **Q-31R.2** — ANSWERED by the Director (round-2 ruling,
+  2026-11-06 ~09:40 CST): **FIX, bounded to 72-31.** Broader
+  save-path changes retain their separate gate. Recorded; no
+  further answer required.
