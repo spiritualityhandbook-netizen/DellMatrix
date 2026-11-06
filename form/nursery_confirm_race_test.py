@@ -506,6 +506,153 @@ def case_pointer_classification():
         _clean(owner)
 
 
+# ---------------------------------------------------------------- D1PE
+_EACCES_WORKER = r"""
+import json, os, sys, time
+tree, owner, spool = sys.argv[1:4]
+sys.path.insert(0, tree)
+# Import EVERYTHING while the state dir is still searchable:
+# several form modules create state subdirectories at import.
+from form.mandell.checkpoint_generation import (
+    committed_generation_state, _pointer_path)
+p = _pointer_path(owner)
+open(os.path.join(spool, "ready"), "w").write("ready")
+deadline = time.time() + 60
+while not os.path.exists(os.path.join(spool, "lock")):
+    if time.time() > deadline:
+        print(json.dumps({"proof": {"lstat": "no-lock-signal",
+                                     "errno": None},
+                          "state": "subprocess_failed"}))
+        sys.exit(0)
+    time.sleep(0.02)
+try:
+    os.lstat(p)
+    proof = {"lstat": "ok", "errno": None}
+except PermissionError as e:
+    proof = {"lstat": "PermissionError", "errno": e.errno}
+except Exception as e:
+    proof = {"lstat": type(e).__name__, "errno": getattr(e, "errno", None)}
+st, _gen = committed_generation_state(owner)
+print(json.dumps({"proof": proof, "state": st}))
+"""
+
+
+def case_pointer_eacces():
+    """Director correction round 3 (2026-11-06, on head 79c3c46):
+    a real CURRENT file whose parent directory denies search —
+    os.lstat raises PermissionError (EACCES), but os.path.lexists
+    swallows it, so the state classified ('absent', None). This
+    suite runs as root, where EACCES cannot occur, so the case
+    runs the classification as user 'nobody' (setpriv) against a
+    world-traversable copy of the tree: it first PROVES EACCES
+    on a direct os.lstat of the pointer, then asserts the
+    classification of the same lookup is 'unreadable'."""
+    import form.mandell.checkpoint_generation as cg
+    owner = _owner("EAC")
+    base = tempfile.mkdtemp(prefix="n31eac_")
+    try:
+        tree = os.path.join(base, "tree")
+        shutil.copytree(os.path.join(REPO, "form"),
+                        os.path.join(tree, "form"))
+        os.chmod(base, 0o755)
+        for root, dirs, files in os.walk(tree):
+            os.chmod(root, 0o755)
+            for fn in files:
+                os.chmod(os.path.join(root, fn), 0o644)
+        pointer = os.path.join(
+            tree, "form", "state",
+            os.path.basename(cg._pointer_path(owner)))
+        with open(pointer, "w") as f:
+            f.write("{}")
+        spool = os.path.join(base, "spool")
+        os.makedirs(spool)
+        os.chmod(spool, 0o777)
+        proc = subprocess.Popen(
+            ["setpriv", "--reuid=nobody", "--regid=nogroup",
+             "--clear-groups", sys.executable, "-c",
+             _EACCES_WORKER, tree, owner, spool],
+            cwd=base, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, text=True)
+        deadline = time.time() + 60
+        while (time.time() < deadline
+               and not os.path.exists(os.path.join(spool, "ready"))):
+            time.sleep(0.05)
+        # Worker has imported; NOW remove search permission from
+        # the root-owned state dir, so the pointer lookup raises
+        # EACCES although the CURRENT file exists.
+        os.chmod(os.path.join(tree, "form", "state"), 0o700)
+        open(os.path.join(spool, "lock"), "w").write("lock")
+        out_stdout, out_stderr = proc.communicate(timeout=120)
+        lines = out_stdout.strip().splitlines()
+        res = (json.loads(lines[-1]) if lines else
+               {"proof": {"lstat": "no-output", "errno": None},
+                "state": "subprocess_failed",
+                "stderr": out_stderr.strip()[-300:]})
+        check("D1PE.eacces_proven_on_lstat",
+              res["proof"]["lstat"] == "PermissionError"
+              and res["proof"]["errno"] == 13, str(res))
+        check("D1PE.classified_unreadable_not_absent",
+              res["state"] == "unreadable", str(res))
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+
+# ---------------------------------------------------------------- D1SE
+def case_single_worker_eacces():
+    """Carry the EACCES lookup fault (proven against the real
+    filesystem in D1PE) through a lone worker's confirmation:
+    os.lstat on the owner's CURRENT path raises PermissionError.
+    At 79c3c46 lexists() hides the error, the baseline classifies
+    'absent', and the confirm commits. Required:
+    baseline_unverifiable refusal with zero checkpoint calls and
+    the proposal still pending after fresh-process reload."""
+    from form.open import open_program
+    import form.mandell.checkpoint_generation as cg
+    owner = _owner("D1SE")
+    _clean(owner)
+    try:
+        p0 = open_program(owner)
+        pid_a = p0.nursery.add("First Idea", words="alpha").id
+        ra = _confirm(p0, pid_a)
+        check("D1SE.setup_checkpoint_established", ra["ok"], str(ra))
+        worker = open_program(owner)
+        pid = worker.nursery.add("Race Idea", words="alpha beta").id
+        pointer = cg._pointer_path(owner)
+        commits = {"n": 0}
+        orig_commit = cg.commit_checkpoint
+
+        def counting_commit(program, *a, **kw):
+            commits["n"] += 1
+            return orig_commit(program, *a, **kw)
+
+        orig_lstat = os.lstat
+
+        def eacces_lstat(path, *a, **kw):
+            if os.fspath(path) == pointer:
+                raise PermissionError(
+                    13, "Permission denied (injected EACCES)", pointer)
+            return orig_lstat(path, *a, **kw)
+
+        cg.commit_checkpoint = counting_commit
+        os.lstat = eacces_lstat
+        try:
+            r = _confirm(worker, pid)
+        finally:
+            os.lstat = orig_lstat
+            cg.commit_checkpoint = orig_commit
+        check("D1SE.refused_baseline_unverifiable",
+              not r["ok"] and r["reason"] == "baseline_unverifiable",
+              str(r))
+        check("D1SE.zero_commit_calls", commits["n"] == 0,
+              str(commits))
+        rel = _reload_fresh(owner, pid)
+        check("D1SE.reload_still_pending_no_unit",
+              rel["status"] == "pending" and not rel["unit"]
+              and rel["label_count"] == 0, str(rel))
+    finally:
+        _clean(owner)
+
+
 # ---------------------------------------------------------------- L1
 def case_legacy_first_confirm():
     """Clean legacy behavior: an owner with NO established
@@ -676,6 +823,8 @@ def main():
     case_baseline_unreadable()
     case_single_worker_baseline_unreadable()
     case_pointer_classification()
+    case_pointer_eacces()
+    case_single_worker_eacces()
     case_legacy_first_confirm()
     case_concurrent(1)
     case_concurrent(2)
