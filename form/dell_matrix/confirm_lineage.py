@@ -382,6 +382,7 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         _baseline_program_bytes = None
         _baseline_nursery_bytes = None
         _baseline_gen = None
+        _baseline_gen_state = None
         _baseline_ok = False
         try:
             from form.persist import _path as _ppath
@@ -400,9 +401,18 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
                     _baseline_nursery_bytes = f.read()
             # 72-31 (D-B): record the committed generation at baseline
             # time. Compensation re-validates against it before
-            # restoring any baseline bytes.
-            from form.mandell.checkpoint_generation import current_generation_id as _cgid
-            _baseline_gen = _cgid(program.owner)
+            # restoring any baseline bytes. Tri-state read (Director
+            # correction 2026-11-06): an UNREADABLE pointer at
+            # baseline makes compensation unverifiable — fail the
+            # capture (the except below leaves the journal for
+            # recovery) instead of recording a None that is
+            # indistinguishable from proven absence.
+            from form.mandell.checkpoint_generation import committed_generation_state as _cgs
+            _baseline_gen_state, _baseline_gen = _cgs(program.owner)
+            if _baseline_gen_state == "unreadable":
+                raise OSError(
+                    "committed generation unreadable at baseline "
+                    "capture; compensation cannot be verified")
             _baseline_ok = True
         except Exception as e:
             # Baseline capture failed; compensation cannot be verified.
@@ -468,15 +478,47 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             # revert: skip the restore and treat compensation as
             # converged on it.
             _gen_advanced = False
+            _gen_uncertain = False
+            _now_state = "error"
             try:
-                from form.mandell.checkpoint_generation import current_generation_id as _cgid_now
-                _now_gen = _cgid_now(program.owner)
-                _gen_advanced = (_now_gen is not None
-                                 and _now_gen != _baseline_gen)
+                from form.mandell.checkpoint_generation import committed_generation_state as _cgs_now
+                _now_state, _now_gen = _cgs_now(program.owner)
+                if _now_state == "verified" and _baseline_gen_state == "verified":
+                    _gen_advanced = (_now_gen != _baseline_gen)
+                elif _now_state == "verified" and _baseline_gen_state == "absent":
+                    # A generation appeared after an absent baseline:
+                    # another transaction committed (the race winner).
+                    _gen_advanced = True
+                elif _now_state == "absent" and _baseline_gen_state == "absent":
+                    _gen_advanced = False  # proven unchanged
+                else:
+                    # verified->absent (pointer vanished) or the
+                    # pointer is UNREADABLE: committed identity
+                    # cannot be positively established. Uncertainty
+                    # is never evidence that a baseline restore is
+                    # safe (Director correction 2026-11-06: the
+                    # best-effort helper's None collapsed exactly
+                    # this case and let a stale restore erase the
+                    # winner).
+                    _gen_uncertain = True
             except Exception:
-                _gen_advanced = False
+                _gen_uncertain = True
             if _gen_advanced:
                 reverted = True
+            elif _gen_uncertain:
+                # Preserve recovery evidence on uncertainty: do NOT
+                # restore baseline bytes, do NOT clear the intent
+                # journal (reverted stays False), and fence this
+                # instance from saving until verified restoration.
+                _already = getattr(program, "_recovery_required", None)
+                if not (isinstance(_already, dict) and prop.id in _already):
+                    from form.mandell.core_i_recovery import mark_recovery_required
+                    mark_recovery_required(
+                        program, prop.id,
+                        "compensation_unverified_generation_unreadable",
+                        {"baseline_state": str(_baseline_gen_state),
+                         "now_state": str(_now_state)})
+                reverted = False
             # F2: Only attempt compensation if baseline was captured.
             # Otherwise leave journal for recovery (fail closed).
             # Director 2026-10-05 (compensation): incomplete in-memory

@@ -431,6 +431,30 @@ def current_generation_id(owner: str) -> Optional[str]:
         return None
 
 
+def committed_generation_state(owner: str):
+    """Tri-state committed-generation read for identity decisions.
+
+    Returns ("verified", generation_id) when the CURRENT pointer
+    reads cleanly, ("absent", None) when no checkpoint generation
+    is established for the owner (the pointer file does not exist:
+    proven absence), and ("unreadable", error) for every other
+    failure (OS error, corrupt pointer, owner mismatch).
+
+    current_generation_id() above is best-effort epoch context and
+    collapses all three outcomes into a value-or-None. A caller
+    deciding whether stored bytes may be overwritten (e.g. failure
+    compensation restoring a baseline) must use this instead:
+    "unreadable" is uncertainty, never evidence that the committed
+    generation is unchanged.
+    """
+    try:
+        return ("verified", _read_pointer(owner).get("generation_id"))
+    except CheckpointNotEstablished:
+        return ("absent", None)
+    except Exception as e:  # noqa: BLE001
+        return ("unreadable", e)
+
+
 def _read_manifest(owner: str, generation_id: str) -> Dict[str, Any]:
     data = _read_json_file(_manifest_path(owner, generation_id), "generation manifest")
     if data.get("checkpoint_protocol_version") != CHECKPOINT_PROTOCOL_VERSION:
