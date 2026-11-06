@@ -370,5 +370,9 @@ def main():
     return 0 if passed == len(RESULTS) else 1
 
 
+def smoke() -> bool:
+    return main() == 0
+
+
 if __name__ == "__main__":
     sys.exit(main())
