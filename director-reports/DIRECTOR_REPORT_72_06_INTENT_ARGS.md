@@ -130,3 +130,40 @@ remedies are the Director's to authorize.
 - Q-06.3: The B-gated trio cites a "pending operand-confirmation
   flow" — is that flow a registered objective anywhere, or should
   it be entered into the register as its own item?
+
+## Addendum 1 — Supplement per the Director's INSUFFICIENT_EVIDENCE review (2026-11-05 19:38 CST)
+
+Review archived verbatim at `responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_72_06.md`
+(the same supplement also archives the 72-16 PASS,
+`responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_72_16_PASS.md`, so
+PR #307's confirmed head stays frozen). Owed items, supplied:
+
+1. **Pinned exact-head workflow** — `.github/workflows/verify-72-06.yml`:
+   head-SHA checkout + `EXACT_HEAD_ASSERTION` BEFORE manifest and
+   probes; runs the census probe and the REPL probe at that head.
+2. **Bare-REPL real-user proof of Class E** — `q06_repl_probe.py`
+   (cross-process `python3 -m form.repl`): `cycle three times`
+   executes **Cycle x1** and `grow three` executes **Loop:
+   requested 1, executed 1**, both `ok=True`; digit controls
+   `cycle 3 times` / `grow 3` execute x3 / requested 3. **4/4,
+   two runs**; full transcripts are the run logs
+   (`q06_repl_run1.log` / `q06_repl_run2.log`, owner tags
+   normalized for archival; substantively identical), hashed in
+   the regenerated MANIFEST.sha256. Class E is now proven at
+   REAL_USER_PATH, not only programmatically.
+3. **Producer/consumer enumeration** — `ENUMERATION.md` in the
+   bundle: the exact grep commands and their verbatim outputs
+   (every Intent construction/args site in translate.py; every
+   intent.args read in semantic_router.py and repl.py; the empty
+   dead-arg sweep for ref/condition; the bridge.py reporting-only
+   read).
+4. **Terminal smoke** — PR #308's Form smoke at the frozen
+   original head 3f2c556 is confirmed in the CI receipt archived
+   with this supplement; the supplement head re-runs all checks
+   and the verify-72-06 job is the live exact-head proof for the
+   final head.
+
+Note under Ace's FIX-FIRST ruling (2026-11-05 19:53 CST): the
+Class E REPAIR now proceeds as its own circuit without waiting
+for a further authorization; Q-06.1 is answered by execution
+rather than proposal. Q-06.2/Q-06.3 remain open for the Director.
