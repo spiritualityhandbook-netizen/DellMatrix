@@ -541,12 +541,26 @@ def case_pointer_eacces():
     """Director correction round 3 (2026-11-06, on head 79c3c46):
     a real CURRENT file whose parent directory denies search —
     os.lstat raises PermissionError (EACCES), but os.path.lexists
-    swallows it, so the state classified ('absent', None). This
-    suite runs as root, where EACCES cannot occur, so the case
-    runs the classification as user 'nobody' (setpriv) against a
+    swallows it, so the state classified ('absent', None). The
+    case runs the classification in a worker process whose user
+    genuinely cannot search the state directory, against a
     world-traversable copy of the tree: it first PROVES EACCES
     on a direct os.lstat of the pointer, then asserts the
-    classification of the same lookup is 'unreadable'."""
+    classification of the same lookup is 'unreadable'.
+
+    Privilege geometry (fixture correction, 2026-11-06): the
+    worker must be an UNPRIVILEGED user relative to the state
+    dir in both worlds. When the suite itself runs as root
+    (EACCES cannot occur for root), the worker drops to user
+    'nobody' via setpriv and the root-owned state dir is chmod
+    0o700 (nobody is 'other': no search). When the suite runs
+    as a NON-root user (e.g. CI runners), setpriv to another
+    uid is itself forbidden — the original fixture died there
+    (55/57 on GitHub, reproduced locally under a non-root uid)
+    — so the worker runs as the SAME user and the state dir is
+    chmod 0o000: the owner is denied search on its own
+    directory, and os.lstat raises the same EACCES. The proof
+    obligations are identical in both geometries."""
     import form.mandell.checkpoint_generation as cg
     owner = _owner("EAC")
     base = tempfile.mkdtemp(prefix="n31eac_")
@@ -567,10 +581,19 @@ def case_pointer_eacces():
         spool = os.path.join(base, "spool")
         os.makedirs(spool)
         os.chmod(spool, 0o777)
+        as_root = os.getuid() == 0
+        if as_root:
+            worker_cmd = ["setpriv", "--reuid=nobody",
+                          "--regid=nogroup", "--clear-groups",
+                          sys.executable, "-c",
+                          _EACCES_WORKER, tree, owner, spool]
+            deny_mode = 0o700
+        else:
+            worker_cmd = [sys.executable, "-c",
+                          _EACCES_WORKER, tree, owner, spool]
+            deny_mode = 0o000
         proc = subprocess.Popen(
-            ["setpriv", "--reuid=nobody", "--regid=nogroup",
-             "--clear-groups", sys.executable, "-c",
-             _EACCES_WORKER, tree, owner, spool],
+            worker_cmd,
             cwd=base, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, text=True)
         deadline = time.time() + 60
@@ -578,9 +601,11 @@ def case_pointer_eacces():
                and not os.path.exists(os.path.join(spool, "ready"))):
             time.sleep(0.05)
         # Worker has imported; NOW remove search permission from
-        # the root-owned state dir, so the pointer lookup raises
-        # EACCES although the CURRENT file exists.
-        os.chmod(os.path.join(tree, "form", "state"), 0o700)
+        # the state dir (0o700 root-owned denies 'nobody' as
+        # other; 0o000 denies the same-user worker as owner), so
+        # the pointer lookup raises EACCES although the CURRENT
+        # file exists.
+        os.chmod(os.path.join(tree, "form", "state"), deny_mode)
         open(os.path.join(spool, "lock"), "w").write("lock")
         out_stdout, out_stderr = proc.communicate(timeout=120)
         lines = out_stdout.strip().splitlines()
@@ -594,6 +619,13 @@ def case_pointer_eacces():
         check("D1PE.classified_unreadable_not_absent",
               res["state"] == "unreadable", str(res))
     finally:
+        # Restore search permission so a non-root owner can
+        # traverse and delete its own tree (root ignores modes).
+        try:
+            os.chmod(os.path.join(base, "tree", "form", "state"),
+                     0o755)
+        except OSError:
+            pass
         shutil.rmtree(base, ignore_errors=True)
 
 

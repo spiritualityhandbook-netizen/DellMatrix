@@ -26,9 +26,12 @@ production, 756916c suite, on top of 3c905e3); records head 616449f
 production, 79c3c46 suite; Director-verified, then
 CORRECTION_REQUIRED round 3, classification only — superseded);
 round-3 FINAL code SHA 506823e26ad8b0a96cb34ed1b8a6f3388dbfd238
-(commits b8f31c4 production, 506823e suite). The final PR head adds
-records only — the product-code diff between the final code SHA
-506823e and the PR head is empty.
+(commits b8f31c4 production, 506823e suite). Records head ad5cf83
+then exposed a TEST-FIXTURE defect at CI (see Fixture correction
+below); the final PR head adds that fixture correction plus
+records. The production-code diff between the final code SHA
+506823e and the PR head is empty — the only code change after
+506823e is the D1PE fixture in form/nursery_confirm_race_test.py.
 CI execution identity: the PR workflows execute the pull-request
 merge ref of the final PR head (the #306 lesson: that ref, not the
 branch head, is what CI runs); the concrete run IDs at the final
@@ -278,6 +281,40 @@ outcomes into one value (best-effort None, `lexists` False,
 Absence requires positive proof (FileNotFoundError from an
 error-preserving lookup); every other outcome is uncertainty,
 and uncertainty fails closed.
+
+## Fixture correction — D1PE privilege geometry (test-only)
+
+After records head ad5cf83 was pushed, GitHub Form smoke went
+RED at that head (run 42257623227): 243/244 suites on both
+passes; the only red suite was nursery_confirm_race_test at
+55/57. Local runs at the same code scored 57/57. The discrepancy
+was reproduced exactly by running the suite as a NON-root user —
+the Director independently reproduced 55/57 under UID 1000 —
+and the mechanism identified: D1PE's worker launcher used
+setpriv to drop from root to 'nobody', but a non-root suite
+process cannot setpriv at all ("setgroups failed: Operation
+not permitted"), so the worker exited before probing and both
+D1PE checks failed. The production classification was never
+implicated: D1P and D1SE, which need no privilege switch,
+passed in both geometries. The fixture had inherited ambient
+machine privilege instead of constructing the condition its
+contract requires.
+
+Repair (test file only; production code untouched): D1PE now
+selects its privilege geometry explicitly. Root suite: as
+before — setpriv to 'nobody', state dir 0o700 (nobody is
+'other', denied search). Non-root suite: the worker runs as
+the SAME user and the state dir is chmod 0o000, denying the
+owner search on its own directory; the worker still proves a
+real PermissionError (errno 13) on a direct os.lstat before
+asserting 'unreadable', and the parent restores the mode
+before cleanup. Verification: failing-first 55/57 under a
+non-root uid at the unrepaired fixture; after repair, 57/57 as
+root AND 57/57 as a non-root user; the lexists mutant under
+the non-root geometry is killed with the round-3 profile
+(53/57 — D1PE.classified + D1SE x3), so the case keeps its
+teeth in the CI geometry. Final regression and CI at the
+fixture head are reported in the delivery packet.
 
 ## Scoreboard correction + register reconciliation (Director-ordered)
 
