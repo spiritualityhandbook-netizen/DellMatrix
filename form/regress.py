@@ -185,6 +185,7 @@ LIST = [
     "form.core_i_arg_gate_test",
     "form.repl_seed_error_visibility_test",
     "form.translate_intent_args_test",
+    "form.translate_word_counts_test",
     "form.mandell.d1_dell84_copy_test",
     "form.mandell.d1_dell85_move_test",
     "form.mandell.d1_dell86_delete_test",
