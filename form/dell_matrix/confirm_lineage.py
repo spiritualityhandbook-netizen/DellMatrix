@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from typing import Any, Dict, List
 
 from form.dell_matrix.lineage import assign_lineage
@@ -335,6 +336,44 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             pass
         return _denied_receipt(pid, _producer2, _v2["detail"], "pre_commit")
     if not _skip:
+        # 72-31: serialize the durable commit section per owner under
+        # the canonical owner-state lock (TD-1-R2 authority — the same
+        # lock persist_rest.save takes; re-entrant for this thread, so
+        # the seal's own saves join rather than deadlock). Two live
+        # instances racing a confirm otherwise interleave baseline
+        # capture, checkpoint seal and failure compensation: both can
+        # pass the nursery optimistic guard inside its check/write
+        # window (double-ok), and a refused loser's baseline restore
+        # can overwrite the winner's committed generation (lost
+        # winner). Holding the lock from baseline capture through
+        # compensation makes the commit section one owner-scoped
+        # transaction; the nursery guard then refuses a stale loser
+        # deterministically, after the winner's commit is durable.
+        # Acquisition failure fails closed (OwnerLockBusy /
+        # OwnerLockUnavailable propagate): in-memory staging is
+        # reverted first; the transaction never proceeds unlocked.
+        from form.owner_state_lock import owner_state_lock
+        _commit_lock = owner_state_lock(program.owner)
+        try:
+            _commit_lock.__enter__()
+        except Exception:
+            prop.status = "pending"
+            if not existed:
+                _lk = _remove_newly_placed()
+                if not _lk["ok"]:
+                    from form.mandell.core_i_recovery import mark_recovery_required
+                    mark_recovery_required(
+                        program, prop.id, "compensation_incomplete",
+                        {"failures": _lk["failures"],
+                         "removed": _lk.get("removed", [])})
+            raise
+
+        def _release_commit_lock():
+            try:
+                _commit_lock.__exit__(None, None, None)
+            except Exception:
+                pass
+
         # F2: Capture baseline file bytes before commit. If commit fails
         # after partial saves, restore these bytes directly. This is more
         # robust than trying to surgically revert all in-memory side
@@ -342,6 +381,7 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         # lattice, history, keys).
         _baseline_program_bytes = None
         _baseline_nursery_bytes = None
+        _baseline_gen = None
         _baseline_ok = False
         try:
             from form.persist import _path as _ppath
@@ -358,17 +398,28 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             if os.path.isfile(_n_path):
                 with open(_n_path, 'rb') as f:
                     _baseline_nursery_bytes = f.read()
+            # 72-31 (D-B): record the committed generation at baseline
+            # time. Compensation re-validates against it before
+            # restoring any baseline bytes.
+            from form.mandell.checkpoint_generation import current_generation_id as _cgid
+            _baseline_gen = _cgid(program.owner)
             _baseline_ok = True
         except Exception as e:
             # Baseline capture failed; compensation cannot be verified.
             # Leave journal for recovery (do not clear).
             _baseline_ok = False
+        # 72-31: name our own generation up front (same id format as
+        # checkpoint_generation._new_generation_id) so compensation
+        # can distinguish "our commit boundary was crossed" from
+        # "another transaction's generation is now committed".
+        _our_gen = "g" + uuid.uuid4().hex[:16]
         try:
             from form.mandell.checkpoint_generation import commit_checkpoint
-            commit_checkpoint(program)
+            commit_checkpoint(program, generation_id=_our_gen)
             # Success: clear the intent journal (unless supersession manages it).
             if not _skip_journal:
                 clear_confirm_intent(program.owner)
+            _release_commit_lock()
         except Exception as exc:
             # Transaction failed: revert in-memory state to OLD.
             # Proposal stays pending (retryable), Idea removed if newly placed.
@@ -403,11 +454,34 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             # journal for recovery. Use atomic_write_bytes (not raw open)
             # to prevent partial writes.
             reverted = False
+            # 72-31 (D-B): re-validate the committed generation before
+            # restoring baseline bytes. If the CURRENT pointer advanced
+            # past the baseline generation, it names either a NEWER
+            # generation committed by another transaction after our
+            # baseline was captured (the race winner — its live files
+            # are authoritative and must not be overwritten with our
+            # stale baseline) or OUR OWN generation (our commit
+            # boundary was crossed before a later stage failed;
+            # restoring baseline would diverge the live pair from the
+            # committed members). Either way durable state is a
+            # complete committed generation that is not ours to
+            # revert: skip the restore and treat compensation as
+            # converged on it.
+            _gen_advanced = False
+            try:
+                from form.mandell.checkpoint_generation import current_generation_id as _cgid_now
+                _now_gen = _cgid_now(program.owner)
+                _gen_advanced = (_now_gen is not None
+                                 and _now_gen != _baseline_gen)
+            except Exception:
+                _gen_advanced = False
+            if _gen_advanced:
+                reverted = True
             # F2: Only attempt compensation if baseline was captured.
             # Otherwise leave journal for recovery (fail closed).
             # Director 2026-10-05 (compensation): incomplete in-memory
             # cleanup also blocks journal clearing (evidence retained).
-            if _baseline_ok and _ckpt_comp["ok"]:
+            elif _baseline_ok and _ckpt_comp["ok"]:
                 try:
                     from form.dell_matrix.atomic_write import atomic_write_bytes
                     # Restore Program file from baseline bytes (complete revert)
@@ -431,6 +505,7 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             if reverted:
                 if not _skip_journal:
                     clear_confirm_intent(program.owner)
+            _release_commit_lock()
             # Check if it's a nursery conflict (optimistic concurrency).
             # The checkpoint wraps the original error, so check the chain.
             from form.dell_matrix.nursery import NurseryConflictError

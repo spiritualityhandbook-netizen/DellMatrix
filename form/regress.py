@@ -190,6 +190,7 @@ LIST = [
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",
     "form.graph_journal_crash_test",
+    "form.nursery_confirm_race_test",
     "form.mandell.d1_dell84_copy_test",
     "form.mandell.d1_dell85_move_test",
     "form.mandell.d1_dell86_delete_test",
