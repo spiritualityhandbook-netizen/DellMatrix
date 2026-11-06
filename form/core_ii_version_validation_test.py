@@ -241,17 +241,23 @@ def main():
     env["core_ii"] = {"version": 999, "present": True,
                       "store": dict(MARKER)}
     tmp = _write_tmp(env)
-    worker = (
-        "import sys; sys.path.insert(0, {repo!r});"
-        "from form.persist_rest import load;"
-        "try:\n"
-        "    load({owner!r}, path={tmp!r}, activate=False);"
-        "    print('LOADED')\n"
-        "except Exception as e:\n"
-        "    print(type(e).__name__)"
-    ).format(repo=REPO, owner=OWNER, tmp=tmp)
+    fd, wpath = tempfile.mkstemp(suffix=".py")
+    os.close(fd)
+    _track(wpath)
+    with open(wpath, "w", encoding="utf-8") as f:
+        f.write(
+            "import sys\n"
+            "sys.path.insert(0, sys.argv[1])\n"
+            "from form.persist_rest import load\n"
+            "try:\n"
+            "    load(sys.argv[2], path=sys.argv[3],"
+            " activate=False)\n"
+            "    print('LOADED')\n"
+            "except Exception as e:\n"
+            "    print(type(e).__name__)\n"
+        )
     import subprocess
-    out = subprocess.run([sys.executable, "-c", worker],
+    out = subprocess.run([sys.executable, wpath, REPO, OWNER, tmp],
                          capture_output=True, text=True, timeout=120)
     last = out.stdout.strip().splitlines()[-1] if out.stdout.strip() \
         else "no-output"
