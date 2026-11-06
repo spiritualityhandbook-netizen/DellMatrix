@@ -447,14 +447,21 @@ def committed_generation_state(owner: str):
     "unreadable" is uncertainty, never evidence that the committed
     generation is unchanged.
 
-    Proven absence is established by the pointer PATH not existing
-    (lexists). A directory or a dangling symlink at the pointer
-    path is present-but-unreadable, never absent — inferring
-    absence from isfile() on the resolved path misclassifies both
-    (Director correction 2026-11-06, round 2).
+    Proven absence is established ONLY by FileNotFoundError from
+    an error-preserving os.lstat of the pointer path. Every other
+    lookup outcome is presence or uncertainty: a directory or a
+    dangling symlink at the path is present-but-unreadable, and a
+    lookup ERROR (e.g. EACCES when a parent directory denies
+    search) is unreadable — os.path.lexists hides exactly that
+    error by collapsing every OSError to False (Director
+    corrections 2026-11-06, rounds 2 and 3).
     """
-    if not os.path.lexists(_pointer_path(owner)):
+    try:
+        os.lstat(_pointer_path(owner))
+    except FileNotFoundError:
         return ("absent", None)
+    except Exception as e:  # noqa: BLE001
+        return ("unreadable", e)
     try:
         return ("verified", _read_pointer(owner).get("generation_id"))
     except Exception as e:  # noqa: BLE001
