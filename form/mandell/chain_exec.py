@@ -344,6 +344,11 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
         # returned snapshot/atom_results, history/outcome
         # writers), never by rewriting canonical state.
         last_ok = bool(out.get("ok", True))
+        # 72-17 R-B: an atom's structured directive (bare Show's
+        # "render") rides the shared chain state to the chain result;
+        # the minimal atom receipts stay unchanged.
+        if out.get("directive"):
+            state["directive"] = out["directive"]
         # DIRECTOR DECISION 1: atom record carries unified truth —
         # ok=False, skipped=True, reason=<explicit> for unexecuted atoms.
         # The chain continues (no abort); the aggregate reflects the truth.
@@ -662,7 +667,10 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     _snap = st.snap() if st is not None else {}
     if _redact:
         _snap = sanitize_evidence(_snap)
-    result = {"ok": ok, "error": last_error, "seed": _echo.as_mandel(), "english": _echo.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": _snap}
+    # 72-17 R-B: a structured directive set by any atom (bare Show's
+    # "render") propagates to the chain result; it never rides messages.
+    _directive = state.get("directive") or None
+    result = {"ok": ok, "error": last_error, "seed": _echo.as_mandel(), "english": _echo.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": _snap, "directive": _directive}
     # PP5: keep the last chain execution on the program
     # (runtime-only) so the flow renderer can draw what actually
     # ran. Best-effort — rendering support must never break

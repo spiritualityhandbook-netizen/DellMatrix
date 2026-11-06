@@ -86,6 +86,9 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
                     create_skin = Skin[atom_args["skin"]]
                     messages.append(f"TOAM: typed skin='{atom_args['skin']}' wired to Create")
     new_program = None
+    # 72-17 R-B: structured result directive (e.g. bare Show sets
+    # "render"); machine directives never ride the human messages list.
+    directive = None
 
     def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
         # Canonical slug + collision dedup (form/idea_create.py, P3/TD-5):
@@ -177,7 +180,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         elif "lattice" in lab:
             messages.append(program.lattice.render_ascii())
         else:
-            messages.append("__RENDER__")
+            directive = "render"
     elif primary == 10:
         path = program.save()
         ns = program.nursery.summary()
@@ -605,4 +608,5 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         "primary": primary,
         "messages": messages,
         "new_program": new_program,
+        "directive": directive,
     }
