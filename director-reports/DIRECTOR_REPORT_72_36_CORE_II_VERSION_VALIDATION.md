@@ -133,7 +133,7 @@ Merged-main CI for the base: PR #314 merge commit 20856817 —
 Python package SUCCESS (run 42301441631); Form smoke
 Python package SUCCESS (run 42301441631) and Form smoke SUCCESS (run 42301441652), both terminal at the merge commit.
 
-CI at the final PR head: __FINAL_CI__
+CI at the final PR head: ALL TERMINAL PASS at final head 29886db — Python package run 42306577802 (3.10 + 3.11), Studio Browser Acceptance run 42306577701, Form smoke run 42306577750 (PASS, 18m53s). PR #315 MERGED 2026-11-06 under the Director's conditional FIX-FIRST GO (ruling archived in the 72-35 circuit records, responses/DIRECTOR_REVIEW_EMAIL_2026-11-06_72_36_CONDITIONAL_GO.md): merge commit 4900829a00d63eb63a87304011a39b68309089f4, tree 68be01a17b797a156af6f3eedaa0dd41ba2e72cb; merged-main CI terminal SUCCESS (Python package 42308917046, Form smoke 42308917018). Labeled Ace-authorized fix-first, NOT Director-certified (Q-36.1 remains the certification ask).
 
 ## 5. Register / records carried in this PR
 
