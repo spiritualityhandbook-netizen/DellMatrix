@@ -84,6 +84,17 @@ def _validate_writer_auth(program, pid: str, auth: Dict[str, Any], stage: str) -
 _BETWEEN_STAGES = None
 
 
+class BaselineUnverifiableError(RuntimeError):
+    """Baseline capture failed, so failure compensation cannot be
+    verified. Raised inside the commit section BEFORE any
+    checkpoint call: the confirm is refused explicitly
+    (reason='baseline_unverifiable'), the intent journal is left
+    for recovery, and no durable write is attempted. Claiming
+    success — or proceeding to commit — on an unverifiable
+    baseline is the defect the Director's single-worker probe
+    reproduced on PR head 616449f (2026-11-06, round 2)."""
+
+
 def _denied_receipt(pid, producer, detail, stage):
     return {
         "ok": False,
@@ -425,6 +436,20 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         _our_gen = "g" + uuid.uuid4().hex[:16]
         try:
             from form.mandell.checkpoint_generation import commit_checkpoint
+            if not _baseline_ok:
+                # Baseline capture failed (bytes or committed
+                # generation unreadable): compensation could never
+                # be verified, so the confirm is refused HERE —
+                # before any checkpoint call — rather than
+                # committing and claiming success on an
+                # unverifiable baseline. The except handler below
+                # reverts in-memory staging, leaves the intent
+                # journal as recovery evidence, releases the lock,
+                # and returns the explicit refusal.
+                raise BaselineUnverifiableError(
+                    "baseline capture failed; failure compensation "
+                    "cannot be verified — confirm refused before "
+                    "any durable write")
             commit_checkpoint(program, generation_id=_our_gen)
             # Success: clear the intent journal (unless supersession manages it).
             if not _skip_journal:
@@ -561,6 +586,9 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
                 if cause is not None and cause is not e:
                     return _is_conflict(cause)
                 return False
+            if isinstance(exc, BaselineUnverifiableError):
+                return {"ok": False, "reason": "baseline_unverifiable",
+                        "error": str(exc)}
             if _is_conflict(exc):
                 return {"ok": False, "reason": "nursery_conflict", "error": str(exc)}
             raise
