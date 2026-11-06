@@ -124,12 +124,12 @@ PARAPHRASE_TO_CANONICAL: List[Tuple[str, str]] = [
     (r"^(?:put\s+(?:down|in)\s+)(.+)$", "place {1}"),
     (r"^(?:note\s+(?:down\s+)?)(.+)$", "create an idea called {1}"),
     # grow
-    (r"^(?:please\s+)?(?:grow|expand|develop|cultivate|nurture)(?:\s+(?:my\s+)?ideas?)?(?:\s+(\d+))?$",
+    (r"^(?:please\s+)?(?:grow|expand|develop|cultivate|nurture)(?:\s+(?:my\s+)?ideas?)?(?:\s+(\d+|once|twice|thrice|one|two|three|four|five))?$",
      "grow ideas {1}"),
-    (r"^(?:run\s+growth|do\s+growth|growth\s+cycle)(?:\s+(\d+))?$",
+    (r"^(?:run\s+growth|do\s+growth|growth\s+cycle)(?:\s+(\d+|once|twice|thrice|one|two|three|four|five))?$",
      "grow ideas {1}"),
-    (r"^(?:let\s+(?:them|ideas)\s+grow)(?:\s+(\d+))?$", "grow ideas {1}"),
-    (r"^(?:advance\s+(?:the\s+)?(?:nursery|ideas))(?:\s+(\d+))?$", "grow ideas {1}"),
+    (r"^(?:let\s+(?:them|ideas)\s+grow)(?:\s+(\d+|once|twice|thrice|one|two|three|four|five))?$", "grow ideas {1}"),
+    (r"^(?:advance\s+(?:the\s+)?(?:nursery|ideas))(?:\s+(\d+|once|twice|thrice|one|two|three|four|five))?$", "grow ideas {1}"),
     # show / visual
     (r"^(?:what'?s\s+going\s+on|what'?s\s+here|overview|dashboard)$", "show me"),
     (r"^(?:open\s+(?:the\s+)?(?:map|matrix|panel)|see\s+(?:the\s+)?matrix)$", "show me"),
@@ -631,7 +631,10 @@ def _synonym_rewrite(lower: str, original: str = "") -> str:
         rest2 = re.sub(r"^(?:an?\s+)?(?:idea\s+)?(?:called\s+|named\s+)?", "", rest_op, flags=re.I).strip()
         return f"create an idea called {rest2}" if rest2 else "create an idea called idea"
     if canon == "grow":
-        m = re.search(r"(\d+)", rest)
+        # 72-06 Class E: carry spelled-out counts too, not only
+        # digits — the word is passed through verbatim and the
+        # phrase layer's _count_value converts it.
+        m = re.search(r"(\d+|once|twice|thrice|one|two|three|four|five)", rest)
         return f"grow ideas {m.group(1)}" if m else "grow ideas"
     if canon == "walk" and (not rest or rest in ("forward", "ahead", "on")):
         return "walk forward"
