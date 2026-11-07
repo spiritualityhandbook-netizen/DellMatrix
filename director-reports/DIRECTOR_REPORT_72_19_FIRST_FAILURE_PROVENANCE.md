@@ -72,7 +72,7 @@ executably pinned:
   inverse-reverted, tree clean, suite back to 39/39.
 - Regression at the suite SHA (logs
   hidden_files/72-19_logs/run1/): TERMINAL GREEN 249/249 x3 (fwd / --twice / --order rev; LEG1_RC=LEG2_RC=LEG3_RC=0, CHAIN_DONE present; the new suite runs inside the harness at 39/39)
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: ALL TERMINAL PASS at final head 29bfcb62 — Python package run 42332547596 (3.10 + 3.11), Studio Browser Acceptance run 42332547594, Form smoke run 42332547568 (PASS, 17m52s). PR #319 MERGED 2026-11-06: merge commit 119beac068933384b3ff1282c3611871a15d2558, tree 69ca6b3946cbc39f65332586e6c3ba1c721aba22; merged-main CI terminal SUCCESS (Python package 42334010558, Form smoke 42334010555). Director verdict (2026-11-06 21:24 CST, archived in the 72-20 circuit records): ALL_AI_CONFIRMATION_PASS bounded; Q-72-19.1 YES; Q-72-19.2 last-leaf chain-summary contract retained.
 
 ## 3. Records carried in this PR
 
