@@ -104,7 +104,7 @@ changes nothing — Q-35.1 asks for the ruling.
   exactly B1.fsync_fail.temp_cleaned fails.
 - Regression at the suite SHA (logs
   hidden_files/72-35_logs/run1/): TERMINAL GREEN 246/246 x3 (fwd / --twice / --order rev; LEG1_RC=LEG2_RC=LEG3_RC=0, CHAIN_DONE present; the new suite runs inside the harness at 67/67)
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: ALL TERMINAL PASS at final head 803fb84 — Python package run 42313372252 (3.10 + 3.11), Studio Browser Acceptance run 42313372226, Form smoke run 42313372264 (PASS, 19m6s). PR #316 MERGED 2026-11-06: merge commit 28719de02e3c78807aa4d6329d57a5e4881d5beb, tree 3e10b90512902b72892a0767aec1d46ff168ebf5; merged-main CI terminal SUCCESS (Python package run 42315407459, Form smoke run 42315407553). Director verdict (2026-11-06 18:04 CST, archived in the G-04 circuit records): ALL_AI_CONFIRMATION_PASS for the bounded evidence deliverable; Q-35.2 YES; Q-35.1 sweep stays manual, no production wiring authorized.
 
 ## 5. Records carried in this PR
 
@@ -118,7 +118,7 @@ changes nothing — Q-35.1 asks for the ruling.
   all terminal PASS — package 42306577802, browser-
   acceptance 42306577701, smoke 42306577750; merged
   4900829a00d63eb63a87304011a39b68309089f4, tree
-  68be01a17b797a156af6f3eedaa0dd41ba2e72cb; merged-main CI terminal SUCCESS (Python package run 42308917046, Form smoke run 42308917018)).
+  68be01a17b797a156af6f3eedaa0dd41ba2e72cb; merged-main CI terminal SUCCESS (Python package run 42308917018, Form smoke run 42308917046 — pairing corrected 2026-11-06: the original receipt swapped the two run IDs; both runs were terminal SUCCESS, so the substantive claim was unaffected)).
 - Register: 72-35 row updated (dedicated boundary suite
   landed; status stays PARTIAL — the row's wider scope is
   not exhausted by one suite, and the wiring question is
