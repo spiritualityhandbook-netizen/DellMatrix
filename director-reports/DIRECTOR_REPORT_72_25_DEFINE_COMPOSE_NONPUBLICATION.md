@@ -59,7 +59,7 @@ hidden_files/72-25_probe.py):
   checks); inverse-reverted, tree clean, 15/15.
 - Regression at the suite SHA (logs
   hidden_files/72-25_logs/run1/): TERMINAL GREEN 252/252 x3 (fwd / --twice / --order rev; LEG1_RC=LEG2_RC=LEG3_RC=0, CHAIN_DONE present; the new suite runs inside the harness at 15/15)
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: final-head CI all terminal PASS — Python package 42352059072, browser-acceptance 42352059058, Form smoke 42352059054 PASS 18m14s; PR #322 merged 130c0c6d3fd10cf4cc1c38ca2431b86a3038d959, tree 9976b9ea888784536bfb1e593fb4c3751f58d4fe; merged-main CI terminal SUCCESS — package 42353340739, Form smoke 42353340804
 
 ## 3. Records carried in this PR
 

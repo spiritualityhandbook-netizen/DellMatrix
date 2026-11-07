@@ -199,6 +199,7 @@ LIST = [
     "form.frame_guarantees_test",
     "form.loop_bounds_test",
     "form.define_compose_nonpublication_test",
+    "form.manifestset_isolation_test",
     "form.mandell.d1_dell84_copy_test",
     "form.mandell.d1_dell85_move_test",
     "form.mandell.d1_dell86_delete_test",
