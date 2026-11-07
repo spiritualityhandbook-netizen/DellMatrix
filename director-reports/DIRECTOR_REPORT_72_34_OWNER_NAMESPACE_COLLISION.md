@@ -75,10 +75,26 @@ has_checkpoint(X) True, has_checkpoint(Y) False.
 Suite design note: shape-agnostic. A repair may namespace the
 live paths (the _owner_ns precedent) OR refuse foreign state
 loudly at load/save/construction; either passes the suite.
-Silent adoption is the only failing shape. The suite is
-deliberately NOT registered in form/regress.py — it is
-failing-first evidence; the canonical regression is untouched
-by this circuit and remains 256 suites green at main.
+Silent adoption is the only failing shape.
+
+CORRECTION (same circuit, before review): the suite was
+initially committed UNREGISTERED, and PR-head Form smoke at
+6c3fd95 failed RED on the harness completeness law —
+form/regress.py treats every discovered test file as an
+intended entry (OMITTED INTENDED ENTRY), so an on-disk suite
+outside the list is itself a regression failure. That was
+Uni's miss in grounding, not a product behavior. The suite is
+now registered in form/regress.py (and exposes smoke() =
+main() == 0 per the harness contract). Consequence, stated
+plainly: the regression on THIS branch runs 257 entries with
+exactly this one entry RED by design (5/12, the 7 defect
+checks) until the repair lands; PR CI smoke is likewise RED
+on the defect entry itself. The PR therefore cannot go green
+— and cannot merge — until the repair lands under your
+classification, or you direct it held open as an evidence
+record (the #308 pattern). At main the canonical regression
+remains 256 suites green; this branch's red is the defect's
+own signature, nothing else.
 
 ## 4. Records carried in this PR
 
