@@ -77,7 +77,7 @@ NOT serialized by to_dict and is therefore out of scope
   level-dependent checks fail.
 - Regression at the repair SHA: TERMINAL GREEN 247/247 x3 (fwd / --twice / --order rev; LEG1_RC=LEG2_RC=LEG3_RC=0, CHAIN_DONE present; the new suite runs inside the harness at 23/23)
 - Fresh clone from GitHub at the repair SHA: fresh clone from GitHub at 359ca76: suite 23/23, water_persistence 14/14, growth_persistence 12/12, tree clean
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: ALL TERMINAL PASS at final head 7161281 — Python package run 42319878197 (3.10 + 3.11), Studio Browser Acceptance run 42319878212, Form smoke run 42319878231 (PASS, 16m24s). PR #317 MERGED 2026-11-06: merge commit 6b0454fc8954971739c3f83bfb6bcb88562d9301, tree 37eab0a206ecf4d0f12f287e54e141f84d02bce0; merged-main CI terminal SUCCESS (Python package 42321548225, Form smoke 42321548267). Director verdict (2026-11-06 19:33 CST, archived in the 72-13 circuit records): ALL_AI_CONFIRMATION_PASS bounded to the DD-11 restoration; G-04 remains COMPLETED; Q-G04.2 intensity asymmetry designated a separate inventory/proposal item, no production change until separately reviewed.
 
 ## 4. Records carried in this PR
 
