@@ -60,7 +60,7 @@ public entry path (probe: hidden_files/72-21_probe.py,
   suite back to 27/27.
 - Regression at the suite SHA (logs
   hidden_files/72-21_logs/run1/): TERMINAL GREEN 251/251 x3 (fwd / --twice / --order rev; LEG1_RC=LEG2_RC=LEG3_RC=0, CHAIN_DONE present; the new suite runs inside the harness at 27/27)
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: ALL TERMINAL PASS at final head b7a9c829 — Python package run 42347757572 (3.10 + 3.11), Studio Browser Acceptance run 42347757620, Form smoke run 42347757733 (PASS, 19m28s). PR #321 MERGED 2026-11-07: merge commit 374d7de51c4f62516bee88cc50224f7d1c033aca, tree a41690b0c3e2f027432edd3e01532f106eb1d818; merged-main CI terminal SUCCESS (Python package 42349137986, Form smoke 42349137956 — both watched to terminal). Director verdict (2026-11-07 00:54 CST, archived in the 72-25 circuit records): bounded technical PASS conditional on terminal CI (condition satisfied before merge); Q-72-21.1 YES.
 
 ## 3. Records carried in this PR
 
