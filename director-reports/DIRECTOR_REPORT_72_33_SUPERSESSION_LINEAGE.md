@@ -83,7 +83,21 @@ recover_supersede_intent + open_program).
   verified ZERO-DIFF against HEAD, 11/11.
 - Regression at the suite SHA (logs
   hidden_files/72-33_logs/run1/): TERMINAL GREEN 255/255 x3 (fwd / --twice / --order rev; LEG1_RC=LEG2_RC=LEG3_RC=0, CHAIN_DONE 2026-11-07 06:53 CST; the new suite runs inside the harness at 11/11). Disclosure: the first chain launch was killed by a runtime/VM restart ~58s in (partial leg 1 = NO RESULT, never recorded as pass or fail); the relaunched run1 chain above is the deciding evidence.
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: all terminal PASS at
+  eb1d633e8c93a0031de04c332f6c862c4b9cf598 — Python
+  package 42375318715, Form smoke 42375318753,
+  Studio Browser Acceptance 42375318758. PR #325
+  MERGED 2026-11-07 07:40 CST under your bounded
+  ALL_AI_CONFIRMATION_PASS (Gmail 1a1b634ad028dd8b):
+  merge commit
+  ff5c2ccbe6681b5ae08ba5ffb3016ef7fa4a57c0;
+  delivered merge tree
+  c92be579c1748955c0210bc285d0aec780872ee0 IDENTICAL
+  to the frozen candidate head tree (git-verified
+  on both commits). Merged-main CI on the
+  push-workflow route terminal SUCCESS — package
+  42378009309, Form smoke 42378009212, both
+  watch-observed to terminal.
 
 ## 4. Records carried in this PR
 
