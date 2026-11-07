@@ -15,7 +15,7 @@ _ROWS = [
     (59, "Route", "Choose/direct execution path (in a Branch chain a 59 atom is consumed as the Else marker, never as Route)", "route", "control", "flow", "Route Direct Send"),
     (60, "Branch", "Conditional divergence", "branch", "control", "flow", "Branch If Else Switch"),
     (61, "Join", "Rejoin divergent execution paths", "join", "control", "flow", "Join Rejoin Converge"),
-    (62, "Parallel", "Execute independent operations concurrently", "concurrent", "control", "flow", "Parallel Concurrent Simultaneous Together"),
+    (62, "Parallel", "Execute operations in listed order - sequential, not concurrent; a sibling failure is captured and the remaining operations still run", "together", "control", "flow", "Parallel Concurrent Simultaneous Together"),
     (63, "Sequence", "Explicit ordered execution", "order", "control", "flow", "Sequence Then Order"),
     (64, "Until", "Continue until condition becomes true", "until", "control", "flow", "Until Await WaitUntil"),
     (65, "While", "Continue while condition remains true", "while", "control", "flow", "While During"),
