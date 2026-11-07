@@ -154,6 +154,11 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
         return _write_program_file(program, target, _fail_at)
     from form.owner_state_lock import owner_state_lock
     with owner_state_lock(program.owner):
+        # 72-34 / DD-12: never overwrite a canonical file proven
+        # to belong to a different raw owner (safe-name collision).
+        from form.persist import assert_program_owner_access
+        assert_program_owner_access(program.owner, target,
+                                    "persist_rest.save")
         _refuse_if_binding_loss(program, target)
         return _write_program_file(program, target, _fail_at)
 
@@ -321,6 +326,15 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     reader never accepts a hybrid program/nursery pair.
     """
     assert_floor_intact()
+    # 72-34 / DD-12: on the DEFAULT path, refuse a proven foreign
+    # owner BEFORE any recovery journal is replayed or state is
+    # adopted — the shared safe-name file may belong to a colliding
+    # raw owner. An explicit path keeps the pinned Q-016 behavior
+    # (the load resolves to the file's owner).
+    if path is None:
+        from form.persist import assert_program_owner_access
+        assert_program_owner_access(owner, _path(owner),
+                                    "persist_rest.load")
     # Checkpoint-intent recovery (Ten-Phase P2, t11 closure) runs FIRST:
     # it restores the raw pre-seal live pair that the transaction
     # recoveries below reason about. A checkpoint journal means the

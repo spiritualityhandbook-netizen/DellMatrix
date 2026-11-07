@@ -114,7 +114,13 @@ form/regress.py; probes hidden_files/72-10_probe.py
   2026-11-07 14:40 UTC). The branch carries 255
   suites; the PR tree unions this registration with
   72-33's (256) and PR CI exercises the union.
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: PR-head package 42384871312,
+  Form smoke 42384871203, browser-acceptance 42384871228,
+  all terminal SUCCESS at d4ffc12ab9811608ca575a494f61eaf1ff929cd9;
+  PR #326 merged 0a4c4b69f1da05c2c1e68d0257ef3e70ec9272cf;
+  delivered merge tree a27cc709442665c6f0806dc2851353cdca5e0235
+  == frozen candidate tree; merged-main package 42387509030
+  + Form smoke 42387509036 terminal SUCCESS.
 
 ## 4. Records carried in this PR
 
