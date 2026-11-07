@@ -148,3 +148,88 @@ CI at the final PR head: __FINAL_CI__
 - Q-72-34.3: may this evidence PR merge on your bounded
   confirmation, as with 72-33/72-10, leaving the repair to its
   own circuit once classified?
+
+## 7. Repair (Director ruling 2026-11-07 11:32 CST, Gmail
+1a1b711ea7532e1d — archived in responses/ with this PR)
+
+Classification per Q-72-34.1: bounded FIX-FIRST refusal, this
+PR only. Shape per Q-72-34.2: fail-closed raw-owner identity
+checks anchored on the program file's stored raw `owner`
+field — the one live surface whose identity binding is
+already trustworthy (the Q-016 file-owner resolution reads
+the same field). No renaming, no migration, no deletion.
+
+Mechanism (3 production files, +81 lines):
+- form/persist.py: OwnerCollisionError(RuntimeError);
+  stored_program_owner(path) returns the stored raw owner or
+  None (absent / unreadable / no owner field — legacy without
+  reliable identity is NOT treated as proven foreign);
+  assert_program_owner_access(owner, path, context) raises
+  only on a PROVEN mismatch (stored owner present and !=
+  requested). The check never writes bytes.
+- form/persist_rest.py: save() asserts access on the
+  canonical target under owner_state_lock before any write;
+  load() asserts on the DEFAULT path BEFORE any recovery
+  journal is replayed or state adopted. An explicit path
+  keeps the pinned Q-016 behavior (resolves to file owner;
+  suite K4).
+- form/open.py: Program.__post_init__ asserts access before
+  recovery replay or nursery read on live construction (the
+  injected sealed-generation-member path is exempt — bound
+  to a sealed member, never the live file).
+
+Neighbor contract update (form/mandell/dcc_xviii_test.py):
+the P collision control previously documented the live
+collision as "pre-existing, out of scope"; it now asserts
+the repaired behavior — live construction of the second
+colliding owner is REFUSED (OwnerCollisionError) while the
+generation namespaces remain disjoint. 90/90 green.
+
+Results:
+- Suite: 12/12 PASS at the repaired tree (from failing-first
+  5/12; the 7 defect checks now pass by refusal, controls
+  unchanged). Verified first-hand by the main session and
+  two cycle runs; cross-process check D2X included.
+- Refusals are non-destructive: the guard raises before any
+  write; refused load/save/construction leaves stored bytes
+  untouched (suite D4/D5 assert the first owner's state
+  survives intact and loadable under its exact name).
+- Regression at the repaired tree: TERMINAL GREEN 257/257
+  x3 (fwd / --twice / --order rev; LEG1_RC=LEG2_RC=
+  LEG3_RC=0, CHAIN_DONE 2026-11-07 15:29 CST; logs
+  hidden_files/72-34_logs/run1/; the collision suite runs
+  inside the harness and is green on every leg).
+- Mutant verification: EVALUATION_UNAVAILABLE. The
+  guard-silencing mutant edit was refused by the execution
+  environment's safety tooling in three separate sessions
+  (12:01 and 14:01 cycles, and twice in the main session on
+  the sibling 72-10 circuit); the edit never executed and was
+  never routed around. The suite's non-vacuity rests on its
+  failing-first signature instead: the identical suite,
+  byte-for-byte, scores 5/12 with exactly the 7 defect checks
+  failing against the unrepaired tree at this PR's base —
+  the before/after pair is the mutation evidence of record.
+  If you require the in-place mutant as well, it needs a
+  session whose tooling permits the edit.
+
+Narrow remaining gap (reported per Q-72-34.2, NOT closed):
+identity checks anchor on the program file. Graph and ideas
+files carry their own stored owner but have no standalone
+guard; their reads are covered only insofar as the exercised
+flows pass the program-file anchor first. The nursery file
+carries NO owner field at all: a colliding nursery file with
+no program file present has no identity binding to check,
+so construction would not refuse on nursery evidence alone.
+Closing those needs per-surface identity stamps (a write-
+format change) or the gated namespace work — both outside
+this bounded refusal. Same-owner and non-colliding legacy
+paths are untouched and covered by controls K3/K4 and the
+full regression.
+
+## 8. Ask
+
+Bounded re-ruling on this final head: confirm DD-12 FIXED
+within the refusal scope above (with the named nursery /
+standalone-surface gap retained), or direct the gap closed
+first under separate authorization. FINAL_CI is completed
+in the next circuit's records per standing practice.

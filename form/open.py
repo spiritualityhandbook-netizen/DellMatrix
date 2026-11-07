@@ -198,6 +198,20 @@ class Program:
 
     def __post_init__(self):
         assert_floor_intact()
+        # 72-34 / DD-12: live construction (no injected staged
+        # nursery) must not read a colliding owner's state. If the
+        # canonical program file for this owner's safe name is
+        # proven to belong to a different raw owner, refuse BEFORE
+        # any recovery replay or nursery read exposes foreign
+        # state. The injected generation-member path is exempt:
+        # it is bound to a sealed member, never the live file.
+        if getattr(self, "_init_nursery", None) is None:
+            from form.persist import (
+                _path as _program_path,
+                assert_program_owner_access)
+            assert_program_owner_access(
+                self.owner, _program_path(self.owner),
+                "Program construction")
         self.cube = give(self.owner)
         self.duo = DuoBeta(matrix=self.matrix)
         self.avatar = Avatar(name=self.owner)

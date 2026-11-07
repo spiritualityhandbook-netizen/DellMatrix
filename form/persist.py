@@ -59,6 +59,59 @@ def _cp_path(owner: str, stamp: Optional[str] = None) -> str:
     return os.path.join(_STATE_DIR, f"program_{_safe_owner(owner)}_cp_{stamp}.json")
 
 
+class OwnerCollisionError(RuntimeError):
+    """72-34 / DD-12: the canonical program file for this owner's
+    normalized (safe) name is bound to a DIFFERENT raw owner.
+
+    _safe_owner collapses distinct raw owners ("a/b", "a_b") onto
+    one safe name and therefore one canonical file. The stored
+    file's raw ``owner`` field is the identity authority for that
+    file: a request from any other raw owner is refused loudly,
+    before load / adoption / construction / save, and no bytes
+    are written. Renaming or migrating the colliding namespace
+    is a separate gated circuit — never done silently here."""
+
+
+def stored_program_owner(path: str) -> Optional[str]:
+    """Raw owner recorded in the program file at ``path``.
+
+    Returns the stored owner string when the file exists and
+    carries one; None when the file is absent, unreadable, not a
+    JSON object, or carries no owner field (legacy envelope —
+    no reliable identity to check against; the caller's normal
+    validation still applies). Only a PROVEN mismatch (a stored
+    owner different from the requested owner) is a collision."""
+    try:
+        with open(path, "rb") as f:
+            data = json.loads(f.read().decode("utf-8"))
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    owner = data.get("owner")
+    return owner if isinstance(owner, str) and owner else None
+
+
+def assert_program_owner_access(owner: str, path: str,
+                                context: str) -> None:
+    """Refuse ``context`` when the program file at ``path`` is
+    proven to belong to a different raw owner than ``owner``.
+
+    Fail-closed on proven foreign identity only; the file's
+    bytes are never touched by this check."""
+    stored = stored_program_owner(path)
+    if stored is not None and stored != owner:
+        raise OwnerCollisionError(
+            f"{context}: owner namespace collision — the canonical "
+            f"program file {os.path.basename(path)} belongs to owner "
+            f"{stored!r}, not {owner!r} (both normalize to safe name "
+            f"{_safe_owner(owner)!r}). Refusing to load, adopt, or "
+            f"overwrite another owner's state; the stored bytes are "
+            f"preserved unchanged. Resolve by using the stored "
+            f"owner's exact name, or by an authorized namespace "
+            f"migration (72-34/DD-12).")
+
+
 def _serialize_avatar(program: Program) -> Dict[str, Any]:
     b = program.avatar.body
     return {

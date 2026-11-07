@@ -431,9 +431,12 @@ def control_p_owner_isolation() -> None:
     check("P.b_unaffected", lrb["generation_id"] == "gpB0000000000001"
           and b in state_digest(qb)["nursery_ids"])
     # Collision namespace: raw owners that normalize to the same safe name
-    # must never share generation artifacts. (Their live canonical files do
-    # collide -- pre-existing Persistence V2 behavior, out of scope here --
-    # so the collision fixture is managed explicitly, not via wipe_owner.)
+    # must never share generation artifacts. (72-34/DD-12 update: the live
+    # canonical files no longer merely "collide, out of scope" — since the
+    # DD-12 refusal repair, live construction of the second colliding
+    # owner REFUSES against the first owner's proven stored identity.
+    # The generation namespace remains disjoint underneath that refusal.
+    # The collision fixture is managed explicitly, not via wipe_owner.)
     ox, oy = "DCCXVIII/PX", "DCCXVIII_PX"
     assert _safe_owner_collides(ox, oy)
     for f in STATE.glob("*DCCXVIII_PX*"):
@@ -453,24 +456,25 @@ def control_p_owner_isolation() -> None:
         "program": Path(CG._member_path(ox, "program", "gpx0000000000001")),
     }
     ox_shas = {k: sha_of(p) for k, p in ox_files.items()}
-    py = open_program(oy)
-    y = add_confirmed(py, "py base", "yankee two words")
-    CG.commit_checkpoint(py, generation_id="gpy0000000000001")
+    from form.persist import OwnerCollisionError
+    oy_refused = False
+    try:
+        open_program(oy)
+    except OwnerCollisionError:
+        oy_refused = True
+    check("P.collision_live_construction_refused", oy_refused)
     nsx, nsy = CG._owner_ns(ox), CG._owner_ns(oy)
     oy_member = Path(CG._member_path(oy, "nursery", "gpy0000000000001"))
     qx, lrx = CG.load_checkpoint(ox, activate=False)
-    qy, lry = CG.load_checkpoint(oy, activate=False)
     check("P.collision_namespaces_disjoint",
           nsx != nsy
           and ox_files["nursery"] != oy_member
-          and oy_member.is_file())
+          and not CG.has_checkpoint(oy))
     check("P.collision_no_overwrite",
           all(p.is_file() and sha_of(p) == ox_shas[k] for k, p in ox_files.items()))
     check("P.collision_each_loads_own",
-          x in state_digest(qx)["nursery_ids"] and y not in state_digest(qx)["nursery_ids"]
-          and y in state_digest(qy)["nursery_ids"]
-          and lrx["generation_id"] == "gpx0000000000001"
-          and lry["generation_id"] == "gpy0000000000001")
+          x in state_digest(qx)["nursery_ids"]
+          and lrx["generation_id"] == "gpx0000000000001")
 
 
 # ---------------------------------------------------------------- CONTROL Q
