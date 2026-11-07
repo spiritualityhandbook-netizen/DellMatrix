@@ -100,7 +100,7 @@ per your 72-13 instruction.
   0dff41b (canonical return main() == 0) before the
   green run2. The RED logs are preserved at
   hidden_files/72-20_logs/run1/.
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: ALL TERMINAL PASS at final head 871738dc — Python package run 42342298181 (3.10 + 3.11), Studio Browser Acceptance run 42342298231, Form smoke run 42342298271 (PASS, 18m20s). PR #320 MERGED 2026-11-06: merge commit 6cf22dd34473179b1b68a97bcdb09945294d2d8f, tree 298e8f16eead9e53a8b8f5c646d0b70d1c3bad2f; merged-main CI terminal SUCCESS (Python package 42343632836, Form smoke 42343632844). Director verdict (2026-11-06 23:32 CST, archived in the 72-21 circuit records): bounded technical PASS conditional on terminal CI (condition satisfied before merge); Q-72-20.1 YES; Q-72-20.2 manifest synonyms retained.
 
 ## 4. Records carried in this PR
 
