@@ -201,6 +201,7 @@ LIST = [
     "form.define_compose_nonpublication_test",
     "form.manifestset_isolation_test",
     "form.guard_assert_propagation_test",
+    "form.supersession_lineage_restart_test",
     "form.mandell.d1_dell84_copy_test",
     "form.mandell.d1_dell85_move_test",
     "form.mandell.d1_dell86_delete_test",
