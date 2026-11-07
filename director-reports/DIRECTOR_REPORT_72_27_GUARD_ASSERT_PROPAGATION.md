@@ -81,7 +81,7 @@ by the hourly cycle in a fresh clone at the same base):
   ZERO-DIFF against HEAD (git diff empty), 16/16.
 - Regression at the suite SHA (logs
   hidden_files/72-27_logs/run1/): TERMINAL GREEN 254/254 x3 (fwd / --twice / --order rev; LEG1_RC=LEG2_RC=LEG3_RC=0, CHAIN_DONE present; the new suite runs inside the harness at 16/16)
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: all terminal PASS at the final head 2be9b92c — Python package 42361191482, browser-acceptance 42361191528, Form smoke 42361191883 PASS 12m26s; PR #324 merged 3ebef3515e2de66cb27a313b95794f71647a232b; delivered merge tree 316162a9c863d0db24c1cfe6ac87e03ad5af43e3 IDENTICAL to the frozen candidate head tree (git-verified on both commits); merged-main CI on the push-workflow route terminal SUCCESS — package 42362064170, Form smoke 42362064258, both watch-observed.
 
 ## 3. Records carried in this PR
 
