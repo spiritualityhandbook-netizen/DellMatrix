@@ -553,14 +553,38 @@ class ForceField:
                 seen.add(key)
                 restored.append(copy.deepcopy(rec))
             ff.growth.plants = restored
+        # G-04 restoration (the SM-39 sibling pattern): gravity
+        # wells and the gravity/space/time/weather evolution
+        # levels were serialized by to_dict but never restored,
+        # so every load silently reset them. Wells restore as
+        # the saved SNAPSHOT (deep-copied, verbatim); the next
+        # tick recomputes them from live nodes, exactly as
+        # tick() already does when gravity is active. Only
+        # dict records restore — malformed entries are skipped,
+        # never fabricated — mirroring the Water/Growth record
+        # discipline above. A legacy payload without the
+        # section restores defaults without error.
+        gr = data.get("gravity") or {}
+        ff.gravity.evolution_level = float(
+            gr.get("evolution_level", 1.0))
+        wells = gr.get("wells")
+        if isinstance(wells, list):
+            ff.gravity.wells = [copy.deepcopy(wl) for wl in wells
+                                if isinstance(wl, dict)]
         b = data.get("breath") or {}
         ff.breath.phase = str(b.get("phase") or "inhale")
         ff.breath.cycle = int(b.get("cycle") or 0)
         ff.breath.evolution_level = float(b.get("evolution_level", 1.0))
         t = data.get("time") or {}
         ff.time.tick = int(t.get("tick") or 0)
+        ff.time.evolution_level = float(t.get("evolution_level", 1.0))
         ww = data.get("weather") or {}
         ff.weather.condition = str(ww.get("condition") or "clear")
+        ff.weather.evolution_level = float(
+            ww.get("evolution_level", 1.0))
+        sp = data.get("space") or {}
+        ff.space.evolution_level = float(
+            sp.get("evolution_level", 1.0))
         return ff
 
 
