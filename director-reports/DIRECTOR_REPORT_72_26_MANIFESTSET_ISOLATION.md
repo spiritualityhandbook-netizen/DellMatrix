@@ -74,7 +74,7 @@ public entry path (probe: hidden_files/72-26_probe.py):
   inverse-reverted, tree clean, 18/18.
 - Regression at the suite SHA (logs
   hidden_files/72-26_logs/run1/): TERMINAL GREEN 253/253 x3 (fwd / --twice / --order rev; LEG1_RC=LEG2_RC=LEG3_RC=0, CHAIN_DONE present; the new suite runs inside the harness at 18/18)
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: final-head CI all terminal PASS — Python package 42356605061, browser-acceptance 42356605082, Form smoke 42356605114 PASS 13m1s; PR #323 merged 8c6f1f5f20b118d443c02efc77a4e7bae62487df, tree 2e6609331b15faead58712b589c432c14ae993cd — identical to the frozen candidate head tree (Director ask, verified by git rev-parse on both commits); merged-main CI terminal SUCCESS on the push-workflow route — package 42357533609, Form smoke 42357533583
 
 ## 3. Records carried in this PR
 
