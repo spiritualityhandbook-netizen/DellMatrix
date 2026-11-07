@@ -84,7 +84,7 @@ an undocumented coercion in the sweep.
   inverse-reverted, tree clean, suite back to 67/67.
 - Regression at the repair SHA (logs
   hidden_files/72-13_logs/run1/): TERMINAL GREEN 248/248 x3 (fwd / --twice / --order rev; LEG1_RC=LEG2_RC=LEG3_RC=0, CHAIN_DONE present; the new suite runs inside the harness at 67/67)
-- CI at the final PR head: __FINAL_CI__
+- CI at the final PR head: ALL TERMINAL PASS at final head 54bb854 — Python package run 42326464425 (3.10 + 3.11), Studio Browser Acceptance run 42326464409, Form smoke run 42326464379 (PASS, 16m35s). PR #318 MERGED 2026-11-06: merge commit 2893e3d390d72ade13c0f2a5da53ff00c6968503, tree 8f83b144d57906ff84129fe28a4fabf9fa65a1ad; merged-main CI terminal SUCCESS (Python package 42327922946, Form smoke 42327922971). Director verdict (2026-11-06 20:35 CST, archived in the 72-19 circuit records): ALL_AI_CONFIRMATION_PASS bounded; Q-72-13.1 YES; Q-72-13.2 legacy coercions retained as compatibility contract.
 
 ## 5. Records carried in this PR
 
