@@ -95,21 +95,81 @@ changed; workflow files only.
 
 ## 4. FINAL_CI
 
-PENDING at PR opening — self-hosting proof: this
-PR's exact-head form-smoke, python-package
-(3.10/3.11) and studio-browser-acceptance runs
-execute under the pinned actions themselves and
-must be terminal PASS before merge (hard gate,
-main-session merge only, §32 re-checked
-immediately before merge). Filled by the
-post-merge records update.
+FILLED post-merge: PR #330 merged 2026-11-08
+05:18:06 CST as 7c08f12 (head d0f0964). Form smoke
+run 42474077655 completed SUCCESS at the unchanged
+head before the merge; tree equality VERIFIED
+(3f54d9cb both sides); merged-main python-package
+42475133086 + form-smoke 42475133099 both SUCCESS.
+
+## 5. TRIAGE ADDENDUM (Director HOLD, Gmail
+1a1baf2e0fa698da, 2026-11-08 05:37 CST — archived
+at responses/DIRECTOR_REVIEW_EMAIL_2026-11-08_
+72_67_HOLD.md)
+
+The Director ruled 72-67 PATCH DELIVERED /
+CERTIFICATION HOLD: the verify-72-17 FAILURE in
+PR #330's checks was merged over on Uni's semantic
+classification (inverted stale probe) without
+establishing the check's required status or a
+formal classification BEFORE the merge. Strict
+confirmed stays 18/72; the COMPLETED proposal in
+§0 and the register is WITHDRAWN to PARTIAL pending
+the scoped ruling on this triage (Q-72-67.1
+resubmitted below).
+
+Triage (authorized single circuit, run by the main
+session 2026-11-08 ~05:52 CST):
+
+1. Classification: **PRE-EXISTING failure — not a
+   regression, not flaky.** The failing job re-runs
+   the PRE-REPAIR 72-17 probe
+   (director-reports/evidence/72-17-show-sentinel/
+   q17_probe.py), whose PASS conditions assert the
+   `__RENDER__` sentinel LEAKS (S1.bare_show_sentinel,
+   S3.studio_payload_carries_sentinel,
+   S4.chain_carries_sentinel). Since PR #311 removed
+   the leak, the probe fails BECAUSE the repair
+   works. Reproduced in disposable clones at the
+   pre-#330 base a74d31a AND at #330 head d0f0964:
+   both RC=1, FAILs on exactly S1/S3/S4, outputs
+   byte-identical base vs head and identical to CI
+   (run 42474077547). First broken line (all
+   executions): `FAIL S1.bare_show_sentinel::
+   messages=['Mandell: 09[Show]', 'English: Show
+   (Render / output)'] ok=True`.
+2. Required-check status: **NONE.**
+   `gh api branches/main/protection` returns 404
+   (branch not protected); repository rulesets = [].
+   No platform-required checks exist for this
+   repository; the merge gate is Uni's standing
+   hard-gate law, not a platform ruleset. §32
+   freshness at the merge was clean (no Director
+   mail about #330 existed before the merge; the
+   HOLD postdates it).
+3. Process correction (owned): merging over ANY
+   red check now requires, BEFORE the merge, (a)
+   the required-status check and (b) a formal
+   failure classification recorded in the circuit
+   records. Semantic judgment of what a check
+   means is not sufficient on its own. (72-17's
+   probe semantics are untouched by this circuit;
+   retiring/rewriting the inverted probe is a
+   separate queued hygiene circuit.)
+
+Disposition requested: 72-67 PARTIAL (patch
+delivered, triage attached) until the Director's
+scoped ruling on Q-72-67.1.
 
 ## Questions for the Director
 
-- Q-72-67.1: confirm 72-67 COMPLETED on merge
-  (strict 18/72 -> 19/72)? The register row in
-  this PR proposes COMPLETED for your
-  verification, per the 72-60 pattern.
+- Q-72-67.1 (RESUBMITTED with the §5 triage):
+  confirm 72-67 COMPLETED in the bounded scope
+  (workflow permissions + SHA pins delivered;
+  verify-72-17 failure classified PRE-EXISTING,
+  required-check status NONE)? On confirmation
+  strict moves 18/72 -> 19/72. Until then the
+  row stands PARTIAL.
 
 ## Anticipated probes
 
