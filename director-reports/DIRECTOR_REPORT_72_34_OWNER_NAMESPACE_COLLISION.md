@@ -116,7 +116,7 @@ own signature, nothing else.
 - Register: 72-34 row updated (collision case evidenced,
   defect recorded); row stays PARTIAL. Strict stays 17/72.
 
-CI at the final PR head: __FINAL_CI__
+CI at the final PR head (FINAL_CI, completed in the 72-40 circuit per the Director's 2026-11-07 16:31 CST ruling, Gmail 1a1b823c027a1ca4): all terminal SUCCESS at 41f649892b5d9d767450224b7784058f7d76c4ac — Python package 42417038397, Form smoke 42417038357, Studio Browser Acceptance 42417038358. PR #327 MERGED b997cc961506b854458704715c28185e17679a3c; delivered merge tree f3ac2eb34c8f3fc262ebd74bfef4517621bc9338 IDENTICAL to the frozen candidate tree (git-verified on both commits). Merged-main push CI terminal SUCCESS — package 42421765769 + Form smoke 42421765705; fresh merged-main regression 257/257. Bounded ruling: ALL_AI_CONFIRMATION_PASS for the program-file-anchored refusal only (DD-12 FIXED in that scope); nursery-only / standalone-surface exclusions remain OPEN.
 
 ## 5. Anticipated probes
 
