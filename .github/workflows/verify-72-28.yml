@@ -18,12 +18,15 @@ on:
     branches:
       - uni/72-28-evidence-supplement
 
+permissions:
+  contents: read
+
 jobs:
   verify-72-28:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the supplement head (script source only)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Run pinned verification at the exact pushed head
         run: bash director-reports/evidence/72-28-pair-atomic/verify_72_28.sh "${{ github.sha }}"
