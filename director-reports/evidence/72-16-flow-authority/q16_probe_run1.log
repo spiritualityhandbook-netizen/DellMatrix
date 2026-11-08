@@ -1,0 +1,18 @@
+PASS  A1.chain_ok  atoms=[(34, True), (40, True)]
+PASS  A1.flow_ok  steps=[(34, True), (40, True)]
+PASS  A2.chain_block  atoms=[(28, False, False), (40, False, True)]
+PASS  A2.flow_block  steps=[(28, False, False), (40, False, True)]
+PASS  A3.flow_cycle_args  args={'count': 3}
+PASS  B1.flow_refuses_flowover  err="flow '>>>' is REQUIRES_RUNTIME_SUPPORT, not executable"
+PASS  B1.chain_executes_flowover  atoms=[(40, True, False), (12, False, True)]
+PASS  B2.flow_refuses_flowby  err="flow ':' is DESCRIPTIVE_ONLY, not executable"
+PASS  B2.chain_executes_flowby  atoms=[(40, True), (12, True)]
+PASS  B3.chain_per_atom_refusal  atoms=[(34, False, 'UNSUPPORTED_ARGS: mark'), (40, True, '')]
+PASS  B3.flow_whole_program_refusal  err='expected flow at 9: \'(mark="hello") > 40[\''
+PASS  B4.flow_rewrites_grow_label  flow seed line=['Mandell: 13[Loop] :: 1', 'English: Loop (Iterate until) → 1']
+PASS  B4.chain_keeps_grow_label  chain seed line=['Mandell: 13[Loop] :: 3 > 40[TokenCount]', 'English: Loop (Iterate until) then TokenCount (Cost measure)']
+PASS  C1.flow_delegates_to_router  flow_executor routes every node via route_intent; no direct leaf/Core II calls
+PASS  C2.chain_owns_atom_dispatch  chain_exec dispatches Core II directly and Core I via execute_seed(_leaf=True)
+PASS  D1.repl_uses_chain_semantics  REPL delivers the seed as written (P10 pre-claim -> chain_exec), not flow_executor's rewrite
+
+16/16 checks passed

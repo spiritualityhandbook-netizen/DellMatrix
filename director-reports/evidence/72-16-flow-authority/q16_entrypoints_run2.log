@@ -1,0 +1,8 @@
+PASS  E1.repl_seed_operand_preserved  REPL seed path executes the operand as written (chain semantics)
+PASS  E2.repl_english_routes_via_composer  English entry compiles to the Mandell program and executes it (composer -> flow path, composite receipt shown)
+PASS  E2.repl_english_operand_preserved  the count operand 3 reaches execution at the English entry
+PASS  E3.studio_operand_preserved  Studio executes via execute_seed; operand as written
+PASS  E4.front_door_operand_preserved  execute_seed (chain path) executes the operand as written
+PASS  E5.flow_api_exception_as_classified  OPEN divergence: direct flow-API execution rewrites :: 3 -> :: 1 (pinned; a future authorized repair flips this check deliberately)
+
+6/6 checks passed
