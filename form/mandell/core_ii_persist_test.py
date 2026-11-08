@@ -120,19 +120,30 @@ def smoke() -> bool:
     rec("old_v7_default_state", old.core_ii.scope == "plane" and old.core_ii.store == {})
     os.remove(old_path)
 
+    # 72-36 contract correction: a present core_ii member of the
+    # wrong shape is malformed, NOT proven absence — the load must
+    # REFUSE with an error naming the member, never silently fall
+    # back to a default state. This case previously pinned the
+    # silent fallback (malformed_loads / malformed_fallback); that
+    # pin asserted the defect and is corrected here. The full
+    # version contract is pinned by
+    # form/core_ii_version_validation_test.py.
     bad = serialize(p)
     bad["core_ii"] = "not-a-dict"
     fd, bad_path = tempfile.mkstemp(suffix=".json")
     os.close(fd)
     with open(bad_path, "w", encoding="utf-8") as f:
         json.dump(bad, f)
+    with open(bad_path, "rb") as f:
+        bad_bytes = f.read()
     try:
-        broken = load("CoreIIPersistBad", path=bad_path)
-        rec("malformed_loads", True)
-        rec("malformed_fallback", broken.core_ii.scope == "plane" and broken.core_ii.store == {})
+        load("CoreIIPersistBad", path=bad_path)
+        rec("malformed_refused", False,
+            "load accepted a non-dict core_ii member")
     except Exception as exc:
-        rec("malformed_loads", False, str(exc))
-        rec("malformed_fallback", False)
+        rec("malformed_refused", "core_ii" in str(exc), str(exc))
+    with open(bad_path, "rb") as f:
+        rec("malformed_file_unchanged", f.read() == bad_bytes)
     os.remove(bad_path)
 
     typed = serialize(p)

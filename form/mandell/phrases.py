@@ -13,9 +13,9 @@ PHRASES: List[Tuple[str, str, str]] = [
      '08[Create](name="{name}") > 15[Map] :: {label}', "place"),
 
     # bare "evolve" is program evolve (see below); "grow" is idea growth
-    (r"^(?:grow)(?:\s+ideas?)?(?:\s+(\d+))?$",
+    (r"^(?:grow)(?:\s+ideas?)?(?:\s+(\d+|once|twice|thrice|one|two|three|four|five))?$",
      "13[Loop] > 04[Transform] :: grow", "grow"),
-    (r"^(?:evolve\s+ideas?)(?:\s+(\d+))?$",
+    (r"^(?:evolve\s+ideas?)(?:\s+(\d+|once|twice|thrice|one|two|three|four|five))?$",
      "13[Loop] > 04[Transform] :: grow", "grow"),
 
     (r"^(?:show|show\s+me|display)(?:\s+the\s+matrix)?$",
@@ -28,7 +28,7 @@ PHRASES: List[Tuple[str, str, str]] = [
     (r"^(?:load|reload|restore)(?:\s+session)?$",
      "28[Rollback] :: load", "load"),
 
-    (r"^(?:walk|go|move)\s*(?:forward|ahead)?(?:\s+(\d+))?$",
+    (r"^(?:walk|go|move)\s*(?:forward|ahead)?(?:\s+(\d+|once|twice|thrice|one|two|three|four|five))?$",
      "19[Drive] :: walk", "walk"),
     (r"^run$", "19[Drive] :: run", "run"),
     (r"^(?:stop|halt|idle)$", "32[Pause] :: stop", "stop"),
@@ -141,12 +141,12 @@ PHRASES: List[Tuple[str, str, str]] = [
     (r"^(?:unzoom|zoom\s+out|leave\s+page)$",
      "15[Map] :: unzoom", "unzoom"),
     (r"^zoom\s+(.+)$",
-     "15[Map] :: zoom", "zoom"),
+     "15[Map] :: zoom {label}", "zoom"),
     (r"^weather\s+(clear|rain|storm|fog)$",
-     "25[Pulse] :: weather", "weather"),
+     "25[Pulse] :: weather {label}", "weather"),
     (r"^(?:english\s+status|english\s+brain)$",
      "35[Discover] :: english_status", "english_status"),
-    (r"^(?:english\s+expand)(?:\s+(\d+))?$",
+    (r"^(?:english\s+expand)(?:\s+(\d+|once|twice|thrice|one|two|three|four|five))?$",
      "13[Loop] :: english_expand", "english_expand"),
     (r"^(?:english\s+help|how\s+to\s+talk)$",
      "09[Show] :: english_help", "english_help"),

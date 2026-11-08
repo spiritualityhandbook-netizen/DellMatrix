@@ -246,7 +246,15 @@ _register(OperatorSignature(
              description="Value to store (may be empty string)"),
     ],
     derived_from="form/mandell/query_ops.py:apply_query (n==55)",
-    output="Sets st.store[key] = value (create or overwrite)",
+    output="Sets st.store[key] = value (create or overwrite). "
+           "Established coercions (handler contract, pinned by "
+           "the registry and contract suites): a legacy label "
+           "with no '=' stores the literal '1' under the whole "
+           "label as key; an empty key (legacy '=v', or a typed "
+           "empty key) coerces to the key \"value\"; the legacy "
+           "path strips key and value whitespace, while typed "
+           "roles are stored losslessly (no strip); a typed "
+           "call with key only stores ''",
     failures="ambiguous_set (legacy label only: two or more "
              "existing keys are valid splits of the label — "
              "refuses before mutation; typed roles are lossless)",

@@ -139,8 +139,10 @@ def main():
 
     # -- 09 Show: four-way dispatch
     r = _run(p, "09[Show]")
-    _rec("09 Show: bare Show returns the literal render token",
-         _msgs(r) == ["__RENDER__"], str(_msgs(r)))
+    _rec("09 Show: bare Show carries the render directive, "
+         "no token in messages (72-17 R-B)",
+         _msgs(r) == [] and r.get("directive") == "render",
+         str(_msgs(r)))
     st = p.avatar_status()
     r = _run(p, "09[Show] :: avatar")
     _rec("09 Show avatar: exactly '<look>  <describe>' of "

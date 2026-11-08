@@ -460,8 +460,10 @@ DEEP_NOTES: Dict[int, str] = {
         "passed, Skin.CUBE, collision dedup; the unit is "
         "immediately selectable by Core II Select."),
     9: ("D1 circuit 17 DEEP NOTE: Show dispatches on the "
-        "label — bare Show returns the literal token "
-        "'__RENDER__'; 'avatar' returns exactly '<look>  "
+        "label — bare Show sets the structured result "
+        "directive 'render' (72-17 R-B: no machine token in "
+        "the human messages list; the REPL keys off the "
+        "field); 'avatar' returns exactly '<look>  "
         "<describe>' of live avatar_status; 'lattice' "
         "returns the lattice ASCII render; 'visual' "
         "reports 'Visual ready.' plus the UI html path."),

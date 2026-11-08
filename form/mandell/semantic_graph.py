@@ -685,14 +685,33 @@ class SemanticGraph:
                             # sync_dependent sees the edge in _current.
                             self._fold()
                     elif op["op"] == "sync_dependent":
-                        self._sync_dependent_by_ids(
+                        applied = self._sync_dependent_by_ids(
                             op["dependent_id"], op["derived_property"],
                             op["target_id"], op.get("unit"), op.get("derivation"),
                             op.get("subject_id"), op.get("edge_rel_id"))
-                        # NULL-1: successful replay clears any stale FAILED.
-                        ledger_key = (op["dependent_id"], op["derived_property"])
-                        if ledger_key in self._propagation_ledger:
-                            del self._propagation_ledger[ledger_key]
+                        if applied:
+                            # NULL-1: successful replay clears any stale FAILED.
+                            ledger_key = (op["dependent_id"], op["derived_property"])
+                            if ledger_key in self._propagation_ledger:
+                                del self._propagation_ledger[ledger_key]
+                        else:
+                            # 72-32 D1/D2: a journaled sync whose edge is
+                            # missing or not ACTIVE was NOT applied. It must
+                            # never vanish into a success report, and it must
+                            # never erase a pre-existing FAILED record: record
+                            # an explicit FAILED (preserving any prior error
+                            # context in the message chain is unnecessary —
+                            # the record itself is the visible failure).
+                            self._propagation_ledger[
+                                (op["dependent_id"], op["derived_property"])] = {
+                                "status": PropagationStatus.FAILED.value,
+                                "error": (
+                                    "journal_replay: sync_dependent not applied; "
+                                    f"edge {op.get('edge_rel_id')!r} missing or "
+                                    "not ACTIVE; derived effect not applied"),
+                                "timestamp": time.time(),
+                                "target_id": op.get("target_id"),
+                            }
                 except GraphValidationError:
                     raise
                 except Exception as exc:
@@ -714,13 +733,17 @@ class SemanticGraph:
                                 target_id: str, unit: Optional[str],
                                 derivation: Optional[str],
                                 subject_id: Optional[str],
-                                edge_rel_id: Optional[str]) -> None:
+                                edge_rel_id: Optional[str]) -> bool:
         """Idempotent dependent sync for journal replay. Finds the edge by
-        rel_id and recomputes; skips gracefully if the edge is gone."""
+        rel_id and recomputes. Returns True when the sync was applied,
+        False when the edge is missing or not ACTIVE (72-32 D1: the
+        caller — journal replay — must surface that as an explicit
+        failure, never as silent success)."""
         edge = self._current.get(edge_rel_id) if edge_rel_id else None
         if edge is None or edge.status != RelationshipStatus.ACTIVE:
-            return
+            return False
         self._recompute_dependent(edge)
+        return True
 
     # -- fold + derived indexes --------------------------------------------
 
@@ -1644,6 +1667,35 @@ class SemanticGraph:
                         and op.get("dependent_id") == dependent_id
                         and op.get("derived_property") == derived_property):
                     return "pending"
+        # 72-32 D3: a MIRROR dependent whose persisted derived value does
+        # not match its target's current unit value is stale; reporting
+        # "synchronized" for it is a false success (the inter-hop crash
+        # window could leave exactly this state with no journal and no
+        # ledger record). Detection is read-only; on any load difficulty
+        # fall through to the ledger/journal verdict rather than invent
+        # a failure for state this check cannot read.
+        for _e in self._current.values():
+            if _e.source_id != dependent_id or _e.status != RelationshipStatus.ACTIVE:
+                continue
+            if _e.type != RelationshipType.DEPENDS_ON:
+                continue
+            _props = _e.props_dict()
+            if _props.get("derived_property") != derived_property:
+                continue
+            if _props.get("derivation") != DerivationKind.MIRROR.value:
+                continue
+            try:
+                _target = load_idea(_e.target_id, self.owner)
+                _dependent = load_idea(dependent_id, self.owner)
+                _expected = deepcopy(
+                    _target.get_active_properties().get(_props.get("unit")))
+                _actual = _dependent.get_active_properties().get(
+                    derived_property, _MISSING)
+            except Exception:
+                break
+            if _actual is _MISSING or _actual != _expected:
+                return "failed"
+            break
         return "synchronized"
 
     def _propagate_property(self, idea_id: str, property_name: str,
@@ -1843,6 +1895,37 @@ class SemanticGraph:
                         f"{derivation.value} of {edge.target_id[:8]}"),
             )
             dependent.set_property(props["derived_property"], new_value, prov)
+            if save_after and not self._replaying:
+                # 72-32 D3: journal the downstream (multi-hop) syncs BEFORE
+                # committing this hop's derived write. Previously the next
+                # hop was journaled only inside the post-save
+                # _propagate_property call, so a crash between the save and
+                # that journal left the downstream dependent stale with no
+                # journal and no FAILED record. The ops are the same
+                # idempotent sync_dependent ops _propagate_property writes;
+                # its own journal write below appends duplicates harmlessly
+                # (replay recomputes the same values; equality cutoff).
+                _downstream_ops = []
+                for _rel_id in list(self._by_target.get(edge.source_id, [])):
+                    _e2 = self._current[_rel_id]
+                    if _e2.type != RelationshipType.DEPENDS_ON:
+                        continue
+                    _p2 = _e2.props_dict()
+                    if _p2.get("derivation") != DerivationKind.MIRROR.value:
+                        continue
+                    if _p2.get("unit") != props["derived_property"]:
+                        continue
+                    _downstream_ops.append(
+                        {"op": "sync_dependent",
+                         "dependent_id": _e2.source_id,
+                         "derived_property": _p2.get("derived_property"),
+                         "target_id": edge.source_id,
+                         "unit": props["derived_property"],
+                         "derivation": DerivationKind.MIRROR.value,
+                         "subject_id": None,
+                         "edge_rel_id": _e2.rel_id})
+                if _downstream_ops:
+                    self._write_journal(_downstream_ops)
             if save_after:
                 save_idea(dependent, self.owner)
             # SF-P2-1 multi-hop: this dependent's newly derived value may

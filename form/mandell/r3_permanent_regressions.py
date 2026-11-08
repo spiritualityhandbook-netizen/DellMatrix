@@ -552,7 +552,7 @@ baseline_program = fp_bytes(ppath)
 # Test 1: Complete compensation (both saves succeed)
 from form.mandell import checkpoint_generation as cg
 orig_commit = cg.commit_checkpoint
-def failing_commit(program, _fail_at=None):
+def failing_commit(program, generation_id=None, _fail_at=None):
     program.nursery.save()
     persist_rest.save(program)
     raise OSError("INJECTED_COMMIT_FAILURE")
@@ -628,7 +628,7 @@ def failing_awb(path, blob, *a, **k):
         raise OSError("INJECTED_WRITE_FAILURE")
     return orig_awb(path, blob, *a, **k)
 
-def failing_commit2(program, _fail_at=None):
+def failing_commit2(program, generation_id=None, _fail_at=None):
     program.nursery.save()
     persist_rest.save(program)
     write_failed[0] = True

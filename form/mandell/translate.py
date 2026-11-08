@@ -134,6 +134,26 @@ _HINT_ACTION = {
 }
 
 
+# 72-06 Class E repair (Ace FIX-FIRST, 2026-11-05): spelled-out
+# counts must be honored exactly like digits. The word table
+# mirrors english_composer._WORD_NUM so bare translate() and the
+# composite path accept the same words; conversion happens ONLY
+# at count positions, never as a global text substitution, so
+# user labels containing number words are never rewritten.
+_COUNT_WORDS = {
+    "once": 1, "twice": 2, "thrice": 3,
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+}
+
+
+def _count_value(raw: Any, default: int = 1) -> int:
+    """Parse a captured count token: digits or a number word."""
+    s = str(raw or "").strip().lower()
+    if s.isdigit():
+        return int(s)
+    return _COUNT_WORDS.get(s, default)
+
+
 def translate(english: str) -> Intent:
     text = english.strip()
     # B6 (Director FIX, step 6): empty input reports
@@ -384,7 +404,7 @@ def translate(english: str) -> Intent:
             # was unreachable, so the user's count was silently
             # dropped while execution reported success.
             _lbl = str(hit.get("label") or "")
-            args = {"cycles": max(1, int(_lbl)) if _lbl.isdigit() else 1}
+            args = {"cycles": max(1, _count_value(_lbl, 1))}
         elif action == "turn":
             args = {"direction": "left" if "left" in hint else "right"}
         elif action == "express":
@@ -401,18 +421,23 @@ def translate(english: str) -> Intent:
             # handler reads steps from Intent.args. Hard-coding 1
             # silently dropped the user's count.
             _lbl = str(hit.get("label") or "")
-            args = {"steps": int(_lbl) if _lbl.isdigit() else 1}
+            args = {"steps": _count_value(_lbl, 1)}
         elif action == "strafe":
             args = {"direction": "left" if "left" in lower else "right"}
         elif action == "zoom":
-            args = {"ref": hit.get("label") or ""}
+            # 72-06 Class D: the mandel now carries the operand
+            # ("15[Map] :: zoom {label}"); the old {"ref": ...} arg
+            # had no consumer anywhere in form/ or gui/ — retired.
+            args = {}
         elif action == "weather":
-            m = re.search(r"weather\s+(\w+)", lower)
-            args = {"condition": m.group(1) if m else "clear"}
+            # 72-06 Class D: same — operand rides the mandel
+            # ("25[Pulse] :: weather {label}"); {"condition": ...}
+            # was dead (no consumer) — retired.
+            args = {}
         elif action == "english_expand":
             n = 50
-            if hit.get("label") and str(hit["label"]).isdigit():
-                n = int(hit["label"])
+            if hit.get("label"):
+                n = _count_value(hit["label"], 50)
             args = {"cycles": n}
         elif action == "form":
             # DCC-III: extract form name from hint (form_sphere) or mandel.
@@ -650,9 +675,9 @@ def translate(english: str) -> Intent:
         return Intent("simulate", 31, "Simulate", {}, "31[Simulate]", text)
     if re.search(r"\b(checkpoint|save\s+a\s+checkpoint|make\s+a\s+checkpoint)\b", lower):
         return Intent("checkpoint", 27, "Checkpoint", {}, "27[Checkpoint]", text)
-    m = re.search(r"\b(cycle|run\s+cycles?)\b\s*(\d+)?", lower)
+    m = re.search(r"\b(cycle|run\s+cycles?)\b\s*(\d+|once|twice|thrice|one|two|three|four|five)?", lower)
     if m:
-        n = int(m.group(2)) if m.group(2) else 1
+        n = _count_value(m.group(2), 1) if m.group(2) else 1
         n = max(1, min(n, 5))  # Dell 6 caps at 5
         return Intent("cycle", 6, "Cycle", {"count": n}, f"06[Cycle] :: {n}", text)
     m = re.search(r"\bform\s+(cube|sphere|core|flower)\b", lower)
