@@ -82,12 +82,15 @@ class EnhanceGate:
             }
         return None
 
-    def pulse(self, plane: Plane) -> Dict[str, Any]:
+    def pulse(self, plane: Plane, program: Any = None) -> Dict[str, Any]:
         assert_floor_intact()
         blocked = self._blocked()
         if blocked:
             return blocked
-        self.state = pulse(plane, self.state)
+        # 72-40: forward the owner program so resonance.pulse can
+        # consult the canonical lifecycle boundary. Callers without
+        # a program keep the documented no-exclusion behavior.
+        self.state = pulse(plane, self.state, program=program)
         self.session_pulses += 1
         return {
             "ok": True,

@@ -1970,7 +1970,7 @@ class Program:
         self.note_seed(32, "Pause", "enhance_off")
 
     def pulse(self) -> Dict[str, Any]:
-        out = self.enhance.pulse(self.cube.session.plane)
+        out = self.enhance.pulse(self.cube.session.plane, program=self)
         # Score calculus: record slopes over time
         try:
             self.inspire.scores.push(self.scores())
