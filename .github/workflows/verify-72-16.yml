@@ -1,0 +1,70 @@
+name: verify-72-16
+
+# Exact-head reproduction for PR #307 (72-16 investigation),
+# required by the Director's Mode A assessment 2026-11-05:
+# reproduce the 16/16 authority checks and the 6/6 entry-point /
+# operand-preservation checks AT the PR head — not at the
+# ephemeral pull-request merge ref (the 72-17 lesson: a default
+# pull_request checkout tests the merge commit, so this workflow
+# checks out the head SHA explicitly and asserts rev-parse
+# equality BEFORE any probe runs).
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/verify-72-16.yml"
+      - "director-reports/evidence/72-16-flow-authority/**"
+      - "director-reports/DIRECTOR_REPORT_72_16_FLOW_AUTHORITY.md"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-72-16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout the PR head SHA explicitly
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: ASSERT exact-head identity before anything else
+        run: |
+          EXPECTED="${{ github.event.pull_request.head.sha }}"
+          ACTUAL="$(git rev-parse HEAD)"
+          echo "expected: $EXPECTED"
+          echo "actual:   $ACTUAL"
+          test "$ACTUAL" = "$EXPECTED"
+          echo "EXACT_HEAD_ASSERTION: PASS"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Manifest verification
+        working-directory: director-reports/evidence/72-16-flow-authority
+        run: sha256sum -c MANIFEST.sha256
+
+      - name: Authority probe (16/16) at the exact head
+        run: |
+          set -o pipefail
+          python3 director-reports/evidence/72-16-flow-authority/q16_probe.py ci 2>&1 \
+            | tee q16_probe_ci.log
+
+      - name: Entry-point / operand-preservation probe (6/6) at the exact head
+        run: |
+          set -o pipefail
+          python3 director-reports/evidence/72-16-flow-authority/q16_entrypoints_probe.py ci 2>&1 \
+            | tee q16_entrypoints_ci.log
+
+      - name: Upload verify-72-16 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-72-16-evidence
+          path: |
+            q16_probe_ci.log
+            q16_entrypoints_ci.log
+          if-no-files-found: warn
