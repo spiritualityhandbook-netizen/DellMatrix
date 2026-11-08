@@ -106,3 +106,54 @@ new suite `form/translate_word_counts_test.py`, registered in
   remedy is to make the mandel carry the operand (the channel
   the router actually reads) and retire the dead args. Any
   objection to that shape?
+
+---
+
+## RECONCILIATION CARD — 2026-11-08 (Director Mode A directive, TARGET=72-06 Class E)
+
+**Purpose:** reconcile the record only. PR #308's original "no repair
+authorization" wording is STALE: the Class E repair already landed and
+was ruled on. #308 remains census-held; this card records NO new defect
+closure and NO completion increase — Class E (DD-01) was already FIXED
+and confirmed before this card existed.
+
+- **Repair:** PR #309, "72-06 Class E repair — spelled-out counts
+  honored (Ace FIX-FIRST)" — candidate head
+  `91afdeb131a7b6822eba6488b10576b3eba1d20d`, merged 2026-11-06
+  03:39:52 UTC as merge commit
+  `02955ddf0d7bdbcf7132d6f42f3c04609d2730c8`.
+- **Scoped ruling:** Director SCOPED PASS (2026-11-05, archived at
+  `director-reports/responses/DIRECTOR_REVIEW_EMAIL_2026-11-05_72_06_CLASS_E_SCOPED_PASS.md`):
+  Class E accepted FIXED within the documented vocabulary and covered
+  paths.
+- **Current-main re-verification (INDEPENDENTLY VERIFIED 2026-11-08 by
+  Uni, fresh clone):** main pinned at
+  `57b92925577c1094c93d3e8b91db74d8fd70b215` (PR #331 merge).
+  `python3 -m form.translate_word_counts_test` → **21/21, exit 0**,
+  including executed seeds `06[Cycle] :: 3` and `13[Loop] :: 3`,
+  REPL subprocess checks showing actual execution of three iterations
+  ("Cycle x3"; "Loop: requested 3, executed 3"), unchanged digit and
+  no-count-default behavior, and the label anti-corruption case
+  ("one star" preserved verbatim).
+- **Historical evidence (REPORTED at circuit time, 2026-11-05; linked,
+  not re-run here):** failing-first transcripts in the PR #308
+  supplement (bare REPL, cross-process: word forms executed 1, digit
+  controls executed 3); mutant (digit-only `_count_value`) → **6/21**,
+  reverted by inverse edit, suite restored to 21/21; full regression
+  x3 sequential **239/239 GREEN** each leg (logs
+  `hidden_files/72-06-repair_logs/`; the VM-replacement-killed leg is
+  recorded NO RESULT in §Evidence above and was never counted).
+- **Exact-head CI for the repair (independently re-read from GitHub
+  2026-11-08):** at candidate `91afdeb` — Python package run
+  42154429273 SUCCESS, Form smoke run 42154429306 SUCCESS (18m8s),
+  Studio Browser Acceptance run 42154429275 SUCCESS.
+- **Retained limits (unchanged):** number words beyond five (six,
+  seven, ...) remain unhandled, uniformly with the composite path
+  whose vocabulary this repair mirrors; the `evolve loop N` form
+  carries no count in args (observed sibling, outside the Class E
+  contract, not changed). 72-06 as a whole is NOT declared complete
+  by this card; #308's census hold stands.
+
+**Disposition:** current main PASSES the acceptance evidence — no
+regression reproduced, so no repair circuit is opened. The authorized
+queue continues.
