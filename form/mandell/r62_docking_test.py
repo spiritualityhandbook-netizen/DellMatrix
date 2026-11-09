@@ -324,9 +324,13 @@ def test_dock_surface_has_no_authority_methods():
     # authority method: every verb lands PENDING proposals through
     # the same Nursery path as propose(), and the no_* checks above
     # still guard the authority boundary itself.
+    # Proposal B (Q-LD.2, dock improvements circuit) deliberately
+    # adds last_response_view: a read-only, session-only view of
+    # the last model response. It lands nothing and grants nothing.
     check("C11:surface", sorted(methods) == [
-        "comprehend", "field_snapshot", "flag", "propose", "relate",
-        "relate_field", "synthesize", "undock"], str(methods))
+        "comprehend", "field_snapshot", "flag", "last_response_view",
+        "propose", "relate", "relate_field", "synthesize",
+        "undock"], str(methods))
 
 
 def test_no_eval_or_shell_on_output():

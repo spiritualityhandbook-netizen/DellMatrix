@@ -45,6 +45,8 @@ MAX_WORDS_CHARS = 5000
 DEFAULT_TIMEOUT_S = 30
 DEFAULT_MAX_PROMPT_CHARS = 8000
 DEFAULT_MAX_RESPONSE_CHARS = 8000
+# Proposal B (Q-LD.2): session-only response-view bound.
+_RESPONSE_VIEW_CHARS = 2000
 
 # Key names that must never enter model context or public artifacts.
 _SENSITIVE_KEY_RE = re.compile(
@@ -180,8 +182,13 @@ class _BridgeProvider:
         if not result.ok:
             if (result.error or "").startswith("response_too_large:"):
                 raise _TransportTooLarge(result.error)
+            # Proposal B (Q-LD.1): carry the bridge cause into the
+            # failure instead of discarding it. The cause is RAW
+            # here; every receipt surface passes it through
+            # sanitize_error before it reaches a caller.
             raise ProviderError(
-                f"provider {self.provider} failed")
+                f"provider {self.provider} failed: "
+                f"{str(result.error or '')[:500]}")
         self.last_actual_model = (result.meta or {}).get("model")
         # NOTE: no silent truncation here. The dock enforces the
         # decoded-char bound by REJECTING oversized responses before
@@ -456,6 +463,26 @@ def validate_context(context: Any) -> Dict[str, Any]:
 
 # ---------------------------------------------------------------- validation
 
+_FENCE_RE = re.compile(
+    r"^```(?:json)?[ \t]*\r?\n(.*?)```[ \t]*$", re.DOTALL)
+
+
+def _unwrap_single_fence(text: str) -> str:
+    """Proposal B (Q-LD.1) fence tolerance: when the WHOLE output is
+    exactly one complete fenced block (``` or ```json), return its
+    inner text; otherwise return the text unchanged so the strict
+    JSON parse rejects it. Prose around a fence, two blocks, an
+    unterminated fence, or a fence nested inside the block all stay
+    rejected — the unwrap is exact, never a search."""
+    s = text.strip()
+    if not s.startswith("```"):
+        return text
+    m = _FENCE_RE.match(s)
+    if not m or "```" in m.group(1):
+        return text
+    return m.group(1)
+
+
 def validate_proposal_output(text: str) -> Dict[str, Any]:
     """Validate raw model output against the explicit proposal schema.
 
@@ -468,7 +495,7 @@ def validate_proposal_output(text: str) -> Dict[str, Any]:
         raise ProviderError("empty model output")
     try:
         data = json.loads(
-            text,
+            _unwrap_single_fence(text),
             parse_constant=lambda v: (_ for _ in ()).throw(
                 ValueError(f"non-finite constant {v}")))
     except Exception:
@@ -538,7 +565,7 @@ def validate_semantic_output(text: str, *,
         raise ProviderError("empty model output")
     try:
         data = json.loads(
-            text,
+            _unwrap_single_fence(text),
             parse_constant=lambda v: (_ for _ in ()).throw(
                 ValueError(f"non-finite constant {v}")))
     except Exception:
@@ -607,7 +634,8 @@ class DockedSession:
                  "_provider", "_model_label", "_timeout_s",
                  "_max_prompt_chars", "_max_response_chars", "_docked",
                  "_task", "_session_id", "_evidence", "_snap_name",
-                 "_coordinator", "_defer_persist", "_bimo")
+                 "_coordinator", "_defer_persist", "_bimo",
+                 "_last_response")
 
     def __init__(self, program, trusted_subject: str, owner,
                  provider_name: str, provider, model_label: str,
@@ -635,6 +663,9 @@ class DockedSession:
         object.__setattr__(self, "_bimo",
                            dict(bimo_config) if bimo_config else None)
         object.__setattr__(self, "_snap_name", "")
+        # Proposal B (Q-LD.2): the last raw model response, held
+        # SESSION-ONLY for last_response_view(); never persisted.
+        object.__setattr__(self, "_last_response", None)
         # SD-2: the field-snapshot coordinator is wired by dock()
         # (the trusted host entry) after construction; direct
         # construction leaves it None and the semantic verbs fail
@@ -747,6 +778,22 @@ class DockedSession:
             except Exception:
                 pass
 
+    def last_response_view(self):
+        """Proposal B (Q-LD.2): bounded sanitized SESSION-ONLY
+        view of the last model response, labeled as model output
+        with truncation disclosed. None before any provider
+        response. Durable records stay digest/parsed-fields only;
+        nothing here is persisted."""
+        raw = self._last_response
+        if raw is None:
+            return None
+        text = sanitize_error(raw, protected_values(self._program))
+        truncated = len(text) > _RESPONSE_VIEW_CHARS
+        if truncated:
+            text = text[:_RESPONSE_VIEW_CHARS]
+        return {"kind": "model_output", "text": text,
+                "truncated": truncated}
+
     def propose(self, prompt: str,
                 context: Optional[Dict[str, Any]] = None,
                 reason: Optional[str] = None,
@@ -832,6 +879,10 @@ class DockedSession:
         framing = self._bimo_framing()
         if framing:
             full_prompt = framing + "\n\n" + full_prompt
+        # Proposal B (Q-LD.1): the schema statement rides the
+        # assembled prompt (and its evidence digest), before the
+        # context block so the context stays the final block.
+        full_prompt += self._PROPOSAL_SCHEMA_TAIL
         if safe_ctx:
             full_prompt += "\n\n[context]\n" + json.dumps(
                 safe_ctx, sort_keys=True)
@@ -863,6 +914,12 @@ class DockedSession:
             return {"ok": False, "reason": "provider_failure",
                     "detail": sanitize_error(
                         f"{type(e).__name__}", prot)}
+        except ProviderError as e:
+            # Proposal B (Q-LD.1): surface the SANITIZED cause
+            # (e.g. the bridge's upstream error), never type-name
+            # only and never raw.
+            return {"ok": False, "reason": "provider_failure",
+                    "detail": sanitize_error(str(e), prot)}
         except DockError as e:
             return {"ok": False, "reason": "provider_failure",
                     "detail": sanitize_error(str(e), prot)}
@@ -879,6 +936,7 @@ class DockedSession:
             return {"ok": False, "reason": "response_too_large",
                     "detail": f"Response exceeds {self._max_response_chars} "
                              "chars; rejected before parsing."}
+        object.__setattr__(self, "_last_response", raw)
         # Protected-material screen on provider output BEFORE parsing
         # and before Nursery.add — raw AND decoded forms.
         if contains_protected_decoded(raw, prot):
@@ -1017,6 +1075,13 @@ class DockedSession:
         '"label", "words", "detail", "goals", "reason", "parents". '
         '"reason" is required: state the evidence for your judgment. '
         '"parents" lists the target ids your proposal is about.')
+
+    # Proposal B (Q-LD.1): propose() states its output schema in
+    # the ask too (previously only the semantic verbs did).
+    _PROPOSAL_SCHEMA_TAIL = (
+        '\n\n[output schema] Reply with one JSON object only: '
+        '{"label": string, "words": string, "detail": string '
+        '(optional), "goals": [string] (optional)}.')
 
     def field_snapshot(self):
         """The canonical field snapshot for this session's subject,
@@ -1442,6 +1507,9 @@ class DockedSession:
         except (TimeoutError, ConnectionError) as e:
             return {"ok": False, "reason": "provider_failure",
                     "detail": sanitize_error(f"{type(e).__name__}", prot)}
+        except ProviderError as e:
+            return {"ok": False, "reason": "provider_failure",
+                    "detail": sanitize_error(str(e), prot)}
         except DockError as e:
             return {"ok": False, "reason": "provider_failure",
                     "detail": sanitize_error(str(e), prot)}
@@ -1454,6 +1522,7 @@ class DockedSession:
         if len(raw) > self._max_response_chars:
             return {"ok": False, "reason": "response_too_large",
                     "detail": "Response exceeds bound; rejected."}
+        object.__setattr__(self, "_last_response", raw)
         if contains_protected_decoded(raw, prot):
             return {"ok": False, "reason": "protected_output",
                     "detail": "Provider output carries protected "
