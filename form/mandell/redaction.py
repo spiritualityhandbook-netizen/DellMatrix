@@ -30,7 +30,11 @@ from dataclasses import replace
 from typing import Any
 
 _SECRET_RE = re.compile(
-    r"(?i)(password|secret|token|api[_-]?key|bearer)\s*[:=]?\s*\S+")
+    # DD-31: an optional copula ("is") may sit between the keyword /
+    # separator and the value ("my password is X"); consume it so the
+    # VALUE is redacted, not the word "is".
+    r"(?i)(password|secret|token|api[_-]?key|bearer)"
+    r"\s*[:=]?\s*(?:is\s*[:=]?\s*)?\S+")
 _NUMBER_RE = re.compile(r"\b\d{12,}\b")
 
 SANITIZE_DELL = 41
