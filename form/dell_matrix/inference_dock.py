@@ -1033,6 +1033,83 @@ class DockedSession:
         except Exception:
             return None
 
+    def _retrieve_into_index(self, coord, index, target_id):
+        """One bounded retrieval round for a single caller-named id
+        (Q-SC.3). On success the sanitized entry joins `index` and is
+        returned; otherwise None. Retrieval failure is treated as
+        absence, never as data."""
+        fn = getattr(coord, "retrieve_for", None)
+        if fn is None:
+            return None
+        try:
+            res = fn(self._subject, [target_id])
+        except Exception:
+            return None
+        for e in (res or {}).get("entries", []) \
+                if isinstance(res, dict) else []:
+            if isinstance(e, dict):
+                key = e.get("pid") or e.get("uid")
+                if key:
+                    index[str(key)] = e
+                    if str(key) == str(target_id):
+                        return e
+        return None
+
+    def _retrieve_missing(self, coord, index, targets):
+        """One retrieval round for every target missing from the
+        snapshot index. Returns {id: entry} for the entries this
+        round retrieved (empty when nothing was missing)."""
+        missing = [t for t in targets if t not in index]
+        retrieved: Dict[str, Any] = {}
+        if not missing:
+            return retrieved
+        fn = getattr(coord, "retrieve_for", None)
+        if fn is None:
+            return retrieved
+        try:
+            res = fn(self._subject, list(missing))
+        except Exception:
+            return retrieved
+        for e in (res or {}).get("entries", []) \
+                if isinstance(res, dict) else []:
+            if isinstance(e, dict):
+                key = e.get("pid") or e.get("uid")
+                if key:
+                    index[str(key)] = e
+                    retrieved[str(key)] = e
+        return retrieved
+
+    def _revalidate_retrieved(self, coord, retrieved) -> bool:
+        """Revalidate retrieved entries against live state before
+        incorporation (Q-SC.3): a target deleted, lifecycle-changed
+        or content-changed since retrieval refuses the verb rather
+        than landing on stale data."""
+        if not retrieved:
+            return True
+        fn = getattr(coord, "retrieve_for", None)
+        if fn is None:
+            return False
+        try:
+            res = fn(self._subject, list(retrieved))
+        except Exception:
+            return False
+        now: Dict[str, Any] = {}
+        for e in (res or {}).get("entries", []) \
+                if isinstance(res, dict) else []:
+            if isinstance(e, dict):
+                key = e.get("pid") or e.get("uid")
+                if key:
+                    now[str(key)] = e
+        for rid, old in retrieved.items():
+            cur = now.get(rid)
+            if cur is None:
+                return False
+            for f in ("status", "label", "words", "detail",
+                      "revision_number"):
+                if old.get(f) != cur.get(f):
+                    return False
+        return True
+
     def relate(self, a, b, *, reason=None) -> Dict[str, Any]:
         """Judge how two field entries relate; land a PENDING
         proposal expressing the relation."""
@@ -1208,6 +1285,11 @@ class DockedSession:
                 index[str(e["pid"])] = e
         entry = index.get(target)
         if entry is None:
+            # Q-SC.3: ONE retrieval round for the caller-named target
+            # beyond the snapshot slice. Candidates below stay
+            # snapshot-bounded (recorded v1 limit).
+            entry = self._retrieve_into_index(coord, index, target)
+        if entry is None:
             return {"ok": False, "reason": "unknown_target",
                     "detail": "Target is not in the field snapshot."}
         target_tokens = self._field_tokens(entry)
@@ -1282,6 +1364,9 @@ class DockedSession:
         for e in snap.get("ideas", []):
             if isinstance(e, dict) and e.get("pid"):
                 index[str(e["pid"])] = e
+        # Q-SC.3: ONE retrieval round for caller-named targets
+        # beyond the snapshot slice, before declaring any unknown.
+        retrieved = self._retrieve_missing(coord, index, targets)
         entries = []
         for t in targets:
             e = index.get(t)
@@ -1365,6 +1450,14 @@ class DockedSession:
         chosen_reason = reason if reason is not None else fields["reason"]
         kind = "evolved" if verb in (
             "relate", "synthesize", "relate_field") else "new"
+        # Q-SC.3 revalidation: retrieved targets are re-checked
+        # against live state immediately before incorporation.
+        if retrieved and not self._revalidate_retrieved(coord,
+                                                         retrieved):
+            return {"ok": False, "reason": "stale_target",
+                    "detail": "A retrieved target changed or was "
+                              "removed before incorporation; refused "
+                              "rather than landing on stale data."}
         try:
             prop = self._program.nursery.add(
                 fields["label"], words=fields["words"], kind=kind,
@@ -1383,6 +1476,7 @@ class DockedSession:
                 "provider": self._provider_name,
                 "model": actual_model or self._model_label,
                 "task": verb, "verb": verb,
+                "source_identity": snap.get("source_identity"),
                 "session_id": self._session_id}
 
 
