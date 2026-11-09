@@ -5155,3 +5155,40 @@ circuit by circuit under the standing gates (Director
 certification, Ace design sessions, gated buckets
 unchanged). Nothing in the passes erases history: each
 pass layers over the last, supersessions marked.
+
+### 13.8 PAIRWISE RECORD RECONCILED (Ace order, 2026-11-09)
+
+Ace asked that the Dells be checked against each other and
+the existing record verified against today's standard.
+FOUND IN THE REPO (director-reports/evidence/step13/):
+the full pairwise pass EXISTS and is complete as a sweep —
+Step 13 re-derivation, all 9,900 ordered pairs + 100
+identity, ledger v2 (SHA-256 checksummed), classified
+FUNCTIONAL 1,989 / FUNCTIONAL_INDEPENDENT 6,375 /
+INTENDED_CLASH 1,528 / UNIQUE 8 / DEFECT 0; identity 89
+IDEMPOTENT / 11 HONEST_REFUSAL.
+LIMITS, stated plainly: (1) it ran on a FROZEN baseline at
+the repaired step-11 head (early Nov 2026) — exact for
+that baseline, not for today's code; (2) it is
+harness-level evidence (per-owner isolated Program state),
+not a public-entry-path execution; (3) its classification
+semantics are the frozen Gate-0 seed's — they predate the
+tour's rulings.
+STALE-BY-CHANGE: pairs touching any Dell whose production
+behavior changed after the freeze (typed-arg refusal
+gates 72-13, owner guards DD-12, pulse exclusions DD-13,
+redaction DD-31, chain fail-closed DD-45) or whose
+INTENDED behavior the tour re-ruled (Loop DD-14, Compare
+grammar DD-42, Parallel DD-43, the DD-44 limit law, and
+the DD-15..DD-54 design rulings) cannot be carried
+forward as current-standard verdicts. A pair marked
+FUNCTIONAL under behavior Ace has since ruled defective
+is the headline case (Loop's pairs).
+PRESCRIPTION (for the implementation phase, Director
+routing): a DELTA re-derivation — re-run only the pairs
+touching changed or re-ruled Dells against current main
+under the tour-era classification standard (classes a-d),
+diff against ledger v2, and publish ledger v3 with the
+diff as evidence. The untouched remainder of v2 stands
+as-is; history is preserved, nothing is wiped or
+re-claimed wholesale.
