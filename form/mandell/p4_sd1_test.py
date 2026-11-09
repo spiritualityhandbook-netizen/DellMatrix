@@ -89,7 +89,9 @@ def smoke() -> bool:
                 and e1["task"] == "relate")
             rec("evidence_prompt_hash",
                 e1["prompt_hash"] == hashlib.sha256(
-                    "draft an idea about resonance".encode()).hexdigest()
+                    ("draft an idea about resonance"
+                     + idock.DockedSession._PROPOSAL_SCHEMA_TAIL
+                     ).encode()).hexdigest()
                 and e1["snapshot_id"] is None
                 and e2["snapshot_id"] == hashlib.sha256(json.dumps(
                     {"topic": "rings"}, sort_keys=True).encode()).hexdigest())
