@@ -2873,7 +2873,7 @@ WORKS — the honest looper. Verified all three paths live
   success.
 Notable for DD-14: Until proves the codebase already owns REAL
 chain-body repetition (execute_range re-invoked per iteration in
-chain_exec.py's 64/65 branch) — Dell 14 Loop's missing mechanism
+chain_exec.py's 64/65 branch) — Dell 14 Loop's missing mechanism [ANNOTATION 2026-11-09: registry at 7aad191 — Dell 13 = Loop; Dell 14 = Bind. DD-14 is a defect ID, not a Dell number. See SS14.2.]
 has an in-house precedent one floor up. While (65) shares this
 branch with inverted polarity (zero iterations when the
 condition starts false; bounded failure when it never turns
@@ -2894,7 +2894,7 @@ chain_exec branch reads. No defect, no ruling needed.
 
 Ace, on learning While stops at 8 by default: the bound must
 not silently default. RULED, for the loop family (While 65 and
-Until 64 share the bound machinery; Dell 14 Loop noted as the
+Until 64 share the bound machinery; Dell 14 Loop noted as the [ANNOTATION 2026-11-09: Dell 13 = Loop; Dell 14 = Bind (registry at 7aad191). See SS14.2.]
 same family):
 
 1. SPECIFY: running a loop requires stating exactly how many
@@ -4809,7 +4809,7 @@ restoration. The Dell TOUR EXAMINATION stands at 00-54
 (SS12 header and SS12.7 item 1 are stale history). Remaining
 tour: 55-99, feeding clusters below.
 
-## 13.2 THE CLUSTERS — related directives, built together
+## HISTORICAL SYNTHESIS A — SUPERSEDED CLUSTER MAPPING (originally: 13.2 THE CLUSTERS — related directives, built together). Preserved verbatim as history; NOT a current direction. Canonical mapping: SS14.1.
 
 C1 HONEST RECEIPTS + LOOP BODY (DD-14; riders DD-18, DD-35,
 DD-23 receipt half) — one failure class: receipts claiming
@@ -4915,7 +4915,7 @@ F12 V-12 timed trials scheduling.
 
 ---
 
-## 13. REANALYSIS — THE WHOLE PLAN, CONNECTED (Ace order, 2026-11-09; Uni, main session)
+## HISTORICAL SYNTHESIS B — BASE FOR CURRENT MAPPING (originally: 13. REANALYSIS — THE WHOLE PLAN, CONNECTED (Ace order, 2026-11-09; Uni, main session)). Preserved verbatim as history; its C1-C13 mapping is the base reconciled into SS14.
 
 Ace ordered a full reanalysis: connect directives that can be built
 together, mark what is already done, wipe nothing. This section is
@@ -5192,3 +5192,802 @@ diff against ledger v2, and publish ledger v3 with the
 diff as evidence. The untouched remainder of v2 stands
 as-is; history is preserved, nothing is wiped or
 re-claimed wholesale.
+
+
+---
+
+## 14. WORKING-PLAN CANDIDATE — SECOND EVOLUTION (Uni, 2026-11-09)
+
+Status: CANDIDATE, not adopted. Produced under SS13.7 step 4 by folding
+the Director's enhancement pass DIR-PLAN-E2-2026-11-09 (relayed through
+Ace in wake mode; his pass reviewed the frozen plan at merge 7aad191,
+PR #344) into the reiteration. Adoption happens only at SS13.7 step 5
+reconciliation through Ace. This section changes no code, unparks no
+PR, and increases no counter: strict completion remains 19/72; PR #345
+remains parked pending the DD-31 flicker ruling; DD-14 evidence is
+unchanged (suite 11/11, mutant killed, regression leg 1 terminal
+green, leg 2 interrupted / NO RESULT, leg 3 unrun).
+
+Claim discipline (binding on every reading of this plan): owner
+requirement, reported observation at a named SHA, design proposal,
+implemented candidate, merged delivery, and scoped certification are
+six different states and are never written as one another. "Tour
+complete" means all 100 Dells were EXAMINED; it is not proof that all
+work through every public path — several entries are API-only, and
+each delivered tool still needs a real supported invocation path and
+a machine-readable receipt before the AI-tool objective (SS12.71b)
+closes for it. Future-tense requirements are never present
+capabilities.
+
+### 14.1 CANONICAL MAPPING — Pass B C1–C13 + H track
+
+The stable base is Historical Synthesis B's C1–C13. A cluster is a
+DEPENDENCY FAMILY, not permission to combine independent repairs
+into one PR; every independently testable change is one bounded
+circuit (Director F7). H is a cross-cutting human-surface delivery
+track, NOT a fourteenth cluster; Synthesis B's C13 remains Simulate.
+
+Pass A -> canonical home (Director crosswalk, incorporated):
+- A-C1 Honest Receipts -> C1 Chain Truth (C9 for Translate).
+  Retained: DD-18 receipt honesty; DD-35 no invented intent;
+  receipt fixes are distinguished from resonance redesign.
+- A-C2 Resonance Core -> C2 (Mirror comparison in C3). Retained:
+  growth design session, decline-coupled decay, fusion/partition
+  rules, Mirror's comparison requirement.
+- A-C3 Harmonic Notes -> C10 Harmonic Plane. Retained:
+  item-attached notes, durable ordering, derived view modes.
+- A-C4 Failure/Snapshots -> C3 Failure & Time (C13 for rehearsal).
+  Retained: Alpha history, rollback compatibility, failure menu.
+  Q1 everyday saves remain separately scoped (gate bucket).
+- A-C5 Nursery Governance -> C5 (C11 for Manifest lifecycle).
+  Retained: ranking, owner policy, explicit
+  confirmed-but-unmanifested state.
+- A-C6 Reference/Essence -> C4 Reference Family. Retained:
+  Compress/Expand as one zipper; Distill/Inject composition.
+- A-C7 Shelf/Editing -> C11 Idea Editing. Retained: private drafts,
+  containment, supersession, owner promotion.
+- A-C8 Boxes/Freeze -> C6 Boxes, Freeze & Placement. Retained:
+  named boxes, standing private box, room/item freeze.
+- A-C9 Dock/Psalm -> C8 Dock & Psalms. Retained: complete live
+  roster, compact complete history, resident design session.
+- A-C10 Self-report -> C7 Self-report & Quantitative Contracts.
+  Retained: health, performance, token accounting kept distinct.
+- A-C11 Placement/Binding -> C6 (lifecycle dependency on C11).
+  Retained: idea/body/both, AUTO/BIND, explicit manual placement.
+- A-C12 Bridge -> C12 Bridge. Retained: Exchange is the transfer
+  authority; Bridge reports other bridges without controlling them.
+- A-C13 Display/Human Surface -> H TRACK, linked to all C clusters.
+  Retained: SS1–SS10 vision, personal page, AGE, face, Show,
+  navigation research, human acceptance. Nothing from the original
+  interface vision disappears because Synthesis B omitted a
+  display cluster.
+
+### 14.2 SUPERSESSION TABLE (history preserved; one current reading)
+
+- Two SS13 cluster mappings (Synthesis A, Synthesis B) -> SS14.1 is
+  the only current mapping. Both syntheses stand above as labeled
+  history.
+- Duplicated section numbers (two SS13.2, two SS13.5, SS13.1/13.2 in
+  both passes) -> historical labels only. SS14 numbering is unique;
+  circuit references use card IDs (e.g. C1.Loop), never bare
+  section numbers.
+- "Tour incomplete / in progress" statements anywhere in SS12 ->
+  SUPERSEDED by SS13.7: the tour completed 2026-11-09, all 100
+  Dells examined. Examination is not per-path proof (see claim
+  discipline).
+- "Dell 14 Loop" (SS12 annotations at the two occurrences) ->
+  registry at 7aad191: Dell 13 = Loop, Dell 14 = Bind. DD-14 is a
+  defect identifier, not a Dell number.
+- DD-45 named "Select/Filter silent data loss" -> RENAMED: chain
+  parse-refusal fail-open. The initial diagnosis was DISPROVED by
+  the investigation and the correction is preserved: no stored
+  ideas were lost; an empty-label seed parse refusal failed open
+  and the chain proceeded as if it had succeeded. Acceptance:
+  parser refusal -> failure with zero execution and zero mutation;
+  valid same-chain creation/selection controls must pass.
+- "Try + run + Revert is a zero-write sandbox" -> REJECTED as the
+  implementation guarantee for Simulate (C13). Capture/restore
+  components may be reused only inside an isolated execution
+  context.
+- Diff snapshot called "fourteen slices" while fifteen are listed
+  -> count is UNRESOLVED here; the C3 circuit counts from the
+  actual schema at its own circuit SHA.
+- "Every writer feeds room ledgers" (tour-era, SS12.79 region) ->
+  QUALIFIED to covered writers only; the DD-51 writer census is
+  the wider, later record.
+- DD-43 note "Mirror cannot conflict" -> read-only means no
+  writes; it does NOT establish that concurrent reads see a
+  consistent snapshot.
+- DD-50 / Map -> Map's described role is a perception lens. C6
+  grounding must locate the real Plane-position mutation
+  authority rather than assume Dell 15 is that authority.
+- TD-2 status -> built as a containment-only candidate (nest /
+  promote / reparent, SemanticGraph sole containment authority);
+  CERTIFICATION: UNKNOWN — no scoped ruling receipt is linked in
+  the plan (Director F2). Containment is not redesigned on that
+  basis.
+- SS12.34 Translate doctrine (earlier single-mode reading) ->
+  dual-mode per Ace's correction, canonical in C9.
+
+
+### 14.3 CIRCUIT CARDS
+
+Card fields per SS14.5: slices (card IDs), dependencies, acceptance
+evidence, stop condition. A green slice never closes a whole
+cluster. Gated items (Q1/C-A/F2, R-2 architecture, save-path
+designs) keep their review gates regardless of cluster membership.
+
+C1 CHAIN TRUTH
+- Slices: C1.ParseRefusal (DD-45 — DELIVERED CANDIDATE, parked in
+  PR #345; remaining step is the Director's flicker disposition,
+  not implementation); C1.Loop (DD-14 — IN FLIGHT, see SS14.4);
+  C1.PulseReceipt (DD-18); C1.Predicate (DD-42); C1.Bounds
+  (DD-44 — an explicit contract-change slice, never a rider hidden
+  in Loop); C1.ConcurrencyDesign (DD-43 — design slice).
+  Guard/Catch wording and Sequence semantics are separate
+  hygiene/design items, not silent behavior changes.
+- Dependencies: canonical parser, chain executor, predicate
+  engine, outcome hook. C1.ConcurrencyDesign additionally needs
+  C13 isolation, C3 comparison + proposal revalidation, C11
+  lifecycle integration, and Ace's multi-Psalm session for persona
+  execution.
+- Acceptance: C1.Loop proves actual body repetition with state
+  counters and per-atom iteration receipts, nested/control-flow
+  boundaries, failures/skips, unchanged Cycle semantics; its
+  existing count contract is distinguished from the later DD-44
+  change. C1.PulseReceipt reports actual gate outcome, executed
+  count, and refusal with unchanged state. C1.Predicate rejects
+  unsupported multi-token conditions instead of falling back to
+  truthiness across Compare/Branch/Assert/Guard; prefix grammar
+  and explicit legitimate truthy uses preserved; missing operands
+  and reserved names tested; exists/bare-literal semantics need a
+  NAMED decision, not an accidental change. C1.Bounds proves
+  missing/invalid counts do not run, valid counts are exact,
+  limit exhaustion is honest, named limit domains compose
+  (SS14.3 C7 note and Director DD-44 contract: named domains,
+  scope/lifetime, inheritance, restoration; a user limit may
+  narrow but never bypass hard safety limits; no silent 8; "ask"
+  is a structured missing-input result in noninteractive
+  callers). C1.ConcurrencyDesign proves real overlapping
+  execution on isolated state, deterministic conflict reporting,
+  stale-preview refusal, authorized application; sequential code
+  stays labeled sequential until then.
+- Stop: any false success, missing atom, unbounded replay,
+  inferred permission, unexplained state loss, or shared mutable
+  arm state. Do not bundle Loop, Pulse, and predicates merely
+  because their receipts are related.
+
+C2 RESONANCE CORE
+- Slices: relatedness model; development-coupled growth; targeted
+  Pulse; decline-coupled Decay; DD-15 fusion; DD-16 partition;
+  DD-23 enhancement outcome; DD-19 temperature design.
+  Independent receipt corrections (C1) do not wait for this model.
+- Dependencies: Ace's resonance/growth/temperature design
+  sessions FIRST (Ace's format; never designed unilaterally); C7
+  quantity interfaces; canonical lifecycle and sandbox exclusions.
+  Q-72-40.2 is cross-referenced here for design (Director F5);
+  its original objective is NOT closed by cross-reference.
+- Acceptance: agreed fixtures distinguish meaningful shared
+  content from stopwords and real relations from coincidental
+  similarity; resonance exposes with-whom / how-strong / why.
+  Pulse obeys selected targets and exclusions. Growth responds to
+  agreed development evidence, attention the smallest factor,
+  never mere existence. Fusion carries parent substance and
+  provenance while preserving parents. Split keeps each
+  resonating cluster intact, handles zero/one cluster and ties
+  honestly, never loses the parent. Calculated relatedness vs
+  observed interaction are separately labeled evidence; transfer
+  does not prove semantic truth. Temperature is a typed intensity
+  control per consumer, not a secret global switch.
+- Stop: invented growth metrics, unilateral cluster thresholds,
+  mixing harmony/relatedness concepts, secret gate changes. One
+  unpartitionable cluster is never torn to manufacture two
+  children.
+
+C3 FAILURE & TIME (witness family)
+- Slices: C3.Diff (DD-51 Rings 1+2; Ring-3 scopes later);
+  C3.MirrorCompare; C3.Trace (DD-52); C3.FailureDoors (DD-32
+  Analyze/Revert/Retry); C3.Rooms (DD-53); C3.Undo (DD-54);
+  C3.Alpha (history member + close ceremony). The Q1/C-A
+  everyday-save repair stays SEPARATE (gate bucket).
+- Dependencies: canonical mutation capture, snapshot append,
+  transaction frames, checkpoint generation authorities; design
+  review for persistence and for independently addressable
+  rooms. C13 supplies rehearsal; C12 consumes room comparison.
+  DESIGN PREREQUISITES (unresolved, SS14.8): the coordinated
+  history contract (navigable undo vs durable evidence; redo-tail
+  invalidation removes reachability, not evidence; retention /
+  compaction is an explicit open question — no promise of
+  unlimited lossless history in fixed space); overlapping-room
+  write ownership and targeted-revert mechanics.
+- Acceptance: C3.Diff captures every declared writer and compares
+  every declared content slice (slice count taken from the actual
+  schema at the circuit SHA — SS14.2), including absent-vs-None,
+  transaction baselines, and explicitly named unexamined scopes;
+  every claimed writer gets a fixture; whole-checkpoint scope
+  includes working state/verdicts; Diff's automatic check compares
+  measured effects against a separately stated effect contract,
+  not merely the same implementation's receipt. C3.MirrorCompare:
+  Mirror keeps its roster and gains pair comparison through this
+  comparator, honest pagination. Lifetimes stay separate: Diff =
+  latest scoped comparison (no archive); Trace = current
+  process/session only (new sessions never inherit old Trace);
+  sealed history = durable evidence; undo never rewrites receipts
+  or accepted transaction evidence. C3.Trace: process identity,
+  execution-surface coverage, ordering, full retrieval beyond 512
+  entries without silent loss, lifecycle events and room
+  boundaries identified. C3.FailureDoors: Retry targets an
+  identified FAILED original attempt, once; success or no
+  outstanding failure never replays; wrappers never become
+  targets; partial effects shown before retry. C3.Undo: 30-step
+  adjustable undo/redo proven, new-write tail invalidation,
+  history preservation, room-vs-session undo, terminal-frame
+  shadowing exhibit; the 30-step window is never advertised as
+  all-history restore. C3.Rooms: chosen-room operations cannot
+  overwrite another room's later work; ordinary session close
+  names open rooms and requires confirmation; a killed process
+  cannot be promised an interactive warning. C3.Alpha gate
+  (SS12.13 acceptance, binding): old four-member generations
+  freeze/confirm/restore under new code; new history-bearing
+  generations restore coherently; compensating checkpoints,
+  fresh-process convergence, absent-history honesty survive;
+  unknown/corrupt members refuse without overwrite; save failure
+  never pretends the session is safely closed; adding a fifth
+  member is never claimed automatic.
+- Stop: any preview writes live state, any undo rewrites history,
+  any room destroys another's work, any generation hybrid, any
+  undelivered history scope advertised as complete.
+
+C4 REFERENCE FAMILY
+- Slices: C4.Zipper (DD-20 Compress + Expand, one circuit, never
+  disconnected halves); C4.InjectRef (DD-26 Inject + Reference
+  dereferencing); C4.Distill (DD-28).
+- Dependencies: SemanticGraph REFERENCES and containment/lineage
+  contracts; stable source identity; C5 proposal governance for
+  generated content; C3 comparison for evidence.
+- Acceptance: Compress preserves a resolvable source link; Expand
+  retrieves the full intended source under a declared
+  current-vs-versioned rule; both public doors agree; English
+  Expand cannot silently become Grow. Inject adds a reference,
+  not a duplicate; the initial consumer list is explicit (reading
+  / showing first; growth / resonance / export separately
+  evidenced). Cycles, missing/deleted/inactive/foreign targets,
+  and supersession resolve honestly. Core II refs aliases and
+  graph references reconcile through an ADAPTER, not a second
+  relationship store (one owner per semantic domain — Director
+  SS2). Distill uses actual words/detail/goals, carries
+  provenance and disclosed omissions, stays usable without its
+  source; deterministic-vs-model is ACE'S decision (unresolved,
+  SS14.8); "faithful" is judged on human examples, not shortness.
+- Stop: fabricated unzip, silent reference cycles, changed
+  originals, cross-owner leakage, a name-tag presented as a
+  content summary.
+
+C5 NURSERY DOOR, RANKING & DISCOVERY
+- Slices: C5.Formula (confirmed ranking formula); C5.PlaneRank
+  (switchable Plane ranking); C5.Search (DD-25 Discover + DD-49
+  Resolve as two faces of ONE search machinery); C5.Door
+  (DD-27 door policy).
+- Dependencies: existing Nursery, G-11 retrieval, C2's settled
+  relatedness (for that ranking mode), C7 measurements, C4
+  references, C11 contained parts/rooms as those types become
+  available.
+- Acceptance: formula is exactly S = 0.40 LINK + 0.25 ACE + 0.20
+  FRESH + 0.15 NOVEL; inputs, normalization, missing data, ties,
+  and revisions defined; Ace's FRESH half-life choice (Q-N3)
+  stays EXPLICIT and open (SS14.8); top five per topic; global
+  pending cap 200; tombstoned evictions; NO cap transferred to
+  the idea field; the score that decided the order is displayed.
+  Search/browse reaches every authorized item through stable
+  ordered pages, reports totals/coverage and honest unavailable
+  sections, handles identical labels by stable IDs, and never
+  treats a 16-ID retrieval round as a field-size cap; search
+  results never become authority. C5.Door: auto-passage stays OFF
+  until Ace supplies standards and scope; future receipts name
+  policy version and authorizing rule; revocation takes effect
+  before application; Cycle never approves its own proposals.
+- Stop: hidden truncation, fabricated full coverage, rank-derived
+  permission, invented replacement scores for missing signals.
+
+C6 BOXES, FREEZE & PLACEMENT
+- Slices: C6.Boxes (DD-17 standing/named sandboxes); C6.Freeze
+  (DD-22 room/item pause); C6.ScopeGroup (Scope/Group
+  integration); C6.Placement (idea/body/both, AUTO/BIND).
+  Grounding prerequisite: locate the real Plane-position mutation
+  authority (SS14.2, DD-50/Map note).
+- Dependencies: existing SandboxGate and Plane sandbox identity;
+  TD-1 binding and TD-2 containment; canonical lifecycle; C11
+  confirmed/unmanifested contract for new placement behavior;
+  Ace's placement design session.
+- Acceptance: owner put/take, multiple boxes, and the standing
+  private box work across reload; per-box interaction never leaks
+  to unrelated boxes or the open field. Lock is isolation, not
+  Pause. Paused items remain visible, retain contents/position,
+  and stop aging/growth/sending/receiving resonance; Resume is
+  the only release and never silently toggles Enhance; room pause
+  and item pause compose under a declared precedence.
+  Replacement retains intended position; child placement respects
+  parents; manual placement cannot be bypassed by a model.
+  Idea-only/body-only/both maintain identity and binding truth.
+- Stop: a named Group treated as automatically a security
+  sandbox, implicit relocation, cross-box activity, orphan
+  binding, new durable state without round-trip/refusal proof.
+
+C7 SELF-REPORT & QUANTITATIVE CONTRACTS
+- Slices: C7.Schema (DD-29 baseline); C7.Profile (DD-39);
+  C7.Tokens (DD-30 token accounting + shorthand SS12.87a);
+  C7.MeasureFamily (DD-46 Measure, DD-47 Threshold, DD-48
+  Weight/Normalize + the incorporation sweep). C5 owns search;
+  C7 supplies its numeric signals.
+- Dependencies: declared subsystem inventory; existing status,
+  predicate, token, and definition authorities. Existing numeric
+  facts may be exposed BEFORE the new resonance model; new
+  semantic weights wait for their owner design. Provider
+  accounting binds to the actual provider/model, never a guessed
+  tokenizer.
+- Acceptance: Schema distinguishes exists / connected / available
+  and OFF-by-design / degraded / unknown; probes are read-only or
+  isolated — testing health never mutates user work or silently
+  contacts a provider. Profile measures named stages with
+  monotonic timing, environment/workload identity, overhead
+  disclosed; real observations vs deliberate benchmarks distinct;
+  repeat benchmarks use disposable state. Measure names property,
+  scope, units, source, freshness; unknown / non-numeric /
+  nonfinite properties REFUSE instead of returning Count.
+  Threshold retains signed (value - threshold) plus the requested
+  comparison operator and verdict; nonnumeric predicates invent
+  no numeric margins. Weight distinguishes manual vs calculated
+  values, method/version, normalized basis; every quantity keeps
+  unit, source, timestamp/revision, scope, and method — seconds,
+  tokens, distance, and confidence are never silently summed; a
+  weight or persona role NEVER grants permission. Incorporation
+  proceeds subsystem by subsystem with evidence (forces,
+  perspectives, personas, provider data only where real
+  quantities exist). Tokens/shorthand: Mandell atoms, LatinMandell,
+  glyph representations, each internal tokenizer, and provider
+  tokens are labeled SEPARATELY; credential "tokens" never enter
+  this inventory; the Mandellmoji namespace/number collision is
+  resolved against the active registry BEFORE glyph execution is
+  enabled; Alias/Define/Compose remain the word authority (no
+  parser bypass, cycles, or lost operand roles); longhand vs
+  shorthand compared on canonical semantics and real token counts
+  per system (compression does not imply provider savings);
+  Compose's existing define-run side effects preserved until
+  explicitly redesigned — parsing/inspection must not
+  accidentally run a definition. External dependency/model
+  details are revalidated when implementation begins; DIR-PLAN-E2
+  endorses no dated provider specifications.
+- Stop: blanket VALID with unexamined systems, inferred
+  benchmarks, fabricated token counts, mixed-unit scores, role
+  metadata granting authority, "universal" coverage without a
+  finite audited inventory.
+
+
+C8 DOCK & PSALMS
+- Slices: C8.Roster (DD-37 complete roster + compact history);
+  C8.EmbedBind (embedding provider binding); C8.Resident
+  (resident Psalm, SS12.20); C8.MultiPsalm (multi-Psalm/BIMO
+  execution design).
+- Dependencies: existing dock sessions/provenance; G-12 sanitized
+  session response view; C5 governs proposal output. Ace's
+  multi-Psalm / resident / provider choices gate those slices —
+  NOT the independent roster repair.
+- Acceptance: every live dock appears, including >10 sessions,
+  with actual task/activity and honest unknown status; all
+  session identities remain reachable in compact sorted history
+  (compaction is not counted eviction); the separately bounded
+  proposal-detail contract is preserved unless explicitly
+  changed; no raw responses or prompt text persisted merely to
+  satisfy "complete"; restart never resurrects a dead session as
+  live; multiple offline sessions are distinguished from multiple
+  live providers. EmbedBind reports provider/model/vector-space
+  identity (a vector database is not an embedding model).
+  Resident behavior has visible start/stop, bounded work, and
+  proposal-only output; presence grants no authority. Persona
+  execution needs actual instance semantics and Ace-approved
+  roles; BIMO metadata alone is not execution.
+- Stop: hidden live sessions, omitted historical identities,
+  raw-response retention introduced by implication, pretend
+  embedding availability, unattended authority inferred from
+  "resident."
+
+C9 TRANSLATE
+- Slices: C9.NoIntent (DD-35 honest no-intent); C9.DualMode
+  (DD-36 dual-mode / Adapt incorporation).
+- Dependencies: Ace's "not yet" remains in force for Adapt. When
+  Ace calls it: verify compatibility and required attribution
+  (Adapt, Mycroft AI team, Apache 2.0); use the canonical
+  intent/parser/executor and the existing dock proposal boundary.
+- Acceptance: recognized commands preserve all operands and
+  canonical meaning; unknown text produces no invented Show seed;
+  receipts name deterministic vs docked engine and confidence
+  where meaningful; deterministic parsing handles its declared
+  language subset; model-assisted translation remains proposed
+  work until authorized; the docked AI can invoke Translate as a
+  tool without an uncontrolled Translate<->dock loop; negation,
+  ambiguity, compound commands, and unsupported input are tested;
+  no library choice silently widens execution authority.
+- Stop: fabricated intent, altered labels, execution during
+  explanation, implementing the deferred adoption before Ace
+  calls it. A narrow DD-35 fix may be separately scoped without
+  deciding the whole new translator.
+
+C10 HARMONIC PLANE
+- Slices: C10.Stamp (DD-24 item-attached harmonic stamps);
+  C10.Lenses (harmony organization/retrieval + derived lens
+  modes).
+- Dependencies: Ace's note/harmony design session; existing
+  harmonic lattice and harmony authorities; C7 numeric
+  interfaces; H presentation. The established distinctions among
+  positional notes, coherence, and relatedness are not replaced.
+- Acceptance: the item carries its own stamp/provenance in stable
+  order (two stamps within one second remain ordered); moving an
+  item does not silently change its attached note merely because
+  the lattice address changed; stamps round-trip; relevance /
+  harmony / gravity views rearrange DISPLAY only and leaving a
+  view restores exact canonical placements/data; explicit user
+  moves are separately recorded; retrieval by harmonic relation
+  is testable against the chosen model.
+- Stop: content-note derivation invented without Ace, overwriting
+  prior stamps, lens writes to canonical state, musical labels
+  presented as evidence of semantic truth.
+
+C11 IDEA EDITING, SHELF & MANIFEST
+- Slices: C11.Shelf (DD-38 private notebook); C11.Edit (DD-41
+  contained-part drafts + edit proposals); C11.Manifest (DD-40
+  confirmation/manifestation split); C11.Move (DD-50 universal
+  Move as a governed adapter family).
+- Dependencies: TD-1/TD-2; C4 references; C3 Diff/history; C13
+  preview; C5 Nursery; C6 placement/isolation. Splitting the
+  current atomic confirmation transition is a lifecycle /
+  persistence DESIGN REVIEW, not a cosmetic new verb. The
+  historical DD-41 "confirm makes real" is reconciled with
+  DD-40's later separated manifestation step inside that design.
+- Acceptance: drafts are independent from live originals; inward
+  scope cannot widen beyond addressed contents; edited parts
+  preserve stable identities and provenance. Change proposals
+  carry target revision, before/after/diff, and impact coverage;
+  stale or double confirmation refuses. Confirmed-but-
+  unmanifested is explicit, durable, and recoverable; retry
+  produces one result; crash states converge lawfully. Nothing
+  auto-grows a confirmed idea through unspecified steps merely to
+  satisfy the word "Manifest." A docked AI CALCULATES consequences
+  and authors proposals (Ace's correction, SS12.44 — the "AI merely
+  packages user edits" framing is superseded); AI re-examination
+  produces further PENDING proposals only. Named macros retain
+  intended arguments and targets without inheriting hidden
+  trailing labels. C11.Move dispatches by explicit object class
+  to EXISTING engines, preserves identity, refuses ambiguity /
+  occupied-target collisions unless a separately authorized
+  overwrite contract exists; Psalms and their bodies are never
+  freight; an AI move is pending until Ace confirms; moving a
+  proposal cannot bypass lifecycle authority. Delete removes
+  active access and never destroys the history/complete record
+  (Ace's delete law).
+- Stop: draft mutations leaking, silently superseding before
+  approval, duplicated manifested objects, moving an AI/persona
+  as an object, replacing domain engines with one generic
+  mutation bypass.
+
+C12 BRIDGE
+- Slices: C12.Ledger (all-bridges read ledger); C12.ExchangeDoor
+  (local Exchange export/import front door); C12.RoomBridge
+  (room-to-room preview/transfer, only after room semantics are
+  settled in C3).
+- Dependencies: existing Exchange preflight/journal; C3
+  comparison; C13 rehearsal; C4 references; DD-53 rooms; C2
+  supplies the calculated-vs-observed interaction terminology.
+  Online/shared-matrix work remains DEFERRED (Ace: "way way
+  later," after everything in this plan).
+- Acceptance: preview reports actual reach, affected IDs, and
+  unexamined effects before transfer; the accepted payload binds
+  to that preview (source identities/revisions, intended targets,
+  limits, policy — revalidated before effects; stale proposals
+  refuse or require a new preview; no silent preview drift,
+  double application, guessed targets, or repeated live-provider
+  calls disguised as identical replay). Imports stay PENDING
+  under the receiver's authority and preserve provenance;
+  corrupt / foreign / duplicate / replayed packets and
+  interrupted imports have honest outcomes. The ledger reports
+  dock/Exchange facts without taking over their management and
+  stores no raw secrets. Room bridges never claim staged
+  isolation while underlying writes are live.
+- Stop: second import authority, direct auto-incorporation,
+  invented peer connectivity, preview drift, a read ledger
+  secretly becoming a manager.
+
+C13 SIMULATE
+- Slices: C13.Inventory (explicit effect inventory); C13.Executor
+  (isolated executor adapter); C13.DryRun (supported dry-run
+  commands/chains — a bounded supported subset FIRST, not all
+  future domains); C13.ParallelPreview (later, per-arm preview).
+- Dependencies: canonical parser/executor and outcomes; isolated
+  state capture; C3 scoped comparison. Public receipts name
+  unsupported domains.
+- Acceptance: the actual supported command executes against an
+  isolated copy; per-atom outcomes and scoped diffs returned; ALL
+  effects discarded. Original memory, durable files, history,
+  Nursery, graph, other owners, and relevant external effects are
+  compared before/after. Tests include failed commands,
+  save/delete/bridge/provider operations, nested control flow,
+  and a deliberately live-write mutant. External-effect commands
+  are simulated through explicit adapters or REFUSED before
+  dispatch — a network call followed by Revert is not a
+  simulation. Preview time/randomness/provider output is frozen
+  or reported nondeterministic; reproducibility is never guessed.
+  Parallel simulation shows each arm and its conflicts, never one
+  blended answer.
+- Stop: any live write, history append, uncontrolled external
+  call, or a claim to simulate a domain with no isolation
+  adapter.
+
+H HUMAN SURFACE (cross-cutting track; separately authorized —
+this candidate starts no UI build)
+- Scope: Nursery cards and owner-chosen / custom / AI-proposed
+  shapes; Plane ROOM/SKY with glide/zoom; the five
+  context-preserving pages including the Psalm Matrix; personal
+  identity page; AGE surfacing; animated face (Dell 05); Show;
+  navigation research; Ace's live-use acceptance. The deferred
+  neural slot is preserved without inventing its design.
+- Dependencies: canonical object IDs and truthful payloads from
+  the delivering C slice; existing Nursery, BIMO, and persona
+  machinery; Ace's named design sessions precede those designs;
+  navigation placement is researched during its delivery slice.
+  Existing live docking evidence does not substitute for Ace's
+  personal acceptance.
+- Acceptance: the user can see what a proposal changes, inspect
+  its source/limits, confirm/reject, and return to the same idea
+  across pages; unavailable and pending states are visible; deep
+  nesting stays navigable; pages and lists are reachable without
+  memorizing IDs; view motion never relocates data; shapes are
+  presentation, never implicit permission. Real UI routes plus
+  keyboard/touch use and legibility are tested; Ace performs the
+  agreed tasks; success criteria are defined BEFORE the trial.
+- Stop: fabricated live users/state, polished cards hiding
+  missing functionality, a prototype reported as completed human
+  acceptance.
+
+
+### 14.4 SEQUENCING
+
+One active implementation circuit and one visible next target at
+a time. Completed G-11 / G-12 / DD-31 work is not restarted
+because the plan mentions it; their scoped certificates do not
+automatically close an original-72 row; the DD-31 flicker is a
+separately tracked reliability question.
+
+Step 0: this candidate -> reconciliation and adoption (SS13.7
+step 5). Parallel Director decision, separately presented: the
+#345 / DD-31 flicker package (SS14.5) — #345 stays parked until
+the Director rules.
+
+NEXT SINGLE CIRCUIT: C1.Loop — DD-14 completion (already in
+flight; finishing it precedes any new slice, per completion-first).
+- Requirement/source anchor: DD-14 (tour Dell 13): Loop's chained
+  body did not repeat; the receipt claimed repetitions that never
+  ran. Existing authority: chain_exec execute_range + Until/While
+  bound machinery. Candidate: branch uni/dd14-loop-body @ 7dc9ef0
+  (execute_range treats Dell 13 as a repetition head; leaf count
+  grammar clamped 1..5; stop on first body failure).
+- Evidence so far: failing-first suite 6/11 -> 11/11 after repair;
+  defect-restoring mutant killed (5/11), reverted by inverse
+  edit; neighbours green; regression leg 1 (fwd) TERMINAL GREEN on
+  the unchanged candidate.
+- Remaining acceptance proof: regression legs 2 (--twice) and 3
+  (--order rev) terminal on the SAME unchanged candidate; one
+  circuit PR (code + suite + Director report + register);
+  exact-head terminal CI; SS32-equivalent freshness in wake mode
+  = Ace-relayed instruction freshness (email is frozen; no email
+  claim is made); main-session merge; fresh-clone verification.
+- Stop condition: any source change to the candidate invalidates
+  ALL legs (they share one tree) and restarts the evidence; any
+  false-success or missing-atom result in the suite stops the
+  circuit for re-grounding. DD-44's contract change is NOT part
+  of this circuit.
+
+Recommended order after C1.Loop and the flicker disposition:
+independent C1 receipt/predicate fixes (C1.PulseReceipt,
+C1.Predicate) -> C8.Roster (bounded DD-37 slice) -> C3.Diff Rings
+1+2 -> C7.Schema read-only baseline -> C13 bounded dry-run slice
+-> C5 ranking/search and C4 reference slices -> remaining
+dependency-ready work. Selection rule for every next slice:
+(1) proven harm / authority risk, (2) which named completion
+criterion it closes, (3) prerequisites already satisfied,
+(4) bounded verification cost. Original-72 vs extension benefit
+is shown separately; a trivial extension fix is never preferred
+merely to inflate a count, and an original-72 item is never
+preferred while a reproduced destructive defect runs. A newly
+reproduced data-integrity defect may take priority, with the
+displaced circuit recorded.
+
+False-dependency cuts (waiting is not required): Schema may
+report existing numeric facts before universal weighting; search
+can browse stable IDs before semantic ranking; bounded reference
+reads need not wait for resonance/export; Simulate can cover a
+declared subset before Parallel; Macro drafts can precede the
+full Manifest redesign without changing promotion semantics.
+Unimplemented coverage stays explicit wherever a cut is taken.
+
+Standing dispositions unchanged: #294 / #233 / #308 keep their
+holds; DAF-09 and whole-program certification remain withheld;
+Adapt, online/shared matrix, and the neural item remain deferred;
+V-13 neural deferred per Ace; completed Ace choices (lenses-only
+motion, linear redo with Fallback back-trail, disappearing
+Ace-closed Try rooms, ranking formula weights/caps) are recorded
+decisions and are NOT re-asked.
+
+### 14.5 ACCEPTANCE PACKET AND EVIDENCE ECONOMY
+
+Every slice carries one compact card:
+ID | requirement/source anchor | existing authority |
+prerequisites | exact change | acceptance/negative cases |
+evidence tier | source SHA | result | remaining gap |
+stop condition | objective/defect links.
+
+One change PR per slice carrying code, tests, and necessary
+report/register updates; documentation reconciliation rides when
+safe; no evidence-only PR unless it supplies a named missing
+acceptance item. Existing valid proof is linked, not rerun for
+ceremony. Established tier requirements, exact-head terminal
+required CI, and main-session merge ownership stand. Behavioral
+work retains failing-first proof, genuine execution-path
+assertions, a defect-restoring mutant, appropriate regression,
+and exact-head receipts; stateful work adds the fresh-process
+persistence / crash / rollback and compatibility evidence its
+scope requires. Local report-supported results are distinguished
+from independently checked results. A green rerun neither deletes
+an initial failure nor explains its cause.
+
+DD-31 FLICKER PACKAGE (for the Director's separate ruling; this
+candidate issues no exception): every failure and rerun indexed
+by head, workflow/job/attempt, execution ref, environment, test
+name, assertion, output, and exit status; first-attempt
+transcripts retained; all local attempts counted (CI: attempt-1
+failures on PR #344, PR #345, and merged-main at 7aad191 — always
+dd31 pass 2, 20/21; every rerun green; local: isolated 6x2 green,
+full-list twice-mode on the exact #345 tree green both passes,
+one invalid hunt discarded and rerun corrected); whether the
+exact same source executed is stated per run; the smallest
+changed environment/order/state condition is contrasted; the
+relationship to #345 is stated (none in code — the red check is
+the dd31 suite on a tree whose change is DD-45's). Mechanism
+remains UNKNOWN unless evidence identifies it. Any exception
+must name the exact check/head and residual risk.
+
+### 14.6 PAIRWISE LEDGER V3 PROTOCOL
+
+Ledger v2 stands as a FROZEN BASELINE (9,900 ordered pairs + 100
+standalone; 1,989 functional / 6,375 functional-independent /
+1,528 intended clashes / 8 unique / 0 defects, checksum-verified
+in director-reports/evidence/step13/). It is not a certificate
+for current code or newly ruled semantics.
+
+For v3: define the changed/re-ruled set S from source diffs and
+semantic dependencies, including shared parser, predicate,
+lifecycle, and executor changes. Run every ordered pair with at
+least one endpoint in S, plus affected identity (standalone)
+cases and shared-consumer closure. With 100 Dells and k = |S|
+affected endpoints, the off-diagonal pair count is
+100x99 - (100-k)x(99-k); identity cases are counted separately.
+A shared-authority change may make k = 100; no artificially small
+delta is forced. Freeze the classification rubric and the source
+SHA before running. Tour-era classes are versioned and their
+meanings mapped to v2 BEFORE labels are compared — a changed
+label may mean a changed rubric, not a new product defect.
+Expected intentional refusals are preserved. Add real-entry-path
+compositions and representative three-or-more-atom chains for
+changed control flow: pairwise tests alone do not establish
+arbitrary composition. Unaffected v2 entries are reported as
+inherited historical evidence, never freshly verified. A full
+current-standard pairwise certificate additionally requires proof
+that the retained portion's dependencies and semantics are
+unchanged.
+
+### 14.7 RECORD DECISIONS (Director F-items) AND OPEN QUESTIONS
+
+- F1/F4 IDs and register home: DD IDs preserved as defect/design
+  references; C1–C13 preserved as families; mapping to existing
+  objective rows WITHOUT renumbering the original 72. New
+  extension objectives need distinct IDs checked against the
+  current register; no duplicate closure credit.
+- F2 TD-2 certification: UNKNOWN (SS14.2). "Built" is not a
+  ruling; the scoped ruling and exclusions get linked when they
+  exist.
+- F3 stale status rows: folded into the next normal update; each
+  status carries source/head/date and retains its exclusions.
+- F5 resonance question: Q-72-40.2 cross-referenced into C2; not
+  closed by cross-reference.
+- F6 Q-SNAP.3: a separate launch/signal-hardening proposal if
+  still desired; no G-11 or DAF-09 certification inference. (The
+  mechanism is already recorded as an operational law in the
+  workspace notes; a product change remains proposal-only.)
+- F7 cluster batching: clusters are phased dependency families;
+  one bounded circuit per independently testable change; a shared
+  failure mechanism may justify a multi-Dell repair.
+- F8–F12 Ace choices: FRESH policy (Q-N3), remaining design
+  sessions, Embed selection, Distill mode, and human trials
+  remain explicit Ace decisions — recorded once when made, never
+  repeatedly requested.
+- Preserved contracts (not silently "fixed"): Sequence/Parallel
+  stated semantics, All-empty vacuous truth, Infer confidence
+  handling, cause-edge projection — open questions stay open.
+  Guard/Catch wording is a separate bounded hygiene opportunity.
+- Preserved Ace boundaries: Delete/history, room closure by Ace,
+  the undo window — retention and overlapping-room mechanics are
+  settled before implementation; no automatic erasure and no
+  fabricated unlimited retention.
+
+Design sessions owed (Ace's format; gate their clusters):
+resonance + growth + temperature (C2); placement + Create modes
+(C6); note/harmony (C10); multi-Psalm coordination and resident
+Psalm (C8, SS12.36e); universal measurement family is folded into
+C7 cards with Ace's Dell 71–75 chain (Measure -> Weight ->
+Threshold -> Limit -> Normalize -> Schema) as its source anchor;
+Show, Dell 05 face, AGE surfacing, 01/02 personal page feed the
+H track.
+
+### 14.8 DISPOSITION OF DIR-PLAN-E2 AMENDMENTS
+
+INCORPORATED (as written): SS1 canonical structure (all five
+points, including the H track and the Pass A/B historical
+headings applied in place); the Pass A -> Pass B crosswalk
+(SS14.1); every SS2 engineering correction (Try/Revert guarantee
+rejected; addressable-room mechanics as design prerequisite;
+one coordinated history contract with bounded navigable undo vs
+durable evidence; Diff/Trace/history lifetimes separated;
+preview-to-execution binding and revalidation; one owner per
+semantic domain with adapters; weight unit/provenance discipline
+and no authority from weights; DD-44 named limit domains;
+DD-45 renamed chain parse-refusal fail-open; claim discipline);
+the SS2 record corrections (Diff slice count as an open
+verification item; DD-50 grounding prerequisite in C6; DD-43
+Mirror wording; writer-ledger qualification); SS3 circuit
+contracts for C1–C13 and H (condensed into SS14.3 cards); SS4
+sequencing, selection rule, priority override, and
+false-dependency cuts; SS5 acceptance packet and the flicker
+package specification; SS6 pairwise v3 protocol including the
+pair-count formula; SS7 F-item decisions; SS8 coverage map
+(accepted as the Director's review-coverage record).
+
+REFINED (with reasons):
+- R1 Next single circuit named as C1.Loop completion rather than
+  a fresh C1 slice. Reason: DD-14 is mid-circuit on a frozen
+  candidate (7dc9ef0) with leg 1 terminal green; opening a
+  different slice first would strand a nearly closed circuit,
+  against completion-first. The Director's own SS4 orders DD-14's
+  remaining evidence before the recommended sequence; SS14.4
+  names it as the circuit and carries its card.
+- R2 DD-45 recorded in C1 as a DELIVERED CANDIDATE PARKED in
+  PR #345, not a to-build slice. Reason: repository reality —
+  the repair exists at 5fa4d5f with failing-first 99/113 ->
+  113/113 evidence; its only remaining step is the Director's
+  flicker disposition.
+- R3 Pass A/B headings annotated IN PLACE (historical prefix;
+  original words retained inside the heading line) rather than
+  sections relocated. Reason: preserves line-level history and
+  every existing numeric cross-reference into SS13.
+- R4 SS14.3 cards condense the Director's SS3 acceptance prose
+  into the SS14.5 card fields (dependencies / acceptance / stop).
+  Reason: his own SS5 packet format; no acceptance content is
+  dropped, and the full prose remains authoritative in
+  DIR-PLAN-E2 as relayed and will ride the adoption record.
+
+UNRESOLVED (carried as open, with owners):
+- Q-N3 FRESH half-life (all corpora vs per-corpus) — Ace.
+- Embed provider selection (Gemini embedding vs local Ollama
+  candidates) — Ace.
+- Distill deterministic condensation vs model proposal — Ace.
+- TD-2 certification — UNKNOWN; no scoped ruling receipt linked.
+- Diff slice count (14 stated vs 15 listed) — verified from the
+  schema at the C3 circuit SHA.
+- History retention/compaction contract — C3 design prerequisite.
+- Overlapping-room write ownership and targeted revert — C3
+  design prerequisite.
+- Undo window vs Fallback back-trail coexistence — C3 design
+  prerequisite.
+- Resonance / growth / temperature model — Ace design sessions
+  gate C2.
+
+Candidate produced by Uni, 2026-11-09, in wake mode. Returned
+through Ace for reconciliation and adoption under SS13.7.
+Not adopted, not a certification, no counter moved.
