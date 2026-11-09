@@ -85,6 +85,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 import math
 import time
 import uuid
@@ -108,6 +109,7 @@ _MAX_QUEUE = 64
 _MAX_RECEIPTS = 500
 _MAX_SNAPSHOT_IDEAS = 200
 _MAX_SNAPSHOT_UNITS = 200
+_MAX_RETRIEVE_IDS = 16
 _MAX_AUDIT_RECORDS = 500
 
 # Envelope content bounds (AMEND §2): strict, explicit.
@@ -683,6 +685,80 @@ class HostCoordinator:
 
     # -- snapshots (bounded, detached) ------------------------------------
 
+    @staticmethod
+    def _idea_entry(pid: Any, prop: Any) -> Dict[str, Any]:
+        return {
+            "pid": str(pid)[:_MAX_TARGET],
+            "label": str(getattr(prop, "label", "") or "")[:_MAX_STR_LEN],
+            "words": str(getattr(prop, "words", "") or "")[:_MAX_STR_LEN],
+            "status": str(getattr(prop, "status", "") or "")[:64],
+            "revision_number": int(getattr(prop, "revision_number", 1) or 1),
+            # SD-2 (master plan P5): the canonical snapshot carries
+            # authored content so a docked semantic judge can see
+            # what an entry actually says, not only its label.
+            # Same bounds + the same outward sanitization below.
+            "detail": str(getattr(prop, "detail", "") or "")[:_MAX_STR_LEN],
+            "goals": [str(g)[:128] for g in
+                      (getattr(prop, "goals", None) or [])[:8]
+                      if isinstance(g, str)],
+        }
+
+    @staticmethod
+    def _unit_entry(uid: Any, u: Any) -> Dict[str, Any]:
+        return {
+            "uid": str(uid)[:_MAX_TARGET],
+            "label": str(getattr(u, "label", "") or "")[:_MAX_STR_LEN],
+            "words": str(getattr(u, "words", "") or "")[:_MAX_STR_LEN],
+            "x": getattr(u, "x", 0),
+            "y": getattr(u, "y", 0),
+            # SD-2: authored content, as for proposals above.
+            "detail": str(getattr(u, "detail", "") or "")[:_MAX_STR_LEN],
+            "goals": [str(g)[:128] for g in
+                      (getattr(u, "goals", None) or [])[:8]
+                      if isinstance(g, str)],
+        }
+
+    def _plane_units(self) -> Dict[str, Any]:
+        plane = getattr(getattr(self._program, "cube", None),
+                        "session", None)
+        plane = getattr(plane, "plane", None) if plane is not None else None
+        if plane is None:
+            return {}
+        return getattr(plane, "units", {}) or {}
+
+    def _source_identity(self, proposals: Dict[str, Any],
+                         units: Dict[str, Any]) -> str:
+        """Trustworthy cross-process source identity (Q-SC.3 as
+        amended): a deterministic digest over the relevant source
+        content + lifecycle of BOTH collections, in collection
+        order. Identical state yields the identical identity in any
+        process and across restarts; any relevant mutation (content,
+        status, revision, membership) changes it. Deliberately NOT
+        a runtime counter."""
+        rows: List[Any] = []
+        for pid, prop in proposals.items():
+            rows.append(["idea", str(pid),
+                         str(getattr(prop, "label", "") or ""),
+                         str(getattr(prop, "words", "") or ""),
+                         str(getattr(prop, "detail", "") or ""),
+                         str(getattr(prop, "status", "") or ""),
+                         int(getattr(prop, "revision_number", 1) or 1),
+                         [str(g) for g in
+                          (getattr(prop, "goals", None) or [])
+                          if isinstance(g, str)]])
+        for uid, u in units.items():
+            rows.append(["unit", str(uid),
+                         str(getattr(u, "label", "") or ""),
+                         str(getattr(u, "words", "") or ""),
+                         str(getattr(u, "detail", "") or ""),
+                         getattr(u, "x", 0), getattr(u, "y", 0),
+                         [str(g) for g in
+                          (getattr(u, "goals", None) or [])
+                          if isinstance(g, str)]])
+        blob = json.dumps(rows, sort_keys=True, default=str,
+                          ensure_ascii=True).encode("utf-8")
+        return hashlib.sha256(blob).hexdigest()
+
     def snapshot_for(self, subject: str) -> Dict[str, Any]:
         """Return a bounded DETACHED sanitized snapshot for an agent.
 
@@ -691,55 +767,40 @@ class HostCoordinator:
         string copies; sanitization never modifies canonical Idea content.
         If sanitization is unavailable, fail closed (raise) rather than
         return unscreened content.
+
+        Q-SC.3: the snapshot also carries a truthful "coverage" block
+        (separate totals per collection, returned counts, truncation)
+        and a "source_identity" digest of the FULL collections, so a
+        caller can tell the slice is partial and can name entries
+        beyond it for retrieve_for.
         """
         _validate_subject(subject)
         if subject not in self._agents:
             raise CoordinatorError(f"unknown agent subject: {subject}")
         program = self._program
-        ideas: List[Dict[str, Any]] = []
         nursery = getattr(program, "nursery", None)
         proposals = getattr(nursery, "proposals", None) or {}
-        for pid, prop in list(proposals.items())[:_MAX_SNAPSHOT_IDEAS]:
-            label = str(getattr(prop, "label", "") or "")[:_MAX_STR_LEN]
-            words = str(getattr(prop, "words", "") or "")[:_MAX_STR_LEN]
-            ideas.append({
-                "pid": str(pid)[:_MAX_TARGET],
-                "label": label,
-                "words": words,
-                "status": str(getattr(prop, "status", "") or "")[:64],
-                "revision_number": int(getattr(prop, "revision_number", 1) or 1),
-                # SD-2 (master plan P5): the canonical snapshot carries
-                # authored content so a docked semantic judge can see
-                # what an entry actually says, not only its label.
-                # Same bounds + the same outward sanitization below.
-                "detail": str(getattr(prop, "detail", "") or "")[:_MAX_STR_LEN],
-                "goals": [str(g)[:128] for g in
-                          (getattr(prop, "goals", None) or [])[:8]
-                          if isinstance(g, str)],
-            })
-        units: List[Dict[str, Any]] = []
-        plane = getattr(getattr(program, "cube", None), "session", None)
-        plane = getattr(plane, "plane", None) if plane is not None else None
-        if plane is not None:
-            for uid, u in list(getattr(plane, "units", {}).items())[:_MAX_SNAPSHOT_UNITS]:
-                units.append({
-                    "uid": str(uid)[:_MAX_TARGET],
-                    "label": str(getattr(u, "label", "") or "")[:_MAX_STR_LEN],
-                    "words": str(getattr(u, "words", "") or "")[:_MAX_STR_LEN],
-                    "x": getattr(u, "x", 0),
-                    "y": getattr(u, "y", 0),
-                    # SD-2: authored content, as for proposals above.
-                    "detail": str(getattr(u, "detail", "") or "")[:_MAX_STR_LEN],
-                    "goals": [str(g)[:128] for g in
-                              (getattr(u, "goals", None) or [])[:8]
-                              if isinstance(g, str)],
-                })
+        ideas = [self._idea_entry(pid, prop) for pid, prop in
+                 list(proposals.items())[:_MAX_SNAPSHOT_IDEAS]]
+        all_units = self._plane_units()
+        units = [self._unit_entry(uid, u) for uid, u in
+                 list(all_units.items())[:_MAX_SNAPSHOT_UNITS]]
         snap = {
             "subject": subject,
             "owner": self._owner,
             "ideas": ideas,
             "units": units,
             "detached": True,
+            "coverage": {
+                "ideas_total": len(proposals),
+                "ideas_returned": len(ideas),
+                "units_total": len(all_units),
+                "units_returned": len(units),
+                "truncated": (len(proposals) > len(ideas)
+                              or len(all_units) > len(units)),
+            },
+            "source_identity": self._source_identity(proposals,
+                                                     all_units),
         }
         try:
             return _sanitize_outward(self._program, snap)
@@ -751,6 +812,59 @@ class HostCoordinator:
             # mechanism, not the exception message. Suppress chaining.
             raise CoordinatorError(
                 "snapshot unavailable: output sanitization failed"
+            ) from None
+
+    def retrieve_for(self, subject: str,
+                     ids: Any) -> Dict[str, Any]:
+        """Retrieve caller-named entries by stable id (Q-SC.3).
+
+        Bounded retrieval reachability: at most _MAX_RETRIEVE_IDS
+        caller-named ids per round (more is a hard CoordinatorError
+        with NO partial result); duplicate ids dedupe to one entry.
+        Unknown ids and other owners' ids return in "absent", never
+        as data. Entries carry the same fields and bounds as snapshot
+        entries plus "source": "retrieved", and pass through the
+        SAME _sanitize_outward fail-closed path as snapshot_for.
+        Subject authorization is identical to snapshot_for.
+        """
+        _validate_subject(subject)
+        if subject not in self._agents:
+            raise CoordinatorError(f"unknown agent subject: {subject}")
+        if not isinstance(ids, (list, tuple)) \
+                or any(not isinstance(i, str) or not i for i in ids):
+            raise CoordinatorError(
+                "retrieve_for needs a list of non-empty id strings")
+        if len(ids) > _MAX_RETRIEVE_IDS:
+            raise CoordinatorError(
+                f"retrieve_for bound exceeded: at most "
+                f"{_MAX_RETRIEVE_IDS} ids per round")
+        program = self._program
+        nursery = getattr(program, "nursery", None)
+        proposals = getattr(nursery, "proposals", None) or {}
+        all_units = self._plane_units()
+        entries: List[Dict[str, Any]] = []
+        absent: List[str] = []
+        seen = set()
+        for rid in ids:
+            if rid in seen:
+                continue
+            seen.add(rid)
+            entry = None
+            if rid in proposals:
+                entry = self._idea_entry(rid, proposals[rid])
+            elif rid in all_units:
+                entry = self._unit_entry(rid, all_units[rid])
+            if entry is None:
+                absent.append(rid)
+            else:
+                entry["source"] = "retrieved"
+                entries.append(entry)
+        out = {"entries": entries, "absent": absent}
+        try:
+            return _sanitize_outward(self._program, out)
+        except EnvelopeValidationError:
+            raise CoordinatorError(
+                "retrieval unavailable: output sanitization failed"
             ) from None
 
     # -- enqueue -----------------------------------------------------------
