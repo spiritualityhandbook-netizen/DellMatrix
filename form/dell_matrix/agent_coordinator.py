@@ -819,12 +819,18 @@ class HostCoordinator:
         """Retrieve caller-named entries by stable id (Q-SC.3).
 
         Bounded retrieval reachability: at most _MAX_RETRIEVE_IDS
-        caller-named ids per round (more is a hard CoordinatorError
-        with NO partial result); duplicate ids dedupe to one entry.
-        Unknown ids and other owners' ids return in "absent", never
-        as data. Entries carry the same fields and bounds as snapshot
-        entries plus "source": "retrieved", and pass through the
-        SAME _sanitize_outward fail-closed path as snapshot_for.
+        DISTINCT caller-named ids per round (more is a hard
+        CoordinatorError with NO partial result); duplicate ids
+        dedupe to one entry BEFORE the bound is counted
+        (Q-SNAP.1 follow-up, QSNAP1-3). Each id is itself bounded
+        to _MAX_TARGET chars — the same bound entry ids carry —
+        and an over-length id is refused with a fixed
+        non-reflecting error, so no result or error text can echo
+        unbounded caller input. Unknown ids and other owners' ids
+        return in "absent", never as data. Entries carry the same
+        fields and bounds as snapshot entries plus
+        "source": "retrieved", and pass through the SAME
+        _sanitize_outward fail-closed path as snapshot_for.
         Subject authorization is identical to snapshot_for.
         """
         _validate_subject(subject)
@@ -834,7 +840,11 @@ class HostCoordinator:
                 or any(not isinstance(i, str) or not i for i in ids):
             raise CoordinatorError(
                 "retrieve_for needs a list of non-empty id strings")
-        if len(ids) > _MAX_RETRIEVE_IDS:
+        if any(len(i) > _MAX_TARGET for i in ids):
+            raise CoordinatorError(
+                "retrieve_for id exceeds maximum length")
+        distinct = list(dict.fromkeys(ids))
+        if len(distinct) > _MAX_RETRIEVE_IDS:
             raise CoordinatorError(
                 f"retrieve_for bound exceeded: at most "
                 f"{_MAX_RETRIEVE_IDS} ids per round")
@@ -844,11 +854,7 @@ class HostCoordinator:
         all_units = self._plane_units()
         entries: List[Dict[str, Any]] = []
         absent: List[str] = []
-        seen = set()
-        for rid in ids:
-            if rid in seen:
-                continue
-            seen.add(rid)
+        for rid in distinct:
             entry = None
             if rid in proposals:
                 entry = self._idea_entry(rid, proposals[rid])
