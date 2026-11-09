@@ -322,6 +322,7 @@ LIST = [
     "form.dd18_pulse_receipt_test:smoke",
     "form.regress_capture_test:smoke",
     "form.dd14_loop_body_test:smoke",
+    "form.dd45_chain_parse_refusal_test:smoke",
     "form.step4_operand_transport_test:smoke",
     "form.step5_exchange_boundary_test:smoke",
     "form.step5b_exchange_durability_test:smoke",
