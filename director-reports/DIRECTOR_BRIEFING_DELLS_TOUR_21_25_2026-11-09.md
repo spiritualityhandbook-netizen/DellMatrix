@@ -66,3 +66,32 @@ circuit through Director routing. Strict remains 19/72.
 - Q-DT.2: sequencing within the Dells series relative to
   Proposal B and DD-14 — Uni's proposal above, or the Director's
   order?
+
+## Addendum (same session, later): §12.11–§12.13 — Temp ruling, Checkpoint, and the rollback/save contract
+
+Appended to this PR before merge, per Ace's stop-and-record
+instruction. New plan material riding this same publication:
+
+- §12.11 + §12.11a — 26 Temp (verified: a 3-mode switch on the
+  EnhanceGate; DD-19 silent warm-coercion of unknown labels) and
+  ACE'S RULING: Temperature is a GRADED intensity dial (cold =
+  least, warm = moderate, hot = intense) meant to operate across
+  MANY systems, not only Pulse; full design parked by Ace for
+  later work with the resonance design session.
+- §12.12 — 27 Checkpoint (verified: honest receipt, label names
+  the generation, four sealed members, chained generations; the
+  standing gap — no history member — is the Dell-20 Alpha
+  directive's build, confirmed from this side).
+- §12.13 — 28 Rollback examined via Ace's question and VERIFIED
+  LIVE through the human path (bare Dell denied zero-mutation;
+  restore-confirm sealed a compensating checkpoint, restored,
+  fresh-process converged). It closes with an ACCEPTANCE
+  REQUIREMENT in Ace's own direction: the rollback/save
+  combination is a standing contract — (a) no regression of the
+  current combination; (b) the history-carrying generation ships
+  only with live human-path proof that pre-history four-member
+  generations still freeze/confirm/restore; (c) any change to
+  either side re-runs the compatibility proof before merge.
+
+- Q-DT.3: confirm the §12.13 acceptance requirement as binding
+  on the Alpha checkpoint circuit's contract.

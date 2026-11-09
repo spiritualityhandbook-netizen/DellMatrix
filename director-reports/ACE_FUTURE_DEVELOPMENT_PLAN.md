@@ -632,3 +632,135 @@ internally). These last two are Ace's standing Dell-16 directions
 (targeted/changeable pulse; resonance VISIBLE inside an idea),
 filed for the sit-down design session; DD-18 is the bounded
 receipt-honesty repair, routed like DD-14.
+
+## 12.11 TOUR CONTINUED — 26 TEMP (Ace session, 2026-11-09)
+
+Verified live at main 7e4f6d3 (in-process executor probes, owner
+TOUR26A). Implementation: executor_leaf.py (26 arm) -> Program
+enhance_on/enhance_off/pulse — the SAME EnhanceGate as 25 Pulse.
+
+**26 Temp — verified behavior.** There is no temperature: no
+degrees, no scale, no per-idea quantity. Temp is a three-mode
+switch for the enhance gate — cold/cool -> enhance OFF ("Temp ->
+cold (enhance OFF)"); hot/heat -> enhance ON + one pulse ("Temp ->
+hot (enhance ON + pulse)", and the pulse genuinely runs, since hot
+opens the gate first; scores moved live); bare Temp and EVERY
+other label -> warm ("Temp -> warm (enhance ON)"). Receipts for
+the three modes are honest (state claims verified in-process).
+The EnhanceGate therefore has three Dell-level remotes so far:
+Pulse's smuggled "on" label (25), Temp (26), and Pause/Resume
+(32/33, per the gate's own docstring).
+
+**Finding DD-19 (observed).** ANY unrecognized label — a typo, a
+unit's name, gibberish — silently resolves to warm and turns the
+enhance engine ON (live: "Temp :: banana" -> enhance ON). Silent
+coercion of unknown input into a state-changing default, the same
+failure class the Director has had refused elsewhere (unknown
+should refuse or hold, not silently switch a global engine on).
+Secondary naming note, same family as DD-17: "Temp" promises a
+temperature; the mechanism is a discrete mode switch. Rulings are
+Ace's: refuse unknown labels (honest receipt), and whether a real
+temperature (a graded quantity that modulates pulse strength)
+should exist as part of the resonance design session's work.
+
+### 12.11a ACE RULING on Temp (same session, minutes later — DD-19 becomes RULED)
+
+Ace rejected the switch reading: Temperature is meant to be a
+GRADED intensity dial sorting things into three categories —
+cold = least, warm = moderate, hot = intense (he corrected
+himself mid-sentence to exactly this ordering). And its reach is
+wider than Pulse: "temperature is supposed to operate with a lot
+of things not just the pulse." Parked by Ace for later work
+("we're going to have to do some more work on that one. Later.")
+— the full design (which systems temperature modulates, and how
+the three grades map to magnitudes) belongs with the resonance
+sit-down design session, not a unilateral build. Carried from
+DD-19 unchanged: unknown labels must refuse, never silently warm.
+
+## 12.12 TOUR CONTINUED — 27 CHECKPOINT (Ace session, 2026-11-09)
+
+Verified live at main 7e4f6d3 (REPL owner TOUR27A + on-disk
+inspection). Implementation: core_i_ops.py (27 arm) ->
+core_i_recovery.checkpoint -> Checkpoint Generation V1.
+
+**27 Checkpoint — verified behavior.** The Dell works, and its
+receipt is honest: "Checkpoint written: generation <id>", with a
+failure path that reports "Checkpoint fail: ..." and ok=False.
+Bare use mints a hash-derived id (live: ge26172d083d4443d); a
+label becomes the generation's name (live: "Checkpoint :: before
+the storm" -> generation before_the_storm). Each sealed
+generation carries four members — nursery, program, ideas, graph
+— hash-verified by the machinery (the path that passed every
+72-28 crash test with no hybrid), a committed flag, and
+previous_generation_id, so generations form a chain of moments.
+Rollback exists only authority-mediated at 28 (bare seed denied,
+zero mutation; human two-step or a granted endpoint) — card-
+verified here, examined at 28's own stop.
+
+**The standing gap, confirmed from this side.** The manifest has
+NO history member: a checkpoint seals WHAT the state is, not HOW
+it was reached — no receipts, no sequence, no story. This is the
+same gap Ace's Dell-20 (Alpha) directive already owns: closing
+must save the record of EVERYTHING (how things happened, the
+current state, and how the state was reached from beginning to
+end). 27 proves the machinery that directive builds on is real
+and Dell-wired (Alpha's card-only close is not); the history
+member remains the build, in the gated bucket with the rest of
+the persistence path. No new defect filed. Also noted: no Dell
+lists existing checkpoints or peeks inside one — the owner gets
+an id on a receipt and nothing to browse; that browsing surface
+belongs with the field-reachability direction and the room/sky
+display work.
+
+## 12.13 TOUR CONTINUED — 28 ROLLBACK, EXAMINED VIA ACE'S QUESTION (2026-11-09)
+
+Ace's question: does rollback work properly with the current
+save, and will it work with the revitalized (planned) version?
+Examined live at main 7e4f6d3 (REPL owner TOUR28A, the real human
+path, plus fresh-process verification).
+
+**Current save: YES, verified end-to-end.** Bare 28[Rollback]
+DENIED with zero mutation (acceptance_policy_denied — no issued
+approval for producer 'dell28'). Bare "restore" freezes and
+DESCRIBES the target, never executes. "restore confirm first"
+executed: it first sealed a COMPENSATING checkpoint of the
+pre-rollback state (pre_rollback_first_20261109T1308), then
+restored generation "first" — the live Plane lost the unit
+created after that checkpoint, and a FRESH PROCESS load showed
+the same converged state (eager convergence; the current pointer
+names the compensating generation, chain unbroken). Consistent
+with 72-33 (lineage survives reload and crash rollback).
+
+**The planned revitalized checkpoint (the Dell-20 Alpha build:
+a history member inside the sealed generation).** Rollback reads
+sealed generations, not the everyday save pair, so the Q1
+load-time-convergence repair neither affects nor is needed by
+rollback. The history member rides inside the same envelope as a
+fifth member beside nursery/program/ideas/graph, and a restore
+carries the target generation's members with it — by design a
+history-carrying generation restores its story with its state.
+OWED BY THE BUILD, NOT CLAIMED TODAY: proof that pre-history
+generations (four members) still freeze, confirm, and restore
+under the new code (the fail-closed load law — one proven
+complete old-or-new generation — applied to the member set), and
+that a rollback to a pre-history generation behaves honestly
+about the absent story. These become acceptance checks in the
+Alpha checkpoint circuit's contract.
+
+**ACCEPTANCE REQUIREMENT — the rollback/save combination (Ace,
+2026-11-09, stated as a stop-and-record instruction).** The
+rollback + checkpoint combination verified above is a standing
+contract, not an observation: (a) the current combination (sealed
+four-member generations + authority-mediated rollback + eager
+convergence + compensating checkpoint) must not regress; (b) the
+planned history-carrying generation ships ONLY when the build
+proves, with live evidence through the human path, that
+pre-history four-member generations still freeze, confirm, and
+restore under the new code, and that rollback to a pre-history
+generation behaves honestly about the absent story; (c) any
+future change to either side of the combination (save format or
+rollback mechanism) re-runs this compatibility proof before it
+may merge. Ace directed that this requirement sit in the plan
+where the Director reads it; it binds the Alpha checkpoint
+circuit's contract.
+
