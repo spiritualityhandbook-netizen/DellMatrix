@@ -1083,7 +1083,18 @@ class DockedSession:
         """Revalidate retrieved entries against live state before
         incorporation (Q-SC.3): a target deleted, lifecycle-changed
         or content-changed since retrieval refuses the verb rather
-        than landing on stale data."""
+        than landing on stale data.
+
+        Q-SNAP.1 follow-up (QSNAP1-1): the compared field set is the
+        FULL semantically relevant set, consistent with the field
+        choices of the canonical _source_identity in
+        agent_coordinator: ideas carry status/label/words/detail/
+        revision_number/goals; units carry label/words/detail/
+        goals/x/y. Comparing the union is exact for both kinds —
+        a field a kind does not carry is absent (None) on both
+        sides of the comparison. A goals edit on either collection
+        or a unit coordinate move in the retrieval window is
+        therefore stale, exactly like a label or status change."""
         if not retrieved:
             return True
         fn = getattr(coord, "retrieve_for", None)
@@ -1105,7 +1116,7 @@ class DockedSession:
             if cur is None:
                 return False
             for f in ("status", "label", "words", "detail",
-                      "revision_number"):
+                      "revision_number", "goals", "x", "y"):
                 if old.get(f) != cur.get(f):
                     return False
         return True
@@ -1284,11 +1295,20 @@ class DockedSession:
             if isinstance(e, dict) and e.get("pid"):
                 index[str(e["pid"])] = e
         entry = index.get(target)
+        pre_retrieved: Dict[str, Any] = {}
         if entry is None:
             # Q-SC.3: ONE retrieval round for the caller-named target
             # beyond the snapshot slice. Candidates below stay
             # snapshot-bounded (recorded v1 limit).
             entry = self._retrieve_into_index(coord, index, target)
+            if entry is not None:
+                # Q-SNAP.1 follow-up (QSNAP1-2): relate_field's own
+                # retrieved target is handed to _verb explicitly so
+                # the shared _revalidate_retrieved boundary checks
+                # THIS retrieval (full field set) before
+                # incorporation — not merely whatever _verb happens
+                # to retrieve again on its own round.
+                pre_retrieved[str(target)] = entry
         if entry is None:
             return {"ok": False, "reason": "unknown_target",
                     "detail": "Target is not in the field snapshot."}
@@ -1331,10 +1351,11 @@ class DockedSession:
             "positives and why."
             + self._SCHEMA_TAIL)
         return self._verb("relate_field", [target] + candidates,
-                          instruction, reason=reason)
+                          instruction, reason=reason,
+                          pre_retrieved=pre_retrieved)
 
     def _verb(self, verb, targets, instruction, *, concern="",
-              reason=None) -> Dict[str, Any]:
+              reason=None, pre_retrieved=None) -> Dict[str, Any]:
         """Shared verb path: snapshot -> resolve targets -> prompt
         -> screens -> provider -> semantic schema -> PENDING land."""
         if not self._docked:
@@ -1367,6 +1388,12 @@ class DockedSession:
         # Q-SC.3: ONE retrieval round for caller-named targets
         # beyond the snapshot slice, before declaring any unknown.
         retrieved = self._retrieve_missing(coord, index, targets)
+        if pre_retrieved:
+            # QSNAP1-2: entries a caller path (relate_field) already
+            # retrieved join the revalidation set under the same
+            # shared boundary; this round's fresher copy wins.
+            for _k, _v in pre_retrieved.items():
+                retrieved.setdefault(_k, _v)
         entries = []
         for t in targets:
             e = index.get(t)
