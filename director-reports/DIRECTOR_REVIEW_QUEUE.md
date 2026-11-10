@@ -12,15 +12,19 @@ SUSX100,000 state file. Uni updates heads in place as lanes land.
 | Item | Ask | Head | Asked |
 |---|---|---|---|
 | PR #345 — DD-45 execute_chain refuses failed seeds | Refreshed disposition (flicker closure changes the basis; PR #361 merged c13de21) | 5fa4d5f | 2026-11-10, comment 6777027932 |
-| PR #350 — DD-31 diagnostic capture | Renewed merge ruling at post-rebase head (prior conditional authorization named superseded head 7cdb880 and does not carry) | b6b0307cac2467d09e6466065c1b2281f990a2e0 | rebased 2026-11-10; request posted |
-| PR #360 — DD-44 loop bounds (Q-DD44.1) | Refreshed disposition at post-rebase head | 0773d1346475760fad0c455ae0ddf8f49a26ad34 | rebased 2026-11-10; request posted |
-| PR #348 — DD-14 / C1.Loop | Refreshed disposition after regression legs 2–3 complete (current: review PASS + MERGE HOLD) | 813b2aa | legs running 2026-11-10 |
+| PR #350 — DD-31 diagnostic capture | Renewed merge ruling at post-rebase head (prior conditional authorization named superseded head 7cdb880 and does not carry). Exact-head CI TERMINAL PASS; disposition package posted (comment 6777942929) | b6b0307cac2467d09e6466065c1b2281f990a2e0 | package posted 2026-11-10 ~14:05 CST |
+| PR #360 — DD-44 loop bounds (Q-DD44.1) | Refreshed disposition at post-rebase head. Keeper scoped CONFIRM on record (main 0815c82, Q-DD44.1 accepted); exact-head CI TERMINAL PASS; Director recheck package posted per MODE D delta list (comment 6777942005) | 0773d1346475760fad0c455ae0ddf8f49a26ad34 | package posted 2026-11-10 ~14:05 CST |
+| PR #348 — DD-14 / C1.Loop | Refreshed disposition after regression legs 2–3 on the REBASED head. First legs run at 813b2aa: leg 3 (rev) GREEN; leg 2 (--twice) RED isolated to the pre-#361 dd31 suite (proven DD31-CI mechanism, fixed on main by #361; log preserved). Branch rebased onto current main (DD-14 suite 11/11 on the rebased tree); legs 2–3 RERUNNING at the new head | d1ae66d | rebased + legs rerunning 2026-11-10 ~14:10 CST |
 
 ## Final-check queue (hourly final check, WORKFLOW v1 §4)
 
 Merged 2026-11-10, final-check PENDING: PR #361, #362, #363, #365,
-#366. Joining on merge: PR #367 (smoke pending at publication),
-PRs #351–#356 and #364 (records batch, runner active).
+#366, #367 (merged 70a478e; Director scoped certification + Keeper
+record-truth CONFIRM on record; Director MODE D delta acknowledged
+the merge and ordered merged-main receipts published), #364
+(merged 318736014). Records batch remainder: PRs #351–#356 rebased
+2026-11-10 (981f5ed / 3e122bc / 7308f9b / 1dfa964 / 7bd483b /
+4b886ad), exact-head CI running; each joins this queue on merge.
 
 ## Standing decisions owed
 
@@ -41,3 +45,18 @@ PRs #351–#356 and #364 (records batch, runner active).
 - Q-DD42.1: DD-42 second-authority certification trailing.
 - DD-18: Keeper second certification trailing (Keeper lane;
   listed here for completeness of the shared record).
+
+## Ace rulings recorded 2026-11-10 (full texts ride the next records PR)
+
+- EPISTEMIC DOCTRINE: Mandell is a checkable chain-of-thought
+  visibility layer, NOT a source of truth; truth is the checkable,
+  predictable, understandable, reasonable, explainable — mathematics,
+  logic, and what can be confirmed. Mandell itself falls under that
+  law and can be wrong. UNKNOWN is acceptable and never stops
+  progress. Working test: can we use it, calculate it, see or
+  experience it, is it present in reality or in nature — then create.
+  Time is not a factor of progress; the plan (§14) and real
+  capability movement govern.
+- BILINGUAL MANDELL: chains shown to Ace carry the English gloss per
+  step; ordering per Director refinement: Mandell first, English
+  second, evidence and ruling last.
