@@ -102,29 +102,49 @@ def smoke() -> bool:
         check('P2b post-rollback nursery mutation + save', rc == 0, out[-300:])
 
         # ---- P3 (fresh process, API): reload -> sealed generation intact?
+        # Q-DD31F.2 (sibling of DD31-CI-INTERMITTENT, proven 2026-11-10):
+        # this driver previously globbed 'checkpoint_manifest*.json' over
+        # the WHOLE shared state dir with no owner filter and sha-verified
+        # every member of every manifest it found, so a FOREIGN suite's
+        # manifest whose members were later cleaned up crashed the driver
+        # (open() of a missing member) and flipped the sealed_intact check
+        # (clean 13/13 vs planted-foreign-manifest 12/13). The check's true
+        # subject is THIS suite's own owner's sealed generations: scope
+        # the scan to this owner's generation namespace
+        # (gen_<owner_ns>_*.json, the current checkpoint_generation
+        # manifest naming) and require at least one own manifest, so the
+        # check can neither be tripped by foreign residue nor pass
+        # vacuously over an empty set.
         code = (
             "import sys, hashlib, json, glob, os; sys.path.insert(0, %r)\n"
             "from form.mandell import checkpoint_generation as CG\n"
             "from form import persist_rest\n"
             "from form.dell_matrix.nursery import owner_nursery_path\n"
-            "p, rc = CG.load_checkpoint(%r, activate=False)\n"
-            "q = persist_rest.load(%r)\n"
+            "owner = %r\n"
+            "p, rc = CG.load_checkpoint(owner, activate=False)\n"
+            "q = persist_rest.load(owner)\n"
             "units = sorted(str(u) for u in p.cube.session.plane.units)\n"
             "print('units=' + ','.join(units))\n"
             "lunits = sorted(str(u) for u in q.cube.session.plane.units)\n"
             "print('live_units=' + ','.join(lunits))\n"
-            "state_dir = os.path.dirname(owner_nursery_path(%r))\n"
+            "state_dir = os.path.dirname(owner_nursery_path(owner))\n"
+            "ns = CG._owner_ns(owner)\n"
             "bad = []\n"
-            "for mf in glob.glob(os.path.join(state_dir, 'checkpoint_manifest*.json')):\n"
+            "manifests = sorted(glob.glob(os.path.join(state_dir, 'gen_' + ns + '_*.json')))\n"
+            "if not manifests:\n"
+            "    bad.append(('no_own_manifest', ns))\n"
+            "for mf in manifests:\n"
             "    man = json.load(open(mf))\n"
-            "    for gid, gen in man.get('generations', {}).items():\n"
-            "        for member, sha in gen.get('members', {}).items():\n"
-            "            b = open(member, 'rb').read()\n"
-            "            if hashlib.sha256(b).hexdigest() != sha:\n"
-            "                bad.append((gid, member))\n"
+            "    if man.get('owner') != owner:\n"
+            "        bad.append((mf, 'owner_mismatch'))\n"
+            "        continue\n"
+            "    for kind, spec in man.get('members', {}).items():\n"
+            "        b = open(os.path.join(state_dir, spec['file']), 'rb').read()\n"
+            "        if hashlib.sha256(b).hexdigest() != spec['sha256']:\n"
+            "            bad.append((man.get('generation_id'), spec['file']))\n"
             "print('sealed_intact=' + str(not bad))\n"
             "if bad: print('BAD=' + str(bad))\n"
-        ) % (REPO, OWNER, OWNER, OWNER)
+        ) % (REPO, OWNER)
         rc, out = _run_py(code)
         check('P3 checkpoint generation holds P1 idea', 'proofidea' in out, out[-300:])
         m = re.search(r'live_units=([a-z,]+)', out)
