@@ -23,18 +23,21 @@ Data: director-reports/master_work_list_items.json
 
 ## The count
 
-**PROGRESS: 25 / 182 COMPLETE = 13.7%**
+**PROGRESS: 25 / 179 COMPLETE = 14.0%**
 
 | Status | Items |
 |---|---|
 | COMPLETE | 25 |
-| MERGED_UNVERIFIED | 3 |
-| BUILT_HELD | 3 |
-| PARTIAL | 56 |
-| OPEN | 86 |
+| MERGED_UNVERIFIED | 4 |
+| BUILT_HELD | 2 |
+| PARTIAL | 57 |
+| OPEN | 88 |
 | GATED | 3 |
-| NEEDS_OVERSEER | 6 |
-| **TOTAL** | **182** |
+| NEEDS_OVERSEER | 0 |
+| **TOTAL (active)** | **179** |
+
+Outside active scope: 3 SANDBOXED items (parked by Ace,
+listed in their own block below; not counted in the total or the %).
 
 Continuity with the retired frame (different denominator, not a
 regression): on the 72 register rows alone, strict completion is
@@ -46,14 +49,14 @@ parked items the 72 frame never counted.
 
 | # | Item | Source IDs | Status |
 |---|---|---|---|
-| 1 | Loop chained-body repetition repair (PR #348; rebased d1ae66d; regression legs 2-3 rerunning; Director HOLD until legs + terminal CI green) | DD-14 / C1.Loop | BUILT_HELD |
-| 2 | Loop bounds must be explicit — no silent 8 (PR #360 @ 0773d13; Director SCOPED_CODE_PASS + conditional merge authorization; Keeper CONFIRM on record; local full regression running) | DD-44 / C1.Bounds / Q-DD44.1 | MERGED_UNVERIFIED |
-| 3 | Chain parse-refusal must fail closed, zero execution / zero mutation (PR #345 @ 5fa4d5f; CI green; queued for Director patch review) | DD-45 / C1.ParseRefusal | BUILT_HELD |
-| 4 | DD-31 diagnostic capture hardening — failure-only stderr capture in the regress harness (PR #350 @ b6b0307; Director SCOPED_CODE_PASS + conditional authorization; Keeper CONFIRM landed; local regression queued) | PR #350 (DD-31 cascade) | BUILT_HELD |
+| 1 | Loop chained-body repetition repair (PR #348 @ d1ae66d; ALL regression legs TERMINAL GREEN — fwd CI, --twice 266/266, rev 266/266; refreshed disposition package posted 6778799489; Director HOLD pending his disposition) | DD-14 / C1.Loop | BUILT_HELD |
+| 2 | Loop bounds must be explicit — no silent 8 (PR #360 MERGED d58a3d5; Director SCOPED_CODE_PASS + Keeper CONFIRM at head 0773d13; local full regression GREEN at head; post-merge suite 16/16 on merged main; final-check pending) | DD-44 / C1.Bounds / Q-DD44.1 | MERGED_UNVERIFIED |
+| 3 | Chain parse-refusal must fail closed (PR #345; reconciliation COMPLETE: the one mutation is a PP3 unknowns-register entry, proven by dd45_recon_test.py 20/20; corrected claim + guard comment pushed @ 71098a5; hold-lift package posted 6778879305 — Director rules option A corrected-claim vs option B PP3-repeal) | DD-45 / C1.ParseRefusal | BUILT_HELD |
+| 4 | DD-31 diagnostic capture hardening — failure-only stderr capture in the regress harness (PR #350 MERGED e4aad9d; Director SCOPED_CODE_PASS + Keeper CONFIRM at head b6b0307; local full regression GREEN at head (266 suites); no capture files in repo (4 files verified); final-check pending; DD-31 root mechanism remains OPEN per Director) | PR #350 (DD-31 cascade) | MERGED_UNVERIFIED |
 | 5 | DD31-CI-INTERMITTENT root-cause fix — dd31 suite residue check scoped to its own owner (PR #361 merged c13de21; Director + Keeper scoped confirmations; final-check pending) | DD31-CI (extension) | MERGED_UNVERIFIED |
-| 6 | Sibling whole-directory-assertion inventory (hygiene circuit, Director-favored) | Q-DD31F.2 | OPEN |
+| 6 | Sibling whole-directory-assertion inventory (Q-DD31F.2): inventory COMPLETE (267 suites: 1 confirmed sibling p0_integrated_proof, 17 suspect, 248 clean); sibling fix lane running | Q-DD31F.2 | PARTIAL |
 | 7 | WORKFLOW role seeds implementation — 31 seeds landed as PENDING proposals, classified, isolated (PR #367 merged 70a478e; Director scoped certification + Keeper record-truth CONFIRM; final-check pending; the 31 proposals themselves await Ace's sovereign Nursery confirm — see appendix) | ROLE-SEEDS-IMPL / PR #367 | MERGED_UNVERIFIED |
-| 8 | Governance records publication batch (PRs #351–#356 rebased, CI running, merge on terminal; queue PR #368 acknowledged) | Records batch | PARTIAL |
+| 8 | Governance records publication batch (PR #351 MERGED 4b1761d; PRs #352-#356 rebased + union-resolved, MERGEABLE, merging serially as CI lands; queue PR #368 live) | Records batch | PARTIAL |
 
 ## Block B — C1 Chain Truth, remainder and follow-ups
 
@@ -234,13 +237,13 @@ parked items the 72 frame never counted.
 |---|---|---|---|
 | 137 | Zipper — Compress + Expand as one circuit: Compress preserves a resolvable source link; Expand retrieves the full intended source under a declared current-vs-versioned rule | DD-20 / C4.Zipper | OPEN |
 | 138 | Inject by reference + Reference dereferencing — Inject adds a reference, not a duplicate; cycles/missing/foreign/superseded targets resolve honestly; graph refs and Core II aliases reconcile through an adapter | DD-26 / C4.InjectRef | OPEN |
-| 139 | Distill = essence — uses actual words/detail/goals, carries provenance and disclosed omissions, usable without its source (deterministic-vs-model is Ace's open decision) | DD-28 / C4.Distill | OPEN |
+| 139 | Distill = essence — uses actual words/detail/goals, carries provenance and disclosed omissions, usable without its source (mode RESOLVED by Ace 2026-11-10: docked AI distills; undocked deterministic — see item 179) | DD-28 / C4.Distill | OPEN |
 
 ## Block Plan §14.3 — C5 Nursery Door, Ranking & Discovery
 
 | # | Item | Source IDs | Status |
 |---|---|---|---|
-| 140 | Nursery ranking formula — exactly S = 0.40 LINK + 0.25 ACE + 0.20 FRESH + 0.15 NOVEL; top five per topic; pending cap 200; tombstoned evictions; deciding score displayed (machinery exists; FRESH half-life Q-N3 stays explicit and open) | C5.Formula | PARTIAL |
+| 140 | Nursery ranking formula — exactly S = 0.40 LINK + 0.25 ACE + 0.20 FRESH + 0.15 NOVEL; top five per topic; pending cap 200; tombstoned evictions; deciding score displayed (machinery exists; FRESH aging RESOLVED by Ace 2026-11-10: staged 3/7/14-day aging, 30-day fade only under inflow — see item 177) | C5.Formula | PARTIAL |
 | 141 | Switchable Plane ranking — Rank measure is switchable per Ace's ruling (§12.35b) | C5.PlaneRank | OPEN |
 | 142 | One search machinery, two faces — Discover + Resolve: stable ordered pages reach every authorized item, totals/coverage reported, identical labels handled by stable IDs | DD-25 / DD-49 / C5.Search | OPEN |
 | 143 | Nursery door policy — auto-passage stays OFF until Ace supplies standards and scope; Cycle never approves its own proposals; receipts name policy version and authorizing rule | DD-27 / C5.Door | OPEN |
@@ -268,7 +271,7 @@ parked items the 72 frame never counted.
 | # | Item | Source IDs | Status |
 |---|---|---|---|
 | 152 | Dock roster repair — complete roster + compact history: every live dock appears incl. >10 sessions; no live-list cap; session records keep only the last 10 per owner today (the defect); 50 proposals/session bound | DD-37 / C8.Roster | OPEN |
-| 153 | Embedding provider binding — EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider choice is Ace's open decision | C8.EmbedBind | OPEN |
+| 153 | Embedding provider binding — EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider RESOLVED by Ace 2026-11-10: any docked AI, Gemini today — see item 178 | C8.EmbedBind | OPEN |
 | 154 | Resident Psalm — visible start/stop, bounded work, proposal-only output; presence grants no authority (direction recorded §12.20; future build) | C8.Resident | OPEN |
 | 155 | Multi-Psalm / BIMO execution design — persona execution needs actual instance semantics and Ace-approved roles; BIMO metadata alone is not execution (design sit-down owed, §12.36e) | C8.MultiPsalm | OPEN |
 
@@ -333,13 +336,18 @@ parked items the 72 frame never counted.
 |---|---|---|---|
 | 176 | Literal wave-field instrument — INNOVATE_DEFERRED, parked (§14.9): read-only and nonauthoritative if ever built; never feeds resonance scores, Nursery admission, vote weights, or threshold decisions; any semantic path is an Ace-owned architecture decision | Waves study (§14.9) | OPEN |
 
-## Block Needs Overseer — parked on Ace
+## Block Ruled by Ace — decisions of 2026-11-10
 
 | # | Item | Source IDs | Status |
 |---|---|---|---|
-| 177 | Q-N3 — FRESH half-life value for the Nursery ranking formula (formula confirmed; the FRESH decay constant is Ace's) | Q-N3 | NEEDS_OVERSEER |
-| 178 | Embed provider choice (plan §14.8) — Ace's provider selection | Embed provider (§14.8) | NEEDS_OVERSEER |
-| 179 | Distill mode (plan §14.8) — Ace's decision: deterministic recipe vs model proposal | Distill mode (§14.8) | NEEDS_OVERSEER |
-| 180 | NVIDIA Inception — project website: Ace's approval to publish the built website at a public Vercel URL | NVIDIA (website) | NEEDS_OVERSEER |
-| 181 | NVIDIA Inception — incorporation: company name + registered-agent choice (Texas Form 205 filing is Ace's) | NVIDIA (incorporation) | NEEDS_OVERSEER |
-| 182 | Live-model demo step 6 — Ace's own timed trials working the Matrix | Live-model demo step 6 | NEEDS_OVERSEER |
+| 177 | FRESH aging — RULED by Ace 2026-11-10: proposals age at 3/7/14-day marks and fade at 30 days ONLY while new proposals are arriving (a quiet field never expires); implementation rides the C5 ranking circuit | Q-N3 | OPEN |
+| 178 | Embed provider — RULED by Ace 2026-11-10: provider-agnostic dock capability (any docked AI serves as embedder; currently Gemini; a Psalm must be docked); implementation = C8 EmbedBind (item 153) | Embed provider (§14.8) | OPEN |
+| 179 | Distill mode — RULED by Ace 2026-11-10: conditional — a docked AI distills when one is docked, the deterministic recipe when none is (AI-first doctrine) | Distill mode (§14.8) | OPEN |
+
+## Block Sandboxed — parked by Ace (2026-11-10)
+
+| # | Item | Source IDs | Status |
+|---|---|---|---|
+| 180 | NVIDIA Inception website — SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only | NVIDIA (website) | SANDBOXED |
+| 181 | NVIDIA Inception incorporation — SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only | NVIDIA (incorporation) | SANDBOXED |
+| 182 | Live-model demo step 6 — parked by Ace 2026-11-10 until he is at a computer; he will run the timed trials himself; no scheduling | Live-model demo step 6 | SANDBOXED |

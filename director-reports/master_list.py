@@ -30,6 +30,7 @@ STATUSES = [
     "OPEN",
     "GATED",
     "NEEDS_OVERSEER",
+    "SANDBOXED",
 ]
 
 
@@ -53,7 +54,7 @@ def load_and_validate(path):
 
 def summarize(items):
     counts = Counter(i["status"] for i in items)
-    total = len(items)
+    total = sum(1 for i in items if i["status"] != "SANDBOXED")
     complete = counts["COMPLETE"]
     pct = (100.0 * complete / total) if total else 0.0
     return counts, total, complete, pct
@@ -63,8 +64,10 @@ def one_line(items):
     counts, total, complete, pct = summarize(items)
     parts = [f"MWL {complete}/{total} COMPLETE = {pct:.1f}%"]
     for s in STATUSES[1:]:
-        if counts[s]:
+        if s != "SANDBOXED" and counts[s]:
             parts.append(f"{s} {counts[s]}")
+    if counts["SANDBOXED"]:
+        parts.append(f"SANDBOXED {counts['SANDBOXED']} (outside active scope)")
     return " | ".join(parts)
 
 
@@ -101,8 +104,14 @@ def render(items, data_note):
     out.append("| Status | Items |")
     out.append("|---|---|")
     for s in STATUSES:
+        if s == "SANDBOXED":
+            continue
         out.append(f"| {s} | {counts[s]} |")
-    out.append(f"| **TOTAL** | **{total}** |")
+    out.append(f"| **TOTAL (active)** | **{total}** |")
+    if counts["SANDBOXED"]:
+        out.append("")
+        out.append(f"Outside active scope: {counts['SANDBOXED']} SANDBOXED items (parked by Ace,")
+        out.append("listed in their own block below; not counted in the total or the %).")
     out.append("")
     out.append("Continuity with the retired frame (different denominator, not a")
     out.append("regression): on the 72 register rows alone, strict completion is")

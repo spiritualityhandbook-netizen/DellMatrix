@@ -1,7 +1,7 @@
 [
  {
   "n": 1,
-  "title": "Loop chained-body repetition repair (PR #348; rebased d1ae66d; leg 2 --twice TERMINAL GREEN at rebased head; leg 3 rev running; Director HOLD until terminal leg receipts + exact-head CI)",
+  "title": "Loop chained-body repetition repair (PR #348 @ d1ae66d; ALL regression legs TERMINAL GREEN \u2014 fwd CI, --twice 266/266, rev 266/266; refreshed disposition package posted 6778799489; Director HOLD pending his disposition)",
   "ids": "DD-14 / C1.Loop",
   "status": "BUILT_HELD",
   "block": "A \u2014 Front line (in flight now)"
@@ -15,7 +15,7 @@
  },
  {
   "n": 3,
-  "title": "Chain parse-refusal must fail closed, zero execution / zero mutation (PR #345 @ 5fa4d5f; CI green; queued for Director patch review)",
+  "title": "Chain parse-refusal must fail closed (PR #345; reconciliation COMPLETE: the one mutation is a PP3 unknowns-register entry, proven by dd45_recon_test.py 20/20; corrected claim + guard comment pushed @ 71098a5; hold-lift package posted 6778879305 \u2014 Director rules option A corrected-claim vs option B PP3-repeal)",
   "ids": "DD-45 / C1.ParseRefusal",
   "status": "BUILT_HELD",
   "block": "A \u2014 Front line (in flight now)"
@@ -36,9 +36,9 @@
  },
  {
   "n": 6,
-  "title": "Sibling whole-directory-assertion inventory (hygiene circuit, Director-favored)",
+  "title": "Sibling whole-directory-assertion inventory (Q-DD31F.2): inventory COMPLETE (267 suites: 1 confirmed sibling p0_integrated_proof, 17 suspect, 248 clean); sibling fix lane running",
   "ids": "Q-DD31F.2",
-  "status": "OPEN",
+  "status": "PARTIAL",
   "block": "A \u2014 Front line (in flight now)"
  },
  {
@@ -50,7 +50,7 @@
  },
  {
   "n": 8,
-  "title": "Governance records publication batch (PRs #351\u2013#356 rebased, CI running, merge on terminal; queue PR #368 acknowledged)",
+  "title": "Governance records publication batch (PR #351 MERGED 4b1761d; PRs #352-#356 rebased + union-resolved, MERGEABLE, merging serially as CI lands; queue PR #368 live)",
   "ids": "Records batch",
   "status": "PARTIAL",
   "block": "A \u2014 Front line (in flight now)"
@@ -967,14 +967,14 @@
  },
  {
   "n": 139,
-  "title": "Distill = essence \u2014 uses actual words/detail/goals, carries provenance and disclosed omissions, usable without its source (deterministic-vs-model is Ace's open decision)",
+  "title": "Distill = essence \u2014 uses actual words/detail/goals, carries provenance and disclosed omissions, usable without its source (mode RESOLVED by Ace 2026-11-10: docked AI distills; undocked deterministic \u2014 see item 179)",
   "ids": "DD-28 / C4.Distill",
   "status": "OPEN",
   "block": "Plan \u00a714.3 \u2014 C4 Reference Family"
  },
  {
   "n": 140,
-  "title": "Nursery ranking formula \u2014 exactly S = 0.40 LINK + 0.25 ACE + 0.20 FRESH + 0.15 NOVEL; top five per topic; pending cap 200; tombstoned evictions; deciding score displayed (machinery exists; FRESH half-life Q-N3 stays explicit and open)",
+  "title": "Nursery ranking formula \u2014 exactly S = 0.40 LINK + 0.25 ACE + 0.20 FRESH + 0.15 NOVEL; top five per topic; pending cap 200; tombstoned evictions; deciding score displayed (machinery exists; FRESH aging RESOLVED by Ace 2026-11-10: staged 3/7/14-day aging, 30-day fade only under inflow \u2014 see item 177)",
   "ids": "C5.Formula",
   "status": "PARTIAL",
   "block": "Plan \u00a714.3 \u2014 C5 Nursery Door, Ranking & Discovery"
@@ -1065,7 +1065,7 @@
  },
  {
   "n": 153,
-  "title": "Embedding provider binding \u2014 EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider choice is Ace's open decision",
+  "title": "Embedding provider binding \u2014 EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider RESOLVED by Ace 2026-11-10: any docked AI, Gemini today \u2014 see item 178",
   "ids": "C8.EmbedBind",
   "status": "OPEN",
   "block": "Plan \u00a714.3 \u2014 C8 Dock & Psalms"
@@ -1233,44 +1233,44 @@
  },
  {
   "n": 177,
-  "title": "Q-N3 \u2014 FRESH half-life value for the Nursery ranking formula (formula confirmed; the FRESH decay constant is Ace's)",
+  "title": "FRESH aging \u2014 RULED by Ace 2026-11-10: proposals age at 3/7/14-day marks and fade at 30 days ONLY while new proposals are arriving (a quiet field never expires); implementation rides the C5 ranking circuit",
   "ids": "Q-N3",
-  "status": "NEEDS_OVERSEER",
-  "block": "Needs Overseer \u2014 parked on Ace"
+  "status": "OPEN",
+  "block": "Ruled by Ace \u2014 decisions of 2026-11-10"
  },
  {
   "n": 178,
-  "title": "Embed provider choice (plan \u00a714.8) \u2014 Ace's provider selection",
+  "title": "Embed provider \u2014 RULED by Ace 2026-11-10: provider-agnostic dock capability (any docked AI serves as embedder; currently Gemini; a Psalm must be docked); implementation = C8 EmbedBind (item 153)",
   "ids": "Embed provider (\u00a714.8)",
-  "status": "NEEDS_OVERSEER",
-  "block": "Needs Overseer \u2014 parked on Ace"
+  "status": "OPEN",
+  "block": "Ruled by Ace \u2014 decisions of 2026-11-10"
  },
  {
   "n": 179,
-  "title": "Distill mode (plan \u00a714.8) \u2014 Ace's decision: deterministic recipe vs model proposal",
+  "title": "Distill mode \u2014 RULED by Ace 2026-11-10: conditional \u2014 a docked AI distills when one is docked, the deterministic recipe when none is (AI-first doctrine)",
   "ids": "Distill mode (\u00a714.8)",
-  "status": "NEEDS_OVERSEER",
-  "block": "Needs Overseer \u2014 parked on Ace"
+  "status": "OPEN",
+  "block": "Ruled by Ace \u2014 decisions of 2026-11-10"
  },
  {
   "n": 180,
-  "title": "NVIDIA Inception \u2014 project website: Ace's approval to publish the built website at a public Vercel URL",
+  "title": "NVIDIA Inception website \u2014 SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only",
   "ids": "NVIDIA (website)",
-  "status": "NEEDS_OVERSEER",
-  "block": "Needs Overseer \u2014 parked on Ace"
+  "status": "SANDBOXED",
+  "block": "Sandboxed \u2014 parked by Ace (2026-11-10)"
  },
  {
   "n": 181,
-  "title": "NVIDIA Inception \u2014 incorporation: company name + registered-agent choice (Texas Form 205 filing is Ace's)",
+  "title": "NVIDIA Inception incorporation \u2014 SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only",
   "ids": "NVIDIA (incorporation)",
-  "status": "NEEDS_OVERSEER",
-  "block": "Needs Overseer \u2014 parked on Ace"
+  "status": "SANDBOXED",
+  "block": "Sandboxed \u2014 parked by Ace (2026-11-10)"
  },
  {
   "n": 182,
-  "title": "Live-model demo step 6 \u2014 Ace's own timed trials working the Matrix",
+  "title": "Live-model demo step 6 \u2014 parked by Ace 2026-11-10 until he is at a computer; he will run the timed trials himself; no scheduling",
   "ids": "Live-model demo step 6",
-  "status": "NEEDS_OVERSEER",
-  "block": "Needs Overseer \u2014 parked on Ace"
+  "status": "SANDBOXED",
+  "block": "Sandboxed \u2014 parked by Ace (2026-11-10)"
  }
 ]
