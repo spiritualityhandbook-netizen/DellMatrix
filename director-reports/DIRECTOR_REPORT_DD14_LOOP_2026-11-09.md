@@ -62,3 +62,14 @@ fully-green run on this candidate (its only red is the flicker).
 Q-DD14.1: scoped closure of DD-14 on this evidence (with the
 --twice caveat recorded), or is a fully-green --twice leg required
 first (which couples this closure to the DD-31 circuit's outcome)?
+
+## Rebase note (2026-11-09, post-review)
+After the Director's scoped code review PASS at head b18c063
+(ruling 2026-11-09 19:42 CST; MERGE HOLD — respected, no merge
+attempted), main advanced via PR #347 and this branch was rebased
+onto 7780dff. The ONLY conflict was director-reports/INDEX.md,
+resolved as a union of both rows. The three code files are
+byte-identical to the reviewed head (0-line diff b18c063 -> current
+head, verified) and to the regression-tested code; the dd14 suite
+was re-run on the rebased tree (11/11). Exact-head CI re-runs at
+the new head; the documented --twice caveat is unchanged.
