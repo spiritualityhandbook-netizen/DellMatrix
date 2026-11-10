@@ -15,7 +15,7 @@ field and every atom classified by what the program actually did:
   (a grammar/authority boundary: prose conditions, prose targets,
   invalid loop counts, and the like).
 
-| Seed | atoms | REAL | DESCRIPTIVE | REFUSED | chain ok |
+| Seed | atoms | EXECUTED_OK | DESCRIPTIVE | REFUSED | chain ok |
 |---|---|---|---|---|---|
 | ACE_OVERSEER_FULL (master) | 38 | 13 | 24 | 1 | no |
 | DIRECTOR_HOURLY_FULL (master) | 32 | 7 | 25 | 0 | YES |
@@ -50,11 +50,11 @@ field and every atom classified by what the program actually did:
 | INTERLOCK_MAP (interlock) | 10 | 8 | 0 | 2 | no |
 | **TOTAL** | **272** | **158** | **82** | **32** | — |
 
-Full per-atom detail is retained in the goal workspace
-(`hidden_files/impl_roles_evidence.json` +
-`hidden_files/impl_roles_classification.json`).
+Full per-atom detail is published in this PR
+(`WORKFLOW_ROLE_SEEDS_RUNTIME_CLASSIFICATION.json`, relabeled per
+§2 of the evidence addendum) and retained in the goal workspace.
 
-## Authority isolation — PROVEN by the runs themselves
+## Authority isolation — supported by before/after snapshots (evidence addendum §3)
 
 The directive's safety boundary states that a written Guard, Commit,
 or Merge atom cannot independently grant permissions. The execution
@@ -64,16 +64,18 @@ masters, 92[Guard], 91[Assert] throughout) were processed as ordinary
 atoms — several DESCRIPTIVE, several REFUSED — and conferred nothing.
 Across all 31 executions: no Nursery proposal was confirmed, no merge
 occurred, no permission changed, no state outside the dedicated
-WFROLES1 field was touched. WORKFLOW v1 authority remained controlling
+WFROLES1 field was touched — the snapshot form of this evidence
+(hash-compared before/after, confirmed 0 -> 0) is in the evidence
+addendum, §3. WORKFLOW v1 authority remained controlling
 throughout; the seeds operated strictly inside it.
 
 ## Reading of the result
 
-The seeds are semantic scores written in Mandell. In the program,
-roughly two atoms in five perform a real operation, about a third are
-descriptive (they carry meaning for a reader — human or docked AI —
-without a mechanical binding), and the rest meet an honest refusal at
-a named boundary. That is the truthful runtime classification the
+The seeds are semantic scores written in Mandell. Run 1, exactly:
+EXECUTED_OK 58.1% (158/272), DESCRIPTIVE 30.1% (82/272), REFUSED
+11.8% (32/272). The descriptive atoms carry meaning for a reader —
+human or docked AI — without a mechanical binding; the refused atoms
+meet an honest refusal at a named boundary. That is the truthful runtime classification the
 directive required: the Mandell is real, its executable subset is
 proven, and its descriptive subset is not pretending to be machinery.
 
@@ -84,25 +86,30 @@ verification required before certification), Uni re-executed all 31
 seeds in a fresh load of WFROLES1 and published the full per-atom
 data in this PR (`WORKFLOW_ROLE_SEEDS_RUNTIME_CLASSIFICATION.json`).
 
-Run 2 totals: **161 REAL / 82 DESCRIPTIVE / 29 REFUSED** (272).
+Run 2 totals: **161 EXECUTED_OK (59.2%) / 82 DESCRIPTIVE (30.1%) / 29 REFUSED (10.7%)** (272). Reproduction: 269/272 = 98.9%.
 Against run 1 (158 / 82 / 32): **269 of 272 atoms reproduced their
 class exactly**; DESCRIPTIVE is identical (82). Three atoms are
 STATE-SENSITIVE, named here rather than averaged away:
 
 1. `KEEPER_FASTLANE_FULL` atom 11, 89[Diff] — run 1 REFUSED
-   (`baseline_missing`: the field was minutes old, no baseline
-   existed); run 2 REAL (run 1's own checkpoints had created one).
+   (`baseline_missing`); run 2 EXECUTED_OK. Precondition NOT
+   established: the evidence addendum (§1) excludes new-field,
+   checkpoint, save+reload, maturity, label-text, and chain-position
+   conditions, and the run-2 result did not reproduce on re-run.
+   Recorded RUN_CONDITIONAL / PRECONDITION UNKNOWN.
 2. `UNI_FAILURE_PATH` atom 0, 94[Catch] — run 1 REFUSED
-   (`catch_illegal`); run 2 REAL.
+   (`catch_illegal`); run 2 EXECUTED_OK.
 3. `GEMINI_FAILURE_PATH` atom 0, 94[Catch] — same flip.
 
-For the two Catch atoms the process histories differ in exactly the
-relevant way (DERIVED): run 2's process executed the master seeds
-first — several chains failed in-process before the failure-path
-seeds ran — while run 1's classification process ran the failure
-seeds with no preceding in-process failure. Catch legality depending
-on a live caught-failure context is the leading explanation,
-consistent with the error name and the differential; it is labeled
-DERIVED, not proven. Run 1's numbers stand above as the
-implementation record; this run is the reproducibility evidence.
-Certification of either set remains the Director's act.
+CORRECTION (2026-11-10, per the Director's MODE D documentation
+requirement): an earlier version of this section explained the two
+Catch flips with a DERIVED "live caught-failure context" theory.
+That theory was FALSIFIED by the controlled tests in the evidence
+addendum (§1): Catch refuses after in-chain and cross-chain
+failures, and executes only inside an OPEN TRY ROOM (rooms persist
+across chains in a session until closed) — proven by conditions
+A/B/C/D and probes P1/P2/P3 there. The falsified text is removed
+and replaced by this correction; the addendum carries the full
+test record. Run 1's numbers stand above as the implementation
+record; this run is the reproducibility evidence. Certification
+of either set remains the Director's act.
