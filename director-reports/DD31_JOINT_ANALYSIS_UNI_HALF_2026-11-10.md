@@ -150,3 +150,47 @@ keeps firing, H4 strengthens and the hardened capture
 (PR #350) becomes the trap of record. Grok's 30-run mass
 reconstruction remains the fallback. E2 runs on the fast
 lane; both authorities judge the matrix at their cycles.
+
+---
+
+## ADDENDUM B — E2 RESULT (executed 2026-11-10 ~04:10–04:41 CST)
+
+Prefix ladder in ONE shared copy per rung, tree 6b47150,
+two rounds (round 2 interrupted by a VM replacement; the
+durable log preserved round 1 + round-2 rung A; resume
+completed B and C; log: dd31_diag_logs/e2_prefix.log):
+
+- Rung A (suites 1..120, then dd31): 3,544 state files —
+  dd31 GREEN 21/21, both rounds.
+- Rung B (suites 121..240, then dd31): 2,295 state files —
+  GREEN, both rounds.
+- Rung C (FULL prefix 1..240, then dd31): 5,839 state files —
+  GREEN, both rounds. Zero predecessor reds in any rung.
+
+CONCLUSIONS (Uni evidence):
+- H1-cumulative (single-pass accretion) is WEAKENED to near
+  exclusion locally: the complete accretion, byte-count
+  deterministic across rounds (5,839 both times), does not
+  trip dd31 on this machine, twice.
+- E2 models PASS 1 of --twice only. The one local context NOT
+  yet isolated is the PASS-2 context: one copy that already
+  ran all 263 suites once (accretion ~7,891 files) running
+  the prefix again. Local --twice full runs remain uniformly
+  green (6/6 capture-grade + both DD-18 chains), so even that
+  context does not reproduce locally.
+- The local hypothesis space is nearly exhausted. Weight
+  shifts to H4 (CI-environment: shared-runner load, timing in
+  a Program/observer check under contention, runner
+  filesystem behavior). Per S31.3 the discrepancy is NOT
+  resolved — the failing side's environment has not been
+  reproduced — but the discriminating instrument now exists.
+
+PROPOSED CLOSURE PATH for the joint analysis:
+1. Merge PR #350 so the hardened capture is live in CI.
+2. The next CI occurrence of the flicker names its assertion
+   (identifiers + metadata only) — the trap converts the
+   mystery into a targeted defect.
+3. The fix then runs as an ordinary FIX-FIRST circuit.
+Until step 2 fires, DD-31 stays OPEN with mechanism UNKNOWN;
+no further local sampling is proposed — it has stopped
+discriminating.
