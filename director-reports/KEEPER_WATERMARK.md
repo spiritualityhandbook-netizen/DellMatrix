@@ -1,11 +1,11 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-10 ~15:02 CST  
-**UTC approx**: 2026-11-10T21:02:00Z
+**Last cycle**: 2026-11-10 ~16:01 CST  
+**UTC approx**: 2026-11-10T22:01:00Z
 
 ## Items ruled this cycle
-- Prior scoped CONFIRM on PR #360 (DD-44) and PR #350 (DD-31 diagnostic safety) stands. Both merged lawfully post prior watermark. This pass serves as final check on records. Explicit non-coverage: product runtime, Uni executions, circuits outside named records.
-- No other ripe items. Scoreboard 19/72 + FIXED 12 / GATED 3 unchanged. NEEDS_OVERSEER 6 items intact.
+- Prior scoped CONFIRM on PR #360 (DD-44) and PR #350 (DD-31 diagnostic safety) stands. Both merged lawfully prior. This pass serves as final check on records. Explicit non-coverage: product runtime, Uni executions, circuits outside named records.
+- Merges in window (#353, #371, #368) records-only; no new dispositions. Scoreboard 19/72 + FIXED 12 / GATED 3 unchanged. NEEDS_OVERSEER parked list EMPTY (Ace dispositions #371).
 
 ## Silence flag
 true — no new dispositions issued.
