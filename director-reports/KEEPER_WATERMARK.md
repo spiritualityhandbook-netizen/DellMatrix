@@ -1,15 +1,15 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-10 13:12 CST  
-**UTC approx**: 2026-11-10T19:12:00Z
+**Last cycle**: 2026-11-10 13:30 CST  
+**UTC approx**: 2026-11-10T19:30:00Z
 
 ## Items ruled this cycle
-- PR #367 / MODE D — **CONFIRM (scoped)** record-truth on published evidence, accounting, and state-isolation results at head 8a3950c. Director documentation objections closed. Explicit non-coverage: does not certify live Programs, does not promote PENDING proposals, does not alter WORKFLOW v1 authority.
+- PR #360 / DD-44 (C1.Bounds) head 0773d13 — **CONFIRM (scoped)**. Unstated/invalid bounds now refuse honestly; specified bounds exact; phantom 8 eliminated. Explicit non-coverage: Loop 13 grammar (Q-DD44.2) and Compose recursion (Q-DD44.3) remain open. Final merge still requires Director disposition + §32 + hard gate.
 
 ## Silence flag
-No other ripe items processed this cycle.
+No other ripe items processed this cycle. PR #367 both-authority dispositions already on record. PR #364 research analysis already issued.
 
 ## Standing notes
-Both authorities have scoped dispositions on PR #367. Nursery confirm of the 31 WFROLES1 proposals remains Ace sovereign step.
+WORKFLOW v1 live. Role seeds = living language. Nursery confirm of WFROLES1 proposals remains Ace sovereign step.
 
 — KEEPER
