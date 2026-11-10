@@ -16,6 +16,8 @@ SUSX100,000 state file. Uni updates heads in place as lanes land.
 | PR #360 — DD-44 loop bounds (Q-DD44.1) | Refreshed disposition at post-rebase head. Keeper scoped CONFIRM on record (main 0815c82, Q-DD44.1 accepted); exact-head CI TERMINAL PASS; Director recheck package posted per MODE D delta list (comment 6777942005) | 0773d1346475760fad0c455ae0ddf8f49a26ad34 | MERGED d58a3d5 (2026-11-10 ~14:25 CST) — all conditions verified in the merge step; post-merge DD-44 suite 16/16 on merged main. Final-check PENDING. Q-DD44.2/.3 remain separate OPEN follow-ups |
 | PR #348 — DD-14 / C1.Loop | Refreshed disposition after regression legs 2–3 on the REBASED head. First legs run at 813b2aa: leg 3 (rev) GREEN; leg 2 (--twice) RED isolated to the pre-#361 dd31 suite (proven DD31-CI mechanism, fixed on main by #361; log preserved). Branch rebased onto current main (DD-14 suite 11/11 on the rebased tree); legs 2–3 RERUNNING at the new head | d1ae66d | rebased + legs rerunning 2026-11-10 ~14:10 CST. Director recheck (mail 1a1c713671086995): HOLD remains until rebased regression completes successfully + terminal exact-head CI |
 
+| PR #370 — C8.Roster / DD-37 dock_sessions two-tier retention (live uncapped + compact history archive) | NEW BUILD for review: failing-first 3/15 -> 15/15, mutant killed, dock-family suites green; main-session regression legs running at head; siblings + proposals-50 untouched | 2b95d86 | 2026-11-10 (PR body carries the evidence) |
+
 ## Final-check queue (hourly final check, WORKFLOW v1 §4)
 
 Merged 2026-11-10, final-check PENDING: PR #361, #362, #363, #365,
