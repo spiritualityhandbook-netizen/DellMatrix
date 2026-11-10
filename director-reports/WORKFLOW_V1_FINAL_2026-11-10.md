@@ -1,6 +1,6 @@
 # WORKFLOW v1 — FINAL SYNTHESIS
 
-**Status: FINAL SYNTHESIS SUBMITTED FOR VERIFICATION.** Synthesized by
+**Status: ADOPTED — WORKFLOW v1 IS THE OPERATIVE WORKFLOW** (adoption event recorded in SS10; effective 2026-11-10 11:10 CST). Synthesized by
 Uni (step 3 of 3) from: (1) Uni draft + self-analysis (PR #363,
 `WORKFLOW_V1_UNI_DRAFT_AND_SELF_ANALYSIS_2026-11-10.md`); (2) Keeper
 input (`KEEPER_WORKFLOW_INPUT_2026-11-10.md`, commit 9359f60,
@@ -354,35 +354,41 @@ the register and standing instructions within one cycle.
 
 ## 10. Transition checklist [D11] — old workflow → WORKFLOW v1
 
-- [ ] This synthesis published on PR #363 with: Uni draft, Keeper
+- [x] This synthesis published on PR #363 with: Uni draft, Keeper
       input (9359f60), Director verbatim fold (1a1c65f0ec86d2e3).
-- [ ] Director synthesis-check by email: each D-amendment confirmed
+- [x] Director synthesis-check by email: each D-amendment confirmed
       incorporated or exceptioned.
-- [ ] Keeper record-truth confirmation of the fold on GitHub.
-- [ ] Amendment disposition table (§11) reviewed by both authorities.
-- [ ] Cycle instructions re-issued under v1: hourly execution cron,
+- [x] Keeper record-truth confirmation of the fold on GitHub.
+- [x] Amendment disposition table (§11) reviewed by both authorities.
+- [x] Cycle instructions re-issued under v1: hourly execution cron,
       30-min heartbeat, 15-min Keeper-mail fold — owners and prompts
       unchanged in schedule; bodies updated to cite v1 §§.
-- [ ] State file header re-issued under v1 (watermarks carried:
-      DIRECTOR_MAIL_LAST_PROCESSED = 1a1c65f0ec86d2e3;
+- [x] State file header re-issued under v1 (watermarks carried:
+      DIRECTOR_MAIL_LAST_PROCESSED = 1a1c669faa09d8ae (synthesis check, folded via Ace relay 2026-11-10 11:09 CST);
       GROK_MAIL_LAST_PROCESSED = NONE; Keeper watermark file created
       at adoption or first Keeper cycle after).
-- [ ] Parked work carried, not erased: NEEDS_OVERSEER items (Q-N3
+- [x] Parked work carried, not erased: NEEDS_OVERSEER items (Q-N3
       FRESH half-life, Embed provider, Distill mode — Ace; NVIDIA
       website approval, incorporation, demo timed trials — Ace).
-- [ ] Open HOLDs carried, not erased: PR #360 (DD-44, Director HOLDs);
+- [x] Open HOLDs carried, not erased: PR #360 (DD-44, Director HOLDs);
       PR #348 (DD-14) and PR #345 (DD-45) await their own refreshed
       exact-head dispositions; PR #350 awaits its renewed merge ruling
       after rebase onto post-#361 main; PR #363 adoption HOLD (H1)
       until this checklist completes.
-- [ ] Standing fences carried: PR #294 + PR #233 never merge; PR #308
+- [x] Standing fences carried: PR #294 + PR #233 never merge; PR #308
       census-held; DAF-09 + whole-program certification WITHHELD;
       everyday-save repair gated on Q1/C-A; 72-16 R-2 Director-owned;
       Studio LOCAL-ONLY.
-- [ ] **Adoption event**: version WORKFLOW v1 · commit ______ ·
-      effective ______ CST · recorded here and in the state file by
-      Uni; the prior charter (DIR-SLEEP-V3-R2) ends at that timestamp
-      and this document is the operative workflow from that moment.
+- [x] **Adoption event**: version WORKFLOW v1 · text commit
+      1cc193fd6b42d175d149ae01d4973b2a919e0227 (synthesis + SS13
+      prohibitions + S1 correction) · effective 2026-11-10 11:10 CST ·
+      recorded here and in the state file by Uni; the prior charter
+      (DIR-SLEEP-V3-R2) ends at that timestamp and this document is
+      the operative workflow from that moment. (Record note: commit
+      f4411c7 carried the fold correction + NEEDS_OVERSEER mirror;
+      this SS10 completion rides the following commit because a
+      scripting assertion interrupted the first fill — the record is
+      corrected here, not silently.)
 
 ## 11. Amendment disposition table
 
