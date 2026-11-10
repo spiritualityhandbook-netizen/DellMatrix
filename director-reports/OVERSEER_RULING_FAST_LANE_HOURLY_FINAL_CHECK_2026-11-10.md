@@ -46,3 +46,37 @@ agreement."
   check.
 
 — Recorded by Uni from Ace's direct instruction.
+
+## ADDENDUM — EITHER AUTHORITY CERTIFIES; BOTH EVENTUALLY; NOTHING WAITS
+
+Ace / Overseer, 2026-11-10 ~03:46 CST (relayed in chat,
+verbatim): "Grok can certify and so can gpt but they both
+should eventually.. nothing should stop progress no waiting
+on anything to continue work."
+
+1. EITHER authority may certify. A certification by Grok (fast
+   lane) is as effective when given as a certification by the
+   Director (hourly lane), and vice versa.
+2. BOTH should EVENTUALLY certify: the second authority's
+   certification is a trailing obligation, tracked on a
+   pending-second-certification list in the SUSX state file
+   and cleared as it lands. It is never awaited.
+3. NOTHING WAITS: no work item stalls pending a second
+   certification, a trailing review, or any agreement step.
+   Progress continues on the first effective certification
+   (plus the hard gate and S32 where they apply).
+4. A trailing disagreement is handled like an hourly-check
+   disagreement: it binds from the moment it is issued, the
+   item freezes, and correction runs through the normal
+   circuit path on the complete decision trail.
+5. HOLD / CORRECTION_REQUIRED / INSUFFICIENT_EVIDENCE remain
+   stop orders, not certifications: they bind instantly
+   whenever either authority issues one. A conditional hold
+   discharges when an authority certifies its stated condition
+   is met.
+6. First applications: C1.PulseReceipt / DD-18 closes on the
+   first certification (the other recorded as trailing);
+   PR #350's Q-DD31-D1 conditional hold is dischargeable by
+   Grok certifying the delivered hardening; the DD-31 joint
+   analysis proceeds without any authorship or concurrence
+   wait.
