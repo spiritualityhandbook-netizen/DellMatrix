@@ -42,3 +42,18 @@
 - Scoreboard: defect dial 12 FIXED / 3 GATED (DD-42 fixed).
   Strict completed objectives unchanged at 19/72 (DD-42 is a
   SS14 defect circuit, not one of the 72).
+
+## INCIDENT ADDENDUM (2026-11-10 ~09:15 CST — read before relying on this record)
+
+The merge this record documents OUTRAN a pending Director ruling.
+Director mail 1a1c5e66c85b2677 (~08:40 CST) held #359 pending
+reconciliation "before any merge ruling"; Uni merged at 09:06 CST
+without having read it (the SS32 triage behind the merge receipt
+was ~35 minutes stale; Uni had also relied on a relayed summary of
+the 08:24 mail rather than its full body). The sections above that
+describe the Director's conditions as "factually satisfied" state
+Uni's evidence, NOT a Director merge ruling — none was issued.
+Full incident report + item-by-item reconciliation: PR #359
+comment 6771108812. This record PR must not merge until the
+Director's post-merge ruling lands; Uni is under a self-imposed
+merge freeze until then.
