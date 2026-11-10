@@ -119,10 +119,21 @@ def main():
              for m in r.get("messages", [])), str(r.get("messages", [])))
     _cleanup(owner)
 
+    # DD31-CI-INTERMITTENT root cause (proven 2026-11-10,
+    # Ace live session): this check previously listed the
+    # WHOLE shared state dir and failed on ANY filename
+    # containing "dd31" — including innocent files owned by
+    # OTHER suites (uuid-owner state files whose random hex
+    # happens to contain "dd31"). In forward regress order
+    # thousands of files precede this suite, so the check
+    # flickered ~29% of passes; alone or in reverse order
+    # the dir is nearly empty and it always passed. The
+    # check's true subject is THIS suite's own residue:
+    # scope it to the owner this suite is responsible for.
     leftovers = []
     base = os.path.join(_ROOT, "form", "state")
     if os.path.isdir(base):
-        leftovers = [f for f in os.listdir(base) if "dd31" in f.lower()]
+        leftovers = [f for f in os.listdir(base) if owner in f]
     _rec("cleanup leaves no residue", leftovers == [], str(leftovers))
 
     passed = sum(1 for _, ok_, _ in RESULTS if ok_)
