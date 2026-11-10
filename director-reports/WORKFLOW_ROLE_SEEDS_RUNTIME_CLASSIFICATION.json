@@ -1,0 +1,1560 @@
+{
+ "run": "verification run 2 (fresh load of WFROLES1, all 31 seeds re-executed)",
+ "seeds": {
+  "ACE_OVERSEER_FULL": {
+   "kind": "MASTER",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "00[Nova]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "01[Initiate]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "02[Persona]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "05[Tone]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "03[Logic]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "80[Context]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "35[Discover]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "54[Query]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "18[Mirror]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "57[Compare]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "12[Test]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "91[Assert]",
+     "class": "REFUSED",
+     "error": "condition_unparseable"
+    },
+    {
+     "atom": "82[Group]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "66[ForEach]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "07[Link]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "14[Bind]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "18[Mirror]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "76[Resolve]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "15[Map]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "90[Trace]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "46[Rank]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "74[Weight]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "77[Infer]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "22[Split]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "89[Diff]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "92[Guard]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "53[Scope]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "97[Define]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "25[Pulse]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "93[Try]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "95[Commit]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "03[Logic]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "27[Checkpoint]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "38[Distill]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "10[Keep]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "09[Show]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "13[Loop]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "20[Alpha]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    }
+   ]
+  },
+  "ACE_SELF": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "18[Mirror]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "57[Compare]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "69[None]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "41[Sanitize]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "12[Test]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "91[Assert]",
+     "class": "REFUSED",
+     "error": "condition_unparseable"
+    }
+   ]
+  },
+  "ACE_OTHERS": {
+   "kind": "LENS",
+   "chain_ok": true,
+   "atoms": [
+    {
+     "atom": "82[Group]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "66[ForEach]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "58[Match]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "74[Weight]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "25[Pulse]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    }
+   ]
+  },
+  "ACE_WORKFLOW": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "15[Map]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "70[Count]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "90[Trace]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "73[Threshold]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "99[Compose]",
+     "class": "REFUSED",
+     "error": "malformed_composition"
+    }
+   ]
+  },
+  "ACE_DIRECTIVE": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "30[Expand]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "77[Infer]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "89[Diff]",
+     "class": "REFUSED",
+     "error": "baseline_missing"
+    },
+    {
+     "atom": "92[Guard]",
+     "class": "REFUSED",
+     "error": "condition_unparseable"
+    },
+    {
+     "atom": "45[Translate]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "ACE_FAILURE_PATH": {
+   "kind": "FAILURE",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "94[Catch]",
+     "class": "REFUSED",
+     "error": "catch_illegal"
+    },
+    {
+     "atom": "43[Fallback]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "32[Pause]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "33[Resume]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "DIRECTOR_HOURLY_FULL": {
+   "kind": "MASTER",
+   "chain_ok": true,
+   "atoms": [
+    {
+     "atom": "06[Cycle]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "56[Get]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "02[Persona]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "03[Logic]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "35[Discover]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "82[Group]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "66[ForEach]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "57[Compare]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "18[Mirror]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "89[Diff]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "77[Infer]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "22[Split]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "62[Parallel]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "76[Resolve]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "15[Map]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "66[ForEach]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "52[Filter]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "46[Rank]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "51[Select]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "35[Discover]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "57[Compare]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "97[Define]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "79[Depend]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "72[Limit]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "92[Guard]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "60[Branch]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "91[Assert]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "63[Sequence]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "41[Sanitize]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "34[Stamp]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "10[Keep]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "20[Alpha]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    }
+   ]
+  },
+  "DIRECTOR_SELF": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "18[Mirror]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "90[Trace]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "69[None]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "49[Profile]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "88[Patch]",
+     "class": "REFUSED",
+     "error": "patch_miss:patch my model of the program where the window proved it stale"
+    }
+   ]
+  },
+  "DIRECTOR_OTHERS": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "81[Reference]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "57[Compare]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "61[Join]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "60[Branch]",
+     "class": "REFUSED",
+     "error": "condition_unparseable"
+    },
+    {
+     "atom": "54[Query]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    }
+   ]
+  },
+  "DIRECTOR_WORKFLOW": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "11[Architect]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "73[Threshold]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "78[Cause]",
+     "class": "REFUSED",
+     "error": "malformed_relation"
+    },
+    {
+     "atom": "31[Simulate]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "46[Rank]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "DIRECTOR_DIRECTIVE": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "54[Query]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "35[Discover]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "79[Depend]",
+     "class": "REFUSED",
+     "error": "malformed_relation"
+    },
+    {
+     "atom": "72[Limit]",
+     "class": "REFUSED",
+     "error": "invalid_limit"
+    },
+    {
+     "atom": "09[Show]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "DIRECTOR_FAILURE_PATH": {
+   "kind": "FAILURE",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "94[Catch]",
+     "class": "REFUSED",
+     "error": "catch_illegal"
+    },
+    {
+     "atom": "55[Set]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "32[Pause]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "25[Pulse]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "KEEPER_FASTLANE_FULL": {
+   "kind": "MASTER",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "06[Cycle]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "02[Persona]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "03[Logic]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "35[Discover]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "51[Select]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "18[Mirror]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "34[Stamp]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "91[Assert]",
+     "class": "REFUSED",
+     "error": "condition_unparseable"
+    },
+    {
+     "atom": "54[Query]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "90[Trace]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "57[Compare]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "89[Diff]",
+     "class": "EXECUTED_OK",
+     "error": "",
+     "run_conditional": true
+    },
+    {
+     "atom": "66[ForEach]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "88[Patch]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "12[Test]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "60[Branch]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "53[Scope]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "72[Limit]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "76[Resolve]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "25[Pulse]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "55[Set]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "10[Keep]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "13[Loop]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "20[Alpha]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    }
+   ]
+  },
+  "KEEPER_SELF": {
+   "kind": "LENS",
+   "chain_ok": true,
+   "atoms": [
+    {
+     "atom": "18[Mirror]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "71[Measure]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "16[Decay]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "42[Retry]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "KEEPER_OTHERS": {
+   "kind": "LENS",
+   "chain_ok": true,
+   "atoms": [
+    {
+     "atom": "81[Reference]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "58[Match]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "61[Join]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "59[Route]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "KEEPER_WORKFLOW": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "15[Map]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "70[Count]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "73[Threshold]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "99[Compose]",
+     "class": "REFUSED",
+     "error": "malformed_composition"
+    }
+   ]
+  },
+  "KEEPER_DIRECTIVE": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "54[Query]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "52[Filter]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "97[Define]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "92[Guard]",
+     "class": "REFUSED",
+     "error": "condition_unparseable"
+    }
+   ]
+  },
+  "KEEPER_FAILURE_PATH": {
+   "kind": "FAILURE",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "94[Catch]",
+     "class": "REFUSED",
+     "error": "catch_illegal"
+    },
+    {
+     "atom": "69[None]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "32[Pause]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "34[Stamp]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "UNI_CONTINUOUS_FULL": {
+   "kind": "MASTER",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "00[Nova]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "02[Persona]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "03[Logic]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "56[Get]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "18[Mirror]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "49[Profile]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "54[Query]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "82[Group]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "61[Join]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "25[Pulse]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "15[Map]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "51[Select]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "35[Discover]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "77[Infer]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "31[Simulate]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "93[Try]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "12[Test]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "11[Architect]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "08[Create]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "62[Parallel]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "13[Loop]",
+     "class": "REFUSED",
+     "error": "invalid_loop_count"
+    },
+    {
+     "atom": "57[Compare]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "41[Sanitize]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "63[Sequence]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "92[Guard]",
+     "class": "REFUSED",
+     "error": "condition_unparseable"
+    },
+    {
+     "atom": "21[Merge]",
+     "class": "REFUSED",
+     "error": "missing_source"
+    },
+    {
+     "atom": "27[Checkpoint]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "90[Trace]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "38[Distill]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "36[Inject]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "10[Keep]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "13[Loop]",
+     "class": "REFUSED",
+     "error": "invalid_loop_count"
+    },
+    {
+     "atom": "20[Alpha]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "UNI_SELF": {
+   "kind": "LENS",
+   "chain_ok": true,
+   "atoms": [
+    {
+     "atom": "18[Mirror]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "71[Measure]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "89[Diff]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "16[Decay]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "UNI_OTHERS": {
+   "kind": "LENS",
+   "chain_ok": true,
+   "atoms": [
+    {
+     "atom": "84[Copy]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "59[Route]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "66[ForEach]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "43[Fallback]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    }
+   ]
+  },
+  "UNI_WORKFLOW": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "15[Map]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "78[Cause]",
+     "class": "REFUSED",
+     "error": "malformed_relation"
+    },
+    {
+     "atom": "73[Threshold]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "80[Context]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "UNI_DIRECTIVE": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "54[Query]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "76[Resolve]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "72[Limit]",
+     "class": "REFUSED",
+     "error": "invalid_limit"
+    },
+    {
+     "atom": "97[Define]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "UNI_FAILURE_PATH": {
+   "kind": "FAILURE",
+   "chain_ok": true,
+   "atoms": [
+    {
+     "atom": "94[Catch]",
+     "class": "EXECUTED_OK",
+     "error": "",
+     "run_conditional": true
+    },
+    {
+     "atom": "27[Checkpoint]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "43[Fallback]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "33[Resume]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "PSALM_DOCKED_FULL": {
+   "kind": "MASTER",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "36[Inject]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "02[Persona]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "03[Logic]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "53[Scope]",
+     "class": "REFUSED",
+     "error": "scope_unknown:receive the command and its scope \u2014 who commanded it, through which rung of the chain, over exactly what field"
+    },
+    {
+     "atom": "92[Guard]",
+     "class": "REFUSED",
+     "error": "condition_unparseable"
+    },
+    {
+     "atom": "80[Context]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "18[Mirror]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "35[Discover]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "66[ForEach]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "58[Match]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "77[Infer]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "57[Compare]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "15[Map]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "74[Weight]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "46[Rank]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "52[Filter]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "91[Assert]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "21[Merge]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "08[Create]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "37[Nurture]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "45[Translate]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "29[Compress]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "25[Pulse]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "38[Distill]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "10[Keep]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    },
+    {
+     "atom": "20[Alpha]",
+     "class": "DESCRIPTIVE",
+     "error": ""
+    }
+   ]
+  },
+  "GEMINI_SELF": {
+   "kind": "LENS",
+   "chain_ok": true,
+   "atoms": [
+    {
+     "atom": "18[Mirror]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "71[Measure]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "41[Sanitize]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "69[None]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "GEMINI_OTHERS": {
+   "kind": "LENS",
+   "chain_ok": true,
+   "atoms": [
+    {
+     "atom": "81[Reference]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "14[Bind]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "57[Compare]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "07[Link]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "GEMINI_WORKFLOW": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "15[Map]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "79[Depend]",
+     "class": "REFUSED",
+     "error": "malformed_relation"
+    },
+    {
+     "atom": "73[Threshold]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "31[Simulate]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "GEMINI_DIRECTIVE": {
+   "kind": "LENS",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "54[Query]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "76[Resolve]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "72[Limit]",
+     "class": "REFUSED",
+     "error": "invalid_limit"
+    },
+    {
+     "atom": "43[Fallback]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "GEMINI_FAILURE_PATH": {
+   "kind": "FAILURE",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "94[Catch]",
+     "class": "EXECUTED_OK",
+     "error": "",
+     "run_conditional": true
+    },
+    {
+     "atom": "92[Guard]",
+     "class": "REFUSED",
+     "error": "condition_unparseable"
+    },
+    {
+     "atom": "32[Pause]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "09[Show]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    }
+   ]
+  },
+  "INTERLOCK_MAP": {
+   "kind": "INTERLOCK",
+   "chain_ok": false,
+   "atoms": [
+    {
+     "atom": "01[Initiate]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "97[Define]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "35[Discover]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "12[Test]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "08[Create]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "57[Compare]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "92[Guard]",
+     "class": "REFUSED",
+     "error": "condition_unparseable"
+    },
+    {
+     "atom": "18[Mirror]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "37[Nurture]",
+     "class": "EXECUTED_OK",
+     "error": ""
+    },
+    {
+     "atom": "95[Commit]",
+     "class": "REFUSED",
+     "error": "commit_illegal"
+    }
+   ]
+  }
+ },
+ "relabeling": "Per Director instruction (2026-11-10 12:40 mail): REAL is relabeled EXECUTED_OK; atoms whose class depends on session/field state carry run_conditional=true (89[Diff] in KEEPER_FASTLANE_FULL; 94[Catch] in UNI_FAILURE_PATH and GEMINI_FAILURE_PATH).",
+ "totals_run2": {
+  "EXECUTED_OK": 161,
+  "DESCRIPTIVE": 82,
+  "REFUSED": 29
+ }
+}
