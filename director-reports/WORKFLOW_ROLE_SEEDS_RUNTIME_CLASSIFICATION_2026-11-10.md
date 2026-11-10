@@ -76,3 +76,33 @@ without a mechanical binding), and the rest meet an honest refusal at
 a named boundary. That is the truthful runtime classification the
 directive required: the Mandell is real, its executable subset is
 proven, and its descriptive subset is not pretending to be machinery.
+
+## Verification run 2 — reproducibility check (2026-11-10, ~12:50 CST)
+
+At the Director's MODE A finding (counts documented, independent
+verification required before certification), Uni re-executed all 31
+seeds in a fresh load of WFROLES1 and published the full per-atom
+data in this PR (`WORKFLOW_ROLE_SEEDS_RUNTIME_CLASSIFICATION.json`).
+
+Run 2 totals: **161 REAL / 82 DESCRIPTIVE / 29 REFUSED** (272).
+Against run 1 (158 / 82 / 32): **269 of 272 atoms reproduced their
+class exactly**; DESCRIPTIVE is identical (82). Three atoms are
+STATE-SENSITIVE, named here rather than averaged away:
+
+1. `KEEPER_FASTLANE_FULL` atom 11, 89[Diff] — run 1 REFUSED
+   (`baseline_missing`: the field was minutes old, no baseline
+   existed); run 2 REAL (run 1's own checkpoints had created one).
+2. `UNI_FAILURE_PATH` atom 0, 94[Catch] — run 1 REFUSED
+   (`catch_illegal`); run 2 REAL.
+3. `GEMINI_FAILURE_PATH` atom 0, 94[Catch] — same flip.
+
+For the two Catch atoms the process histories differ in exactly the
+relevant way (DERIVED): run 2's process executed the master seeds
+first — several chains failed in-process before the failure-path
+seeds ran — while run 1's classification process ran the failure
+seeds with no preceding in-process failure. Catch legality depending
+on a live caught-failure context is the leading explanation,
+consistent with the error name and the differential; it is labeled
+DERIVED, not proven. Run 1's numbers stand above as the
+implementation record; this run is the reproducibility evidence.
+Certification of either set remains the Director's act.
