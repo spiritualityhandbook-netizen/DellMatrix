@@ -388,23 +388,39 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
             messages.append("  (empty)")
         st.last_result = {"source": "trace", "value": list(st.traces), "count": len(st.traces), "matched": True}
     elif n == 91:
-        from .control_runtime import eval_condition
-        passed = eval_condition(st, program, lab or "true")
-        st.last_assert = "PASS" if passed else "FAIL"
-        messages.append(f"Assert {st.last_assert} {lab or 'true'}")
-        if not passed:
-            ok, err = False, "assert_fail"
+        from .control_runtime import eval_condition_detail
+        detail = eval_condition_detail(st, program, lab or "true")
+        if detail.get("error"):
+            # DD-42: an unparseable condition earns NO verdict
+            # stamp — the atom refuses with the engine's error.
+            ok, err = False, detail["error"]
+            messages.append(f"Assert refused ({err}) {lab or 'true'}")
             _fail_open_tx(st, err)
+        else:
+            passed = bool(detail.get("matched"))
+            st.last_assert = "PASS" if passed else "FAIL"
+            messages.append(f"Assert {st.last_assert} {lab or 'true'}")
+            if not passed:
+                ok, err = False, "assert_fail"
+                _fail_open_tx(st, err)
     elif n == 92:
-        from .control_runtime import eval_condition
-        allow = eval_condition(st, program, lab or "true")
-        if lab.lower() in ("block", "deny"):
-            allow = False
-        st.last_guard = "ALLOW" if allow else "BLOCK"
-        messages.append(f"Guard {st.last_guard} {lab or 'default'}")
-        if not allow:
-            ok, err = False, "guard_block"
+        from .control_runtime import eval_condition_detail
+        detail = eval_condition_detail(st, program, lab or "true")
+        if detail.get("error"):
+            # DD-42: no ALLOW/BLOCK stamp on an unparseable
+            # condition — refuse with the engine's error.
+            ok, err = False, detail["error"]
+            messages.append(f"Guard refused ({err}) {lab or 'default'}")
             _fail_open_tx(st, err)
+        else:
+            allow = bool(detail.get("matched"))
+            if lab.lower() in ("block", "deny"):
+                allow = False
+            st.last_guard = "ALLOW" if allow else "BLOCK"
+            messages.append(f"Guard {st.last_guard} {lab or 'default'}")
+            if not allow:
+                ok, err = False, "guard_block"
+                _fail_open_tx(st, err)
     elif n == 93:
         frames = _open_tx(st)
         frame = {"id": f"tx{getattr(st, 'tx_dropped_total', 0) + len(frames)}", "checkpoint": _ckpt(st), "staged_changes": [], "status": "open", "error": "", "depth": len(_active(frames))}

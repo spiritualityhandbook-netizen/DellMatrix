@@ -43,15 +43,26 @@ def bound_of(st: Any) -> int:
     return n if ok else DEFAULT_BOUND
 
 
-def eval_condition(st: Any, program: Any, expr: str) -> bool:
+def eval_condition_detail(st: Any, program: Any, expr: str) -> Dict[str, Any]:
+    """DD-42: the full verdict record behind eval_condition.
+
+    The literal layer maps to matched True/False with no
+    error. Everything else is eval_predicate's dict, whose
+    "error" (e.g. condition_unparseable) the verdict surfaces
+    (Assert/Guard/Branch) must surface as a refusal instead
+    of stamping a verdict on a bool that hid it."""
     raw = (expr or "").strip()
     e = raw.lower()
     if e in ("", "pass", "true", "allow", "ok", "yes"):
-        return True
+        return {"predicate": "literal", "matched": True, "error": ""}
     if e in ("fail", "false", "block", "deny", "no"):
-        return False
+        return {"predicate": "literal", "matched": False, "error": ""}
     from .predicate import eval_predicate
-    return bool(eval_predicate(st, program, raw).get("matched"))
+    return eval_predicate(st, program, raw)
+
+
+def eval_condition(st: Any, program: Any, expr: str) -> bool:
+    return bool(eval_condition_detail(st, program, expr).get("matched"))
 
 
 def find_join(atoms: List[Any], start: int, end: Optional[int] = None) -> int:

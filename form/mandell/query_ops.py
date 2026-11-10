@@ -74,13 +74,25 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
             messages.append(f"Get {key}={val!r} status={status}")
     elif n == 57:
         head = lab.lower().split(":")[0].split(" ")[0]
-        expr = lab if head in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends") else ("eq:" + " ".join([p for p in lab.replace(",", " ").split() if p][:2]))
-        cmpd = eval_predicate(st, program, expr)
-        st.last_result = result_cell(value=cmpd.get("matched"), matched=bool(cmpd.get("matched")), source="compare", predicate=cmpd.get("predicate") or "eq", error=cmpd.get("error") or "", trace="57")
-        st.last_result["mode"] = cmpd.get("mode") or ""
-        if cmpd.get("error") == "type_mismatch":
-            ok, err = False, "type_mismatch"
-        messages.append(f"Compare {expr} matched={cmpd.get('matched')} mode={cmpd.get('mode')} err={cmpd.get('error')}")
+        _toks = [p for p in lab.replace(",", " ").split() if p]
+        if head not in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends") and ((len(_toks) >= 2 and _toks[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends")) or len(_toks) > 2):
+            # DD-42: an infix condition (level gt 99) or any
+            # label the two-token eq shorthand cannot represent
+            # refuses honestly — the old rewrite silently
+            # re-answered "eq:level gt", a question nobody asked.
+            ok, err = False, "condition_unparseable"
+            st.last_result = result_cell(value=None, matched=False, source="compare", predicate="unparseable", error=err, trace="57")
+            messages.append(f"Compare refused ({err}) {lab}")
+            expr = None
+        else:
+            expr = lab if head in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends") else ("eq:" + " ".join([p for p in lab.replace(",", " ").split() if p][:2]))
+        if expr is not None:
+            cmpd = eval_predicate(st, program, expr)
+            st.last_result = result_cell(value=cmpd.get("matched"), matched=bool(cmpd.get("matched")), source="compare", predicate=cmpd.get("predicate") or "eq", error=cmpd.get("error") or "", trace="57")
+            st.last_result["mode"] = cmpd.get("mode") or ""
+            if cmpd.get("error") == "type_mismatch":
+                ok, err = False, "type_mismatch"
+            messages.append(f"Compare {expr} matched={cmpd.get('matched')} mode={cmpd.get('mode')} err={cmpd.get('error')}")
     elif n == 58:
         ids = list(st.selected)
         st.selected = [i for i in ids if pred_fn(lab, i)] if lab else list(ids)
@@ -134,15 +146,28 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
     elif n == 73:
         expr = lab if lab else "gte:count 0"
         head = lab.lower().split(":")[0] if lab else ""
+        _refuse73 = False
         if lab and head not in ("eq", "ne", "lt", "lte", "gt", "gte", "threshold"):
             parts = [p for p in lab.replace(",", " ").replace(":", " ").split() if p]
-            expr = f"gte:{parts[0]} {parts[1]}" if len(parts) >= 2 else (f"gte:count {parts[0]}" if parts else expr)
-        if expr.lower().startswith("threshold"):
-            expr = "gte:" + expr.split(":", 1)[-1]
-        cmpd = eval_predicate(st, program, expr)
-        hit = bool(cmpd.get("matched"))
-        st.last_result = result_cell(value=hit, matched=hit, source="threshold", predicate=cmpd.get("predicate") or "gte", error=cmpd.get("error") or "", trace="73")
-        messages.append(f"Threshold {expr} matched={hit}")
+            if len(parts) > 2 or (len(parts) == 2 and parts[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends")):
+                # DD-42 sibling: the gte shorthand cannot
+                # represent an infix condition — refuse
+                # honestly instead of comparing against the
+                # operator word (gte:level gt).
+                _refuse73 = True
+            else:
+                expr = f"gte:{parts[0]} {parts[1]}" if len(parts) >= 2 else (f"gte:count {parts[0]}" if parts else expr)
+        if _refuse73:
+            ok, err = False, "condition_unparseable"
+            st.last_result = result_cell(value=None, matched=False, source="threshold", predicate="unparseable", error=err, trace="73")
+            messages.append(f"Threshold refused ({err}) {lab}")
+        else:
+            if expr.lower().startswith("threshold"):
+                expr = "gte:" + expr.split(":", 1)[-1]
+            cmpd = eval_predicate(st, program, expr)
+            hit = bool(cmpd.get("matched"))
+            st.last_result = result_cell(value=hit, matched=hit, source="threshold", predicate=cmpd.get("predicate") or "gte", error=cmpd.get("error") or "", trace="73")
+            messages.append(f"Threshold {expr} matched={hit}")
     elif n == 74:
         key, _, val = lab.partition("=")
         key = (key or "target").strip()

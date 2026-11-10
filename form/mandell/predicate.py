@@ -205,6 +205,19 @@ def eval_predicate(st: Any, program: Any, expr: str) -> Dict[str, Any]:
             rest = raw[len(pred):].lstrip(": ").strip()
             break
     if not name:
+        if len(raw.split()) > 1:
+            # DD-42: a multi-token condition matching no
+            # predicate prefix (the infix form, level gt 99)
+            # is UNPARSEABLE. It must refuse honestly — the
+            # old fall-through resolved the whole string as
+            # one literal token and judged only its truthiness,
+            # silently discarding the operator and the second
+            # operand. A bare key ALONE (one token) remains
+            # the designed truthiness form below.
+            result["predicate"] = "unparseable"
+            result["matched"] = False
+            result["error"] = "condition_unparseable"
+            return result
         result["predicate"] = "truthy"
         token = resolve_value(st, program, raw)
         result["matched"] = _truthy(token)

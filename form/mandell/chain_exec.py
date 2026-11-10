@@ -405,6 +405,24 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
                 int(atoms[j].dell),
                 f"control head refused: {head_err}; "
                 f"body occurrence not executed"))
+    elif n == 60 and head_err == "condition_unparseable":
+        # DD-42: the Branch head atom refused its condition —
+        # the same wholesale-refusal shape as the D1 gate
+        # above: no arm executes, body occurrences receipt
+        # honest skips, the frame fails with the engine error.
+        status = "fail"
+        err = head_err
+        state["ok"] = False
+        if not state.get("error"):
+            state["error"] = head_err
+        messages.append(
+            f"control head {n:02d} refused ({head_err}) — body not executed")
+        for j in range(head + 1, join_at):
+            skipped.append(int(atoms[j].dell))
+            results.append(_skip_receipt(
+                int(atoms[j].dell),
+                f"control head refused: {head_err}; "
+                f"body occurrence not executed"))
     elif n == 60:
         else_kind, else_at = find_else(atoms, head + 1, join_at)
         if else_kind == "multi":
