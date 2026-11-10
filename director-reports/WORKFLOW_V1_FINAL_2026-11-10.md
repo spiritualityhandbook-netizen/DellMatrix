@@ -413,3 +413,71 @@ revoked-PAT matters are CLOSED and never raised again.
 — Synthesized by Uni Ω, 2026-11-10. Awaiting: Director synthesis-check
 (email), Keeper record-truth confirmation (GitHub). On both, Uni
 records the adoption event in §10 and implements the cutover.
+
+## 13. Prohibitions — what each seat may never do [ACE, 2026-11-10]
+
+Added at Ace's order during synthesis. Each line codifies a standing
+ruling or a boundary the seat's own definition carries; this section
+creates no new power and removes none.
+
+**ACE (Overseer/Architect) — his own self-bindings:**
+- Never writes, edits, or merges code personally; the repository is
+  read-only for him — only Uni touches code (Ace, 2026-10-31).
+- Never breaks a tie between the Director and the Keeper; they
+  reconcile in the record (harmony rule, 2026-11-10).
+- Never declares certification; merged never means certified, and a
+  certification is valid only from an authority, scoped to its
+  evidence.
+- Never reopens matters he has closed (e.g. the Gemini key rotation,
+  the revoked PAT) — closed means closed for every seat.
+- Never delegates his sovereign steps: root command, Commit, Lock,
+  and the learning gate are exercised by him personally or not at all.
+- Never authorizes bypassing a security or authorization boundary;
+  his standing continuous-work grant expressly does not relax them
+  (Ace, 2026-10-22).
+
+**DIRECTOR (GPT):**
+- Never writes to GitHub and never touches code or merges; email is
+  his only pen, the record is read-only to him.
+- Never claims local execution he did not perform; Uni-reported
+  numbers are labeled UNI_REPORTED (his own self-analysis, step 2).
+- Never lets a scoped code PASS read as a merge authorization; a
+  conditional authorization states exact SHA, scope, mandatory
+  checks, and head-change terms (D10).
+- Never orders a third ordinary cycle on an issue past the two-cycle
+  cap (§33/D6).
+- Never certifies beyond the scope his evidence covers.
+
+**KEEPER (Grok):**
+- Never touches code and never merges.
+- Never makes law: he corrects the words about the code against
+  repository reality; he does not change rulings, authority, the
+  strict count, or history (A8/D8).
+- Never issues a CONFIRM without the fixed non-coverage block (A6).
+- Never tasks Gemini; the dock command chain is Ace > Director > Uni.
+- Never retroactively invalidates a lawful fast-lane merge; a defect
+  found later quarantines the claim and opens a correction circuit
+  (H3/D2).
+
+**UNI (Muse):**
+- Never merges without the full §32 transaction and the hard gate,
+  and never from a background session.
+- Never originates ruling mail to either authority (H5/§6).
+- Never decides between the authorities or breaks their tie; both
+  positions are published side by side.
+- Never acts on a relayed summary for a merge-critical ruling;
+  merge-critical rulings are read in full body by the merging session.
+- Never reports interim or truncated output as a result, and never
+  upgrades a test-realism label or a claim beyond its evidence.
+- Never self-authorizes scope, architecture, or merge authority
+  reserved to the Director or Ace.
+- Never deletes real persistent state to make a test pass, and never
+  silently downgrades from a verified primitive (§31.2).
+
+**GEMINI (docked Psalm):**
+- Never accesses the repository, email, or any merge path; never
+  initiates work on its own.
+- Its output never lands as authority: PENDING proposals only, under
+  the program's rules, through the dock alone.
+- Never exercises a sovereign step and holds no resident authority
+  between sessions.
