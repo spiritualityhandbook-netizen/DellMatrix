@@ -14,7 +14,7 @@ from .control_runtime import (
     CONTROL_HEADS,
     FLOW_CONTRACT,
     MAX_DEPTH,
-    bound_of,
+    bound_detail,
     eval_condition,
     find_else,
     find_join,
@@ -480,7 +480,6 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
     elif n == 63:
         program, results = execute_range(program, seed, atoms, head + 1, join_at, depth + 1, messages, ran, skipped, state)
     elif n in (64, 65):
-        loop_limit = bound_of(st)
         pred0 = eval_condition(st, program, cond)
         if n == 64 and pred0:
             status = "zero"
@@ -501,38 +500,70 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
                     int(atoms[j].dell),
                     "while condition already false — zero iterations; body occurrence not executed"))
         else:
-            while iterations < loop_limit:
-                if n == 64 and eval_condition(st, program, cond):
-                    messages.append("Until early exit")
-                    break
-                if n == 65 and not eval_condition(st, program, cond):
-                    messages.append("While early exit")
-                    break
-                program, chunk = execute_range(program, seed, atoms, head + 1, join_at, depth + 1, messages, ran, skipped, state)
-                results.extend(chunk)
-                iterations += 1
-                st.control_steps += 1
-                st = attach(program)
-                if n == 64 and eval_condition(st, program, cond):
-                    messages.append("Until condition true after body")
-                    break
-                if n == 65 and not eval_condition(st, program, cond):
-                    messages.append("While condition false after body")
-                    break
+            # DD-44: the loop WOULD iterate — its bound must be
+            # one the user stated. Unspecified refuses with the
+            # ask (what was asked, what is missing, what ran:
+            # nothing); an invalid stored limit refuses with
+            # its own error. Neither silently becomes 8.
+            _bd = bound_detail(st)
+            if _bd["status"] != "specified":
+                _berr = "bound_unspecified" if _bd["status"] == "unspecified" else _bd["error"]
+                status = "fail"
+                err = _berr
+                state["ok"] = False
+                if not state.get("error"):
+                    state["error"] = _berr
+                head_receipt["ok"] = False
+                head_receipt["error"] = _berr
+                head_receipt["reason"] = _berr
+                messages.append(
+                    f"control head {n:02d} refused ({_berr}) — "
+                    f"loop bound not specified: state the iteration "
+                    f"count with Limit (72) before running "
+                    f"{'Until' if n == 64 else 'While'}; nothing ran")
+                for j in range(head + 1, join_at):
+                    skipped.append(int(atoms[j].dell))
+                    results.append(_skip_receipt(
+                        int(atoms[j].dell),
+                        f"control head refused: {_berr}; "
+                        f"body occurrence not executed"))
+                loop_limit = 0
             else:
-                still = eval_condition(st, program, cond)
-                if n == 64 and not still:
-                    status = "bounded"
-                    err = "bound_reached"
-                    state["ok"] = False
-                    state["error"] = err
-                    messages.append(f"Until bound={loop_limit} reached")
-                if n == 65 and still:
-                    status = "bounded"
-                    err = "bound_reached"
-                    state["ok"] = False
-                    state["error"] = err
-                    messages.append(f"While bound={loop_limit} reached")
+                loop_limit = int(_bd["value"])
+            if _bd["status"] == "specified":
+                while iterations < loop_limit:
+                    if n == 64 and eval_condition(st, program, cond):
+                        messages.append("Until early exit")
+                        break
+                    if n == 65 and not eval_condition(st, program, cond):
+                        messages.append("While early exit")
+                        break
+                    program, chunk = execute_range(program, seed, atoms, head + 1, join_at, depth + 1, messages, ran, skipped, state)
+                    results.extend(chunk)
+                    iterations += 1
+                    st.control_steps += 1
+                    st = attach(program)
+                    if n == 64 and eval_condition(st, program, cond):
+                        messages.append("Until condition true after body")
+                        break
+                    if n == 65 and not eval_condition(st, program, cond):
+                        messages.append("While condition false after body")
+                        break
+                else:
+                    still = eval_condition(st, program, cond)
+                    if n == 64 and not still:
+                        status = "bounded"
+                        err = "bound_reached"
+                        state["ok"] = False
+                        state["error"] = err
+                        messages.append(f"Until bound={loop_limit} reached")
+                    if n == 65 and still:
+                        status = "bounded"
+                        err = "bound_reached"
+                        state["ok"] = False
+                        state["error"] = err
+                        messages.append(f"While bound={loop_limit} reached")
+
     elif n == 66:
         members = list(st.selected or [])
         prev_ctx = st.context
@@ -598,8 +629,10 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
     st.last_frame = {"kind": kind, "condition": cond, "status": status, "iterations": iterations, "results": results, "error": err, "depth": depth}
     if n in (64, 65):
         # Step 7 (B8): the frame exposes the bound alongside the
-        # actual iterations.
-        st.last_frame["bound"] = bound_of(st)
+        # actual iterations. DD-44: the stated number, or the
+        # honest word "unspecified" — never a phantom default.
+        _bd = bound_detail(st)
+        st.last_frame["bound"] = _bd["value"] if _bd["status"] == "specified" else _bd["status"]
     st.last_control = dict(st.last_frame)
     st.frames.append(dict(st.last_frame))
     return program, results, head_receipt

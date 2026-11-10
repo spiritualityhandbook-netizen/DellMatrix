@@ -315,13 +315,14 @@ def main():
     r = _run(q, "65[While]")
     _rec("65 While: bare While (condition defaults "
          "true) with an empty body fails HONESTLY — "
-         "ok=False bound_reached at the default "
-         "bound 8",
+         "DD-44: ok=False bound_unspecified, nothing "
+         "ran (was: bound_reached at the silent "
+         "default bound 8, superseded SS12.56)",
          r.get("ok") is False
-         and r.get("error") == "bound_reached"
+         and r.get("error") == "bound_unspecified"
          and qs.last_control.get("kind") == "while"
-         and qs.last_control.get("status") == "bounded"
-         and qs.last_control.get("iterations") == 8,
+         and qs.last_control.get("status") == "fail"
+         and qs.last_control.get("iterations") == 0,
          str(_msgs(r)))
     r = _run(q, "65[While] :: false")
     ok_wf = (r.get("ok") is True
@@ -339,12 +340,13 @@ def main():
     r = _run(q, "64[Until]")
     _rec("64 Until STEP 7 (B8): bare Until's two layers "
          "AGREE — the core arm prints 'Until "
-         "cond=true already=True bound=8' and the "
+         "cond=true already=True bound=unspecified' "
+         "(DD-44: the honest word, was bound=8) and the "
          "chain layer prints 'Until already true — "
          "zero iterations', closing ok=True / "
          "status zero with an EMPTY condition",
          r.get("ok") is True
-         and "Until cond=true already=True bound=8"
+         and "Until cond=true already=True bound=unspecified"
          in _msgs(r)
          and "Until already true — zero iterations"
          in _msgs(r)
@@ -469,6 +471,7 @@ def main():
     owner_l = "D1RegCoreIIAL"
     lp = _program(owner_l)
     ls = _st(lp)
+    _run(lp, "72[Limit] :: 8")
     r = _run(lp, "64[store_done] > 55[done] > 61[Join]")
     _rec("symbiosis: Until's body is Set (55) — the "
          "body writes store[done], the Until "

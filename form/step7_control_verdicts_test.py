@@ -289,13 +289,14 @@ def _b8() -> None:
     r = _run(p, "64[Until]")
     _rec("B8: bare Until — core arm and chain AGREE the empty "
          "condition is true (zero iterations)",
-         "Until cond=true already=True bound=8" in _msgs(r)
+         "Until cond=true already=True bound=unspecified" in _msgs(r)
          and "Until already true — zero iterations" in _msgs(r)
          and r.get("ok") is True,
          str([m for m in _msgs(r) if "Until" in m]))
-    _rec("B8: frame exposes bound=8 alongside iterations=0, "
-         "status zero, empty condition",
-         _ctrl(p).get("bound") == 8 and _ctrl(p).get("iterations") == 0
+    _rec("B8: frame exposes bound=unspecified alongside "
+         "iterations=0, status zero, empty condition "
+         "(DD-44: honest absence, was bound=8)",
+         _ctrl(p).get("bound") == "unspecified" and _ctrl(p).get("iterations") == 0
          and _ctrl(p).get("status") == "zero"
          and _ctrl(p).get("condition") == "",
          str({k: _ctrl(p).get(k) for k in ("bound", "iterations", "status", "condition")}))
@@ -320,7 +321,7 @@ def _b8() -> None:
          "as skipped, frame bound exposed",
          _dells(r) == [65, 8, 61]
          and _recs(r, 8)[0].get("skipped") is True
-         and _ctrl(p).get("bound") == 8
+         and _ctrl(p).get("bound") == "unspecified"
          and _ctrl(p).get("iterations") == 0 and r.get("ok") is True,
          str(_dells(r)))
     _cleanup("S7B8C")

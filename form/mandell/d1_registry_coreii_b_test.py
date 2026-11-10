@@ -222,10 +222,16 @@ def main():
 
     # -- 72 Limit
     r = _run(p, "72[Limit]")
-    _rec("72 Limit: bare Limit installs the default "
-         "bound 8",
-         _msgs(r) == ["Limit 8"] and st.limit == "8"
-         and st.last_result.get("value") == 8,
+    _rec("72 Limit: bare Limit REFUSES "
+         "limit_unspecified and stores nothing "
+         "(DD-44; was: installs the silent default "
+         "bound 8, superseded SS12.56)",
+         _msgs(r) == ["Limit refused "
+                      "(limit_unspecified): state a "
+                      "number or max"]
+         and st.limit == ""
+         and st.last_result.get("error")
+         == "limit_unspecified",
          str(_msgs(r)))
     _run(p, "72[Limit] :: 5")
     r = _run(p, "72[Limit] :: 8.5")
