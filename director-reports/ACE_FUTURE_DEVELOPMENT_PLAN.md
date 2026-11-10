@@ -5358,6 +5358,16 @@ C1 CHAIN TRUTH
   because their receipts are related.
 
 C2 RESONANCE CORE
+- Bounded candidate (Director R1, 2026-11-10; SS14.9):
+  graded-input-to-verdict invariant test on one real canonical
+  path — inject a faded high-weight candidate and a
+  stale/superseded candidate at a graded-to-decision boundary;
+  require exclusion/attenuation as specified and explicit refusal
+  for invalid state; prove the downstream receipt matches the
+  actual canonical inputs. Ground the path first; do not duplicate
+  DD-13. Restoration classified ABSTRACT / PARTIALLY_REALIZED /
+  CHAIN_COVERAGE_UNKNOWN (receipts restore decision legibility,
+  not graded-input correctness).
 - Slices: relatedness model; development-coupled growth; targeted
   Pulse; decline-coupled Decay; DD-15 fusion; DD-16 partition;
   DD-23 enhancement outcome; DD-19 temperature design.
@@ -5697,6 +5707,15 @@ C12 BRIDGE
   secretly becoming a manager.
 
 C13 SIMULATE
+- Research intake (2026-11-10, SS14.9): sweep -> classify ->
+  stability-map ADAPTED as a DESIGN input for C13 exploration
+  (parameter grids classified by per-cell receipts, rendered as
+  terrain; the same rendering pointed at the symbiosis grid makes
+  composition space navigable). Conditions (Director R3 on
+  PR #364): genuine isolated sandbox (Try+run+Revert is NOT
+  isolation), deterministic seeds, immutable inputs, budget/time
+  limits, independent per-cell receipts, sensitivity analysis; no
+  run-count feasibility promised before profiling.
 - Slices: C13.Inventory (explicit effect inventory); C13.Executor
   (isolated executor adapter); C13.DryRun (supported dry-run
   commands/chains — a bounded supported subset FIRST, not all
@@ -5723,6 +5742,14 @@ C13 SIMULATE
 
 H HUMAN SURFACE (cross-cutting track; separately authorized —
 this candidate starts no UI build)
+- Research intake (2026-11-10, SS14.9): wave-field rendering
+  ADAPTED as a display-only design option for the 2D SKY — ideas
+  as emitters, Pulse as a visible wavefront, links as waveguides
+  — via a clean-room finite-difference wave solver (textbook
+  numerics). WaveDude Next itself REJECTED for embedding
+  (GPL-3.0 + Windows/.NET, current architecture). Performance on
+  modest devices and visual-meaning calibration are PROJECTED,
+  not verified. Display only: never a selection input.
 - Scope: Nursery cards and owner-chosen / custom / AI-proposed
   shapes; Plane ROOM/SKY with glide/zoom; the five
   context-preserving pages including the Psalm Matrix; personal
@@ -5991,3 +6018,40 @@ UNRESOLVED (carried as open, with owners):
 Candidate produced by Uni, 2026-11-09, in wake mode. Returned
 through Ace for reconciliation and adoption under SS13.7.
 Not adopted, not a certification, no counter moved.
+
+### 14.9 RESEARCH INTAKE — WAVES STUDY (2026-11-10)
+
+Ace flagged three videos (Huygens Optics photonic gates; 4phy
+string theory; Drew's Campfire double-pendulum sweep). Full record:
+RESEARCH_VIDEO_STUDY_WAVES_2026-11-10.md (PR #364) with the
+Director's analysis folded verbatim
+(DIRECTOR_ANALYSIS_PR364_WAVES_VERBATIM_2026-11-10.md, Gmail
+1a1c69107898777f) and the Keeper's record-truth CONFIRM (aabfe3c).
+Dispositions, each filed at its proper home above:
+
+- Wave-field SKY rendering — ADAPT, display-only design option
+  (H track card). Clean-room technique; no embed.
+- Sweep -> classify -> stability-map — ADAPT as DESIGN input
+  (C13 card), under the Director's isolation/seed/receipt
+  conditions; also applicable as a visualization of the existing
+  symbiosis receipts (no causal prediction implied).
+- Graded-input-to-verdict invariant test — bounded candidate
+  (C2 card). Restoration: ABSTRACT / PARTIALLY_REALIZED /
+  CHAIN_COVERAGE_UNKNOWN.
+- Literal wave-field instrument — INNOVATE_DEFERRED, parked:
+  read-only and nonauthoritative if ever built; never feeds
+  resonance scores, Nursery admission, vote weights, or threshold
+  decisions by default; any semantic path is an Ace-owned
+  architecture decision requiring independent predictive
+  validation. Keeper SWAT risks seeded (5).
+- WaveDude Next standalone — ADOPT as an Ace-side external tool
+  (GPL-3.0+, Windows); embedding REJECTED for the current
+  architecture (not a universal GPL prohibition).
+- Interference as validation of resonance semantics — REJECTED:
+  weighted summation is not optical phase interference; the
+  resemblance is verbal only.
+- String theory — INSPIRE only; REJECTED as DellMatrix
+  engineering validation.
+- Method note: transcripts were IP/bot-blocked; the study rests
+  on creator descriptions/chapters + primary software sources;
+  spoken-word claims remain UNVERIFIED.
