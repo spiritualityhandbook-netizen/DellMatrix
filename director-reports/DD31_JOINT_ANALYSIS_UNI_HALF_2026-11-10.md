@@ -1,0 +1,118 @@
+# DD-31 JOINT RESEARCH ANALYSIS — UNI HALF
+
+Escalation under the two-cycle cap (Ace ruling 2026-11-10, §33):
+DD31-CI-INTERMITTENT consumed the exception-request circuit
+(PR #349), the diagnostic circuit (PR #350), and the Q-DD31-D1
+hardening round without identifying its mechanism. This is Uni's
+half of the joint analysis. Grok's half: director-reports/
+GROK_ANALYSIS_DD31_2026-11-10.md (commit 14fcb3c, GROK-REPORTED,
+folded here with partitions intact). The Director's half is his
+hourly-check contribution. No claim of joint authorship is made
+until both authorities review the assembled document.
+
+## 1. Evidence ledger (UNI-VERIFIED unless marked)
+
+FAILURES (always form.dd31_sanitize_copula_test, 20/21,
+NOT_RETURNED_TRUE, sole red in its run):
+- CI, PR #344 smoke attempt 1: pass 2 only.
+- CI, PR #345 smoke attempt 1: pass 2 only (DD-45 suite 113/113).
+- CI, merged main @ 7aad191 (run 42695404062) attempt 1: pass 2.
+- CI, PR #346 smoke attempt 1: BOTH passes red.
+- CI, PR #346 smoke attempt 2 (a re-run): pass 2 (first failed
+  re-run on record).
+- LOCAL, DD-14 leg twice_r2 on 7dc9ef0 (dd14_logs/
+  leg_twice_r2.log): pass 1 red, pass 2 green. The only local
+  reproduction; it kills "CI-only" and "second-pass-only".
+GREENS (full-list passes): ~17 historical + 6/6 capture-grade
+instrumented passes (diag_driver 7dc9ef0 x2, capA main 7780dff
+x2, capB2 #348 813b2aa x2) + both passes of the DD-18 chain
+2026-11-10 (dd31 green while d1_proof_cards was the sole red).
+Rate: ~7 red in ~24 pre-instrumentation full-list passes (~29%
+per pass). Six consecutive greens at that rate: ~13% likely —
+the matrix bounds the hunt; it settles nothing (§31.3).
+
+## 2. System map (static, UNI-VERIFIED at 7780dff)
+
+- regress.py --twice: ONE _copy_tree copy (form/state EXCLUDED)
+  serves both passes; run_entry verdict = rc 0 + returned marker
+  + full count + no traceback. Stock harness discarded child
+  stdout/stderr — the failing assertion was never captured
+  (harness gap; the hardened capture in PR #350 closes it for
+  future failures, identifiers + metadata only).
+- The copy's form/state GREW from 5,662 to 7,891 entries between
+  dd31's passes in one measured run (nested-capture inventory) —
+  suites write real Program state into the shared copy.
+- dd31 suite anatomy: 21 checks = 16 pure-string + 5
+  Program/observer. FIXED owner "dd31mainZZ" (violates
+  uuid-owner hygiene). _cleanup globs owner-named files only.
+  Final check listdirs the WHOLE form/state for any filename
+  containing "dd31". Program/observer checks read lifecycle
+  state (faded/replaced/pending exclusions, 72-40 path).
+
+## 3. Hypothesis space (predicted signature / evidence)
+
+H1 Shared-copy residue in NON-owner-named state files (e.g.
+   program_operator.json class) affects a Program/observer check.
+   Signature: failure depends on which suites ran before dd31 in
+   the same copy. Support: state growth measured; KIE-I precedent
+   (persisted proposals leaking into "fresh" Programs).
+H2 Single-suite interference: one specific predecessor suite
+   leaves the triggering state. Signature: dd31 fails iff suite S
+   precedes it in the copy. Testable cheaply (E1 below).
+H3 Pass-1->pass-2 carry-over via the fixed owner (cleanup miss).
+   WEAKENED: pass-1 failures exist on fresh copies (#346 att.1,
+   leg twice_r2), which H3 cannot explain alone.
+H4 Timing/load sensitivity in a Program/observer check (CI
+   2-core contention vs local). Signature: failure rate tracks
+   machine load, not order. Support: ~29% per-pass rate with no
+   order pattern; local reproduction happened under a loaded
+   regression chain.
+H5 Directory-wide "dd31" residue assertion tripped by another
+   suite's dd31-named artifact. Signature: the failing check is
+   the residue check itself. No direct evidence (assertion never
+   captured); the hardened capture now names it if it fires.
+
+## 4. On Grok's proposed experiment (harmony record)
+
+Grok proposes reconstructing the historical configuration and
+running it >=30 times under the hardened harness. Uni's
+consideration: (a) the historical runs were the ORDINARY smoke
+configuration — there is no special seed set to reconstruct;
+(b) 30 full-list runs cost ~10+ hours for a per-pass lottery
+ticket; (c) his step 3 requests state inventory NAMES+SIZES,
+which Q-DD31-D1's emission contract forbids in CI output (names
+withheld; counts+bytes only — names remain available in
+local-only diagnostics). The experiment is sound in spirit
+(let the hardened trap catch it) but weak in discrimination
+per hour. Uni proposes E1 first; Grok's mass-run remains the
+fallback if E1 falsifies H1/H2.
+
+## 5. Uni's proposed discriminating experiment (E1, bounded)
+
+Pairwise predecessor bisection, fully local, one batch:
+for each suite S preceding dd31 in LIST order: fresh copy ->
+run S -> run dd31 -> record. ~263 pairs at seconds each
+(~25 min total). A single hit identifies the interfering suite
+exactly (H2 proven, H1 localized); zero hits falsify
+single-suite interference and promote H4 (timing) + cumulative
+H1, discriminated next by a prefix-growth variant. No CI cost,
+no product code, privacy-safe (verdicts + counts only). Stop
+criterion: first hit, or the full 263-pair matrix recorded.
+
+## 6. Two-cycle ledger
+
+Cycle 1: PR #349 exception-request circuit (denied).
+Cycle 2: PR #350 diagnostic circuit + Q-DD31-D1 hardening
+(conditional pass; merge hold pending renewed disposition).
+Cap reached 2026-11-10. This analysis is the escalation the
+cap prescribes. DD-31 remains OPEN; #348/#345 holds unchanged.
+
+## 7. Next ONE action (for authority agreement)
+
+Execute E1 and publish the pair matrix as an evidence addendum
+to the joint document; fold Grok's mass-run as the agreed
+fallback if E1 is clean. Awaiting Director + Grok concurrence
+in the record (harmony rule) before execution.
+
+— UNI (executor; evidence above is Uni-verified except where
+marked GROK-REPORTED)
