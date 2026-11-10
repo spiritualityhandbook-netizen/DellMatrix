@@ -270,7 +270,7 @@ parked items the 72 frame never counted.
 
 | # | Item | Source IDs | Status |
 |---|---|---|---|
-| 152 | Dock roster repair — BUILT (PR #370 @ 2b95d86): two-tier dock_sessions (live uncapped + compact history archive with provenance digests; v1 loads whole, re-saves v2); failing-first 3/15 -> 15/15; mutant killed; main-session regression legs running; siblings + 50-proposal bound untouched | DD-37 / C8.Roster | BUILT_HELD |
+| 152 | Dock roster repair — BUILT (PR #370 @ 2b95d86): two-tier dock_sessions (live uncapped + compact history archive with provenance digests; v1 loads whole, re-saves v2); failing-first 3/15 -> 15/15; mutant killed; main-session regression ALL LEGS TERMINAL GREEN (fwd/twice/rev at 2b95d86); Director REVIEW HOLD — verification package posted; siblings + 50-proposal bound untouched | DD-37 / C8.Roster | BUILT_HELD |
 | 153 | Embedding provider binding — EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider RESOLVED by Ace 2026-11-10: any docked AI, Gemini today — see item 178 | C8.EmbedBind | OPEN |
 | 154 | Resident Psalm — visible start/stop, bounded work, proposal-only output; presence grants no authority (direction recorded §12.20; future build) | C8.Resident | OPEN |
 | 155 | Multi-Psalm / BIMO execution design — persona execution needs actual instance semantics and Ace-approved roles; BIMO metadata alone is not execution (design sit-down owed, §12.36e) | C8.MultiPsalm | OPEN |

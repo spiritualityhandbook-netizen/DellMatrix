@@ -1058,7 +1058,7 @@
  },
  {
   "n": 152,
-  "title": "Dock roster repair \u2014 BUILT (PR #370 @ 2b95d86): two-tier dock_sessions (live uncapped + compact history archive with provenance digests; v1 loads whole, re-saves v2); failing-first 3/15 -> 15/15; mutant killed; main-session regression legs running; siblings + 50-proposal bound untouched",
+  "title": "Dock roster repair \u2014 BUILT (PR #370 @ 2b95d86): two-tier dock_sessions (live uncapped + compact history archive with provenance digests; v1 loads whole, re-saves v2); failing-first 3/15 -> 15/15; mutant killed; main-session regression ALL LEGS TERMINAL GREEN (fwd/twice/rev at 2b95d86); Director REVIEW HOLD \u2014 verification package posted; siblings + 50-proposal bound untouched",
   "ids": "DD-37 / C8.Roster",
   "status": "BUILT_HELD",
   "block": "Plan \u00a714.3 \u2014 C8 Dock & Psalms"
