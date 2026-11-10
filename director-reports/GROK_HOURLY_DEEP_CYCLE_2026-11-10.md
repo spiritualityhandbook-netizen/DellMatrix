@@ -1,26 +1,28 @@
-# GROK HOURLY DEEP CYCLE — 2026-11-10 12:01 CST
+# GROK HOURLY DEEP CYCLE — 2026-11-10 13:01 CST
 
-**Window**: since KEEPER_WATERMARK 2026-11-10 11:47 CST (UTC ~17:47)
+**Window**: since KEEPER_WATERMARK 2026-11-10 12:33 CST (UTC ~18:33)
 **Cycle type**: scheduled deep (trailing second-cert, scoreboard, drift, reconciliation, NEEDS_OVERSEER, next-circuit SWAT)
-**Silence**: false — PR #363 merged 17:57 UTC; PR #366 open (merge record for #361).
+**Silence**: false — PR #367 activity (Director MODE A translate fold + Keeper Q-SEEDS.2 CONFIRM + Uni classification addendum).
+**Current main**: 5d4eabbef021711b8c5f41067c53e4ee01ccdde4
 
 ## 2. TRAILING SECOND-CERTIFICATION SWEEP
-- Prior CONFIRM on PR #364 / RESEARCH_VIDEO_STUDY_WAVES (record-truth, classifications concurred) remains sole scoped CONFIRM in window. Director fold present. No second-authority gap. Disposition: **CONFIRM stands**. Logged: no change.
-- PR #361 merged (DD31-CI-INTERMITTENT root cause + oracle scope fix). Merge record PR #366 open. Uni-reported: local 264/264 x3, dd31 21/21, regress 265/265 GREEN on merged main. No PENDING_FINAL_CHECK flag observed in sampled record. No HOLD issued. Certifies nothing new this cycle (merged never certified).
+- Prior CONFIRM on PR #367 / Q-SEEDS.2 (honesty of receipts + safety proof only; explicit non-coverage block issued) remains sole scoped CONFIRM in window. Director MODE A translate ruling folded (Mandell as reasoning language; DellMatrix optional executable; neither grants authority). No full second-authority certification on the atom counts yet; independent verification still pending per Uni fold. Disposition: **CONFIRM stands** (scoped). Logged: no change. No HOLD.
+- No Uni fast-lane executions flagged PENDING_FINAL_CHECK in sampled record since last watermark. Prior merges (#361/#366) carry MERGED_VERIFIED + final-check notes; no new quarantine.
+- No other items requiring trailing cert in window.
 
 Explicit non-coverage: product runtime, Uni executions, any circuit outside records. This certificate does not extend to runtime behavior or Uni-reported numbers.
 
 ## 3. SCOREBOARD AUDIT
-From PR #366 body (Uni-reported): strict completed objectives **19/72 unchanged**. Defect dial **FIXED 12 / GATED 3** (superseding earlier readings; DD31 closed as extension-register oracle item). Pending certifications, blocked/parked: NEEDS_OVERSEER list active (6 items). No drift in words or math detected against sampled INDEX/register fragments. No correction. Disagreement path reserved.
+From merge record PR #361 / MERGE_RECORD_PR361_DD31_CI_INTERMITTENT_2026-11-10.md and PR #367 body (Uni-reported): strict completed objectives **19/72 unchanged**. Defect dial **FIXED 12 / GATED 3** (DD-01..05,09-13,18,42 fixed; DD-06/07/08 gated). Pending certifications, blocked/parked: NEEDS_OVERSEER list active (6 items). No drift in words or math detected against sampled INDEX/register fragments and merge records. No correction. Disagreement path reserved.
 
 ## 4. DOCUMENTATION DRIFT SWEEP
-PR #363 merged (WORKFLOW v1 FINAL). Touched director-reports. INDEX, NEEDS_OVERSEER.md, KEEPER_WATERMARK, README sampled against current main (SHA 88c1c5ef). Reality matches published record on paths checked. No drift requiring correction. No HOLD.
+No merges since last watermark that touched README, INDEX, registers, or plan records. Sampled: INDEX.md (dispositions current), NEEDS_OVERSEER.md (6 items exact), KEEPER_WATERMARK.md, MERGE_RECORD_PR361..., WORKFLOW_V1_FINAL. Reality matches published record on paths checked. No drift requiring correction. No HOLD.
 
 ## 5. RECONCILIATION SWEEP
-No published position disagreement with Director folded record in window. WORKFLOW v1 FINAL synthesis agreement stands. PR #361/#366 record-truth consistent with prior CONFIRM path. No freeze issued.
+No published position disagreement with Director folded record in window. Director MODE A translate aligns with Keeper living-language clarification (seeds as shared Mandell grammar). PR #367 record-truth consistent. No freeze issued.
 
 ## 6. NEEDS_OVERSEER CHECK
-File exists. Parked items each name exact missing input from Ace:
+File exists and matches prior. Parked items each name exact missing input from Ace:
 - Q-N3 FRESH half-life
 - Embed provider (SS14.8)
 - Distill mode (SS14.8)
@@ -30,22 +32,22 @@ File exists. Parked items each name exact missing input from Ace:
 Nothing consumed. No blocker cleared. Nothing new surfaced to Ace.
 
 ## 7. NEXT-CIRCUIT PRE-ANALYSIS + SWAT
-Highest-value next circuit as seen: completion of PR #366 merge record + defect-dial restatement (records-only), then scoped work on open SS14 circuits (e.g. DD-14 Loop PR #348, DD-44 Bounds PR #360) or PR #350 diagnostic under renewed ruling. Reason: records unblock scoreboard truth; remaining circuits have high unblock multiplier on plan sequence, moderate evidence cost, two-cycle finishability under standing auth. Uni ranks by capability gain / severity / unblock / evidence cost / finishability.
+Highest-value next circuit as seen: scoped progression on open SS14 circuits (e.g. DD-14 Loop PR #348, DD-44 Bounds PR #360, or DD-31 diagnostic PR #350 under renewed exact-head ruling) once any pending second-cert or Ace sovereign steps clear. Reason: high unblock multiplier on plan sequence, moderate evidence cost, two-cycle finishability under standing auth. Uni ranks by capability gain / severity / unblock / evidence cost / finishability. Seeds nursery confirm remains Ace sovereign.
 
 SWAT hit list (for next queued, provisional; file under director-reports/SWAT/ or PR comment on open):
-- Target surfaces: form/regress.py (capture/oracle), chain_exec Loop/Predicate/Bounds, director-reports INDEX + defect dial, merge-gate receipts.
-- Ranked risks: silent partial-capture success, unbound default leakage (phantom 8), index/dial drift post-merge, second-authority collision on any field instrument.
+- Target surfaces: form/regress.py (capture/oracle), chain_exec Loop/Predicate/Bounds, director-reports INDEX + defect dial, merge-gate receipts, WFROLES1 nursery field.
+- Ranked risks: silent partial-capture success, unbound default leakage (phantom 8), index/dial drift post-merge, second-authority collision on any field instrument, self-confirm in nursery.
 - Probes (3-5, falsifiable, owners):
-  1. Failing-first + defect-restoring mutant kill on any oracle/capture change (owner: Uni).
+  1. Failing-first + defect-restoring mutant kill on any oracle/capture/bounds change (owner: Uni).
   2. --twice green under full harness, signal dispositions reset (owner: Uni).
   3. Exact-head CI terminal SUCCESS vs local chain divergence check (owner: Keeper verify on records).
   4. Explicit non-coverage block on every CONFIRM (owner: both).
   5. Watermark advance + silence flag after ruling (owner: Keeper).
-- Recommended refusal checks: honest UNCAPTURED / bound_unspecified / no silent default.
-- Positive controls: suite counts preserved, green --twice, receipt-per-cell where applicable.
+- Recommended refusal checks: honest UNCAPTURED / bound_unspecified / no silent default / no self-confirm.
+- Positive controls: suite counts preserved, green --twice, receipt-per-cell where applicable, fresh-process reload of PENDING proposals.
 - Mutant kills: defect-restoring inverse-edit on each repair; bystander non-trip for residue checks.
 
-Standing SWAT risks from waves research (second-authority, pretty-analogy, license, GPU-less, C13 scale) remain pre-build gates if those circuits queue.
+Standing SWAT risks from waves research remain pre-build gates if those circuits queue.
 
 No new ruling this cycle beyond standing CONFIRM. PR comments: none required (no disposition issued on open items).
 
