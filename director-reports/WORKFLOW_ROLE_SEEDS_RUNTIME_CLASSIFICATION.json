@@ -1,10 +1,5 @@
 {
  "run": "verification run 2 (fresh load of WFROLES1, all 31 seeds re-executed)",
- "totals": {
-  "REAL": 161,
-  "DESCRIPTIVE": 82,
-  "REFUSED": 29
- },
  "seeds": {
   "ACE_OVERSEER_FULL": {
    "kind": "MASTER",
@@ -12,57 +7,57 @@
    "atoms": [
     {
      "atom": "00[Nova]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "01[Initiate]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "02[Persona]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "05[Tone]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "03[Logic]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "80[Context]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "35[Discover]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "54[Query]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "18[Mirror]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "57[Compare]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "12[Test]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -72,12 +67,12 @@
     },
     {
      "atom": "82[Group]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "66[ForEach]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -208,27 +203,27 @@
    "atoms": [
     {
      "atom": "18[Mirror]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "57[Compare]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "69[None]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "41[Sanitize]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "12[Test]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -244,12 +239,12 @@
    "atoms": [
     {
      "atom": "82[Group]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "66[ForEach]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -275,22 +270,22 @@
    "atoms": [
     {
      "atom": "15[Map]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "70[Count]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "90[Trace]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "73[Threshold]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -306,12 +301,12 @@
    "atoms": [
     {
      "atom": "30[Expand]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "77[Infer]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -326,7 +321,7 @@
     },
     {
      "atom": "45[Translate]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -342,17 +337,17 @@
     },
     {
      "atom": "43[Fallback]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "32[Pause]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "33[Resume]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -363,37 +358,37 @@
    "atoms": [
     {
      "atom": "06[Cycle]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "56[Get]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "02[Persona]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "03[Logic]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "35[Discover]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "82[Group]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "66[ForEach]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -529,22 +524,22 @@
    "atoms": [
     {
      "atom": "18[Mirror]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "90[Trace]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "69[None]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "49[Profile]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -560,17 +555,17 @@
    "atoms": [
     {
      "atom": "81[Reference]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "57[Compare]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "61[Join]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -591,12 +586,12 @@
    "atoms": [
     {
      "atom": "11[Architect]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "73[Threshold]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -606,12 +601,12 @@
     },
     {
      "atom": "31[Simulate]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "46[Rank]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -622,12 +617,12 @@
    "atoms": [
     {
      "atom": "54[Query]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "35[Discover]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -642,7 +637,7 @@
     },
     {
      "atom": "09[Show]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -658,17 +653,17 @@
     },
     {
      "atom": "55[Set]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "32[Pause]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "25[Pulse]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -679,37 +674,37 @@
    "atoms": [
     {
      "atom": "06[Cycle]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "02[Persona]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "03[Logic]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "35[Discover]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "51[Select]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "18[Mirror]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "34[Stamp]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -719,27 +714,28 @@
     },
     {
      "atom": "54[Query]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "90[Trace]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "57[Compare]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "89[Diff]",
-     "class": "REAL",
-     "error": ""
+     "class": "EXECUTED_OK",
+     "error": "",
+     "run_conditional": true
     },
     {
      "atom": "66[ForEach]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -805,22 +801,22 @@
    "atoms": [
     {
      "atom": "18[Mirror]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "71[Measure]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "16[Decay]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "42[Retry]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -831,22 +827,22 @@
    "atoms": [
     {
      "atom": "81[Reference]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "58[Match]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "61[Join]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "59[Route]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -857,17 +853,17 @@
    "atoms": [
     {
      "atom": "15[Map]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "70[Count]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "73[Threshold]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -883,17 +879,17 @@
    "atoms": [
     {
      "atom": "54[Query]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "52[Filter]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "97[Define]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -914,17 +910,17 @@
     },
     {
      "atom": "69[None]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "32[Pause]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "34[Stamp]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -935,102 +931,102 @@
    "atoms": [
     {
      "atom": "00[Nova]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "02[Persona]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "03[Logic]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "56[Get]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "18[Mirror]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "49[Profile]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "54[Query]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "82[Group]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "61[Join]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "25[Pulse]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "15[Map]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "51[Select]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "35[Discover]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "77[Infer]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "31[Simulate]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "93[Try]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "12[Test]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "11[Architect]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "08[Create]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "62[Parallel]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1040,17 +1036,17 @@
     },
     {
      "atom": "57[Compare]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "41[Sanitize]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "63[Sequence]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1065,27 +1061,27 @@
     },
     {
      "atom": "27[Checkpoint]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "90[Trace]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "38[Distill]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "36[Inject]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "10[Keep]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1095,7 +1091,7 @@
     },
     {
      "atom": "20[Alpha]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -1106,22 +1102,22 @@
    "atoms": [
     {
      "atom": "18[Mirror]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "71[Measure]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "89[Diff]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "16[Decay]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -1132,17 +1128,17 @@
    "atoms": [
     {
      "atom": "84[Copy]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "59[Route]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "66[ForEach]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1158,7 +1154,7 @@
    "atoms": [
     {
      "atom": "15[Map]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1168,12 +1164,12 @@
     },
     {
      "atom": "73[Threshold]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "80[Context]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -1184,12 +1180,12 @@
    "atoms": [
     {
      "atom": "54[Query]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "76[Resolve]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1199,7 +1195,7 @@
     },
     {
      "atom": "97[Define]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -1210,22 +1206,23 @@
    "atoms": [
     {
      "atom": "94[Catch]",
-     "class": "REAL",
-     "error": ""
+     "class": "EXECUTED_OK",
+     "error": "",
+     "run_conditional": true
     },
     {
      "atom": "27[Checkpoint]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "43[Fallback]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "33[Resume]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -1236,17 +1233,17 @@
    "atoms": [
     {
      "atom": "36[Inject]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "02[Persona]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "03[Logic]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1261,22 +1258,22 @@
     },
     {
      "atom": "80[Context]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "18[Mirror]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "35[Discover]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "66[ForEach]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1372,22 +1369,22 @@
    "atoms": [
     {
      "atom": "18[Mirror]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "71[Measure]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "41[Sanitize]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "69[None]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -1398,22 +1395,22 @@
    "atoms": [
     {
      "atom": "81[Reference]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "14[Bind]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "57[Compare]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "07[Link]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -1424,7 +1421,7 @@
    "atoms": [
     {
      "atom": "15[Map]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1434,12 +1431,12 @@
     },
     {
      "atom": "73[Threshold]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "31[Simulate]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -1450,12 +1447,12 @@
    "atoms": [
     {
      "atom": "54[Query]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "76[Resolve]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1465,7 +1462,7 @@
     },
     {
      "atom": "43[Fallback]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -1476,8 +1473,9 @@
    "atoms": [
     {
      "atom": "94[Catch]",
-     "class": "REAL",
-     "error": ""
+     "class": "EXECUTED_OK",
+     "error": "",
+     "run_conditional": true
     },
     {
      "atom": "92[Guard]",
@@ -1486,12 +1484,12 @@
     },
     {
      "atom": "32[Pause]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "09[Show]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     }
    ]
@@ -1502,32 +1500,32 @@
    "atoms": [
     {
      "atom": "01[Initiate]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "97[Define]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "35[Discover]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "12[Test]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "08[Create]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "57[Compare]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1537,12 +1535,12 @@
     },
     {
      "atom": "18[Mirror]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
      "atom": "37[Nurture]",
-     "class": "REAL",
+     "class": "EXECUTED_OK",
      "error": ""
     },
     {
@@ -1552,5 +1550,11 @@
     }
    ]
   }
+ },
+ "relabeling": "Per Director instruction (2026-11-10 12:40 mail): REAL is relabeled EXECUTED_OK; atoms whose class depends on session/field state carry run_conditional=true (89[Diff] in KEEPER_FASTLANE_FULL; 94[Catch] in UNI_FAILURE_PATH and GEMINI_FAILURE_PATH).",
+ "totals_run2": {
+  "REAL": 161,
+  "DESCRIPTIVE": 82,
+  "REFUSED": 29
  }
 }

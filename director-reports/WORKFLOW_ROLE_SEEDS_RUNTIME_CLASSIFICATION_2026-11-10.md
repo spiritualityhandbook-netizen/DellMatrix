@@ -7,7 +7,7 @@ does not make its instructions executable — so every one of the 31
 seeds was EXECUTED through the canonical front door in the WFROLES1
 field and every atom classified by what the program actually did:
 
-- **REAL** — the atom executed and performed its operation (`ok`).
+- **EXECUTED_OK** (relabeled from REAL per the Director's 2026-11-10 instruction) — the atom executed and performed its operation (`ok`) in that run. Three atoms are additionally flagged **RUN_CONDITIONAL** in the JSON: their class depends on session/field state (see the evidence addendum).
 - **DESCRIPTIVE** — the atom was skipped: it carries a label/prose
   argument with no executable binding; the program reports it not
   executed (ok=False, skipped=True) rather than pretending.
