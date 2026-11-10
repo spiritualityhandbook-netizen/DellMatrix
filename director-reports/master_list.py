@@ -15,7 +15,7 @@ Usage:
   python3 master_list.py [--data PATH] [--out PATH] [--line]
 
 --line prints only the one-line summary for the state file / cycle log:
-  MWL 25/177 COMPLETE = 14.1% | MERGED_UNVERIFIED 2 | BUILT_HELD 4 | ...
+  MWL 25/182 COMPLETE = 13.7% | MERGED_UNVERIFIED 4 | BUILT_HELD 2 | ...
 """
 import argparse
 import json
@@ -125,13 +125,50 @@ def render(items, data_note):
     return "\n".join(out)
 
 
+KNOWN_ABSENT = {"DD-33", "SM-53"}  # grep-verified absent from plan + register (coverage report)
+
+
+def census(items):
+    """Mechanical presence census: which series IDs appear in items' ids fields.
+    Presence is NOT proof of correct deduplication or coverage — it is a
+    tripwire that fails loudly when an expected ID vanishes from the data.
+    The auditable coverage argument lives in master_work_list_coverage.md."""
+    import re as _re
+    found = set()
+    for i in items:
+        found |= set(_re.findall(r"(?:DD|SM|V|G)-\d+|72-\d+", i["ids"]))
+    missing = []
+    for prefix, hi in (("DD-", 54), ("72-", 72)):
+        for k in range(1, hi + 1):
+            tok = f"{prefix}{k:02d}"
+            if tok not in found and tok not in KNOWN_ABSENT:
+                missing.append(tok)
+    return found, missing
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default="master_work_list_items.json")
     ap.add_argument("--out", default=None)
     ap.add_argument("--line", action="store_true")
+    ap.add_argument("--check", default=None,
+                    help="re-render and byte-diff against this committed render; exit 3 on drift")
+    ap.add_argument("--census", action="store_true",
+                    help="print the series-ID presence census and fail on unexpected absences")
     args = ap.parse_args()
     items = load_and_validate(args.data)
+    if args.census:
+        found, missing = census(items)
+        print(f"census: {len(found)} series IDs present; unexpected absences: {missing}")
+        if missing:
+            sys.exit(4)
+    if args.check:
+        rendered = render(items, args.data)
+        existing = open(args.check).read()
+        if rendered != existing:
+            print(f"RENDER DRIFT: {args.check} differs from a fresh render of {args.data}", file=sys.stderr)
+            sys.exit(3)
+        print(f"render check OK: {args.check} is byte-identical to a fresh render")
     if args.line:
         print(one_line(items))
         return
