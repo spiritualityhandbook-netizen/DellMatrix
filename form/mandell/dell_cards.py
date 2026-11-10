@@ -563,8 +563,10 @@ DEEP_NOTES: Dict[int, str] = {
          "the sandbox — sandbox_off, every unit "
          "sandboxed=False, 'Sandbox OFF.'"),
     25: ("D1 circuit 18 DEEP NOTE: Pulse pulses the "
-         "enhance engine ('Pulse sent.'); with "
-         "enhance OFF the scores are untouched; the "
+         "enhance engine ('Pulse sent.' when a pulse "
+         "executes); with enhance OFF the scores are "
+         "untouched and the receipt reports the refusal "
+         "('Pulse NOT sent (enhance OFF).', DD-18); the "
          "labels 'on'/'enhance_on' turn enhance ON "
          "instead ('Enhance ON.')."),
     26: ("D1 circuit 18 DEEP NOTE: Temp resolves "

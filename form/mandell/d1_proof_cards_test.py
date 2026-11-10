@@ -19,8 +19,8 @@ survey distribution, so the accounting cannot drift silently:
   reason). Dimensions are asserted separately — a card may
   not borrow strength from another dimension.
 - The bare-invocation distribution as amended by the
-  Director-order circuits (steps 6, 9 and 10 most
-  recently): 79 executed; exactly 21 failed, each with
+  Director-order circuits (steps 6, 9 and 10, and DD-18
+  most recently): 78 executed; exactly 22 failed, each with
   its recorded reason. (Bare invocation on an empty field in this
   runtime — operand/precondition failures are expected and
   are what the cards exist to record.)
@@ -71,6 +71,11 @@ EXPECTED_BARE_FAILURES = {
     # honestly refuses ungroup_missing:empty instead of
     # a silent released=0 success.
     83: "ungroup_missing:empty",
+    # DD-18 (C1.PulseReceipt): bare Pulse on an empty field
+    # honestly refuses on the enhance gate instead of
+    # claiming "Pulse sent." with ok=True — the same cure
+    # Step 6 applied to bare Decay (Dell 16, above).
+    25: "Pulse refused: enhance OFF",
     94: "catch_illegal",
     95: "commit_without_try",
     98: "alias_missing",
@@ -107,8 +112,8 @@ def main():
 
     failed = {c["dell"]: c["bare"]["error"]
               for c in cards if c["bare"]["outcome"] != "executed"}
-    _rec("bare invocation: 79 executed, 21 named failures",
-         len(failed) == 21
+    _rec("bare invocation: 78 executed, 22 named failures",
+         len(failed) == 22
          and all(failed.get(n, "").startswith(prefix)
                  for n, prefix in EXPECTED_BARE_FAILURES.items())
          and set(failed) == set(EXPECTED_BARE_FAILURES),

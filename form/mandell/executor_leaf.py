@@ -368,8 +368,24 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             program.enhance_on()
             messages.append("Enhance ON.")
         else:
-            program.pulse()
-            messages.append("Pulse sent.")
+            # DD-18: the receipt reports the gate's actual outcome.
+            # The gate refuses (enhance OFF / budget exhausted) with
+            # ok=False; claiming "Pulse sent." anyway was the defect.
+            out = program.pulse()
+            if out and out.get("ok"):
+                messages.append("Pulse sent.")
+            else:
+                reason = (out or {}).get("reason", "refused")
+                messages.append(f"Pulse NOT sent ({reason}).")
+                return {
+                    "ok": False,
+                    "seed": _echo.as_mandel(),
+                    "english": _echo.as_english(),
+                    "primary": primary,
+                    "messages": messages,
+                    "new_program": new_program,
+                    "error": f"Pulse refused: {reason}",
+                }
     elif primary == 26:
         lab = (label or "warm").lower()
         if lab in ("cold", "cool"):
@@ -378,8 +394,14 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             messages.append("Temp → cold (enhance OFF)")
         elif lab in ("hot", "heat"):
             program.enhance_on()
-            program.pulse()
-            messages.append("Temp → hot (enhance ON + pulse)")
+            out = program.pulse()
+            if out and out.get("ok"):
+                messages.append("Temp → hot (enhance ON + pulse)")
+            else:
+                # DD-18: the temp change executed; the pulse did not.
+                reason = (out or {}).get("reason", "refused")
+                messages.append(
+                    f"Temp → hot (enhance ON; pulse refused: {reason})")
         else:
             program.enhance_on()
             messages.append("Temp → warm (enhance ON)")

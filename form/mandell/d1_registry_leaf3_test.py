@@ -250,9 +250,10 @@ def main():
     p.enhance.state.scores.clear()
     p.enhance.state.scores["garden_gate"] = 1.0
     r = _run(p, "25[Pulse]")
-    _rec("25 Pulse: bare Pulse with enhance OFF leaves "
-         "the scores exactly unchanged",
-         _msgs(r) == ["Pulse sent."]
+    _rec("25 Pulse: bare Pulse with enhance OFF refuses "
+         "honestly (DD-18) and leaves the scores exactly unchanged",
+         _msgs(r) == ["Pulse NOT sent (enhance OFF)."]
+         and r.get("ok") is False
          and p.enhance.on is False
          and p.scores() == {"garden_gate": 1.0}, str(_msgs(r)))
     r = _run(p, "25[Pulse] :: on")
