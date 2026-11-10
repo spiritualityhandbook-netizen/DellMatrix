@@ -75,11 +75,13 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
     elif n == 57:
         head = lab.lower().split(":")[0].split(" ")[0]
         _toks = [p for p in lab.replace(",", " ").split() if p]
-        if head not in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends") and ((len(_toks) >= 2 and _toks[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends")) or len(_toks) > 2):
-            # DD-42: an infix condition (level gt 99) or any
-            # label the two-token eq shorthand cannot represent
-            # refuses honestly — the old rewrite silently
-            # re-answered "eq:level gt", a question nobody asked.
+        if head not in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends") and len(_toks) >= 2 and _toks[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends"):
+            # DD-42: an infix condition (level gt 99) refuses
+            # honestly — the old rewrite silently re-answered
+            # "eq:level gt", a question nobody asked. (Tokens
+            # beyond two WITHOUT an operator in second place
+            # keep the pinned shorthand truncation contract —
+            # d1_dell57_compare_test rewrite_drops_tokens.)
             ok, err = False, "condition_unparseable"
             st.last_result = result_cell(value=None, matched=False, source="compare", predicate="unparseable", error=err, trace="57")
             messages.append(f"Compare refused ({err}) {lab}")
@@ -149,11 +151,12 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
         _refuse73 = False
         if lab and head not in ("eq", "ne", "lt", "lte", "gt", "gte", "threshold"):
             parts = [p for p in lab.replace(",", " ").replace(":", " ").split() if p]
-            if len(parts) > 2 or (len(parts) == 2 and parts[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends")):
-                # DD-42 sibling: the gte shorthand cannot
-                # represent an infix condition — refuse
+            if len(parts) >= 2 and parts[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends"):
+                # DD-42 sibling: an infix condition refuses
                 # honestly instead of comparing against the
-                # operator word (gte:level gt).
+                # operator word (gte:level gt). Extra tokens
+                # without an operator in second place keep
+                # the shorthand truncation contract (as 57).
                 _refuse73 = True
             else:
                 expr = f"gte:{parts[0]} {parts[1]}" if len(parts) >= 2 else (f"gte:count {parts[0]}" if parts else expr)

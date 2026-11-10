@@ -148,6 +148,22 @@ def main():
     check("compare.eq_shorthand_preserved",
           ok is True and lr.get("matched") is True,
           f"ok={ok} err={err} lr={lr}")
+    ok, err = _atom(execute_seed(p, "57[Compare] :: level 5 dropped"))
+    lr = st.last_result or {}
+    check("compare.truncation_contract_preserved",
+          ok is True and lr.get("matched") is True,
+          f"ok={ok} err={err} lr={lr}")
+
+    # ---------- English door (operator_bridge) ----------
+    from form.mandell.operator_bridge import execute_english
+    r = execute_english(p, "branch if ready")
+    check("english.branch_if_bare_key_routes",
+          r.routed and r.ok and r.resolved_dell == 60,
+          f"routed={r.routed} ok={r.ok} err={r.error}")
+    r = execute_english(p, "branch if level gt 99")
+    check("english.branch_if_infix_refused_honestly",
+          r.routed and not r.ok and "condition_unparseable" in (r.error or ""),
+          f"routed={r.routed} ok={r.ok} err={r.error}")
 
     # ---------- Threshold (73, sibling rewrite) ----------
     ok, err = _atom(execute_seed(p, "73[Threshold] :: level gt 99"))
