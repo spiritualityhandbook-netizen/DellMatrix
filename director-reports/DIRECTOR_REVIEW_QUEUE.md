@@ -18,6 +18,8 @@ SUSX100,000 state file. Uni updates heads in place as lanes land.
 
 | PR #370 — C8.Roster / DD-37 dock_sessions two-tier retention (live uncapped + compact history archive) | NEW BUILD for review: failing-first 3/15 -> 15/15, mutant killed, dock-family suites green; main-session regression legs running at head; siblings + proposals-50 untouched | 2b95d86 | 2026-11-10 (PR body carries the evidence) |
 
+| PR #372 — Q-DD31F.2 sibling fix: p0 sealed-integrity scan owner-scoped | NEW BUILD for review: legacy-format glob was foreign-trippable AND vacuous; plant differential 12/13 -> 13/13; own-manifest mutants red; one test file | 1182e35 | 2026-11-10 (PR body carries the evidence) |
+
 ## Final-check queue (hourly final check, WORKFLOW v1 §4)
 
 Merged 2026-11-10, final-check PENDING: PR #361, #362, #363, #365,
