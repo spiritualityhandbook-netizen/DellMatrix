@@ -161,12 +161,25 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
                     f"Scope refused: unknown scope {name!r} "
                     f"(supported: {', '.join(scope_supported(st))})")
         elif n == 60:
-            from .control_runtime import ControlFrame, eval_condition
-            taken = eval_condition(st, program, lab or "true")
-            st.branch = {"cond": lab or "true", "taken": taken, "path": "true" if taken else "false"}
-            frame = ControlFrame(id=f"br{len(st.frames)}", kind="branch", condition=lab or "true", status="taken" if taken else "skipped")
-            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
-            messages.append(f"Branch cond={lab or 'true'} taken={taken} unchosen_not_run")
+            from .control_runtime import ControlFrame, eval_condition_detail
+            detail = eval_condition_detail(st, program, lab or "true")
+            if detail.get("error"):
+                # DD-42: an unparseable Branch condition takes
+                # NO arm — the atom refuses with the error.
+                ok = False
+                err = detail["error"]
+                messages.append(f"Branch refused ({err}) cond={lab or 'true'}")
+                st.last_result = {"value": None, "matched": False,
+                                  "source": "branch", "predicate": "unparseable",
+                                  "error": err, "trace": "60"}
+                taken = None
+            else:
+                taken = bool(detail.get("matched"))
+            if taken is not None:
+                st.branch = {"cond": lab or "true", "taken": taken, "path": "true" if taken else "false"}
+                frame = ControlFrame(id=f"br{len(st.frames)}", kind="branch", condition=lab or "true", status="taken" if taken else "skipped")
+                st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+                messages.append(f"Branch cond={lab or 'true'} taken={taken} unchosen_not_run")
         elif n == 61:
             from .control_runtime import ControlFrame
             policy = (lab or "all").lower()

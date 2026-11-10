@@ -345,7 +345,7 @@ def english_to_intent(english: str):
     if first >= 0:
         rest = text[first:]
         rest = _re.sub(r"^[a-z0-9]+", "", rest, count=1).strip()
-        rest = _re.sub(r"^(the|a|an|of|to|for|with|on|in)\s+", "", rest).strip()
+        rest = _re.sub(r"^(the|a|an|of|to|for|with|on|in|if)\s+", "", rest).strip()
         label = rest[:120]
     name = CORE_II[n]["name"]
     action = hits[0]
