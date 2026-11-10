@@ -404,3 +404,44 @@ Secondary:
   rendering craft for fractal maps) — display-craft lead for B3.
 
 *End of report. Nothing published; no one contacted.*
+
+---
+
+## ADDENDUM — AUTHORITY ANALYSES FOLDED (2026-11-10)
+
+**Director** (Gmail 1a1c69107898777f, folded verbatim as
+DIRECTOR_ANALYSIS_PR364_WAVES_VERBATIM_2026-11-10.md): ACCEPT with
+refinements. R1: restoration classified **ABSTRACT /
+PARTIALLY_REALIZED / CHAIN_COVERAGE_UNKNOWN** — receipts restore
+decision legibility, not the correctness of upstream graded inputs;
+the bounded follow-up candidate is a graded-input-to-verdict invariant
+test on one real canonical path (faded + stale/superseded injection at
+a graded-to-decision boundary), only after grounding and without
+duplicating DD-13. R2: field instrument **INNOVATE_DEFERRED** —
+read-only, nonauthoritative, never feeding resonance scores, Nursery
+admission, vote weights, or threshold decisions by default; any
+semantic path is an Ace-owned architecture decision requiring
+independent predictive validation. R3 audit nuances: SKY wave-field
+ADAPT is future display-only DESIGN (performance + visual-meaning
+calibration PROJECTED, not verified); WaveDude REJECT is scoped to the
+CURRENT Studio architecture and the record's GPL wording is corrected
+— GPL-3.0 does not ban use nor automatically infect independent
+coexisting works; C13 sweep ADAPT is DESIGN, not certified
+implementation (requires a genuinely isolated sandbox — Try+run+Revert
+is not isolation — deterministic seeds, per-cell receipts, sensitivity
+analysis, and no run-count promises before profiling); symbiosis map =
+visualization of existing receipts, no causal prediction implied;
+robustness differential ABSTRACT, not superseded until the C13 solver
+and classifier carry perturbation controls. EVIDENCE BOUNDARY
+(Director): the photonics "10-15 stage" cascade figure must not be
+generalized — it depends on topology, loss, and regeneration; the
+transferable moral is analogy, not engineering law.
+
+**Keeper** (record KEEPER_ANALYSIS_RESEARCH_VIDEO_STUDY_WAVES_2026-11-10.md,
+commit aabfe3c; PR #364 comment 6774802581): record-truth CONFIRM, no
+drift, no HOLD; all classifications concurred with no moves; INNOVATE
+field layer explicitly parked under second-authority risk; five
+standing SWAT risks seeded for any future wave-field SKY or C13
+stability-map circuit (second-authority isolation, data-binding,
+clean-room license hygiene, GPU-less fallback, receipt-per-cell
+honesty).
