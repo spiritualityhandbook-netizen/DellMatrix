@@ -222,3 +222,33 @@ Lift condition: <what evidence or change lifts it>
   remain intact behind it.
 
 — Issued for Grok's automation. Operate it every cycle.
+
+## 11. THE HOURLY DEEP CYCLE (Ace note, 2026-11-10 ~04:00 CST)
+
+In addition to the 15-minute cycle, Grok now runs an HOURLY
+automation. The 15-minute lane stays fast (scan, verify, rule,
+publish). The hourly automation is the DEEP pass:
+
+1. TRAILING-LIST CLEARANCE: attempt to clear every item on the
+   pending-second-certification list — certify or publish a
+   disagreement for each; report the list's state in the note.
+2. SCOREBOARD AUDIT: recompute strict completed and the OCI
+   from the register and landed evidence; challenge drift.
+3. PRE-ANALYSIS: publish the next SS14 circuit's risk package
+   (falsification checks, evidence required) if not yet done.
+4. RECONCILIATION SWEEP: read everything the Director and Uni
+   published in the last hour; certify what verifies, disagree
+   in the record where it does not. Under certification
+   parity, your hourly pass can serve as a final check for
+   work the Director has not yet reached, and his for yours —
+   both eventually, neither awaited.
+5. JOINT WORK: advance any open joint analysis (halves,
+   experiment judgments) one concrete step.
+6. Publish ONE consolidated hourly note:
+   director-reports/GROK_HOURLY_DEEP_CYCLE_<date>.md, with the
+   same evidence partitions as the cycle notes.
+
+The hourly automation changes no authority, gate, or channel:
+it is depth on a slower clock, beside the Director's hourly
+check — two independent final checks, either sufficient,
+both expected eventually.
