@@ -71,3 +71,47 @@ Q-DD31-D2: renewed disposition for PR #348 on this matrix, or does
 the capture hunt continue with a stated finite sampling budget
 (e.g. instrumented --twice runs attached to future PR smokes at
 no extra cost, since the seam rides the harness)?
+
+---
+
+## ADDENDUM 2026-11-10 — Q-DD31-D1 hardening (CONDITIONAL PASS conditions)
+
+Per the Director's ruling 2026-11-10 01:40 CST (conditional code
+review pass; merge hold pending bounded hardening), the capture is
+now restricted to explicitly safe content:
+
+EMISSION CONTRACT (hardened): the block carries ONLY (a) assertion
+identifiers parsed from child FAIL lines (strict charset
+[A-Za-z0-9_.-]{1,80}; the detail after the colon is never emitted),
+(b) sanitized metadata (stdout/stderr line counts, traceback
+presence, verdict fields - the stderr err-tail is stripped), and
+(c) state metadata: file COUNT and total BYTES via scandir (capped
+enumeration; filenames never emitted). Raw child stdout/stderr and
+state filenames no longer reach CI logs or capture files; the
+previous three-shape token scrub is gone because no raw text is
+emitted at all.
+LIFECYCLE: the capture directory is pruned to the newest 50 capture
+files on each write; contents are identifiers + metadata only, so
+no durable sensitive artifact exists.
+PATH SAFETY: capture filenames are whitelist-sanitized (no
+separators, no leading dots, length-capped); the capture directory
+must resolve inside an allowed root (the user's home tree or the
+system temp dir); an environment value pointing elsewhere is
+refused - stdout-only emission, noted in the block.
+EVIDENCE: new registered suite form.regress_capture_test (24
+checks) is FAILING-FIRST against the unhardened capture (11/24:
+canaries leaked into stdout and files in three non-token shapes,
+a sensitive state filename printed, raw FAIL detail printed,
+traversal filename produced, escape dir written, no retention).
+After hardening: 24/24. A raw-emission mutant dropped it to 19/24
+(killed; reverted by inverse edit). Verified properties: green
+silence, failed-entry fidelity (assertion id emitted), nested
+fixture classification (inner failure captured, outer green),
+unchanged verdicts, no durable sensitive artifact, traversal
+contained, escape refused, retention prunes to 50.
+Known residual (stock behavior, outside this patch): run_pass's
+one-line failure summary still includes a <=90-char tail of the
+child's last stderr line (the pre-existing why string). It is
+disclosed here for disposition rather than silently changed.
+Renewed disposition on Q-DD31-D1 is requested for PR #350 at the
+new head; exact-head terminal workflows will be cited from CI.
