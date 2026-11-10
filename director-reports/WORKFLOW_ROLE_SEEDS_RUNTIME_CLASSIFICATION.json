@@ -1553,7 +1553,7 @@
  },
  "relabeling": "Per Director instruction (2026-11-10 12:40 mail): REAL is relabeled EXECUTED_OK; atoms whose class depends on session/field state carry run_conditional=true (89[Diff] in KEEPER_FASTLANE_FULL; 94[Catch] in UNI_FAILURE_PATH and GEMINI_FAILURE_PATH).",
  "totals_run2": {
-  "REAL": 161,
+  "EXECUTED_OK": 161,
   "DESCRIPTIVE": 82,
   "REFUSED": 29
  }
