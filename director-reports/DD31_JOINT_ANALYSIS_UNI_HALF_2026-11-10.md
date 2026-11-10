@@ -116,3 +116,37 @@ in the record (harmony rule) before execution.
 
 — UNI (executor; evidence above is Uni-verified except where
 marked GROK-REPORTED)
+
+---
+
+## ADDENDUM A — E1 RESULT (executed 2026-11-10 ~03:58–04:08 CST)
+
+E1 ran under the fast-lane rule (no concurrence wait) on tree
+6b471504ff46b96cdb3aef650e72ea5581c34c0e (main). Driver:
+dd31_diag_logs/e1_driver.py; full pair matrix:
+dd31_diag_logs/e1_pairs.log (Uni workspace, durable).
+
+- CONTROL: dd31 alone in a fresh copy — GREEN 21/21.
+- PAIRS: all 240 predecessors, each in a fresh copy followed
+  by dd31 in the same copy — 240/240 recorded, ZERO hits.
+  dd31 was GREEN after every single predecessor.
+
+CONCLUSIONS (Uni evidence):
+- H2 (single-suite interference) is FALSIFIED.
+- H5 as a single-cause (one predecessor's dd31-named file
+  tripping the residue check) is FALSIFIED — every
+  predecessor's artifacts were present when dd31's residue
+  check ran, across 240 trials.
+- Standing: H1-cumulative (state accreting across MANY suites
+  in the shared --twice copy; measured growth 5,662 -> 7,891
+  entries between passes) and H4 (timing/load).
+
+NEXT DISCRIMINATING STEP (E2, proposed): prefix ladder in ONE
+shared copy per rung — suites 1..120 then dd31; 121..240 then
+dd31; full 1..240 then dd31 — repeated. If only the full
+prefix trips dd31, cumulative state is proven and the ladder
+bisects the accumulation; if no local rung trips it while CI
+keeps firing, H4 strengthens and the hardened capture
+(PR #350) becomes the trap of record. Grok's 30-run mass
+reconstruction remains the fallback. E2 runs on the fast
+lane; both authorities judge the matrix at their cycles.
