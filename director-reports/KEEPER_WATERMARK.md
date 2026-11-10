@@ -1,16 +1,16 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-10 14:11 CST  
-**UTC approx**: 2026-11-10T20:11:00Z
+**Last cycle**: 2026-11-10 ~15:02 CST  
+**UTC approx**: 2026-11-10T21:02:00Z
 
 ## Items ruled this cycle
-- PR #350 head b6b0307 — **CONFIRM (scoped)** on the bounded safety patch (summary path no longer emits raw stderr tail; err_lines=<count> only). Closes the residual leak named by the Director. Explicit non-coverage: does not close DD-31, does not certify product paths. Final merge still requires remaining Director conditions + §32 + hard gate.
-- PR #360 already carries Keeper CONFIRM (scoped) at 0773d13; Director conditional authorization in force pending local regression terminal.
+- Prior scoped CONFIRM on PR #360 (DD-44) and PR #350 (DD-31 diagnostic safety) stands. Both merged lawfully post prior watermark. This pass serves as final check on records. Explicit non-coverage: product runtime, Uni executions, circuits outside named records.
+- No other ripe items. Scoreboard 19/72 + FIXED 12 / GATED 3 unchanged. NEEDS_OVERSEER 6 items intact.
 
 ## Silence flag
-No other ripe items processed this cycle.
+true — no new dispositions issued.
 
 ## Standing notes
-Both builds now have Director SCOPED_CODE_PASS + Keeper CONFIRM on the record. Conditional means conditional — no merge until each named condition is verified in the step itself.
+Highest-value next: PR #372 (Q-DD31F.2 sibling oracle hygiene). Lawful merges never retroactively invalidated; defect found here quarantines the claim and opens a correction circuit.
 
 — KEEPER
