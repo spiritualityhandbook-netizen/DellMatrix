@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-DEFAULT_BOUND = 8
+DEFAULT_BOUND = 8  # legacy constant; NOT a loop default (DD-44)
 MAX_DEPTH = 4
 CONTROL_HEADS = {60, 62, 63, 64, 65, 66}
 
@@ -36,11 +36,38 @@ class ControlFrame:
         }
 
 
-def bound_of(st: Any) -> int:
-    from .predicate import validate_bound
-    raw = getattr(st, "limit", "") or ""
+def bound_detail(st: Any) -> Dict[str, Any]:
+    """DD-44: resolve the stored loop bound HONESTLY.
+
+    Returns {status, value, error, domain, raw} where status is
+    "specified" (a number the user stated, or the word max =
+    the stated maximum), "unspecified" (no Limit was ever
+    stated — the loop must ASK, never silently pick a number),
+    or "invalid" (a stored value that is not a lawful bound).
+    This replaces bound_of, whose contract returned 8 for
+    empty, "max", AND invalid input alike — the silent-8
+    defect. No accessor may hand back an unstated default."""
+    from .predicate import MAX_BOUND, validate_bound
+    raw = str(getattr(st, "limit", "") or "").strip()
+    if not raw:
+        return {"status": "unspecified", "value": None,
+                "error": "", "domain": "loop", "raw": raw}
+    if raw.lower() == "max":
+        return {"status": "specified", "value": MAX_BOUND,
+                "error": "", "domain": "loop", "raw": raw}
     ok, n, _err = validate_bound(raw)
-    return n if ok else DEFAULT_BOUND
+    if ok:
+        return {"status": "specified", "value": n,
+                "error": "", "domain": "loop", "raw": raw}
+    return {"status": "invalid", "value": None,
+            "error": "invalid_limit", "domain": "loop", "raw": raw}
+
+
+def bound_display(st: Any) -> str:
+    """The bound as receipts may show it: the stated number,
+    or the honest word for its absence — never a phantom 8."""
+    d = bound_detail(st)
+    return str(d["value"]) if d["status"] == "specified" else d["status"]
 
 
 def eval_condition_detail(st: Any, program: Any, expr: str) -> Dict[str, Any]:

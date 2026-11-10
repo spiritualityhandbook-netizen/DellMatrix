@@ -316,6 +316,7 @@ LIST = [
     "form.step3c_sanitize_state_test:smoke",
     "form.dd31_sanitize_copula_test:smoke",
     "form.dd42_predicate_infix_test:smoke",
+    "form.dd44_bounds_explicit_test:smoke",
     "form.dd18_pulse_receipt_test:smoke",
     "form.step4_operand_transport_test:smoke",
     "form.step5_exchange_boundary_test:smoke",

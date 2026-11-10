@@ -220,7 +220,7 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
             messages.append(f"Sequence {lab or 'ordered'}")
         elif n == 64:
-            from .control_runtime import ControlFrame, eval_condition, bound_of
+            from .control_runtime import ControlFrame, eval_condition, bound_display
             # Step 7 (B8): the chain controller owns Until condition
             # semantics — an EMPTY condition evaluates true
             # (zero-iteration boundary) in eval_condition, so the
@@ -229,13 +229,13 @@ def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[
             pred = eval_condition(st, program, lab)
             frame = ControlFrame(id=f"un{len(st.frames)}", kind="until", condition=lab, status="ready" if not pred else "zero")
             st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
-            messages.append(f"Until cond={lab or 'true'} already={pred} bound={bound_of(st)}")
+            messages.append(f"Until cond={lab or 'true'} already={pred} bound={bound_display(st)}")
         elif n == 65:
-            from .control_runtime import ControlFrame, eval_condition, bound_of
+            from .control_runtime import ControlFrame, eval_condition, bound_display
             pred = eval_condition(st, program, lab or "true")
             frame = ControlFrame(id=f"wh{len(st.frames)}", kind="while", condition=lab or "true", status="ready" if pred else "zero")
             st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
-            messages.append(f"While cond={lab or 'true'} already={pred} bound={bound_of(st)}")
+            messages.append(f"While cond={lab or 'true'} already={pred} bound={bound_display(st)}")
         elif n == 66:
             from .control_runtime import ControlFrame
             # Step 7 (B9): empty selection means zero iterations —

@@ -224,7 +224,11 @@ def main():
     p = _prog(tag)
     st = p.core_ii
     _run(p, "55[Set] :: go=1")
-    out = _run(p, "65[store_go] > 92[false] > 86[Delete] :: go > 61[Join]")
+    # DD-44: the While's bound is now STATED (8) instead of
+    # silently defaulted; the Guard-propagation subject of
+    # this section is unchanged.
+    out = _run(p, "72[Limit] :: 8 > 65[store_go] > 92[false] "
+                  "> 86[Delete] :: go > 61[Join]")
     check("I1.guard_in_while_body_one_iteration_frame_fail",
           _recs(out, 92) == [(False, "guard_block", False)]
           and _settled(p, "while") == "fail"

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple
 
-from .predicate import eval_predicate, partition_store_operand, result_cell, validate_bound
+from .predicate import MAX_BOUND, eval_predicate, partition_store_operand, result_cell, validate_bound
 
 QUERY_DELLS = {51, 52, 54, 55, 56, 57, 58, 59, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79}
 
@@ -136,15 +136,29 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
         st.last_result["measure_kind"] = kind
         messages.append(f"Measure {kind}={val} unit={unit}")
     elif n == 72:
-        vok, bound, verr = validate_bound(lab or "max")
-        if not vok:
-            ok, err = False, verr
-            st.last_result = result_cell(value=None, matched=False, source="limit", error=verr, trace="72")
-            messages.append(f"Limit invalid {lab!r}")
-        else:
-            st.limit = str(bound)
-            st.last_result = result_cell(value=bound, matched=True, source="limit", predicate="bound", trace="72")
+        raw = (lab or "").strip()
+        if not raw:
+            # DD-44: a bare Limit may not manufacture a value —
+            # the old (lab or "max") path silently stored 8.
+            ok, err = False, "limit_unspecified"
+            st.last_result = result_cell(value=None, matched=False, source="limit", error=err, trace="72")
+            messages.append("Limit refused (limit_unspecified): state a number or max")
+        elif raw.lower() == "max":
+            # DD-44: "max" states the maximum (MAX_BOUND) —
+            # it previously also stored 8 via validate_bound.
+            st.limit = str(MAX_BOUND)
+            st.last_result = result_cell(value=MAX_BOUND, matched=True, source="limit", predicate="bound", trace="72")
             messages.append(f"Limit {st.limit}")
+        else:
+            vok, bound, verr = validate_bound(raw)
+            if not vok:
+                ok, err = False, verr
+                st.last_result = result_cell(value=None, matched=False, source="limit", error=verr, trace="72")
+                messages.append(f"Limit invalid {lab!r}")
+            else:
+                st.limit = str(bound)
+                st.last_result = result_cell(value=bound, matched=True, source="limit", predicate="bound", trace="72")
+                messages.append(f"Limit {st.limit}")
     elif n == 73:
         expr = lab if lab else "gte:count 0"
         head = lab.lower().split(":")[0] if lab else ""

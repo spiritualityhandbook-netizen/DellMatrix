@@ -136,15 +136,24 @@ def main():
           is True)
 
     tag = "W2"; TAGS.append(tag)
+    # DD-44 SUPERSESSION (Ace ruling, plan SS12.56): 72-21's
+    # "default bound 8" pin is superseded — an unstated bound
+    # now REFUSES (bound_unspecified) and nothing runs. The
+    # bounds-exact half of 72-21 stands (W1/W5/N3).
     p, out = _run(tag, "65[store_go] > 55[Set] :: tick=1 > 61[Join]", GO)
-    body = [r for r in _recs(out) if r[0] == 55]
-    check("W2.default_bound_8", len(body) == 8, str(len(body)))
+    body = [r for r in _recs(out) if r[0] == 55 and not r[3]]
+    check("W2.unspecified_bound_refused", len(body) == 0
+          and out["error"] == "bound_unspecified", str(len(body)))
     fr = _settled_frame(p, "while")
-    check("W2.frame_bounded_8_8", fr.get("status") == "bounded"
-          and fr.get("iterations") == 8 and fr.get("bound") == 8, str(fr))
+    check("W2.frame_fail_unspecified", fr.get("status") == "fail"
+          and fr.get("iterations") == 0
+          and fr.get("bound") == "unspecified", str(fr))
 
     tag = "W3"; TAGS.append(tag)
-    p, out = _run(tag, "65[store_go] > 86[Delete] :: go > 61[Join]", GO)
+    # DD-44: the clearing-exit behavior is unchanged; the
+    # bound is now STATED (8) instead of silently defaulted.
+    p, out = _run(tag, "72[Limit] :: 8 > 65[store_go] "
+                       "> 86[Delete] :: go > 61[Join]", GO)
     fr = _settled_frame(p, "while")
     check("W3.body_clears_condition_exits_after_1",
           fr.get("iterations") == 1 and fr.get("status") == "ok"
@@ -158,7 +167,8 @@ def main():
           (55, False, "", True) in rec, str(rec))
     fr = _settled_frame(p, "while")
     check("W4.frame_zero", fr.get("status") == "zero"
-          and fr.get("iterations") == 0 and fr.get("bound") == 8, str(fr))
+          and fr.get("iterations") == 0
+          and fr.get("bound") == "unspecified", str(fr))
     check("W4.join_ok_chain_partial",
           (_join_receipt(out) or {}).get("ok") is True
           and out["ok"] and out["partial"])
