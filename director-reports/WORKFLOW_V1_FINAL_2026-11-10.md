@@ -213,16 +213,35 @@ Uni's fold acknowledgement in GitHub. A cycle with no new defects
 still delivers verified no-change checks and a grounded next action;
 progress is never manufactured.
 
-## 4. Item state machine [D2][D10]
+## 4. Item state — four orthogonal dimensions [D2][D10, S1-corrected]
 
-Per exact SHA and scope, an item is in exactly one state:
-CODE_REVIEW_PASS · SCOPED_CERTIFIED · MERGE_AUTHORIZED_CONDITIONAL
-(carrying: exact SHA, allowed scope, mandatory checks,
-head-change-invalidates flag, red-waiver terms) · MERGED_UNVERIFIED ·
-MERGED_VERIFIED · PENDING_FINAL_CHECK · FINAL_CHECK_CLEARED · HOLD ·
-CORRECTION_REQUIRED · UNKNOWN. No state is promoted on PR merge alone,
-and no label is upgraded beyond its evidence (§10 test-realism ladder
-applies to claims generally).
+Per exact SHA and scope, an item carries one value in EACH dimension;
+the dimensions are independent and no value erases another. (S1
+correction, Director synthesis check 2026-11-10: the original single
+mutually-exclusive list made PENDING_FINAL_CHECK contradict
+MERGED_VERIFIED, although a verified merge awaiting hourly review must
+carry both, and a HOLD must coexist with — never overwrite — merge
+history.)
+
+- **Lifecycle** (durable; history is append-only): CODE_REVIEWED ·
+  AUTHORIZED (conditional terms attached: exact SHA, allowed scope,
+  mandatory checks, head-change-invalidates flag, red-waiver terms) ·
+  MERGED_UNVERIFIED · MERGED_VERIFIED · CLOSED.
+- **Certification** (scoped record, stored independently): per
+  authority, per scope — NONE · SCOPED_CERTIFIED, with the trailing
+  second certification tracked as PENDING_SECOND until issued.
+- **Final check**: NOT_YET_DUE · PENDING · CLEARED · QUARANTINED (a
+  finding quarantines the claim and opens a correction circuit; it
+  never rewrites lifecycle history).
+- **Active blockers** (a set, possibly empty): HOLD ·
+  CORRECTION_REQUIRED · INSUFFICIENT_EVIDENCE — each entry carrying
+  issuer, timestamp, SHA, and scope. Blockers coexist with any
+  lifecycle state and lift only by their stated terms.
+
+No dimension is promoted on PR merge alone, and no label is upgraded
+beyond its evidence (§10 test-realism ladder applies to claims
+generally). Any dimension that cannot be established is recorded
+UNKNOWN, never guessed.
 
 ## 5. Decision, cap, and research law
 
