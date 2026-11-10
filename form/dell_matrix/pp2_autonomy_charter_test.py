@@ -26,7 +26,9 @@ drift from the code:
 - a Director recommendation never changes a proposal's status,
   and after undock the Director surface refuses;
 - bounded evidence stores evict their oldest entries at the cap
-  (dock session proposals at 50, dock sessions at 10);
+  (dock session proposals at 50; dock sessions themselves were
+  capped at 10 under B2 until Ace retired that rotation for
+  dock in DD-37 — the live tier is now uncapped);
 - the InternetGate starts OFF and never auto-enables.
 """
 from __future__ import annotations
@@ -233,8 +235,9 @@ def _check_bounds():
     first_sid = list(recs.keys())[0]
     sec = dks.serialize_section(recs, None, "PP2Charter")
     sess = sec.get("sessions") or {}
-    _rec("dock sessions capped at 10 per owner, oldest dropped",
-         len(sess) == 10 and first_sid not in sess,
+    _rec("dock sessions uncapped: all 11 persist, oldest kept "
+         "(DD-37 retires the B2 dock rotation)",
+         len(sess) == 11 and first_sid in sess,
          f"kept={len(sess)}")
 
 

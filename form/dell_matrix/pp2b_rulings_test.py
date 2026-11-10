@@ -9,6 +9,15 @@ unknowns 200, design_loop 200, exchange_receipts 200,
 exchange_seeds 200), the per-record dock proposal entries
 (50/session), and the AutoGrowth ledger file (200 rows).
 
+DD-37 amendment (Ace, plan SS12.36c/d): the dock_sessions
+10-record rotation is RETIRED — dock persists as a two-tier
+section (live uncapped + compact history, complete coverage).
+The dock assertions below now state the two-tier contract: no
+dock evictions occur, and dock dropped_total is the frozen
+historical count (zero for these fresh owners). The other
+sections' B2 assertions stand untouched, as does the
+per-record 50-proposal bound.
+
 B3: develop_loop / grow_from_root announce what the automatic
 path did: gate flips, and every confirmation attempt classified
 as applied / denied / failed. No broader automatic acceptance
@@ -111,9 +120,10 @@ def _check_section_counters_exact_once():
                                    "pp2b:test")
         p.save()
         st = _state(owner)
-        _rec("sections serialize kept population + dropped_total",
-             len(st["dock_sessions"]["sessions"]) == 10
-             and st["dock_sessions"].get("dropped_total") == 1
+        _rec("sections serialize kept population + dropped_total "
+             "(dock uncapped under DD-37)",
+             len(st["dock_sessions"]["sessions"]) == 11
+             and st["dock_sessions"].get("dropped_total") == 0
              and len(st["director_records"]["entries"]) == 200
              and st["director_records"].get("dropped_total") == 1
              and len(st["unknowns"]["entries"]) == 200
@@ -124,7 +134,7 @@ def _check_section_counters_exact_once():
         p.save()
         st1b = _state(owner)
         _rec("saving the same in-memory program twice recounts nothing",
-             st1b["dock_sessions"].get("dropped_total") == 1
+             st1b["dock_sessions"].get("dropped_total") == 0
              and st1b["director_records"].get("dropped_total") == 1
              and st1b["unknowns"].get("dropped_total") == 1,
              f"dock={st1b['dock_sessions'].get('dropped_total')} "
@@ -132,7 +142,7 @@ def _check_section_counters_exact_once():
              f"unk={st1b['unknowns'].get('dropped_total')}")
         p2 = persist_rest.load(owner, activate=False)
         _rec("totals survive reload on the program",
-             p2.dock_sessions_dropped_total == 1
+             p2.dock_sessions_dropped_total == 0
              and p2.director_records_dropped_total == 1
              and p2.unknowns_dropped_total == 1,
              f"{p2.dock_sessions_dropped_total}/"
@@ -141,13 +151,13 @@ def _check_section_counters_exact_once():
         p2.save()
         st2 = _state(owner)
         _rec("re-serializing the same population recounts nothing",
-             st2["dock_sessions"].get("dropped_total") == 1
+             st2["dock_sessions"].get("dropped_total") == 0
              and st2["director_records"].get("dropped_total") == 1
              and st2["unknowns"].get("dropped_total") == 1,
              f"dock={st2['dock_sessions'].get('dropped_total')}")
         p3 = persist_rest.load(owner, activate=False)
         _rec("totals are stable across a second reload",
-             p3.dock_sessions_dropped_total == 1
+             p3.dock_sessions_dropped_total == 0
              and p3.unknowns_dropped_total == 1)
     finally:
         _cleanup(owner)
@@ -174,14 +184,15 @@ def _check_load_side_and_malformed():
         with open(path, "w", encoding="utf-8") as f:
             json.dump(st, f)
         p2 = persist_rest.load(owner, activate=False)
-        _rec("load counts evictions from an uncounted legacy file",
-             len(p2.dock_sessions) == 10
-             and p2.dock_sessions_dropped_total == 2,
+        _rec("uncounted legacy dock file loads complete, nothing "
+             "counted dropped (DD-37)",
+             len(p2.dock_sessions) == 12
+             and p2.dock_sessions_dropped_total == 0,
              f"kept={len(p2.dock_sessions)} "
              f"total={p2.dock_sessions_dropped_total}")
         p2.save()
         _rec("the load-side count persists on the next save",
-             _state(owner)["dock_sessions"].get("dropped_total") == 2)
+             _state(owner)["dock_sessions"].get("dropped_total") == 0)
         # A malformed record is evidence, not an eviction.
         p3 = Program(owner)
         _fill_sessions(p3, owner, 11)
@@ -192,7 +203,8 @@ def _check_load_side_and_malformed():
         p3.save()
         st3 = _state(owner)
         _rec("malformed records are preserved, never counted dropped",
-             st3["dock_sessions"].get("dropped_total") == 1
+             st3["dock_sessions"].get("dropped_total") == 0
+             and len(st3["dock_sessions"]["sessions"]) == 11
              and "malformed" in st3["dock_sessions"],
              f"total={st3['dock_sessions'].get('dropped_total')} "
              f"malformed={'malformed' in st3['dock_sessions']}")
