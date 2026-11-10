@@ -684,7 +684,68 @@ class _Completed:
         self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
 
 
-def run_entry(entry: str, cwd: str) -> Tuple[bool, str]:
+# --- Failure capture (DD-31 diagnostic circuit, Director ruling
+# 2026-11-09 21:43 CST) -------------------------------------------------
+# On a FAILED entry only, retain bounded child stdout/stderr excerpts,
+# the entry's own FAIL lines, exit status, the pass label, and a
+# names+sizes inventory of the copy's form/state. The capture is
+# printed to the harness's own stdout (so CI job logs carry it) and
+# written to REGRESS_FAILURE_DIR (default ./regress_failures).
+# Capture never changes a verdict: it runs after the verdict is
+# computed, and any capture error is reported inside the block.
+import re as _re
+
+_CAPTURE_MAX_LINES = 25
+_CAPTURE_MAX_CHARS = 300
+_SECRET_SHAPES = _re.compile(r"(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})")
+
+
+def _capture_scrub(text: str) -> str:
+    return _SECRET_SHAPES.sub("<scrubbed>", text)
+
+
+def _capture_block(entry: str, label: str, why: str, stdout: str,
+                   stderr: str, cwd: str) -> str:
+    lines = [f"REGRESS-CAPTURE-BEGIN entry={entry} pass={label or '-'} {why}"]
+    fails = [ln for ln in stdout.splitlines() if ln.startswith("FAIL")][:_CAPTURE_MAX_LINES]
+    lines.append(f"child FAIL lines ({len(fails)}):")
+    lines += ["  " + _capture_scrub(ln[:_CAPTURE_MAX_CHARS]) for ln in fails]
+    tail = stdout.splitlines()[-_CAPTURE_MAX_LINES:]
+    lines.append(f"child stdout tail ({len(tail)}):")
+    lines += ["  " + _capture_scrub(ln[:_CAPTURE_MAX_CHARS]) for ln in tail]
+    etail = stderr.splitlines()[-15:]
+    lines.append(f"child stderr tail ({len(etail)}):")
+    lines += ["  " + _capture_scrub(ln[:_CAPTURE_MAX_CHARS]) for ln in etail]
+    state_dir = os.path.join(cwd, "form", "state")
+    try:
+        names = sorted(os.listdir(state_dir))
+        inv = [f"{n}({os.path.getsize(os.path.join(state_dir, n))})" for n in names[:200]]
+        lines.append(f"state inventory form/state count={len(names)}: " + " ".join(inv))
+    except OSError as exc:
+        lines.append(f"state inventory unavailable: {exc.__class__.__name__}")
+    lines.append("REGRESS-CAPTURE-END")
+    return "\n".join(lines)
+
+
+def _emit_capture(entry: str, label: str, why: str, stdout: str,
+                  stderr: str, cwd: str) -> None:
+    try:
+        block = _capture_block(entry, label, why, stdout, stderr, cwd)
+    except Exception as exc:  # capture must never break the harness
+        block = (f"REGRESS-CAPTURE-BEGIN entry={entry} pass={label or '-'} {why}\n"
+                 f"capture error: {exc.__class__.__name__}\nREGRESS-CAPTURE-END")
+    print(block, flush=True)
+    try:
+        cap_dir = os.environ.get("REGRESS_FAILURE_DIR") or os.path.join(os.getcwd(), "regress_failures")
+        os.makedirs(cap_dir, exist_ok=True)
+        safe = _re.sub(r"[^A-Za-z0-9_.-]+", "_", f"{entry}_{label or 'pass'}")
+        with open(os.path.join(cap_dir, safe + ".log"), "w") as fh:
+            fh.write(block + "\n")
+    except OSError:
+        pass
+
+
+def run_entry(entry: str, cwd: str, label: str = "") -> Tuple[bool, str]:
     mod, _, fn = normalize(entry).partition(":")
     token = secrets.token_hex(8)  # proves the function RETURNED True (an early sys.exit(0) cannot print it)
     code = ("import importlib,sys; "
@@ -708,6 +769,7 @@ def run_entry(entry: str, cwd: str) -> Tuple[bool, str]:
         if unavail:
             pids = ",".join(str(pid) for pid, _ in unavail)
             why += f" cleanup_unavailable={len(unavail)}:{pids}"
+        _emit_capture(entry, label.strip(), why, "", "", cwd)
         return False, why
     except KeyboardInterrupt:
         _kill_process_tree(proc)
@@ -732,6 +794,8 @@ def run_entry(entry: str, cwd: str) -> Tuple[bool, str]:
         why += " TRACEBACK"
     if not ok and r.stderr.strip():
         why += " err=" + r.stderr.strip().splitlines()[-1][:90]
+    if not ok:
+        _emit_capture(entry, label.strip(), why, r.stdout, r.stderr, cwd)
     return ok, why
 
 
@@ -750,7 +814,7 @@ def run_pass(entries: List[str], intended: Iterable[str], cwd: str, label: str =
         return False
     bad, executed = [], 0
     for e in norm:
-        ok, why = run_entry(e, cwd)
+        ok, why = run_entry(e, cwd, label)
         executed += 1
         print(f"{'OK ' if ok else 'RED'} {e:58s} {why}", flush=True)
         if not ok:
