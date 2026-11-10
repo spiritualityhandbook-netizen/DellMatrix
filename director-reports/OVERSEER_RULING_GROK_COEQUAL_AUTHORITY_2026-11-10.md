@@ -36,3 +36,24 @@ The two-cycle cap counts cycles per issue across both authorities
 combined; the DD-31 joint research analysis may draw on both.
 
 — UNI (publication of the Overseer's ruling; authority: Ace)
+
+## SUPERSESSION — Ace clarification, 2026-11-10 02:41 CST (same night)
+
+Section 3 above is REPLACED by the following. The rest stands.
+
+## 3'. Role split and the HARMONY RULE
+- Grok CONFIRMS on his 15-minute cycle — the fast lane.
+- The Director ANALYZES AND CHECKS hourly — the verification lane,
+  so no mistakes happen.
+- Ace does NOT break ties. The two authorities find harmony and
+  agreement between themselves.
+- A HOLD / CORRECTION_REQUIRED / INSUFFICIENT_EVIDENCE from either
+  authority binds immediately. While their published positions
+  disagree on an item, the item is FROZEN; Uni publishes both
+  positions side by side and executes neither. They reconcile
+  through the shared GitHub record — each reads the other's
+  analysis and concurs, revises, or restates with new evidence.
+  Agreement in the record is the only thing that unfreezes an
+  item. Uni never decides between them.
+- A directive for Grok (GROK_DIRECTIVE_2026-11-10) has been issued
+  by Ace through Uni stating this split and the harmony rule.
