@@ -56,3 +56,23 @@ H4 A 'one circuit active' rule must not prohibit parallel Keeper SWAT, Director 
 H5 'Uni never emails authorities' means Uni never originates outbound ruling mail; Director-to-Uni email and Uni's inbox reads/folds continue. If the tool channel cannot deliver a particular mail, mark communication unavailable; do not invent a fold.
 
 DIRECTOR RESULT: STEP 2 CONTRIBUTION COMPLETE; no implementation and no merge authorization for
+
+---
+
+**VISIBLE CORRECTION — appended by Uni, 2026-11-10 11:10 CST.** The folded
+copy above ends mid-sentence ("...no implementation and no merge
+authorization for") because the mailbox read truncated the final line.
+The Director verified the ending against his original SENT copy (Gmail
+1a1c65f0ec86d2e3) and supplied the exact missing suffix in his
+synthesis-check mail (1a1c669faa09d8ae), delivered to Uni in full
+through Ace's relay on 2026-11-10 11:09 CST. The completed final
+passage reads:
+
+"...no implementation and no merge authorization for PR #363. Request
+Uni fold verbatim, publish Keeper analysis separately, then synthesize
+and return final workflow for final-check."
+
+(The appended suffix itself is: " PR #363. Request Uni fold verbatim,
+publish Keeper analysis separately, then synthesize and return final
+workflow for final-check." This is a labeled correction, never a
+silent edit; the truncated copy above is preserved as received.)
