@@ -318,6 +318,7 @@ LIST = [
     "form.dd42_predicate_infix_test:smoke",
     "form.dd44_bounds_explicit_test:smoke",
     "form.dd18_pulse_receipt_test:smoke",
+    "form.regress_capture_test:smoke",
     "form.step4_operand_transport_test:smoke",
     "form.step5_exchange_boundary_test:smoke",
     "form.step5b_exchange_durability_test:smoke",
@@ -685,7 +686,114 @@ class _Completed:
         self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
 
 
-def run_entry(entry: str, cwd: str) -> Tuple[bool, str]:
+# --- Failure capture (DD-31 diagnostic circuit; hardened per
+# Director ruling 2026-11-10 01:40 CST, Q-DD31-D1) ----------------------
+# On a FAILED entry only, emit a bounded diagnostic block containing
+# ONLY: (a) assertion identifiers parsed from the child's FAIL lines
+# (strict identifier charset; the detail after the colon is NEVER
+# emitted - it can quote secrets or user data), (b) sanitized
+# metadata (line counts, traceback presence, verdict fields), and
+# (c) state metadata (file COUNT and total BYTES; filenames are
+# NEVER emitted). No raw child stdout/stderr is printed or filed.
+# The block prints to the harness's own stdout (CI logs carry it)
+# and is filed under the capture directory.
+# Lifecycle/retention: the capture directory holds at most
+# _CAPTURE_KEEP newest capture files; older ones are pruned on each
+# write. Files contain identifiers + metadata only, so no durable
+# sensitive artifact exists to retain.
+# Path safety: the capture filename is whitelist-sanitized (no
+# separators, no leading dots), and the capture directory must
+# resolve inside an allowed root (the user's home tree or the
+# system temp dir); an environment value pointing elsewhere is
+# refused (stdout-only emission, noted in the block).
+# Capture never changes a verdict: it runs after the verdict is
+# computed, and any capture error is reported inside the block.
+import re as _re
+
+_FAIL_ID = _re.compile(r"^FAIL ([A-Za-z0-9_.\-]{1,80}):")
+_CAPTURE_KEEP = 50
+_STATE_COUNT_CAP = 100000
+
+
+def _capture_block(entry: str, label: str, why: str, stdout: str,
+                   stderr: str, cwd: str) -> str:
+    why_safe = why.split(" err=")[0]  # verdict fields only, no stderr tail
+    lines = [f"REGRESS-CAPTURE-BEGIN entry={entry} pass={label or '-'} {why_safe}"]
+    ids = []
+    for ln in stdout.splitlines():
+        m = _FAIL_ID.match(ln)
+        if m and m.group(1) not in ids:
+            ids.append(m.group(1))
+    lines.append("assertion_ids: " + (", ".join(ids[:25]) if ids else "none"))
+    lines.append(
+        f"child: stdout_lines={len(stdout.splitlines())} "
+        f"stderr_lines={len(stderr.splitlines())} "
+        f"traceback={'yes' if 'Traceback (most recent call last)' in (stdout + stderr) else 'no'}")
+    state_dir = os.path.join(cwd, "form", "state")
+    try:
+        count, total, capped = 0, 0, False
+        with os.scandir(state_dir) as it:
+            for de in it:
+                count += 1
+                if count > _STATE_COUNT_CAP:
+                    capped = True
+                    break
+                try:
+                    total += de.stat().st_size
+                except OSError:
+                    pass
+        lines.append(f"state: files={count}{'+' if capped else ''} bytes={total} (names withheld)")
+    except OSError as exc:
+        lines.append(f"state: unavailable ({exc.__class__.__name__})")
+    lines.append("REGRESS-CAPTURE-END")
+    return "\n".join(lines)
+
+
+def _capture_dir() -> Tuple[str, bool]:
+    # Allowed roots: the user's home tree and the system temp dir
+    # (the canonical scratch space). Anything else (system paths,
+    # other users' trees) is refused: stdout-only emission.
+    raw = os.environ.get("REGRESS_FAILURE_DIR") or os.path.join(os.getcwd(), "regress_failures")
+    real = os.path.realpath(raw)
+    roots = [os.path.realpath(os.path.expanduser("~")),
+             os.path.realpath(tempfile.gettempdir())]
+    ok = any(real == r or real.startswith(r + os.sep) for r in roots)
+    return real, ok
+
+
+def _emit_capture(entry: str, label: str, why: str, stdout: str,
+                  stderr: str, cwd: str) -> None:
+    try:
+        block = _capture_block(entry, label, why, stdout, stderr, cwd)
+    except Exception as exc:  # capture must never break the harness
+        block = (f"REGRESS-CAPTURE-BEGIN entry={entry} pass={label or '-'} "
+                 f"{why.split(' err=')[0]}\ncapture error: {exc.__class__.__name__}\n"
+                 "REGRESS-CAPTURE-END")
+    cap_dir, dir_ok = _capture_dir()
+    if not dir_ok:
+        block = block.replace("REGRESS-CAPTURE-END",
+                              "capture_dir: refused_outside_home (file skipped)\nREGRESS-CAPTURE-END")
+    print(block, flush=True)
+    if not dir_ok:
+        return
+    try:
+        os.makedirs(cap_dir, exist_ok=True)
+        safe = _re.sub(r"[^A-Za-z0-9_.-]+", "_", f"{entry}_{label or 'pass'}").lstrip(".")[:120]
+        path = os.path.join(cap_dir, safe + ".log")
+        with open(path, "w") as fh:
+            fh.write(block + "\n")
+        logs = [os.path.join(cap_dir, n) for n in os.listdir(cap_dir) if n.endswith(".log")]
+        logs.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        for stale in logs[_CAPTURE_KEEP:]:
+            try:
+                os.unlink(stale)
+            except OSError:
+                pass
+    except OSError:
+        pass
+
+
+def run_entry(entry: str, cwd: str, label: str = "") -> Tuple[bool, str]:
     mod, _, fn = normalize(entry).partition(":")
     token = secrets.token_hex(8)  # proves the function RETURNED True (an early sys.exit(0) cannot print it)
     code = ("import importlib,sys; "
@@ -709,6 +817,7 @@ def run_entry(entry: str, cwd: str) -> Tuple[bool, str]:
         if unavail:
             pids = ",".join(str(pid) for pid, _ in unavail)
             why += f" cleanup_unavailable={len(unavail)}:{pids}"
+        _emit_capture(entry, label.strip(), why, "", "", cwd)
         return False, why
     except KeyboardInterrupt:
         _kill_process_tree(proc)
@@ -732,7 +841,14 @@ def run_entry(entry: str, cwd: str) -> Tuple[bool, str]:
     if tb:
         why += " TRACEBACK"
     if not ok and r.stderr.strip():
-        why += " err=" + r.stderr.strip().splitlines()[-1][:90]
+        # Privacy (Director finding, 2026-11-10 wake review):
+        # the why string is printed verbatim by run_pass and
+        # lands in CI logs — it must never carry raw stderr
+        # content. Metadata only (line count); the sanitized
+        # failure detail lives in the capture block.
+        why += f" err_lines={len(r.stderr.splitlines())}"
+    if not ok:
+        _emit_capture(entry, label.strip(), why, r.stdout, r.stderr, cwd)
     return ok, why
 
 
@@ -751,7 +867,7 @@ def run_pass(entries: List[str], intended: Iterable[str], cwd: str, label: str =
         return False
     bad, executed = [], 0
     for e in norm:
-        ok, why = run_entry(e, cwd)
+        ok, why = run_entry(e, cwd, label)
         executed += 1
         print(f"{'OK ' if ok else 'RED'} {e:58s} {why}", flush=True)
         if not ok:
