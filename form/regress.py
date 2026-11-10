@@ -840,7 +840,12 @@ def run_entry(entry: str, cwd: str, label: str = "") -> Tuple[bool, str]:
     if tb:
         why += " TRACEBACK"
     if not ok and r.stderr.strip():
-        why += " err=" + r.stderr.strip().splitlines()[-1][:90]
+        # Privacy (Director finding, 2026-11-10 wake review):
+        # the why string is printed verbatim by run_pass and
+        # lands in CI logs — it must never carry raw stderr
+        # content. Metadata only (line count); the sanitized
+        # failure detail lives in the capture block.
+        why += f" err_lines={len(r.stderr.splitlines())}"
     if not ok:
         _emit_capture(entry, label.strip(), why, r.stdout, r.stderr, cwd)
     return ok, why

@@ -97,6 +97,26 @@ def main():
         check("state_count_metadata", "files=2" in body)
         check("no_raw_fail_detail", "leaked" not in body)
 
+    # 1b. The STOCK summary path (Director finding, 2026-11-10
+    # wake review): the returned why string is printed verbatim
+    # by run_pass on the RED line — it must never carry the raw
+    # stderr tail. Canary-free, metadata intact.
+    check("why_canary_free",
+          all(c not in why for c in CANARIES), f"why={why}")
+    check("why_metadata_kept",
+          "rc=" in why and "last=1/2" in why
+          and "NOT_RETURNED_TRUE" in why, f"why={why}")
+    _before = set(os.listdir(capdir))
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        regress.run_pass(["fakefail:smoke"], ["fakefail:smoke"],
+                         work, "pass1b")
+    check("runpass_line_canary_free",
+          all(c not in buf.getvalue() for c in CANARIES),
+          buf.getvalue()[-200:])
+    for _f in set(os.listdir(capdir)) - _before:
+        os.unlink(os.path.join(capdir, _f))
+
     # 2. Green entry: silence.
     ok2, _, out2 = _run("greenmod:smoke", work, "pass1")
     check("verdict_true_on_green", ok2)
