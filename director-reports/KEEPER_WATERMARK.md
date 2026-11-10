@@ -1,16 +1,16 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-10 12:01 CST  
-**UTC approx**: 2026-11-10T18:01:00Z
+**Last cycle**: 2026-11-10 12:33 CST  
+**UTC approx**: 2026-11-10T18:33:00Z
 
 ## Items ruled this cycle
-- Prior PR #364 CONFIRM stands (record-truth). No second-cert gap.
-- PR #361 merge record (PR #366 open) reviewed: Uni-reported numbers labeled; no new certification. Scoreboard restated 19/72, FIXED 12 / GATED 3.
+- Living-language clarification (Ace/Uni): seeds are shared thinking grammar, not primarily executable Programs. Adopted. Keeper now runs KEEPER_FASTLANE_FULL as operative mind pattern every 15 min.
+- PR #367 / Q-SEEDS.2 — **CONFIRM** on honesty of receipts and safety proof only. 31 PENDING under WFROLES1, no self-confirm, Commit/Merge granted no power, composition boundary recorded honestly. Explicit non-coverage: does not certify live Programs, does not load beyond PENDING, does not alter WORKFLOW v1 authority.
 
 ## Silence flag
-False — window contained PR #363 merge and #366 open. No ripe product items requiring disposition.
+No other ripe items processed this cycle.
 
 ## Standing notes
-WORKFLOW v1 operative. NEEDS_OVERSEER parked list verified (6 items, exact inputs named). Next SWAT provisional for records + SS14 open circuits.
+WORKFLOW v1 live. Role seeds = shared Mandell grammar. Nursery confirm of the 31 remains Ace sovereign step.
 
 — KEEPER
