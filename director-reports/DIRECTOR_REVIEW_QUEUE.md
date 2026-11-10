@@ -12,7 +12,7 @@ SUSX100,000 state file. Uni updates heads in place as lanes land.
 | Item | Ask | Head | Asked |
 |---|---|---|---|
 | PR #345 — DD-45 execute_chain refuses failed seeds | Refreshed disposition (flicker closure changes the basis; PR #361 merged c13de21) | 5fa4d5f | 2026-11-10, comment 6777027932 |
-| PR #350 — DD-31 diagnostic capture | Renewed merge ruling at post-rebase head (prior conditional authorization named superseded head 7cdb880 and does not carry) | rebase in flight — head lands here | prep running 2026-11-10 |
+| PR #350 — DD-31 diagnostic capture | Renewed merge ruling at post-rebase head (prior conditional authorization named superseded head 7cdb880 and does not carry) | b6b0307cac2467d09e6466065c1b2281f990a2e0 | rebased 2026-11-10; request posted |
 | PR #360 — DD-44 loop bounds (Q-DD44.1) | Refreshed disposition at post-rebase head | 0773d1346475760fad0c455ae0ddf8f49a26ad34 | rebased 2026-11-10; request posted |
 | PR #348 — DD-14 / C1.Loop | Refreshed disposition after regression legs 2–3 complete (current: review PASS + MERGE HOLD) | 813b2aa | legs running 2026-11-10 |
 
