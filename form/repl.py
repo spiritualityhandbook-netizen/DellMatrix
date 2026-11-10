@@ -3152,10 +3152,14 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _say("Enhance OFF.")
 
     elif action == "pulse":
-        p.pulse()
+        out = p.pulse()
         if hasattr(p, "note_seed"):
             p.note_seed(25, "Pulse")
-        _say("Pulse sent.")
+        if out and out.get("ok"):
+            _say("Pulse sent.")
+        else:
+            # DD-18: report the gate's refusal, never a false send.
+            _say(f"Pulse NOT sent ({(out or {}).get('reason', 'refused')}).")
 
     elif action == "sandbox_on":
         p.sandbox_on()
