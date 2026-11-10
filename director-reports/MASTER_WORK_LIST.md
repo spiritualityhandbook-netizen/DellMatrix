@@ -28,9 +28,9 @@ Data: master_work_list_items.json
 | Status | Items |
 |---|---|
 | COMPLETE | 25 |
-| MERGED_UNVERIFIED | 4 |
-| BUILT_HELD | 4 |
-| PARTIAL | 56 |
+| MERGED_UNVERIFIED | 6 |
+| BUILT_HELD | 3 |
+| PARTIAL | 55 |
 | OPEN | 87 |
 | GATED | 3 |
 | NEEDS_OVERSEER | 0 |
@@ -54,9 +54,9 @@ parked items the 72 frame never counted.
 | 3 | Chain parse-refusal must fail closed (PR #345; reconciliation COMPLETE: the one mutation is a PP3 unknowns-register entry, proven by dd45_recon_test.py 20/20; corrected claim + guard comment pushed @ 71098a5; hold-lift package posted 6778879305 — Director rules option A corrected-claim vs option B PP3-repeal) | DD-45 / C1.ParseRefusal | BUILT_HELD |
 | 4 | DD-31 diagnostic capture hardening — failure-only stderr capture in the regress harness (PR #350 MERGED e4aad9d; Director SCOPED_CODE_PASS + Keeper CONFIRM at head b6b0307; local full regression GREEN at head (266 suites); no capture files in repo (4 files verified); final-check pending; DD-31 root mechanism remains OPEN per Director) | PR #350 (DD-31 cascade) | MERGED_UNVERIFIED |
 | 5 | DD31-CI-INTERMITTENT root-cause fix — dd31 suite residue check scoped to its own owner (PR #361 merged c13de21; Director + Keeper scoped confirmations; final-check pending) | DD31-CI (extension) | MERGED_UNVERIFIED |
-| 6 | Sibling whole-directory-assertion inventory (Q-DD31F.2): inventory COMPLETE (267 suites: 1 confirmed sibling, 17 suspect, 248 clean); sibling fix BUILT (PR #372 @ 1182e35 — p0 scan owner-scoped to the current manifest format; plant differential 12/13 -> 13/13; own-manifest mutants red; one test file only) | Q-DD31F.2 | BUILT_HELD |
+| 6 | Sibling whole-directory-assertion inventory (Q-DD31F.2): inventory COMPLETE (267 suites: 1 confirmed sibling, 17 suspect, 248 clean); sibling fix MERGED 5d2deb4 (PR #372 @ 1182e35 — p0 scan owner-scoped to the current manifest format; plant differential 12/13 -> 13/13; own-manifest mutants red; one test file only); local regression fwd/twice/rev TERMINAL GREEN at head; post-merge p0 smoke ALL GREEN on merged main; Director SCOPED PASS (P3 oracle only); final-check pending | Q-DD31F.2 | MERGED_UNVERIFIED |
 | 7 | WORKFLOW role seeds implementation — 31 seeds landed as PENDING proposals, classified, isolated (PR #367 merged 70a478e; Director scoped certification + Keeper record-truth CONFIRM; final-check pending; the 31 proposals themselves await Ace's sovereign Nursery confirm — see appendix) | ROLE-SEEDS-IMPL / PR #367 | MERGED_UNVERIFIED |
-| 8 | Governance records publication batch (PR #351 MERGED 4b1761d; PRs #352-#356 rebased + union-resolved, MERGEABLE, merging serially as CI lands; queue PR #368 live) | Records batch | PARTIAL |
+| 8 | Governance records publication batch — ALL MERGED: #351 4b1761d, #352 4b04f2f, #353 a7f59c9, #354 8bf09b5, #355 f8295f3, #356 554af27; Director Review Queue PR #368 MERGED 3651a5b; NEEDS_OVERSEER dispositions PR #371 MERGED da73ff9; final-check pending | Records batch | MERGED_UNVERIFIED |
 
 ## Block B — C1 Chain Truth, remainder and follow-ups
 
