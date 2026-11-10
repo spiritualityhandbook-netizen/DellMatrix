@@ -114,6 +114,32 @@ circuit), chain continuation policy (Q-DD18.2 baseline).
   Limit bind Compose depth at all, or is that read an
   accident to remove in its own circuit?
 
+## Addendum (2026-11-10, second commit): migration completed
+
+The first head's exact-head CI Form smoke was TERMINAL RED
+261/265 — four suites still pinned the superseded default
+contract (the same class DD-18 met in the leaf3 suite; my
+pre-PR neighbor set was too narrow, corrected here):
+d1_proof_cards, d1_registry_coreii_a (27/30),
+d1_registry_coreii_b (42/43), step7_control_verdicts
+(25/28). The main-session local chain reproduced the same
+four reds; dd44 suite stayed 16/16. NOT the DD-31 flicker.
+
+Repairs, all preserving each suite's behavioral subject:
+- coreii_a: bare-While expectation -> bound_unspecified,
+  frame fail/0; B8 message pin bound=unspecified; the
+  Until symbiosis chain now states Limit 8 first (the
+  suite's own pattern, used by its While symbiosis check).
+  30/30.
+- coreii_b: bare-Limit pin -> limit_unspecified refusal,
+  nothing stored. 43/43.
+- step7 B8: three bound display pins -> "unspecified";
+  the stated-bound B8 case (Limit 3) untouched. 28/28.
+- proof_cards: EXPECTED_BARE_FAILURES 65 ->
+  bound_unspecified, + 72 limit_unspecified; census
+  78/22 -> 77/23; DELL_PROOF_CARDS.md regenerated from
+  the repaired render (diff: cards 65 and 72 only). 6/6.
+
 ## Anticipated probes
 
 - "Did any lawful loop break?" Every loop chain in the

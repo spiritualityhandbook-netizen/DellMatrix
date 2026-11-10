@@ -56,7 +56,10 @@ EXPECTED_BARE_FAILURES = {
     37: "add idea requires a label",
     44: "bridge_unavailable",
     47: "embed_unavailable",
-    65: "bound_reached",
+    # DD-44: bare While refuses bound_unspecified (no bound
+    # was ever stated); bare Limit refuses limit_unspecified.
+    65: "bound_unspecified",
+    72: "limit_unspecified",
     78: "malformed_relation",
     79: "malformed_relation",
     85: "malformed_move",
@@ -112,8 +115,8 @@ def main():
 
     failed = {c["dell"]: c["bare"]["error"]
               for c in cards if c["bare"]["outcome"] != "executed"}
-    _rec("bare invocation: 78 executed, 22 named failures",
-         len(failed) == 22
+    _rec("bare invocation: 77 executed, 23 named failures",
+         len(failed) == 23
          and all(failed.get(n, "").startswith(prefix)
                  for n, prefix in EXPECTED_BARE_FAILURES.items())
          and set(failed) == set(EXPECTED_BARE_FAILURES),
