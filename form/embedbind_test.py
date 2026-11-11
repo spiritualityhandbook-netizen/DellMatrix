@@ -128,5 +128,24 @@ def smoke() -> bool:
     vec = vv.last_core_i.get("vector") or []
     rec("vector_validity", len(vec) == vv.last_core_i.get("dim") and all(isinstance(x, float) and math.isfinite(x) for x in vec))
 
+    # 14. VECTOR VALIDITY GATE (Director requirement, mail
+    # 1a1c9f8b): LLMBridge.embed validates EVERY provider result -
+    # an ok=True transport returning an empty, nonfinite, or
+    # malformed vector is rejected by name, and such a provider
+    # cannot bind.
+    from form.llm.bridge import LLMBridge, EmbedResult
+    def bad_bridge(vec):
+        br = LLMBridge()
+        br._ollama_embed = lambda label, text, model=None, timeout=30: EmbedResult("ollama", True, vector=vec, model="m-bad")
+        return br
+    for name, vec in (("empty", []), ("nan", [0.1, float("nan")]),
+                      ("inf", [float("inf")] * 3), ("malformed", ["x", "y"])):
+        br = bad_bridge(vec)
+        res = br.embed("ollama", "probe text")
+        rec(f"invalid_vector_{name}_rejected", res.ok is False and res.error.startswith("embed_invalid_vector"), str(res.error))
+        bp = open_program("EbBadVec")
+        bb = bind_embedder(bp, "ollama", bridge=br)
+        rec(f"invalid_vector_{name}_cannot_bind", bb.get("ok") is False and getattr(bp, "embed_binding", None) is None)
+
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)

@@ -70,6 +70,30 @@ FAKE_EMBED_MODEL = "fake-embed-16"
 FAKE_EMBED_DIM = 16
 
 
+def _validate_embed_result(res: EmbedResult) -> EmbedResult:
+    """Central vector-validity gate for EVERY embed transport.
+
+    Director requirement (PR #378, mail 1a1c9f8b): a bound probe
+    must never accept an empty, nonfinite, or malformed vector.
+    Every LLMBridge.embed return path passes through here, so no
+    provider - present or future - can bind on a bad vector. The
+    provider/model identity is preserved on the failure result.
+    """
+    if not res.ok:
+        return res
+    import math
+    vec = res.vector
+    if not isinstance(vec, list) or not vec:
+        return EmbedResult(res.provider, False, model=res.model,
+                           error="embed_invalid_vector: empty")
+    for v in vec:
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+            return EmbedResult(res.provider, False, model=res.model,
+                               error="embed_invalid_vector: nonfinite_or_malformed")
+    return EmbedResult(res.provider, True,
+                       vector=[float(v) for v in vec], model=res.model)
+
+
 def _fake_embed(text: str) -> EmbedResult:
     """Deterministic offline embedding test double.
 
@@ -263,14 +287,16 @@ class LLMBridge:
         assert_floor_intact()
         provider = provider.lower().strip()
         if provider == "fake":
-            return _fake_embed(text)
+            return _validate_embed_result(_fake_embed(text))
         if provider not in PROVIDERS:
             return EmbedResult(provider, False, error=f"unknown provider {provider}")
         try:
             if provider in ("gemini", "aistudio"):
-                return self._gemini_embed(provider, text, model=model, timeout=timeout)
+                return _validate_embed_result(
+                    self._gemini_embed(provider, text, model=model, timeout=timeout))
             if provider in ("ollama", "local"):
-                return self._ollama_embed(provider, text, model=model, timeout=timeout)
+                return _validate_embed_result(
+                    self._ollama_embed(provider, text, model=model, timeout=timeout))
         except urllib.error.HTTPError as e:
             body = e.read(2000).decode("utf-8", errors="replace")[:500]
             return EmbedResult(provider, False, error=f"HTTP {e.code}: {body}")
