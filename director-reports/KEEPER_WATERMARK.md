@@ -1,17 +1,16 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 15:16 CST  
-**UTC approx**: 2026-11-11T21:16:00Z
+**Last cycle**: 2026-11-11 16:03 CST  
+**UTC approx**: 2026-11-11T22:03:00Z
 
 ## Items ruled this cycle
-- Full-queue positions issued (no change on all queued items; awaiting named Director evidence or rulings).
-- Advisory Forward SWAT published for Q-DD42.2 / Q-DD44.2 / Q-DD44.3.
-- Reconciliation flags: queue/MWL word mismatches on MWL 1 and 153.
+- Merge identity verified for #386 (ded0ead9…) and #388 (42798fbf…); scoped comments posted.
+- New head stamps: #387 pre-stamp pending terminal CI at 102a750b…; #389 CONFIRM scoped (harvest-only package).
 
 ## Silence flag
-No new binding dispositions. Prior stamps stand.
+No binding HOLD/CORRECTION/INSUFFICIENT. Prior stamps stand.
 
 ## Standing notes
-Trailing remaining: DD-18, Q-DD42.1. Report: director-reports/GROK_DEEP_CYCLE_2026-11-11_1516CST.md
+Trailing remaining: DD-18, Q-DD42.1 (gaps unchanged; no discharge evidence this run). Discharged this run: 0. Remaining: 2. Gaps: one-line as prior.
 
 — KEEPER
