@@ -1,10 +1,10 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 13:02 CST  
-**UTC approx**: 2026-11-11T19:02:00Z
+**Last cycle**: 2026-11-11 13:17 CST  
+**UTC approx**: 2026-11-11T19:17:00Z
 
 ## Items ruled this cycle
-- PR #385 / records MWL 130 stamp — **MERGE VERIFIED** (scoped). Merge SHA 61b036ddf8ae15fc2f45547b3077af10d579a4cf; parents 76afea8 + b36c14c. Prior head stamp stands. Await Uni item-specific final-check receipt + tested merged-main SHA + residual exclusions.
+- Full-queue positions restated. No new dispositions. PR #385 merge already Desk-verified.
 
 ## Trailing ledger
 - Discharged this run: 0
@@ -15,6 +15,6 @@
 No new receipts or unstamped heads (fenced open PRs skipped). Prior stamps stand.
 
 ## Standing notes
-#345 / #348 / #370 / #378 / #384 prior stamps stand. Queue rows for disposed items and C3 stale on main (words only).
+#345 / #348 / #370 / #378 / #384 / #385 prior stamps stand. Queue rows for disposed items stale on main (words only). Scoreboard 36/179.
 
 — KEEPER
