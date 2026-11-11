@@ -1,0 +1,2913 @@
+{
+ "header": {
+  "authorization": "Director mail 1a1cc55119b5979f (2026-11-11): ONE bounded in-repo HARVEST-ONLY LM-1 build; external import HELD (Q-LM1.1)",
+  "coverage": {
+   "collision_pieces": 17,
+   "external_note": "The 1,693-row Wikipedia roots table was NOT imported (Q-LM1.1 HOLD; no license decision). This table covers in-repo material only.",
+   "external_rows_not_imported": 1693,
+   "harvested_rows": 158,
+   "per_stratum": {
+    "ace_seed": 53,
+    "candidate": 16,
+    "inrepo": 54,
+    "inrepo_force": 21,
+    "inrepo_legacy": 14
+   },
+   "quarantined_pieces": [
+    "alpha",
+    "dell",
+    "delta",
+    "man",
+    "omega",
+    "re"
+   ]
+  },
+  "generated_by": "lm1_harvest/1.0",
+  "harvest_date": "2026-11-11",
+  "manifest": {
+   "census_anchor": {
+    "path": "director-reports/LM0_CENSUS_CONFIRMED_2026-11-11.md",
+    "sha256": "c37adb098db942209b18e05ae9d9736fbee3b563532873f016a3474293da85c0"
+   },
+   "sources": [
+    {
+     "path": "form/mandell/latinmandell.py",
+     "sha256": "085f7ef0b6ab4fd8177f945f22f2a07bddff5cbcc2deb1983c09cc53e3f57383",
+     "symbol": "ROOTS"
+    },
+    {
+     "path": "form/mandell/morpheme.py",
+     "sha256": "cc31000a61d71234111af1f19b6fbd0dd6fdf0163dc22275e8da3310ab04ba8d",
+     "symbol": "PREFIXES/ROOTS/SUFFIXES + force_mandell_morphemes"
+    },
+    {
+     "path": "src/core/mandel_ontology.js",
+     "sha256": "37c13ff090eee3531fcad71f2d7e3ee833d3edf148813d0f14954866bcfa99a2",
+     "symbol": "MORPHEMES"
+    },
+    {
+     "path": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+     "sha256": "88a89262a24afa2750d02159af802963e03c7a3639e542473768bc28b909d96d",
+     "symbol": "Starter prefixes / Starter suffixes"
+    }
+   ]
+  },
+  "precedence": [
+   "customs",
+   "ace_seed",
+   "inrepo",
+   "inrepo_force",
+   "inrepo_legacy",
+   "candidate"
+  ],
+  "precedence_note": "Customs are runtime state (persist v7), never harvested; a bound custom outranks every shipped stratum. lookup() returns the full row set -- never a silent first-match.",
+  "table": "lm_table",
+  "version": 1
+ },
+ "rows": [
+  {
+   "authored_form": "accept",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 50,
+   "la": "acceptare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "accept",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "take as valid · receive into form",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "ad",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "ad",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "toward · directed",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "aequi",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "aequi",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "balanced",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "alpha",
+   "authored_position_class": "prefix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "alpha",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "beginning",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Alpha",
+   "authored_position_class": "operator",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "Greek",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "alpha",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.greek"
+   },
+   "sense": "absolute beginning",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "bind",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 14,
+   "la": "ligare / vincire",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "bind",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "fasten into relation",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "birth",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "birth",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "genesis",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "bridge",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 44,
+   "la": "pons",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "bridge",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "path across a divide",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "ce",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "ce",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "attribute / act",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "-cell",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm.",
+   "piece": "cell",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter suffixes"
+   },
+   "sense": "Bound multi-seed cell",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "com",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "com",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "together · synthesis · unified",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Com-",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "Latin",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "com",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.latinPrefix"
+   },
+   "sense": "together / unified",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "command",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "command",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Com-mand",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "commandell",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "commandell",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Com-man-dell",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "commence",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "commence",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Com-men-ce",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "commend",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "commend",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Com-mend",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "complete",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "complete",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Com-plete",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "compress",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 29,
+   "la": "comprimere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "compress",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "press into smaller form",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "con",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "con",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "with · joint",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "confirm",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 50,
+   "la": "confirmare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "confirm",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "make firm · establish as live",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "conlogure",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "conlogure",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Con-log-ure",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "cor",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "cor",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "heart · core",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "core",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 15,
+   "la": "cor / nucleus",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "core",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "heart · innermost kernel",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "create",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 8,
+   "la": "creare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "create",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "bring into being · call forth",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "cube",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 15,
+   "la": "cubus",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "cube",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "stable measure · squared body",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "cycle",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 6,
+   "la": "cyclus / orbis",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "cycle",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "ring of recurrence",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "de",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "de",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "down · analytical · reverse · intensive",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "De-",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "Latin",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "de",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.latinPrefix"
+   },
+   "sense": "down from / analyzing",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "decay",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 16,
+   "la": "cadere / corrumpi",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "decay",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "fall away from force",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "defacure",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "defacure",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "De-fac-ure",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "dell",
+   "authored_position_class": "root",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "dell",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "nested unit · operator cell · protected pocket",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "dell",
+   "authored_position_class": "suffix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "dell",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "fragment · nested cell · protected pocket",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Dell-",
+   "authored_position_class": "prefix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Leight.",
+   "piece": "dell",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Operator-bearing",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "-dell",
+   "authored_position_class": "suffix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm.",
+   "piece": "dell",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter suffixes"
+   },
+   "sense": "Operator-named unit",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "delta",
+   "authored_position_class": "prefix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "delta",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "change",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Delta",
+   "authored_position_class": "operator",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "Greek",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "delta",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.greek"
+   },
+   "sense": "measure of change",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "distill",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 38,
+   "la": "destillare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "distill",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "drop the essence clear of dross",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "-ell",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm.",
+   "piece": "ell",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter suffixes"
+   },
+   "sense": "Small cell / unit",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "er",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "er",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "actor",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Evolu-",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Loure/Leight.",
+   "piece": "evolu",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Growth / change through time",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "evolve",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 4,
+   "la": "evolvere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "evolve",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "unroll · unfold what is latent",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "ex",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "ex",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "execute immediately",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "expand",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 30,
+   "la": "expandere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "expand",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "spread outward from center",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "fac",
+   "authored_position_class": "root",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "fac",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "construct · make",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "-fac-",
+   "authored_position_class": "root",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "Latin",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "fac",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.latinRoot"
+   },
+   "sense": "make / build",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "-factors",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm.",
+   "piece": "factors",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter suffixes"
+   },
+   "sense": "Checklist gate",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "fallback",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 43,
+   "la": "recedere ad tutum",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "fallback",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "return to the safe path",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "flower",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 15,
+   "la": "flos",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "flower",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "unfolding peak of a living form",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "Form-",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Leight.",
+   "piece": "form",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Bring shape",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "fu",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "fu",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "forward vector",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "future",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "future",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Fu-tu-re",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "gen",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "gen",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "origin · generate",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "grow",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 13,
+   "la": "crescere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "grow",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "increase by living process",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "Harmoni-",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Leight.",
+   "piece": "harmoni",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Balance / coherence",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "idea",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 8,
+   "la": "idea / forma",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "idea",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "form held in mind · pattern",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "im",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "im",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "in · isolated",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "ing",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "ing",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "active pipeline",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "inject",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 36,
+   "la": "inicere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "inject",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "throw into the midst",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "iso",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "iso",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "quarantined · equal",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "keep",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 10,
+   "la": "servare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "keep",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "guard · preserve continuity",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "Lambda",
+   "authored_position_class": "operator",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "Greek",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "lambda",
+   "position_class": "operator",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.greek"
+   },
+   "sense": "wavelength of logic",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "lattice",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 15,
+   "la": "reticulum",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "lattice",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "net of ordered relations",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "link",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 7,
+   "la": "nectere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "link",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "join by connection",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "load",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 28,
+   "la": "onerare / restaurare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "load",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "place burden · restore state",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "lock",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 23,
+   "la": "claudere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "lock",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "close against change",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "log",
+   "authored_position_class": "root",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "log",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "trace · reason",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "-log-",
+   "authored_position_class": "root",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "Latin",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "log",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.latinRoot"
+   },
+   "sense": "record / track",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "logic",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 3,
+   "la": "ratio / logos",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "logic",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "ordered reason · rule-structure",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "loop",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 13,
+   "la": "circulus / iterare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "loop",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "return path · repeat until",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "lumen",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "lumen",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "light made visible",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "lux",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "lux",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "light",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "make",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 8,
+   "la": "facere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "make",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "do · fashion · cause",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "man",
+   "authored_position_class": "prefix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "man",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "control · hand · execution",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Man-",
+   "authored_position_class": "prefix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Leight.",
+   "piece": "man",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Of the protocol / operator domain",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "-man",
+   "authored_position_class": "suffix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm.",
+   "piece": "man",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter suffixes"
+   },
+   "sense": "Term-only (Dellman)",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "mand",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "mand",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "command · order · execute",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "mandel",
+   "authored_position_class": "whole_form",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "mandel",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Man-del",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "Mandel-",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Leight.",
+   "piece": "mandel",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Of the protocol / operator domain",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "mandell",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "mandell",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Man-dell",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "mandellang",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "mandellang",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Man-dell-Lang",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "mandellanguage",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "mandellanguage",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Man-dell-Lang-uage",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "manifest",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 50,
+   "la": "manifestare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "manifest",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "make evident in the world",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "map",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 15,
+   "la": "mappa / ordinare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "map",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "place in ordered relation",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "men",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "men",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "mind",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "mend",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "mend",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "validate · repair · honor",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "ment",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "ment",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "result or means · mind",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "merge",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 21,
+   "la": "mergere / miscere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "merge",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "plunge together · mix into one",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "mirror",
+   "authored_position_class": "whole_form",
+   "conflict_status": "collision_logged",
+   "dell_ref": 18,
+   "la": "speculum",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "mirror",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "show by reflection",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "Mirror-",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Loure.",
+   "piece": "mirror",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Reflect / compare",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "mit",
+   "authored_position_class": "root",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "mit",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "send · transmit",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "-mit-",
+   "authored_position_class": "root",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "Latin",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "mit",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.latinRoot"
+   },
+   "sense": "send / transmit",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "mut",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "mut",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "mutate variable",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "nova",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "nova",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "new · edge (not Floor)",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "nud",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "nud",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "raw · naked",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "nur",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "nur",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "nurse · feed · adaptive growth",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "nursery",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 23,
+   "la": "seminarium",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "nursery",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "place where seedlings are held",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "nurture",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "nurture",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Nur-tu-re",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "ob",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "ob",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "against · opposed",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "omega",
+   "authored_position_class": "prefix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "omega",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "end · completion",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Omega",
+   "authored_position_class": "operator",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "Greek",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "omega",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.greek"
+   },
+   "sense": "ultimate bound",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "omni",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "omni",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "all · universal · whole",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "omni-fac-ure",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "omni-fac-ure",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Omni-fac-ure",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "omnifacure",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "omnifacure",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Omni-fac-ure",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "omnispecure",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "omnispecure",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Omni-spec-ure",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "ordo",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "ordo",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "order · rank",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "origin",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 0,
+   "la": "origo / nova",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "origin",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "source · rising point",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "over",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "over",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "above · across",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "person",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 2,
+   "la": "persona",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "person",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "mask · role through which being speaks",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "plete",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "plete",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "terminate · complete",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "post",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "post",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "after",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "pre",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "pre",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "before · predictive",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Pre-",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "Latin",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "pre",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.latinPrefix"
+   },
+   "sense": "before / predictive",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "premiture",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "premiture",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Pre-mit-ure",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "Proso-",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Loure.",
+   "piece": "proso",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Face / persona surface",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "pulse",
+   "authored_position_class": "whole_form",
+   "conflict_status": "collision_logged",
+   "dell_ref": 25,
+   "la": "pulsus",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "pulse",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "stroke outward · beat of life",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "pulse",
+   "authored_position_class": "root",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "pulse",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "stroke · beat",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Pure-",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Leight.",
+   "piece": "pure",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Locked crystalline",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "rank",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 46,
+   "la": "ordo / ordinare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "rank",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "place by worth or order",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "re",
+   "authored_position_class": "prefix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "re",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "again · iterative · back",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "re",
+   "authored_position_class": "suffix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "re",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "loop / again · return frame",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Re-",
+   "authored_position_class": "prefix",
+   "conflict_status": "position_unresolved",
+   "dell_ref": null,
+   "la": null,
+   "language": "Latin",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "re",
+   "position_class": "position_unresolved",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.latinPrefix"
+   },
+   "sense": "again / iterative",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "rebirth",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "rebirth",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Re-birth",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "Recur-",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Loure.",
+   "piece": "recur",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Loop again",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "refacure",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "refacure",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Re-fac-ure",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "reject",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 24,
+   "la": "reicere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "reject",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "cast back · refuse entry",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "run",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 19,
+   "la": "currere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "run",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "move with urgency",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "sanitize",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 41,
+   "la": "purgare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "sanitize",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "cleanse of harm or secret",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "save",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 10,
+   "la": "servare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "save",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "hold safe across time",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "schema",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 39,
+   "la": "schema / forma",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "schema",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "shape that validates structure",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "see",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 9,
+   "la": "videre",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "see",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "perceive with clarity",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "shadow",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 17,
+   "la": "umbra",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "shadow",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "parallel presence without full body",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "show",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 9,
+   "la": "monstrare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "show",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "cause to be seen",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "Sigma",
+   "authored_position_class": "operator",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "Greek",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "sigma",
+   "position_class": "operator",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.greek"
+   },
+   "sense": "sum of parts",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "spec",
+   "authored_position_class": "root",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "spec",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "evaluate · look",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "-spec-",
+   "authored_position_class": "root",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "Latin",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "spec",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.latinRoot"
+   },
+   "sense": "look / evaluate",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "sphere",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 15,
+   "la": "sphaera",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "sphere",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "all-around whole · rounded totality",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "split",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 22,
+   "la": "findere / dividere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "split",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "cleave into parts",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "stop",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 32,
+   "la": "sistere",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "stop",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "cause motion to stand",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "struct",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "struct",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "structure",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "sub",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "sub",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "under · nested",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "syn",
+   "authored_position_class": "prefix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "syn",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "synchronized",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "term",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "term",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "terminate · wipe",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "test",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 12,
+   "la": "probare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "test",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "prove by trial",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "tion",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "tion",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "act or state",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "trans",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "trans",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "PREFIXES"
+   },
+   "sense": "across · transformative",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "Trans-",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "Latin",
+   "notes": "Legacy layer (src/ is not the production runtime); evidence only.",
+   "piece": "trans",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "src/core/mandel_ontology.js",
+    "source_symbol": "MORPHEMES.latinPrefix"
+   },
+   "sense": "across / changing form",
+   "split": null,
+   "stratum": "inrepo_legacy"
+  },
+  {
+   "authored_form": "Trans-",
+   "authored_position_class": "prefix",
+   "conflict_status": "collision_logged",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "CANDIDATE ONLY (Q-LM1.9): NOT IN USE preform material; admission gated by Leight/Loure + Architect confirm. Admission path: Loure.",
+   "piece": "trans",
+   "position_class": "prefix",
+   "provenance": {
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "source_symbol": "Starter prefixes"
+   },
+   "sense": "Across / change",
+   "split": null,
+   "stratum": "candidate"
+  },
+  {
+   "authored_form": "transfacure",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "transfacure",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Trans-fac-ure",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "transform",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 4,
+   "la": "transformare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "transform",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "change form across a boundary",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "translate",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 45,
+   "la": "transferre",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "translate",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "carry meaning across tongues",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "translogdell",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "Whole-form forced split; carries a split, not a sense (the split's pieces carry the senses).",
+   "piece": "translogdell",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "force_mandell_morphemes"
+   },
+   "sense": "",
+   "split": "Trans-log-dell",
+   "stratum": "inrepo_force"
+  },
+  {
+   "authored_form": "tu",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "tu",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "protect",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "tutorial",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 1,
+   "la": "tutor / via",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "tutorial",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "guided path of learning",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "unlock",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 24,
+   "la": "aperire",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "unlock",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "open what was closed",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "ure",
+   "authored_position_class": "suffix",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "ure",
+   "position_class": "suffix",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "SUFFIXS"
+   },
+   "sense": "object / result · formalized",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "visual",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 9,
+   "la": "visualis",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "visual",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "of sight · rendered form",
+   "split": null,
+   "stratum": "ace_seed"
+  },
+  {
+   "authored_form": "voc",
+   "authored_position_class": "root",
+   "conflict_status": "clean",
+   "dell_ref": null,
+   "la": null,
+   "language": "project",
+   "notes": "",
+   "piece": "voc",
+   "position_class": "root",
+   "provenance": {
+    "source_file": "form/mandell/morpheme.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "voice",
+   "split": null,
+   "stratum": "inrepo"
+  },
+  {
+   "authored_form": "walk",
+   "authored_position_class": "whole_form",
+   "conflict_status": "clean",
+   "dell_ref": 19,
+   "la": "ambulare",
+   "language": "Latin",
+   "notes": "Ace seed surface root; customs outrank at runtime.",
+   "piece": "walk",
+   "position_class": "whole_form",
+   "provenance": {
+    "source_file": "form/mandell/latinmandell.py",
+    "source_symbol": "ROOTS"
+   },
+   "sense": "move by measured steps",
+   "split": null,
+   "stratum": "ace_seed"
+  }
+ ]
+}

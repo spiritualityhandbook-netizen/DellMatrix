@@ -1,0 +1,377 @@
+[
+ {
+  "piece": "alpha",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "beginning",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "operator",
+    "position_class": "position_unresolved",
+    "sense": "absolute beginning",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "com",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "together · synthesis · unified",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "together / unified",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "de",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "down · analytical · reverse · intensive",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "down from / analyzing",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "dell",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "position_unresolved",
+    "sense": "nested unit · operator cell · protected pocket",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "suffix",
+    "position_class": "position_unresolved",
+    "sense": "fragment · nested cell · protected pocket",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "Operator-bearing",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   },
+   {
+    "authored_position_class": "suffix",
+    "position_class": "position_unresolved",
+    "sense": "Operator-named unit",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   }
+  ]
+ },
+ {
+  "piece": "delta",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "change",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "operator",
+    "position_class": "position_unresolved",
+    "sense": "measure of change",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "fac",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "construct · make",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "make / build",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "log",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "trace · reason",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "record / track",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "man",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "control · hand · execution",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "Of the protocol / operator domain",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   },
+   {
+    "authored_position_class": "suffix",
+    "position_class": "position_unresolved",
+    "sense": "Term-only (Dellman)",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   }
+  ]
+ },
+ {
+  "piece": "mandel",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo_force (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "whole_form",
+    "position_class": "whole_form",
+    "sense": "",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo_force"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "Of the protocol / operator domain",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   }
+  ]
+ },
+ {
+  "piece": "mirror",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = ace_seed (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "whole_form",
+    "position_class": "whole_form",
+    "sense": "show by reflection",
+    "source_file": "form/mandell/latinmandell.py",
+    "stratum": "ace_seed"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "Reflect / compare",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   }
+  ]
+ },
+ {
+  "piece": "mit",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "send · transmit",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "send / transmit",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "omega",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "end · completion",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "operator",
+    "position_class": "position_unresolved",
+    "sense": "ultimate bound",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "pre",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "before · predictive",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "before / predictive",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "pulse",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = ace_seed (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "whole_form",
+    "position_class": "whole_form",
+    "sense": "stroke outward · beat of life",
+    "source_file": "form/mandell/latinmandell.py",
+    "stratum": "ace_seed"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "stroke · beat",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   }
+  ]
+ },
+ {
+  "piece": "re",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "again · iterative · back",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "suffix",
+    "position_class": "position_unresolved",
+    "sense": "loop / again · return frame",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "again / iterative",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "spec",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "evaluate · look",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "look / evaluate",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "trans",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "across · transformative",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "across / changing form",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "Across / change",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   }
+  ]
+ }
+]
