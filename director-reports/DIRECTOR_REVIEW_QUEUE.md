@@ -10,10 +10,11 @@ SUSX100,000 state file. Uni updates heads in place as lanes land.
 ## Awaiting disposition
 | Item | Ask | Head | Asked |
 |---|---|---|---|
-| PR #348 — DD-14 / C1.Loop | SCOPED_CODE_PASS + CONDITIONAL MERGE AUTHORIZATION on record (Director mail 1a1c7e617ea7110a, 2026-11-10 17:58 CST; reaffirmed 18:38 CST mail 1a1c80a9e8c4d028). Conditions: rebased --twice/rev terminal green (DONE — receipts comment 6783324671), independent exact-head CI (DONE — 4/4 SUCCESS, hourly cycle verified first-hand), Keeper fresh CONFIRM at d2e1bce (OUTSTANDING — asks 6782719580 + 6782772967), SS32 in merge step. No Uni action remains; awaiting the Keeper. | d2e1bce15e54 | 2026-11-10 |
-| PR #345 — DD-45 execute_chain refuses failed seeds | SCOPED_CODE_PASS on the corrected claim ("no Program/Nursery business-state mutation; one unknown diagnostic entry") at superseded head 71098a5 (mail 1a1c7e617ea7110a); candidate REBASED to cure the conflicting-PR no-CI mechanism. FRESH DISPOSITION REQUESTED at 2be29dc (comment 6783571930): exact-head CI 4/4 terminal SUCCESS (hourly verified); dd45_recon 20/20; local regression in flight (fwd GREEN; --twice/rev running). Keeper CONFIRM also outstanding (6783346977). | 2be29dcee283 | 2026-11-10 |
+| PR #348 — DD-14 / C1.Loop | MERGED 41c3c96 (2026-11-11) under Director authorization mail 1a1ca412705293cf + Keeper CONFIRM (scoped) at 490fc1a (KEEPER_WATERMARK cycle 04:54 CST). Post-merge: dd14 suite 11/11 on fresh main clone. MWL 1 = MERGED_UNVERIFIED. Awaiting: your final-check disposition. Non-coverage: Q-DD44.2 / Q-DD44.3 remain open. | 490fc1ab5b37 (merged) | closed as awaiting item 2026-11-11 |
+| PR #345 — DD-45 / C1.ParseRefusal | HOLD maintained (Director mail 1a1ca412705293cf). Bounded missing-evidence packet posted (comment 6794018964): everything exists EXCEPT (1) Keeper CONFIRM at the exact head — none issued through the 04:54 CST cycle — and (2) Director explicit acceptance of the corrected claim at this head. Main has advanced (c0fd0b7); an INDEX/records rebase + identity proof + fresh stamps at the new head will precede any merge. | 02e2e076dac4 | 2026-11-10 |
+| PR #378 — C8 EmbedBind / MWL 153 | MERGED c0fd0b7 (2026-11-11) under Director SCOPED_CODE_PASS + conditional authorization (mail 1a1ca412) + Keeper CONFIRM (scoped) at 58b5518. Repair rounds on record: fail-closed rebind (Director finding, mail 1a1c9c85) + central vector-validity gate (mail 1a1c9f8b). Post-merge: embedbind suite 29/29 on fresh main clone; regression x3 GREEN at 58b5518; CI 4/4. MWL 153 = MERGED_UNVERIFIED. Awaiting: your final-check disposition. Live Gemini entitlement UNKNOWN (not certified). | 58b5518a88e4 (merged) | closed as awaiting item 2026-11-11 |
 | PR #369 — Master Work List | MERGED 6b2bad8 (head 547f27c) under your SCOPED_DESIGN_PASS conditions (terminal CI + independent receipts); your 18:38 mail asked MERGED-vs-closed verification — verified MERGED with SHA on the record. Leaves the queue on your final-check pass; no completion credit taken. | 547f27c82a8e | closed as awaiting item 2026-11-10 |
-| PR #370 — C8.Roster / DD-37 | MERGED ad2a12c (head 2b95d86) under your conditional authorization + Keeper scoped CONFIRM (9d39cdc). Your 18:38 mail recognizes MERGED + scoped postmerge receipts (roster 15/15, smoke True, capture 27/27); MWL item 152 stays MERGED_UNVERIFIED pending your independent closure/register reconciliation. Leaves the queue on your final-check pass. | 2b95d86b8427 | closed as awaiting item 2026-11-10 |
+| PR #370 — C8.Roster / DD-37 | MERGED ad2a12c (head 2b95d86) under your conditional authorization + Keeper scoped CONFIRM (9d39cdc). Your 18:38 mail recognizes MERGED + scoped postmerge receipts (roster 15/15, smoke True, capture 27/27); MWL item 152 CLOSED COMPLETE (scoped) 2026-11-10 (PR #376). Leaves the queue on your final-check pass. | 2b95d86b8427 | closed as awaiting item 2026-11-10 |
 | PR #372 — Q-DD31F.2 sibling fix | MERGED 5d2deb4 (head 1182e35) under your conditional authorization. Keeper 18:01 deep cycle cleared his final-check flag (records/test-only). Leaves the queue on your final-check pass. | 1182e35 | closed as awaiting item 2026-11-10 |
 
 ## Final check — DISPOSED 2026-11-10 23:43 CST (Director mail 1a1c9225c1bae60f)
@@ -24,11 +25,14 @@ SUSX100,000 state file. Uni updates heads in place as lanes land.
 - MWL 7: SCOPED_RECORD_CLOSURE_AUTHORIZED (implementation evidence
   record only) — applied. Ace's Nursery confirm of the 31
   proposals remains his separate sovereign step.
-- MWL 8: HOLD — unit definition + exhaustive manifest + closure
-  criterion published (MWL8_BATCH_MANIFEST_2026-11-10.md; missing
-  SHA: PR #365 = 444a76062). Awaiting an authority ruling against
-  the manifest.
-- Headline after regeneration: 31/179 COMPLETE = 17.3%.
+- MWL 8: COMPLETE (records-only) — Director CONDITIONAL
+  SCOPED_RECORD_PASS (mail 1a1c9549bfb1581c) discharged by Uni
+  scripted verification 15/15 (PR #377 merged 42dbb52); Director
+  independently verified the merge + headline in mail
+  1a1c992af38db8eb (2026-11-11 01:46 CST). Keeper trailing
+  certification in his cycles.
+- Headline after regeneration: 32/179 COMPLETE = 17.9%
+  (PR #377, merged 42dbb52).
 
 ## Final-check queue (hourly final check, WORKFLOW v1 SS4)
 
@@ -39,7 +43,9 @@ Keeper flags noted where cleared): PR #361, #362, #363, #365, #366,
 (f8295f3 — Keeper flag cleared 18:01), #356 (554af27 — Keeper flag
 cleared 18:01), #368 (3651a5b), #371 (da73ff9), #372 (5d2deb4 —
 Keeper flag cleared 18:01), #369 (6b2bad8, docs; no completion
-credit), #370 (ad2a12c).
+credit), #370 (ad2a12c), #348 (41c3c96 — merged
+2026-11-11, final-check pending), #378 (c0fd0b7 — merged
+2026-11-11, final-check pending).
 
 ## Standing decisions owed
 

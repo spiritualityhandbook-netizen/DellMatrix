@@ -28,10 +28,10 @@ Data: director-reports/master_work_list_items.json
 | Status | Items |
 |---|---|
 | COMPLETE | 32 |
-| MERGED_UNVERIFIED | 0 |
-| BUILT_HELD | 2 |
+| MERGED_UNVERIFIED | 2 |
+| BUILT_HELD | 1 |
 | PARTIAL | 55 |
-| OPEN | 87 |
+| OPEN | 86 |
 | GATED | 3 |
 | NEEDS_OVERSEER | 0 |
 | **TOTAL (active)** | **179** |
@@ -49,7 +49,7 @@ parked items the 72 frame never counted.
 
 | # | Item | Source IDs | Status |
 |---|---|---|---|
-| 1 | Loop chained-body repetition repair (PR #348 @ d1ae66d; ALL regression legs TERMINAL GREEN — fwd CI, --twice 266/266, rev 266/266; refreshed disposition package posted 6778799489; Director HOLD pending his disposition) | DD-14 / C1.Loop | BUILT_HELD |
+| 1 | Loop chained-body repetition repair (PR #348 @ d1ae66d; ALL regression legs TERMINAL GREEN — fwd CI, --twice 266/266, rev 266/266; refreshed disposition package posted 6778799489; Director HOLD pending his disposition) [MERGED PR #348 as 41c3c96 2026-11-11; Keeper CONFIRM scoped at 490fc1a + Director authorization mail 1a1ca412; post-merge dd14 suite 11/11 on main c0fd0b7; COMPLETE only on authority-confirmed closure] | DD-14 / C1.Loop | MERGED_UNVERIFIED |
 | 2 | Loop bounds must be explicit — no silent 8 (PR #360 MERGED d58a3d5; Director SCOPED_CODE_PASS + Keeper CONFIRM at head 0773d13; local full regression GREEN at head; post-merge suite 16/16 on merged main; final-check CLOSED per citation) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main. | DD-44 / C1.Bounds / Q-DD44.1 | COMPLETE |
 | 3 | Chain parse-refusal must fail closed (PR #345; reconciliation COMPLETE: the one mutation is a PP3 unknowns-register entry, proven by dd45_recon_test.py 20/20; corrected claim + guard comment pushed @ 71098a5; hold-lift package posted 6778879305 — Director rules option A corrected-claim vs option B PP3-repeal) | DD-45 / C1.ParseRefusal | BUILT_HELD |
 | 4 | DD-31 diagnostic capture hardening — failure-only stderr capture in the regress harness (PR #350 MERGED e4aad9d; Director SCOPED_CODE_PASS + Keeper CONFIRM at head b6b0307; local full regression GREEN at head (266 suites); no capture files in repo (4 files verified); final-check CLOSED per citation; DD-31 root mechanism remains OPEN per Director) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main. | PR #350 (DD-31 cascade) | COMPLETE |
@@ -271,7 +271,7 @@ parked items the 72 frame never counted.
 | # | Item | Source IDs | Status |
 |---|---|---|---|
 | 152 | Dock roster repair — BUILT (PR #370 @ 2b95d86): two-tier dock_sessions (live uncapped + compact history archive with provenance digests; v1 loads whole, re-saves v2); failing-first 3/15 -> 15/15; mutant killed; main-session regression ALL LEGS TERMINAL GREEN (fwd/twice/rev at 2b95d86); MERGED ad2a12c (PR #370); Director SCOPED_CODE_PASS (mail 1a1c7e617ea7110a) + Keeper scoped CONFIRM (disposition file commit 9d39cdc); post-merge fresh-clone dd37_roster 15/15 + regress_capture 27/27; siblings + 50-proposal bound untouched; closure scope = C8.Roster (dock_sessions) ONLY CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main. CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main. | DD-37 / C8.Roster | COMPLETE |
-| 153 | Embedding provider binding — EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider RESOLVED by Ace 2026-11-10: any docked AI, Gemini today — see item 178 | C8.EmbedBind | OPEN |
+| 153 | Embedding provider binding — EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider RESOLVED by Ace 2026-11-10: any docked AI, Gemini today — see item 178 [MERGED PR #378 as c0fd0b7 2026-11-11; Director SCOPED_CODE_PASS + conditional authorization mail 1a1ca412; Keeper CONFIRM scoped at 58b5518; post-merge embedbind suite 29/29 on main; live Gemini entitlement UNKNOWN; COMPLETE only on authority-confirmed closure] | C8.EmbedBind | MERGED_UNVERIFIED |
 | 154 | Resident Psalm — visible start/stop, bounded work, proposal-only output; presence grants no authority (direction recorded §12.20; future build) | C8.Resident | OPEN |
 | 155 | Multi-Psalm / BIMO execution design — persona execution needs actual instance semantics and Ace-approved roles; BIMO metadata alone is not execution (design sit-down owed, §12.36e) | C8.MultiPsalm | OPEN |
 
