@@ -22,7 +22,12 @@ suites do not reach:
   nothing (the name does not exist to point at), while an
   Alias to a published name binds.
 - A failed REDEFINITION retains the prior body, and the
-  retained body remains invocable.
+  retained body remains invocable. (A7's failing body is
+  an unbound 47[Embed] — deterministic embed_unavailable;
+  Q-C3.1 amendment, see the in-code note at A7.)
+- Ring 1 (DD-51): a successful Alias arms the Diff
+  baseline, so a standalone 89[Diff] after it succeeds
+  instead of refusing baseline_missing (A9).
 - A Define in an unchosen Branch arm never executes, so
   nothing is published; a normal Define publishes.
 - Non-publication SURVIVES persistence: after the
@@ -126,12 +131,35 @@ def main():
     check("A6.alias_to_published_name_binds",
           out["ok"] and st.aliases.get("akeep") == "keep")
 
-    out = _run(p, "99[Compose] :: keep=89[Diff]")
+    # Q-C3.1 amendment (Director ruling, mail 1a1cb916b4f20117):
+    # A7's original failing body was 89[Diff] — it failed only
+    # because no baseline existed. DD-51 Ring 1 made A6's Alias
+    # note a baseline, so the Diff body now SUCCEEDS and the
+    # redefinition publishes (failing-first probe:
+    # c3diff/logs/amend_probe.log). The replacement body, an
+    # unbound 47[Embed], fails deterministically with
+    # embed_unavailable: the embed binding is runtime-only,
+    # never persisted, and nothing in this suite binds one, so
+    # the failure cannot depend on baselines, store contents,
+    # or ambient state. (An Assert body cannot serve here: the
+    # chain grammar rejects a nested :: inside a Compose label,
+    # so that body would never run — same probe log.) The B18
+    # invariant under test is unchanged: a genuinely failed
+    # define-run never publishes and the prior body is retained.
+    out = _run(p, "99[Compose] :: keep=47[Embed]")
     check("A7.failed_redefinition_retains_prior",
-          out["ok"] is False
+          out["ok"] is False and out["error"] == "embed_unavailable"
           and st.compositions.get("keep") == "70[Count]")
     out = _run(p, "99[Compose] :: keep")
     check("A8.retained_body_still_invocable", out["ok"])
+
+    # DD-51 Ring 1 success path (the behavior that retired the
+    # old A7 trigger): A6's Alias noted a baseline, so a
+    # standalone Diff now executes instead of refusing
+    # baseline_missing.
+    out = _run(p, "89[Diff]")
+    check("A9.alias_arms_baseline_diff_succeeds", out["ok"],
+          f"{out.get('error')!r}")
 
     # Persistence: canonical save + load (the REPL's path).
     from form import persist_rest
