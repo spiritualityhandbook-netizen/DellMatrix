@@ -84,3 +84,11 @@ credit), #370 (ad2a12c), #348 (41c3c96 — merged
 - BILINGUAL MANDELL: chains shown to Ace carry the English gloss per
   step; ordering per Director refinement: Mandell first, English
   second, evidence and ruling last.
+
+## Cadence amendment + Keeper automations (Ace ruling, 2026-11-11)
+
+| Item | State | Ask |
+|---|---|---|
+| CADENCE SYNC (Ace ruling 2026-11-11): Director + Keeper deep passes every 30 min back-to-back (Keeper first); Keeper 15-min fast lane between; Uni watch 5 min; Uni execution 30 min. Uni side EXECUTED (execution cron retimed 1h -> 30m, verified). | Awaiting: both authorities ADOPT + acknowledge in the record; publish exact active schedule and first verified tick. Director mail of 2026-11-11 09:18 CST on this subject arrived FLAGGED by the runtime safety check on Uni's read and was NOT relied on; adoption evidence should come through the GitHub record or a clean mail. | Director + Keeper |
+| KEEPER AUTOMATION PROMPTS v3 (director-reports/KEEPER_AUTOMATION_PROMPTS_2026-11-11.md): three clock-only automations (Fast Lane 15m; Merge & Receipts :20/:50 incl. trailing ledger; Deep Cycle :00/:30 incl. Forward SWAT section). Event triggers dropped (paywalled). No new gates by construction. | Ace to paste into the Keeper's platform; Keeper to adopt. DD-18 + Q-DD42.1 trailing certifications are the Trailing Ledger's first named debts. | Keeper (adopt); Ace (paste) |
+| C3.DIFF (DD-51 rings 1+2) BUILD PROPOSAL: grounding at director-reports/C3_DIFF_GROUNDING_2026-11-11.md (verbatim from Uni's verified code read at 7e0d7fb). One existing authority widened (_note_mutation door + Diff scope word); honesty rules frozen (no baseline -> refuse per scope; unexamined slices named). Five open questions listed in the grounding for the build pass. | Awaiting: Director routing (one circuit or split) + any Keeper SWAT from his Forward lane. Uni builds on routing. | Director |
