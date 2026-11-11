@@ -51,6 +51,63 @@ class ProviderResult:
         }
 
 
+@dataclass
+class EmbedResult:
+    """One embedding transport outcome (C8 EmbedBind).
+
+    `model` is the ACTUAL model that produced the vector and `vector`
+    the ACTUAL values; callers build vector-space identity
+    ("<provider>:<model>:<dim>") from these, never from requests.
+    """
+    provider: str
+    ok: bool
+    vector: List[float] = field(default_factory=list)
+    model: str = ""
+    error: str = ""
+
+
+FAKE_EMBED_MODEL = "fake-embed-16"
+FAKE_EMBED_DIM = 16
+
+
+def _validate_embed_result(res: EmbedResult) -> EmbedResult:
+    """Central vector-validity gate for EVERY embed transport.
+
+    Director requirement (PR #378, mail 1a1c9f8b): a bound probe
+    must never accept an empty, nonfinite, or malformed vector.
+    Every LLMBridge.embed return path passes through here, so no
+    provider - present or future - can bind on a bad vector. The
+    provider/model identity is preserved on the failure result.
+    """
+    if not res.ok:
+        return res
+    import math
+    vec = res.vector
+    if not isinstance(vec, list) or not vec:
+        return EmbedResult(res.provider, False, model=res.model,
+                           error="embed_invalid_vector: empty")
+    for v in vec:
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+            return EmbedResult(res.provider, False, model=res.model,
+                               error="embed_invalid_vector: nonfinite_or_malformed")
+    return EmbedResult(res.provider, True,
+                       vector=[float(v) for v in vec], model=res.model)
+
+
+def _fake_embed(text: str) -> EmbedResult:
+    """Deterministic offline embedding test double.
+
+    Mirrors the dock's FakeProvider precedent: an honest, labeled
+    stand-in for transport proofs. It is NOT a semantic embedding
+    and must never be served as one - the provider name "fake" and
+    the model name travel in every receipt it produces.
+    """
+    import hashlib
+    digest = hashlib.sha256(text.encode("utf-8")).digest()
+    vec = [digest[i % len(digest)] / 127.5 - 1.0 for i in range(FAKE_EMBED_DIM)]
+    return EmbedResult("fake", True, vector=vec, model=FAKE_EMBED_MODEL)
+
+
 def _env(*names: str) -> str:
     for n in names:
         v = os.environ.get(n, "").strip()
@@ -215,6 +272,69 @@ class LLMBridge:
         except Exception as e:
             return ProviderResult(provider, False, error=str(e))
         return ProviderResult(provider, False, error="unhandled")
+
+    def embed(self, provider: str, text: str, *,
+              model: Optional[str] = None, timeout: int = 30) -> EmbedResult:
+        """Embedding transport (C8 EmbedBind, MWL 153).
+
+        A provider's generative access does NOT by itself prove
+        embedding entitlement (plan SS12.36): embedding is a separate
+        endpoint/model, so this method is the entitlement surface and
+        it fails by name. Providers without an implemented embedding
+        endpoint return embed_not_supported_for_provider - never a
+        substitute vector from any other mechanism.
+        """
+        assert_floor_intact()
+        provider = provider.lower().strip()
+        if provider == "fake":
+            return _validate_embed_result(_fake_embed(text))
+        if provider not in PROVIDERS:
+            return EmbedResult(provider, False, error=f"unknown provider {provider}")
+        try:
+            if provider in ("gemini", "aistudio"):
+                return _validate_embed_result(
+                    self._gemini_embed(provider, text, model=model, timeout=timeout))
+            if provider in ("ollama", "local"):
+                return _validate_embed_result(
+                    self._ollama_embed(provider, text, model=model, timeout=timeout))
+        except urllib.error.HTTPError as e:
+            body = e.read(2000).decode("utf-8", errors="replace")[:500]
+            return EmbedResult(provider, False, error=f"HTTP {e.code}: {body}")
+        except Exception as e:
+            return EmbedResult(provider, False, error=str(e))
+        return EmbedResult(provider, False,
+                           error=f"embed_not_supported_for_provider: {provider}")
+
+    def _gemini_embed(self, label: str, text: str, model: Optional[str] = None,
+                      timeout: int = 30) -> EmbedResult:
+        key = _env("GOOGLE_API_KEY", "GEMINI_API_KEY", "AISTUDIO_API_KEY")
+        if not key:
+            return EmbedResult(label, False,
+                               error="missing GOOGLE_API_KEY / GEMINI_API_KEY")
+        actual_model = model or os.environ.get("GEMINI_EMBED_MODEL", "gemini-embedding-001")
+        url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+               f"{actual_model}:embedContent?key={key}")
+        data = _http_json(url, {"content": {"parts": [{"text": text}]}},
+                          {"Content-Type": "application/json"}, timeout=timeout)
+        values = (data.get("embedding") or {}).get("values") or []
+        if not values:
+            return EmbedResult(label, False, model=actual_model,
+                               error="empty embedding values in response")
+        return EmbedResult(label, True, vector=[float(v) for v in values],
+                           model=actual_model)
+
+    def _ollama_embed(self, label: str, text: str, model: Optional[str] = None,
+                      timeout: int = 30) -> EmbedResult:
+        actual_model = model or os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+        url = ollama_host().rstrip("/") + "/api/embeddings"
+        data = _http_json(url, {"model": actual_model, "prompt": text},
+                          {"Content-Type": "application/json"}, timeout=timeout)
+        values = data.get("embedding") or []
+        if not values:
+            return EmbedResult(label, False, model=actual_model,
+                               error="empty embedding in response")
+        return EmbedResult(label, True, vector=[float(v) for v in values],
+                           model=actual_model)
 
     def call_all(self, prompt: str, system: str = "") -> List[ProviderResult]:
         det = self.detect()
