@@ -317,6 +317,7 @@ LIST = [
     "form.dd31_sanitize_copula_test:smoke",
     "form.dd42_predicate_infix_test:smoke",
     "form.dd44_bounds_explicit_test:smoke",
+    "form.embedbind_test:smoke",
     "form.dd37_roster_test:smoke",
     "form.dd18_pulse_receipt_test:smoke",
     "form.regress_capture_test:smoke",

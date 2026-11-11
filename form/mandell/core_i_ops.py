@@ -892,7 +892,26 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
         messages.append("Bridge unavailable: no external provider bound")
         return {**base, "ok": False, "error": "bridge_unavailable"}
     if n == 47:
-        program.last_core_i = {"dell": 47, "ok": False, "error": "embed_unavailable", "representation": "none", "provider": ""}
-        messages.append("Embed unavailable: no vector provider bound")
-        return {**base, "ok": False, "error": "embed_unavailable"}
+        binding = getattr(program, "embed_binding", None)
+        if not binding:
+            program.last_core_i = {"dell": 47, "ok": False, "error": "embed_unavailable", "representation": "none", "provider": ""}
+            messages.append("Embed unavailable: no vector provider bound")
+            return {**base, "ok": False, "error": "embed_unavailable"}
+        text = (label or "").strip()
+        if not text:
+            program.last_core_i = {"dell": 47, "ok": False, "error": "embed_no_text", "representation": "none", "provider": binding.get("provider", ""), "model": binding.get("model", "")}
+            messages.append("Embed: no text to embed (write 47[Embed]:: <text>)")
+            return {**base, "ok": False, "error": "embed_no_text"}
+        from ..dell_matrix.embed_bind import embed_text
+        res = embed_text(program, text)
+        if res is None or not res.ok:
+            err = (res.error if res is not None else "") or "embed_failed"
+            program.last_core_i = {"dell": 47, "ok": False, "error": err, "representation": "none", "provider": binding.get("provider", ""), "model": binding.get("model", "")}
+            messages.append(f"Embed failed: {err}")
+            return {**base, "ok": False, "error": err}
+        dim = len(res.vector)
+        vector_space = f"{res.provider}:{res.model}:{dim}"
+        program.last_core_i = {"dell": 47, "ok": True, "provider": res.provider, "model": res.model, "vector_space": vector_space, "dim": dim, "representation": "vector", "vector": list(res.vector)}
+        messages.append(f"Embedded via {res.provider}/{res.model} (vector space {vector_space})")
+        return {**base, "ok": True, "error": ""}
     return None
