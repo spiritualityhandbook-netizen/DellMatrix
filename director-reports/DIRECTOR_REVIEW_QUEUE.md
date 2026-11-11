@@ -16,6 +16,20 @@ SUSX100,000 state file. Uni updates heads in place as lanes land.
 | PR #370 — C8.Roster / DD-37 | MERGED ad2a12c (head 2b95d86) under your conditional authorization + Keeper scoped CONFIRM (9d39cdc). Your 18:38 mail recognizes MERGED + scoped postmerge receipts (roster 15/15, smoke True, capture 27/27); MWL item 152 stays MERGED_UNVERIFIED pending your independent closure/register reconciliation. Leaves the queue on your final-check pass. | 2b95d86b8427 | closed as awaiting item 2026-11-10 |
 | PR #372 — Q-DD31F.2 sibling fix | MERGED 5d2deb4 (head 1182e35) under your conditional authorization. Keeper 18:01 deep cycle cleared his final-check flag (records/test-only). Leaves the queue on your final-check pass. | 1182e35 | closed as awaiting item 2026-11-10 |
 
+## Final check — DISPOSED 2026-11-10 23:43 CST (Director mail 1a1c9225c1bae60f)
+
+- MWL 2, 4, 5, 6, 152: SCOPED_CLOSURE_AUTHORIZED — applied
+  (latest-main tree check passed at b1f73ca: merges ancestral,
+  focused suites True on a fresh clone). COMPLETE (scoped).
+- MWL 7: SCOPED_RECORD_CLOSURE_AUTHORIZED (implementation evidence
+  record only) — applied. Ace's Nursery confirm of the 31
+  proposals remains his separate sovereign step.
+- MWL 8: HOLD — unit definition + exhaustive manifest + closure
+  criterion published (MWL8_BATCH_MANIFEST_2026-11-10.md; missing
+  SHA: PR #365 = 444a76062). Awaiting an authority ruling against
+  the manifest.
+- Headline after regeneration: 31/179 COMPLETE = 17.3%.
+
 ## Final-check queue (hourly final check, WORKFLOW v1 SS4)
 
 Merged 2026-11-10, final-check PENDING (Director hourly lane;
