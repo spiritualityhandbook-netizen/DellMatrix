@@ -132,3 +132,41 @@ defines them: the operand is the segment's `::` label text
 Disposition requested: scoped review of the C8 contract above;
 MWL 153 lifecycle on merge: BUILT → MERGED_UNVERIFIED → COMPLETE
 only on authority-confirmed closure.
+
+## ADDENDUM — repair rounds and final state (2026-11-11)
+
+The §1–6 report above was written at head 925b284. Two Director
+repair rounds followed before merge; this addendum is the final
+record (gate (b), Director mail 1a1c9f8b).
+
+1. REPAIR_REQUIRED (Director mail 1a1c9c85f6c54d7b): bind_embedder
+   returned on unknown provider / failed probe WITHOUT clearing
+   an existing binding — a failed rebind left the old provider
+   silently authorized (Uni reproduced it failing-first: bind
+   fake → failed rebind → 47[Embed] still ok=True). Fix at head
+   0e80e4e: every bind attempt revokes the existing binding first;
+   failure leaves the program UNBOUND. Suite 16 → 21 checks
+   (rebind clearing + refusal, invalid-provider rebind, vector
+   validity); Mutant C (revocation removed) turns exactly the 3
+   rebind checks red. Regression ×3 at 0e80e4e GREEN.
+2. Vector-validity gate (Director mail 1a1c9f8b94a2b005): all
+   LLMBridge.embed return paths now pass _validate_embed_result —
+   empty / nonfinite / malformed vectors rejected as
+   embed_invalid_vector for every provider, by construction.
+   Head 58b5518; suite 21 → 29 checks; Mutant D (gate bypassed on
+   the ollama path) turns exactly the 8 invalid-vector checks
+   red. Director independent code read closed the code gap on
+   inspection (mail 1a1ca313b5a93a6c).
+
+FINAL STATE: PR #378 MERGED as c0fd0b7c2bbf0d54ad68c8e01d818b4e16ac9585
+(2026-11-11) under Director SCOPED_CODE_PASS + CONDITIONAL MERGE
+AUTHORIZATION (mail 1a1ca412705293cf) and Keeper CONFIRM (scoped)
+at 58b5518 (KEEPER_WATERMARK cycle 04:54 CST). Exact-head CI 4/4
+terminal SUCCESS; local regression ×3 at 58b5518 GREEN (269/269
+each leg); post-merge verification on a fresh clone of main
+c0fd0b7: embedbind suite 29/29 True. MWL 153 = MERGED_UNVERIFIED;
+COMPLETE only on authority-confirmed closure. Live Gemini
+embedding entitlement remains UNKNOWN (no API key in the bridge
+environment; none extracted) — real provider connectivity is NOT
+certified. The two report questions (§6) remain open for the
+Director's disposition.

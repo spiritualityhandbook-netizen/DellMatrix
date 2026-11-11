@@ -1,1276 +1,1276 @@
 [
  {
   "n": 1,
-  "title": "Loop chained-body repetition repair (PR #348 @ d1ae66d; ALL regression legs TERMINAL GREEN — fwd CI, --twice 266/266, rev 266/266; refreshed disposition package posted 6778799489; Director HOLD pending his disposition)",
+  "title": "Loop chained-body repetition repair (PR #348 @ d1ae66d; ALL regression legs TERMINAL GREEN \u2014 fwd CI, --twice 266/266, rev 266/266; refreshed disposition package posted 6778799489; Director HOLD pending his disposition) [MERGED PR #348 as 41c3c96 2026-11-11; Keeper CONFIRM scoped at 490fc1a + Director authorization mail 1a1ca412; post-merge dd14 suite 11/11 on main c0fd0b7; COMPLETE only on authority-confirmed closure]",
   "ids": "DD-14 / C1.Loop",
-  "status": "BUILT_HELD",
-  "block": "A — Front line (in flight now)"
+  "status": "MERGED_UNVERIFIED",
+  "block": "A \u2014 Front line (in flight now)"
  },
  {
   "n": 2,
-  "title": "Loop bounds must be explicit — no silent 8 (PR #360 MERGED d58a3d5; Director SCOPED_CODE_PASS + Keeper CONFIRM at head 0773d13; local full regression GREEN at head; post-merge suite 16/16 on merged main; final-check CLOSED per citation) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
+  "title": "Loop bounds must be explicit \u2014 no silent 8 (PR #360 MERGED d58a3d5; Director SCOPED_CODE_PASS + Keeper CONFIRM at head 0773d13; local full regression GREEN at head; post-merge suite 16/16 on merged main; final-check CLOSED per citation) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
   "ids": "DD-44 / C1.Bounds / Q-DD44.1",
   "status": "COMPLETE",
-  "block": "A — Front line (in flight now)"
+  "block": "A \u2014 Front line (in flight now)"
  },
  {
   "n": 3,
-  "title": "Chain parse-refusal must fail closed (PR #345; reconciliation COMPLETE: the one mutation is a PP3 unknowns-register entry, proven by dd45_recon_test.py 20/20; corrected claim + guard comment pushed @ 71098a5; hold-lift package posted 6778879305 — Director rules option A corrected-claim vs option B PP3-repeal)",
+  "title": "Chain parse-refusal must fail closed (PR #345; reconciliation COMPLETE: the one mutation is a PP3 unknowns-register entry, proven by dd45_recon_test.py 20/20; corrected claim + guard comment pushed @ 71098a5; hold-lift package posted 6778879305 \u2014 Director rules option A corrected-claim vs option B PP3-repeal)",
   "ids": "DD-45 / C1.ParseRefusal",
   "status": "BUILT_HELD",
-  "block": "A — Front line (in flight now)"
+  "block": "A \u2014 Front line (in flight now)"
  },
  {
   "n": 4,
-  "title": "DD-31 diagnostic capture hardening — failure-only stderr capture in the regress harness (PR #350 MERGED e4aad9d; Director SCOPED_CODE_PASS + Keeper CONFIRM at head b6b0307; local full regression GREEN at head (266 suites); no capture files in repo (4 files verified); final-check CLOSED per citation; DD-31 root mechanism remains OPEN per Director) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
+  "title": "DD-31 diagnostic capture hardening \u2014 failure-only stderr capture in the regress harness (PR #350 MERGED e4aad9d; Director SCOPED_CODE_PASS + Keeper CONFIRM at head b6b0307; local full regression GREEN at head (266 suites); no capture files in repo (4 files verified); final-check CLOSED per citation; DD-31 root mechanism remains OPEN per Director) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
   "ids": "PR #350 (DD-31 cascade)",
   "status": "COMPLETE",
-  "block": "A — Front line (in flight now)"
+  "block": "A \u2014 Front line (in flight now)"
  },
  {
   "n": 5,
-  "title": "DD31-CI-INTERMITTENT root-cause fix — dd31 suite residue check scoped to its own owner (PR #361 merged c13de21; Director + Keeper scoped confirmations; final-check CLOSED per citation) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
+  "title": "DD31-CI-INTERMITTENT root-cause fix \u2014 dd31 suite residue check scoped to its own owner (PR #361 merged c13de21; Director + Keeper scoped confirmations; final-check CLOSED per citation) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
   "ids": "DD31-CI (extension)",
   "status": "COMPLETE",
-  "block": "A — Front line (in flight now)"
+  "block": "A \u2014 Front line (in flight now)"
  },
  {
   "n": 6,
-  "title": "Sibling whole-directory-assertion inventory (Q-DD31F.2): inventory COMPLETE (267 suites: 1 confirmed sibling, 17 suspect, 248 clean); sibling fix MERGED 5d2deb4 (PR #372 @ 1182e35 — p0 scan owner-scoped to the current manifest format; plant differential 12/13 -> 13/13; own-manifest mutants red; one test file only); local regression fwd/twice/rev TERMINAL GREEN at head; post-merge p0 smoke ALL GREEN on merged main; Director SCOPED PASS (P3 oracle only); final-check CLOSED per citation CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
+  "title": "Sibling whole-directory-assertion inventory (Q-DD31F.2): inventory COMPLETE (267 suites: 1 confirmed sibling, 17 suspect, 248 clean); sibling fix MERGED 5d2deb4 (PR #372 @ 1182e35 \u2014 p0 scan owner-scoped to the current manifest format; plant differential 12/13 -> 13/13; own-manifest mutants red; one test file only); local regression fwd/twice/rev TERMINAL GREEN at head; post-merge p0 smoke ALL GREEN on merged main; Director SCOPED PASS (P3 oracle only); final-check CLOSED per citation CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
   "ids": "Q-DD31F.2",
   "status": "COMPLETE",
-  "block": "A — Front line (in flight now)"
+  "block": "A \u2014 Front line (in flight now)"
  },
  {
   "n": 7,
-  "title": "WORKFLOW role seeds implementation — 31 seeds landed as PENDING proposals, classified, isolated (PR #367 merged 70a478e; Director scoped certification + Keeper record-truth CONFIRM; final-check CLOSED as a RECORD per citation; the 31 proposals themselves await Ace's sovereign Nursery confirm — see appendix) CLOSED (scoped record closure ONLY): Director SCOPED_RECORD_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST) — covers the role-seed implementation evidence record (31 PENDING state-bound proposals; 269/272 run-2 reproduction with 3 conditional atoms explained). NOT an acceptance of the proposals, a live catalog, or general executable behavior; Ace’s Nursery confirm of the 31 proposals remains his separate sovereign step.",
+  "title": "WORKFLOW role seeds implementation \u2014 31 seeds landed as PENDING proposals, classified, isolated (PR #367 merged 70a478e; Director scoped certification + Keeper record-truth CONFIRM; final-check CLOSED as a RECORD per citation; the 31 proposals themselves await Ace's sovereign Nursery confirm \u2014 see appendix) CLOSED (scoped record closure ONLY): Director SCOPED_RECORD_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST) \u2014 covers the role-seed implementation evidence record (31 PENDING state-bound proposals; 269/272 run-2 reproduction with 3 conditional atoms explained). NOT an acceptance of the proposals, a live catalog, or general executable behavior; Ace\u2019s Nursery confirm of the 31 proposals remains his separate sovereign step.",
   "ids": "ROLE-SEEDS-IMPL / PR #367",
   "status": "COMPLETE",
-  "block": "A — Front line (in flight now)"
+  "block": "A \u2014 Front line (in flight now)"
  },
  {
   "n": 8,
-  "title": "Governance records publication batch — ALL MERGED: #351 4b1761d, #352 4b04f2f, #353 a7f59c9, #354 8bf09b5, #355 f8295f3, #356 554af27; Director Review Queue PR #368 MERGED 3651a5b; NEEDS_OVERSEER dispositions PR #371 MERGED da73ff9; final-check pending ITEM-SPECIFIC COMPLETION HELD: Director HOLD, mail 1a1c9225c1bae60f (2026-11-10) — one-unit definition + exhaustive batch manifest published in director-reports/MWL8_BATCH_MANIFEST_2026-11-10.md (unit = PRs #351-#356, #362-#366, #368, #371, #373, #374; missing SHA supplied: PR #365 merged 444a76062); closure criterion stated there; item completes only on an authority ruling against that manifest. CLOSED (records-only): Director CONDITIONAL SCOPED_RECORD_PASS, mail 1a1c9549bfb1581c (2026-11-11 00:38 CST); Uni verification 2026-11-11: all 15 PRs MERGED with exact manifest SHAs (script/gh), all merge commits ancestors of main 8f789ce, ZERO product-code files (form//gui/) in any of the 15 diffs, publication files present and unsuperseded on main; receipt appended to MWL8_BATCH_MANIFEST_2026-11-10.md.",
+  "title": "Governance records publication batch \u2014 ALL MERGED: #351 4b1761d, #352 4b04f2f, #353 a7f59c9, #354 8bf09b5, #355 f8295f3, #356 554af27; Director Review Queue PR #368 MERGED 3651a5b; NEEDS_OVERSEER dispositions PR #371 MERGED da73ff9; final-check pending ITEM-SPECIFIC COMPLETION HELD: Director HOLD, mail 1a1c9225c1bae60f (2026-11-10) \u2014 one-unit definition + exhaustive batch manifest published in director-reports/MWL8_BATCH_MANIFEST_2026-11-10.md (unit = PRs #351-#356, #362-#366, #368, #371, #373, #374; missing SHA supplied: PR #365 merged 444a76062); closure criterion stated there; item completes only on an authority ruling against that manifest. CLOSED (records-only): Director CONDITIONAL SCOPED_RECORD_PASS, mail 1a1c9549bfb1581c (2026-11-11 00:38 CST); Uni verification 2026-11-11: all 15 PRs MERGED with exact manifest SHAs (script/gh), all merge commits ancestors of main 8f789ce, ZERO product-code files (form//gui/) in any of the 15 diffs, publication files present and unsuperseded on main; receipt appended to MWL8_BATCH_MANIFEST_2026-11-10.md.",
   "ids": "Records batch",
   "status": "COMPLETE",
-  "block": "A — Front line (in flight now)"
+  "block": "A \u2014 Front line (in flight now)"
  },
  {
   "n": 9,
-  "title": "Pulse receipt truth — Dell 25 leaf receipt + Dell 26 disclosure (PR #357 merged fd88d3d; Director scoped certification Q-DD18.1; Keeper second certification trailing)",
+  "title": "Pulse receipt truth \u2014 Dell 25 leaf receipt + Dell 26 disclosure (PR #357 merged fd88d3d; Director scoped certification Q-DD18.1; Keeper second certification trailing)",
   "ids": "DD-18 / C1.PulseReceipt",
   "status": "COMPLETE",
-  "block": "B — C1 Chain Truth, remainder and follow-ups"
+  "block": "B \u2014 C1 Chain Truth, remainder and follow-ups"
  },
  {
   "n": 10,
   "title": "Predicate infix conditions refuse honestly instead of degrading to truthiness (PR #359 merged 47673cc; trailing Q-DD42.1 second certification outstanding)",
   "ids": "DD-42 / C1.Predicate",
   "status": "COMPLETE",
-  "block": "B — C1 Chain Truth, remainder and follow-ups"
+  "block": "B \u2014 C1 Chain Truth, remainder and follow-ups"
  },
  {
   "n": 11,
-  "title": "Parallel must mean parallel — concurrency design slice (needs C13 isolation, C3 comparison, C11 lifecycle, Ace multi-Psalm session)",
+  "title": "Parallel must mean parallel \u2014 concurrency design slice (needs C13 isolation, C3 comparison, C11 lifecycle, Ace multi-Psalm session)",
   "ids": "DD-43 / C1.ConcurrencyDesign",
   "status": "OPEN",
-  "block": "B — C1 Chain Truth, remainder and follow-ups"
+  "block": "B \u2014 C1 Chain Truth, remainder and follow-ups"
  },
  {
   "n": 12,
   "title": "While/Until (64/65) loop conditions: honest refusal surface for unparseable infix conditions (fails closed today; no refusal receipt)",
   "ids": "Q-DD42.2",
   "status": "OPEN",
-  "block": "B — C1 Chain Truth, remainder and follow-ups"
+  "block": "B \u2014 C1 Chain Truth, remainder and follow-ups"
  },
  {
   "n": 13,
   "title": "Loop 13 receipted grammar follow-up",
   "ids": "Q-DD44.2",
   "status": "OPEN",
-  "block": "B — C1 Chain Truth, remainder and follow-ups"
+  "block": "B \u2014 C1 Chain Truth, remainder and follow-ups"
  },
  {
   "n": 14,
   "title": "Compose recursion cap follow-up",
   "ids": "Q-DD44.3",
   "status": "OPEN",
-  "block": "B — C1 Chain Truth, remainder and follow-ups"
+  "block": "B \u2014 C1 Chain Truth, remainder and follow-ups"
  },
  {
   "n": 15,
   "title": "ForceField gravity wells + evolution levels restore on load (PR #317)",
   "ids": "G-04 / DD-11",
   "status": "COMPLETE",
-  "block": "C — Extension-register closures"
+  "block": "C \u2014 Extension-register closures"
  },
  {
   "n": 16,
-  "title": "Snapshot retrieval reachability — coverage truth + bounded retrieve_for + cross-process source identity (PRs #336/#337)",
+  "title": "Snapshot retrieval reachability \u2014 coverage truth + bounded retrieve_for + cross-process source identity (PRs #336/#337)",
   "ids": "G-11 / Q-SNAP",
   "status": "COMPLETE",
-  "block": "C — Extension-register closures"
+  "block": "C \u2014 Extension-register closures"
  },
  {
   "n": 17,
-  "title": "Dock Proposal B — sanitized failure transparency, one fenced-JSON tolerance, session response view (PR #340)",
+  "title": "Dock Proposal B \u2014 sanitized failure transparency, one fenced-JSON tolerance, session response view (PR #340)",
   "ids": "G-12 / Q-LD",
   "status": "COMPLETE",
-  "block": "C — Extension-register closures"
+  "block": "C \u2014 Extension-register closures"
  },
  {
   "n": 18,
   "title": "Dell 41 Sanitize copula redaction leak repaired (PR #342; Director scoped certification, Dell 41 only)",
   "ids": "DD-31",
   "status": "COMPLETE",
-  "block": "C — Extension-register closures"
+  "block": "C \u2014 Extension-register closures"
  },
  {
   "n": 19,
-  "title": "Finalize Studio browser acceptance on integrated revision (= SM-01; certified with noted exceptions — no human session, no network deployment)",
+  "title": "Finalize Studio browser acceptance on integrated revision (= SM-01; certified with noted exceptions \u2014 no human session, no network deployment)",
   "ids": "72-01 / SM-01",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 20,
   "title": "Reconcile merged Core I gate with INDEX/archival status (= SM-05)",
   "ids": "72-02 / SM-05",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 21,
-  "title": "Independently reproduce DAF-09 session-escape cleanup (= SM-02; register BLOCKED — Director's independent 19/22 stands; local greens do not resolve it, §31.3)",
+  "title": "Independently reproduce DAF-09 session-escape cleanup (= SM-02; register BLOCKED \u2014 Director's independent 19/22 stands; local greens do not resolve it, \u00a731.3)",
   "ids": "72-03 / SM-02",
   "status": "OPEN",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 22,
   "title": "Close or precisely retain identical-label/unit-ID ambiguity in Growth lenses (= SM-39, SM-54; limitation lifted for the unit-keyed path incl. round-trip; legacy label-only ambiguity retained as a documented boundary)",
   "ids": "72-04 / SM-39 / SM-54",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 23,
   "title": "Repair Dell 37 REPL failure visibility (= SM-16)",
   "ids": "72-05 / SM-16",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 24,
   "title": "Review English Intent.args as a separate end-to-end contract (= SM-11; DD-01 Class E and DD-02 Class D FIXED inside via PRs #309/#310; census PR #308 held; full-contract review has no report)",
   "ids": "72-06 / SM-11 / DD-01 / DD-02",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 25,
   "title": "Dispose remaining per-scope admission/registry certification requests (= SM-04; A1 retained, A2 not certified)",
   "ids": "72-07 / SM-04",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 26,
   "title": "Preserve CI-only #233 + long-lived certification artifacts (= SM-03, SM-06; standing preservation duty, compliant)",
   "ids": "72-08 / SM-03 / SM-06",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 27,
-  "title": "Harden Director–Uni next-best circuit handoff (= SM-07; workflow adopted; standing practice, no completion certificate)",
-  "ids": "72-09 / SM-07 (twin claim — see coverage note)",
+  "title": "Harden Director\u2013Uni next-best circuit handoff (= SM-07; workflow adopted; standing practice, no completion certificate)",
+  "ids": "72-09 / SM-07 (twin claim \u2014 see coverage note)",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 28,
-  "title": "Stress Seed grammar + error precedence (= SM-58; stress battery landed PR #326, bounded scope confirmed; Q-72-10.1–.3 open)",
+  "title": "Stress Seed grammar + error precedence (= SM-58; stress battery landed PR #326, bounded scope confirmed; Q-72-10.1\u2013.3 open)",
   "ids": "72-10 / SM-58",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 29,
   "title": "Reconcile English create + direct REPL handlers with canonical Mandell (= SM-12, SM-13; investigation accepted, census outstanding)",
   "ids": "72-11 / SM-12 / SM-13",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 30,
   "title": "Deepen reachability for already-supported English actions only (B-2: 37/100 reachable, 63 NO_ROUTE_FOUND; per-Dell probes)",
   "ids": "72-12 / G-02 / SM-14",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 31,
   "title": "Audit 17 typed-signature error/coercion contracts (= SM-17, SM-19; per-signature audit landed PR #318 incl. Dell 55's four legacy quirks as permanent contract; wider SM-17/19 scope open)",
   "ids": "72-13 / SM-17 / SM-19",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 32,
   "title": "Strengthen Core I single/chain/intercept/live refusal parity (certified with noted boundaries)",
   "ids": "72-14",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 33,
   "title": "Challenge Core II unsupported-role control-head short circuits (certified with noted boundaries)",
   "ids": "72-15",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 34,
-  "title": "Reconcile legacy flow executor with canonical chain ownership (= SM-15; investigation complete — flow_executor is a composition-semantics divergence; R-1 proposal accepted for design review; implementation NOT authorized)",
+  "title": "Reconcile legacy flow executor with canonical chain ownership (= SM-15; investigation complete \u2014 flow_executor is a composition-semantics divergence; R-1 proposal accepted for design review; implementation NOT authorized)",
   "ids": "72-16 / SM-15 / DD-08",
   "status": "GATED",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 35,
-  "title": "Remove/relabel literal Show placeholder output — message-layer R-B repair Director-confirmed bounded (DD-03, PR #311); Studio console / browser-surface remedy ruling still listed as owed in the Director queue",
+  "title": "Remove/relabel literal Show placeholder output \u2014 message-layer R-B repair Director-confirmed bounded (DD-03, PR #311); Studio console / browser-surface remedy ruling still listed as owed in the Director queue",
   "ids": "72-17 / DD-03",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 36,
   "title": "Audit message-only Dell descriptions for truthful operations (= SM-23; systematic audit outstanding)",
   "ids": "72-18 / SM-23",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 37,
   "title": "Preserve first-failure provenance through mixed chain receipts (bounded composition proof landed PR #319; Step-8 wider scope open)",
   "ids": "72-19",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 38,
-  "title": "Challenge Branch/Parallel/Sequence/Join reported guarantees (= SM-18; bounded recheck landed PR #320 — Dell 62 Parallel is sequential in listed order; wider scope open)",
+  "title": "Challenge Branch/Parallel/Sequence/Join reported guarantees (= SM-18; bounded recheck landed PR #320 \u2014 Dell 62 Parallel is sequential in listed order; wider scope open)",
   "ids": "72-20 / SM-18",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 39,
   "title": "Stress Until/While/ForEach bounds + nested control inheritance (= SM-18; bounded circuit PR #321; the silent-default finding is superseded going forward by item 2 / DD-44)",
   "ids": "72-21 / SM-18",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 40,
   "title": "Reverify Try/Catch error consumption + same-frame reuse",
   "ids": "72-22",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 41,
   "title": "Challenge Commit/Revert exact state + side-effect boundaries",
   "ids": "72-23",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 42,
   "title": "Stress Diff/Set missing-vs-None + baseline handling",
   "ids": "72-24",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 43,
-  "title": "Protect Define/Alias/Compose against failed-run persistence (fix landed PR #322 — failed runs publish nothing; register row retains wider scope)",
+  "title": "Protect Define/Alias/Compose against failed-run persistence (fix landed PR #322 \u2014 failed runs publish nothing; register row retains wider scope)",
   "ids": "72-25",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 44,
   "title": "Stress per-member ManifestSet + typed chainlink transport (= SM-21; member isolation landed PR #323; wider scope open)",
   "ids": "72-26 / SM-21",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 45,
   "title": "Recheck Guard/Assert failure propagation across control frames (verdict propagation landed PR #324; wider scope open)",
   "ids": "72-27",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 46,
   "title": "Audit Program/Nursery pair-atomic save + fresh-process load (= SM-35; everyday-save hybrid-pair defect OPEN; repair routed through the separate C-A circuit under the Q1 line)",
   "ids": "72-28 / SM-35 / DD-06",
   "status": "GATED",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 47,
   "title": "Stress checkpoint sealing, rollback, directory-sync failure (= SM-36; DD-04 checkpoint family repaired PR #312; sealed-snapshot path passed every crash test; row scope open)",
   "ids": "72-29 / SM-36 / DD-04",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 48,
-  "title": "Challenge Exchange journaled import/recovery + receipt disposal (= SM-33, SM-34; includes the G-03 Q1 Exchange owner-boundary audit leg — audit authorized, modification NOT authorized)",
+  "title": "Challenge Exchange journaled import/recovery + receipt disposal (= SM-33, SM-34; includes the G-03 Q1 Exchange owner-boundary audit leg \u2014 audit authorized, modification NOT authorized)",
   "ids": "72-30 / SM-33 / SM-34 / G-03",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 49,
   "title": "Check Nursery optimistic concurrency + duplicate confirmation (= SM-31; DD-09 repaired inside, PR #314; row scope open)",
   "ids": "72-31 / SM-31 / DD-09",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 50,
   "title": "Validate semantic-graph journals against derived Program effects (= SM-25; DD-05 graph journal repaired PR #313; row scope open)",
   "ids": "72-32 / SM-25 / DD-05",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 51,
   "title": "Verify supersession crash + acceptance lineage across restart (= SM-30; replacement lineage landed PR #325; row scope open)",
   "ids": "72-33 / SM-30",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 52,
   "title": "Test owner namespace collision + foreign-state rejection (DD-12 loud refusal confirmed for program-file-anchored flows, PR #327; nursery-file-alone and standalone graph/ideas corners open)",
   "ids": "72-34 / DD-12",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 53,
   "title": "Recheck atomic-write orphan-temp + rollback cleanup bounds (crash suite confirmed 67/67, no defect; orphan-temp cleanup decision Q-35.1 owed by the Director)",
   "ids": "72-35",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 54,
   "title": "Roundtrip persistent envelopes under corrupt/unknown versions (DD-10 repaired inside, PR #315; row scope open)",
   "ids": "72-36 / DD-10",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 55,
   "title": "Plan + verify the Plane-to-Idea bridge / Track D (= SM-27, SM-28)",
   "ids": "72-37 / SM-27 / SM-28",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 56,
   "title": "Reconcile Idea + semantic-graph node identity through lifecycle (= SM-26)",
   "ids": "72-38 / SM-26",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 57,
-  "title": "Prove nested Idea parent/child + promotion invariants (TD-2 containment BUILT as a candidate per plan §14.2; the register's G-01 text still says \"not yet built\" and its certification is recorded UNKNOWN — see appendix)",
+  "title": "Prove nested Idea parent/child + promotion invariants (TD-2 containment BUILT as a candidate per plan \u00a714.2; the register's G-01 text still says \"not yet built\" and its certification is recorded UNKNOWN \u2014 see appendix)",
   "ids": "72-39 / G-01 / SM-26 / SM-28",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 58,
   "title": "Enforce active/faded/superseded participation across all consumers (= SM-29; DD-13 resonance fix landed PR #328; Q-72-40.2 harmonize open)",
   "ids": "72-40 / SM-29 / DD-13",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 59,
   "title": "Reconcile GrowthForce label identity with stable Plane unit IDs",
   "ids": "72-41",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 60,
   "title": "Stress knowledge selection, scope, lineage, dependencies (= SM-37)",
   "ids": "72-42 / SM-37",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 61,
   "title": "Trace cause/depend/provenance explanations to real graph evidence (= SM-38; SM-64 theme)",
   "ids": "72-43 / SM-38 / SM-64 (theme)",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 62,
   "title": "Test resonance/harmony-to-Nursery proposals at the human gate",
   "ids": "72-44",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 63,
   "title": "Preserve epistemic source/status through views + spatial consumers",
   "ids": "72-45",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 64,
   "title": "Verify dock COMPREHEND/relate_field through policy + Nursery (= SM-44)",
   "ids": "72-46 / SM-44",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 65,
   "title": "Stress stale field-snapshot + agent reconnect boundaries",
   "ids": "72-47",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 66,
   "title": "Exercise agent host-bound idempotency, retries, conflicting envelopes (= SM-45)",
   "ids": "72-48 / SM-45",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 67,
   "title": "Challenge AcceptancePolicy delegation, expiry, revocation chains (= SM-32)",
   "ids": "72-49 / SM-32",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 68,
   "title": "Prove DirectorSession remains recommendations-only (= SM-46)",
   "ids": "72-50 / SM-46",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 69,
   "title": "Reconcile DuoBeta outcome evidence + learning ledger persistence (= SM-41)",
   "ids": "72-51 / SM-41",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 70,
   "title": "Test learned-score saturation + opt-out reversibility (= SM-42)",
   "ids": "72-52 / SM-42",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 71,
   "title": "Harden provider errors, prompt/output validation, protected values (= SM-43)",
   "ids": "72-53 / SM-43",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 72,
   "title": "Keep selfgrow auxiliary ledger isolated from canonical state",
   "ids": "72-54",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 73,
   "title": "Trigger real-browser acceptance for relevant Form runtime changes (= SM-49, SM-50)",
   "ids": "72-55 / SM-49 / SM-50",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 74,
   "title": "Add browser refusal / PARTIAL / skipped-atom acceptance paths (= SM-49)",
   "ids": "72-56 / SM-49",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 75,
   "title": "Drive Growth + Console tabs in browser acceptance (= SM-49)",
   "ids": "72-57 / SM-49",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 76,
   "title": "Regression-test Studio Host/Origin/token + malformed HTTP (= SM-51)",
   "ids": "72-58 / SM-51",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 77,
   "title": "Test Studio state refresh, stale owner state, receipt reconstruction",
   "ids": "72-59",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 78,
   "title": "Prove identical executable semantics across GUI/API/REPL/Python (= SM-52; Director-confirmed COMPLETED, official 18/72)",
   "ids": "72-60 / SM-52",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 79,
   "title": "Improve Studio keyboard, focus, constrained viewport behavior (= SM-56)",
   "ids": "72-61 / SM-56",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 80,
   "title": "Reconcile offline visual snapshot with canonical state; clear non-live label (= SM-55)",
   "ids": "72-62 / SM-55",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 81,
   "title": "Stress 2D spatial placement, rendering, restore invariants (= SM-40)",
   "ids": "72-63 / SM-40",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 82,
   "title": "Refresh stale in-use docs + README suite-count claims (= SM-62)",
   "ids": "72-64 / SM-62",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 83,
   "title": "Protect Form as source of truth vs frozen JS/preform drift (= SM-63)",
   "ids": "72-65 / SM-63",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 84,
   "title": "Deepen changed-file lint + Python-version compatibility checks (= SM-61)",
   "ids": "72-66 / SM-61",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 85,
   "title": "Harden GitHub workflow permissions + pin third-party actions (Director-approved COMPLETED after red-check triage, official 19/72)",
   "ids": "72-67",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 86,
   "title": "Reconcile regression discovery, suite registration, mutation detection (= SM-57; SM-57 investigation closed-no-defect)",
   "ids": "72-68 / SM-57",
   "status": "COMPLETE",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 87,
   "title": "Create repeatable low-memory + large-state performance baselines (= SM-59, SM-60)",
   "ids": "72-69 / SM-59 / SM-60",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 88,
   "title": "Incrementally reduce oversized live-module coupling, no behavior change (register OPEN)",
   "ids": "72-70",
   "status": "OPEN",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 89,
-  "title": "End-to-end protected-value canaries across outward evidence surfaces (= SM-20; investigation closed-by-ruling — refusal diagnostics names-only; no redaction build authorized)",
+  "title": "End-to-end protected-value canaries across outward evidence surfaces (= SM-20; investigation closed-by-ruling \u2014 refusal diagnostics names-only; no redaction build authorized)",
   "ids": "72-71 / SM-20",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 90,
   "title": "Automate morning-report reconciliation, staleness, next-best recommendations (= SM-09 theme)",
   "ids": "72-72 / SM-09 (theme)",
   "status": "PARTIAL",
-  "block": "D — Register: the 72 inventory rows"
+  "block": "D \u2014 Register: the 72 inventory rows"
  },
  {
   "n": 91,
-  "title": "Strengthen exact-head / merge-tree / post-merge / fresh-clone gate reconciliation (register also claims SM-07 as 72-09's twin; carried separately because the stated scopes differ — see coverage report)",
+  "title": "Strengthen exact-head / merge-tree / post-merge / fresh-clone gate reconciliation (register also claims SM-07 as 72-09's twin; carried separately because the stated scopes differ \u2014 see coverage report)",
   "ids": "SM-07",
   "status": "OPEN",
-  "block": "E — Register: SUS Omega-64 unique entries"
+  "block": "E \u2014 Register: SUS Omega-64 unique entries"
  },
  {
   "n": 92,
   "title": "Make workflow resumable: last-good checkpoint + completed-circuit records (partially embodied in practice, not verified as an objective)",
   "ids": "SM-08",
   "status": "OPEN",
-  "block": "E — Register: SUS Omega-64 unique entries"
+  "block": "E \u2014 Register: SUS Omega-64 unique entries"
  },
  {
   "n": 93,
   "title": "Standardize morning Director report format (register notes it folded operationally into 72-72's automation question; carried separately per the register's unique-entries table)",
   "ids": "SM-09",
   "status": "OPEN",
-  "block": "E — Register: SUS Omega-64 unique entries"
+  "block": "E \u2014 Register: SUS Omega-64 unique entries"
  },
  {
   "n": 94,
   "title": "Connect NBD ranking to real report status, dependencies, improvement candidates; deterministic stale-candidate detection (= SM-48, internal duplicate pair counted once)",
   "ids": "SM-10",
   "status": "OPEN",
-  "block": "E — Register: SUS Omega-64 unique entries"
+  "block": "E \u2014 Register: SUS Omega-64 unique entries"
  },
  {
   "n": 95,
   "title": "Strengthen Dell 08 naming, slug collision, skin, legacy-label regression coverage",
   "ids": "SM-22",
   "status": "OPEN",
-  "block": "E — Register: SUS Omega-64 unique entries"
+  "block": "E \u2014 Register: SUS Omega-64 unique entries"
  },
  {
   "n": 96,
   "title": "Reverify reserved-address refusal / honest unsupported behavior of Bridge and Embed",
   "ids": "SM-24",
   "status": "OPEN",
-  "block": "E — Register: SUS Omega-64 unique entries"
+  "block": "E \u2014 Register: SUS Omega-64 unique entries"
  },
  {
   "n": 97,
   "title": "Confirm BIMO/persona views remain advisory; cannot bypass host-bound authority (also a Psalm Matrix V-10 prerequisite fact)",
   "ids": "SM-47",
   "status": "OPEN",
-  "block": "E — Register: SUS Omega-64 unique entries"
+  "block": "E \u2014 Register: SUS Omega-64 unique entries"
  },
  {
   "n": 98,
   "title": "Improve traceability from runtime behavior to receipts, outcomes, persisted evidence (end-to-end traceability scope; theme overlaps item for 72-43)",
   "ids": "SM-64",
   "status": "OPEN",
-  "block": "E — Register: SUS Omega-64 unique entries"
+  "block": "E \u2014 Register: SUS Omega-64 unique entries"
  },
  {
   "n": 99,
-  "title": "Nursery proposal CARDS (visual, glanceable; confirm / reject / modify) — register DEFERRED, not authorized",
+  "title": "Nursery proposal CARDS (visual, glanceable; confirm / reject / modify) \u2014 register DEFERRED, not authorized",
   "ids": "V-01",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 100,
-  "title": "Custom idea shapes in the Nursery (circle, square/box, triangle, custom-drawn outline) — DEFERRED; depends V-01",
+  "title": "Custom idea shapes in the Nursery (circle, square/box, triangle, custom-drawn outline) \u2014 DEFERRED; depends V-01",
   "ids": "V-02",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 101,
-  "title": "AI-suggested looks (semantic icons + shape language) as Nursery proposals ONLY — DEFERRED; depends V-01",
+  "title": "AI-suggested looks (semantic icons + shape language) as Nursery proposals ONLY \u2014 DEFERRED; depends V-01",
   "ids": "V-03",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 102,
-  "title": "Nursery as THE primary decision screen (painting/building feel, fun, organized, never an info dump) — DEFERRED",
+  "title": "Nursery as THE primary decision screen (painting/building feel, fun, organized, never an info dump) \u2014 DEFERRED",
   "ids": "V-04",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 103,
-  "title": "SKY perspective (2D; ideas as clouds/shapes; persistent positions; same canonical data as ROOM) — DEFERRED",
+  "title": "SKY perspective (2D; ideas as clouds/shapes; persistent positions; same canonical data as ROOM) \u2014 DEFERRED",
   "ids": "V-05",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 104,
-  "title": "ROOM perspective (3D; walkable; stackable/openable boxes; never stagnant-looking) — DEFERRED",
+  "title": "ROOM perspective (3D; walkable; stackable/openable boxes; never stagnant-looking) \u2014 DEFERRED",
   "ids": "V-06",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 105,
-  "title": "Navigation: zoom + tap-to-glide; recursive exploration of ideas within ideas — DEFERRED; depends G-01, V-05/V-06",
+  "title": "Navigation: zoom + tap-to-glide; recursive exploration of ideas within ideas \u2014 DEFERRED; depends G-01, V-05/V-06",
   "ids": "V-07",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 106,
-  "title": "Page set: Plane, Nursery, Dells, Dell Playground, Psalm Matrix — transitions preserve current idea/context — DEFERRED; depends V-09",
+  "title": "Page set: Plane, Nursery, Dells, Dell Playground, Psalm Matrix \u2014 transitions preserve current idea/context \u2014 DEFERRED; depends V-09",
   "ids": "V-08",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 107,
-  "title": "Navigation placement RESEARCHED online before implementation — DEFERRED; precedes any V-08 build",
+  "title": "Navigation placement RESEARCHED online before implementation \u2014 DEFERRED; precedes any V-08 build",
   "ids": "V-09",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 108,
-  "title": "PSALM MATRIX: the AI page — Psalms + personas + status + docking visible there; no second authority — DEFERRED; depends SM-47 fact base",
+  "title": "PSALM MATRIX: the AI page \u2014 Psalms + personas + status + docking visible there; no second authority \u2014 DEFERRED; depends SM-47 fact base",
   "ids": "V-10",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 109,
-  "title": "AI-talk place: pure English, NOT a chat box — a new interaction concept to invent — DEFERRED",
+  "title": "AI-talk place: pure English, NOT a chat box \u2014 a new interaction concept to invent \u2014 DEFERRED",
   "ids": "V-11",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 110,
-  "title": "Human-validation gates: (a) a real AI docked live AND (b) Ace personally working the Matrix, both required before any usability acceptance — register BLOCKED: awaits V-circuits + live dock + Ace's own session",
+  "title": "Human-validation gates: (a) a real AI docked live AND (b) Ace personally working the Matrix, both required before any usability acceptance \u2014 register BLOCKED: awaits V-circuits + live dock + Ace's own session",
   "ids": "V-12",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 111,
-  "title": "Reserved neural research: weight-space programming / targeted enhancement of a less powerful AI — DEFERRED (long-term); NO IMPLEMENTATION AUTHORIZED",
+  "title": "Reserved neural research: weight-space programming / targeted enhancement of a less powerful AI \u2014 DEFERRED (long-term); NO IMPLEMENTATION AUTHORIZED",
   "ids": "V-13",
   "status": "OPEN",
-  "block": "F — Register: V vision objectives"
+  "block": "F \u2014 Register: V vision objectives"
  },
  {
   "n": 112,
-  "title": "Whole-program certification + REAL_USER_PATH claims — register BLOCKED: certification WITHHELD by the Director; depends 72-03 (DAF-09) + 72-07 (A2)",
+  "title": "Whole-program certification + REAL_USER_PATH claims \u2014 register BLOCKED: certification WITHHELD by the Director; depends 72-03 (DAF-09) + 72-07 (A2)",
   "ids": "G-05",
   "status": "OPEN",
-  "block": "G — Register: G standing objectives (remainder)"
+  "block": "G \u2014 Register: G standing objectives (remainder)"
  },
  {
   "n": 113,
-  "title": "Symbiosis pairwise compatibility: 100×99 ordered pairs + standalone, classified with evidence; composition laws via held-out prediction test (pairwise v2 ledger executed; ledger v3 delta re-run under §14.6 outstanding)",
+  "title": "Symbiosis pairwise compatibility: 100\u00d799 ordered pairs + standalone, classified with evidence; composition laws via held-out prediction test (pairwise v2 ledger executed; ledger v3 delta re-run under \u00a714.6 outstanding)",
   "ids": "G-06",
   "status": "PARTIAL",
-  "block": "G — Register: G standing objectives (remainder)"
+  "block": "G \u2014 Register: G standing objectives (remainder)"
  },
  {
   "n": 114,
   "title": "Full-registry D1 deepening: per-Dell deep-contract circuits until ALL 100 Dells reach a high standard (many Dells deepened; registry incomplete)",
   "ids": "G-07",
   "status": "PARTIAL",
-  "block": "G — Register: G standing objectives (remainder)"
+  "block": "G \u2014 Register: G standing objectives (remainder)"
  },
  {
   "n": 115,
-  "title": "SUSX100,000 execution run — the standing completion drive itself (Ace GO 2026-11-04; run concluded in wake mode, queue continues; the register's DEFERRED label is superseded by its own 2026-11-04 supersession note)",
+  "title": "SUSX100,000 execution run \u2014 the standing completion drive itself (Ace GO 2026-11-04; run concluded in wake mode, queue continues; the register's DEFERRED label is superseded by its own 2026-11-04 supersession note)",
   "ids": "G-08",
   "status": "PARTIAL",
-  "block": "G — Register: G standing objectives (remainder)"
+  "block": "G \u2014 Register: G standing objectives (remainder)"
  },
  {
   "n": 116,
   "title": "DAF-09 catch-up Director report (owed per the 2026-10-31 reporting cadence; Uni-side writing)",
   "ids": "G-09",
   "status": "OPEN",
-  "block": "G — Register: G standing objectives (remainder)"
+  "block": "G \u2014 Register: G standing objectives (remainder)"
  },
  {
   "n": 117,
-  "title": "Exchange Phase G (cloud perspectives) — register DECLINED (deferred by adoption, Ace 2026-10-26); historical record, not reactivated",
+  "title": "Exchange Phase G (cloud perspectives) \u2014 register DECLINED (deferred by adoption, Ace 2026-10-26); historical record, not reactivated",
   "ids": "G-10",
   "status": "OPEN",
-  "block": "G — Register: G standing objectives (remainder)"
+  "block": "G \u2014 Register: G standing objectives (remainder)"
  },
  {
   "n": 118,
-  "title": "Q1 family implementation — journaled Exchange import/recovery transactions (C-B) under the adopted Q1 plan; PR #294 held on Director design hold, never merge as-is; implementation awaits Director authorization",
+  "title": "Q1 family implementation \u2014 journaled Exchange import/recovery transactions (C-B) under the adopted Q1 plan; PR #294 held on Director design hold, never merge as-is; implementation awaits Director authorization",
   "ids": "DD-07 / PR #294 / Q1",
   "status": "GATED",
-  "block": "H — Gated family and Director-decision follow-ups"
+  "block": "H \u2014 Gated family and Director-decision follow-ups"
  },
  {
   "n": 119,
-  "title": "Atomic-write sweep wiring decision (Q-35.1): sweep_stale_tmps has no production caller — orphan .dmtmp cleanup is manual-only until the Director rules (follow-up of the 72-35 row)",
+  "title": "Atomic-write sweep wiring decision (Q-35.1): sweep_stale_tmps has no production caller \u2014 orphan .dmtmp cleanup is manual-only until the Director rules (follow-up of the 72-35 row)",
   "ids": "Q-35.1 / 72-35 follow-up",
   "status": "OPEN",
-  "block": "H — Gated family and Director-decision follow-ups"
+  "block": "H \u2014 Gated family and Director-decision follow-ups"
  },
  {
   "n": 120,
   "title": "Historical verify-72-17 reproducer hygiene: give the stale pre-repair probe an explicit/manual historical purpose, keeping the current repair regression active (queued hygiene circuit from the 72-67 closure)",
   "ids": "72-67 follow-up",
   "status": "OPEN",
-  "block": "H — Gated family and Director-decision follow-ups"
+  "block": "H \u2014 Gated family and Director-decision follow-ups"
  },
  {
   "n": 121,
   "title": "C2 bounded candidate: graded-input-to-verdict invariant test on one real canonical path (faded high-weight + stale/superseded candidates; exclusion/attenuation proven against the actual canonical inputs; grounded first, does not duplicate DD-13)",
-  "ids": "C2.Candidate (Director R1, §14.9)",
+  "ids": "C2.Candidate (Director R1, \u00a714.9)",
   "status": "OPEN",
-  "block": "Plan §14.3 — C2 Resonance Core"
+  "block": "Plan \u00a714.3 \u2014 C2 Resonance Core"
  },
  {
   "n": 122,
-  "title": "C2 relatedness model — resonance exposes with-whom / how-strong / why over agreed fixtures",
+  "title": "C2 relatedness model \u2014 resonance exposes with-whom / how-strong / why over agreed fixtures",
   "ids": "C2.Relatedness",
   "status": "OPEN",
-  "block": "Plan §14.3 — C2 Resonance Core"
+  "block": "Plan \u00a714.3 \u2014 C2 Resonance Core"
  },
  {
   "n": 123,
-  "title": "C2 development-coupled growth — growth responds to agreed development evidence; attention the smallest factor, never mere existence (Ace design session gates)",
+  "title": "C2 development-coupled growth \u2014 growth responds to agreed development evidence; attention the smallest factor, never mere existence (Ace design session gates)",
   "ids": "C2.Growth",
   "status": "OPEN",
-  "block": "Plan §14.3 — C2 Resonance Core"
+  "block": "Plan \u00a714.3 \u2014 C2 Resonance Core"
  },
  {
   "n": 124,
-  "title": "C2 targeted Pulse — Pulse obeys selected targets and exclusions",
+  "title": "C2 targeted Pulse \u2014 Pulse obeys selected targets and exclusions",
   "ids": "C2.TargetedPulse",
   "status": "OPEN",
-  "block": "Plan §14.3 — C2 Resonance Core"
+  "block": "Plan \u00a714.3 \u2014 C2 Resonance Core"
  },
  {
   "n": 125,
   "title": "C2 decline-coupled Decay",
   "ids": "C2.Decay",
   "status": "OPEN",
-  "block": "Plan §14.3 — C2 Resonance Core"
+  "block": "Plan \u00a714.3 \u2014 C2 Resonance Core"
  },
  {
   "n": 126,
-  "title": "C2 fusion — Merge carries parent substance and provenance while preserving parents",
+  "title": "C2 fusion \u2014 Merge carries parent substance and provenance while preserving parents",
   "ids": "DD-15 / C2.Fusion",
   "status": "OPEN",
-  "block": "Plan §14.3 — C2 Resonance Core"
+  "block": "Plan \u00a714.3 \u2014 C2 Resonance Core"
  },
  {
   "n": 127,
-  "title": "C2 partition — Split keeps each resonating cluster intact; zero/one cluster and ties handled honestly; parent never lost",
+  "title": "C2 partition \u2014 Split keeps each resonating cluster intact; zero/one cluster and ties handled honestly; parent never lost",
   "ids": "DD-16 / C2.Partition",
   "status": "OPEN",
-  "block": "Plan §14.3 — C2 Resonance Core"
+  "block": "Plan \u00a714.3 \u2014 C2 Resonance Core"
  },
  {
   "n": 128,
-  "title": "C2 enhancement outcome — Enhance redefined per Ace's ruling (outcome leg of the resonance family)",
+  "title": "C2 enhancement outcome \u2014 Enhance redefined per Ace's ruling (outcome leg of the resonance family)",
   "ids": "DD-23 / C2.EnhancementOutcome",
   "status": "OPEN",
-  "block": "Plan §14.3 — C2 Resonance Core"
+  "block": "Plan \u00a714.3 \u2014 C2 Resonance Core"
  },
  {
   "n": 129,
-  "title": "C2 temperature design — Temp as a typed intensity control per consumer, not a secret global switch (DD-19 RULED by Ace; design session gates)",
+  "title": "C2 temperature design \u2014 Temp as a typed intensity control per consumer, not a secret global switch (DD-19 RULED by Ace; design session gates)",
   "ids": "DD-19 / C2.TemperatureDesign",
   "status": "OPEN",
-  "block": "Plan §14.3 — C2 Resonance Core"
+  "block": "Plan \u00a714.3 \u2014 C2 Resonance Core"
  },
  {
   "n": 130,
-  "title": "Diff becomes the one comparison authority — Rings 1+2 (every declared writer and content slice compared, incl. absent-vs-None and transaction baselines; Ring-3 scopes later; slice count verified from the schema at the circuit SHA)",
+  "title": "Diff becomes the one comparison authority \u2014 Rings 1+2 (every declared writer and content slice compared, incl. absent-vs-None and transaction baselines; Ring-3 scopes later; slice count verified from the schema at the circuit SHA)",
   "ids": "DD-51 / C3.Diff",
   "status": "PARTIAL",
-  "block": "Plan §14.3 — C3 Failure & Time (witness family)"
+  "block": "Plan \u00a714.3 \u2014 C3 Failure & Time (witness family)"
  },
  {
   "n": 131,
-  "title": "Mirror gains the true compare — pair comparison through the C3 comparator, honest pagination (Ace directive §12.3; DD-43 Mirror wording per §14.8)",
+  "title": "Mirror gains the true compare \u2014 pair comparison through the C3 comparator, honest pagination (Ace directive \u00a712.3; DD-43 Mirror wording per \u00a714.8)",
   "ids": "C3.MirrorCompare",
   "status": "OPEN",
-  "block": "Plan §14.3 — C3 Failure & Time (witness family)"
+  "block": "Plan \u00a714.3 \u2014 C3 Failure & Time (witness family)"
  },
  {
   "n": 132,
-  "title": "Trace covers the entire current process — full retrieval beyond 512 entries without silent loss; Trace is session-only, never history",
+  "title": "Trace covers the entire current process \u2014 full retrieval beyond 512 entries without silent loss; Trace is session-only, never history",
   "ids": "DD-52 / C3.Trace",
   "status": "OPEN",
-  "block": "Plan §14.3 — C3 Failure & Time (witness family)"
+  "block": "Plan \u00a714.3 \u2014 C3 Failure & Time (witness family)"
  },
  {
   "n": 133,
-  "title": "Failure doors — Analyze / Revert / Retry per Ace's failure doctrine: Retry targets an identified FAILED attempt, once; wrappers never become targets; partial effects shown first",
+  "title": "Failure doors \u2014 Analyze / Revert / Retry per Ace's failure doctrine: Retry targets an identified FAILED attempt, once; wrappers never become targets; partial effects shown first",
   "ids": "DD-32 / C3.FailureDoors",
   "status": "OPEN",
-  "block": "Plan §14.3 — C3 Failure & Time (witness family)"
+  "block": "Plan \u00a714.3 \u2014 C3 Failure & Time (witness family)"
  },
  {
   "n": 134,
-  "title": "Rooms are Ace's to close — chosen-room operations cannot overwrite another room's later work; session close names open rooms; overlapping-room write ownership is a design prerequisite",
+  "title": "Rooms are Ace's to close \u2014 chosen-room operations cannot overwrite another room's later work; session close names open rooms; overlapping-room write ownership is a design prerequisite",
   "ids": "DD-53 / C3.Rooms",
   "status": "OPEN",
-  "block": "Plan §14.3 — C3 Failure & Time (witness family)"
+  "block": "Plan \u00a714.3 \u2014 C3 Failure & Time (witness family)"
  },
  {
   "n": 135,
-  "title": "Undo and redo like a real program — 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo",
+  "title": "Undo and redo like a real program \u2014 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo",
   "ids": "DD-54 / C3.Undo",
   "status": "OPEN",
-  "block": "Plan §14.3 — C3 Failure & Time (witness family)"
+  "block": "Plan \u00a714.3 \u2014 C3 Failure & Time (witness family)"
  },
  {
   "n": 136,
-  "title": "Alpha / history member + close ceremony — old generations freeze/confirm/restore under new code; save failure never pretends the session is safely closed (gate per §12.13)",
+  "title": "Alpha / history member + close ceremony \u2014 old generations freeze/confirm/restore under new code; save failure never pretends the session is safely closed (gate per \u00a712.13)",
   "ids": "C3.Alpha",
   "status": "OPEN",
-  "block": "Plan §14.3 — C3 Failure & Time (witness family)"
+  "block": "Plan \u00a714.3 \u2014 C3 Failure & Time (witness family)"
  },
  {
   "n": 137,
-  "title": "Zipper — Compress + Expand as one circuit: Compress preserves a resolvable source link; Expand retrieves the full intended source under a declared current-vs-versioned rule",
+  "title": "Zipper \u2014 Compress + Expand as one circuit: Compress preserves a resolvable source link; Expand retrieves the full intended source under a declared current-vs-versioned rule",
   "ids": "DD-20 / C4.Zipper",
   "status": "OPEN",
-  "block": "Plan §14.3 — C4 Reference Family"
+  "block": "Plan \u00a714.3 \u2014 C4 Reference Family"
  },
  {
   "n": 138,
-  "title": "Inject by reference + Reference dereferencing — Inject adds a reference, not a duplicate; cycles/missing/foreign/superseded targets resolve honestly; graph refs and Core II aliases reconcile through an adapter",
+  "title": "Inject by reference + Reference dereferencing \u2014 Inject adds a reference, not a duplicate; cycles/missing/foreign/superseded targets resolve honestly; graph refs and Core II aliases reconcile through an adapter",
   "ids": "DD-26 / C4.InjectRef",
   "status": "OPEN",
-  "block": "Plan §14.3 — C4 Reference Family"
+  "block": "Plan \u00a714.3 \u2014 C4 Reference Family"
  },
  {
   "n": 139,
-  "title": "Distill = essence — uses actual words/detail/goals, carries provenance and disclosed omissions, usable without its source (mode RESOLVED by Ace 2026-11-10: docked AI distills; undocked deterministic — see item 179)",
+  "title": "Distill = essence \u2014 uses actual words/detail/goals, carries provenance and disclosed omissions, usable without its source (mode RESOLVED by Ace 2026-11-10: docked AI distills; undocked deterministic \u2014 see item 179)",
   "ids": "DD-28 / C4.Distill",
   "status": "OPEN",
-  "block": "Plan §14.3 — C4 Reference Family"
+  "block": "Plan \u00a714.3 \u2014 C4 Reference Family"
  },
  {
   "n": 140,
-  "title": "Nursery ranking formula — exactly S = 0.40 LINK + 0.25 ACE + 0.20 FRESH + 0.15 NOVEL; top five per topic; pending cap 200; tombstoned evictions; deciding score displayed (machinery exists; FRESH aging RESOLVED by Ace 2026-11-10: staged 3/7/14-day aging, 30-day fade only under inflow — see item 177)",
+  "title": "Nursery ranking formula \u2014 exactly S = 0.40 LINK + 0.25 ACE + 0.20 FRESH + 0.15 NOVEL; top five per topic; pending cap 200; tombstoned evictions; deciding score displayed (machinery exists; FRESH aging RESOLVED by Ace 2026-11-10: staged 3/7/14-day aging, 30-day fade only under inflow \u2014 see item 177)",
   "ids": "C5.Formula",
   "status": "PARTIAL",
-  "block": "Plan §14.3 — C5 Nursery Door, Ranking & Discovery"
+  "block": "Plan \u00a714.3 \u2014 C5 Nursery Door, Ranking & Discovery"
  },
  {
   "n": 141,
-  "title": "Switchable Plane ranking — Rank measure is switchable per Ace's ruling (§12.35b)",
+  "title": "Switchable Plane ranking \u2014 Rank measure is switchable per Ace's ruling (\u00a712.35b)",
   "ids": "C5.PlaneRank",
   "status": "OPEN",
-  "block": "Plan §14.3 — C5 Nursery Door, Ranking & Discovery"
+  "block": "Plan \u00a714.3 \u2014 C5 Nursery Door, Ranking & Discovery"
  },
  {
   "n": 142,
-  "title": "One search machinery, two faces — Discover + Resolve: stable ordered pages reach every authorized item, totals/coverage reported, identical labels handled by stable IDs",
+  "title": "One search machinery, two faces \u2014 Discover + Resolve: stable ordered pages reach every authorized item, totals/coverage reported, identical labels handled by stable IDs",
   "ids": "DD-25 / DD-49 / C5.Search",
   "status": "OPEN",
-  "block": "Plan §14.3 — C5 Nursery Door, Ranking & Discovery"
+  "block": "Plan \u00a714.3 \u2014 C5 Nursery Door, Ranking & Discovery"
  },
  {
   "n": 143,
-  "title": "Nursery door policy — auto-passage stays OFF until Ace supplies standards and scope; Cycle never approves its own proposals; receipts name policy version and authorizing rule",
+  "title": "Nursery door policy \u2014 auto-passage stays OFF until Ace supplies standards and scope; Cycle never approves its own proposals; receipts name policy version and authorizing rule",
   "ids": "DD-27 / C5.Door",
   "status": "OPEN",
-  "block": "Plan §14.3 — C5 Nursery Door, Ranking & Discovery"
+  "block": "Plan \u00a714.3 \u2014 C5 Nursery Door, Ranking & Discovery"
  },
  {
   "n": 144,
-  "title": "Boxes — standing/named sandboxes: owner put/take, multiple boxes, the standing private box, all across reload; per-box interaction never leaks",
+  "title": "Boxes \u2014 standing/named sandboxes: owner put/take, multiple boxes, the standing private box, all across reload; per-box interaction never leaks",
   "ids": "DD-17 / C6.Boxes",
   "status": "OPEN",
-  "block": "Plan §14.3 — C6 Boxes, Freeze & Placement"
+  "block": "Plan \u00a714.3 \u2014 C6 Boxes, Freeze & Placement"
  },
  {
   "n": 145,
-  "title": "Freeze — room/item pause: paused items stay visible, retain contents/position, stop aging/growth/resonance; Resume is the only release (Lock is isolation, not Pause)",
+  "title": "Freeze \u2014 room/item pause: paused items stay visible, retain contents/position, stop aging/growth/resonance; Resume is the only release (Lock is isolation, not Pause)",
   "ids": "DD-22 / C6.Freeze",
   "status": "OPEN",
-  "block": "Plan §14.3 — C6 Boxes, Freeze & Placement"
+  "block": "Plan \u00a714.3 \u2014 C6 Boxes, Freeze & Placement"
  },
  {
   "n": 146,
-  "title": "Scope/Group integration — the 53<->82 partnership as one pair; a named Group is never automatically a security sandbox",
+  "title": "Scope/Group integration \u2014 the 53<->82 partnership as one pair; a named Group is never automatically a security sandbox",
   "ids": "C6.ScopeGroup",
   "status": "OPEN",
-  "block": "Plan §14.3 — C6 Boxes, Freeze & Placement"
+  "block": "Plan \u00a714.3 \u2014 C6 Boxes, Freeze & Placement"
  },
  {
   "n": 147,
-  "title": "Placement — idea/body/both, AUTO/BIND: replacement retains intended position; child placement respects parents; manual placement cannot be bypassed by a model (grounding: locate the real Plane-position mutation authority)",
+  "title": "Placement \u2014 idea/body/both, AUTO/BIND: replacement retains intended position; child placement respects parents; manual placement cannot be bypassed by a model (grounding: locate the real Plane-position mutation authority)",
   "ids": "C6.Placement / DD-50 (grounding note)",
   "status": "OPEN",
-  "block": "Plan §14.3 — C6 Boxes, Freeze & Placement"
+  "block": "Plan \u00a714.3 \u2014 C6 Boxes, Freeze & Placement"
  },
  {
   "n": 148,
-  "title": "Schema = the nervous system — read-only baseline distinguishing exists / connected / available and OFF-by-design / degraded / unknown; probing never mutates user work",
+  "title": "Schema = the nervous system \u2014 read-only baseline distinguishing exists / connected / available and OFF-by-design / degraded / unknown; probing never mutates user work",
   "ids": "DD-29 / C7.Schema",
   "status": "OPEN",
-  "block": "Plan §14.3 — C7 Self-Report & Quantitative Contracts"
+  "block": "Plan \u00a714.3 \u2014 C7 Self-Report & Quantitative Contracts"
  },
  {
   "n": 149,
-  "title": "Profile is the speedometer — named stages with monotonic timing, environment/workload identity, overhead disclosed; real observations vs deliberate benchmarks distinct",
+  "title": "Profile is the speedometer \u2014 named stages with monotonic timing, environment/workload identity, overhead disclosed; real observations vs deliberate benchmarks distinct",
   "ids": "DD-39 / C7.Profile",
   "status": "OPEN",
-  "block": "Plan §14.3 — C7 Self-Report & Quantitative Contracts"
+  "block": "Plan \u00a714.3 \u2014 C7 Self-Report & Quantitative Contracts"
  },
  {
   "n": 150,
-  "title": "Token accounting + shorthand in harmony (§12.87a) — token census executed across Mandellistics; per-system counts labeled separately; longhand vs shorthand compared on canonical semantics (census work product exists; the harmonized contract is unbuilt)",
+  "title": "Token accounting + shorthand in harmony (\u00a712.87a) \u2014 token census executed across Mandellistics; per-system counts labeled separately; longhand vs shorthand compared on canonical semantics (census work product exists; the harmonized contract is unbuilt)",
   "ids": "DD-30 / C7.Tokens",
   "status": "PARTIAL",
-  "block": "Plan §14.3 — C7 Self-Report & Quantitative Contracts"
+  "block": "Plan \u00a714.3 \u2014 C7 Self-Report & Quantitative Contracts"
  },
  {
   "n": 151,
-  "title": "Universal measurement family + incorporation sweep — Measure / Threshold / Weight-Normalize with unit, source, timestamp, method on every quantity; subsystem-by-subsystem incorporation (forces, perspectives, personas, provider data)",
+  "title": "Universal measurement family + incorporation sweep \u2014 Measure / Threshold / Weight-Normalize with unit, source, timestamp, method on every quantity; subsystem-by-subsystem incorporation (forces, perspectives, personas, provider data)",
   "ids": "DD-46 / DD-47 / DD-48 / C7.MeasureFamily",
   "status": "OPEN",
-  "block": "Plan §14.3 — C7 Self-Report & Quantitative Contracts"
+  "block": "Plan \u00a714.3 \u2014 C7 Self-Report & Quantitative Contracts"
  },
  {
   "n": 152,
-  "title": "Dock roster repair — BUILT (PR #370 @ 2b95d86): two-tier dock_sessions (live uncapped + compact history archive with provenance digests; v1 loads whole, re-saves v2); failing-first 3/15 -> 15/15; mutant killed; main-session regression ALL LEGS TERMINAL GREEN (fwd/twice/rev at 2b95d86); MERGED ad2a12c (PR #370); Director SCOPED_CODE_PASS (mail 1a1c7e617ea7110a) + Keeper scoped CONFIRM (disposition file commit 9d39cdc); post-merge fresh-clone dd37_roster 15/15 + regress_capture 27/27; siblings + 50-proposal bound untouched; closure scope = C8.Roster (dock_sessions) ONLY CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main. CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
+  "title": "Dock roster repair \u2014 BUILT (PR #370 @ 2b95d86): two-tier dock_sessions (live uncapped + compact history archive with provenance digests; v1 loads whole, re-saves v2); failing-first 3/15 -> 15/15; mutant killed; main-session regression ALL LEGS TERMINAL GREEN (fwd/twice/rev at 2b95d86); MERGED ad2a12c (PR #370); Director SCOPED_CODE_PASS (mail 1a1c7e617ea7110a) + Keeper scoped CONFIRM (disposition file commit 9d39cdc); post-merge fresh-clone dd37_roster 15/15 + regress_capture 27/27; siblings + 50-proposal bound untouched; closure scope = C8.Roster (dock_sessions) ONLY CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main. CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
   "ids": "DD-37 / C8.Roster",
   "status": "COMPLETE",
-  "block": "Plan §14.3 — C8 Dock & Psalms"
+  "block": "Plan \u00a714.3 \u2014 C8 Dock & Psalms"
  },
  {
   "n": 153,
-  "title": "Embedding provider binding — EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider RESOLVED by Ace 2026-11-10: any docked AI, Gemini today — see item 178",
+  "title": "Embedding provider binding \u2014 EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider RESOLVED by Ace 2026-11-10: any docked AI, Gemini today \u2014 see item 178 [MERGED PR #378 as c0fd0b7 2026-11-11; Director SCOPED_CODE_PASS + conditional authorization mail 1a1ca412; Keeper CONFIRM scoped at 58b5518; post-merge embedbind suite 29/29 on main; live Gemini entitlement UNKNOWN; COMPLETE only on authority-confirmed closure]",
   "ids": "C8.EmbedBind",
-  "status": "OPEN",
-  "block": "Plan §14.3 — C8 Dock & Psalms"
+  "status": "MERGED_UNVERIFIED",
+  "block": "Plan \u00a714.3 \u2014 C8 Dock & Psalms"
  },
  {
   "n": 154,
-  "title": "Resident Psalm — visible start/stop, bounded work, proposal-only output; presence grants no authority (direction recorded §12.20; future build)",
+  "title": "Resident Psalm \u2014 visible start/stop, bounded work, proposal-only output; presence grants no authority (direction recorded \u00a712.20; future build)",
   "ids": "C8.Resident",
   "status": "OPEN",
-  "block": "Plan §14.3 — C8 Dock & Psalms"
+  "block": "Plan \u00a714.3 \u2014 C8 Dock & Psalms"
  },
  {
   "n": 155,
-  "title": "Multi-Psalm / BIMO execution design — persona execution needs actual instance semantics and Ace-approved roles; BIMO metadata alone is not execution (design sit-down owed, §12.36e)",
+  "title": "Multi-Psalm / BIMO execution design \u2014 persona execution needs actual instance semantics and Ace-approved roles; BIMO metadata alone is not execution (design sit-down owed, \u00a712.36e)",
   "ids": "C8.MultiPsalm",
   "status": "OPEN",
-  "block": "Plan §14.3 — C8 Dock & Psalms"
+  "block": "Plan \u00a714.3 \u2014 C8 Dock & Psalms"
  },
  {
   "n": 156,
-  "title": "Translate: honest no-intent — unknown text produces no invented Show seed; receipts name deterministic vs docked engine (a narrow DD-35 fix may be scoped without deciding the whole translator)",
+  "title": "Translate: honest no-intent \u2014 unknown text produces no invented Show seed; receipts name deterministic vs docked engine (a narrow DD-35 fix may be scoped without deciding the whole translator)",
   "ids": "DD-35 / C9.NoIntent",
   "status": "OPEN",
-  "block": "Plan §14.3 — C9 Translate"
+  "block": "Plan \u00a714.3 \u2014 C9 Translate"
  },
  {
   "n": 157,
-  "title": "Translate dual-mode / Adapt incorporation — Adapt adoption ruled by Ace (credit Mycroft AI team, Apache 2.0) but his \"not yet\" remains in force until he calls it",
+  "title": "Translate dual-mode / Adapt incorporation \u2014 Adapt adoption ruled by Ace (credit Mycroft AI team, Apache 2.0) but his \"not yet\" remains in force until he calls it",
   "ids": "DD-36 / C9.DualMode",
   "status": "OPEN",
-  "block": "Plan §14.3 — C9 Translate"
+  "block": "Plan \u00a714.3 \u2014 C9 Translate"
  },
  {
   "n": 158,
-  "title": "Harmonic stamps — item-attached stamps with provenance in stable order; moving an item never silently changes its note; stamps round-trip",
+  "title": "Harmonic stamps \u2014 item-attached stamps with provenance in stable order; moving an item never silently changes its note; stamps round-trip",
   "ids": "DD-24 / C10.Stamp",
   "status": "OPEN",
-  "block": "Plan §14.3 — C10 Harmonic Plane"
+  "block": "Plan \u00a714.3 \u2014 C10 Harmonic Plane"
  },
  {
   "n": 159,
-  "title": "Harmonic lenses — harmony organization/retrieval + derived lens modes; views rearrange DISPLAY only and restore exact canonical placements on exit",
+  "title": "Harmonic lenses \u2014 harmony organization/retrieval + derived lens modes; views rearrange DISPLAY only and restore exact canonical placements on exit",
   "ids": "C10.Lenses",
   "status": "OPEN",
-  "block": "Plan §14.3 — C10 Harmonic Plane"
+  "block": "Plan \u00a714.3 \u2014 C10 Harmonic Plane"
  },
  {
   "n": 160,
-  "title": "The private shelf / little notebook — Macro read back as one seed; Ace's private notebook design (§12.37a)",
+  "title": "The private shelf / little notebook \u2014 Macro read back as one seed; Ace's private notebook design (\u00a712.37a)",
   "ids": "DD-38 / C11.Shelf",
   "status": "OPEN",
-  "block": "Plan §14.3 — C11 Idea Editing, Shelf & Manifest"
+  "block": "Plan \u00a714.3 \u2014 C11 Idea Editing, Shelf & Manifest"
  },
  {
   "n": 161,
-  "title": "Idea editing system — go inside, edit the parts, propose the change: contained-part drafts independent from live originals; proposals carry target revision, before/after/diff, impact coverage; stale or double confirmation refuses",
+  "title": "Idea editing system \u2014 go inside, edit the parts, propose the change: contained-part drafts independent from live originals; proposals carry target revision, before/after/diff, impact coverage; stale or double confirmation refuses",
   "ids": "DD-41 / C11.Edit",
   "status": "OPEN",
-  "block": "Plan §14.3 — C11 Idea Editing, Shelf & Manifest"
+  "block": "Plan \u00a714.3 \u2014 C11 Idea Editing, Shelf & Manifest"
  },
  {
   "n": 162,
-  "title": "Manifest split — Confirm is the yes, Manifest is the walk: confirmed-but-unmanifested is explicit, durable, recoverable; retry produces one result (lifecycle/persistence design review first)",
+  "title": "Manifest split \u2014 Confirm is the yes, Manifest is the walk: confirmed-but-unmanifested is explicit, durable, recoverable; retry produces one result (lifecycle/persistence design review first)",
   "ids": "DD-40 / C11.Manifest",
   "status": "OPEN",
-  "block": "Plan §14.3 — C11 Idea Editing, Shelf & Manifest"
+  "block": "Plan \u00a714.3 \u2014 C11 Idea Editing, Shelf & Manifest"
  },
  {
   "n": 163,
-  "title": "Universal Move — Move moves anything movable: dispatches by explicit object class to EXISTING engines, preserves identity, refuses ambiguity/collisions; Psalms are never freight; an AI move is pending until Ace confirms",
+  "title": "Universal Move \u2014 Move moves anything movable: dispatches by explicit object class to EXISTING engines, preserves identity, refuses ambiguity/collisions; Psalms are never freight; an AI move is pending until Ace confirms",
   "ids": "DD-50 / C11.Move",
   "status": "OPEN",
-  "block": "Plan §14.3 — C11 Idea Editing, Shelf & Manifest"
+  "block": "Plan \u00a714.3 \u2014 C11 Idea Editing, Shelf & Manifest"
  },
  {
   "n": 164,
-  "title": "Bridge ledger — the ledger of all bridges: reports dock/Exchange facts without taking over their management; stores no raw secrets (Bridge's ruled purpose, §12.33a/b)",
+  "title": "Bridge ledger \u2014 the ledger of all bridges: reports dock/Exchange facts without taking over their management; stores no raw secrets (Bridge's ruled purpose, \u00a712.33a/b)",
   "ids": "DD-34 / C12.Ledger",
   "status": "OPEN",
-  "block": "Plan §14.3 — C12 Bridge"
+  "block": "Plan \u00a714.3 \u2014 C12 Bridge"
  },
  {
   "n": 165,
-  "title": "Exchange front door — local Exchange export/import door: preview binds to payload, imports stay PENDING under the receiver's authority, corrupt/foreign/replayed packets get honest outcomes",
+  "title": "Exchange front door \u2014 local Exchange export/import door: preview binds to payload, imports stay PENDING under the receiver's authority, corrupt/foreign/replayed packets get honest outcomes",
   "ids": "C12.ExchangeDoor",
   "status": "OPEN",
-  "block": "Plan §14.3 — C12 Bridge"
+  "block": "Plan \u00a714.3 \u2014 C12 Bridge"
  },
  {
   "n": 166,
-  "title": "Room-to-room bridge — preview/transfer between rooms, only after C3 room semantics are settled; never claims staged isolation while writes are live",
+  "title": "Room-to-room bridge \u2014 preview/transfer between rooms, only after C3 room semantics are settled; never claims staged isolation while writes are live",
   "ids": "C12.RoomBridge",
   "status": "OPEN",
-  "block": "Plan §14.3 — C12 Bridge"
+  "block": "Plan \u00a714.3 \u2014 C12 Bridge"
  },
  {
   "n": 167,
-  "title": "Simulate: explicit effect inventory — the declared inventory of effects a simulation must account for",
+  "title": "Simulate: explicit effect inventory \u2014 the declared inventory of effects a simulation must account for",
   "ids": "C13.Inventory",
   "status": "OPEN",
-  "block": "Plan §14.3 — C13 Simulate"
+  "block": "Plan \u00a714.3 \u2014 C13 Simulate"
  },
  {
   "n": 168,
-  "title": "Simulate: isolated executor adapter — the actual supported command executes against an isolated copy; the DD-21 finding (Simulate's current behavior) is rebuilt here",
+  "title": "Simulate: isolated executor adapter \u2014 the actual supported command executes against an isolated copy; the DD-21 finding (Simulate's current behavior) is rebuilt here",
   "ids": "DD-21 / C13.Executor",
   "status": "OPEN",
-  "block": "Plan §14.3 — C13 Simulate"
+  "block": "Plan \u00a714.3 \u2014 C13 Simulate"
  },
  {
   "n": 169,
-  "title": "Simulate: supported dry-run — a bounded supported subset FIRST; per-atom outcomes and scoped diffs returned; ALL effects discarded; external-effect commands simulated through adapters or refused before dispatch",
+  "title": "Simulate: supported dry-run \u2014 a bounded supported subset FIRST; per-atom outcomes and scoped diffs returned; ALL effects discarded; external-effect commands simulated through adapters or refused before dispatch",
   "ids": "C13.DryRun",
   "status": "OPEN",
-  "block": "Plan §14.3 — C13 Simulate"
+  "block": "Plan \u00a714.3 \u2014 C13 Simulate"
  },
  {
   "n": 170,
-  "title": "Simulate: parallel preview — per-arm preview shows each arm and its conflicts, never one blended answer (later slice)",
+  "title": "Simulate: parallel preview \u2014 per-arm preview shows each arm and its conflicts, never one blended answer (later slice)",
   "ids": "C13.ParallelPreview",
   "status": "OPEN",
-  "block": "Plan §14.3 — C13 Simulate"
+  "block": "Plan \u00a714.3 \u2014 C13 Simulate"
  },
  {
   "n": 171,
-  "title": "Human Surface track (cross-cutting; separately authorized — no UI build started): Nursery cards and shapes, Plane ROOM/SKY with glide/zoom, the five context-preserving pages incl. the Psalm Matrix, personal identity page, AGE surfacing, animated face (Dell 05), Show, navigation research, Ace's live-use acceptance; wave-field SKY rendering is a display-only design option filed here (§14.9)",
+  "title": "Human Surface track (cross-cutting; separately authorized \u2014 no UI build started): Nursery cards and shapes, Plane ROOM/SKY with glide/zoom, the five context-preserving pages incl. the Psalm Matrix, personal identity page, AGE surfacing, animated face (Dell 05), Show, navigation research, Ace's live-use acceptance; wave-field SKY rendering is a display-only design option filed here (\u00a714.9)",
   "ids": "H track",
   "status": "OPEN",
-  "block": "Plan §14.3 — H Human Surface track"
+  "block": "Plan \u00a714.3 \u2014 H Human Surface track"
  },
  {
   "n": 172,
   "title": "Beyond-72 extension register framework (Director F1/F4): new extension objectives get distinct IDs checked against the current register, mapping to existing rows WITHOUT renumbering the original 72; no duplicate closure credit",
   "ids": "F1/F4",
   "status": "OPEN",
-  "block": "Plan §14.7/§14.8 — non-slice open items"
+  "block": "Plan \u00a714.7/\u00a714.8 \u2014 non-slice open items"
  },
  {
   "n": 173,
-  "title": "Coordinated history retention/compaction contract — bounded navigable undo vs durable evidence; retention/compaction is an explicit open question (C3 design prerequisite; no promise of unlimited lossless history)",
-  "ids": "C3 design prerequisite (§14.7/§14.8)",
+  "title": "Coordinated history retention/compaction contract \u2014 bounded navigable undo vs durable evidence; retention/compaction is an explicit open question (C3 design prerequisite; no promise of unlimited lossless history)",
+  "ids": "C3 design prerequisite (\u00a714.7/\u00a714.8)",
   "status": "OPEN",
-  "block": "Plan §14.7/§14.8 — non-slice open items"
+  "block": "Plan \u00a714.7/\u00a714.8 \u2014 non-slice open items"
  },
  {
   "n": 174,
-  "title": "Guard/Catch wording hygiene — a separate bounded hygiene opportunity (preserved contract; not a silent behavior change)",
-  "ids": "C1 hygiene (§14.7)",
+  "title": "Guard/Catch wording hygiene \u2014 a separate bounded hygiene opportunity (preserved contract; not a silent behavior change)",
+  "ids": "C1 hygiene (\u00a714.7)",
   "status": "OPEN",
-  "block": "Plan §14.7/§14.8 — non-slice open items"
+  "block": "Plan \u00a714.7/\u00a714.8 \u2014 non-slice open items"
  },
  {
   "n": 175,
-  "title": "Q-SNAP.3 launch/signal-hardening proposal — proposal-only product change if still desired; no G-11 or DAF-09 certification inference (Director F6)",
+  "title": "Q-SNAP.3 launch/signal-hardening proposal \u2014 proposal-only product change if still desired; no G-11 or DAF-09 certification inference (Director F6)",
   "ids": "Q-SNAP.3 / F6",
   "status": "OPEN",
-  "block": "Plan §14.7/§14.8 — non-slice open items"
+  "block": "Plan \u00a714.7/\u00a714.8 \u2014 non-slice open items"
  },
  {
   "n": 176,
-  "title": "Literal wave-field instrument — INNOVATE_DEFERRED, parked (§14.9): read-only and nonauthoritative if ever built; never feeds resonance scores, Nursery admission, vote weights, or threshold decisions; any semantic path is an Ace-owned architecture decision",
-  "ids": "Waves study (§14.9)",
+  "title": "Literal wave-field instrument \u2014 INNOVATE_DEFERRED, parked (\u00a714.9): read-only and nonauthoritative if ever built; never feeds resonance scores, Nursery admission, vote weights, or threshold decisions; any semantic path is an Ace-owned architecture decision",
+  "ids": "Waves study (\u00a714.9)",
   "status": "OPEN",
-  "block": "Research intake — parked (§14.9)"
+  "block": "Research intake \u2014 parked (\u00a714.9)"
  },
  {
   "n": 177,
-  "title": "FRESH aging — RULED by Ace 2026-11-10: proposals age at 3/7/14-day marks and fade at 30 days ONLY while new proposals are arriving (a quiet field never expires); implementation rides the C5 ranking circuit",
+  "title": "FRESH aging \u2014 RULED by Ace 2026-11-10: proposals age at 3/7/14-day marks and fade at 30 days ONLY while new proposals are arriving (a quiet field never expires); implementation rides the C5 ranking circuit",
   "ids": "Q-N3",
   "status": "OPEN",
-  "block": "Ruled by Ace — decisions of 2026-11-10"
+  "block": "Ruled by Ace \u2014 decisions of 2026-11-10"
  },
  {
   "n": 178,
-  "title": "Embed provider — RULED by Ace 2026-11-10: provider-agnostic dock capability (any docked AI serves as embedder; currently Gemini; a Psalm must be docked); implementation = C8 EmbedBind (item 153)",
-  "ids": "Embed provider (§14.8)",
+  "title": "Embed provider \u2014 RULED by Ace 2026-11-10: provider-agnostic dock capability (any docked AI serves as embedder; currently Gemini; a Psalm must be docked); implementation = C8 EmbedBind (item 153)",
+  "ids": "Embed provider (\u00a714.8)",
   "status": "OPEN",
-  "block": "Ruled by Ace — decisions of 2026-11-10"
+  "block": "Ruled by Ace \u2014 decisions of 2026-11-10"
  },
  {
   "n": 179,
-  "title": "Distill mode — RULED by Ace 2026-11-10: conditional — a docked AI distills when one is docked, the deterministic recipe when none is (AI-first doctrine)",
-  "ids": "Distill mode (§14.8)",
+  "title": "Distill mode \u2014 RULED by Ace 2026-11-10: conditional \u2014 a docked AI distills when one is docked, the deterministic recipe when none is (AI-first doctrine)",
+  "ids": "Distill mode (\u00a714.8)",
   "status": "OPEN",
-  "block": "Ruled by Ace — decisions of 2026-11-10"
+  "block": "Ruled by Ace \u2014 decisions of 2026-11-10"
  },
  {
   "n": 180,
-  "title": "NVIDIA Inception website — SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only",
+  "title": "NVIDIA Inception website \u2014 SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only",
   "ids": "NVIDIA (website)",
   "status": "SANDBOXED",
-  "block": "Sandboxed — parked by Ace (2026-11-10)"
+  "block": "Sandboxed \u2014 parked by Ace (2026-11-10)"
  },
  {
   "n": 181,
-  "title": "NVIDIA Inception incorporation — SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only",
+  "title": "NVIDIA Inception incorporation \u2014 SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only",
   "ids": "NVIDIA (incorporation)",
   "status": "SANDBOXED",
-  "block": "Sandboxed — parked by Ace (2026-11-10)"
+  "block": "Sandboxed \u2014 parked by Ace (2026-11-10)"
  },
  {
   "n": 182,
-  "title": "Live-model demo step 6 — parked by Ace 2026-11-10 until he is at a computer; he will run the timed trials himself; no scheduling",
+  "title": "Live-model demo step 6 \u2014 parked by Ace 2026-11-10 until he is at a computer; he will run the timed trials himself; no scheduling",
   "ids": "Live-model demo step 6",
   "status": "SANDBOXED",
-  "block": "Sandboxed — parked by Ace (2026-11-10)"
+  "block": "Sandboxed \u2014 parked by Ace (2026-11-10)"
  }
 ]
