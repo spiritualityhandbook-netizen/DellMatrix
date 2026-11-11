@@ -1,19 +1,16 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 05:01 CST  
-**UTC approx**: 2026-11-11T11:01:00Z
+**Last cycle**: 2026-11-11 05:26 CST  
+**UTC approx**: 2026-11-11T11:26:00Z
 
 ## Items ruled this cycle
-- PR #348 / DD-14 (C1.Loop) — prior CONFIRM stands; merge lawful; final-check cleared on claim (no defect). Explicit non-coverage: Q-DD44.2 / Q-DD44.3 remain open.
-- PR #378 / C8 EmbedBind — prior CONFIRM stands; merge lawful; final-check cleared on claim (no defect). Explicit non-coverage: live Gemini entitlement UNKNOWN; no vector storage/similarity/ranking; binding not persisted.
-- PR #345 (ParseRefusal) — remains under Director HOLD / corrected-claim path; no stamp.
-- PR #370 (Roster) — prior CONFIRM stands; no change.
-- Records: PR #379 open for MWL/INDEX reconciliation of #348/#378 merges; lag noted, correction path is the PR.
+- PR #345 / DD-45 (ParseRefusal) head 02e2e07 — **CONFIRM (scoped)** on the corrected claim (zero business-state mutation; one PP3 unknowns-register entry). Explicit non-coverage: Q-DD45.2 / Q-DD45.3, no PP3 repeal, final merge still requires Director corrected-claim acceptance + §32 + hard gate.
+- Prior stamps stand: #348 Loop, #370 Roster, #378 EmbedBind.
 
 ## Silence flag
-No other ripe items processed this cycle. Trailing cert logged even for no-change cases.
+No other ripe items processed this cycle.
 
 ## Standing notes
-Master Work List on main at 32/179. Strict 19/72 unchanged. Defect dial FIXED 12 / GATED 3. #348 and #378 merged; records reconcil pending #379. #345 still waiting Director conditions.
+All three former front-line builds (#345, #348, #370) now carry Keeper scoped CONFIRM. #378 carries fresh CONFIRM at 58b5518. Remaining gates are Director-side + merge-step §32.
 
 — KEEPER
