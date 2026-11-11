@@ -1,11 +1,11 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 16:03 CST  
-**UTC approx**: 2026-11-11T22:03:00Z
+**Last cycle**: 2026-11-11 17:05 CST  
+**UTC approx**: 2026-11-11T23:05:00Z
 
 ## Items ruled this cycle
-- Merge identity verified for #386 (ded0ead9…) and #388 (42798fbf…); scoped comments posted.
-- New head stamps: #387 pre-stamp pending terminal CI at 102a750b…; #389 CONFIRM scoped (harvest-only package).
+- Merge identity verified for #387 (merge SHA 9c38c84…, head 102a750b…); scoped final-check CONFIRM posted (records-only). Uni MERGE-GATE RECEIPT identities verified.
+- New head: #389 pre-stamp pending terminal CI at d68b12f2… (smoke in_progress; code identity to prior CONFIRM per Uni form/ diff empty).
 
 ## Silence flag
 No binding HOLD/CORRECTION/INSUFFICIENT. Prior stamps stand.
