@@ -125,18 +125,46 @@ form/define_compose_nonpublication_test.py, +31/-3):
   discipline. RETURNING for Director final disposition per Q-C3.3,
   with Keeper scoped review at the amended head.
 
-## Questions for the Director
+## Questions for the Director — RULED (mails 1a1cb916b4f20117, 1a1cbb30652fef84)
 
-- Q-C3.1: Rule on the delta — (a) amend the suite's scenario to use
-  an unconditionally failing body (Uni's recommendation; B18 contract
-  unchanged), or (b) rule a mechanism change instead?
-- Q-C3.2: Accept deviations 1–3 as standing semantics (pinned-suite
-  precedence; 99-publication exclusion; ComposeStep legacy mapping)?
-- Q-C3.3: On your ruling for Q-C3.1(a), Uni lands the scenario
-  amendment as a fast follow-up so exact-head CI can go fully green;
-  is the C3 PR mergeable before that amendment, with the red
-  classified as this disclosed delta, or must the amendment ride
-  first?
+- Q-C3.1 RULED: bounded scenario amendment APPROVED in this same PR
+  (deterministic failing trigger; B18 preserved; failing-first +
+  Alias->Diff success check required). EXECUTED as the AMENDMENT
+  ROUND above; amendment then received SCOPED CODE/SCENARIO PASS
+  (mail 1a1cbb30652fef84).
+- Q-C3.2 RULED: the three deviations ACCEPTED as scoped, bounded
+  compatibility choices — not approval of the stale-baseline corner,
+  all-writer completeness, or global certification. Residual
+  limitations stay in this report (below).
+- Q-C3.3 RULED: NO MERGE WHILE FORM SMOKE RED. Return path set:
+  amendment + campaign + terminal-green exact-head CI + Keeper
+  scoped review + Director FINAL disposition. This packet is that
+  return; merge awaits the final disposition and the Keeper stamp.
+
+## CAMPAIGN RECEIPT (final, amended code head 449c5dc; records heads above it change no form/ file)
+
+Failing-first: build suite form/c3diff_test.py 3/24 on unmodified
+code -> 24/24 after implementation. Amendment suite
+define_compose_nonpublication_test 12/15 before -> 16/16 after
+(trigger probe logs: amend_before, amend_probe, amend_suite in the
+circuit log archive). Mutants killed: 3/3 (M1/M2/M3, inverse-edit
+reverts).
+Local campaign on the amended head (main session, logs amend_fwd /
+amend_twice / amend_rev): fwd 273/273 OK EXIT 0; --twice 546 OK
+EXIT 0; rev 273/273 OK EXIT 0 — zero red in all legs.
+Exact-head CI: at a3c77ab — smoke run 43065038983 SUCCESS, package
+run 43065038971 SUCCESS, browser-acceptance run 43065039015
+SUCCESS (all terminal). Records-only heads after a3c77ab re-run CI
+for exact-head discipline; their form/ tree is identical
+(diff-verified).
+Residual limitations: (i) latent stale-baseline corner after a
+snapshot-fallback Revert remains as-is (pinned step9 semantics);
+(ii) Dell 99 publication does not arm baselines (documented
+exclusion); (iii) Ring 3 (Plane/Nursery/generation diffs) is a
+later circuit; (iv) scoped acceptances are not global
+certification; MWL 130 uncredited until independent closure.
+Proposed MWL 130 transition on closure: OPEN -> COMPLETE (scoped:
+Rings 1+2 as built), headline 35/179 -> 36/179 = 20.1%.
 
 Anticipated probes: a baseline armed by 98[Alias] then consumed by
 89[Diff]:: all after unrelated writes (covered, per-slice pins);
