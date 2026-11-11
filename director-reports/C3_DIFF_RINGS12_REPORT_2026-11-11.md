@@ -81,6 +81,43 @@ baseline_missing again). What Ring 1 retired is the suite's scenario
 prop: "a Diff body is a reliably failing define-run after other
 content writes." Uni did not edit the pinned suite.
 
+
+## AMENDMENT ROUND (Director Q-C3.1 ruling, mail 1a1cb916b4f20117)
+
+Q-C3.1 APPROVED the bounded scenario amendment in this same PR;
+Q-C3.2 ACCEPTED the three deviations as scoped; Q-C3.3 barred any
+merge while smoke is red and set the return path (amendment ->
+campaign -> terminal-green exact-head CI -> Keeper scoped review ->
+Director final disposition).
+
+AMENDMENT (head 449c5dc9444e56f2c2a5bdb8bca487754b81c81f, one file:
+form/define_compose_nonpublication_test.py, +31/-3):
+- OLD A7 trigger: 99[Compose] :: keep=89[Diff] — failed only because
+  no baseline existed; Ring 1 retired it (A6 Alias arms a baseline).
+- NEW A7 trigger: 99[Compose] :: keep=47[Embed] — fails with
+  embed_unavailable. Dell 47's binding is runtime-only, per-Program,
+  never persisted; nothing in this suite binds one, so the failure
+  is independent of baselines, store contents, and ambient state:
+  deterministic by construction.
+- The Assert-body alternative was REJECTED on probe evidence: a
+  nested :: inside a Compose label fails at outer-chain parse, so
+  the body never runs and cannot evidence a failed define-run.
+- A7's assertion is strictly STRONGER (adds out["error"] ==
+  "embed_unavailable"); P2/P3 and all other checks byte-identical;
+  A3 keeps its 89[Diff] body (still fails legitimately — no baseline
+  exists at that point). ADDED A9: after A6, standalone 89[Diff]
+  returns ok — the Ring-1 success path the old scenario denied.
+- Failing-first: unmodified suite 12/15 (log amend_before); probe in
+  the exact post-A6 state (log amend_probe): baseline armed, old
+  trigger succeeds and republishes, Embed trigger fails
+  embed_unavailable repeatably, keep retained.
+- Amended suite: 16/16 PASS (denominator 15 -> 16 by the one added
+  check, documented in-code). Focused suites: c3diff 24/24,
+  step9_diff 24/24, step10_consistency 34/34, spectrum_closure
+  57/57, unified_runtime 37/37, dd14 11/11.
+- Main-session campaign x3 on the amended head and exact-head CI
+  results are appended below when terminal.
+
 ## Questions for the Director
 
 - Q-C3.1: Rule on the delta — (a) amend the suite's scenario to use
