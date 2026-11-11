@@ -697,6 +697,40 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
             program._chain_sanitize_redact = True
         except Exception:
             pass
+    if not getattr(seed, "ok", True):
+        # DD-45: a seed the parser REFUSED (ok=False, atoms=[])
+        # must never execute as a vacuous success. The front door
+        # (executor.execute_seed) checks seed.ok before dispatch;
+        # the chain authority enforces the same refusal for direct
+        # callers: zero atoms execute; no idea, plane, store,
+        # selection, or Nursery state mutates; the parse error is
+        # named in the result; exactly one PP3 unknowns-register
+        # entry is recorded (in memory now, persisted on the next
+        # ordinary save — proven in dd45_recon_test.py). At base this guard
+        # was absent — a create+Select seed whose trailing empty
+        # label failed parsing returned ok=True here with no atom
+        # executed, and the never-created units read as erased
+        # state (tour finding DD-45, §12.57a).
+        err = getattr(seed, "error", "") or "seed_parse_failed"
+        messages.append(f"Chain refused: seed parse failed: {err}")
+        try:
+            from .executor import _note_unknown
+            _note_unknown(program, f"seed: {seed_text[:160]}",
+                          f"Seed could not be parsed: {err}",
+                          "chain_exec:parse")
+        except Exception:
+            pass
+        st = getattr(program, "core_ii", None)
+        _snap = st.snap() if st is not None else {}
+        if _redact:
+            err = sanitize_text(err)
+            _snap = sanitize_evidence(_snap)
+        return {"ok": False, "error": err, "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": seed.primary_dell(), "messages": messages,
+                "new_program": None, "chain_ran": [], "chain_skipped": [],
+                "atom_results": [], "partial": False,
+                "any_skipped": False, "core_ii": _snap, "directive": None}
     try:
         program, _results = execute_range(program, seed, list(seed.atoms), 0, len(seed.atoms), 0, messages, ran, skipped, state)
     finally:

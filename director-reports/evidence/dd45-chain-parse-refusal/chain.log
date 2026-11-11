@@ -1,0 +1,8 @@
+CHAIN_START 2026-11-09T18:16:46.619583+00:00 clone=/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/dd45_clone
+leg1_fwd START 2026-11-09T18:16:46.619616+00:00 args=[]
+leg1_fwd RC=0 TERMINAL=REGRESS FINAL: GREEN (order=fwd) END 2026-11-09T18:25:48.310444+00:00
+leg2_twice START 2026-11-09T18:25:48.310649+00:00 args=['--twice']
+leg2_twice RC=0 TERMINAL=REGRESS FINAL: GREEN (order=fwd, twice) END 2026-11-09T18:44:01.256184+00:00
+leg3_rev START 2026-11-09T18:44:01.256430+00:00 args=['--order', 'rev']
+leg3_rev RC=0 TERMINAL=REGRESS FINAL: GREEN (order=rev) END 2026-11-09T18:52:56.762390+00:00
+CHAIN_END 2026-11-09T18:52:56.764438+00:00
