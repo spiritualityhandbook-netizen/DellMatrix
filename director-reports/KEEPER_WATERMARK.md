@@ -1,13 +1,14 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 10:18 CST  
-**UTC approx**: 2026-11-11T16:18:00Z
+**Last cycle**: 2026-11-11 11:22 CST  
+**UTC approx**: 2026-11-11T17:22:00Z
 
 ## Items ruled this cycle
-- Full-queue positions restated (disposed COMPLETE on #348/#345/#378 carried forward; others no-change awaiting named evidence).
-- PR #382 merge verified (records only, merged 16:09 UTC under prior scoped CONFIRM at head f377418).
-- Scoreboard reconciled: 35/179 COMPLETE = 19.6%. Queue rows for disposed items flagged stale (words only).
-- No new open heads requiring stamp.
+- Full-queue positions restated (disposed COMPLETE on #348/#345/#378 carried; others no-change awaiting named evidence).
+- PR #384 head a3c77ab stamped (pending terminal CI + Director Q-C3 ruling).
+- PR #383 merge noted (clock correction records).
+- Scoreboard reconciled: 35/179 COMPLETE = 19.6%. Queue stale rows flagged (words only).
+- Forward SWAT advisory on C3.Diff + next 2 OPEN.
 
 ## Silence flag
 Silence = false. Positions published.
