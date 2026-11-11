@@ -99,5 +99,34 @@ def smoke() -> bool:
     em = execute_seed(w, "47[Embed]:: hello")
     rec("binding_not_global", em.get("ok") is False and em.get("error") == "embed_unavailable")
 
+    # 12. FAIL-CLOSED REBIND (Director finding, PR #378): a failed
+    # rebind attempt revokes the previous binding - the program is
+    # left UNBOUND, never silently still authorized on the old
+    # provider.
+    rb = open_program("EbRebind")
+    bind_embedder(rb, "fake")
+    saved2 = {k: os.environ.pop(k, None) for k in ("GOOGLE_API_KEY", "GEMINI_API_KEY", "AISTUDIO_API_KEY")}
+    try:
+        b = bind_embedder(rb, "gemini")
+        rec("failed_rebind_returns_not_ok", b.get("ok") is False)
+    finally:
+        for k, v in saved2.items():
+            if v is not None:
+                os.environ[k] = v
+    rec("failed_rebind_clears_binding", getattr(rb, "embed_binding", None) is None)
+    em = execute_seed(rb, "47[Embed]:: still authorized?")
+    rec("failed_rebind_refuses", em.get("ok") is False and em.get("error") == "embed_unavailable")
+    b = bind_embedder(rb, "not-a-provider")
+    rec("invalid_rebind_clears_binding", b.get("ok") is False and getattr(rb, "embed_binding", None) is None)
+
+    # 13. Vector validity: the receipt vector is a list of finite
+    # floats whose length is exactly the declared dim.
+    import math
+    vv = open_program("EbVecValid")
+    bind_embedder(vv, "fake")
+    execute_seed(vv, "47[Embed]:: validity check please")
+    vec = vv.last_core_i.get("vector") or []
+    rec("vector_validity", len(vec) == vv.last_core_i.get("dim") and all(isinstance(x, float) and math.isfinite(x) for x in vec))
+
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)

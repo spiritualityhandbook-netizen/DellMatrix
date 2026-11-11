@@ -30,11 +30,19 @@ def bind_embedder(program: Any, provider: str, model: Optional[str] = None,
                   *, bridge: Optional[LLMBridge] = None) -> Dict[str, Any]:
     """Probe the provider's embedding endpoint; bind only on proof.
 
+    FAIL-CLOSED REBIND CONTRACT: a bind attempt revokes any
+    existing binding FIRST. A failed attempt — unknown provider or
+    failed probe — leaves the program UNBOUND, never silently still
+    authorized on the previous provider. (Director finding on PR
+    #378, 2026-11-11: the original code returned on failure without
+    clearing, so a failed rebind kept the old provider live.)
+
     Returns {"ok": True, provider, model, dim, vector_space} on
     success (model/dim are the ACTUAL values the probe reported),
-    or {"ok": False, error, provider} leaving the program unbound.
+    or {"ok": False, error, provider} with the program unbound.
     """
     provider = (provider or "").lower().strip()
+    program.embed_binding = None
     if provider != "fake" and provider not in PROVIDERS:
         return {"ok": False, "error": f"unknown provider {provider}",
                 "provider": provider}
