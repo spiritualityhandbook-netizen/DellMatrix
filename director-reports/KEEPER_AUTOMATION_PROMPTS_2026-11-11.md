@@ -17,8 +17,12 @@ configuration only.
 
 ## THE LOOP (America/Chicago)
 
-- :00 — Keeper AUTOMATION 2 (Deep Cycle), aligned with the
-  Director's on-the-hour pass. Uni execution follows.
+- :00 — Keeper AUTOMATION 2 (Deep Cycle). The Director's
+  automation runs hourly near :40 (his platform's actual
+  schedule, corrected 2026-11-11, mail 1a1cb7868c6dbcda);
+  there is NO synchronized joint pass — each authority's pass
+  is independent, and Uni's 5-minute watch folds rulings as
+  they land. No wait-time guarantee rests on a joint pass.
 - :30 — Keeper AUTOMATION 1 (The Desk: merges, receipts, trailing,
   new heads).
 - Uni: watch every 5 minutes; execution cycle every 30 minutes.

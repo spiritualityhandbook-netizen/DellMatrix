@@ -41,8 +41,9 @@ THE LOOP (America/Chicago): the Director disposes the full queue in
 his deep passes; Uni's watch runs every 5 minutes and Uni's
 execution cycle every 30 minutes, so Uni work lands throughout the
 hour. Your two automations run hourly, offset:
-- AUTOMATION 2 (DEEP CYCLE) at :00, aligned with the Director's
-  pass on the hour.
+- AUTOMATION 2 (DEEP CYCLE) at :00. The Director's automation
+  runs hourly near :40 (corrected 2026-11-11); there is no
+  synchronized joint pass — the passes are independent.
 - AUTOMATION 1 (THE DESK) at :30, mid-hour, catching what Uni
   landed since the deep pass.
 
