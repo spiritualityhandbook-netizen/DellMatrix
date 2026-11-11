@@ -158,13 +158,16 @@ def _counted_sections(owner: str):
     """PP2b (charter ruling B2): the bounded kit sections whose
     retention evictions are counted. Each row: (section key,
     program attribute, id field, sort field, max keep, record
-    validator bound to the owner)."""
+    validator bound to the owner). A max keep of None marks a
+    section whose retention Ace has since superseded (DD-37 dock
+    two-tier contract): no trimming or counting runs for it, and
+    its total is the frozen historical eviction count."""
     from form.dell_matrix import (
         design_loop, director_records, dock_session, exchange,
         unknowns)
     return (
         ("dock_sessions", "dock_sessions", "session_id", "started",
-         dock_session._MAX_SESSIONS,
+         None,
          lambda rec: dock_session.validate(rec, owner)),
         ("director_records", "director_records", "entry_id", "ts",
          director_records._MAX_ENTRIES,
@@ -264,6 +267,14 @@ def serialize(program: Program) -> Dict[str, Any]:
         if not isinstance(_total, int) or isinstance(_total, bool) \
                 or _total < 0:
             _total = 0
+        if _max_keep is None:
+            # DD-37: retention superseded for this section — no
+            # eviction can occur, so the total is carried verbatim
+            # as the frozen historical count. It must never grow,
+            # never reset, and never count a history compaction.
+            setattr(program, _attr + "_dropped_total", _total)
+            _totals[_key] = _total
+            continue
         if isinstance(_entries, dict) and _entries:
             _valid = _collect_valid(
                 _entries, _vrec, _id_field, {},
@@ -430,6 +441,9 @@ def serialize(program: Program) -> Dict[str, Any]:
         # with one documented difference: a record may persist OPEN
         # (closed = null) because docked proposals are durable the
         # moment they land, so their session link must be too.
+        # DD-37: serialized as the two-tier section (live uncapped
+        # + compact history); "dropped_total" is the frozen
+        # pre-DD-37 rotation count, carried verbatim.
         "dock_sessions": serialize_dock_section(
             getattr(program, "dock_sessions", None),
             getattr(program, "dock_sessions_malformed", None),
