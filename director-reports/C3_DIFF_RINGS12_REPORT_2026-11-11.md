@@ -115,8 +115,15 @@ form/define_compose_nonpublication_test.py, +31/-3):
   check, documented in-code). Focused suites: c3diff 24/24,
   step9_diff 24/24, step10_consistency 34/34, spectrum_closure
   57/57, unified_runtime 37/37, dd14 11/11.
-- Main-session campaign x3 on the amended head and exact-head CI
-  results are appended below when terminal.
+- Main-session campaign x3 on the amended head a3c77ab (logs
+  c3diff/logs/amend_*): fwd 273/273 OK EXIT 0; --twice 546 OK
+  EXIT 0; rev 273/273 OK EXIT 0. ZERO red in all three legs.
+- Exact-head CI on a3c77ab: TERMINAL GREEN (smoke PASS 16m30s;
+  build 3.10/3.11 PASS; browser-acceptance PASS; MERGEABLE/CLEAN).
+- This appendix commit changes no form/ file (tree under form/
+  identical to a3c77ab); CI reruns on the new head for exact-head
+  discipline. RETURNING for Director final disposition per Q-C3.3,
+  with Keeper scoped review at the amended head.
 
 ## Questions for the Director
 
