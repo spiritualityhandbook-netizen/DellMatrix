@@ -1,9 +1,9 @@
 [
  {
   "n": 1,
-  "title": "Loop chained-body repetition repair (PR #348 @ d1ae66d; ALL regression legs TERMINAL GREEN — fwd CI, --twice 266/266, rev 266/266; refreshed disposition package posted 6778799489; Director HOLD pending his disposition) [MERGED PR #348 as 41c3c96 2026-11-11; Keeper CONFIRM scoped at 490fc1a + Director authorization mail 1a1ca412; post-merge dd14 suite 11/11 on main c0fd0b7; COMPLETE only on authority-confirmed closure]",
+  "title": "Loop chained-body repetition repair (PR #348 @ d1ae66d; ALL regression legs TERMINAL GREEN — fwd CI, --twice 266/266, rev 266/266; refreshed disposition package posted 6778799489; Director HOLD pending his disposition) [MERGED PR #348 as 41c3c96 2026-11-11; Keeper CONFIRM scoped at 490fc1a + Director authorization mail 1a1ca412; post-merge dd14 suite 11/11 on main c0fd0b7; COMPLETE only on authority-confirmed closure] [COMPLETE (scoped) 2026-11-11: Director final-check SCOPED_EVIDENCE_ACCEPTABLE + conditional closure, mail 1a1cb0e5402ecd4f; item receipt 6798979710. Residuals: Q-DD44.2/Q-DD44.3 open.]",
   "ids": "DD-14 / C1.Loop",
-  "status": "MERGED_UNVERIFIED",
+  "status": "COMPLETE",
   "block": "A — Front line (in flight now)"
  },
  {
@@ -15,9 +15,9 @@
  },
  {
   "n": 3,
-  "title": "Chain parse-refusal must fail closed (PR #345; reconciliation COMPLETE: the one mutation is a PP3 unknowns-register entry, proven by dd45_recon_test.py 20/20; corrected claim + guard comment pushed @ 71098a5; hold-lift package posted 6778879305 — Director rules option A corrected-claim vs option B PP3-repeal) [MERGED PR #345 as 7e0d7fb 2026-11-11 under Director corrected-claim acceptance PASS (mail 1a1ca66a) + Keeper CONFIRM refreshed at 7ec9da5 (6794857774); regression x3 GREEN at rebased head; post-merge suites True on merged main; COMPLETE only on authority final check]",
+  "title": "Chain parse-refusal must fail closed (PR #345; reconciliation COMPLETE: the one mutation is a PP3 unknowns-register entry, proven by dd45_recon_test.py 20/20; corrected claim + guard comment pushed @ 71098a5; hold-lift package posted 6778879305 — Director rules option A corrected-claim vs option B PP3-repeal) [MERGED PR #345 as 7e0d7fb 2026-11-11 under Director corrected-claim acceptance PASS (mail 1a1ca66a) + Keeper CONFIRM refreshed at 7ec9da5 (6794857774); regression x3 GREEN at rebased head; post-merge suites True on merged main; COMPLETE only on authority final check] [COMPLETE (scoped) 2026-11-11: Director final-check SCOPED_EVIDENCE_ACCEPTABLE + conditional closure, mail 1a1cb0e5402ecd4f; item receipt 6798980318. Residuals: PP3 diagnostic-entry mutation by design; Q-DD45.2/Q-DD45.3 open.]",
   "ids": "DD-45 / C1.ParseRefusal",
-  "status": "MERGED_UNVERIFIED",
+  "status": "COMPLETE",
   "block": "A — Front line (in flight now)"
  },
  {
@@ -1065,9 +1065,9 @@
  },
  {
   "n": 153,
-  "title": "Embedding provider binding — EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider RESOLVED by Ace 2026-11-10: any docked AI, Gemini today — see item 178 [MERGED PR #378 as c0fd0b7 2026-11-11; Director SCOPED_CODE_PASS + conditional authorization mail 1a1ca412; Keeper CONFIRM scoped at 58b5518; post-merge embedbind suite 29/29 on main; live Gemini entitlement UNKNOWN; COMPLETE only on authority-confirmed closure]",
+  "title": "Embedding provider binding — EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider RESOLVED by Ace 2026-11-10: any docked AI, Gemini today — see item 178 [MERGED PR #378 as c0fd0b7 2026-11-11; Director SCOPED_CODE_PASS + conditional authorization mail 1a1ca412; Keeper CONFIRM scoped at 58b5518; post-merge embedbind suite 29/29 on main; live Gemini entitlement UNKNOWN; COMPLETE only on authority-confirmed closure] [COMPLETE (scoped) 2026-11-11: Director final-check SCOPED_EVIDENCE_ACCEPTABLE + conditional closure, mail 1a1cb0e5402ecd4f; item receipt 6798981215. Residuals: no live in-program Gemini entitlement certified; adapter DESIGN HOLD; Q1/Q2 open.]",
   "ids": "C8.EmbedBind",
-  "status": "MERGED_UNVERIFIED",
+  "status": "COMPLETE",
   "block": "Plan §14.3 — C8 Dock & Psalms"
  },
  {
