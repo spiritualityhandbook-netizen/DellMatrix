@@ -8,27 +8,24 @@ disposition is on record. Dual-anchored: this file on main + the
 SUSX100,000 state file. Uni updates heads in place as lanes land.
 
 ## Awaiting disposition
-
 | Item | Ask | Head | Asked |
 |---|---|---|---|
-| PR #345 — DD-45 execute_chain refuses failed seeds | SCOPED HOLD (Director delta mail 1a1c72ded8c73827): patch review finds the refusal guard calls _note_unknown(program), potentially mutating the unknown ledger — the "zero state mutates" claim needs scope correction or proof (test asserting Program/Nursery durable state unchanged + diagnostic-note mutation classified). SCOPED CODE REVIEW CONDITIONAL PASS on fail-closed receipt only; MERGE HOLD until reconciled + refreshed local regression | 5fa4d5f | 2026-11-10, comment 6777027932 |
-| PR #350 — DD-31 diagnostic capture | Renewed merge ruling at post-rebase head (prior conditional authorization named superseded head 7cdb880 and does not carry). Exact-head CI TERMINAL PASS; disposition package posted (comment 6777942929) | b6b0307cac2467d09e6466065c1b2281f990a2e0 | MERGED e4aad9d (2026-11-10 ~14:38 CST) — all Director conditions verified in the merge step: Keeper CONFIRM ddf0cbd, local full regression GREEN at head (266 suites), capture-file check clean (4 files), SS32 full-body read of mail 1a1c72ded8c73827. Final-check PENDING. DD-31 root mechanism remains OPEN |
-| PR #360 — DD-44 loop bounds (Q-DD44.1) | Refreshed disposition at post-rebase head. Keeper scoped CONFIRM on record (main 0815c82, Q-DD44.1 accepted); exact-head CI TERMINAL PASS; Director recheck package posted per MODE D delta list (comment 6777942005) | 0773d1346475760fad0c455ae0ddf8f49a26ad34 | MERGED d58a3d5 (2026-11-10 ~14:25 CST) — all conditions verified in the merge step; post-merge DD-44 suite 16/16 on merged main. Final-check PENDING. Q-DD44.2/.3 remain separate OPEN follow-ups |
-| PR #348 — DD-14 / C1.Loop | Refreshed disposition after regression legs 2–3 on the REBASED head. First legs run at 813b2aa: leg 3 (rev) GREEN; leg 2 (--twice) RED isolated to the pre-#361 dd31 suite (proven DD31-CI mechanism, fixed on main by #361; log preserved). Branch rebased onto current main (DD-14 suite 11/11 on the rebased tree); legs 2–3 RERUNNING at the new head | d1ae66d | rebased + legs rerunning 2026-11-10 ~14:10 CST. Director recheck (mail 1a1c713671086995): HOLD remains until rebased regression completes successfully + terminal exact-head CI |
+| PR #348 — DD-14 / C1.Loop | SCOPED_CODE_PASS + CONDITIONAL MERGE AUTHORIZATION on record (Director mail 1a1c7e617ea7110a, 2026-11-10 17:58 CST; reaffirmed 18:38 CST mail 1a1c80a9e8c4d028). Conditions: rebased --twice/rev terminal green (DONE — receipts comment 6783324671), independent exact-head CI (DONE — 4/4 SUCCESS, hourly cycle verified first-hand), Keeper fresh CONFIRM at d2e1bce (OUTSTANDING — asks 6782719580 + 6782772967), SS32 in merge step. No Uni action remains; awaiting the Keeper. | d2e1bce15e54 | 2026-11-10 |
+| PR #345 — DD-45 execute_chain refuses failed seeds | SCOPED_CODE_PASS on the corrected claim ("no Program/Nursery business-state mutation; one unknown diagnostic entry") at superseded head 71098a5 (mail 1a1c7e617ea7110a); candidate REBASED to cure the conflicting-PR no-CI mechanism. FRESH DISPOSITION REQUESTED at 2be29dc (comment 6783571930): exact-head CI 4/4 terminal SUCCESS (hourly verified); dd45_recon 20/20; local regression in flight (fwd GREEN; --twice/rev running). Keeper CONFIRM also outstanding (6783346977). | 2be29dcee283 | 2026-11-10 |
+| PR #369 — Master Work List | MERGED 6b2bad8 (head 547f27c) under your SCOPED_DESIGN_PASS conditions (terminal CI + independent receipts); your 18:38 mail asked MERGED-vs-closed verification — verified MERGED with SHA on the record. Leaves the queue on your final-check pass; no completion credit taken. | 547f27c82a8e | closed as awaiting item 2026-11-10 |
+| PR #370 — C8.Roster / DD-37 | MERGED ad2a12c (head 2b95d86) under your conditional authorization + Keeper scoped CONFIRM (9d39cdc). Your 18:38 mail recognizes MERGED + scoped postmerge receipts (roster 15/15, smoke True, capture 27/27); MWL item 152 stays MERGED_UNVERIFIED pending your independent closure/register reconciliation. Leaves the queue on your final-check pass. | 2b95d86b8427 | closed as awaiting item 2026-11-10 |
+| PR #372 — Q-DD31F.2 sibling fix | MERGED 5d2deb4 (head 1182e35) under your conditional authorization. Keeper 18:01 deep cycle cleared his final-check flag (records/test-only). Leaves the queue on your final-check pass. | 1182e35 | closed as awaiting item 2026-11-10 |
 
-| PR #370 — C8.Roster / DD-37 dock_sessions two-tier retention (live uncapped + compact history archive) | NEW BUILD for review: failing-first 3/15 -> 15/15, mutant killed, dock-family suites green; main-session regression legs running at head; siblings + proposals-50 untouched | 2b95d86 | 2026-11-10 (PR body carries the evidence) |
+## Final-check queue (hourly final check, WORKFLOW v1 SS4)
 
-| PR #372 — Q-DD31F.2 sibling fix: p0 sealed-integrity scan owner-scoped | NEW BUILD for review: legacy-format glob was foreign-trippable AND vacuous; plant differential 12/13 -> 13/13; own-manifest mutants red; one test file | 1182e35 | 2026-11-10 (PR body carries the evidence) |
-
-## Final-check queue (hourly final check, WORKFLOW v1 §4)
-
-Merged 2026-11-10, final-check PENDING: PR #361, #362, #363, #365,
-#366, #367 (merged 70a478e; Director scoped certification + Keeper
-record-truth CONFIRM on record; Director MODE D delta acknowledged
-the merge and ordered merged-main receipts published), #364
-(merged 318736014). Records batch remainder: PRs #351–#356 rebased
-2026-11-10 (981f5ed / 3e122bc / 7308f9b / 1dfa964 / 7bd483b /
-4b886ad), exact-head CI running; each joins this queue on merge.
+Merged 2026-11-10, final-check PENDING (Director hourly lane;
+Keeper flags noted where cleared): PR #361, #362, #363, #365, #366,
+#367, #364, #350 (e4aad9d), #360 (d58a3d5), records batch #351
+(4b1761d), #352 (4b04f2f), #353 (a7f59c9), #354 (8bf09b5), #355
+(f8295f3 — Keeper flag cleared 18:01), #356 (554af27 — Keeper flag
+cleared 18:01), #368 (3651a5b), #371 (da73ff9), #372 (5d2deb4 —
+Keeper flag cleared 18:01), #369 (6b2bad8, docs; no completion
+credit), #370 (ad2a12c).
 
 ## Standing decisions owed
 
