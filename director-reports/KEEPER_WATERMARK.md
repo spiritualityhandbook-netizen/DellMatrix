@@ -1,23 +1,16 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 14:16 CST  
-**UTC approx**: 2026-11-11T20:16:00Z
+**Last cycle**: 2026-11-11 15:11 CST  
+**UTC approx**: 2026-11-11T21:11:00Z
 
 ## Items ruled this cycle
-- Full-queue positions restated: no change, awaiting named evidence on all open queue items.
-- No new final-check dispositions.
-- Forward SWAT advisory published for next 3 UNBUILT (DD-43, Q-DD42.2, Q-DD44.2).
-- Unclosed heads: no new stamps required.
-
-## Trailing ledger
-- Discharged this run: 0
-- Remaining: 2 (DD-18 on #357, Q-DD42.1 on #359)
-- Gaps restated: second certification still trailing on both; existing record does not yet support discharge.
+- PR #386 / LM-1 proposal — **CONFIRM (scoped, records only)**. Package complete for ruling; Q-LM1.1–Q-LM1.10 remain open (license gate first). No implementation authorized.
+- PR #387 / LM-7 Fractal Zoom plan adoption — **CONFIRM (scoped)**. Ace adoption + ideas-axis amendment accurately recorded. Not implementation authorization; precondition LM-3 + LM-4 stands.
 
 ## Silence flag
-No dispositions. Watermark advanced. Valid pass when nothing ripe.
+No other ripe items processed this cycle.
 
 ## Standing notes
-Prior stamps stand. Scoreboard 36/179 on main.
+Prior stamps on #345 / #348 / #370 / #378 / #384 stand. Fractal Zoom is plan law; harvest-only LM-1 build awaits the Q-LM1 rulings.
 
 — KEEPER
