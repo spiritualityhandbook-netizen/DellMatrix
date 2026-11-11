@@ -906,7 +906,7 @@
   "n": 130,
   "title": "Diff becomes the one comparison authority — Rings 1+2 (every declared writer and content slice compared, incl. absent-vs-None and transaction baselines; Ring-3 scopes later; slice count verified from the schema at the circuit SHA)",
   "ids": "DD-51 / C3.Diff",
-  "status": "PARTIAL",
+  "status": "COMPLETE",
   "block": "Plan §14.3 — C3 Failure & Time (witness family)"
  },
  {
