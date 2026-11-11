@@ -50,9 +50,9 @@
  },
  {
   "n": 8,
-  "title": "Governance records publication batch — ALL MERGED: #351 4b1761d, #352 4b04f2f, #353 a7f59c9, #354 8bf09b5, #355 f8295f3, #356 554af27; Director Review Queue PR #368 MERGED 3651a5b; NEEDS_OVERSEER dispositions PR #371 MERGED da73ff9; final-check pending ITEM-SPECIFIC COMPLETION HELD: Director HOLD, mail 1a1c9225c1bae60f (2026-11-10) — one-unit definition + exhaustive batch manifest published in director-reports/MWL8_BATCH_MANIFEST_2026-11-10.md (unit = PRs #351-#356, #362-#366, #368, #371, #373, #374; missing SHA supplied: PR #365 merged 444a76062); closure criterion stated there; item completes only on an authority ruling against that manifest.",
+  "title": "Governance records publication batch — ALL MERGED: #351 4b1761d, #352 4b04f2f, #353 a7f59c9, #354 8bf09b5, #355 f8295f3, #356 554af27; Director Review Queue PR #368 MERGED 3651a5b; NEEDS_OVERSEER dispositions PR #371 MERGED da73ff9; final-check pending ITEM-SPECIFIC COMPLETION HELD: Director HOLD, mail 1a1c9225c1bae60f (2026-11-10) — one-unit definition + exhaustive batch manifest published in director-reports/MWL8_BATCH_MANIFEST_2026-11-10.md (unit = PRs #351-#356, #362-#366, #368, #371, #373, #374; missing SHA supplied: PR #365 merged 444a76062); closure criterion stated there; item completes only on an authority ruling against that manifest. CLOSED (records-only): Director CONDITIONAL SCOPED_RECORD_PASS, mail 1a1c9549bfb1581c (2026-11-11 00:38 CST); Uni verification 2026-11-11: all 15 PRs MERGED with exact manifest SHAs (script/gh), all merge commits ancestors of main 8f789ce, ZERO product-code files (form//gui/) in any of the 15 diffs, publication files present and unsuperseded on main; receipt appended to MWL8_BATCH_MANIFEST_2026-11-10.md.",
   "ids": "Records batch",
-  "status": "MERGED_UNVERIFIED",
+  "status": "COMPLETE",
   "block": "A — Front line (in flight now)"
  },
  {

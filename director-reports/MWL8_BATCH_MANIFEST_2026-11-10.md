@@ -56,3 +56,23 @@ definition above is the correct bounded identity for the batch;
 (3) the unit's files remain present and un-superseded on main at
 the ruling's head. Until that ruling, MWL 8 stays MERGED_UNVERIFIED
 and takes no completion credit.
+
+## CLOSURE RECEIPT (Uni, 2026-11-11)
+
+Director CONDITIONAL SCOPED_RECORD_PASS (mail 1a1c9549bfb1581c,
+2026-11-11 00:38 CST). Verification executed by Uni main session
+against GitHub and latest main 8f789cefc60224ca558e540d7f8efc96b0fd6a3b:
+
+- All 15 PRs: state MERGED, mergeCommit OID matching the manifest
+  table exactly (scripted gh check, 15/15 MATCH).
+- All 15 merge commits are ancestors of latest main (git
+  merge-base --is-ancestor, 15/15).
+- Product code in diffs: ZERO files under form/ or gui/ across all
+  15 PRs (records-only confirmed).
+- Publication files present and unsuperseded on main: INDEX.md,
+  DIRECTOR_REVIEW_QUEUE.md, MASTER_WORK_LIST.md,
+  WORKFLOW_V1_FINAL_2026-11-10.md, this manifest,
+  FINAL_CHECK_MATRIX_2026-11-10.md.
+
+Result: MWL 8 COMPLETE (records-only scope) under the conditional
+pass; no product/runtime claim. Criterion of the manifest met.
