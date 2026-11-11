@@ -358,6 +358,40 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
         if not last_ok:
             state["ok"] = False
             state["error"] = out.get("error") or state.get("error") or ""
+        if n == 13 and last_ok and not out.get("skipped") and i + 1 < end:
+            # DD-14: Dell 13[Loop] is a chain repetition head. The
+            # leaf ran Loop's own ringed growth ONCE with the full
+            # count (its receipt line claims requested/executed);
+            # the atoms AFTER Loop in this range are its body and
+            # must execute `executed` times in total. The main loop
+            # has NOT run them yet at this point (Loop is the atom
+            # under execution), so the body range executes here,
+            # `executed` times, and the main loop then skips past
+            # it. The
+            # count grammar is the leaf's own (_parse_count,
+            # DIR-F13) over the same effective label the leaf saw,
+            # clamped identically (1..5); an unparseable label
+            # already failed the leaf above, so no repetition is
+            # owed. Repetition stops at the first body failure
+            # (first-failure truth, 72-19). Nested Loops recurse
+            # through execute_range itself; control heads inside
+            # the body keep their frame semantics per round.
+            from .executor_leaf import _parse_count
+            _raw = (_eff_label(atom, seed) or "").strip()
+            _parsed = _parse_count(_raw) if _raw else 1
+            if _parsed is not None:
+                _executed = max(1, min(_parsed, 5))
+                for _round in range(_executed):
+                    program, chunk = execute_range(
+                        program, seed, atoms, i + 1, end, depth,
+                        messages, ran, skipped, state)
+                    results.extend(chunk)
+                    if chunk:
+                        last_ok = bool(chunk[-1].get("ok", True))
+                    if any(not r.get("ok", True) and not r.get("skipped")
+                           for r in chunk):
+                        break
+                i = end - 1
         i += 1
     return program, results
 
