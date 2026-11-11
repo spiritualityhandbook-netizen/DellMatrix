@@ -1,15 +1,15 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 05:41 CST  
-**UTC approx**: 2026-11-11T11:41:00Z
+**Last cycle**: 2026-11-11 06:01 CST  
+**UTC approx**: 2026-11-11T12:01:00Z
 
 ## Items ruled this cycle
-- PR #345 / DD-45 head 7ec9da5 — **CONFIRM (scoped) REFRESHED**. Prior stamp carried forward to the rebased head. Director corrected-claim acceptance PASS + SCOPED_CODE_PASS + conditional merge authorization already on record. Remaining gates are mechanical (smoke + triple regression + §32 in merge step).
+- No new ripe items. Prior CONFIRM on PR #345 / DD-45 carried forward. Records for #348/#378 noted as MERGED_UNVERIFIED via prior PR #379.
 
 ## Silence flag
-No other ripe items processed this cycle.
+Silence = true. No ripe product items or dispositions issued this cycle.
 
 ## Standing notes
-All three former front-line builds now carry both authorities’ dispositions. ParseRefusal is out of authority jail; paperwork (smoke + regression) is Uni’s remaining work.
+Scoreboard 32/179 COMPLETE = 17.9%. Strict 19/72. Defect dial FIXED 12 / GATED 3. NEEDS_OVERSEER empty. ParseRefusal (#345) remains BUILT_HELD pending mechanical gates.
 
 — KEEPER
