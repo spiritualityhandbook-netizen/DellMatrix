@@ -197,6 +197,11 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
             st.last_result = result_cell(value=None, matched=False, source="weight", error=err, trace="74")
             messages.append(f"Weight reject {key}={val!r}")
         else:
+            # DD-51 Ring 1: Weight joins the shared
+            # diff-baseline authority (Set's pattern):
+            # note after the refusal check, before writing.
+            from .spectrum_ops import _ckpt as _diff_ckpt, _note_mutation as _note_diff
+            _note_diff(st, "weight", lab, _diff_ckpt(st))
             st.weights[key] = w
             st.last_result = result_cell(value=w, matched=True, source="weight", predicate=key, trace="74")
             messages.append(f"Weight {key}={w}")
@@ -206,6 +211,11 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
             st.last_result = result_cell(value=dict(st.weights), matched=False, count=len(st.weights), source="normalize", error="zero_set", trace="75")
             messages.append("Normalize zero_set")
         else:
+            # DD-51 Ring 1: Normalize joins the shared
+            # authority — the capture precedes the
+            # whole-dict rebind exactly as a per-key write.
+            from .spectrum_ops import _ckpt as _diff_ckpt, _note_mutation as _note_diff
+            _note_diff(st, "normalize", lab, _diff_ckpt(st))
             st.weights = {k: v / ssum for k, v in st.weights.items()}
             st.last_result = result_cell(value=dict(st.weights), matched=True, count=len(st.weights), source="normalize", trace="75")
             messages.append(f"Normalize n={len(st.weights)} sum={sum(st.weights.values()):.6f}")
@@ -274,6 +284,12 @@ def _relation(st, field, lab, source, trace, messages, title) -> Tuple[bool, str
         st.last_result = result_cell(value=(a, b), matched=False, source=source, error="duplicate_relation", trace=trace)
         messages.append(f"{title} duplicate {a}->{b}")
         return True, ""
+    # DD-51 Ring 1: ONE note site covers both Cause (78)
+    # and Depend (79) — after every refusal check (the
+    # duplicate path above returns ok WITHOUT mutating, so
+    # it must not note), immediately before the append.
+    from .spectrum_ops import _ckpt as _diff_ckpt, _note_mutation as _note_diff
+    _note_diff(st, source, lab, _diff_ckpt(st))
     bag.append((a, b))
     st.last_result = result_cell(value=(a, b), matched=True, source=source, trace=trace)
     messages.append(f"{title} {a}->{b}" if source == "cause" else f"{title} {a} requires {b}")

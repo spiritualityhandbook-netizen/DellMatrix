@@ -88,9 +88,14 @@ def _sync_depth(st: Any) -> None:
 
 
 def _note_mutation(st: Any, op: str, lab: str, pre: Dict[str, Any]) -> None:
-    """Step 9 (B14): the ONE shared diff-baseline authority.
-    Every store writer — Set (55, via query_ops) and the
-    spectrum writers 84-88 — calls this with pre=_ckpt(st)
+    """Step 9 (B14) / DD-51 Ring 1: the ONE shared
+    diff-baseline authority. Every content writer — Set
+    (55, via query_ops), Weight/Normalize/Cause/Depend
+    (74/75/78/79, via query_ops), the spectrum writers
+    80-88 and 97-98 (Compose's publication write is the
+    one documented exclusion — see Dell 99), and the
+    chain-layer flow writers in chain_exec._apply_flow
+    — calls this with pre=_ckpt(st)
     captured after all refusal checks and immediately
     before its mutation. It sets the standalone baseline
     (st.diff_baseline) that Diff reads when no transaction
@@ -100,6 +105,58 @@ def _note_mutation(st: Any, op: str, lab: str, pre: Dict[str, Any]) -> None:
     frames = _active(_open_tx(st))
     if frames:
         frames[-1].setdefault("staged_changes", []).append({"op": op, "lab": lab})
+
+
+# DD-51 Ring 2: Diff scope vocabulary. The label of a Diff
+# atom names ONE scope, exact-matched: "" / "store" is the
+# legacy store-only comparison; a content-slice name
+# compares that slice; "all" compares every content
+# slice; "whole" / "checkpoint" / "whole checkpoint"
+# compares the whole _ckpt frame (content + working +
+# verdict slices). Anything else refuses (see Dell 89).
+DIFF_CONTENT_SLICES = ("store", "weights", "groups", "refs",
+                       "causes", "deps", "defs", "aliases",
+                       "compositions")
+DIFF_WORKING_SLICES = ("scope", "selected", "context",
+                       "route", "last_assert", "last_guard")
+DIFF_ALL_SLICES = DIFF_CONTENT_SLICES + DIFF_WORKING_SLICES
+
+
+def _diff_scope(lab: str):
+    """Resolve a Diff label to (scope_key, examined) or
+    None for an unmatched non-empty label."""
+    word = (lab or "").strip().lower()
+    if word in ("", "store", "composestep"):
+        # "composestep" is not an aim: it is the wrapper
+        # term _compose_seed generates for digit bodies
+        # ("89" -> "89[ComposeStep]"), transported as the
+        # payload by chain_exec._payload_cond. It names
+        # the atom, so the legacy behavior applies (the
+        # payload is not read as a scope word).
+        return "store", ["store"]
+    if word in DIFF_CONTENT_SLICES:
+        return word, [word]
+    if word == "all":
+        return "all", list(DIFF_CONTENT_SLICES)
+    if word in ("whole", "checkpoint", "whole checkpoint"):
+        return "whole", list(DIFF_ALL_SLICES)
+    return None
+
+
+def _slice_changed(name: str, before: Any, after: Any) -> List[Any]:
+    """Per-slice change list between two _ckpt values.
+    Dicts use the DIR-F15 membership-first rule (an absent
+    key differs from a key stored as None); lists report
+    added-then-removed members; scalars report the slice
+    name when the value moved."""
+    if isinstance(before, dict) and isinstance(after, dict):
+        return [k for k in set(list(before) + list(after))
+                if (k in before) != (k in after)
+                or before.get(k) != after.get(k)]
+    if isinstance(before, list) and isinstance(after, list):
+        return [x for x in after if x not in before] \
+            + [x for x in before if x not in after]
+    return [] if before == after else [name]
 
 
 def note_atom_failure(st: Any, err: str) -> None:
@@ -152,16 +209,22 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
     # their operands are resolved.
     ok, err = True, ""
     if n == 80:
+        pre = _ckpt(st)
         st.context = lab or st.scope
+        _note_mutation(st, "context", lab, pre)
         messages.append(f"Context -> {st.context}")
     elif n == 81:
         target = lab or (st.selected[0] if st.selected else "")
         name = target or "ref"
+        pre = _ckpt(st)
         st.refs[name] = target
+        _note_mutation(st, "reference", lab, pre)
         messages.append(f"Reference {name} -> {target or '(none)'} no_copy")
     elif n == 82:
         name = lab or "group"
+        pre = _ckpt(st)
         st.groups[name] = list(st.selected or ids_fn(program))
+        _note_mutation(st, "group", lab, pre)
         messages.append(f"Group {name} n={len(st.groups[name])}")
     elif n == 83:
         # Step 10 (B12): a NAMED missing group is a refusal,
@@ -181,9 +244,11 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
             ok, err = False, "ungroup_missing:empty"
             messages.append("Ungroup missing (no groups)")
             return ok, err
+        pre = _ckpt(st)
         members = st.groups.pop(name, [])
         if members and not st.selected:
             st.selected = list(members)
+        _note_mutation(st, "ungroup", lab, pre)
         messages.append(f"Ungroup {name} released={len(members)}")
         if name and st.scope == name:
             messages.append(
@@ -346,13 +411,31 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
         # writer. An active transaction frame's checkpoint
         # governs; otherwise the standalone baseline captured
         # by _note_mutation immediately before the most
-        # recent store mutation (Set 55 included). There is
+        # recent mutation (every ring-1 writer). There is
         # NO fallback to the current state: with no baseline
         # captured in this session Diff refuses
         # baseline_missing and claims NO change-set (changed
         # is None, never []). Reading Diff never captures,
         # replaces, or clears a baseline, so repeated reads
         # return the identical result.
+        # DD-51 Ring 2: the label aims Diff at a SCOPE (see
+        # _diff_scope). No word / "store" is the legacy
+        # store-only comparison: its before/after/changed
+        # keys and message are byte-identical to Step 9.
+        # Wider scopes ADD scope/slices/unexamined keys —
+        # the per-slice change-sets under the named scope,
+        # and the _ckpt slices NOT examined named outright,
+        # never silently skipped. An unmatched non-empty
+        # label refuses diff_scope_unknown and writes NO
+        # last_diff: an unrecognized aim is not a store
+        # Diff wearing a costume.
+        resolved = _diff_scope(lab)
+        if resolved is None:
+            word = (lab or "").strip()
+            ok, err = False, f"diff_scope_unknown:{word}"
+            messages.append(f"Diff scope unknown {word!r}")
+            return ok, err
+        scope_key, examined = resolved
         frames = _active(_open_tx(st))
         if frames:
             before = frames[-1].get("checkpoint") or _ckpt(st)
@@ -364,9 +447,13 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
             before = None
             source = "missing"
         after = _ckpt(st)
+        # The legacy keys always carry the store comparison,
+        # so the store is never named unexamined.
+        unexamined = [s for s in DIFF_ALL_SLICES
+                      if s not in examined and s != "store"]
         if before is None:
             ok, err = False, "baseline_missing"
-            st.last_diff = {"before": None, "after": after.get("store", {}), "changed": None, "label": lab, "baseline": "missing", "available": False, "error": "baseline_missing"}
+            st.last_diff = {"before": None, "after": after.get("store", {}), "changed": None, "label": lab, "baseline": "missing", "available": False, "error": "baseline_missing", "scope": scope_key, "slices": None, "unexamined": list(examined)}
             messages.append("Diff baseline_missing (no baseline captured)")
         else:
             # DIR-F15: membership change alone is a change.
@@ -376,10 +463,24 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
             # from changed. Membership is compared first;
             # keys present on both sides fall back to value
             # equality (a retained None is NOT a change).
+            # _slice_changed applies that rule per slice.
+            slices = {}
+            for name in examined:
+                _b, _a = before.get(name), after.get(name)
+                slices[name] = {"before": _b, "after": _a,
+                                "changed": _slice_changed(name, _b, _a)}
             _bs, _as = before.get("store", {}), after.get("store", {})
-            changed = [k for k in set(list(_bs) + list(_as)) if (k in _bs) != (k in _as) or _bs.get(k) != _as.get(k)]
-            st.last_diff = {"before": before.get("store", {}), "after": after.get("store", {}), "changed": changed, "label": lab, "baseline": source}
-            messages.append(f"Diff changed={changed} baseline={source}")
+            changed = _slice_changed("store", _bs, _as)
+            st.last_diff = {"before": before.get("store", {}), "after": after.get("store", {}), "changed": changed, "label": lab, "baseline": source, "scope": scope_key, "slices": slices, "unexamined": unexamined}
+            if scope_key == "store":
+                messages.append(f"Diff changed={changed} baseline={source}")
+            elif len(examined) == 1:
+                messages.append(f"Diff scope={scope_key} changed={slices[examined[0]]['changed']} baseline={source}")
+            else:
+                summary = {name: slices[name]["changed"]
+                           for name in examined
+                           if slices[name]["changed"]}
+                messages.append(f"Diff scope={scope_key} changed={summary} baseline={source}")
     elif n == 90:
         messages.append(f"Trace last {min(8, len(st.traces))}:")
         for item in st.traces[-8:]:
@@ -502,7 +603,9 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
     elif n == 97:
         name, _, meaning = lab.partition("=")
         name = (name or "def").strip()
+        pre = _ckpt(st)
         st.defs[name] = meaning or lab
+        _note_mutation(st, "define", lab, pre)
         messages.append(f"Define {name}")
     elif n == 98:
         name, _, target = lab.partition("=")
@@ -519,7 +622,9 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                 ok, err = False, "alias_missing"
                 messages.append(f"Alias missing {target}")
             else:
+                pre = _ckpt(st)
                 st.aliases[name] = target
+                _note_mutation(st, "alias", lab, pre)
                 messages.append(f"Alias {name}->{target}")
     elif n == 99:
         name, _, body = lab.partition("=")
@@ -549,6 +654,22 @@ def apply_spectrum(n: int, st: Any, program: Any, lab: str, term: str, messages:
                     retained = "; previous definition retained" if had_prior else ""
                     messages.append(f"Compose {name}={body} ran={out.get('chain_ran')} not published{retained}")
                 else:
+                    # DD-51 Ring 1 EXCLUSION (evidence-ruled):
+                    # the publication write does NOT note.
+                    # B18's contract (step10_consistency,
+                    # define_compose_nonpublication) executes
+                    # candidate bodies against live state, and
+                    # its pinned scenarios use a Diff body's
+                    # baseline_missing as the canonical failing
+                    # define-run in a state where the ONLY
+                    # baseline would be the one a prior
+                    # publication manufactured — noting here
+                    # makes Diff-bodied redefinitions
+                    # self-fulfilling and breaks both suites.
+                    # The publication remains visible to
+                    # Diff(compositions): any standing
+                    # baseline predates it, so the write is
+                    # reported inside that window.
                     st.compositions[name] = body
                     messages.append(f"Compose {name}={body} ran={out.get('chain_ran')}")
         else:

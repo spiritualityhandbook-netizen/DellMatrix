@@ -221,29 +221,49 @@ def _apply_flow(st: Any, flow: str, prev_ok: bool, prev_atom: Any, next_atom: An
         messages.append("FlowOver boundary — skip until Join")
         st.flow_blocked.append(name)
         return "over"
+    # DD-51 Ring 1: the flow operators below write Core II
+    # slices (refs, context, route) outside Dell dispatch.
+    # They pass through the ONE _note_mutation door with a
+    # _ckpt captured immediately before the write, exactly
+    # like every Dell writer — otherwise the standalone
+    # baseline would silently misattribute a flow-written
+    # change to whichever Dell noted last.
+    from form.mandell.spectrum_ops import _ckpt as _flow_ckpt, \
+        _note_mutation as _flow_note
     if flow == ":":
         term = getattr(next_atom, "term", "")
+        pre = _flow_ckpt(st)
         st.context = term
+        _flow_note(st, "flowby", term, pre)
         messages.append(f"FlowBy bind context={term}")
         return "run"
     if flow == "::":
         term = getattr(next_atom, "term", "")
+        pre = _flow_ckpt(st)
         st.refs["deep"] = term
+        _flow_note(st, "deepflowby", term, pre)
         messages.append(f"DeepFlowBy {term}")
         return "run"
     if flow == ":>":
         term = getattr(next_atom, "term", "")
+        pre = _flow_ckpt(st)
         st.route = term or st.route
+        _flow_note(st, "flowtowards", term, pre)
         messages.append(f"FlowTowards {st.route}")
         return "run"
     if flow == "<:":
         term = getattr(prev_atom, "term", "")
+        pre = _flow_ckpt(st)
         st.refs["from"] = term
+        _flow_note(st, "flowfrom", term, pre)
         messages.append(f"FlowFrom {term}")
         return "run"
     if flow == "<:>":
+        pre = _flow_ckpt(st)
         st.refs["from"] = getattr(prev_atom, "term", "")
         st.route = getattr(next_atom, "term", "") or st.route
+        _flow_note(st, "dynamicflow",
+                   f"{st.refs.get('from')}->{st.route}", pre)
         messages.append(f"DynamicFlow {st.refs.get('from')}->{st.route}")
         return "run"
     if flow == "<<[Delta]":
