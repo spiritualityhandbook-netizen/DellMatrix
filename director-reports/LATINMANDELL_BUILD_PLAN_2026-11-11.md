@@ -580,6 +580,45 @@ exist. The Zoom extends the §4.6 level table (L1–L5) upward:
   with the relations between them (which cause, which depend,
   which merely decorate).
 
+### The Ideas Axis (Ace amendment, 2026-11-11 15:03 CST)
+
+The Zoom runs on **ideas**, not only on writing. Ace's ruling:
+the fractal zoom works with the full matrix, zooms into one
+idea, then into the contents of that idea — hand in hand with
+LatinMandell — because the majority of everything in the field
+breaks down into tokens of words and letters, and symbols.
+Pictures, files, and other attachments come into play too, but
+the majority is text, and text is what the zoom reads natively.
+
+- **Field zoom (the idea floors):** MATRIX (the whole field,
+  all ideas and their relations) → IDEA (one idea, its stacked
+  contents) → CONTENTS (the idea's text, symbols, and
+  attachments) → then the word floors take over: sentences →
+  words → morphemes (L6→L2). Zooming OUT reverses: morphemes →
+  words → the idea's meaning → the idea's place and weight in
+  the whole field.
+- **Relations between ideas are floors too:** an idea's links,
+  causes, dependencies, and groupings (the same slices Dell
+  89[Diff] compares) are its L5/L7 relations at field scale —
+  the zoom reads *why this idea sits where it sits*, not only
+  what it says.
+- **Symbols ride the text floors:** Mandellmoji glyphs (§4.9)
+  and other symbols are tokens with predisposed meanings
+  (LM-0 discipline); they classify and stack like words.
+- **Non-text contents — honest ceiling:** a picture or file
+  inside an idea is zoomed through what the program can
+  checkably read — its name, type, captions, metadata, and any
+  text it carries. The *content* of an image (what it depicts)
+  is the docked AI's residue, exactly as idiom is (§5 ceilings):
+  the zoom reports the attachment's presence and text-layer
+  facts and marks the visual layer as dock-read, never as
+  program-read. No fabricated description.
+- **One zoom, two axes:** writing and ideas are the same
+  mechanism at different scales — a script is a field of
+  paragraphs; the matrix is a field of ideas. The falsification
+  tests apply on both axes (an idea-level claim must trace to
+  the idea's contents; a field-level claim to specific ideas).
+
 ### The Harmonization Law (Ace, same messages)
 
 - One program, not a pile of parts: any question or action
