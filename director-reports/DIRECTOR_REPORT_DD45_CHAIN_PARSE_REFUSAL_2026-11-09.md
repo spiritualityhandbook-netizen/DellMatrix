@@ -87,9 +87,12 @@ in `form/regress.py` LIST after dd31; canonical count
 `form/mandell/chain_exec.py` only — a guard at the head of
 `execute_chain`, mirroring the front door's existing refusal:
 when `seed.ok` is False, the chain executes ZERO atoms, mutates
-ZERO state, records the refusal as an encountered unknown
-(PP3 parity with the executor's parse note), and returns the
-standard chain result shape with `ok=False` and
+no Program/Nursery business state, and records the refusal as an
+encountered unknown (PP3 parity with the executor's parse note) —
+that unknowns-register entry is the ONE diagnostic state change
+(see the 2026-11-10 reconciliation note at the end of this
+report) — and returns the standard chain result shape with
+`ok=False` and
 `error = <the parse error, named>`. Semantics of every valid
 seed are untouched — the guard is unreachable for ok seeds
 (parse failures always carry atoms=[], so no execution path
@@ -205,3 +208,23 @@ NOT changed, deliberately:
 *Uni Ω — evidence first; the merge gate for this PR is the
 main session's §32 freshness check plus the hard gate, and
 certification remains the Director's alone.*
+
+
+---
+
+## Correction note (2026-11-10, reconciliation circuit)
+
+The original §3 wording ("mutates ZERO state") was imprecise and
+is superseded by the text above. Reconciliation evidence
+(form/dd45_recon_test.py, 20/20): a refused seed executes zero
+atoms and mutates no idea, plane, store, selection, or Nursery
+state, and writes nothing to disk at refusal time; exactly one
+state change occurs — an OPEN entry in the program's unknowns
+register (PP3 encountered-unknowns, deduped by subject+question;
+in memory at refusal, persisted on the next ordinary save). The
+Director's scoped ruling (mail 1a1c7e617ea7110a, 2026-11-10)
+accepts the corrected claim form: "no Program/Nursery
+business-state mutation; one unknown diagnostic entry." The §2
+base-battery description ("state untouched") referred to the
+business-state checks those tests assert; the register entry is
+outside that battery's scope and is covered by the recon suite.
