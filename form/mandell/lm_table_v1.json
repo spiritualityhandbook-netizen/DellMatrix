@@ -37,7 +37,7 @@
     },
     {
      "path": "form/mandell/morpheme.py",
-     "sha256": "cc31000a61d71234111af1f19b6fbd0dd6fdf0163dc22275e8da3310ab04ba8d",
+     "sha256": "5c7daf793dad29a877c45b451ab14a8d375fc27c15cac9af86d560a74c3d4ac8",
      "symbol": "PREFIXES/ROOTS/SUFFIXES + force_mandell_morphemes"
     },
     {
