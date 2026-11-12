@@ -7,10 +7,12 @@ Contracts proven here:
   ordinary English (transportation / incredible / preview /
   unbelievable: sense '(open)', known False) and split_word did not
   exist. split_word now returns a structured parse wherever the LM-1
-  harvested table supports one -- and an honest UNRESOLVED parse
-  where it does not (incredible / unbelievable contain no harvested
-  piece: in-/un-/cred/believ were never harvested, so the splitter
-  fabricates nothing).
+  table supports one -- and an honest UNRESOLVED parse where it does
+  not (incredible / unbelievable contained no V1-harvested piece:
+  in-/un-/cred/believ were never harvested in-repo, so on the v1
+  table the splitter fabricated nothing; on the integrated head
+  the v2 external stratum contributes the in-/un- prefix rows only
+  and the middles stay honestly UNRESOLVED -- see S16).
 - CENSUS WHOLE: a confirmed LM-0 census word classifies WHOLE with
   ALL its categories (multi-category is law, R8) and is never split.
   The shipped census artifact pins the confirmed edition by sha256.
@@ -34,13 +36,28 @@ Contracts proven here:
   arithmetic (S11); census recount from the artifact's ENTRIES,
   independent of its header claims (S12); v2 presence + the
   per-process table cache against a synthesized bound pair and a
-  fixture loader implementing the PR #393 pair contract -- this
-  branch's shipped loader predates v2, so S13 exercises
-  split_word's side of the contract in subprocess scratch trees;
-  the authoritative composition with the REAL #393 loader and
-  artifacts is proof (d) in hidden_files/lm2/proof_d_real.py (S13);
+  fixture loader implementing the PR #393 pair contract (S13 is
+  FIXTURE-form: synthesized pair, fixture loader, scratch trees);
   quarantine annotation for 'man' / 'alpha' (S14; 'dell' / 're'
   are S5).
+- A9 CORRECTION (Director mail 1a1ce5a1885841eb, S15-S16): census
+  section provenance -- the builder leaked the preceding
+  category's last subsection label into 101 rows; fixed, proven
+  against an independent span-first parse of the source (S15).
+  INTEGRATED HEAD: this branch is rebased on merged main c6f6fb5
+  (PR #393), so the shipped loader IS the pair-verifying snapshot
+  loader and split_word's in-process table is the REAL v2 pair
+  (2,245 rows). The gold battery is TABLE-RELATIVE: expectations
+  whose pieces the v2 external stratum now covers were re-derived
+  from the v2 rows + the unchanged algorithm (derivations cited
+  inline at GOLD), and S16 pins BOTH derivations -- the v1-table
+  expectations for exactly the differing words are asserted
+  against the real loader with v2 absent (scratch tree), so the
+  integrated delta is proven to be the table, not the code.
+  S16 is the REAL-artifact composition battery (real loader +
+  real pair-bound artifacts): external coverage resolves, a
+  corrupted pair member makes PairInconsistentError propagate
+  out of split_word, and v2-absent behavior is unchanged.
 """
 
 from __future__ import annotations
@@ -65,8 +82,13 @@ CENSUS_PER_CATEGORY = {"LINK": 233, "POINT": 117, "CONDITION": 34,
 # splits, prefix/root/suffix inventories) and the confirmed census.
 # Each entry: word -> [(piece, kind, resolved), ...]; census entries
 # add a 4th element on the single piece: the full category set.
-# "UNRES" pieces are the honest expectation where the harvested
-# table holds no piece (never a fabricated split).
+# "UNRES" pieces are the honest expectation where the table holds
+# no piece (never a fabricated split). INTEGRATED HEAD (A9): the
+# battery below is derived against the merged V2 table (the table
+# split_word actually loads on this head). Entries whose derivation
+# changed with the v2 external stratum cite the responsible rows
+# inline; their V1-table derivations are pinned in _V1_DELTA (S16)
+# and still hold with v2 absent.
 GOLD = {
     # census whole-classification (never split)
     "and": [("and", "whole", True, {"LINK"})],
@@ -108,7 +130,10 @@ GOLD = {
     "refacure": [("re", "prefix", True), ("fac", "root", True),
                  ("ure", "suffix", True)],
     "mandell": [("man", "prefix", True), ("dell", "suffix", True)],
-    "mandel": [("man", "prefix", True), ("del", "UNRESOLVED", False)],
+    # recorded split Man-del; v1 had NO 'del' row (UNRESOLVED);
+    # v2 adds one external 'del' row, so the recorded split's last
+    # piece now resolves under its slot-default kind 'suffix'.
+    "mandel": [("man", "prefix", True), ("del", "suffix", True)],
     # The recorded force splits for mandellang / mandellanguage
     # ('Man-dell-Lang', 'Man-dell-Lang-uage') do NOT tile the word --
     # the parts join to 'mandelllang' / 'mandelllanguage' (the 'l'
@@ -125,23 +150,67 @@ GOLD = {
                        ("tion", "suffix", True)],
     "preview": [("pre", "prefix", True),
                 ("view", "UNRESOLVED", False)],
-    "incredible": [("incredible", "UNRESOLVED", False)],
-    "unbelievable": [("unbelievable", "UNRESOLVED", False)],
-    "structure": [("struct", "root", True), ("ure", "suffix", True)],
+    # v2 derivation: 3 external 'in-' prefix rows; 'credible' has
+    # no row in any stratum and 'ible' is not a table piece, so the
+    # middle stays honestly UNRESOLVED (v1: no 'in' row at all --
+    # one UNRESOLVED piece; pinned in _V1_DELTA).
+    "incredible": [("in", "prefix", True),
+                   ("credible", "UNRESOLVED", False)],
+    # v2 derivation: 1 external 'un-' prefix row; 'believable'
+    # has no row and 'able' is not a table piece (v1: one
+    # UNRESOLVED piece; pinned in _V1_DELTA).
+    "unbelievable": [("un", "prefix", True),
+                     ("believable", "UNRESOLVED", False)],
+    # v2 derivation: an external 'struct' row whose position_class
+    # is position_unresolved carries authored_position_class
+    # 'prefix', which places 'struct' in the prefix inventory
+    # under the unchanged union rule; remainder 'ure' (3 chars)
+    # passes the guard and resolves via its inrepo suffix row
+    # under the middle slot-default kind 'root'. FLAGGED in the
+    # A9 packet: the v2 header's own note excludes
+    # position_unresolved pieces from position-dependent
+    # consumption -- whether the authored claim of an unresolved
+    # row may drive the inventory is an authority question, NOT
+    # decided in this circuit (v1: struct root + ure suffix;
+    # pinned in _V1_DELTA).
+    "structure": [("struct", "prefix", True), ("ure", "root", True)],
     "transform": [("trans", "prefix", True), ("form", "root", True)],
+    # v2 derivation: external 'press' row (v1: none) resolves the
+    # middle under the slot-default kind 'root'.
     "compress": [("com", "prefix", True),
-                 ("press", "UNRESOLVED", False)],
+                 ("press", "root", True)],
+    # v2 derivation: external 'firm' row (v1: none), same shape.
     "confirm": [("con", "prefix", True),
-                ("firm", "UNRESOLVED", False)],
-    "movement": [("move", "UNRESOLVED", False),
-                 ("ment", "suffix", True)],
-    "singing": [("sing", "UNRESOLVED", False),
-                ("ing", "suffix", True)],
+                ("firm", "root", True)],
+    # v2 derivation: the source's dash notation stamps the
+    # combining form 'mov-' as a prefix claim, so 'mov' enters the
+    # prefix inventory and is consumed (remainder 'ement', 5
+    # chars, passes the length guard); 'ement' is not a table
+    # piece and the suffix search stops at 'ment' (remainder 'e'
+    # fails the guard), leaving 'ement' UNRESOLVED. v1 had no
+    # 'mov' claim: 'ment' stacked off 'move' (pinned in
+    # _V1_DELTA). The parse is data-faithful; whether combining-
+    # form prefix claims should drive the prefix slot is the same
+    # authority question flagged at 'structure'.
+    "movement": [("mov", "prefix", True),
+                 ("ement", "UNRESOLVED", False)],
+    # v2 derivation: 'sin-' is likewise a prefix claim in the
+    # source notation; 'ging' has no row and 'ing' is blocked
+    # (remainder 'g' fails the guard). v1: sing + ing (pinned).
+    "singing": [("sin", "prefix", True),
+                ("ging", "UNRESOLVED", False)],
     "transmit": [("trans", "prefix", True), ("mit", "root", True)],
     "submit": [("sub", "prefix", True), ("mit", "root", True)],
-    "inspect": [("inspect", "UNRESOLVED", False)],
+    # v2 derivation: external 'in-' prefix + external 'spect'
+    # row (v1: neither) -- the etymological parse, now covered.
+    "inspect": [("in", "prefix", True), ("spect", "root", True)],
     "logic": [("logic", "whole", True)],
-    "evolve": [("evolve", "whole", True)],
+    # v2 derivation: an external 'ev-' prefix claim consumes the
+    # prefix slot (remainder 'olve', 4 chars, passes the guard);
+    # 'olve' has no row. v1: no prefix claim matched, so the
+    # ace_seed whole_form row governed (pinned in _V1_DELTA).
+    "evolve": [("ev", "prefix", True),
+               ("olve", "UNRESOLVED", False)],
     "dell": [("dell", "whole", True)],
     "re": [("re", "whole", True)],
     "translation": [("trans", "prefix", True),
@@ -268,6 +337,63 @@ print(json.dumps({"first": first, "second": second}))
 '''
 
 
+# ---- S16 fixtures (A9 integrated head) ---------------------------
+# _V1_DELTA pins the V1-TABLE derivations of exactly the words
+# whose integrated (v2) expectations differ, plus the two S16
+# example words. Asserted in a scratch tree carrying the REAL
+# loader with v2 ABSENT (S16c): if every entry matches there while
+# GOLD matches in-process against the real v2 pair, the integrated
+# delta is the table, not the code.
+_V1_DELTA = {
+    "mandel": [("man", "prefix", True), ("del", "UNRESOLVED", False)],
+    "incredible": [("incredible", "UNRESOLVED", False)],
+    "unbelievable": [("unbelievable", "UNRESOLVED", False)],
+    "structure": [("struct", "root", True), ("ure", "suffix", True)],
+    "compress": [("com", "prefix", True),
+                 ("press", "UNRESOLVED", False)],
+    "confirm": [("con", "prefix", True),
+                ("firm", "UNRESOLVED", False)],
+    "movement": [("move", "UNRESOLVED", False),
+                 ("ment", "suffix", True)],
+    "singing": [("sing", "UNRESOLVED", False),
+                ("ing", "suffix", True)],
+    "inspect": [("inspect", "UNRESOLVED", False)],
+    "evolve": [("evolve", "whole", True)],
+    "press": [("press", "UNRESOLVED", False)],
+    "movementing": [("move", "UNRESOLVED", False),
+                    ("ment", "suffix", True),
+                    ("ing", "suffix", True)],
+    "trans-portation": [("trans", "whole", True),
+                        ("porta", "UNRESOLVED", False),
+                        ("tion", "suffix", True)],
+    "biology": [("biology", "UNRESOLVED", False)],
+    "cred": [("cred", "UNRESOLVED", False)],
+}
+
+# S16 driver: runs in a scratch tree carrying the REAL shipped
+# loader (copied from this tree) and REAL artifacts. Modes:
+#   biology            -> split_word('biology') outcome
+#   delta              -> signatures for every _V1_DELTA word
+#                         (the words are passed as JSON in argv[3])
+_S16_DRIVER = '''
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from form.mandell import morpheme
+def sig(w):
+    p = morpheme.split_word(w)
+    return [[x["piece"], x["kind"], x["resolved"]]
+            for x in p["pieces"]]
+try:
+    if sys.argv[2] == "biology":
+        print(json.dumps({"pieces": sig("biology")}))
+    else:
+        words = json.loads(sys.argv[3])
+        print(json.dumps({w: sig(w) for w in words}))
+except Exception as e:
+    print(json.dumps({"error": type(e).__name__}))
+'''
+
+
 def _sig(parse):
     """(piece, kind, resolved) signature of a parse for gold compare."""
     return [(p["piece"], p["kind"], p["resolved"])
@@ -373,10 +499,14 @@ def smoke() -> bool:
     pv = morpheme.split_word("preview")
     rec("S2 preview decomposes: pre resolved + UNRES(view)",
         _sig(pv) == _gold_sig(GOLD["preview"]))
-    for w in ("incredible", "unbelievable"):
+    for w, acct in (("incredible", 0.2), ("unbelievable", 1 / 6)):
         p = morpheme.split_word(w)
-        rec(f"S2 {w}: honest UNRESOLVED, nothing fabricated",
-            _sig(p) == _gold_sig(GOLD[w]) and p["accounted"] == 0.0)
+        rec(f"S2 {w}: v1-opaque; on the v2 table only the "
+            f"external prefix resolves -- the middle stays "
+            f"honestly UNRESOLVED, nothing fabricated",
+            _sig(p) == _gold_sig(GOLD[w])
+            and abs(p["accounted"] - acct) < 1e-9
+            and p["pieces"][-1]["resolved"] is False)
 
     # ---- S3 census whole-classification
     who = morpheme.split_word("who")
@@ -477,10 +607,13 @@ def smoke() -> bool:
             for p in cd2["pieces"]))
 
     # ---- S9 greedy guards + suffix stacking (proof item (c))
+    press_p = morpheme.split_word("press")
     rec("S9 prefix guard: 'press' -- 'pre' NOT torn out (remainder "
-        "'ss' too short and not a known root)",
-        _sig(morpheme.split_word("press"))
-        == [("press", "UNRESOLVED", False)])
+        "'ss' too short and not a known root; the guard is intact). "
+        "Integrated head: 'press' itself is now a v2 external "
+        "piece and resolves whole (v1: UNRESOLVED, _V1_DELTA)",
+        _sig(press_p) == [("press", "whole", True)]
+        and all(p["piece"] != "pre" for p in press_p["pieces"]))
     rec("S9 prefix guard: 'prezz' -- 'pre' blocked the same way",
         _sig(morpheme.split_word("prezz"))
         == [("prezz", "UNRESOLVED", False)])
@@ -489,10 +622,12 @@ def smoke() -> bool:
         _sig(morpheme.split_word("pretu"))
         == [("pre", "prefix", True), ("tu", "root", True)])
     rec("S9 suffix stack preserves word order: movementing == "
-        "move + ment + ing",
+        "mov + UNRES(ement) + ing on the v2 table (the 'mov-' "
+        "prefix claim consumes first; 'ing' still stacks last, in "
+        "word order). v1 derivation move + ment + ing: _V1_DELTA",
         _sig(morpheme.split_word("movementing"))
-        == [("move", "UNRESOLVED", False), ("ment", "suffix", True),
-            ("ing", "suffix", True)])
+        == [("mov", "prefix", True),
+            ("ement", "UNRESOLVED", False), ("ing", "suffix", True)])
 
     # ---- S10 punctuation / delimiters / case (proof item (c))
     up = morpheme.split_word("TRANSPORTATION")
@@ -506,10 +641,15 @@ def smoke() -> bool:
         == [("trans", "prefix", True),
             ("portation.", "UNRESOLVED", False)])
     hd = morpheme.split_word("trans-portation")
-    rec("S10 hyphenated input: parts parsed separately",
+    rec("S10 hyphenated input: parts parsed separately. "
+        "Integrated head: 'port' is a v2 external prefix piece "
+        "and consumes first; 'ation' is not a table suffix piece "
+        "and 'tion' is blocked (remainder 'a' fails the guard), "
+        "so the residue is honestly UNRESOLVED (v1 derivation "
+        "porta + tion: _V1_DELTA)",
         _sig(hd) == [("trans", "whole", True),
-                     ("porta", "UNRESOLVED", False),
-                     ("tion", "suffix", True)])
+                     ("port", "prefix", True),
+                     ("ation", "UNRESOLVED", False)])
     rec("S10 trailing comma glues to the residue the same way",
         _sig(morpheme.split_word("commandell,"))
         == [("com", "prefix", True),
@@ -523,11 +663,15 @@ def smoke() -> bool:
         abs(lang["accounted"] - 6 / 10) < 1e-9
         and abs(lang["morpheme_resolved"] - 1 / 2) < 1e-9)
     mv = morpheme.split_word("movementing")
-    rec("S11 movementing accounting: ACCOUNTED 7/11, RESOLVED 2/3",
-        abs(mv["accounted"] - 7 / 11) < 1e-9
+    rec("S11 movementing accounting: ACCOUNTED 6/11, RESOLVED "
+        "2/3 on the v2 table (mov 3 + ing 3 resolved of 11 "
+        "letters; v1 derivation accounted 7/11)",
+        abs(mv["accounted"] - 6 / 11) < 1e-9
         and abs(mv["morpheme_resolved"] - 2 / 3) < 1e-9)
     rec("S11 delimited accounting covers part letters only: "
-        "trans-portation ACCOUNTED 9/14, RESOLVED 2/3",
+        "trans-portation ACCOUNTED 9/14, RESOLVED 2/3 (trans 5 + "
+        "port 4 resolved of 14 part letters; the resolved SET "
+        "changed with the v2 table, the arithmetic did not)",
         abs(hd["accounted"] - 9 / 14) < 1e-9
         and abs(hd["morpheme_resolved"] - 2 / 3) < 1e-9)
 
@@ -735,6 +879,113 @@ def smoke() -> bool:
         al["pieces"][0].get("position_unresolved") is True
         and len(al["pieces"][0]["senses"])
         == len(lm_table.lookup("alpha")))
+
+    # ---- S16 integrated-head composition (A9 item 6; REAL loader
+    # + REAL artifacts; S13 above is the fixture-form counterpart)
+    tbl = lm_table.load_table()
+    rec("S16 the in-process table IS the real pair-bound v2: "
+        "2245 rows, pair generation binding in the header",
+        len(tbl["rows"]) == 2245
+        and bool((tbl["header"] or {}).get("pair", {})
+                 .get("generation")))
+    bio = morpheme.split_word("biology")
+    rec("S16 real v2 pair: biology == bio + logy, ACCOUNTED 1.0, "
+        "every piece's senses carry the external stratum",
+        _sig(bio) == [("bio", "prefix", True),
+                      ("logy", "root", True)]
+        and bio["accounted"] == 1.0
+        and all(any(row["stratum"] == "external_wikipedia"
+                    for row in p["senses"]) for p in bio["pieces"]))
+    v1_tbl = lm_table.load_table(
+        path=os.path.join(_HERE, "mandell", "lm_table_v1.json"))
+    cred_rows = lm_table.lookup("cred")
+    rec("S16 'cred' resolves via the external stratum alone: "
+        "v1-pinned lookup is empty, v2 lookup is non-empty and "
+        "every 'cred' row is external_wikipedia; split_word "
+        "resolves it whole",
+        lm_table.lookup("cred", table=v1_tbl) == []
+        and len(cred_rows) >= 1
+        and all(row["stratum"] == "external_wikipedia"
+                for row in cred_rows)
+        and _sig(morpheme.split_word("cred"))
+        == [("cred", "whole", True)])
+    # Scratch trees carrying the REAL loader + REAL artifacts.
+    scratch16 = tempfile.mkdtemp(prefix="lm2_s16_")
+    try:
+        md16 = os.path.join(scratch16, "form", "mandell")
+        os.makedirs(md16)
+        open(os.path.join(scratch16, "form", "__init__.py"),
+             "w").close()
+        open(os.path.join(md16, "__init__.py"), "w").close()
+        real_files = ("morpheme.py", "lm_table.py",
+                      "lm0_census_v1.json", "lm_table_v1.json",
+                      "lm_table_v1.collisions.json",
+                      "lm_table_v2.json",
+                      "lm_table_v2.collisions.json")
+        for f in real_files:
+            shutil.copy(os.path.join(shipped_md, f),
+                        os.path.join(md16, f))
+        driver16 = os.path.join(scratch16, "driver16.py")
+        with open(driver16, "w", encoding="utf-8") as f:
+            f.write(_S16_DRIVER)
+
+        def _run16(mode, words=None):
+            cmd = [sys.executable, driver16, scratch16, mode]
+            if words is not None:
+                cmd.append(json.dumps(words))
+            proc = subprocess.run(
+                cmd, capture_output=True, text=True, cwd=scratch16,
+                env={**os.environ, "PYTHONPATH": scratch16})
+            if proc.returncode != 0:
+                return {"driver_error": proc.stderr[-400:]}
+            return json.loads(proc.stdout.strip().splitlines()[-1])
+
+        ok16 = _run16("biology")
+        rec("S16 scratch tree (real loader, real pair): biology "
+            "composes identically to the in-process parse",
+            ok16.get("pieces")
+            == [["bio", "prefix", True], ["logy", "root", True]])
+        cpath16 = os.path.join(md16, "lm_table_v2.collisions.json")
+        with open(cpath16, encoding="utf-8") as f:
+            ctxt16 = f.read()
+        i16 = ctxt16.find("dell")
+        with open(cpath16, "w", encoding="utf-8") as f:
+            f.write(ctxt16[:i16] + "z" + ctxt16[i16 + 1:])
+        bad16 = _run16("biology")
+        rec("S16 corrupted collisions member: PairInconsistent"
+            "Error propagates out of split_word (fail-closed, no "
+            "silent v1 fallback)",
+            bad16.get("error") == "PairInconsistentError")
+        shutil.copy(os.path.join(shipped_md,
+                                 "lm_table_v2.collisions.json"),
+                    cpath16)
+        tpath16 = os.path.join(md16, "lm_table_v2.json")
+        with open(tpath16, encoding="utf-8") as f:
+            ttxt16 = f.read()
+        # Corrupt INSIDE the hashed region: the loader binds the
+        # CANONICAL ROWS bytes, so flip one letter in the last
+        # row's stratum value (JSON stays valid; the rows hash
+        # no longer matches the pair binding).
+        j16 = ttxt16.rfind("external_wikipedia")
+        with open(tpath16, "w", encoding="utf-8") as f:
+            f.write(ttxt16[:j16] + "external_zikipedia"
+                    + ttxt16[j16 + len("external_wikipedia"):])
+        bad16b = _run16("biology")
+        rec("S16 corrupted table member: PairInconsistentError "
+            "propagates the same way",
+            bad16b.get("error") == "PairInconsistentError")
+        for f in ("lm_table_v2.json",
+                  "lm_table_v2.collisions.json"):
+            os.remove(os.path.join(md16, f))
+        delta16 = _run16("delta", sorted(_V1_DELTA))
+        rec("S16 v2 absent (real loader): every _V1_DELTA word "
+            "takes its V1-table derivation -- the integrated "
+            "delta is the table, not the code",
+            all(delta16.get(w)
+                == [[p, k, r] for p, k, r in expected]
+                for w, expected in _V1_DELTA.items()))
+    finally:
+        shutil.rmtree(scratch16, ignore_errors=True)
 
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
