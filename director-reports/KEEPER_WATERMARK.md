@@ -1,12 +1,10 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-12 07:33 CST  
-**UTC approx**: 2026-11-12T13:33:00Z
+**Last cycle**: 2026-11-12 12:18 CST  
+**UTC approx**: 2026-11-12T18:18:00Z
 
 ## Items ruled this cycle
-- PR #400 / Register reconciliation — **CONFIRM (scoped)** on both proposed credits: MWL 148 C7.Schema/DD-29 and MWL 183 LM-2 Splitter, each limited to the demonstrated surface. Headline 38/180 takes effect on joint authority confirmation of this PR.
-- PR #401 / C7.Profile — **CONFIRM (scoped, contingent on campaign)**. BENCHMARK-only v1 focused evidence holds; campaign still owed.
-- Prior #398 contingent CONFIRM stands.
+- Deep Cycle pass complete. Full-queue positions published (no change on ripe items awaiting named evidence). No new binding dispositions. Open heads #401 (prior stamp) and #405 stamped scoped CONFIRM (pre-stamp / evidence gap named). Scoreboard reconciled to 38/180.
 
 ## Trailing ledger
 - remaining: 2 (DD-18, Q-DD42.1)
