@@ -26,8 +26,16 @@ Contract (plan §12.38a DD-39 RESOLVED BY ACE + §14 C7 acceptance):
   standalone operation exists); it is not a peer stage and cannot
   be selected on its own.
 - The largest-share stage is NAMED as an observation
-  ("largest: <stage> <pct>%"); v1 carries NO normative threshold
-  verdict (Q-C7P.5 / Q-ACE-C7P.1 stay routed to the authorities).
+  ("largest: <stage> <pct>%"); share alone is never a verdict.
+- DRAGGING is defined by Ace (Q-ACE-C7P.1 ANSWERED 2026-11-12):
+  "Dragging occurs when lag affects the functionality or the
+  capability of anything, any process. Otherwise it's not
+  dragging." The report's `dragging` list names only stages
+  whose lag DEMONSTRABLY IMPAIRED function — in v1, a stage
+  that FAILED by raising a timeout-class error. A clean stage
+  with the largest share is NOT dragging (pinned); a stage
+  that fails for a non-timing reason is FAILED, not dragging
+  (pinned). No share threshold exists (Q-C7P.5 resolved).
 - Timings are RECEIPT-ONLY in v1 (Q-C7P.2 default (b)): no new
   timings store is built; the receipt itself carries the full
   per-stage timings. Kept-timings is a named follow-up.
@@ -347,9 +355,13 @@ def smoke() -> bool:
             f"setup: {type(e).__name__}: {e}")
     p = _program("C7ProfileT8B")
     res = execute_seed(p, "49[Profile]")
+    # Amended in the Q-ACE-C7P.1 correction: the original pin also
+    # required the WORD "dragging" to be absent, pinning the
+    # pre-ruling default. Ace's ruling makes the dragging line
+    # mandatory; the surviving pin is that no share THRESHOLD
+    # verdict exists. Dragging semantics are pinned in section 12.
     rec("t8_no_threshold_verdict",
-        not any("threshold" in m.lower() or "dragging" in m.lower()
-                for m in _msgs(res))
+        not any("threshold" in m.lower() for m in _msgs(res))
         and (res.get("profile_report") or {}).get("verdict") == "COMPLETE",
         str(_msgs(res))[:200])
 
@@ -406,6 +418,72 @@ def smoke() -> bool:
         str((rs.get("schema_board") or {}).get("verdict")))
     rec("t11_status_unchanged", len(p.status()) == 32,
         f"{len(p.status())} keys")
+
+    # -- 12. Dragging (Ace's definition, Q-ACE-C7P.1 answered):
+    #        lag that impaired function/capability — never share.
+    p = _program("C7ProfileT12")
+    res = execute_seed(p, "49[Profile]")
+    rep12 = res.get("profile_report") or {}
+    rec("t12_clean_largest_not_dragging",
+        rep12.get("dragging") == []
+        and (rep12.get("largest_stage") or {}).get("name") == "growth",
+        f"dragging={rep12.get('dragging')} "
+        f"largest={rep12.get('largest_stage')}")
+    rec("t12_dragging_line_none_wording",
+        any(m.startswith("  dragging: none") and "impaired function" in m
+            for m in _msgs(res)),
+        str([m for m in _msgs(res) if "dragging" in m])[:200])
+    try:
+        pb = _board_mod()
+        orig_pulse = pb.STAGE_FUNCS["pulse"]
+
+        def _timeout_pulse(prog, ctx):
+            raise TimeoutError(
+                "bounded wait exhausted after 5.00s (synthetic double)")
+
+        pb.STAGE_FUNCS["pulse"] = _timeout_pulse
+        try:
+            p = _program("C7ProfileT12B")
+            res = execute_seed(p, "49[Profile]")
+        finally:
+            pb.STAGE_FUNCS["pulse"] = orig_pulse
+        rep12b = res.get("profile_report") or {}
+        st12b = _stages(rep12b)
+        drag12b = rep12b.get("dragging") or []
+        rec("t12_timeout_stage_is_dragging",
+            [d.get("name") for d in drag12b] == ["pulse"]
+            and "TimeoutError" in (drag12b[0].get("reason") or "")
+            and (st12b.get("pulse") or {}).get("status") == "FAILED"
+            and rep12b.get("verdict") == "PARTIAL"
+            and any(m.startswith("  dragging: pulse (")
+                    for m in _msgs(res)),
+            f"dragging={drag12b} verdict={rep12b.get('verdict')}")
+    except Exception as e:
+        rec("t12_timeout_stage_is_dragging", False,
+            f"setup: {type(e).__name__}: {e}")
+    try:
+        pb = _board_mod()
+        orig_save12 = pb.STAGE_FUNCS["save"]
+
+        def _bomb12(prog, ctx):
+            raise RuntimeError("c7profile bomb (non-timing)")
+
+        pb.STAGE_FUNCS["save"] = _bomb12
+        try:
+            p = _program("C7ProfileT12C")
+            res = execute_seed(p, "49[Profile]")
+        finally:
+            pb.STAGE_FUNCS["save"] = orig_save12
+        rep12c = res.get("profile_report") or {}
+        st12c = _stages(rep12c)
+        rec("t12_nontiming_failure_not_dragging",
+            rep12c.get("dragging") == []
+            and (st12c.get("save") or {}).get("status") == "FAILED",
+            f"dragging={rep12c.get('dragging')} "
+            f"save={st12c.get('save')}")
+    except Exception as e:
+        rec("t12_nontiming_failure_not_dragging", False,
+            f"setup: {type(e).__name__}: {e}")
 
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)

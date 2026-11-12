@@ -47,10 +47,20 @@ this slice, each routed in the circuit report):
   timed run, and printed as its own line. Stages + overhead +
   unaccounted reconcile to the total BY CONSTRUCTION:
   unaccounted is the remainder, printed, never rounded away.
-- LARGEST STAGE NAMED (Q-C7P.5 default): the receipt names the
+- LARGEST STAGE NAMED (Q-C7P.5): the receipt names the
   largest-share timed stage as an OBSERVATION ("largest:
-  <stage> <pct>%"). V1 carries NO normative threshold verdict;
-  the needle's threshold is Q-ACE-C7P.1, routed, not invented.
+  <stage> <pct>%"). Share is visibility, never a verdict.
+- DRAGGING (Q-C7P.5 RESOLVED by Ace's answer to Q-ACE-C7P.1,
+  2026-11-12): "Dragging occurs when lag affects the
+  functionality or the capability of anything, any process.
+  Otherwise it's not dragging." The report therefore carries
+  a `dragging` list: stages whose lag DEMONSTRABLY IMPAIRED
+  function in this run. V1's only honest impairment evidence
+  is time-attributable failure — a stage that FAILED by
+  raising a timeout-class error (its bounded wait/time budget
+  ran out). A stage that fails for a non-timing reason is
+  FAILED, not dragging; a stage with a huge share and a clean
+  completion is NEVER dragging. No share threshold exists.
 - RECEIPT-ONLY TIMINGS (Q-C7P.2 default (b)): no timings store
   is built in v1; the receipt itself carries the full per-stage
   timings. Kept timings (change over time) are a named
@@ -148,6 +158,30 @@ STAGE_FUNCS: Dict[str, Callable[[Any, Dict[str, Any]], str]] = {
 EMBEDDING_NOTE = (
     "OFF-by-design — embedding needs a docked Psalm (Dell 47 "
     "binding); the standalone benchmark never contacts a provider")
+
+# Timeout-class error names: the failure IS the exhaustion of a
+# time budget (a bounded wait / deadline). Builtin TimeoutError
+# also covers the asyncio / socket / concurrent.futures aliases
+# (same class in modern Python, same __name__ regardless);
+# TimeoutExpired is subprocess's distinct timeout class. Per
+# Ace's definition these are the only v1 failures attributable
+# to lag itself; any other FAILED stage failed for a non-timing
+# reason and is not dragging.
+_TIMEOUT_ERROR_CLASSES = frozenset({"TimeoutError", "TimeoutExpired"})
+
+
+def _dragging_entries(stages: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+    """Ace's dragging rule: lag that impaired function or
+    capability. In v1 that is evidenced ONLY by a stage whose
+    failure is time-attributable (timeout-class). Share plays
+    no part: a slow-but-clean stage is never listed."""
+    out: List[Dict[str, str]] = []
+    for s in stages:
+        if s["status"] != "FAILED":
+            continue
+        if s.get("error_class") in _TIMEOUT_ERROR_CLASSES:
+            out.append({"name": s["name"], "reason": s["note"]})
+    return out
 
 
 # ------------------------------------------------------------------
@@ -265,6 +299,7 @@ def run_profile_benchmark(only_stage: Optional[str] = None) -> Dict[str, Any]:
                     entry = {"name": name, "status": "FAILED",
                              "seconds": time.perf_counter() - t0,
                              "share": None,
+                             "error_class": type(e).__name__,
                              "note": f"{type(e).__name__}: {e}"[:160]}
                 stages.append(entry)
                 if name == "place":
@@ -293,6 +328,7 @@ def run_profile_benchmark(only_stage: Optional[str] = None) -> Dict[str, Any]:
     if timed:
         top = max(timed, key=lambda s: s["seconds"])
         largest = {"name": top["name"], "share": top["share"]}
+    dragging = _dragging_entries(stages)
     if error:
         verdict = "FAILED"
     elif failed:
@@ -336,6 +372,13 @@ def run_profile_benchmark(only_stage: Optional[str] = None) -> Dict[str, Any]:
             f"{(largest['share'] or 0) * 100:.1f}%")
     else:
         lines.append("  largest: none (no stage timed)")
+    if dragging:
+        for d in dragging:
+            lines.append(f"  dragging: {d['name']} ({d['reason']})")
+    else:
+        lines.append(
+            "  dragging: none — dragging is lag that impaired "
+            "function or capability; no stage's lag did")
     if cleanup_error:
         lines.append(f"  warning: {cleanup_error}")
 
@@ -360,6 +403,7 @@ def run_profile_benchmark(only_stage: Optional[str] = None) -> Dict[str, Any]:
         "unaccounted_seconds": unaccounted,
         "total_seconds": total,
         "largest_stage": largest,
+        "dragging": dragging,
         "error": error,
         "cleanup_error": cleanup_error,
         "lines": lines,
