@@ -718,7 +718,8 @@ DEEP_NOTES: Dict[int, str] = {
          ":: empty') — and notes nothing itself; a "
          "'replay' label runs replay_exec(n) for "
          "real instead."),
-    49: ("C7.Profile (DD-39): Profile is the "
+    49: ("D1 circuit 19 DEEP NOTE, as rebuilt by "
+         "C7.Profile (DD-39): Profile is the "
          "speedometer — a deliberate BENCHMARK on "
          "disposable state timing the named stages "
          "place/pulse/growth/save/load with a "
