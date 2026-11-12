@@ -1,13 +1,15 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-12 12:18 CST  
-**UTC approx**: 2026-11-12T18:18:00Z
+**Last cycle**: 2026-11-12 17:30 CST  
+**UTC approx**: 2026-11-12T23:30:00Z
 
 ## Items ruled this cycle
-- Deep Cycle pass complete. Full-queue positions published (no change on ripe items awaiting named evidence). No new binding dispositions. Open heads #401 (prior stamp) and #405 stamped scoped CONFIRM (pre-stamp / evidence gap named). Scoreboard reconciled to 38/180.
+- Desk :30. No new merges. No new final-check receipts. Trailing ledger restated (0 discharged). New head: #398 CONFIRM (scoped) at b5ee15c (campaign 279/279 + CI terminal verified). Prior stamps current. #401 already stamped at 33c9029.
 
 ## Trailing ledger
+- discharged this run: 0
 - remaining: 2 (DD-18, Q-DD42.1)
+- gaps: second-cert still trailing on both; awaiting item-specific evidence or Director ruling.
 
 ## Automation posture
 Desk :30 / Deep :00 healthy. No stall.
