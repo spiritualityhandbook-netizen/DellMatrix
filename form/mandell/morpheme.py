@@ -8,7 +8,7 @@ Does not reprogram host BPE.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import json
 import os
 import re
@@ -400,6 +400,233 @@ def split_word(word: str) -> Dict:
         return _lm2_receipt(word, norm, pieces, False)
     return _lm2_receipt(word, norm, _lm2_parse_token(norm, st),
                         norm in st["census"])
+
+
+# ------------------------------------------------------------------
+# LM-3 THE COMPOSER (LatinMandell plan section 15, circuit LM-3)
+#
+# compose_word() is the STACK + CLASSIFY + MAP steps of the plan
+# formula PARSE = SPLIT x STACK x CLASSIFY x MAP, built directly
+# on split_word's receipt: pieces arrive IN PARSE ORDER with
+# their STACK roles (kind: prefix aims, root carries, suffix
+# lands), the FULL precedence-ranked sense rows, the quarantine
+# annotations, and the per-row lineage fields. The composer adds
+# NO table access, NO new ranking, and NO new authority:
+#
+# - GOVERNING SENSE: a piece's governing row is rows[0] of its
+#   split-receipt senses -- the ONE existing selector
+#   (lm_table.PRECEDENCE) already ordered them. The composer
+#   never re-derives position from the governing row (position
+#   was settled at split time under _lm2_position_eligible) and
+#   never consults substring rows: only pieces the splitter
+#   actually produced are composition material ('incredible':
+#   lookup('cred') can see a sense, but 'cred' is not a piece of
+#   the parse, so its sense composes nothing).
+# - STACK: the gloss joins governing senses VERBATIM with the
+#   existing " · " convention; UNRESOLVED pieces render as
+#   their raw text in brackets, named in place, never dropped.
+#   The template contributes only role punctuation -- no
+#   connective prose is generated. gloss_state is derived, not
+#   scored: COMPOSED (every piece resolved), PARTIAL (>=1
+#   resolved and >=1 UNRESOLVED), UNRESOLVED (none resolved ->
+#   gloss is None: SPLIT found nothing to stack, and the
+#   multiplicative law forbids a fabricated product).
+# - CURATED (Q-LM3.1 proposed rule, pending Director ruling):
+#   where latinmandell.root_of returns a genuine whole-word
+#   entry (customs or the 53 ROOTS -- Ace's pure meanings by
+#   design, R14), it is reported as `curated` and governs the
+#   word's Dell; the stack is still computed and shown beside
+#   it, disagreements printed, never hidden. root_of's DERIVED
+#   paths (the -tion/-ible suffix hints and hyphen morphology,
+#   recognizable by their "morphology" key) are readings, not
+#   curated entries, and never govern -- the -tion hint is
+#   exactly the pseudo-gloss LM-3 exists to replace.
+# - MAP (PROJECTION discipline): Dell candidates derive ONLY
+#   from pieces whose governing row carries a dell_ref (today
+#   exactly the 53 ace_seed bindings; external rows carry
+#   none). A candidate is a reading, not a lookup claim.
+#   Ranking is a presentation order over already-governed rows:
+#   the contributing row's precedence_rank, then root/whole
+#   pieces before affixes, then parse order. Distinct Dells:
+#   exactly one -> THE candidate (ambiguity False); more ->
+#   ambiguity True, dell None; none -> ambiguity
+#   "no_candidate", dell None. A quarantined
+#   (position_unresolved) piece never contributes a candidate,
+#   though its governing SENSE may still stack -- quarantine
+#   excludes position, never visibility (LM-2 law).
+# - CLASSIFY (word level): a census word classifies by its LM-0
+#   categories; a word with >=1 contributing content piece is
+#   FUNCTION; otherwise UNRESOLVED. Sentence-level spine
+#   assembly is LM-4 scope (Q-LM3.3).
+# - LINEAGE (Q-B2 law): lineage entries are the GOVERNING rows
+#   only, one per contributing piece; external entries carry
+#   source_revid + provenance source_file + license.
+#   lineage_class: DERIVED_ADAPTATION when >=1 governing row is
+#   external_wikipedia (a stack composed in whole or in part
+#   from external glosses, distributed under CC BY-SA 4.0 with
+#   attribution), INDEPENDENT otherwise. UNCHANGED_QUOTE never
+#   applies to a stack. The vocabulary follows the Q-B2 boundary
+#   record; lm1_import.classify_export is a build-time bulk
+#   export classifier for row sets and is deliberately NOT
+#   reused here (its own docstring reserves LM-2/LM-3
+#   composition lineage as a separate circuit).
+# - HONESTY SCORES: accounted + morpheme_resolved ride the
+#   split receipt UNCHANGED. No blended confidence is minted.
+# - FAIL-CLOSED: compose_word calls split_word, so a
+#   PairInconsistentError from the loader propagates out of the
+#   composer exactly as out of the splitter.
+# - latinmandell.explain / format_explain do NOT adopt the
+#   composer in this circuit (Q-LM3.4 proposed); their behavior
+#   is unchanged.
+# ------------------------------------------------------------------
+
+_LM3_STRATUM_EXTERNAL = "external_wikipedia"
+_LM3_KIND_TIER = {"root": 0, "whole": 0, "prefix": 1, "suffix": 2}
+
+
+def _lm3_curated(word: str) -> Optional[Dict]:
+    """The genuine curated whole-word entry for `word`, or None.
+
+    root_of() also returns DERIVED readings (suffix hints and
+    hyphen morphology); those carry a "morphology" key and are
+    not curated entries, so they never govern. Customs and the
+    53 ROOTS hits carry no such key.
+    """
+    try:
+        try:
+            from form.mandell import latinmandell
+        except ImportError:  # direct-script fallback
+            import latinmandell
+        hit = latinmandell.root_of(word)
+    except Exception:
+        return None
+    if not hit or "morphology" in hit:
+        return None
+    return {"sense": hit.get("sense"), "dell": hit.get("dell"),
+            "la": hit.get("la"), "custom": bool(hit.get("custom"))}
+
+
+def compose_word(word: str) -> Dict:
+    """LM-3 composition of one word. See the LM-3 contract above.
+
+    Returns {word, normalized, pieces (the split receipt's
+    pieces, each extended with `governing`: {sense, stratum,
+    precedence_rank} or None), gloss, gloss_state, accounted,
+    morpheme_resolved, curated, dell_candidates, dell,
+    ambiguity, lineage, lineage_class, classify, census}.
+    """
+    split = split_word(word)
+    pieces: List[Dict] = []
+    lineage: List[Dict] = []
+    raw_candidates: List[Dict] = []
+    gloss_parts: List[str] = []
+    contributing = 0
+    for idx, piece in enumerate(split["pieces"]):
+        out = dict(piece)
+        governing = None
+        if piece.get("resolved") and piece.get("senses"):
+            row = piece["senses"][0]
+            if row.get("sense"):
+                governing = {
+                    "sense": row["sense"],
+                    "stratum": row.get("stratum"),
+                    "precedence_rank": row.get("precedence_rank"),
+                }
+                entry = {"piece": piece["piece"],
+                         "stratum": row.get("stratum"),
+                         "precedence_rank": row.get("precedence_rank")}
+                if row.get("stratum") == _LM3_STRATUM_EXTERNAL:
+                    entry["source_revid"] = row.get("source_revid")
+                    entry["source_file"] = (
+                        row.get("provenance") or {}).get("source_file")
+                    entry["license"] = row.get("license")
+                lineage.append(entry)
+                if (row.get("dell_ref") is not None
+                        and not piece.get("position_unresolved")):
+                    raw_candidates.append({
+                        "dell": row["dell_ref"],
+                        "via_piece": piece["piece"],
+                        "via_stratum": row.get("stratum"),
+                        "rank": row.get("precedence_rank"),
+                        "_tier": _LM3_KIND_TIER.get(piece["kind"], 3),
+                        "_idx": idx,
+                    })
+        out["governing"] = governing
+        pieces.append(out)
+        if governing is not None:
+            contributing += 1
+            gloss_parts.append(governing["sense"])
+        else:
+            gloss_parts.append("[%s]" % piece["piece"])
+
+    total = len(split["pieces"])
+    if contributing == 0:
+        gloss, gloss_state = None, "UNRESOLVED"
+    elif contributing == total:
+        gloss, gloss_state = " · ".join(gloss_parts), "COMPOSED"
+    else:
+        gloss, gloss_state = " · ".join(gloss_parts), "PARTIAL"
+
+    # MAP candidates: dedupe per Dell keeping the best-ranked
+    # contribution, then present in (rank, kind tier, parse
+    # order) -- a presentation order over governed rows only.
+    by_dell: Dict[Any, Dict] = {}
+    for cand in raw_candidates:
+        key = (cand["rank"], cand["_tier"], cand["_idx"])
+        cur = by_dell.get(cand["dell"])
+        if cur is None or key < (cur["rank"], cur["_tier"], cur["_idx"]):
+            by_dell[cand["dell"]] = cand
+    candidates = sorted(
+        by_dell.values(),
+        key=lambda c: (c["rank"], c["_tier"], c["_idx"]))
+    dell_candidates = [
+        {"dell": c["dell"], "via_piece": c["via_piece"],
+         "via_stratum": c["via_stratum"], "rank": c["rank"]}
+        for c in candidates]
+    if not dell_candidates:
+        ambiguity: Any = "no_candidate"
+    elif len(dell_candidates) == 1:
+        ambiguity = False
+    else:
+        ambiguity = True
+
+    curated = _lm3_curated(word)
+    if curated is not None and curated.get("dell") is not None:
+        dell = curated["dell"]
+    elif len(dell_candidates) == 1:
+        dell = dell_candidates[0]["dell"]
+    else:
+        dell = None
+
+    if split["census"] and split["pieces"]:
+        classify: Any = list(split["pieces"][0].get("categories") or [])
+    elif contributing:
+        classify = "FUNCTION"
+    else:
+        classify = "UNRESOLVED"
+
+    lineage_class = (
+        "DERIVED_ADAPTATION"
+        if any(e["stratum"] == _LM3_STRATUM_EXTERNAL for e in lineage)
+        else "INDEPENDENT")
+
+    return {
+        "word": split["word"],
+        "normalized": split["normalized"],
+        "pieces": pieces,
+        "gloss": gloss,
+        "gloss_state": gloss_state,
+        "accounted": split["accounted"],
+        "morpheme_resolved": split["morpheme_resolved"],
+        "curated": curated,
+        "dell_candidates": dell_candidates,
+        "dell": dell,
+        "ambiguity": ambiguity,
+        "lineage": lineage,
+        "lineage_class": lineage_class,
+        "classify": classify,
+        "census": split["census"],
+    }
 
 
 def smoke() -> bool:
