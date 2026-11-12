@@ -280,3 +280,158 @@ session and the authorities; nothing in this PR merges anything.
    main-session full campaign at the head, exact-head terminal CI,
    and the §32 fresh-mail transaction. Register row 184 stays OPEN
    until merged-main proof; narrow credit, if any, only after.
+
+## 11. CORRECTION — malformed boxed wall-key fail-open (Director review mail 1a1d0990c34b0d99, 2026-11-12)
+
+**Finding (Director, code inspection).** `_wall_key` returns `None`
+for BOTH (a) a genuinely unboxed unit and (b) a unit with
+`sandboxed=True` but `sandbox_id=None`/absent. `Plane.enhance_scope`
+refuses boxed membership in state (b) (its `u.sandboxed and
+u.sandbox_id` test falls through to the unboxed-peer list), but
+RingedGrowth's `None == None` equality ADMITTED the malformed unit
+as a wall-mate of genuinely unboxed peers — a fail-open boundary
+under malformed/restored state.
+
+**Reproduction verdict: REPRODUCED.** Five failing-first checks
+(F1–F5) were added to `form/gs4_sandbox_test.py` and run against the
+pre-correction head 119b58f. Verbatim failing output (suite 14/19):
+
+```
+  [FAIL] F1 malformed boxed unit is refused, never wall-mate of unboxed :: refused=[] proposals_touching_malf=5 pairs_scanned=15 excluded_cross=0
+  [FAIL] F2 malformed unit: no outside-token drift to or from it :: drift_from_malf=[]
+  [FAIL] F3 unknown sandbox_id is refused (fail-closed) :: refused=[] proposals_touching_ghost=0
+  [FAIL] F4 membership-inconsistent unit is refused; its claimed-mate pair never scores :: refused=[] stale_pair_proposals=1 pairs_scanned=7
+  [FAIL] F5 well-formed unboxed peers still grow beside refused units :: pairs_scanned=7 (6 = the pairs among the 4 unboxed units; stale_a's 4 cross-wall pairs excluded, stale_b refused outright)
+GS-4 SANDBOX: 14/19 checks passed
+```
+
+Reading of the reds, precisely: in the F1 field (one malformed unit
++ five unboxed), ALL 15 pairs scanned and **5 proposals carry the
+malformed unit in their parents** — it paired with unboxed peers
+exactly as the Director's inspection predicted. F2's red is
+entangled with F1's by construction (its conjunction requires zero
+malf-parented proposals at all; the drift sub-clause itself observed
+no drift offspring — `drift_from_malf=[]` — because in that field
+the malformed unit's pairs gated to Solstice crosses, not drift;
+the pairing admission is the leak, and F2 stays red until both
+halves hold). F3's red is the *silence*: the unknown-id unit paired
+with nobody in that run (its key isolates it by accident of
+equality), but no refusal existed — correction converts the
+accident into a guaranteed, receipted refusal. F4's red is a
+proposal parented `{stale_a, stale_b}`: the unit the Sandbox record
+does NOT list scored with its claimed mate. F5's red is F4's
+consequence (7 scanned vs 6 lawful).
+
+**State taxonomy (examined BEFORE fixing, against Plane's own
+code).** `Plane.box()` (plane.py:182-196) sets the unit fields and
+appends membership together; `Plane.unbox()` (:198-207) clears both
+sides together. Every permutation of the public box API was traced,
+including re-boxing a unit into a second sandbox (box() does not
+remove it from the first box's member_ids — the stale listing keeps
+the unit's CURRENT claim verified, and enhance_scope/graph_view key
+off the unit's current sandbox_id, so the stale listing is inert)
+and REPL group add/remove/delete (repl.py:1442/1448/1473 — all via
+box/unbox). **No box-API path produces a state where a unit's
+sandboxed/sandbox_id claim disagrees with its CURRENT box's
+membership.** The malformed states are therefore NOT canonically
+legitimate live states; they are corruption-class states that are
+nevertheless REACHABLE, through exactly these doors:
+
+- **S1 `sandboxed=True, sandbox_id=None`/empty/non-string** —
+  verbatim restore: `form/persist_rest.py:506-507` restores
+  `unit.sandboxed = bool(...)` and `unit.sandbox_id = u.get(...)`
+  with NO validation (blank_cube pack restore :63-64 identical).
+  A save whose unit record carries `sandboxed: true` with a null /
+  missing / empty id restores into S1 exactly. Canonical verdict on
+  this shape already exists: `form/mandell/unit_containment.py`
+  `_malformed_sandbox` (F1, Director review 2026-11-04) defines it
+  as malformed and refuses such endpoints outright.
+- **S2 `sandbox_id` names no Sandbox record** — restore rebuilds
+  `plane.sandboxes` ONLY from the saved `sandboxes` map
+  (persist_rest.py:512-519); a unit record referencing an id absent
+  from that map (hand-edited save, partially-written pair, older
+  save shape) restores into S2. (The reverse divergence — a Sandbox
+  record listing a unit whose flag is False — is inert for growth:
+  `_wall_key` reads the unit side, and the unboxed unit pairs as
+  unboxed, consistent with Plane.display/enhance_scope.)
+- **S3 membership inconsistency (unit claims box X; X's member_ids
+  omits it)** — the restore asymmetry produces it directly: unit
+  fields restore from the UNITS map (:506-507) while Sandbox records
+  rebuild from the SANDOXES map's members lists (:512-519) — two
+  independently-authored maps in one save; any divergence between
+  them restores into S3. Also producible by direct member_ids
+  record edits. Direction (ii) (record lists a unit that does not
+  claim the box) is inert for growth, per S2's note.
+
+So: legitimate through NO supported operation; reachable through
+restore of divergent saved state. The repair therefore refuses —
+it does not "repair" the state, invent membership, or collapse the
+unit to unboxed.
+
+**Repair (same circuit, wall-key logic only,
+`form/dell_matrix/ringed_growth.py`).**
+
+- `_malformed_boxed(plane, uid)` (new): True iff the unit claims
+  sandbox isolation (`sandboxed` truthy) AND its claim fails
+  verification against the canonical Plane box authority —
+  sandbox_id not a non-empty string (the unit_containment F1
+  definition, reused, not reinvented), OR no Sandbox record under
+  that id, OR the record's member_ids does not contain the unit.
+- In `run()`, per cycle, the malformed set is computed BEFORE the
+  wall-key equality test; any pair touching a malformed unit is
+  refused (never scored), counted in `pairs_excluded_malformed_box`.
+- Receipt (bounded, explicit, in the existing C-7 style): each step
+  receipt gains `pairs_excluded_malformed_box: N` and
+  `malformed_box_units_refused: [ids]` (also present, zero/empty, on
+  the no-live-ideas step); the run result gains the cross-cycle
+  total `pairs_excluded_malformed_box` and the run-union
+  `malformed_box_units_refused` list. Silence remains a violation.
+
+**Post-fix behavior (suite 19/19).** F1: `refused=['malf']`, 0
+proposals touch it, `pairs_scanned=10` (the five genuinely unboxed
+units' pairs — the malformed unit's 5 pairs refused). F3:
+`refused=['ghost']`, 0 proposals. F4: `refused=['stale_b']`,
+`stale_a` (listed member) NOT refused, claimed-mate pair never
+scores, `pairs_scanned=6`. All 14 prior checks unchanged and green.
+
+**Receipt counts on the corrected head.** Well-formed fields:
+`malformed_box_units_refused=[]` and
+`pairs_excluded_malformed_box=0` on every step and result — the
+unboxed-identity proof of §5 was re-run post-correction: the
+unboxed run's 10 proposal records are again identical to the
+pre-patch records in every field (pid, kind, label, words, parents,
+affinity, reason, origin, harmony, graph_coherence), gate counts
+and fog count identical; step receipts are identical modulo the
+added GS-4 keys, whose values on this field are 6-excluded (boxed
+run) / 0 (unboxed run) for cross-sandbox and 0 / empty for the
+malformed refusal on both runs.
+
+**Mutation control.** Real correction committed first (0405445);
+the fail-closed branch was then disabled by inverse edit
+(`malformed = set()` at the computation site): suite returned to
+EXACTLY the failing-first state — 14/19 with F1–F5 red and
+byte-identical details (proposals_touching_malf=5, pairs_scanned=15
+and 7). Reverted by inverse edit; `git diff` empty; suite re-run
+19/19 on the restored tree. **Killed.**
+
+**Focused regression at the corrected head.** DCC-XI..XV
+unmodified: dcc_xi, dcc_xii, dcc_xiii, dcc_xiv, dcc_xv,
+dcc_xv_cross_process — all GREEN. The §6 focused set re-run:
+growth_persistence, view_rooms_growth, growth_unit_identity,
+p3_r31_affinity_proof, p3_r35_integration_proof,
+p3_r36_graph_harmony_proof, resonance_lifecycle_gate,
+resonance_command, nursery_confirm_race, d1_recon1_scope,
+lm1_harvest (22), lm1_import (55), lm2_splitter (66), c7schema
+(33), d1_proof_cards, gs4_sandbox (19) — all GREEN; ringed_growth
+module self-test 3/3. Full campaign (fwd/twice/rev) remains a
+main-session step at the corrected head, per the review's own
+sequence.
+
+**Scope honesty.** The correction touches ONLY the wall-key /
+enumeration logic of `ringed_growth.py` plus the suite and this
+report. It does not change Plane, persist, or containment; the S2
+reverse divergence (record lists a non-claiming unit) is documented
+inert above and deliberately NOT acted on — no second authority, no
+state rewriting, no healing of saved state. U1/U2/U3 remain
+UNPROVEN (§8 unchanged). MWL 184 remains OPEN, no credit. CODE
+MERGE HOLD continues.
