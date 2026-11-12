@@ -27,14 +27,25 @@ it is not itself an import, a merge, or a certification.
 
 ## Terms, stated honestly (CC BY-SA 4.0)
 
-1. **Attribution (BY):** credit must be given — source named, license named,
-  changes indicated. Ace's instruction places the credit in the PROGRAM
-  CREDITS; the import circuit will also carry a machine-readable attribution
-  record (source, revision, license, retrieval date) beside the table.
-2. **ShareAlike (SA):** material built from the table and shared must be
-  shared under the same CC BY-SA 4.0 terms. The imported stratum stays a
-  segregated, source-labeled stratum (per Q-LM1.2 design) so the obligation
-  is traceable and does not silently spread to in-repo strata.
+1. **Attribution (BY):** credit must be given in a reasonable manner with
+  the distributed material — source/author community named, working
+  source/revision links, license URL, and changes indicated. Ace's
+  instruction places the credit in the PROGRAM CREDITS; the import circuit
+  will also carry a machine-readable attribution record (source, per-page
+  revisions, license, retrieval date) beside the table. The actual
+  per-page/source licenses and provenance are confirmed before any copying;
+  no presumption that every linked source is covered identically.
+2. **ShareAlike (SA):** ShareAlike can apply to adaptations of the licensed
+  material. The imported rows are kept as a segregated, source-labeled
+  stratum (Q-LM1.2) as an engineering safeguard: **segregation enables
+  traceability; downstream adaptations/distributions require separate
+  license assessment** (Director wording, mail 1a1cd2c1abd8f162).
+  Segregation is not claimed to legally confine all ShareAlike
+  consequences to that stratum in every downstream product or combined
+  output; collection/aggregation is distinguished from adaptation, and how
+  transformed rows, exports, generated derivative datasets, bundled
+  releases, and credits are licensed is defined in the import circuit's
+  boundary record, reviewed by the Director before execution.
 
 ## Scope limits that stand
 
@@ -51,10 +62,19 @@ it is not itself an import, a merge, or a certification.
   re-sequences.
 - Nothing in this ruling changes #294/#233/#308, DAF-09, or any other gate.
 
-## Next
+## Next — authority state as amended 2026-11-11 (evening)
 
-Director + Keeper: fold this ruling on your next passes; if either
-authority reads the license terms differently, a HOLD binds from issue and
-the import circuit does not start. Uni: no import work begins until this
-record has been visible to both authorities' cycles (or they acknowledge
-sooner in the record).
+- Ace ordered execution directly (main chat, 2026-11-11 18:34 CST: "Exe
+  architect", confirmed "That means execution").
+- Director (mail 1a1cd2c1abd8f162, 18:32 CST): Ace's policy permission
+  ACCEPTED; SCOPED RECORDS PASS for this record as amended; **IMPORT
+  EXECUTION HOLD** pending Keeper fold and Director review of a concrete
+  attribution/license/distribution boundary, plus standard circuit gates.
+  Q-LM1.1 answered as: permission yes, execution held for the boundary
+  review. LM-2 harvested-only remains first.
+- Keeper: scoped CONFIRM on this record (comment 6810769093; watermark
+  18:32 CST) — the Keeper fold the HOLD names is on record.
+- Uni: the build lane started under Ace's order was STOPPED the moment the
+  HOLD was folded; nothing was pushed or imported (fetched wikitext sits
+  only in a hidden evidence folder). Uni drafts the concrete boundary for
+  Director review; execution resumes only when the HOLD lifts.
