@@ -1,0 +1,6027 @@
+{
+ "entries": [
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-indefinite-one",
+     "section": "2G. Articles — promoted from FLUFF (R3)"
+    }
+   ],
+   "word": "a"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-on-board",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "aboard"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-about-topic-or-around",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "about"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-above-higher-than",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "above"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-side-by-side-with",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "abreast"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-absent-without",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "absent"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-according-to-basis-or-report",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "according to"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-result-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "accordingly"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-across-from-side-to-side",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "across"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-opposite-across-from",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "across from"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-time-after",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-after-in-time-or-behind",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "after"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-against-contact-or-opposition",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "against"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-ahead-before-or-in-front-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "ahead of"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-all-or-whole",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "all"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-aloft-above",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "aloft"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-along-length-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "along"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-together-with",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "along with"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-beside-alongside",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "alongside"
+  },
+  {
+   "categories": [
+    "FOCUS"
+   ],
+   "rows": [
+    {
+     "category": "FOCUS",
+     "meaning": "focus-add-same-kind",
+     "section": null
+    }
+   ],
+   "word": "also"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-contrast-despite",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "although"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-be-speaker-present",
+     "section": null
+    }
+   ],
+   "word": "am"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-amid-middle-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "amid"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-amid-middle-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "amidst"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-among-group",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "among"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-among-group",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "amongst"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-indefinite-one",
+     "section": "2G. Articles — promoted from FLUFF (R3)"
+    }
+   ],
+   "word": "an"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "join-both",
+     "section": "1A. Coordinating conjunctions"
+    }
+   ],
+   "word": "and"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-other-one",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "another"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-against-opposed-to",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "anti"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-any-or-no-particular",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "any"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-any-person",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "anybody"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-any-person",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "anyone"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-any-thing",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "anything"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-any-place",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "anywhere"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-apart-from-except-or-separate",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "apart from"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-regarding-topic",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "apropos"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-be-plural-or-hearer-present",
+     "section": null
+    }
+   ],
+   "word": "are"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-around-surrounding-or-near",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "around"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-as-role-time-cause-or-manner",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-as-role-or-capacity",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "as"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-extent-or-topic",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "as far as"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-as-for-topic",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "as for"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-as-if-manner-or-comparison",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "as if"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-while-and-if",
+     "section": null
+    }
+   ],
+   "word": "as long as"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "comparison-equal-count-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "as many … as"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "comparison-equal-amount-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "as much … as"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-as-of-from-date",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "as of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-as-per-according-to",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "as per"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-regarding-about",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "as regards"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-time-immediately-after",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "as soon as"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-as-if-manner-or-comparison",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "as though"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-as-to-about-or-concerning",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "as to"
+  },
+  {
+   "categories": [
+    "FOCUS"
+   ],
+   "rows": [
+    {
+     "category": "FOCUS",
+     "meaning": "focus-add-same-kind",
+     "section": null
+    }
+   ],
+   "word": "as well"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "comparison-equal-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "as … as"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-aside-from-except-or-besides",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "aside from"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-slanting-across",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "aslant"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-assume-that",
+     "section": null
+    }
+   ],
+   "word": "assuming"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-assume-that",
+     "section": null
+    }
+   ],
+   "word": "assuming that"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-astride-across-both-sides",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "astride"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-at-point",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "at"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-at-expense-of-cost",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "at the expense of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-on-top-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "atop"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-away-from-source",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "away from"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-except-for",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "bar"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "almost-reverse-with-small-margin",
+     "section": "4B. Partial / broad negatives — NEGATE-partial subclass (CONFIRMED, R5)"
+    }
+   ],
+   "word": "barely"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-except-unless",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "barring"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-be-operator",
+     "section": null
+    }
+   ],
+   "word": "be"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-cause",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "because"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-because-of-cause",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "because of"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-be-perfect-participle",
+     "section": null
+    }
+   ],
+   "word": "been"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-time-before",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-before-in-time-or-place",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "before"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-behind-at-back-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "behind"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-be-progressive-participle",
+     "section": null
+    }
+   ],
+   "word": "being"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-below-lower-than",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "below"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-beneath-under",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "beneath"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-beside-at-side-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "beside"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-add-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-in-addition-to-or-except",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "besides"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-between-two-or-more",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "between"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-beyond-farther-than",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "beyond"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-two-together",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "both"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "join-both-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "both … and"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "join-contrast",
+     "section": "1A. Coordinating conjunctions"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-except-for",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "but"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-counterfactual-without",
+     "section": null
+    }
+   ],
+   "word": "but for"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-by-agent-means-near-or-no-later-than",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "by"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-by-means-of-method",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "by means of"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-emphatic-certainly-not",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "by no means"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-by-way-of-route-or-method",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "by way of"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-can-ability-or-permission",
+     "section": null
+    }
+   ],
+   "word": "can"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-open-modal-pattern",
+     "section": null
+    }
+   ],
+   "word": "can/could/will/would — modal-question pattern"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-exact-number-pattern",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "cardinal numerals"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-certain-some-known",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "certain"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-at-home-or-business-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "chez"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-about-approximately-at",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "circa"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-concerning-about",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "concerning"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-result-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "consequently"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-against-in-opposition",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "contra"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-could-ability-possibility-or-polite",
+     "section": null
+    }
+   ],
+   "word": "could"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-counter-to-opposite",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "counter to"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-including-in-count",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "counting"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-with-combined-with",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "cum"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-dare-challenge-or-courage",
+     "section": null
+    }
+   ],
+   "word": "dare — modal use"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-despite-contrast",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "despite"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-do-support-past",
+     "section": null
+    }
+   ],
+   "word": "did"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-do-support-operator",
+     "section": null
+    }
+   ],
+   "word": "do"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-open-support-pattern",
+     "section": null
+    }
+   ],
+   "word": "do/does/did — question-support pattern"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-do-support-third-present",
+     "section": null
+    }
+   ],
+   "word": "does"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-double-two-times",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "double"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-down-direction-or-lower",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "down"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-due-to-cause",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "due to"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-during-through-time",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "during"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-each-separately",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "each"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-each-to-other",
+     "section": "2C. Reciprocals"
+    }
+   ],
+   "word": "each other"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-each-to-other-own",
+     "section": "2C. Reciprocals"
+    }
+   ],
+   "word": "each other's"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-effective-from-date",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "effective"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-confirmation-particle",
+     "section": null
+    }
+   ],
+   "word": "eh / huh — tag particles"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-one-of-two",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "either"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "choice-either-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "either … or"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-enough-sufficient",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "enough"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-before-in-time",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "ere"
+  },
+  {
+   "categories": [
+    "FOCUS"
+   ],
+   "rows": [
+    {
+     "category": "FOCUS",
+     "meaning": "focus-unexpected-or-scalar",
+     "section": null
+    }
+   ],
+   "word": "even"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-even-under",
+     "section": null
+    }
+   ],
+   "word": "even if"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-strong-contrast-despite",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "even though"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-every-separately-all",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "every"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-every-person",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "everybody"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-every-person",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "everyone"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-every-thing",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "everything"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-every-place",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "everywhere"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-except-excluding",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "except"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-except-for-exclusion",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "except for"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-except-excluding",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "excepting"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-excluding-not-counting",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "excluding"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-for-lack-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "failing"
+  },
+  {
+   "categories": [
+    "POINT",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-few-small-number",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "small-positive-not-many",
+     "section": "4B. Partial / broad negatives — NEGATE-partial subclass (CONFIRMED, R5)"
+    }
+   ],
+   "word": "few"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-fewer-smaller-number",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "fewer"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-sequence-last-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "finally"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-following-after-or-as-result",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "following"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-reason",
+     "section": "1A. Coordinating conjunctions"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-for-purpose-recipient-or-duration",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "for"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-for-sake-of-benefit-or-purpose",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "for the sake of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-from-source-origin",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "from"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-add-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "furthermore"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-given-that",
+     "section": null
+    }
+   ],
+   "word": "given"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-given-that",
+     "section": null
+    }
+   ],
+   "word": "given that"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-granted-that",
+     "section": null
+    }
+   ],
+   "word": "granted"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-granted-that",
+     "section": null
+    }
+   ],
+   "word": "granted that"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-have-perfect-past",
+     "section": null
+    }
+   ],
+   "word": "had"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-half-part",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "half"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "almost-reverse-degree-or-amount",
+     "section": "4B. Partial / broad negatives — NEGATE-partial subclass (CONFIRMED, R5)"
+    }
+   ],
+   "word": "hardly"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "time-immediate-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "hardly … when"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-have-perfect-third-present",
+     "section": null
+    }
+   ],
+   "word": "has"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-have-perfect-operator",
+     "section": null
+    }
+   ],
+   "word": "have"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-male-third-subject",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "he"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-result-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "hence"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-female-third-object-or-own-before-noun",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "her"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-female-third-own-standalone",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "hers"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-female-third-self",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "herself"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-male-third-object",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "him"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-male-third-self",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "himself"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-male-third-own",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "his"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-method-or-manner",
+     "section": null
+    }
+   ],
+   "word": "how"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-degree-pattern",
+     "section": null
+    }
+   ],
+   "word": "how + adjective/adverb"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-cause-informal",
+     "section": null
+    }
+   ],
+   "word": "how come"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-distance-or-extent",
+     "section": null
+    }
+   ],
+   "word": "how far"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-duration-or-length",
+     "section": null
+    }
+   ],
+   "word": "how long"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-count",
+     "section": null
+    }
+   ],
+   "word": "how many"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-amount-or-price",
+     "section": null
+    }
+   ],
+   "word": "how much"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-frequency",
+     "section": null
+    }
+   ],
+   "word": "how often"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-age",
+     "section": null
+    }
+   ],
+   "word": "how old"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-time-until",
+     "section": null
+    }
+   ],
+   "word": "how soon"
+  },
+  {
+   "categories": [
+    "LINK",
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-contrast-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    },
+    {
+     "category": "POINT",
+     "meaning": "point-back-any-manner-or-degree",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-degree-or-points-any-manner",
+     "section": null
+    }
+   ],
+   "word": "however"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-speaker-subject",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "i"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-open",
+     "section": null
+    }
+   ],
+   "word": "if"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-if-not",
+     "section": null
+    }
+   ],
+   "word": "if not"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "wish-or-regret-open",
+     "section": null
+    }
+   ],
+   "word": "if only"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-if-true",
+     "section": null
+    }
+   ],
+   "word": "if so"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-inside-or-within-time",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-accordance-with-rule",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in accordance with"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-addition-to-extra",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in addition to"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-in-case-precaution",
+     "section": null
+    }
+   ],
+   "word": "in case"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-case-of-condition-or-event",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in case of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-exchange-for-trade",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in exchange for"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-front-of-before",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in front of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-lieu-of-instead",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in lieu of"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-emphatic-manner-zero",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "in no way"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-purpose",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "in order that"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-place-of-instead",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in place of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-regarding-about",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in regard to"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-spite-of-despite",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in spite of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-terms-of-frame",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in terms of"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-if-event-happens",
+     "section": null
+    }
+   ],
+   "word": "in the event that"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-light-of-considering",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in the light of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-view-of-considering",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "in view of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-including-as-part",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "including"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-inside-within",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "inside"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-replacement-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "instead"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-instead-of-replacement",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "instead of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-into-entering-or-changing-to",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "into"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-be-third-present",
+     "section": null
+    }
+   ],
+   "word": "is"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-open-inversion-pattern",
+     "section": null
+    }
+   ],
+   "word": "is/are/was/were — inversion pattern"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-confirmation-pattern",
+     "section": null
+    }
+   ],
+   "word": "isn't it / aren't i / didn't you — tag-question pattern"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-thing-third-subject-or-object",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "it"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-form-no-clear-referent",
+     "section": "2F. Expletive / dummy forms — CONFIRMED POINT-form with NO-REFERENT flag (R7)"
+    }
+   ],
+   "word": "it — dummy/weather/time"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-thing-third-own-before-noun",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "its"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-thing-third-self",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "itself"
+  },
+  {
+   "categories": [
+    "FOCUS"
+   ],
+   "rows": [
+    {
+     "category": "FOCUS",
+     "meaning": "focus-exact-limit-or-recent",
+     "section": null
+    }
+   ],
+   "word": "just"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "comparison-parallel-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "just as … so"
+  },
+  {
+   "categories": [
+    "LINK",
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-less-minus",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    },
+    {
+     "category": "POINT",
+     "meaning": "point-less-smaller-amount",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "less"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-negative-purpose",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "lest"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-comparison-like",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-like-similar-to",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "like"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-similar-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "likewise"
+  },
+  {
+   "categories": [
+    "POINT",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-little-small-amount",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "almost-reverse-amount",
+     "section": "4B. Partial / broad negatives — NEGATE-partial subclass (CONFIRMED, R5)"
+    }
+   ],
+   "word": "little"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-many-large-number",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "many"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-may-permission-or-possibility",
+     "section": null
+    }
+   ],
+   "word": "may"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-speaker-object",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "me"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-time-parallel-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "meanwhile"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-might-possibility",
+     "section": null
+    }
+   ],
+   "word": "might"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-speaker-own-standalone",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "mine"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-minus-subtracted",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "minus"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-modulo-excepting-or-under-relation",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "modulo"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-more-greater-amount-or-number",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "more"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-add-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "moreover"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-most-greatest-part",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "most"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-much-large-amount",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "much"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-must-necessity-or-strong-inference",
+     "section": null
+    }
+   ],
+   "word": "must"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-speaker-own-before-noun",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "my"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-speaker-self",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "myself"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-clitic",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "n't"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-near-close-to",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "near"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-near-to-close",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "near to"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-need-necessity",
+     "section": null
+    }
+   ],
+   "word": "need — modal use"
+  },
+  {
+   "categories": [
+    "POINT",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-not-one-of-two",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-one-of-two",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "neither"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "join-negative-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "neither … nor"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-always",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "never"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "dismiss-or-reverse-importance",
+     "section": "4C. NEGATE boundary candidates"
+    }
+   ],
+   "word": "never mind"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-contrast-despite-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "nevertheless"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-next-beside",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "next"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-next-to-beside",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "next to"
+  },
+  {
+   "categories": [
+    "POINT",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-no-amount-or-instance",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-or-no-instance",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "no"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-continuing-state",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "no longer"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-additional-or-continuing",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "no more"
+  },
+  {
+   "categories": [
+    "POINT",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-no-person",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-person-any",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "no one"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-time-completion-pair-opener",
+     "section": "4C. NEGATE boundary candidates"
+    }
+   ],
+   "word": "no sooner"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "time-immediate-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "no sooner … than"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-emphatic-refusal",
+     "section": "4C. NEGATE boundary candidates"
+    }
+   ],
+   "word": "no way"
+  },
+  {
+   "categories": [
+    "POINT",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-no-person",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-person-any",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "no-one"
+  },
+  {
+   "categories": [
+    "POINT",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-no-person",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-person-any",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "nobody"
+  },
+  {
+   "categories": [
+    "POINT",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-none-no-amount-or-one",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-amount-or-one",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "none"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-part-of-group",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "none of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-contrast-despite-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "nonetheless"
+  },
+  {
+   "categories": [
+    "LINK",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "join-negative-other",
+     "section": "1A. Coordinating conjunctions"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "join-reverse-other",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "nor"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "not"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-emphatic-degree-zero",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "not at all"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-required-inference",
+     "section": "4C. NEGATE boundary candidates"
+    }
+   ],
+   "word": "not necessarily"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-present-time",
+     "section": "4C. NEGATE boundary candidates"
+    }
+   ],
+   "word": "not now"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "focus-add-not-simple-reverse",
+     "section": "4C. NEGATE boundary candidates"
+    }
+   ],
+   "word": "not only"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "join-add-emphasis-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "not only … but also"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "weaken-or-reverse-claim",
+     "section": "4C. NEGATE boundary candidates"
+    }
+   ],
+   "word": "not really"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-completion-so-far",
+     "section": "4C. NEGATE boundary candidates"
+    }
+   ],
+   "word": "not yet"
+  },
+  {
+   "categories": [
+    "POINT",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-no-thing",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-thing-any",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "nothing"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-despite-contrast",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "notwithstanding"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-new-cause",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "now that"
+  },
+  {
+   "categories": [
+    "POINT",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-no-place",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-place-any",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "nowhere"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-of-part-source-or-belonging",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-off-away-from-or-not-on",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "off"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-offshore-away-from-shore",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "offshore"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-on-surface-topic-or-time",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "on"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-on-account-of-cause",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "on account of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-on-behalf-of-for-another",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "on behalf of"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-explicit-requirement",
+     "section": null
+    }
+   ],
+   "word": "on condition that"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-emphatic-never-permitted",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "on no account"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-on-basis-of-ground",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "on the basis of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-on-top-of-above-or-in-addition",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "on top of"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-once-after",
+     "section": null
+    }
+   ],
+   "word": "once"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-generic-person",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "one"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-each-to-other-group",
+     "section": "2C. Reciprocals"
+    }
+   ],
+   "word": "one another"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-each-to-other-group-own",
+     "section": "2C. Reciprocals"
+    }
+   ],
+   "word": "one another's"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-generic-person-own",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "one's"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-fraction-pattern",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "one-third"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-ones-substitute-plural",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "ones"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-generic-person-self",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "oneself"
+  },
+  {
+   "categories": [
+    "FOCUS"
+   ],
+   "rows": [
+    {
+     "category": "FOCUS",
+     "meaning": "focus-exclusive-or-limit",
+     "section": null
+    }
+   ],
+   "word": "only"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-only-under",
+     "section": null
+    }
+   ],
+   "word": "only if"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-onto-moving-to-surface",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "onto"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-opposite-facing",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "opposite"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "choice-either",
+     "section": "1A. Coordinating conjunctions"
+    }
+   ],
+   "word": "or"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-if-not-consequence",
+     "section": null
+    }
+   ],
+   "word": "or else"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-order-position-pattern",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "ordinal numerals"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-other-or-rest",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "other"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-other-ones",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "others"
+  },
+  {
+   "categories": [
+    "LINK",
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-negative-condition-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    },
+    {
+     "category": "CONDITION",
+     "meaning": "condition-if-not-consequence",
+     "section": null
+    }
+   ],
+   "word": "otherwise"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-ought-duty-or-expectation",
+     "section": null
+    }
+   ],
+   "word": "ought to"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-speaker-group-own-before-noun",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "our"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-speaker-group-own-standalone",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "ours"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-speaker-group-self",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "ourselves"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-out-outside-or-away",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "out"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-out-of-source-inside-or-lack",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "out of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-outside-exterior-to",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "outside"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-outside-of-exterior",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "outside of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-over-above-across-or-more-than",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "over"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-owing-to-cause",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "owing to"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-with-due-respect-to",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "pace"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-past-beyond-or-after",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "past"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-pending-until-or-awaiting",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "pending"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-per-each-or-by-means",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "per"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-plus-added-to",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "plus"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-after-in-time",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "post"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-before-in-time",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "pre"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-prior-to-before",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "prior to"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-for-in-support-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "pro"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-provided-that",
+     "section": null
+    }
+   ],
+   "word": "provided"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-provided-that",
+     "section": null
+    }
+   ],
+   "word": "provided that"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-providing-that",
+     "section": null
+    }
+   ],
+   "word": "providing"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-providing-that",
+     "section": null
+    }
+   ],
+   "word": "providing that"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-capacity-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "qua"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "almost-reverse-frequency",
+     "section": "4B. Partial / broad negatives — NEGATE-partial subclass (CONFIRMED, R5)"
+    }
+   ],
+   "word": "rarely"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "preference-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "rather … than"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-regarding-about",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "re"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-regarding-about",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "regarding"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-regarding-about",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "respecting"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-around-surrounding",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "round"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-same-identical",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "same"
+  },
+  {
+   "categories": [
+    "LINK",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-without-lacking",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "absence-not-having-formal",
+     "section": "4C. NEGATE boundary candidates"
+    }
+   ],
+   "word": "sans"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-except-for",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "save"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-except-for",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "saving"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "almost-reverse-degree-or-amount",
+     "section": "4B. Partial / broad negatives — NEGATE-partial subclass (CONFIRMED, R5)"
+    }
+   ],
+   "word": "scarcely"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "time-immediate-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "scarcely … when"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-given-cause",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "seeing as"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-given-cause",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "seeing that"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "almost-reverse-frequency",
+     "section": "4B. Partial / broad negatives — NEGATE-partial subclass (CONFIRMED, R5)"
+    }
+   ],
+   "word": "seldom"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-several-more-than-two",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "several"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-shall-future-or-obligation",
+     "section": null
+    }
+   ],
+   "word": "shall"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-female-third-subject",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "she"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-short-of-less-than",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "short"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-should-advice-expectation-or-condition",
+     "section": null
+    }
+   ],
+   "word": "should"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-similar-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "similarly"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-cause-or-time-from",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-since-from-time-or-cause",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "since"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-result",
+     "section": "1A. Coordinating conjunctions"
+    }
+   ],
+   "word": "so"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-while-and-if",
+     "section": null
+    }
+   ],
+   "word": "so long as"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-purpose-or-result",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "so that"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "degree-result-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "so … that"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-some-unspecified-amount-or-part",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "some"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-unspecified-person",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "somebody"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-unspecified-person",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "someone"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-unspecified-thing",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "something"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-unspecified-place",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "somewhere"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-under-formal",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "sub"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-subsequent-to-after",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "subsequent to"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-that-kind-or-degree",
+     "section": "2B. Demonstratives and deictic determiners"
+    }
+   ],
+   "word": "such"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "kind-result-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "such … that"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-suppose-that",
+     "section": null
+    }
+   ],
+   "word": "suppose"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-supposing-that",
+     "section": null
+    }
+   ],
+   "word": "supposing"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-supposing-that",
+     "section": null
+    }
+   ],
+   "word": "supposing that"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-comparison-after",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-than-comparison-after",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "than"
+  },
+  {
+   "categories": [
+    "LINK",
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-clause-content",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    },
+    {
+     "category": "POINT",
+     "meaning": "point-far-singular",
+     "section": "2B. Demonstratives and deictic determiners"
+    }
+   ],
+   "word": "that"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-known — the identifiable one",
+     "section": "2G. Articles — promoted from FLUFF (R3)"
+    }
+   ],
+   "word": "the"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "comparison-proportional-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    }
+   ],
+   "word": "the … the"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-third-group-or-unknown-own-before-noun",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "their"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-third-group-or-unknown-own-standalone",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "theirs"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-third-group-or-unknown-object",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "them"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-third-unknown-self",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "themself"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-third-group-self",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "themselves"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-sequence-next",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "then"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-far-place",
+     "section": "2F. Expletive / dummy forms — CONFIRMED POINT-form with NO-REFERENT flag (R7)"
+    }
+   ],
+   "word": "there — deictic place"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-form-place-opening-no-clear-referent",
+     "section": "2F. Expletive / dummy forms — CONFIRMED POINT-form with NO-REFERENT flag (R7)"
+    }
+   ],
+   "word": "there — existential"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-result-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "therefore"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-near-plural",
+     "section": "2B. Demonstratives and deictic determiners"
+    }
+   ],
+   "word": "these"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-third-group-or-unknown-subject",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "they"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-near-singular",
+     "section": "2B. Demonstratives and deictic determiners"
+    }
+   ],
+   "word": "this"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-far-plural",
+     "section": "2B. Demonstratives and deictic determiners"
+    }
+   ],
+   "word": "those"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-contrast-despite",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "though"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-multiplier-pattern",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "three times"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-through-passing-across-or-by-means",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "through"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-throughout-all-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "throughout"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-result-discourse",
+     "section": "1D. Conjunctive / discourse links — LINK-discourse subclass (CONFIRMED, R6)"
+    }
+   ],
+   "word": "thus"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-time-up-to",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-until-up-to-time",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "till"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-times-multiplied-by",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "times"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-to-destination-direction-or-recipient",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "to"
+  },
+  {
+   "categories": [
+    "FOCUS"
+   ],
+   "rows": [
+    {
+     "category": "FOCUS",
+     "meaning": "focus-add-same-kind",
+     "section": null
+    }
+   ],
+   "word": "too"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-concerning-about",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "touching"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-toward-in-direction-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "toward"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-toward-in-direction-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "towards"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-twice-two-times",
+     "section": "2E. Indefinite pronouns and determiner-like POINT forms"
+    }
+   ],
+   "word": "twice"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-under-below-or-subject-to",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "under"
+  },
+  {
+   "categories": [
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "NEGATE",
+     "meaning": "reverse-emphatic-no-case",
+     "section": "4A. Core negatives"
+    }
+   ],
+   "word": "under no circumstances"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-underneath-below",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "underneath"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-except",
+     "section": null
+    }
+   ],
+   "word": "unless"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-unlike-different-from",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "unlike"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-time-up-to",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    },
+    {
+     "category": "LINK",
+     "meaning": "link-until-up-to-time",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "until"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-to-formal-or-archaic",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "unto"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-up-direction-or-along",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "up"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-up-against-contact-or-opposition",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "up against"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-up-to-as-far-or-until",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "up to"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-on-formal",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "upon"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-speaker-group-object",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "us"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-used-to-past-habit",
+     "section": null
+    }
+   ],
+   "word": "used to"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-versus-against-or-compared-with",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "versus"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-via-by-way-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "via"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-place-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "vice"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-in-relation-to-or-facing",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "vis-à-vis"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-lacking-without",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "wanting"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-be-past-singular",
+     "section": null
+    }
+   ],
+   "word": "was"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-speaker-group-subject",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "we"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-be-past-plural-or-subjunctive",
+     "section": null
+    }
+   ],
+   "word": "were"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-thing-unspecified",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-for-thing",
+     "section": null
+    }
+   ],
+   "word": "what"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-purpose",
+     "section": null
+    }
+   ],
+   "word": "what for"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-hypothetical-case",
+     "section": null
+    }
+   ],
+   "word": "what if"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-any-thing",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-or-points-any-thing",
+     "section": null
+    }
+   ],
+   "word": "whatever"
+  },
+  {
+   "categories": [
+    "POINT",
+    "CONDITION",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-time",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "CONDITION",
+     "meaning": "condition-when-case-arises",
+     "section": null
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-for-time",
+     "section": null
+    }
+   ],
+   "word": "when"
+  },
+  {
+   "categories": [
+    "POINT",
+    "CONDITION",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-any-time",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "CONDITION",
+     "meaning": "condition-or-time-every-or-any-time",
+     "section": null
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-or-points-any-time",
+     "section": null
+    }
+   ],
+   "word": "whenever"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-place",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-for-place",
+     "section": null
+    }
+   ],
+   "word": "where"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-for-source-place",
+     "section": null
+    }
+   ],
+   "word": "where from"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-contrast",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "whereas"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-any-place",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-or-points-any-place",
+     "section": null
+    }
+   ],
+   "word": "wherever"
+  },
+  {
+   "categories": [
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "CONDITION",
+     "meaning": "condition-or-alternative-open",
+     "section": null
+    }
+   ],
+   "word": "whether"
+  },
+  {
+   "categories": [
+    "LINK",
+    "CONDITION"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "alternative-pair",
+     "section": "1C. Correlative pairs and paired constructions"
+    },
+    {
+     "category": "CONDITION",
+     "meaning": "condition-alternative-frame",
+     "section": null
+    }
+   ],
+   "word": "whether … or"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-thing-or-choice",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-for-choice",
+     "section": null
+    }
+   ],
+   "word": "which"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-any-choice",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-or-points-any-choice",
+     "section": null
+    }
+   ],
+   "word": "whichever"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-time-or-contrast",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "while"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-time-or-contrast",
+     "section": "1B. Subordinating and clause-linking conjunctions"
+    }
+   ],
+   "word": "whilst"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-person-subject",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-for-person",
+     "section": null
+    }
+   ],
+   "word": "who"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-any-person",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-or-points-any-person",
+     "section": null
+    }
+   ],
+   "word": "whoever"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-person-object",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-for-person-object",
+     "section": null
+    }
+   ],
+   "word": "whom"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-any-person-object",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-or-points-any-person-object",
+     "section": null
+    }
+   ],
+   "word": "whomever"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-own",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-for-owner-or-relation",
+     "section": null
+    }
+   ],
+   "word": "whose"
+  },
+  {
+   "categories": [
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "ASK",
+     "meaning": "asks-or-points-any-owner",
+     "section": null
+    }
+   ],
+   "word": "whosever"
+  },
+  {
+   "categories": [
+    "POINT",
+    "ASK"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-back-reason",
+     "section": "2D. Relative forms — POINT home, LINK use (CONFIRMED, R8)"
+    },
+    {
+     "category": "ASK",
+     "meaning": "asks-for-cause",
+     "section": null
+    }
+   ],
+   "word": "why"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-will-future-or-volition",
+     "section": null
+    }
+   ],
+   "word": "will"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-with-accompaniment-means-or-having",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "with"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-regarding-about",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "with regard to"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-with-respect-to-regarding",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "with respect to"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-with-exception-of-excluding",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "with the exception of"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-within-inside-or-before-limit",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "within"
+  },
+  {
+   "categories": [
+    "LINK",
+    "CONDITION",
+    "NEGATE"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-without-absence-or-not-having",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    },
+    {
+     "category": "CONDITION",
+     "meaning": "condition-counterfactual-absence",
+     "section": null
+    },
+    {
+     "category": "NEGATE",
+     "meaning": "absence-not-having",
+     "section": "4C. NEGATE boundary candidates"
+    }
+   ],
+   "word": "without"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "link-worth-value-of",
+     "section": "1E. Linking prepositions — contemporary/general inventory"
+    }
+   ],
+   "word": "worth"
+  },
+  {
+   "categories": [
+    "OPERATOR"
+   ],
+   "rows": [
+    {
+     "category": "OPERATOR",
+     "meaning": "function-would-conditional-polite-or-past-habit",
+     "section": null
+    }
+   ],
+   "word": "would"
+  },
+  {
+   "categories": [
+    "LINK"
+   ],
+   "rows": [
+    {
+     "category": "LINK",
+     "meaning": "join-contrast-still",
+     "section": "1A. Coordinating conjunctions"
+    }
+   ],
+   "word": "yet"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-far-visible",
+     "section": "2B. Demonstratives and deictic determiners"
+    }
+   ],
+   "word": "yon"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-far-place-or-visible",
+     "section": "2B. Demonstratives and deictic determiners"
+    }
+   ],
+   "word": "yonder"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-hearer-subject-or-object",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "you"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-hearer-own-before-noun",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "your"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-hearer-own-standalone",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "yours"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-hearer-self-singular",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "yourself"
+  },
+  {
+   "categories": [
+    "POINT"
+   ],
+   "rows": [
+    {
+     "category": "POINT",
+     "meaning": "point-hearer-self-plural",
+     "section": "2A. Personal and possessive pronoun paradigm"
+    }
+   ],
+   "word": "yourselves"
+  }
+ ],
+ "header": {
+  "artifact": "lm0_census_v1",
+  "generated_by": "form/lm2_census_build.py",
+  "note": "Confirmed LM-0 census (Ace-confirmed 2026-11-11). Multi-category membership is law (R8); the SS1F reservoir is UNCONFIRMED and excluded.",
+  "per_category": {
+   "ASK": 34,
+   "CONDITION": 34,
+   "FLUFF": 0,
+   "FOCUS": 6,
+   "LINK": 233,
+   "NEGATE": 37,
+   "OPERATOR": 27,
+   "POINT": 117
+  },
+  "rows": 488,
+  "source": "director-reports/LM0_CENSUS_CONFIRMED_2026-11-11.md",
+  "source_sha256": "c37adb098db942209b18e05ae9d9736fbee3b563532873f016a3474293da85c0",
+  "unique_words": 441
+ }
+}
