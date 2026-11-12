@@ -1279,5 +1279,12 @@
   "ids": "LM-2 / Q-LM2.1",
   "status": "COMPLETE",
   "block": "Plan §15 — LatinMandell"
+ },
+ {
+  "n": 184,
+  "title": "GS-4 Growth Sandbox Integrity / cross-wall enumeration — CONFIRMED sandbox-integrity defect, state OPEN, no completion credit: default RingedGrowth pair enumeration ignored Plane box walls (the wall entered only as _affinity's soft in_scope 0.2 penalty) and produced (a) two-parent Solstice proposals spanning the wall and (b) single-parent Equinox/Standstill drift offspring of boxed units carrying outside units' tokens under inside-only lineage; boxing changed nothing in default growth output (control-identical). Reproduced independently twice on merged main @074b30f (PR #403; PR #402 comment 6827580827); Keeper independently challenged and confirmed (comment 6828513382); Director scoped ACCEPTANCE mail 1a1d05d91f6401dc. Bounded repair AUTHORIZED by Director scope ruling mail 1a1d077edcbc82e2 (2026-11-12): wall-mate enumeration filter in form/dell_matrix/ringed_growth.py using the existing Plane box authority + receipted pairs_excluded_cross_sandbox count; unboxed output byte-for-byte, scope_ids / default-unset / affinity weights / DCC-XI..XV pins unchanged, no cross-wall bypass flag. Row stays OPEN until merged-main proof under Keeper final confirmation + Director final code disposition; U1 (post-growth mutation), U2 (docked-session synthesis), U3 (multi-cycle compounding) remain UNPROVEN limitations — not repaired, not counted as repaired.",
+  "ids": "GS-4 / PR #403 / PR #404",
+  "status": "OPEN",
+  "block": "Growth Selection — GS-4 (PR #402)"
  }
 ]

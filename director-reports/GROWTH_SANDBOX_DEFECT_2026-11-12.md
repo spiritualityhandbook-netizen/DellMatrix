@@ -248,3 +248,9 @@ scoped: scope_mode=contextual pairs_scanned=1 proposals=1 leaks=0
 === CONTRACT ASSERTIONS: 1 PASS / 3 FAIL ===
 VERDICT: DEFECT REPRODUCED
 ```
+
+---
+
+## Post-merge disposition (2026-11-12, union refresh onto main c0742ce)
+
+This report stands as the historical defect record; nothing above is rewritten. The defect it documents was repaired and the repair is MERGED via PR #405 (branch uni/gs4-repair-1112, corrected head 41e1556; merge commit c0742cedbdbc9bf7f4f2950815606f572f7625f8), with PR #404 merged as its ancestry. GS-4 campaign at the corrected head TERMINAL GREEN (fwd/twice/rev) and exact-head CI TERMINAL GREEN; merged-main verification passed (gs4 suite 19/19 on merged main). Register placement landed as MWL 184 'GS-4 Growth Sandbox Integrity / cross-wall enumeration' (OPEN / confirmed defect). MWL 184 completion credit is REQUESTED and PENDING authority ruling — NOT granted; row 184 remains OPEN. U1/U2/U3 remain UNPROVEN edges, tracked as follow-up probes.
