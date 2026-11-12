@@ -1,10 +1,10 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-12 16:20 CST  
-**UTC approx**: 2026-11-12T22:20:00Z
+**Last cycle**: 2026-11-12 17:30 CST  
+**UTC approx**: 2026-11-12T23:30:00Z
 
 ## Items ruled this cycle
-- Deep :00. Full-queue positions restated (no change, awaiting named evidence). No new final-check dispositions. Reconciliation: queue/board/watermark aligned at 38/181. Forward SWAT continued (advisory). Unclosed heads: #401 gap (33c9029 unstamped, evidence not independently verified); #398 pre-stamp pending terminal CI at b5ee15c. Prior stamps (#399/#402/#403/#406) current.
+- Desk :30. No new merges. No new final-check receipts. Trailing ledger restated (0 discharged). New head: #398 CONFIRM (scoped) at b5ee15c (campaign 279/279 + CI terminal verified). Prior stamps current. #401 already stamped at 33c9029.
 
 ## Trailing ledger
 - discharged this run: 0
