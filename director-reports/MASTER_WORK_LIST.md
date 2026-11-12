@@ -23,18 +23,18 @@ Data: master_work_list_items.json
 
 ## The count
 
-**PROGRESS: 36 / 179 COMPLETE = 20.1%**
+**PROGRESS: 38 / 180 COMPLETE = 21.1%**
 
 | Status | Items |
 |---|---|
-| COMPLETE | 36 |
+| COMPLETE | 38 |
 | MERGED_UNVERIFIED | 0 |
 | BUILT_HELD | 0 |
 | PARTIAL | 54 |
-| OPEN | 86 |
+| OPEN | 85 |
 | GATED | 3 |
 | NEEDS_OVERSEER | 0 |
-| **TOTAL (active)** | **179** |
+| **TOTAL (active)** | **180** |
 
 Outside active scope: 3 SANDBOXED items (parked by Ace,
 listed in their own block below; not counted in the total or the %).
@@ -261,7 +261,7 @@ parked items the 72 frame never counted.
 
 | # | Item | Source IDs | Status |
 |---|---|---|---|
-| 148 | Schema = the nervous system — read-only baseline distinguishing exists / connected / available and OFF-by-design / degraded / unknown; probing never mutates user work | DD-29 / C7.Schema | OPEN |
+| 148 | Schema = the nervous system — read-only baseline distinguishing exists / connected / available and OFF-by-design / degraded / unknown; probing never mutates user work [COMPLETE (scoped) 2026-11-12 — PROPOSED in the completion-register reconciliation PR; effective as authority-confirmed credit only on the authorities' confirmation of that PR: PR #397 MERGED 2e46272410d7bd6a262256b72d0fae3f9671858c (union head cd46c98); Director scoped PASS at e42f1ac (mail 1a1cfb3e5058e140) + conditional carry-forward to cd46c98 (mail 1a1cfbf8b93bc86f), conditions discharged; Keeper CONFIRM (scoped) at e42f1ac (6823464587) + refreshed at cd46c98 (6823706050); regression campaign 277/277 x3 TERMINAL GREEN at cd46c98; exact-head CI all-pass; merged-main verification on a fresh clone @2e46272: c7schema 33/33 + live 39[Schema]:: validate -> VALID, board 16/16 via execute_seed. DD-29 FIXED in this scope (defect dial 12 -> 13 FIXED / 3 GATED on confirmation). Scope = the read-only DD-29 board ONLY. Residuals NOT in this claim: DEGRADED disposition read-verified but not test-pinned; persona_matrix write-on-read hygiene (separate register step owed); Dell 39 operand semantics; operational liveness beyond provider-report shape.] | DD-29 / C7.Schema | COMPLETE |
 | 149 | Profile is the speedometer — named stages with monotonic timing, environment/workload identity, overhead disclosed; real observations vs deliberate benchmarks distinct | DD-39 / C7.Profile | OPEN |
 | 150 | Token accounting + shorthand in harmony (§12.87a) — token census executed across Mandellistics; per-system counts labeled separately; longhand vs shorthand compared on canonical semantics (census work product exists; the harmonized contract is unbuilt) | DD-30 / C7.Tokens | PARTIAL |
 | 151 | Universal measurement family + incorporation sweep — Measure / Threshold / Weight-Normalize with unit, source, timestamp, method on every quantity; subsystem-by-subsystem incorporation (forces, perspectives, personas, provider data) | DD-46 / DD-47 / DD-48 / C7.MeasureFamily | OPEN |
@@ -351,3 +351,9 @@ parked items the 72 frame never counted.
 | 180 | NVIDIA Inception website — SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only | NVIDIA (website) | SANDBOXED |
 | 181 | NVIDIA Inception incorporation — SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only | NVIDIA (incorporation) | SANDBOXED |
 | 182 | Live-model demo step 6 — parked by Ace 2026-11-10 until he is at a computer; he will run the timed trials himself; no scheduling | Live-model demo step 6 | SANDBOXED |
+
+## Block Plan §15 — LatinMandell
+
+| # | Item | Source IDs | Status |
+|---|---|---|---|
+| 183 | LM-2 THE SPLITTER — split_word over the LM table (census-whole -> table-recorded -> guarded greedy longest-match), the lm0_census_v1.json artifact, full-row-set receipts (accounted / morpheme_resolved), and the quarantine-eligibility predicate [COMPLETE (scoped) 2026-11-12 — PROPOSED as Q-LM2.1 in the LM-2 circuit report (PR #399) and entered by the completion-register reconciliation PR; effective as authority-confirmed credit only on the authorities' confirmation of that PR: PR #395 MERGED c414e710ea63d5c799d1b66d2b92a7d051507f18 (head 4d0de79); Director CONDITIONAL SCOPED PASS (mail 1a1ceddc6e1f5001) discharged by Keeper FINAL STAMP at 4d0de79 (6823425709); regression campaign 276/276 x3 TERMINAL GREEN at 4d0de79; exact-head CI all-pass; merged-main verification on a fresh clone @c414e71: lm2_splitter 66/66, live split_word('biology') -> bio + logy accounted 1.0, split_word('incredible') -> credible UNRESOLVED accounted 0.2. Scope = the splitter slice ONLY: no composition (LM-3), no translator wiring (LM-4), no external-gold claim; the two-cycle accounting question Q-LM2.2 stays the authorities' separately.] | LM-2 / Q-LM2.1 | COMPLETE |
