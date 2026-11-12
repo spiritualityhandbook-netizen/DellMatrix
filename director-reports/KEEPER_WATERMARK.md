@@ -1,11 +1,11 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 19:04 CST  
-**UTC approx**: 2026-11-12T01:04:00Z
+**Last cycle**: 2026-11-11 20:02 CST  
+**UTC approx**: 2026-11-12T02:02:00Z
 
 ## Items ruled this cycle
-- PR #390 — MERGE verified (merge SHA 49b81dd..., head 36f703e5...); MERGE-GATE RECEIPT identities + CI terminal CONFIRMED (scoped). Final-check on tested merged-main still awaited.
-- PR #392 — NEW HEAD stamped: CONFIRM (scoped to records design content at acfbec30...); pre-stamp pending terminal CI.
+- PR #390 — POST-MERGE TESTED-MAIN RECEIPT identities + file blob CONFIRMED (scoped). Prior merge-gate CONFIRM carried forward.
+- PR #392 — NEW HEAD stamped: CONFIRM (scoped to corrected records design content at 38e7dd73...); terminal CI SUCCESS.
 
 ## Trailing ledger
 - discharged this run: 0
