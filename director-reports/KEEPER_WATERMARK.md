@@ -1,23 +1,16 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-12 01:04 CST  
-**UTC approx**: 2026-11-12T07:04:00Z
+**Last cycle**: 2026-11-12 06:21 CST  
+**UTC approx**: 2026-11-12T12:21:00Z
 
 ## Items ruled this cycle
-- PR #393 / LM-1 — MERGE VERIFIED (merge SHA c6f6fb57, head c7bdc8a). Receipts still awaited: Uni final-check, tested merged-main SHA, residual exclusions.
-- PR #394 / README — MERGE VERIFIED (merge SHA 8c6937bf, head 97c7c297). Receipts still awaited.
-- PR #395 / LM-2 — **CONFIRM (scoped)** at head af139d1e. Focused suites + CI 4/4 SUCCESS. Missing: terminal regression campaign.
-- PR #396 / LM-1 report — **CONFIRM (scoped)** at head f490ea90. Records-only citation of prior #393 evidence.
-
-## Trailing ledger
-- DD-18 (PR #357): gap restated — second cert pending.
-- Q-DD42.1 (PR #359): gap restated — scoped second cert pending.
-Count: discharged this run 0, remaining 2, gaps 2.
+- PR #397 / C7.Schema — **CONFIRM (scoped) at head e42f1acb490b87bc3451b0d556a04ffde48b90d5**. Director renewed HOLD discharged; campaign terminal green; exact-head CI green. Uni clear to revalidate and §32 merge.
+- PR #395 — prior final CONFIRM at 4d0de79 stands; Director authorized §32 merge.
 
 ## Silence flag
-#308 / #294 / #233 remain fenced.
+No other ripe items this cycle.
 
 ## Standing notes
-Desk processed post-watermark merges and new heads. Deep cycle backstop remains.
+Both #395 and #397 are clear from the Keeper side. Merged-main verification still required before completion credit on either.
 
 — KEEPER

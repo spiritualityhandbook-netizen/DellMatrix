@@ -28,9 +28,12 @@ builds driven through form/lm1_import.py's pure build path:
   carries notices; a set with one provenance field stripped is
   REFUSED; an adapted row forces derived_adaptation; in-repo
   rows alone classify independent.
-- T7 V1 INTEGRITY + LOADER PATHS: lm_table_v1.json sha256 is the
-  pre-import pin; the loader's single read path returns v2 when
-  present and falls back to v1 behavior when v2 is absent.
+- T7 V1 INTEGRITY + LOADER PATHS: lm_table_v1.json sha256 equals
+  the pinned v1 artifact for this head (see V1_SHA256 below: the
+  pre-import pin, refreshed by exactly one provenance line when
+  LM-2 extended a harvested source file); the loader's single
+  read path returns v2 when present and falls back to v1
+  behavior when v2 is absent.
 - T8 CARDINALITY: the shipped artifact validates; a copy with
   one external row silently dropped FAILS validation; fixture
   ledger identities balance per page and in total.
@@ -103,7 +106,28 @@ _ROOT = os.path.dirname(_HERE)
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-V1_SHA256 = "59c63a40f8d274254a7589b9a2e6ef49dba712eb880ca5ac144b005bb8da8849"
+# The v1 artifact's sha256. PRE-IMPORT PIN (PR #393, the value
+# this check was born with): the import circuit never touched v1,
+# proven on that circuit by a zero-line git diff.
+#   59c63a40f8d274254a7589b9a2e6ef49dba712eb880ca5ac144b005bb8da8849
+# INTEGRATED-HEAD REFRESH (PR #395, LM-2): LM-2 extended
+# form/mandell/morpheme.py, a HARVESTED SOURCE of the v1 table;
+# lm1_harvest_test P3 requires the v1 header's per-source sha256
+# records to match the files on disk, so the header's morpheme.py
+# line was refreshed (cc31000a... -> 5c7daf79..., the current
+# morpheme.py). That ONE line is the artifact's only delta vs the
+# pre-import pin (git diff against main shows exactly it); every
+# row is byte-identical. The pin below names the refreshed
+# artifact so any FURTHER silent v1 mutation still turns T7 red.
+# QUARANTINE-ELIGIBILITY REFRESH (PR #395, Director mail
+# 1a1ce8ae4b5c8fe3): the eligibility fix edited morpheme.py
+# again, so the harvester refreshed the same ONE header line a
+# second time (5c7daf79... -> 011299ac..., the fixed
+# morpheme.py) and the artifact's sha moved with it
+# (62579e49... -> 45b42d65...). Rows and the collisions file
+# remain byte-identical; the delta vs the refreshed artifact
+# above is exactly that one line.
+V1_SHA256 = "45b42d65251cc176a083a90afb83b0a4be9603ebd2eaa431616f8563fdc1d79e"
 QUARANTINED = ("dell", "man", "re", "alpha", "delta", "omega")
 
 RIGHTS = {"text": "Creative Commons Attribution-Share Alike 4.0",
@@ -405,7 +429,8 @@ def smoke() -> bool:
     # ---- T7: v1 integrity + loader paths
     v1_path = os.path.join(_HERE, "mandell", "lm_table_v1.json")
     v1_hash = hashlib.sha256(open(v1_path, "rb").read()).hexdigest()
-    rec("T7 lm_table_v1.json sha256 == pre-import pin",
+    rec("T7 lm_table_v1.json sha256 == pinned v1 artifact "
+        "(pre-import pin + the one-line LM-2 provenance refresh)",
         v1_hash == V1_SHA256, v1_hash)
     rec("T7 default load returns v2; explicit v1 path returns v1",
         header.get("version") == 2
