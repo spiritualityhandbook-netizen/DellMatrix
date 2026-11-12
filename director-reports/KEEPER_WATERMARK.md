@@ -1,15 +1,16 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 21:12 CST  
-**UTC approx**: 2026-11-12T03:12:00Z
+**Last cycle**: 2026-11-11 22:10 CST  
+**UTC approx**: 2026-11-12T04:10:00Z
 
 ## Items ruled this cycle
-- PR #391 / LM-1 import license boundary — **CONFIRM (scoped) at amended head 899a579d8518ded8916d81a63a758403dad7b3fc**. Prior pre-amendment CONFIRM superseded. Director condition (a) satisfied from the Keeper side. Q-B1..Q-B3 remain with the Director; IMPORT EXECUTION HOLD remains until he rules.
+- PR #393 / LM-1 external import — **CONFIRM (scoped)** at head 24d0ba8227df88fea78a5ac5d776541fd09c8b9f. Bounded import circuit matches authorized design + license fence. Explicit non-coverage: no LM-2/3, no translator, no MWL credit, final merge still requires regression + CI + Director + §32.
+- PR #394 / README refresh — **CONFIRM (scoped)**. Docs only; counts quoted from render/live state.
 
 ## Silence flag
-No other ripe items.
+#308 / #294 / #233 remain fenced.
 
 ## Standing notes
-#391 now carries an explicit named-head stamp. Merge and import still gated on Director disposition.
+LM-1 import is stamped from the Keeper side. Conveyor continues under standard gates.
 
 — KEEPER
