@@ -591,9 +591,11 @@ not exceed executed evidence**. Independent authorities review and certify work 
 bounded scopes; merged code is not the same thing as certified code, and this README
 keeps the two separate.
 
-**Production main:** `610fb13` (2026-11-11). The earlier anchor `11933da` (P12 closure
-audit, 2026-10-30, full 100-Dell registry proof complete) remains the reconciliation
-point for that audit's claims.
+**Production main:** `11933da` — the anchor recorded by the P12 closure audit
+(2026-10-30, full 100-Dell registry proof complete). Main has since advanced beyond
+that anchor (this refresh was written at main `610fb13`, 2026-11-11); the anchor
+line is retained verbatim because the P12 audit's reconciliation is stated
+against it.
 
 **The scoreboard:** all remaining work is enumerated in one **Master Work List**
 ([`director-reports/MASTER_WORK_LIST.md`](director-reports/MASTER_WORK_LIST.md)) —
