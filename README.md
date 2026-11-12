@@ -12,9 +12,11 @@ only a human confirms, commits, or teaches the system anything.
 > **How to read this README.** Sections 1–6 explain the whole program — what it is, why it
 > exists, every major component, and worked examples. Every example in §6 was executed
 > against the code at commit `c94e223` on 2026-11-01; outputs are real, trimmed only for
-> length. Sections 7–10 give status, architecture, tests, and honest limitations. DellMatrix
-> is under active development: it is a real, tested, working system, and it is **not**
-> claimed to be a finished consumer product.
+> length. Sections 7–11 give status, **the plan map from program start to the finish
+> line**, architecture, tests, and honest limitations. Status in §7 is current as of
+> 2026-11-11 against production main `610fb13`. DellMatrix is under active development:
+> it is a real, tested, working system, and it is **not** claimed to be a finished
+> consumer product.
 
 ---
 
@@ -371,6 +373,41 @@ auto-learning.
   identity-verified signalling (pidfd + start-time), and reports — never hides — any
   cleanup it could not perform.
 
+### 3.10 LatinMandell and Mandelmoji — the language lenses
+
+Mandell also has two *reading* layers, designed by Ace as lenses — aids to
+understanding, never sources of truth:
+
+- **LatinMandell** (`form/mandell/latinmandell.py`, `morpheme.py`) breaks English
+  words into their Latin/Greek morphemes — `Commendell` → *com-* (together) +
+  *man* (hand/control) + *dell* (nested unit) — so a word's *function* becomes
+  visible: what it does, not just what it is called. The design law: parse is
+  **split → stack → classify → map**; every piece is classified FUNCTION or FLUFF,
+  and the small words get their own predisposed categories instead of the junk
+  drawer — LINK (*and, of*), POINT (*my, you*), CONDITION (*if*), NEGATE (*not*),
+  ASK (*why, who, what, when, where, how*). Function pieces then point at Dells.
+  A word that will not decompose is reported **unresolved**, never guessed.
+  *Current state:* the in-repo morpheme harvest and tables are on main
+  (`lm_table.py`, `lm_table_v1.json`); an LM-0 census of the small-word categories
+  precedes the external roots import (1,684 reconciled rows, CC BY-SA attributed),
+  which is built and in authority review (PR #393). The forced-parse integration
+  into the English translator is the LM-2+ circuit series, in progress — today
+  LatinMandell *explains and deepens*; it does not yet gate translation.
+- **Mandelmoji** is the glyph layer: one character that both *references* a Dell
+  and carries a predisposed *tone* through 05[Tone] — 🌱08 reads as Create spoken
+  in a voice of growth. Glyph syntax is positional (glyph glued to the number,
+  exactly where the atom sits; chain-leading glyphs tone the whole chain).
+  *Current state:* 15 glyphs are catalogued in code with address 775 reserved;
+  names are being reconciled to the current registry and the tone table is
+  Ace-confirmed before REPL execution is wired. Until then Mandelmoji is a
+  reference notation, not an executable one — stated plainly, per house rule.
+
+Both lenses sit *beside* the language: LatinMandell reads the words, Mandelmoji
+refers and leans, the Dells do the work. In Ace-facing and bilingual presentation,
+Mandell chains are shown **Mandell first, plain-English gloss beside each step** —
+the gloss is a ladder for the reader, never a substitute for the Dell (a Dell whose
+English does all the work is decoration, and the project treats it as a defect).
+
 ---
 
 ## 4. What You Can Use It For
@@ -406,7 +443,7 @@ auto-learning.
 
 **Requirements:** Python 3.10+ and nothing else for the core loop (see
 `requirements.txt`). Tested on Linux; a Mac launcher is provided and verified; a
-Windows launcher is provided and structurally verified (not executed — see §9).
+Windows launcher is provided and structurally verified (not executed — see §10).
 
 ```bash
 git clone https://github.com/spiritualityhandbook-netizen/DellMatrix
@@ -546,16 +583,24 @@ you> confirm <id>                             ← only if it earns it, under you
 
 ## 7. Status — What Is Proven, What Is Not
 
-DellMatrix is developed under an Overseer → Director → Uni engineering process with an
-unusual rule: **claims may not exceed executed evidence**, and an independent Director
-reviews and certifies work in bounded scopes. Merged code is not the same thing as
-certified code, and this README keeps the two separate.
+DellMatrix is developed under a five-seat process — **Ace (Overseer) → Director
+(ChatGPT, hourly analysis and final check) + Keeper (Grok, fast-lane confirmation) →
+Uni (the only seat that touches code)**, with Gemini as a docked in-program worker —
+governed since 2026-11-10 by **Workflow v1**. The unusual rule stands: **claims may
+not exceed executed evidence**. Independent authorities review and certify work in
+bounded scopes; merged code is not the same thing as certified code, and this README
+keeps the two separate.
 
-**Production main:** `11933da` — the anchor recorded by the P12 closure audit
-(2026-10-30, full 100-Dell registry proof complete). Main has since advanced beyond
-that anchor through the Director's completion-order circuits (§7, certification
-picture); the anchor line is retained because the P12 audit's reconciliation is
-stated against it.
+**Production main:** `610fb13` (2026-11-11). The earlier anchor `11933da` (P12 closure
+audit, 2026-10-30, full 100-Dell registry proof complete) remains the reconciliation
+point for that audit's claims.
+
+**The scoreboard:** all remaining work is enumerated in one **Master Work List**
+([`director-reports/MASTER_WORK_LIST.md`](director-reports/MASTER_WORK_LIST.md)) —
+179 items, strict counting, no partial credit. As of the render on this main:
+**36 / 179 COMPLETE = 20.1%** (54 PARTIAL, 86 OPEN, 3 GATED). The Director's hourly
+review disposes of a published queue
+([`director-reports/DIRECTOR_REVIEW_QUEUE.md`](director-reports/DIRECTOR_REVIEW_QUEUE.md)).
 
 **Verified working (executed evidence):** the full English REPL loop; create / grow /
 review / confirm / supersede; save / load across processes; the 100-Dell registry with
@@ -567,33 +612,76 @@ journaled, fail-closed import; the visual export (interactive offline HTML; the 
 script is covered by executed DOM-logic tests); Spanish/French core loop; workshops and
 the Perspective Studio; a regression harness (`form/regress.py` — the canonical suite registry; the current suite count is the length of its LIST)
 covering all of the above, run forward, twice, and in reverse order per release cycle.
+Since the last README: **Loop's chained-body repair and explicit bounds (DD-14/DD-44),
+chain parse-refusal failing closed (DD-45), Diff rings 1+2 as the comparison authority
+(C3), Embed bound to a docked provider (C8 EmbedBind), the dock-roster eviction fix,
+LatinMandell's in-repo morpheme harvest and tables (§3.10), the 31 Workflow role seeds
+landed as pending proposals, and the Email Matrix field (1,052 idea units built from
+Ace's mail under his confirmations)** — each merged with terminal-green regression and
+scoped authority confirmation, itemized on the Master Work List.
 
-**Certification picture (Director rulings, 2026-10-31 → 2026-11-01):** the security
-circuits (sanitize/redaction, InternetGate), the operand-mutation and Exchange
-durability repairs, control-verdict and Diff contracts, and several bounded per-Dell
-contracts are certified *with noted exceptions, at exact commits, in bounded scopes*.
-Other areas are implemented and verified by the project's own suites but await
-Director re-ruling; a consolidated admission packet is in preparation. Per-circuit
-reports live in [`director-reports/`](director-reports/) with `INDEX.md` as the entry
-point. Nothing in this README sums bounded certificates into a whole-program claim.
+**Certification picture (selected, all scoped):** DIR-CERT-2026-11-02 stands for its
+named circuits with its exceptions retained; Studio security and the Core I
+unsupported-arg gate are certified in scope (Studio remains a functional **local-only**
+application; browser acceptance is still open); Workflow v1 is adopted and live;
+the LatinMandell LM-1 license boundary and import design are ruled and merged, with
+the import itself (PR #393) in Director review at this writing. Per-circuit reports
+live in [`director-reports/`](director-reports/) with `INDEX.md` as the entry point.
+Nothing in this README sums bounded certificates into a whole-program claim:
+**whole-program certification is NOT issued.**
 
 **Explicitly not claimed:**
 - "User-ready" as a finished consumer product.
 - A live third-party AI provider session through the dock (proven against a local
-  double only).
+  double only; the Gemini embedding provider is verified at the API level, and the
+  in-program adapter remains an open boundary).
 - Sustained real-world use, or Exchange between two physical machines (proven
   cross-process between two owners on one machine).
 - Pixel-perfect rendering of the visual export in a named commercial browser
   (file generation and script behavior are tested; a named-browser render was not
   executed in the build environment).
-- One regression-harness question — cleanup of session-escaped processes — is an open
-  cross-environment investigation: local suites pass, an independent environment
-  reproduced intermittent failures, and per project law the discrepancy is recorded
-  as **UNRESOLVED** rather than argued away.
+- The everyday save path as crash-safe *as a pair*: each file is written safely
+  alone, but an interrupted pair-save can expose a hybrid with no warning; the
+  checkpoint/sealed-snapshot path passed every crash test. The repair-or-declare
+  decision is the Director's (Master Work List, Q1 class, GATED; PR #294 held).
+- One regression-harness question — cleanup of session-escaped processes
+  (DAF-09) — is an open cross-environment investigation: local suites pass, an
+  independent environment reproduced intermittent failures, and per project law
+  the discrepancy is recorded as **UNRESOLVED** and DAF-09 certification
+  **WITHHELD** rather than argued away.
+- PRs #308 (intent-args census) and #233 (certification run) are fenced/held and
+  are not part of the working program's claims.
 
 ---
 
-## 8. Architecture and Source Guide
+## 8. The Plan Map — Start → Now → Finish
+
+The whole arc on one page. The governing documents are **the Dell Plan**
+(Ace's plan: the Master Objective Register, the §12 Dell-by-Dell rulings, the §14
+working plan, and the vision items — mirrored in `director-reports/`) and the
+**Master Work List** (§7), which is the single scoreboard. Where the plan and the
+code disagree about what a Dell is supposed to do, **the plan stands** and the
+code is the thing that is behind (Ace ruling, 2026-11-11).
+
+| Phase | What happened | State |
+|-------|---------------|-------|
+| **0 — Origin** | Ace authors Mandellistics: the Mandell language and the 100 Dells as a way of thinking, before there is a program. `preform/` and the JavaScript `src/` era explore it. | Historical |
+| **1 — Form** | The Python runtime in `form/` becomes the live program: REPL, `Program`, persistence, Nursery/Plane, Exchange, DuoBeta, the dock. `src/` freezes. | Built |
+| **2 — Proof** | Per-Dell deepening circuits (D1) and the P-series drive the registry to a full 100-Dell proof (anchor `11933da`, 2026-10-30); DIR-CERT-2026-11-02 certifies its named circuits in scope. | Closed, with exceptions on record |
+| **3 — The completion drives** | SUS Ω-64, then SUSX100,000: a nonstop push at the whole queue. Ω-64 closed honestly (10 complete/verified, the rest partial, investigated, or deferred) and was **accepted with noted exceptions** — the project learned to count strictly or not at all. | Closed honestly |
+| **4 — The Dell Plan + Workflow v1** | Ace's Dell-by-Dell tour rewrites what many Dells are *supposed* to do (§12 rulings DD-43…DD-54+: Parallel must mean parallel, Loop bounds explicit, Diff the one comparison authority, Trace covers the whole process…). Workflow v1 seats the five roles; the Director Review Queue and the Master Work List (179 items) replace every older scoreboard. | Governing now |
+| **5 — NOW (2026-11-11)** | Foundation-order circuits closing one by one — Loop, Bounds, ParseRefusal, Diff rings 1+2, EmbedBind, the roster fix — plus the LatinMandell program (LM-0 census → LM-1 import in review → LM-2 splitter). **Board: 36/179 COMPLETE (20.1%).** | In progress |
+| **6 — The road to finish** | The remaining §14 foundation families in order (truth/receipts → roster → Diff's upper rings → the upper Dell families), the gated Q1 save-path decision, the withheld DAF-09 discrepancy, Studio browser acceptance — then Ace's vision items: Nursery proposal cards and custom shapes, the Plane as a walkable **Room** (3D) and **Sky** (2D), the page set ending in the **Psalm Matrix**, navigation researched before it is placed. | Ahead |
+| **FINISH** | The Master Work List reads **179/179 COMPLETE**, every item with executed evidence, and whole-program certification is issued by the Director with the Keeper's trailing certification on record. Human testing opens only through its gates: a real AI docked live **and** Ace working the Matrix himself. | The finish line |
+
+Two rules keep the map honest: **merged is never certified** (a merge is an
+execution under authorization; certification is a separate authority act), and
+**the board is machine-rendered from its data file** — nobody hand-edits the
+percentage.
+
+---
+
+## 9. Architecture and Source Guide
 
 | Path | Role |
 |------|------|
@@ -601,11 +689,15 @@ point. Nothing in this README sums bounded certificates into a whole-program cla
 | `form/repl.py` | REPL front door: the `you>` loop and command dispatch |
 | `form/open.py` | `Program` — the central state object — and `open_program()` |
 | `form/mandell/` | The Mandell language: `registry.py` (the 100 Dells), `executor.py`, `chain_exec.py`, `core_ii_exec.py` (Core II state machine), `translate.py`, checkpoint/recovery, supersession, redaction |
+| `form/mandell/latinmandell.py`, `morpheme.py`, `lm_table*.json` | LatinMandell: morpheme decomposition and the harvested roots/affixes tables (§3.10) |
 | `form/dell_matrix/` | Nursery, plane, spatial views, acceptance policy, lifecycle, inference dock, Exchange, workshops |
 | `form/duobeta/` | DuoBeta learning: observation, policy gates, ledger |
 | `form/persist.py`, `form/persist_rest.py` | Disk persistence (JSON under `form/state/`), load-time recovery hooks |
 | `form/regress.py` | The regression harness (canonical suite registry; count = length of LIST) |
 | `director-reports/` | Per-circuit evidence reports submitted for Director certification; `INDEX.md` is the entry point |
+| `director-reports/MASTER_WORK_LIST.md` | The single scoreboard: all 179 work items, machine-rendered by `master_list.py` from `master_work_list_items.json` |
+| `director-reports/DIRECTOR_REVIEW_QUEUE.md` | Everything awaiting a Director disposition, with exact heads; the hourly review disposes of the whole queue |
+| `gui/` | DellMatrix Studio — the local visual application (local-only; not network-deployed) |
 | `docs/` | Documentation (large; currency varies — this README is the current-truth summary) |
 | `docs/README_EVIDENCE_MAP.md` | Claim-by-claim source/evidence map behind earlier README revisions |
 | `launch.py` | Root launcher → `form.repl` |
@@ -614,7 +706,7 @@ point. Nothing in this README sums bounded certificates into a whole-program cla
 
 ---
 
-## 9. Tests and Honest Limitations
+## 10. Tests and Honest Limitations
 
 ```bash
 python3 -m form.regress                # full suite, forward
@@ -632,7 +724,8 @@ python3 -m form.regress --order rev    # reverse order
 - The system suggesting candidate connections on its own is planned, not implemented.
 - The Windows launcher has not been executed (no Windows environment available); the
   Mac launcher is executed and verified.
-- Bridge (44) and Embed (47) refuse by design until a real provider is bound.
+- Embed (47) executes only with a provider bound through the dock (the EmbedBind
+  circuit, C8); unbound, it refuses honestly. Bridge (44) still refuses by design.
 - Some documentation under `docs/` predates the current runtime; where a doc and this
   README disagree about behavior, the code — and the test that exercises it — wins.
 
@@ -644,7 +737,7 @@ and do not modify `src/` (frozen).
 
 ---
 
-## 10. Glossary
+## 11. Glossary
 
 - **Dell** — one of the 100 Mandell operators; a numbered, named, testable action.
 - **Seed** — a single Mandell instruction: `NN[Name]:: label`.
@@ -665,3 +758,8 @@ and do not modify `src/` (frozen).
 - **DuoBeta** — the learning subsystem: observation in, policy-gated proposals, human-gated application.
 - **Exchange** — file-based transfer of ideas *with their receipts*, imported as pending under the receiver's gate.
 - **Honest refusal** — the system's pattern of declining, with a reason, instead of fabricating a result.
+- **Director / Keeper** — the two independent review authorities (ChatGPT / Grok): the Director analyzes and gives the final check hourly; the Keeper confirms on a fast lane. Either can HOLD a work item instantly; only Uni writes code.
+- **Master Work List** — the single 179-item enumeration of all remaining work; COMPLETE means authority-confirmed closed, and the headline percentage allows no partial credit.
+- **LatinMandell** — the morpheme lens (§3.10): English decomposed into Latin/Greek pieces so word *function* is explicit; an aid to understanding, not a source of truth.
+- **Mandelmoji** — the glyph layer (§3.10): one character that references a Dell and carries a predisposed tone through 05[Tone].
+- **Psalm** — an AI docked into DellMatrix as a worker (proposals only, never authority). The **Psalm Matrix** is the planned all-AI page of the future page set.
