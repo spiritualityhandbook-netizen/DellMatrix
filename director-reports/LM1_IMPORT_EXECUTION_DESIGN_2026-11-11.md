@@ -37,8 +37,12 @@ Any material deviation from the pinned set aborts the build.
    around. No GFDL election.
 3. **No copied examples (Q-LM1.10).** The parser takes the roots
    table's own columns (root, origin/language, gloss) and structurally
-   cannot emit the examples column; a test greps the artifact for
-   example-column markers.
+   cannot emit the examples column. Enforcement is POSITIVE and
+   STRUCTURAL, not a grep (Director correction (1)): the test suite
+   feeds fixture pages whose example cells contain UNIQUE SENTINEL
+   strings, including cross-column and multiline example fixtures,
+   and asserts no sentinel — and no example-cell content of any kind —
+   appears in any emitted root, origin, or gloss field.
 4. **Zero adapted rows or fail closed.** Rows carry content unchanged;
    the only transforms are the boundary's format normalizations, each
    written to a per-row changed-fields log with a trace to the pinned
@@ -53,17 +57,37 @@ Any material deviation from the pinned set aborts the build.
    the external stratum win silently (loader precedence:
    customs > ace_seed > inrepo > inrepo_force > candidate >
    external_wikipedia).
+7. **Cardinality reconciliation (Director correction (2)).** The build
+   produces a strict reconciliation ledger: per page — pinned source
+   row count, parsed count, rows excluded (license), invalid rows,
+   emitted count — plus totals. The build ABORTS on any unexplained
+   discrepancy between these numbers. The expected ~1,693 is an
+   estimate for sanity-checking, never an acceptance criterion; the
+   ledger, not the estimate, is what must balance.
+8. **Partial-coverage honesty (Director correction (3)).** If any page
+   is license-excluded, the v2 artifact's manifest carries an explicit
+   `coverage: PARTIAL` status naming the excluded pages, and the build
+   refuses to emit any artifact claiming complete coverage. Partial
+   coverage is a stated fact of the table, never a silent shortfall.
+9. **No-write-on-failure (Director correction (5)).** The build writes
+   to a temporary artifact and atomically replaces v2 only after every
+   gate passes; a failed build leaves the previous v2 (or its absence)
+   exactly as it was. A test kills the build mid-run at a gate failure
+   and asserts no partial artifact exists.
 
 ## 3. Lineage and export behavior (boundary §4, implemented)
 
-- The loader's row objects expose their provenance; the composition
-  layer (when LM-2/LM-3 wire it — NOT in this circuit) will record
-  source lineage per output. THIS circuit ships the lineage DATA
-  MODEL and its tests at the table level: every external row is
-  lineage-complete by construction (gate 5), and an export helper
-  classifies a row set as unchanged quote / derived adaptation /
-  independent and REFUSES bulk export of any set containing a row
-  with incomplete lineage.
+- The loader's row objects expose their provenance. THIS circuit
+  ships the lineage DATA MODEL and its tests at the table level:
+  every external row is lineage-complete by construction (gate 5),
+  and an export helper classifies a row set as unchanged quote /
+  derived adaptation / independent and REFUSES bulk export of any
+  set containing a row with incomplete lineage. (Director
+  correction (4): the export helper is a BUILD-TIME TABLE
+  mechanism only. No runtime-composition enforcement or API
+  guarantees are claimed or built in this circuit — the helper
+  proves only what the table code actually wires. LM-2/LM-3
+  composition lineage is a separate circuit's concern.)
 - Preserved nuance (Director, mail 1a1cd41952e441fa): the default
   DERIVED ADAPTATION classification for uncertain lineage is a
   conservative notice, NOT permission to export; where lineage is
@@ -75,7 +99,10 @@ Any material deviation from the pinned set aborts the build.
 
 - T1 provenance completeness: every external row has page+revid+
   license; manifest revids match the boundary table.
-- T2 examples absent: no example-column content in the artifact.
+- T2 examples structurally excluded: fixture pages with UNIQUE
+  SENTINEL strings in example cells (including cross-column and
+  multiline fixtures) emit artifacts in which no sentinel or
+  example-cell content appears in any root/origin/gloss field.
 - T3 zero adapted: adapted flag false on all imported rows;
   changed-fields entries use only the allowed normalization list.
 - T4 precedence: a piece present in both in-repo and external strata
@@ -86,7 +113,18 @@ Any material deviation from the pinned set aborts the build.
 - T6 lineage/export: export of a complete-lineage set classifies and
   carries notices; export of a set with one provenance field stripped
   is REFUSED (incomplete-lineage refusal).
-- T7 v1 integrity: lm_table_v1.json sha256 unchanged by the build.
+- T7 v1 integrity: lm_table_v1.json sha256 unchanged by the build;
+  both loader paths tested — v2-present (v2 read) and v2-absent
+  (v1 fallback, behavior identical to today) (Director correction (5)).
+- T8 cardinality: the reconciliation ledger balances per page and in
+  total (source = parsed = excluded + invalid + emitted); a fixture
+  with one row silently dropped fails the build.
+- T9 partial coverage: a fixture with one license-excluded page emits
+  `coverage: PARTIAL` naming the page; a claim of complete coverage
+  in that state is refused.
+- T10 no-write-on-failure: a build failed at any gate leaves no new
+  or partial v2 artifact; the pre-existing v2 (or absence) is
+  byte-identical afterward.
 - Mutants (inverse-edit revert, committed work first): M1 drop
   provenance writing → T1/T6 fail. M2 raise external precedence → T4
   fails. M3 allow an unlisted transform → T3 fails.
