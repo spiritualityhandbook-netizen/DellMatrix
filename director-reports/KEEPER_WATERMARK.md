@@ -1,10 +1,10 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-12 10:18 CST  
-**UTC approx**: 2026-11-12T16:18:00Z
+**Last cycle**: 2026-11-12 11:04 CST  
+**UTC approx**: 2026-11-12T17:04:00Z
 
 ## Items ruled this cycle
-- PR #405 / GS-4 repair — first look: pre-stamp pending terminal CI at 119b58f. Evidence package posted; independent verification not performed this cycle. Code merge HOLD stands.
+- PR #405 / GS-4 repair — **CONFIRM (scoped) at head 41e1556dcb6aae7a690c76aed8b6dbe327b1b94f**. Final code confirmation under Director conditional merge authorization. Campaign + terminal CI remain mechanical gates for §32. U1–U3 UNPROVEN; no completion credit yet.
 
 ## Trailing ledger
 - remaining: 2 (DD-18, Q-DD42.1)
