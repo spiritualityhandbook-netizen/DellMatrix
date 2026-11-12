@@ -58,6 +58,22 @@ Contracts proven here:
   real pair-bound artifacts): external coverage resolves, a
   corrupted pair member makes PairInconsistentError propagate
   out of split_word, and v2-absent behavior is unchanged.
+- QUARANTINE ELIGIBILITY (Director mail 1a1ce8ae4b5c8fe3, S17):
+  the A9 packet flagged that an external 'struct' row whose
+  position_class is position_unresolved entered the prefix
+  inventory through its authored_position_class claim. The
+  Director RULED: LM-1 quarantine excludes position_unresolved
+  rows from position-dependent consumption. One predicate in
+  morpheme.py (_lm2_position_eligible: the row's OWN
+  position_class is resolved) now governs the prefix inventory,
+  the suffix inventory, known-middle, and slot kind. Quarantined
+  rows stay in lookup() and in piece senses in full -- excluded
+  from position, never erased. Exactly one GOLD entry changes
+  ('structure': the resolved 'stru' prefix row now governs);
+  the mov-/sin-/ev- combining-form entries stand because those
+  rows carry RESOLVED position_class='prefix', not authored-only
+  claims. 'structure' stays in _V1_DELTA (the 'stru' row is
+  v2-only, so the v1 derivation still differs).
 """
 
 from __future__ import annotations
@@ -161,19 +177,23 @@ GOLD = {
     # UNRESOLVED piece; pinned in _V1_DELTA).
     "unbelievable": [("un", "prefix", True),
                      ("believable", "UNRESOLVED", False)],
-    # v2 derivation: an external 'struct' row whose position_class
-    # is position_unresolved carries authored_position_class
-    # 'prefix', which places 'struct' in the prefix inventory
-    # under the unchanged union rule; remainder 'ure' (3 chars)
-    # passes the guard and resolves via its inrepo suffix row
-    # under the middle slot-default kind 'root'. FLAGGED in the
-    # A9 packet: the v2 header's own note excludes
-    # position_unresolved pieces from position-dependent
-    # consumption -- whether the authored claim of an unresolved
-    # row may drive the inventory is an authority question, NOT
-    # decided in this circuit (v1: struct root + ure suffix;
-    # pinned in _V1_DELTA).
-    "structure": [("struct", "prefix", True), ("ure", "root", True)],
+    # QUARANTINE-ELIGIBILITY derivation (Director mail
+    # 1a1ce8ae4b5c8fe3 RULED the A9 packet's flag): the external
+    # 'struct' row is position_unresolved, so its authored
+    # 'prefix' claim may NOT place 'struct' in the prefix
+    # inventory. What governs instead: the RESOLVED external
+    # 'stru' prefix row (position_class 'prefix') consumes
+    # first (remainder 'ucture', 6 >= 3); the resolved inrepo
+    # 'ure' suffix stacks (remainder 'ct', 2 >= 2); 'ct' has
+    # no rows -> UNRESOLVED. 'struct' itself still resolves in
+    # full elsewhere (its inrepo row is pc='root'; S17 pins the
+    # whole-word parse and its complete senses). v1 derivation
+    # (no 'stru' row exists in v1): struct root + ure suffix --
+    # pinned in _V1_DELTA, where the entry STAYS because the
+    # derivations still differ.
+    "structure": [("stru", "prefix", True),
+                  ("ct", "UNRESOLVED", False),
+                  ("ure", "suffix", True)],
     "transform": [("trans", "prefix", True), ("form", "root", True)],
     # v2 derivation: external 'press' row (v1: none) resolves the
     # middle under the slot-default kind 'root'.
@@ -189,14 +209,17 @@ GOLD = {
     # piece and the suffix search stops at 'ment' (remainder 'e'
     # fails the guard), leaving 'ement' UNRESOLVED. v1 had no
     # 'mov' claim: 'ment' stacked off 'move' (pinned in
-    # _V1_DELTA). The parse is data-faithful; whether combining-
-    # form prefix claims should drive the prefix slot is the same
-    # authority question flagged at 'structure'.
+    # _V1_DELTA). The parse is data-faithful. Quarantine ruling
+    # (mail 1a1ce8ae4b5c8fe3): the 'mov' row carries RESOLVED
+    # position_class='prefix' -- not an authored-only claim on
+    # an unresolved row -- so this entry stands (S17 pins it).
     "movement": [("mov", "prefix", True),
                  ("ement", "UNRESOLVED", False)],
     # v2 derivation: 'sin-' is likewise a prefix claim in the
     # source notation; 'ging' has no row and 'ing' is blocked
     # (remainder 'g' fails the guard). v1: sing + ing (pinned).
+    # The 'sin' row's position_class is RESOLVED 'prefix', so
+    # the quarantine ruling does not touch it (S17).
     "singing": [("sin", "prefix", True),
                 ("ging", "UNRESOLVED", False)],
     "transmit": [("trans", "prefix", True), ("mit", "root", True)],
@@ -209,6 +232,8 @@ GOLD = {
     # prefix slot (remainder 'olve', 4 chars, passes the guard);
     # 'olve' has no row. v1: no prefix claim matched, so the
     # ace_seed whole_form row governed (pinned in _V1_DELTA).
+    # The 'ev' row's position_class is RESOLVED 'prefix', so
+    # the quarantine ruling does not touch it (S17).
     "evolve": [("ev", "prefix", True),
                ("olve", "UNRESOLVED", False)],
     "dell": [("dell", "whole", True)],
@@ -986,6 +1011,108 @@ def smoke() -> bool:
                 for w, expected in _V1_DELTA.items()))
     finally:
         shutil.rmtree(scratch16, ignore_errors=True)
+
+    # ---- S17 quarantine eligibility (Director mail
+    # 1a1ce8ae4b5c8fe3): a position_unresolved row's
+    # authored_position_class must not drive ANY positional
+    # consumption. The single predicate is
+    # morpheme._lm2_position_eligible(row): the row's own
+    # position_class is resolved (not 'position_unresolved').
+    # Rows under test are REAL shipped-table rows:
+    #   'struct' external_wikipedia: pc=position_unresolved,
+    #     authored='prefix', sense 'to make up, build'; its
+    #     inrepo row is pc='root' (eligible for root, not prefix).
+    #   'fa': BOTH rows external, pc=position_unresolved
+    #     (authored 'prefix' / 'root') -- no eligible row at all.
+    #   'prim': BOTH rows external, pc=position_unresolved
+    #     (authored 'prefix' / 'root').
+    #   'mov' / 'sin' / 'ev': pc='prefix' RESOLVED external rows
+    #     (the source's dash-notation combining forms) -- eligible.
+    elig = getattr(morpheme, "_lm2_position_eligible", None)
+    struct_rows = lm_table.lookup("struct")
+    struct_ext = [row for row in struct_rows
+                  if row["stratum"] == "external_wikipedia"]
+    rec("S17 the one predicate, on real rows: the quarantined "
+        "'struct' external row is ineligible, its resolved inrepo "
+        "'root' row is eligible, every 'fa' / 'dell' row is "
+        "ineligible, the resolved 'mov' row is eligible",
+        elig is not None
+        and len(struct_ext) == 1
+        and elig(struct_ext[0]) is False
+        and any(elig(row) for row in struct_rows
+                if row["stratum"] == "inrepo")
+        and not any(elig(row)
+                    for row in lm_table.lookup("fa"))
+        and not any(elig(row)
+                    for row in lm_table.lookup("dell"))
+        and any(elig(row) for row in lm_table.lookup("mov")))
+    st17 = morpheme._lm2_loads()
+    rec("S17 inventories: no seat is held by an authored claim on "
+        "a position_unresolved row ('struct'/'prim'/'fa'/'cor' "
+        "out of prefixes; 'cry'/'re'/'dell' out of suffixes), "
+        "and resolved seats are retained ('mov'/'sin'/'ev' "
+        "prefixes; 'ment'/'tion'/'ing' suffixes)",
+        not ({"struct", "prim", "fa", "cor"}
+             & set(st17["prefixes"]))
+        and not ({"cry", "re", "dell"} & set(st17["suffixes"]))
+        and {"mov", "sin", "ev"} <= set(st17["prefixes"])
+        and {"ment", "tion", "ing"} <= set(st17["suffixes"]))
+    struct_p = morpheme.split_word("structure")
+    rec("S17 'structure': the quarantined claim no longer puts "
+        "'struct' in the prefix slot. Corrected derivation: the "
+        "RESOLVED external 'stru' prefix row consumes first "
+        "(remainder 'ucture', 6 >= 3), the resolved inrepo 'ure' "
+        "suffix stacks (remainder 'ct', 2 >= 2), 'ct' has no "
+        "rows -> UNRESOLVED; ACCOUNTED 7/9",
+        _sig(struct_p) == [("stru", "prefix", True),
+                           ("ct", "UNRESOLVED", False),
+                           ("ure", "suffix", True)]
+        and abs(struct_p["accounted"] - 7 / 9) < 1e-9)
+    prim_p = morpheme.split_word("primeval")
+    rec("S17 'primeval': no 'prim' piece (both 'prim' rows are "
+        "position_unresolved). The RESOLVED external 'pri' "
+        "prefix row consumes (remainder 'meval', 5 >= 3); "
+        "'meval' has no rows -> UNRESOLVED; ACCOUNTED 3/8",
+        _sig(prim_p) == [("pri", "prefix", True),
+                         ("meval", "UNRESOLVED", False)]
+        and abs(prim_p["accounted"] - 3 / 8) < 1e-9)
+    rec("S17 known-middle: 'fa' is not a known middle (its only "
+        "'root' claim is authored, on a position_unresolved "
+        "row), so the 'de' / 'un' prefix guards fail on the "
+        "2-char remainder and nothing is fabricated",
+        _sig(morpheme.split_word("defa"))
+        == [("defa", "UNRESOLVED", False)]
+        and _sig(morpheme.split_word("unfa"))
+        == [("unfa", "UNRESOLVED", False)])
+    rec("S17 slot kind: an authored claim on a quarantined row "
+        "assigns no kind -- 'fa' takes the slot defaults "
+        "('prefix' first / 'suffix' last); a RESOLVED row still "
+        "drives its kind ('mend' last == 'root' via its inrepo "
+        "root row), and the recorded split Com-mend is unchanged",
+        morpheme._lm2_slot_kind("fa", "first", st17) == "prefix"
+        and morpheme._lm2_slot_kind("fa", "last", st17)
+        == "suffix"
+        and morpheme._lm2_slot_kind("mend", "last", st17)
+        == "root"
+        and _sig(morpheme.split_word("commend"))
+        == [("com", "prefix", True), ("mend", "root", True)])
+    whole_struct = morpheme.split_word("struct")
+    rec("S17 preservation: quarantined rows are excluded from "
+        "position, never erased -- lookup('struct') / "
+        "lookup('fa') return their full row sets and the "
+        "whole-word 'struct' piece's senses still carry the "
+        "position_unresolved external row",
+        len(whole_struct["pieces"]) == 1
+        and whole_struct["pieces"][0]["senses"] == struct_rows
+        and any(row["position_class"] == "position_unresolved"
+                for row in whole_struct["pieces"][0]["senses"])
+        and len(lm_table.lookup("fa")) == 2)
+    rec("S17 the combining-form entries stand under the ruling: "
+        "'mov' / 'sin' / 'ev' rows carry RESOLVED "
+        "position_class='prefix', so movement / singing / "
+        "evolve keep their GOLD parses",
+        all(_sig(morpheme.split_word(w)) == _gold_sig(GOLD[w])
+            for w in ("movement", "singing", "evolve")))
 
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)

@@ -198,6 +198,14 @@ def explain_morphemes(text: str) -> Dict:
 #   existing callers; split_word does not inherit it.) Quarantined
 #   pieces (dell / man / re / alpha / delta / omega) annotate
 #   position_unresolved instead of picking a positional winner.
+# - QUARANTINE ELIGIBILITY (Director mail 1a1ce8ae4b5c8fe3):
+#   position-dependent consumption (the prefix/suffix inventories,
+#   known-middle, slot kind) is driven ONLY by rows whose own
+#   position_class is resolved -- see _lm2_position_eligible. A
+#   position_unresolved row's authored_position_class never
+#   licenses a positional use; the row remains fully visible
+#   through lookup() and piece senses -- excluded from position,
+#   never erased.
 # - Material with no table rows becomes an UNRESOLVED piece
 #   carrying the raw text -- never guessed, never dropped.
 # - Receipts: accounted = resolved chars / total chars;
@@ -210,6 +218,19 @@ _LM2_HERE = os.path.dirname(os.path.abspath(__file__))
 LM2_CENSUS_PATH = os.path.join(_LM2_HERE, "lm0_census_v1.json")
 _LM2_QUARANTINED = ("dell", "man", "re", "alpha", "delta", "omega")
 _lm2_state: Dict = {}
+
+
+def _lm2_position_eligible(row: Dict) -> bool:
+    """The ONE positional eligibility predicate (Director mail
+    1a1ce8ae4b5c8fe3). A table row may drive position-dependent
+    consumption -- prefix/suffix inventory membership,
+    known-middle, slot kind -- only when its OWN position_class
+    is resolved. A position_unresolved row's
+    authored_position_class is a claim under dispute, never a
+    positional license. Eligibility gates POSITION only: the
+    row still serves in full through lm_table.lookup() and
+    piece senses."""
+    return row.get("position_class") != "position_unresolved"
 
 
 def _lm2_loads() -> Dict:
@@ -226,11 +247,11 @@ def _lm2_loads() -> Dict:
             census = {e["word"]: e for e in doc.get("entries", [])}
         prefixes, suffixes = set(), set()
         for row in table.get("rows", []):
-            classes = {row.get("position_class"),
-                       row.get("authored_position_class")}
-            if "prefix" in classes:
+            if not _lm2_position_eligible(row):
+                continue
+            if row.get("position_class") == "prefix":
                 prefixes.add(row["piece"])
-            if "suffix" in classes:
+            if row.get("position_class") == "suffix":
                 suffixes.add(row["piece"])
         _lm2_state.update(
             lm_table=lm_table, table=table, census=census,
@@ -266,8 +287,8 @@ def _lm2_census_piece(entry: Dict) -> Dict:
 
 def _lm2_known_middle(text: str, st: Dict) -> bool:
     for row in st["lm_table"].lookup(text, st["table"]):
-        if (row.get("position_class") in ("root", "whole_form")
-                or row.get("authored_position_class")
+        if (_lm2_position_eligible(row)
+                and row.get("position_class")
                 in ("root", "whole_form")):
             return True
     return False
@@ -276,8 +297,8 @@ def _lm2_known_middle(text: str, st: Dict) -> bool:
 def _lm2_slot_kind(part: str, slot: str, st: Dict) -> str:
     classes = set()
     for row in st["lm_table"].lookup(part, st["table"]):
-        classes.add(row.get("position_class"))
-        classes.add(row.get("authored_position_class"))
+        if _lm2_position_eligible(row):
+            classes.add(row.get("position_class"))
     if slot == "first" and "prefix" in classes:
         return "prefix"
     if slot == "last" and "suffix" in classes:

@@ -119,7 +119,15 @@ if _ROOT not in sys.path:
 # pre-import pin (git diff against main shows exactly it); every
 # row is byte-identical. The pin below names the refreshed
 # artifact so any FURTHER silent v1 mutation still turns T7 red.
-V1_SHA256 = "62579e49734d8fc69fba17dbf83c3932307d4e02a662eabec595a7fd585a7bdd"
+# QUARANTINE-ELIGIBILITY REFRESH (PR #395, Director mail
+# 1a1ce8ae4b5c8fe3): the eligibility fix edited morpheme.py
+# again, so the harvester refreshed the same ONE header line a
+# second time (5c7daf79... -> 011299ac..., the fixed
+# morpheme.py) and the artifact's sha moved with it
+# (62579e49... -> 45b42d65...). Rows and the collisions file
+# remain byte-identical; the delta vs the refreshed artifact
+# above is exactly that one line.
+V1_SHA256 = "45b42d65251cc176a083a90afb83b0a4be9603ebd2eaa431616f8563fdc1d79e"
 QUARANTINED = ("dell", "man", "re", "alpha", "delta", "omega")
 
 RIGHTS = {"text": "Creative Commons Attribution-Share Alike 4.0",
