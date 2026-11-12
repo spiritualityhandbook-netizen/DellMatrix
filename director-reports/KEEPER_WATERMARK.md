@@ -1,10 +1,10 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-12 11:22 CST  
-**UTC approx**: 2026-11-12T17:22:00Z
+**Last cycle**: 2026-11-12 12:18 CST  
+**UTC approx**: 2026-11-12T18:18:00Z
 
 ## Items ruled this cycle
-- Deep Cycle pass complete. Queue positions published. No new binding dispositions. PR #401 head stamped (pre-stamp pending campaign).
+- Deep Cycle pass complete. Full-queue positions published (no change on ripe items awaiting named evidence). No new binding dispositions. Open heads #401 (prior stamp) and #405 stamped scoped CONFIRM (pre-stamp / evidence gap named). Scoreboard reconciled to 38/180.
 
 ## Trailing ledger
 - remaining: 2 (DD-18, Q-DD42.1)
