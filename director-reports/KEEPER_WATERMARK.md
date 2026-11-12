@@ -1,15 +1,16 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 18:32 CST  
-**UTC approx**: 2026-11-12T00:32:00Z
+**Last cycle**: 2026-11-11 18:47 CST  
+**UTC approx**: 2026-11-12T00:47:00Z
 
 ## Items ruled this cycle
-- PR #390 / LM-1 Ace license ruling — **CONFIRM (scoped)**. Import unlocked under Ace’s sovereign step; Wikipedia contributor community credited; CC BY-SA 4.0 attribution + share-alike stated; imported rows fenced as segregated stratum. No import executed by this stamp. Contrary HOLD (if any later) binds instantly.
+- PR #391 / LM-1 import license boundary — **CONFIRM (scoped)**. Records packet complete for Director ruling on Q-B1..Q-B3. Does not lift IMPORT EXECUTION HOLD; does not execute import.
+- PR #390 prior CONFIRM stands.
 
 ## Silence flag
-No other ripe items processed this cycle.
+No other ripe product items. #294 / #308 / #233 remain fenced (Q1 gate / census hold / CI-only).
 
 ## Standing notes
-Prior stamps stand. LM-1 license gate is open under Ace’s terms; import circuit still awaits both authorities’ clean fold and the LM-2-first sequencing.
+LM-1 path: Ace license unlocked + attribution/share-alike fence recorded; detailed boundary packet stamped and awaiting Director. Import circuit still gated.
 
 — KEEPER
