@@ -135,7 +135,11 @@ def smoke() -> bool:
 
     from form.mandell import lm_table
 
-    table = lm_table.load_table()
+    # These contracts govern the V1 artifact specifically. Since
+    # the LM-1 import circuit, the loader's default read path
+    # returns v2 when present (v1 fallback), so pin v1 explicitly.
+    table = lm_table.load_table(
+        path=os.path.join(_HERE, "mandell", "lm_table_v1.json"))
     rows = table["rows"]
     header = table["header"]
 
@@ -220,7 +224,9 @@ def smoke() -> bool:
         keys = {(g["position_class"], g["sense"]) for g in grows}
         if len(keys) > 1:
             expected_collisions.add(piece)
-    logged = {_norm(e["piece"]) for e in lm_table.load_collisions()}
+    logged = {_norm(e["piece"]) for e in lm_table.load_collisions(
+        path=os.path.join(_HERE, "mandell",
+                          "lm_table_v1.collisions.json"))}
     rec("P4 collision log == independent collision recount",
         logged == expected_collisions,
         f"logged-only={sorted(logged - expected_collisions)} "
@@ -230,7 +236,7 @@ def smoke() -> bool:
     rec("P5 precedence documented with customs first",
         lm_table.PRECEDENCE[0] == "customs"
         and "customs" in json.dumps(header).lower())
-    dell_rows = lm_table.lookup("dell")
+    dell_rows = lm_table.lookup("dell", table=table)
     rec("P5 lookup('dell') returns the full row set (>=3 strata rows)",
         len(dell_rows) >= 3
         and len(dell_rows) == len(groups.get("dell", [])),

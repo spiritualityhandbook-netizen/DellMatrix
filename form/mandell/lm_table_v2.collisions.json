@@ -1,0 +1,3809 @@
+[
+ {
+  "piece": "a",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "away from, down, off",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "movement to or toward; in addition to",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "not, without",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ac",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "point",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "cure",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "movement to or toward; in addition to",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "acr",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "point",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "height, summit, tip, top",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ad",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "toward · directed",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "movement to or toward; in addition to",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "aer",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "lift, raise",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "air, atmosphere",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ag",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "movement to or toward; in addition to",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "do, go, move",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "lead",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "alpha",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "beginning",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "operator",
+    "position_class": "position_unresolved",
+    "sense": "absolute beginning",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "am",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "movement to or toward; in addition to",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "love, liking",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "friend",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "both, on both sides",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "not, without",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "again, against, back, up",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "an",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "movement to or toward; in addition to",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "both, on both sides",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "not, without",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "again, against, back, up",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "anti",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "against, opposed to, preventive",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "before, in front of, prior to; old",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ap",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "movement to or toward; in addition to",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "off, away from, separate, at the farthest point",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ar",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "movement to or toward; in addition to",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "not, without",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "arche",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "ruler",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "ancient",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "au",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "away from, down, off",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "bird",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "axi",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "merit, worth",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "axis",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/A",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "bi",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "two",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/B",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "life",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/B",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "bol",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "throw",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/B",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "throw",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/B",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "clod, lump",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/B",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "brom",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "oats",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/B",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "stench",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/B",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "byss",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "bottom",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/B",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "flax",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/B",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "cal",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "beautiful",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "call",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "heat",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "can",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "dog",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "reed, rod",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sing",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "carp",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "fruit",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "wrist",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "cen",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "new",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "empty",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "common",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "cirr",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "orange",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "curl, tentacle",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "clin",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "bed",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "lean, recline",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "col",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "strain",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "cultivate, till, inhabit",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "with, together",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "coll",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "hill",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "neck",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "com",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "together · synthesis · unified",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "together / unified",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "friendly, kind",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "with, together",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "con",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "with · joint",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "with, together",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "cone",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "cor",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "heart · core",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "with, together",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "heart",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "cry",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "cold",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "suffix",
+    "position_class": "position_unresolved",
+    "sense": "wail, shriek",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "cub",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "cube",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "lie",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "de",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "down · analytical · reverse · intensive",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "down from / analyzing",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "bind",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/D",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "down, away from, removing",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/D",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "dell",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "position_unresolved",
+    "sense": "nested unit · operator cell · protected pocket",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "suffix",
+    "position_class": "position_unresolved",
+    "sense": "fragment · nested cell · protected pocket",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "Operator-bearing",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   },
+   {
+    "authored_position_class": "suffix",
+    "position_class": "position_unresolved",
+    "sense": "Operator-named unit",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   }
+  ]
+ },
+ {
+  "piece": "delta",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "change",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "operator",
+    "position_class": "position_unresolved",
+    "sense": "measure of change",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "dem",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "build",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/D",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "people",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/D",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "dida",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "learn",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/D",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "teach",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/D",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "dom",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "build",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/D",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "house",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/D",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ed",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "eat",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/E",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "swell, swollen",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "em",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "buy",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/E",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "in",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/E",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "equ",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "even, equal, level",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/E",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "horse",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/E",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ex",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "suffix",
+    "position_class": "suffix",
+    "sense": "execute immediately",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "outside, out of, from, out",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/E",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "fac",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "construct · make",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "make / build",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "do, make",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/F",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "fer",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "wild, fierce",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/F",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "position_unresolved",
+    "sense": "to bear, carry",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/F",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "form",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = candidate (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "Bring shape",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "shape",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/F",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "fund",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "bottom",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/F",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "pour",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/F",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "gen",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "origin · generate",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "birth, beget, race, kind",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/G",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "beget",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/G",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ger",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "old",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/G",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "bear, carry",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/G",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "gon",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "birth, beget, race, kind",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/G",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "corner, angle, knee",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/G",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "hal",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "salt",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/H",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "breathe",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/H",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "hed",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sit",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/H",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "pleasant, sweet",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/H",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "hemer",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "day",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/H",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "tame",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/H",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "hor",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "boundary",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/H",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "hour",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/H",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "hyster",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "womb",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/H",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "later",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/H",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "il",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "in, on",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/I",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "not, un- (negation)",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/I",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "im",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "in · isolated",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "in, on",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/I",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "not, un- (negation)",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/I",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "in",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sinew",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/I",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "in, on",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/I",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "not, un- (negation)",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/I",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "iso",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "quarantined · equal",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "equal, same",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/I",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "jac",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "lie",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/J",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "cast, throw",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/J",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "lab",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "grasp, seize, take",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "slide, slip",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "leg",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "say",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "choose, gather, read",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "law",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "send",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "lep",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "grasp, seize, take",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "flake, peel, scale",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "line",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "line",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "smear, smudge",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "log",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "trace · reason",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "record / track",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "word, reason, speech, thought",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "lut",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "wash",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "yellow, golden",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/L",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "man",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "control · hand · execution",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "Of the protocol / operator domain",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   },
+   {
+    "authored_position_class": "suffix",
+    "position_class": "position_unresolved",
+    "sense": "Term-only (Dellman)",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "crazy",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "flow",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "stay",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "hand",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "mand",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "command · order · execute",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "order, commit",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "mandel",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo_force (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "whole_form",
+    "position_class": "whole_form",
+    "sense": "",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo_force"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "Of the protocol / operator domain",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   }
+  ]
+ },
+ {
+  "piece": "men",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "mind",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "month",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "mend",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "validate · repair · honor",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "position_unresolved",
+    "sense": "order, commit",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "defect, fault",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ment",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "suffix",
+    "position_class": "suffix",
+    "sense": "result or means · mind",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "mind",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "merge",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = ace_seed (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "whole_form",
+    "position_class": "whole_form",
+    "sense": "plunge together · mix into one",
+    "source_file": "form/mandell/latinmandell.py",
+    "stratum": "ace_seed"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "dip, plunge",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "metr",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "measure",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "mother",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "min",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "jut",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "less, smaller",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "mina",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "lead",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "threaten",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "mirror",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = ace_seed (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "whole_form",
+    "position_class": "whole_form",
+    "sense": "show by reflection",
+    "source_file": "form/mandell/latinmandell.py",
+    "stratum": "ace_seed"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "Reflect / compare",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   }
+  ]
+ },
+ {
+  "piece": "mit",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "send · transmit",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "send / transmit",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "send",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "thread",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "mon",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "alone, only",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "warn",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "mor",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "foolish, dull",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "pause, delay",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "custom, disposition",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "mut",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "suffix",
+    "position_class": "suffix",
+    "sense": "mutate variable",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "move, motion",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "change",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "my",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "mouse",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "shut (the eyes)",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/M",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ne",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "spin, thread",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "new",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "nect",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "swimming",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "join, tie",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "nom",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "arrangement, law",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "arrangement, law, order",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "non",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "not",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "ninth",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "nine",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "not",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "south",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "back",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "letter, mark, note",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "nov",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "nine",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "new",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "nub",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "cloud",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "to marry, to wed",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "nud",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "raw · naked",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "naked",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/N",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ob",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "against · opposed",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "against",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "om",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "raw",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "shoulder",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "omega",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "end · completion",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "operator",
+    "position_class": "position_unresolved",
+    "sense": "ultimate bound",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   }
+  ]
+ },
+ {
+  "piece": "omni",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "all · universal · whole",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "all",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "onc",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "barb, hook",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "bulk",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "op",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "against",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "hole",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "oper",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "work",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "cover",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "opt",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "eye",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "choose",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "or",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "mountain",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "mouth",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "osm",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "odor",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "push, thrust",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/O",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pact",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "fasten",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "agreement",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pan",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "Pan",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "all",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "bread",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "par",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "beside, near",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "equal",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "order, prepare, provide, procure",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pass",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sprinkle",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "pace, step",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "suffer, feel, endure, permit",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pat",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "path",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "be open",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pect",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "fixed",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "fix",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ped",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "child",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "foot",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pel",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "clay, mud",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "thoroughly, through",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pen",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "almost",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "punish",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "peri",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "pouch, wallet",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "around",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pil",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "hair",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "pillar, ball",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pin",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "drink",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "pine",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "drink",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pir",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "try",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "pear",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "plac",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "plain, plate, tablet",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "calm",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "please",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "plan",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "wander",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "flat",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ple",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "fill, full",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sail, swim",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "fill",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "poli",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "city",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "gray, grey",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "post",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "after",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "after, behind",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pot",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "power",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "drink",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pre",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "before · predictive",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "before / predictive",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "before",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "prim",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "position_unresolved",
+    "sense": "press",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "first",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pro",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "before, in front of",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "for, forward",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "prodig",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "waste",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "prodigy",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/P",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "pulse",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = ace_seed (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "whole_form",
+    "position_class": "whole_form",
+    "sense": "stroke outward · beat of life",
+    "source_file": "form/mandell/latinmandell.py",
+    "stratum": "ace_seed"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "stroke · beat",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   }
+  ]
+ },
+ {
+  "piece": "rap",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "rob, seize",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/R",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "turnip",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/R",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "re",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "again · iterative · back",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "suffix",
+    "position_class": "position_unresolved",
+    "sense": "loop / again · return frame",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "again / iterative",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "again, back",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/R",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "reg",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "straight, direct",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/R",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "king",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/R",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sarc",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "flesh",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "tailor",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sci",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "shade, shadow",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "know",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "se",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "away, apart",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "six",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sed",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "away, apart",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "settle, calm",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sit",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sen",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "old man",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "six each",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sept",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "fence, partition, enclosure",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "seven",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ser",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "silk",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sow",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "attach, join",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "whey",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "late",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sex",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sexual",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "six",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sider",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "iron",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "star",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sol",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sun",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "comfort, soothe",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "alone, only",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "spec",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "evaluate · look",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "look / evaluate",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "look",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "spond",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "pledge, promise",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "a surety, guarantee; give assurance, promise solemnly",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "st",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "cause to stand",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "stand",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "stell",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "send",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "star",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sten",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "stand",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "narrow",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "stern",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "breastbone",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "spread, strew",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "stich",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "line, row",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "tunic",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "strat",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "spread, strew",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "army",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "struct",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "structure",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "to make up, build",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "su",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sew",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "below",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sub",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "under · nested",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "below",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "sum",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "sum",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "take",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "syn",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "synchronized",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "with",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/S",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "tag",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "arrange, order",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "touch",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "tec",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "melt",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "childbirth",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "tele",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "far, end",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "complete",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ten",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "stretch",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "hold, keep",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "test",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = ace_seed (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "whole_form",
+    "position_class": "whole_form",
+    "sense": "prove by trial",
+    "source_file": "form/mandell/latinmandell.py",
+    "stratum": "ace_seed"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "witness",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "the",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "god",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "put",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ting",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "position_unresolved",
+    "sense": "touch",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "dye, moisten",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "trans",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "across · transformative",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "across / changing form",
+    "source_file": "src/core/mandel_ontology.js",
+    "stratum": "inrepo_legacy"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "Across / change",
+    "source_file": "preform/pages/21_AFFIX_LEXICON_STARTER.md",
+    "stratum": "candidate"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "across",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "trit",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "rub, wear",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "third",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "troch",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "run, wheel",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "wheel",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/T",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ul",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "gums",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/U",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "woolly",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/U",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ur",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "tail",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/U",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "urine",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/U",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "vas",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "go",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "vessel",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "ven",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "vein",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "poison",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "hunt",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "come",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "vent",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "come",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "wind",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "vill",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "country house",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "shaggy hair",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "vir",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "man",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "green",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "poison, venom",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "voc",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = inrepo (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "voice",
+    "source_file": "form/mandell/morpheme.py",
+    "stratum": "inrepo"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "position_unresolved",
+    "sense": "call, voice",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "vol",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "fly",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "prefix",
+    "position_class": "prefix",
+    "sense": "will",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/V",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ },
+ {
+  "piece": "{{nowrap|-cid-}}",
+  "precedence_outcome": "No runtime change: existing module behavior is untouched by the table. Table annotation only: highest-precedence shipped stratum = external_wikipedia (a runtime custom, if bound, outranks every shipped stratum). position_unresolved pieces are excluded from position-dependent consumption until an authority rules (Q-LM1.3-Q-LM1.6).",
+  "rows": [
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "fall",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   },
+   {
+    "authored_position_class": "root",
+    "position_class": "root",
+    "sense": "cut, kill",
+    "source_file": "English Wikipedia: List of Greek and Latin roots in English/C",
+    "stratum": "external_wikipedia"
+   }
+  ]
+ }
+]
