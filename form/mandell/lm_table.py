@@ -37,10 +37,30 @@ first, each row annotated with precedence_rank. It never silently
 first-matches: callers (LM-2, later) see every stratum's claim,
 including position_unresolved rows for quarantined pieces
 (dell / man / re / alpha / delta / omega -- Q-LM1.3-Q-LM1.6 open).
+
+Pair binding (v2; PR #393 atomicity repair, Director mail
+1a1cdca2f4dd89fe): the v2 table header carries a "pair" block
+binding the exact bytes of the sibling collisions file and the
+canonical bytes of the table's rows to a single generation id.
+load_table() verifies that binding whenever the loaded table
+carries one, and load_collisions() on the default path verifies
+through it before returning. ANY mismatch -- mixed publish,
+partial publish, tampered member, missing member -- raises
+PairInconsistentError: an inconsistent pair is never served.
+Absence is a different state and keeps the legacy contract:
+a missing table loads as the empty table, without raising. An
+inconsistent pair does NOT fall back to v1: v1 is a different,
+smaller dataset, and silently serving it would be a silent
+downgrade. The recovery is to re-run the build
+(form/lm1_import.py), whose publish protocol converges the pair
+to one consistent generation. The v1 artifacts carry no pair
+block and behave exactly as before; explicit paths are honored
+as given.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from typing import Any, Dict, List, Optional
@@ -64,6 +84,81 @@ def _norm(piece: str) -> str:
     return (piece or "").strip().strip("-").lower()
 
 
+class PairInconsistentError(RuntimeError):
+    """The v2 table/collisions pair failed its generation
+    binding check (mixed, partial, or tampered publish). Raised
+    instead of ever serving an inconsistent pair; re-running
+    form/lm1_import.py converges the pair."""
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _canonical_rows_bytes(rows) -> bytes:
+    return json.dumps(rows, ensure_ascii=False, sort_keys=True,
+                      separators=(",", ":")).encode("utf-8")
+
+
+def _sibling_collisions_path(table_path: str):
+    """The collisions file bound to a v2 table path, or None for
+    any other artifact name (the binding is defined only for the
+    lm_table_v2.json / lm_table_v2.collisions.json pair)."""
+    if os.path.basename(table_path) != "lm_table_v2.json":
+        return None
+    return os.path.join(os.path.dirname(table_path),
+                        "lm_table_v2.collisions.json")
+
+
+def _verify_pair(table_path: str, doc) -> None:
+    """Fail closed unless the sibling collisions file is exactly
+    the one this table generation binds. No pair block (v1, or an
+    unbound artifact) -> nothing to verify, legacy behavior."""
+    pair = (doc.get("header") or {}).get("pair")
+    if not pair:
+        return
+    cpath = _sibling_collisions_path(table_path)
+    if cpath is None:
+        return
+    fields = (pair.get("generation"), pair.get("collisions_sha256"),
+              pair.get("rows_sha256"))
+    if any(not isinstance(v, str) or len(v) != 64
+           for v in fields):
+        raise PairInconsistentError(
+            f"lm_table pair inconsistent: {table_path} carries an "
+            "incomplete pair binding; re-run form/lm1_import.py "
+            "to converge the pair")
+    if not os.path.exists(cpath):
+        raise PairInconsistentError(
+            f"lm_table pair inconsistent: {table_path} binds "
+            f"collisions file {cpath}, which is missing; re-run "
+            "form/lm1_import.py to converge the pair")
+    with open(cpath, "rb") as f:
+        cbytes = f.read()
+    if _sha256_bytes(cbytes) != pair["collisions_sha256"]:
+        raise PairInconsistentError(
+            f"lm_table pair inconsistent: collisions file "
+            f"{cpath} does not match the binding in "
+            f"{table_path} (mixed or tampered pair); re-run "
+            "form/lm1_import.py to converge the pair")
+    rows_sha = _sha256_bytes(
+        _canonical_rows_bytes(doc.get("rows", [])))
+    if rows_sha != pair["rows_sha256"]:
+        raise PairInconsistentError(
+            f"lm_table pair inconsistent: rows of {table_path} "
+            "do not match their pair binding (tampered table); "
+            "re-run form/lm1_import.py to converge the pair")
+    generation = _sha256_bytes(
+        bytes.fromhex(pair["collisions_sha256"])
+        + bytes.fromhex(rows_sha))
+    if generation != pair["generation"]:
+        raise PairInconsistentError(
+            f"lm_table pair inconsistent: generation id in "
+            f"{table_path} does not derive from its bound "
+            "members; re-run form/lm1_import.py to converge "
+            "the pair")
+
+
 def _default_table_path() -> str:
     """The single read path: v2 when present, v1 fallback."""
     if os.path.exists(V2_TABLE_PATH):
@@ -80,19 +175,35 @@ def _default_collisions_path() -> str:
 def load_table(path: Optional[str] = None) -> Dict[str, Any]:
     """Load the LM table (v2 when present, else v1). Missing file
     -> empty table, no raise: {'header': None, 'rows': []}
-    (today's behavior, exactly)."""
+    (today's behavior, exactly). A table carrying a pair binding
+    (v2) is verified against its sibling collisions file first:
+    an inconsistent pair raises PairInconsistentError."""
     p = path or _default_table_path()
     if not os.path.exists(p):
         return {"header": None, "rows": []}
     with open(p, encoding="utf-8") as f:
         doc = json.load(f)
+    _verify_pair(p, doc)
     return {"header": doc.get("header"), "rows": doc.get("rows", [])}
 
 
 def load_collisions(path: Optional[str] = None) -> List[Dict[str, Any]]:
     """Load the collision log paired with the active table.
-    Missing file -> empty list."""
-    p = path or _default_collisions_path()
+    Missing file -> empty list. On the default path with a v2
+    table present, the pair binding is verified (via load_table)
+    before the collisions are returned: a mixed pair raises
+    PairInconsistentError rather than serving the collisions of
+    another generation. An explicit path is honored as given."""
+    if path is not None:
+        if not os.path.exists(path):
+            return []
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    if os.path.exists(V2_TABLE_PATH):
+        load_table()  # verifies the pair binding, fail-closed
+        with open(V2_COLLISIONS_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    p = _default_collisions_path()
     if not os.path.exists(p):
         return []
     with open(p, encoding="utf-8") as f:

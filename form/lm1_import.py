@@ -32,9 +32,13 @@ Gates, in order, all fail-closed (design SS2):
   1. Revision pin check: fetched revid must equal the pin; a
      mismatch aborts the whole build, no partial table.
   2. Per-page license check: the site license is re-verified via
-     the MediaWiki siteinfo rightsinfo at fetch time; a page whose
-     license is not confirmed CC BY-SA 4.0 is EXCLUDED and the
-     exclusion reported -- never worked around. No GFDL election.
+     the MediaWiki siteinfo rightsinfo at fetch time. That is a
+     SITE-level statement; the per-page exception scan of the
+     pinned wikitext is recorded in director-reports/
+     LM1_IMPORT_ATTRIBUTION_2026-11-11.md (substantiation
+     section). If the site license cannot be confirmed as
+     CC BY-SA 4.0, every page is treated as unconfirmed
+     (license-excluded) -- never worked around. No GFDL election.
   3. No copied examples (Q-LM1.10): the parser reads ONLY the root,
      meaning, and origin columns of each wikitable row. The
      etymology and examples columns are structurally unreachable:
@@ -66,10 +70,26 @@ Gates, in order, all fail-closed (design SS2):
      manifest coverage status is PARTIAL naming the pages, and
      validate_table() refuses any artifact claiming COMPLETE
      coverage in that state.
-  9. No-write-on-failure: both artifacts are written to temporary
-     files and os.replace()d only after every gate has passed; a
-     failed build leaves the previous artifacts (or their absence)
-     byte-identical.
+  9. Pair-atomic publish (REPAIRED 2026-11-11 per Director mail
+     1a1cdca2f4dd89fe; the original sequence -- two independent
+     _write_atomic calls, collisions then table -- was NOT
+     pair-atomic, and main() re-checked the v1 hash only AFTER
+     publishing, when a failure could no longer unpublish):
+     both artifacts are built and validated in memory, serialized
+     once, and staged (temp file + fsync) beside their targets;
+     the table header's "pair" block binds the exact collisions
+     bytes and the canonical rows bytes to a single generation
+     id; the v1 hash is rechecked BEFORE anything is published;
+     the previous pair is copied to <path>.prev build-area
+     recovery copies; the collisions file is replaced first and
+     the table LAST -- the table is the commit point. The loader
+     (form/mandell/lm_table.py) verifies the binding on every
+     default read and fails closed on a mixed pair, so an
+     interruption between the replaces is never served as a
+     consistent pair; re-running this build converges the pair
+     (tested recovery protocol: T-A/T-B/T-E in
+     form/lm1_import_test.py). A failed gate leaves the previous
+     artifacts (or their absence) byte-identical.
 
 Export helper (boundary SS4, build-time only): classify_export()
 classifies a row set as unchanged_quote / derived_adaptation /
@@ -88,6 +108,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -797,31 +818,176 @@ def classify_export(rows) -> dict:
 
 
 # ------------------------------------------------------------------
-# Atomic write + main
+# Pair-atomic publish + main (gate 9, repaired per Director mail
+# 1a1cdca2f4dd89fe -- see the module docstring)
 # ------------------------------------------------------------------
 
-def _write_atomic(path: str, doc) -> None:
+def _serialize(doc) -> bytes:
+    """The one serialization for both artifacts: the exact bytes
+    that are hashed for the pair binding are the exact bytes
+    written to disk."""
+    return json.dumps(doc, ensure_ascii=False, indent=1,
+                      sort_keys=True).encode("utf-8") + b"\n"
+
+
+def _stage_bytes(path: str, data: bytes) -> str:
+    """Write data to a temp file beside its target and fsync it.
+    Returns the temp path; nothing is visible at the target yet."""
     tmp = f"{path}.tmp-{os.getpid()}"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(doc, f, ensure_ascii=False, indent=1,
-                  sort_keys=True)
-        f.write("\n")
-    os.replace(tmp, path)
+    with open(tmp, "wb") as f:
+        f.write(data)
+        f.flush()
+        os.fsync(f.fileno())
+    return tmp
+
+
+def _write_atomic_bytes(path: str, data: bytes) -> None:
+    os.replace(_stage_bytes(path, data), path)
+
+
+def _write_atomic(path: str, doc) -> None:
+    _write_atomic_bytes(path, _serialize(doc))
+
+
+def pair_binding(rows, collisions_bytes: bytes) -> dict:
+    """Bind the artifact pair to a single generation.
+
+    The generation id is derived from BOTH members' content: the
+    sha256 of the exact collisions-file bytes and the sha256 of
+    the canonical rows bytes. The table header carries all three
+    values; the loader recomputes them on every default read, so
+    any pair that is not exactly one generation -- mixed publish,
+    partial publish, tampered member -- is detected.
+    """
+    collisions_sha = _sha256_bytes(collisions_bytes)
+    rows_bytes = json.dumps(rows, ensure_ascii=False,
+                            sort_keys=True,
+                            separators=(",", ":")).encode("utf-8")
+    rows_sha = _sha256_bytes(rows_bytes)
+    generation = _sha256_bytes(bytes.fromhex(collisions_sha)
+                               + bytes.fromhex(rows_sha))
+    return {"binding": "lm1-pair/1", "generation": generation,
+            "collisions_sha256": collisions_sha,
+            "rows_sha256": rows_sha}
+
+
+def _effective_fault(fault):
+    """Resolve the failure-injection hook for publish tests.
+
+    An explicit callable wins. Otherwise, when the environment
+    carries LM1_IMPORT_FAULT=sleep:<point>, the hook sleeps at the
+    named publish point (writing LM1_IMPORT_FAULT_MARKER first if
+    set) -- used by the process-interruption test (T-B), which
+    kills the importer mid-publish. Build-time test use only;
+    unset in normal builds.
+    """
+    if fault is not None:
+        return fault
+    spec = os.environ.get("LM1_IMPORT_FAULT", "")
+    if not spec.startswith("sleep:"):
+        return None
+    point = spec.split(":", 1)[1]
+    marker = os.environ.get("LM1_IMPORT_FAULT_MARKER")
+
+    def hook(hit):
+        if hit == point:
+            if marker:
+                with open(marker, "w", encoding="utf-8") as f:
+                    f.write(hit)
+            time.sleep(120)
+
+    return hook
 
 
 def run_build(payloads, rights, fetched_at, v1_doc,
               table_path=V2_TABLE_PATH,
-              collisions_path=V2_COLLISIONS_PATH) -> dict:
-    """Build + atomically write both artifacts (gate 9).
+              collisions_path=V2_COLLISIONS_PATH,
+              v1_path=None, expected_v1_sha256=None,
+              fault=None) -> dict:
+    """Build, bind, and publish the artifact pair (gate 9).
 
-    On ImportAbort nothing is written: any pre-existing artifact
-    (or its absence) is left byte-identical.
+    Publish protocol (all steps after build_table, which runs
+    every gate in memory and writes nothing):
+
+      1. Serialize both artifacts once; the table header gains
+         the "pair" generation binding (pair_binding()).
+      2. Stage both payloads to fsynced temp files beside their
+         targets. Nothing is visible at the targets yet.
+      3. Pre-publish v1 recheck: when expected_v1_sha256 is
+         supplied, the v1 file at v1_path must still hash to it;
+         a concurrent v1 change aborts the build with NOTHING
+         published. (The pre-repair code checked only after
+         publishing, when the failure could not unpublish.)
+      4. Retain the previous pair as <path>.prev build-area
+         recovery copies (never read by the loader, never part of
+         the committed artifact set; recovery aids only).
+      5. Publish: os.replace the collisions file, then the table
+         file LAST. The table is the commit point -- its header
+         binds the collisions bytes of the same generation, and
+         the loader verifies that binding on every default read
+         and fails closed (PairInconsistentError) on a mixed
+         pair. A crash between the two replaces therefore leaves
+         a state no reader will serve; re-running the build
+         converges the pair to one consistent generation
+         (recovery protocol, tested by T-A/T-B/T-E).
+
+    fault: optional callable invoked at the publish points
+    "staged", "after_collisions_replace", "after_table_replace"
+    (failure-injection tests); see _effective_fault for the
+    env-gated alternative.
     """
     built = build_table(v1_doc, payloads, rights, fetched_at)
-    _write_atomic(collisions_path, built["collisions"])
-    _write_atomic(table_path,
-                  {"header": built["table"]["header"],
-                   "rows": built["table"]["rows"]})
+    hook = _effective_fault(fault)
+    table_doc = {"header": built["table"]["header"],
+                 "rows": built["table"]["rows"]}
+    collisions_bytes = _serialize(built["collisions"])
+    table_doc["header"]["pair"] = pair_binding(
+        table_doc["rows"], collisions_bytes)
+    table_bytes = _serialize(table_doc)
+    built["table"] = table_doc
+    staged = []
+    try:
+        staged.append((_stage_bytes(collisions_path,
+                                     collisions_bytes),
+                       collisions_path))
+        staged.append((_stage_bytes(table_path, table_bytes),
+                       table_path))
+        if hook is not None:
+            hook("staged")
+        if expected_v1_sha256 is not None:
+            if v1_path is None:
+                raise ImportAbort(
+                    "gate 9 (publish): expected_v1_sha256 "
+                    "supplied without v1_path -- abort, nothing "
+                    "published")
+            try:
+                with open(v1_path, "rb") as f:
+                    actual_v1 = _sha256_bytes(f.read())
+            except OSError as exc:
+                raise ImportAbort(
+                    "gate 9 (publish): v1 table unreadable for "
+                    f"the pre-publish recheck ({exc}) -- abort, "
+                    "nothing published")
+            if actual_v1 != expected_v1_sha256:
+                raise ImportAbort(
+                    "gate 9 (publish): v1 table changed during "
+                    "the build -- aborting BEFORE publish; the "
+                    "previous pair (or its absence) is untouched")
+        for _tmp, target in staged:
+            if os.path.exists(target):
+                with open(target, "rb") as f:
+                    _write_atomic_bytes(target + ".prev", f.read())
+        os.replace(staged[0][0], staged[0][1])
+        if hook is not None:
+            hook("after_collisions_replace")
+        os.replace(staged[1][0], staged[1][1])
+        if hook is not None:
+            hook("after_table_replace")
+    except BaseException:
+        for tmp, _target in staged:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
+        raise
     return built
 
 
@@ -851,14 +1017,29 @@ def main() -> int:
             "confirmed as CC BY-SA 4.0 at fetch time; every page "
             "is unconfirmed -- aborting rather than emitting an "
             "empty import")
-    with open(V1_TABLE_PATH, encoding="utf-8") as f:
-        v1_doc = json.load(f)
-    v1_hash_before = _sha256_bytes(open(V1_TABLE_PATH, "rb").read())
-    built = run_build(payloads, rights, fetched_at, v1_doc)
-    v1_hash_after = _sha256_bytes(open(V1_TABLE_PATH, "rb").read())
-    if v1_hash_before != v1_hash_after:
-        raise ImportAbort("v1 table changed during build (must "
-                          "never happen)")
+    # Read the v1 bytes ONCE: the document parsed and the hash
+    # rechecked before publish (inside run_build) are the same
+    # bytes, so no change can slip between parse and recheck.
+    with open(V1_TABLE_PATH, "rb") as f:
+        v1_bytes = f.read()
+    v1_doc = json.loads(v1_bytes)
+    v1_hash = _sha256_bytes(v1_bytes)
+    built = run_build(payloads, rights, fetched_at, v1_doc,
+                      v1_path=V1_TABLE_PATH,
+                      expected_v1_sha256=v1_hash)
+    # Post-publish read-back: the pair on disk must verify
+    # against its own binding before success is reported.
+    with open(V2_COLLISIONS_PATH, "rb") as f:
+        published_collisions_sha = _sha256_bytes(f.read())
+    with open(V2_TABLE_PATH, encoding="utf-8") as f:
+        published_pair = (json.load(f).get("header")
+                          or {}).get("pair") or {}
+    if published_pair.get("collisions_sha256") != \
+            published_collisions_sha:
+        raise ImportAbort(
+            "gate 9 (publish): post-publish read-back failed -- "
+            "the published pair does not verify against its "
+            "binding")
     totals = built["ledger"]["totals"]
     cov = built["table"]["header"]["coverage"]
     print(f"lm1_import: coverage {cov['status']}; "
@@ -868,7 +1049,9 @@ def main() -> int:
           f"{totals['license_excluded_rows']}, emitted pieces "
           f"{totals['emitted_pieces']} -> {V2_TABLE_PATH}, "
           f"{V2_COLLISIONS_PATH}")
-    print(f"lm1_import: v1 sha256 unchanged: {v1_hash_after}")
+    print(f"lm1_import: v1 sha256 unchanged: {v1_hash}")
+    print(f"lm1_import: pair generation "
+          f"{published_pair.get('generation')}")
     return 0
 
 

@@ -7,7 +7,7 @@ Import executed 2026-11-11 by Uni (build-time tool `form/lm1_import.py`), under 
 - Source work: "List of Greek and Latin roots in English", English Wikipedia — https://en.wikipedia.org/wiki/List_of_Greek_and_Latin_roots_in_English
 - Author (for attribution): the Wikipedia contributor community of the listed pages (no single creator). Program credits: CREDITS.md at the repository root.
 - Hub page: "List of Greek and Latin roots in English", pinned revision 1378877227 (fetched live and verified against the pin at build time).
-- License: CC BY-SA 4.0 — https://creativecommons.org/licenses/by-sa/4.0/ — re-verified at fetch time via the MediaWiki API siteinfo rightsinfo: "Creative Commons Attribution-Share Alike 4.0" (https://creativecommons.org/licenses/by-sa/4.0/deed.en); confirmed for every page below. No GFDL election.
+- License: CC BY-SA 4.0 — https://creativecommons.org/licenses/by-sa/4.0/ — re-verified at fetch time via the MediaWiki API siteinfo rightsinfo: "Creative Commons Attribution-Share Alike 4.0" (https://creativecommons.org/licenses/by-sa/4.0/deed.en). That rightsinfo response is a SITE-level statement, not a per-page one; its application to the 24 pinned revisions is substantiated in the "Site-license substantiation" section below. No GFDL election.
 - Retrieved: 2026-11-12T03:19:52Z (UTC), via the MediaWiki API (prop=revisions, wikitext). Every page's fetched revision equals its boundary pin; the build aborts on any mismatch.
 
 ## Per-page provenance and cardinality ledger
@@ -39,6 +39,15 @@ Import executed 2026-11-11 by Uni (build-time tool `form/lm1_import.py`), under 
 | List of Greek and Latin roots in English/X | 1106460130 | 2022-08-24T18:29:38Z | 5fb3cd47e74f6bbe… | 7 | 7 | 0 | 0 | 7 | 8 |
 | List of Greek and Latin roots in English/Z | 1276421824 | 2025-02-18T19:41:07Z | 2f27aeea54aa8675… | 10 | 10 | 0 | 0 | 10 | 10 |
 | **Totals** | | | | **1693** | **1684** | **9** | **0** | **1684** | **2087** |
+
+## Site-license substantiation (Director review point, 2026-11-11)
+
+The build's license evidence is the MediaWiki API siteinfo rightsinfo response, which states the license for the SITE (English Wikipedia), not for any individual page: text "Creative Commons Attribution-Share Alike 4.0", URL https://creativecommons.org/licenses/by-sa/4.0/deed.en, recorded verbatim in the v2 table manifest (`header.manifest.rightsinfo`). This section records what was checked to substantiate applying that site license to the 24 pinned letter revisions, per the Director's review point on PR #393. It is a factual record of checks performed, NOT a legal certification.
+
+- **Basis.** English Wikipedia's licensing is site-wide under its terms: text contributed to the site is licensed under the site license (the CC BY-SA license the rightsinfo names) unless a page itself states different terms. The recognized exception surface on Wikipedia is file/media description pages carrying non-free-use rationales; the 25 pages here are text list pages, not file pages.
+- **What was checked (2026-11-11, PR #393 repair cycle).** The exact wikitext of all 24 pinned letter revisions — verified byte-identical to the build payloads (each file's sha256 equals the sha256 recorded for that page in the v2 manifest) — and the hub page wikitext (revision id 1378877227, equal to the boundary pin) was scanned for per-page license exceptions: license templates or notices, and the strings "public domain", "GFDL", "copyright", "non-free", "fair use", and license/licence/permission used as a notice. The complete template inventory across the letter pages is language, etymology, and navigation templates only (wikt-lang, grc-transl, lang, LSJ, L&S, Reflist, Short description / short description, flatlist, nowrap, linktext, anchor, cite web, Not a typo).
+- **Result.** NO per-page license statement, license template, or exception marker was found on any of the 25 pages. The single match for a license-adjacent word is the ordinary English word "permission" inside an examples cell on page /M (root mit-/miss-), which is content, not a notice — and examples were not imported (Q-LM1.10).
+- **Bounded conclusion.** No page-level exception exists in the pinned wikitext to document; the 24 revisions are treated under the site license exactly as re-verified at fetch time. If any of these pages is later shown to carry an exception, that page's rows must be excluded and this record and the coverage status corrected.
 
 ## Coverage
 

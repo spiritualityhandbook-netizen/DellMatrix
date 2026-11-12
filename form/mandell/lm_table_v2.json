@@ -615,6 +615,12 @@
     "rows": 158
    }
   },
+  "pair": {
+   "binding": "lm1-pair/1",
+   "collisions_sha256": "98d05ccc0699abb182ca5b0013d37266ae226fdc8263e78dfc7704b5eb9d3dda",
+   "generation": "0d3eb928baea31f518e2395e180ad9bbeef0ba8a449926c6c2ddcd39e11c5267",
+   "rows_sha256": "ebed2423cabc9af0cb783f0db050f0b25582cfc7d9c01bf5402762cea5bea375"
+  },
   "precedence": [
    "customs",
    "ace_seed",
