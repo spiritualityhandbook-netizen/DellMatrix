@@ -250,10 +250,133 @@ def smoke() -> bool:
           len(props4) == 0,
           f"proposals={len(props4)} scope_mode={res4.get('scope_mode')}")
 
-    total = 14
+    # --- RUN F: malformed / unknown / stale-member boxed state ------
+    # Director code-review finding (mail 1a1d0990c34b0d99): _wall_key
+    # returns None for BOTH a genuinely unboxed unit and a unit with
+    # sandboxed=True but sandbox_id=None — None==None equality would
+    # admit the malformed unit as a wall-mate of unboxed peers
+    # (fail-open under malformed/restored state: persist_rest restores
+    # unit.sandboxed/unit.sandbox_id verbatim, and Plane.box() never
+    # validates box membership). Canonical verdict on malformed
+    # endpoints already exists: form/mandell/unit_containment.py F1
+    # (Director review 2026-11-04) refuses them outright. These runs
+    # construct each malformed state by direct field assignment (the
+    # same state a verbatim restore can produce) and pin the repair:
+    # such units are refused — excluded from pair enumeration with
+    # the refusal receipted (malformed_box_units_refused) — never
+    # collapsed to unboxed. Construction probes for every box/unbox
+    # permutation reachable through the public box API are in the
+    # run-F taxonomy comment in the repair report §11.
+    F_UNITS = ["malf", "stale_a", "stale_b", "ghost", "ok_a", "ok_b"]
+
+    def _f_base(tag, boxed):
+        p = _build(f"{OWNER_TAG}F{tag}", box_inside=False)
+        plane = p.cube.session.plane
+        plane.units.clear()
+        plane.sandboxes.clear()
+        p.nursery.proposals.clear()
+        for uid in F_UNITS:
+            p.place(uid, f"flabel {uid}", words=f"fwords {uid}",
+                    x=0.0, y=0.0)
+        for uid in boxed:
+            plane.box([uid], "realbox", label="gs4 real box")
+        return p, plane
+
+    # F-run driver: each malformed field is driven through the public
+    # grow path; refusal evidence is read from the result receipt.
+    def _f_run(tag, boxed, mutate):
+        p, plane = _f_base(tag, boxed)
+        mutate(plane)
+        before = list(plane.units)
+        res = p.grow_ideas(1)
+        steps = res.get("steps") or [{}]
+        props = _snapshot(p)
+        return p, plane, res, steps, props, before
+
+    def _pairs_touching(props, uid):
+        return [pr for pr in props if uid in (pr["parents"] or [])]
+
+    def _tokens_of(p, uid):
+        return _raw_words(p.cube.session.plane.units[uid].label + " "
+                          + p.cube.session.plane.units[uid].words)
+
+    # F1/F2 — malformed boxed (sandbox_id None) beside unboxed peers.
+    def _mk_malformed(plane):
+        u = plane.units["malf"]
+        u.sandboxed = True
+        u.sandbox_id = None
+        u.label = "harbor lantern malformed"
+        u.words = ("harbor lantern craft timber copper kettle song "
+                   "malformed cellar vault")
+
+    pf, planf, resf, stepsf, propsf, _ = _f_run("1", [], _mk_malformed)
+    f_refused = list(resf.get("malformed_box_units_refused") or [])
+    check("F1 malformed boxed unit is refused, never wall-mate of unboxed",
+          "malf" in f_refused
+          and len(_pairs_touching(propsf, "malf")) == 0,
+          f"refused={f_refused} "
+          f"proposals_touching_malf={len(_pairs_touching(propsf, 'malf'))} "
+          f"pairs_scanned={stepsf[0].get('pairs_scanned')} "
+          f"excluded_cross={stepsf[0].get('pairs_excluded_cross_sandbox')}")
+    drift_f = [pr for pr in propsf
+               if pr["parents"] == ["malf"]
+               and (out_only_tokens
+                    & _raw_words(pr["label"] + " " + pr["words"]))]
+    check("F2 malformed unit: no outside-token drift to or from it",
+          len(drift_f) == 0
+          and all(set(pr["parents"] or []) != {"malf"} for pr in propsf),
+          f"drift_from_malf={[(pr['pid'], pr['parents']) for pr in drift_f]}")
+
+    # F3 — unknown sandbox_id (names no sandbox in Plane.sandboxes).
+    def _mk_ghost(plane):
+        u = plane.units["ghost"]
+        u.sandboxed = True
+        u.sandbox_id = "no_such_box"
+        u.label = "harbor lantern ghostbox"
+        u.words = ("harbor lantern craft timber copper kettle song "
+                   "ghostbox cellar vault")
+
+    pg, plang, resg, stepsg, propsg, _ = _f_run("3", [], _mk_ghost)
+    g_refused = list(resg.get("malformed_box_units_refused") or [])
+    check("F3 unknown sandbox_id is refused (fail-closed)",
+          "ghost" in g_refused
+          and len(_pairs_touching(propsg, "ghost")) == 0,
+          f"refused={g_refused} "
+          f"proposals_touching_ghost={len(_pairs_touching(propsg, 'ghost'))}")
+
+    # F4 — membership inconsistency, direction (i): two units claim
+    # realbox; the Sandbox record lists only stale_a. Plane.box()
+    # keeps both sides in sync through the API, so this state is
+    # reachable only by field/record divergence (restore of a
+    # hand-edited or partially-written save; see report §11) — but a
+    # restore CAN produce it verbatim, so growth must fail closed.
+    def _mk_stale(plane):
+        sb = plane.sandboxes["realbox"]
+        sb.member_ids = [m for m in sb.member_ids if m != "stale_b"]
+
+    ps, plans, ress, stepss, propss, _ = _f_run(
+        "4", ["stale_a", "stale_b"], _mk_stale)
+    s_refused = list(ress.get("malformed_box_units_refused") or [])
+    pair_stale = [pr for pr in propss
+                  if set(pr["parents"] or []) == {"stale_a", "stale_b"}]
+    check("F4 membership-inconsistent unit is refused; its claimed-mate pair never scores",
+          "stale_b" in s_refused
+          and "stale_a" not in s_refused
+          and len(pair_stale) == 0,
+          f"refused={s_refused} stale_pair_proposals={len(pair_stale)} "
+          f"pairs_scanned={stepss[0].get('pairs_scanned')}")
+
+    # F5 — well-formed boxed pair among the refused: still grows.
+    check("F5 well-formed unboxed peers still grow beside refused units",
+          stepss[0].get("pairs_scanned") == 6,
+          f"pairs_scanned={stepss[0].get('pairs_scanned')} "
+          f"(6 = the pairs among the 4 unboxed units; stale_a's 4 "
+          f"cross-wall pairs excluded, stale_b refused outright)")
+
+    total = 19
     print(f"GS-4 SANDBOX: {total - len(fails)}/{total} checks passed"
           + (f"; FAILING: {fails}" if fails else ""))
-    for owner in ("A", "B", "C", "D", "E"):
+    for owner in ("A", "B", "C", "D", "E", "F1", "F3", "F4"):
         _cleanup(f"{OWNER_TAG}{owner}")
     return not fails
 

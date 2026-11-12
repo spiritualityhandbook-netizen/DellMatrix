@@ -98,11 +98,53 @@ def _wall_key(plane: Plane, uid: str) -> Optional[str]:
     None when unboxed, else the unit's sandbox_id. Membership is read
     from the SAME Unit fields Plane.box/unbox maintain and
     Plane.enhance_scope consults — no second store, no new authority.
+
+    A malformed boxed unit (see _malformed_boxed) also yields None
+    here — callers must consult _malformed_boxed FIRST and refuse
+    such units; None from this function alone never proves a unit is
+    genuinely unboxed.
     """
     u = plane.units.get(uid)
     if u is None or not getattr(u, "sandboxed", False):
         return None
     return getattr(u, "sandbox_id", None)
+
+
+def _malformed_boxed(plane: Plane, uid: str) -> bool:
+    """GS-4 correction (Director review mail 1a1d0990c34b0d99): True
+    when a unit CLAIMS sandbox isolation but its claim cannot be
+    verified against the canonical Plane box authority:
+
+    - sandbox_id is not a non-empty string (missing / None / empty) —
+      the same malformed-endpoint definition form/mandell/
+      unit_containment.py applies under F1 (Director review
+      2026-11-04): such endpoints are refused outright there;
+    - sandbox_id names no Sandbox record in plane.sandboxes;
+    - the named Sandbox record's member_ids does not contain the
+      unit (membership inconsistency — the unit's claim and the
+      box's record disagree).
+
+    Plane.box()/unbox() maintain both sides together, so none of
+    these states arise through the box API; they arise through
+    verbatim restore (form/persist_rest.py restores sandboxed /
+    sandbox_id unvalidated and rebuilds Sandbox records from the
+    members lists), hand-edited or partially-written saves, or
+    direct field/record writes. Growth fails CLOSED on all of them:
+    the unit is refused from pair enumeration (receipted), never
+    collapsed to unboxed — collapsing would admit it as a wall-mate
+    of genuinely unboxed units (None == None), the fail-open the
+    Director's review identified.
+    """
+    u = plane.units.get(uid)
+    if u is None or not getattr(u, "sandboxed", False):
+        return False
+    sid = getattr(u, "sandbox_id", None)
+    if not (isinstance(sid, str) and sid != ""):
+        return True
+    sb = plane.sandboxes.get(sid)
+    if sb is None:
+        return True
+    return uid not in (sb.member_ids or [])
 
 
 def _tension(a: Set[str], b: Set[str]) -> float:
@@ -445,6 +487,21 @@ class RingedGrowth:
         Unboxed output is unchanged byte-for-byte; affinity weights,
         scope_ids semantics, and default-unset semantics are untouched.
         The only lawful crossing door remains unbox-then-grow.
+
+        GS-4 correction (Director review mail 1a1d0990c34b0d99): a
+        unit whose boxed claim cannot be verified against the Plane
+        box authority (sandboxed=True with a missing/empty sandbox_id,
+        an unknown sandbox_id, or a Sandbox record that does not list
+        it as a member — see _malformed_boxed) is REFUSED from pair
+        enumeration outright, receipted per cycle in
+        malformed_box_units_refused (pairs touching it counted in
+        pairs_excluded_malformed_box). It is never collapsed to
+        unboxed: _wall_key returns None for it exactly as for a
+        genuinely unboxed unit, and None == None equality would
+        otherwise admit it as their wall-mate — a fail-open boundary
+        under malformed/restored state. This mirrors the canonical
+        containment verdict (unit_containment F1 refuses malformed
+        sandboxed endpoints outright).
         """
         docked = session is not None \
             and bool(getattr(session, "is_docked", False))
@@ -455,6 +512,8 @@ class RingedGrowth:
         total_new = 0
         total_evo = 0
         total_excluded_cross_sandbox = 0
+        total_excluded_malformed_box = 0
+        refused_malformed_box: List[str] = []
         fog_cut = 0
         gate_counts = {"Solstice": 0, "Equinox": 0, "Standstill": 0, "None": 0}
         body_snapshots: List[Dict[str, Any]] = []
@@ -507,6 +566,8 @@ class RingedGrowth:
                     "ok": False,
                     "reason": "no live ideas",
                     "pairs_excluded_cross_sandbox": 0,
+                    "pairs_excluded_malformed_box": 0,
+                    "malformed_box_units_refused": [],
                     "body": body_snapshots[-1],
                 })
                 continue
@@ -514,11 +575,25 @@ class RingedGrowth:
             # GS-4: wall-mate admissibility (C-1) — a pair enumerates
             # iff both units share one wall key. Cross-wall pairs are
             # excluded BEFORE scoring: never gated, never drifted from.
+            # GS-4 correction (mail 1a1d0990c34b0d99): units whose
+            # boxed claim fails verification (_malformed_boxed) are
+            # refused BEFORE the equality test — their _wall_key is
+            # None, indistinguishable from genuinely unboxed, and the
+            # equality test alone would admit them (fail-open).
             wall_keys = {uid: _wall_key(plane, uid) for uid in ids}
+            malformed = {uid for uid in ids if _malformed_boxed(plane, uid)}
+            refused_cycle = sorted(malformed)
+            for uid in refused_cycle:
+                if uid not in refused_malformed_box:
+                    refused_malformed_box.append(uid)
             pairs: List[Tuple[str, str, Dict[str, float]]] = []
             excluded_cross_sandbox = 0
+            excluded_malformed_box = 0
             for i, a in enumerate(ids):
                 for b in ids[i + 1 :]:
+                    if a in malformed or b in malformed:
+                        excluded_malformed_box += 1
+                        continue
                     if wall_keys[a] != wall_keys[b]:
                         excluded_cross_sandbox += 1
                         continue
@@ -526,6 +601,7 @@ class RingedGrowth:
                                     include_superseded=include_superseded)
                     pairs.append((a, b, aff))
             total_excluded_cross_sandbox += excluded_cross_sandbox
+            total_excluded_malformed_box += excluded_malformed_box
             pairs.sort(key=lambda t: -t[2]["affinity"])
 
             new_this = 0
@@ -659,6 +735,11 @@ class RingedGrowth:
                     "pairs_scanned": len(pairs),
                     # GS-4 / C-7: the wall's action is always receipted.
                     "pairs_excluded_cross_sandbox": excluded_cross_sandbox,
+                    # GS-4 correction (mail 1a1d0990c34b0d99): pairs
+                    # refused because a member's boxed claim failed
+                    # verification, and the refused units by id.
+                    "pairs_excluded_malformed_box": excluded_malformed_box,
+                    "malformed_box_units_refused": refused_cycle,
                     "proposed_new": new_this,
                     "proposed_evolved": evo_this,
                     "docked_new": docked_this,
@@ -683,6 +764,12 @@ class RingedGrowth:
             # GS-4 / C-7: total cross-sandbox pairs excluded across
             # all cycles of this run (per-cycle counts ride steps).
             "pairs_excluded_cross_sandbox": total_excluded_cross_sandbox,
+            # GS-4 correction (mail 1a1d0990c34b0d99): pairs refused
+            # across all cycles because a member's boxed claim failed
+            # verification, and the refused unit ids (run-union, in
+            # first-refusal order). Empty on every well-formed field.
+            "pairs_excluded_malformed_box": total_excluded_malformed_box,
+            "malformed_box_units_refused": list(refused_malformed_box),
             "fog_cut": fog_cut,
             "gates": gate_counts,
             "nursery": self.nursery.summary(),
