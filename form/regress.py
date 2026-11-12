@@ -332,6 +332,7 @@ LIST = [
     "form.step8_transactions_test:smoke",
     "form.step9_diff_test:smoke",
     "form.c3diff_test:smoke",
+    "form.c7schema_test:smoke",
     "form.lm1_harvest_test:smoke",
     "form.lm1_import_test:smoke",
     "form.lm2_splitter_test:smoke",

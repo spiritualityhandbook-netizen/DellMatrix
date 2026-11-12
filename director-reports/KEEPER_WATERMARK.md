@@ -1,16 +1,19 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-12 06:21 CST  
-**UTC approx**: 2026-11-12T12:21:00Z
+**Last cycle**: 2026-11-12 08:49 CST  
+**UTC approx**: 2026-11-12T14:49:00Z
 
 ## Items ruled this cycle
-- PR #397 / C7.Schema — **CONFIRM (scoped) at head e42f1acb490b87bc3451b0d556a04ffde48b90d5**. Director renewed HOLD discharged; campaign terminal green; exact-head CI green. Uni clear to revalidate and §32 merge.
-- PR #395 — prior final CONFIRM at 4d0de79 stands; Director authorized §32 merge.
+- PR #402 / GROWTH SELECTION proposal — **CONFIRM (scoped, records)**. Grounding classifications confirmed; sandbox finding confirmed as defect-class observation. No build authorized. Q-GS.1–.11 remain with the Director; Q-ACE-GS.1/.2 with Ace.
+- Prior: #400 credits CONFIRM, #401 contingent CONFIRM, #398 contingent CONFIRM stand.
+
+## Trailing ledger
+- remaining: 2 (DD-18, Q-DD42.1)
+
+## Automation posture
+Desk :30 / Deep :00 healthy. No stall.
 
 ## Silence flag
-No other ripe items this cycle.
-
-## Standing notes
-Both #395 and #397 are clear from the Keeper side. Merged-main verification still required before completion credit on either.
+#308 / #294 / #233 fenced.
 
 — KEEPER
