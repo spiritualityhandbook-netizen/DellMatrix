@@ -31,26 +31,33 @@ receipts it (live run at this head, disposable owner):
   Profile: COMPLETE
     kind: BENCHMARK · workload: 12 ideas · stages: place, pulse, growth, save, load
     env: python 3.12.3 · Linux-7.0.0-44-generic-x86_64-with-glibc2.39
-    · place: 0.0064s (1.5%) — 12 ideas placed
-    · pulse: 0.0010s (0.2%) — resonance ok, session_pulses=1
-    · growth: 0.3882s (88.6%) — nursery update included in growth (sub-stage; proposals pending 0 -> 18)
-    · save: 0.0371s (8.5%) — saved program_ProfileBench….json
-    · load: 0.0045s (1.0%) — loaded 13 units
+    · place: 0.0059s (1.0%) — 12 ideas placed
+    · pulse: 0.0009s (0.2%) — resonance ok, session_pulses=1
+    · growth: 0.4995s (89.2%) — nursery update included in growth (sub-stage; proposals pending 0 -> 18)
+    · save: 0.0442s (7.9%) — saved program_ProfileBench….json
+    · load: 0.0072s (1.3%) — loaded 13 units
     · embedding: ABSENT — OFF-by-design — embedding needs a docked Psalm (Dell 47 binding); the standalone benchmark never contacts a provider
-    overhead: 0.0011s (harness, empty-workload calibration)
-    unaccounted: 0.0000s
-    total: 0.4384s
-    largest: growth 88.6%
+    overhead: 0.0013s (harness, empty-workload calibration)
+    unaccounted: 0.0007s
+    total: 0.5597s
+    largest: growth 89.2%
+    dragging: none — dragging is lag that impaired function or capability; no stage's lag did
 
-The dragging stage is visible at a glance (growth, 88.6%,
-with the Nursery-update sub-stage share named inside it) —
-the causal picture §12.38a demands, not a single "slow"
-number. The structured report rides the atom result under
-"profile_report": {kind: BENCHMARK, workload identity
-(mode/ideas/stages/setup/run/owner), environment identity
-(python/platform), stages[{name, status, seconds, share,
-note}], overhead_seconds, unaccounted_seconds, total_seconds,
-largest_stage, verdict}.
+The largest stage is visible at a glance (growth, 89.2%,
+with the Nursery-update sub-stage named inside it) — the
+causal picture §12.38a demands, not a single "slow" number:
+Ace sees what runs and how fast or slow it runs compared to
+its scope and the program as a whole. Largest is NOT
+dragging: under Ace's definition (Q-ACE-C7P.1, below)
+dragging requires lag that impaired function or capability,
+and growth completed cleanly — so the same receipt that
+names it largest also reports dragging: none. The structured
+report rides the atom result under "profile_report": {kind:
+BENCHMARK, workload identity (mode/ideas/stages/setup/run/
+owner), environment identity (python/platform),
+stages[{name, status, seconds, share, note, error_class?}],
+overhead_seconds, unaccounted_seconds, total_seconds,
+largest_stage, dragging, verdict}.
 
 ## MECHANISM
 
@@ -102,6 +109,19 @@ largest_stage, verdict}.
   Everything else about the live program is byte-identical,
   digest-pinned, including a persona_matrix.active sentinel
   that any status() routing would flip.
+- Dragging (post-build correction, Ace's Q-ACE-C7P.1
+  ruling): FAILED stage entries now also carry a structured
+  error_class. The board's `dragging` list is computed by
+  ONE rule — a stage is dragging only when its failure is
+  time-attributable, i.e. it raised a timeout-class error
+  (TimeoutError / TimeoutExpired: a bounded wait or time
+  budget exhausted — the failure IS the lag). The stage's
+  failure note rides as the entry's reason. Every other
+  outcome is excluded by construction: TIMED stages (any
+  share), FAILED stages with non-timing errors, ABSENT rows.
+  The receipt prints one dragging line per named stage, or
+  "dragging: none" with Ace's definition stated on the line
+  itself, so share can never be misread as dragging later.
 
 ## DECISIONS TAKEN (defaults, routed for ruling)
 
@@ -113,12 +133,49 @@ each question below — none is presented as ruled law:
   receipt; OBSERVED mode deferred to its own circuit.
 - Q-C7P.2 → receipt-only timings v1 (option (b)); NO new
   timings store built; kept-timings is the named follow-up.
-- Q-C7P.5 → the board reports per-stage shares and NAMES the
-  largest-share stage as an observation ("largest: <stage>
-  <pct>%"); NO normative threshold verdict in v1.
-  Q-ACE-C7P.1 (Ace's needle threshold) stays routed.
+- Q-C7P.5 → RESOLVED by Ace's answer to Q-ACE-C7P.1 (see
+  below): no share threshold exists; dragging is
+  impairment-defined. The board still reports per-stage
+  shares and NAMES the largest-share stage as an observation
+  ("largest: <stage> <pct>%") — visibility, never a verdict.
 - Q-C7P.7 → overhead disclosed as its own calibrated line;
   stages + overhead + unaccounted reconcile to total.
+
+## Q-ACE-C7P.1 — ANSWERED BY ACE (2026-11-12, post-build correction)
+
+Ace ruled, verbatim substance: "Dragging occurs when lag
+affects the functionality or the capability of anything,
+any process. Otherwise it's not dragging." And on Profile's
+purpose: "Profile is so I can see what runs and how fast or
+slow it runs compared to its scope and the program as a
+whole. Like how it can see that growth eats most of the
+tick — now I know that growth takes a lot of power."
+
+Implemented in this same circuit (head after e90a337):
+profile_report.dragging lists ONLY stages whose lag
+demonstrably impaired function in the run — in the v1
+benchmark the one honest impairment evidence is
+time-attributable failure: a stage that raised a
+timeout-class error (its bounded wait/time budget ran out).
+A stage failing for a non-timing reason is FAILED, not
+dragging; a clean stage at 89.2% share is largest, not
+dragging. The receipt's dragging line states the definition
+so the distinction survives the reader. Suite pins both
+directions plus the converse (section 12 of the suite).
+
+## NORTH STAR — ACE'S STATED DIRECTION (recorded, NOT built)
+
+Ace, same ruling: if every part of a car were entered into
+DellMatrix as information, Profile should be able to see
+how they all run together — how they tick together. That
+is: Profile's receipts generalize from the program's own
+stages to ANY modeled system whose parts and operations are
+represented in the Matrix — per-part timing against the
+whole system's tick, with dragging judged by impaired
+function of the modeled system. Recorded here as Ace's
+direction for later Profile slices. V1 claims NONE of it:
+v1 times DellMatrix's own named stages only, on disposable
+state, in BENCHMARK mode.
 
 ## EVIDENCE (Uni-run, this head)
 
@@ -142,10 +199,32 @@ each question below — none is presented as ruled law:
   (calls=['embed_bind.embed_text']); M4 live-program contact
   reintroduced (program.status() in the leaf branch) → t3
   digest + sentinel RED (pm_active SENTINEL→None).
-- Focused neighbours, all green at this head: c7profile
-  32/32, c7schema 33/33, lm2_splitter 66/66, lm1_import
-  55/55, d1_registry_leaf4 36/36, core_i_maturity 22/22,
-  d1_proof_cards 6/6, unified_runtime 37/37.
+- Post-build correction (Ace's Q-ACE-C7P.1 ruling): suite
+  32 → 36 checks. New section 12 pins: t12_clean_largest_
+  not_dragging (standard run: dragging == [] while largest
+  == growth), t12_dragging_line_none_wording (the "dragging:
+  none" line states the impaired-function definition),
+  t12_timeout_stage_is_dragging (synthetic pulse double
+  raising TimeoutError appears in dragging with its reason;
+  verdict PARTIAL; receipt line "dragging: pulse (...)"),
+  t12_nontiming_failure_not_dragging (RuntimeError bomb at
+  save: FAILED, dragging == []). One legacy pin amended,
+  disclosed: t8_no_threshold_verdict previously also required
+  the word "dragging" to be ABSENT from receipts — that
+  pinned the pre-ruling default; Ace's ruling makes the
+  dragging line mandatory, so the pin now asserts only the
+  surviving contract (no share-threshold verdict). Post-
+  correction suite: 36/36 (logs/green_dragging.log). M5
+  (correction mutant): dragging computed by share (>50% →
+  dragging) → ALL FOUR t12 pins RED, growth flagged at 92.7%
+  share despite clean completion (logs/mutant_share_flag.
+  log); reverted by inverse edit, tree clean, 36/36 restored.
+- Focused neighbours: re-run at the correction head —
+  c7profile 36/36, c7schema 33/33, d1_registry_leaf4 PASS,
+  core_i_maturity 22/22. Green at the build head a24089a
+  (the correction touches no surface they read):
+  lm2_splitter 66/66, lm1_import 55/55, d1_proof_cards 6/6,
+  unified_runtime 37/37.
 - regress LIST: 278 entries by import (277 + c7profile),
   no duplicates.
 - Full regression campaign + exact-head CI: NOT run by this
@@ -178,8 +257,14 @@ updated IN THIS PR with the change named, per the brief:
   labeled BENCHMARK and is a this-machine/this-workload fact.
 - No timings store; change-over-time visibility awaits the
   kept-timings follow-up (Q-C7P.2).
-- No threshold/"dragging" verdict; largest-stage naming is
-  an observation only (Q-C7P.5 / Q-ACE-C7P.1 open).
+- Dragging is impairment-defined ONLY (Ace's ruling): v1
+  attributes it solely on timeout-class stage failure.
+  OBSERVED-mode dragging — lag measurably degrading a live
+  operation without a timeout — is not evidenced by a
+  disposable benchmark and is NOT claimed; it belongs to
+  the deferred OBSERVED circuit. No share threshold exists
+  at any size. The north-star generalization (Profile over
+  arbitrary modeled systems) is recorded, not built.
 - No save-path repair: Profile TIMES the everyday save; the
   DD-06 pair defect stays gated on the Q1 line.
 - No persona write-on-read fix: routed around on this path,
@@ -203,13 +288,17 @@ confirm place/pulse/growth/save/load with nursery-update as
 growth's sub-stage and embedding ABSENT standalone, and the
 benchmark's named sequence as what "the tick" means for
 Profile v1 (no Program.tick exists). Q-C7P.5 (dragging
-rule): the observation-only naming taken here vs a ruled
-threshold. Q-C7P.6 (operand grammar): confirm bare /
+rule): RESOLVED — Ace answered it through Q-ACE-C7P.1
+(dragging = lag that impaired function/capability; no
+share threshold); implemented impairment-evidenced-only
+in the post-build correction. No Director action needed
+unless he disputes the v1 attribution (timeout-class
+failure as the sole benchmark-honest impairment evidence).
+Q-C7P.6 (operand grammar): confirm bare /
 ':: <stage>' / honest refusal. Q-C7P.7 (overhead form):
 confirm the calibrated-line + remainder reconciliation.
-Q-ACE-C7P.1 (for Ace, via the Director): how dominant must
-a stage be before Profile calls it out beyond the largest
-observation?
+Q-ACE-C7P.1: ANSWERED BY ACE 2026-11-12 (see the dedicated
+section above); nothing outstanding.
 
 ## ANTICIPATED PROBES
 
@@ -230,17 +319,22 @@ observation?
   estimate's size (observed: overhead ~0.001s against a
   ~0.44s total, unaccounted ~0.0000s). Nothing is hidden
   inside a rounded total.
-- "Growth at 88.6% — is that a defect?" — It is a
+- "Growth at ~89% — is that a defect?" — It is a
   measurement on a 12-idea disposable workload: growth does
   the cross-authoring work and pulse/save are near-instant
   at this scale. The board names the largest stage as an
   observation precisely so this question gets asked with
-  numbers; whether any share is a BREACH is the unruled
-  threshold question (Q-C7P.5), not a verdict v1 invents.
+  numbers. And under Ace's own definition it is NOT
+  dragging: growth completed its function cleanly, so the
+  receipt says dragging: none on the same lines that name
+  it largest. Dragging would require lag that impaired
+  function — in v1, a stage dying on a timeout — and no
+  share, however large, substitutes for that evidence.
 
 ## ACE'S MOVE
 
-Nothing needed from Ace. Next step owner: the main session
-(full campaign at the gate, then §32), with the authorities'
-dispositions on Q-C7P.1–.7 + Q-ACE-C7P.1 routed through the
-Director.
+Nothing needed from Ace — Q-ACE-C7P.1 is answered and its
+ruling is implemented in this same circuit. Next step
+owner: the main session (full campaign at the gate, then
+§32), with the authorities' dispositions on Q-C7P.1–.4
+and Q-C7P.6–.7 routed through the Director.
