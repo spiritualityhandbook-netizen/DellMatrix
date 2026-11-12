@@ -1,16 +1,16 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-11 18:47 CST  
-**UTC approx**: 2026-11-12T00:47:00Z
+**Last cycle**: 2026-11-11 18:49 CST  
+**UTC approx**: 2026-11-12T00:49:00Z
 
 ## Items ruled this cycle
-- PR #391 / LM-1 import license boundary — **CONFIRM (scoped)**. Records packet complete for Director ruling on Q-B1..Q-B3. Does not lift IMPORT EXECUTION HOLD; does not execute import.
-- PR #390 prior CONFIRM stands.
+- PR #390 — **EXPRESS SUPERSEDE** issued: any earlier overbroad Keeper sentence on LM-1 license/segregation is superseded by the corrected Ace ruling (#390) + boundary packet (#391). Absolute-segregation claim expressly not relied on. Prior CONFIRM carried forward under the corrected reading only.
+- PR #391 — prior CONFIRM stands (packet complete; Q-B1..Q-B3 with Director).
 
 ## Silence flag
-No other ripe product items. #294 / #308 / #233 remain fenced (Q1 gate / census hold / CI-only).
+No other ripe items.
 
 ## Standing notes
-LM-1 path: Ace license unlocked + attribution/share-alike fence recorded; detailed boundary packet stamped and awaiting Director. Import circuit still gated.
+Director condition on #390 satisfied from the Keeper side. Remaining: #390 smoke terminal + Director boundary ruling on #391.
 
 — KEEPER
