@@ -92,6 +92,19 @@ def _tokens_uid(plane: Plane, uid: str) -> Set[str]:
     return _content_tokens(_unit_blob(plane, uid))
 
 
+def _wall_key(plane: Plane, uid: str) -> Optional[str]:
+    """GS-4: a unit's wall key from the canonical Plane box authority.
+
+    None when unboxed, else the unit's sandbox_id. Membership is read
+    from the SAME Unit fields Plane.box/unbox maintain and
+    Plane.enhance_scope consults — no second store, no new authority.
+    """
+    u = plane.units.get(uid)
+    if u is None or not getattr(u, "sandboxed", False):
+        return None
+    return getattr(u, "sandbox_id", None)
+
+
 def _tension(a: Set[str], b: Set[str]) -> float:
     """Exclusive-token bridge tension between two token sets (raw, unnormalized).
 
@@ -417,6 +430,21 @@ class RingedGrowth:
         dock's own "dock:..." origin. Single-parent Equinox /
         Standstill drift stays token machinery in both modes —
         it is not a pair synthesis.
+
+        GS-4 (sandbox containment, Director scope ruling 2026-11-12):
+        candidate pair enumeration is filtered by canonical Plane box
+        membership — two units are admissible as a pair iff their wall
+        keys are equal (both unboxed, or boxed into the SAME sandbox).
+        Cross-wall pairs are never scored, so neither manifestation of
+        the wall-blind enumeration defect can occur: no cross-wall
+        Solstice pair proposals, and no boxed-primary drift importing
+        an outside peer's tokens (the drift peer is the same enumerated
+        pair's second member). The exclusion count is receipted per
+        cycle as pairs_excluded_cross_sandbox (and totaled at top
+        level); silence about exclusions is a contract violation.
+        Unboxed output is unchanged byte-for-byte; affinity weights,
+        scope_ids semantics, and default-unset semantics are untouched.
+        The only lawful crossing door remains unbox-then-grow.
         """
         docked = session is not None \
             and bool(getattr(session, "is_docked", False))
@@ -426,6 +454,7 @@ class RingedGrowth:
         report: List[Dict[str, Any]] = []
         total_new = 0
         total_evo = 0
+        total_excluded_cross_sandbox = 0
         fog_cut = 0
         gate_counts = {"Solstice": 0, "Equinox": 0, "Standstill": 0, "None": 0}
         body_snapshots: List[Dict[str, Any]] = []
@@ -477,16 +506,26 @@ class RingedGrowth:
                     "cycle": cycle + 1,
                     "ok": False,
                     "reason": "no live ideas",
+                    "pairs_excluded_cross_sandbox": 0,
                     "body": body_snapshots[-1],
                 })
                 continue
 
+            # GS-4: wall-mate admissibility (C-1) — a pair enumerates
+            # iff both units share one wall key. Cross-wall pairs are
+            # excluded BEFORE scoring: never gated, never drifted from.
+            wall_keys = {uid: _wall_key(plane, uid) for uid in ids}
             pairs: List[Tuple[str, str, Dict[str, float]]] = []
+            excluded_cross_sandbox = 0
             for i, a in enumerate(ids):
                 for b in ids[i + 1 :]:
+                    if wall_keys[a] != wall_keys[b]:
+                        excluded_cross_sandbox += 1
+                        continue
                     aff = _affinity(plane, a, b, body=body, program=program,
                                     include_superseded=include_superseded)
                     pairs.append((a, b, aff))
+            total_excluded_cross_sandbox += excluded_cross_sandbox
             pairs.sort(key=lambda t: -t[2]["affinity"])
 
             new_this = 0
@@ -618,6 +657,8 @@ class RingedGrowth:
                     "ok": True,
                     "live_ideas": len(ids),
                     "pairs_scanned": len(pairs),
+                    # GS-4 / C-7: the wall's action is always receipted.
+                    "pairs_excluded_cross_sandbox": excluded_cross_sandbox,
                     "proposed_new": new_this,
                     "proposed_evolved": evo_this,
                     "docked_new": docked_this,
@@ -639,6 +680,9 @@ class RingedGrowth:
             "docked_new": docked_new,
             "token_fallback": token_fallback,
             "docked_pairs": docked_pairs,
+            # GS-4 / C-7: total cross-sandbox pairs excluded across
+            # all cycles of this run (per-cycle counts ride steps).
+            "pairs_excluded_cross_sandbox": total_excluded_cross_sandbox,
             "fog_cut": fog_cut,
             "gates": gate_counts,
             "nursery": self.nursery.summary(),

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""GS-4 sandbox containment — FAILING-FIRST suite (Director mail
-1a1d05d91f6401dc, 2026-11-12).
+"""GS-4 sandbox containment suite (failing-first origin: Director mail
+1a1d05d91f6401dc, 2026-11-12; repair authorized by Director scope
+ruling mail 1a1d077edcbc82e2, 2026-11-12).
 
 The wall contract (Ace's Growth Selection Doctrine, 2026-11-12): "a
 sandbox that doesn't effect anything outside of it" — growth involving
@@ -8,19 +9,20 @@ boxed (sandboxed) units must not use material from outside the wall.
 
 The defect (reproduced independently twice on merged main @074b30f;
 PR #403 + PR #402 comment 6827580827): default RingedGrowth pair
-enumeration is wall-blind — cross-sandbox pairs are scored like any
-pair (the wall enters only as _affinity's soft in_scope 0.2 penalty)
-and produce (a) two-parent Solstice proposals spanning the wall and
+enumeration was wall-blind — cross-sandbox pairs were scored like any
+pair (the wall entered only as _affinity's soft in_scope 0.2 penalty)
+and produced (a) two-parent Solstice proposals spanning the wall and
 (b) single-parent Equinox/Standstill drift offspring of boxed units
 carrying outside units' tokens under inside-only lineage.
 
-This suite pins the contract the GS-4 containment build must satisfy.
-At publication (on main @074b30f, no implementation) the two
-manifestation checks FAIL verbatim — that failure IS the evidence.
-The controls PASS today and must keep passing after the build:
+Published failing-first with A1/A2/A3/B2 red on main (6/10). The GS-4
+repair filters candidate pair enumeration in RingedGrowth.run by
+canonical Plane box membership (wall-key equality), receipts the
+exclusion count (pairs_excluded_cross_sandbox, C-7), and leaves
+unboxed output byte-for-byte identical — all ten checks green,
+including the pre-existing controls that must never regress:
 scope_ids containment, unboxed backward-compat, empty scope, and
-invalid scope refusal are pre-existing lawful behavior the build
-must not break.
+invalid scope refusal.
 
 Field (5 co-located units; same field as the PR #403 independent
 probe so this suite is falsifiable against its published log):
@@ -104,7 +106,7 @@ def _snapshot(p):
 
 
 def smoke() -> bool:
-    print("=== GS-4 SANDBOX CONTAINMENT (FAILING-FIRST) ===")
+    print("=== GS-4 SANDBOX CONTAINMENT ===")
     fails = []
 
     def check(name, ok, detail):
@@ -137,6 +139,14 @@ def smoke() -> bool:
           pairs_scanned == 4,
           f"pairs_scanned={pairs_scanned} (10 = all pairs incl. 6 cross-wall; "
           f"4 = wall-respecting)")
+
+    # A1b receipt (C-7): the exclusion count is receipted, never
+    # silent — 6 cross-wall pairs excluded on this run's step.
+    check("A1b receipt counts excluded cross-sandbox pairs (C-7)",
+          steps[0].get("pairs_excluded_cross_sandbox") == 6
+          and res.get("pairs_excluded_cross_sandbox") == 6,
+          f"step={steps[0].get('pairs_excluded_cross_sandbox')} "
+          f"total={res.get('pairs_excluded_cross_sandbox')} (6 expected)")
 
     # A2 manifestation 1: no proposal's parents span the wall.
     cross = [pr for pr in props
@@ -171,11 +181,42 @@ def smoke() -> bool:
                    for pr in props)
     sig_b = sorted((pr["kind"], tuple(pr["parents"]), pr["label"])
                    for pr in props2)
-    check("B2 boxed default output equals unboxed output (defect pin: "
-          "boxing must change growth output; today it changes nothing)",
+    check("B2 boxed default output differs from unboxed (the wall acts)",
           sig_a != sig_b,
           f"boxed proposals={len(props)} unboxed proposals={len(props2)}; "
           f"identical={(sig_a == sig_b)}")
+
+    # B3 receipt (C-7): the unboxed run receipts ZERO exclusions.
+    check("B3 unboxed receipt shows zero exclusions (C-7)",
+          steps2[0].get("pairs_excluded_cross_sandbox") == 0,
+          f"step={steps2[0].get('pairs_excluded_cross_sandbox')} (0 expected)")
+
+    # --- RUN E: mixed boxes + unboxed are strangers (C-3) ------------
+    # Same field, but in_a/in_b are boxed into DIFFERENT sandboxes:
+    # every pair involving a boxed unit must be a within-box pair, and
+    # only the 3 unboxed-unboxed pairs may scan (pairs_scanned == 3,
+    # 7 excluded).
+    pe = _build(f"{OWNER_TAG}E", box_inside=False)
+    plane_e = pe.cube.session.plane
+    plane_e.box(["in_a"], "vaultA", label="gs4 vault A")
+    plane_e.box(["in_b"], "vaultB", label="gs4 vault B")
+    rese = pe.grow_ideas(1)
+    stepse = rese.get("steps") or [{}]
+    propse = _snapshot(pe)
+    cross_e = [pr for pr in propse
+               if (set(pr["parents"]) & in_set
+                   and set(pr["parents"]) != {"in_a"}
+                   and set(pr["parents"]) != {"in_b"})
+               or (set(pr["parents"]) == {"in_a", "in_b"})]
+    check("E1 mixed boxes: only unboxed-unboxed pairs scan",
+          stepse[0].get("pairs_scanned") == 3
+          and stepse[0].get("pairs_excluded_cross_sandbox") == 7,
+          f"pairs_scanned={stepse[0].get('pairs_scanned')} "
+          f"excluded={stepse[0].get('pairs_excluded_cross_sandbox')} "
+          f"(3 scanned / 7 excluded expected)")
+    check("E2 mixed boxes: no proposal crosses any wall",
+          len(cross_e) == 0,
+          f"crossing proposals={[(pr['pid'], pr['parents']) for pr in cross_e]}")
 
     # --- RUN C (control): scope_ids door contains — pre-existing -----
     p3 = _build(f"{OWNER_TAG}C", box_inside=True)
@@ -209,11 +250,10 @@ def smoke() -> bool:
           len(props4) == 0,
           f"proposals={len(props4)} scope_mode={res4.get('scope_mode')}")
 
-    total = 10
+    total = 14
     print(f"GS-4 SANDBOX: {total - len(fails)}/{total} checks passed"
-          + (f"; FAILING (failing-first, defect present): {fails}"
-             if fails else ""))
-    for owner in ("A", "B", "C", "D"):
+          + (f"; FAILING: {fails}" if fails else ""))
+    for owner in ("A", "B", "C", "D", "E"):
         _cleanup(f"{OWNER_TAG}{owner}")
     return not fails
 
