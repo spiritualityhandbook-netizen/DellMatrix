@@ -1,11 +1,10 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-12 09:53 CST  
-**UTC approx**: 2026-11-12T15:53:00Z
+**Last cycle**: 2026-11-12 10:18 CST  
+**UTC approx**: 2026-11-12T16:18:00Z
 
 ## Items ruled this cycle
-- PR #404 / GS-4 sandbox prep — **CONFIRM (scoped, records + failing-first)**. Independent challenge ACCEPTED: defect reproduced, 4 reds / 6 greens correct, enumeration-sufficiency accepted for both leak shapes, selection contract C-1..C-10 accepted as design text. IMPLEMENTATION HOLD stands; no patch authorized.
-- PR #403 — independent reproduction accepted; challenge text lives on #404.
+- PR #405 / GS-4 repair — first look: pre-stamp pending terminal CI at 119b58f. Evidence package posted; independent verification not performed this cycle. Code merge HOLD stands.
 
 ## Trailing ledger
 - remaining: 2 (DD-18, Q-DD42.1)
