@@ -19,8 +19,10 @@ through the public seed path:
   SEED) where distilled = distill_label(source) —
   tokens >2 chars, lowercased, deduped, max 4 (no such
   tokens -> the surviving token / "distill").
-- 39 Schema: a live-shape read (lattice, nursery,
-  growth present) — "Schema: VALID"; any label is
+- 39 Schema: the DD-29 nervous-system board (C7
+  circuit) — 16 systems, each reported exists/
+  connected/available plus its state line; a healthy
+  program's verdict is "Schema: VALID"; any label is
   ignored; the verdict is noted to history.
 - 40 TokenCount (core_i_ops): the approx session
   weight — approx = ideas*8 + history*4 + cells*2 +
@@ -283,14 +285,29 @@ def main():
                                    "Sanitize out: (empty)"],
          str(_msgs(r)))
 
-    # -- 39 Schema: live-shape verdict, label ignored
+    # -- 39 Schema: DD-29 nervous-system board (C7.Schema
+    # circuit — contract changed from the 3-hasattr stub and
+    # disclosed in that PR): per-organ exists/connected/
+    # available board over DD-29's 16 systems, label ignored,
+    # verdict noted to history in the historical form.
     r = _run(p, "39[Schema] :: anything at all")
-    _rec("39 Schema: a healthy program is VALID — any "
-         "label is ignored — and the verdict is noted "
-         "to history",
-         _msgs(r) == ["Schema: VALID"]
+    _m39 = _msgs(r)
+    _organs39 = [m for m in _m39 if m.startswith("  · ")]
+    _rec("39 Schema: a healthy program's board is VALID — "
+         "16 systems examined, one line per organ carrying "
+         "its three checks, the label ignored, enhance "
+         "OFF-by-design — and the verdict is noted to "
+         "history",
+         _m39[0] == "Schema: VALID"
+         and "16 systems examined" in _m39[1]
+         and len(_organs39) == 16
+         and all(": exists=" in m and " connected=" in m
+                 and " available=" in m for m in _organs39)
+         and any(m.startswith("  · enhance:")
+                 and "available=OFF-by-design" in m
+                 for m in _organs39)
          and "39[Schema] :: valid" in list(p.history),
-         str(_msgs(r)))
+         str(_m39))
 
     # -- 43 Fallback: message-only safe path
     before = list(_units(p))
