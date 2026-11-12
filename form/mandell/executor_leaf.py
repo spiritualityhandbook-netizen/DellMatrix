@@ -89,6 +89,9 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     # 72-17 R-B: structured result directive (e.g. bare Show sets
     # "render"); machine directives never ride the human messages list.
     directive = None
+    # C7.Schema (DD-29): Dell 39's structured board rides the
+    # result dict under "schema_board" (set only for Dell 39).
+    schema_detail = None
 
     def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
         # Canonical slug + collision dedup (form/idea_create.py, P3/TD-5):
@@ -462,22 +465,23 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         if hasattr(program, "note_seed"):
             program.note_seed(38, "Distill", short)
     elif primary == 39:
-        ok = True
-        reasons = []
-        if not hasattr(program, "lattice") or program.lattice is None:
-            ok = False
-            reasons.append("missing lattice")
-        if not hasattr(program, "nursery"):
-            ok = False
-            reasons.append("missing nursery")
-        if not hasattr(program, "growth"):
-            ok = False
-            reasons.append("missing growth")
-        messages.append(f"Schema: {'VALID' if ok else 'INVALID'}")
-        for r in reasons:
-            messages.append(f"  · {r}")
+        # C7.Schema (DD-29): the read-only nervous-system board.
+        # build_schema_board probes every inventoried organ in
+        # isolation through the organ's own status provider —
+        # probing never mutates user work. The operand stays
+        # ignored by design: Schema interrogates the program,
+        # not the label (bare and labeled runs return the same
+        # board). Verdict tokens keep the historical forms, so
+        # the history receipt '39[Schema] :: valid' is preserved
+        # for a healthy program.
+        from form.dell_matrix.schema_board import build_schema_board
+        board = build_schema_board(program)
+        messages.extend(board["lines"])
+        schema_detail = board
         if hasattr(program, "note_seed"):
-            program.note_seed(39, "Schema", "valid" if ok else "invalid")
+            program.note_seed(39, "Schema",
+                              "valid" if board["verdict"] == "VALID"
+                              else "invalid")
     elif primary == 41:
         # DAF-02/B5: the IN line shows the SANITIZED representation,
         # never the raw input — Sanitize must not disclose the very
@@ -623,7 +627,7 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         if label:
             place_idea(label)
 
-    return {
+    out = {
         "ok": True,
         "seed": _echo.as_mandel(),
         "english": _echo.as_english(),
@@ -632,3 +636,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         "new_program": new_program,
         "directive": directive,
     }
+    if schema_detail is not None:
+        out["schema_board"] = schema_detail
+    return out
