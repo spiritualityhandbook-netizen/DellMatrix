@@ -336,6 +336,11 @@ LIST = [
     "form.lm1_harvest_test:smoke",
     "form.lm1_import_test:smoke",
     "form.lm2_splitter_test:smoke",
+    # GS-4 sandbox containment (Director mail 1a1d05d91f6401dc):
+    # FAILING-FIRST at publication — pins the wall contract the GS-4
+    # build must satisfy; red until the containment build lands under
+    # a Director scope ruling.
+    "form.gs4_sandbox_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
     "form.dirf14_catch_consumed_test:smoke",
