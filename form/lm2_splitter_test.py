@@ -27,6 +27,20 @@ Contracts proven here:
   INTERNAL. The score is printed whatever it is. External gold
   (MorphoLex / SIGMORPHON) is a named follow-up pending a license
   check -- it is NOT this circuit.
+- PROOF CIRCUIT (Director mail 1a1ce1ed1a8c42c5, S8-S14):
+  recorded-split governance vs the greedy path (S8); greedy
+  prefix/suffix guards and suffix-stack order (S9); punctuation,
+  delimiters and case (S10); explicit UNRESOLVED accounting
+  arithmetic (S11); census recount from the artifact's ENTRIES,
+  independent of its header claims (S12); v2 presence + the
+  per-process table cache against a synthesized bound pair and a
+  fixture loader implementing the PR #393 pair contract -- this
+  branch's shipped loader predates v2, so S13 exercises
+  split_word's side of the contract in subprocess scratch trees;
+  the authoritative composition with the REAL #393 loader and
+  artifacts is proof (d) in hidden_files/lm2/proof_d_real.py (S13);
+  quarantine annotation for 'man' / 'alpha' (S14; 'dell' / 're'
+  are S5).
 """
 
 from __future__ import annotations
@@ -135,6 +149,122 @@ GOLD = {
     "omni": [("omni", "whole", True)],
     "zzqx": [("zzqx", "UNRESOLVED", False)],
 }
+
+
+# ---- S13 fixtures -------------------------------------------------
+# A minimal loader implementing the PR #393 pair contract
+# (v2-preferred default path; the pair binding in the v2 header --
+# generation = sha256(collisions_sha256 || rows_sha256) over the
+# canonical rows bytes -- is verified on load and any mismatch
+# raises PairInconsistentError; lookup returns the FULL row set
+# with precedence annotation, external_wikipedia lowest). It is a
+# test fixture, NOT shipped code: this branch's real loader
+# predates v2 support. split_word is the unit under test.
+_S13_LOADER = '''
+import hashlib, json, os
+_HERE = os.path.dirname(os.path.abspath(__file__))
+V1 = os.path.join(_HERE, "lm_table_v1.json")
+V1C = os.path.join(_HERE, "lm_table_v1.collisions.json")
+V2 = os.path.join(_HERE, "lm_table_v2.json")
+V2C = os.path.join(_HERE, "lm_table_v2.collisions.json")
+PRECEDENCE = ["customs", "ace_seed", "inrepo", "inrepo_force",
+              "inrepo_legacy", "candidate", "external_wikipedia"]
+_RANK = {n: i for i, n in enumerate(PRECEDENCE)}
+
+class PairInconsistentError(RuntimeError):
+    pass
+
+def _sha(b):
+    return hashlib.sha256(b).hexdigest()
+
+def _canon(rows):
+    return json.dumps(rows, ensure_ascii=False, sort_keys=True,
+                      separators=(",", ":")).encode("utf-8")
+
+def load_table(path=None):
+    if path is not None:
+        if not os.path.exists(path):
+            return {"header": None, "rows": []}
+        doc = json.load(open(path, encoding="utf-8"))
+        return {"header": doc.get("header"),
+                "rows": doc.get("rows", [])}
+    if os.path.exists(V2):
+        doc = json.loads(open(V2, "rb").read().decode("utf-8"))
+        pair = (doc.get("header") or {}).get("pair")
+        if pair:
+            if not os.path.exists(V2C):
+                raise PairInconsistentError("collisions missing")
+            cbytes = open(V2C, "rb").read()
+            rows_sha = _sha(_canon(doc.get("rows", [])))
+            gen = _sha(bytes.fromhex(_sha(cbytes))
+                       + bytes.fromhex(rows_sha))
+            if (_sha(cbytes) != pair["collisions_sha256"]
+                    or rows_sha != pair["rows_sha256"]
+                    or gen != pair["generation"]):
+                raise PairInconsistentError("pair binding mismatch")
+        return {"header": doc.get("header"),
+                "rows": doc.get("rows", [])}
+    if not os.path.exists(V1):
+        return {"header": None, "rows": []}
+    doc = json.load(open(V1, encoding="utf-8"))
+    return {"header": doc.get("header"), "rows": doc.get("rows", [])}
+
+def load_collisions(path=None):
+    p = path or (V2C if os.path.exists(V2) else V1C)
+    if not os.path.exists(p):
+        return []
+    if path is None and os.path.exists(V2):
+        load_table()
+    return json.load(open(p, encoding="utf-8"))
+
+def lookup(piece, table=None):
+    t = table if table is not None else load_table()
+    key = (piece or "").strip().strip("-").lower()
+    if not key:
+        return []
+    out = []
+    for row in t.get("rows", []):
+        if row.get("piece") == key:
+            a = dict(row)
+            a["precedence_rank"] = _RANK.get(row.get("stratum"),
+                                             len(PRECEDENCE))
+            out.append(a)
+    out.sort(key=lambda r: (r["precedence_rank"],
+                            r.get("authored_position_class", "")))
+    return out
+'''
+
+_S13_DRIVER = '''
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from form.mandell import morpheme
+def sig(w):
+    p = morpheme.split_word(w)
+    return {"pieces": [[x["piece"], x["kind"], x["resolved"]]
+                       for x in p["pieces"]],
+            "accounted": p["accounted"]}
+try:
+    print(json.dumps({"telescope": sig("telescope")}))
+except Exception as e:
+    print(json.dumps({"error": type(e).__name__}))
+'''
+
+_S13_CACHE_DRIVER = '''
+import json, os, shutil, sys
+root = sys.argv[1]
+sys.path.insert(0, root)
+from form.mandell import morpheme
+def sig(w):
+    p = morpheme.split_word(w)
+    return [[x["piece"], x["kind"], x["resolved"]]
+            for x in p["pieces"]]
+first = sig("telescope")
+md = os.path.join(root, "form", "mandell")
+for f in ("lm_table_v2.json", "lm_table_v2.collisions.json"):
+    shutil.copy(os.path.join(root, "stash", f), os.path.join(md, f))
+second = sig("telescope")
+print(json.dumps({"first": first, "second": second}))
+'''
 
 
 def _sig(parse):
@@ -272,6 +402,235 @@ def smoke() -> bool:
         print(f"    GOLD MISS {word}: expected {_gold_sig(expected)} "
               f"got {got}")
     rec("S7 INTERNAL gold battery: every case matches", not misses)
+
+    # ---- S8 recorded-split governance (proof item (c))
+    nur_splits = {row.get("split") for row in lm_table.lookup("nurture")
+                  if row.get("split")}
+    nur = morpheme.split_word("nurture")
+    rec("S8 recorded split governs: nurture == Nur-tu-re, suffix is "
+        "'re' although 'ure' is a table suffix piece",
+        nur_splits == {"Nur-tu-re"}
+        and _sig(nur) == [("nur", "prefix", True),
+                          ("tu", "root", True),
+                          ("re", "suffix", True)]
+        and len(lm_table.lookup("ure")) >= 1)
+    lang_splits = {row.get("split")
+                   for row in lm_table.lookup("mandellang")
+                   if row.get("split")}
+    lang = morpheme.split_word("mandellang")
+    rec("S8 non-tiling recorded split honestly declined: "
+        "mandellang (record: Man-dell-Lang) takes the generic path",
+        lang_splits == {"Man-dell-Lang"}
+        and _sig(lang) == _gold_sig(GOLD["mandellang"]))
+    cd2 = morpheme.split_word("commandell")
+    rec("S8 recorded path: every piece's senses == FULL lookup set",
+        all(p["senses"] == lm_table.lookup(p["piece"])
+            for p in cd2["pieces"]))
+
+    # ---- S9 greedy guards + suffix stacking (proof item (c))
+    rec("S9 prefix guard: 'press' -- 'pre' NOT torn out (remainder "
+        "'ss' too short and not a known root)",
+        _sig(morpheme.split_word("press"))
+        == [("press", "UNRESOLVED", False)])
+    rec("S9 prefix guard: 'prezz' -- 'pre' blocked the same way",
+        _sig(morpheme.split_word("prezz"))
+        == [("prezz", "UNRESOLVED", False)])
+    rec("S9 prefix guard passes when the remainder is a known "
+        "root: pretu == pre + tu",
+        _sig(morpheme.split_word("pretu"))
+        == [("pre", "prefix", True), ("tu", "root", True)])
+    rec("S9 suffix stack preserves word order: movementing == "
+        "move + ment + ing",
+        _sig(morpheme.split_word("movementing"))
+        == [("move", "UNRESOLVED", False), ("ment", "suffix", True),
+            ("ing", "suffix", True)])
+
+    # ---- S10 punctuation / delimiters / case (proof item (c))
+    up = morpheme.split_word("TRANSPORTATION")
+    rec("S10 uppercase input: parse == lowercase parse, raw input "
+        "preserved in the receipt",
+        _sig(up) == _sig(t) and up["normalized"] == "transportation"
+        and up["word"] == "TRANSPORTATION")
+    rec("S10 trailing punctuation stays glued to an UNRESOLVED "
+        "residue and blocks the suffix match (honest, pinned)",
+        _sig(morpheme.split_word("transportation."))
+        == [("trans", "prefix", True),
+            ("portation.", "UNRESOLVED", False)])
+    hd = morpheme.split_word("trans-portation")
+    rec("S10 hyphenated input: parts parsed separately",
+        _sig(hd) == [("trans", "whole", True),
+                     ("porta", "UNRESOLVED", False),
+                     ("tion", "suffix", True)])
+    rec("S10 trailing comma glues to the residue the same way",
+        _sig(morpheme.split_word("commandell,"))
+        == [("com", "prefix", True),
+            ("mandell,", "UNRESOLVED", False)])
+
+    # ---- S11 explicit UNRESOLVED accounting (proof item (c))
+    rec("S11 preview accounting: ACCOUNTED 3/7, RESOLVED 1/2",
+        abs(pv["accounted"] - 3 / 7) < 1e-9
+        and abs(pv["morpheme_resolved"] - 1 / 2) < 1e-9)
+    rec("S11 mandellang accounting: ACCOUNTED 6/10, RESOLVED 1/2",
+        abs(lang["accounted"] - 6 / 10) < 1e-9
+        and abs(lang["morpheme_resolved"] - 1 / 2) < 1e-9)
+    mv = morpheme.split_word("movementing")
+    rec("S11 movementing accounting: ACCOUNTED 7/11, RESOLVED 2/3",
+        abs(mv["accounted"] - 7 / 11) < 1e-9
+        and abs(mv["morpheme_resolved"] - 2 / 3) < 1e-9)
+    rec("S11 delimited accounting covers part letters only: "
+        "trans-portation ACCOUNTED 9/14, RESOLVED 2/3",
+        abs(hd["accounted"] - 9 / 14) < 1e-9
+        and abs(hd["morpheme_resolved"] - 2 / 3) < 1e-9)
+
+    # ---- S12 census recount from the artifact's ENTRIES
+    # (proof item (a): independent of the header's own claims)
+    entries = census_doc["entries"]
+    per_entries = {}
+    total_entries_rows = 0
+    for e in entries:
+        total_entries_rows += len(e["rows"])
+        for row in e["rows"]:
+            per_entries[row["category"]] = \
+                per_entries.get(row["category"], 0) + 1
+    rec("S12 census entries recount: 488 rows in the entries alone",
+        total_entries_rows == 488)
+    rec("S12 census entries recount: per-category == confirmed "
+        "counts",
+        {c: per_entries.get(c, 0) for c in CENSUS_PER_CATEGORY}
+        == CENSUS_PER_CATEGORY)
+    rec("S12 census entries: 441 unique words; each entry's "
+        "category set == its rows' categories",
+        len({e["word"] for e in entries}) == 441
+        and all(set(row["category"] for row in e["rows"])
+                == set(e["categories"]) for e in entries))
+
+    # ---- S13 v2 presence + cache (proof item (d), fixture form)
+    import shutil
+    import subprocess
+    import tempfile
+    scratch = tempfile.mkdtemp(prefix="lm2_s13_")
+    try:
+        md_dir = os.path.join(scratch, "form", "mandell")
+        os.makedirs(md_dir)
+        open(os.path.join(scratch, "form", "__init__.py"),
+             "w").close()
+        open(os.path.join(md_dir, "__init__.py"), "w").close()
+        shipped_md = os.path.join(_HERE, "mandell")
+        for f in ("morpheme.py", "lm0_census_v1.json",
+                  "lm_table_v1.json", "lm_table_v1.collisions.json"):
+            shutil.copy(os.path.join(shipped_md, f),
+                        os.path.join(md_dir, f))
+        with open(os.path.join(md_dir, "lm_table.py"), "w",
+                  encoding="utf-8") as f:
+            f.write(_S13_LOADER)
+
+        def _ext_row(piece, pos, sense):
+            return {"piece": piece, "authored_form": piece,
+                    "position_class": pos,
+                    "authored_position_class": pos,
+                    "language": "Greek", "sense": sense,
+                    "dell_ref": None, "la": None, "split": None,
+                    "stratum": "external_wikipedia",
+                    "provenance": {"source_file": "S13 fixture",
+                                   "source_symbol": "synthesized"},
+                    "conflict_status": "clean",
+                    "notes": "S13 fixture row (synthesized v2 pair)"}
+
+        with open(os.path.join(shipped_md, "lm_table_v1.json"),
+                  encoding="utf-8") as f:
+            v1_doc = json.load(f)
+        rows2 = v1_doc["rows"] + [
+            _ext_row("tele", "prefix", "far"),
+            _ext_row("scope", "root", "instrument for seeing")]
+        with open(os.path.join(shipped_md,
+                               "lm_table_v1.collisions.json"),
+                  "rb") as f:
+            coll_bytes = f.read()
+        rows_sha = hashlib.sha256(json.dumps(
+            rows2, ensure_ascii=False, sort_keys=True,
+            separators=(",", ":")).encode("utf-8")).hexdigest()
+        coll_sha = hashlib.sha256(coll_bytes).hexdigest()
+        gen = hashlib.sha256(bytes.fromhex(coll_sha)
+                             + bytes.fromhex(rows_sha)).hexdigest()
+        v2_doc = {"header": {"table": "lm_table", "version": 2,
+                             "pair": {"generation": gen,
+                                      "collisions_sha256": coll_sha,
+                                      "rows_sha256": rows_sha}},
+                  "rows": rows2}
+        stash = os.path.join(scratch, "stash")
+        os.makedirs(stash)
+        with open(os.path.join(stash, "lm_table_v2.json"), "w",
+                  encoding="utf-8") as f:
+            json.dump(v2_doc, f, ensure_ascii=False, indent=1,
+                      sort_keys=True)
+            f.write("\n")
+        with open(os.path.join(stash,
+                               "lm_table_v2.collisions.json"),
+                  "wb") as f:
+            f.write(coll_bytes)
+        driver = os.path.join(scratch, "driver.py")
+        with open(driver, "w", encoding="utf-8") as f:
+            f.write(_S13_DRIVER)
+        cache_driver = os.path.join(scratch, "cache_driver.py")
+        with open(cache_driver, "w", encoding="utf-8") as f:
+            f.write(_S13_CACHE_DRIVER)
+
+        def _run(path):
+            proc = subprocess.run(
+                [sys.executable, path, scratch],
+                capture_output=True, text=True, cwd=scratch,
+                env={**os.environ, "PYTHONPATH": scratch})
+            if proc.returncode != 0:
+                return {"driver_error": proc.stderr[-400:]}
+            return json.loads(proc.stdout.strip().splitlines()[-1])
+
+        out1 = _run(driver)
+        rec("S13 v2 absent: split_word works on the v1 table",
+            out1.get("telescope", {}).get("pieces")
+            == [["telescope", "UNRESOLVED", False]]
+            and out1.get("telescope", {}).get("accounted") == 0.0)
+        for f in ("lm_table_v2.json", "lm_table_v2.collisions.json"):
+            shutil.copy(os.path.join(stash, f),
+                        os.path.join(md_dir, f))
+        out2 = _run(driver)
+        rec("S13 v2 present (consistent synthesized pair): wider "
+            "external coverage is served",
+            out2.get("telescope", {}).get("pieces")
+            == [["tele", "prefix", True], ["scope", "root", True]]
+            and out2.get("telescope", {}).get("accounted") == 1.0)
+        cpath13 = os.path.join(md_dir, "lm_table_v2.collisions.json")
+        with open(cpath13, encoding="utf-8") as f:
+            ctext = f.read()
+        i13 = ctext.find("dell")
+        with open(cpath13, "w", encoding="utf-8") as f:
+            f.write(ctext[:i13] + "z" + ctext[i13 + 1:])
+        out3 = _run(driver)
+        rec("S13 corrupt pair: PairInconsistentError propagates "
+            "out of split_word (fail-closed, no v1 fallback)",
+            out3.get("error") == "PairInconsistentError")
+        for f in ("lm_table_v2.json", "lm_table_v2.collisions.json"):
+            os.remove(os.path.join(md_dir, f))
+        out4 = _run(cache_driver)
+        rec("S13 cache is PER-PROCESS: a pair arriving mid-process "
+            "is not picked up; fresh processes (above) see the "
+            "disk state",
+            out4.get("first") == [["telescope", "UNRESOLVED", False]]
+            and out4.get("second") == out4.get("first"))
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    # ---- S14 quarantine annotation (proof item (e); dell/re: S5)
+    man_piece = [p for p in cd["pieces"] if p["piece"] == "man"][0]
+    rec("S14 quarantined 'man' annotates position_unresolved, "
+        "senses complete",
+        man_piece.get("position_unresolved") is True
+        and len(man_piece["senses"]) == len(lm_table.lookup("man")))
+    al = morpheme.split_word("alpha")
+    rec("S14 quarantined 'alpha' (whole) annotates "
+        "position_unresolved, senses complete",
+        al["pieces"][0].get("position_unresolved") is True
+        and len(al["pieces"][0]["senses"])
+        == len(lm_table.lookup("alpha")))
 
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
