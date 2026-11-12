@@ -247,7 +247,7 @@
     {
      "category": "FOCUS",
      "meaning": "focus-add-same-kind",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "also"
@@ -273,7 +273,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-be-speaker-present",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "am"
@@ -481,7 +481,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-be-plural-or-hearer-present",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "are"
@@ -564,7 +564,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-while-and-if",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "as long as"
@@ -681,7 +681,7 @@
     {
      "category": "FOCUS",
      "meaning": "focus-add-same-kind",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "as well"
@@ -733,7 +733,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-assume-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "assuming"
@@ -746,7 +746,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-assume-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "assuming that"
@@ -863,7 +863,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-be-operator",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "be"
@@ -902,7 +902,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-be-perfect-participle",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "been"
@@ -946,7 +946,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-be-progressive-participle",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "being"
@@ -1086,7 +1086,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-counterfactual-without",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "but for"
@@ -1151,7 +1151,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-can-ability-or-permission",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "can"
@@ -1164,7 +1164,7 @@
     {
      "category": "ASK",
      "meaning": "asks-open-modal-pattern",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "can/could/will/would — modal-question pattern"
@@ -1268,7 +1268,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-could-ability-possibility-or-polite",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "could"
@@ -1320,7 +1320,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-dare-challenge-or-courage",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "dare — modal use"
@@ -1346,7 +1346,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-do-support-past",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "did"
@@ -1359,7 +1359,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-do-support-operator",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "do"
@@ -1372,7 +1372,7 @@
     {
      "category": "ASK",
      "meaning": "asks-open-support-pattern",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "do/does/did — question-support pattern"
@@ -1385,7 +1385,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-do-support-third-present",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "does"
@@ -1502,7 +1502,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-confirmation-particle",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "eh / huh — tag particles"
@@ -1567,7 +1567,7 @@
     {
      "category": "FOCUS",
      "meaning": "focus-unexpected-or-scalar",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "even"
@@ -1580,7 +1580,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-even-under",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "even if"
@@ -1851,7 +1851,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-given-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "given"
@@ -1864,7 +1864,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-given-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "given that"
@@ -1877,7 +1877,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-granted-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "granted"
@@ -1890,7 +1890,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-granted-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "granted that"
@@ -1903,7 +1903,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-have-perfect-past",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "had"
@@ -1955,7 +1955,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-have-perfect-third-present",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "has"
@@ -1968,7 +1968,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-have-perfect-operator",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "have"
@@ -2085,7 +2085,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-method-or-manner",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "how"
@@ -2098,7 +2098,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-degree-pattern",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "how + adjective/adverb"
@@ -2111,7 +2111,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-cause-informal",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "how come"
@@ -2124,7 +2124,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-distance-or-extent",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "how far"
@@ -2137,7 +2137,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-duration-or-length",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "how long"
@@ -2150,7 +2150,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-count",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "how many"
@@ -2163,7 +2163,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-amount-or-price",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "how much"
@@ -2176,7 +2176,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-frequency",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "how often"
@@ -2189,7 +2189,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-age",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "how old"
@@ -2202,7 +2202,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-time-until",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "how soon"
@@ -2227,7 +2227,7 @@
     {
      "category": "ASK",
      "meaning": "asks-degree-or-points-any-manner",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "however"
@@ -2253,7 +2253,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-open",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "if"
@@ -2266,7 +2266,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-if-not",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "if not"
@@ -2279,7 +2279,7 @@
     {
      "category": "CONDITION",
      "meaning": "wish-or-regret-open",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "if only"
@@ -2292,7 +2292,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-if-true",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "if so"
@@ -2344,7 +2344,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-in-case-precaution",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "in case"
@@ -2487,7 +2487,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-if-event-happens",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "in the event that"
@@ -2591,7 +2591,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-be-third-present",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "is"
@@ -2604,7 +2604,7 @@
     {
      "category": "ASK",
      "meaning": "asks-open-inversion-pattern",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "is/are/was/were — inversion pattern"
@@ -2617,7 +2617,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-confirmation-pattern",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "isn't it / aren't i / didn't you — tag-question pattern"
@@ -2682,7 +2682,7 @@
     {
      "category": "FOCUS",
      "meaning": "focus-exact-limit-or-recent",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "just"
@@ -2803,7 +2803,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-may-permission-or-possibility",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "may"
@@ -2842,7 +2842,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-might-possibility",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "might"
@@ -2946,7 +2946,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-must-necessity-or-strong-inference",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "must"
@@ -3024,7 +3024,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-need-necessity",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "need — modal use"
@@ -3585,7 +3585,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-explicit-requirement",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "on condition that"
@@ -3637,7 +3637,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-once-after",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "once"
@@ -3741,7 +3741,7 @@
     {
      "category": "FOCUS",
      "meaning": "focus-exclusive-or-limit",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "only"
@@ -3754,7 +3754,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-only-under",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "only if"
@@ -3806,7 +3806,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-if-not-consequence",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "or else"
@@ -3864,7 +3864,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-if-not-consequence",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "otherwise"
@@ -3877,7 +3877,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-ought-duty-or-expectation",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "ought to"
@@ -4124,7 +4124,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-provided-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "provided"
@@ -4137,7 +4137,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-provided-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "provided that"
@@ -4150,7 +4150,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-providing-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "providing"
@@ -4163,7 +4163,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-providing-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "providing that"
@@ -4403,7 +4403,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-shall-future-or-obligation",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "shall"
@@ -4442,7 +4442,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-should-advice-expectation-or-condition",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "should"
@@ -4499,7 +4499,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-while-and-if",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "so long as"
@@ -4655,7 +4655,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-suppose-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "suppose"
@@ -4668,7 +4668,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-supposing-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "supposing"
@@ -4681,7 +4681,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-supposing-that",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "supposing that"
@@ -5035,7 +5035,7 @@
     {
      "category": "FOCUS",
      "meaning": "focus-add-same-kind",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "too"
@@ -5139,7 +5139,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-except",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "unless"
@@ -5261,7 +5261,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-used-to-past-habit",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "used to"
@@ -5339,7 +5339,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-be-past-singular",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "was"
@@ -5365,7 +5365,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-be-past-plural-or-subjunctive",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "were"
@@ -5384,7 +5384,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-thing",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "what"
@@ -5397,7 +5397,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-purpose",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "what for"
@@ -5410,7 +5410,7 @@
     {
      "category": "ASK",
      "meaning": "asks-hypothetical-case",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "what if"
@@ -5429,7 +5429,7 @@
     {
      "category": "ASK",
      "meaning": "asks-or-points-any-thing",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "whatever"
@@ -5449,12 +5449,12 @@
     {
      "category": "CONDITION",
      "meaning": "condition-when-case-arises",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     },
     {
      "category": "ASK",
      "meaning": "asks-for-time",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "when"
@@ -5474,12 +5474,12 @@
     {
      "category": "CONDITION",
      "meaning": "condition-or-time-every-or-any-time",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     },
     {
      "category": "ASK",
      "meaning": "asks-or-points-any-time",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "whenever"
@@ -5498,7 +5498,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-place",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "where"
@@ -5511,7 +5511,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-source-place",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "where from"
@@ -5543,7 +5543,7 @@
     {
      "category": "ASK",
      "meaning": "asks-or-points-any-place",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "wherever"
@@ -5556,7 +5556,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-or-alternative-open",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "whether"
@@ -5575,7 +5575,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-alternative-frame",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     }
    ],
    "word": "whether … or"
@@ -5594,7 +5594,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-choice",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "which"
@@ -5613,7 +5613,7 @@
     {
      "category": "ASK",
      "meaning": "asks-or-points-any-choice",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "whichever"
@@ -5658,7 +5658,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-person",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "who"
@@ -5677,7 +5677,7 @@
     {
      "category": "ASK",
      "meaning": "asks-or-points-any-person",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "whoever"
@@ -5696,7 +5696,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-person-object",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "whom"
@@ -5715,7 +5715,7 @@
     {
      "category": "ASK",
      "meaning": "asks-or-points-any-person-object",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "whomever"
@@ -5734,7 +5734,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-owner-or-relation",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "whose"
@@ -5747,7 +5747,7 @@
     {
      "category": "ASK",
      "meaning": "asks-or-points-any-owner",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "whosever"
@@ -5766,7 +5766,7 @@
     {
      "category": "ASK",
      "meaning": "asks-for-cause",
-     "section": "4C. NEGATE boundary candidates"
+     "section": null
     }
    ],
    "word": "why"
@@ -5779,7 +5779,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-will-future-or-volition",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "will"
@@ -5864,7 +5864,7 @@
     {
      "category": "CONDITION",
      "meaning": "condition-counterfactual-absence",
-     "section": "2G. Articles — promoted from FLUFF (R3)"
+     "section": null
     },
     {
      "category": "NEGATE",
@@ -5895,7 +5895,7 @@
     {
      "category": "OPERATOR",
      "meaning": "function-would-conditional-polite-or-past-habit",
-     "section": "Candidates considered and not filed as FLUFF"
+     "section": null
     }
    ],
    "word": "would"

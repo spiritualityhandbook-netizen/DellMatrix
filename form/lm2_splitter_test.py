@@ -48,6 +48,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -277,6 +278,54 @@ def _gold_sig(expected):
     return [(e[0], e[1], e[2]) for e in expected]
 
 
+def _independent_census_rows(text):
+    """Span-first re-parse of the confirmed census, independent of
+    form.lm2_census_build's single-pass state machine (A9 proof):
+    the source is cut into per-category spans -- a span starts at
+    its '# N. NAME' heading with a FRESH section of None -- and
+    census-table rows are collected span by span. A row's expected
+    section is the last '## ' heading inside its OWN span, or None
+    when the span has none before the row's table. Returns
+    (word, category, meaning, section) tuples."""
+    cats = {"LINK", "POINT", "CONDITION", "NEGATE", "ASK",
+            "FLUFF", "OPERATOR", "FOCUS"}
+    rows = []
+    cur = None
+    section = None
+    in_table = False
+    for line in text.splitlines():
+        m = re.match(r"^# \d+\.\s+([A-Z][A-Z-]*)", line)
+        if m:
+            cur = m.group(1) if m.group(1) in cats else None
+            section = None
+            in_table = False
+            continue
+        if line.startswith("# "):
+            cur = None
+            section = None
+            in_table = False
+            continue
+        if cur is None:
+            continue
+        if line.startswith("## "):
+            section = line[3:].strip()
+            in_table = False
+            continue
+        if re.match(r"^\|\s*candidate\s*\|", line):
+            in_table = True
+            continue
+        if in_table:
+            if line.startswith("|"):
+                cells = [c.strip() for c in line.split("|")]
+                if (len(cells) >= 4 and cells[1]
+                        and not re.match(r"^[\s:\-|]+$", cells[1])):
+                    rows.append((cells[1].lower(), cur,
+                                 cells[2], section))
+            else:
+                in_table = False
+    return rows
+
+
 def smoke() -> bool:
     print("=== LM-2 SPLITTER SMOKE ===")
     r = []
@@ -503,6 +552,61 @@ def smoke() -> bool:
         len({e["word"] for e in entries}) == 441
         and all(set(row["category"] for row in e["rows"])
                 == set(e["categories"]) for e in entries))
+
+    # ---- S15 census section provenance (A9 correction, Director
+    # mail 1a1ce5a1885841eb): a row's section is the last '## '
+    # subsection heading INSIDE its own category, or the explicit
+    # absent marker None when the category has no subsection
+    # heading before the row's table. The pre-fix builder never
+    # reset its section variable at category boundaries, so 101
+    # rows (all of ASK 34 / CONDITION 34 / OPERATOR 27 / FOCUS 6,
+    # the categories with no '## ' headings of their own) carried
+    # a label inherited from the PRECEDING category -- provenance
+    # fiction over (word, category, meaning) content that is exact.
+    synth = "\n".join([
+        "# 1. LINK",
+        "## 1A. Coordinating conjunctions",
+        "| candidate | meaning | source | notes |",
+        "|---|---|---|---|",
+        "| and | joins | s | n |",
+        "# 5. ASK",
+        "| candidate | meaning | source | notes |",
+        "|---|---|---|---|",
+        "| who | asks person | s | n |",
+        "# 4. NEGATE",
+        "## 4A. Core negatives",
+        "| candidate | meaning | source | notes |",
+        "|---|---|---|---|",
+        "| not | denies | s | n |",
+    ])
+    srows, scat = lm2_census_build.parse_census(synth)
+    sby = {row["word"]: row for row in srows}
+    rec("S15 synthetic boundary: own-category section kept; "
+        "unsectioned category gets the absent marker (None); a "
+        "later category's own section attaches normally",
+        sby["and"]["section"] == "1A. Coordinating conjunctions"
+        and sby["who"]["section"] is None
+        and sby["not"]["section"] == "4A. Core negatives"
+        and scat == {"LINK": 1, "POINT": 0, "CONDITION": 0,
+                     "NEGATE": 1, "ASK": 1, "OPERATOR": 0,
+                     "FOCUS": 0, "FLUFF": 0})
+    with open(census_file, encoding="utf-8") as f:
+        census_text = f.read()
+    ind_rows = _independent_census_rows(census_text)
+    art_rows = [(e["word"], row["category"], row["meaning"],
+                 row["section"])
+                for e in entries for row in e["rows"]]
+    from collections import Counter as _Counter
+    rec("S15 independent span-first parse == shipped artifact "
+        "(content AND section provenance, all 488 rows)",
+        _Counter(ind_rows) == _Counter(art_rows))
+    rec("S15 absent marker carried: every ASK / CONDITION / "
+        "OPERATOR / FOCUS row has section None (those category "
+        "spans contain no '## ' heading -- proven by S15 above)",
+        all(row["section"] is None for e in entries
+            for row in e["rows"]
+            if row["category"] in ("ASK", "CONDITION",
+                                   "OPERATOR", "FOCUS")))
 
     # ---- S13 v2 presence + cache (proof item (d), fixture form)
     import shutil

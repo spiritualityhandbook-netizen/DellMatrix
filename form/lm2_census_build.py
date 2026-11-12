@@ -13,6 +13,15 @@ prose (not a table) and is named UNCONFIRMED in the census itself; SS9
 (MORPHEME SIDE) is not a small-word category. Multi-category membership
 is law (R8): a word filed under several categories keeps every row.
 
+Section provenance (A9 correction, Director mail 1a1ce5a1885841eb):
+a row's `section` is the last `## ` subsection heading INSIDE its own
+category, or None -- the explicit absent marker -- when the category
+has no subsection heading before the row's table. Section NEVER
+crosses a category boundary: ASK / CONDITION / OPERATOR / FOCUS have
+no `## ` headings of their own, so all their rows carry None. (The
+pre-fix builder never reset `section` at category boundaries and 101
+rows shipped with a label inherited from the preceding category.)
+
     python -m form.lm2_census_build            # regenerate the artifact
     python -m form.lm2_census_build --check    # verify artifact == census
 """
@@ -44,17 +53,19 @@ def parse_census(text: str):
     rows = []
     per_category = {c: 0 for c in CATEGORIES}
     current = None
-    section = ""
+    section = None
     in_table = False
     for line in text.splitlines():
         m = re.match(r"^# (\d+)\.\s+([A-Z][A-Z-]*)", line)
         if m:
             name = _HEADING.get(m.group(1))
             current = name if name and m.group(2).startswith(name) else None
+            section = None
             in_table = False
             continue
         if line.startswith("# "):
             current = None
+            section = None
             in_table = False
             continue
         if line.startswith("## "):
