@@ -91,6 +91,21 @@ Gates, in order, all fail-closed (design SS2):
      form/lm1_import_test.py). A failed gate leaves the previous
      artifacts (or their absence) byte-identical.
 
+     Known limitation (documented per Director mail
+     1a1cdee092fdf580; NOT an enforced lock): the pre-publish v1
+     recheck precedes both os.replace operations, so a v1 write
+     landing in the narrow window between the recheck and the
+     table replace would not be caught by THIS build -- the
+     published v2 would have been derived from the pre-change
+     v1 bytes main() parsed (the published PAIR remains
+     internally consistent and verified; the skew is between v1
+     and v2, and the next build re-reads v1 and converges). The
+     importer is a single-writer build-time tool: no other
+     process may write the v1 table or the v2 pair while a
+     build runs. On the read side, the loader reads each
+     artifact exactly once per load and verifies the binding
+     against those same bytes (T-F interleavings).
+
 Export helper (boundary SS4, build-time only): classify_export()
 classifies a row set as unchanged_quote / derived_adaptation /
 independent and REFUSES (ExportRefused) bulk export of any set
@@ -918,6 +933,11 @@ def run_build(payloads, rights, fetched_at, v1_doc,
          a concurrent v1 change aborts the build with NOTHING
          published. (The pre-repair code checked only after
          publishing, when the failure could not unpublish.)
+         Known limitation: the recheck precedes the step-5
+         replaces, so a v1 write landing between the recheck
+         and the table replace escapes THIS build's detection
+         (documented in the module docstring, gate 9; the build
+         assumes a single writer).
       4. Retain the previous pair as <path>.prev build-area
          recovery copies (never read by the loader, never part of
          the committed artifact set; recovery aids only).

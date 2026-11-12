@@ -56,6 +56,23 @@ downgrade. The recovery is to re-run the build
 to one consistent generation. The v1 artifacts carry no pair
 block and behave exactly as before; explicit paths are honored
 as given.
+
+Read contract under concurrent publication (second repair
+cycle, Director mail 1a1cdee092fdf580): every load reads each
+artifact's bytes exactly once, verifies the binding against
+those snapshots, and parses its return value from the same
+snapshots -- no path is opened twice in a load. os.replace is
+atomic per file, so a single file's snapshot is always one
+whole generation; a publish landing between the two snapshot
+reads therefore yields either one consistent generation
+(served) or a binding mismatch (PairInconsistentError) --
+never a mixed pair, and never bytes other than the ones that
+were verified. The first repair's load_collisions() violated
+this contract: it verified through load_table() and then
+re-opened the collisions file to produce its return value, so
+a publish landing between verification and the return read
+could hand back an unverified generation. That second read is
+gone; T-F in form/lm1_import_test.py pins the interleavings.
 """
 
 from __future__ import annotations
@@ -110,10 +127,12 @@ def _sibling_collisions_path(table_path: str):
                         "lm_table_v2.collisions.json")
 
 
-def _verify_pair(table_path: str, doc) -> None:
-    """Fail closed unless the sibling collisions file is exactly
-    the one this table generation binds. No pair block (v1, or an
-    unbound artifact) -> nothing to verify, legacy behavior."""
+def _verify_pair(table_path: str, doc, collisions_bytes) -> None:
+    """Fail closed unless collisions_bytes -- the sibling
+    collisions bytes read in the SAME load call as the table
+    bytes this doc was parsed from -- are exactly the ones this
+    table generation binds. No pair block (v1, or an unbound
+    artifact) -> nothing to verify, legacy behavior."""
     pair = (doc.get("header") or {}).get("pair")
     if not pair:
         return
@@ -128,14 +147,12 @@ def _verify_pair(table_path: str, doc) -> None:
             f"lm_table pair inconsistent: {table_path} carries an "
             "incomplete pair binding; re-run form/lm1_import.py "
             "to converge the pair")
-    if not os.path.exists(cpath):
+    if collisions_bytes is None:
         raise PairInconsistentError(
             f"lm_table pair inconsistent: {table_path} binds "
             f"collisions file {cpath}, which is missing; re-run "
             "form/lm1_import.py to converge the pair")
-    with open(cpath, "rb") as f:
-        cbytes = f.read()
-    if _sha256_bytes(cbytes) != pair["collisions_sha256"]:
+    if _sha256_bytes(collisions_bytes) != pair["collisions_sha256"]:
         raise PairInconsistentError(
             f"lm_table pair inconsistent: collisions file "
             f"{cpath} does not match the binding in "
@@ -172,6 +189,35 @@ def _default_collisions_path() -> str:
     return V1_COLLISIONS_PATH
 
 
+def _load_snapshot(table_path: str):
+    """Load a table and its bound collisions file as ONE
+    snapshot: each file's bytes are read exactly once, the pair
+    binding is verified against those bytes, and both return
+    values are parsed from those same bytes -- no path is opened
+    twice in a load, so nothing a concurrent publish lands can
+    enter a load after its verification.
+
+    Returns (doc, collisions): collisions is the parsed
+    collisions list when the table carries a pair binding for a
+    sibling file, else None (v1 / unbound artifact -- the legacy
+    separate-read behavior of load_collisions applies)."""
+    with open(table_path, "rb") as f:
+        table_bytes = f.read()
+    doc = json.loads(table_bytes.decode("utf-8"))
+    pair = (doc.get("header") or {}).get("pair")
+    cpath = _sibling_collisions_path(table_path) if pair else None
+    if not pair or cpath is None:
+        return doc, None
+    collisions_bytes = None
+    if os.path.exists(cpath):
+        with open(cpath, "rb") as f:
+            collisions_bytes = f.read()
+    _verify_pair(table_path, doc, collisions_bytes)
+    # _verify_pair raised if the bound sibling was missing; the
+    # bytes verified above are the bytes parsed here.
+    return doc, json.loads(collisions_bytes.decode("utf-8"))
+
+
 def load_table(path: Optional[str] = None) -> Dict[str, Any]:
     """Load the LM table (v2 when present, else v1). Missing file
     -> empty table, no raise: {'header': None, 'rows': []}
@@ -181,26 +227,30 @@ def load_table(path: Optional[str] = None) -> Dict[str, Any]:
     p = path or _default_table_path()
     if not os.path.exists(p):
         return {"header": None, "rows": []}
-    with open(p, encoding="utf-8") as f:
-        doc = json.load(f)
-    _verify_pair(p, doc)
+    doc, _collisions = _load_snapshot(p)
     return {"header": doc.get("header"), "rows": doc.get("rows", [])}
 
 
 def load_collisions(path: Optional[str] = None) -> List[Dict[str, Any]]:
     """Load the collision log paired with the active table.
     Missing file -> empty list. On the default path with a v2
-    table present, the pair binding is verified (via load_table)
-    before the collisions are returned: a mixed pair raises
-    PairInconsistentError rather than serving the collisions of
-    another generation. An explicit path is honored as given."""
+    table present, table and collisions are read as one verified
+    snapshot (see _load_snapshot) and the collisions returned are
+    parsed from the very bytes the binding verified: a mixed
+    pair raises PairInconsistentError rather than serving the
+    collisions of another generation. An explicit path is
+    honored as given."""
     if path is not None:
         if not os.path.exists(path):
             return []
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     if os.path.exists(V2_TABLE_PATH):
-        load_table()  # verifies the pair binding, fail-closed
+        _doc, collisions = _load_snapshot(V2_TABLE_PATH)
+        if collisions is not None:
+            return collisions
+        # A v2-named table with no pair binding is not a shipped
+        # state; keep the legacy direct read, as before.
         with open(V2_COLLISIONS_PATH, encoding="utf-8") as f:
             return json.load(f)
     p = _default_collisions_path()

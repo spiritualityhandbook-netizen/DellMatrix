@@ -62,10 +62,30 @@ pair-atomic, and the v1 hash was rechecked only after publish):
 - T-E RETRY / RECOVERY: after a mid-publish crash (in-process and
   via the killed subprocess), re-running the build converges the
   pair to one consistent new generation that the reader serves.
+
+Second repair cycle (Director mail 1a1cdee092fdf580 -- the first
+repair bound the pair, but the reader still did not hold one
+snapshot: load_collisions() verified through load_table() and
+then opened the collisions file a SECOND time to return it, so a
+publish landing between verification and the return read could
+hand back an unverified generation; load_table() verified
+against separately-read bytes rather than one snapshot):
+
+- T-F READER INTERLEAVINGS: deterministic open-count hooks swap
+  artifact files at exact read points during a load (no timing,
+  no sleeps). F1/F2: a publish landing between verification and
+  a second return read must never be served -- the verified
+  generation is returned and each file is read exactly once.
+  F3/F7: a mixed publish landing between the two snapshot reads
+  is refused. F4/F5: a consistent republish landing before the
+  reads is served as ONE new generation, never mixed. F6: a
+  table-only swap after the table snapshot cannot affect the
+  in-flight load.
 """
 
 from __future__ import annotations
 
+import builtins
 import copy
 import glob
 import hashlib
@@ -152,6 +172,52 @@ imp.run_build(payloads, RIGHTS, "2026-11-11T00:00:00Z",
               collisions_path=sys.argv[4])
 print("DRIVER DONE")
 """
+
+
+class _SwapHook:
+    """Deterministic publication interleaving for T-F.
+
+    Wraps builtins.open: when the file at trigger_path is opened
+    for reading the trigger_count-th time inside the block, the
+    given on-disk swaps ({path: bytes}) are applied FIRST, via
+    temp file + os.replace -- generation-whole, exactly as the
+    importer's publish replaces whole files. No timing, no
+    sleeps: the interleaving point is the open count itself."""
+
+    def __init__(self, trigger_path, trigger_count, swaps):
+        self.trigger_path = os.path.abspath(trigger_path)
+        self.trigger_count = trigger_count
+        self.swaps = swaps
+        self.opens = 0
+        self.fired = False
+        self._real_open = builtins.open
+
+    def __enter__(self):
+        builtins.open = self._open
+        return self
+
+    def __exit__(self, *exc):
+        builtins.open = self._real_open
+        return False
+
+    def _open(self, file, mode="r", *args, **kwargs):
+        if isinstance(file, (str, bytes, os.PathLike)) \
+                and "r" in mode and "w" not in mode \
+                and "a" not in mode and "+" not in mode:
+            try:
+                path = os.path.abspath(os.fspath(file))
+            except TypeError:
+                path = None
+            if path == self.trigger_path:
+                self.opens += 1
+                if self.opens == self.trigger_count:
+                    self.fired = True
+                    for target, data in self.swaps.items():
+                        tmp = f"{target}.swap-{os.getpid()}"
+                        with self._real_open(tmp, "wb") as f:
+                            f.write(data)
+                        os.replace(tmp, target)
+        return self._real_open(file, mode, *args, **kwargs)
 
 
 def _fixture_v1_doc():
@@ -740,6 +806,106 @@ def smoke() -> bool:
             _served_sense(mod) == "eta meaning")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+    # ---- T-F: reader interleavings (Director mail
+    # 1a1cdee092fdf580). Two valid generations are built in two
+    # pair dirs; gen 1 is served from the first. _SwapHook swaps
+    # files at exact open-count points during a load.
+    tmp, mod_dir = _mk_pair_dir("tf")
+    tmp2, mod2_dir = _mk_pair_dir("tf2")
+    try:
+        tpath, cpath = _pair_paths(mod_dir)
+        t2path, c2path = _pair_paths(mod2_dir)
+        imp.run_build(_gen_payloads(""), RIGHTS,
+                      "2026-11-11T00:00:00Z", _fixture_v1_doc(),
+                      table_path=tpath, collisions_path=cpath)
+        imp.run_build(_gen_payloads(" v2"), RIGHTS,
+                      "2026-11-11T00:00:00Z", _fixture_v1_doc(),
+                      table_path=t2path, collisions_path=c2path)
+        mod = _load_pair_mod(mod_dir, "tf")
+        gen1_table = open(tpath, "rb").read()
+        gen1_coll = open(cpath, "rb").read()
+        gen2_table = open(t2path, "rb").read()
+        gen2_coll = open(c2path, "rb").read()
+        gen1_coll_json = json.loads(gen1_coll.decode("utf-8"))
+        gen2_coll_json = json.loads(gen2_coll.decode("utf-8"))
+        gen2_gen = (json.loads(gen2_table.decode("utf-8"))
+                    ["header"]["pair"]["generation"])
+
+        def _sense_of(doc):
+            got = [row["sense"] for row in doc["rows"]
+                   if row["piece"] == "zzeta"
+                   and row["stratum"] == "external_wikipedia"]
+            return got[0] if got else None
+
+        def _restore_gen1():
+            with open(tpath, "wb") as f:
+                f.write(gen1_table)
+            with open(cpath, "wb") as f:
+                f.write(gen1_coll)
+
+        rec("T-F setup: generations 1 and 2 differ in both pair "
+            "members", gen1_coll_json != gen2_coll_json
+            and gen1_table != gen2_table)
+
+        with _SwapHook(cpath, 2, {cpath: gen2_coll}) as hook:
+            got_f1 = mod.load_collisions()
+        rec("T-F1 collisions-only publish landing between "
+            "verification and the return read is never served: "
+            "verified generation returned, file read once",
+            got_f1 == gen1_coll_json and not hook.fired)
+        _restore_gen1()
+
+        with _SwapHook(cpath, 2, {cpath: gen2_coll,
+                                  tpath: gen2_table}) as hook:
+            got_f2 = mod.load_collisions()
+        rec("T-F2 whole-pair publish landing between "
+            "verification and the return read is never served "
+            "by load_collisions either",
+            got_f2 == gen1_coll_json and not hook.fired)
+        _restore_gen1()
+
+        with _SwapHook(cpath, 1, {cpath: gen2_coll}):
+            refused_f3 = _refused(mod, mod.load_table)
+        rec("T-F3 load_table refuses a mixed publish landing "
+            "between its two reads", refused_f3)
+        _restore_gen1()
+
+        with _SwapHook(cpath, 1, {cpath: gen2_coll,
+                                  tpath: gen2_table}):
+            refused_f7 = _refused(mod, mod.load_table)
+        rec("T-F7 load_table refuses when both members are "
+            "replaced between its two reads (snapshots disagree)",
+            refused_f7)
+        _restore_gen1()
+
+        with _SwapHook(tpath, 1, {tpath: gen2_table,
+                                  cpath: gen2_coll}):
+            doc_f4 = mod.load_table()
+        rec("T-F4 a consistent republish landing before "
+            "load_table's reads is served as ONE new generation",
+            _sense_of(doc_f4) == "eta meaning v2"
+            and doc_f4["header"]["pair"]["generation"] == gen2_gen)
+        _restore_gen1()
+
+        with _SwapHook(tpath, 1, {tpath: gen2_table,
+                                  cpath: gen2_coll}):
+            got_f5 = mod.load_collisions()
+        rec("T-F5 a consistent republish landing before "
+            "load_collisions' reads is served as ONE new "
+            "generation", got_f5 == gen2_coll_json)
+        _restore_gen1()
+
+        with _SwapHook(cpath, 1, {tpath: gen2_table}):
+            doc_f6 = mod.load_table()
+        rec("T-F6 a table-only swap after the table snapshot "
+            "cannot affect the in-flight load: the original "
+            "verified generation is served",
+            _sense_of(doc_f6) == "eta meaning")
+        _restore_gen1()
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+        shutil.rmtree(tmp2, ignore_errors=True)
 
     print(f"    coverage: {header['coverage']['status']}; "
           f"external rows {len(ext)}; totals "
