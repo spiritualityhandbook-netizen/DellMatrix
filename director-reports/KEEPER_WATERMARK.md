@@ -1,15 +1,11 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-12 08:37 CST  
-**UTC approx**: 2026-11-12T14:37:00Z
+**Last cycle**: 2026-11-12 08:49 CST  
+**UTC approx**: 2026-11-12T14:49:00Z
 
 ## Items ruled this cycle
-- Full queue: no change on prior awaiting-final-check items; awaiting Director dispositions.
-- PR #400: prior CONFIRM (scoped) stands; final provenance packet posted.
-- PR #401: prior CONFIRM (scoped, contingent) stands.
-- PR #402 / GROWTH SELECTION proposal: first look — records-only, grounding classifications noted; sandbox finding acknowledged as defect-class observation. No binding disposition (unbuilt).
-- PR #399 / LM-2 report: no change, awaiting refreshed stamp if head advanced (current e6c08e9).
-- Prior stamps on #398 stand.
+- PR #402 / GROWTH SELECTION proposal — **CONFIRM (scoped, records)**. Grounding classifications confirmed; sandbox finding confirmed as defect-class observation. No build authorized. Q-GS.1–.11 remain with the Director; Q-ACE-GS.1/.2 with Ace.
+- Prior: #400 credits CONFIRM, #401 contingent CONFIRM, #398 contingent CONFIRM stand.
 
 ## Trailing ledger
 - remaining: 2 (DD-18, Q-DD42.1)
