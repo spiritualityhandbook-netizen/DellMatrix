@@ -281,6 +281,93 @@ def smoke() -> bool:
     rec("t9_repeat_bare_calls_ok",
         r9a.get("ok") is True and r9b.get("ok") is True)
 
+    # -- 10. State-line renderer failure fails CLOSED (Director
+    #        2026-11-12): a report that passes the anchor check
+    #        but crashes its own state renderer must NOT stand
+    #        as connected=YES / available=YES beside a failed
+    #        state line, and must not count as passing. The
+    #        anchor check validates key presence only, never
+    #        value types; _state_forces iterates rep["active"].
+    class _HostileForces:
+        def status(self):
+            return {"active": 5, "weather": "calm"}
+
+    p = _program("C7SchemaT10")
+    p.forces = _HostileForces()
+    try:
+        res = execute_seed(p, "39[Schema]")
+        raised = ""
+    except Exception as e:  # the board itself must not crash
+        res, raised = {}, f"{type(e).__name__}: {e}"
+    verdict, count_line, organs = _board(res)
+    f10 = organs.get("forces") or {}
+    rec("t10_board_survives_renderer_failure", not raised, raised)
+    rec("t10_renderer_failure_not_yes_yes",
+        f10.get("connected") == "UNKNOWN"
+        and f10.get("available") == "UNKNOWN",
+        str(f10))
+    rec("t10_renderer_failure_named_and_counted",
+        "state line raised" in f10.get("state", "")
+        and "TypeError" in f10.get("state", "")
+        and verdict == "Schema: INVALID" and "forces" in count_line,
+        f"{verdict} | {count_line} | {f10}")
+
+    # -- 10b. The guard is renderer-agnostic: ANY organ's state
+    #        renderer raising fails that organ closed (patched
+    #        renderer on the keys spec; restored in finally).
+    from form.dell_matrix import schema_board as _sb
+    p = _program("C7SchemaT10B")
+    kspec = next(s for s in _sb._SPECS if s.name == "keys")
+
+    def _renderer_bomb(rep):
+        raise ValueError("c7 renderer bomb")
+
+    orig_state = kspec.state
+    kspec.state = _renderer_bomb
+    try:
+        board10 = _sb.build_schema_board(p)
+        raised = ""
+    except Exception as e:
+        board10, raised = {}, f"{type(e).__name__}: {e}"
+    finally:
+        kspec.state = orig_state
+    k10 = next((o for o in board10.get("organs") or []
+                if o["name"] == "keys"), {})
+    rec("t10_any_renderer_failure_fails_closed",
+        not raised and k10.get("connected") == "UNKNOWN"
+        and k10.get("available") == "UNKNOWN"
+        and "ValueError" in k10.get("state", "")
+        and board10.get("verdict") == "INVALID"
+        and len(board10.get("organs") or []) == 16,
+        f"{raised} | {k10}")
+
+    # -- 10c. Same class, one door over: an availability hook
+    #        that raises must not escape _probe_organ (its own
+    #        contract: never raises) or crash the board; the
+    #        organ reports available=UNKNOWN, connection kept.
+    espec = next(s for s in _sb._SPECS if s.name == "enhance")
+
+    def _avail_bomb(rep):
+        raise KeyError("c7 availability bomb")
+
+    orig_avail = espec.availability
+    espec.availability = _avail_bomb
+    try:
+        board10c = _sb.build_schema_board(p)
+        raised = ""
+    except Exception as e:
+        board10c, raised = {}, f"{type(e).__name__}: {e}"
+    finally:
+        espec.availability = orig_avail
+    e10 = next((o for o in board10c.get("organs") or []
+                if o["name"] == "enhance"), {})
+    rec("t10_availability_failure_fails_closed",
+        not raised and e10.get("connected") == "YES"
+        and e10.get("available") == "UNKNOWN"
+        and "availability check raised" in e10.get("state", "")
+        and board10c.get("verdict") == "INVALID",
+        f"{raised} | {e10}")
+
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)
 

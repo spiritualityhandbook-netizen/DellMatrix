@@ -51,6 +51,19 @@ back to UNKNOWN with the reason recorded — purity first.
 Per-organ isolation: each organ is probed inside its own
 try/except. One organ's failure can neither crash the board
 nor be swallowed into a pass.
+
+State-line contract (explicit): rendering an organ's state
+line is part of consuming its report, and the anchor check
+validates anchor-key presence only, never value types — so
+a renderer can meet a value it cannot render. A renderer
+exception therefore fails the organ CLOSED: connected and
+available report UNKNOWN with the rendering failure named
+in the state line (the same disposition as a raised probe),
+and the organ counts as failing. No organ ever stands as
+connected=YES / available=YES beside a failed state line.
+An availability hook that raises likewise reports
+available=UNKNOWN with the failure named; the board itself
+never raises.
 """
 from __future__ import annotations
 
@@ -364,14 +377,32 @@ def _probe_organ(spec: _Spec, program: Any) -> Dict[str, Any]:
         state = (spec.state(rep, program) if spec.state_takes_program
                  else spec.state(rep))
     except Exception as e:
-        state = f"state line raised {type(e).__name__}: {e}"[:120]
+        # Fail closed (Director 2026-11-12): rendering the state
+        # line is part of consuming the report. A report whose
+        # state line cannot be rendered has not proven itself
+        # consumable, so — exactly as a raised probe does — the
+        # organ reports UNKNOWN with the failure named, never
+        # connected/available YES beside a failed state line.
+        out.update(connected=UNKNOWN, available=UNKNOWN,
+                   state=f"state line raised {type(e).__name__}: {e}"[:120])
+        return out
     err = rep.get("error") or (rep.get("reason") if rep.get("ok") is False else None)
     if rep.get("ok") is False or rep.get("error"):
         out["available"] = DEGRADED
         out["state"] = f"{state} · organ reports error: {err}"[:160]
         return out
-    out["available"] = (spec.availability(rep) if spec.availability
-                        else YES)
+    try:
+        out["available"] = (spec.availability(rep) if spec.availability
+                            else YES)
+    except Exception as e:
+        # Same fail-closed class: an availability hook that
+        # raises must not escape this function (its contract is
+        # "never raises") or crash the board. Connection WAS
+        # proven; availability is what could not be determined.
+        out.update(available=UNKNOWN,
+                   state=(f"{state} · availability check raised "
+                          f"{type(e).__name__}: {e}")[:160])
+        return out
     out["state"] = state
     return out
 
