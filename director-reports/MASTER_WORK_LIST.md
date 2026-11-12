@@ -23,7 +23,7 @@ Data: master_work_list_items.json
 
 ## The count
 
-**PROGRESS: 38 / 180 COMPLETE = 21.1%**
+**PROGRESS: 38 / 181 COMPLETE = 21.0%**
 
 | Status | Items |
 |---|---|
@@ -31,10 +31,10 @@ Data: master_work_list_items.json
 | MERGED_UNVERIFIED | 0 |
 | BUILT_HELD | 0 |
 | PARTIAL | 54 |
-| OPEN | 85 |
+| OPEN | 86 |
 | GATED | 3 |
 | NEEDS_OVERSEER | 0 |
-| **TOTAL (active)** | **180** |
+| **TOTAL (active)** | **181** |
 
 Outside active scope: 3 SANDBOXED items (parked by Ace,
 listed in their own block below; not counted in the total or the %).
@@ -357,3 +357,9 @@ parked items the 72 frame never counted.
 | # | Item | Source IDs | Status |
 |---|---|---|---|
 | 183 | LM-2 THE SPLITTER — split_word over the LM table (census-whole -> table-recorded -> guarded greedy longest-match), the lm0_census_v1.json artifact, full-row-set receipts (accounted / morpheme_resolved), and the quarantine-eligibility predicate [COMPLETE (scoped) 2026-11-12 — PROPOSED as Q-LM2.1 in the LM-2 circuit report (PR #399) and entered by the completion-register reconciliation PR; effective as authority-confirmed credit only on the authorities' confirmation of that PR: PR #395 MERGED c414e710ea63d5c799d1b66d2b92a7d051507f18 (head 4d0de79); Director CONDITIONAL SCOPED PASS (mail 1a1ceddc6e1f5001) discharged by Keeper FINAL STAMP at 4d0de79 (6823425709); regression campaign 276/276 x3 TERMINAL GREEN at 4d0de79; exact-head CI all-pass; merged-main verification on a fresh clone @c414e71: lm2_splitter 66/66, live split_word('biology') -> bio + logy accounted 1.0, split_word('incredible') -> credible UNRESOLVED accounted 0.2. Scope = the splitter slice ONLY: no composition (LM-3), no translator wiring (LM-4), no external-gold claim; the two-cycle accounting question Q-LM2.2 stays the authorities' separately.] | LM-2 / Q-LM2.1 | COMPLETE |
+
+## Block Growth Selection — GS-4 (PR #402)
+
+| # | Item | Source IDs | Status |
+|---|---|---|---|
+| 184 | GS-4 Growth Sandbox Integrity / cross-wall enumeration — CONFIRMED sandbox-integrity defect, state OPEN, no completion credit: default RingedGrowth pair enumeration ignored Plane box walls (the wall entered only as _affinity's soft in_scope 0.2 penalty) and produced (a) two-parent Solstice proposals spanning the wall and (b) single-parent Equinox/Standstill drift offspring of boxed units carrying outside units' tokens under inside-only lineage; boxing changed nothing in default growth output (control-identical). Reproduced independently twice on merged main @074b30f (PR #403; PR #402 comment 6827580827); Keeper independently challenged and confirmed (comment 6828513382); Director scoped ACCEPTANCE mail 1a1d05d91f6401dc. Bounded repair AUTHORIZED by Director scope ruling mail 1a1d077edcbc82e2 (2026-11-12): wall-mate enumeration filter in form/dell_matrix/ringed_growth.py using the existing Plane box authority + receipted pairs_excluded_cross_sandbox count; unboxed output byte-for-byte, scope_ids / default-unset / affinity weights / DCC-XI..XV pins unchanged, no cross-wall bypass flag. Row stays OPEN until merged-main proof under Keeper final confirmation + Director final code disposition; U1 (post-growth mutation), U2 (docked-session synthesis), U3 (multi-cycle compounding) remain UNPROVEN limitations — not repaired, not counted as repaired. | GS-4 / PR #403 / PR #404 | OPEN |
