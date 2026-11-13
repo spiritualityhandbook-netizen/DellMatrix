@@ -284,3 +284,87 @@ Director + Keeper: disposition on the C13 slice at this head;
 rulings on Q-C13.1–Q-C13.7 (Q-C13.7 decides the MWL 167–170
 credit shape — none is self-applied). Merge only via the main
 session under the hard gate + §32 after both dispositions.
+
+## 14. FINISH — post-interruption completion (2026-11-13, finish lane)
+
+The build lane was interrupted after pushing head fb22bed (build
+9fae03e, re-pins fd04fb6, this report) but before opening the PR.
+The main session verified the pushed state first-hand and a finish
+lane completed the circuit. One residual defect was found and
+repaired; no product code was changed by the finish lane.
+
+### 14.1 Residual defect: d1_proof_cards census pin (DD-21 fallout)
+
+At fb22bed, in a FRESH clone, form.mandell.d1_proof_cards_test was
+RED 4/6 — exactly two failures: (1) the bare-invocation census
+(the live survey now yields 24 failures including
+31: 'no_argument', the C13 contract; the pin still carried the
+superseded placeholder census of 23 with Dell 31 executed);
+(2) committed DELL_PROOF_CARDS.md != fresh render. Main @d930322
+is 6/6 on the same suite — the defect is branch-carried, from the
+build's Dell 31 change; §7's re-pins covered d1_registry_leaf3
+and semantic_route but not this suite.
+
+Diagnosis: the pins live in d1_proof_cards_test.py
+(EXPECTED_BARE_FAILURES + the census assertion). The canonical
+regeneration path for the cards file is the renderer itself —
+dell_cards.build_all_cards(owner_prefix="D1CardT") +
+render_cards_md written to form/mandell/DELL_PROOF_CARDS.md, the
+same functions the suite uses (precedent: 77b815d, "no hand
+edits"). Delta evidence: a fresh render on main @d930322 vs a
+fresh render on this branch differ in exactly four lines, all
+Dell-31 consequences — the census header (77/23 -> 76/24), the
+row-31 outcome (executed -> failed: no_argument), and the Dell 31
+deep-note line (the C13 note the build commit already carried in
+dell_cards.py). The committed-vs-fresh diff on the branch is the
+identical four lines. No other Dell's render moved.
+
+Repair (commit 61c9b3a, following the DD-44 census precedent
+0773d13): EXPECTED_BARE_FAILURES gains 31: "no_argument" with a
+C13 (DD-21) comment; the census assertion becomes 76 executed /
+24 named failures; DELL_PROOF_CARDS.md regenerated through the
+canonical renderer — byte-identical to the branch's pre-repair
+fresh render. Change surface: exactly those two files.
+
+### 14.2 Finish-lane verifications (all in fresh clones)
+
+- Clone 1 @fb22bed + repair (pre-commit): d1_proof_cards 6/6,
+  c13_simulate 16/16, d1_registry_leaf3 44/44, gs4_sandbox 19/19,
+  dock_proposal_b 17/17.
+- Clone 2 @61c9b3a (pushed repair head): the same five suites,
+  same counts, all green; the live demo receipt reproduced —
+  rehearsal of 08[Create] :: demo_new > 07[Link] :: demo_base
+  reports both atoms ok and would_create [demo_new,
+  link_demo_base], history_delta +2 on the copy only; live units,
+  live history and the durable state directory are byte-identical
+  afterward (receipt self-check live_fingerprint_unchanged=True);
+  a 27[Checkpoint] rehearsal is refused refused_external_effect
+  and the state directory remains byte-identical.
+
+### 14.3 Observation O-FIN.1 — for the Director's disposition
+
+Isolated probes (separate processes, fresh owners) show the
+front-door execution of a 31[Simulate]-headed chain materializes
+the live program's Core II section in its serialized form
+(core_ii.present False -> True, all-default empty content), the
+first time such a chain runs on a program whose Core II was
+never materialized. Direct run_simulation calls do NOT do this,
+and neither do real Create chains; the trigger is the executor's
+front-door path around the arm, not the rehearsal board. Nothing
+else moves: no units, proposals or history change, the durable
+state directory is byte-identical, and once materialized the
+serialized form is bit-stable across repeated simulations
+(verbatim isolated reruns). The shipped suite's bit-identity
+windows do not isolate this one-time lazy materialization (its
+fingerprint windows run on programs that have already simulated).
+No repair was attempted — it is outside the finish lane's tasked
+defect and predates it (a property of build commit 9fae03e's
+executor wiring). The Director is asked to rule whether this is
+an accepted lazy-default materialization (the same defaults any
+Core II touch would produce) or a repair item against the
+"bit-identical" wording of the C13 contract. An earlier combined
+multi-owner diagnostic of the finish lane's appeared to show
+sim-after-sim fingerprint instability; it did NOT reproduce in
+isolated verbatim reruns and is discarded as instrument
+contamination (§30) — the isolated reruns are the evidence of
+record.
