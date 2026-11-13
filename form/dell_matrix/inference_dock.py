@@ -661,9 +661,13 @@ def _wall_verdict(program, plane, pid, stack=(), anchor=True):
     PENDING (only pending records are lineage authorities; a
     confirmed idea resolves through the Plane unit confirmation
     placed, a rejected one was never placed), a lineage cycle,
-    an over-depth chain, a missing link mid-chain, or (in
-    ANCESTOR position — see below) a pending record with no
-    recorded parents. "unknown" is fail-closed: absence never
+    an over-depth chain, a missing link mid-chain, malformed
+    STORED ancestry on culprit (a parents container that is not
+    a list, or any element that is not a non-empty string id —
+    third pass, Director mail 1a1d536b69514874: unverifiable
+    stored elements are unestablished, never silently dropped),
+    or (in ANCESTOR position — see below) a pending record with
+    no recorded parents. "unknown" is fail-closed: absence never
     resolves to unboxed (Director mail 1a1d4790779b6edc).
 
     Anchor vs ancestor: a parentless PENDING proposal is itself
@@ -688,8 +692,23 @@ def _wall_verdict(program, plane, pid, stack=(), anchor=True):
         return ("unknown", None, pid)
     if pid in stack or len(stack) >= _WALL_LINEAGE_MAX_DEPTH:
         return ("unknown", None, pid)
-    ancestors = [a for a in (getattr(rec, "parents", None) or [])
-                 if isinstance(a, str)]
+    # Third pass (Director mail 1a1d536b69514874): EVERY stored
+    # ancestor reference is validated strictly — the container
+    # must be a list and every element a non-empty string id.
+    # The first/second-pass code FILTERED with isinstance, which
+    # silently discarded malformed elements: parents=[123]
+    # degraded to an empty list (an unboxed ANCHOR verdict), and
+    # ["out_a", 123] to a clean unboxed lineage. Stored ancestry
+    # that cannot be verified element-by-element is
+    # UNESTABLISHED: fail-closed "unknown" naming this record,
+    # never filtered into admissibility. No admission is
+    # broadened — nursery.add always stores a list of the ids it
+    # was given, so only crafted/restored states reach this.
+    stored = getattr(rec, "parents", None)
+    if not isinstance(stored, list) or any(
+            not isinstance(a, str) or not a for a in stored):
+        return ("unknown", None, pid)
+    ancestors = stored
     if not ancestors:
         if anchor:
             return ("ok", {None}, pid)

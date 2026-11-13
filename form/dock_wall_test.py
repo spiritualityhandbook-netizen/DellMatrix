@@ -51,6 +51,19 @@ this: T1 the multi-hop leak refuses, T2/T3 legitimate pending
 continuations land, T4/T5 ghost vs legitimate pending, T6 cycle,
 T7 missing mid-chain link, T8 malformed ancestor.
 
+THIRD PASS (Director mail 1a1d536b69514874, 2026-11-13 08:02 CST):
+the resolver validated ancestry by FILTERING — ancestors were
+[a for a in parents if isinstance(a, str)] — so malformed
+non-string stored elements were silently DISCARDED: a pending
+record with parents=[123] degraded to an empty parent list and
+resolved as an unboxed ANCHOR, and ["out_a", 123] degraded to a
+clean unboxed lineage. Unverifiable stored ancestry is
+UNESTABLISHED, never admissible (positive-evidence / fail-closed
+lineage). Checks T9a–T9e pin strict element-by-element validation:
+non-string elements, mixed valid+invalid lists, non-list
+containers, and empty-string elements all refuse fail-closed as
+unknown_parent with zero Nursery mutation.
+
 Field: the GS-4 / PR #403 field — in_a/in_b boxed into 'vault1';
 out_a near-twin, out_b moderate, out_c distant, all unboxed.
 Evidence class: INTEGRATION (real Program/Nursery via production
@@ -501,6 +514,111 @@ def smoke() -> bool:
           and len(pt.nursery.proposals) == nt0,
           f"receipt={r} proposals={len(pt.nursery.proposals)}")
 
+    # --- Build T9 (third pass): malformed STORED ancestry ---------
+    # Director mail 1a1d536b69514874. The resolver's isinstance
+    # filter silently dropped non-string stored ancestors, so an
+    # unverifiable lineage degraded into admissibility (see the
+    # module docstring). Fixtures are crafted by direct store
+    # assignment — the channel a verbatim restore of a hand-edited
+    # save produces (persist_rest restores parents unvalidated);
+    # nursery.add always stores a proper list, so no public
+    # landing can author these states.
+    def _call(fn):
+        """A verb that RAISES instead of returning a bounded
+        receipt is itself failure evidence (pre-fix, a non-list
+        container crashed the resolver's comprehension with
+        TypeError — no receipt at all)."""
+        try:
+            return fn(), ""
+        except Exception as e:
+            return {}, f"{type(e).__name__}: {e}"
+
+    def _craft(label, stored_parents):
+        pid = pt.nursery.add(label, words=f"{label} words",
+                             parents=[]).id
+        pt.nursery.proposals[pid].parents = stored_parents
+        return pid
+
+    # T9a: parents == [123] degrades pre-fix to a parentless
+    # unboxed anchor — relate must refuse fail-closed instead.
+    bad_num = _craft("malformed numeric ancestry", [123])
+    nt0 = len(pt.nursery.proposals)
+    sess9 = _make_session(pt)
+    r, raised = _call(lambda: sess9.relate(bad_num, "out_a"))
+    check("T9a non-string ancestor [123]: relate refused (unknown_parent)",
+          raised == "" and r.get("ok") is False
+          and r.get("reason") == "unknown_parent"
+          and bad_num in (r.get("unknown") or [])
+          and len(pt.nursery.proposals) == nt0,
+          f"receipt={r} raised={raised!r} "
+          f"proposals={len(pt.nursery.proposals)} (was {nt0})")
+
+    # T9b: the same record through synthesize — identical refusal.
+    sess9b = _make_fixed_session(pt, [bad_num, "out_a"])
+    r, raised = _call(lambda: sess9b.synthesize([bad_num, "out_a"]))
+    check("T9b non-string ancestor [123]: synthesize refused (unknown_parent)",
+          raised == "" and r.get("ok") is False
+          and r.get("reason") == "unknown_parent"
+          and bad_num in (r.get("unknown") or [])
+          and len(pt.nursery.proposals) == nt0,
+          f"receipt={r} raised={raised!r} "
+          f"proposals={len(pt.nursery.proposals)} (was {nt0})")
+
+    # T9c: a mixed list ["out_a", 123] — the valid element must
+    # not launder the invalid one into a clean unboxed lineage.
+    bad_mix = _craft("malformed mixed ancestry", ["out_a", 123])
+    nt0 = len(pt.nursery.proposals)
+    sess9c = _make_fixed_session(pt, [bad_mix, "out_b"])
+    r, raised = _call(lambda: sess9c.synthesize([bad_mix, "out_b"]))
+    check("T9c mixed ancestry [out_a, 123]: synthesize refused (unknown_parent)",
+          raised == "" and r.get("ok") is False
+          and r.get("reason") == "unknown_parent"
+          and bad_mix in (r.get("unknown") or [])
+          and len(pt.nursery.proposals) == nt0,
+          f"receipt={r} raised={raised!r} "
+          f"proposals={len(pt.nursery.proposals)} (was {nt0})")
+
+    # T9d: invalid CONTAINER shapes — parents stored as an int and
+    # as a bare string (not a list). Both must refuse with a
+    # bounded receipt; pre-fix the int container raised TypeError
+    # out of the verb (no receipt) and the bare string was walked
+    # character by character.
+    bad_int = _craft("malformed int container ancestry", 123)
+    bad_str = _craft("malformed string container ancestry", "out_a")
+    nt0 = len(pt.nursery.proposals)
+    sess9d = _make_fixed_session(pt, [bad_int, "out_a"])
+    r1, raised1 = _call(lambda: sess9d.synthesize([bad_int, "out_a"]))
+    sess9e = _make_fixed_session(pt, [bad_str, "out_a"])
+    r2, raised2 = _call(lambda: sess9e.synthesize([bad_str, "out_a"]))
+    check("T9d non-list container (int / bare string): bounded refusal",
+          raised1 == "" and raised2 == ""
+          and r1.get("ok") is False
+          and r1.get("reason") == "unknown_parent"
+          and bad_int in (r1.get("unknown") or [])
+          and r2.get("ok") is False
+          and r2.get("reason") == "unknown_parent"
+          and bad_str in (r2.get("unknown") or [])
+          and len(pt.nursery.proposals) == nt0,
+          f"int: receipt={r1} raised={raised1!r}; "
+          f"str: receipt={r2} raised={raised2!r}; "
+          f"proposals={len(pt.nursery.proposals)} (was {nt0})")
+
+    # T9e: an empty-string element [""] names nothing and
+    # establishes nothing — pinned fail-closed (pre-fix this
+    # already refused via the ghost recursion, with the empty
+    # string itself as culprit; the fix names the record).
+    bad_empty = _craft("malformed empty ancestry", [""])
+    nt0 = len(pt.nursery.proposals)
+    sess9f = _make_fixed_session(pt, [bad_empty, "out_a"])
+    r, raised = _call(lambda: sess9f.synthesize([bad_empty, "out_a"]))
+    check("T9e empty-string ancestor: synthesize refused (unknown_parent)",
+          raised == "" and r.get("ok") is False
+          and r.get("reason") == "unknown_parent"
+          and bad_empty in (r.get("unknown") or [])
+          and len(pt.nursery.proposals) == nt0,
+          f"receipt={r} raised={raised!r} "
+          f"proposals={len(pt.nursery.proposals)} (was {nt0})")
+
     # --- Build G (control): the growth path still lands -----------
     pgm = _build(f"{OWNER_TAG}G", box_inside=True)
     sessgm = _make_session(pgm)
@@ -527,7 +645,7 @@ def smoke() -> bool:
           f"step={steps[0].get('pairs_excluded_cross_sandbox')} "
           f"total={res.get('pairs_excluded_cross_sandbox')} (6 expected)")
 
-    total = 24
+    total = 29
     print(f"DOCK WALL: {total - len(fails)}/{total} checks passed"
           + (f"; FAILING: {fails}" if fails else ""))
     for owner in ("A", "F", "F3", "T", "G"):
