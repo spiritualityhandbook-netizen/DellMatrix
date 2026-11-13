@@ -19,6 +19,20 @@ confirm_lineage._BETWEEN_STAGES hook); T17 = P4 intent-journal
 recovery consistency; T18 = P5 generation-race loser cleanliness.
 (P1 = the T1/T7 save/reload arms above.) Expected: 18/18.
 
+Repair lane (2026-11-13, Director mail 1a1d5f2f58738b15 — design
+ambiguity A1 decided: NO silent adoption of a pre-existing
+auto_staging record): T19 = staging-id collision refuses
+fail-closed with positive identity validation (exact reserved
+label); T20 = stage/restore validation (staged membership + label
+survive save/reload; release via Plane.unbox and re-box works
+after reload); T21 = forced PARTIAL Plane.box mutation (record
+side mutated, unit side untouched, then raise) still compensates
+cleanly — no dangling member_ids, no placed unit, proposal
+preserved and retryable; T22 = the collision refusal on the real
+sweep path is an explicit counted failure (never a silent skip)
+and the preserved proposal still confirms manually afterwards.
+Expected: 22/22.
+
 Field (same GS-4 / U-probe field, so results are falsifiable against
 the published probe logs):
   in_a, in_b   boxed into sandbox 'vault1'
@@ -518,10 +532,167 @@ def t18():
     cleanup(owner)
 
 
+# --------------------------------- A1 repair (Director 2026-11-13)
+def _user_staging_box(p):
+    """A pre-existing USER-owned box carrying the staging id: the
+    user's own label, holding the user's own unit. Built through
+    the same Plane.box writer a user surface uses."""
+    p.place("user_gem", "my private gem", words="private keepsake",
+            x=0.0, y=0.0)
+    p.cube.session.plane.box(["user_gem"], "auto_staging",
+                             label="My private vault")
+
+
+def t19():
+    owner = "CPQ3T19"
+    p = build(owner)
+    _user_staging_box(p)
+    pid = seed(p, "t19 unboxed parents cross", "harbor lantern t19",
+               ["out_a", "out_b"])
+    p.set_auto_confirm_grow(True)
+    res = p.confirm_proposal(pid, _producer="grow_auto")
+    plane = p.cube.session.plane
+    sb = plane.sandboxes.get("auto_staging")
+    ok = (not res.get("ok")
+          and res.get("reason") == "staging_box_conflict"
+          and res.get("sandbox_id") == "auto_staging"
+          and res.get("existing_label") == "My private vault"
+          and status_of(p, pid) == "pending"
+          and wall_of(p, pid) is None
+          and sb is not None and sb.label == "My private vault"
+          and list(sb.member_ids) == ["user_gem"])
+    check("T19 staging-id collision refuses (no silent adoption)", ok,
+          f"res={ {k: res.get(k) for k in ('ok', 'reason', 'sandbox_id', 'existing_label')} } "
+          f"status={status_of(p, pid)} unit={wall_of(p, pid)} "
+          f"box_label={sb.label if sb else None} "
+          f"box_members={list(sb.member_ids) if sb else None}")
+    cleanup(owner)
+
+
+def t20():
+    owner = "CPQ3T20"
+    p = build(owner)
+    pid = seed(p, "t20 staged child", "harbor lantern t20",
+               ["out_a", "out_b"])
+    sweep(p)
+    from form.dell_matrix.confirm_lineage import STAGING_BOX_LABEL
+    live_sb = p.cube.session.plane.sandboxes.get("auto_staging")
+    rw, boxes = reloaded_wall(owner, pid)
+    from form.open import Program
+    p2 = Program.load(owner)
+    sb2 = p2.cube.session.plane.sandboxes.get("auto_staging")
+    intact = (rw and rw["sandboxed"]
+              and rw["sandbox_id"] == "auto_staging"
+              and pid in boxes.get("auto_staging", [])
+              and live_sb is not None
+              and live_sb.label == STAGING_BOX_LABEL
+              and sb2 is not None and sb2.label == STAGING_BOX_LABEL)
+    # Release via the existing machinery AFTER reload, then re-box.
+    rel = p2.cube.session.plane.unbox(pid)
+    w_after = wall_of(p2, pid)
+    p2.cube.session.plane.box([pid], "vault1")
+    ok = (status_of(p, pid) == "confirmed" and intact and rel
+          and w_after and not w_after["sandboxed"]
+          and w_after["sandbox_id"] is None
+          and pid not in (members(p2, "auto_staging") or [])
+          and pid in (members(p2, "vault1") or []))
+    check("T20 staged unit survives reload; release + re-box work",
+          ok, f"status={status_of(p, pid)} reloaded={rw} "
+              f"reloaded_members={boxes.get('auto_staging')} "
+              f"label_ok={sb2 is not None and sb2.label == STAGING_BOX_LABEL} "
+              f"released={rel} after={w_after}")
+    cleanup(owner)
+
+
+def t21():
+    """Forced PARTIAL Plane.box mutation: the record side is
+    mutated (child appended to member_ids) and box() raises BEFORE
+    the unit side is touched. Compensation must still leave no
+    dangling member_ids and no placed unit — live or reloaded —
+    and the proposal must stay pending and retryable."""
+    owner = "CPQ3T21"
+    p = build(owner)
+    pid = seed(p, "t21 boxed child", "harbor lantern t21",
+               ["in_a", "in_b"])
+    from form.dell_matrix.plane import Plane, Sandbox
+    orig_box = Plane.box
+
+    def partial_box(self, unit_ids, sandbox_id="box1", label=None):
+        sb = self.sandboxes.get(sandbox_id) or Sandbox(id=sandbox_id)
+        if label is not None:
+            sb.label = label
+        for uid in unit_ids:
+            if uid not in sb.member_ids:
+                sb.member_ids.append(uid)
+        self.sandboxes[sandbox_id] = sb
+        raise RuntimeError("forced partial box fault (suite)")
+
+    Plane.box = partial_box
+    raised = None
+    try:
+        manual_confirm(p, pid)
+    except RuntimeError as e:
+        raised = e
+    finally:
+        Plane.box = orig_box
+    plane = p.cube.session.plane
+    dangling = [sid for sid, sb in plane.sandboxes.items()
+                if pid in sb.member_ids]
+    rw, boxes = reloaded_wall(owner, pid)
+    reloaded_dangling = [sid for sid, ms in boxes.items()
+                         if pid in ms]
+    clean = (raised is not None
+             and getattr(raised, "_compensation_incomplete",
+                         None) is None
+             and status_of(p, pid) == "pending"
+             and wall_of(p, pid) is None
+             and not dangling and not reloaded_dangling
+             and rw is None)
+    # Preservation is functional: with the fault removed the same
+    # proposal confirms cleanly into the parents' wall.
+    res2 = manual_confirm(p, pid)
+    ok = (clean and res2.get("ok")
+          and pid in (members(p, "vault1") or []))
+    check("T21 partial box() mutation compensates fully + retry", ok,
+          f"raised={type(raised).__name__ if raised else None} "
+          f"dangling={dangling} reloaded_dangling={reloaded_dangling} "
+          f"status={status_of(p, pid)} retry_ok={res2.get('ok')}")
+    cleanup(owner)
+
+
+def t22():
+    owner = "CPQ3T22"
+    p = build(owner)
+    _user_staging_box(p)
+    pid = seed(p, "t22 unboxed parents cross", "harbor lantern t22",
+               ["out_a", "out_b"])
+    res = sweep(p)
+    ac = res.get("auto_confirm") or {}
+    plane = p.cube.session.plane
+    sb = plane.sandboxes.get("auto_staging")
+    preserved = (status_of(p, pid) == "pending"
+                 and wall_of(p, pid) is None
+                 and pid not in (ac.get("skipped_ids") or [])
+                 and int(ac.get("failed", 0)) >= 1
+                 and sb is not None and sb.label == "My private vault"
+                 and pid not in list(sb.member_ids))
+    # Preservation is functional: the same proposal still confirms
+    # manually afterwards (D6: unboxed parents, manual -> unboxed).
+    res2 = manual_confirm(p, pid)
+    w2 = wall_of(p, pid)
+    ok = (preserved and res2.get("ok") and w2
+          and not w2["sandboxed"] and w2["sandbox_id"] is None)
+    check("T22 sweep collision = explicit failure; proposal preserved",
+          ok, f"auto_confirm={ac} status_after_sweep=pending "
+              f"manual_retry_ok={res2.get('ok')} wall={w2}")
+    cleanup(owner)
+
+
 def smoke() -> bool:
     RESULTS.clear()
     for fn in (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10,
-               t11, t12, t13, t14, t15, t16, t17, t18):
+               t11, t12, t13, t14, t15, t16, t17, t18,
+               t19, t20, t21, t22):
         try:
             fn()
         except Exception as e:
@@ -529,7 +700,7 @@ def smoke() -> bool:
                   f"EXCEPTION {type(e).__name__}: {e}")
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"CONFIRM_PLACEMENT: {passed}/{len(RESULTS)}")
-    return passed == len(RESULTS) and len(RESULTS) == 18
+    return passed == len(RESULTS) and len(RESULTS) == 22
 
 
 if __name__ == "__main__":

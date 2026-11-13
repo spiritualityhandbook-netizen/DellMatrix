@@ -110,6 +110,21 @@ def _denied_receipt(pid, producer, detail, stage):
 # FIRST; Ace/Director rulings 2026-11-13): the designated per-owner
 # auto-staging box. Automatic placements with no wall of their own
 # land here first — contained, never directly on the open field.
+#
+# Collision rule (Director ruling 2026-11-13, mail 1a1d5f2f58738b15 —
+# design ambiguity A1 decided: NO silent adoption): an existing
+# record under STAGING_BOX_ID may be used as the staging box ONLY
+# when it is positively verified as the writer's own staging box.
+# Positive identity = the record carries STAGING_BOX_LABEL exactly.
+# The writer sets that label once, at creation, and never rewrites
+# it afterwards; no user surface writes it (REPL groups store the
+# raw user name as the label under a project_<slug> id — repl.py
+# _group_slug/_find_group — and the Plane.box default label is
+# "sandbox"), and the label persists through save/load (persist.py
+# serializes it; persist_rest restores it), so the identity check
+# survives reload. An existing record with any other label is
+# positively NOT the staging box: the resolver refuses with
+# staging_box_conflict, zero mutation, proposal stays pending.
 STAGING_BOX_ID = "auto_staging"
 STAGING_BOX_LABEL = "Auto staging — program-placed, awaiting release"
 
@@ -151,15 +166,28 @@ def _resolve_confirm_placement(program, prop, auth) -> Dict[str, Any]:
         r.update(extra)
         return r
 
+    def _staging_or_refusal(parent_keys):
+        # AUTO => SANDBOX FIRST staging, fail-closed on collision:
+        # use the designated box only on POSITIVE verification that
+        # it is the writer's own staging box (module note at
+        # STAGING_BOX_ID). An unverifiable record is refused, never
+        # adopted: zero mutation, proposal stays pending.
+        _sb = program.cube.session.plane.sandboxes.get(STAGING_BOX_ID)
+        if _sb is not None and _sb.label != STAGING_BOX_LABEL:
+            return _refuse("staging_box_conflict",
+                           sandbox_id=STAGING_BOX_ID,
+                           existing_label=_sb.label)
+        return {"ok": True, "sandbox_id": STAGING_BOX_ID,
+                "mode": "auto_staging",
+                "parent_wall_keys": parent_keys, "choice": None}
+
     parents = getattr(prop, "parents", None)
     if not isinstance(parents, list) or any(
             not isinstance(x, str) or not x for x in parents):
         return _refuse("malformed_parentage")
     if not parents:
         if auto:
-            return {"ok": True, "sandbox_id": STAGING_BOX_ID,
-                    "mode": "auto_staging", "parent_wall_keys": [],
-                    "choice": None}
+            return _staging_or_refusal([])
         return {"ok": True, "sandbox_id": None, "mode": "parentless",
                 "parent_wall_keys": [], "choice": None}
     plane = program.cube.session.plane
@@ -194,9 +222,7 @@ def _resolve_confirm_placement(program, prop, auth) -> Dict[str, Any]:
     only = next(iter(keys))
     if only is None:
         if auto:
-            return {"ok": True, "sandbox_id": STAGING_BOX_ID,
-                    "mode": "auto_staging",
-                    "parent_wall_keys": [None], "choice": None}
+            return _staging_or_refusal([None])
         return {"ok": True, "sandbox_id": None,
                 "mode": "unboxed_parents",
                 "parent_wall_keys": [None], "choice": None}
@@ -283,6 +309,23 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
                     removed.append("sandbox_membership")
         except Exception as e:
             failures.append(f"sandbox_membership:{type(e).__name__}")
+        # Partial-mutation sweep (Director 2026-11-13): Plane.box
+        # maintains two sides — the unit's flags and the record's
+        # member_ids. A fault between the two sides can leave the
+        # child listed in a record while the unit carries no
+        # sandbox_id for the keyed cleanup above to find.
+        # Compensation must not depend on which half of box() ran:
+        # remove the id from EVERY box record that lists it.
+        try:
+            for _sb2 in program.cube.session.plane.sandboxes.values():
+                if prop.id in _sb2.member_ids:
+                    _sb2.member_ids = [m for m in _sb2.member_ids
+                                       if m != prop.id]
+                    if "sandbox_membership" not in removed:
+                        removed.append("sandbox_membership")
+        except Exception as e:
+            failures.append(
+                f"sandbox_membership_sweep:{type(e).__name__}")
         # Critical: plane unit
         try:
             units.pop(prop.id, None)
@@ -347,6 +390,15 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
                         f"verify:placements_check_failed:{type(e).__name__}")
         except Exception as e:
             _verify_failures.append(f"verify:spatial_check:{type(e).__name__}")
+        try:
+            for _sb3 in program.cube.session.plane.sandboxes.values():
+                if prop.id in _sb3.member_ids:
+                    _verify_failures.append(
+                        "verify:sandbox_membership_still_present")
+                    break
+        except Exception as e:
+            _verify_failures.append(
+                f"verify:sandbox_membership_check_failed:{type(e).__name__}")
         failures.extend(_verify_failures)
         return {"ok": not failures, "failures": failures, "removed": removed}
     try:
@@ -361,8 +413,16 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         # membership is applied immediately after placement.
         if _placement.get("sandbox_id"):
             _sid = _placement["sandbox_id"]
+            # The staging label is creation provenance: written
+            # ONLY when the staging box is created here, never
+            # rewritten onto an existing record (the resolver has
+            # already positively verified an existing staging
+            # record; rewriting its label would manufacture the
+            # very evidence the verification relies on).
             _label = (STAGING_BOX_LABEL
-                      if _sid == STAGING_BOX_ID else None)
+                      if _sid == STAGING_BOX_ID
+                      and _sid not in program.cube.session.plane.sandboxes
+                      else None)
             program.cube.session.plane.box([prop.id], _sid,
                                            label=_label)
     except Exception as e:
