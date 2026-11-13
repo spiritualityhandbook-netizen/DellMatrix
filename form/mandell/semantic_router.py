@@ -259,9 +259,16 @@ CORRESPONDENCE: Dict[Tuple[str, int], _Correspondence] = {
         dell=31,
         dell_name="Simulate",
         evidence=(
-            "Intent('simulate') = dry-run preview. Dell 31 arm "
-            "(executor_leaf.py) shows status explicitly as 'no mutation' — "
-            "read-only. Verified live: dry-run output, no state change."
+            "Intent('simulate') = dry-run preview. C13 (DD-21): "
+            "Dell 31 as a chain head rehearses the following "
+            "atoms against an isolated copy (simulate_board) — "
+            "per-atom outcomes + scoped diff, live state "
+            "bit-identical. Bare 31[Simulate] from this router "
+            "has no operand and reports itself unexecuted "
+            "(no_argument). CORRECTED 2026-11-13: the earlier "
+            "claim 'no mutation — read-only, no state change' "
+            "was false for the pre-C13 arm, which appended a "
+            "history entry on every invocation (grounding G2/G4)."
         ),
         build_seed=_seed_simulate,
     ),

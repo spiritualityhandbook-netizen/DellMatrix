@@ -34,6 +34,25 @@ def _eff_label(atom: Any, seed: Any) -> str:
     return lab if lab else (getattr(seed, "label", "") or "")
 
 
+def _sub_seed_text(seed: Any, atoms: Any, start: int, end: int) -> str:
+    """Reconstruct the seed text for atoms[start:end] of a parsed
+    seed (C13: a Simulate head's rehearsal operand). Segment
+    labels are resolved per atom via _eff_label and baked in, so
+    the reconstruction round-trips through parse_seed with the
+    same dispatch-time labels (the AF-1 re-emission precedent)."""
+    from dataclasses import replace as _replace
+    from .seed import Seed as _Seed
+    eff = [_eff_label(a, seed) for a in atoms[start:end]]
+    flows = list(getattr(seed, "flows", []) or [])[start:end - 1]
+    if any(eff[:-1]):
+        sub_atoms = [_replace(a, label=lab)
+                     for a, lab in zip(atoms[start:end], eff)]
+        return _Seed(atoms=sub_atoms, flows=flows, label="").as_mandel()
+    sub_atoms = [_replace(a, label="") for a in atoms[start:end]]
+    return _Seed(atoms=sub_atoms, flows=flows,
+                 label=eff[-1] if eff else "").as_mandel()
+
+
 def _skip_receipt(n: int, reason: str) -> Dict[str, Any]:
     """Step 7 (DAF-08): occurrence-level receipt for an atom that
     did NOT execute for a lawful/control reason. Shape follows
@@ -334,6 +353,42 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
             join_at = find_join(atoms, i + 1, end)
             i = join_at + 1 if join_at < end and int(getattr(atoms[join_at], "dell", -1)) == 61 else join_at
             st = attach(program)
+            continue
+        if n == 31 and i + 1 < end:
+            # C13 (DD-21): Dell 31 [Simulate] is a rehearsal head —
+            # the atoms after it in this range are its operand (a
+            # "::" followed by an atom is the DeepFlowBy operator,
+            # so the grammar hands them to this head the way Loop's
+            # body follows Loop). The simulate board rehearses them
+            # against an isolated copy; none executes live, and
+            # their receipts ride atom_results marked
+            # simulated=True. The head's own truth: ok iff the
+            # rehearsal ran; a refusal (parse / external-effect /
+            # unsupported domain / nested Simulate) is an
+            # unexecuted atom — ok=False, skipped=True, reason.
+            from form.dell_matrix.simulate_board import run_simulation
+            rcpt = run_simulation(
+                program, _sub_seed_text(seed, atoms, i + 1, end))
+            for _line in rcpt.get("lines") or []:
+                messages.append(_line)
+            state["simulate"] = rcpt
+            _sim_ok = bool(rcpt.get("ok"))
+            results.append({"dell": 31, "ok": _sim_ok,
+                            "error": rcpt.get("error") or "",
+                            "skipped": not _sim_ok,
+                            "reason": rcpt.get("reason") or "",
+                            "simulated": False})
+            for _a in rcpt.get("atom_results") or []:
+                results.append({**_a, "simulated": True})
+            if _sim_ok:
+                ran.append(31)
+                last_ok = True
+            else:
+                skipped.append(31)
+                last_ok = False
+                state["ok"] = False
+                state["error"] = rcpt.get("error") or state.get("error") or ""
+            i = end
             continue
         program, out = _run_atom(program, atom, seed, messages)
         _note_chain_failure(program, out)
@@ -810,6 +865,12 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     # "render") propagates to the chain result; it never rides messages.
     _directive = state.get("directive") or None
     result = {"ok": ok, "error": last_error, "seed": _echo.as_mandel(), "english": _echo.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": _snap, "directive": _directive}
+    # C13 (DD-21): a Simulate head's rehearsal receipt rides the
+    # chain result under "simulate" (present only when a Dell 31
+    # head ran in this chain).
+    if state.get("simulate") is not None:
+        result["simulate"] = sanitize_evidence(state["simulate"]) \
+            if _redact else state["simulate"]
     # PP5: keep the last chain execution on the program
     # (runtime-only) so the flow renderer can draw what actually
     # ran. Best-effort — rendering support must never break
