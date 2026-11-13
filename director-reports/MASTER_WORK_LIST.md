@@ -23,15 +23,15 @@ Data: master_work_list_items.json
 
 ## The count
 
-**PROGRESS: 38 / 181 COMPLETE = 21.0%**
+**PROGRESS: 39 / 181 COMPLETE = 21.5%**
 
 | Status | Items |
 |---|---|
-| COMPLETE | 38 |
+| COMPLETE | 39 |
 | MERGED_UNVERIFIED | 0 |
 | BUILT_HELD | 0 |
 | PARTIAL | 54 |
-| OPEN | 86 |
+| OPEN | 85 |
 | GATED | 3 |
 | NEEDS_OVERSEER | 0 |
 | **TOTAL (active)** | **181** |
@@ -362,4 +362,4 @@ parked items the 72 frame never counted.
 
 | # | Item | Source IDs | Status |
 |---|---|---|---|
-| 184 | GS-4 Growth Sandbox Integrity / cross-wall enumeration — CONFIRMED sandbox-integrity defect, state OPEN, no completion credit: default RingedGrowth pair enumeration ignored Plane box walls (the wall entered only as _affinity's soft in_scope 0.2 penalty) and produced (a) two-parent Solstice proposals spanning the wall and (b) single-parent Equinox/Standstill drift offspring of boxed units carrying outside units' tokens under inside-only lineage; boxing changed nothing in default growth output (control-identical). Reproduced independently twice on merged main @074b30f (PR #403; PR #402 comment 6827580827); Keeper independently challenged and confirmed (comment 6828513382); Director scoped ACCEPTANCE mail 1a1d05d91f6401dc. Bounded repair AUTHORIZED by Director scope ruling mail 1a1d077edcbc82e2 (2026-11-12): wall-mate enumeration filter in form/dell_matrix/ringed_growth.py using the existing Plane box authority + receipted pairs_excluded_cross_sandbox count; unboxed output byte-for-byte, scope_ids / default-unset / affinity weights / DCC-XI..XV pins unchanged, no cross-wall bypass flag. Row stays OPEN until merged-main proof under Keeper final confirmation + Director final code disposition; U1 (post-growth mutation), U2 (docked-session synthesis), U3 (multi-cycle compounding) remain UNPROVEN limitations — not repaired, not counted as repaired. | GS-4 / PR #403 / PR #404 | OPEN |
+| 184 | GS-4 Growth Sandbox Integrity / cross-wall enumeration — CONFIRMED sandbox-integrity defect, previously OPEN with no completion credit, now scoped COMPLETE on the cited merged-main evidence: default RingedGrowth pair enumeration ignored Plane box walls (the wall entered only as _affinity's soft in_scope 0.2 penalty) and produced (a) two-parent Solstice proposals spanning the wall and (b) single-parent Equinox/Standstill drift offspring of boxed units carrying outside units' tokens under inside-only lineage; boxing changed nothing in default growth output (control-identical). Reproduced independently twice on merged main @074b30f (PR #403; PR #402 comment 6827580827); Keeper independently challenged and confirmed (comment 6828513382); Director scoped ACCEPTANCE mail 1a1d05d91f6401dc. Bounded repair AUTHORIZED by Director scope ruling mail 1a1d077edcbc82e2 (2026-11-12): wall-mate enumeration filter in form/dell_matrix/ringed_growth.py using the existing Plane box authority + receipted pairs_excluded_cross_sandbox count; unboxed output byte-for-byte, scope_ids / default-unset / affinity weights / DCC-XI..XV pins unchanged, no cross-wall bypass flag. Row was OPEN until merged-main proof under Keeper final confirmation + Director final code disposition; U1 (post-growth mutation), U2 (docked-session synthesis), U3 (multi-cycle compounding) remain UNPROVEN limitations — not repaired, not counted as repaired. [COMPLETE (scoped) 2026-11-12 — credit applied by this separate one-row register patch on the authorities' rulings, after the merged-main proof this row required: repair PR #405 MERGED c0742cedbdbc9bf7f4f2950815606f572f7625f8 (tree b1474f4dabf62d627c1515d7b3d53a05a0845dec); merged-main verification on main: gs4_sandbox_test 19/19; post-merge receipts PR #406 MERGED 471c8c81eb99e6136e24cee600b87d7e250f80b0; Keeper final code CONFIRM 6830347970 + records CONFIRM (scoped) 6833527733; Director scoped-credit ruling mail 1a1d13decabf9abd + final CONFIRM mail 1a1d217b62eeb4ba. SCOPED — cross-wall pair enumeration + malformed-box fail-closed only; U1 (post-growth mutation), U2 (docked-session synthesis), U3 (multi-cycle compounding) remain UNPROVEN and separately tracked; NO blanket sandbox certification.] | GS-4 / PR #403 / PR #404 | COMPLETE |
