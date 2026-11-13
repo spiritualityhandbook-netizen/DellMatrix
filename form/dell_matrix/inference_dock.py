@@ -611,6 +611,69 @@ def validate_semantic_output(text: str, *,
             "reason": reason.strip(), "parents": list(parents)}
 
 
+# ------------------------------------------------------- Q-U.2 wall gate
+
+# The direct verbs whose landed lineage the Q-U.2 contract covers
+# (Director mail 1a1d44118259b159). flag / comprehend land single-
+# parent lineage and are outside this circuit.
+_WALL_VERBS = ("relate", "synthesize", "relate_field")
+
+
+def _session_plane(program):
+    """The program's Plane, resolved exactly as agent_coordinator's
+    _plane_units resolves it (program.cube.session.plane). None
+    when the program carries no plane — then no wall records exist
+    and every parent carries the unboxed key by definition."""
+    session = getattr(getattr(program, "cube", None), "session", None)
+    if session is None:
+        return None
+    return getattr(session, "plane", None)
+
+
+def _parent_wall_refusal(program, verb, parents):
+    """Q-U.2 dock-landing wall admissibility: the parents a direct
+    verb is about to persist must share ONE canonical wall key,
+    computed from the Plane's own box records through the GS-4
+    authority — ringed_growth._wall_key / _malformed_boxed, the
+    same helpers growth enumeration enforces with; no second wall
+    semantics. A parent absent from the Plane (a PENDING Nursery
+    idea) carries the unboxed key, exactly as _wall_key rules it.
+    A malformed box claim refuses fail-closed and is never
+    collapsed to unboxed (the GS-4 None == None fail-open). The
+    host enforces; the docked judge is never consulted.
+
+    Returns a refusal receipt dict, or None when admissible."""
+    plane = _session_plane(program)
+    if plane is None:
+        return None
+    from form.dell_matrix.ringed_growth import (
+        _malformed_boxed, _wall_key)
+    keys = set()
+    for pid in parents:
+        if _malformed_boxed(plane, pid):
+            return {"ok": False, "reason": "malformed_wall_claim",
+                    "detail": f"Parent {pid} claims sandbox "
+                              "isolation that the Plane's box "
+                              "records cannot verify; refused "
+                              "fail-closed before proposal "
+                              "creation (Q-U.2).",
+                    "verb": verb, "task": verb,
+                    "parents": list(parents), "malformed": [pid]}
+        keys.add(_wall_key(plane, pid))
+    if len(keys) > 1:
+        walls = sorted("unboxed" if k is None else str(k)
+                       for k in keys)
+        return {"ok": False, "reason": "cross_wall_parents",
+                "detail": "Parents span more than one sandbox "
+                          f"wall ({', '.join(walls)}); refused "
+                          "before proposal creation — a docked "
+                          "proposal's parents must share one wall "
+                          "(Q-U.2).",
+                "verb": verb, "task": verb,
+                "parents": list(parents), "walls": walls}
+    return None
+
+
 # ---------------------------------------------------------------- docked session
 
 class DockedSession:
@@ -1386,6 +1449,40 @@ class DockedSession:
             if overlap > 0:
                 scored.append((-overlap, cid))
         scored.sort()
+        # Q-U.2: the token pre-filter is additionally constrained
+        # to the target's canonical wall (Plane box records via
+        # the GS-4 helpers — never the snapshot, which carries no
+        # wall fields). Candidates across the wall are never shown
+        # to the judge, so this verb cannot hand it a cross-wall
+        # lineage to author; the _verb landing check refuses any
+        # cross-wall parent set that remains (e.g. a target
+        # retrieved after this filter ran). The caller-named
+        # target's own malformed box claim refuses here
+        # fail-closed; malformed candidates are filtered like any
+        # other non-wall-mate.
+        plane = _session_plane(self._program)
+        if plane is not None:
+            from form.dell_matrix.ringed_growth import (
+                _malformed_boxed, _wall_key)
+            if _malformed_boxed(plane, target):
+                return _parent_wall_refusal(
+                    self._program, "relate_field", [target])
+            target_key = _wall_key(plane, target)
+            walled = [cid for _, cid in scored
+                      if not _malformed_boxed(plane, cid)
+                      and _wall_key(plane, cid) == target_key]
+            if scored and not walled:
+                return {"ok": False, "reason": "no_wall_mates",
+                        "detail": "Every field entry sharing "
+                                  "content tokens with the target "
+                                  "sits across a sandbox wall or "
+                                  "carries an unverifiable box "
+                                  "claim; the provider was not "
+                                  "called.",
+                        "verb": "relate_field",
+                        "task": "relate_field"}
+            keep = set(walled)
+            scored = [s for s in scored if s[1] in keep]
         # The SD-2 schema bounds a proposal's parents at
         # MAX_PARENTS, and the judge's parents must be a subset of
         # the entries it is shown — so at most MAX_PARENTS - 1
@@ -1554,6 +1651,19 @@ class DockedSession:
                     "detail": "A retrieved target changed or was "
                               "removed before incorporation; refused "
                               "rather than landing on stale data."}
+        # Q-U.2 dock-landing wall admissibility (Director mail
+        # 1a1d44118259b159): for the direct verbs, the lineage
+        # about to persist must share ONE canonical wall key,
+        # computed from the Plane's box records — never from the
+        # snapshot, never from the judge's output. A refusal here
+        # persists nothing. This is the single landing funnel for
+        # relate / synthesize / relate_field; flag / comprehend
+        # land single-parent lineage and stay outside the circuit.
+        if verb in _WALL_VERBS:
+            refusal = _parent_wall_refusal(
+                self._program, verb, parents)
+            if refusal is not None:
+                return refusal
         try:
             prop = self._program.nursery.add(
                 fields["label"], words=fields["words"], kind=kind,
