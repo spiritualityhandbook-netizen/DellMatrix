@@ -24,6 +24,26 @@ except ImportError:
     from form.mandell.manifest import Manifest
 
 
+class MalformedSandboxClaim(RuntimeError):
+    """F-d fail-closed refusal (GS-4 precedent): a unit claims sandbox
+    isolation (sandboxed=True) but the claim cannot be verified
+    against the Plane's box records — sandbox_id missing/invalid, no
+    such Sandbox record, or the unit absent from the record's
+    member_ids (form/dell_matrix/ringed_growth.py _malformed_boxed,
+    the canonical verifier). Consumers refuse the unit explicitly,
+    naming it; the claim is never silently collapsed to unboxed.
+    The F-d stale state (sandboxed=False + stale sandbox_id) is NOT
+    malformed: it is canonically UNBOXED and never raises this."""
+
+    def __init__(self, unit_id: str, sandbox_id: Any = None):
+        self.unit_id = unit_id
+        self.sandbox_id = sandbox_id
+        super().__init__(
+            f"unit {unit_id!r} claims sandbox isolation but its claim "
+            f"cannot be verified (sandbox_id={sandbox_id!r}); refusing "
+            "the malformed sandbox claim — never silently unboxed")
+
+
 class Perspective(str, Enum):
     TABLE = "table"
     PAGE = "page"
@@ -224,6 +244,14 @@ class Plane:
         u = self.units.get(unit_id)
         if not u:
             return []
+        # F-d fail-closed (GS-4 precedent; audit PR #409 consumer #4):
+        # a malformed sandbox claim is refused explicitly, naming the
+        # unit — never silently treated as unboxed. The F-d stale
+        # state (sandboxed=False + stale id) is NOT malformed and
+        # still scopes as unboxed below.
+        from form.dell_matrix.ringed_growth import _malformed_boxed
+        if _malformed_boxed(self, unit_id):
+            raise MalformedSandboxClaim(unit_id, u.sandbox_id)
         if u.sandboxed and u.sandbox_id:
             sb = self.sandboxes.get(u.sandbox_id)
             return [m for m in (sb.member_ids if sb else []) if m != unit_id]
@@ -267,7 +295,21 @@ class Plane:
             lines.append(f"| —— PAGE / CELL ——")
             lines.append(f"| title: {u.label}")
             lines.append(f"| skin: {u.skin.value}  pos: {self._layout_hint(u)}")
-            lines.append(f"| state: {'SANDBOX '+u.sandbox_id if u.sandboxed else 'CONNECTED'}")
+            # F-d (audit PR #409 consumer #8): never concatenate an
+            # unverified sandbox_id — a malformed claim renders an
+            # explicit refusal line instead of crashing (TypeError on
+            # None) or printing a misleading box name. The F-d stale
+            # state (flag False) still renders CONNECTED.
+            from form.dell_matrix.ringed_growth import _malformed_boxed
+            if _malformed_boxed(self, u.id):
+                state_text = ("SANDBOX CLAIM UNVERIFIABLE "
+                              f"(malformed: sandbox_id={u.sandbox_id!r})"
+                              " — REFUSED")
+            elif u.sandboxed:
+                state_text = f"SANDBOX {u.sandbox_id}"
+            else:
+                state_text = "CONNECTED"
+            lines.append(f"| state: {state_text}")
             lines.append(f"| score: {scores.get(u.id, 0.0):.2f}")
             if u.detail:
                 lines.append(f"| detail: {u.detail[:120]}")
@@ -279,7 +321,11 @@ class Plane:
             text = u.words or "(empty)"
             for chunk in text.split("\n"):
                 lines.append(f"|   {chunk}")
-            lines.append(f"| enhance → {self.enhance_scope(u.id)}")
+            try:
+                enhance_text = f"{self.enhance_scope(u.id)}"
+            except MalformedSandboxClaim as refused:
+                enhance_text = f"REFUSED ({refused})"
+            lines.append(f"| enhance → {enhance_text}")
             lines.append(f"| neighbors → {self.neighbors(u.id)}")
         else:
             mode = {Perspective.PAGE: "top-down page (cells)", Perspective.CIRCLE: "circular plane", Perspective.FLOWER: "flower / vesica", Perspective.SPHERE: "expanded sphere field", Perspective.CUBE: "cube-based grid", Perspective.TABLE: "table plane"}.get(self.perspective, self.perspective.value)

@@ -1430,8 +1430,24 @@ def _handle_group_command(p: Program, lower: str, raw_line: str) -> None:
                 return
         uid = res["unit_id"]
         unit = res["unit"]
+        # F-d (audit PR #409 consumer #10): membership is the
+        # canonical pair test — sandboxed flag AND valid id AND the
+        # box record's member_ids — never sandbox_id alone. A
+        # malformed claim (GS-4 _malformed_boxed) fails closed in
+        # both directions. The F-d stale state (sandboxed=False +
+        # stale id) is canonically UNBOXED: it is not a member, so
+        # add proceeds and remove honestly reports non-membership.
+        from form.dell_matrix.ringed_growth import _malformed_boxed
+        if _malformed_boxed(plane, uid):
+            _say(f"{unit.label} claims sandbox isolation but the claim "
+                 f"cannot be verified (malformed sandbox claim, "
+                 f"sandbox_id={unit.sandbox_id!r}) — refusing; repair "
+                 "the claim before grouping.")
+            return
+        in_group = (bool(unit.sandboxed) and unit.sandbox_id == sb.id
+                    and uid in (sb.member_ids or []))
         if adding:
-            if unit.sandbox_id == sb.id:
+            if in_group:
                 _say(f"{unit.label} is already in group '{sb.label}'.")
                 return
             if unit.sandboxed and unit.sandbox_id:
@@ -1442,7 +1458,7 @@ def _handle_group_command(p: Program, lower: str, raw_line: str) -> None:
             plane.box([uid], sb.id)
             _say(f"Added {unit.label} ({uid}) to group '{sb.label}' · {len(sb.member_ids)} member(s)")
             return
-        if unit.sandbox_id != sb.id:
+        if not in_group:
             _say(f"{unit.label} is not in group '{sb.label}'.")
             return
         plane.unbox(uid)

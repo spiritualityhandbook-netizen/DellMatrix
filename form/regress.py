@@ -346,6 +346,10 @@ LIST = [
     # 1a1d44118259b159): the dock's direct verbs refuse cross-wall /
     # malformed parent sets before any PENDING proposal persists.
     "form.dock_wall_test:smoke",
+    # F-d consistency repair (audit PR #409; Ace build-all order
+    # 2026-11-13): the three malformed-claim consumers refuse
+    # fail-closed; the F-d stale state still reads UNBOXED.
+    "form.fd_consistency_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
     "form.dirf14_catch_consumed_test:smoke",
