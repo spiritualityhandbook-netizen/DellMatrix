@@ -342,6 +342,10 @@ LIST = [
     # build must satisfy; red until the containment build lands under
     # a Director scope ruling.
     "form.gs4_sandbox_test:smoke",
+    # Q-U.2 dock-landing wall admissibility (Director mail
+    # 1a1d44118259b159): the dock's direct verbs refuse cross-wall /
+    # malformed parent sets before any PENDING proposal persists.
+    "form.dock_wall_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
     "form.dirf14_catch_consumed_test:smoke",
