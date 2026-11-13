@@ -34,6 +34,23 @@ hands only wall-mate pairs to session.synthesize (GS-4 filter,
 pairs_excluded_cross_sandbox receipted), and those docked pairs
 still land (checks G1/G2).
 
+SECOND PASS (Director mail 1a1d4790779b6edc, 2026-11-13 04:34 CST;
+probe comment 6849971182, residual P6(ii)): the first-pass gate
+resolved a parent id only through the Plane. A PENDING proposal is
+absent from the Plane, so it carried the unboxed key BY ABSENCE —
+two hops composed across the wall (hop 1 lands an in-wall pending;
+hop 2 relates that pending with an outside unit and lands), and,
+symmetrically, a legitimate in-wall pending continuation was
+falsely refused. The second-pass contract: a PENDING parent's wall
+is established from its OWN recorded Nursery lineage, resolved
+recursively through the same canonical Plane helpers; a parent no
+authority can establish (ghost id, non-pending record, parentless
+pending, cycle, over-depth chain, missing link) refuses
+fail-closed as unknown_parent, never as unboxed. Checks T1–T8 pin
+this: T1 the multi-hop leak refuses, T2/T3 legitimate pending
+continuations land, T4/T5 ghost vs legitimate pending, T6 cycle,
+T7 missing mid-chain link, T8 malformed ancestor.
+
 Field: the GS-4 / PR #403 field — in_a/in_b boxed into 'vault1';
 out_a near-twin, out_b moderate, out_c distant, all unboxed.
 Evidence class: INTEGRATION (real Program/Nursery via production
@@ -136,6 +153,31 @@ def _make_session(p):
 
     sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
     sess._provider = MaximalJudge("valid")
+    return sess
+
+
+def _make_fixed_session(p, parents):
+    """A session whose judge returns a FIXED parentage payload
+    regardless of the targets shown (the probe battery's
+    FixedJudge) — exercises the provider-named parents path,
+    including ids the verb itself never targeted as lineage."""
+    from form.dell_matrix import inference_dock as idock
+
+    class FixedJudge(idock.FakeProvider):
+        def generate(self, prompt, *, timeout_s, max_chars):
+            self.calls += 1
+            self.last_prompt = prompt
+            return json.dumps({
+                "label": "Fixed Payload",
+                "words": "fixed judge synthesis words",
+                "detail": "authored by a fixed-payload judge",
+                "goals": ["probe goal"],
+                "reason": "fixed payload judge",
+                "parents": list(parents),
+            })
+
+    sess = idock.dock(p, "agent-a", provider="fake", fake_mode="valid")
+    sess._provider = FixedJudge("valid")
     return sess
 
 
@@ -317,6 +359,148 @@ def smoke() -> bool:
           and len(pg.nursery.proposals) == ng0,
           f"receipt={r} proposals={len(pg.nursery.proposals)}")
 
+    # --- Build T (second pass): pending-parent lineage ------------
+    # Director mail 1a1d4790779b6edc. A PENDING proposal's wall is
+    # established from its recorded Nursery lineage, never from its
+    # absence on the Plane. Fixtures are built through the public
+    # surfaces the probe used (dock landings, Nursery.add) plus
+    # direct-store crafting for the cycle/malformed-ancestor states
+    # no public landing can produce.
+    pt = _build(f"{OWNER_TAG}T", box_inside=True)
+    sesst = _make_session(pt)
+    plant = pt.cube.session.plane
+
+    # Hop 1: an in-wall pending lands (same-wall, as A7 proved).
+    r = sesst.synthesize(["in_a", "in_b"])
+    pid_in = r.get("pid", "")
+    hop = pt.nursery.proposals.get(pid_in)
+    check("T0 hop-1 in-wall pending landed (fixture)",
+          r.get("ok") is True and hop is not None
+          and hop.status == "pending"
+          and set(hop.parents or []) == {"in_a", "in_b"},
+          f"pid={pid_in} parents="
+          f"{list(hop.parents or []) if hop else None}")
+
+    # T1: hop 2 — the in-wall pending related/synthesized with an
+    # outside unit MUST refuse (the P6(ii) leak: on the first-pass
+    # code both land, parents [pid_in, out_a]).
+    nt0 = len(pt.nursery.proposals)
+    r1 = sesst.relate(pid_in, "out_a")
+    r2 = sesst.synthesize([pid_in, "out_a"])
+    check("T1 multi-hop: in-wall pending + outside unit refused",
+          r1.get("ok") is False
+          and r1.get("reason") == "cross_wall_parents"
+          and r2.get("ok") is False
+          and r2.get("reason") == "cross_wall_parents"
+          and len(pt.nursery.proposals) == nt0,
+          f"relate={r1.get('ok')}/{r1.get('reason')} "
+          f"synthesize={r2.get('ok')}/{r2.get('reason')} "
+          f"proposals={len(pt.nursery.proposals)} (was {nt0})")
+
+    # T2: legitimate same-wall pending continuation lands.
+    r = sesst.relate(pid_in, "in_b")
+    prop = pt.nursery.proposals.get(r.get("pid", "")) if r.get("ok") else None
+    check("T2 same-wall pending continuation lands PENDING",
+          r.get("ok") is True and prop is not None
+          and prop.status == "pending"
+          and set(prop.parents or []) == {pid_in, "in_b"},
+          f"receipt={r}")
+
+    # T3: legitimate unboxed pending continuation lands.
+    r = sesst.synthesize(["out_a", "out_b"])
+    pid_out = r.get("pid", "")
+    r = sesst.relate(pid_out, "out_c")
+    prop = pt.nursery.proposals.get(r.get("pid", "")) if r.get("ok") else None
+    check("T3 unboxed pending continuation lands PENDING",
+          pid_out and r.get("ok") is True and prop is not None
+          and prop.status == "pending"
+          and set(prop.parents or []) == {pid_out, "out_c"},
+          f"hop pid={pid_out} receipt={r}")
+
+    # T4: a MALICIOUS ghost parent — an id no authority knows,
+    # named by the provider as lineage — refuses fail-closed with
+    # the unknown-parent verdict (first pass: invalid_output at
+    # the schema gate, never a wall verdict).
+    nt0 = len(pt.nursery.proposals)
+    sessg = _make_fixed_session(pt, ["in_a", "ghost_id"])
+    r = sessg.synthesize(["in_a", "in_b"])
+    check("T4 ghost parent refused fail-closed (unknown_parent)",
+          r.get("ok") is False
+          and r.get("reason") == "unknown_parent"
+          and "ghost_id" in (r.get("unknown") or [])
+          and len(pt.nursery.proposals) == nt0,
+          f"receipt={r} proposals={len(pt.nursery.proposals)}")
+
+    # T5: the legitimate pending parent is distinguished from the
+    # ghost — named by the provider as lineage, the in-wall
+    # pending + an in-wall unit LANDS (first pass falsely refused
+    # this: the pending carried the unboxed key by absence).
+    sessl = _make_fixed_session(pt, [pid_in, "in_b"])
+    r = sessl.synthesize([pid_in, "in_b"])
+    prop = pt.nursery.proposals.get(r.get("pid", "")) if r.get("ok") else None
+    check("T5 legitimate pending parent lands (ghost distinction)",
+          r.get("ok") is True and prop is not None
+          and prop.status == "pending"
+          and set(prop.parents or []) == {pid_in, "in_b"},
+          f"receipt={r}")
+
+    # T6: a crafted lineage CYCLE refuses bounded — two nursery
+    # records naming each other as parent (direct store mutation;
+    # no public landing can author a cycle). Completion of this
+    # check at all is the boundedness evidence.
+    cyc_a = pt.nursery.add("cycle alpha lineage",
+                           words="cycle alpha words",
+                           parents=[]).id
+    cyc_b = pt.nursery.add("cycle beta lineage",
+                           words="cycle beta words",
+                           parents=[cyc_a]).id
+    pt.nursery.proposals[cyc_a].parents = [cyc_b]
+    nt0 = len(pt.nursery.proposals)
+    sessc = _make_fixed_session(pt, [cyc_a, "out_a"])
+    r = sessc.synthesize([cyc_a, "out_a"])
+    check("T6 lineage cycle refused bounded (unknown_parent)",
+          r.get("ok") is False
+          and r.get("reason") == "unknown_parent"
+          and len(pt.nursery.proposals) == nt0,
+          f"receipt={r} proposals={len(pt.nursery.proposals)}")
+
+    # T7: a pending whose OWN parent is missing (ghost mid-chain)
+    # refuses fail-closed — the chain cannot be established.
+    orph = pt.nursery.add("orphan lineage cross",
+                          words="orphan lineage words",
+                          parents=["ghost_parent"]).id
+    nt0 = len(pt.nursery.proposals)
+    sesso = _make_fixed_session(pt, [orph, "out_a"])
+    r = sesso.synthesize([orph, "out_a"])
+    check("T7 missing mid-chain parent refused (unknown_parent)",
+          r.get("ok") is False
+          and r.get("reason") == "unknown_parent"
+          and "ghost_parent" in (r.get("unknown") or [])
+          and len(pt.nursery.proposals) == nt0,
+          f"receipt={r} proposals={len(pt.nursery.proposals)}")
+
+    # T8: a pending whose parent is a MALFORMED plane unit refuses
+    # with the malformed verdict naming the ancestor — malformed
+    # anywhere in the chain is fail-closed, never unboxed.
+    pt.place("malf_t", "harbor lantern malformed ancestor",
+             words="harbor lantern craft timber copper kettle song "
+                   "malformed ancestor cellar vault", x=0.0, y=0.0)
+    umt = plant.units["malf_t"]
+    umt.sandboxed = True
+    umt.sandbox_id = None
+    mchild = pt.nursery.add("malformed ancestor child",
+                            words="malformed ancestor child words",
+                            parents=["malf_t"]).id
+    nt0 = len(pt.nursery.proposals)
+    sessm = _make_fixed_session(pt, [mchild, "out_a"])
+    r = sessm.synthesize([mchild, "out_a"])
+    check("T8 malformed ancestor refused (malformed_wall_claim)",
+          r.get("ok") is False
+          and r.get("reason") == "malformed_wall_claim"
+          and "malf_t" in (r.get("malformed") or [])
+          and len(pt.nursery.proposals) == nt0,
+          f"receipt={r} proposals={len(pt.nursery.proposals)}")
+
     # --- Build G (control): the growth path still lands -----------
     pgm = _build(f"{OWNER_TAG}G", box_inside=True)
     sessgm = _make_session(pgm)
@@ -343,10 +527,10 @@ def smoke() -> bool:
           f"step={steps[0].get('pairs_excluded_cross_sandbox')} "
           f"total={res.get('pairs_excluded_cross_sandbox')} (6 expected)")
 
-    total = 15
+    total = 24
     print(f"DOCK WALL: {total - len(fails)}/{total} checks passed"
           + (f"; FAILING: {fails}" if fails else ""))
-    for owner in ("A", "F", "F3", "G"):
+    for owner in ("A", "F", "F3", "T", "G"):
         _cleanup(f"{OWNER_TAG}{owner}")
     return not fails
 

@@ -630,36 +630,127 @@ def _session_plane(program):
     return getattr(session, "plane", None)
 
 
+# Second pass (Director mail 1a1d4790779b6edc, probe residual
+# P6(ii)): a PENDING proposal is absent from the Plane, so the
+# Plane helpers alone assign it the unboxed key BY ABSENCE — two
+# hops then compose across a wall, and a legitimate in-wall
+# continuation is falsely refused. A pending parent's wall is
+# instead established from its OWN recorded Nursery lineage,
+# resolved recursively through the same canonical Plane helpers.
+# The recursion is bounded: _WALL_LINEAGE_MAX_DEPTH lineage links
+# (each dock landing adds at most one link, and MAX_PARENTS bounds
+# the width, so 32 is far beyond any chain a session can author;
+# a longer chain is unestablished, not unboxed).
+_WALL_LINEAGE_MAX_DEPTH = 32
+
+
+def _wall_verdict(program, plane, pid, stack=(), anchor=True):
+    """Resolve ONE parent id to its canonical wall verdict:
+    (verdict, keys, culprit).
+
+    verdict "ok": keys is the 1-set holding the id's wall key
+    (None = unboxed). A Plane unit resolves through the GS-4
+    helpers; a PENDING Nursery proposal resolves through its
+    recorded parents, recursively (its lineage's single shared
+    key). verdict "cross": the id's own lineage already spans
+    more than one wall; keys is that set. verdict "malformed":
+    an unverifiable box claim exists at culprit (the id itself
+    or one of its ancestors). verdict "unknown": NO canonical
+    authority establishes a wall for culprit — a ghost id known
+    to neither Plane nor Nursery, a Nursery record that is not
+    PENDING (only pending records are lineage authorities; a
+    confirmed idea resolves through the Plane unit confirmation
+    placed, a rejected one was never placed), a lineage cycle,
+    an over-depth chain, a missing link mid-chain, or (in
+    ANCESTOR position — see below) a pending record with no
+    recorded parents. "unknown" is fail-closed: absence never
+    resolves to unboxed (Director mail 1a1d4790779b6edc).
+
+    Anchor vs ancestor: a parentless PENDING proposal is itself
+    a legal field entry whose wall is unboxed — it claims no
+    ancestry, and the Nursery creates parentless entries by
+    design (organic growth proposals, manual adds, ingest). As
+    the ANCHOR of a checked parent set (anchor=True) it resolves
+    ("ok", {None}). As an ANCESTOR of another proposal it
+    establishes nothing about that descendant's lineage, so the
+    strict rule stands in recursion (anchor=False): parentless
+    resolves "unknown" — a smuggled wall claim riding a
+    parentless intermediary still refuses."""
+    from form.dell_matrix.ringed_growth import (
+        _malformed_boxed, _wall_key)
+    if pid in plane.units:
+        if _malformed_boxed(plane, pid):
+            return ("malformed", None, pid)
+        return ("ok", {_wall_key(plane, pid)}, pid)
+    nursery = getattr(program, "nursery", None)
+    rec = nursery.proposals.get(pid) if nursery is not None else None
+    if rec is None or getattr(rec, "status", None) != "pending":
+        return ("unknown", None, pid)
+    if pid in stack or len(stack) >= _WALL_LINEAGE_MAX_DEPTH:
+        return ("unknown", None, pid)
+    ancestors = [a for a in (getattr(rec, "parents", None) or [])
+                 if isinstance(a, str)]
+    if not ancestors:
+        if anchor:
+            return ("ok", {None}, pid)
+        return ("unknown", None, pid)
+    keys = set()
+    for anc in ancestors:
+        verdict, akeys, culprit = _wall_verdict(
+            program, plane, anc, stack + (pid,), anchor=False)
+        if verdict in ("malformed", "unknown"):
+            return (verdict, None, culprit)
+        keys |= akeys
+    if len(keys) > 1:
+        return ("cross", keys, pid)
+    return ("ok", keys, pid)
+
+
 def _parent_wall_refusal(program, verb, parents):
     """Q-U.2 dock-landing wall admissibility: the parents a direct
-    verb is about to persist must share ONE canonical wall key,
-    computed from the Plane's own box records through the GS-4
-    authority — ringed_growth._wall_key / _malformed_boxed, the
-    same helpers growth enumeration enforces with; no second wall
-    semantics. A parent absent from the Plane (a PENDING Nursery
-    idea) carries the unboxed key, exactly as _wall_key rules it.
-    A malformed box claim refuses fail-closed and is never
-    collapsed to unboxed (the GS-4 None == None fail-open). The
-    host enforces; the docked judge is never consulted.
+    verb is about to persist must share ONE canonical wall key.
+    Plane units are computed from the Plane's own box records
+    through the GS-4 authority — ringed_growth._wall_key /
+    _malformed_boxed, the same helpers growth enumeration
+    enforces with; no second wall semantics. A PENDING Nursery
+    parent resolves through its recorded lineage (second pass,
+    Director mail 1a1d4790779b6edc; see _wall_verdict): a pending
+    whose lineage spans a wall contributes every wall it spans,
+    so multi-hop compositions refuse exactly as direct ones do.
+    A malformed box claim anywhere in a parent's lineage refuses
+    fail-closed and is never collapsed to unboxed (the GS-4
+    None == None fail-open); a parent no authority can establish
+    refuses as unknown_parent, never as unboxed. The host
+    enforces; the docked judge is never consulted.
 
     Returns a refusal receipt dict, or None when admissible."""
     plane = _session_plane(program)
     if plane is None:
         return None
-    from form.dell_matrix.ringed_growth import (
-        _malformed_boxed, _wall_key)
     keys = set()
     for pid in parents:
-        if _malformed_boxed(plane, pid):
+        verdict, vkeys, culprit = _wall_verdict(program, plane, pid)
+        if verdict == "malformed":
             return {"ok": False, "reason": "malformed_wall_claim",
-                    "detail": f"Parent {pid} claims sandbox "
+                    "detail": f"Parent {culprit} claims sandbox "
                               "isolation that the Plane's box "
                               "records cannot verify; refused "
                               "fail-closed before proposal "
                               "creation (Q-U.2).",
                     "verb": verb, "task": verb,
-                    "parents": list(parents), "malformed": [pid]}
-        keys.add(_wall_key(plane, pid))
+                    "parents": list(parents), "malformed": [culprit]}
+        if verdict == "unknown":
+            return {"ok": False, "reason": "unknown_parent",
+                    "detail": f"Parent {culprit} has no canonical "
+                              "wall authority: it is not a Plane "
+                              "unit and not a PENDING Nursery "
+                              "proposal with an established "
+                              "lineage; refused fail-closed before "
+                              "proposal creation rather than "
+                              "treated as unboxed (Q-U.2).",
+                    "verb": verb, "task": verb,
+                    "parents": list(parents), "unknown": [culprit]}
+        keys |= vkeys
     if len(keys) > 1:
         walls = sorted("unboxed" if k is None else str(k)
                        for k in keys)
@@ -671,6 +762,52 @@ def _parent_wall_refusal(program, verb, parents):
                           "(Q-U.2).",
                 "verb": verb, "task": verb,
                 "parents": list(parents), "walls": walls}
+    return None
+
+
+def _unknown_parent_refusal(program, verb, raw):
+    """Q-U.2 second pass: name the wall verdict for a provider
+    payload whose ONLY schema defect is parent ids outside the
+    field. The semantic validator (correctly) rejects lineage the
+    judge never saw before the landing gate can run; when the
+    payload's parents are otherwise well-formed (a bounded list
+    of strings) and at least one resolves to the resolver's
+    "unknown" verdict — a ghost id no canonical authority can
+    establish — the refusal is the explicit unknown_parent
+    receipt, so a malicious ghost parent is distinguishable from
+    a legitimate PENDING parent (which validates inside the
+    field and resolves through its lineage at the gate). Any
+    other payload, and any parent the resolver CAN establish,
+    returns None: the caller's generic invalid_output verdict
+    stands. Nothing here weakens the validator — the refusal is
+    stricter, never an admission."""
+    plane = _session_plane(program)
+    if plane is None:
+        return None
+    try:
+        data = json.loads(_unwrap_single_fence(raw))
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    named = data.get("parents", [])
+    if not isinstance(named, list) or not named \
+            or len(named) > MAX_PARENTS \
+            or any(not isinstance(x, str) for x in named):
+        return None
+    for pid in named:
+        verdict, _keys, culprit = _wall_verdict(program, plane, pid)
+        if verdict == "unknown":
+            return {"ok": False, "reason": "unknown_parent",
+                    "detail": f"Parent {culprit} has no canonical "
+                              "wall authority: it is not a Plane "
+                              "unit and not a PENDING Nursery "
+                              "proposal with an established "
+                              "lineage; refused fail-closed before "
+                              "proposal creation rather than "
+                              "treated as unboxed (Q-U.2).",
+                    "verb": verb, "task": verb,
+                    "parents": list(named), "unknown": [culprit]}
     return None
 
 
@@ -1450,27 +1587,33 @@ class DockedSession:
                 scored.append((-overlap, cid))
         scored.sort()
         # Q-U.2: the token pre-filter is additionally constrained
-        # to the target's canonical wall (Plane box records via
-        # the GS-4 helpers — never the snapshot, which carries no
-        # wall fields). Candidates across the wall are never shown
-        # to the judge, so this verb cannot hand it a cross-wall
-        # lineage to author; the _verb landing check refuses any
-        # cross-wall parent set that remains (e.g. a target
-        # retrieved after this filter ran). The caller-named
-        # target's own malformed box claim refuses here
-        # fail-closed; malformed candidates are filtered like any
-        # other non-wall-mate.
+        # to the target's canonical wall (the _wall_verdict
+        # resolution — Plane box records for units, recorded
+        # Nursery lineage for PENDING candidates; never the
+        # snapshot, which carries no wall fields). Candidates
+        # across the wall are never shown to the judge, so this
+        # verb cannot hand it a cross-wall lineage to author; the
+        # _verb landing check refuses any cross-wall parent set
+        # that remains (e.g. a target retrieved after this filter
+        # ran). The caller-named target's own refusal verdict
+        # (malformed / unknown / cross-lineage) returns here
+        # fail-closed; candidates carrying any refusal verdict are
+        # filtered like any other non-wall-mate.
         plane = _session_plane(self._program)
         if plane is not None:
-            from form.dell_matrix.ringed_growth import (
-                _malformed_boxed, _wall_key)
-            if _malformed_boxed(plane, target):
-                return _parent_wall_refusal(
-                    self._program, "relate_field", [target])
-            target_key = _wall_key(plane, target)
-            walled = [cid for _, cid in scored
-                      if not _malformed_boxed(plane, cid)
-                      and _wall_key(plane, cid) == target_key]
+            refusal = _parent_wall_refusal(
+                self._program, "relate_field", [target])
+            if refusal is not None:
+                return refusal
+            _tv, _tk, _tc = _wall_verdict(
+                self._program, plane, target)
+            target_key = next(iter(_tk))
+            walled = []
+            for _, cid in scored:
+                cverdict, ckeys, _cc = _wall_verdict(
+                    self._program, plane, cid)
+                if cverdict == "ok" and ckeys == {target_key}:
+                    walled.append(cid)
             if scored and not walled:
                 return {"ok": False, "reason": "no_wall_mates",
                         "detail": "Every field entry sharing "
@@ -1627,6 +1770,20 @@ class DockedSession:
         try:
             fields = validate_semantic_output(raw, allowed_parents=set(index))
         except ProviderError as e:
+            # Q-U.2 second pass (Director mail 1a1d4790779b6edc):
+            # a provider-named parent id that no canonical
+            # authority can establish is a WALL verdict
+            # (unknown_parent), not mere schema noise — but only
+            # when the provider's parentage is otherwise
+            # well-formed and the wall gate is in force for this
+            # verb; every other schema failure keeps the generic
+            # invalid_output verdict. Ghost-vs-legitimate-pending
+            # is decided by the resolver, never by the schema.
+            if verb in _WALL_VERBS:
+                ghost_refusal = _unknown_parent_refusal(
+                    self._program, verb, raw)
+                if ghost_refusal is not None:
+                    return ghost_refusal
             return {"ok": False, "reason": "invalid_output",
                     "detail": sanitize_error(str(e), prot)}
         parents = fields["parents"] or list(targets)
@@ -1652,13 +1809,15 @@ class DockedSession:
                               "removed before incorporation; refused "
                               "rather than landing on stale data."}
         # Q-U.2 dock-landing wall admissibility (Director mail
-        # 1a1d44118259b159): for the direct verbs, the lineage
-        # about to persist must share ONE canonical wall key,
-        # computed from the Plane's box records — never from the
-        # snapshot, never from the judge's output. A refusal here
-        # persists nothing. This is the single landing funnel for
-        # relate / synthesize / relate_field; flag / comprehend
-        # land single-parent lineage and stay outside the circuit.
+        # 1a1d44118259b159; second pass 1a1d4790779b6edc): for
+        # the direct verbs, the lineage about to persist must
+        # share ONE canonical wall key — Plane box records for
+        # units, recorded Nursery lineage for PENDING parents —
+        # never from the snapshot, never from the judge's output.
+        # A refusal here persists nothing. This is the single
+        # landing funnel for relate / synthesize / relate_field;
+        # flag / comprehend land single-parent lineage and stay
+        # outside the circuit.
         if verb in _WALL_VERBS:
             refusal = _parent_wall_refusal(
                 self._program, verb, parents)
