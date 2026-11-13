@@ -11,8 +11,13 @@ wall-blind by construction at the base this suite was written against
 pass — behavior that is already correct and must not regress).
 Expected after the DESIGN.md build: 14/14.
 
-NOT registered in form/regress.py LIST by this lane (design-lane
-deliverable; the build lane registers it).
+Build lane (2026-11-13): registered in form/regress.py LIST after
+form.dock_wall_test. T15-T18 added by the build lane per DESIGN.md
+SS9 proof plan: T15 = P2 checkpoint rollback across a boxed confirm;
+T16 = P3 mid-write revocation compensation cleanliness (via the
+confirm_lineage._BETWEEN_STAGES hook); T17 = P4 intent-journal
+recovery consistency; T18 = P5 generation-race loser cleanliness.
+(P1 = the T1/T7 save/reload arms above.) Expected: 18/18.
 
 Field (same GS-4 / U-probe field, so results are falsifiable against
 the published probe logs):
@@ -390,10 +395,133 @@ def t14():
     cleanup(owner)
 
 
+# ------------------------------------------------- proof plan (DESIGN §9)
+def t15():
+    """P2: checkpoint rollback to the generation before a boxed
+    confirm — the child is absent AND no box member_ids reference
+    it; the pre-confirm generation restores exactly."""
+    owner = "CPQ3T15"
+    p = build(owner)
+    pid_a = seed(p, "t15 anchor", "harbor lantern t15a", [])
+    manual_confirm(p, pid_a)
+    from form.mandell.checkpoint_generation import \
+        committed_generation_state
+    g_a = committed_generation_state(owner)[1]
+    pid_b = seed(p, "t15 boxed child", "harbor lantern t15b",
+                 ["in_a", "in_b"])
+    res_b = manual_confirm(p, pid_b)
+    from form.dell_matrix import rollback_authority as ra
+    frozen = ra.freeze_rollback_target(owner, g_a)
+    data = ra.rollback_content(frozen, ra._live_fingerprints(owner))
+    issued = p.acceptance_policy.issue_approval(
+        operation=ra.ROLLBACK_OPERATION, target=g_a, reviewer="human",
+        data=data, note="confirm-placement P2 proof")
+    rr = p.confirm_rollback(
+        g_a,
+        _review_context={"approval_id": issued["context"]["approval_id"]},
+        _subject="human", _producer="repl-human")
+    rw_b, boxes = reloaded_wall(owner, pid_b)
+    rw_a, _ = reloaded_wall(owner, pid_a)
+    ok = (res_b.get("ok") and rr.get("ok") and rw_b is None
+          and pid_b not in boxes.get("vault1", [])
+          and boxes.get("vault1") == ["in_a", "in_b"]
+          and rw_a is not None and not rw_a["sandboxed"])
+    check("T15 P2 rollback across boxed confirm restores exactly", ok,
+          f"rollback_ok={rr.get('ok')} child={rw_b} "
+          f"vault1={boxes.get('vault1')} anchor={rw_a}")
+    cleanup(owner)
+
+
+def t16():
+    """P3: mid-write revocation (reviewed content mutated between
+    stages via the _BETWEEN_STAGES hook) denies a BOXED confirm at
+    pre_commit; compensation leaves no unit and NO dangling
+    member_ids entry — live or reloaded."""
+    owner = "CPQ3T16"
+    p = build(owner)
+    pid = seed(p, "t16 boxed child", "harbor lantern t16",
+               ["in_a", "in_b"])
+    from form.dell_matrix import confirm_lineage
+
+    def hook(program, _pid, _auth):
+        program.nursery.proposals[_pid].words = "mutated mid-write"
+
+    confirm_lineage._BETWEEN_STAGES = hook
+    try:
+        res = manual_confirm(p, pid)
+    finally:
+        confirm_lineage._BETWEEN_STAGES = None
+    rw, boxes = reloaded_wall(owner, pid)
+    ok = (not res.get("ok") and res.get("stage") == "pre_commit"
+          and status_of(p, pid) == "pending"
+          and wall_of(p, pid) is None
+          and pid not in (members(p, "vault1") or [])
+          and rw is None and pid not in boxes.get("vault1", []))
+    check("T16 P3 revocation compensation leaves no dangling member",
+          ok, f"res={ {k: res.get(k) for k in ('ok', 'reason', 'stage')} } "
+              f"live_members={members(p, 'vault1')} reloaded={rw} "
+              f"reloaded_members={boxes.get('vault1')}")
+    cleanup(owner)
+
+
+def t17():
+    """P4: intent-journal recovery treats a boxed confirm
+    consistently — recovery runs without raising, mutates nothing
+    (child stays boxed, membership intact), and clears the journal."""
+    owner = "CPQ3T17"
+    p = build(owner)
+    pid = seed(p, "t17 boxed child", "harbor lantern t17",
+               ["in_a", "in_b"])
+    res = manual_confirm(p, pid)
+    from form.mandell.core_i_recovery import write_confirm_intent, \
+        recover_confirmation_intent
+    write_confirm_intent(owner, pid)
+    outcome = recover_confirmation_intent(owner)
+    rw, boxes = reloaded_wall(owner, pid)
+    again = recover_confirmation_intent(owner)
+    ok = (res.get("ok")
+          and outcome in ("already_complete", "no_change")
+          and rw and rw["sandboxed"] and rw["sandbox_id"] == "vault1"
+          and pid in boxes.get("vault1", [])
+          and again == "none")
+    check("T17 P4 intent-journal recovery consistent for boxed confirm",
+          ok, f"outcome={outcome} again={again} wall={rw}")
+    cleanup(owner)
+
+
+def t18():
+    """P5: generation race — two live instances confirm the same
+    boxed proposal; the loser is refused (nursery_conflict) and the
+    durable state holds the child exactly once, boxed, with exactly
+    one membership entry (the winner's placement intact)."""
+    owner = "CPQ3T18"
+    p1 = build(owner)
+    pid = seed(p1, "t18 race child", "harbor lantern t18",
+               ["in_a", "in_b"])
+    p1.save()
+    p1.nursery.save()
+    from form.open import Program
+    p2 = Program.load(owner)
+    r1 = p1.confirm_proposal(
+        pid, _producer="repl_user",
+        _review_context=p1.make_review_context(pid, "repl_user"))
+    r2 = p2.confirm_proposal(
+        pid, _producer="repl_user",
+        _review_context=p2.make_review_context(pid, "repl_user"))
+    rw, boxes = reloaded_wall(owner, pid)
+    ok = (r1.get("ok") and not r2.get("ok")
+          and rw and rw["sandboxed"] and rw["sandbox_id"] == "vault1"
+          and (boxes.get("vault1") or []).count(pid) == 1)
+    check("T18 P5 race loser clean, winner placement intact", ok,
+          f"winner={r1.get('ok')} loser_reason={r2.get('reason')} "
+          f"wall={rw} members={boxes.get('vault1')}")
+    cleanup(owner)
+
+
 def smoke() -> bool:
     RESULTS.clear()
     for fn in (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10,
-               t11, t12, t13, t14):
+               t11, t12, t13, t14, t15, t16, t17, t18):
         try:
             fn()
         except Exception as e:
@@ -401,7 +529,7 @@ def smoke() -> bool:
                   f"EXCEPTION {type(e).__name__}: {e}")
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"CONFIRM_PLACEMENT: {passed}/{len(RESULTS)}")
-    return passed == len(RESULTS) and len(RESULTS) == 14
+    return passed == len(RESULTS) and len(RESULTS) == 18
 
 
 if __name__ == "__main__":
