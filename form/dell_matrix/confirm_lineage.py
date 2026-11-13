@@ -115,18 +115,32 @@ def _denied_receipt(pid, producer, detail, stage):
 # design ambiguity A1 decided: NO silent adoption): an existing
 # record under STAGING_BOX_ID may be used as the staging box ONLY
 # when it is positively verified as the writer's own staging box.
-# Positive identity = the record carries STAGING_BOX_LABEL exactly.
-# The writer sets that label once, at creation, and never rewrites
-# it afterwards; no user surface writes it (REPL groups store the
-# raw user name as the label under a project_<slug> id — repl.py
-# _group_slug/_find_group — and the Plane.box default label is
-# "sandbox"), and the label persists through save/load (persist.py
-# serializes it; persist_rest restores it), so the identity check
-# survives reload. An existing record with any other label is
-# positively NOT the staging box: the resolver refuses with
-# staging_box_conflict, zero mutation, proposal stays pending.
+#
+# Gate-2 (Director mail 1a1d6d1d64b72589, 2026-11-13 15:30 CST):
+# label equality alone is not unforgeable provenance — Plane.box
+# is a public writer and any caller can stamp the reserved label
+# onto a foreign record (demonstrated failing-first: T23/T24 at
+# head 49e2e64 adopted such a box). Positive identity is therefore
+# TWO durable facts on the record itself: STAGING_BOX_LABEL
+# exactly, AND STAGING_PROVENANCE — a provenance marker that
+# Plane.box stamps ONLY at record creation and never rewrites,
+# that this writer passes ONLY when it creates the staging box,
+# and that no user surface can set (REPL groups create
+# project_<slug> ids with the raw user name as label and never
+# pass provenance; persist_rest restores the saved value
+# verbatim). Both facts persist through save/load (persist.py
+# serializes them; persist_rest restores them), so the identity
+# check survives reload. A record missing either fact — a
+# different label, a foreign same-label record, or a record from
+# a pre-provenance save or pack import (provenance "") — is
+# positively NOT verified as the staging box: the resolver
+# refuses with staging_box_conflict, zero mutation, proposal
+# stays pending. Residual, disclosed: a hand-edited save file can
+# forge the marker — the same disclosed class as F-d malformed
+# claims; no claim is made against out-of-band file editing.
 STAGING_BOX_ID = "auto_staging"
 STAGING_BOX_LABEL = "Auto staging — program-placed, awaiting release"
+STAGING_PROVENANCE = "confirm_lineage:auto_staging"
 
 
 def _placement_options(keys):
@@ -173,7 +187,10 @@ def _resolve_confirm_placement(program, prop, auth) -> Dict[str, Any]:
         # STAGING_BOX_ID). An unverifiable record is refused, never
         # adopted: zero mutation, proposal stays pending.
         _sb = program.cube.session.plane.sandboxes.get(STAGING_BOX_ID)
-        if _sb is not None and _sb.label != STAGING_BOX_LABEL:
+        if _sb is not None and (
+                _sb.label != STAGING_BOX_LABEL
+                or getattr(_sb, "provenance", "")
+                != STAGING_PROVENANCE):
             return _refuse("staging_box_conflict",
                            sandbox_id=STAGING_BOX_ID,
                            existing_label=_sb.label)
@@ -413,18 +430,23 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         # membership is applied immediately after placement.
         if _placement.get("sandbox_id"):
             _sid = _placement["sandbox_id"]
-            # The staging label is creation provenance: written
-            # ONLY when the staging box is created here, never
-            # rewritten onto an existing record (the resolver has
-            # already positively verified an existing staging
-            # record; rewriting its label would manufacture the
-            # very evidence the verification relies on).
-            _label = (STAGING_BOX_LABEL
-                      if _sid == STAGING_BOX_ID
-                      and _sid not in program.cube.session.plane.sandboxes
+            # The staging label + provenance marker are creation
+            # evidence: written ONLY when the staging box is
+            # created here, never rewritten onto an existing
+            # record (the resolver has already positively verified
+            # an existing staging record; rewriting its identity
+            # would manufacture the very evidence the verification
+            # relies on).
+            _creating_staging = (
+                _sid == STAGING_BOX_ID
+                and _sid not in program.cube.session.plane.sandboxes)
+            _label = (STAGING_BOX_LABEL if _creating_staging
                       else None)
+            _prov = (STAGING_PROVENANCE if _creating_staging
+                     else None)
             program.cube.session.plane.box([prop.id], _sid,
-                                           label=_label)
+                                           label=_label,
+                                           provenance=_prov)
     except Exception as e:
         # Director 2026-10-05 (compensation): cleanup failures are
         # observable. The original exception propagates (honest failure),

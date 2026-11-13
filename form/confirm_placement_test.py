@@ -33,6 +33,28 @@ sweep path is an explicit counted failure (never a silent skip)
 and the preserved proposal still confirms manually afterwards.
 Expected: 22/22.
 
+Gate-2 lane (2026-11-13, Director mail 1a1d6d1d64b72589): the
+Director ruled label equality alone is not unforgeable
+provenance. Provenance contract: staging ownership is verified
+by TWO durable facts on the canonical Sandbox record — the exact
+reserved label AND a provenance marker (STAGING_PROVENANCE)
+that Plane.box stamps only at record creation and never
+rewrites, that only the staging writer passes, and that the
+persist pair round-trips verbatim. A record missing either fact
+(foreign same-label record, pre-provenance save, pack import)
+fails closed for staging use. Residual, disclosed: hand-edited
+save files can forge the marker — the same disclosed class as
+F-d malformed claims; no claim is made against out-of-band file
+editing. T23 = same-label foreign box refuses the direct
+grow_auto confirm with zero mutation; T24 = the sweep counts it
+as an explicit failure and the refusal survives save/load;
+T25 = positive control — the program's own staging box carries
+the marker live and after reload, stages again after reload,
+and release via unbox + re-box still works. Failing-first at
+49e2e64: T23/T24 FAIL (the same-label foreign box was ADOPTED —
+proposals confirmed into it); T25 cannot import the marker.
+Expected: 25/25.
+
 Field (same GS-4 / U-probe field, so results are falsifiable against
 the published probe logs):
   in_a, in_b   boxed into sandbox 'vault1'
@@ -617,7 +639,8 @@ def t21():
     from form.dell_matrix.plane import Plane, Sandbox
     orig_box = Plane.box
 
-    def partial_box(self, unit_ids, sandbox_id="box1", label=None):
+    def partial_box(self, unit_ids, sandbox_id="box1", label=None,
+                    **kw):
         sb = self.sandboxes.get(sandbox_id) or Sandbox(id=sandbox_id)
         if label is not None:
             sb.label = label
@@ -688,11 +711,143 @@ def t22():
     cleanup(owner)
 
 
+# ----------------------- gate-2 (Director mail 1a1d6d1d64b72589)
+def _foreign_staging_box(p):
+    """A FOREIGN box carrying BOTH the staging id and the EXACT
+    reserved label, created through the same Plane.box writer a
+    user surface uses — but NOT by the staging writer, so it
+    carries no program provenance. Holding the user's own unit.
+    Gate-2 (Director 2026-11-13 15:30 CST): label equality alone
+    is not unforgeable provenance; this box must never be
+    adopted as the program's staging box."""
+    from form.dell_matrix.confirm_lineage import STAGING_BOX_LABEL
+    p.place("user_gem", "my private gem", words="private keepsake",
+            x=0.0, y=0.0)
+    p.cube.session.plane.box(["user_gem"], "auto_staging",
+                             label=STAGING_BOX_LABEL)
+
+
+def t23():
+    owner = "CPQ3T23"
+    p = build(owner)
+    _foreign_staging_box(p)
+    pid = seed(p, "t23 unboxed parents cross", "harbor lantern t23",
+               ["out_a", "out_b"])
+    p.set_auto_confirm_grow(True)
+    res = p.confirm_proposal(pid, _producer="grow_auto")
+    plane = p.cube.session.plane
+    sb = plane.sandboxes.get("auto_staging")
+    ok = (not res.get("ok")
+          and res.get("reason") == "staging_box_conflict"
+          and status_of(p, pid) == "pending"
+          and wall_of(p, pid) is None
+          and sb is not None
+          and list(sb.member_ids) == ["user_gem"])
+    check("T23 same-label foreign box refuses direct auto confirm "
+          "(label is not provenance)", ok,
+          f"res={ {k: res.get(k) for k in ('ok', 'reason')} } "
+          f"status={status_of(p, pid)} unit={wall_of(p, pid)} "
+          f"box_members={list(sb.member_ids) if sb else None}")
+    cleanup(owner)
+
+
+def t24():
+    owner = "CPQ3T24"
+    p = build(owner)
+    _foreign_staging_box(p)
+    pid = seed(p, "t24 unboxed parents cross", "harbor lantern t24",
+               ["out_a", "out_b"])
+    res = sweep(p)
+    ac = res.get("auto_confirm") or {}
+    plane = p.cube.session.plane
+    sb = plane.sandboxes.get("auto_staging")
+    sweep_refused = (status_of(p, pid) == "pending"
+                     and wall_of(p, pid) is None
+                     and pid not in (ac.get("skipped_ids") or [])
+                     and int(ac.get("failed", 0)) >= 1
+                     and sb is not None
+                     and pid not in list(sb.member_ids)
+                     and "user_gem" in list(sb.member_ids))
+    # The refusal is durable: after save/load the foreign box is
+    # STILL foreign — a fresh proposal in the reloaded program is
+    # refused the same way, and the user's membership is intact.
+    from form.open import Program
+    p2 = Program.load(owner)
+    sb2 = p2.cube.session.plane.sandboxes.get("auto_staging")
+    pid2 = seed(p2, "t24 post-reload cross", "harbor lantern t24b",
+                ["out_a", "out_b"])
+    p2.set_auto_confirm_grow(True)
+    res2 = p2.confirm_proposal(pid2, _producer="grow_auto")
+    reload_refused = (not res2.get("ok")
+                      and res2.get("reason") == "staging_box_conflict"
+                      and status_of(p2, pid2) == "pending"
+                      and sb2 is not None
+                      and list(sb2.member_ids) == ["user_gem"])
+    ok = sweep_refused and reload_refused
+    check("T24 same-label foreign box: sweep counted failure + "
+          "refusal survives reload", ok,
+          f"auto_confirm={ac} sweep_refused={sweep_refused} "
+          f"reload_res={ {k: res2.get(k) for k in ('ok', 'reason')} } "
+          f"reloaded_members={list(sb2.member_ids) if sb2 else None}")
+    cleanup(owner)
+
+
+def t25():
+    """Positive control for the provenance invariant: the
+    program's OWN staging box — created by the staging writer,
+    carrying the reserved provenance marker — keeps working
+    across save/load: a second auto confirm after reload stages
+    into the SAME box, and release via unbox + re-box still
+    works."""
+    owner = "CPQ3T25"
+    p = build(owner)
+    pid = seed(p, "t25 staged child", "harbor lantern t25",
+               ["out_a", "out_b"])
+    sweep(p)
+    from form.dell_matrix.confirm_lineage import (
+        STAGING_BOX_LABEL, STAGING_PROVENANCE)
+    sb = p.cube.session.plane.sandboxes.get("auto_staging")
+    marked_live = (sb is not None
+                   and sb.label == STAGING_BOX_LABEL
+                   and getattr(sb, "provenance", None)
+                   == STAGING_PROVENANCE)
+    from form.open import Program
+    p2 = Program.load(owner)
+    sb2 = p2.cube.session.plane.sandboxes.get("auto_staging")
+    marked_reloaded = (sb2 is not None
+                       and sb2.label == STAGING_BOX_LABEL
+                       and getattr(sb2, "provenance", None)
+                       == STAGING_PROVENANCE
+                       and pid in list(sb2.member_ids))
+    pid2 = seed(p2, "t25 second staged child", "harbor lantern t25b",
+                ["out_a", "out_c"])
+    res2 = sweep(p2)
+    w2 = wall_of(p2, pid2)
+    staged_again = (status_of(p2, pid2) == "confirmed" and w2
+                    and w2["sandboxed"]
+                    and w2["sandbox_id"] == "auto_staging"
+                    and pid2 in (members(p2, "auto_staging") or []))
+    rel = p2.cube.session.plane.unbox(pid)
+    w_after = wall_of(p2, pid)
+    p2.cube.session.plane.box([pid], "vault1")
+    released = (rel and w_after and not w_after["sandboxed"]
+                and pid not in (members(p2, "auto_staging") or [])
+                and pid in (members(p2, "vault1") or []))
+    ok = (marked_live and marked_reloaded and staged_again
+          and released)
+    check("T25 own staging box: provenance marker durable, reuse "
+          "after reload, release + re-box work", ok,
+          f"marked_live={marked_live} marked_reloaded="
+          f"{marked_reloaded} staged_again={staged_again} "
+          f"released={released} sweep2={res2.get('auto_confirm')}")
+    cleanup(owner)
+
+
 def smoke() -> bool:
     RESULTS.clear()
     for fn in (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10,
                t11, t12, t13, t14, t15, t16, t17, t18,
-               t19, t20, t21, t22):
+               t19, t20, t21, t22, t23, t24, t25):
         try:
             fn()
         except Exception as e:
@@ -700,7 +855,7 @@ def smoke() -> bool:
                   f"EXCEPTION {type(e).__name__}: {e}")
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"CONFIRM_PLACEMENT: {passed}/{len(RESULTS)}")
-    return passed == len(RESULTS) and len(RESULTS) == 22
+    return passed == len(RESULTS) and len(RESULTS) == 25
 
 
 if __name__ == "__main__":
