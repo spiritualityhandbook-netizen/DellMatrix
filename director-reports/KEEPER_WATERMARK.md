@@ -1,10 +1,10 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-12 23:07 CST  
-**UTC approx**: 2026-11-13T05:07:00Z
+**Last cycle**: 2026-11-13 00:18 CST  
+**UTC approx**: 2026-11-13T06:18:00Z
 
 ## Items ruled this cycle
-- PR #403 — **CONFIRM (scoped, records) at head 77b569d71378d5f6705048d37fba1468f564572f**. Prior stamp at a707306 superseded. Director head-freshness condition met from the Keeper side. Uni clear to merge under the standing gate.
+- PR #408 — **CONFIRM (scoped, records) at head a6d732ac8e153be0b0ad3d0171b8b43902d654dd**. Post-merge reconciliation for #398 + #403. Comment 6845795451.
 
 ## Trailing ledger
 - remaining: 2 (DD-18, Q-DD42.1)
