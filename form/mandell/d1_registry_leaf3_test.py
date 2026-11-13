@@ -68,9 +68,15 @@ public seed path:
   source with "_" -> " " split/rejoined; a unit
   expand_<expansion underscored, truncated to 24
   chars> is minted CUBE; "Expanded → <expansion>".
-- 31 Simulate: a dry-run status read (owner, ideas,
-  history_len from the pre-run status) — units,
-  scores and sandbox are unchanged by the run.
+- 31 Simulate: C13 (DD-21) real dry-run rehearsal —
+  as a chain head it rehearses the following atoms
+  against an isolated copy (per-atom outcomes +
+  scoped diff); bare Simulate has nothing to
+  rehearse and reports itself unexecuted
+  (no_argument) — units, scores, sandbox AND
+  history are unchanged by the run. (Pre-C13 this
+  pin described a status read that appended its
+  own history entry; superseded by DD-21.)
 - 32 Pause: bare Pause idles the avatar ("Paused.");
   a label containing "enhance" turns enhance OFF
   instead ("Enhance OFF.", avatar untouched).
@@ -338,20 +344,26 @@ def main():
          and "expand_one_two_three_four_five" in _units(p),
          str(_msgs(r)))
 
-    # -- 31 Simulate: dry-run read, no state change
-    st = p.status()
+    # -- 31 Simulate: C13 (DD-21) — bare Simulate has nothing to
+    # rehearse: honestly unexecuted, mutates nothing at all
+    # (the pre-C13 pin expected a status echo and could not
+    # assert history, because the old arm appended to it).
     snap_units = list(_units(p))
     snap_scores = p.scores()
+    snap_history = list(p.history)
     r = _run(p, "31[Simulate]")
-    _rec("31 Simulate: reports the pre-run status "
-         "(owner/ideas/history_len) and mutates nothing "
-         "— units, scores, sandbox unchanged",
-         _msgs(r) == ["Simulate (dry-run — no mutation):",
-                      f"  owner={st.get('owner')} "
-                      f"ideas={st.get('ideas')}",
-                      f"  history_len={st.get('history_len')}"]
+    _rec("31 Simulate: bare is honestly unexecuted "
+         "(no_argument) and mutates nothing — units, "
+         "scores, sandbox and history unchanged",
+         r.get("ok") is False and r.get("skipped") is True
+         and _msgs(r) == [
+             "Simulate (dry-run): no argument — nothing rehearsed.",
+             "  Simulate needs a seed/chain to rehearse "
+             "(31[Simulate] :: <seed>); none was given — "
+             "atom not executed"]
          and list(_units(p)) == snap_units
          and p.scores() == snap_scores
+         and list(p.history) == snap_history
          and p.sandbox.on is False, str(_msgs(r)))
 
     # -- 32 Pause / 33 Resume
