@@ -48,6 +48,31 @@ Isolation (§30): per-suite owners, state cleaned before and after;
 fingerprints come from the program's own serializer
 (form.persist.serialize) plus sha256 over the state directory —
 never from ambient assumptions.
+
+§16 BISECT REPAIR (the 19/20-under-regress defect): two of this
+suite's measurement instruments asserted over more than the state
+they owned, and failed nondeterministically under a full regress
+while the product behavior stayed correct:
+(1) The raw serializer fingerprint hashed persist.serialize's
+envelope whole — including its `saved` field, a UTC clock stamp
+the serializer writes fresh on EVERY call (form/persist.py).
+Two serializations of an unchanged program straddling a
+one-second boundary differ in exactly that field. The fingerprint
+windows here (t3/t6b/t10/t14-t16) are now computed over the
+serialized STATE with the volatile envelope stamp excluded
+(_state_fingerprint): every state field remains compared at full
+strength; only the measurement's own clock reading is removed.
+Determinism proof: with a forced 1.2 s dwell inside the t3
+window the pre-repair fingerprint failed 12/12; post-repair it
+cannot fail on the stamp (the field is not compared).
+(2) The state-directory snapshot hashed EVERY file in the shared
+form/state directory. Other suites sharing a regress tree
+legitimately create, mutate, and clean up their own owners' files
+at any time; the snapshot is now scoped to this suite's owners
+plus the board's disposable-owner prefix — a simulation writing
+for any of those owners still fails the comparison.
+Checks 14-17 keep their exact Q-C13.O-FIN.1 strength (virgin
+owner, serialized bit-identity incl. Core II presence).
 """
 from __future__ import annotations
 
@@ -91,6 +116,30 @@ def _fingerprint(program) -> str:
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
+def _state_fingerprint(program) -> str:
+    """Bit-identity fingerprint over the program's serialized
+    STATE — the envelope's volatile `saved` clock stamp excluded.
+
+    persist.serialize stamps every serialization with the current
+    UTC second (form/persist.py, the envelope's "saved" field):
+    envelope metadata about the serialization event, not program
+    state. Two serializations of an UNCHANGED program taken across
+    a one-second boundary therefore differ in exactly that field —
+    a measurement artifact that made this suite's fingerprint
+    windows (and the board's live-fingerprint self-check) fail
+    nondeterministically whenever a window straddled a second
+    boundary (§16 bisect, report §16). The O-FIN.1 repair lane's
+    demo hashes were unaffected only because that capture happened
+    inside one second. Excluding the stamp keeps every state field
+    — units, nursery, history, Core II presence, generations —
+    under the bit-identity comparison at full strength."""
+    from form import persist
+    data = persist.serialize(program)
+    data.pop("saved", None)
+    blob = json.dumps(data, sort_keys=True, default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
 def _core_ii_present(program) -> bool:
     """Q-C13.O-FIN.1: is Core II materialized in the SERIALIZED
     live state? serialize_core_ii reports present=False until a
@@ -101,10 +150,29 @@ def _core_ii_present(program) -> bool:
     return bool(persist.serialize(program)["core_ii"]["present"])
 
 
-def _dir_snapshot() -> dict:
+def _dir_snapshot(owners) -> dict:
+    """Content hashes of the state-dir files belonging to THIS
+    suite's owners (plus the board's disposable C13Sim* owners).
+
+    The whole-directory comparison this replaces asserted over
+    state the suite does not own: form/state is shared by every
+    suite in a regress tree, and other owners' files legitimately
+    appear, change, and are cleaned up by their own suites'
+    activity — an ambient dependency (§30) that failed t3/t7b/t10
+    nondeterministically under full regress while the simulated
+    owner's own state stayed bit-identical (§16 bisect, report
+    §16). The DD-21 contract is that a simulation writes nothing
+    for the program it rehearses and touches no other owner's
+    state; scoping the snapshot to the suite's owners keeps that
+    assertion at full strength — any file a simulation creates,
+    removes, or alters for a suite owner (or under the board's
+    disposable owner prefix) still fails the comparison."""
+    pats = tuple(owners) + ("C13Sim",)
     out = {}
     if os.path.isdir(_STATE_DIR):
         for name in sorted(os.listdir(_STATE_DIR)):
+            if not any(p in name for p in pats):
+                continue
             path = os.path.join(_STATE_DIR, name)
             if os.path.isfile(path):
                 with open(path, "rb") as fh:
@@ -147,11 +215,15 @@ def smoke() -> bool:
 
         # -- 3. Live-state bit-identity after a mutating chain
         # (sketch 2): serializer fingerprint, history, state dir.
-        fp0, hist0, dir0 = _fingerprint(p), list(p.history), _dir_snapshot()
+        # The fingerprint runs over the serialized STATE (the
+        # envelope's volatile `saved` stamp excluded — §16); the
+        # state-dir leg is scoped to this suite's owners (§16).
+        fp0, hist0, dir0 = _state_fingerprint(p), list(p.history), \
+            _dir_snapshot(owners)
         res = _sim(p, "08[Create] :: c13_beta > 07[Link] :: c13_alpha")
         rec("t3_live_bit_identical",
-            _fingerprint(p) == fp0 and list(p.history) == hist0
-            and _dir_snapshot() == dir0
+            _state_fingerprint(p) == fp0 and list(p.history) == hist0
+            and _dir_snapshot(owners) == dir0
             and "c13_beta" not in p.cube.session.plane.units,
             "live fingerprint/history/files changed by simulation")
 
@@ -175,7 +247,7 @@ def smoke() -> bool:
 
         # -- 6. Failed atom inside the simulation (sketch 5):
         # per-atom failure named at its atom; live untouched.
-        fp0, hist0 = _fingerprint(p), list(p.history)
+        fp0, hist0 = _state_fingerprint(p), list(p.history)
         res = _sim(p, "08[Create] :: c13_fail_a > 21[Merge] :: no_such_unit_xyz")
         rcpt = res.get("simulate") or {}
         atoms = rcpt.get("atom_results") or []
@@ -185,13 +257,13 @@ def smoke() -> bool:
             and "missing_source" in str(bad[0].get("error", "")),
             f"atom_results={atoms}")
         rec("t6b_live_untouched_by_failed_sim",
-            _fingerprint(p) == fp0 and list(p.history) == hist0,
+            _state_fingerprint(p) == fp0 and list(p.history) == hist0,
             "live state changed by a failed simulation")
 
         # -- 7. External-effect refusal BEFORE dispatch (sketch 6):
         # Checkpoint (durable write) and Bridge (external) are
         # refused with the atom named; zero writes anywhere.
-        dir0 = _dir_snapshot()
+        dir0 = _dir_snapshot(owners)
         ok7, det7 = True, ""
         for arg, dell in (("27[Checkpoint]", 27), ("44[Bridge]", 44)):
             res = _sim(p, arg)
@@ -202,7 +274,7 @@ def smoke() -> bool:
                     and any(x.get("dell") == dell for x in refused)):
                 ok7, det7 = False, f"{arg}: res_ok={res.get('ok')} rcpt={rcpt}"
         rec("t7_external_effect_refused", ok7, det7)
-        rec("t7b_no_writes_from_refusal", _dir_snapshot() == dir0,
+        rec("t7b_no_writes_from_refusal", _dir_snapshot(owners) == dir0,
             "state dir changed by a refused simulation")
 
         # -- 8. Nested control flow (sketch 7): a Loop chain
@@ -228,10 +300,11 @@ def smoke() -> bool:
         # -- 10. Cross-owner isolation (sketch 9, guard): simulating
         # under owner A leaves owner B's files + fingerprint intact.
         other = _program("C13SimT3")
-        fp_b, dir0 = _fingerprint(other), _dir_snapshot()
+        fp_b, dir0 = _state_fingerprint(other), _dir_snapshot(owners)
         _sim(p, "08[Create] :: c13_cross")
         rec("t10_cross_owner_untouched",
-            _fingerprint(other) == fp_b and _dir_snapshot() == dir0,
+            _state_fingerprint(other) == fp_b
+            and _dir_snapshot(owners) == dir0,
             "another owner's state changed")
 
         # -- 11. Unparseable argument -> refusal receipt, not a fake
@@ -289,15 +362,15 @@ def smoke() -> bool:
         # head, present flips False->True and the fingerprint moves.
         q = _program("C13SimT6")
         pre_ok = _core_ii_present(q) is False
-        fp0 = _fingerprint(q)
+        fp0 = _state_fingerprint(q)
         res = _sim(q, "08[Create] :: c13_ser_a")
         rec("t14_frontdoor_sim_unmaterialized_bit_identical",
             pre_ok and res.get("ok") is True
             and _core_ii_present(q) is False
-            and _fingerprint(q) == fp0,
+            and _state_fingerprint(q) == fp0,
             f"precondition_present_false={pre_ok} sim_ok={res.get('ok')} "
             f"present_after={_core_ii_present(q)} "
-            f"fp_equal={_fingerprint(q) == fp0}")
+            f"fp_equal={_state_fingerprint(q) == fp0}")
 
         # -- 15. Q-C13.O-FIN.1 case (b): the same front-door
         # Simulate on an ALREADY-materialized program (a live
@@ -307,28 +380,28 @@ def smoke() -> bool:
         m = _program("C13SimT7")
         live = execute_seed(m, "08[Create] :: c13_mat > 07[Link] :: welcome")
         pre_ok = live.get("ok") is True and _core_ii_present(m) is True
-        fp0 = _fingerprint(m)
+        fp0 = _state_fingerprint(m)
         res = _sim(m, "08[Create] :: c13_ser_b")
         rec("t15_frontdoor_sim_materialized_bit_identical",
             pre_ok and res.get("ok") is True
             and _core_ii_present(m) is True
-            and _fingerprint(m) == fp0,
+            and _state_fingerprint(m) == fp0,
             f"precondition_present_true={pre_ok} sim_ok={res.get('ok')} "
-            f"fp_equal={_fingerprint(m) == fp0}")
+            f"fp_equal={_state_fingerprint(m) == fp0}")
 
         # -- 16. Control (c1): a DIRECT board call on a fresh
         # unmaterialized program is bit-identical (the board
         # rehearses against its isolated copy; it never needed the
         # chain machinery's attach). Passes pre-fix.
         d = _program("C13SimT8")
-        fp0 = _fingerprint(d)
+        fp0 = _state_fingerprint(d)
         rcpt = run_simulation(d, "08[Create] :: c13_ser_c")
         rec("t16_direct_board_bit_identical",
             rcpt.get("ok") is True
             and _core_ii_present(d) is False
-            and _fingerprint(d) == fp0,
+            and _state_fingerprint(d) == fp0,
             f"board_ok={rcpt.get('ok')} present_after={_core_ii_present(d)} "
-            f"fp_equal={_fingerprint(d) == fp0}")
+            f"fp_equal={_state_fingerprint(d) == fp0}")
 
         # -- 17. Control (c2): a normal single-atom front-door
         # execution (leaf path) creates its unit — its intended

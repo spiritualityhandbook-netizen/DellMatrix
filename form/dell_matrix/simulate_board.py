@@ -28,7 +28,8 @@ FORM (v1, grounded defaults; Q-C13.1-.7 ride the circuit report):
   The baseline is captured WITHOUT write-on-read paths: no
   status()/persona_matrix_status() anywhere on this path; the
   live fingerprint is form.persist.serialize (the program's own
-  serializer) plus the live owner's durable file hashes.
+  serializer; its volatile envelope `saved` clock stamp excluded
+  — §16 bisect) plus the live owner's durable file hashes.
 - EFFECT INVENTORY (C13.Inventory) / BOUNDED SUBSET (C13.DryRun):
   IN — Core I atoms (00-50) executing against the copy, incl.
   control flow (Loop bodies, flow operators) via the canonical
@@ -92,8 +93,16 @@ SIMULATE_DELL = 31
 
 def _live_fingerprint(program: Any) -> str:
     from form import persist
-    blob = json.dumps(persist.serialize(program), sort_keys=True,
-                      default=str)
+    data = persist.serialize(program)
+    # The envelope's "saved" field is a UTC clock stamp the
+    # serializer writes fresh on every call (form/persist.py) —
+    # metadata about the serialization event, not program state.
+    # Hashing it made this self-check report a live mutation
+    # whenever the before/after serializations straddled a
+    # one-second boundary (§16 bisect, report §16). Excluded:
+    # every serialized STATE field remains compared.
+    data.pop("saved", None)
+    blob = json.dumps(data, sort_keys=True, default=str)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
