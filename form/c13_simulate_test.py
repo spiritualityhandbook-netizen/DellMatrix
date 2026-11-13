@@ -33,6 +33,16 @@ construction); sketch 10 is the build-phase live-write mutant
 control, discharged outside this suite (M-A/M-B in the circuit
 report). Checks 11-13 extend the sketch with the same contract's
 parse-refusal, bare-argument, and nested-Simulate honesty.
+Checks 14-17 pin Q-C13.O-FIN.1 (Director mail 1a1d4c6cfd564a73):
+a front-door Simulate-headed chain must leave the LIVE program's
+SERIALIZED state bit-identical — on a fresh program whose Core II
+section is not yet materialized (serialize_core_ii reports
+present=False), the chain machinery's entry attach must not
+materialize a default Core II state onto the live program just
+because a rehearsal passed through it. The fingerprint windows
+above start after earlier front-door runs, so they never isolate
+this one-time transition; checks 14-17 use virgin owners and
+capture the serialized state before ANY front-door call.
 
 Isolation (§30): per-suite owners, state cleaned before and after;
 fingerprints come from the program's own serializer
@@ -81,6 +91,16 @@ def _fingerprint(program) -> str:
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
+def _core_ii_present(program) -> bool:
+    """Q-C13.O-FIN.1: is Core II materialized in the SERIALIZED
+    live state? serialize_core_ii reports present=False until a
+    CoreIIState is attached to the live program object. Reading
+    it never attaches (persist_core_ii.serialize_core_ii is a
+    pure getattr/isinstance probe)."""
+    from form import persist
+    return bool(persist.serialize(program)["core_ii"]["present"])
+
+
 def _dir_snapshot() -> dict:
     out = {}
     if os.path.isdir(_STATE_DIR):
@@ -106,7 +126,8 @@ def smoke() -> bool:
               + (f" | {detail}" if detail and not ok else ""))
         r.append(bool(ok))
 
-    owners = ["C13SimT1", "C13SimT2", "C13SimT3", "C13SimT4", "C13SimT5"]
+    owners = ["C13SimT1", "C13SimT2", "C13SimT3", "C13SimT4", "C13SimT5",
+              "C13SimT6", "C13SimT7", "C13SimT8", "C13SimT9"]
     for o in owners:
         _cleanup(o)
     try:
@@ -257,6 +278,71 @@ def smoke() -> bool:
             and rcpt.get("outcome") == "refused_nested_simulate"
             and "c13_nested" not in p.cube.session.plane.units,
             f"res_ok={res.get('ok')} rcpt={rcpt}")
+
+        # -- 14. Q-C13.O-FIN.1 case (a): front-door Simulate on a
+        # FRESH UNMATERIALIZED program — the serialized live state
+        # is captured before ANY front-door call (virgin owner;
+        # serialize probes do not attach). The chain machinery's
+        # entry attach (chain_exec) must not materialize a default
+        # Core II state onto the live program for a rehearsal whose
+        # atoms never execute live. FAILING-FIRST: at the pre-fix
+        # head, present flips False->True and the fingerprint moves.
+        q = _program("C13SimT6")
+        pre_ok = _core_ii_present(q) is False
+        fp0 = _fingerprint(q)
+        res = _sim(q, "08[Create] :: c13_ser_a")
+        rec("t14_frontdoor_sim_unmaterialized_bit_identical",
+            pre_ok and res.get("ok") is True
+            and _core_ii_present(q) is False
+            and _fingerprint(q) == fp0,
+            f"precondition_present_false={pre_ok} sim_ok={res.get('ok')} "
+            f"present_after={_core_ii_present(q)} "
+            f"fp_equal={_fingerprint(q) == fp0}")
+
+        # -- 15. Q-C13.O-FIN.1 case (b): the same front-door
+        # Simulate on an ALREADY-materialized program (a live
+        # multi-atom chain attached Core II — the chain machinery's
+        # standing behavior for real chains, preserved) leaves the
+        # serialized live state bit-identical.
+        m = _program("C13SimT7")
+        live = execute_seed(m, "08[Create] :: c13_mat > 07[Link] :: welcome")
+        pre_ok = live.get("ok") is True and _core_ii_present(m) is True
+        fp0 = _fingerprint(m)
+        res = _sim(m, "08[Create] :: c13_ser_b")
+        rec("t15_frontdoor_sim_materialized_bit_identical",
+            pre_ok and res.get("ok") is True
+            and _core_ii_present(m) is True
+            and _fingerprint(m) == fp0,
+            f"precondition_present_true={pre_ok} sim_ok={res.get('ok')} "
+            f"fp_equal={_fingerprint(m) == fp0}")
+
+        # -- 16. Control (c1): a DIRECT board call on a fresh
+        # unmaterialized program is bit-identical (the board
+        # rehearses against its isolated copy; it never needed the
+        # chain machinery's attach). Passes pre-fix.
+        d = _program("C13SimT8")
+        fp0 = _fingerprint(d)
+        rcpt = run_simulation(d, "08[Create] :: c13_ser_c")
+        rec("t16_direct_board_bit_identical",
+            rcpt.get("ok") is True
+            and _core_ii_present(d) is False
+            and _fingerprint(d) == fp0,
+            f"board_ok={rcpt.get('ok')} present_after={_core_ii_present(d)} "
+            f"fp_equal={_fingerprint(d) == fp0}")
+
+        # -- 17. Control (c2): a normal single-atom front-door
+        # execution (leaf path) creates its unit — its intended
+        # effect — and does NOT materialize Core II on the live
+        # program. Passes pre-fix (the finish lane's realonly
+        # probe, pinned).
+        c = _program("C13SimT9")
+        res = execute_seed(c, "08[Create] :: c13_ser_d")
+        rec("t17_normal_leaf_create_no_core_ii_materialization",
+            res.get("ok") is True
+            and "c13_ser_d" in c.cube.session.plane.units
+            and _core_ii_present(c) is False,
+            f"create_ok={res.get('ok')} "
+            f"present_after={_core_ii_present(c)}")
     finally:
         for o in owners:
             _cleanup(o)

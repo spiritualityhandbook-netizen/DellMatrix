@@ -19,7 +19,7 @@ from .control_runtime import (
     find_else,
     find_join,
 )
-from .core_ii_exec import append_snapshot, attach, execute_core_ii
+from .core_ii_exec import CoreIIState, append_snapshot, attach, execute_core_ii
 from .registry import get_dell, namespace_of
 
 
@@ -302,13 +302,35 @@ def _payload_cond(atom: Any, seed: Any, n: int) -> str:
 
 def execute_range(program, seed, atoms, start, end, depth, messages, ran, skipped, state):
     results = []
-    st = attach(program)
+    # Q-C13.O-FIN.1: a range LED by Dell 31 [Simulate] is consumed
+    # entirely by the rehearsal branch below (it hands the rest
+    # of the range to the simulate board and sets i = end); that
+    # branch never touches the flow state, and nothing in the
+    # range executes live. The standing entry attach would
+    # materialize a default CoreIIState on the LIVE program for a
+    # pure rehearsal — serialized core_ii present flips
+    # False->True, breaking the DD-21 bit-identical live-state
+    # contract. Defer the attach for exactly that range shape;
+    # the _apply_flow call site ensures the state on demand, so
+    # st is a real CoreIIState at every actual use. Every other
+    # range attaches at entry exactly as before.
+    if start < end and int(atoms[start].dell) == 31:
+        st = getattr(program, "core_ii", None)
+        if not isinstance(st, CoreIIState):
+            st = None
+    else:
+        st = attach(program)
     i = start
     last_ok = True
     while i < end:
         atom = atoms[i]
         n = int(atom.dell)
         if i > start:
+            if st is None:
+                # Q-C13.O-FIN.1 deferred attach (see execute_range
+                # entry): flow machinery is the first real consumer
+                # of the Core II state in a Simulate-led range.
+                st = attach(program)
             action = _apply_flow(st, _flow_at(seed, i - 1), last_ok, atoms[i - 1], atom, messages)
             if action == "skip":
                 skipped.append(n)
@@ -766,7 +788,20 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     ran = []
     skipped = []
     state = {"ok": True, "error": "", "new_program": None}
-    attach(program)
+    # Q-C13.O-FIN.1: a Simulate-headed chain (Dell 31 with a
+    # rehearsal operand) executes nothing live — the simulate
+    # board rehearses against an isolated copy — so the standing
+    # entry attach must not materialize a default CoreIIState on
+    # the live program for it: serialized core_ii present would
+    # flip False->True, breaking the DD-21 bit-identical
+    # live-state contract. Every other chain attaches exactly as
+    # before; execute_range defers its own attach for the same
+    # range shape and ensures the state if flow machinery ever
+    # needs it.
+    _sim_headed = (len(seed.atoms) >= 2
+                   and int(seed.atoms[0].dell) == 31)
+    if not _sim_headed:
+        attach(program)
     if _redact:
         try:
             program._chain_sanitize_redact = True
@@ -858,7 +893,15 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     _any_skipped = any(bool(r.get("skipped", False)) for r in atom_results)
     if _redact:
         atom_results = sanitize_evidence(atom_results)
-    _snap = st.snap() if st is not None else {}
+    # Q-C13.O-FIN.1: for a Simulate-headed chain on an
+    # unmaterialized program the live state was deliberately left
+    # unattached (see the entry attach above); the receipt's
+    # core_ii snapshot is a DETACHED default — content-identical
+    # to what the pre-fix attach-then-snap produced — so the
+    # receipt shape is unchanged while the live program's
+    # serialized state stays bit-identical.
+    _snap = st.snap() if st is not None else (
+        CoreIIState().snap() if _sim_headed else {})
     if _redact:
         _snap = sanitize_evidence(_snap)
     # 72-17 R-B: a structured directive set by any atom (bare Show's
