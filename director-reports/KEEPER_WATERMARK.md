@@ -1,12 +1,13 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-13 11:04 CST  
-**UTC approx**: 2026-11-13T17:04:00Z
+**Last cycle**: 2026-11-13 11:23 CST  
+**UTC approx**: 2026-11-13T17:23:00Z
 
 ## Items ruled this cycle
-- #412 / Q-U.2: merge verified at 1b52179b; receipt identities match; **CONFIRM (scoped, final-check)** at merge SHA. Residual: Q-U.3/Q-U.5 separate, Q-U.4 HOLD.
-- #413 / C13: new head e1e99eff; **INSUFFICIENT_EVIDENCE (scoped)** — missing serial ×3 campaign + terminal CI at head.
-- #409 / F-d: refreshed **CONFIRM (scoped, records)** at 13c84446. Content byte-identical.
+- #413 / C13: head e1e99eff; **INSUFFICIENT_EVIDENCE (scoped)** — missing serial ×3 campaign + terminal CI at head.
+- #414 / F-d repair: new head b5e3b5d2; **INSUFFICIENT_EVIDENCE (scoped)** — evidence package not yet verified.
+- #415 / Confirm-placement: new head 22834833; **INSUFFICIENT_EVIDENCE (scoped)** — campaign + CI pending.
+- #409 / F-d: no change, prior CONFIRM (scoped, records) at 13c84446.
 
 ## Trailing ledger
 - discharged this run: 0
