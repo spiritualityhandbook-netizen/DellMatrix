@@ -529,3 +529,233 @@ union, no duplicates.
 - Independent patch review and Keeper confirmation remain
   required before merge; the CODE MERGE HOLD stands until the
   Director lifts it.
+
+## 16. Bisect of the nondeterministic 19/20 (2026-11-13)
+
+### 16.1 Reproduction
+
+At head 16b8bad the c13 suite failed 19/20 in three independent
+environments: exact-head CI smoke (run 43423796181, BOTH the 3.10
+and 3.11 passes, sole failing entry of 280), the main-session
+campaign forward leg in the repair clone (279/280), and standalone
+runs in a clean clone (hourly cycle §30 differential: run 1 20/20,
+run 2 in the same tree 19/20, sole fail t9). A second full regress
+in the campaign clone returned 280/280 — the failure is
+nondeterministic, single-check, and migrates between checks.
+Locally observed failing set across all runs at 16b8bad: t3, t6b,
+t7b, t9, t10, t14, t15, t16. In every failing run the isolation
+contract itself held: Simulate wrote nothing live (t14's
+present_after=False, beta_absent=True class facts intact).
+
+### 16.2 Why CI's exact failing check is unknowable
+
+CI's regress capture strips per-check FAIL detail (its scraper
+regex expects `FAIL name:`; the suite prints `[FAIL] name |`).
+The failing check under CI is therefore not recoverable from the
+CI record; the local failing set above is the evidence base.
+
+### 16.3 Mechanism 1 — wall-clock inside the fingerprint (primary)
+
+`persist.serialize` stamps `"saved":
+datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")`
+(form/persist.py:301, second resolution). At 16b8bad both the
+suite's `_fingerprint` and the board's `_live_fingerprint` hashed
+the full serialization INCLUDING `saved`. Any before/after pair
+straddling a one-second boundary differs with zero state change.
+
+Deterministic proof (dwell experiment, suite t3 window, same code
+path, dwell inserted between the paired serializes):
+
+| dwell | fails |
+|-------|-------|
+| 0.0s  | 0/12  |
+| 0.35s | 4/10  |
+| 1.2s  | 12/12 (sole serialized diff: `.saved`) |
+
+Ambient rate ~1/40 per window; under regress/CI each window
+stretches (thousands of state files hashed, board deepcopies), so
+a straddle in at least one window per run is likely — exactly one
+check fails, identity varies. String-level confirmation at the
+board: three captured `live_fingerprint_unchanged` flips (t1 sim,
+a t9 det sim, the t6 failing-merge sim) each differ in EXACTLY
+one blob region — `saved`, one second apart (full-blob character
+diffs of 1, 1, and 2 characters; blob hashes match the board's
+returned hashes at every position; files leg equal throughout).
+
+### 16.4 Mechanism 2 — whole-directory snapshot scope
+
+The suite's `_dir_snapshot()` hashed EVERY top-level file in the
+shared `form/state/`, compared by t3, t7b, t10. Diagnostic runs
+named the differing files — all other owners' artifacts, incl. a
+`.dmtmp` sibling caught mid-atomic-write
+(`checkpoint_preserve_CR_12_after_both_nursery.json`,
+`graph_P2SUSX99.*`, `nursery_DD14A682D606D.json`,
+`checkpoint_CR_11_after_pointer_*`,
+`exchange_import_Step5Adm.journal.json.dmtmp.*`). Under a real
+regress the private copy's state dir holds ~4,958 files before
+c13 runs. The bit-identity contract covers the simulated owner's
+state and writes BY the simulation (§30); unrelated suites'
+files in a shared directory are ambient state the suite does
+not own.
+
+Classification: (a) — suite-isolation defects in
+form/c13_simulate_test.py plus the same exposure inside the
+board's self-check. Not a contaminating suite; not a product
+race. d1_proof_cards_test exonerated (Dell 31 census outcome is
+parse-level deterministic); confirm_crash_matrix writes nothing
+into c13's windows under sequential regress (used only as the
+coupling-reproduction vehicle: pre-fix pairing failed 2/3 and
+3/3; post-fix 3/3 PASS).
+
+### 16.5 The apparent third mechanism — attribution artifact
+
+Early captures suggested a residual flip source beyond
+mechanisms 1+2: t9 receipt pairs differing only in
+`live_fingerprint_unchanged` and `lines[5]` (diag3 iter12 and
+iter33; t9_mismatch.json), at points where a separate fp-pair
+table seemed to clear the t9 sims themselves. String-level
+capture (§16.3) closes this: every flip ever captured at blob
+level — including a flip inside a t9 det sim itself
+(blob_flip_2) — is `saved` and only `saved`, and the t9 window
+is subject to mechanism 1 twice over, because t9 compares the
+FULL receipts of its two sims byte-for-byte (suite
+c13_simulate_test.py, the r1/r2 `json.dumps` comparison): one
+straddle inside either sim's board window flips exactly one
+receipt's `live_fingerprint_unchanged` (and its `lines[5]`)
+and the pair differs, while the paired suite-side checks are
+unaffected. The residual appearance came from the diagnostic
+harness pairing fp calls to sims by global index under a
+sim-count assumption that does not hold (prescan-refused sims
+never reach the fp pair; 10 executed sims = 20 calls, not
+11/22; diag3b iter33's table marks the t9 pairs equal and pair
+4 unequal on that indexing), so which sim a given straddle
+belonged to was misattributed — the straddle that failed t9
+need not be the pair the table flagged, and vice versa. The
+earlier `.agenda` attribution does not survive re-verification:
+no `agenda` key exists anywhere in the serialization path at
+either head (grep + AST scan of persist.serialize's literal
+keys; fixed 46-key top-level set, invariant across 99 Dell
+seeds, 149 registry heads, save/load roundtrip, and consecutive
+full smokes). No third mechanism is claimed. The board's
+`_live_files` leg (live owner's program + nursery file hashes)
+was captured at every blob-level flip: equal (both files
+absent) in all three; no in-window writer of live-owner files
+was ever observed. Post-fix corroboration: at bd09b0b (board
+fingerprint excludes `saved`), 60 consecutive in-process smokes
+ran 780 sims with zero `live_fingerprint_unchanged` flips
+(§16.10).
+
+### 16.6 Repair (commit bd09b0b)
+
+Files: form/c13_simulate_test.py, form/dell_matrix/simulate_board.py.
+
+- Suite `_state_fingerprint`: serialize once, pop the top-level
+  `saved` stamp, hash. Every other serialized field still
+  compared bit-for-bit; t14–t17 keep their exact strength.
+- Board `_live_fingerprint`: same exclusion, in the product
+  self-check (the identical exposure inside one sim call —
+  leaving it would have kept the receipt's own
+  `live_fingerprint_unchanged` nondeterministic).
+- Suite snapshot scoped to suite-owned names (`_dir_snapshot
+  (owners)`: owners C13SimT1–T9 plus any name containing
+  `C13Sim`, covering the board's disposable owners
+  `C13Sim{pid}_{counter}`), used at t3, t7b, t10 in place of the
+  whole-directory snapshot. `_cleanup` unchanged.
+
+### 16.7 Mutants
+
+- M-OFIN1 (inverse-edit restore of unconditional Core II attach
+  at both chain_exec sites): t14 FAILS (present_after=True,
+  fp_equal=False). Reverted clean; diff empty.
+- M-BOARD (board appends to live history before fp_after):
+  7 checks FAIL (t3, t4, t6b, t9, t14, t15, t16). Reverted clean.
+- M-WRITE (scheduled stray write of program_C13SimT1.json during
+  a sim): inconclusive as designed (write landed after the
+  compare window); the scoped-snapshot contract was instead
+  proven directly by A/B — an own-owner file enters the scoped
+  snapshot; a foreign-owner file (program_ForeignOwnerX.json)
+  does not and leaves it unchanged.
+- Post-fix dwell battery: 1.2s dwell 10/10 PASS (pre-fix 0/12);
+  a real state change is still caught by `_state_fingerprint`.
+
+### 16.8 Director addendum probes (mail 1a1d51dfd3862eaa), at bd09b0b
+
+- P-A mixed chain `08[Create]:: probe_live_a > 31[Simulate]::
+  08[Create]:: probe_ghost` on a virgin owner: ok=True, simulate
+  receipt ok/executed; core_ii_present=True (the standing attach
+  for a real chain is NOT suppressed by the O-FIN.1 deferral),
+  live_a_on_plane=True, ghost_on_plane=False, history_len=1.
+  Live atoms before Simulate attach/materialize as standing
+  behavior; the Simulate segment stayed rehearsal-only.
+- P-B(i) ranged `13[Loop]:: 2 > 31[Simulate]:: 08[Create]::
+  probe_loop_ghost`: ok=True, simulate executed;
+  core_ii_present=True — inherits the chain's standing attach,
+  exactly the §15.7 disclosed residual; ghost_on_plane=False,
+  history_len=1, no crash.
+- P-B(ii) nested `31[Simulate]:: 31[Simulate]:: 08[Create]::
+  probe_nest`: refused_nested_simulate (ok=False),
+  core_ii_present=False, nest_on_plane=False, history_len=0.
+  Its fp difference was diffed to a single serialized field:
+  `unknowns.entries` — the PP3 register (form/mandell/
+  executor.py:140–157; form/dell_matrix/unknowns.py
+  register_encounter, entry_id=uuid4().hex) records "Dell 31 did
+  not execute: …" on the LIVE program for the refused inner atom.
+  That is designed encounter bookkeeping, not an isolation
+  breach (no Core II, no plane/nursery writes). Recorded as an
+  observation; not patched.
+- P-CTL control, pure real chain `08[Create]:: probe_ctl_a >
+  07[Link]:: welcome`: ok=True, core_ii_present=True,
+  ctl_a_on_plane=True — normal path unbroken.
+
+### 16.9 Evidence-integrity disclosure
+
+This lane's early warm iterations (warm_prefix/warmb/warmc logs)
+ran three drivers CONCURRENTLY against one checkout,
+cross-contaminating each other; those [FAIL] logs are concurrency
+artifacts of the harness, not regress evidence, and are not
+relied on. The valid chain: private-copy prefix runs (259
+entries OK; c13 20/20 ×3 in the quiet copy), filesystem watcher
+during a quiet diagnostic window (0 external events), sequential
+coupling runs, serialized diffs, dwell experiments, and the
+string-level blob captures of §16.3/§16.5. A VM replacement
+(~13:02Z) wiped /tmp; all relied-on artifacts live under the
+goal's hidden_files/c13bisect/.
+
+### 16.10 Verification at the final head
+
+- (i) Suite standalone in a fresh tree at bd09b0b: 20/20,
+  EXIT=0 (fresh_standalone.log). Plus 60 consecutive in-process
+  smokes at the fixed head: 780 sims, zero
+  `live_fingerprint_unchanged` flips (lfu_capture.log).
+- (ii) Full `python3 -m form.regress` (fwd) in the bisect clone
+  at bd09b0b (regress_run1.log): `REGRESS: 280/280 -> GREEN` /
+  `REGRESS FINAL: GREEN (order=fwd)`, EXIT 0 (280 OK, 0 FAIL).
+- (iii) Second full regress, same tree, back-to-back
+  (regress_run2.log): `REGRESS: 280/280 -> GREEN` /
+  `REGRESS FINAL: GREEN (order=fwd)`, EXIT 0 (280 OK, 0 FAIL).
+  Both runs executed at the bisect-fix commit bd09b0b; this
+  records commit changes records only.
+
+### 16.11 Final head and scope
+
+FINAL HEAD: [AT-COMMIT] (this records commit; its full SHA is stated in the PR #413 bisect-return comment and in DIRECTOR_REVIEW_QUEUE.md — a commit cannot contain its own hash). Parent (bisect fix): bd09b0b7229fed8d48f8d14dee0e49c1039fd441. Bisect-fix scope (bd09b0b):
+form/c13_simulate_test.py, form/dell_matrix/simulate_board.py.
+Cumulative PR #413 scope (15 files vs main 1211cdaa, the union base): director-reports/C13_SIMULATE_REPORT_2026-11-13.md, director-reports/DIRECTOR_REVIEW_QUEUE.md, director-reports/INDEX.md, form/c13_simulate_test.py, form/dell_matrix/simulate_board.py, form/mandell/DELL_PROOF_CARDS.md, form/mandell/chain_exec.py, form/mandell/d1_proof_cards_test.py, form/mandell/d1_registry_leaf3_test.py, form/mandell/dell_cards.py, form/mandell/executor.py, form/mandell/executor_leaf.py, form/mandell/semantic_route_test.py, form/mandell/semantic_router.py, form/regress.py. This section,
+once committed, is the immutable statement of that head and
+scope.
+
+### 16.12 Attempt history
+
+- 16b8bad: CI smoke run 43423796181 FAILED (c13 19/20, both
+  passes); campaign forward leg RED identically (279/280);
+  second campaign-clone regress GREEN 280/280 (nondeterminism
+  signature). O-FIN.1 repair e6382df stands as a scoped repair
+  candidate for verification (Director, mail 1a1d51dfd3862eaa) —
+  not certification, not merge authorization.
+- bd09b0b: bisect repair (this section). Verification at
+  bd09b0b: fresh-tree standalone 20/20 EXIT 0; two consecutive
+  full regress runs in the same tree, back-to-back, both
+  280/280 GREEN EXIT 0 (§16.10). Exact-head CI and the
+  main-session x3 campaign run at the final records head and
+  are still owed at the time of this commit; the PR remains
+  under the Director's CODE MERGE HOLD.
