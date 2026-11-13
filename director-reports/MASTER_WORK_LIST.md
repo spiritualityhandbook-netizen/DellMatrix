@@ -23,7 +23,7 @@ Data: master_work_list_items.json
 
 ## The count
 
-**PROGRESS: 39 / 181 COMPLETE = 21.5%**
+**PROGRESS: 39 / 182 COMPLETE = 21.4%**
 
 | Status | Items |
 |---|---|
@@ -31,10 +31,10 @@ Data: master_work_list_items.json
 | MERGED_UNVERIFIED | 0 |
 | BUILT_HELD | 0 |
 | PARTIAL | 54 |
-| OPEN | 85 |
+| OPEN | 86 |
 | GATED | 3 |
 | NEEDS_OVERSEER | 0 |
-| **TOTAL (active)** | **181** |
+| **TOTAL (active)** | **182** |
 
 Outside active scope: 3 SANDBOXED items (parked by Ace,
 listed in their own block below; not counted in the total or the %).
@@ -363,3 +363,9 @@ parked items the 72 frame never counted.
 | # | Item | Source IDs | Status |
 |---|---|---|---|
 | 184 | GS-4 Growth Sandbox Integrity / cross-wall enumeration — CONFIRMED sandbox-integrity defect, previously OPEN with no completion credit, now scoped COMPLETE on the cited merged-main evidence: default RingedGrowth pair enumeration ignored Plane box walls (the wall entered only as _affinity's soft in_scope 0.2 penalty) and produced (a) two-parent Solstice proposals spanning the wall and (b) single-parent Equinox/Standstill drift offspring of boxed units carrying outside units' tokens under inside-only lineage; boxing changed nothing in default growth output (control-identical). Reproduced independently twice on merged main @074b30f (PR #403; PR #402 comment 6827580827); Keeper independently challenged and confirmed (comment 6828513382); Director scoped ACCEPTANCE mail 1a1d05d91f6401dc. Bounded repair AUTHORIZED by Director scope ruling mail 1a1d077edcbc82e2 (2026-11-12): wall-mate enumeration filter in form/dell_matrix/ringed_growth.py using the existing Plane box authority + receipted pairs_excluded_cross_sandbox count; unboxed output byte-for-byte, scope_ids / default-unset / affinity weights / DCC-XI..XV pins unchanged, no cross-wall bypass flag. Row was OPEN until merged-main proof under Keeper final confirmation + Director final code disposition; U1 (post-growth mutation), U2 (docked-session synthesis), U3 (multi-cycle compounding) remain UNPROVEN limitations — not repaired, not counted as repaired. [COMPLETE (scoped) 2026-11-12 — credit applied by this separate one-row register patch on the authorities' rulings, after the merged-main proof this row required: repair PR #405 MERGED c0742cedbdbc9bf7f4f2950815606f572f7625f8 (tree b1474f4dabf62d627c1515d7b3d53a05a0845dec); merged-main verification on main: gs4_sandbox_test 19/19; post-merge receipts PR #406 MERGED 471c8c81eb99e6136e24cee600b87d7e250f80b0; Keeper final code CONFIRM 6830347970 + records CONFIRM (scoped) 6833527733; Director scoped-credit ruling mail 1a1d13decabf9abd + final CONFIRM mail 1a1d217b62eeb4ba. SCOPED — cross-wall pair enumeration + malformed-box fail-closed only; U1 (post-growth mutation), U2 (docked-session synthesis), U3 (multi-cycle compounding) remain UNPROVEN and separately tracked; NO blanket sandbox certification.] | GS-4 / PR #403 / PR #404 | COMPLETE |
+
+## Block Growth Selection — sandbox dock/confirm defect (Q-U.1)
+
+| # | Item | Source IDs | Status |
+|---|---|---|---|
+| 185 | Sandbox dock-landing + confirm-placement wall blindness — CONFIRMED sandbox-boundary defect family, separately tracked per Director Q-U.1 SCOPED ACCEPT (mail 1a1d44118259b159, 2026-11-13) and linked to GS-4 / MWL 184: the GS-4 repair closed cross-wall pair ENUMERATION in RingedGrowth only; U-probe closure of the GS-4 UNPROVEN edges (defect record PR #410, MERGED d220196; report SANDBOX_DOCK_CONFIRM_DEFECT_2026-11-13.md) REPRODUCED two further wall-blind surfaces at main 6d5f821. (1) U2 dock landing (INTEGRATION, scripted-FakeProvider dock harness; landing provider-agnostic): inference-dock DIRECT verbs synthesize/relate/relate_field author cross-wall PENDING proposals (docked_cross_7748 + _1 + _2, SPANS_WALL) — 'sandbox' 0 occurrences in inference_dock.py and agent_coordinator.py; the field snapshot carries no wall fields; landing validation checks parents-subset only. Growth-path control SAFE (docked_pairs wall-mates only; pairs_excluded_cross_sandbox=6). (2) Confirm placement wall-blind for EVERY caller (PUBLIC_ENTRY_PATH, REPL-identical call repl.py:2852-2856) via the one shared writer: the auto-confirm sweep calls Program.confirm_proposal (open.py:1342, _producer='grow_auto'), which delegates (open.py:1670 -> 1748/1764) to confirm_lineage.confirm_proposal (confirm_lineage.py:109); placement place() at confirm_lineage.py:233-236 takes NO sandbox arguments and 'sandbox' occurs 0 times in confirm_lineage.py. Reproduced: both-parents-boxed offspring placed UNBOXED and NOT added to box membership (manual_both_boxed_cross_2158, reload-verified); mixed-parent cross-wall confirm SUCCEEDS unboxed; U1c opt-in sweep (set_auto_confirm_grow(True), default False) confirmed=5 failed=0 — a seeded cross-wall proposal went LIVE unboxed and boxed-parent offspring landed unboxed. Dock leaks are PENDING-only; liveness requires a confirm path. Boundaries that HOLD (PUBLIC_ENTRY_PATH): U1 default path (post-run stage never writes back to plane units) and U3 (wall filter composes over 5 cycles with save/reload); the MWL 184 U1/U3 scoped credits are unaffected as bounded, GS-4 / MWL 184 is NOT marked fully complete by this row, and U1/U2/U3 are NOT counted as universally discharged. Repair split per the Director's Q-U rulings: dock-landing circuit AUTHORIZED as a bounded safety circuit (Q-U.2); confirm-placement inheritance QUEUED (Q-U.3); auto-confirm sweep treatment QUEUED (Q-U.5); manual-confirm cross-wall semantics HOLD pending Ace's sovereignty ruling (Q-U.4). This row is OPEN — no repair implemented under it yet; NO completion credit and NO partial credit. Denominator disclosure (loud, per the Q-U.1 generator-consistency condition): this row moves the active total 181 -> 182; COMPLETE stays 39; headline 39/181 = 21.5% -> 39/182 = 21.4% — a denominator change only, not a regression and not a credit change. | U-PROBE / PR #410 / GS-4 residual | OPEN |
