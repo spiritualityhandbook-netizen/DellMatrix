@@ -106,6 +106,105 @@ def _denied_receipt(pid, producer, detail, stage):
     }
 
 
+# Confirm-placement circuit (Q-U.3 + Q-U.4 + Q-U.5 + AUTO => SANDBOX
+# FIRST; Ace/Director rulings 2026-11-13): the designated per-owner
+# auto-staging box. Automatic placements with no wall of their own
+# land here first — contained, never directly on the open field.
+STAGING_BOX_ID = "auto_staging"
+STAGING_BOX_LABEL = "Auto staging — program-placed, awaiting release"
+
+
+def _placement_options(keys):
+    opts = [{"sandbox_id": k} for k in sorted(k for k in keys if k)]
+    opts.append({"outside": True})
+    return opts
+
+
+def _resolve_confirm_placement(program, prop, auth) -> Dict[str, Any]:
+    """Resolve where a confirmation lands, per Q-U.3/.4/.5 +
+    AUTO => SANDBOX FIRST. READ-ONLY.
+
+    Returns {"ok": True, "sandbox_id": Optional[str], "mode": str,
+             "parent_wall_keys": List[Optional[str]],
+             "choice": Optional[str]}
+    or a refusal receipt {"ok": False, "reason": ..., "pid": ...,
+    "producer": ..., ...} in the writer's existing receipt shape.
+
+    Wall verdicts come from the PR #412 resolver,
+    inference_dock._wall_verdict, imported at function level (the
+    established deferred-import pattern for this module): ONE wall
+    semantics, no second authority. Eligibility precedes choice —
+    a malformed or unestablished claim refuses BEFORE any choice
+    is offered or honored, and a caller-supplied choice is only
+    ever validated against the parents' ACTUAL walls; the writer
+    never lets a caller name an arbitrary box.
+    """
+    from form.dell_matrix.inference_dock import _wall_verdict
+    pid = prop.id
+    producer = auth.get("producer") if isinstance(auth, dict) else None
+    auto = producer == "grow_auto"
+    choice = auth.get("placement") if isinstance(auth, dict) else None
+
+    def _refuse(reason, **extra):
+        r = {"ok": False, "reason": reason, "pid": pid,
+             "producer": producer}
+        r.update(extra)
+        return r
+
+    parents = getattr(prop, "parents", None)
+    if not isinstance(parents, list) or any(
+            not isinstance(x, str) or not x for x in parents):
+        return _refuse("malformed_parentage")
+    if not parents:
+        if auto:
+            return {"ok": True, "sandbox_id": STAGING_BOX_ID,
+                    "mode": "auto_staging", "parent_wall_keys": [],
+                    "choice": None}
+        return {"ok": True, "sandbox_id": None, "mode": "parentless",
+                "parent_wall_keys": [], "choice": None}
+    plane = program.cube.session.plane
+    keys = set()
+    for parent in parents:
+        verdict, vkeys, culprit = _wall_verdict(program, plane, parent)
+        if verdict == "malformed":
+            return _refuse("malformed_wall_claim", culprit=culprit)
+        if verdict == "unknown":
+            return _refuse("unknown_parent", culprit=culprit)
+        keys |= vkeys
+    key_list = sorted(keys, key=lambda k: (k is not None, k or ""))
+    if len(keys) > 1:
+        if auto:
+            return _refuse("auto_mixed_wall_noneligible")
+        if choice is None:
+            return _refuse("placement_choice_required",
+                           options=_placement_options(keys))
+        if choice == "outside":
+            return {"ok": True, "sandbox_id": None,
+                    "mode": "manual_choice",
+                    "parent_wall_keys": key_list, "choice": "outside"}
+        if isinstance(choice, str) and choice in keys:
+            return {"ok": True, "sandbox_id": choice,
+                    "mode": "manual_choice",
+                    "parent_wall_keys": key_list, "choice": choice}
+        return _refuse("invalid_placement_choice",
+                       options=_placement_options(keys))
+    if choice is not None:
+        # A choice exists only where a choice exists (D13).
+        return _refuse("invalid_placement_choice")
+    only = next(iter(keys))
+    if only is None:
+        if auto:
+            return {"ok": True, "sandbox_id": STAGING_BOX_ID,
+                    "mode": "auto_staging",
+                    "parent_wall_keys": [None], "choice": None}
+        return {"ok": True, "sandbox_id": None,
+                "mode": "unboxed_parents",
+                "parent_wall_keys": [None], "choice": None}
+    return {"ok": True, "sandbox_id": only,
+            "mode": "auto_parents_wall" if auto else "inherited_wall",
+            "parent_wall_keys": [only], "choice": None}
+
+
 def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[str, Any]:
     """Canonical confirmation authority (transactional).
 
@@ -146,6 +245,13 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     if not _v["ok"]:
         _producer = _auth.get("producer") if isinstance(_auth, dict) else None
         return _denied_receipt(pid, _producer, _v["detail"], "pre_place")
+    # Confirm-placement (Q-U.3/.4/.5 + AUTO => SANDBOX FIRST):
+    # resolve placement READ-ONLY after authorization, before any
+    # mutation. A refusal here means zero mutation: the proposal
+    # stays pending and no checkpoint transaction begins.
+    _placement = _resolve_confirm_placement(program, prop, _auth)
+    if not _placement.get("ok"):
+        return _placement
     existed = prop.id in units
     def _remove_newly_placed():
         """Remove a newly placed Idea from all in-memory structures.
@@ -163,6 +269,20 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         """
         failures = []
         removed = []
+        # Critical (confirm-placement): box membership — a boxed
+        # confirm that is later denied must not leave the child id
+        # dangling in the box's member_ids.
+        try:
+            _placed = units.get(prop.id)
+            _sid = getattr(_placed, "sandbox_id", None) if _placed else None
+            if _sid:
+                _sb = program.cube.session.plane.sandboxes.get(_sid)
+                if _sb is not None and prop.id in _sb.member_ids:
+                    _sb.member_ids = [m for m in _sb.member_ids
+                                      if m != prop.id]
+                    removed.append("sandbox_membership")
+        except Exception as e:
+            failures.append(f"sandbox_membership:{type(e).__name__}")
         # Critical: plane unit
         try:
             units.pop(prop.id, None)
@@ -234,6 +354,17 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             prop.id, prop.label, words=prop.words, detail=_detail(prop, units), goals=_goals(prop, units),
             skin=Skin.SEED, parents=list(rec["parents"]), origin=rec["origin"], lineage_version=int(rec["lineage_version"]),
         )
+        # Confirm-placement: apply box membership via the ONLY
+        # writer that maintains both sides (Plane.box), inside
+        # this same try — i.e. inside the checkpoint transaction
+        # below. place_idea accepts no sandbox kwargs, so
+        # membership is applied immediately after placement.
+        if _placement.get("sandbox_id"):
+            _sid = _placement["sandbox_id"]
+            _label = (STAGING_BOX_LABEL
+                      if _sid == STAGING_BOX_ID else None)
+            program.cube.session.plane.box([prop.id], _sid,
+                                           label=_label)
     except Exception as e:
         # Director 2026-10-05 (compensation): cleanup failures are
         # observable. The original exception propagates (honest failure),
@@ -628,4 +759,10 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     except Exception:
         pass
     program.note_seed(50, "Manifest", prop.label)
-    return {"ok": True, "id": prop.id, "label": prop.label, "kind": prop.kind}
+    return {"ok": True, "id": prop.id, "label": prop.label, "kind": prop.kind,
+            "placement": {
+                "mode": _placement.get("mode"),
+                "sandbox_id": _placement.get("sandbox_id"),
+                "parent_wall_keys": _placement.get("parent_wall_keys"),
+                "choice": _placement.get("choice"),
+            }}

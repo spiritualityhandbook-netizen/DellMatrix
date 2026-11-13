@@ -346,6 +346,7 @@ LIST = [
     # 1a1d44118259b159): the dock's direct verbs refuse cross-wall /
     # malformed parent sets before any PENDING proposal persists.
     "form.dock_wall_test:smoke",
+    "form.confirm_placement_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
     "form.dirf14_catch_consumed_test:smoke",

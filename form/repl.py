@@ -2834,6 +2834,14 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             if res.get("ok"):
                 n += 1
                 _say(f'Confirmed: "{res["label"]}"')
+            elif res.get("reason") == "placement_choice_required":
+                # Confirm-placement (A3): never prompt mid-loop —
+                # skip with the choice line so Ace can re-run the
+                # confirm individually with his placement choice.
+                _say(f'Skipped "{prop["id"]}": parents span more than '
+                     f'one sandbox — confirm it individually with '
+                     f'`confirm {prop["id"]} in <sandbox>` or '
+                     f'`confirm {prop["id"]} outside`.')
         _say(f"Confirmed {n} proposal(s).")
         return p
 
@@ -2847,13 +2855,49 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         return p
 
     if lower.startswith("confirm "):
-        pid = raw_line.split(maxsplit=1)[1].strip()
+        # Confirm-placement (Q-U.4): "confirm <id> in <sandbox_id>" /
+        # "confirm <id> outside" carry Ace's placement choice for a
+        # mixed-wall proposal. Without a choice, a mixed-wall proposal
+        # returns placement_choice_required and (interactive TTY only)
+        # Ace is asked; piped/non-TTY input never prompts — the
+        # choice line prints and the proposal stays pending.
+        _ctoks = raw_line.split()
+        pid = _ctoks[1].strip() if len(_ctoks) > 1 else ""
+        _choice = None
+        if len(_ctoks) >= 4 and _ctoks[2].lower() == "in":
+            _choice = _ctoks[3]
+        elif len(_ctoks) >= 3 and _ctoks[2].lower() == "outside":
+            _choice = "outside"
         # WO-5.1: User typed "confirm <id>" — explicit review context.
         res = p.confirm_proposal(
             pid,
             _producer="repl_user",
             _review_context=p.make_review_context(pid, "repl_user"),
+            _placement=_choice,
         )
+        if (not res.get("ok")
+                and res.get("reason") == "placement_choice_required"):
+            _walls = sorted(str(o.get("sandbox_id"))
+                            for o in (res.get("options") or [])
+                            if isinstance(o, dict) and o.get("sandbox_id"))
+            _say(f'"{pid}" has parents in more than one sandbox '
+                 f'({", ".join(_walls)} + outside). Where should it land?')
+            _say(f"  confirm {pid} in <{'|'.join(_walls)}>  ·  "
+                 f"confirm {pid} outside")
+            if sys.stdin.isatty():
+                try:
+                    _ans = input("Placement (sandbox id or 'outside', "
+                                 "blank = leave pending): ").strip()
+                except EOFError:
+                    _ans = ""
+                if _ans:
+                    res = p.confirm_proposal(
+                        pid,
+                        _producer="repl_user",
+                        _review_context=p.make_review_context(
+                            pid, "repl_user"),
+                        _placement=_ans,
+                    )
         _say(f'Confirmed. "{res["label"]}" is live.' if res.get("ok") else f"Could not confirm: {res.get('reason')}")
         return p
 
