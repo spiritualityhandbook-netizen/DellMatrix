@@ -619,6 +619,52 @@ def validate_semantic_output(text: str, *,
 _WALL_VERBS = ("relate", "synthesize", "relate_field")
 
 
+def _lm4_field_block(text: str) -> Dict[str, Any]:
+    """LM-4: the presentation-form decomposition block for one
+    text field (gloss lines, spine, honesty scores -- the full
+    compose receipt is program-side volume the prompt does not
+    need)."""
+    from ..mandell.morpheme import compose_sentence, sentence_gloss_lines
+    sent = compose_sentence(text or "")
+    return {
+        "source": text or "",
+        "gloss": sentence_gloss_lines(sent),
+        "spine": [{"token": e["token"], "dell": e["dell"],
+                   "via": e["via"]} for e in sent["spine"]],
+        "semantic_accounted": sent["semantic_accounted"],
+        "sentence_morpheme_resolved":
+            sent["sentence_morpheme_resolved"],
+    }
+
+
+def _lm4_entry_with_lm(entry: Dict[str, Any]) -> Dict[str, Any]:
+    """LM-4 THE TOLL BOOTH (docked path): a COPY of a snapshot
+    entry carrying its "lm" decomposition -- one block for the
+    entry's label and one for its words (the host composes each
+    target entry's label/words; grounding build point 5). The
+    original entry is never mutated."""
+    out = dict(entry)
+    out["lm"] = {
+        "label": _lm4_field_block(str(entry.get("label") or "")),
+        "words": _lm4_field_block(str(entry.get("words") or "")),
+    }
+    return out
+
+
+def _lm4_text_block(text: str) -> str:
+    """LM-4: the decomposition block for free text (propose()):
+    the same presentation data as the _verb entries, as text."""
+    from ..mandell.morpheme import compose_sentence, sentence_gloss_lines
+    sent = compose_sentence(text or "")
+    lines = sentence_gloss_lines(sent)
+    spine = ", ".join(
+        f"{e['token']}->{e['dell']}" if e["dell"] is not None
+        else e["token"] for e in sent["spine"])
+    if spine:
+        lines.append(f"LM: spine: {spine}")
+    return "\n".join(lines)
+
+
 def _session_plane(program):
     """The program's Plane, resolved exactly as agent_coordinator's
     _plane_units resolves it (program.cube.session.plane). None
@@ -1091,6 +1137,30 @@ class DockedSession:
                     "detail": "Reason carries protected material; "
                              "rejected before provider call."}
         full_prompt = prompt
+        # LM-4 THE TOLL BOOTH (docked path): the prompt's own
+        # LatinMandell decomposition is appended here -- before
+        # the Bimo framing, the schema tail, the context assembly,
+        # and the protected screen -- so the docked AI receives
+        # the input already broken and the screen still sees the
+        # FINAL outbound text. If the decomposition cannot be
+        # computed, the call is refused named (lm_unavailable, no
+        # provider contact); if the prompt WITH the decomposition
+        # exceeds the caller's own bound, that is refused named
+        # too (prompt_too_large) rather than silently sending the
+        # prompt undecomposed (Q-LM4.5 discloses the choice).
+        try:
+            full_prompt = (full_prompt + "\n\n[decomposition]\n"
+                           + _lm4_text_block(prompt))
+        except Exception as e:
+            return {"ok": False, "reason": "lm_unavailable",
+                    "detail": ("LatinMandell decomposition failed "
+                               f"({type(e).__name__}); the call was "
+                               "refused with no provider contact.")}
+        if len(full_prompt) > self._max_prompt_chars:
+            return {"ok": False, "reason": "prompt_too_large",
+                    "detail": "Prompt with its LM-4 decomposition "
+                              "exceeds the caller's bound; refused "
+                              "rather than sent undecomposed."}
         # PP4: a worn Bimo configuration frames the prompt. The
         # framing counts toward the prompt bound (checked with
         # the assembled text below), and the protected screen
@@ -1725,8 +1795,32 @@ class DockedSession:
                 return {"ok": False, "reason": "unknown_target",
                         "detail": "A target is not in the field snapshot."}
             entries.append(e)
+        # LM-4 THE TOLL BOOTH (docked path): each target entry
+        # carries its LatinMandell decomposition ("lm") -- the
+        # host composes the entry's own text so the docked AI
+        # receives the input ALREADY BROKEN (plan SS4.7: a docked
+        # AI cannot be forced to route its internal text through
+        # the program, so the program hands it the input
+        # decomposed). Entries are COPIES: the coordinator's
+        # snapshot dicts are never mutated. The lm is attached
+        # here -- before the bound check and the protected screen
+        # below -- and a composition failure refuses the call
+        # named, with zero provider contact (the docked path
+        # never sends undecomposed input by silence).
+        try:
+            entries = [_lm4_entry_with_lm(e) for e in entries]
+        except Exception as e:
+            return {"ok": False, "reason": "lm_unavailable",
+                    "detail": ("LatinMandell decomposition failed "
+                               f"({type(e).__name__}); the call was "
+                               "refused with no provider contact.")}
         prompt = instruction + "\n\n[targets]\n" + json.dumps(
             entries, sort_keys=True)
+        prompt += ("\n\n[lm] Each target entry's \"lm\" block is "
+                   "its LatinMandell decomposition (the host's "
+                   "forced first step): read it as the entry's "
+                   "already-taken first read. The spine is a "
+                   "projection (a reading), not a fact.")
         if verb == "flag":
             others = [{"id": k, "label": v.get("label", ""),
                        "words": str(v.get("words", ""))[:120],
