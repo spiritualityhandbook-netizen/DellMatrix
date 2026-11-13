@@ -87,9 +87,25 @@ def smoke() -> bool:
                 and record["subject"] == "agent-a"
                 and record["task"] == "relate"
                 and e1["task"] == "relate")
+            # RE-PIN (LM-4, PR #416): the evidence digest covers
+            # the EXACT assembled outbound text — the standing
+            # contract (the schema tail already rode inside the
+            # digest by the Q-LD.1 precedent). LM-4 inserts the
+            # prompt's LatinMandell decomposition block between
+            # the prompt and the tail, so the expected digest is
+            # sha256(prompt + decomposition + tail), with the
+            # decomposition taken from the same helper _propose
+            # assembles with. Verified against the real code
+            # path: the stored digest equals sha256 of the text
+            # the fake provider actually received
+            # (lm4_ci/CLASSIFICATION.md §3.2). The pre-LM-4 pin
+            # (prompt + tail only) predates the toll booth.
             rec("evidence_prompt_hash",
                 e1["prompt_hash"] == hashlib.sha256(
                     ("draft an idea about resonance"
+                     + "\n\n[decomposition]\n"
+                     + idock._lm4_text_block(
+                         "draft an idea about resonance")
                      + idock.DockedSession._PROPOSAL_SCHEMA_TAIL
                      ).encode()).hexdigest()
                 and e1["snapshot_id"] is None
