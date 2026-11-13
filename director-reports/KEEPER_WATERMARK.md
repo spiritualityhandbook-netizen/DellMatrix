@@ -1,13 +1,10 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-13 12:03 CST  
-**UTC approx**: 2026-11-13T18:03:00Z
+**Last cycle**: 2026-11-13 13:00 CST  
+**UTC approx**: 2026-11-13T19:00:00Z
 
 ## Items ruled this cycle
-- #413 / C13: head e1e99eff; **CONFIRM (scoped, code)** — serial ×3 + terminal CI now on record (Uni 6860359751). Prior INSUFFICIENT superseded.
-- #414 / F-d repair: head b5e3b5d2; **INSUFFICIENT_EVIDENCE (scoped)** — campaign + CI still missing.
-- #415 / Confirm-placement: head 22834833; **INSUFFICIENT_EVIDENCE (scoped)** — campaign + CI still missing.
-- #409 / F-d: no change, prior CONFIRM (scoped, records) at 13c84446.
+- No new dispositions. Prior stamps stand: #413 CONFIRM (scoped, code) at e1e99eff; #414 INSUFFICIENT_EVIDENCE (scoped) at b5e3b5d2; #415 INSUFFICIENT_EVIDENCE (scoped) at 22834833; #409 prior records CONFIRM at 13c84446.
 
 ## Trailing ledger
 - discharged this run: 0
