@@ -414,3 +414,124 @@ None beyond the first-pass residuals: Q-U.4 HOLD (Ace's open
 question), Q-U.3 confirm-placement and Q-U.5 sweep circuits
 queued separately, snapshot wall fields a separate scoped
 step. NO MWL credit claimed (register row 185 stays OPEN).
+
+# THIRD PASS — strict stored-ancestry validation (2026-11-13)
+
+## TP.1 The finding (Director mail 1a1d536b69514874,
+code-verified by the Director; CODE MERGE HOLD continued)
+
+In `_wall_verdict` (form/dell_matrix/inference_dock.py), a
+PENDING record's ancestors were computed by FILTERING:
+`[a for a in (rec.parents or []) if isinstance(a, str)]`.
+Malformed non-string stored elements were silently DISCARDED,
+so unverifiable ancestry degraded into admissibility: a record
+with `parents=[123]` degraded to an empty parent list and
+resolved as an unboxed ANCHOR; `["out_a", 123]` degraded to a
+clean unboxed lineage. A non-list container (`parents=123`)
+crashed the resolver's comprehension outright (TypeError, no
+receipt at all). Positive-evidence law: stored ancestry that
+cannot be verified must never become admissible.
+
+## TP.2 Failing-first evidence (Build T9, form/dock_wall_test.py)
+
+New checks T9a–T9e (suite total 24 → **29**; T0–T8
+unmodified). Fixtures are crafted by direct store assignment —
+the channel a verbatim restore of a hand-edited save produces
+(persist_rest restores `parents` unvalidated); nursery.add
+always stores a proper list, so no public landing authors
+these states. RED run at the union head (b4ce62f, pre-fix
+resolver): **24/29** — FAILING: **T9a** (relate on a `[123]`
+record LANDED), **T9b** (synthesize LANDED), **T9c** (mixed
+`["out_a", 123]` LANDED), **T9d** (int container raised
+TypeError out of the verb; bare-string container walked
+character-by-character, culprit `"o"`), **T9e** (refused, but
+named the empty string as culprit instead of the record).
+After the fix: **29/29** — every case refuses fail-closed as
+`unknown_parent` naming the crafted record, with ZERO Nursery
+mutation. Logs: `hidden_files/dockwall_t9/failing_first_t9.log`,
+`post_fix_t9.log`.
+
+## TP.3 The fix (one hunk, _wall_verdict only)
+
+Strict validation replaces the filter: the stored container
+must be a list and EVERY element a non-empty string id; any
+violation returns `("unknown", None, pid)` — the existing
+fail-closed verdict, reused deliberately (the lineage is
+unestablished; no new receipt name, and NO schema-admission
+broadening per the Q-DW.5 condition: nothing previously
+refused is admitted). `_wall_verdict`'s docstring now names
+malformed stored ancestry among the "unknown" cases.
+Untouched, per scope: confirm_lineage.py, the auto-confirm
+sweep, ringed_growth plane-unit semantics, snapshot fields.
+
+## TP.4 Mutant (real work committed first at 9240c74;
+inverse-edit revert only; post-restore diff empty, 29/29)
+
+- **M-E — silent filter restored** (elements filtered by
+  isinstance again, strict gate disabled, at the resolver's
+  real decision point): suite **24/29**, FAILING exactly
+  T9a–T9e (T9a–T9d the bypass — crafted records LAND again,
+  the int container even landing instead of crashing, because
+  the mutant filtered rather than iterated raw; T9e the
+  culprit regression to `""`) — KILLED.
+
+Log: `hidden_files/dockwall_t9/mutant_t9.log`.
+
+## TP.5 Verification (at fix commit 9240c74)
+
+Focused suites, regress-style smoke, 14/14 green: dock_wall
+**29/29**; track_c_dock_verbs **29/29**; gs4_sandbox **19/19**;
+nursery_confirm_race **57/57**; dock_proposal_b **17/17**;
+snapshot_retrieval **16/16**; snapshot_revalidation **15/15**;
+r62_docking **177/177**; dock_transport **29/29**; p4_sd1
+**19/19**; p5_sd2 **24/24**; p6_sd3 **10/10**; p7_sd4 **17/17**;
+lm3_composer **43/43**.
+
+Full local regression (fwd, this lane, at 9240c74):
+**REGRESS: 280/280 -> GREEN; REGRESS FINAL: GREEN
+(order=fwd); exit 0; 0 RED entries.** Log:
+`hidden_files/dockwall_t9/full_regress_t9.log`.
+
+Independent corroboration: the hourly cycle verified the
+defect at 04f6acf independently (source read + verdict traces
+for `[123]`, `["out_a", 123]`, the empty-string incidental
+refusal, and the non-iterable TypeError) —
+`hidden_files/qu2_t9_2026-11-13/T9_DEFECT_VERIFICATION_2026-11-13.md`.
+All three corroborated shapes are covered explicitly by T9:
+empty strings refused by the validator itself (T9e names the
+record, not the empty string), and non-list containers return
+the bounded refusal — no exception escapes the funnel (T9d).
+
+Union-refresh onto current main: main
+1211cdaa724fdb1ac50ad30e403d359c435a5f41 merged in (union
+commit b4ce62f1234d7135a446e4673021c5e63ac1cb46). Records
+verified by whole-file multiset union: INDEX main 261 lines +
+1 branch-only row = 262, exact (nothing missing, nothing
+extra); DIRECTOR_REVIEW_QUEUE main 111 + 1 = 112, exact.
+regress LIST import-verified: main 279 / branch 280 / merged
+280 == sorted set union, 0 duplicates, branch-only entry
+`form.dock_wall_test:smoke`. Product blobs (inference_dock.py,
+dock_wall_test.py) byte-identical to second-pass head 04f6acf
+after the union (main's advance was records-only).
+
+## TP.6 Heads (immutable)
+
+Second-pass head: 04f6acf187a3051f98475d2fdc227beb9fd8a81d.
+Union commit: b4ce62f1234d7135a446e4673021c5e63ac1cb46.
+Fix commit: 9240c74d08f5d19b5741e18911993a96ec57bac1.
+Final head: the records commit carrying this section, named
+in the PR #412 comment and verifiable by ls-remote (one
+records-only commit atop the fix). Cumulative branch diff vs
+main: form/dell_matrix/inference_dock.py,
+form/dock_wall_test.py, this report, the queue row.
+
+## TP.7 State and asks
+
+CODE MERGE HOLD stands; nothing merged by this lane. ASKS:
+(1) KEEPER: refreshed confirmation at the final head (the
+04f6acf confirmation is stale). (2) DIRECTOR: final review of
+the third pass and merge authorization; Q-DW.4 stands as
+ruled; Q-DW.5's unknown_parent direction now includes stored-
+ancestry strictness for your confirmation. The main session
+runs the ×3 campaign + exact-head CI + §32 at merge time.
+NO MWL credit claimed (register row 185 stays OPEN).
