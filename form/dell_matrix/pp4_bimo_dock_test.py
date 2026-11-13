@@ -195,7 +195,15 @@ def _check_framing_bound():
     try:
         p = Program(owner)
         _commit(p)
-        s = dock(p, "guest:bound", bimo="scout", max_prompt_chars=200)
+        # LM-4 re-pin (2026-11-13): the pair keeps ONE shared small
+        # explicit bound and its exact original meanings. Measured
+        # through the real code path, "short prompt" assembles to
+        # 382 chars unworn and 680 worn (scout framing = 298), so
+        # the shared bound moves 200 -> 500: 382 <= 500 < 680. The
+        # decomposition now rides every propose (it is part of the
+        # outbound text the bound governs), which is what made the
+        # old 200 refuse the unworn case.
+        s = dock(p, "guest:bound", bimo="scout", max_prompt_chars=500)
         out = s.propose("short prompt")
         _rec("framing counts toward the prompt bound",
              out.get("ok") is False
@@ -203,11 +211,27 @@ def _check_framing_bound():
              and s._provider.last_prompt is None,
              f"out={out}")
         s.undock()
-        s2 = dock(p, "guest:plain", max_prompt_chars=200)
+        s2 = dock(p, "guest:plain", max_prompt_chars=500)
         out2 = s2.propose("short prompt")
         _rec("the same bound passes unworn",
              out2.get("ok") is True, f"out={out2}")
         s2.undock()
+        # Ace Elastic Limits Doctrine (2026-11-13): the DEFAULT
+        # bound must never hinder the program's own legitimate
+        # work. The LM-4 decomposition expands dense prose ~10x —
+        # this natural 6,300-char prompt assembles to 70,445 chars
+        # outbound (measured through the real code path; LM-4 limit
+        # grounding) and was REFUSED at the old 8000 default.
+        s3 = dock(p, "guest:elastic")
+        big = ("the harbor lantern keeper watches the tide and "
+               "records every returning boat in the ledger ") * 70
+        out3 = s3.propose(big)
+        _rec("elastic default admits a large legitimate decomposed "
+             "propose",
+             out3.get("ok") is True
+             and len(s3._provider.last_prompt or "") > 8000,
+             f"out={out3}")
+        s3.undock()
     finally:
         _cleanup(owner)
 

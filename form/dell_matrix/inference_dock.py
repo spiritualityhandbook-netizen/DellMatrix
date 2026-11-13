@@ -43,7 +43,15 @@ PROPOSAL_KEYS = ("label", "words")
 MAX_LABEL_CHARS = 200
 MAX_WORDS_CHARS = 5000
 DEFAULT_TIMEOUT_S = 30
-DEFAULT_MAX_PROMPT_CHARS = 8000
+# Ace Elastic Limits Doctrine (2026-11-13): no limit may hinder
+# legitimate work — this ceiling is a runaway stop, never a
+# hindrance. It sits ~10x above every measured legitimate assembly:
+# the LM-4 decomposition alone expands dense prose ~10x (a 6,300-char
+# prompt assembles to 70,445 chars outbound), the program's own verb
+# path assembles ~14.6k on a modest 100-unit field, and a maximal
+# legal context assembles just past 100k — all refused at the old
+# 8000 default.
+DEFAULT_MAX_PROMPT_CHARS = 1000000
 DEFAULT_MAX_RESPONSE_CHARS = 8000
 # Proposal B (Q-LD.2): session-only response-view bound.
 _RESPONSE_VIEW_CHARS = 2000
@@ -2009,11 +2017,17 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
     if not isinstance(timeout_s, int) or isinstance(timeout_s, bool) \
             or timeout_s <= 0 or timeout_s > 600:
         raise DockError("timeout_s must be an int in 1..600")
-    for name, val in (("max_prompt_chars", max_prompt_chars),
-                      ("max_response_chars", max_response_chars)):
+    # Ace Elastic Limits Doctrine (2026-11-13): the prompt bound's
+    # legal range rises with its default (a bound the caller may set
+    # must be able to admit the doctrine ceiling); the response
+    # bound keeps its own unchanged range and default.
+    for name, val, cap in (
+            ("max_prompt_chars", max_prompt_chars,
+             DEFAULT_MAX_PROMPT_CHARS),
+            ("max_response_chars", max_response_chars, 100000)):
         if not isinstance(val, int) or isinstance(val, bool) or val <= 0 \
-                or val > 100000:
-            raise DockError(f"{name} must be an int in 1..100000")
+                or val > cap:
+            raise DockError(f"{name} must be an int in 1..{cap}")
     # PP4: resolve the worn Bimo configuration BEFORE anything
     # is created. Only a COMMITTED Forge configuration can be
     # worn (staged state is not a configuration), and the record
