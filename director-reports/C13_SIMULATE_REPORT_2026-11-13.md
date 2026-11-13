@@ -368,3 +368,164 @@ sim-after-sim fingerprint instability; it did NOT reproduce in
 isolated verbatim reruns and is discarded as instrument
 contamination (§30) — the isolated reruns are the evidence of
 record.
+
+## 15. Q-C13.O-FIN.1 — REPAIR (Director mail 1a1d4c6cfd564a73; CODE MERGE HOLD)
+
+The Director ruled §14.3's observation a contract violation, not
+an accepted lazy default: O-FIN.1 is repaired in this circuit.
+Branch union-refreshed onto main 1211cdaa first (see §15.6);
+all evidence below is at the union head or later.
+
+### 15.1 Reproduction (failing-first, Director's scope)
+
+Minimal reproduction on a fresh UNMATERIALIZED Program (virgin
+owner per case; serialized live state = `persist.serialize`
+canonical JSON — the suite's own fingerprint; reading it never
+attaches, persist_core_ii.serialize_core_ii is a pure
+getattr/isinstance probe). Five-case probe at the union head,
+pre-fix:
+
+| case | path | core_ii.present | serialized state |
+|---|---|---|---|
+| A | front-door `31[Simulate] :: 08[Create] :: x` | False -> **True** | **changed** |
+| B | direct `run_simulation(...)` | False -> False | identical |
+| C | front-door single-atom `08[Create]` (leaf) | False -> False | own unit only |
+| D | front-door LIVE `08[Create] > 07[Link]` chain | False -> **True** | chain's own effects |
+| E | A repeated on an already-materialized program | True -> True | identical |
+
+Pinned in `form/c13_simulate_test.py` as checks 14-17 on virgin
+owners (serialized state captured before ANY front-door call —
+the shipped fingerprint windows start after earlier front-door
+runs, which is why they never isolated the transition):
+
+- t14 (case A): FAILING-FIRST — at the union head pre-fix,
+  `present_after=True fp_equal=False`, suite 19/20.
+- t15 (case E), t16 (case B control), t17 (case C control):
+  pass pre-fix, as designed — they are the regression guards
+  for the repair, not the repro.
+
+Precision note on §14.3: "real Create chains do not trigger it"
+was grounded on the single-atom Create probe. Case D shows a
+live MULTI-atom chain DOES materialize Core II — that is the
+chain machinery's standing design for real chains (flow state
+lives in CoreIIState) and is PRESERVED by this repair, per the
+Director's scope (fix the Simulate path; normal chains behave
+exactly as today, pinned by the core_ii suites in §15.5). The
+defect is specific to Simulate-headed chains, whose atoms never
+execute live.
+
+### 15.2 Attachment point (isolated)
+
+`form/mandell/chain_exec.py`, two unconditional entry attaches
+of `core_ii_exec.attach(program)` (core_ii_exec.py:82-87: sets
+`program.core_ii = CoreIIState()` when absent):
+
+- `execute_chain` — the `attach(program)` immediately after the
+  chain state dict is built (line 805 pre-fix numbering).
+- `execute_range` — line 305 pre-fix, `st = attach(program)` at
+  range entry.
+
+A Simulate-headed seed (`31[Simulate] :: <operand>`, >= 2 atoms)
+routes front-door -> `execute_chain` -> `execute_range`, where
+the Dell 31 branch hands the operand to
+`simulate_board.run_simulation` and consumes the range. The
+rehearsal branch never reads the flow state `st`; the ONLY
+`st` consumers in `execute_range` are the `_apply_flow` call
+(only for i > start — never reached before the branch consumes
+the range) and the post-control-head refresh (line 377, real
+execution only). The board itself never attaches to the live
+program (case B). So the materialization is purely the chain
+machinery's entry ensure, paid by a chain that executes
+nothing live.
+
+### 15.3 Fix (smallest; chain_exec.py only; commit e6382df)
+
+1. `execute_chain`: the entry attach is skipped iff the seed
+   is Simulate-headed (`len(seed.atoms) >= 2 and
+   int(seed.atoms[0].dell) == 31`, chain_exec.py:801-804).
+   Every other chain — parse-refused, Core I, Core II, control —
+   attaches exactly as before.
+2. `execute_range`: the entry attach is deferred iff the range
+   is LED by Dell 31 (chain_exec.py:317-322); the `_apply_flow`
+   call site (chain_exec.py:328-333) ensures the state on
+   demand, so `st` is a real CoreIIState at every actual use.
+   This also covers Simulate-led ranges nested inside Loop /
+   control bodies.
+3. Receipt shape preserved: for the skipped case the result's
+   `core_ii` snapshot is a DETACHED `CoreIIState().snap()`
+   (chain_exec.py:903-904) — content-identical to what the
+   pre-fix attach-then-snap produced — so consumers of the
+   chain receipt see no shape change while the live program
+   stays untouched.
+
+No new authority, no second executor, no board change. The
+Simulate arm never required the ensure: it rehearses on the
+board's isolated copy, where materialization is the copy's own
+business.
+
+### 15.4 Verification (both cases + controls)
+
+Post-fix: suite 20/20. The five-case probe re-run post-fix:
+A present stays False, fingerprint identical; B, C unchanged;
+D (live chain) still materializes — preserved by design;
+E still identical. Demo receipt (fresh owner, single-atom base
+Create, then front-door `31[Simulate] :: 08[Create] ::
+demo_new > 07[Link] :: demo_base`): serialized BEFORE sha256
+`9d9e9f5be83b999eec33f165e09605036c75ff3bd0f246c79c2477d7be2983a0`
+== AFTER (same hash), core_ii present after: False, durable
+state directory byte-identical, rehearsal receipt names
+would_create demo_new + link_demo_base. Durable-file and
+history invariants are pinned by the suite's existing checks
+3/4/7b (state-dir snapshot + history equality) and re-verified
+by the new t14-t16 fingerprint windows.
+
+### 15.5 Mutant + focused suites
+
+MUTANT M-OFIN1 (real fix committed first at e6382df; inverse
+edit): the Simulate-head skip in `execute_chain` neutralized
+(`_sim_headed = False`, unconditional attach restored — the
+pre-fix behavior at the same point). Result: t14 FAILS with
+exactly the pre-fix signature (`present_after=True
+fp_equal=False`), suite 19/20; t15-t17 stay green. Reverted by
+the inverse edit; post-restore diff empty; suite 20/20 again.
+
+Focused suites (regress-style per-entry subprocess runs at the
+repair head; 22/22 green): c13_simulate 20/20;
+d1_proof_cards 6/6; d1_registry_leaf3 44/44; gs4_sandbox
+19/19; dock_proposal_b 17/17; core_ii_smoke 36/36;
+core_ii_persist 20/20; core_ii_version_validation 60/60;
+flow_executor 28/28; control_runtime 38/38; dd14_loop_body
+11/11; dd45_chain_parse_refusal 113/113; dd45_recon 20/20;
+step7_control_verdicts 28/28; dirf13_loop_count 17/17;
+af1_chain_args 13/13; step3b_sanitize_chain 21/21;
+loop_bounds 27/27; semantic_route 59/59; p10_flow_grammar
+12/12; pp5_flow_visual 8/8; first_failure_provenance 39/39.
+The serial same-head fwd/twice/rev campaign, exact-head CI and
+§32 remain the main session's, after this refreshed PR.
+
+### 15.6 LIST reconciliation (union-refresh onto main 1211cdaa)
+
+Merge of origin/main (1211cdaa) into uni/c13-simulate-1113 =
+union commit 1d3eac0. Records conflicts resolved by whole-file
+set-union, verified by multiset comparison (not conflict
+blocks alone): INDEX.md = main's 261 lines (duplicates kept
+as-is) + 1 branch-only line (this report's row) = 262;
+DIRECTOR_REVIEW_QUEUE.md auto-merge verified multiset-exact
+(main 111 + 1 branch-only C13 row = 112). No product-code
+conflicts. regress LIST counts, import-verified at each rev:
+main 279; branch 280 (branch-only entry:
+`form.c13_simulate_test:smoke`); merged tree 280 == sorted set
+union, no duplicates.
+
+### 15.7 Residuals
+
+- Q-C13.1-.7 untouched by this repair; still pending the
+  Director's evidence-specific disposition. No MWL 167-170
+  credit is claimed here.
+- A Simulate atom in a NON-head position of a real chain still
+  rides the chain machinery's standing attach (the chain has
+  real live atoms; its materialization is today's behavior,
+  preserved deliberately per §15.1 case D).
+- Independent patch review and Keeper confirmation remain
+  required before merge; the CODE MERGE HOLD stands until the
+  Director lifts it.
