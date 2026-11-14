@@ -105,6 +105,11 @@ class CompositeIntent:
     intents: List[Intent]
     flows: List[str]
     mandell: str  # The compiled Mandell program
+    # LM-4: per-clause decomposition receipts (Intent.lm), aligned
+    # with `clauses`. The composite receipt aggregates them; the
+    # decomposition is computed inside translate() per clause --
+    # the composer builds none of its own.
+    lm: List[Any] = field(default_factory=list)
 
 
 @dataclass
@@ -113,6 +118,11 @@ class ComposeResult:
     composite: CompositeIntent | None
     error: str = ""
     dells_executed: int = 0  # Always 0 on compile failure.
+    # LM-4: decomposition receipts for the clauses translated so
+    # far, INCLUDING the failing clause on a compile failure --
+    # the failure stays honest AND traced (zero Dells executed,
+    # but the clause's forced first read is on the record).
+    lm: List[Any] = field(default_factory=list)
 
 
 def compose_english(english: str) -> ComposeResult:
@@ -132,19 +142,25 @@ def compose_english(english: str) -> ComposeResult:
         )
 
     intents: List[Intent] = []
+    lm_receipts: List[Any] = []
     for idx, clause in enumerate(clauses):
         normalized = _normalize_clause(clause)
         intent = translate(normalized)
+        # LM-4: the clause's decomposition rides along even when
+        # the clause fails compilation (see ComposeResult.lm).
+        lm_receipts.append(getattr(intent, "lm", None))
         if intent.action == "unknown":
             return ComposeResult(
                 ok=False, composite=None,
                 error=f"clause {idx+1} unsupported: {clause!r}",
+                lm=lm_receipts,
             )
         # The Intent must have a valid Mandell composition.
         if not intent.mandel or "unknown" in intent.mandel.lower():
             return ComposeResult(
                 ok=False, composite=None,
                 error=f"clause {idx+1} malformed: {clause!r}",
+                lm=lm_receipts,
             )
         intents.append(intent)
 
@@ -160,6 +176,7 @@ def compose_english(english: str) -> ComposeResult:
         return ComposeResult(
             ok=False, composite=None,
             error=f"mandell compile failed: {e}",
+            lm=lm_receipts,
         )
 
     # Verify the parsed structure matches our intents.
@@ -167,6 +184,7 @@ def compose_english(english: str) -> ComposeResult:
         return ComposeResult(
             ok=False, composite=None,
             error="node count mismatch after parse",
+            lm=lm_receipts,
         )
 
     composite = CompositeIntent(
@@ -175,8 +193,9 @@ def compose_english(english: str) -> ComposeResult:
         intents=intents,
         flows=flows,
         mandell=mandell,
+        lm=lm_receipts,
     )
-    return ComposeResult(ok=True, composite=composite)
+    return ComposeResult(ok=True, composite=composite, lm=lm_receipts)
 
 
 def execute_composite(program: Any, composite: CompositeIntent,
@@ -205,6 +224,24 @@ def format_composite_receipt(composite: CompositeIntent, receipt: FlowReceipt) -
     for f in composite.flows:
         flow_names.append("FlowTo" if f == ">" else "FlowThru")
     lines.append(f"  {' > '.join(flow_names) if flow_names else '(single)'}")
+    # LM-4: the per-clause decompositions, aggregated from the
+    # clause Intents' receipts (gloss style -- deeper information;
+    # the executed chain above stays the authority for what ran).
+    if getattr(composite, "lm", None):
+        lines.append("LM DECOMPOSITION:")
+        for idx, clause_lm in enumerate(composite.lm):
+            clause = (composite.clauses[idx]
+                      if idx < len(composite.clauses) else "")
+            lines.append(f"  clause {idx + 1}: {clause}")
+            if clause_lm:
+                pres = clause_lm.get("presentation") or {}
+                for gl in pres.get("gloss") or []:
+                    lines.append(f"    {gl}")
+                spine = pres.get("spine_mandell") or ""
+                if spine:
+                    lines.append(
+                        f"    LM: spine reading: {spine} "
+                        "(projection — not the executed chain)")
     lines.append("")
     # format_receipt repeats PROGRAM/FLOW; strip its header to avoid duplication.
     body = format_receipt(receipt)
