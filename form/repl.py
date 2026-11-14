@@ -3465,7 +3465,7 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
     if ">" in line or ":" in line:
         try:
             from form.mandell.flow_executor import (
-                parse_program, execute_program, format_receipt,
+                parse_program, execute_program, format_receipt, FlowRefusal,
             )
             fp = parse_program(line)
             if len(fp.nodes) > 1:
@@ -3476,6 +3476,18 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
                 if receipt.final_program is not None:
                     return receipt.final_program
                 return p
+        except FlowRefusal as refusal:
+            # G31-CONTRACT-01 D-6: a recognized-but-unsupported operator
+            # is an observable refusal — never a silent fall-through and
+            # never a reroute to the canonical profile. The line is not
+            # executed by either profile.
+            print()
+            print(f"Flow refused (Correspondence composition profile): "
+                  f"{refusal}")
+            print("This line was not executed. Raw Mandell seeds run "
+                  "under the canonical chain profile (all nine "
+                  "operators).")
+            return p
         except ValueError:
             pass  # Not a valid flow program; fall through.
 

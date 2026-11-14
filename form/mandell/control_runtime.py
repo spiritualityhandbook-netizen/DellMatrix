@@ -138,3 +138,36 @@ FLOW_CONTRACT = {
     "<:>": "DynamicFlow",
     "<<[Delta]": "DeltaFlow",
 }
+
+# G31-CONTRACT-01 (Director CONFIRMED design, 2026-11-14): the nine
+# operators above are the ONE vocabulary. Two execution profiles view
+# it; a profile is never a second vocabulary. Dispatch routes a
+# program to exactly one profile and never substitutes the other
+# after a refusal (contract rules D-1..D-7; regression:
+# form/mandell/g31_contract_test.py). The correspondence_composition
+# "refused" classifications mirror flow_executor.FLOW_CLASSIFICATION
+# by design; the g31 suite pins the mirror.
+FLOW_PROFILES = {
+    "canonical_chain": {
+        "operators": [">", ">>", ">>>", ":", "::", ":>", "<:", "<:>",
+                      "<<[Delta]"],
+        "surfaces": ["chain_exec.execute_chain",
+                     "operator_bridge.compose_execute",
+                     "repl raw-seed dispatch"],
+    },
+    "correspondence_composition": {
+        "operators": [">", ">>"],
+        "refused": {
+            ">>>": "REQUIRES_RUNTIME_SUPPORT",
+            ":": "DESCRIPTIVE_ONLY",
+            "::": "DESCRIPTIVE_ONLY",
+            ":>": "DESCRIPTIVE_ONLY",
+            "<:": "DESCRIPTIVE_ONLY",
+            "<:>": "UNSAFE/AMBIGUOUS",
+            "<<[Delta]": "REQUIRES_RUNTIME_SUPPORT",
+        },
+        "surfaces": ["flow_executor.parse_program/execute_program",
+                     "english_composer.execute_composite",
+                     "repl DCC-IV branch"],
+    },
+}
