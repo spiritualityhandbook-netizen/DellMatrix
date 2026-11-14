@@ -1,15 +1,19 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-14 02:22 CST  
-**UTC approx**: 2026-11-14T08:22:00Z
+**Last cycle**: 2026-11-14 04:02 CST  
+**UTC approx**: 2026-11-14T10:02:00Z
 
 ## Items ruled this cycle
-- No new dispositions. #413 current head b0b06d3 unstamped — gap: no evidence packet or campaign verified at this head this cycle (prior contingent at e1e99eff). #401 current head 00868f1 unstamped relative to prior at 33c9029. #409 CONFIRM (scoped, records) at 13c8444 holds.
+- #414 merge identity verified: SHA 7b9228ac9b45690dadac041fb7faed2778b1b5f8. Awaiting Uni final-check receipt (tested merged-main SHA + residual exclusions). Scope: F-d repair.
+- #413 head b0b06d3e6aa5f5c7db38e85bd6af893040dbd77f: INSUFFICIENT_EVIDENCE (scoped) — missing serial ×3 campaign at this head. CI green noted.
+- #401 head 00868f11085f95d48dbf2a5c229dde21f7ee8c0b: INSUFFICIENT_EVIDENCE (scoped) — Uni packet unproven at this head.
+- #409 CONFIRM (scoped, records) at 13c8444 holds.
 - Historical queue items: no change, awaiting named evidence or authority rulings as previously stated.
-- #414 MERGED at prior head; awaiting Desk merge-identity verification and post-merge receipts.
 
 ## Trailing ledger
+- discharged this run: 0
 - remaining: 2 (DD-18, Q-DD42.1)
+- gaps: one-line as previously stated; record does not yet support discharge.
 
 ## Automation posture
 Desk :30 / Deep :00 healthy. No stall.
