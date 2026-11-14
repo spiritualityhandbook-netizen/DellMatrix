@@ -66,9 +66,14 @@ through the public seed path:
   (bare n=5, a digit label sets n; empty history ->
   "48[Macro] :: empty"); a "replay" label runs
   replay_exec(n) for real instead.
-- 49 Profile: a status read — owner, ideas, history
-  length, and the nursery/lattice/enhance status
-  dicts echoed exactly as status() reports them.
+- 49 Profile: the speedometer (C7.Profile, DD-39) —
+  a deliberate BENCHMARK on disposable state: named
+  stages place/pulse/growth/save/load timed with a
+  monotonic clock, per-stage shares, overhead
+  disclosed, embedding ABSENT standalone; the
+  structured receipt rides the result as
+  profile_report. (The status echo is retired;
+  Schema owns status.)
 - 50 Manifest: a label mints the unit via place_idea
   (CUBE) + "Manifested."; "acceptance"/"accept"
   print the acceptance sequence and mint nothing;
@@ -369,19 +374,21 @@ def main():
          and _msgs(r) == ["Manifest needs :: label."]
          and list(_units(p)) == before, str(_msgs(r)))
 
-    # -- 49 Profile: exact status echo
-    st = p.status()
+    # -- 49 Profile: the speedometer (C7.Profile, DD-39).
+    #    The exact-echo pin is retired DELIBERATELY with the
+    #    stub it pinned: Profile no longer echoes status()
+    #    (Schema owns status); bare Profile runs the standard
+    #    benchmark on disposable state and receipts it.
     r = _run(p, "49[Profile]")
-    _rec("49 Profile: reports owner/ideas/history and "
-         "echoes the nursery/lattice/enhance status "
-         "dicts exactly as status() returns them",
-         _msgs(r) == ["Profile:",
-                      f"  owner={st.get('owner')}",
-                      f"  ideas={st.get('ideas')} "
-                      f"history={st.get('history_len')}",
-                      f"  nursery={st.get('nursery')}",
-                      f"  lattice={st.get('lattice')}",
-                      f"  enhance={st.get('enhance')}"],
+    rep49 = r.get("profile_report") or {}
+    _rec("49 Profile: runs the standard BENCHMARK on "
+         "disposable state — receipt carries kind/verdict, "
+         "all named stages timed, no status echo",
+         r.get("ok") is True
+         and rep49.get("kind") == "BENCHMARK"
+         and rep49.get("verdict") == "COMPLETE"
+         and bool(_msgs(r)) and _msgs(r)[0] == "Profile: COMPLETE"
+         and not any(m.startswith("  owner=") for m in _msgs(r)),
          str(_msgs(r))[:200])
 
     # -- 40 TokenCount: exact approx formula

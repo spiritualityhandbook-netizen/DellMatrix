@@ -718,11 +718,15 @@ DEEP_NOTES: Dict[int, str] = {
          ":: empty') — and notes nothing itself; a "
          "'replay' label runs replay_exec(n) for "
          "real instead."),
-    49: ("D1 circuit 19 DEEP NOTE: Profile is a "
-         "status read — owner, idea census, history "
-         "length, and the nursery/lattice/enhance "
-         "status dicts echoed exactly as status() "
-         "reports them."),
+    49: ("D1 circuit 19 DEEP NOTE, as rebuilt by "
+         "C7.Profile (DD-39): Profile is the "
+         "speedometer — a deliberate BENCHMARK on "
+         "disposable state timing the named stages "
+         "place/pulse/growth/save/load with a "
+         "monotonic clock, per-stage shares, harness "
+         "overhead disclosed, embedding ABSENT "
+         "standalone; the live program is never the "
+         "measured system and status() is not read."),
     50: ("D1 circuit 19 DEEP NOTE: Manifest mints "
          "a label via place_idea as CUBE + "
          "'Manifested.'; 'acceptance'/'accept' print "
