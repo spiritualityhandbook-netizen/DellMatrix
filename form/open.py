@@ -1338,11 +1338,18 @@ class Program:
             ok_n = 0
             fail_n = 0
             labels: List[str] = []
+            skipped_ids: List[str] = []
             for prop in pending:
                 res = self.confirm_proposal(prop["id"], _producer="grow_auto")
                 if res.get("ok"):
                     ok_n += 1
                     labels.append(res.get("label") or prop.get("label") or prop.get("id"))
+                elif res.get("reason") == "auto_mixed_wall_noneligible":
+                    # Q-U.5: mixed-wall proposals are NON-ELIGIBLE
+                    # for the sweep — a skip with a bounded receipt,
+                    # never a failure; the proposal stays pending
+                    # for a manual (choice-carrying) confirm.
+                    skipped_ids.append(prop["id"])
                 else:
                     fail_n += 1
             result["auto_confirm"] = {
@@ -1350,6 +1357,8 @@ class Program:
                 "confirmed": ok_n,
                 "failed": fail_n,
                 "labels": labels[:20],
+                "skipped_noneligible": len(skipped_ids),
+                "skipped_ids": skipped_ids,
             }
             result["nursery_pending"] = len(self.list_proposals())
             result["ideas_now"] = len(self.cube.session.plane.units)
@@ -1670,7 +1679,8 @@ class Program:
     def confirm_proposal(self, pid: str, _producer: str = "unknown",
                          _review_context: dict = None,
                          _operation: str = "confirm",
-                         _subject: str = None) -> Dict[str, Any]:
+                         _subject: str = None,
+                         _placement: str = None) -> Dict[str, Any]:
         """Canonical confirmation with acceptance policy (WO-5.1).
 
         Args:
@@ -1686,6 +1696,11 @@ class Program:
                 Established by trusted dispatch code, never by the
                 caller's payload. Required when _review_context carries a
                 grant_id; ignored by the human-approval/opt-in paths.
+            _placement: Confirm-placement choice (Q-U.4): a parent
+                sandbox id, or "outside". Carried in the auth snapshot;
+                the writer validates it against the parents' actual
+                walls — it can never name an arbitrary box. Only
+                meaningful when the parentage spans more than one wall.
 
         Returns:
             {"ok": True, ...} on success.
@@ -1760,6 +1775,7 @@ class Program:
             "data_hash": live_hash,
             "review_context": _review_context,
             "subject": _subject,
+            "placement": _placement,
         }
         return _confirm_proposal(self, pid, _auth=_auth)
 

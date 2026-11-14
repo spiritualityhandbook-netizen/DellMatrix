@@ -1,10 +1,12 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-13 10:21 CST  
-**UTC approx**: 2026-11-13T16:21:00Z
+**Last cycle**: 2026-11-13 21:00 CST  
+**UTC approx**: 2026-11-14T03:00:00Z
 
 ## Items ruled this cycle
-- No new dispositions. Prior stamps stand: #411 CONFIRM (scoped, records) at 1211cdaa; #412 CONFIRM (scoped, pending ×3 campaign) at 0d97338; #413 INSUFFICIENT_EVIDENCE (scoped) at 16b8bad.
+- Full-queue positions restated: no change on all queued items (awaiting named evidence or Director disposition).
+- Open heads: no new stamps; prior CONFIRM/INSUFFICIENT stand for #416, #415, #413, #414, #409, #401.
+- Trailing: 0 discharged, 2 remaining (DD-18, Q-DD42.1).
 
 ## Trailing ledger
 - discharged this run: 0
@@ -15,6 +17,6 @@
 Desk :30 / Deep :00 healthy. No stall.
 
 ## Silence flag
-#308 / #294 / #233 fenced. #401 awaits Director disposition (Keeper stamp current). #409 stamped prior.
+#308 / #294 / #233 fenced. Gaps restated; no new merges this cycle.
 
 — KEEPER

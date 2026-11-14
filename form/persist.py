@@ -242,8 +242,12 @@ def serialize(program: Program) -> Dict[str, Any]:
     # Phase M: persist the sandbox label alongside members — a named
     # group must keep its name across save/load. The restorer accepts
     # both this shape and the legacy {sid: [member_ids]} shape.
+    # Gate-2 (2026-11-13): the record's provenance rides along —
+    # creation evidence must survive save/load verbatim; records
+    # saved before this field existed restore as unattributed ("").
     sandboxes = {
-        sid: {"label": sb.label, "members": list(sb.member_ids)}
+        sid: {"label": sb.label, "members": list(sb.member_ids),
+              "provenance": getattr(sb, "provenance", "")}
         for sid, sb in plane.sandboxes.items()
     }
     main = program.main
