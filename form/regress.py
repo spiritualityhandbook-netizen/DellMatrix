@@ -162,6 +162,10 @@ LIST = [
     # contract set == publicly executable set, all nine operators
     # proven at the REPL path).
     "form.mandell.p10_flow_grammar_test",
+    # G31-CONTRACT-02 — two execution profiles over the one flow
+    # vocabulary (profile annotation, D-6 refusal visibility,
+    # T-1..T-6 incl. T-5a/b/c boundary cases).
+    "form.mandell.g31_contract_test",
     # Master plan P11 — satellite disposition guards (sandbox
     # matrices retired per Ace's ruling; useful survivors live).
     "form.mandell.p11_satellites_test",

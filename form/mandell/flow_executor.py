@@ -42,6 +42,18 @@ FLOW_CLASSIFICATION = {
 }
 
 
+class FlowRefusal(ValueError):
+    """A recognized flow operator that this execution profile refuses.
+
+    G31-CONTRACT-01 D-6: a refusal (operator is in the vocabulary but
+    outside the correspondence_composition profile) is distinguishable
+    from an ordinary parse miss so dispatch can surface it observably
+    instead of letting it disappear through a generic ValueError
+    fallback. Subclasses ValueError: every existing handler keeps its
+    current behavior unless it chooses to catch FlowRefusal first.
+    """
+
+
 def _dell_to_action() -> Dict[int, str]:
     """Reverse lookup: Dell number -> semantic action (from verified CORRESPONDENCE)."""
     return {dell: action for (action, dell) in CORRESPONDENCE.keys()}
@@ -171,7 +183,7 @@ def _tokenize_program(raw: str):
         op = fm.group(0)
         if op not in EXECUTABLE_FLOWS:
             cls = FLOW_CLASSIFICATION.get(op, "UNKNOWN")
-            raise ValueError(f"flow '{op}' is {cls}, not executable")
+            raise FlowRefusal(f"flow '{op}' is {cls}, not executable")
         # Must be followed by atom.
         if not _ATOM.match(raw, skip_ws(fm.end())):
             raise ValueError(f"flow '{op}' not followed by atom")
