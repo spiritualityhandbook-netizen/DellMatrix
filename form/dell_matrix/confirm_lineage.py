@@ -106,6 +106,148 @@ def _denied_receipt(pid, producer, detail, stage):
     }
 
 
+# Confirm-placement circuit (Q-U.3 + Q-U.4 + Q-U.5 + AUTO => SANDBOX
+# FIRST; Ace/Director rulings 2026-11-13): the designated per-owner
+# auto-staging box. Automatic placements with no wall of their own
+# land here first — contained, never directly on the open field.
+#
+# Collision rule (Director ruling 2026-11-13, mail 1a1d5f2f58738b15 —
+# design ambiguity A1 decided: NO silent adoption): an existing
+# record under STAGING_BOX_ID may be used as the staging box ONLY
+# when it is positively verified as the writer's own staging box.
+#
+# Gate-2 (Director mail 1a1d6d1d64b72589, 2026-11-13 15:30 CST):
+# label equality alone is not unforgeable provenance — Plane.box
+# is a public writer and any caller can stamp the reserved label
+# onto a foreign record (demonstrated failing-first: T23/T24 at
+# head 49e2e64 adopted such a box). Positive identity is therefore
+# TWO durable facts on the record itself: STAGING_BOX_LABEL
+# exactly, AND STAGING_PROVENANCE — a provenance marker that
+# Plane.box stamps ONLY at record creation and never rewrites,
+# that this writer passes ONLY when it creates the staging box,
+# and that no user surface can set (REPL groups create
+# project_<slug> ids with the raw user name as label and never
+# pass provenance; persist_rest restores the saved value
+# verbatim). Both facts persist through save/load (persist.py
+# serializes them; persist_rest restores them), so the identity
+# check survives reload. A record missing either fact — a
+# different label, a foreign same-label record, or a record from
+# a pre-provenance save or pack import (provenance "") — is
+# positively NOT verified as the staging box: the resolver
+# refuses with staging_box_conflict, zero mutation, proposal
+# stays pending. Residual, disclosed: a hand-edited save file can
+# forge the marker — the same disclosed class as F-d malformed
+# claims; no claim is made against out-of-band file editing.
+STAGING_BOX_ID = "auto_staging"
+STAGING_BOX_LABEL = "Auto staging — program-placed, awaiting release"
+STAGING_PROVENANCE = "confirm_lineage:auto_staging"
+
+
+def _placement_options(keys):
+    opts = [{"sandbox_id": k} for k in sorted(k for k in keys if k)]
+    opts.append({"outside": True})
+    return opts
+
+
+def _resolve_confirm_placement(program, prop, auth) -> Dict[str, Any]:
+    """Resolve where a confirmation lands, per Q-U.3/.4/.5 +
+    AUTO => SANDBOX FIRST. READ-ONLY.
+
+    Returns {"ok": True, "sandbox_id": Optional[str], "mode": str,
+             "parent_wall_keys": List[Optional[str]],
+             "choice": Optional[str]}
+    or a refusal receipt {"ok": False, "reason": ..., "pid": ...,
+    "producer": ..., ...} in the writer's existing receipt shape.
+
+    Wall verdicts come from the PR #412 resolver,
+    inference_dock._wall_verdict, imported at function level (the
+    established deferred-import pattern for this module): ONE wall
+    semantics, no second authority. Eligibility precedes choice —
+    a malformed or unestablished claim refuses BEFORE any choice
+    is offered or honored, and a caller-supplied choice is only
+    ever validated against the parents' ACTUAL walls; the writer
+    never lets a caller name an arbitrary box.
+    """
+    from form.dell_matrix.inference_dock import _wall_verdict
+    pid = prop.id
+    producer = auth.get("producer") if isinstance(auth, dict) else None
+    auto = producer == "grow_auto"
+    choice = auth.get("placement") if isinstance(auth, dict) else None
+
+    def _refuse(reason, **extra):
+        r = {"ok": False, "reason": reason, "pid": pid,
+             "producer": producer}
+        r.update(extra)
+        return r
+
+    def _staging_or_refusal(parent_keys):
+        # AUTO => SANDBOX FIRST staging, fail-closed on collision:
+        # use the designated box only on POSITIVE verification that
+        # it is the writer's own staging box (module note at
+        # STAGING_BOX_ID). An unverifiable record is refused, never
+        # adopted: zero mutation, proposal stays pending.
+        _sb = program.cube.session.plane.sandboxes.get(STAGING_BOX_ID)
+        if _sb is not None and (
+                _sb.label != STAGING_BOX_LABEL
+                or getattr(_sb, "provenance", "")
+                != STAGING_PROVENANCE):
+            return _refuse("staging_box_conflict",
+                           sandbox_id=STAGING_BOX_ID,
+                           existing_label=_sb.label)
+        return {"ok": True, "sandbox_id": STAGING_BOX_ID,
+                "mode": "auto_staging",
+                "parent_wall_keys": parent_keys, "choice": None}
+
+    parents = getattr(prop, "parents", None)
+    if not isinstance(parents, list) or any(
+            not isinstance(x, str) or not x for x in parents):
+        return _refuse("malformed_parentage")
+    if not parents:
+        if auto:
+            return _staging_or_refusal([])
+        return {"ok": True, "sandbox_id": None, "mode": "parentless",
+                "parent_wall_keys": [], "choice": None}
+    plane = program.cube.session.plane
+    keys = set()
+    for parent in parents:
+        verdict, vkeys, culprit = _wall_verdict(program, plane, parent)
+        if verdict == "malformed":
+            return _refuse("malformed_wall_claim", culprit=culprit)
+        if verdict == "unknown":
+            return _refuse("unknown_parent", culprit=culprit)
+        keys |= vkeys
+    key_list = sorted(keys, key=lambda k: (k is not None, k or ""))
+    if len(keys) > 1:
+        if auto:
+            return _refuse("auto_mixed_wall_noneligible")
+        if choice is None:
+            return _refuse("placement_choice_required",
+                           options=_placement_options(keys))
+        if choice == "outside":
+            return {"ok": True, "sandbox_id": None,
+                    "mode": "manual_choice",
+                    "parent_wall_keys": key_list, "choice": "outside"}
+        if isinstance(choice, str) and choice in keys:
+            return {"ok": True, "sandbox_id": choice,
+                    "mode": "manual_choice",
+                    "parent_wall_keys": key_list, "choice": choice}
+        return _refuse("invalid_placement_choice",
+                       options=_placement_options(keys))
+    if choice is not None:
+        # A choice exists only where a choice exists (D13).
+        return _refuse("invalid_placement_choice")
+    only = next(iter(keys))
+    if only is None:
+        if auto:
+            return _staging_or_refusal([None])
+        return {"ok": True, "sandbox_id": None,
+                "mode": "unboxed_parents",
+                "parent_wall_keys": [None], "choice": None}
+    return {"ok": True, "sandbox_id": only,
+            "mode": "auto_parents_wall" if auto else "inherited_wall",
+            "parent_wall_keys": [only], "choice": None}
+
+
 def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[str, Any]:
     """Canonical confirmation authority (transactional).
 
@@ -146,6 +288,13 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     if not _v["ok"]:
         _producer = _auth.get("producer") if isinstance(_auth, dict) else None
         return _denied_receipt(pid, _producer, _v["detail"], "pre_place")
+    # Confirm-placement (Q-U.3/.4/.5 + AUTO => SANDBOX FIRST):
+    # resolve placement READ-ONLY after authorization, before any
+    # mutation. A refusal here means zero mutation: the proposal
+    # stays pending and no checkpoint transaction begins.
+    _placement = _resolve_confirm_placement(program, prop, _auth)
+    if not _placement.get("ok"):
+        return _placement
     existed = prop.id in units
     def _remove_newly_placed():
         """Remove a newly placed Idea from all in-memory structures.
@@ -163,6 +312,37 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         """
         failures = []
         removed = []
+        # Critical (confirm-placement): box membership — a boxed
+        # confirm that is later denied must not leave the child id
+        # dangling in the box's member_ids.
+        try:
+            _placed = units.get(prop.id)
+            _sid = getattr(_placed, "sandbox_id", None) if _placed else None
+            if _sid:
+                _sb = program.cube.session.plane.sandboxes.get(_sid)
+                if _sb is not None and prop.id in _sb.member_ids:
+                    _sb.member_ids = [m for m in _sb.member_ids
+                                      if m != prop.id]
+                    removed.append("sandbox_membership")
+        except Exception as e:
+            failures.append(f"sandbox_membership:{type(e).__name__}")
+        # Partial-mutation sweep (Director 2026-11-13): Plane.box
+        # maintains two sides — the unit's flags and the record's
+        # member_ids. A fault between the two sides can leave the
+        # child listed in a record while the unit carries no
+        # sandbox_id for the keyed cleanup above to find.
+        # Compensation must not depend on which half of box() ran:
+        # remove the id from EVERY box record that lists it.
+        try:
+            for _sb2 in program.cube.session.plane.sandboxes.values():
+                if prop.id in _sb2.member_ids:
+                    _sb2.member_ids = [m for m in _sb2.member_ids
+                                       if m != prop.id]
+                    if "sandbox_membership" not in removed:
+                        removed.append("sandbox_membership")
+        except Exception as e:
+            failures.append(
+                f"sandbox_membership_sweep:{type(e).__name__}")
         # Critical: plane unit
         try:
             units.pop(prop.id, None)
@@ -227,6 +407,15 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
                         f"verify:placements_check_failed:{type(e).__name__}")
         except Exception as e:
             _verify_failures.append(f"verify:spatial_check:{type(e).__name__}")
+        try:
+            for _sb3 in program.cube.session.plane.sandboxes.values():
+                if prop.id in _sb3.member_ids:
+                    _verify_failures.append(
+                        "verify:sandbox_membership_still_present")
+                    break
+        except Exception as e:
+            _verify_failures.append(
+                f"verify:sandbox_membership_check_failed:{type(e).__name__}")
         failures.extend(_verify_failures)
         return {"ok": not failures, "failures": failures, "removed": removed}
     try:
@@ -234,6 +423,30 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             prop.id, prop.label, words=prop.words, detail=_detail(prop, units), goals=_goals(prop, units),
             skin=Skin.SEED, parents=list(rec["parents"]), origin=rec["origin"], lineage_version=int(rec["lineage_version"]),
         )
+        # Confirm-placement: apply box membership via the ONLY
+        # writer that maintains both sides (Plane.box), inside
+        # this same try — i.e. inside the checkpoint transaction
+        # below. place_idea accepts no sandbox kwargs, so
+        # membership is applied immediately after placement.
+        if _placement.get("sandbox_id"):
+            _sid = _placement["sandbox_id"]
+            # The staging label + provenance marker are creation
+            # evidence: written ONLY when the staging box is
+            # created here, never rewritten onto an existing
+            # record (the resolver has already positively verified
+            # an existing staging record; rewriting its identity
+            # would manufacture the very evidence the verification
+            # relies on).
+            _creating_staging = (
+                _sid == STAGING_BOX_ID
+                and _sid not in program.cube.session.plane.sandboxes)
+            _label = (STAGING_BOX_LABEL if _creating_staging
+                      else None)
+            _prov = (STAGING_PROVENANCE if _creating_staging
+                     else None)
+            program.cube.session.plane.box([prop.id], _sid,
+                                           label=_label,
+                                           provenance=_prov)
     except Exception as e:
         # Director 2026-10-05 (compensation): cleanup failures are
         # observable. The original exception propagates (honest failure),
@@ -628,4 +841,10 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     except Exception:
         pass
     program.note_seed(50, "Manifest", prop.label)
-    return {"ok": True, "id": prop.id, "label": prop.label, "kind": prop.kind}
+    return {"ok": True, "id": prop.id, "label": prop.label, "kind": prop.kind,
+            "placement": {
+                "mode": _placement.get("mode"),
+                "sandbox_id": _placement.get("sandbox_id"),
+                "parent_wall_keys": _placement.get("parent_wall_keys"),
+                "choice": _placement.get("choice"),
+            }}

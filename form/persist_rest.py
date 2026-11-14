@@ -512,9 +512,14 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     for sid, entry in data.get("plane", {}).get("sandboxes", {}).items():
         # Phase M: current shape is {"label": ..., "members": [...]};
         # legacy saves stored a bare member list — accept both.
+        # Gate-2 (2026-11-13): provenance restores verbatim; shapes
+        # without it (pre-provenance saves, legacy lists) restore as
+        # unattributed ("") — fail-closed for any consumer that
+        # requires positive ownership evidence, never a crash.
         if isinstance(entry, dict):
             plane.box(list(entry.get("members") or []), sid,
-                      label=str(entry.get("label") or "sandbox"))
+                      label=str(entry.get("label") or "sandbox"),
+                      provenance=str(entry.get("provenance") or ""))
         else:
             plane.box(list(entry), sid)
     try:
