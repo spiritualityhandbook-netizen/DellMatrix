@@ -79,6 +79,11 @@ EXPECTED_BARE_FAILURES = {
     # claiming "Pulse sent." with ok=True — the same cure
     # Step 6 applied to bare Decay (Dell 16, above).
     25: "Pulse refused: enhance OFF",
+    # C13 (DD-21): bare Simulate honestly refuses no_argument
+    # — the C13 arm is a real dry-run rehearsal and a bare
+    # invocation has nothing to rehearse; the superseded
+    # placeholder arm executed a status echo instead.
+    31: "no_argument",
     94: "catch_illegal",
     95: "commit_without_try",
     98: "alias_missing",
@@ -115,8 +120,8 @@ def main():
 
     failed = {c["dell"]: c["bare"]["error"]
               for c in cards if c["bare"]["outcome"] != "executed"}
-    _rec("bare invocation: 77 executed, 23 named failures",
-         len(failed) == 23
+    _rec("bare invocation: 76 executed, 24 named failures",
+         len(failed) == 24
          and all(failed.get(n, "").startswith(prefix)
                  for n, prefix in EXPECTED_BARE_FAILURES.items())
          and set(failed) == set(EXPECTED_BARE_FAILURES),

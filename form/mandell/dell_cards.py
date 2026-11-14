@@ -599,10 +599,16 @@ DEEP_NOTES: Dict[int, str] = {
          "'<label> <words>'; it mints expand_<source "
          "underscored, truncated to 24 chars> as "
          "CUBE and reports the full expansion."),
-    31: ("D1 circuit 18 DEEP NOTE: Simulate is a "
-         "dry-run status read (owner/ideas/"
-         "history_len from the pre-run status); "
-         "units, scores and sandbox are unchanged."),
+    31: ("C13 (DD-21): Simulate is a real dry-run "
+         "rehearsal — as a chain head it rehearses the "
+         "atoms after it against an isolated copy of "
+         "program state and reports per-atom outcomes "
+         "plus a scoped would-be diff; live state, "
+         "including history, is bit-identical afterward. "
+         "Bare Simulate rehearses nothing and reports "
+         "itself unexecuted. (Supersedes the D1 circuit "
+         "18 note: the pre-C13 arm was a status read that "
+         "appended its own history entry.)"),
     32: ("D1 circuit 18 DEEP NOTE: Pause idles the "
          "avatar ('Paused.'); a label containing "
          "'enhance' turns enhance OFF instead "

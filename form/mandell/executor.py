@@ -147,7 +147,11 @@ def execute_seed(program: Any, seed_text: str, _leaf: bool = False) -> Dict[str,
                 from .redaction import sanitize_text as _stx
                 _subj = _stx(_subj)
             for r in out.get("atom_results") or []:
-                if isinstance(r, dict) and r.get("skipped"):
+                # C13: simulated atoms never encountered the LIVE
+                # program (they ran, or didn't, against a copy) —
+                # PP3 records live encounters only.
+                if isinstance(r, dict) and r.get("skipped") \
+                        and not r.get("simulated"):
                     _note_unknown(
                         target, _subj,
                         f"Dell {r.get('dell')} did not execute: "

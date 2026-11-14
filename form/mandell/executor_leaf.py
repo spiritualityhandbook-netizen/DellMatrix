@@ -429,12 +429,32 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         if hasattr(program, "note_seed"):
             program.note_seed(30, "Expand", expanded[:40])
     elif primary == 31:
-        st = program.status()
-        messages.append("Simulate (dry-run — no mutation):")
-        messages.append(f"  owner={st.get('owner')} ideas={st.get('ideas')}")
-        messages.append(f"  history_len={st.get('history_len')}")
-        if hasattr(program, "note_seed"):
-            program.note_seed(31, "Simulate")
+        # C13 (DD-21): a leaf-reached Simulate is bare or carries
+        # only a data label — a seed operand arrives as FOLLOWING
+        # CHAIN ATOMS (a "::" followed by an atom is the DeepFlowBy
+        # operator, never a label marker) and is rehearsed by
+        # chain_exec's Simulate-head interception against the
+        # simulate board's isolated copy. With nothing handed over
+        # there is nothing to rehearse: the atom is honestly
+        # unexecuted. No status() read (its transitive
+        # persona_matrix write-on-read is a documented trap) and
+        # no note_seed — the pre-C13 arm appended a history entry
+        # under a "no mutation" banner (grounding G2).
+        from form.dell_matrix.simulate_board import no_argument_receipt
+        rcpt = no_argument_receipt()
+        messages.extend(rcpt["lines"])
+        return {
+            "ok": False,
+            "skipped": True,
+            "seed": _echo.as_mandel(),
+            "english": _echo.as_english(),
+            "primary": primary,
+            "messages": messages,
+            "new_program": new_program,
+            "error": "no_argument",
+            "reason": rcpt["reason"],
+            "simulate": rcpt,
+        }
     elif primary == 32:
         if "enhance" in (label or "").lower():
             program.enhance_off()

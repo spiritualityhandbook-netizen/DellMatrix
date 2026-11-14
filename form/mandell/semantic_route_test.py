@@ -116,6 +116,14 @@ def smoke() -> int:
             # bound authority (execution requires mediation).
             rec(f"selects_dell_{exp_dell}",
                 r.routed and r.dell == exp_dell and not r.ok)
+        elif exp_dell == 31:
+            # C13 (DD-21): Dell 31 routes correctly, but a bare
+            # "simulate" carries no operand to rehearse — the atom
+            # is honestly unexecuted (no_argument), never a fake
+            # status-echo success. A rehearsal needs the chain
+            # form: 31[Simulate] :: <seed>.
+            rec(f"selects_dell_{exp_dell}",
+                r.routed and r.dell == exp_dell and not r.ok)
         else:
             rec(
                 f"selects_dell_{exp_dell}",
@@ -285,11 +293,23 @@ def smoke() -> int:
 
     # --- DCC-III: read operations do not mutate domain state
     # (history log may grow by note_seed; units/duo/ledger must not)
-    for text in ["measure", "test", "architect", "simulate"]:
+    for text in ["measure", "test", "architect"]:
         before = _domain_snapshot(p)
         r = route_intent(p, translate(text), raw_line=text)
         after = _domain_snapshot(p)
         rec(f"read_{text}_no_mutation", r.routed and r.ok and before == after)
+    # C13 (DD-21): bare "simulate" is no longer a read — with no
+    # operand there is nothing to rehearse, so the routed atom is
+    # honestly unexecuted (ok=False, no_argument named) and the
+    # domain state is untouched. The no-mutation property itself
+    # is unchanged (and stronger: history no longer grows either,
+    # where the pre-C13 arm appended a note_seed entry).
+    before = _domain_snapshot(p)
+    r = route_intent(p, translate("simulate"), raw_line="simulate")
+    after = _domain_snapshot(p)
+    rec("read_simulate_no_mutation",
+        r.routed and not r.ok and before == after
+        and any("no argument" in m for m in r.messages))
 
     # --- DCC-III: state-changing operations work
     r = route_intent(p, translate("stamp test-mark-iii"), raw_line="stamp test-mark-iii")

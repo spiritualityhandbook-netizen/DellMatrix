@@ -19,7 +19,7 @@ from .control_runtime import (
     find_else,
     find_join,
 )
-from .core_ii_exec import append_snapshot, attach, execute_core_ii
+from .core_ii_exec import CoreIIState, append_snapshot, attach, execute_core_ii
 from .registry import get_dell, namespace_of
 
 
@@ -32,6 +32,25 @@ def _eff_label(atom: Any, seed: Any) -> str:
     being swallowed into (or overwritten by) the trailing one."""
     lab = getattr(atom, "label", "") or ""
     return lab if lab else (getattr(seed, "label", "") or "")
+
+
+def _sub_seed_text(seed: Any, atoms: Any, start: int, end: int) -> str:
+    """Reconstruct the seed text for atoms[start:end] of a parsed
+    seed (C13: a Simulate head's rehearsal operand). Segment
+    labels are resolved per atom via _eff_label and baked in, so
+    the reconstruction round-trips through parse_seed with the
+    same dispatch-time labels (the AF-1 re-emission precedent)."""
+    from dataclasses import replace as _replace
+    from .seed import Seed as _Seed
+    eff = [_eff_label(a, seed) for a in atoms[start:end]]
+    flows = list(getattr(seed, "flows", []) or [])[start:end - 1]
+    if any(eff[:-1]):
+        sub_atoms = [_replace(a, label=lab)
+                     for a, lab in zip(atoms[start:end], eff)]
+        return _Seed(atoms=sub_atoms, flows=flows, label="").as_mandel()
+    sub_atoms = [_replace(a, label="") for a in atoms[start:end]]
+    return _Seed(atoms=sub_atoms, flows=flows,
+                 label=eff[-1] if eff else "").as_mandel()
 
 
 def _skip_receipt(n: int, reason: str) -> Dict[str, Any]:
@@ -283,13 +302,35 @@ def _payload_cond(atom: Any, seed: Any, n: int) -> str:
 
 def execute_range(program, seed, atoms, start, end, depth, messages, ran, skipped, state):
     results = []
-    st = attach(program)
+    # Q-C13.O-FIN.1: a range LED by Dell 31 [Simulate] is consumed
+    # entirely by the rehearsal branch below (it hands the rest
+    # of the range to the simulate board and sets i = end); that
+    # branch never touches the flow state, and nothing in the
+    # range executes live. The standing entry attach would
+    # materialize a default CoreIIState on the LIVE program for a
+    # pure rehearsal — serialized core_ii present flips
+    # False->True, breaking the DD-21 bit-identical live-state
+    # contract. Defer the attach for exactly that range shape;
+    # the _apply_flow call site ensures the state on demand, so
+    # st is a real CoreIIState at every actual use. Every other
+    # range attaches at entry exactly as before.
+    if start < end and int(atoms[start].dell) == 31:
+        st = getattr(program, "core_ii", None)
+        if not isinstance(st, CoreIIState):
+            st = None
+    else:
+        st = attach(program)
     i = start
     last_ok = True
     while i < end:
         atom = atoms[i]
         n = int(atom.dell)
         if i > start:
+            if st is None:
+                # Q-C13.O-FIN.1 deferred attach (see execute_range
+                # entry): flow machinery is the first real consumer
+                # of the Core II state in a Simulate-led range.
+                st = attach(program)
             action = _apply_flow(st, _flow_at(seed, i - 1), last_ok, atoms[i - 1], atom, messages)
             if action == "skip":
                 skipped.append(n)
@@ -334,6 +375,42 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
             join_at = find_join(atoms, i + 1, end)
             i = join_at + 1 if join_at < end and int(getattr(atoms[join_at], "dell", -1)) == 61 else join_at
             st = attach(program)
+            continue
+        if n == 31 and i + 1 < end:
+            # C13 (DD-21): Dell 31 [Simulate] is a rehearsal head —
+            # the atoms after it in this range are its operand (a
+            # "::" followed by an atom is the DeepFlowBy operator,
+            # so the grammar hands them to this head the way Loop's
+            # body follows Loop). The simulate board rehearses them
+            # against an isolated copy; none executes live, and
+            # their receipts ride atom_results marked
+            # simulated=True. The head's own truth: ok iff the
+            # rehearsal ran; a refusal (parse / external-effect /
+            # unsupported domain / nested Simulate) is an
+            # unexecuted atom — ok=False, skipped=True, reason.
+            from form.dell_matrix.simulate_board import run_simulation
+            rcpt = run_simulation(
+                program, _sub_seed_text(seed, atoms, i + 1, end))
+            for _line in rcpt.get("lines") or []:
+                messages.append(_line)
+            state["simulate"] = rcpt
+            _sim_ok = bool(rcpt.get("ok"))
+            results.append({"dell": 31, "ok": _sim_ok,
+                            "error": rcpt.get("error") or "",
+                            "skipped": not _sim_ok,
+                            "reason": rcpt.get("reason") or "",
+                            "simulated": False})
+            for _a in rcpt.get("atom_results") or []:
+                results.append({**_a, "simulated": True})
+            if _sim_ok:
+                ran.append(31)
+                last_ok = True
+            else:
+                skipped.append(31)
+                last_ok = False
+                state["ok"] = False
+                state["error"] = rcpt.get("error") or state.get("error") or ""
+            i = end
             continue
         program, out = _run_atom(program, atom, seed, messages)
         _note_chain_failure(program, out)
@@ -711,7 +788,20 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     ran = []
     skipped = []
     state = {"ok": True, "error": "", "new_program": None}
-    attach(program)
+    # Q-C13.O-FIN.1: a Simulate-headed chain (Dell 31 with a
+    # rehearsal operand) executes nothing live — the simulate
+    # board rehearses against an isolated copy — so the standing
+    # entry attach must not materialize a default CoreIIState on
+    # the live program for it: serialized core_ii present would
+    # flip False->True, breaking the DD-21 bit-identical
+    # live-state contract. Every other chain attaches exactly as
+    # before; execute_range defers its own attach for the same
+    # range shape and ensures the state if flow machinery ever
+    # needs it.
+    _sim_headed = (len(seed.atoms) >= 2
+                   and int(seed.atoms[0].dell) == 31)
+    if not _sim_headed:
+        attach(program)
     if _redact:
         try:
             program._chain_sanitize_redact = True
@@ -803,13 +893,27 @@ def execute_chain(program: Any, seed: Any, seed_text: str) -> Dict[str, Any]:
     _any_skipped = any(bool(r.get("skipped", False)) for r in atom_results)
     if _redact:
         atom_results = sanitize_evidence(atom_results)
-    _snap = st.snap() if st is not None else {}
+    # Q-C13.O-FIN.1: for a Simulate-headed chain on an
+    # unmaterialized program the live state was deliberately left
+    # unattached (see the entry attach above); the receipt's
+    # core_ii snapshot is a DETACHED default — content-identical
+    # to what the pre-fix attach-then-snap produced — so the
+    # receipt shape is unchanged while the live program's
+    # serialized state stays bit-identical.
+    _snap = st.snap() if st is not None else (
+        CoreIIState().snap() if _sim_headed else {})
     if _redact:
         _snap = sanitize_evidence(_snap)
     # 72-17 R-B: a structured directive set by any atom (bare Show's
     # "render") propagates to the chain result; it never rides messages.
     _directive = state.get("directive") or None
     result = {"ok": ok, "error": last_error, "seed": _echo.as_mandel(), "english": _echo.as_english(), "primary": seed.primary_dell(), "messages": messages, "new_program": new_program, "chain_ran": ran, "chain_skipped": skipped, "atom_results": atom_results, "partial": _partial, "any_skipped": _any_skipped, "core_ii": _snap, "directive": _directive}
+    # C13 (DD-21): a Simulate head's rehearsal receipt rides the
+    # chain result under "simulate" (present only when a Dell 31
+    # head ran in this chain).
+    if state.get("simulate") is not None:
+        result["simulate"] = sanitize_evidence(state["simulate"]) \
+            if _redact else state["simulate"]
     # PP5: keep the last chain execution on the program
     # (runtime-only) so the flow renderer can draw what actually
     # ran. Best-effort — rendering support must never break
