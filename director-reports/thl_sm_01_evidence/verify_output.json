@@ -1,0 +1,229 @@
+{
+  "construction_equality_R1.05": true,
+  "construction_equality_R2.05": true,
+  "construction_equality_R3.05": true,
+  "C1_euclidean_shells": [
+    {
+      "s2": 2,
+      "dist": 1.0,
+      "count": 12,
+      "cumulative_incl_center": 13
+    },
+    {
+      "s2": 4,
+      "dist": 1.4142135623730951,
+      "count": 6,
+      "cumulative_incl_center": 19
+    },
+    {
+      "s2": 6,
+      "dist": 1.7320508075688772,
+      "count": 24,
+      "cumulative_incl_center": 43
+    },
+    {
+      "s2": 8,
+      "dist": 2.0,
+      "count": 12,
+      "cumulative_incl_center": 55
+    },
+    {
+      "s2": 10,
+      "dist": 2.23606797749979,
+      "count": 24,
+      "cumulative_incl_center": 79
+    },
+    {
+      "s2": 12,
+      "dist": 2.449489742783178,
+      "count": 8,
+      "cumulative_incl_center": 87
+    },
+    {
+      "s2": 14,
+      "dist": 2.6457513110645907,
+      "count": 48,
+      "cumulative_incl_center": 135
+    },
+    {
+      "s2": 16,
+      "dist": 2.8284271247461903,
+      "count": 6,
+      "cumulative_incl_center": 141
+    },
+    {
+      "s2": 18,
+      "dist": 3.0,
+      "count": 36,
+      "cumulative_incl_center": 177
+    }
+  ],
+  "C1_counts": [
+    12,
+    6,
+    24,
+    12,
+    24,
+    8,
+    48,
+    6,
+    36
+  ],
+  "C1_cumulative": [
+    13,
+    19,
+    43,
+    55,
+    79,
+    87,
+    135,
+    141,
+    177
+  ],
+  "C2_step_shells_1_to_4": {
+    "1": 12,
+    "2": 42,
+    "3": 92,
+    "4": 162
+  },
+  "C2_formula_10k2+2": {
+    "1": 12,
+    "2": 42,
+    "3": 92,
+    "4": 162
+  },
+  "C2_shell4_max_euclid_dist": 4.0,
+  "C3_slice_111": [
+    {
+      "s2": 2,
+      "count": 6,
+      "cumulative": 7
+    },
+    {
+      "s2": 6,
+      "count": 6,
+      "cumulative": 13
+    },
+    {
+      "s2": 8,
+      "count": 6,
+      "cumulative": 19
+    },
+    {
+      "s2": 14,
+      "count": 12,
+      "cumulative": 31
+    },
+    {
+      "s2": 18,
+      "count": 6,
+      "cumulative": 37
+    }
+  ],
+  "C3_slice_100": [
+    {
+      "s2": 2,
+      "count": 4,
+      "cumulative": 5
+    },
+    {
+      "s2": 4,
+      "count": 4,
+      "cumulative": 9
+    },
+    {
+      "s2": 8,
+      "count": 4,
+      "cumulative": 13
+    },
+    {
+      "s2": 10,
+      "count": 8,
+      "cumulative": 21
+    },
+    {
+      "s2": 16,
+      "count": 4,
+      "cumulative": 25
+    },
+    {
+      "s2": 18,
+      "count": 4,
+      "cumulative": 29
+    }
+  ],
+  "C3_slice_111_inplane_NN_count_sample": {
+    "6": 33,
+    "3": 8,
+    "4": 6,
+    "5": 3
+  },
+  "C4_attained_s2_up_to_80": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    30,
+    32,
+    34,
+    36,
+    38,
+    40,
+    42,
+    44,
+    46,
+    48,
+    50,
+    52,
+    54,
+    56,
+    58,
+    62,
+    64,
+    66,
+    68,
+    70,
+    72,
+    74,
+    76,
+    78,
+    80
+  ],
+  "C4_gap_s2_up_to_80": [
+    28,
+    60
+  ],
+  "C4_any_integer_triple_s2_28": [],
+  "C4_gaps_explained_by_three_square_theorem": {
+    "28": true,
+    "60": true
+  },
+  "C4_attained_all_three_square_legal": true,
+  "C6_min_over_directions_of_max_dot": 0.7076994763826745,
+  "C6_theoretical_min": 0.7071067811865475,
+  "C6_worst_direction_sample": [
+    -0.9999996147252731,
+    -0.00025947657513326775,
+    0.0008385828594430969
+  ],
+  "C6_axis_direction_max_dot": 0.7071067811865475,
+  "C6_proof": "min_c |x-c|^2 <= r^2 + 1 - sqrt(2) r <= 1 for r = |x| in [0,1]; equality only at r = 0 (the centre, distance exactly 1 from all 12 neighbours). Hence no point of the central sphere is exclusive: exclusive volume is exactly ZERO, a theorem, not an MC estimate.",
+  "C5_volume_per_centre": 0.7071067811865476,
+  "C5_mean_multiplicity_analytic": 5.923843917544487,
+  "C5_max_multiplicity_found": 8,
+  "C5_max_multiplicity_witness": [
+    0.4614869033064434,
+    0.7031825326536413,
+    0.4530653506976983
+  ]
+}
