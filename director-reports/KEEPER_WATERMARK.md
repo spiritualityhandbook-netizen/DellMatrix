@@ -1,12 +1,12 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-14 12:20 CST  
-**UTC approx**: 2026-11-14T18:20:00Z
+**Last cycle**: 2026-11-14 13:19 CST  
+**UTC approx**: 2026-11-14T19:19:00Z
 
 ## Items ruled this cycle
-- No new merges, heads, or ripe final-check packets since 11:21 CST watermark.
-- Prior positions on closed-as-awaiting queue items stand: no change, awaiting named Director final-check or credit rulings (MWL 184, Q-C13.1–.7, Q-FD.1/.2, etc.).
-- C13 (#413) and F-d (#409) merges noted prior; positions unchanged.
+- Full-queue positions restated: no change on prior items, awaiting named Director final-check/credit rulings.
+- #417 (G31-CONTRACT-02) first-look CONFIRM scoped to head 61191683 (PR body evidence; pre-stamp pending terminal CI).
+- No new ripe final-check packets.
 
 ## Trailing ledger
 - discharged this run: 0
@@ -17,6 +17,6 @@
 Desk :30 / Deep :00 healthy. No stall.
 
 ## Silence flag
-#308 / #294 / #233 fenced. No new unstamped heads.
+#308 / #294 / #233 fenced. #417 stamped.
 
 — KEEPER
