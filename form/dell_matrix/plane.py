@@ -83,6 +83,15 @@ class Sandbox:
     id: str
     label: str = "sandbox"
     member_ids: List[str] = field(default_factory=list)
+    # Record-carried provenance: who created this record, in the
+    # creator's own namespace ("" = unattributed — user-created,
+    # restored from a pre-provenance save, or pack-imported).
+    # Plane.box writes it ONLY at record creation and never
+    # rewrites it, so it is durable evidence of origin across
+    # save/load (the persist pair round-trips it). Consumers that
+    # need positive ownership evidence (the confirm-placement
+    # staging guard) check it; it grants nothing by itself.
+    provenance: str = ""
 
 
 @dataclass
@@ -180,8 +189,16 @@ class Plane:
         return True
 
     def box(self, unit_ids: List[str], sandbox_id: str = "box1",
-            label: Optional[str] = None) -> Sandbox:
-        sb = self.sandboxes.get(sandbox_id) or Sandbox(id=sandbox_id)
+            label: Optional[str] = None,
+            provenance: Optional[str] = None) -> Sandbox:
+        sb = self.sandboxes.get(sandbox_id)
+        if sb is None:
+            # Provenance is creation evidence: stamped once, here,
+            # and never rewritten onto an existing record — a
+            # later caller must not be able to launder a foreign
+            # record into a program-created one.
+            sb = Sandbox(id=sandbox_id,
+                         provenance=provenance or "")
         if label is not None:
             sb.label = label
         for uid in unit_ids:

@@ -43,7 +43,15 @@ PROPOSAL_KEYS = ("label", "words")
 MAX_LABEL_CHARS = 200
 MAX_WORDS_CHARS = 5000
 DEFAULT_TIMEOUT_S = 30
-DEFAULT_MAX_PROMPT_CHARS = 8000
+# Ace Elastic Limits Doctrine (2026-11-13): no limit may hinder
+# legitimate work — this ceiling is a runaway stop, never a
+# hindrance. It sits ~10x above every measured legitimate assembly:
+# the LM-4 decomposition alone expands dense prose ~10x (a 6,300-char
+# prompt assembles to 70,445 chars outbound), the program's own verb
+# path assembles ~14.6k on a modest 100-unit field, and a maximal
+# legal context assembles just past 100k — all refused at the old
+# 8000 default.
+DEFAULT_MAX_PROMPT_CHARS = 1000000
 DEFAULT_MAX_RESPONSE_CHARS = 8000
 # Proposal B (Q-LD.2): session-only response-view bound.
 _RESPONSE_VIEW_CHARS = 2000
@@ -611,6 +619,271 @@ def validate_semantic_output(text: str, *,
             "reason": reason.strip(), "parents": list(parents)}
 
 
+# ------------------------------------------------------- Q-U.2 wall gate
+
+# The direct verbs whose landed lineage the Q-U.2 contract covers
+# (Director mail 1a1d44118259b159). flag / comprehend land single-
+# parent lineage and are outside this circuit.
+_WALL_VERBS = ("relate", "synthesize", "relate_field")
+
+
+def _lm4_field_block(text: str) -> Dict[str, Any]:
+    """LM-4: the presentation-form decomposition block for one
+    text field (gloss lines, spine, honesty scores -- the full
+    compose receipt is program-side volume the prompt does not
+    need)."""
+    from ..mandell.morpheme import compose_sentence, sentence_gloss_lines
+    sent = compose_sentence(text or "")
+    return {
+        "source": text or "",
+        "gloss": sentence_gloss_lines(sent),
+        "spine": [{"token": e["token"], "dell": e["dell"],
+                   "via": e["via"]} for e in sent["spine"]],
+        "semantic_accounted": sent["semantic_accounted"],
+        "sentence_morpheme_resolved":
+            sent["sentence_morpheme_resolved"],
+    }
+
+
+def _lm4_entry_with_lm(entry: Dict[str, Any]) -> Dict[str, Any]:
+    """LM-4 THE TOLL BOOTH (docked path): a COPY of a snapshot
+    entry carrying its "lm" decomposition -- one block for the
+    entry's label and one for its words (the host composes each
+    target entry's label/words; grounding build point 5). The
+    original entry is never mutated."""
+    out = dict(entry)
+    out["lm"] = {
+        "label": _lm4_field_block(str(entry.get("label") or "")),
+        "words": _lm4_field_block(str(entry.get("words") or "")),
+    }
+    return out
+
+
+def _lm4_text_block(text: str) -> str:
+    """LM-4: the decomposition block for free text (propose()):
+    the same presentation data as the _verb entries, as text."""
+    from ..mandell.morpheme import compose_sentence, sentence_gloss_lines
+    sent = compose_sentence(text or "")
+    lines = sentence_gloss_lines(sent)
+    spine = ", ".join(
+        f"{e['token']}->{e['dell']}" if e["dell"] is not None
+        else e["token"] for e in sent["spine"])
+    if spine:
+        lines.append(f"LM: spine: {spine}")
+    return "\n".join(lines)
+
+
+def _session_plane(program):
+    """The program's Plane, resolved exactly as agent_coordinator's
+    _plane_units resolves it (program.cube.session.plane). None
+    when the program carries no plane — then no wall records exist
+    and every parent carries the unboxed key by definition."""
+    session = getattr(getattr(program, "cube", None), "session", None)
+    if session is None:
+        return None
+    return getattr(session, "plane", None)
+
+
+# Second pass (Director mail 1a1d4790779b6edc, probe residual
+# P6(ii)): a PENDING proposal is absent from the Plane, so the
+# Plane helpers alone assign it the unboxed key BY ABSENCE — two
+# hops then compose across a wall, and a legitimate in-wall
+# continuation is falsely refused. A pending parent's wall is
+# instead established from its OWN recorded Nursery lineage,
+# resolved recursively through the same canonical Plane helpers.
+# The recursion is bounded: _WALL_LINEAGE_MAX_DEPTH lineage links
+# (each dock landing adds at most one link, and MAX_PARENTS bounds
+# the width, so 32 is far beyond any chain a session can author;
+# a longer chain is unestablished, not unboxed).
+_WALL_LINEAGE_MAX_DEPTH = 32
+
+
+def _wall_verdict(program, plane, pid, stack=(), anchor=True):
+    """Resolve ONE parent id to its canonical wall verdict:
+    (verdict, keys, culprit).
+
+    verdict "ok": keys is the 1-set holding the id's wall key
+    (None = unboxed). A Plane unit resolves through the GS-4
+    helpers; a PENDING Nursery proposal resolves through its
+    recorded parents, recursively (its lineage's single shared
+    key). verdict "cross": the id's own lineage already spans
+    more than one wall; keys is that set. verdict "malformed":
+    an unverifiable box claim exists at culprit (the id itself
+    or one of its ancestors). verdict "unknown": NO canonical
+    authority establishes a wall for culprit — a ghost id known
+    to neither Plane nor Nursery, a Nursery record that is not
+    PENDING (only pending records are lineage authorities; a
+    confirmed idea resolves through the Plane unit confirmation
+    placed, a rejected one was never placed), a lineage cycle,
+    an over-depth chain, a missing link mid-chain, malformed
+    STORED ancestry on culprit (a parents container that is not
+    a list, or any element that is not a non-empty string id —
+    third pass, Director mail 1a1d536b69514874: unverifiable
+    stored elements are unestablished, never silently dropped),
+    or (in ANCESTOR position — see below) a pending record with
+    no recorded parents. "unknown" is fail-closed: absence never
+    resolves to unboxed (Director mail 1a1d4790779b6edc).
+
+    Anchor vs ancestor: a parentless PENDING proposal is itself
+    a legal field entry whose wall is unboxed — it claims no
+    ancestry, and the Nursery creates parentless entries by
+    design (organic growth proposals, manual adds, ingest). As
+    the ANCHOR of a checked parent set (anchor=True) it resolves
+    ("ok", {None}). As an ANCESTOR of another proposal it
+    establishes nothing about that descendant's lineage, so the
+    strict rule stands in recursion (anchor=False): parentless
+    resolves "unknown" — a smuggled wall claim riding a
+    parentless intermediary still refuses."""
+    from form.dell_matrix.ringed_growth import (
+        _malformed_boxed, _wall_key)
+    if pid in plane.units:
+        if _malformed_boxed(plane, pid):
+            return ("malformed", None, pid)
+        return ("ok", {_wall_key(plane, pid)}, pid)
+    nursery = getattr(program, "nursery", None)
+    rec = nursery.proposals.get(pid) if nursery is not None else None
+    if rec is None or getattr(rec, "status", None) != "pending":
+        return ("unknown", None, pid)
+    if pid in stack or len(stack) >= _WALL_LINEAGE_MAX_DEPTH:
+        return ("unknown", None, pid)
+    # Third pass (Director mail 1a1d536b69514874): EVERY stored
+    # ancestor reference is validated strictly — the container
+    # must be a list and every element a non-empty string id.
+    # The first/second-pass code FILTERED with isinstance, which
+    # silently discarded malformed elements: parents=[123]
+    # degraded to an empty list (an unboxed ANCHOR verdict), and
+    # ["out_a", 123] to a clean unboxed lineage. Stored ancestry
+    # that cannot be verified element-by-element is
+    # UNESTABLISHED: fail-closed "unknown" naming this record,
+    # never filtered into admissibility. No admission is
+    # broadened — nursery.add always stores a list of the ids it
+    # was given, so only crafted/restored states reach this.
+    stored = getattr(rec, "parents", None)
+    if not isinstance(stored, list) or any(
+            not isinstance(a, str) or not a for a in stored):
+        return ("unknown", None, pid)
+    ancestors = stored
+    if not ancestors:
+        if anchor:
+            return ("ok", {None}, pid)
+        return ("unknown", None, pid)
+    keys = set()
+    for anc in ancestors:
+        verdict, akeys, culprit = _wall_verdict(
+            program, plane, anc, stack + (pid,), anchor=False)
+        if verdict in ("malformed", "unknown"):
+            return (verdict, None, culprit)
+        keys |= akeys
+    if len(keys) > 1:
+        return ("cross", keys, pid)
+    return ("ok", keys, pid)
+
+
+def _parent_wall_refusal(program, verb, parents):
+    """Q-U.2 dock-landing wall admissibility: the parents a direct
+    verb is about to persist must share ONE canonical wall key.
+    Plane units are computed from the Plane's own box records
+    through the GS-4 authority — ringed_growth._wall_key /
+    _malformed_boxed, the same helpers growth enumeration
+    enforces with; no second wall semantics. A PENDING Nursery
+    parent resolves through its recorded lineage (second pass,
+    Director mail 1a1d4790779b6edc; see _wall_verdict): a pending
+    whose lineage spans a wall contributes every wall it spans,
+    so multi-hop compositions refuse exactly as direct ones do.
+    A malformed box claim anywhere in a parent's lineage refuses
+    fail-closed and is never collapsed to unboxed (the GS-4
+    None == None fail-open); a parent no authority can establish
+    refuses as unknown_parent, never as unboxed. The host
+    enforces; the docked judge is never consulted.
+
+    Returns a refusal receipt dict, or None when admissible."""
+    plane = _session_plane(program)
+    if plane is None:
+        return None
+    keys = set()
+    for pid in parents:
+        verdict, vkeys, culprit = _wall_verdict(program, plane, pid)
+        if verdict == "malformed":
+            return {"ok": False, "reason": "malformed_wall_claim",
+                    "detail": f"Parent {culprit} claims sandbox "
+                              "isolation that the Plane's box "
+                              "records cannot verify; refused "
+                              "fail-closed before proposal "
+                              "creation (Q-U.2).",
+                    "verb": verb, "task": verb,
+                    "parents": list(parents), "malformed": [culprit]}
+        if verdict == "unknown":
+            return {"ok": False, "reason": "unknown_parent",
+                    "detail": f"Parent {culprit} has no canonical "
+                              "wall authority: it is not a Plane "
+                              "unit and not a PENDING Nursery "
+                              "proposal with an established "
+                              "lineage; refused fail-closed before "
+                              "proposal creation rather than "
+                              "treated as unboxed (Q-U.2).",
+                    "verb": verb, "task": verb,
+                    "parents": list(parents), "unknown": [culprit]}
+        keys |= vkeys
+    if len(keys) > 1:
+        walls = sorted("unboxed" if k is None else str(k)
+                       for k in keys)
+        return {"ok": False, "reason": "cross_wall_parents",
+                "detail": "Parents span more than one sandbox "
+                          f"wall ({', '.join(walls)}); refused "
+                          "before proposal creation — a docked "
+                          "proposal's parents must share one wall "
+                          "(Q-U.2).",
+                "verb": verb, "task": verb,
+                "parents": list(parents), "walls": walls}
+    return None
+
+
+def _unknown_parent_refusal(program, verb, raw):
+    """Q-U.2 second pass: name the wall verdict for a provider
+    payload whose ONLY schema defect is parent ids outside the
+    field. The semantic validator (correctly) rejects lineage the
+    judge never saw before the landing gate can run; when the
+    payload's parents are otherwise well-formed (a bounded list
+    of strings) and at least one resolves to the resolver's
+    "unknown" verdict — a ghost id no canonical authority can
+    establish — the refusal is the explicit unknown_parent
+    receipt, so a malicious ghost parent is distinguishable from
+    a legitimate PENDING parent (which validates inside the
+    field and resolves through its lineage at the gate). Any
+    other payload, and any parent the resolver CAN establish,
+    returns None: the caller's generic invalid_output verdict
+    stands. Nothing here weakens the validator — the refusal is
+    stricter, never an admission."""
+    plane = _session_plane(program)
+    if plane is None:
+        return None
+    try:
+        data = json.loads(_unwrap_single_fence(raw))
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    named = data.get("parents", [])
+    if not isinstance(named, list) or not named \
+            or len(named) > MAX_PARENTS \
+            or any(not isinstance(x, str) for x in named):
+        return None
+    for pid in named:
+        verdict, _keys, culprit = _wall_verdict(program, plane, pid)
+        if verdict == "unknown":
+            return {"ok": False, "reason": "unknown_parent",
+                    "detail": f"Parent {culprit} has no canonical "
+                              "wall authority: it is not a Plane "
+                              "unit and not a PENDING Nursery "
+                              "proposal with an established "
+                              "lineage; refused fail-closed before "
+                              "proposal creation rather than "
+                              "treated as unboxed (Q-U.2).",
+                    "verb": verb, "task": verb,
+                    "parents": list(named), "unknown": [culprit]}
+    return None
+
+
 # ---------------------------------------------------------------- docked session
 
 class DockedSession:
@@ -872,6 +1145,30 @@ class DockedSession:
                     "detail": "Reason carries protected material; "
                              "rejected before provider call."}
         full_prompt = prompt
+        # LM-4 THE TOLL BOOTH (docked path): the prompt's own
+        # LatinMandell decomposition is appended here -- before
+        # the Bimo framing, the schema tail, the context assembly,
+        # and the protected screen -- so the docked AI receives
+        # the input already broken and the screen still sees the
+        # FINAL outbound text. If the decomposition cannot be
+        # computed, the call is refused named (lm_unavailable, no
+        # provider contact); if the prompt WITH the decomposition
+        # exceeds the caller's own bound, that is refused named
+        # too (prompt_too_large) rather than silently sending the
+        # prompt undecomposed (Q-LM4.5 discloses the choice).
+        try:
+            full_prompt = (full_prompt + "\n\n[decomposition]\n"
+                           + _lm4_text_block(prompt))
+        except Exception as e:
+            return {"ok": False, "reason": "lm_unavailable",
+                    "detail": ("LatinMandell decomposition failed "
+                               f"({type(e).__name__}); the call was "
+                               "refused with no provider contact.")}
+        if len(full_prompt) > self._max_prompt_chars:
+            return {"ok": False, "reason": "prompt_too_large",
+                    "detail": "Prompt with its LM-4 decomposition "
+                              "exceeds the caller's bound; refused "
+                              "rather than sent undecomposed."}
         # PP4: a worn Bimo configuration frames the prompt. The
         # framing counts toward the prompt bound (checked with
         # the assembled text below), and the protected screen
@@ -1386,6 +1683,46 @@ class DockedSession:
             if overlap > 0:
                 scored.append((-overlap, cid))
         scored.sort()
+        # Q-U.2: the token pre-filter is additionally constrained
+        # to the target's canonical wall (the _wall_verdict
+        # resolution — Plane box records for units, recorded
+        # Nursery lineage for PENDING candidates; never the
+        # snapshot, which carries no wall fields). Candidates
+        # across the wall are never shown to the judge, so this
+        # verb cannot hand it a cross-wall lineage to author; the
+        # _verb landing check refuses any cross-wall parent set
+        # that remains (e.g. a target retrieved after this filter
+        # ran). The caller-named target's own refusal verdict
+        # (malformed / unknown / cross-lineage) returns here
+        # fail-closed; candidates carrying any refusal verdict are
+        # filtered like any other non-wall-mate.
+        plane = _session_plane(self._program)
+        if plane is not None:
+            refusal = _parent_wall_refusal(
+                self._program, "relate_field", [target])
+            if refusal is not None:
+                return refusal
+            _tv, _tk, _tc = _wall_verdict(
+                self._program, plane, target)
+            target_key = next(iter(_tk))
+            walled = []
+            for _, cid in scored:
+                cverdict, ckeys, _cc = _wall_verdict(
+                    self._program, plane, cid)
+                if cverdict == "ok" and ckeys == {target_key}:
+                    walled.append(cid)
+            if scored and not walled:
+                return {"ok": False, "reason": "no_wall_mates",
+                        "detail": "Every field entry sharing "
+                                  "content tokens with the target "
+                                  "sits across a sandbox wall or "
+                                  "carries an unverifiable box "
+                                  "claim; the provider was not "
+                                  "called.",
+                        "verb": "relate_field",
+                        "task": "relate_field"}
+            keep = set(walled)
+            scored = [s for s in scored if s[1] in keep]
         # The SD-2 schema bounds a proposal's parents at
         # MAX_PARENTS, and the judge's parents must be a subset of
         # the entries it is shown — so at most MAX_PARENTS - 1
@@ -1466,8 +1803,32 @@ class DockedSession:
                 return {"ok": False, "reason": "unknown_target",
                         "detail": "A target is not in the field snapshot."}
             entries.append(e)
+        # LM-4 THE TOLL BOOTH (docked path): each target entry
+        # carries its LatinMandell decomposition ("lm") -- the
+        # host composes the entry's own text so the docked AI
+        # receives the input ALREADY BROKEN (plan SS4.7: a docked
+        # AI cannot be forced to route its internal text through
+        # the program, so the program hands it the input
+        # decomposed). Entries are COPIES: the coordinator's
+        # snapshot dicts are never mutated. The lm is attached
+        # here -- before the bound check and the protected screen
+        # below -- and a composition failure refuses the call
+        # named, with zero provider contact (the docked path
+        # never sends undecomposed input by silence).
+        try:
+            entries = [_lm4_entry_with_lm(e) for e in entries]
+        except Exception as e:
+            return {"ok": False, "reason": "lm_unavailable",
+                    "detail": ("LatinMandell decomposition failed "
+                               f"({type(e).__name__}); the call was "
+                               "refused with no provider contact.")}
         prompt = instruction + "\n\n[targets]\n" + json.dumps(
             entries, sort_keys=True)
+        prompt += ("\n\n[lm] Each target entry's \"lm\" block is "
+                   "its LatinMandell decomposition (the host's "
+                   "forced first step): read it as the entry's "
+                   "already-taken first read. The spine is a "
+                   "projection (a reading), not a fact.")
         if verb == "flag":
             others = [{"id": k, "label": v.get("label", ""),
                        "words": str(v.get("words", ""))[:120],
@@ -1530,6 +1891,20 @@ class DockedSession:
         try:
             fields = validate_semantic_output(raw, allowed_parents=set(index))
         except ProviderError as e:
+            # Q-U.2 second pass (Director mail 1a1d4790779b6edc):
+            # a provider-named parent id that no canonical
+            # authority can establish is a WALL verdict
+            # (unknown_parent), not mere schema noise — but only
+            # when the provider's parentage is otherwise
+            # well-formed and the wall gate is in force for this
+            # verb; every other schema failure keeps the generic
+            # invalid_output verdict. Ghost-vs-legitimate-pending
+            # is decided by the resolver, never by the schema.
+            if verb in _WALL_VERBS:
+                ghost_refusal = _unknown_parent_refusal(
+                    self._program, verb, raw)
+                if ghost_refusal is not None:
+                    return ghost_refusal
             return {"ok": False, "reason": "invalid_output",
                     "detail": sanitize_error(str(e), prot)}
         parents = fields["parents"] or list(targets)
@@ -1554,6 +1929,21 @@ class DockedSession:
                     "detail": "A retrieved target changed or was "
                               "removed before incorporation; refused "
                               "rather than landing on stale data."}
+        # Q-U.2 dock-landing wall admissibility (Director mail
+        # 1a1d44118259b159; second pass 1a1d4790779b6edc): for
+        # the direct verbs, the lineage about to persist must
+        # share ONE canonical wall key — Plane box records for
+        # units, recorded Nursery lineage for PENDING parents —
+        # never from the snapshot, never from the judge's output.
+        # A refusal here persists nothing. This is the single
+        # landing funnel for relate / synthesize / relate_field;
+        # flag / comprehend land single-parent lineage and stay
+        # outside the circuit.
+        if verb in _WALL_VERBS:
+            refusal = _parent_wall_refusal(
+                self._program, verb, parents)
+            if refusal is not None:
+                return refusal
         try:
             prop = self._program.nursery.add(
                 fields["label"], words=fields["words"], kind=kind,
@@ -1627,11 +2017,17 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
     if not isinstance(timeout_s, int) or isinstance(timeout_s, bool) \
             or timeout_s <= 0 or timeout_s > 600:
         raise DockError("timeout_s must be an int in 1..600")
-    for name, val in (("max_prompt_chars", max_prompt_chars),
-                      ("max_response_chars", max_response_chars)):
+    # Ace Elastic Limits Doctrine (2026-11-13): the prompt bound's
+    # legal range rises with its default (a bound the caller may set
+    # must be able to admit the doctrine ceiling); the response
+    # bound keeps its own unchanged range and default.
+    for name, val, cap in (
+            ("max_prompt_chars", max_prompt_chars,
+             DEFAULT_MAX_PROMPT_CHARS),
+            ("max_response_chars", max_response_chars, 100000)):
         if not isinstance(val, int) or isinstance(val, bool) or val <= 0 \
-                or val > 100000:
-            raise DockError(f"{name} must be an int in 1..100000")
+                or val > cap:
+            raise DockError(f"{name} must be an int in 1..{cap}")
     # PP4: resolve the worn Bimo configuration BEFORE anything
     # is created. Only a COMMITTED Forge configuration can be
     # worn (staged state is not a configuration), and the record

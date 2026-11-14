@@ -53,6 +53,10 @@ class RouteReceipt:
     authority: str = ""            # which authority executed it
     affected_objects: List[str] = field(default_factory=list)  # known mutations
     atom_results: List[Dict[str, Any]] = field(default_factory=list)  # chain
+    # LM-4 THE TOLL BOOTH: the Intent's LatinMandell decomposition
+    # receipt, copied by the route_intent wrapper (never built
+    # here; None = no decomposition exists, never fabricated).
+    lm: Optional[Dict[str, Any]] = None
 
     @property
     def partial(self) -> bool:
@@ -393,6 +397,10 @@ def route_intent(program: Any, intent: Any, raw_line: str = "",
     """
     nurture_before = getattr(program, "last_nurture", None)
     receipt = _route_intent_impl(program, intent, raw_line)
+    # LM-4: the decomposition rides the receipt (single copy point
+    # in this wrapper, so every _route_intent_impl return site --
+    # routed, no-route, raised -- carries it identically).
+    receipt.lm = getattr(intent, "lm", None)
     # DCC-XX-C1: attribute the arm's receipt only to the call that
     # produced it. Identity comparison: every arm handler assigns a
     # fresh dict to program.last_nurture when it runs.

@@ -338,11 +338,17 @@ LIST = [
     "form.lm1_import_test:smoke",
     "form.lm2_splitter_test:smoke",
     "form.lm3_composer_test:smoke",
+    "form.lm4_tollbooth_test:smoke",
     # GS-4 sandbox containment (Director mail 1a1d05d91f6401dc):
     # FAILING-FIRST at publication — pins the wall contract the GS-4
     # build must satisfy; red until the containment build lands under
     # a Director scope ruling.
     "form.gs4_sandbox_test:smoke",
+    # Q-U.2 dock-landing wall admissibility (Director mail
+    # 1a1d44118259b159): the dock's direct verbs refuse cross-wall /
+    # malformed parent sets before any PENDING proposal persists.
+    "form.dock_wall_test:smoke",
+    "form.confirm_placement_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
     "form.dirf14_catch_consumed_test:smoke",
