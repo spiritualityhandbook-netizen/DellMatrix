@@ -3212,14 +3212,26 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _say("Enhance OFF.")
 
     elif action == "pulse":
-        out = p.pulse()
-        if hasattr(p, "note_seed"):
-            p.note_seed(25, "Pulse")
-        if out and out.get("ok"):
-            _say("Pulse sent.")
-        else:
-            # DD-18: report the gate's refusal, never a false send.
-            _say(f"Pulse NOT sent ({(out or {}).get('reason', 'refused')}).")
+        # F1 (PR #414): a malformed sandbox claim refuses the pulse by
+        # raising MalformedSandboxClaim out of Program.pulse. Answer
+        # with the bounded DD-18 refusal shape and keep the session
+        # alive — one unverifiable claim must not kill the REPL and
+        # its unsaved work. A refused pulse notes no success history.
+        from form.dell_matrix.plane import MalformedSandboxClaim \
+            as _MalformedClaim
+        try:
+            out = p.pulse()
+        except _MalformedClaim as refused:
+            _say(f"Pulse NOT sent ({refused}).")
+            out = None
+        if out is not None:
+            if hasattr(p, "note_seed"):
+                p.note_seed(25, "Pulse")
+            if out.get("ok"):
+                _say("Pulse sent.")
+            else:
+                # DD-18: report the gate's refusal, never a false send.
+                _say(f"Pulse NOT sent ({out.get('reason', 'refused')}).")
 
     elif action == "sandbox_on":
         p.sandbox_on()
