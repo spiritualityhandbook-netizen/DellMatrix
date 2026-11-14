@@ -871,8 +871,12 @@ def _prog_pulse(p) -> str:
         if not p.enhance.on:
             p.enhance_on()
         p.pulse()
-    except Exception:
-        pass
+    except Exception as e:
+        # F2 (PR #414): the returned note is what the enhance loop
+        # records in `applied` — a swallowed refusal here recorded an
+        # applied pulse that never happened. Name the refusal in the
+        # note instead; the success note is unchanged.
+        return f"pulse REFUSED — {type(e).__name__}: {e}"
     return "pulse"
 
 
@@ -1237,7 +1241,12 @@ def run(cycles: int = 150, owner: str = "Operator") -> Dict[str, Any]:
                     except Exception:
                         pass
             elif phase == 7:
-                _prog_pulse(p)
+                _pulse_note = _prog_pulse(p)
+                if _pulse_note != "pulse":
+                    # F2: preserve a refused phase pulse in the loop's
+                    # applied record (same entry shape the catalog
+                    # writes in step 2) instead of dropping the note.
+                    applied.append(f"{i}:prog:pulse:{_pulse_note}")
             elif phase == 8:
                 _prog_evolve(p)
             elif phase == 9:

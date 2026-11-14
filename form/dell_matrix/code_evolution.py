@@ -305,8 +305,13 @@ def develop_loop(
         try:
             program.force_tick()
             program.pulse()
-        except Exception:
-            pass
+        except Exception as e:
+            # F2 (PR #414): a refused pulse (e.g. a malformed sandbox
+            # claim) leaves a named trace in the loop's own log —
+            # never dropped, never reported as applied. The healthy
+            # path appends nothing, exactly as before.
+            log.append({"step": f"pulse_{i}", "ok": False,
+                        "refused": f"{type(e).__name__}: {e}"})
         try:
             program.evolve_understood(f"ce develop {i}")
         except Exception:
