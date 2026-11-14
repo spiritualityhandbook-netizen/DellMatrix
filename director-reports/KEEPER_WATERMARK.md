@@ -1,12 +1,12 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-14 15:03 CST  
-**UTC approx**: 2026-11-14T21:03:00Z
+**Last cycle**: 2026-11-14 15:18 CST  
+**UTC approx**: 2026-11-14T21:18:00Z
 
 ## Items ruled this cycle
-- #417 (G31-CONTRACT-02) merge identity verified (merge SHA b39c6a062b8dabd7d34c69d8c50c0e8735b089c2, head a20997d55c5d1a3e75510cc1c2c8caed75f9e0ec). Receipts awaited: item-specific final-check (tested merged-main SHA + residual exclusions). Second cert now owed.
-- No new ripe final-check packets.
-- Trailing ledger restated on #357 / #359.
+- Full-queue positions published (no new binding dispositions).
+- Scoreboard audit: MWL 39/182 COMPLETE = 21.4% FACT; queue stale headlines flagged.
+- C13 / #413 noted MERGED; awaiting Director final + refreshed confirmation.
 
 ## Trailing ledger
 - discharged this run: 0
