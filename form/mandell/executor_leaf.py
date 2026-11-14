@@ -92,6 +92,9 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     # C7.Schema (DD-29): Dell 39's structured board rides the
     # result dict under "schema_board" (set only for Dell 39).
     schema_detail = None
+    # C7.Profile (DD-39): Dell 49's structured report rides the
+    # result dict under "profile_report" (set only for Dell 49).
+    profile_detail = None
 
     def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
         # Canonical slug + collision dedup (form/idea_create.py, P3/TD-5):
@@ -588,13 +591,45 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             n = _lab_n if _lab_n is not None else 5
             messages.append(program.macro_seed(n))
     elif primary == 49:
-        st = program.status()
-        messages.append("Profile:")
-        messages.append(f"  owner={st.get('owner')}")
-        messages.append(f"  ideas={st.get('ideas')} history={st.get('history_len')}")
-        messages.append(f"  nursery={st.get('nursery')}")
-        messages.append(f"  lattice={st.get('lattice')}")
-        messages.append(f"  enhance={st.get('enhance')}")
+        # C7.Profile (DD-39): the speedometer. Dell 49 runs a
+        # DELIBERATE BENCHMARK on disposable state (profile_board):
+        # named stages timed with a monotonic clock, per-stage
+        # shares, overhead disclosed, embedding ABSENT standalone.
+        # The live program is never the measured system and is
+        # never read on this path — the status echo (Schema's
+        # territory since DD-29) and status()'s transitive persona
+        # write-on-read both leave Dell 49 here. Operand grammar:
+        # bare = the standard benchmark; ':: <stage>' = that stage
+        # only ('resonance' aliases pulse); an unknown label
+        # REFUSES — the atom does not execute and notes nothing.
+        from form.dell_matrix.profile_board import (
+            STAGE_ORDER, run_profile_benchmark)
+        lab = (label or "").strip().lower()
+        _aliases = {"resonance": "pulse"}
+        _known = set(STAGE_ORDER) | {"embedding"} | set(_aliases)
+        if lab and lab not in _known:
+            if lab in ("nursery", "nursery update"):
+                _why = ("Profile: refused — 'nursery update' is a "
+                        "sub-stage of growth, not a standalone "
+                        "stage; benchmark 'growth' to time it.")
+            else:
+                _why = (f"Profile: refused — unknown stage '{lab}'. "
+                        f"Known stages: {', '.join(STAGE_ORDER)} "
+                        f"(+ embedding, ABSENT standalone).")
+            return {
+                "ok": False,
+                "skipped": True,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": messages + [_why],
+                "new_program": new_program,
+                "error": _why,
+            }
+        report = run_profile_benchmark(
+            only_stage=_aliases.get(lab, lab) if lab else None)
+        messages.extend(report["lines"])
+        profile_detail = report
         if hasattr(program, "note_seed"):
             program.note_seed(49, "Profile")
     elif primary == 50:
@@ -658,4 +693,6 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
     }
     if schema_detail is not None:
         out["schema_board"] = schema_detail
+    if profile_detail is not None:
+        out["profile_report"] = profile_detail
     return out

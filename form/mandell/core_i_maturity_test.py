@@ -120,7 +120,11 @@ def smoke() -> bool:
     rec("tokencount_numeric", isinstance(getattr(p, "last_measure", {}).get("value"), int))
     execute_seed(p, "34[Stamp] :: gate")
     rec("stamp_machine_readable", p.last_stamp.get("mark") == "gate" and "T" in p.last_stamp.get("ts", ""))
-    rec("profile_has_runtime_fields", any("ideas=" in m for m in execute_seed(open_program("Pr"), "49[Profile]").get("messages") or []))
+    # DD-39 (C7.Profile): the "ideas=" status-echo pin is retired
+    # DELIBERATELY with the stub it pinned — Profile's runtime
+    # fields are now the benchmark receipt lines (kind + total).
+    _prof_msgs = execute_seed(open_program("Pr"), "49[Profile]").get("messages") or []
+    rec("profile_has_runtime_fields", any("BENCHMARK" in m for m in _prof_msgs) and any(m.startswith("  total:") for m in _prof_msgs))
 
     br = execute_seed(open_program("Br"), "44[Bridge] :: llm")
     rec("bridge_unavailable_explicit", br.get("error") == "bridge_unavailable" and br.get("ok") is False)

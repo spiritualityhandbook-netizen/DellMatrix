@@ -38,7 +38,7 @@ import sys
 
 try:
     from form.mandell.floor import FLOOR, assert_floor_intact
-    from form.dell_matrix.plane import Plane, Skin
+    from form.dell_matrix.plane import MalformedSandboxClaim, Plane, Skin
     from form.dell_matrix.blank_cube import give
     from form.dell_matrix import faded_policy  # P3 R3.5.2: faded-state exclusion
 except ImportError:
@@ -46,7 +46,7 @@ except ImportError:
 
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
     from form.mandell.floor import FLOOR, assert_floor_intact
-    from form.dell_matrix.plane import Plane, Skin
+    from form.dell_matrix.plane import MalformedSandboxClaim, Plane, Skin
     from form.dell_matrix.blank_cube import give
     from form.dell_matrix import faded_policy  # P3 R3.5.2: faded-state exclusion
 
@@ -113,6 +113,23 @@ def pulse(
                      if not canonical_lifecycle.is_active(program, uid)}
     else:
         faded_ids = set()
+    # O1 (PR #414, Director mail 1a1d863bf52afc0a): validate-before-
+    # mutate. The bump loop below raises MalformedSandboxClaim when it
+    # reaches a unit whose sandbox claim cannot be verified — AFTER
+    # earlier units already took their diffusion bumps — so a refused
+    # pulse left partial state behind (pulse_count unmoved) and a
+    # repair-then-retry double-counted the retained bumps. Walk the
+    # same field order first and raise the identical refusal BEFORE
+    # any state write. The verdict reuses the canonical GS-4 verifier
+    # exactly as Plane.enhance_scope calls it — no second malformed
+    # definition. Faded units are skipped here as the bump loop skips
+    # them, so that corner's behavior is unchanged.
+    from form.dell_matrix.ringed_growth import _malformed_boxed
+    for uid in plane.units:
+        if uid in faded_ids:
+            continue
+        if _malformed_boxed(plane, uid):
+            raise MalformedSandboxClaim(uid, plane.units[uid].sandbox_id)
     # Reused state may retain scores/tags for units that faded AFTER
     # their last active pulse. Drop those retained entries so faded
     # units exert zero effective influence going forward; keep the log

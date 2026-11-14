@@ -1210,6 +1210,39 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
     return None
 
 
+def _malformed_claim_guard(fn):
+    """Command-layer F1 guard (PR #414): a malformed sandbox claim
+    anywhere in the field raises MalformedSandboxClaim out of the
+    pulse path AND out of the state payload (build_view consults
+    enhance_scope for every unit), so without this guard no command
+    on such a field could produce a receipt at all. Convert that
+    refusal here — the layer every caller (HTTP handler, the 150 /
+    button loops) consumes dicts from — into a bounded refusal reply:
+    ok=False, the refusal named, and deliberately NO state payload
+    (the payload is exactly what cannot be built until the claim is
+    repaired). Healthy fields never raise, so healthy behavior is
+    unchanged. Applied as a decorator so _run_command itself remains
+    the single command body (IAC-I R.uses_observe pins that the
+    canonical executor call lives in _run_command's own source)."""
+    import functools
+
+    @functools.wraps(fn)
+    def wrapper(program, cmd, _depth=0):
+        from form.dell_matrix.plane import MalformedSandboxClaim
+        try:
+            return fn(program, cmd, _depth=_depth)
+        except MalformedSandboxClaim as refused:
+            return {
+                "ok": False,
+                "error": f"refused: {refused}",
+                "command": (cmd or "").strip(),
+                "end": "malformed_sandbox_claim",
+            }
+
+    return wrapper
+
+
+@_malformed_claim_guard
 def _run_command(program, cmd: str, _depth: int = 0) -> Dict[str, Any]:
     cmd = (cmd or "").strip()
     if not cmd:
