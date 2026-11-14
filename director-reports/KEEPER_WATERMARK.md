@@ -1,12 +1,12 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-14 13:19 CST  
-**UTC approx**: 2026-11-14T19:19:00Z
+**Last cycle**: 2026-11-14 15:03 CST  
+**UTC approx**: 2026-11-14T21:03:00Z
 
 ## Items ruled this cycle
-- Full-queue positions restated: no change on prior items, awaiting named Director final-check/credit rulings.
-- #417 (G31-CONTRACT-02) first-look CONFIRM scoped to head 61191683 (PR body evidence; pre-stamp pending terminal CI).
+- #417 (G31-CONTRACT-02) merge identity verified (merge SHA b39c6a062b8dabd7d34c69d8c50c0e8735b089c2, head a20997d55c5d1a3e75510cc1c2c8caed75f9e0ec). Receipts awaited: item-specific final-check (tested merged-main SHA + residual exclusions). Second cert now owed.
 - No new ripe final-check packets.
+- Trailing ledger restated on #357 / #359.
 
 ## Trailing ledger
 - discharged this run: 0
@@ -17,6 +17,6 @@
 Desk :30 / Deep :00 healthy. No stall.
 
 ## Silence flag
-#308 / #294 / #233 fenced. #417 stamped.
+#308 / #294 / #233 fenced. No new open heads.
 
 — KEEPER
