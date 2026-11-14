@@ -1,12 +1,13 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-14 08:06 CST  
-**UTC approx**: 2026-11-14T14:06:00Z
+**Last cycle**: 2026-11-14 10:22 CST  
+**UTC approx**: 2026-11-14T16:22:00Z
 
 ## Items ruled this cycle
-- PR #413 / C13 Simulate — campaign contingency on prior CONFIRM at head cf5f2e557aa22360026c8ea7decd0f65fbdb395b **discharged** (Uni receipt 6878400267: ×3 TERMINAL GREEN 285/570/285, CI terminal). Scope unchanged. Residuals Q-C13.* remain Director. No new head.
-- No new merges since last watermark.
-- PR #401 — prior final CONFIRM stands.
+- PR #413 / C13 Simulate — MERGED ~09:00 CST (commit 46ae2eae). Prior CONFIRM at cf5f2e5 stands; campaign contingency discharged. No change: awaiting Director final-check disposition and Q-C13.1–.7 / credit shape (MWL 167-170 remain OPEN).
+- PR #409 / F-d consistency audit (records) — MERGED ~09:20 CST (commit 16e5131f). Records-only. No change: awaiting Director acceptance (Q-FD.1) and bounded repair-scope ruling (Q-FD.2). No MWL credit claimed.
+- No other new merges or heads since 08:06 CST watermark.
+- Prior positions on closed-as-awaiting queue items stand: no change, awaiting named Director final-check or credit rulings.
 
 ## Trailing ledger
 - discharged this run: 0
