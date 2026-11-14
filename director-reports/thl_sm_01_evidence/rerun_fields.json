@@ -1,0 +1,173 @@
+sphere mean 5.928 analytic 5.924 mult0 0.0 max 8
+3 mean 1.231 analytic 1.225 mult0 0.08364 max 3
+4 mean 1.906 analytic 1.886 mult0 0.00491 max 5
+5 mean 2.263 analytic 2.242 mult0 0.00141 max 4
+6 mean 2.466 analytic 2.449 mult0 0.000965 max 4
+7 mean 2.597 analytic 2.58 mult0 1.5e-05 max 5
+8 mean 2.682 analytic 2.667 mult0 0.0 max 5
+9 mean 2.743 analytic 2.727 mult0 5e-06 max 4
+10 mean 2.786 analytic 2.771 mult0 0.0 max 4
+{
+  "sphere": {
+    "multiplicity_dist": {
+      "4": 0.10928,
+      "5": 0.11589,
+      "6": 0.519015,
+      "7": 0.249415,
+      "8": 0.0064
+    },
+    "mean_mc": 5.927765,
+    "mean_analytic": 5.923843917544487,
+    "mult0_fraction": 0.0,
+    "max_multiplicity": 8,
+    "exclusive": {
+      "n_samples_in_solid": 400000,
+      "exclusive_fraction": 0.0,
+      "mc_se": 0.0
+    }
+  },
+  "3": {
+    "multiplicity_dist": {
+      "0": 0.08364,
+      "1": 0.60516,
+      "2": 0.30779,
+      "3": 0.00341
+    },
+    "mean_mc": 1.23097,
+    "mean_analytic": 1.224744871391589,
+    "mult0_fraction": 0.08364,
+    "max_multiplicity": 3,
+    "exclusive": {
+      "n_samples_in_solid": 82277,
+      "exclusive_fraction": 0.4943544368414016,
+      "mc_se": 0.0017430229065439036
+    }
+  },
+  "4": {
+    "multiplicity_dist": {
+      "0": 0.00491,
+      "1": 0.35278,
+      "2": 0.43236,
+      "3": 0.15185,
+      "4": 0.05793,
+      "5": 0.00017
+    },
+    "mean_mc": 1.90562,
+    "mean_analytic": 1.8856180831641265,
+    "mult0_fraction": 0.00491,
+    "max_multiplicity": 5,
+    "exclusive": {
+      "n_samples_in_solid": 127339,
+      "exclusive_fraction": 0.196090749888094,
+      "mc_se": 0.0011126314946218363
+    }
+  },
+  "5": {
+    "multiplicity_dist": {
+      "0": 0.00141,
+      "1": 0.214515,
+      "2": 0.395205,
+      "3": 0.297565,
+      "4": 0.091305
+    },
+    "mean_mc": 2.26284,
+    "mean_analytic": 2.2416617065465236,
+    "mult0_fraction": 0.00141,
+    "max_multiplicity": 4,
+    "exclusive": {
+      "n_samples_in_solid": 151349,
+      "exclusive_fraction": 0.10256427198065399,
+      "mc_se": 0.0007798479782759085
+    }
+  },
+  "6": {
+    "multiplicity_dist": {
+      "0": 0.000965,
+      "1": 0.12581,
+      "2": 0.37849,
+      "3": 0.395635,
+      "4": 0.0991
+    },
+    "mean_mc": 2.466095,
+    "mean_analytic": 2.449489742783178,
+    "mult0_fraction": 0.000965,
+    "max_multiplicity": 4,
+    "exclusive": {
+      "n_samples_in_solid": 165147,
+      "exclusive_fraction": 0.05512664474680133,
+      "mc_se": 0.0005616066437947428
+    }
+  },
+  "7": {
+    "multiplicity_dist": {
+      "0": 1.5e-05,
+      "1": 0.12119,
+      "2": 0.312645,
+      "3": 0.4143,
+      "4": 0.15182,
+      "5": 3e-05
+    },
+    "mean_mc": 2.59681,
+    "mean_analytic": 2.5799122673252843,
+    "mult0_fraction": 1.5e-05,
+    "max_multiplicity": 5,
+    "exclusive": {
+      "n_samples_in_solid": 174179,
+      "exclusive_fraction": 0.05079257545398699,
+      "mc_se": 0.0005261175439650274
+    }
+  },
+  "8": {
+    "multiplicity_dist": {
+      "1": 0.103755,
+      "2": 0.284455,
+      "3": 0.43832,
+      "4": 0.17305,
+      "5": 0.00042
+    },
+    "mean_mc": 2.681925,
+    "mean_analytic": 2.666666666666666,
+    "mult0_fraction": 0.0,
+    "max_multiplicity": 5,
+    "exclusive": {
+      "n_samples_in_solid": 180268,
+      "exclusive_fraction": 0.04233141766702909,
+      "mc_se": 0.0004742198254598012
+    }
+  },
+  "9": {
+    "multiplicity_dist": {
+      "0": 5e-06,
+      "1": 0.09101,
+      "2": 0.26625,
+      "3": 0.45153,
+      "4": 0.191205
+    },
+    "mean_mc": 2.74292,
+    "mean_analytic": 2.7271168660322616,
+    "mult0_fraction": 5e-06,
+    "max_multiplicity": 4,
+    "exclusive": {
+      "n_samples_in_solid": 183980,
+      "exclusive_fraction": 0.03660180454397217,
+      "mc_se": 0.00043779304287096824
+    }
+  },
+  "10": {
+    "multiplicity_dist": {
+      "1": 0.08606,
+      "2": 0.246195,
+      "3": 0.463355,
+      "4": 0.20439
+    },
+    "mean_mc": 2.786075,
+    "mean_analytic": 2.7708462518496897,
+    "mult0_fraction": 0.0,
+    "max_multiplicity": 4,
+    "exclusive": {
+      "n_samples_in_solid": 186833,
+      "exclusive_fraction": 0.03415884774103076,
+      "mc_se": 0.00042022091631000174
+    }
+  }
+}

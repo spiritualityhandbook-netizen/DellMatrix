@@ -1,0 +1,406 @@
+3 distinct 60 on-centre 39 eq_hits 3
+4 distinct 77 on-centre 26 eq_hits 2
+5 distinct 91 on-centre 13 eq_hits 1
+6 distinct 69 on-centre 78 eq_hits 6
+7 distinct 117 on-centre 13 eq_hits 1
+8 distinct 129 on-centre 26 eq_hits 2
+9 distinct 138 on-centre 39 eq_hits 3
+10 distinct 155 on-centre 26 eq_hits 2
+cube distinct 104 on-centre 0 eq_hits None
+octahedron distinct 78 on-centre 0 eq_hits None
+tetrahedron distinct 52 on-centre 0 eq_hits None
+dodecahedron distinct 260 on-centre 0 eq_hits None
+{
+  "3": {
+    "corners_per_solid": 5,
+    "total_corner_instances_13cluster": 65,
+    "distinct_corner_points": 60,
+    "stack_histogram": {
+      "1": 56,
+      "2": 3,
+      "3": 1
+    },
+    "corner_instances_landing_on_a_centre": 39,
+    "equatorial_vertices_on_centres_central_solid": 3,
+    "spoke_angles_deg": [
+      90.0,
+      120.0,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 2,
+        "on": 1,
+        "neg": 2
+      },
+      "equator(111)": {
+        "on": 3,
+        "pos": 1,
+        "neg": 1
+      },
+      "x=y": {
+        "pos": 1,
+        "neg": 2,
+        "on": 2
+      }
+    }
+  },
+  "4": {
+    "corners_per_solid": 6,
+    "total_corner_instances_13cluster": 78,
+    "distinct_corner_points": 77,
+    "stack_histogram": {
+      "1": 76,
+      "2": 1
+    },
+    "corner_instances_landing_on_a_centre": 26,
+    "equatorial_vertices_on_centres_central_solid": 2,
+    "spoke_angles_deg": [
+      90.0,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 3,
+        "neg": 3
+      },
+      "equator(111)": {
+        "on": 4,
+        "pos": 1,
+        "neg": 1
+      },
+      "x=y": {
+        "pos": 1,
+        "on": 4,
+        "neg": 1
+      }
+    }
+  },
+  "5": {
+    "corners_per_solid": 7,
+    "total_corner_instances_13cluster": 91,
+    "distinct_corner_points": 91,
+    "stack_histogram": {
+      "1": 91
+    },
+    "corner_instances_landing_on_a_centre": 13,
+    "equatorial_vertices_on_centres_central_solid": 1,
+    "spoke_angles_deg": [
+      72.0,
+      90.0,
+      144.0,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 3,
+        "neg": 4
+      },
+      "equator(111)": {
+        "on": 5,
+        "pos": 1,
+        "neg": 1
+      },
+      "x=y": {
+        "pos": 3,
+        "neg": 2,
+        "on": 2
+      }
+    }
+  },
+  "6": {
+    "corners_per_solid": 8,
+    "total_corner_instances_13cluster": 104,
+    "distinct_corner_points": 69,
+    "stack_histogram": {
+      "1": 44,
+      "2": 18,
+      "3": 6,
+      "6": 1
+    },
+    "corner_instances_landing_on_a_centre": 78,
+    "equatorial_vertices_on_centres_central_solid": 6,
+    "spoke_angles_deg": [
+      60.0,
+      90.0,
+      120.0,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 3,
+        "on": 2,
+        "neg": 3
+      },
+      "equator(111)": {
+        "on": 6,
+        "pos": 1,
+        "neg": 1
+      },
+      "x=y": {
+        "pos": 3,
+        "neg": 3,
+        "on": 2
+      }
+    }
+  },
+  "7": {
+    "corners_per_solid": 9,
+    "total_corner_instances_13cluster": 117,
+    "distinct_corner_points": 117,
+    "stack_histogram": {
+      "1": 117
+    },
+    "corner_instances_landing_on_a_centre": 13,
+    "equatorial_vertices_on_centres_central_solid": 1,
+    "spoke_angles_deg": [
+      51.43,
+      90.0,
+      102.86,
+      154.29,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 5,
+        "neg": 4
+      },
+      "equator(111)": {
+        "on": 7,
+        "pos": 1,
+        "neg": 1
+      },
+      "x=y": {
+        "pos": 3,
+        "neg": 4,
+        "on": 2
+      }
+    }
+  },
+  "8": {
+    "corners_per_solid": 10,
+    "total_corner_instances_13cluster": 130,
+    "distinct_corner_points": 129,
+    "stack_histogram": {
+      "1": 128,
+      "2": 1
+    },
+    "corner_instances_landing_on_a_centre": 26,
+    "equatorial_vertices_on_centres_central_solid": 2,
+    "spoke_angles_deg": [
+      45.0,
+      90.0,
+      135.0,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 5,
+        "neg": 5
+      },
+      "equator(111)": {
+        "on": 8,
+        "pos": 1,
+        "neg": 1
+      },
+      "x=y": {
+        "pos": 3,
+        "on": 4,
+        "neg": 3
+      }
+    }
+  },
+  "9": {
+    "corners_per_solid": 11,
+    "total_corner_instances_13cluster": 143,
+    "distinct_corner_points": 138,
+    "stack_histogram": {
+      "1": 134,
+      "2": 3,
+      "3": 1
+    },
+    "corner_instances_landing_on_a_centre": 39,
+    "equatorial_vertices_on_centres_central_solid": 3,
+    "spoke_angles_deg": [
+      40.0,
+      80.0,
+      90.0,
+      120.0,
+      160.0,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 5,
+        "on": 1,
+        "neg": 5
+      },
+      "equator(111)": {
+        "on": 9,
+        "pos": 1,
+        "neg": 1
+      },
+      "x=y": {
+        "pos": 5,
+        "neg": 4,
+        "on": 2
+      }
+    }
+  },
+  "10": {
+    "corners_per_solid": 12,
+    "total_corner_instances_13cluster": 156,
+    "distinct_corner_points": 155,
+    "stack_histogram": {
+      "1": 154,
+      "2": 1
+    },
+    "corner_instances_landing_on_a_centre": 26,
+    "equatorial_vertices_on_centres_central_solid": 2,
+    "spoke_angles_deg": [
+      36.0,
+      72.0,
+      90.0,
+      108.0,
+      144.0,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 6,
+        "neg": 6
+      },
+      "equator(111)": {
+        "on": 10,
+        "pos": 1,
+        "neg": 1
+      },
+      "x=y": {
+        "pos": 5,
+        "neg": 5,
+        "on": 2
+      }
+    }
+  },
+  "cube": {
+    "corners_per_solid": 8,
+    "total_corner_instances_13cluster": 104,
+    "distinct_corner_points": 104,
+    "stack_histogram": {
+      "1": 104
+    },
+    "corner_instances_landing_on_a_centre": 0,
+    "equatorial_vertices_on_centres_central_solid": null,
+    "spoke_angles_deg": [
+      70.53,
+      109.47,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 4,
+        "neg": 4
+      },
+      "equator(111)": {
+        "pos": 4,
+        "neg": 4
+      },
+      "x=y": {
+        "on": 4,
+        "pos": 2,
+        "neg": 2
+      }
+    }
+  },
+  "octahedron": {
+    "corners_per_solid": 6,
+    "total_corner_instances_13cluster": 78,
+    "distinct_corner_points": 78,
+    "stack_histogram": {
+      "1": 78
+    },
+    "corner_instances_landing_on_a_centre": 0,
+    "equatorial_vertices_on_centres_central_solid": null,
+    "spoke_angles_deg": [
+      90.0,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 1,
+        "neg": 1,
+        "on": 4
+      },
+      "equator(111)": {
+        "pos": 3,
+        "neg": 3
+      },
+      "x=y": {
+        "pos": 2,
+        "neg": 2,
+        "on": 2
+      }
+    }
+  },
+  "tetrahedron": {
+    "corners_per_solid": 4,
+    "total_corner_instances_13cluster": 52,
+    "distinct_corner_points": 52,
+    "stack_histogram": {
+      "1": 52
+    },
+    "corner_instances_landing_on_a_centre": 0,
+    "equatorial_vertices_on_centres_central_solid": null,
+    "spoke_angles_deg": [
+      109.47
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 2,
+        "neg": 2
+      },
+      "equator(111)": {
+        "pos": 1,
+        "neg": 3
+      },
+      "x=y": {
+        "on": 2,
+        "pos": 1,
+        "neg": 1
+      }
+    }
+  },
+  "dodecahedron": {
+    "corners_per_solid": 20,
+    "total_corner_instances_13cluster": 260,
+    "distinct_corner_points": 260,
+    "stack_histogram": {
+      "1": 260
+    },
+    "corner_instances_landing_on_a_centre": 0,
+    "equatorial_vertices_on_centres_central_solid": null,
+    "spoke_angles_deg": [
+      41.81,
+      70.53,
+      109.47,
+      138.19,
+      180.0
+    ],
+    "halving_central_corners": {
+      "x=0": {
+        "pos": 8,
+        "neg": 8,
+        "on": 4
+      },
+      "equator(111)": {
+        "pos": 10,
+        "neg": 10
+      },
+      "x=y": {
+        "on": 4,
+        "pos": 8,
+        "neg": 8
+      }
+    }
+  }
+}
