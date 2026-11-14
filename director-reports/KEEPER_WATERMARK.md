@@ -1,11 +1,11 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-14 00:19 CST  
-**UTC approx**: 2026-11-14T06:19:00Z
+**Last cycle**: 2026-11-14 01:21 CST  
+**UTC approx**: 2026-11-14T07:21:00Z
 
 ## Items ruled this cycle
-- No new dispositions. Prior #414 CONFIRM (scoped) at head 71c79f9dd4a45310792959f9a38942fa30bdebac holds; CODE MERGE HOLD continues pending campaign terminal + exact-head CI + Director merge auth.
-- Prior #413 contingent CONFIRM stands.
+- No new dispositions. #414 MERGED at head 71c79f9 (previously CONFIRMed scoped); awaiting Desk merge-identity verification and any post-merge final-check receipts.
+- Prior #413 CONFIRM (scoped) at e1e99eff holds; current head b0b06d3 unstamped — gap: no evidence packet or campaign at new head verified this cycle.
 - Historical queue items: no change, awaiting named evidence or authority rulings as previously stated.
 
 ## Trailing ledger
