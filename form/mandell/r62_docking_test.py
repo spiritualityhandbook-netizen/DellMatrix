@@ -611,8 +611,20 @@ def test_canary_sensitivity():
         sess = idock.dock(p, "agent-a", provider="fake",
                           fake_mode="reflect")
         r = sess.propose("draft", context={"note": handle})
+        # OBSERVATION POINT MOVED (LM-4, PR #416): the leak is
+        # observed on the fake provider's received prompt, where
+        # the full outbound text (and the handle inside its
+        # [context] block) remains fully observable. The stored
+        # proposal words are truncated to 300 chars by _propose,
+        # and the prepended LM-4 [decomposition] block pushes the
+        # [context] block past char 300 of the reflect echo --
+        # the canary went blind there, it did not stop leaking
+        # (lm4_ci/CLASSIFICATION.md SS3.3, counterfactual probe).
+        # The assertion's meaning is unchanged: with the screen
+        # weakened, the protected handle IS transmitted. The
+        # production screen and the 300-char cap are untouched.
         leaked = (r.get("ok") is True
-                  and handle in p.nursery.proposals[r["pid"]].words)
+                  and handle in (sess._provider.last_prompt or ""))
         check("D7:weakened_leaks", leaked,
               "protection weakened but no leak observed")
     finally:

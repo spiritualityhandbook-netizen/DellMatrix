@@ -327,6 +327,68 @@ def _print_route_receipt(receipt) -> None:
         _say("DELL: none — not executed")
         _say(f"RESULT: {receipt.error or 'not routed'}")
         _say(f"STATE: {receipt.state_note}")
+    # LM-4: the decomposition trace rides the route receipt (the
+    # receipt's lm is the executing Intent's, via route_intent).
+    _print_lm_block(getattr(receipt, "lm", None))
+
+
+def _print_lm_block(lm) -> None:
+    """LM-4 THE TOLL BOOTH: print one decomposition trace from an
+    Intent.lm / RouteReceipt.lm receipt -- gloss-style lines
+    (deeper information), then the spine reading labeled as a
+    projection. The executed chain remains the MANDELL line; the
+    spine never poses as what ran."""
+    if not lm:
+        return
+    pres = lm.get("presentation") or {}
+    for gl in pres.get("gloss") or []:
+        _say(gl)
+    spine = pres.get("spine_mandell") or ""
+    if spine:
+        _say(f"LM: spine reading: {spine} "
+             "(projection — not the executed chain)")
+
+
+# LM-4: actions whose _execute_intent arm routes through
+# route_intent -- their trace prints from the RouteReceipt, so
+# the pre-dispatch print point in _execute_intent skips them
+# (exactly one trace per executed English line).
+_LM_ROUTED_ACTIONS = frozenset({
+    "grow", "measure", "test", "architect", "simulate",
+    "checkpoint", "stamp", "cycle", "form", "retry",
+    "save", "discover", "nurture",
+})
+# Actions claimed by an _execute_intent arm BEFORE the Core-II
+# bridge arm: such an intent never reaches route_intent, even
+# when its Dell address is a Core-II number.
+_LM_EARLIER_ARM_ACTIONS = frozenset({
+    "place", "show", "visual", "walk", "run", "jog", "backstep",
+    "strafe", "stop", "turn", "face", "sit", "stand", "jump",
+    "bend", "express", "avatar_status", "enhance_on",
+    "enhance_off", "pulse", "sandbox_on", "sandbox_off",
+    "status", "help", "unknown",
+})
+
+
+def _lm_trace_is_routed(intent, checkpoint_lang) -> bool:
+    """True when the intent's _execute_intent arm will route
+    through route_intent (and therefore print the LM trace from
+    the RouteReceipt). Mirrors the dispatch chain's arm order."""
+    action = getattr(intent, "action", "") or ""
+    if action in _LM_ROUTED_ACTIONS:
+        return True
+    if action == "load":
+        # The non-checkpoint load arm is direct (persist_load);
+        # a checkpoint-language load falls to the routed DCC-III
+        # arm.
+        return bool(checkpoint_lang)
+    dell = getattr(intent, "dell", None)
+    if dell is not None and action not in _LM_EARLIER_ARM_ACTIONS:
+        try:
+            return 51 <= int(dell) <= 99
+        except (TypeError, ValueError):
+            return False
+    return False
 
 
 def _handle_latinmandell(p: Program, lower: str, raw: str):
@@ -2138,6 +2200,15 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
 
     # ─── Needs: strong create · edit · undo · history · nbd · ready ───
     if lower.startswith("create an idea") or lower.startswith("create idea") or lower.startswith("plant "):
+        # LM-4: this handler EXECUTES the translator's place
+        # semantics from the raw line (it shadows the place arm
+        # at the action chain), and translate() already read the
+        # line -- so the decomposition trace prints here, from the
+        # same Intent receipt, keeping exactly one trace per
+        # executed English line. (The pre-chain print point below
+        # sits after this handler; the PR records the deviation
+        # from the grounding's single-point placement.)
+        _print_lm_block(getattr(intent, "lm", None))
         from form.dell_matrix.needs import parse_and_place, format_create_end
         raw = raw_line
         if lower.startswith("plant "):
@@ -2980,6 +3051,24 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _say(f"  ({rep.get('note') or 'no map yet for this phrase/language'})")
         return p
 
+    # LM-4 THE TOLL BOOTH: exactly one decomposition trace per
+    # executed English line. Routed arms print it from the
+    # RouteReceipt (route_intent passthrough); every other arm
+    # prints it here, from the executing Intent -- with one
+    # exception above: the Needs strong-create handler, which
+    # executes the place semantics from the raw line and prints
+    # the same receipt at its own head. Everything else above
+    # this point that returns -- the pre-dispatch intercepts
+    # (macro / containment / program-evolve / checkpoint-restore,
+    # including the re-normalization recursion, whose INNER call
+    # is the executing one) and the raw-line sub-handlers
+    # (latinmandell / es / fr / bridge / phrases) -- never reaches
+    # a print point, so no trace is printed for an execution
+    # LatinMandell did not precede (grounding bypass census
+    # B7/B8).
+    if not _lm_trace_is_routed(intent, _checkpoint_lang):
+        _print_lm_block(getattr(intent, "lm", None))
+
     if action == "place":
         # Prefer strong-create parse when raw line has create/detail/goals
         raw = raw_line or intent.english or ""
@@ -3415,6 +3504,16 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
             # Compile failure: report honestly, execute zero Dells.
             print()
             print(f"COMPILE FAILURE: {cr.error}")
+            # LM-4: the failing clause's decomposition rides the
+            # failure -- zero Dells executed, but the clause's
+            # forced first read is on the record beside the
+            # refusal (ComposeResult.lm carries it).
+            _fail_lm = getattr(cr, "lm", None) or []
+            if _fail_lm and _fail_lm[-1]:
+                print("LM (failing clause decomposition):")
+                for _gl in ((_fail_lm[-1].get("presentation") or {})
+                            .get("gloss") or []):
+                    print(f"  {_gl}")
             print("Zero Dells executed.")
             print()
             return p

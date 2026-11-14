@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 import re
 
 from .phrases import match_phrase
+from .morpheme import compose_sentence, sentence_gloss_lines, token_key
 
 
 @dataclass
@@ -18,6 +19,12 @@ class Intent:
     args: Dict[str, Any] = field(default_factory=dict)
     mandel: str = ""
     english: str = ""
+    # LM-4 THE TOLL BOOTH: the LatinMandell decomposition receipt
+    # for the English this Intent was translated from (the forced
+    # first READ). Computed ONCE by the translate() wrapper and
+    # attached at its single exit point; None exactly when no
+    # decomposition exists (empty input -- never fabricated).
+    lm: Optional[Dict[str, Any]] = None
 
 
 # hint → action used by REPL
@@ -154,7 +161,155 @@ def _count_value(raw: Any, default: int = 1) -> int:
     return _COUNT_WORDS.get(s, default)
 
 
+# ------------------------------------------------------------------
+# LM-4 THE TOLL BOOTH: the forced pass. translate() is a thin
+# wrapper over _translate_body() (the pre-LM-4 translator, every
+# arm unchanged). The wrapper computes the LatinMandell
+# decomposition ONCE, at entry, on the text the body will
+# actually translate, and attaches it to the returned Intent at
+# this SINGLE exit point -- the body has ~77 return sites, and
+# per-site attachment is how one gets missed (the suite's T3 pins
+# every branch). The body's segmentation recursion calls the
+# BODY, so segments never mint their own receipts; the outer
+# call's receipt covers the whole input. english_composer calls
+# the public translate() per clause, so each clause Intent
+# carries its own clause-level receipt.
+#
+# The decomposition is a READ, not a routing input (grounding
+# conflict C2): it never changes which Intent the body returns
+# (T15 pins the pre-LM-4 baseline). FAIL-CLOSED: compose_sentence
+# runs BEFORE the body; a PairInconsistentError from the LM
+# table loader propagates out of translate() -- the line fails,
+# nothing executes without a receipt (Q-LM4.4; never the silent
+# no-decomposition execution).
+# ------------------------------------------------------------------
+
+# Argument keys whose VALUES echo the whole input rather than
+# capturing an operand (the create arm's `raw`, the unknown arm's
+# `query`). Every token would "match" an echo; echoes are not
+# captures and never mark operands.
+_LM4_ECHO_ARG_KEYS = ("raw", "query")
+
+
+def _lm4_operand_keys(intent: Intent) -> set:
+    """Normalized token keys captured as USER DATA by the body's
+    arms: every string value in Intent.args (recursively),
+    excluding the echo keys. Case is folded by token_key; the
+    arms' own captures already preserve the user's case in args
+    (D1 ARGUMENT_LOSS law) -- matching here is by lookup key."""
+    keys = set()
+
+    def _walk(v):
+        if isinstance(v, str):
+            for w in v.split():
+                k = token_key(w)
+                if k:
+                    keys.add(k)
+        elif isinstance(v, dict):
+            for x in v.values():
+                _walk(x)
+        elif isinstance(v, (list, tuple)):
+            for x in v:
+                _walk(x)
+
+    for k, v in (intent.args or {}).items():
+        if k in _LM4_ECHO_ARG_KEYS:
+            continue
+        _walk(v)
+    return keys
+
+
+def _lm4_spine_mandell(sentence: Dict[str, Any]) -> str:
+    """The spine as an NN[Dell] chain text -- a labeled READING
+    (projection), distinct from the executed mandel string, which
+    remains the authority for what ran. Dell names come from the
+    existing registry (the SSI-I precedent); an unnamed Dell
+    renders as its bare number."""
+    parts = []
+    for e in sentence.get("spine") or []:
+        dell = e.get("dell")
+        if dell is None:
+            continue
+        name = ""
+        try:
+            from .registry import get_dell
+            rec = get_dell(dell)
+            name = str((rec or {}).get("name") or "")
+        except Exception:
+            name = ""
+        parts.append(f"{dell:02d}[{name}]" if name else f"{dell:02d}")
+    return " > ".join(parts)
+
+
+def _lm4_receipt(intent: Intent, sentence: Dict[str, Any]) -> Dict[str, Any]:
+    """Assemble Intent.lm from the finished Intent + the entry
+    decomposition. OPERAND post-pass: a token the arms captured
+    as user data is reclassified OPERAND -- still traced (its
+    decomposition is shown; it was still read), but removed from
+    the spine and from Dell agreement, and the sentence figures
+    that depend on spine/class are recomputed. A user naming an
+    idea 'biology' must not make the sentence 'about' Dell
+    selection for that token."""
+    operands = _lm4_operand_keys(intent)
+    if operands:
+        for tok in sentence.get("tokens") or []:
+            if tok.get("normalized") in operands \
+                    and tok.get("role") != "operand":
+                tok["class"] = "OPERAND"
+                tok["role"] = "operand"
+        sentence["spine"] = [
+            {"token": t["token"], "dell": t["governing_dell"],
+             "via": t["via"]}
+            for t in sentence.get("tokens") or []
+            if t.get("role") == "function"]
+        dells = {e["dell"] for e in sentence["spine"]
+                 if e["dell"] is not None}
+        sentence["dell"] = dells.pop() if len(dells) == 1 else None
+        n = len(sentence.get("tokens") or [])
+        sentence["semantic_accounted"] = (
+            sum(1 for t in sentence.get("tokens") or []
+                if t.get("class") != "UNRESOLVED") / n if n else 0.0)
+    structs = {t["structural_dell"]
+               for t in sentence.get("tokens") or []
+               if t.get("structural_dell") is not None}
+    s_dell = structs.pop() if len(structs) == 1 else None
+    g_dell = sentence.get("dell")
+    agree = None if (s_dell is None or g_dell is None) \
+        else (s_dell == g_dell)
+    return {
+        "sentence": sentence,
+        "intent_dell": intent.dell,
+        "spine_dell": sentence.get("dell"),
+        "dell_diagnostic": {
+            "structural_dell": s_dell,
+            "governing_dell": g_dell,
+            "agree": agree,
+        },
+        "presentation": {
+            "gloss": sentence_gloss_lines(sentence),
+            "spine_mandell": _lm4_spine_mandell(sentence),
+        },
+    }
+
+
 def translate(english: str) -> Intent:
+    """English -> Intent, with the LM-4 decomposition attached.
+
+    Empty input returns the body's nothing_to_translate Intent
+    with NO receipt (no fabricated decomposition of nothing --
+    the wrapper's guard order preserves the body's entry guard).
+    Every other input is decomposed ONCE at entry; see the LM-4
+    block above."""
+    text = (english or "").strip()
+    if not text:
+        return _translate_body(english)
+    sentence = compose_sentence(text)
+    intent = _translate_body(english)
+    intent.lm = _lm4_receipt(intent, sentence)
+    return intent
+
+
+def _translate_body(english: str) -> Intent:
     text = english.strip()
     # B6 (Director FIX, step 6): empty input reports
     # nothing_to_translate — no fabricated Show intent, no side
@@ -223,7 +378,10 @@ def translate(english: str) -> Intent:
                 for rw in _REF_WORDS:
                     part = re.sub(rw, "last_result", part)
                 # Recursive translate (will not re-enter segmentation due to no "then")
-                sub = translate(part)
+                # LM-4: segments call the BODY -- the wrapper's
+                # outer receipt covers the whole input; a segment
+                # never mints its own sentence receipt.
+                sub = _translate_body(part)
                 if "unknown" in sub.mandel:
                     # Segment failed → whole thing is UNKNOWN (safe)
                     return Intent("unknown", None, "", {}, "09[Show] :: unknown", text)

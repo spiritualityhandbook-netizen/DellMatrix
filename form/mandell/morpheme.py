@@ -629,6 +629,242 @@ def compose_word(word: str) -> Dict:
     }
 
 
+# ------------------------------------------------------------------
+# LM-4 THE TOLL BOOTH (LatinMandell plan section 15, circuit LM-4)
+#
+# compose_sentence() is the sentence aggregator LM-3 deferred
+# (Q-LM3.3: word-level only in LM-3; phrase/sentence-spine
+# composition is LM-4). It consumes split_word/compose_word ONLY --
+# no new table access, no new ranking, no new authority:
+#
+# - TOKENS: whitespace split; the surface token is kept verbatim,
+#   the lookup key strips surrounding punctuation and folds case
+#   (token_key); hyphenated compounds pass through whole
+#   (split_word segments delimited forms). EVERY token appears
+#   exactly once, census and UNRESOLVED tokens included -- a token
+#   that resolves to nothing is carried as UNRESOLVED, visible,
+#   never silently dropped (plan Refinement A: UNRESOLVED flows
+#   to the reader's natural understanding).
+# - CLASSIFY (sentence level): a census word carries its LM-0
+#   categories (multi-category is law) and role "glue"; a content
+#   word with >=1 contributing piece is FUNCTION (role
+#   "function"); otherwise UNRESOLVED (role "unresolved"). The
+#   OPERAND class/role is assigned later, by the translator's
+#   receipt post-pass (translate.py) -- the aggregator cannot
+#   know which tokens are user data.
+# - SPINE: the FUNCTION tokens in order, each with its governing
+#   Dell (compose_word's final `dell`, curated-first per
+#   Q-LM3.1/shadow doctrine) or None, and `via` (curated /
+#   candidate / None). The spine is a PROJECTION -- a reading,
+#   not a fact (LM-3 discipline). It is DIAGNOSTIC ONLY: it never
+#   routes, never selects a Dell, never re-routes (grounding
+#   conflict C2; routing changes only where a ruling says so).
+#   The sentence `dell` is the single Dell when the spine yields
+#   exactly one distinct Dell, else None -- never fabricated
+#   from a multi-Dell spine.
+# - Q-LM3.5 DIAGNOSTIC (per token): structural_role = the
+#   piece-kind spine ("prefix+root", "whole", ...);
+#   structural_dell = the single distinct piece-candidate Dell,
+#   else None; governing_dell = compose_word's final Dell;
+#   dell_agree = True/False when BOTH sides are present (a
+#   disagreement is data, printed on the trace), None when one
+#   side is absent (stated, never smoothed). Report-only: the
+#   diagnostic never changes which Dell governs.
+# - Q-LM3.6 NAMING: the migration happens HERE, at the combined
+#   boundary only. Per word, `word_char_accounted` RELABELS the
+#   split receipt's `accounted` (value identical; the LM-2/LM-3
+#   word fields themselves are NOT renamed). Per sentence:
+#   `semantic_accounted` = tokens carrying a class (FUNCTION,
+#   any census category, OPERAND) / all tokens -- the plan SS4.7
+#   ACCOUNTED, computable only because every token is now
+#   classified; `sentence_morpheme_resolved` = the mean of the
+#   per-word morpheme_resolved over CONTENT (non-census) tokens.
+#   The bare key `accounted` never appears on a sentence receipt.
+# - FAIL-CLOSED: compose_sentence -> compose_word -> split_word
+#   -> the lm_table loader; a PairInconsistentError propagates
+#   exactly as it does out of the composer.
+# ------------------------------------------------------------------
+
+_LM4_STRIP_CHARS = ".,;:!?\"'()[]{}<>*"
+
+
+def token_key(surface: str) -> str:
+    """The lookup key for one surface token: surrounding
+    punctuation stripped, case folded. Hyphens are NOT stripped
+    (delimited compounds are split_word's own path)."""
+    return (surface or "").strip().strip(_LM4_STRIP_CHARS).strip().lower()
+
+
+def _lm4_token_record(surface: str) -> Dict:
+    norm = token_key(surface)
+    if not norm:
+        return {"token": surface, "normalized": "", "compose": None,
+                "class": "UNRESOLVED", "role": "unresolved",
+                "word_char_accounted": 0.0, "structural_role": None,
+                "structural_dell": None, "governing_dell": None,
+                "dell_agree": None, "via": None, "census": False,
+                "custom": False}
+    comp = compose_word(norm)
+    cls = comp["classify"]
+    if comp["census"]:
+        role = "glue"
+    elif cls == "FUNCTION":
+        role = "function"
+    else:
+        role = "unresolved"
+    cand_dells = {c["dell"] for c in comp["dell_candidates"]}
+    structural_dell = cand_dells.pop() if len(cand_dells) == 1 else None
+    governing = comp["dell"]
+    if structural_dell is None or governing is None:
+        agree = None
+    else:
+        agree = structural_dell == governing
+    curated = comp["curated"]
+    if governing is not None and curated is not None \
+            and curated.get("dell") == governing:
+        via: Optional[str] = "curated"
+    elif governing is not None:
+        via = "candidate"
+    else:
+        via = None
+    return {
+        "token": surface,
+        "normalized": norm,
+        "compose": comp,
+        "class": cls,
+        "role": role,
+        "word_char_accounted": comp["accounted"],
+        "structural_role": "+".join(
+            p["kind"] for p in comp["pieces"]) or None,
+        "structural_dell": structural_dell,
+        "governing_dell": governing,
+        "dell_agree": agree,
+        "via": via,
+        "census": bool(comp["census"]),
+        "custom": bool(curated and curated.get("custom")),
+    }
+
+
+def compose_sentence(text: str) -> Dict:
+    """LM-4 sentence composition. See the LM-4 contract above.
+
+    Returns {text (verbatim), tokens, spine, semantic_accounted,
+    sentence_morpheme_resolved, ambiguity, dell, lineage_class}.
+    Each token record is {token, normalized, compose (the
+    compose_word receipt), class, role, word_char_accounted,
+    structural_role, structural_dell, governing_dell, dell_agree,
+    via, census, custom}.
+    """
+    raw = text or ""
+    tokens = [_lm4_token_record(tok) for tok in raw.split()]
+    spine = [{"token": t["token"], "dell": t["governing_dell"],
+              "via": t["via"]}
+             for t in tokens if t["role"] == "function"]
+    dells = {e["dell"] for e in spine if e["dell"] is not None}
+    dell = dells.pop() if len(dells) == 1 else None
+    if any((t["compose"] or {}).get("ambiguity") is True
+           for t in tokens):
+        ambiguity: Any = True
+    elif any((t["compose"] or {}).get("ambiguity") == "no_candidate"
+             for t in tokens):
+        ambiguity = "no_candidate"
+    else:
+        ambiguity = False
+    n = len(tokens)
+    semantic_accounted = (
+        sum(1 for t in tokens if t["class"] != "UNRESOLVED") / n
+        if n else 0.0)
+    content = [t for t in tokens
+               if not t["census"] and t["compose"] is not None]
+    sentence_morpheme_resolved = (
+        sum(t["compose"]["morpheme_resolved"] for t in content)
+        / len(content) if content else 0.0)
+    lineage_class = (
+        "DERIVED_ADAPTATION"
+        if any((t["compose"] or {}).get("lineage_class")
+               == "DERIVED_ADAPTATION" for t in tokens)
+        else "INDEPENDENT")
+    return {
+        "text": raw,
+        "tokens": tokens,
+        "spine": spine,
+        "semantic_accounted": semantic_accounted,
+        "sentence_morpheme_resolved": sentence_morpheme_resolved,
+        "ambiguity": ambiguity,
+        "dell": dell,
+        "lineage_class": lineage_class,
+    }
+
+
+def _lm4_fmt_score(v: Any) -> str:
+    return str(round(float(v), 4))
+
+
+def sentence_gloss_lines(sentence: Dict) -> List[str]:
+    """The gloss-style presentation of a compose_sentence receipt
+    (Ace's 2026-11-13 routing: GLOSS STYLE when there is deeper
+    information). Pure function of the receipt: one line per
+    token (table senses verbatim; UNRESOLVED pieces bracketed in
+    place), then the Q-LM3.5 diagnostic line for every token
+    whose structural and governing Dells disagree, then the
+    honesty-score summary line. Census tokens render as their
+    predisposed meaning (the whole-piece form)."""
+    lines: List[str] = []
+    for t in sentence.get("tokens") or []:
+        surf = t["token"]
+        comp = t.get("compose")
+        cls = t.get("class")
+        cls_disp = "/".join(cls) if isinstance(cls, list) else str(cls)
+        if comp is None:
+            lines.append(
+                f"LM: {surf} → [{surf}] ⇒ UNRESOLVED [{cls_disp}]")
+            continue
+        pieces = comp.get("pieces") or []
+        gloss = comp.get("gloss")
+        if len(pieces) == 1 and pieces[0].get("kind") == "whole":
+            base = (f"LM: {surf} → {gloss}" if gloss
+                    else f"LM: {surf} → UNRESOLVED")
+        else:
+            parts = []
+            for p in pieces:
+                gov = p.get("governing")
+                if gov and gov.get("sense"):
+                    parts.append(f"{p['piece']}({gov['sense']})")
+                else:
+                    parts.append(f"[{p['piece']}]")
+            base = (f"LM: {surf} → " + " + ".join(parts)
+                    + f" ⇒ {gloss or 'UNRESOLVED'}")
+        note = ""
+        if cls == "OPERAND":
+            note = " · operand (user data — traced, not routed)"
+        else:
+            curated = comp.get("curated")
+            dell = comp.get("dell")
+            if curated is not None:
+                who = ("custom governs" if curated.get("custom")
+                       else "curated governs")
+                note = f" · {who}" + (
+                    f": Dell {dell:02d}" if dell is not None else "")
+            elif dell is not None:
+                note = f" · Dell {dell:02d} candidate"
+        lines.append(f"{base} [{cls_disp}{note}]")
+    for t in sentence.get("tokens") or []:
+        if t.get("dell_agree") is False:
+            lines.append(
+                f"LM: diagnostic: {t['token']} structural Dell "
+                f"{t['structural_dell']:02d} ≠ governing Dell "
+                f"{t['governing_dell']:02d} — the composition is a "
+                "reading; the governing Dell stands (routing "
+                "unchanged)")
+    lines.append(
+        "LM: semantic_accounted="
+        + _lm4_fmt_score(sentence.get("semantic_accounted", 0.0))
+        + " · sentence_morpheme_resolved="
+        + _lm4_fmt_score(
+            sentence.get("sentence_morpheme_resolved", 0.0)))
+    return lines
+
+
 def smoke() -> bool:
     print("=== MORPHEME PROTOCOL SMOKE ===")
     r = []

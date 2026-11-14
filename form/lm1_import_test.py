@@ -134,7 +134,15 @@ if _ROOT not in sys.path:
 # morpheme.py) and the artifact's sha moved with it
 # (45b42d65... -> 36e38c14...). Rows and the collisions file
 # remain byte-identical; the delta is exactly that one line.
-V1_SHA256 = "36e38c14e08e4afac8dba482dbcfc44299129a89f9443ba88e80d7e207788e20"
+# LM-4 REFRESH (PR pending, circuit LM-4): LM-4 extended
+# form/mandell/morpheme.py again (compose_sentence beside
+# compose_word -- purely additive; the harvested data tables
+# are untouched), so the same ONE header line was refreshed a
+# fourth time (23803c0c... -> 149ada3b..., the LM-4
+# morpheme.py) and the artifact's sha moved with it
+# (36e38c14... -> 9383cdd7...). Rows and the collisions file
+# remain byte-identical; the delta is exactly that one line.
+V1_SHA256 = "9383cdd78775d4fb5f9ae1fda22181a68965b2c0a844e73954456854abb28c9d"
 QUARANTINED = ("dell", "man", "re", "alpha", "delta", "omega")
 
 RIGHTS = {"text": "Creative Commons Attribution-Share Alike 4.0",
