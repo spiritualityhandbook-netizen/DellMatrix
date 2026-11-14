@@ -1,10 +1,10 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-13 23:14 CST  
-**UTC approx**: 2026-11-14T05:14:00Z
+**Last cycle**: 2026-11-13 23:18 CST  
+**UTC approx**: 2026-11-14T05:18:00Z
 
 ## Items ruled this cycle
-- PR #414 / F-d repair — **CONFIRM (scoped) at head 5ad3bf752f9ff455e22ea02ff1c73d74436724ba**. Director accepted repair for final verification; O1/F1/F2 addressed; failing-first 24/24; mutants killed. CODE MERGE HOLD remains until campaign terminal + exact-head CI + Director merge auth.
+- PR #414 / F-d repair — **CONFIRM (scoped) at head 71c79f9dd4a45310792959f9a38942fa30bdebac**. F1 guard reshape to decorator restores IAC-I pin (iac_i 36/36). CODE MERGE HOLD remains until campaign terminal + exact-head CI + Director merge auth.
 - Prior #413 contingent CONFIRM stands.
 
 ## Trailing ledger
