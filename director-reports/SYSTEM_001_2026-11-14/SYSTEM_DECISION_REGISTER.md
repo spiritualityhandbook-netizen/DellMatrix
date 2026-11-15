@@ -32,54 +32,134 @@ ruling; UU-6); everyday-save acceptance = load-time convergence
 register-closure credit (DC-7 above); completes 35 vs 39 (UU-14 —
 settled by the Nov 26 fresh render, not by argument).
 
-## Part B — Feature Intake (Ace's register)
+## Part B — Feature Intake (Ace's register, upgraded by his ruling 2026-11-14 18:36 CST)
 
-**Intake protocol.** When Ace states a feature — in any chat, at
-any time — Uni logs it here within the same sitting: number, his
-words, a one-paragraph design sketch, its honest constraints, its
-dependencies, and its status. Intake is *recording*, not adoption:
-a feature enters the plan's order when the Director folds it into a
-circuit or Ace directs it built. Nothing in this register is ever
-deleted; superseded entries are marked, not erased.
+### The Intake Law (Ace, verbatim substance)
 
-| ID | Stated | Feature (Ace's words) | Status |
-|---|---|---|---|
-| FI-001 | 2026-11-14 | "Dells as numbers — since they are numbers can we put them in a lattice in a way to use them faster and pull them faster" | DESIGNED (sketch below); awaiting Director fold-in |
-| FI-002 | 2026-11-14 | "I may add features to this as time passes by, keep that in mind because I know I'm forgetting plenty" | ADOPTED AS PROTOCOL — this register is the mechanism |
+Every feature Ace states — in any chat, at any hour — is logged
+**the moment he says it**, with a number and a status. Logging is
+not a stub and not a sketch. At intake, the feature is:
 
-### FI-001 — The Dell Lattice Index (design sketch)
+1. **MIRRORED** against the entire plan *as the plan stands at that
+   moment* — what is done, what is not done, calculated at intake
+   time (current totals, the feature's neighborhood state, its
+   dependencies' states, the live pins and open gates).
+2. **EXAMINED AND FULLY DEVELOPED** — the full plan of the idea is
+   brought into the plan: purpose, mechanism, contracts touched,
+   dependencies, failure behavior, acceptance test, evidence path —
+   to the same standard as a refined Grand Plan entry, so that when
+   its turn comes it can **just be executed**, with nothing left to
+   invent.
+3. **PLACED** — in its correct position: category, plan location,
+   and timeline position (which phase, what it waits for, what waits
+   for it). Intake is placement, **not** immediate work; a feature
+   is worked when its position's turn arrives or an authority moves
+   it.
+4. **DONE-DEFINED** — its completion criteria and its *why* are
+   written at intake, so "done" is checkable later against what was
+   meant.
 
-**What.** A derived spatial index over the canonical 99-Dell
-registry: each Dell's number is its address; the index places
-addresses in a lattice so retrieval is by coordinate (direct
-resolution, no list scan), neighborhoods return together (families
-and measured kin in one grab), and composition routes read as
-lattice paths.
+Nothing in this register is ever deleted; superseded entries are
+marked, not erased. Status lifecycle: `INTAKE → DEVELOPED → PLACED
+→ QUEUED → IN PROGRESS → BUILT → CERTIFIED`, with `BOUNDED` /
+`RESEARCH` / `DECISION` naming what a placement waits on.
 
-**Substrate.** HarmonicLattice (existing coordinate store with
-perception readings) is the candidate home; the registry stays the
-one canonical authority — the index is a *derived view*, rebuildable
-from the registry + the relation evidence, never a second store.
+### The register
 
-**Placement law (the honest constraint).** Coordinates must be
-*derived from measured relations* — Dell family structure, chain
-co-use counts, and the symbiosis pairwise evidence (the 100×99
-ordered-pair study is a Dell-to-Dell relation map) — never assigned
-for looks. A decorative lattice makes "near" meaningless and fast
-retrieval retrieves the wrong Dells confidently. Where relations are
-unmeasured, the index says so (UNKNOWN placement class) rather than
-inventing a position.
+| ID | Stated | Feature (Ace's words) | Placed | Status |
+|---|---|---|---|---|
+| FI-001 | 2026-11-14 18:27 | "Dells as numbers — since they are numbers can we put them in a lattice in a way to use them faster and pull them faster" | Part I (Architecture / spatial-indexing); Roadmap Phase 4 | DEVELOPED + PLACED (below); BOUNDED on the placement-derivation ruling |
+| FI-002 | 2026-11-14 18:27, upgraded 18:36 | "I may add features to this as time passes by… I know I'm forgetting plenty" + the 18:36 development-and-placement ruling | Governance — this register | ADOPTED AS LAW — the mechanism described above |
 
-**Acceptance sketch.** A lookup-by-coordinate returns exactly the
-registry's Dell for that address (round-trip against the registry on
-all 99); a neighborhood query returns only Dells whose measured
-relation clears a stated threshold, with the evidence on the
-receipt; rebuild-from-scratch reproduces the index bit-for-bit
-(determinism).
+---
 
-**Dependencies.** Registry (exists) · symbiosis pairwise evidence
-(research exists; composition laws pending their held-out test) ·
-HarmonicLattice (exists) · a Director ruling on the placement
-derivation (which relations, which thresholds) before any build.
+### FI-001 — THE DELL LATTICE INDEX (fully developed at intake)
+
+**Ace's words.** "Dells as numbers — since they are numbers can we
+put them in a lattice in a way to use them faster and pull them
+faster."
+
+**Why (his purpose, and the boundary it sets).** Speed of use and
+retrieval: reach the right Dell, and the right *company* of Dells,
+without scanning the registry. The why also bounds the design — the
+index is an accelerator over the truth, never a source of it.
+
+**Mirror — the plan as it stood at intake (2026-11-14 18:36 CST,
+calculated).** Unified plan: **35 COMPLETE verified of 224 (15.6%)**,
+target ≥56 by Nov 26. Done neighbors: the canonical registry (99
+Dells, live), the executor (128 importers — the retrieval consumer),
+HarmonicLattice (coordinate store + readings, exists), FLOW profiles
+(merged), LM-4 (live). Not done: the Dell Plan gate has not started
+under the unified order (69 of 99 Dells carry plan debt — the index
+accelerates *reaching* Dells, it does not repair what they do); the
+symbiosis composition laws have not yet passed their held-out
+prediction test (the pairwise evidence exists; the laws are
+pending); Tree admission is gated (THL-SM-02 Keeper reproduction,
+then the Director's ruling); placement contract SYS-C12 is PROPOSED;
+Boundary 4 is PARTIAL; the census's runtime half (X11) is
+outstanding. Pins: main `62bdcbc`; PRs open — #418, #420, #421
+(unified plan; Director HOLD, crosswalk required), #422 (SYSTEM-001,
+this package).
+
+**What.** A derived spatial index over the canonical registry:
+every Dell's number is its address; the index assigns each address
+lattice coordinates plus neighborhood sets, and serves three
+retrievals — by coordinate (direct resolution), by neighborhood
+(measured kin in one grab), by route (composition paths read as
+lattice paths).
+
+**How.** A build pass reads (a) the canonical registry, (b) the
+relation evidence — Dell family structure, chain co-use counts from
+executor receipts, the symbiosis pairwise classifications — and
+derives coordinates **deterministically**. Runtime consumers (REPL,
+executor, Studio navigation) consult the index for retrieval; on
+any index doubt they fall back to the registry, which the index can
+never outrank.
+
+**Where.** A new index module in `form/dell_matrix/` beside
+`harmonic_lattice.py` (the candidate substrate), a build/rebuild
+tool beside the LM build tools, and the derived index stored under
+`form/state/` as a cache carrying a provenance header (registry
+fingerprint + evidence ids + build pin). New contract proposed at
+build time: SYS-C45 (registry → index derivation).
+
+**Placement law (the honest constraint, from the Tree's law).**
+Coordinates are derived from **measured relations only** — never
+assigned for looks. A decorative lattice makes "near" meaningless
+and fast retrieval retrieves the wrong Dells confidently. Where a
+relation is unmeasured, the Dell carries an UNKNOWN placement class:
+still retrievable by address, honestly unplaced by relation.
+
+**Failure behavior.** Stale index (registry changed since build) →
+fingerprint mismatch → the index refuses and rebuilds or falls back
+to the registry; a Dell is never made unreachable by the index.
+Corrupt index → same path. The index failing can only ever cost
+speed, never correctness.
+
+**Acceptance — what "done" means (checkable).** (1) Round-trip: all
+99 addresses resolve through the index to exactly the registry's
+Dells. (2) Neighborhood queries return only relations over a stated
+threshold, with evidence ids on the receipt. (3) Rebuild from
+scratch reproduces the index bit-for-bit. (4) The "faster" claim is
+**measured** — a retrieval benchmark against registry list-scan,
+recorded (§1 doctrine: efficiency claims are requirements until
+measured). (5) Public-path proof through the REPL.
+
+**Placement (position, category, timeline).** Category: Part I —
+Architecture / spatial + indexing; contract family Boundary 4.
+Timeline: **Roadmap Phase 4** (spatial reconciliation), beside
+SYS-C12 (idea placement) — both consume measured-relation evidence,
+so they share a derivation ruling. It is deliberately **not** in the
+Dell Plan gate: the gate repairs what Dells *do*; the index changes
+how they are *reached* — a different layer, and mixing them would
+slow both. Waits for: (1) the Director's placement-derivation
+ruling (which relations, which thresholds — Q-S1.3 carries the
+recommendation); (2) the symbiosis laws' held-out test, **or** a
+fallback derivation from family + co-use alone, labeled weaker on
+the index's own provenance header. Nothing on the critical path
+waits for FI-001; journeys J-13/J-15 gain from it when it lands.
+
+**Readiness: BOUNDED** (derivation ruling + evidence status). When
+its turn comes: one bounded circuit, execution-ready as written.
 
 *End of Deliverable 8.*
