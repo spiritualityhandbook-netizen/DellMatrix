@@ -1,8 +1,11 @@
 # THE GRAND WORKFLOW — UNI EXAMINATION, SYNTHESIS, AND CONCURRENCE
 
 **Author:** Uni Ω (sole code seat) · **Date:** 2026-11-14 · **Status:** Uni's
-examination + reconciled draft, posted for Director and Keeper concurrence
-on this same packet. **Inputs:** Keeper Contribution (2026-11-14 22:57 CST,
+examination + reconciled draft; **amended 2026-11-14 23:08 CST** with the
+Director's corrections GW-01–GW-08 incorporated as Part 5 (governing where
+they differ from Parts 1–4). **Keeper FINAL CONCURRENCE recorded**
+(2026-11-14 23:08 CST). Director CONDITIONAL CONCURRENCE recorded; his
+final concurrence on this amended packet is the remaining signature. **Inputs:** Keeper Contribution (2026-11-14 22:57 CST,
 PLRC proposal); Director Reconciliation (2026-11-14, directive mail
 1a1dd9204d78f1d2); empirical cycle analysis (hidden_files/
 grand_workflow_cycle_empirics_2026-11-14.md); external research
@@ -249,3 +252,67 @@ attributed before it exists (Director's rule, concurred).
 are published as the versioned adoption record; WORKFLOW v1 is marked
 superseded by name; the Grand Plan's workflow references update in the
 same records act.
+
+## PART 5 — DIRECTOR CORRECTIONS GW-01–GW-08, INCORPORATED
+
+Director review of this packet (2026-11-14; ruling mail
+1a1dd9a06165da03): CONDITIONAL CONCURRENCE — core architecture
+accepted; eight corrections required and hereby incorporated. Where
+an amendment below differs from Parts 1–4, the amendment governs.
+The Keeper examined all eight independently (Final Examination,
+2026-11-14 23:08 CST) and ruled each ACCEPTED as incorporated here.
+
+- **GW-01 (§3 amended — frozen heads).** The freeze binds only a
+  packet declared review-ready. A repair never waits on a freeze: it
+  creates a new candidate version, the old version's stamps die
+  loudly, and independent work on other packets continues.
+- **GW-02 (§4 amended — proof tiers).** The tiers apply
+  prospectively. Every existing safety and merge obligation — the
+  hard gate, the §32 mail-freshness transaction, exact-head CI where
+  currently required, the no-terminal-green-no-merge rule — remains
+  in force until an authority ruling explicitly amends it. No tier
+  silently retires a gate that has caught a real defect; tier
+  assignment is justified from defect history, affected dependency
+  surfaces, and the consequences of an escaped failure (the
+  Director's test-selection rule, adopted).
+- **GW-03 (§7 amended — transport).** Agreement between transport
+  copies is corroboration, never authorization. A ruling acts only
+  with authenticated source identity and ruling provenance, per the
+  §35 certification discipline; mismatched or unauthenticated
+  copies quarantine as unauthenticated reports.
+- **GW-04 (§2 amended — plan-complete).** The plan contract is
+  compact and machine-checkable, sized proportionally to the work's
+  risk. Refusal names only specific missing essentials, in one
+  line. Plan-completeness is a contract check, not a paperwork tier.
+- **GW-05 (§1 amended — parallelism).** No arbitrary cap on
+  parallel work. Scheduling runs against measured resources
+  (machine capacity, state contention, worktree isolation), real
+  conflicts, and critical-path value — parallelism is scheduled,
+  not merely permitted.
+- **GW-06 (§6 amended — clocks).** The scheduled triggers are
+  preserved as they actually run. Event-driven progress happens
+  only where a running worker or an available tool genuinely
+  supports it; this workflow promises no continuity the platform
+  cannot deliver.
+- **GW-07 (§9 amended — board states).** Worked / proven / accepted
+  stand alongside the four standing dimensions — lifecycle,
+  certification, blockers, final-check. The three states never
+  substitute for the authority dimensions.
+- **GW-08 (new — provenance of research claims).** Every
+  quantitative research figure and model-capability claim used by
+  this workflow carries its provenance (source, date, vendor vs
+  independent, verification state). A figure becomes design
+  authority only after its original study, denominators,
+  applicability, and the actual deployed model identities are
+  verified; until then it is design input, labeled as such. The
+  Part 3 research figures are accordingly design input; Part 1's
+  internal empirics are verified from our own records.
+
+**Concurrence state on this amended packet:** Uni — author, concurs.
+Keeper — FINAL CONCURRENCE (2026-11-14 23:08 CST): "satisfies the
+three hard constraints… measurable (§12), self-repairing on external
+signals only (§10), and removes the three measured sinks."
+Director — conditional concurrence with GW-01–GW-08; **final
+concurrence on this amended packet is the remaining signature.**
+WORKFLOW v1 governs until it lands or Ace rules the Grand Workflow
+live.
