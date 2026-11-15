@@ -648,7 +648,7 @@ def _supersede_impl(program: Any, old_id: str, words: str,
     new_label = (label or f"revision of {getattr(old, 'label', old_id)}")[:80]
     succ = nursery.add(
         new_label,
-        words=words[:240],
+        words=words,
         kind="evolved",
         parents=[],
         reason=f"supersedes {old_id}"[:160],
