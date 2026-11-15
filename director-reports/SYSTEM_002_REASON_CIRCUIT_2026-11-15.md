@@ -78,3 +78,21 @@ Out of scope and untouched: `words[:240]` and `label[:80]` in the same `add()` (
 - Q-S2.2-R.2: supersession's dead `[:160]` was left as another circuit's cosmetic hunk. Confirm it should ride the Q-S2.3 supersession circuit rather than this one.
 
 *No MWL credit is claimed by this circuit. Merge follows the standing gates (main-session diff review, mutants, ×3 campaign, exact-head CI, authority stamps, §32) — none executed by this build lane.*
+
+## 9. R.1 atomicity test — result (addendum, per Director mail 1a1df854c1938a47)
+
+The Director confirmed Q-S2.2-R.1's explicit-refusal disposition on condition of an actual exchange public-path failing/atomicity test. It is built as checks R8 in the same suite (`form/nursery_reason_bound_test.py`, now **24/24 PASS**: the original 12 plus 12 R8 checks); no product code changed.
+
+**Path traced** (`exchange.import_packet`, exchange.py:688): `validate_packet` → protected-material screen → `_preflight_import` (read-only capacity/provenance checks; refuses before mutation) → import-journal intent written → `program.nursery.add(...)` → receipts recording → seed-payload recording → one `program.save()` → journal cleared. The store refusal fires at the `add` stage, before every post-landing stage. On any `add` exception, `import_packet` clears the intent journal and — the clear succeeding — re-raises the store's exception unwrapped; only a failed journal clear converts it (to `ExchangeError`, stage `journal_clear`, journal retained as recovery evidence).
+
+**Degenerate construction (deterministic, self-verifying):** 10 receipts with `origin` set and guess/test_method/result/mirror/outcome blank → 5 lint labels per receipt, 50 labels; the test recomposes the reason exactly as `import_packet` does and asserts it passes the bound before driving the import (measured: 1,393 chars, 50 labels).
+
+**Assertions and outcome — all green on the real path** (real `Program`, per-owner isolated state, af6 harness pattern; a normal 2-receipt import landed first so the preserved state was real, not empty):
+
+- *Typed/visible refusal:* the caller of `import_packet` receives the typed `NurseryReasonError` (a `ValueError`) propagated unwrapped — message: "reason length 1393 exceeds the admitted bound of 1000 chars; refused, nothing stored". No `{"ok": False}` dict is returned and no untyped error escapes on this path.
+- *No partial landing:* in-memory proposal count unchanged (1 → 1); recorded exchange receipts unchanged (2 → 2) and seed payloads unchanged (1 → 1); nursery file bytes byte-identical (926 → 926); program file bytes byte-identical (19,686 → 19,686); no import-journal residue (file absent, `_read_import_journal` returns None); a fresh `persist_rest.load` sees the unchanged nursery.
+- *Importer usable after:* a normal import immediately after the refused one lands (`ok: True`, proposal count 1 → 2).
+
+**Neighbor suites re-run with R8 in place:** af34_exchange_counters 19/19, af6_import_batching 13/13, dirf12_journal_receipt 20/20, step5_exchange_boundary 20/20, step5b_exchange_durability 21/21, p9_exchange 11/11, repair_r2 12/12, repair_r4 16/16 — all PASS.
+
+**Honest scope:** proven — for the reason-bound refusal at the landing stage, the exchange import is atomic and the refusal is typed and visible to the caller as an exception. NOT claimed — crash-mid-transaction recovery (the journal/`recover_exchange_import` path for failures *after* landing, e.g. during receipts recording or the final save) is a different failure class, covered by the step5b/dirf12 suites' own contracts, not exercised by R8; and a caller that lets the exception propagate uncaught will see a traceback rather than a receipt dict — the typed exception IS the surface the exchange path offers its callers today. Nothing is parked as residual for R.1: the existing compensation for this stage (refuse-before-mutation at the store + journal clear at the import layer) proves the contract the Director named.
