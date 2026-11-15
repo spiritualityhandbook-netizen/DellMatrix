@@ -168,3 +168,16 @@ mutants, the x3 regression campaign, exact-head CI.
 - Q-S2.2: reason[:160] has no admitted bound anywhere. Should one be
   declared (with explicit refusal), or is the field's contract
   "short rationale, tail loss acceptable" by design?
+
+---
+
+## 9. REVIEW ADDENDUM (main session, 2026-11-15) — caller-side pre-cuts disclosed
+
+During the build, two caller-side `[:240]` slices on words were found OUTSIDE `Nursery.add()` and left untouched (outside this circuit's authorized scope — the Nursery store):
+
+- `form/dell_matrix/exchange.py:768` passes `words=seed["keep"][:240]` into `Nursery.add()` — the exchange path pre-cuts its seed text at 240 BEFORE the Nursery sees it, so that path still loses admitted content end-to-end even with the store repaired.
+- `form/mandell/supersession.py:651` carries its own `words[:240]` on its own path.
+
+Neither is repaired here; both are disclosed so the merged repair is never read as an end-to-end guarantee for those callers.
+
+- Q-S2.3: Should the exchange-path pre-cut (and the supersession slice) be a bounded follow-up circuit under SYSTEM-002, or classified as caller-owned bounds with their own contracts?
