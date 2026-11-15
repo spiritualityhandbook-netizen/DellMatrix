@@ -1,12 +1,12 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-14 18:05 CST  
-**UTC approx**: 2026-11-15T00:05:00Z
+**Last cycle**: 2026-11-14 18:22 CST  
+**UTC approx**: 2026-11-15T00:22:00Z
 
 ## Items ruled this cycle
-- Merge identity verified for PR #419 (SHA 12891a95f14cd6d2ed72f18da93b72fa6c420f9b); receipts awaited.
-- New heads stamped: PR #420 (INSUFFICIENT_EVIDENCE — missing test evidence), PR #421 (INSUFFICIENT_EVIDENCE — missing test evidence).
-- No new Uni final-check receipts.
+- Head refreshes: PR #421 CONFIRM (scoped) at 35d3acd (CI terminal + records); PR #420 CONFIRM (scoped) at 398e373c (CI terminal + records; conflicting noted).
+- No new Uni final-check receipts. No new merges.
+- Full queue positioned; no change on historical awaiting Director.
 
 ## Trailing ledger
 - discharged this run: 0
