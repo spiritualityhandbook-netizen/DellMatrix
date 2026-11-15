@@ -1,0 +1,1008 @@
+{
+ "meta": {
+  "lane": "SYSTEM-001 Lane 1 \u2014 runtime component census",
+  "pin": "62bdcbcbb53396b87d5884e4fecbd6f8ac8ab239",
+  "method": "grep/AST-derived best-effort; dynamic importlib and subprocess references undercounted; see LANE1_CENSUS.md caveats",
+  "counts": {
+   "form_py_total": 487,
+   "test_like_by_name": 253,
+   "note": "task figure 253 tests; AST name-scan finds 274 test/proof-like files \u2014 difference is proof scripts not named *test*"
+  },
+  "consolidation": "SYSTEM-001 (2026-11-14): component edges grep-derived (Lane 1); boundary_edges added at consolidation from the Director's DIR-DM-SYSTEM-001 boundary map with statuses from the SYSTEM_CONTRACT_REGISTER."
+ },
+ "nodes": [
+  {
+   "id": "form.package",
+   "path": "form/__init__.py",
+   "kind": "package",
+   "owns": "none \u2014 derived",
+   "entrypoints": [],
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "form.main",
+   "path": "form/__main__.py",
+   "kind": "entrypoint",
+   "owns": "none",
+   "entrypoints": [
+    "python -m form"
+   ],
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "form.open",
+   "path": "form/open.py",
+   "kind": "entrypoint+runtime",
+   "owns": "Program live state (in-memory canonical session: ideas, plane units, nursery session, lattice, avatar session)",
+   "entrypoints": "open_program(owner), Program, main(), smoke()",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "form.repl",
+   "path": "form/repl.py",
+   "kind": "entrypoint",
+   "owns": "none \u2014 derived (drives Program; session state via Program/persist)",
+   "entrypoints": "python -m form.repl; main(); REPL commands incl. studio lines, lattice, learn, why, group, containment",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "form.regress",
+   "path": "form/regress.py",
+   "kind": "test-authority",
+   "owns": "none \u2014 derived (runs in private temp copy; fresh form/state)",
+   "entrypoints": "python -m form.regress [--order rev|--twice|--passk]",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "form.persist",
+   "path": "form/persist.py",
+   "kind": "persistence",
+   "owns": "v7 program document schema + _STATE_DIR authority (form/state)",
+   "entrypoints": "serialize(program)",
+   "persistence": "form/state/program_{owner}.json (via persist_rest save)",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "form.persist_rest",
+   "path": "form/persist_rest.py",
+   "kind": "persistence",
+   "owns": "save/load/checkpoint implementation for the v7 document",
+   "entrypoints": "save(program), load(owner), checkpoint(program), list_checkpoints(owner), durable(), smoke(), main()",
+   "persistence": "form/state/program_{owner}.json; program_{owner}_cp_{stamp}.json checkpoints",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "form.persist_core_ii",
+   "path": "form/persist_core_ii.py",
+   "kind": "persistence-helper",
+   "owns": "Core II durable field set (CORE_II_DURABLE) inside the v7 document",
+   "entrypoints": "(helpers used by persist)",
+   "persistence": "inside program_{owner}.json",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "form.owner_state_lock",
+   "path": "form/owner_state_lock.py",
+   "kind": "concurrency-authority",
+   "owns": "owner-state write lock",
+   "entrypoints": "(lock context used by persist/checkpoint writers)",
+   "persistence": "form/state lock files (owner-scoped)",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "form.accept",
+   "path": "form/accept.py",
+   "kind": "entrypoint",
+   "owns": "none",
+   "entrypoints": "python -m form.accept (one-click offline acceptance); __main__",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "form.give_blank",
+   "path": "form/give_blank.py",
+   "kind": "tool",
+   "owns": "none",
+   "entrypoints": "__main__ script",
+   "persistence": "writes form/state/START_{owner}.txt",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "form.grow",
+   "path": "form/grow.py",
+   "kind": "entrypoint",
+   "owns": "none (switch for self-grow)",
+   "entrypoints": "script entry (turn self-grow on)",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "form.greek",
+   "path": "form/greek.py",
+   "kind": "language-surface",
+   "owns": "none \u2014 derived",
+   "entrypoints": "Greek operator public floor functions",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "form.idea_create",
+   "path": "form/idea_create.py",
+   "kind": "parser",
+   "owns": "none \u2014 derived",
+   "entrypoints": "parse/validate idea create lines",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "form.invariants",
+   "path": "form/invariants.py",
+   "kind": "checks",
+   "owns": "none",
+   "entrypoints": "SUS invariant checks (runnable)",
+   "persistence": [],
+   "status_class": "ORPHAN_CANDIDATE"
+  },
+  {
+   "id": "form.lifecycle",
+   "path": "form/lifecycle.py",
+   "kind": "module",
+   "owns": "UNKNOWN (docstring: TPP-I Temporal Presence Projection)",
+   "entrypoints": "UNKNOWN",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "form.seed_strong_ideas",
+   "path": "form/seed_strong_ideas.py",
+   "kind": "tool",
+   "owns": "none (plants into a profile session via Program)",
+   "entrypoints": "script entry",
+   "persistence": "via Program/persist",
+   "status_class": "ORPHAN_CANDIDATE"
+  },
+  {
+   "id": "form.lm1_import",
+   "path": "form/lm1_import.py",
+   "kind": "build-tool",
+   "owns": "LM-1 table build artifacts",
+   "entrypoints": "build-time importer (Wikipedia roots)",
+   "persistence": "form/mandell/lm_table_v1.json + collisions.json (via lm1_harvest)",
+   "status_class": "HISTORICAL_ONLY"
+  },
+  {
+   "id": "form.lm1_harvest",
+   "path": "form/lm1_harvest.py",
+   "kind": "build-tool",
+   "owns": "LM-1 harvest table build",
+   "entrypoints": "build-time only",
+   "persistence": "form/mandell/lm_table_v1.json",
+   "status_class": "HISTORICAL_ONLY"
+  },
+  {
+   "id": "form.lm2_census_build",
+   "path": "form/lm2_census_build.py",
+   "kind": "build-tool",
+   "owns": "LM-2 census export",
+   "entrypoints": "build-time only",
+   "persistence": "JSON census export (path in module)",
+   "status_class": "HISTORICAL_ONLY"
+  },
+  {
+   "id": "mandell.registry",
+   "path": "form/mandell/registry.py",
+   "kind": "registry-authority",
+   "owns": "the Dell registry (numbered operators + manors); execution_standing",
+   "entrypoints": "get_dell, lookup, namespace_of, active_core_count",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.seed",
+   "path": "form/mandell/seed.py",
+   "kind": "language",
+   "owns": "none \u2014 derived (parse/validate/explain)",
+   "entrypoints": "parse_seed and related seed API",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.executor",
+   "path": "form/mandell/executor.py",
+   "kind": "execution-front-door",
+   "owns": "none \u2014 derived",
+   "entrypoints": "execute seed entrypoints",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.executor_leaf",
+   "path": "form/mandell/executor_leaf.py",
+   "kind": "execution",
+   "owns": "none \u2014 derived (dense Dell coverage leaf)",
+   "entrypoints": "leaf execution functions (referenced by executor/tests; AST import scan undercounts)",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.chain_exec",
+   "path": "form/mandell/chain_exec.py",
+   "kind": "execution",
+   "owns": "control frames / flow contract execution state (in-memory)",
+   "entrypoints": "chain execution API",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.flow_executor",
+   "path": "form/mandell/flow_executor.py",
+   "kind": "execution",
+   "owns": "none \u2014 derived",
+   "entrypoints": "DCC-IV composed execution; FLOW_CLASSIFICATION refusals",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.core_ii",
+   "path": "form/mandell/core_ii.py",
+   "kind": "language-spec",
+   "owns": "Core II architecture definition (Dells 51-99)",
+   "entrypoints": "(definition module)",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.core_ii_exec",
+   "path": "form/mandell/core_ii_exec.py",
+   "kind": "execution",
+   "owns": "Core II runtime state (in-memory formalized executable state)",
+   "entrypoints": "Core II execution API",
+   "persistence": "state serialized via persist_core_ii into v7 document",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.control_runtime",
+   "path": "form/mandell/control_runtime.py",
+   "kind": "execution",
+   "owns": "FLOW_CONTRACT + FLOW_PROFILES annotation (canonical chain / correspondence composition profiles)",
+   "entrypoints": "control predicates/frames",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.semantic_graph",
+   "path": "form/mandell/semantic_graph.py",
+   "kind": "graph-authority",
+   "owns": "Canonical Semantic Graph: relationships, journal, derivation/propagation state",
+   "entrypoints": "SemanticGraph; graph_path, graph_journal_path",
+   "persistence": "form/state graph file + graph journal (paths via _state_dir/graph_path in module)",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.semantic_router",
+   "path": "form/mandell/semantic_router.py",
+   "kind": "routing",
+   "owns": "none \u2014 derived",
+   "entrypoints": "typed Mandell->Dell routing",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.idea",
+   "path": "form/mandell/idea.py",
+   "kind": "data-authority",
+   "owns": "Canonical Idea type: identity, lifecycle state, provenance, property versions, change events",
+   "entrypoints": "Idea, LifecycleState, Provenance",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.idea_persist",
+   "path": "form/mandell/idea_persist.py",
+   "kind": "persistence",
+   "owns": "per-owner idea records",
+   "entrypoints": "idea load/save helpers",
+   "persistence": "form/state/ideas_{owner} (dir/file per module)",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.idea_checkpoint",
+   "path": "form/mandell/idea_checkpoint.py",
+   "kind": "persistence",
+   "owns": "idea checkpoint integration",
+   "entrypoints": "checkpoint helpers",
+   "persistence": "form/state/ideas_{owner}.json; ideas_rehydrate_{owner}.pending",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.checkpoint_generation",
+   "path": "form/mandell/checkpoint_generation.py",
+   "kind": "persistence-authority",
+   "owns": "checkpoint generations: pointer, manifests, sealed member files, retention (current+previous)",
+   "entrypoints": "commit_checkpoint, load_checkpoint, has_checkpoint, committed_generation_state",
+   "persistence": "form/state/current_{owner}.json; gen_{owner}_{id}.json; {kind}_{owner}.g_{id}.json",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.core_i_recovery",
+   "path": "form/mandell/core_i_recovery.py",
+   "kind": "recovery-authority",
+   "owns": "Core I checkpoints (27/28), rollback/confirm/checkpoint/supersede journals",
+   "entrypoints": "recovery + journal APIs",
+   "persistence": "form/state/rollback_{owner}.journal.json; confirm_{owner}.journal.json; checkpoint_{owner}.journal.json; supersede_{owner}.journal.json; *.staging files",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.supersession",
+   "path": "form/mandell/supersession.py",
+   "kind": "knowledge-lifecycle",
+   "owns": "versioned knowledge supersession + revision lifecycle (Supersession V1)",
+   "entrypoints": "supersession APIs",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.knowledge_selector",
+   "path": "form/mandell/knowledge_selector.py",
+   "kind": "selection",
+   "owns": "none \u2014 derived (deterministic contextual selection, Relevance V2)",
+   "entrypoints": "selector API",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.knowledge_influence",
+   "path": "form/mandell/knowledge_influence.py",
+   "kind": "explanation",
+   "owns": "none \u2014 read-only explanation layer (KIE-I)",
+   "entrypoints": "explanation API",
+   "persistence": [],
+   "status_class": "ORPHAN_CANDIDATE"
+  },
+  {
+   "id": "mandell.knowledge_lineage",
+   "path": "form/mandell/knowledge_lineage.py",
+   "kind": "lineage",
+   "owns": "knowledge evidence lineage (Lineage V1)",
+   "entrypoints": "lineage APIs",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "mandell.translate",
+   "path": "form/mandell/translate.py",
+   "kind": "language",
+   "owns": "none \u2014 derived",
+   "entrypoints": "45[Translate] English->Mandell",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.bridge",
+   "path": "form/mandell/bridge.py",
+   "kind": "language",
+   "owns": "none \u2014 derived",
+   "entrypoints": "45[Translate] bidirectional bridge",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "mandell.english_composer",
+   "path": "form/mandell/english_composer.py",
+   "kind": "language",
+   "owns": "none \u2014 derived",
+   "entrypoints": "English multi-step -> Mandell program -> DCC-IV execution (execute_composite)",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.english_brain",
+   "path": "form/mandell/english_brain.py",
+   "kind": "language",
+   "owns": "none \u2014 derived",
+   "entrypoints": "natural English understanding API",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "mandell.latinmandell",
+   "path": "form/mandell/latinmandell.py",
+   "kind": "language",
+   "owns": "LatinMandell morphological depth layer; LM table data (read-only loader in lm_table.py)",
+   "entrypoints": "decomposition/composition APIs; toll-booth reading in repl path",
+   "persistence": "reads form/mandell/lm_table_v1.json",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.lm_table",
+   "path": "form/mandell/lm_table.py",
+   "kind": "data-loader",
+   "owns": "none \u2014 read-only loader of the LM-1 table",
+   "entrypoints": "table load API",
+   "persistence": "reads lm_table_v1.json",
+   "status_class": "ORPHAN_CANDIDATE"
+  },
+  {
+   "id": "mandell.registry_dell_cards",
+   "path": "form/mandell/dell_cards.py",
+   "kind": "survey",
+   "owns": "none \u2014 derived (D1 proof cards for every Dell)",
+   "entrypoints": "build_card / cards API",
+   "persistence": "cleans/uses owner state dir during card builds (see module _cleanup)",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "mandell.language",
+   "path": "form/mandell/language.py",
+   "kind": "language-authority",
+   "owns": "Mandell language authority: persist, evidence, plan, parser adapter (per docstring)",
+   "entrypoints": "language APIs",
+   "persistence": "UNKNOWN (docstring claims persist role; path not isolated in scan)",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "mandell.floor",
+   "path": "form/mandell/floor.py",
+   "kind": "foundation",
+   "owns": "the Floor (immutable foundational constants/rules)",
+   "entrypoints": "FLOOR, assert_floor_intact, floor_status",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.circuit_ledger",
+   "path": "form/mandell/circuit_ledger.py",
+   "kind": "ledger",
+   "owns": "claims ONE current state authority for DellMatrix (docstring) \u2014 overlaps persist/checkpoint authorities; see census conflict note",
+   "entrypoints": "ledger APIs (used via importlib in tests)",
+   "persistence": "UNKNOWN",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "mandell.unit_binding",
+   "path": "form/mandell/unit_binding.py",
+   "kind": "containment",
+   "owns": "Plane Unit -> canonical Idea binding (TD-1)",
+   "entrypoints": "binding APIs",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.unit_containment",
+   "path": "form/mandell/unit_containment.py",
+   "kind": "containment",
+   "owns": "Plane Unit containment operations (TD-2)",
+   "entrypoints": "containment APIs",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "mandell.duobeta_learn",
+   "path": "form/mandell/duobeta_learn.py",
+   "kind": "learning",
+   "owns": "DuoBeta evidence-learning records (DBEL-I)",
+   "entrypoints": "learning APIs",
+   "persistence": "UNKNOWN",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "dell_matrix.core",
+   "path": "form/dell_matrix/core.py",
+   "kind": "runtime-host",
+   "owns": "DellMatrix snap host composition (required set post-preform)",
+   "entrypoints": "DellMatrix",
+   "persistence": "in-memory; persisted via Program/persist",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.plane",
+   "path": "form/dell_matrix/plane.py",
+   "kind": "spatial",
+   "owns": "Plane: perspectives (incl. FLOWER), skins, units, sandboxes (live state)",
+   "entrypoints": "Plane, Perspective, Skin, Unit, smoke(), main()",
+   "persistence": "serialized inside v7 program document",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.spatial_authority",
+   "path": "form/dell_matrix/spatial_authority.py",
+   "kind": "spatial-authority",
+   "owns": "Canonical Spatial Authority: positions/forces (mass, wells, separation, spring, center, weather modulation)",
+   "entrypoints": "SpatialAuthority",
+   "persistence": "UNKNOWN (state carried in Program/plane serialization)",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.harmonic_lattice",
+   "path": "form/dell_matrix/harmonic_lattice.py",
+   "kind": "spatial-derived",
+   "owns": "none \u2014 derived coordinate cell store + perception forms (core/cube/sphere/flower readings); note_at/chord readings",
+   "entrypoints": "HarmonicLattice; plant_flower; to_core/to_cube/to_sphere/to_flower",
+   "persistence": "serialized via persist (_serialize_lattice)",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.sacred_geometry",
+   "path": "form/dell_matrix/sacred_geometry.py",
+   "kind": "geometry",
+   "owns": "none \u2014 derived (pure geometry: flower_centers, vesica, verita_between_nodes, fractals)",
+   "entrypoints": "flower_centers, vesica, verita_between_nodes, geometry_status, smoke()",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.nursery",
+   "path": "form/dell_matrix/nursery.py",
+   "kind": "nursery-authority",
+   "owns": "Nursery proposals (pending pool) per owner",
+   "entrypoints": "Nursery, Proposal, owner_nursery_path",
+   "persistence": "form/state/nursery.json; form/state/nursery_{owner}.json (atomic_write)",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.ringed_growth",
+   "path": "form/dell_matrix/ringed_growth.py",
+   "kind": "growth",
+   "owns": "Ringed Growth \u2014 sole public growth path (per docstring); affinity/resonance-weighted growth state",
+   "entrypoints": "growth APIs; __main__ smoke",
+   "persistence": "via Program/persist",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.resonance",
+   "path": "form/dell_matrix/resonance.py",
+   "kind": "resonance",
+   "owns": "ResonanceAct state (in-memory)",
+   "entrypoints": "resonance APIs; __main__",
+   "persistence": "UNKNOWN",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "dell_matrix.harmony",
+   "path": "form/dell_matrix/harmony.py",
+   "kind": "derived-metric",
+   "owns": "none \u2014 derived (coherence/non-redundancy degree over idea sets)",
+   "entrypoints": "harmony APIs",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "dell_matrix.atomic_write",
+   "path": "form/dell_matrix/atomic_write.py",
+   "kind": "persistence-primitive",
+   "owns": "none \u2014 the crash-safe JSON replacement primitive (DCC-XVII)",
+   "entrypoints": "atomic write function(s)",
+   "persistence": "(mechanism used by nursery, persist_rest, checkpoint, semantic_graph, others)",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.visual",
+   "path": "form/dell_matrix/visual.py",
+   "kind": "studio-surface",
+   "owns": "none \u2014 derived (visual control panel; offline HTML UI)",
+   "entrypoints": "main(); visual panel generation",
+   "persistence": "writes HTML output (path in module)",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.live_visual",
+   "path": "form/dell_matrix/live_visual.py",
+   "kind": "studio-surface",
+   "owns": "none \u2014 derived (live two-way visual bridge, localhost only)",
+   "entrypoints": "live bridge server/handlers",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "dell_matrix.live_host",
+   "path": "form/dell_matrix/live_host.py",
+   "kind": "studio-host",
+   "owns": "none \u2014 derived (persistent live HTML host)",
+   "entrypoints": "main(argv); __main__",
+   "persistence": "serves HTML host (localhost)",
+   "status_class": "ORPHAN_CANDIDATE"
+  },
+  {
+   "id": "dell_matrix.perspective_studio",
+   "path": "form/dell_matrix/perspective_studio.py",
+   "kind": "studio-surface",
+   "owns": "none \u2014 derived (presentation adapter over compose_views)",
+   "entrypoints": "studio APIs",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "dell_matrix.profile_board",
+   "path": "form/dell_matrix/profile_board.py",
+   "kind": "board",
+   "owns": "none \u2014 derived (Dell 49 speedometer; reads state dir)",
+   "entrypoints": "profile board API; __main__",
+   "persistence": "reads form/state/*{owner}*",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.schema_board",
+   "path": "form/dell_matrix/schema_board.py",
+   "kind": "board",
+   "owns": "none \u2014 derived (Dell 39 read-only board)",
+   "entrypoints": "schema board API; __main__",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.simulate_board",
+   "path": "form/dell_matrix/simulate_board.py",
+   "kind": "board",
+   "owns": "none \u2014 derived (Dell 31 dry-run rehearsal; reads state dir)",
+   "entrypoints": "simulate board API; __main__",
+   "persistence": "reads form/state/*{owner}*",
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.forces",
+   "path": "form/dell_matrix/forces.py",
+   "kind": "forces",
+   "owns": "Nature Forces state (in-memory; persistence asymmetric per prior census \u2014 gravity wells + evolution saved, others not)",
+   "entrypoints": "forces APIs; __main__",
+   "persistence": "partially via Program/persist (see census note)",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "dell_matrix.lineage",
+   "path": "form/dell_matrix/lineage.py",
+   "kind": "lineage-authority",
+   "owns": "single lineage authority: parents, origin, version, inspect",
+   "entrypoints": "lineage APIs",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "dell_matrix.spatial_audio",
+   "path": "form/dell_matrix/spatial_audio.py",
+   "kind": "audio-derived",
+   "owns": "none \u2014 derived (position->pan/gain/band/ear cues)",
+   "entrypoints": "audio cue APIs; __main__",
+   "persistence": [],
+   "status_class": "ORPHAN_CANDIDATE"
+  },
+  {
+   "id": "dell_matrix.ambient_gate",
+   "path": "form/dell_matrix/ambient_gate.py",
+   "kind": "ingest",
+   "owns": "ambient inbox folders (files/screen/mic/clipboard adapters)",
+   "entrypoints": "gate APIs; __main__",
+   "persistence": "form/state/inbox/, screen/, mic/, clipboard/",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "dell_matrix.auto_growth",
+   "path": "form/dell_matrix/auto_growth.py",
+   "kind": "growth",
+   "owns": "automated Nursery producer state",
+   "entrypoints": "auto-growth APIs",
+   "persistence": "form/state (module _STATE; env DELLMATRIX_STATE override)",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "dell_matrix.exchange",
+   "path": "form/dell_matrix/exchange.py",
+   "kind": "exchange",
+   "owns": "seed packets with receipts (Exchange v1)",
+   "entrypoints": "exchange APIs",
+   "persistence": "receipts via atomic_write (paths in module)",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "duobeta.growth",
+   "path": "form/duobeta/growth.py",
+   "kind": "learning",
+   "owns": "DuoBeta living growth / self-understanding state",
+   "entrypoints": "growth APIs",
+   "persistence": "UNKNOWN",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "duobeta.selfgrow",
+   "path": "form/duobeta/selfgrow.py",
+   "kind": "learning",
+   "owns": "SelfGrow state file",
+   "entrypoints": "self-grow APIs",
+   "persistence": "selfgrow_state.json (module _DATA/STATE_PATH; direct open write)",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "llm.bridge",
+   "path": "form/llm/bridge.py",
+   "kind": "ai-bridge",
+   "owns": "none \u2014 derived (universal LLM bridge: cloud + local Ollama)",
+   "entrypoints": "bridge APIs",
+   "persistence": [],
+   "status_class": "ACTIVE"
+  },
+  {
+   "id": "llm.cli",
+   "path": "form/llm/cli.py",
+   "kind": "entrypoint",
+   "owns": "none",
+   "entrypoints": "main() \u2014 LLM bridge CLI for sister terminal",
+   "persistence": [],
+   "status_class": "ORPHAN_CANDIDATE"
+  },
+  {
+   "id": "avatar.body",
+   "path": "form/avatar/body.py",
+   "kind": "avatar",
+   "owns": "Avatar body FSM state",
+   "entrypoints": "body APIs",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "avatar.face",
+   "path": "form/avatar/face.py",
+   "kind": "avatar",
+   "owns": "Avatar face/expression state",
+   "entrypoints": "face APIs",
+   "persistence": [],
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "avatar.kaomoji",
+   "path": "form/avatar/kaomoji.py",
+   "kind": "avatar-data",
+   "owns": "none \u2014 derived (kaomoji packs)",
+   "entrypoints": "kaomoji data/functions",
+   "persistence": [],
+   "status_class": "ORPHAN_CANDIDATE"
+  },
+  {
+   "id": "worldwide.catalog",
+   "path": "form/worldwide/WORLDWIDE_IDEAS.py",
+   "kind": "catalog",
+   "owns": "none \u2014 source catalog for planting (data)",
+   "entrypoints": "idea catalog data",
+   "persistence": "planted via Program",
+   "status_class": "ACTIVE_UNVERIFIED"
+  },
+  {
+   "id": "ancient.stonehenge_seed",
+   "path": "form/ancient/stonehenge_seed.py",
+   "kind": "seed-data",
+   "owns": "none \u2014 structural seed (not decipherment claims)",
+   "entrypoints": "__main__ seed script",
+   "persistence": [],
+   "status_class": "HISTORICAL_ONLY"
+  },
+  {
+   "id": "matrices.readme",
+   "path": "form/matrices/README.md",
+   "kind": "documentation",
+   "owns": "none (directory contains README only \u2014 no Python modules at this pin)",
+   "entrypoints": "none",
+   "persistence": [],
+   "status_class": "HISTORICAL_ONLY"
+  }
+ ],
+ "edges": [
+  {
+   "from": "form.main",
+   "to": "form.open",
+   "kind": "calls"
+  },
+  {
+   "from": "form.open",
+   "to": "form.persist_rest",
+   "kind": "calls"
+  },
+  {
+   "from": "form.open",
+   "to": "dell_matrix.core",
+   "kind": "imports"
+  },
+  {
+   "from": "form.open",
+   "to": "dell_matrix.plane",
+   "kind": "imports"
+  },
+  {
+   "from": "form.open",
+   "to": "dell_matrix.nursery",
+   "kind": "imports"
+  },
+  {
+   "from": "form.open",
+   "to": "dell_matrix.harmonic_lattice",
+   "kind": "imports"
+  },
+  {
+   "from": "form.repl",
+   "to": "form.open",
+   "kind": "imports"
+  },
+  {
+   "from": "form.repl",
+   "to": "mandell.executor",
+   "kind": "calls"
+  },
+  {
+   "from": "form.repl",
+   "to": "mandell.latinmandell",
+   "kind": "calls"
+  },
+  {
+   "from": "form.persist",
+   "to": "form.persist_rest",
+   "kind": "calls"
+  },
+  {
+   "from": "form.persist",
+   "to": "form.persist_core_ii",
+   "kind": "imports"
+  },
+  {
+   "from": "form.persist_rest",
+   "to": "dell_matrix.atomic_write",
+   "kind": "calls"
+  },
+  {
+   "from": "form.persist_rest",
+   "to": "form.owner_state_lock",
+   "kind": "calls"
+  },
+  {
+   "from": "mandell.checkpoint_generation",
+   "to": "form.persist",
+   "kind": "reads"
+  },
+  {
+   "from": "mandell.core_i_recovery",
+   "to": "form.persist",
+   "kind": "reads"
+  },
+  {
+   "from": "mandell.idea_checkpoint",
+   "to": "form.persist",
+   "kind": "reads"
+  },
+  {
+   "from": "mandell.idea_persist",
+   "to": "form.persist",
+   "kind": "reads"
+  },
+  {
+   "from": "mandell.semantic_graph",
+   "to": "dell_matrix.atomic_write",
+   "kind": "calls"
+  },
+  {
+   "from": "mandell.executor",
+   "to": "mandell.executor_leaf",
+   "kind": "calls"
+  },
+  {
+   "from": "mandell.chain_exec",
+   "to": "mandell.control_runtime",
+   "kind": "imports"
+  },
+  {
+   "from": "mandell.english_composer",
+   "to": "mandell.flow_executor",
+   "kind": "calls"
+  },
+  {
+   "from": "dell_matrix.nursery",
+   "to": "dell_matrix.atomic_write",
+   "kind": "calls"
+  },
+  {
+   "from": "dell_matrix.plane",
+   "to": "dell_matrix.sacred_geometry",
+   "kind": "calls"
+  },
+  {
+   "from": "dell_matrix.harmonic_lattice",
+   "to": "dell_matrix.sacred_geometry",
+   "kind": "calls"
+  },
+  {
+   "from": "form.regress",
+   "to": "form.open",
+   "kind": "calls"
+  },
+  {
+   "from": "llm.bridge",
+   "to": "form.open",
+   "kind": "calls"
+  },
+  {
+   "from": "duobeta.selfgrow",
+   "to": "form.open",
+   "kind": "reads"
+  }
+ ],
+ "boundary_edges": [
+  {
+   "from": "english_input",
+   "to": "latinmandell",
+   "kind": "boundary-1 typed-meaning",
+   "status": "PARTIAL"
+  },
+  {
+   "from": "latinmandell",
+   "to": "dells",
+   "kind": "boundary-1 execution",
+   "status": "PARTIAL"
+  },
+  {
+   "from": "dells",
+   "to": "canonical_state",
+   "kind": "boundary-2 mutation+trace",
+   "status": "IMPLEMENTED_UNVERIFIED"
+  },
+  {
+   "from": "canonical_state",
+   "to": "semantic_graph",
+   "kind": "boundary-3 identity/containment",
+   "status": "IMPLEMENTED_UNVERIFIED"
+  },
+  {
+   "from": "semantic_graph",
+   "to": "spatial_authority",
+   "kind": "boundary-4 placement",
+   "status": "PARTIAL"
+  },
+  {
+   "from": "spatial_authority",
+   "to": "tree_geometry",
+   "kind": "boundary-5 slice/occupancy",
+   "status": "PROPOSED"
+  },
+  {
+   "from": "tree_geometry",
+   "to": "resonance_harmony",
+   "kind": "boundary-6 derived readings",
+   "status": "PROPOSED"
+  },
+  {
+   "from": "resonance_harmony",
+   "to": "nursery",
+   "kind": "boundary-7 candidates",
+   "status": "PARTIAL"
+  },
+  {
+   "from": "nursery",
+   "to": "persistence",
+   "kind": "boundary-8 atomic acceptance",
+   "status": "CONTRADICTED (silent 240-char store cut, SYS-C29)"
+  },
+  {
+   "from": "hcn",
+   "to": "dock",
+   "kind": "boundary-9 orchestration",
+   "status": "PROPOSED (no HCN engine in form/)"
+  },
+  {
+   "from": "dock",
+   "to": "psalm_matrix",
+   "kind": "boundary-9 roles/permissions",
+   "status": "PARTIAL"
+  },
+  {
+   "from": "all_engines",
+   "to": "studio",
+   "kind": "boundary-10 read models",
+   "status": "IMPLEMENTED_UNVERIFIED"
+  },
+  {
+   "from": "all_subsystems",
+   "to": "evidence",
+   "kind": "boundary-11 provenance/reproducibility",
+   "status": "PARTIAL"
+  }
+ ]
+}
