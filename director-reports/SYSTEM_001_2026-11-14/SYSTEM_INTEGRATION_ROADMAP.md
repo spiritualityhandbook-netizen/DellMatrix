@@ -71,11 +71,13 @@ against tests alone.
 **Phase 5 — Resonance, Nursery, learning (Boundaries 6–8).**
 - **SYSTEM-002 (recommended first implementation circuit — see the
   review packet): Nursery store silent-truncation repair** (SYS-C29,
-  CONTRADICTED). Bounded: one store path; the fix shape is already
-  governed by the Elastic Limits Doctrine (store at the admitted
-  5,000-char contract or refuse loudly — never silent). Failing-first
-  test on the store path; acceptance = a 5,000-char word round-trips
-  intact or refuses by name.
+  CONTRADICTED). Bounded: one store path. **Fix shape amended by
+  Ace (FI-004, 2026-11-14 19:01):** not a raised cap — *elastic,
+  demand-grown nested capacity* on the store path, per the Elastic
+  Limits Doctrine as Ace directs it (grow like the Harmonic Cube;
+  no silent cut at any size; capacity steps visible on the receipt).
+  Failing-first test on the store path; acceptance = words of any
+  admitted length round-trip intact, with growth steps receipted.
 - Nursery ranking build (SYS-C27): the designed formula
   (S = 0.40 LINK + 0.25 ACE + 0.20 FRESH + 0.15 NOVEL; top-5/topic;
   ceiling on PENDING only) implemented or the design formally

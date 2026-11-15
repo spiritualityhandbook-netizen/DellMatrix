@@ -72,6 +72,22 @@ reading over the one canonical registry* — never a second store
 (architectural law). Open questions (owner: Director/Ace) are in the
 Decision Register.
 
+## Ace's geometry rulings (2026-11-14 19:01 — FI-003, FI-005)
+
+**One window, tabbed.** All geometry lives in a single windowed
+surface, one tab per shape (FI-003) — binding on the Phase 7
+workspace and on any geometry surface built before it. **The
+Harmonic Cube is part of the Tree of Harmonic Life** (FI-005): a
+component of the Tree system, not a separate exhibit. Every dataset
+is representable on every harmonic shape *where a logical
+representation exists*; representability is computed per
+(data class × shape) — REPRESENTABLE / PROJECTED (losses named) /
+NOT REPRESENTABLE (reason proven) — and never faked. Where multiple
+logical linkings exist, all are kept as **named, numbered schemes**,
+switchable from the Console (the visual-control menu gains the
+linking-scheme selector); switching changes the reading only.
+Full developments: `SYSTEM_DECISION_REGISTER.md`, FI-003/FI-005.
+
 ## What this architecture forbids (carried from the directive)
 
 No second idea database (Tree), no second authority system (HCN), no
