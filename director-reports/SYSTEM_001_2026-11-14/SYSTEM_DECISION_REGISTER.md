@@ -32,6 +32,46 @@ ruling; UU-6); everyday-save acceptance = load-time convergence
 register-closure credit (DC-7 above); completes 35 vs 39 (UU-14 —
 settled by the Nov 26 fresh render, not by argument).
 
+### Director rulings on the SYSTEM-001 packet (2026-11-14, relayed by Ace; verified record folded in the main session — SYSTEM-001 disposition: CONDITIONAL CONFIRM, planning/census only, NOT a system certification)
+
+- **Q-S1.1 — CONFIRM SYSTEM-002**, limited to Nursery storage
+  integrity. *Implementation rule:* elastic capacity does **not**
+  require a cubic storage structure — Uni must first compare
+  practical storage mechanisms against FI-009's fitness standard;
+  the repair must eliminate silent truncation without unnecessary
+  complexity, unbounded resource consumption, or a new competing
+  persistence authority.
+- **Q-S1.2 — Living equation ledger.** Preserve historical entries;
+  append evidence-backed reclassifications. (The ledger circuit —
+  SYSTEM-002R — runs as a separate records circuit.)
+- **Q-S1.3 — CONFIRM FI-001 in Phase 4.** Index the canonical
+  registry; require **measured** speed gains and **evidence-based**
+  neighborhoods (FI-001's own acceptance terms, adopted).
+- **Q-S1.4 — Separate authority circuit.** The circuit_ledger.py /
+  language.py ownership questions do not mix into the Nursery
+  repair.
+- **DC-2 — Defer renaming** until callers and public compatibility
+  are inventoried; include all seven harmonic-name candidates in
+  the naming audit.
+- **DC-3 — Compare, don't crown:** lens-area fraction vs disk
+  Jaccard against stated use cases; no universal replacement
+  without evidence.
+- **DC-4 — Classify VERITA-JUDGE by demonstrated runtime
+  reachability**, not grep alone.
+- **DC-5 — Wait for X11's runtime evidence.**
+- **DC-6 — Mark the resonance "vesica" token as non-geometric**;
+  a separate measured-geometry contract is required before any
+  geometric claim.
+- **DC-7 — No automatic +3 COMPLETE credit** (GP-G24 / G-29 /
+  FAR-17); Keeper and Director verify the original acceptance
+  requirements individually.
+- **DC-8, DC-9, DC-10 — Ace-owned; preserved.** No authorization
+  inferred.
+- **DC-11 — Director concurs: living ledger**, with immutable
+  evidence references and version history. (Ace's lean and the
+  Director's concurrence now agree — the living-ledger question is
+  settled.)
+
 ## Part B — Feature Intake (Ace's register, upgraded by his ruling 2026-11-14 18:36 CST)
 
 ### The Intake Law (Ace, verbatim substance)
@@ -68,7 +108,7 @@ marked, not erased. Status lifecycle: `INTAKE → DEVELOPED → PLACED
 
 | ID | Stated | Feature (Ace's words) | Placed | Status |
 |---|---|---|---|---|
-| FI-001 | 2026-11-14 18:27 | "Dells as numbers — since they are numbers can we put them in a lattice in a way to use them faster and pull them faster" | Part I (Architecture / spatial-indexing); Roadmap Phase 4 | DEVELOPED + PLACED (below); BOUNDED on the placement-derivation ruling |
+| FI-001 | 2026-11-14 18:27 | "Dells as numbers — since they are numbers can we put them in a lattice in a way to use them faster and pull them faster" | Part I (Architecture / spatial-indexing); Roadmap Phase 4 | DEVELOPED + PLACED (below); **CONFIRMED in Phase 4 by the Director (Q-S1.3, 2026-11-14)** — measured speed gains + evidence-based neighborhoods required; BOUNDED on the placement-derivation ruling |
 | FI-002 | 2026-11-14 18:27, upgraded 18:36 | "I may add features to this as time passes by… I know I'm forgetting plenty" + the 18:36 development-and-placement ruling | Governance — this register | ADOPTED AS LAW — the mechanism described above |
 | FI-003 | 2026-11-14 19:01 | "All the geometry definitely should be window and tabbed together" | Part I / H9 neighborhood; Roadmap Phase 7 | RULED by Ace (presentation law); DEVELOPED below |
 | FI-004 | 2026-11-14 19:01 | Elastic storage everywhere it can happen — stores grow like the Harmonic Cube (nested, demand-grown), starting with the Nursery store | Cross-cutting (persistence); amends SYSTEM-002's fix shape | DEVELOPED below; BOUNDED on the storage-mechanism design |
@@ -232,8 +272,12 @@ design — elastic applies to *capacity*, never to *authority*).
 intact; capacity steps are visible on the receipt; no silent cut
 exists anywhere on the path. **Placed:** cross-cutting persistence;
 Nursery step inside SYSTEM-002 (Phase 5); the generalization rides
-Phase 3's state work. BOUNDED on the mechanism design + the
-Director's SYSTEM-002 confirm (Q-S1.1 updated by this amendment).
+Phase 3's state work. **Director's implementation rule
+(2026-11-14):** SYSTEM-002 is CONFIRMED (Q-S1.1), and elastic
+capacity does **not** require a cubic structure — practical storage
+mechanisms are compared under FI-009 first; no unnecessary
+complexity, no unbounded resource consumption, no new competing
+persistence authority.
 
 ### FI-005 — HARMONIC GEOMETRY: THE CUBE IN THE TREE, EVERY SHAPE A READING, LINKINGS SWITCHABLE
 
