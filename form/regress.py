@@ -198,6 +198,7 @@ LIST = [
     "form.snapshot_revalidation_test",
     "form.dock_proposal_b_test",
     "form.nursery_confirm_race_test",
+    "form.nursery_reason_bound_test",
     "form.core_ii_version_validation_test",
     "form.atomic_write_boundaries_test",
     "form.forcefield_gravity_evolution_test",

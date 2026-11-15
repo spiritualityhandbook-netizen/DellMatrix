@@ -57,6 +57,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
+from form.dell_matrix.nursery import MAX_REASON_CHARS
 from form.dell_matrix.session_section import (
     MISSING,
     add_malformed,
@@ -140,7 +141,12 @@ def _is_valid_entry(e: Any) -> bool:
         return False
     if not _bounded_str(e.get("task"), 40):
         return False
-    if not _bounded_str(e.get("reason"), 160):
+    # Q-S2.2: the entry's reason is the proposal's stored reason verbatim
+    # (inference_dock._record_evidence copies prop.reason), so the bound
+    # is the Nursery's admitted reason bound — the historical 160 here
+    # mirrored the store's silent cut and would have marked every
+    # admitted 161..1000-char reason's evidence entry invalid.
+    if not _bounded_str(e.get("reason"), MAX_REASON_CHARS):
         return False
     if not _bounded_str(e.get("origin"), 120):
         return False
