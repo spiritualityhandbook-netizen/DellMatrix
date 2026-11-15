@@ -76,6 +76,7 @@ marked, not erased. Status lifecycle: `INTAKE → DEVELOPED → PLACED
 | FI-006 | 2026-11-14 19:01 | Everything mirrored against everything else — no unexplored function between two components, and none between three (the Tree harmonizes in threes) | Standing exploration law (extends the symbiosis requirement to triples + all components) | ADOPTED AS STANDING LAW; program developed below |
 | FI-007 | 2026-11-14 19:01 | Dell arithmetic and mathematics on chains of thought — add/multiply/divide Dells; fractions, algebra, calculus, and the other domains, asked of everything | Research program under Part I/II | DEVELOPED below; RESEARCH (lawful / category-error / impossible verdicts all admissible) |
 | FI-008 | 2026-11-14 19:01 | The standing inquiry — compare / clash / differ / hidden-in-combinations, asked of all components against the whole, themselves, and each other, over and over as the system evolves, "like a living system already building itself" | Standing law — the inquiry cadence | ADOPTED AS STANDING LAW; method developed below |
+| FI-009 | 2026-11-14 19:12 | "The 12×12×12 is not necessarily a design image, I want whatever suits the DellMatrix the best — same goes for all other harmonic geometry or harvest geometry" | Cross-cutting selection law (geometry) | ADOPTED AS STANDARD; developed below; corrects FI-004's framing |
 
 ---
 
@@ -211,9 +212,13 @@ states the principle (capacity nested and demand-grown, never a
 wall in practice, never empty pre-allocation; the census counted
 185 limits, 70 hindering) — but the *mechanism* in code is mostly
 fixed caps plus per-store habits; no shared elastic store exists.
-Ace's exact cube mechanics ("12×12×12 or however it operates") are
-**not verified in code** — recorded as his design image; the
-mechanism design is the work. **Development.** SYSTEM-002's fix
+Ace's "12×12×12" is **neither a spec nor a mere image**
+(corrected by Ace, 2026-11-14 19:12): it is one candidate geometry.
+Under the Fitness Standard (FI-009) the growth geometry — nesting
+factor, step sizes, dimensions — is selected by **what best suits
+DellMatrix**: the data it must hold and the operations it must
+serve, with the selection receipted. The mechanism design,
+including the fitness determination, is the work. **Development.** SYSTEM-002's fix
 shape is amended: not "raise the cap to 5,000," but *replace the
 fixed cap with demand-grown nested capacity* on the Nursery store
 path — store in full at any admitted size, capacity growing in
@@ -354,5 +359,30 @@ resolution or a named hidden-structure hypothesis under test.
 in each synchronization's record — the system examines itself on
 schedule, not on inspiration. **Placed:** governance, beside
 Flora I; first formal run at the next synchronization point.
+
+### FI-009 — THE FITNESS STANDARD FOR GEOMETRY (Ace ruling)
+
+**Ace's words.** "The 12 x12x12 is not necessarily a design image,
+I want whatever suits the DellMatrix the best. Same goes for all
+other harmonic geometry or harvest geometry." **The standard.**
+Every geometric structure in the system — the Harmonic Cube's
+growth geometry (FI-004), all harmonic geometry (FI-005's shapes
+and linkings), and harvest geometry (the HCN Harvest Engine's
+forms) — takes the form that **best suits DellMatrix**: fitted to
+the data it must hold, the operations it must serve, and measured
+behavior, with the fitness criteria stated and the selection
+receipted. Numbers Ace offers in conversation (12×12×12) enter as
+**candidates** — neither privileged as specs nor dismissed as
+decoration; evidence decides between candidates. **Boundaries.**
+Where a form is already proven (the FCC Tree mathematics,
+THL-SM-01), fitness is measured against the proof, not re-opened by
+taste. Where a frozen blueprint specifies a form (HCN R3 harvest
+geometry), the standard enters through the versioned-amendment
+door — it governs the amendment's choice; it does not silently
+override the freeze. **Done =** every geometric structure carries a
+fitness receipt: criteria, candidates considered, the selected
+form, and the reason it suits DellMatrix best. **Placed:**
+cross-cutting; first applications are FI-004's storage geometry
+(SYSTEM-002) and FI-005's representability calculus (Phase 4).
 
 *End of Deliverable 8.*
