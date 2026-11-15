@@ -60,6 +60,26 @@ class NurseryLabelError(ValueError):
 MAX_LABEL_CHARS = 200
 
 
+class NurseryWordsError(ValueError):
+    """Proposal words exceed the Nursery's admitted bound (SYS-C29).
+
+    Raised by Nursery.add BEFORE any mutation or save: oversize input is
+    refused explicitly and nothing is stored, replacing the historical
+    silent truncation at 240 chars, which destroyed admitted content
+    (the inference dock admits words up to 5,000 chars) with no error."""
+
+
+# SYS-C29: the Nursery's admitted bound for Proposal.words — the same
+# 5,000-char bound the inference dock enforces by explicit refusal
+# (form/dell_matrix/inference_dock.py MAX_WORDS_CHARS = 5000) before it
+# calls Nursery.add. Admitted words are stored in full, exactly; words
+# beyond the bound raise NurseryWordsError with no mutation. Per the
+# Elastic Limits Doctrine the bound is a runaway stop, not a hindrance:
+# it sits at the system's own admitted maximum.
+MAX_WORDS_CHARS = 5000
+
+
+
 # Reserved nursery-file key for DCC-XIX conflict dispositions. Can never
 # collide with a proposal ID: _slug() output is lowercase alnum plus
 # underscores, stripped of leading/trailing underscores, with a numeric
@@ -223,11 +243,19 @@ class Nursery:
         Q-S2.1: labels are stored in full up to MAX_LABEL_CHARS; longer
         labels raise NurseryLabelError BEFORE any mutation or save (the
         historical label[:80] silently destroyed admitted content).
+
+        SYS-C29: words are stored in full up to MAX_WORDS_CHARS; longer
+        words raise NurseryWordsError BEFORE any mutation or save (the
+        historical words[:240] silently destroyed admitted content).
         """
         if isinstance(label, str) and len(label) > MAX_LABEL_CHARS:
             raise NurseryLabelError(
                 f"label length {len(label)} exceeds the admitted bound "
                 f"of {MAX_LABEL_CHARS} chars; refused, nothing stored")
+        if isinstance(words, str) and len(words) > MAX_WORDS_CHARS:
+            raise NurseryWordsError(
+                f"words length {len(words)} exceeds the admitted bound "
+                f"of {MAX_WORDS_CHARS} chars; refused, nothing stored")
         pid = _slug(label, seed)
         # avoid exact id collision
         if pid in self.proposals:
@@ -235,7 +263,7 @@ class Nursery:
         p = Proposal(
             id=pid,
             label=label,
-            words=words[:240],
+            words=words,
             kind=kind,
             parents=parents or [],
             affinity=float(affinity),
