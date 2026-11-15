@@ -709,11 +709,16 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
     origin = f"exchange:{man['author_origin']}"[:120]
     lint_text = "; ".join(lint["labels"]) if lint["labels"] \
         else "chain complete"
+    # Q-S2.2: no [:160] pre-cut — the composed reason passes whole to
+    # the Nursery, which stores admitted reasons losslessly to 1,000
+    # and refuses beyond explicitly (a degenerate packet whose lint
+    # text pushes the reason past the bound is refused at the store,
+    # never silently cut).
     reason = (
         f"exchange import from {man['author_origin']} · "
         f"replication: {lint['receipts']} receipt(s), "
         f"{lint['distinct_origins']} distinct origin(s) · "
-        f"lint: {lint_text}")[:160]
+        f"lint: {lint_text}")
     detail_lines = [f"KEEP: {seed['keep']}"]
     if seed["chain"]:
         detail_lines.append(f"SEED CHAIN: {seed['chain']}")

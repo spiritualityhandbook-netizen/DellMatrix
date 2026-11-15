@@ -198,6 +198,7 @@ LIST = [
     "form.snapshot_revalidation_test",
     "form.dock_proposal_b_test",
     "form.nursery_confirm_race_test",
+    "form.nursery_reason_bound_test",
     "form.nursery_label_bound_test",
     "form.nursery_words_bound_test",
     "form.core_ii_version_validation_test",

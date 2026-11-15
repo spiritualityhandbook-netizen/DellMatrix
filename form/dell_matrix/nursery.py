@@ -42,6 +42,27 @@ class NurseryLoadError(ValueError):
     fabricated."""
 
 
+class NurseryReasonError(ValueError):
+    """Proposal reason exceeds the Nursery's admitted bound (Q-S2.2).
+
+    Raised by Nursery.add BEFORE any mutation or save: oversize input is
+    refused explicitly and nothing is stored, replacing the historical
+    silent truncation at 160 chars, which destroyed admitted content
+    (the inference dock admits reasons up to 1,000 chars) with no error."""
+
+
+# Q-S2.2: the Nursery's admitted bound for Proposal.reason — the same
+# 1,000-char bound the inference dock enforces by explicit refusal
+# (form/dell_matrix/inference_dock.py: host reason in propose() and at
+# the semantic-verb entry, model reason in validate_semantic_output)
+# and director_session.py's MAX_REASON_CHARS = 1000, before callers
+# reach Nursery.add. Admitted reasons are stored in full, exactly;
+# reasons beyond the bound raise NurseryReasonError with no mutation.
+# The dock-session evidence validator (dock_session.py) shares this
+# bound, since its entries carry the stored reason verbatim.
+MAX_REASON_CHARS = 1000
+
+
 class NurseryLabelError(ValueError):
     """Proposal label exceeds the Nursery's admitted bound (Q-S2.1).
 
@@ -77,7 +98,6 @@ class NurseryWordsError(ValueError):
 # Elastic Limits Doctrine the bound is a runaway stop, not a hindrance:
 # it sits at the system's own admitted maximum.
 MAX_WORDS_CHARS = 5000
-
 
 
 # Reserved nursery-file key for DCC-XIX conflict dispositions. Can never
@@ -247,6 +267,10 @@ class Nursery:
         SYS-C29: words are stored in full up to MAX_WORDS_CHARS; longer
         words raise NurseryWordsError BEFORE any mutation or save (the
         historical words[:240] silently destroyed admitted content).
+
+        Q-S2.2: reason is stored in full up to MAX_REASON_CHARS; a longer
+        reason raises NurseryReasonError BEFORE any mutation or save (the
+        historical reason[:160] silently destroyed admitted content).
         """
         if isinstance(label, str) and len(label) > MAX_LABEL_CHARS:
             raise NurseryLabelError(
@@ -256,6 +280,10 @@ class Nursery:
             raise NurseryWordsError(
                 f"words length {len(words)} exceeds the admitted bound "
                 f"of {MAX_WORDS_CHARS} chars; refused, nothing stored")
+        if isinstance(reason, str) and len(reason) > MAX_REASON_CHARS:
+            raise NurseryReasonError(
+                f"reason length {len(reason)} exceeds the admitted bound "
+                f"of {MAX_REASON_CHARS} chars; refused, nothing stored")
         pid = _slug(label, seed)
         # avoid exact id collision
         if pid in self.proposals:
@@ -267,7 +295,7 @@ class Nursery:
             kind=kind,
             parents=parents or [],
             affinity=float(affinity),
-            reason=reason[:160],
+            reason=reason,
             harmony=float(harmony),
             graph_coherence=float(graph_coherence),
             origin=origin[:120] if isinstance(origin, str) else "",
