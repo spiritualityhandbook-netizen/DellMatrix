@@ -770,7 +770,7 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
             details={"stage": "journal"}) from e
     try:
         prop = program.nursery.add(
-            seed["label"], words=seed["keep"][:240], origin=origin,
+            seed["label"], words=seed["keep"], origin=origin,
             reason=reason, detail=detail_text,
             goals=[f"replication {lint['receipts']}x/"
                    f"{lint['distinct_origins']} origins"])

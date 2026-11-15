@@ -488,3 +488,16 @@ historical; 3 are unknown. This is the baseline Phase 0 must improve.
 - This ledger is append-only within GDP-V1. Completed objectives are never removed.
 
 *Ledger V1 — committed on branch `gdp-p0r4`. Base `1c90cecf9e5bbbf6bda055f3157ecada299f6840`.*
+
+---
+
+## 13. RECLASSIFICATION APPENDS — SYSTEM-002R living ledger (2026-11-15)
+
+*SYSTEM-002R (Q-S1.2 / DC-1 / DC-11, Director CONFIRMED): this ledger is a LIVING document. Reclassifications are appended here with provenance and evidence; prior claims are never erased (ledger §12). Code status is not mathematical admission; an append records what the evidence shows about the code/ledger relationship only.*
+
+### R4-A1 — DEDUP: EXECUTED (reclassification, 2026-11-15)
+
+- **Prior claim (ledger §7 table, R4-A1):** "`vesica_strength` core formula implemented twice live: `sacred_geometry.py:145` (EQ-GEO-001) and `verita.py:31-44` (EQ-VER-001)… `verita.py::vesica_strength` must delegate to the canonical implementation (or be removed with callers migrated)." The V1 headline likewise counts "1 live duplicate."
+- **Evidence (verified first-hand 2026-11-15 at main 17ae4ce):** `form/dell_matrix/verita.py` imports `from form.dell_matrix import sacred_geometry` and its `vesica_strength` (line 56) delegates to `sacred_geometry.vesica`, its docstring naming EQ-GEO-001 "live authority" — the required delegation EXISTS in the code. Independently found by the SYSTEM-001 census (pin 62bdcbc), which flagged this ledger row as STALE (the highest-severity ledger/code conflict in that census).
+- **New classification:** R4-A1 DEDUP = **EXECUTED**. One live authority for the vesica formula: `sacred_geometry.vesica` (EQ-GEO-001); `verita.vesica_strength` is a delegating adapter, not a second implementation. The V1 headline's "1 live duplicate exists" is superseded by this append (the historical text stands unedited, per append-only law).
+- **Provenance:** Uni (main session), 2026-11-15, SYSTEM-002R first append. No code changed by this entry.
