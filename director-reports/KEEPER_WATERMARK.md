@@ -1,15 +1,15 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-14 22:02 CST  
-**UTC approx**: 2026-11-15T04:02:00Z
+**Last cycle**: 2026-11-14 22:18 CST  
+**UTC approx**: 2026-11-15T04:18:00Z
 
 ## Items ruled this cycle
-- Receipt verify: PR #419 CONFIRM (scoped, records-only) at merge 12891a95f14cd6d2ed72f18da93b72fa6c420f9b / head 126186316af68bb690bb9716bfa4e9cad7fb737f. Trailing second cert discharged.
+- No new ripe items. Prior stamps held (#422 head a461d8ad, #421, #420, #418). #419 receipt prior.
 - No new merges since last watermark.
-- No new heads; prior stamps held (#422, #420, #421, #418).
+- Queue positions: no change, awaiting Director final-check dispositions on merged items listed in DIRECTOR_REVIEW_QUEUE.md.
 
 ## Trailing ledger
-- discharged this run: 1 (#419)
+- discharged this run: 0
 - remaining: 2 (DD-18, Q-DD42.1)
 - gaps: both await item-specific final-check receipt naming tested merged-main SHA + residual exclusions, or Director ruling.
 
