@@ -547,7 +547,10 @@ class Program:
                 "sandboxed": bool(u.sandboxed),
                 "zoomed": uid == self.cube.session.plane.zoom_target,
             })
-        for prop in self.ranked_proposals()[:12]:
+        # C5R.1 (AC-1.2): EVERY pending proposal appears as a ghost —
+        # the historical [:12] cap silently presented 12 as the count
+        # (the R42 defect: 15 pending -> 12 ghost entries, no total).
+        for prop in self.ranked_proposals():
             out.append({
                 "kind": "nursery_ghost",
                 "id": prop.get("id"),

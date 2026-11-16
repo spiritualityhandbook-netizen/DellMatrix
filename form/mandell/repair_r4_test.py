@@ -167,9 +167,13 @@ def _check_nonvacuity_and_labels():
         out2 = ex.import_packet(p, pkt2)
         built2 = ex.build_packet(p, out2["pid"])
         landed = p.nursery.proposals[out2["pid"]]
+        # Q-S2.1 contract (Director-authorized 2026-11-15): labels
+        # admitted to the dock bound of 200 are stored WHOLE by the
+        # Nursery; the pre-repair pin asserted the old silent [:80]
+        # cut. The check name said "round-trips" all along.
         _rec("100-char label round-trips from the payload",
              built2["seed"]["label"] == long_label
-             and len(landed.label) == 80,
+             and len(landed.label) == len(long_label),
              f"exported={len(built2['seed']['label'])} "
              f"nursery={len(landed.label)}")
     finally:
