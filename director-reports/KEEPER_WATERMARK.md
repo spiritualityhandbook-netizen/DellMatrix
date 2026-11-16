@@ -1,14 +1,13 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-16 11:21 CST  
-**UTC approx**: 2026-11-16T17:21:00Z  
-**Type**: DEEP PASS
+**Last cycle**: 2026-11-16 12:02 CST  
+**UTC approx**: 2026-11-16T18:02:00Z  
+**Type**: TERMINAL CONFIRM
 
 ## Items ruled this cycle
-- Trailing ledger: DD-18 and Q-DD42.1 remain discharged from prior cycle (10:25 CST). This pass confirms remaining = 0. No new items.
-- Scoreboard: audited against dual-belt ledger (PLAN denom 242, CODE denom 198). Documented COMPLETE baseline 35 of 182 (Manifest Sitting #002). Ledger notes 37. Rendered MWL.md still shows retired 39/182 — flag for correction. No new COMPLETE credited.
-- Queue: every item carries position or explicit no-change awaiting named evidence. No ripe terminal packages for new CONFIRM.
-- SWAT (wake/sleep transition): confirmations challenged against receipts (held); coverage of trailing list complete; stale stamps on MWL 39 noted; no missed failures identified on verified heads; gate decisions consistent with record.
+- Gate-ready scan since prior watermark (11:21 CST / 17:21Z): open PRs updated after cutoff are #461 (Workflow v2 DESIGN, head f395e175) and #452 (orphan dispositions refresh, head 384eb182).
+- Neither carries quiet full regression x3 terminal GREEN at exact head + exact-head CI terminal ALL PASS + checkpoint package. #452 CI (build/smoke) success but records-only; no regression x3 receipt. #461 is design draft; Director recheck scoped PASS at f395e175; no terminal package evidence.
+- No terminal CONFIRM issued. Pre-stamp conditions unmet on all candidates. No new stamps required.
 
 ## Trailing ledger
 - discharged this run: 0
@@ -16,7 +15,7 @@
 - gaps: none
 
 ## Automation posture
-Deep Pass complete. Trailing clear. Watermark advanced. No HOLD.
+Terminal Confirm complete. No ripe packages. Watermark advanced. No HOLD.
 
 ## Silence flag
 #308 / #294 / #233 fenced.
