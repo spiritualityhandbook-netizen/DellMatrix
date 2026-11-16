@@ -38,7 +38,7 @@ history for a healthy program.
 PROBE PURITY (the C7 acceptance: testing health never mutates
 user work): every provider below was audited as a pure read.
 Two documented exceptions to calling status()'s exact wrapper:
-Program.persona_matrix_status() WRITES persona_matrix.active
+Program.persona_matrix_status() WROTE persona_matrix.active
 on read, and Program.personas_status() nests that call — so
 the board reads persona_matrix.to_dict() directly and assembles
 the personas report from the same registry reads
@@ -148,8 +148,9 @@ def _probe_forces(program: Any) -> Dict[str, Any]:
 
 def _probe_personas(program: Any) -> Dict[str, Any]:
     # personas_status() itself is NOT called: it nests
-    # persona_matrix_status(), which writes on read (see the
-    # module docstring). These are the same registry reads
+    # persona_matrix_status(), which wrote on read before the
+    # Q-OD.2 purification (see the module docstring). These are
+    # the same registry reads
     # personas_status() assembles, minus the writing parts.
     from form.dell_matrix.personas import (
         PERSONAS, get_persona, list_categories)
@@ -166,8 +167,8 @@ def _probe_bimo(program: Any) -> Dict[str, Any]:
 
 
 def _probe_persona_matrix(program: Any) -> Dict[str, Any]:
-    # persona_matrix_status() writes .active on read; the
-    # organ's own to_dict() is the pure report it wraps.
+    # persona_matrix_status() wrote .active on read before
+    # Q-OD.2; the organ's own to_dict() is the report it wraps.
     return program.persona_matrix.to_dict()
 
 

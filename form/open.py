@@ -736,7 +736,12 @@ class Program:
         else:
             key = normalize_persona_id(name)
             self.persona_lens = key or name.lower().replace(" ", "_").strip()
-            if hasattr(self, "persona_matrix") and key:
+            if hasattr(self, "persona_matrix"):
+                # Q-OD.2: the writer syncs in EVERY branch — an
+                # unrecognized persona (key None) clears the matrix
+                # highlight rather than leaving the previous persona
+                # active (Codex finding on PR #462; pinned by
+                # persona_purity_test t6).
                 self.persona_matrix.active = key
             # if BIMO slot exists, dock this persona into its slot
             pe = get_persona(key) if key else None
@@ -748,11 +753,12 @@ class Program:
         return render_roster(self.persona_lens)
 
     def persona_matrix_status(self) -> Dict[str, Any]:
-        self.persona_matrix.active = self.persona_lens
+        # Q-OD.2: pure read — writers own the lens->active sync
+        # (set_persona_lens, bimo_fuse, bimo pilot, persist load).
         return self.persona_matrix.to_dict()
 
     def persona_matrix_ascii(self) -> List[str]:
-        self.persona_matrix.active = self.persona_lens
+        # Q-OD.2: pure read — see persona_matrix_status.
         return self.persona_matrix.render_ascii()
 
     def bimo_status(self) -> Dict[str, Any]:
