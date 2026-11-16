@@ -1,15 +1,15 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-16 15:17 CST  
-**UTC approx**: 2026-11-16T21:17:00Z  
-**Type**: DEEP CYCLE
+**Last cycle**: 2026-11-16 16:02 CST  
+**UTC approx**: 2026-11-16T22:02:00Z  
+**Type**: TERMINAL CONFIRM SCAN
 
 ## Items ruled this cycle
-- Deep Pass complete per GROK_DEEP_CYCLE_2026-11-16_1517CST.md.
-- Trailing second-certifications: remaining 0 (DD-18 / Q-DD42.1 clear; no new items).
-- Scoreboard: PLAN 242 / CODE 198 denominators confirmed. Baseline 35 of 182 (Sitting #002). MWL shows 39/182 (retired). Discrepancy flagged; both positions restated (post #463 merge). No new COMPLETE credited. No blending.
-- Queue: every item positioned or explicit no-change awaiting named evidence. No ripe terminal packages. Fenced items skipped. #462 remains pre-stamp.
-- No HOLD. No disagreements disposed (agreement required).
+- Terminal Confirm scan complete. No gate-ready packages Uni posted since prior watermark (2026-11-16 15:17 CST) meet the three terminal conditions (quiet full regression x3 GREEN at exact head + exact-head CI terminal ALL PASS + checkpoint package at head).
+- #462: previously noted pre-stamp; Acting Keeper issued TERMINAL CONFIRM and it was merged at d1e9c81423d70204865813ad81c914bef69c3c61. No further action.
+- #464: open records-only plan. Acting Keeper stamped TERMINAL CONFIRM at head 2563fe9fc4594aee3d59500d39a5db01b5203028, but CI not terminal ALL PASS (smoke in_progress at scan time). Does not meet full terminal criteria under Keeper Terminal Confirm rule. Pre-stamp relative to the three receipts. No new Uni checkpoint package.
+- No other open heads with Uni-posted checkpoint packages since last run.
+- No HOLD. Trailing remains 0.
 
 ## Trailing ledger
 - discharged this run: 0
@@ -17,7 +17,7 @@
 - gaps: none
 
 ## Automation posture
-Deep Cycle complete. Trailing clear. Scoreboard flag published. Watermark advanced. No HOLD.
+Terminal Confirm scan complete. No ripe packages. Watermark advanced. No HOLD.
 
 ## Silence flag
 #308 / #294 / #233 fenced.
