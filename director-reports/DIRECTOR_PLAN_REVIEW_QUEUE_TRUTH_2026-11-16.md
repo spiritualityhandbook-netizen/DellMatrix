@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-16 · **Status:** PLAN DRAFT / independent Uni + Keeper review required · **Authority:** Ace §42 full-capacity and GitHub-first rulings · **Owner of production/code/merge:** Uni. **Author:** Director. **Checker:** Keeper.
 
-**Verified source revision:** merged-main `d1e9c81423d70204865813ad81c914bef69c3c61`; `director-reports/DIRECTOR_REVIEW_QUEUE.md` blob `39a9531f4430bf2d922f00ee5c7e53df294debb2` (134 lines), `director-reports/INDEX.md` blob `c46a5e3f60ea8286f0602e282b4f3d3152d48592` (280 lines). The queue has 36 entries in the **Awaiting disposition** table, followed by cadence and workflow record tables. Existing rows include repeated Q-S2.2 material, already-disposed historical #400 and GS-4 questions, and literal `this PR head` instead of a resolvable PR/SHA. The repository's PR and comment record is available, yet outdated queue representations lead to false no-ripe sweeps.
+**Verified source revision:** merged-main `d1e9c81423d70204865813ad81c914bef69c3c61`; `director-reports/DIRECTOR_REVIEW_QUEUE.md` blob `39a9531f4430bf2d922f00ee5c7e53df294debb2` (133 lines by `wc -l`), `director-reports/INDEX.md` blob `c46a5e3f60ea8286f0602e282b4f3d3152d48592` (279 lines by `wc -l`). The queue has 36 entries in the **Awaiting disposition** table, followed by cadence and workflow record tables. Existing rows include repeated Q-S2.2 material, already-disposed historical #400 and GS-4 questions, and literal `this PR head` instead of a resolvable PR/SHA. The repository's PR and comment record is available, yet outdated queue representations lead to false no-ripe sweeps.
 
 ## Objective / nonnegotiable law
 
