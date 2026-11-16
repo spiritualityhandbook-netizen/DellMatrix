@@ -1,9 +1,10 @@
 # WORKFLOW v2 DESIGN — GitHub-First, Event-Driven, Two-Checker
 
-Author: Uni (drafting lane). Date: 2026-11-16. **Revision 2** —
-revised by Uni the same day per Director CORRECTION_REQUIRED
-(comment 6922164452 on PR #461), findings R1–R5; revision map at the
-end of this file. Status: **DRAFT FOR TWO-CHECKER REVIEW**. Not
+Author: Uni (drafting lane). Date: 2026-11-16. **Revision 3** —
+Revision 2 answered Director CORRECTION_REQUIRED (comment 6922164452
+on PR #461), findings R1–R5; Revision 3 applies the Director's EXE
+factual correction (comment 6924943142); revision map at the end of
+this file. Status: **DRAFT FOR TWO-CHECKER REVIEW**. Not
 adopted until the Keeper's independent check and the Director's
 recheck at the revised head are recorded and all three lanes agree.
 It changes no authority, HOLD, certification, or counting rule: the
@@ -13,8 +14,11 @@ operating/transport rules only.
 GOVERNANCE ANCHOR (corrected per R2): Ace's full-capacity,
 two-checker, and email-sunset rulings of 2026-11-16 are recorded in
 Uni's workspace operating manual (AGENTS.md sections 42–44, a Uni-side
-file) and published on the GitHub record at PR #424 comment 6918881559
-and PR #459 comment 6918880978. The repository root AGENTS.md is the
+file) and published on the GitHub record (the section-42 EXE ruling
+at PR #424 comment 6918881559 and PR #459 comment 6918880978 — those
+two pointers evidence section 42 only; the separate section-43 and
+section-44 ruling references are supplied in the governance record
+carried by the follow-on records change). The repository root AGENTS.md is the
 persona registry (52 lines) and does NOT contain those sections; no
 claim in this design rests on it doing so. A separate evidence-gated
 records change will carry the sections into the authoritative
@@ -25,9 +29,10 @@ workflow record on the repository.
 ### Ace / Overseer
 - Sovereign authority; installs and account-level grants (the Codex
   Connector install at 09:19 CST unblocked the Director lane); EXE
-  command; final word on every fence. Ace is also the only lane that
-  can arm ChatGPT event tasks: the setup lives in the ChatGPT Work UI
-  (proven 2026-11-16, Part 2.2). No transport duty beyond that — the
+  command; final word on every fence. Event-task setup is an
+  account-surface act Ace authorizes: for the doorbell test Ace
+  instructed the setup and the Director performed the creation from
+  his own session (Part 2.2). No transport duty beyond that — the
   workflow never routes work through Ace's hands.
 
 ### Director (ChatGPT)
@@ -39,11 +44,15 @@ PROVEN today, on this repository:
   document publication (PR #460 opened by his own hand with two
   authored plan files, then repaired through two further heads).
 - Plan authoring as a production lane; rulings posted directly on PRs.
-- Event-triggered wake on a PR comment, via the Ace-armed Work task
-  (Part 2.2 receipts).
-LIMITS: his own session's Automations contract cannot create event
-tasks (discovery action returned NOT_FOUND / HTTP 404; schedule and
-timing modes only — his receipt, PR #459 comment 6922131230). Codex
+- Event-triggered wake on a PR comment, via the event task created
+  under Ace's instruction (Part 2.2 receipts); event-task creation
+  from his own session (automations.create with a pull_request
+  trigger, 2026-11-16T16:54:53Z).
+LIMITS: automation capability is session/surface-dependent — an
+earlier session's discovery returned NOT_FOUND / HTTP 404 (schedule
+and timing modes only — his receipt, PR #459 comment 6922131230),
+while a later session created the event task successfully; the 404
+was that session's limitation, not a platform or role limit. Codex
 review cannot approve or block a PR; no GPT-side merge is documented —
 merges stay Uni's act. He runs no local code, tests, or campaigns.
 
@@ -75,22 +84,28 @@ comments for every documented trigger path.
 1. **One shared record.** GitHub is the single surface all lanes read
    and write: rulings as PR comments, plans/reports as files, stamps
    at exact heads. State not on GitHub does not exist cross-lane.
-2. **Doorbell — PROVEN at the armed configuration, scoped honestly.**
-   Ace armed the DellMatrix Doorbell Event Test from the ChatGPT Work
-   UI on 2026-11-16: connector github, webhook pull_request,
-   repository spiritualityhandbook-netizen/DellMatrix, PR 459,
-   comments enabled, bot reviews included, no schedule, no polling.
-   Uni posted the marker comment DOORBELL-TEST-1 (PR #459 comment
-   6923119862, 16:57:31Z); the task woke on the comment event and
-   replied EVENT-TRIGGER WAKE (comment 6923147266, 16:58:38Z, ~67
-   seconds, triggered by issue_comment created). Event-driven wake on
-   PR comments is therefore PROVEN for this configuration. Scope
-   limits, stated plainly: arming is a Work-UI act on Ace's surface
-   (the Director's session cannot create event tasks); the proof
-   covers the armed PR-comment configuration, not every conceivable
-   event type; an hourly condition-watch or an @codex worker is NEVER
-   a substitute for a Director event task and must never be reported
-   as one. The phase-grid clocks remain as backstop (see 5).
+2. **Doorbell — PROVEN as a narrow marker test, scoped honestly.**
+   The DellMatrix Doorbell Event Test was created on 2026-11-16 under
+   Ace's explicit instruction, by the Director from his own session
+   (discover_webhook_schema + automations.create, pull_request
+   trigger, created 2026-11-16T16:54:53Z): connector github, webhook
+   pull_request, repository spiritualityhandbook-netizen/DellMatrix,
+   PR 459, comments enabled, bot reviews included, reviews / commit
+   updates / merge-only off; fresh task readback: enabled,
+   unscheduled, no next scheduled run. Uni posted the marker comment
+   DOORBELL-TEST-1 (PR #459 comment 6923119862, 16:57:31Z); the task
+   woke on the comment event and replied EVENT-TRIGGER WAKE (comment
+   6923147266, 16:58:38Z, ~67 seconds, triggered by issue_comment
+   created). Scope, stated plainly: the saved prompt replies ONLY to
+   the literal marker on PR #459 — a nonmatching comment (6924175752)
+   was correctly ignored. This proves a comment-triggered wake-and-
+   reply for this narrow test configuration. It is NOT a
+   production-wide Director doorbell: it does not execute a full
+   Director review on every PR or every comment, and generalizing it
+   is future work, not a proven capability. An hourly condition-watch
+   or an @codex worker is NEVER a substitute for a Director event
+   task and must never be reported as one. The phase-grid clocks
+   remain as backstop (see 5).
 3. **@codex worker triggers.** Uni report comments that need GPT-side
    worker action may end with an explicit `@codex ...` line (proven
    trigger for a review or cloud task). A Codex worker is a fresh
@@ -113,8 +128,10 @@ comments for every documented trigger path.
    and no role promotion.
 5. **Clocks are a backstop, not a guarantee (R5).** The phase grid
    (Director :00/:30, Keeper :15/:45, Uni watch 2m, execution 30m)
-   bounds worst-case latency; it does not guarantee it. Tasks can
-   miss, pause, or require approval. Latency and accountability stay
+   provides nominal review opportunities; it guarantees nothing.
+   Tasks can miss, pause, or require approval, and missed or delayed
+   runs mean there is no proven finite worst-case bound — only
+   observed latency counts. Latency and accountability stay
    MEASURED: counts are objects closed with cited evidence, gate
    latency is reported per hop, and HELD markers and stop conditions
    remain in force at all times.
@@ -147,10 +164,12 @@ comments for every documented trigger path.
 ## PART 3 — QUESTIONS, AS ANSWERED
 
 - Q-W2.1 (which PR activities fire an event task): ANSWERED BY
-  EXPERIMENT — PR comments fire the Ace-armed pull_request task on
-  PR #459 (receipts in Part 2.2). The Director's account-session
-  contract exposes no event selector (EVALUATION_UNAVAILABLE in that
-  session); the Work UI exposes it, and Ace's arming is the receipt.
+  EXPERIMENT — PR comments fire the pull_request task on PR #459
+  (receipts in Part 2.2). One Director session exposed no event
+  selector (EVALUATION_UNAVAILABLE in that session); a later session
+  created the task under Ace's instruction — creation capability is
+  session-dependent, and the created task plus its observed wake are
+  the receipts.
 - Q-W2.2 (Keeper event-trigger equivalent): OPEN — the Keeper alone
   verifies Grok-side access; clock-only until he does.
 - Q-W2.3 (merge act): Director answered YES — Uni-only production
@@ -181,6 +200,25 @@ comments for every documented trigger path.
 - R5 (latency honesty): Part 2.5 added — clocks as measured
   backstop, never a guarantee; @codex is a worker, not the Director;
   bot suggestions are not code admission; HELD markers retained.
+
+## REVISION 3 MAP (Director EXE factual correction 6924943142)
+
+- Capability location corrected: the doorbell task was created by the
+  Director from his own session under Ace's instruction (16:54:53Z);
+  the earlier 404 was session-scoped. All blanket claims that only
+  Ace's UI can arm event tasks, or that the Director cannot create
+  them, are removed (Parts 1, 2.2, 3).
+- Scope narrowed: the test replies only to the literal marker on
+  PR #459 (a nonmatching comment was correctly ignored); it is not a
+  production-wide Director doorbell and executes no general review.
+- Latency wording corrected (Part 2.5): nominal review opportunities
+  and observed latency; no proven finite worst-case bound.
+- Governance pointers corrected (header): comments 6918881559 and
+  6918880978 evidence section 42 only; sections 43/44 references are
+  supplied in the follow-on governance record.
+- R4 evidence: the Director's correction records unattended :00 and
+  :30 publication run IDs; Uni's closing-watermark + cutover record
+  is posted separately on this PR.
 
 ## ADOPTION
 
