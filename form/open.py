@@ -748,11 +748,12 @@ class Program:
         return render_roster(self.persona_lens)
 
     def persona_matrix_status(self) -> Dict[str, Any]:
-        self.persona_matrix.active = self.persona_lens
+        # Q-OD.2: pure read — writers own the lens->active sync
+        # (set_persona_lens, bimo_fuse, bimo pilot, persist load).
         return self.persona_matrix.to_dict()
 
     def persona_matrix_ascii(self) -> List[str]:
-        self.persona_matrix.active = self.persona_lens
+        # Q-OD.2: pure read — see persona_matrix_status.
         return self.persona_matrix.render_ascii()
 
     def bimo_status(self) -> Dict[str, Any]:
