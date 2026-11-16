@@ -198,6 +198,11 @@ LIST = [
     "form.snapshot_revalidation_test",
     "form.dock_proposal_b_test",
     "form.nursery_confirm_race_test",
+    "form.nursery_reason_bound_test",
+    "form.nursery_label_bound_test",
+    "form.nursery_words_bound_test",
+    "form.nursery_c5r1_holding_test",
+    "form.nursery_c5r1_readpath_test",
     "form.core_ii_version_validation_test",
     "form.atomic_write_boundaries_test",
     "form.forcefield_gravity_evolution_test",
@@ -210,6 +215,7 @@ LIST = [
     "form.guard_assert_propagation_test",
     "form.seed_grammar_stress_test",
     "form.supersession_lineage_restart_test",
+    "form.precuts_caller_words_test",
     "form.owner_namespace_collision_test",
     "form.resonance_lifecycle_gate_test",
     "form.four_way_equivalence_test",
@@ -344,6 +350,11 @@ LIST = [
     "form.lm2_splitter_test:smoke",
     "form.lm3_composer_test:smoke",
     "form.lm4_tollbooth_test:smoke",
+    # A4 pre-decomposition resource guard (Director fix-first
+    # circuit, 2026-11-15): the chunked bounded decomposition
+    # refuses oversized assembled prompts BEFORE the full
+    # decomposition cost, byte-identical on admitted calls.
+    "form.lm4_resource_guard_test:smoke",
     # GS-4 sandbox containment (Director mail 1a1d05d91f6401dc):
     # FAILING-FIRST at publication — pins the wall contract the GS-4
     # build must satisfy; red until the containment build lands under
