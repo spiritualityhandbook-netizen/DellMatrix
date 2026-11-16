@@ -507,6 +507,28 @@ class Nursery:
                     "size", "last"):
             if key not in data:
                 return None
+        # Field types are validated, not assumed: a hand-crafted
+        # cursor must refuse CURSOR_MALFORMED, never crash the
+        # query (Codex P2 on PR #465, accepted).
+        if not isinstance(data["owner"], str):
+            return None
+        if data["mode"] not in ("browse", "search"):
+            return None
+        if data["sig"] is not None and not isinstance(data["sig"], str):
+            return None
+        if (data["status"] is not None
+                and not isinstance(data["status"], str)):
+            return None
+        if not isinstance(data["term"], str):
+            return None
+        if (isinstance(data["size"], bool)
+                or not isinstance(data["size"], int)):
+            return None
+        last = data["last"]
+        if last is not None:
+            if (not isinstance(last, list) or len(last) != 2
+                    or not all(isinstance(x, str) for x in last)):
+                return None
         return data
 
     def _see_freshness(self) -> Optional[Dict[str, Any]]:

@@ -2827,14 +2827,6 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _show_proposals(p)
         return p
 
-    if (lower == "proposals browse"
-            or lower.startswith("proposals browse ")
-            or lower == "proposals search"
-            or lower.startswith("proposals search ")
-            or lower.startswith("proposals get ")):
-        _see_dispatch(p, lower)
-        return p
-
     if lower.startswith("exchange "):
         # P9 / Exchange v1: file-based seed packets with receipts.
         # Export assembles a packet for a proposal (with its
@@ -3518,6 +3510,21 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
     interaction_id. All current parsing, routing, eligibility, guards, and
     special authorities apply. No historical authority is reused.
     """
+    # C5R.2 SEE doors dispatch FIRST: they are unambiguous prefix
+    # commands, and content-based stages below would otherwise
+    # swallow them — the chain parser claims any line containing
+    # ":" (e.g. `proposals browse status:pending`) and the restore
+    # handler claimed `proposals search restore` (Codex P2 on
+    # PR #465, accepted; both probe-verified before this move).
+    _see_lower = line.lower()
+    if (_see_lower == "proposals browse"
+            or _see_lower.startswith("proposals browse ")
+            or _see_lower == "proposals search"
+            or _see_lower.startswith("proposals search ")
+            or _see_lower.startswith("proposals get ")):
+        _see_dispatch(p, _see_lower)
+        return p
+
     # ROS-I: read-only observability meta-commands.
     if _handle_ros_command(p, line):
         return p

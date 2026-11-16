@@ -330,6 +330,29 @@ def smoke() -> bool:
                   (not arch.get("ok"))
                   and arch.get("error") == "STATUS_UNSUPPORTED",
                   f"err={arch.get('error')}")
+            # Crafted cursors with wrong field types refuse typed,
+            # never crash (Codex P2 on PR #465, accepted).
+            import json as _json
+            def _craft(**over):
+                payload = {"v": 1, "owner": owner_a, "mode": "browse",
+                           "sig": None, "status": None, "term": "",
+                           "size": 50, "last": None}
+                payload.update(over)
+                return _json.dumps(payload).encode().hex()
+            crafted_ok = True
+            for bc in (_craft(size="fifty"), _craft(term=7),
+                       _craft(last="see_0001"),
+                       _craft(last=["only-one"]),
+                       _craft(mode="teleport"), _craft(owner=42)):
+                try:
+                    rr = fresh.browse_proposals(cursor=bc)
+                    crafted_ok = crafted_ok and (
+                        not rr.get("ok")
+                        and rr.get("error") == "CURSOR_MALFORMED")
+                except Exception:
+                    crafted_ok = False
+            check("S6.crafted_cursor_types_refused_not_crash",
+                  crafted_ok)
             pa = fresh  # continue on the fresh instance
         except Exception as e:
             for nm in ("S6.malformed_cursor_refused",
@@ -337,7 +360,8 @@ def smoke() -> bool:
                        "S6.external_write_stales_cursor",
                        "S6.stale_instance_refuses_page_one",
                        "S6.fresh_instance_retry_succeeds",
-                       "S6.archived_status_refused_until_c5r5"):
+                       "S6.archived_status_refused_until_c5r5",
+                       "S6.crafted_cursor_types_refused_not_crash"):
                 check(nm, False, f"exc {e!r}")
 
         # ---- S7: ID-set retrieval, 1/16/17/100/1000, missing named ----
@@ -424,6 +448,18 @@ def smoke() -> bool:
                         pb2, line, str(uuid.uuid4())))
                 return msg
 
+            # Prefix doors must win over content handlers: the
+            # restore handler and the ":" chain parser both tried
+            # to claim SEE lines (Codex P2 on PR #465, probe-found).
+            outr = dispatch("proposals search restore")
+            check("S9.see_door_beats_restore_handler",
+                  outr.startswith("proposals search"),
+                  f"head={outr.splitlines()[0] if outr else ''!r}")
+            outc = dispatch("proposals browse status:pending")
+            check("S9.see_door_beats_chain_parser",
+                  "status: pending" in outc
+                  and "total_matches 45" in outc,
+                  f"head={outc.splitlines()[0] if outc else ''!r}")
             out1 = dispatch("proposals browse")
             m = re.search(r"cursor:(\S+)", out1)
             check("S9.repl_browse_first_page",
