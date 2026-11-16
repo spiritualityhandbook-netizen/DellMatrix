@@ -42,6 +42,119 @@ class NurseryLoadError(ValueError):
     fabricated."""
 
 
+class NurseryReasonError(ValueError):
+    """Proposal reason exceeds the Nursery's admitted bound (Q-S2.2).
+
+    Raised by Nursery.add BEFORE any mutation or save: oversize input is
+    refused explicitly and nothing is stored, replacing the historical
+    silent truncation at 160 chars, which destroyed admitted content
+    (the inference dock admits reasons up to 1,000 chars) with no error."""
+
+
+# Q-S2.2: the Nursery's admitted bound for Proposal.reason — the same
+# 1,000-char bound the inference dock enforces by explicit refusal
+# (form/dell_matrix/inference_dock.py: host reason in propose() and at
+# the semantic-verb entry, model reason in validate_semantic_output)
+# and director_session.py's MAX_REASON_CHARS = 1000, before callers
+# reach Nursery.add. Admitted reasons are stored in full, exactly;
+# reasons beyond the bound raise NurseryReasonError with no mutation.
+# The dock-session evidence validator (dock_session.py) shares this
+# bound, since its entries carry the stored reason verbatim.
+MAX_REASON_CHARS = 1000
+
+
+class NurseryOriginError(ValueError):
+    """Proposal origin exceeds the Nursery's admitted bound (C5R.1).
+
+    Raised by Nursery.add BEFORE any mutation or save: oversize input
+    is refused explicitly and nothing is stored, replacing the
+    historical silent truncation at 120 chars (the inference dock
+    keeps the whole origin inside this bound by construction — its
+    _origin_for segments are limited so the assembled origin fits)."""
+
+
+# C5R.1: the Nursery's admitted bound for Proposal.origin — the same
+# 120-char bound the inference dock's _origin_for is built to fit.
+# Admitted origins are stored in full, exactly; origins beyond the
+# bound raise NurseryOriginError with no mutation.
+MAX_ORIGIN_CHARS = 120
+
+
+class NurseryDetailError(ValueError):
+    """Proposal detail exceeds the Nursery's admitted bound (C5R.1).
+
+    Raised by Nursery.add BEFORE any mutation or save: oversize input
+    is refused explicitly and nothing is stored, replacing the
+    historical silent truncation at 2,000 chars (the inference dock
+    admits detail up to 2,000 chars by explicit refusal)."""
+
+
+# C5R.1: the Nursery's admitted bound for Proposal.detail — the same
+# 2,000-char bound the inference dock enforces by explicit refusal
+# (form/dell_matrix/inference_dock.py MAX_DETAIL_CHARS = 2000) before
+# it calls Nursery.add. Admitted detail is stored in full, exactly;
+# detail beyond the bound raises NurseryDetailError with no mutation.
+MAX_DETAIL_CHARS = 2000
+
+
+class NurseryGoalsError(ValueError):
+    """Proposal goals exceed the Nursery's admitted bounds (C5R.1).
+
+    Raised by Nursery.add BEFORE any mutation or save: an over-bound
+    goals list (more than MAX_GOALS entries, a goal longer than
+    MAX_GOAL_CHARS, or a non-string entry) is refused explicitly and
+    nothing is stored, replacing the historical silent per-goal
+    truncation at 200 chars, silent list truncation at 8, and silent
+    dropping of non-string/empty entries."""
+
+
+# C5R.1: the Nursery's admitted bounds for Proposal.goals — the same
+# bounds the inference dock enforces by explicit refusal
+# (form/dell_matrix/inference_dock.py MAX_GOALS = 8,
+# MAX_GOAL_CHARS = 200) before it calls Nursery.add. Admitted goals
+# are stored in full, exactly, in order; goals beyond the bounds
+# raise NurseryGoalsError with no mutation.
+MAX_GOALS = 8
+MAX_GOAL_CHARS = 200
+
+
+class NurseryLabelError(ValueError):
+    """Proposal label exceeds the Nursery's admitted bound (Q-S2.1).
+
+    Raised by Nursery.add BEFORE any mutation or save: an over-bound
+    label is refused explicitly and nothing is stored, replacing the
+    historical silent truncation at 80 chars, which destroyed admitted
+    content (the inference dock admits labels up to 200 chars) with no
+    error."""
+
+
+# Q-S2.1: the Nursery's admitted bound for Proposal.label — the same
+# 200-char bound the inference dock enforces by explicit refusal
+# (form/dell_matrix/inference_dock.py MAX_LABEL_CHARS = 200) before it
+# calls Nursery.add. Admitted labels are stored in full, exactly;
+# labels beyond the bound raise NurseryLabelError with no mutation.
+MAX_LABEL_CHARS = 200
+
+
+class NurseryWordsError(ValueError):
+    """Proposal words exceed the Nursery's admitted bound (SYS-C29).
+
+    Raised by Nursery.add BEFORE any mutation or save: oversize input is
+    refused explicitly and nothing is stored, replacing the historical
+    silent truncation at 240 chars, which destroyed admitted content
+    (the inference dock admits words up to 5,000 chars) with no error."""
+
+
+# SYS-C29: the Nursery's admitted bound for Proposal.words — the same
+# 5,000-char bound the inference dock enforces by explicit refusal
+# (form/dell_matrix/inference_dock.py MAX_WORDS_CHARS = 5000) before it
+# calls Nursery.add. Admitted words are stored in full, exactly; words
+# beyond the bound raise NurseryWordsError with no mutation. Per the
+# Elastic Limits Doctrine the bound is a runaway stop, not a hindrance:
+# it sits at the system's own admitted maximum.
+MAX_WORDS_CHARS = 5000
+
+
 # Reserved nursery-file key for DCC-XIX conflict dispositions. Can never
 # collide with a proposal ID: _slug() output is lowercase alnum plus
 # underscores, stripped of leading/trailing underscores, with a numeric
@@ -201,25 +314,75 @@ class Nursery:
         persisted on the proposal. Program.ranked_proposals consumes them
         as tie-breakers, so the scores are read by a real consumer, not
         merely stored.
+
+        Q-S2.1: labels are stored in full up to MAX_LABEL_CHARS; longer
+        labels raise NurseryLabelError BEFORE any mutation or save (the
+        historical label[:80] silently destroyed admitted content).
+
+        SYS-C29: words are stored in full up to MAX_WORDS_CHARS; longer
+        words raise NurseryWordsError BEFORE any mutation or save (the
+        historical words[:240] silently destroyed admitted content).
+
+        Q-S2.2: reason is stored in full up to MAX_REASON_CHARS; a longer
+        reason raises NurseryReasonError BEFORE any mutation or save (the
+        historical reason[:160] silently destroyed admitted content).
+
+        C5R.1: origin, detail and goals follow the same contract at the
+        bounds the inference dock already enforces by explicit refusal
+        (origin 120, detail 2,000, goals 8 x 200): admitted values are
+        stored byte-exact; over-bound values raise NurseryOriginError /
+        NurseryDetailError / NurseryGoalsError BEFORE any mutation or
+        save (the historical origin[:120] / detail[:2000] /
+        goals[:200]-and-[:8] silently destroyed admitted content, and
+        non-string or empty goals were silently dropped).
         """
+        if isinstance(label, str) and len(label) > MAX_LABEL_CHARS:
+            raise NurseryLabelError(
+                f"label length {len(label)} exceeds the admitted bound "
+                f"of {MAX_LABEL_CHARS} chars; refused, nothing stored")
+        if isinstance(words, str) and len(words) > MAX_WORDS_CHARS:
+            raise NurseryWordsError(
+                f"words length {len(words)} exceeds the admitted bound "
+                f"of {MAX_WORDS_CHARS} chars; refused, nothing stored")
+        if isinstance(reason, str) and len(reason) > MAX_REASON_CHARS:
+            raise NurseryReasonError(
+                f"reason length {len(reason)} exceeds the admitted bound "
+                f"of {MAX_REASON_CHARS} chars; refused, nothing stored")
+        if isinstance(origin, str) and len(origin) > MAX_ORIGIN_CHARS:
+            raise NurseryOriginError(
+                f"origin length {len(origin)} exceeds the admitted bound "
+                f"of {MAX_ORIGIN_CHARS} chars; refused, nothing stored")
+        if isinstance(detail, str) and len(detail) > MAX_DETAIL_CHARS:
+            raise NurseryDetailError(
+                f"detail length {len(detail)} exceeds the admitted bound "
+                f"of {MAX_DETAIL_CHARS} chars; refused, nothing stored")
+        if goals is not None:
+            if not isinstance(goals, list) or len(goals) > MAX_GOALS:
+                raise NurseryGoalsError(
+                    f"goals must be a list of at most {MAX_GOALS} "
+                    f"entries; refused, nothing stored")
+            for g in goals:
+                if not isinstance(g, str) or len(g) > MAX_GOAL_CHARS:
+                    raise NurseryGoalsError(
+                        f"each goal must be a string of at most "
+                        f"{MAX_GOAL_CHARS} chars; refused, nothing stored")
         pid = _slug(label, seed)
         # avoid exact id collision
         if pid in self.proposals:
             pid = pid + "_" + str(len(self.proposals))
         p = Proposal(
             id=pid,
-            label=label[:80],
-            words=words[:240],
+            label=label,
+            words=words,
             kind=kind,
             parents=parents or [],
             affinity=float(affinity),
-            reason=reason[:160],
+            reason=reason,
             harmony=float(harmony),
             graph_coherence=float(graph_coherence),
-            origin=origin[:120] if isinstance(origin, str) else "",
-            detail=detail[:2000] if isinstance(detail, str) else "",
-            goals=[g[:200] for g in (goals or [])
-                   if isinstance(g, str) and g.strip()][:8],
+            origin=origin if isinstance(origin, str) else "",
+            detail=detail if isinstance(detail, str) else "",
+            goals=list(goals) if goals else [],
         )
         self.proposals[pid] = p
         try:

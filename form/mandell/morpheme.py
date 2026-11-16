@@ -757,6 +757,17 @@ def compose_sentence(text: str) -> Dict:
     """
     raw = text or ""
     tokens = [_lm4_token_record(tok) for tok in raw.split()]
+    return _sentence_from_token_records(raw, tokens)
+
+
+def _sentence_from_token_records(raw: str, tokens: List[Dict]) -> Dict:
+    """LM-4 aggregates over a token-record list: the FUNCTION
+    spine, the single-dell roll-up, ambiguity precedence, the two
+    honesty scores and the lineage class. compose_sentence() is
+    the whole-text path; the A4 bounded decomposition
+    (form/dell_matrix/inference_dock.py) pools token records
+    chunk by chunk and recomputes the aggregates ONCE through
+    this same code, so the two paths cannot drift."""
     spine = [{"token": t["token"], "dell": t["governing_dell"],
               "via": t["via"]}
              for t in tokens if t["role"] == "function"]

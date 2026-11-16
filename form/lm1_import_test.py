@@ -142,7 +142,17 @@ if _ROOT not in sys.path:
 # morpheme.py) and the artifact's sha moved with it
 # (36e38c14... -> 9383cdd7...). Rows and the collisions file
 # remain byte-identical; the delta is exactly that one line.
-V1_SHA256 = "9383cdd78775d4fb5f9ae1fda22181a68965b2c0a844e73954456854abb28c9d"
+# A4 REFRESH (PR #439, circuit A4 resource guard): A4 factored
+# compose_sentence's aggregate block verbatim into
+# _sentence_from_token_records in morpheme.py (pure extraction;
+# the harvested data tables are untouched), so the same ONE
+# header line was refreshed a fifth time (149ada3b... ->
+# 3238d0db..., the A4 morpheme.py) and the artifact's sha moved
+# with it (9383cdd7... -> 9ae4a27c...). Rows and the collisions
+# file remain byte-identical; the delta is exactly that one
+# line. lm1_harvest_test P1 recounts against the current file
+# pass, proving the harvested rows still reconcile.
+V1_SHA256 = "9ae4a27c10c6edaee3435d489fbb1cd2ae136f2bfb7e34e2141cd5fd2a83dd28"
 QUARANTINED = ("dell", "man", "re", "alpha", "delta", "omega")
 
 RIGHTS = {"text": "Creative Commons Attribution-Share Alike 4.0",
