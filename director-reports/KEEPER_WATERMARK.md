@@ -1,15 +1,15 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-16 00:03 CST  
-**UTC approx**: 2026-11-16T06:03:00Z  
-**Type**: FAST CONFIRM
+**Last cycle**: 2026-11-16 01:05 CST  
+**UTC approx**: 2026-11-16T07:05:00Z  
+**Type**: TERMINAL CONFIRM check
 
 ## Items ruled this cycle
 - Merges since last: none.
-- Receipts since last: none new.
+- Receipts since last: checkpoint package posted on #459 (comment 6908926253); campaign launch noted (6909457678).
 - New heads: #459 head ef512651051766816e690473097731efef6fcea8 PRE-STAMP issued.
-  Missing: quiet full regression x3 terminal GREEN; checkpoint package (withheld for FAILED-GATE DRILL).
-  Exact-head CI checks (smoke/build) success; not full regression.
+  Missing: quiet full regression x3 terminal GREEN receipt on GitHub record (campaign launched ~00:46 CST; no EXIT 0 logs posted).
+  Checkpoint package present. Exact-head CI terminal SUCCESS (smoke + build 3.10/3.11).
   Gate holds.
 
 ## Trailing ledger
@@ -18,7 +18,7 @@
 - gaps: both await item-specific final-check receipt naming tested merged-main SHA + residual exclusions, or Director ruling.
 
 ## Automation posture
-FAST CONFIRM. Pre-stamp comment published on #459. Watermark advanced. No HOLD.
+TERMINAL CONFIRM. Pre-stamp comment published on #459. Watermark advanced. No HOLD.
 
 ## Silence flag
 #308 / #294 / #233 fenced.
