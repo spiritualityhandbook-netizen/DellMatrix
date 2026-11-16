@@ -736,7 +736,12 @@ class Program:
         else:
             key = normalize_persona_id(name)
             self.persona_lens = key or name.lower().replace(" ", "_").strip()
-            if hasattr(self, "persona_matrix") and key:
+            if hasattr(self, "persona_matrix"):
+                # Q-OD.2: the writer syncs in EVERY branch — an
+                # unrecognized persona (key None) clears the matrix
+                # highlight rather than leaving the previous persona
+                # active (Codex finding on PR #462; pinned by
+                # persona_purity_test t6).
                 self.persona_matrix.active = key
             # if BIMO slot exists, dock this persona into its slot
             pe = get_persona(key) if key else None

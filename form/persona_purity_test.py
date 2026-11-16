@@ -31,6 +31,11 @@ Contract pinned here:
   persona_lens and persona_matrix.active to the pilot.
 - t5: control — set_persona_lens keeps its existing sync
   (the repair must not break the writers that were correct).
+- t6: set_persona_lens with an UNRECOGNIZED persona clears
+  persona_matrix.active — the writer syncs in every branch
+  (Codex finding on PR #462: the fallback branch previously
+  left the previous persona highlighted indefinitely once the
+  readers stopped lazily syncing on read).
 """
 from __future__ import annotations
 
@@ -136,8 +141,21 @@ def smoke() -> bool:
         f"lens={p.persona_lens!r} active={p.persona_matrix.active!r}")
     _cleanup("QOD2PurityT5")
 
-    ok = all(r) and len(r) == 5
-    print(f"PERSONA PURITY: {'GREEN' if ok else 'RED'} ({sum(r)}/5)")
+    # -- t6: the setter's unrecognized-persona branch syncs too:
+    #       valid persona, then an unknown name — the matrix must
+    #       not keep highlighting the previous persona.
+    p = _program("QOD2PurityT6")
+    p.set_persona_lens("manny")
+    p.set_persona_lens("unknown-persona")
+    status_active = p.personas_status().get("active")
+    rec("t6_setter_fallback_branch_syncs",
+        p.persona_matrix.active is None and status_active is None,
+        f"lens={p.persona_lens!r} active={p.persona_matrix.active!r} "
+        f"status_active={status_active!r}")
+    _cleanup("QOD2PurityT6")
+
+    ok = all(r) and len(r) == 6
+    print(f"PERSONA PURITY: {'GREEN' if ok else 'RED'} ({sum(r)}/6)")
     return ok
 
 
