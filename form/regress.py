@@ -201,6 +201,8 @@ LIST = [
     "form.nursery_reason_bound_test",
     "form.nursery_label_bound_test",
     "form.nursery_words_bound_test",
+    "form.nursery_c5r1_holding_test",
+    "form.nursery_c5r1_readpath_test",
     "form.core_ii_version_validation_test",
     "form.atomic_write_boundaries_test",
     "form.forcefield_gravity_evolution_test",
