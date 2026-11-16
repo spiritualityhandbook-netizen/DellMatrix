@@ -584,6 +584,9 @@ def _show_proposals(p: Program) -> None:
                 and entry.get("pid"):
             recommendations.setdefault(entry["pid"], []).append(entry)
     _say(f"Nursery has {len(pending)} proposal(s):")
+    if len(pending) > 20:
+        # C5R.1 (AC-1.2): a subset view states shown/total on its face.
+        _say(f"  (showing 20 of {len(pending)})")
     for i, prop in enumerate(pending[:20], 1):
         aff = float(prop.get("affinity", 0))
         _say(f"  {i}. aff={aff:.3f} [{prop.get('kind')}] {prop['id']}")
@@ -1290,6 +1293,9 @@ def _handle_macro_rank(p: Program, lower: str, raw: str) -> bool:
             _say("Nursery is empty.")
             return True
         _say(f"Ranked {len(ranked)} proposals:")
+        if len(ranked) > 12:
+            # C5R.1 (AC-1.2): a subset view states shown/total on its face.
+            _say(f"  (showing 12 of {len(ranked)})")
         for i, prop in enumerate(ranked[:12], 1):
             _say(
                 f"  {i}. aff={float(prop.get('affinity', 0)):.3f} "
