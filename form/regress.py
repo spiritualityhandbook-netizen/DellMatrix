@@ -350,6 +350,11 @@ LIST = [
     "form.lm2_splitter_test:smoke",
     "form.lm3_composer_test:smoke",
     "form.lm4_tollbooth_test:smoke",
+    # A4 pre-decomposition resource guard (Director fix-first
+    # circuit, 2026-11-15): the chunked bounded decomposition
+    # refuses oversized assembled prompts BEFORE the full
+    # decomposition cost, byte-identical on admitted calls.
+    "form.lm4_resource_guard_test:smoke",
     # GS-4 sandbox containment (Director mail 1a1d05d91f6401dc):
     # FAILING-FIRST at publication — pins the wall contract the GS-4
     # build must satisfy; red until the containment build lands under
