@@ -135,7 +135,10 @@ class AutoGrowth:
                 words=words,
                 kind="auto",
                 affinity=float(judge.get("combined") or 0),
-                reason=f"auto:{source}:{judge.get('reason', '')}"[:160],
+                # Q-S2.2: no [:160] pre-cut — the judge's reason passes
+                # whole to the Nursery, which stores admitted reasons
+                # losslessly to 1,000 and refuses beyond explicitly.
+                reason=f"auto:{source}:{judge.get('reason', '')}",
             )
             if self._should_auto_confirm(judge, self.last_report.get("delta_band", "elevated")):
                 # WO-5.1: Pass producer ID. Denied by default without opt-in.

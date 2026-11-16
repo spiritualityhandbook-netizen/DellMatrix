@@ -659,11 +659,11 @@ def _lm4_entry_with_lm(entry: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-def _lm4_text_block(text: str) -> str:
-    """LM-4: the decomposition block for free text (propose()):
-    the same presentation data as the _verb entries, as text."""
-    from ..mandell.morpheme import compose_sentence, sentence_gloss_lines
-    sent = compose_sentence(text or "")
+def _lm4_block_from_sentence(sent) -> str:
+    """Render one compose_sentence receipt as the propose() text
+    block (gloss lines + the spine line). The single render for
+    both the whole-text path and the A4 chunked path."""
+    from ..mandell.morpheme import sentence_gloss_lines
     lines = sentence_gloss_lines(sent)
     spine = ", ".join(
         f"{e['token']}->{e['dell']}" if e["dell"] is not None
@@ -671,6 +671,87 @@ def _lm4_text_block(text: str) -> str:
     if spine:
         lines.append(f"LM: spine: {spine}")
     return "\n".join(lines)
+
+
+def _lm4_text_block(text: str) -> str:
+    """LM-4: the decomposition block for free text (propose()):
+    the same presentation data as the _verb entries, as text."""
+    from ..mandell.morpheme import compose_sentence
+    return _lm4_block_from_sentence(compose_sentence(text or ""))
+
+
+# A4 (Director fix-first circuit; grounding + chunking-equivalence
+# records 2026-11-14): the header propose() assembles around the
+# LM-4 block, named once so the bounded path accounts the exact
+# bytes propose() sends.
+_LM4_DECOMP_HEADER = "\n\n[decomposition]\n"
+
+# A4: tokens composed per chunk by _lm4_text_block_bounded. The
+# chunk size bounds the abort overshoot: at the ~9.1x expansion
+# measured for ordinary text, one 512-token chunk adds at most
+# ~30K gloss chars past the caller's bound before the abort can
+# fire, while the per-chunk compose_sentence overhead stays at
+# ~1 call per 512 tokens (84 calls at the largest admissible
+# prompt) instead of a call per token.
+_LM4_CHUNK_TOKENS = 512
+
+
+class _LM4AssembledTooLarge(Exception):
+    """A4 internal signal: the chunked decomposition's running
+    lower bound proves the assembled prompt exceeds the caller's
+    bound, so the remaining tokens are never composed. propose()
+    converts this into the same prompt_too_large refusal the
+    final assembled-length screen returns."""
+
+
+def _lm4_text_block_bounded(text: str, bound: int) -> str:
+    """A4: _lm4_text_block with a pre-decomposition resource guard.
+
+    The token stream is composed in chunks of _LM4_CHUNK_TOKENS
+    and the token records pooled; the sentence aggregates are
+    recomputed ONCE from the pooled records (through the same
+    code compose_sentence runs), so an admitted call renders
+    BYTE-IDENTICAL to _lm4_text_block.
+
+    While pooling, the gloss + diagnostic line lengths of the
+    pooled tokens accumulate as a running LOWER bound on the
+    final block length: the finished block contains exactly those
+    lines plus the summary line, the spine line and the remaining
+    tokens' lines, all of non-negative length. The moment
+    len(text) + header + running exceeds `bound` (the caller's
+    assembled-prompt bound), the assembled prompt is GUARANTEED
+    to exceed it too, so _LM4AssembledTooLarge is raised and the
+    remaining tokens are never composed. Refusal cost is bounded
+    by the bound rather than the raw size, no valid content can
+    be refused by the abort, and the final assembled-length
+    screen in propose() still decides every admitted call."""
+    from ..mandell.morpheme import (
+        compose_sentence, sentence_gloss_lines,
+        _sentence_from_token_records)
+    raw = text or ""
+    tokens = raw.split()
+    if not tokens:
+        return _lm4_block_from_sentence(compose_sentence(raw))
+    base = len(raw) + len(_LM4_DECOMP_HEADER)
+    pooled: List[Dict[str, Any]] = []
+    running = 0
+    for start in range(0, len(tokens), _LM4_CHUNK_TOKENS):
+        chunk = tokens[start:start + _LM4_CHUNK_TOKENS]
+        records = compose_sentence(" ".join(chunk))["tokens"]
+        pooled.extend(records)
+        # The chunk's gloss + diagnostic lines are the finished
+        # block's lines for these tokens (pure per-token renders);
+        # the partial render's last line is its own summary line,
+        # which is NOT part of the running bound.
+        chunk_lines = sentence_gloss_lines({"tokens": records})
+        running += sum(len(line) + 1 for line in chunk_lines[:-1])
+        if base + running > bound:
+            raise _LM4AssembledTooLarge(
+                f"assembled prompt provably exceeds the bound of "
+                f"{bound} chars after {len(pooled)} of "
+                f"{len(tokens)} tokens")
+    return _lm4_block_from_sentence(
+        _sentence_from_token_records(raw, pooled))
 
 
 def _session_plane(program):
@@ -1156,9 +1237,20 @@ class DockedSession:
         # exceeds the caller's own bound, that is refused named
         # too (prompt_too_large) rather than silently sending the
         # prompt undecomposed (Q-LM4.5 discloses the choice).
+        # A4: the decomposition is computed by the bounded chunked
+        # path, which aborts as soon as the assembled length is
+        # PROVEN to exceed the caller's bound -- the refusal below
+        # is the same one the final assembled screen returns, and
+        # the screen still decides every admitted call.
         try:
-            full_prompt = (full_prompt + "\n\n[decomposition]\n"
-                           + _lm4_text_block(prompt))
+            full_prompt = (full_prompt + _LM4_DECOMP_HEADER
+                           + _lm4_text_block_bounded(
+                               prompt, self._max_prompt_chars))
+        except _LM4AssembledTooLarge:
+            return {"ok": False, "reason": "prompt_too_large",
+                    "detail": "Prompt with its LM-4 decomposition "
+                              "exceeds the caller's bound; refused "
+                              "rather than sent undecomposed."}
         except Exception as e:
             return {"ok": False, "reason": "lm_unavailable",
                     "detail": ("LatinMandell decomposition failed "
