@@ -394,6 +394,10 @@ LIST = [
     # path never hybrid across crash points; ordinary path bounded
     # statement (per-file atomicity only).
     "form.sm35_pair_atomic_test:smoke",
+    # Q-OD.2 hygiene circuit (Director authorization, PR #452 comment
+    # 6924026251): persona readers are observationally pure and the
+    # Bimo pilot writer syncs persona_matrix.active beside the lens.
+    "form.persona_purity_test:smoke",
 ]
 
 TIMEOUT_S = 900
