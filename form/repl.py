@@ -63,6 +63,7 @@ Ideas / Growth
   create an idea called test
   grow ideas 2
   proposals | confirm <id> | confirm all | reject all
+  proposals browse [status:<s>] [size:<n>] | proposals search <term> | proposals get <id...>
   exchange export <id> <file> | exchange import <file>
   unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
   flow                      show the last chain execution as a trace + frames
@@ -188,6 +189,7 @@ Create — make and develop ideas
   create an idea called <name>
   grow ideas <n>
   proposals | confirm <id> | confirm all | reject all
+  proposals browse [status:<s>] [size:<n>] | proposals search <term> | proposals get <id...>
   exchange export <id> <file> | exchange import <file>
   unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
   flow                      show the last chain execution as a trace + frames
@@ -551,6 +553,99 @@ def _run_tutorial(p: Program) -> Program:
     _say(f"(Demo used isolated owner '{demo_owner}'; your '{p.owner}' state was not modified.)")
     print()
     return p
+
+
+def _show_see_page(p: Program, verb: str, resp: dict) -> None:
+    """Print one C5R.2 SEE page (browse/search) with truthful totals."""
+    if not resp.get("ok"):
+        _say(f"proposals {verb} refused: {resp.get('error')} — "
+             f"{resp.get('detail')}")
+        return
+    if verb == "search":
+        head = f"proposals search — term: {resp.get('term')}"
+        if resp.get("status_filter"):
+            head += f" · status: {resp['status_filter']}"
+        _say(head)
+    else:
+        _say(f"proposals browse — status: "
+             f"{resp.get('status_filter') or 'all'}")
+    _say(f"shown {resp['shown']} of {resp['total_matches']} matches — "
+         f"total_matches {resp['total_matches']} · "
+         f"total_searched {resp['total_searched']} · "
+         f"total_inventory {resp['total_inventory']} · "
+         f"page size {resp['page_size']}")
+    for i, item in enumerate(resp["items"], 1):
+        _say(f"  {i}. [{item.get('status')}] {item.get('id')} — "
+             f"{item.get('label')}")
+    if resp.get("next_cursor"):
+        _say(f"next: proposals {verb} cursor:{resp['next_cursor']}")
+    else:
+        _say("next: (none — end of results)")
+
+
+def _see_dispatch(p: Program, lower: str) -> None:
+    """C5R.2 SEE doors: proposals browse|search|get (read-only).
+
+    Grammar: browse [status:<s>] [size:<n>] [cursor:<token>];
+    search [status:<s>] [size:<n>] [cursor:<token>] <term...>;
+    get <id> [id...]. The exact-match `proposals` door is untouched.
+    """
+    parts = lower.split()
+    verb = parts[1] if len(parts) > 1 else ""
+    rest = parts[2:]
+    if verb == "get":
+        if not rest:
+            _say("proposals get refused: NO_IDS — name at least one "
+                 "proposal id")
+            return
+        resp = p.get_proposals(rest)
+        if not resp.get("ok"):
+            _say(f"proposals get refused: {resp.get('error')} — "
+                 f"{resp.get('detail')}")
+            return
+        _say(f"proposals get — found {len(resp['found'])} of "
+             f"{resp['requested']} requested")
+        for item in resp["found"]:
+            _say(f"  [{item.get('status')}] {item.get('id')} — "
+                 f"{item.get('label')}")
+        for pid in resp["missing"]:
+            _say(f"  missing: {pid}")
+        _say(f"summary: found {len(resp['found'])}, "
+             f"missing {len(resp['missing'])}, duplicates collapsed "
+             f"{resp['duplicates_collapsed']} — policy: "
+             f"{resp['policy']}")
+        return
+    status = None
+    size = None
+    cursor = None
+    term_words = []
+    for tok in rest:
+        if tok.startswith("status:"):
+            status = tok.split(":", 1)[1] or None
+        elif tok.startswith("size:"):
+            raw = tok.split(":", 1)[1]
+            size = int(raw) if raw.lstrip("-").isdigit() else raw
+        elif tok.startswith("cursor:"):
+            cursor = tok.split(":", 1)[1]
+        elif verb == "search":
+            term_words.append(tok)
+        else:
+            _say(f"proposals {verb} refused: ARGUMENT_INVALID — "
+                 f"unexpected token {tok!r}; use status:<s>, "
+                 "size:<n>, or cursor:<token>")
+            return
+    if cursor is not None:
+        resp = (p.search_proposals("", cursor=cursor)
+                if verb == "search"
+                else p.browse_proposals(cursor=cursor))
+    elif verb == "search":
+        resp = p.search_proposals(
+            " ".join(term_words), status=status,
+            page_size=size if size is not None else 50)
+    else:
+        resp = p.browse_proposals(
+            status=status, page_size=size if size is not None else 50)
+    _show_see_page(p, verb, resp)
 
 
 def _show_proposals(p: Program) -> None:
@@ -2730,6 +2825,14 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
 
     if lower in ("proposals", "nursery", "void", "pending"):
         _show_proposals(p)
+        return p
+
+    if (lower == "proposals browse"
+            or lower.startswith("proposals browse ")
+            or lower == "proposals search"
+            or lower.startswith("proposals search ")
+            or lower.startswith("proposals get ")):
+        _see_dispatch(p, lower)
         return p
 
     if lower.startswith("exchange "):

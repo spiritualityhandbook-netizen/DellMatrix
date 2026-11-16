@@ -1379,6 +1379,26 @@ class Program:
     def list_proposals(self) -> List[Dict[str, Any]]:
         return [p.to_dict() for p in self.nursery.pending()]
 
+    # ── C5R.2 SEE: complete Nursery visibility (thin wrappers) ──
+    # The single read authority is Nursery.query / fetch_many over
+    # this program's owner-bound store; these wrappers only bind
+    # the owner at the trusted Program boundary. Read-only: no
+    # save/confirm/reject path is reachable from here.
+
+    def browse_proposals(self, status=None, page_size=50, cursor=None):
+        return self.nursery.query(
+            owner=self.owner, mode="browse", status=status,
+            page_size=page_size, cursor=cursor)
+
+    def search_proposals(self, term, status=None, page_size=50,
+                         cursor=None):
+        return self.nursery.query(
+            owner=self.owner, mode="search", status=status,
+            term=term, page_size=page_size, cursor=cursor)
+
+    def get_proposals(self, ids):
+        return self.nursery.fetch_many(list(ids))
+
     # ── Track D TD-1: Unit -> canonical Idea binding (S1) ────────
     # Binding foundation only: bind itself performs no containment
     # operations and zero graph writes. Containment lives in the
