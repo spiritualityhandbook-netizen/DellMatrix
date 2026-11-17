@@ -7,6 +7,61 @@ queue complete and current; an item leaves the queue only when its
 disposition is on record. Dual-anchored: this file on main + the
 SUSX100,000 state file. Uni updates heads in place as lanes land.
 
+## QUEUE REFRESH — 2026-11-17 (Director EXE directive, mail 1a1eae0325277a00)
+
+Transport acknowledgment: Uni received the Director's EXE live-review
+directive by email (message 1a1eae0325277a00, 2026-11-17 18:58Z) and
+executes it here. No merge authorization was issued by that review.
+Next gate: independent verification of the refreshed evidence below.
+
+Refreshed live from GitHub at main `8d5c8028` (2026-11-17 ~13:00 CST).
+"CI at head" = check-runs on the PR's own head commit. A green stale
+head is not mergeability: 22 of 24 open PRs CONFLICT with current main.
+
+DIRECTOR PRIORITIES (restated by the 2026-11-17 EXE review):
+- PR #421 (Unified Grand Plan): its proposed 224-item register and
+  revised completion count are NOT an adopted scoreboard.
+  CORRECTION_REQUIRED stands at head 35d3acd9 (do not move the head).
+- PR #461 (Workflow v2): NOT adopted. ADOPTION HOLD (narrowed).
+  Remaining: the SS43/44 references artifact (rides the
+  records-correction PR), Keeper review at the adoption head, and the
+  Director's final adoption + SS32 cutover ruling.
+
+| PR | Head | CI at head | Mergeable | Keeper confirmation at head | Latest Director disposition | Unresolved decision / next gate |
+|---|---|---|---|---|---|---|
+| #461 Workflow v2 | 95f10f64 | 3 success | MERGEABLE/CLEAN | none at head | ADOPTION HOLD NARROWED (2026-11-16) | SS43/44 artifact; Keeper adoption-head review; final adoption + cutover ruling |
+| #445 Limits wave 5 (R22-R26) | b6a325dc | 3 success | CONFLICTING | none | none on PR | refresh-or-close decision; bounded repair authorizations (smallest first) |
+| #444 C5 grounding | d116b30a | 3 success | CONFLICTING | none | none on PR | disposition owed |
+| #443 FI-001 benchmark | 80c1dfc2 | 3 success | CONFLICTING | none | none on PR | disposition owed |
+| #442 Limits wave 4 (R17-R21) | 19a62188 | 3 success | CONFLICTING | none | none on PR | refresh-or-close; R17 repair authorization |
+| #441 Scoreboard 3-row reconciliation | 76be17ab | 3 success | CONFLICTING | none | none on PR (pairs with #424) | content edits owed (227->224 three-row proof), then pair refresh with #424 |
+| #440 Grand Workflow ref + queue refresh | ad383100 | 3 success | CONFLICTING | none | none on PR | stale; superseded in part by this refresh |
+| #438 Limits wave 3 (R12-R16) | da339a09 | 3 success | CONFLICTING | none | none on PR | refresh-or-close decision |
+| #435 Limits wave 2 (R7-R11) | e2322739 | 3 success | CONFLICTING | none | none on PR | refresh-or-close decision |
+| #434 Q-LC.1 undo/redo correction plan | c9b394e2 | 3 success | CONFLICTING | none | none on PR | Q-LC.1 build authorization (open question) |
+| #433 FI-010 Phase R census | 55fe3d1f | 3 success | CONFLICTING | none | none on PR | disposition owed |
+| #432 Limits wave 1 | 2e95b431 | 3 success | CONFLICTING | none | none on PR | refresh-or-close decision |
+| #431 SYSTEM-002 Q-S2.2/Q-S2.3 | 0365c71b | 3 success | CONFLICTING | none | Q-S2.2 answered via PR #451 batch (6946046074); none on this PR | closure/disposition decision on this PR |
+| #428 Grand Workflow first-night fix | cd7ab96a | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper) at head | none newer | union-refresh or close as superseded |
+| #427 LIMITS CENSUS + Q-LC.1/Q-LC.2 | 665a259a | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper) at head | none newer | Q-LC.1/Q-LC.2 rulings; refresh-or-close |
+| #426 SS7 Far Stratum opening file | 85f6fafe | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper) at head | none newer | union-refresh or close as superseded |
+| #425 G31 closure file | fc46c391 | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper) at head | none newer | union-refresh or close as superseded |
+| #424 MWL-UNIFIED CROSSWALK | be62189b | 3 success | CONFLICTING | none at head | live-scoreboard rule disposition (6925729360 lineage): CURRENT verified MWL = 39/182 ACTIVE | content edits owed (182-entry mapping; drop the stale headline line), then pair refresh with #441; feeds #421 |
+| #421 THE GRAND PLAN — UNIFIED | 35d3acd9 | 3 success | CONFLICTING | none | CORRECTION_REQUIRED (6921699052); NO MERGE AUTHORIZATION | head FROZEN by Uni; correction runs through #424/#441 first; register/count NOT adopted |
+| #420 THL-SM-02 preservation | 24b34730 | 3 success | CONFLICTING | CONFIRM issued at an OLDER head (398e...), not at current head | INSUFFICIENT_EVIDENCE superseded by that older-head CONFIRM | re-present at current head |
+| #418 Sandbox FULL STUDY package | 54da969d | 3 success | CONFLICTING | CONFIRM 2026-11-14 (prior Keeper) at head | none newer | refresh-or-close decision |
+| #308 72-06 Intent.args census | ee9e1fdd | 4 success | CONFLICTING | none | none on PR | FENCED — census-held; no action |
+| #294 Q1 audit (Exchange/recovery) | 56c9ed8d | 3 success | MERGEABLE/CLEAN | none | none on PR | FENCED — Q1 design/implementation GATE HOLD; never merge |
+| #233 CI-only certification run | e799e800 | 3 success | CONFLICTING | none | none on PR | FENCED — never merge |
+
+Reading of the refresh (Uni): the limits waves, resource-guard and
+defect-repair packages (#431-#445 family) carry exact-head CI green
+but NO authority disposition at their heads and stale bases; per the
+Director's 2026-11-17 review they require exact-head evidence
+packages before any merge authorization. The four 2026-11-15 scoped
+CONFIRMs (#425-#428) cover their own heads only and predate the
+current main by many merges. No row in this table is merge-ready.
+
 ## Awaiting disposition
 | Item | Ask | Head | Asked |
 |---|---|---|---|
