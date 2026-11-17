@@ -94,3 +94,23 @@ COMPLETE credited; the board discrepancy (39/182 rendered vs
 **What does not change.** The Brains seat definition above,
 Gemini as Acting Keeper, the Director's authority, and Uni as
 sole coder/merger are unaffected. Records only. No credit.
+
+## Narrowing note — 2026-11-17 (Uni, per Director 6955864895)
+
+The Director's delta on PR #472 requires source-of-truth closure
+on the automation question. Uni cannot produce an authoritative
+automation-state receipt (that state lives on Grok's platform),
+so the record is narrowed instead, in the Director's framing:
+
+**The Keeper automation shutdown is reported, not independently
+verified.** Every statement in this record about the state of
+Grok's Keeper automations rests on Grok's own report of
+2026-11-17 09:12 CST, relayed by Ace, together with the one
+observed execution afterward (the directed deep pass of 10:39
+CST, commit `7321268e`, addressed in the addendum above). No lane
+has independently established whether the automations are
+currently disabled, and this record must not be read as implying
+otherwise. The seat definition itself (Brains: on-call, no
+clocks, no gates) is Ace's ruling and stands as recorded; only
+the factual claim about the automations' present state is
+narrowed.
