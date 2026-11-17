@@ -199,3 +199,73 @@ credit), #370 (ad2a12c), #348 (41c3c96 — merged
 | THE GRAND WORKFLOW — Uni examination + reconciled draft (director-reports/THE_GRAND_WORKFLOW_SYNTHESIS_UNI_2026-11-14.md, this PR): Keeper PLRC + Director architecture reconciled with measured cycle empirics and external research. Uni CONCURS as drafted; agreement completes when Director and Keeper each post explicit concurrence on this same packet, or Ace rules it live. WORKFLOW v1 governs until adoption. | Awaiting: Director + Keeper concurrence (or exact objections) | Director + Keeper |
 | FI-011 — PSALM WORKFLOW + NURSERY AUTO-CONFIRM GATES (Ace feature, stated 2026-11-15 15:00 CST; intake under the FI-002 law; full development: director-reports/FI011_PSALM_WORKFLOW_NURSERY_GATES_2026-11-15.md; this PR) | DEVELOPED + PLACED, not built. Mirrored against the whole plan: Freedom Clause sovereignty at the Nursery gate (a gate is a human decision made in advance — WHEN the human decides changes, never WHO), the C5/C5.Door AI hard line (gates set only by the user's hand; a Psalm may only PROPOSE a gate as a PENDING suggestion via C5R.6 machinery), placement law Q-U.4 (auto placement sandbox-first unless the gate names a wall), hard-law precedence (ungateable categories), Witness Law (every auto-confirm receipted + in the live feed), elastic limits, FI-009 strict-conjunction deterministic matching (an AI never evaluates a gate match). Placement: gate half = Nursery capability in the C5 lineage after C5R.5 MANAGE + C5R.6 AI ORGANIZER; workflow half = Grand Plan sequence step 4, the Psalm Matrix stage. ASKS: Q-FI011.1 (Director: is a user-set standing gate a human confirmation within C5.Door's meaning; does the PENDING-only Psalm-output doctrine admit the gate-matched refinement?) — Q-FI011.2 (Director: the ungateable category list under hard law) — Q-FI011.4 (Keeper: W4 adversarial scope) — Q-FI011.3 (Ace, non-blocking: sandbox-first placement default). No build is requested or authorized. | this PR head | 2026-11-15 |
 | CYCLE SYSTEM — phase-staggered pipeline design + activation (director-reports/CYCLE_SYSTEM_2026-11-15.md, this PR): researched platform limits (ChatGPT Tasks + Grok Automations hourly floor; fresh-conversation runs; state in the record), phase grid Director :00/:30 + Keeper :15/:45 + Uni watch 5m/execution 30m, lane contracts, ready-to-paste Keeper skills/slots + Director four-part task texts. Keeper ACK 2026-11-15 23:16 CST; Director CONDITIONAL CONFIRM 23:19 CST with five amendments folded (duty separation, Keeper-hourly verification, measured latency, verifiable transport, split PLAN/CODE ratios + three-lane SWAT). Ace ordered activation 23:33 CST ("Cycle System Live"). THIS PR IS THE ACTIVATION VEHICLE: the Director's standard requires one end-to-end proof transaction (Uni evidence -> Keeper stamp -> Director ruling by verified email -> Uni GitHub acknowledgment -> section 32 merge -> Director final check) plus a failed-gate drill on the same vehicle (package starts incomplete; the gate must hold). Records only; no code credit; status stays DESIGN until both proofs exist. | ACTIVATION IN PROOF — drill first, then the full lap | this PR head |
+
+## ADDENDUM — 2026-11-17 ~14:45 CST (Uni execution cycle; Director §42 delta 6960021739, item 5)
+
+This addendum is ADDITIVE. Nothing above is rewritten: every prior
+receipt, disposition, and pending question in this file stands as
+recorded. Where this addendum conflicts with the refresh text above,
+this addendum governs CURRENT gates; the older text remains the
+historical record of its own time.
+
+1. MAIN RECONCILIATION. The refresh above was taken at main `8d5c8028`.
+   Current main is `4f6011bae83468704293625985a5d7fd0e7fce6c`
+   (Keeper Deep Pass watermark commit, 2026-11-17 ~14:12 CST).
+   Current-main CI is terminally ALL SUCCESS: Python package
+   44166532172 SUCCESS; Form smoke 44166532258 SUCCESS. The Form smoke
+   FAILURE 44165049363 belongs to the superseded intermediate head
+   `5aca8efc` (the #474 merge commit) and is NOT a current-main
+   failure; the later heads `f78b2cef` and `4f6011ba` are green.
+   Open PRs: 24. Only #461 and #294 are MERGEABLE; #294 is fenced
+   (GATE HOLD, never merge) and #233 is fenced (never merge).
+
+2. SEAT CORRECTION (supersedes the GOVERNANCE NOTE and the
+   "Acting-Keeper (Gemini)" column wording above for CURRENT gates).
+   Per Ace's explicit re-seat 2026-11-17 13:52 CST, accepted by the
+   Director as the operative reported governance event (delta
+   6960021739, item 1): the Keeper seat is held by GROK. Gemini's
+   Acting-Keeper lane is QUEUED; stamps she already issued stand as
+   issued, and her pending items transferred to the Keeper's queue.
+   The merged BRAINS_SEAT_RECORD (PR #472, merge `c0f08f67`) is a
+   HISTORICAL record of the seat as of its merge and is not the
+   current seat state; it is not rewritten. Grok's automation-OFF
+   status remains REPORTED, NOT INDEPENDENTLY VERIFIED. Current
+   Keeper gates in the table above are therefore read as: Keeper
+   (Grok, re-seated) confirmation at head. The #461 next gate reads:
+   SS43/44 artifact; Keeper adoption-head review; Director final
+   adoption + cutover ruling. #461 ADOPTION HOLD is unchanged.
+
+3. MERGED SINCE THE REFRESH (records only; no PLAN/CODE credit).
+   - PR #474 MERGED as `5aca8efc29a98b4f2e625f30c3ec384717695838`
+     (candidate head `48f9e3ea4ca9dc805d2d4eb013b0b8479bd5ddb2`;
+     Director SCOPED CONTENT ACCEPTED 6958696273; Keeper FAST CONFIRM
+     6959320989; terminal CI ALL SUCCESS; Uni merge record 6959421038).
+   - PR #475 MERGED as `f78b2cef8c6868f63adccc798fb9747f95deb46c`
+     (candidate head `bc2dea28d02543750c86b3ef4bf6ae3522cdeff5`;
+     Director Phase-D disposition 6958695377; Keeper FAST CONFIRM
+     6959324073; terminal CI ALL SUCCESS; Uni merge record 6959421587).
+   - PR #473 C5R.4 LENS credit settlement CLOSED after the refresh:
+     Director SCOPED CODE COMPLETE 6959492051 + Keeper CODE CREDIT
+     CONFIRMED 6959597046 + Uni settlement 6959619312 = CODE +1
+     (2026-11-17 settled CODE total +3 with C5R.3 #467 and GROW-DUP
+     #466). Director Transition SWAT 6959681971 independently verified
+     and closed this settlement; no additional signature is requested.
+
+4. TRIAGE WORK ORDER (Director delta 6960021739, items 3-4; accepted
+   for work, NOT merge authorization). Priority 1: #424 + #441 as one
+   evidence-reconciliation job feeding #421; #421 stays
+   CORRECTION_REQUIRED with its proposed counts unadopted. Close
+   candidates #440 / #425 / #426 / #428 / #418: closure only after a
+   per-PR zero-loss replacement mapping + source receipt; no mass
+   close. #427 / #434 / #431 / #433 / #443 / #444 await distinct
+   question dispositions after exact-head source packets; #444's
+   pre-LENS premise must be reconciled with merged #473 before reuse.
+   #420 requires current-head re-presentation. #432 / #435 / #438 /
+   #442 / #445 may be prepared as one limits-family decision packet;
+   no blanket rebases or authorizations. No open PR is newly
+   merge-authorized by the delta or by this addendum.
+
+5. PENDING QUESTIONS PRESERVED. Every question and gate recorded
+   above (including Q-LC.1/Q-LC.2, the LM asks, the FI-011 asks, and
+   the #421/#461 gates) remains open exactly as written; this
+   addendum answers none of them and closes none of them.
