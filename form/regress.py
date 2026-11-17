@@ -205,6 +205,7 @@ LIST = [
     "form.nursery_c5r1_readpath_test",
     "form.nursery_growdup_test",
     "form.nursery_c5r2_see_test",
+    "form.nursery_c5r3_organize_test",
     "form.core_ii_version_validation_test",
     "form.atomic_write_boundaries_test",
     "form.forcefield_gravity_evolution_test",

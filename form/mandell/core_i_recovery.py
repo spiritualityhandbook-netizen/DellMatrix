@@ -1044,8 +1044,8 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     from form.mandell.checkpoint_generation import _check_fail, CheckpointError
     from form.dell_matrix.atomic_write import atomic_write_json
     from form.dell_matrix.nursery import (
-        DISPOSITION_SECTION_KEY, _disk_sig, NurseryConflictError,
-        owner_nursery_path,
+        DISPOSITION_SECTION_KEY, EDIT_RECEIPT_SECTION_KEY, _disk_sig,
+        NurseryConflictError, owner_nursery_path,
     )
 
     # 1. PREPARE: serialize all three payloads BEFORE touching any live file.
@@ -1057,6 +1057,13 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     nursery_payload = {k: v.to_dict() for k, v in nursery.proposals.items()}
     nursery_payload[DISPOSITION_SECTION_KEY] = {
         cid: dict(rec) for cid, rec in nursery.conflict_dispositions.items()
+    }
+    # C5R.3: the organization edit-receipt section rides the same
+    # reconstruction — a rollback must preserve the selected
+    # generation's audit history, not only its edited metadata.
+    nursery_payload[EDIT_RECEIPT_SECTION_KEY] = {
+        op_id: dict(rec)
+        for op_id, rec in nursery.organization_edit_receipts.items()
     }
     # R2: Ideas payload. The ideas_snapshot_path_for_rollback is passed
     # explicitly to avoid guessing. It points to the sealed generation's
