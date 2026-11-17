@@ -6,7 +6,7 @@ Phase 1: the additive organization schema on Proposal, the
 deterministic creation seed (seed-rule v1), typed bound refusals,
 the receipt-identity plumbing, the reserved edit-receipt section's
 load/save round-trip, and legacy write-freedom.
-Phase 2: the trusted edit operation (Nursery.edit_organization +
+Phase 2: the trusted edit operation (Nursery.organize_proposal +
 Program.organize_proposal + the REPL `proposals organize` door)
 and the SEE organization views (searchable topic/tags/cluster,
 cursor-bound filters, overlap-aware grouping).
