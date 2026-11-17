@@ -1,44 +1,42 @@
 # C5R.4 LENS — Concrete Signal Definitions (Uni, 2026-11-17)
 
-Status: DEFINITIONS DRAFT v2 for two-checker review. No build is
-authorized by this document. It answers the Director's published LENS
-directive (delivered via Ace, verified channel, 2026-11-17 ~04:52 CST,
-against main 77ea7271) as refined by the Director's C5R.4 scope
-decisions and next-circuit brief (EXE comment 6945952130 on PR #444,
-2026-11-17): transparent scoring, complete paging, preserved human
-confirmation; PlaneRank stays separate. It also resolves Q-C5R.4:
-C5.PlaneRank does NOT integrate with the lens — the lens is computed
-entirely inside the existing SEE service (Nursery.query) from stored
-Proposal fields, and never imports, calls, or reads PlaneRank state.
+Status: DEFINITIONS v3 — revised per Director source review
+6946155095 (PR #468, at v1 head 149c96e1) and Director EXE
+6945952130 (PR #444). REVISE PLAN / BUILD NOT YET AUTHORIZED.
+No production build, merge, or credit is claimed by this package.
 
-v2 changes against v1 (all from 6945952130): tie-break is the stable
-proposal ID after equal full-precision S; a formal signal-contract
-table with measured-zero vs missing evidence and partial-coverage
-disclosure (no silent renormalization); the FRESH half-life is an
-explicit PROVISIONAL policy with Ace's Q-C5R.2 choice kept open and
-visible; the lens family is S / newest / oldest / alphabetical; the
-paging-hazard rule binds every mutable scoring input; the legacy
-Inspire recipe is named, kept, and fenced (section 8); the Keeper
-forward-check list is folded into the acceptance suite (L13–L19).
+Authority chain: the Director's published LENS directive (via Ace,
+verified channel, 2026-11-17, against main 77ea7271) — transparent
+scoring, complete paging, preserved human confirmation, PlaneRank
+stays separate — as corrected and closed by the two rulings above.
+Q-C5R.4 is resolved: C5.PlaneRank (MWL 141, a planned Plane-field
+component; no such module exists in form/) does NOT integrate. The
+lens is computed entirely inside the existing SEE service
+(Nursery.query) from stored Proposal fields and the matched set.
 
 ## 1. Contract
 
-- The lens is an OPT-IN ordering of the existing SEE service:
-  `query(..., sort="lens")` (family in section 3.6). Lenses reorder
-  only within the same owner / status / search / organization
-  filter scope the query already defines — a low rank, a missing
-  signal, or age NEVER removes a record from a view or changes its
-  confirmation state. The default ordering is unchanged:
-  `(created, id)` ascending, reported as `sort: "created,id"`.
-- Ranking changes ORDER ONLY, never membership. A lens traversal
-  returns exactly the matched ID set a default traversal returns
-  (proven at 1,000 records by the failing-first suite).
+- **S is the DEFAULT ordering** of the SEE service (browse and
+  search). A query with no sort returns S order and reports
+  `sort: "lens-v1"`. Three explicit alternatives ride the same
+  contract: `newest` (created desc, ID asc), `oldest` (created asc,
+  ID asc — the historical default order, preserved as an explicit
+  chronological lens), `alphabetical` (label casefold asc, ID asc).
+- Ranking changes ORDER ONLY, never membership, within the same
+  owner / status / search / organization-filter scope the query
+  already defines. A lens traversal returns exactly the matched ID
+  set the `oldest` traversal returns (proven at 1,000 records,
+  mixed statuses, and under filters).
 - The lens NEVER writes. Confirmation remains Ace's sovereign act;
   no score, at any value, confirms, rejects, deletes, or lands
-  anything. The store file is byte-identical after any lens query.
-- Transparent scoring: every returned item carries its full score
-  breakdown, and the response names the weights version. Anyone can
-  recompute every score by hand from the stored record.
+  anything. Stored payload, status, and organization are
+  byte-identical after any lens query.
+- Transparent scoring: every returned item carries its score and
+  full component breakdown with evidence states; the response names
+  the weights version and the effective configuration identity
+  (section 5). Anyone can recompute every score by hand from the
+  stored record, the disclosed comparison corpus, the evaluation
+  instant, and the configuration.
 
 ## 2. The score
 
@@ -46,183 +44,235 @@ forward-check list is folded into the acceptance suite (L13–L19).
 S(p) = 0.40 * LINK(p) + 0.25 * ACE(p) + 0.20 * FRESH(p) + 0.15 * NOVEL(p)
 ```
 
-Weights version: `lens-v1`. Ordering: S descending at FULL
+Weights version `lens-v1`. Ordering: S descending at FULL
 precision; equal full-precision S breaks by stable proposal ID
-ascending. Scores may be rounded for display only — rounding never
-feeds the ordering. Every component is in [0, 1], computed ONLY
-from fields stored on the Proposal record and the matched set
-itself. Nothing is fabricated: each component carries an evidence
-state (section 3.5); a missing component is disclosed as missing
-with the score flagged partial — weights are NEVER silently
-renormalized and a partial score is never presented as full.
+ascending (no other criterion — age is never a hidden tie-break).
+Rounding is for display only and never feeds the ordering. When a
+component's evidence is missing or malformed, its contribution is
+0, the weights are NOT renormalized, and the score is flagged
+`partial` — a partial score is never presented as fully evidenced.
 
 ## 3. Signal definitions
 
-### LINK(p) — connectedness to the rest of the store
+### 3.1 LINK(p) — connectedness to the rest of the store
 
 Mean of three stored components:
 
-- `parents_c = min(len(p.parents), 2) / 2`  → one of {0, 0.5, 1}
-- `graph_c   = p.graph_coherence`          → stored [0,1]; 0.0 is the
-  recorded value when no graph evidence exists (never invented)
-- `harmony_c = p.harmony`                  → stored [0,1]; 0.0 is the
-  recorded neutral for non-pair proposals
+- `parents_c = min(unique_valid_parents(p), 2) / 2`, where
+  unique_valid_parents counts DISTINCT parent IDs that resolve to
+  records in the same store. Duplicate parent strings never raise
+  connectedness; parent IDs that do not resolve are named in the
+  evidence as unresolved and do not count.
+- `graph_c = p.graph_coherence`, `harmony_c = p.harmony` — each
+  with presence-tracked evidence (section 3.5).
 
 `LINK = (parents_c + graph_c + harmony_c) / 3`
 
-### ACE(p) — Ace-attention lineage
+### 3.2 ACE(p) — human-attention component (provenance-limited)
 
-`ACE = 1.0` if following `supersedes_id` links from p within the store
-reaches a record whose status is `confirmed` (Ace acted on this
-lineage); otherwise `ACE = 0.0`. Binary in v1 by design: the stored
-record either proves an Ace confirmation in the chain or it does not.
-No softer inference is permitted — an unproven attention claim must
-not move a ranking. Confirm/reject COUNTS are not attention and are
-never used as a proxy. If a `supersedes_id` points outside the store
-(dangling link), the traversal is incomplete: ACE reports its value
-with evidence state `partial` and the dangling link named — the gap
-is disclosed, never silently treated as a complete search.
+Status alone does NOT prove Ace attention: `Nursery.confirm(pid)`
+writes `status='confirmed'` without recording an actor, and
+`supersedes_id` records predecessor identity, not an attention
+receipt. Therefore, in v1:
 
-### FRESH(p) — recency with per-collection fade
+- **ACE is explicitly MISSING on every record**: contribution 0,
+  weights unchanged, every S flagged partial with
+  `evidence.ace = "missing"`. This is the honest state of the
+  evidence; no proxy is silently counted as attention.
+- The confirmed-lineage signal is still computed and disclosed
+  SEPARATELY as `ace_proxy` (1.0 if the supersedes chain reaches a
+  confirmed record, else 0.0). It is labeled a proxy in every
+  response, is never described as verified personal Ace attention,
+  and contributes NOTHING to S in v1.
+- Lineage traversal is cycle-safe (visited set; a cycle terminates
+  and is reported) and reports broken references (a supersedes_id
+  pointing outside the store is named; evidence `partial`).
+- Before ACE may count in any later version, a trustworthy
+  human-action source must be traced and reviewed (build-phase
+  investigation: `Program.confirm_proposal`'s producer parameter
+  and the acceptance-data records are the first candidates). No
+  unreviewed attention writer may be introduced to solve this.
 
-`FRESH = 1 / (1 + age_days / half_life_days(collection(p)))`
+### 3.3 FRESH(p) — recency, reciprocal fade v1
 
-- `age_days` is computed from `p.created` (ISO-8601) to the query's
-  evaluation instant. The evaluation instant is bound into the cursor
-  on page 1, so one traversal is one frozen ranking even if the
-  wall clock moves between pages.
-- `collection(p)` is the record's C5R.3 effective topic (stored topic,
-  else `unclassified`). The half-life table is a named mapping
-  (`LENS_FADE_DAYS`) so fade rates are per-collection by mechanism.
-- PROVISIONAL POLICY (Director 6945952130): the per-collection
-  half-life values are Ace's open choice (Q-C5R.2) — Uni does not
-  invent them. Until Ace rules, v1 runs on the explicit provisional
-  policy "14.0 days for every collection", and every lens response
-  names that policy as provisional with Q-C5R.2 still open. When Ace
-  rules, only the table changes; the formula and this contract do
-  not.
-- An unparseable `created` yields `FRESH = 0.0` with evidence state
-  `missing` and the breakdown flags `fresh_basis: "unknown"` — no
-  fabricated recency.
+The fade function is **reciprocal fade v1** (NOT exponential
+half-life decay, and never named as such):
 
-### NOVEL(p) — dissimilarity inside the matched set
+```
+FRESH = 1 / (1 + age_days / tau(collection(p)))
+age_days = max(0, evaluation_instant - created) in days
+```
 
-`NOVEL = 1 - max over q in matched, q != p of J(tokens(p), tokens(q))`
+- `collection(p)` is the C5R.3 effective topic. `tau` comes from
+  the named table `LENS_FADE_DAYS`. **Provisional parameter:**
+  tau = 14.0 days, ONE uniform default for every collection —
+  accepted by the Director as a provisional v1 implementation
+  parameter. It is NOT Ace's selection and NOT a per-corpus policy
+  Ace chose. Q-C5R.2 remains OPEN, and every lens response names
+  the fade policy as provisional with Q-C5R.2 open. When Ace rules,
+  only the table changes.
+- Timestamp conventions: the canonical record format
+  (`%Y-%m-%dT%H:%M:%SZ`, UTC) and offset-bearing ISO-8601 parse
+  (offsets convert to UTC). A naive timestamp (no Z, no offset) is
+  ambiguous and contributes disclosed missing/0 — no zone is
+  invented. An invalid timestamp likewise contributes missing/0.
+- A future-dated `created` clamps age to 0 (FRESH = 1.0) and is
+  disclosed with `future_dated: true` — never a negative age,
+  never a score above the function's range.
+- tau validation: a table value that is not finite and strictly
+  positive is a configuration error; the lens refuses
+  `LENS_CONFIG_INVALID` rather than dividing by it.
 
-- `tokens(x)` = the casefolded whitespace token set of
-  `label + " " + words`.
-- `J` is Jaccard similarity. NOVEL is computed over the matched set
-  (after filters, before paging) and the response discloses the
-  matched-set size it was computed against.
-- A single-record matched set gives `NOVEL = 1.0`. An empty token
-  set gives `NOVEL = 0.0` (no content to be novel with). An exact
-  duplicate of another matched record gives `NOVEL = 0.0`.
+### 3.4 NOVEL(p) — lexical dissimilarity proxy
 
-### 3.5 Signal contract table (Director 6945952130, item 5)
+NOVEL is a precisely labeled **lexical** dissimilarity proxy over
+the matched set. It does not establish semantic novelty across the
+Matrix, and no response may describe it as doing so.
 
-| Signal | Source (stored) | Normalization | Range | Provenance in response | Absent / malformed handling |
-|---|---|---|---|---|---|
-| LINK | `parents`, `graph_coherence`, `harmony` on the Proposal record | mean of `min(len(parents),2)/2`, `graph_coherence`, `harmony` | [0,1] | per-component value + evidence state | a key absent from the stored record (pre-R3.6 legacy) = evidence `missing`, value enters at 0.0, score flagged partial; a stored 0.0 = evidence `measured` (a real zero, never conflated with missing) |
-| ACE | `supersedes_id` chain + `status` of reached records | binary | {0,1} | value + evidence state | complete traversal with no confirmed ancestor = `measured` 0.0; dangling `supersedes_id` = evidence `partial`, link named |
-| FRESH | `created` (ISO-8601) + bound evaluation instant + `LENS_FADE_DAYS[effective topic]` | `1/(1+age_days/half_life)` | (0,1] | value + `fresh_basis` | unparseable `created` = evidence `missing`, value 0.0, `fresh_basis: "unknown"` |
-| NOVEL | `label` + `words` token sets over the matched set | `1 - max Jaccard` | [0,1] | value + matched-set size | empty token set = evidence `missing`, value 0.0; singleton matched set = `measured` 1.0 |
+```
+NOVEL = 1 - max over q in matched, q != p of J(tokens(p), tokens(q))
+tokens(x) = casefolded whitespace token set of label + " " + words
+J = Jaccard similarity
+```
 
-Evidence states are part of the score breakdown on every item:
-`lens: {score, link, ace, fresh, novel, partial, evidence}` where
-the four components are their numeric values, `partial` is true
-when any component's evidence is not `measured`, and `evidence`
-maps each component (for LINK, each sub-component) to `measured` /
-`missing` / `partial`. Revisions to any signal definition
-increment the weights version (`lens-v2`, ...) and are recorded
-here; a cursor bound to an older version refuses rather than
-mixing versions mid-traversal.
+- The comparison corpus is the matched set (after owner/status/
+  search/organization filters, before paging); the response
+  discloses the corpus size. **Filter changes can change scores** —
+  stated here and in the response metadata.
+- Singleton corpus: NOVEL = 1.0 (measured, no comparator exists).
+  Empty token set: NOVEL evidence `missing`, value 0.0.
+- Tokenization happens once per query snapshot; the 1,000-record
+  path is measured in the build packet. No retention cap may be
+  introduced to avoid comparison cost.
 
-## 3.6 The lens family
+### 3.5 Component validity, missingness, provenance
 
-`sort` accepts exactly: `lens` (the S ranking above), `newest`
-(created desc, ID asc), `oldest` (created asc, ID asc — the same
-order as today's default, named), `alphabetical` (label casefold
-asc, ID asc). Every lens obeys the identical contract: membership
-never changes, paging is complete, cursors bind the lens, nothing
-writes. The default (no sort passed) remains `oldest`'s order,
-reported as today (`created,id`).
+Every component on every item reports `{value, evidence}` where
+evidence is `measured`, `missing`, `malformed`, or `partial`:
 
-## 4. Cursor and refusal semantics (inherited from SEE, extended)
+- A stored numeric value inside its range = `measured` (a stored
+  0.0 is a real measured zero, never conflated with absence).
+- A key ABSENT from the stored record (pre-R3.6 legacy records load
+  with dataclass defaults) = `missing`. Presence is tracked at
+  load; the dataclass default alone never masquerades as a
+  measurement.
+- A stored value that is non-numeric, non-finite, or outside its
+  declared range = `malformed`: it contributes as missing (0), is
+  named in the evidence, and the ORIGINAL stored value is
+  preserved untouched — never silently clamped, never rewritten.
+- Any missing/malformed component (and in v1, ACE always) flags
+  the item's score `partial`.
 
-- The cursor binds: owner, mode, filters, page size, sort (`lens-v1`
-  + weights version), and the evaluation instant. Continuing with an
-  explicitly different sort refuses `CURSOR_FILTER_MISMATCH`; an
-  unpassed sort defers to the bound lens (SEE convention).
-- PAGING HAZARD RULE (Director 6945952130): a continuation is valid
-  only when EVERY mutable scoring input is unchanged. In the S
-  recipe every input is either (a) inside the nursery file — LINK,
-  ACE, and NOVEL read stored records only, and the file's disk
-  signature covers them — or (b) the evaluation instant, bound into
-  the cursor. There is no third input: the S recipe reads no
-  preference model, no Plane evidence, no external state (that
-  external dependence is precisely what keeps the legacy recipe,
-  section 8, from being this lens). A store change between pages
-  refuses `STALE_CURSOR`; there is no mid-traversal recomputation
-  against changed inputs, and no repeats or skips across pages.
-- A stale in-memory instance refuses `STALE_OWNER_STATE` before
-  page 1, exactly as SEE does today.
-- An unknown sort value refuses `SORT_UNSUPPORTED` (typed, never a
-  silent fall back to the default order).
+| Signal | Source | Range | Malformed rule |
+|---|---|---|---|
+| LINK.parents | `parents` list | {0, 0.5, 1} after unique-valid count | non-list / non-string entries: `malformed`, excluded + named |
+| LINK.graph | `graph_coherence` | [0,1] | outside range / non-finite / non-numeric: `malformed` |
+| LINK.harmony | `harmony` | [0,1] | same |
+| ACE | (no trustworthy source in v1) | {0} contribution | always `missing` in v1; `ace_proxy` disclosed separately |
+| FRESH | `created` + bound instant + tau table | (0,1] | naive/invalid timestamp: `missing`; future: clamped + disclosed |
+| NOVEL | `label`+`words` over matched corpus | [0,1] | empty tokens: `missing` |
 
-## 5. REPL surface (build phase)
+Definition revisions increment the weights version (`lens-v2`,
+...) and are recorded here; a cursor bound to an older version or
+configuration refuses rather than mixing (section 5).
 
-`proposals browse sort:lens` / `proposals search sort:lens <term...>`
-render the ranked order with each item's score shown; continuations
-ride the same cursor grammar. The legacy `proposals` and `rank`
-doors are untouched.
+## 4. Evaluation instant
 
-## 6. What this is not
+A query may pass `lens_now` (an offset-aware ISO-8601 instant) to
+fix the evaluation instant — for reproducible scoring and tests.
+When passed, it governs every FRESH computation in the traversal
+and is bound into the cursor. When absent, the service clock at
+page 1 governs and is bound the same way. An invalid `lens_now`
+refuses `ARGUMENT_INVALID`. A frozen traversal's scores and order
+are identical even if the wall clock advances between pages.
 
-- Not PlaneRank: no shared code, no shared state, no cross-reads.
+## 5. Continuation identity (cursor contract)
+
+The cursor binds: owner, mode, filters, page size, sort + weights
+version, the evaluation instant, AND the **effective configuration
+identity** — a digest of the weights, the fade-function version,
+and the full effective `LENS_FADE_DAYS` table. The nursery file
+digest alone is NOT sufficient, because the fade table is mutable
+configuration outside the file. Continuation rules:
+
+- Explicitly different sort/filter/size: `CURSOR_FILTER_MISMATCH`.
+- Store change between pages: `STALE_CURSOR`.
+- Configuration change between pages: `CURSOR_CONFIG_CHANGED`.
+- Stale in-memory instance: `STALE_OWNER_STATE` before page 1.
+- Unknown sort: `SORT_UNSUPPORTED`. Invalid tau at query time:
+  `LENS_CONFIG_INVALID`.
+- No mid-traversal recomputation against changed inputs; no
+  repeats or skips across pages.
+
+## 6. Migration contract (ranked_proposals and its consumers)
+
+`Program.ranked_proposals` (form/open.py) currently orders the
+pending scope by the LEGACY recipe: the Inspire preference blend
+with harmony/graph_coherence tie-breaks and an affinity fallback.
+Under C5R.4 the build migrates the consumers to the SEE lens:
+
+- `ranked_proposals` keeps its signature and its pending scope and
+  membership, but its ORDER becomes the S lens order over that
+  scope (via Nursery.query), with the score breakdown available on
+  each returned record. The Inspire preference model itself is not
+  modified; only its use as ranked_proposals' ordering authority
+  retires.
+- Consumers inventoried at main 77ea7271 — form/dell_matrix/
+  code_evolution.py, live_visual.py (5 sites), sacred_geometry.py,
+  visual.py, form/mandell/executor_leaf.py, the REPL `rank` door
+  (form/repl.py), and the Dell 46 / snapshot surfaces riding these
+  callers — keep working against the same signature; what changes
+  is the order and the disclosed scores.
+- REPL doors: `proposals browse` / `proposals search` show the
+  default S order with each item's score; `sort:<lens>` tokens
+  select the alternatives; `rank` renders the migrated order. The
+  legacy `proposals` door is untouched.
+
+**Assertion mapping** (each old ordering assertion, Uni side;
+the Keeper's independent enumeration agreed at v2 and is re-run
+against this v3 mapping in her recheck):
+
+| Assertion | Disposition |
+|---|---|
+| p3_r35_integration_proof bypass-must-fail (ranked consumption of harmony/graph signals) | SUPERSEDED as written — the consumer changes. The underlying contract (stored harmony/graph evidence affects ranking) is PRESERVED through LINK and re-proved by the lens suite's consumption checks (suite L20). |
+| p3_r36_graph_harmony_proof B4 + ranked sections | SUPERSEDED as written; same replacement as above. |
+| nursery_c5r1_readpath_test R2 (ranked count + ID set == list set) | PRESERVED — pending scope and membership do not change; only order does. |
+| nursery_c5r2_see_test S1 (default traversal in (created,id) order) | SUPERSEDED for the default (now S); PRESERVED as the `oldest` lens pin. The SEE suite is updated in the build PR to pin default = S and oldest = historical order. |
+| nursery_c5r2_see_test docstring note (ranked_proposals pending-only) | PRESERVED (informational; still true). |
+
+Until the build lands, the legacy recipe remains the live
+behavior, named the LEGACY LENS and tested under its own name;
+nothing in this plan changes any expected result before the build
+PR does so deliberately, assertion by assertion, per this map.
+
+## 7. What this is not
+
+- Not PlaneRank: no shared code, state, or cross-reads (suite
+  tripwire enforces it).
 - Not a filter: membership is the matched set, whole and unchanged.
 - Not an actor: it cannot confirm, reject, delete, organize, or
-  persist anything. It is a lens in the literal sense — it changes
-  what you look at first, nothing else.
+  persist anything. A low rank, a missing signal, or age never
+  removes a record or changes its confirmation state — the
+  lowest-ranked pending proposal confirms through the public path
+  exactly like the highest (suite-proved).
 
-## 7. Proof contract
+## 8. Proof contract
 
-`form/nursery_c5r4_lens_test.py` (failing-first, this package):
-L1 default-order pin (passes today), L2–L19 the lens contract above
-(all failing today for the stated reason: no lens exists). L13–L19
-carry the Keeper forward-check list from 6945952130: per-lens
-1,000-record membership, equal-score ID tie-break, missing-vs-zero
-evidence, FRESH timestamp boundaries under the provisional policy,
-a weight-permutation control (the implementation's order must match
-the STATED weights' hand computation and differ from a permuted
-weights computation where the two disagree), changed-lens cursor
-refusal, and public-path confirmation of the last-ranked pending
-proposal. The build is complete only when the whole suite passes at
-an exact head plus the standard campaign/CI/checker gates.
+`form/nursery_c5r4_lens_test.py` (failing-first, this package;
+v3: 21 checks, L1–L20 with L10 split in two). At this stage the suite is explicitly STANDALONE
+(Director registration clarification, 6946155095): it is not in
+form/regress.py, so plan-stage failure cannot break main
+regression. Mandatory registration rides the implementation
+candidate and is verified before admission. The build is complete
+only when the whole suite passes at an exact head, the SEE suite
+updates land with it, and the standard campaign/CI/checker gates
+close.
 
-## 8. The legacy lens — named, kept, fenced (Director 6945952130, item 3)
+## 9. Open items at contract close (Director's decision)
 
-`Program.ranked_proposals` (form/open.py) already ranks: the Inspire
-preference blend (0.65 affinity + 0.35 tanh(preference)) with
-harmony / graph_coherence tie-breaks and an affinity fallback. That
-recipe is hereby named the LEGACY LENS. It must never become an
-undocumented secondary formula beside the S lens:
-
-- The legacy lens KEEPS its current behavior for its current
-  callers in this circuit. C5R.4 does not replace it, retune it, or
-  silently reroute any caller.
-- Callers inventoried at main 77ea7271: form/dell_matrix/
-  code_evolution.py, live_visual.py (5 sites), sacred_geometry.py,
-  visual.py, form/mandell/executor_leaf.py, and the REPL `rank`
-  door (form/repl.py). The Dell 46 and snapshot surfaces ride these
-  same callers.
-- Pinned ordering assertions Uni has enumerated (Uni side; the
-  Keeper's independent enumeration rides her forward check, and
-  BOTH enumerations must agree before any expected result is
-  replaced): form/mandell/p3_r35_integration_proof.py
-  (bypass-must-fail on ranked consumption),
-  form/mandell/p3_r36_graph_harmony_proof.py (B4 + ranked
-  sections), form/nursery_c5r1_readpath_test.py,
-  form/nursery_c5r2_see_test.py.
-- Any future migration of a caller from the legacy lens to a SEE
-  lens is its own circuit with its own failing-first evidence; the
-  legacy lens is tested separately under its own name until then.
+- ACE: whether the traced human-action source (if any qualifies)
+  admits ACE into S in v1, or ACE remains missing until a reviewed
+  provenance mechanism exists. Uni's position: missing until
+  proven — no attention claim without a receipt.
+- Q-C5R.2 (Ace, open, nonblocking): per-collection fade values.
+  The provisional uniform 14.0-day tau runs until Ace rules.
