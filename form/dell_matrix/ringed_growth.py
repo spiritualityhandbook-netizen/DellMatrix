@@ -511,6 +511,7 @@ class RingedGrowth:
         report: List[Dict[str, Any]] = []
         total_new = 0
         total_evo = 0
+        total_dup = 0
         total_excluded_cross_sandbox = 0
         total_excluded_malformed_box = 0
         refused_malformed_box: List[str] = []
@@ -522,6 +523,13 @@ class RingedGrowth:
         gcoh_vals: List[float] = []
 
         for cycle in range(max(1, cycles)):
+            # G-DUP.4 (Director 6936222292): receipt mark at cycle
+            # start. The step appended for this cycle itemizes the
+            # suppression receipts appended SINCE this mark (receipt
+            # deltas), so every skip is linked to the cycle that
+            # produced it and a later run never attributes receipts
+            # an earlier run (or a direct add) left on this instance.
+            cycle_receipt_mark = len(self.nursery.suppression_receipts)
             # --- BODY PULSE FIRST — sense organs before proposing rings ---
             body = _body_pulse_safe()
             blocked, vital_missing = _vital_block(body)
@@ -565,6 +573,8 @@ class RingedGrowth:
                     "cycle": cycle + 1,
                     "ok": False,
                     "reason": "no live ideas",
+                    "suppressions": [dict(r) for r in
+                                     self.nursery.suppression_receipts[cycle_receipt_mark:]],
                     "pairs_excluded_cross_sandbox": 0,
                     "pairs_excluded_malformed_box": 0,
                     "malformed_box_units_refused": [],
@@ -607,6 +617,7 @@ class RingedGrowth:
             new_this = 0
             evo_this = 0
             docked_this = 0
+            dup_this = 0
 
             for a, b, aff in pairs:
                 gate = _ring_phase(aff["affinity"])
@@ -681,6 +692,11 @@ class RingedGrowth:
                     if not _aetheris_clear(label, words):
                         fog_cut += 1
                         continue
+                    # GROW-DUP: a suppressed duplicate add stores
+                    # nothing (proposal count unchanged) — it must not
+                    # consume the max_new quota or inflate totals; it
+                    # is receipted as a skip instead.
+                    _before = len(self.nursery.proposals)
                     self.nursery.add(
                         label=label,
                         words=words,
@@ -693,6 +709,10 @@ class RingedGrowth:
                         graph_coherence=pair_gcoh,
                         origin="growth:token",
                     )
+                    if len(self.nursery.proposals) == _before:
+                        dup_this += 1
+                        total_dup += 1
+                        continue
                     new_this += 1
                     total_new += 1
 
@@ -712,6 +732,10 @@ class RingedGrowth:
                     if not _aetheris_clear(label, words):
                         fog_cut += 1
                         continue
+                    # GROW-DUP: same skip accounting as the Solstice
+                    # path — a suppressed duplicate consumes no
+                    # max_evolved quota and inflates no total.
+                    _before = len(self.nursery.proposals)
                     self.nursery.add(
                         label=label,
                         words=words,
@@ -724,6 +748,10 @@ class RingedGrowth:
                         graph_coherence=pair_gcoh,
                         origin="growth:token",
                     )
+                    if len(self.nursery.proposals) == _before:
+                        dup_this += 1
+                        total_dup += 1
+                        continue
                     evo_this += 1
                     total_evo += 1
 
@@ -741,6 +769,15 @@ class RingedGrowth:
                     "pairs_excluded_malformed_box": excluded_malformed_box,
                     "malformed_box_units_refused": refused_cycle,
                     "proposed_new": new_this,
+                    "duplicates_suppressed": dup_this,
+                    # G-DUP.4: itemized suppressions for THIS cycle —
+                    # each receipt names the survivor and the reason;
+                    # the step's "cycle" field supplies the cycle the
+                    # original authorization (6931279746) required.
+                    # Receipt deltas only: receipts from before this
+                    # run are never attributed to its cycles.
+                    "suppressions": [dict(r) for r in
+                                     self.nursery.suppression_receipts[cycle_receipt_mark:]],
                     "proposed_evolved": evo_this,
                     "docked_new": docked_this,
                     "rings": list(RINGS),
@@ -756,6 +793,10 @@ class RingedGrowth:
             "cycles": cycles,
             "proposed_new": total_new,
             "proposed_evolved": total_evo,
+            # GROW-DUP: suppressed duplicate token-growth adds across
+            # all cycles of this run; additions + skips reconcile with
+            # the nursery's suppression receipts for the same run.
+            "duplicates_suppressed": total_dup,
             # SD-3: which mechanism authored the pair crosses.
             "growth_mode": "docked" if docked else "token",
             "docked_new": docked_new,

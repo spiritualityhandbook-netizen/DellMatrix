@@ -63,6 +63,7 @@ Ideas / Growth
   create an idea called test
   grow ideas 2
   proposals | confirm <id> | confirm all | reject all
+  proposals browse [status:<s>] [size:<n>] | proposals search <term> | proposals get <id...>
   exchange export <id> <file> | exchange import <file>
   unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
   flow                      show the last chain execution as a trace + frames
@@ -188,6 +189,7 @@ Create — make and develop ideas
   create an idea called <name>
   grow ideas <n>
   proposals | confirm <id> | confirm all | reject all
+  proposals browse [status:<s>] [size:<n>] | proposals search <term> | proposals get <id...>
   exchange export <id> <file> | exchange import <file>
   unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
   flow                      show the last chain execution as a trace + frames
@@ -551,6 +553,100 @@ def _run_tutorial(p: Program) -> Program:
     _say(f"(Demo used isolated owner '{demo_owner}'; your '{p.owner}' state was not modified.)")
     print()
     return p
+
+
+def _show_see_page(p: Program, verb: str, resp: dict) -> None:
+    """Print one C5R.2 SEE page (browse/search) with truthful totals."""
+    if not resp.get("ok"):
+        _say(f"proposals {verb} refused: {resp.get('error')} — "
+             f"{resp.get('detail')}")
+        return
+    if verb == "search":
+        head = f"proposals search — term: {resp.get('term')}"
+        if resp.get("status_filter"):
+            head += f" · status: {resp['status_filter']}"
+        _say(head)
+    else:
+        _say(f"proposals browse — status: "
+             f"{resp.get('status_filter') or 'all'}")
+    _say(f"shown {resp['shown']} of {resp['total_matches']} matches — "
+         f"total_matches {resp['total_matches']} · "
+         f"total_searched {resp['total_searched']} · "
+         f"total_inventory {resp['total_inventory']} · "
+         f"page size {resp['page_size']}")
+    for i, item in enumerate(resp["items"], 1):
+        _say(f"  {i}. [{item.get('status')}] {item.get('id')} — "
+             f"{item.get('label')}")
+    if resp.get("next_cursor"):
+        _say(f"next: proposals {verb} cursor:{resp['next_cursor']}")
+    else:
+        _say("next: (none — end of results)")
+
+
+def _see_dispatch(p: Program, lower: str) -> None:
+    """C5R.2 SEE doors: proposals browse|search|get (read-only).
+
+    Grammar: browse [status:<s>] [size:<n>] [cursor:<token>];
+    search [status:<s>] [size:<n>] [cursor:<token>] <term...>;
+    get <id> [id...]. The exact-match `proposals` door is untouched.
+    """
+    from form.dell_matrix.nursery import SEE_UNSET
+    parts = lower.split()
+    verb = parts[1] if len(parts) > 1 else ""
+    rest = parts[2:]
+    if verb == "get":
+        if not rest:
+            _say("proposals get refused: NO_IDS — name at least one "
+                 "proposal id")
+            return
+        resp = p.get_proposals(rest)
+        if not resp.get("ok"):
+            _say(f"proposals get refused: {resp.get('error')} — "
+                 f"{resp.get('detail')}")
+            return
+        _say(f"proposals get — found {len(resp['found'])} of "
+             f"{resp['requested']} requested")
+        for item in resp["found"]:
+            _say(f"  [{item.get('status')}] {item.get('id')} — "
+                 f"{item.get('label')}")
+        for pid in resp["missing"]:
+            _say(f"  missing: {pid}")
+        _say(f"summary: found {len(resp['found'])}, "
+             f"missing {len(resp['missing'])}, duplicates collapsed "
+             f"{resp['duplicates_collapsed']} — policy: "
+             f"{resp['policy']}")
+        return
+    # Untyped options stay SEE_UNSET so a continuation can tell
+    # "not mentioned" (cursor's bound value governs) from
+    # "explicitly restated" (must match the bound value or the
+    # query refuses CURSOR_FILTER_MISMATCH — never a silent ignore).
+    status = SEE_UNSET
+    size = SEE_UNSET
+    cursor = None
+    term_words = []
+    for tok in rest:
+        if tok.startswith("status:"):
+            status = tok.split(":", 1)[1] or None
+        elif tok.startswith("size:"):
+            raw = tok.split(":", 1)[1]
+            size = int(raw) if raw.lstrip("-").isdigit() else raw
+        elif tok.startswith("cursor:"):
+            cursor = tok.split(":", 1)[1]
+        elif verb == "search":
+            term_words.append(tok)
+        else:
+            _say(f"proposals {verb} refused: ARGUMENT_INVALID — "
+                 f"unexpected token {tok!r}; use status:<s>, "
+                 "size:<n>, or cursor:<token>")
+            return
+    if verb == "search":
+        term = " ".join(term_words) if term_words else SEE_UNSET
+        resp = p.search_proposals(term, status=status,
+                                  page_size=size, cursor=cursor)
+    else:
+        resp = p.browse_proposals(status=status, page_size=size,
+                                  cursor=cursor)
+    _show_see_page(p, verb, resp)
 
 
 def _show_proposals(p: Program) -> None:
@@ -3415,6 +3511,21 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
     interaction_id. All current parsing, routing, eligibility, guards, and
     special authorities apply. No historical authority is reused.
     """
+    # C5R.2 SEE doors dispatch FIRST: they are unambiguous prefix
+    # commands, and content-based stages below would otherwise
+    # swallow them — the chain parser claims any line containing
+    # ":" (e.g. `proposals browse status:pending`) and the restore
+    # handler claimed `proposals search restore` (Codex P2 on
+    # PR #465, accepted; both probe-verified before this move).
+    _see_lower = line.lower()
+    if (_see_lower == "proposals browse"
+            or _see_lower.startswith("proposals browse ")
+            or _see_lower == "proposals search"
+            or _see_lower.startswith("proposals search ")
+            or _see_lower.startswith("proposals get ")):
+        _see_dispatch(p, _see_lower)
+        return p
+
     # ROS-I: read-only observability meta-commands.
     if _handle_ros_command(p, line):
         return p
@@ -4619,14 +4730,20 @@ def _handle_connect_line(p, line: str, session):
                      f"token growth.")
         out = p.grow_ideas(cycles, session=session.docked)
         mode = out.get("growth_mode", "token")
+        _dup = out.get("duplicates_suppressed", 0)
         session.record(
             "grow", f"mode={mode} new={out.get('proposed_new', 0)} "
                     f"evolved={out.get('proposed_evolved', 0)} "
+                    f"suppressed={_dup} "
                     f"docked_new={out.get('docked_new', 0)} "
                     f"fallback={out.get('token_fallback', 0)}")
+        # G-DUP.2: disclose suppressions in the public transcript.
+        _dup_note = (f" ({_dup} duplicate"
+                     f"{'s' if _dup != 1 else ''} suppressed)"
+                     if _dup else "")
         _say(f"Growth ({mode}): {out.get('proposed_new', 0)} new + "
-             f"{out.get('proposed_evolved', 0)} evolved proposal(s) "
-             f"— all PENDING review.")
+             f"{out.get('proposed_evolved', 0)} evolved proposal(s)"
+             f"{_dup_note} — all PENDING review.")
         return p, session
 
     session.record(token or "unknown", f"rejected: {FAIL_OUT_OF_SCOPE}")

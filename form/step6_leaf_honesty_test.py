@@ -13,6 +13,13 @@ Contracts proven here, through the public seed path
   executed != requested; the nursery delta equals exactly
   executed x the measured one-cycle delta. Malformed and
   negative labels refuse invalid_loop_count with zero growth.
+  GROW-DUP amendment (Director 6931279746): repeated cycles over
+  an unchanged field re-derive identical crosses, which are now
+  suppressed instead of stored as twins — so the execution
+  witness is ADD OUTCOMES (stored delta + suppression receipts),
+  which must still equal exactly executed x the measured
+  one-cycle outcome count. The honesty contract is unchanged:
+  every claimed cycle provably ran.
 - B3 Merge: fewer than two resolved required sources refuses
   missing_source (bare, unknown tokens, one source) with zero
   mutation; ambiguity still refuses ambiguous_source; a named
@@ -168,45 +175,59 @@ def _b2() -> None:
     p = _prog("S6B2")
     _run(p, "08[Create] :: Alpha")
     base_units = set(_units(p))
+
+    def _outcomes(prog, pend_before, rcpt_before):
+        # GROW-DUP: an executed cycle's witness is every add outcome
+        # — stored proposals plus suppression receipts.
+        return ((_pending(prog) - pend_before)
+                + (len(prog.nursery.suppression_receipts)
+                   - rcpt_before))
+
     p0 = _pending(p)
+    s0 = len(p.nursery.suppression_receipts)
     r = _run(p, "13[Loop]")
-    d1 = _pending(p) - p0
+    d1 = _outcomes(p, p0, s0)
     _rec("B2 bare: 1 cycle runs; requested=1 executed=1 reported",
          r.get("ok") is True and d1 > 0
          and "Loop: requested 1, executed 1." in _msgs(r)
          and set(_units(p)) == base_units,
          f"{_msgs(r)} d1={d1}")
     p1 = _pending(p)
+    s1 = len(p.nursery.suppression_receipts)
     r = _run(p, "13[Loop] :: 3")
-    _rec("B2 in-bound: requested=3 executed=3, nursery delta = 3 cycles",
+    _rec("B2 in-bound: requested=3 executed=3, add outcomes = 3 cycles",
          r.get("ok") is True
          and "Loop: requested 3, executed 3." in _msgs(r)
-         and _pending(p) - p1 == 3 * d1,
-         f"{_msgs(r)} delta={_pending(p) - p1} d1={d1}")
+         and _outcomes(p, p1, s1) == 3 * d1,
+         f"{_msgs(r)} outcomes={_outcomes(p, p1, s1)} d1={d1}")
     p2 = _pending(p)
+    s2 = len(p.nursery.suppression_receipts)
     r = _run(p, "13[Loop] :: 7")
-    _rec("B2 clamp: requested=7 executed=5, clamp named, delta = 5 cycles",
+    _rec("B2 clamp: requested=7 executed=5, clamp named, "
+         "add outcomes = 5 cycles",
          r.get("ok") is True
          and "Loop: requested 7, executed 5. (clamped to 1..5)"
          in _msgs(r)
-         and _pending(p) - p2 == 5 * d1,
-         f"{_msgs(r)} delta={_pending(p) - p2} d1={d1}")
+         and _outcomes(p, p2, s2) == 5 * d1,
+         f"{_msgs(r)} outcomes={_outcomes(p, p2, s2)} d1={d1}")
     p3 = _pending(p)
+    s3 = len(p.nursery.suppression_receipts)
     r = _run(p, "13[Loop] :: 100")
     _rec("B2 extreme: requested=100 still executes only 5",
          r.get("ok") is True
          and "Loop: requested 100, executed 5. (clamped to 1..5)"
          in _msgs(r)
-         and _pending(p) - p3 == 5 * d1,
-         f"{_msgs(r)} delta={_pending(p) - p3}")
+         and _outcomes(p, p3, s3) == 5 * d1,
+         f"{_msgs(r)} outcomes={_outcomes(p, p3, s3)}")
     p4 = _pending(p)
+    s4 = len(p.nursery.suppression_receipts)
     r = _run(p, "13[Loop] :: 0")
     _rec("B2 zero: requested=0 clamps up to executed=1",
          r.get("ok") is True
          and "Loop: requested 0, executed 1. (clamped to 1..5)"
          in _msgs(r)
-         and _pending(p) - p4 == d1,
-         f"{_msgs(r)} delta={_pending(p) - p4}")
+         and _outcomes(p, p4, s4) == d1,
+         f"{_msgs(r)} outcomes={_outcomes(p, p4, s4)}")
     for label in ("bogus", "-3", "3.5"):
         p5 = _pending(p)
         r = _run(p, f"13[Loop] :: {label}")
