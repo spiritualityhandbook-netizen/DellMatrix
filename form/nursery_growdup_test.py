@@ -31,11 +31,16 @@ uses its own tagged owner under form/state and cleans up):
 - G6: pre-existing duplicates are preserved untouched: two identical
   pending records inserted directly stay; a third identical add is
   suppressed against the first and neither record changes.
-- G7: a suppressed add performs no save — with the owner file changed
-  externally, the duplicate add still returns the survivor (no
-  conflict raised, nothing written), while a DISTINCT add raises
-  NurseryConflictError and the external bytes survive (the canonical
-  lost-update refusal is not bypassed).
+- G7 (re-pinned by G-DUP.1, Director 6933752017): freshness BEFORE
+  suppression — a fresh instance's genuine skip performs no save and
+  writes nothing; a STALE instance's duplicate add falls through to
+  the canonical NurseryConflictError (external bytes survive), as
+  does a distinct add. The original G7 pinned stale-skip-returns-
+  survivor; G-DUP.1 showed that return can misrepresent owner state.
+- G9: two-instance mutation — B confirms (and, separately, rejects)
+  the survivor and saves; stale A's identical add refuses
+  canonically, records no receipt, and never returns the decided
+  proposal as pending.
 - G8 (growth level, PUBLIC path via Program.grow_ideas): growing the
   same unchanged field twice stores each token cross once; the
   second run reports duplicates_suppressed > 0, adds zero new token
@@ -180,19 +185,31 @@ def smoke() -> bool:
           len(n6.suppression_receipts) == 1
           and n6.suppression_receipts[0]["surviving_id"] == first.id)
 
-    # G7: skip performs no save; distinct add still conflict-refused.
+    # G7 (re-pinned by G-DUP.1, Director 6933752017): freshness
+    # BEFORE suppression. A stale instance's duplicate add falls
+    # through to the canonical lost-update refusal — it may NOT
+    # return a survivor whose on-disk state it cannot prove. A
+    # FRESH instance's genuine skip still performs no save.
     n7, path7 = _fresh(tmp, "g7.json")
     s1 = n7.add(**BASE)
     with open(path7, "rb") as f:
-        external = f.read().replace(b"Alpha", b"AlphX")
+        before = f.read()
+    r = n7.add(**BASE)
+    with open(path7, "rb") as f:
+        check("G7.fresh_skip_no_write",
+              r.id == s1.id and f.read() == before
+              and len(n7.suppression_receipts) == 1)
     with open(path7, "wb") as f:
-        f.write(external)
+        f.write(before.replace(b"Alpha", b"AlphX"))
+    with open(path7, "rb") as f:
+        external = f.read()
+    stale_dup_refused = False
     try:
-        r = n7.add(**BASE)
-        skip_ok = r.id == s1.id
+        n7.add(**BASE)
     except NurseryConflictError:
-        skip_ok = False
-    check("G7.skip_no_save_no_conflict", skip_ok)
+        stale_dup_refused = True
+    check("G7.stale_duplicate_refused_canonically",
+          stale_dup_refused and len(n7.suppression_receipts) == 1)
     with open(path7, "rb") as f:
         check("G7.external_bytes_preserved", f.read() == external)
     conflict = False
@@ -201,6 +218,26 @@ def smoke() -> bool:
     except NurseryConflictError:
         conflict = True
     check("G7.distinct_add_conflict_refused", conflict)
+
+    # G9 (G-DUP.1 two-instance mutation case): instance B confirms
+    # (then, in a second store, rejects) the survivor and saves;
+    # stale instance A's identical add must refuse canonically —
+    # never return the decided proposal as pending, never record
+    # a suppression receipt for it.
+    for verb, act in (("confirm", "confirm"), ("reject", "reject")):
+        nA, pathA = _fresh(tmp, f"g9_{verb}.json")
+        pA = nA.add(**BASE)
+        nB = Nursery.load(pathA)
+        getattr(nB, act)(pA.id)
+        refused = False
+        try:
+            nA.add(**BASE)
+        except NurseryConflictError:
+            refused = True
+        check(f"G9.stale_add_after_external_{verb}_refused",
+              refused and len(nA.suppression_receipts) == 0
+              and Nursery.load(pathA).proposals[pA.id].status
+              == ("confirmed" if verb == "confirm" else "rejected"))
 
     # G8: growth level via the public Program.grow_ideas path.
     check("G8.growth_level", _growth_level())

@@ -277,6 +277,16 @@ class Nursery:
     suppression_receipts: List[Dict[str, Any]] = field(
         default_factory=list, repr=False, compare=False)
 
+    def _suppression_fresh(self) -> bool:
+        """True when this instance provably sees the current owner
+        file — the same signature comparison save() enforces
+        (``_disk_sig(self.path) == self._seen``). An ownerless
+        in-memory nursery has no external writer, so its view is
+        current by construction."""
+        if not self.path:
+            return True
+        return _disk_sig(self.path) == self._seen
+
     def repoint_to_live(self, live_path: str) -> None:
         """Re-point this instance's file ownership to the live owner file.
 
@@ -391,7 +401,17 @@ class Nursery:
         # is stored as its own proposal, exactly as before. A skip
         # mutates nothing, saves nothing, and returns the survivor with
         # a receipt recorded on this instance.
-        if origin == "growth:token":
+        #
+        # G-DUP.1 (Director 6933752017): suppression returns a record
+        # WITHOUT passing the save-time lost-update check, so it is
+        # lawful only when this instance provably sees the current
+        # owner file (freshness-before-suppression). A stale instance
+        # — whose in-memory "pending" survivor may already be
+        # confirmed, rejected, or removed on disk — falls through to
+        # the normal add path, whose save raises the canonical
+        # NurseryConflictError. A genuine skip (fresh instance) still
+        # performs no save and writes nothing.
+        if origin == "growth:token" and self._suppression_fresh():
             for existing in self.proposals.values():
                 if (
                     existing.status == "pending"
