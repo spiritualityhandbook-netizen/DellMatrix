@@ -15,10 +15,11 @@ returned no coverage counts, no truncation marker, no source
 identity, and no retrieval path. Dock verbs resolve targets only
 from that snapshot, so any idea past position 200 was unreachable
 (`unknown_target`) no matter how legitimate the request. Proven
-live in the Email Matrix field (1,052 units): the DistroKid
-payment-decline target sits at position 219 and was omitted, while
-the Stripe target at position 107 was present — the pair was
-unrelatable through the verbs. Failing-first suite result at base:
+live in the Email Matrix test field: an email-derived target unit
+sits at position 219 and was omitted, while a second
+email-derived unit at position 107 was present — the pair was
+unrelatable through the verbs. (Email-derived specifics scrubbed
+2026-11-17 under Ace's scrap ruling.) Failing-first suite result at base:
 **2/16** (the two control checks pass; all 14 defect checks fail).
 
 ## 2. The repair (one bounded circuit, as amended)

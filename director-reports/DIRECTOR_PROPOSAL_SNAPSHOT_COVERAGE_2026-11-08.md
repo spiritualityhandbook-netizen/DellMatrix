@@ -16,13 +16,13 @@ any other window. The semantic verbs (relate / synthesize /
 relate_field / comprehend) resolve targets and candidates ONLY
 inside that snapshot.
 
-Live measurement (Email Matrix, owner EMAILFIELD8B0610,
-1,049 units at the relate run): snapshot = 200 units + 200
-ideas. The DistroKid target `problem_with_your_distrokid__1598`
+Live measurement (Email Matrix test field): snapshot = 200 units + 200
+ideas. An email-derived target unit
 sits at collection position 219 → `relate_field` returned
 `unknown_target` for an idea that exists and is authorized.
-All 8 DistroKid-labeled units (positions 219–350+) were
-invisible. Raising the cap cannot fix this class: any fixed
+All 8 units of its label family (positions 219–350+) were
+invisible. (Owner ID and subject-derived unit IDs scrubbed
+2026-11-17 under Ace's scrap ruling.) Raising the cap cannot fix this class: any fixed
 cap N leaves position N+1 unreachable, and prompt budgets
 forbid unbounded snapshots.
 

@@ -114,3 +114,36 @@ otherwise. The seat definition itself (Brains: on-call, no
 clocks, no gates) is Ace's ruling and stands as recorded; only
 the factual claim about the automations' present state is
 narrowed.
+
+## Seat-reconciliation addendum — 2026-11-17 (Uni, per Director Transition SWAT 6959681971; Uni response 6959726923 on PR #461; Director delta 6960021739 accepting the re-seat as the operative reported governance event)
+
+The record above is accurate **for its time**: at that record, Grok
+= Brains (on-call, no gates) and Gemini = Acting Keeper. The
+original text is preserved unedited; this addendum states the
+later change without rewriting history.
+
+- **Effective seat changed afterward by Ace's explicit ruling,
+  2026-11-17 13:52 CST**: Grok was **RE-SEATED as Keeper** under
+  new anti-stall rules (stamp-or-name-exact-missing-evidence same
+  cycle; holds narrow, never blocking); the Brains hat is OFF
+  while he holds the Keeper seat. Gemini's Acting-Keeper lane was
+  **QUEUED** at the same ruling — her issued stamps stand; her
+  then-pending items (#474 delta check, #475 review, #473 credit
+  half) transferred to Grok's queue.
+- Therefore Keeper comment 6959597046 on PR #473 (CODE CREDIT
+  CONFIRMED, scoped, C5R.4 LENS) and the Deep Pass watermark
+  commits on main are **the operative Keeper's own acts in the
+  re-seated seat**, not a one-off and not a stale-record error.
+  **The settled C5R.4 credit is NOT reopened** (Director
+  6959492051 + Keeper 6959597046 + Uni settlement 6959619312).
+- Courier clarification (Ace, 2026-11-17 14:14 CST): the
+  Keeper/Director texts Ace pastes into the main chat are Ace
+  hand-carrying them — never automation output. Grok's own
+  GitHub comments and watermark commits are his acts via his
+  connector.
+- Grok automation OFF status remains **REPORTED, NOT VERIFIED**
+  (see the narrowing note above); no stronger label is claimed.
+- Director delta 6960021739 (2026-11-17 ~14:30 CST) accepted this
+  re-seat as the operative *reported* governance event and
+  required this dated additive record; the merged #472 record
+  stands as history and is not rewritten.
