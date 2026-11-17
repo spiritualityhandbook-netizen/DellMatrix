@@ -104,13 +104,16 @@ age_days = max(0, evaluation_instant - created) in days
 ```
 
 - `collection(p)` is the C5R.3 effective topic. `tau` comes from
-  the named table `LENS_FADE_DAYS`. **Provisional parameter:**
-  tau = 14.0 days, ONE uniform default for every collection —
-  accepted by the Director as a provisional v1 implementation
-  parameter. It is NOT Ace's selection and NOT a per-corpus policy
-  Ace chose. Q-C5R.2 remains OPEN, and every lens response names
-  the fade policy as provisional with Q-C5R.2 open. When Ace rules,
-  only the table changes.
+  the named table `LENS_FADE_DAYS`. **Ace's ruling (Q-C5R.2,
+  ANSWERED 2026-11-17, in-chat):** 14 days is the default AND the
+  minimum fade; a collection's tau may be raised only to one of
+  24, 48, 96, or 142 days. The lawful tau ladder is therefore
+  {14, 24, 48, 96, 142} days; the default table entry for every
+  collection is 14.0. A table value outside the ladder is a
+  configuration error (below). Until Ace's ruling this ran as the
+  Director-accepted provisional uniform 14.0; the ruling keeps the
+  same default and adds the ladder. Every lens response names the
+  fade policy and the effective tau source.
 - Timestamp conventions: the canonical record format
   (`%Y-%m-%dT%H:%M:%SZ`, UTC) and offset-bearing ISO-8601 parse
   (offsets convert to UTC). A naive timestamp (no Z, no offset) is
@@ -119,9 +122,10 @@ age_days = max(0, evaluation_instant - created) in days
 - A future-dated `created` clamps age to 0 (FRESH = 1.0) and is
   disclosed with `future_dated: true` — never a negative age,
   never a score above the function's range.
-- tau validation: a table value that is not finite and strictly
-  positive is a configuration error; the lens refuses
-  `LENS_CONFIG_INVALID` rather than dividing by it.
+- tau validation: a table value that is not finite, not strictly
+  positive, or not on Ace's ladder {14, 24, 48, 96, 142} is a
+  configuration error; the lens refuses `LENS_CONFIG_INVALID`
+  rather than dividing by it.
 
 ### 3.4 NOVEL(p) — lexical dissimilarity proxy
 
@@ -274,5 +278,6 @@ close.
   admits ACE into S in v1, or ACE remains missing until a reviewed
   provenance mechanism exists. Uni's position: missing until
   proven — no attention claim without a receipt.
-- Q-C5R.2 (Ace, open, nonblocking): per-collection fade values.
-  The provisional uniform 14.0-day tau runs until Ace rules.
+- Q-C5R.2: ANSWERED by Ace 2026-11-17 — 14 days default and
+  minimum; raisable per collection to 24, 48, 96, or 142 days
+  (section 3.3). No longer open.
