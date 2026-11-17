@@ -161,12 +161,28 @@ def t351_handoff() -> None:
             "Proposal has no selection-score attribute")
         import inspect
         from form.dell_matrix import ringed_growth, nursery
-        src = inspect.getsource(ringed_growth) + inspect.getsource(nursery)
-        score_reads = [ln2 for ln2 in src.splitlines()
+        # C5R.4 LENS MIGRATION (definitions v3 section 6; Codex P2
+        # on PR #473): the scan's contract is that SELECTION scores
+        # are never consumed by the growth modules. ringed_growth is
+        # still scanned in full. nursery.py now legitimately
+        # computes and reads its OWN lens ordering score (the
+        # C5R.4 S lens, computed inside Nursery.query from stored
+        # proposal fields) — that is the nursery's own ordering
+        # authority, not a selection score, so the nursery scan
+        # targets the selection-score leak specifically. The
+        # no_score_field check above is unchanged: a Proposal still
+        # carries no score attribute.
+        rg_src = inspect.getsource(ringed_growth)
+        score_reads = [ln2 for ln2 in rg_src.splitlines()
                        if '["score"]' in ln2 or "['score']" in ln2
                        or ".score" in ln2 or "selection_score" in ln2]
+        n_src = inspect.getsource(nursery)
+        score_reads += [ln2 for ln2 in n_src.splitlines()
+                        if "selection_score" in ln2]
         rec("handoff::no_score_consumer", len(score_reads) == 0,
-            "no score key/attribute read in ringed_growth.py or nursery.py")
+            "no selection-score read in ringed_growth.py; no "
+            "selection_score in nursery.py (its own C5R.4 lens "
+            "score is computed and read inside Nursery.query)")
         # NEW (W1, 3.5.1/3.5.5): growth persists harmony + graph_coherence
         # per proposal pair; both in [0,1].
         sig_ok = all(isinstance(pr.harmony, float)
@@ -186,10 +202,15 @@ def t351_handoff() -> None:
 
 def t351_consumer_bypass() -> None:
     """BYPASS-MUST-FAIL (graph/harmony consumption): Program.ranked_proposals
-    consumes harmony/graph_coherence as tie-breakers. With the consumer
-    patched to affinity-only, tied-affinity proposals MUST order
-    differently. If the orders are identical, the signals are decorative
-    and the proof FAILS."""
+    consumes harmony/graph_coherence. C5R.4 LENS MIGRATION
+    (definitions v3 section 6 assertion mapping; Codex P2 on
+    PR #473): the legacy tie-breaker formulation of this assertion
+    is SUPERSEDED — the signals now move the order through the
+    S lens's LINK component ((parents + graph + harmony) / 3),
+    re-proved by nursery_c5r4_lens_test L20. The bypass contract
+    itself is preserved: with the consumer patched to affinity-only,
+    tied-affinity proposals MUST order differently. If the orders
+    are identical, the signals are decorative and the proof FAILS."""
     from form.open import Program
     owner = _owner("CB")
     _clean(owner)

@@ -24,7 +24,9 @@ Bypass-must-fail tests (each MUST fail if the wiring is removed):
   (B3) "harmony" stripped from a proposal dict -> the wiring assertion
        MUST raise.
   (B4) harmony stripped from ranked_proposals input -> the
-       harmony-first ordering assertion MUST raise.
+       harmony-first ordering assertion MUST raise. (C5R.4 LENS:
+       section G now proves this through the S lens's LINK
+       component — see the migration note there.)
 
 Exit code: 0 on all pass (prints "P3 R3.6 WORLD: ALL PASS"), non-zero on
 any failure. Cleans up all test state files it creates.
@@ -330,76 +332,128 @@ def _world():
             pass
 
     # ------------------------------------------------------------------
-    # G. ranked_proposals consumes harmony (B4: bypass-must-fail).
+    # G. ranked_proposals consumes harmony/graph (B4: bypass-must-fail).
     # ------------------------------------------------------------------
-    # Call the REAL Program.ranked_proposals with a stub program that
-    # supplies list_proposals() + a prefs ranker mimicking the real
-    # inspire blend (0.65*affinity, pref 0 -> ties on equal affinity).
-    class _StubPrefs:
-        def rank_proposals(self, props):
-            out = []
-            for p in props:
-                row = dict(p)
-                row["blended"] = round(0.65 * float(p.get("affinity") or 0), 4)
-                out.append(row)
-            out.sort(key=lambda x: -x["blended"])
-            return out
+    # C5R.4 LENS MIGRATION (definitions v3 section 6 assertion
+    # mapping; Codex P2 on PR #473): this section's legacy form —
+    # a stub program feeding dicts to the Inspire-blend recipe with
+    # harmony/graph tie-breaks and an affinity fallback — is
+    # SUPERSEDED as written. ranked_proposals now serves the S
+    # lens order from Nursery.query over a REAL nursery; the stub
+    # has no nursery and the recipe no longer exists. The
+    # underlying contract is PRESERVED and re-proved here through
+    # the real consumer: stored harmony/graph evidence moves the
+    # ranked order through LINK = (parents + graph + harmony) / 3.
+    # Fixtures follow the lens suite's L20 pattern: identical
+    # label/words/created for every record, so NOVEL and FRESH are
+    # exactly equal across records and LINK alone decides.
+    from form.dell_matrix.nursery import Proposal as _Prop
 
-    class _StubProg:
-        def __init__(self, props):
-            self._props = props
-            self.inspire = type("I", (), {"prefs": _StubPrefs()})()
+    def _ranked_prog(owner_g, records):
+        for pth in (graph_path(owner_g), graph_journal_path(owner_g)):
+            try:
+                os.remove(pth)
+            except OSError:
+                pass
+        d = os.path.join(_STATE_DIR, f"ideas_{_safe_owner(owner_g)}")
+        shutil.rmtree(d, ignore_errors=True)
+        f = os.path.join(_STATE_DIR, f"nursery_{owner_g}.json")
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+        prog = Program(owner=owner_g)
+        for r in records:
+            prog.nursery.proposals[r.id] = r
+        prog.nursery.save()
+        return prog
 
-        def list_proposals(self):
-            return [dict(d) for d in self._props]
+    def _ranked_cleanup(owner_g):
+        for pth in (graph_path(owner_g), graph_journal_path(owner_g)):
+            try:
+                os.remove(pth)
+            except OSError:
+                pass
+        d = os.path.join(_STATE_DIR, f"ideas_{_safe_owner(owner_g)}")
+        shutil.rmtree(d, ignore_errors=True)
+        f = os.path.join(_STATE_DIR, f"nursery_{owner_g}.json")
+        try:
+            os.remove(f)
+        except OSError:
+            pass
 
-    base = {"label": "x", "words": "w", "kind": "new", "parents": [],
-            "reason": "", "status": "pending"}
-    p_lo = dict(base, id="p_lo", affinity=0.5, harmony=0.1, graph_coherence=0.0)
-    p_hi = dict(base, id="p_hi", affinity=0.5, harmony=0.9, graph_coherence=0.0)
-    stub = _StubProg([p_lo, p_hi])  # insertion order: lo first
-    ranked = Program.ranked_proposals(stub)
-    rec("ranked_harmony_tiebreak",
-        [r["id"] for r in ranked] == ["p_hi", "p_lo"],
-        f"order={[r['id'] for r in ranked]} (equal blended, harmony decides)")
-    # Graph coherence breaks harmony ties.
-    p_g1 = dict(base, id="p_g1", affinity=0.5, harmony=0.9, graph_coherence=0.0)
-    p_g2 = dict(base, id="p_g2", affinity=0.5, harmony=0.9, graph_coherence=1.0)
-    ranked2 = Program.ranked_proposals(_StubProg([p_g1, p_g2]))
-    rec("ranked_gcoh_tiebreak",
-        [r["id"] for r in ranked2] == ["p_g2", "p_g1"],
-        f"order={[r['id'] for r in ranked2]}")
-    # Affinity still dominates (harmony is a tie-break, not a replacement).
-    p_a1 = dict(base, id="p_a1", affinity=0.9, harmony=0.0, graph_coherence=0.0)
-    p_a2 = dict(base, id="p_a2", affinity=0.1, harmony=1.0, graph_coherence=1.0)
-    ranked3 = Program.ranked_proposals(_StubProg([p_a2, p_a1]))
-    rec("ranked_affinity_dominates",
-        [r["id"] for r in ranked3] == ["p_a1", "p_a2"],
-        f"order={[r['id'] for r in ranked3]}")
+    def _rk(pid, **kw):
+        base = dict(id=pid, label="twin", words="twin", kind="new",
+                    parents=[], affinity=0.5, reason="",
+                    created="2026-11-10T00:00:00Z", status="pending",
+                    harmony=0.0, graph_coherence=0.0)
+        base.update(kw)
+        return _Prop(**base)
 
-    # (B4) bypass-must-fail: strip harmony -> harmony-first assertion MUST raise.
-    stripped_props = [{k: v for k, v in d.items() if k != "harmony"}
-                      for d in (p_lo, p_hi)]
-    ranked_stripped = Program.ranked_proposals(_StubProg(stripped_props))
-    b4 = False
+    G_OWNER = "p3r36_ranked"
     try:
-        assert [r["id"] for r in ranked_stripped] == ["p_hi", "p_lo"]
-    except AssertionError:
-        b4 = True
-    rec("bypass_ranked_harmony_detected", b4,
-        f"stripped order={[r['id'] for r in ranked_stripped]}; "
-        "without harmony the tie-break is gone")
+        prog = _ranked_prog(G_OWNER, [
+            _rk("rk_a", harmony=0.1),
+            _rk("rk_b", harmony=0.9),
+            _rk("rk_c", harmony=0.9, graph_coherence=0.0),
+            _rk("rk_d", harmony=0.9, graph_coherence=1.0),
+            _rk("rk_e", affinity=0.9),
+            _rk("rk_f", affinity=0.1, harmony=1.0,
+                graph_coherence=1.0),
+        ])
+        order = [r["id"] for r in prog.ranked_proposals()]
+        rec("ranked_harmony_via_link",
+            order.index("rk_b") < order.index("rk_a"),
+            f"order={order} (harmony 0.9 beats 0.1 through LINK)")
+        rec("ranked_gcoh_via_link",
+            order.index("rk_d") < order.index("rk_c"),
+            f"order={order} (graph 1.0 beats 0.0 at equal harmony)")
+        # Affinity is retired as an ordering input: the record with
+        # the strongest stored signals outranks the high-affinity
+        # record that carries none.
+        rec("ranked_affinity_not_an_input",
+            order.index("rk_f") < order.index("rk_e"),
+            f"order={order} (affinity 0.1 + signals beats 0.9 bare)")
 
-    # Fallback path (prefs ranker raises): same tie-break contract.
-    class _FailPrefs:
-        def rank_proposals(self, props):
-            raise RuntimeError("prefs down")
-    stub_f = _StubProg([p_lo, p_hi])
-    stub_f.inspire = type("I", (), {"prefs": _FailPrefs()})()
-    ranked_f = Program.ranked_proposals(stub_f)
-    rec("ranked_fallback_harmony_tiebreak",
-        [r["id"] for r in ranked_f] == ["p_hi", "p_lo"],
-        f"order={[r['id'] for r in ranked_f]}")
+        # (B4) bypass-must-fail: strip harmony (both records carry
+        # none) -> the harmony-first assertion MUST raise; with
+        # every lens component equal the order falls to the id
+        # tie-break, so the stripped order differs from G's first
+        # pair order.
+        S_OWNER = "p3r36_ranked_stripped"
+        try:
+            prog_s = _ranked_prog(S_OWNER, [_rk("rk_a"), _rk("rk_b")])
+            ranked_stripped = [r["id"] for r in prog_s.ranked_proposals()]
+        finally:
+            _ranked_cleanup(S_OWNER)
+        b4 = False
+        try:
+            assert ranked_stripped == ["rk_b", "rk_a"]
+        except AssertionError:
+            b4 = True
+        rec("bypass_ranked_harmony_detected", b4,
+            f"stripped order={ranked_stripped}; without harmony "
+            "the LINK advantage is gone")
+
+        # No silent fallback: when the SEE traversal refuses,
+        # ranked_proposals raises — it never falls back to a legacy
+        # recipe (the retired fallback assertion's replacement).
+        orig_query = Nursery.query
+        Nursery.query = lambda self, **kw: {
+            "ok": False, "error": "FORCED_REFUSAL",
+            "detail": "forced for proof"}
+        try:
+            raised = False
+            try:
+                prog.ranked_proposals()
+            except RuntimeError:
+                raised = True
+        finally:
+            Nursery.query = orig_query
+        rec("ranked_no_silent_fallback", raised,
+            "SEE refusal raises instead of falling back")
+    finally:
+        _ranked_cleanup(G_OWNER)
 
     # ------------------------------------------------------------------
     # H. Contract reconciliation: _affinity bounds, missing-unit,

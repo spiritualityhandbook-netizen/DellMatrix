@@ -1394,6 +1394,13 @@ class Nursery:
                     "CURSOR_MALFORMED",
                     f"cursor was issued for {data['mode']}; continue "
                     f"with proposals {data['mode']} cursor:<token>")
+            if sort == "lens-v1":
+                # The alias names the same lens the cursor binds in
+                # normalized form ("lens"); normalize BEFORE the
+                # equality check below so a client repeating its
+                # page-1 arguments verbatim is not refused for a
+                # change it did not make (Codex P2, PR #473).
+                sort = "lens"
             for passed, bound, field in (
                     (status, data["status"], "status filter"),
                     (term, data["term"], "search term"),
@@ -1621,9 +1628,11 @@ class Nursery:
                 matched,
                 key=lambda p: (-lens_by_id[p.id]["lens"]["score"],
                                p.id))
-        if sort != "lens" and sort != "oldest":
+        if sort != "lens":
             # The non-default explicit lenses still disclose the S
-            # breakdown on every item (transparency is not opt-in).
+            # breakdown on every item (transparency is not opt-in) —
+            # "oldest" included: chronological ordering changes the
+            # ORDER only, never the disclosures (Codex P2, PR #473).
             for p in matched:
                 if p.id not in lens_by_id:
                     lens_by_id[p.id] = self._lens_for(
@@ -1774,7 +1783,26 @@ class Nursery:
             raise NurseryConflictError(
                 f"nursery file changed on disk since load: {os.path.basename(self.path)} (lost update refused)"
             )
-        payload = {k: v.to_dict() for k, v in self.proposals.items()}
+        payload = {}
+        for k, v in self.proposals.items():
+            d = v.to_dict()
+            # C5R.4 LENS (Codex P2, PR #473): a record LOADED from a
+            # legacy file that lacks harmony/graph_coherence keys
+            # carries those components as MISSING evidence, not as
+            # measured zeros. Serializing the dataclass defaults
+            # would insert zeros the reload then reports as
+            # measured — the original and reloaded instances would
+            # disagree about the same generation. Preserve absence:
+            # omit the keys that were absent at load. Records built
+            # in this process have no presence entry and serialize
+            # in full; no production path assigns these two fields
+            # after load (they are set only at construction).
+            present = self._present_fields.get(k)
+            if present is not None:
+                for fname in ("harmony", "graph_coherence"):
+                    if fname not in present:
+                        d.pop(fname, None)
+            payload[k] = d
         # DCC-XIX: the operator's conflict-disposition map rides the same
         # atomic write as the proposals, so the durable file always holds
         # one complete policy: the old one or the new one, never a mix.

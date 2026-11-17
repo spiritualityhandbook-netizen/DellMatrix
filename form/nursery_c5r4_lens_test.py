@@ -200,6 +200,43 @@ def smoke() -> bool:
         except Exception as e:
             _fail(["L2.oldest_is_historical_order"], e)
 
+        # L21/L22 added 2026-11-17 for the Codex P2 findings on
+        # PR #473 (disclosed here and in the PR): the transparency
+        # contract applies to EVERY ordering, and the accepted
+        # "lens-v1" alias must survive cursor continuation.
+        try:
+            resp = pb.browse_proposals(sort="oldest", lens_now=T,
+                                       page_size=50)
+            check("L21.oldest_carries_lens_disclosures",
+                  resp.get("ok") is True and len(resp["items"]) == 3
+                  and all("lens" in it
+                          and "score" in it["lens"]
+                          and "evidence" in it["lens"]
+                          and "ace_proxy" in it
+                          and "ace_proxy_evidence" in it
+                          for it in resp["items"]),
+                  f"items={len(resp.get('items') or [])}")
+        except Exception as e:
+            _fail(["L21.oldest_carries_lens_disclosures"], e)
+
+        try:
+            page1 = pb.browse_proposals(sort="lens-v1", lens_now=T,
+                                        page_size=2)
+            page2 = pb.browse_proposals(
+                cursor=page1["next_cursor"], sort="lens-v1",
+                lens_now=T, page_size=2)
+            ids1 = [it["id"] for it in page1["items"]]
+            ids2 = [it["id"] for it in page2.get("items") or []]
+            check("L22.lens_v1_alias_cursor_continuation",
+                  page1.get("ok") is True
+                  and page2.get("ok") is True
+                  and sorted(ids1 + ids2)
+                  == ["lb_1000", "lb_1001", "lb_1002"]
+                  and not set(ids1) & set(ids2),
+                  f"p1={ids1} p2={ids2} err={page2.get('code')!r}")
+        except Exception as e:
+            _fail(["L22.lens_v1_alias_cursor_continuation"], e)
+
         try:
             base_ids, _ = _traverse(pa.browse_proposals, sort="oldest",
                                     page_size=200)
@@ -482,9 +519,30 @@ def smoke() -> bool:
                   and items["lm_0003"]["lens"]["partial"] is True
                   and pd2.nursery.proposals["lm_0003"].harmony == 1.7,
                   f"bad={ev_b} (stored 1.7 preserved, not clamped)")
+            # L23 added 2026-11-17 for the Codex P2 finding on
+            # PR #473: missing-evidence provenance must survive a
+            # save/reload round trip — saving the loaded instance
+            # must not insert default zeros that the reload then
+            # reports as measured.
+            pd2.nursery.save()
+            raw2 = json.loads(open(pd2.nursery.path).read())
+            rec2 = _find_rec(raw2, "lm_0002")
+            pd3 = open_program(owner_d)
+            resp3 = pd3.browse_proposals(lens_now=T, page_size=50)
+            items3 = {it["id"]: it for it in resp3["items"]}
+            ev_s3 = items3["lm_0002"]["lens"]["evidence"]
+            ev_k3 = items3["lm_0001"]["lens"]["evidence"]
+            check("L23.missing_evidence_survives_save_reload",
+                  "harmony" not in rec2
+                  and "graph_coherence" not in rec2
+                  and ev_s3.get("link_harmony") == "missing"
+                  and ev_s3.get("link_graph") == "missing"
+                  and ev_k3.get("link_harmony") == "measured",
+                  f"stripped={ev_s3} kept={ev_k3}")
         except Exception as e:
             _fail(["L14.measured_zero_not_missing",
-                   "L15.malformed_named_not_clamped"], e)
+                   "L15.malformed_named_not_clamped",
+                   "L23.missing_evidence_survives_save_reload"], e)
 
         # ===== FRESH boundaries under frozen instant =====
         owner_f = "C5R4VF" + suffix
