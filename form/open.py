@@ -19,7 +19,7 @@ try:
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
     from form.dell_matrix.sandbox_gate import SandboxGate
-    from form.dell_matrix.nursery import Nursery, SEE_UNSET
+    from form.dell_matrix.nursery import Nursery, ORG_UNSET, SEE_UNSET
     from form.dell_matrix.ringed_growth import RingedGrowth
     from form.dell_matrix.harmonic_lattice import HarmonicLattice
     from form.dell_matrix.harmonic_core import (
@@ -65,7 +65,7 @@ except ImportError:
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
     from form.dell_matrix.sandbox_gate import SandboxGate
-    from form.dell_matrix.nursery import Nursery, SEE_UNSET
+    from form.dell_matrix.nursery import Nursery, ORG_UNSET, SEE_UNSET
     from form.dell_matrix.ringed_growth import RingedGrowth
     from form.dell_matrix.harmonic_lattice import HarmonicLattice
     from form.dell_matrix.harmonic_core import (
@@ -1399,6 +1399,27 @@ class Program:
 
     def get_proposals(self, ids):
         return self.nursery.fetch_many(list(ids))
+
+    # ── C5R.3 ORGANIZE: trusted organization edit (Phase 2) ────
+    # The Program layer is where the trusted actor is established:
+    # "human:<owner>" is constructed HERE, host-side, from the
+    # owner this Program is bound to — never from command text,
+    # record content, or any caller-supplied actor string (a
+    # dock/model-supplied actor is trusted nowhere; Resolution 5).
+    # The single mutation authority remains
+    # Nursery.edit_organization over this owner-bound store. No
+    # dock path reaches this wrapper: the InferenceDock verbs are
+    # propose/grow only, and the connect-session dispatcher never
+    # routes here.
+
+    def organize_proposal(self, proposal_id, *,
+                           expected_generation=None,
+                           topic=ORG_UNSET, tags=ORG_UNSET,
+                           cluster=ORG_UNSET, **extra):
+        return self.nursery.edit_organization(
+            proposal_id, actor=f"human:{self.owner}",
+            expected_generation=expected_generation,
+            topic=topic, tags=tags, cluster=cluster, **extra)
 
     # ── Track D TD-1: Unit -> canonical Idea binding (S1) ────────
     # Binding foundation only: bind itself performs no containment
