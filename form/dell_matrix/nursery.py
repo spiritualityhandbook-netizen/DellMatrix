@@ -155,11 +155,203 @@ class NurseryWordsError(ValueError):
 MAX_WORDS_CHARS = 5000
 
 
+class NurseryTopicError(ValueError):
+    """Proposal topic exceeds the Nursery's admitted bound (C5R.3).
+
+    Raised BEFORE any mutation or save: an over-bound topic is refused
+    explicitly and nothing is stored, in the same typed-refusal style
+    as NurseryLabelError / NurseryWordsError. Admitted topics are
+    stored in full, exactly — never silently sliced."""
+
+
+# C5R.3: the Nursery's admitted bound for Proposal.topic. Justified
+# against the AC-3.1 1,000-proposal acceptance fixture: at 200 chars
+# the topic contributes at most ~200 bytes per record (~200 KB over
+# the whole fixture), small next to the already-admitted 5,000-char
+# words field, so the bound is a runaway stop in the Elastic Limits
+# sense, not a hindrance.
+MAX_TOPIC_CHARS = 200
+
+
+class NurseryTagsError(ValueError):
+    """Proposal tags exceed the Nursery's admitted bounds, or repeat a
+    tag exactly (C5R.3).
+
+    Raised BEFORE any mutation or save: an over-bound tag list (more
+    than MAX_TAGS entries, a tag longer than MAX_TAG_CHARS, or a
+    non-string entry) is refused explicitly and nothing is stored.
+    An EXACT duplicate tag within the list is likewise refused with
+    this named error — duplicates are never silently deduplicated or
+    normalized away. Tags differing only in case or spelling are
+    distinct tags: the exact accepted spelling is what is stored."""
+
+
+# C5R.3: the Nursery's admitted bounds for Proposal.tags. Justified
+# against the AC-3.1 1,000-proposal fixture: at most 16 tags of at
+# most 100 chars is ~1.6 KB of tag data per record worst case, the
+# same order as the already-admitted reason (1,000) and detail
+# (2,000) bounds; organization metadata stays a small fraction of a
+# record next to the 5,000-char words field.
+MAX_TAGS = 16
+MAX_TAG_CHARS = 100
+
+
+class NurseryClusterError(ValueError):
+    """Proposal cluster exceeds the Nursery's admitted bound (C5R.3).
+
+    Raised BEFORE any mutation or save: an over-bound cluster is
+    refused explicitly and nothing is stored. Cluster is an
+    organization reference only — never a containment/Plane
+    authority."""
+
+
+# C5R.3: the Nursery's admitted bound for Proposal.cluster — the same
+# 200-char class as label/topic, justified the same way against the
+# 1,000-proposal fixture.
+MAX_CLUSTER_CHARS = 200
+
+
+def validate_topic(topic: Any) -> str:
+    """Admit a topic value or refuse typed (C5R.3). Returns the value
+    unchanged (exact spelling preserved) when admitted."""
+    if not isinstance(topic, str) or len(topic) > MAX_TOPIC_CHARS:
+        raise NurseryTopicError(
+            f"topic must be a string of at most {MAX_TOPIC_CHARS} "
+            f"chars; refused, nothing stored")
+    return topic
+
+
+def validate_tags(tags: Any) -> List[str]:
+    """Admit a tag list or refuse typed (C5R.3). Returns the list
+    unchanged (exact spellings, order preserved) when admitted. An
+    exact duplicate tag is a refusal, never a silent dedup."""
+    if not isinstance(tags, list) or len(tags) > MAX_TAGS:
+        raise NurseryTagsError(
+            f"tags must be a list of at most {MAX_TAGS} entries; "
+            f"refused, nothing stored")
+    seen: set = set()
+    for t in tags:
+        if not isinstance(t, str) or len(t) > MAX_TAG_CHARS:
+            raise NurseryTagsError(
+                f"each tag must be a string of at most "
+                f"{MAX_TAG_CHARS} chars; refused, nothing stored")
+        if t in seen:
+            raise NurseryTagsError(
+                f"duplicate tag {t!r} refused; tags are never "
+                f"silently deduplicated, nothing stored")
+        seen.add(t)
+    return tags
+
+
+def validate_cluster(cluster: Any) -> str:
+    """Admit a cluster value or refuse typed (C5R.3). Returns the
+    value unchanged when admitted."""
+    if not isinstance(cluster, str) or len(cluster) > MAX_CLUSTER_CHARS:
+        raise NurseryClusterError(
+            f"cluster must be a string of at most "
+            f"{MAX_CLUSTER_CHARS} chars; refused, nothing stored")
+    return cluster
+
+
 # Reserved nursery-file key for DCC-XIX conflict dispositions. Can never
 # collide with a proposal ID: _slug() output is lowercase alnum plus
 # underscores, stripped of leading/trailing underscores, with a numeric
 # hash suffix -- it can never equal this dunder constant.
 DISPOSITION_SECTION_KEY = "__conflict_dispositions__"
+
+# C5R.3: reserved nursery-file key for human organization EDIT
+# receipts (same-file section precedent: DCC-XIX dispositions above).
+# Can never collide with a proposal ID for the same _slug() reason.
+# Phase 1 ships the load/save plumbing only — the section starts
+# empty and round-trips; the edit door that appends receipts is
+# Phase 2. Stored receipts carry NO file digest (Resolution 3): the
+# canonical post-save digest is returned to the caller, never
+# embedded in the file that digest describes.
+EDIT_RECEIPT_SECTION_KEY = "__organization_edit_receipts__"
+
+# C5R.3 creation-seed rule (seed-rule v1). Deterministic, applied
+# ONLY at Nursery.add() construction of a genuinely NEW proposal:
+#   primary  = validated kind — the canonical validated-kind set for
+#              v1 is exactly the Proposal docstring's producer kinds
+#              (Acting-Keeper ruling on Q-C5R.3-UNI.1, PR #460);
+#   fallback = validated origin family (the origin's leading segment
+#              before the first ":", when it is a well-formed family
+#              token);
+#   else     = the explicit topic "unclassified".
+# Any expansion of the validated-kind set requires a seed-rule
+# version increment. Legacy records are never seeded: load/browse
+# assign nothing.
+SEED_RULE_VERSION = "c5r3-seed-v1"
+SEED_VALIDATED_KINDS = frozenset({"new", "evolved", "design", "auto"})
+UNCLASSIFIED_TOPIC = "unclassified"
+
+_ORIGIN_FAMILY_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+
+def _origin_family(origin: Any) -> Optional[str]:
+    """The validated origin family for the seed fallback: the
+    origin's leading segment (e.g. "growth" for "growth:token",
+    "dock" for "dock:<provider>:<model>"), or None when the origin
+    is absent or its family segment is not a well-formed token."""
+    if not isinstance(origin, str) or not origin:
+        return None
+    family = origin.split(":", 1)[0]
+    return family if _ORIGIN_FAMILY_RE.match(family) else None
+
+
+def _derive_seed_topic(kind: Any, origin: Any) -> tuple:
+    """Seed-rule v1: returns (topic, seed_topic_source) where the
+    source is "kind", "origin_family", or "unclassified"."""
+    if isinstance(kind, str) and kind in SEED_VALIDATED_KINDS:
+        return kind, "kind"
+    family = _origin_family(origin)
+    if family is not None:
+        return family, "origin_family"
+    return UNCLASSIFIED_TOPIC, "unclassified"
+
+
+def build_organization_receipt(
+    *,
+    operation_id: str,
+    actor: str,
+    proposal_id: str,
+    before: Dict[str, Any],
+    after: Dict[str, Any],
+    rule_version: str,
+    predecessor_generation: Optional[str],
+) -> Dict[str, Any]:
+    """The STORABLE organization receipt (C5R.3, Resolution 3).
+
+    Carries operation ID, trusted actor (or "system_seed" for the
+    automatic creation seed), proposal ID, before/after organization
+    state, rule version, and the predecessor-generation identity
+    (the pre-save _seen). It deliberately carries NO file digest:
+    the canonical digest of the generation this receipt lands in
+    cannot be known before that generation is written, and a file
+    must never embed a claim to be its own digest. Use
+    receipt_with_file_digest() for the RETURNED form handed to the
+    caller after a successful save; that form is never stored.
+    """
+    return {
+        "operation_id": operation_id,
+        "actor": actor,
+        "proposal_id": proposal_id,
+        "before": before,
+        "after": after,
+        "rule_version": rule_version,
+        "predecessor_generation": predecessor_generation,
+    }
+
+
+def receipt_with_file_digest(receipt: Dict[str, Any],
+                             file_digest: Optional[str]) -> Dict[str, Any]:
+    """The RETURNED receipt form: a copy of the storable receipt plus
+    the canonical post-save file digest (Nursery._seen after save).
+    Return-only — this dict is never serialized into the owner file.
+    """
+    out = dict(receipt)
+    out["file_digest"] = file_digest
+    return out
 
 
 def owner_nursery_path(owner: str) -> str:
@@ -249,6 +441,31 @@ class Proposal:
     # loading unchanged (same additive pattern as origin).
     detail: str = ""
     goals: List[str] = field(default_factory=list)
+    # C5R.3 ORGANIZE (Phase 1): organization metadata + creation-seed
+    # provenance (additive; the defaults keep pre-C5R.3 nursery files
+    # loading unchanged — Proposal(**record) fills these for legacy
+    # records). topic/tags/cluster are organization metadata only:
+    # never a retention bucket, never a containment/Plane authority.
+    # Legacy records are NEVER seeded on load or browse: the seed
+    # below is assigned only at Nursery.add() construction of a
+    # genuinely NEW proposal (a GROW-DUP-suppressed add returns its
+    # survivor before construction and is never seeded).
+    topic: str = ""
+    tags: List[str] = field(default_factory=list)
+    cluster: str = ""
+    # Creation-seed provenance: which source produced `topic` at
+    # creation ("kind" | "origin_family" | "unclassified"; "" =
+    # unseeded legacy record), the EXACT source field values the
+    # seed rule consulted, the seed-rule version, and the creation
+    # receipt's operation ID (actor "system_seed"; see
+    # build_organization_receipt). The canonical post-save file
+    # digest is NEVER stored on the record — it is returned to the
+    # caller after save (Nursery.save / last_organization_receipt).
+    seed_topic_source: str = ""
+    seed_source_kind: str = ""
+    seed_source_origin: str = ""
+    seed_rule_version: str = ""
+    seed_operation_id: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -260,6 +477,46 @@ class Proposal:
 # one (which must equal the bound value or refuse loudly) —
 # Director source review on PR #465, 2026-11-16.
 SEE_UNSET = object()
+
+
+def _validate_loaded_organization(key: str, rec: "Proposal",
+                                  path: str) -> None:
+    """Fail-closed shape check for a staged record's C5R.3
+    organization fields (AC-3.1): malformed persisted metadata
+    raises NurseryLoadError during load staging — it is never
+    converted into a seemingly valid empty value, and no partially
+    loaded Nursery escapes. Type and bound checks mirror the
+    admission validators (validate_topic / validate_tags /
+    validate_cluster) plus the exact-duplicate tag refusal."""
+    base = os.path.basename(path)
+
+    def bad(why: str) -> NurseryLoadError:
+        return NurseryLoadError(
+            f"nursery file {base} has a malformed organization "
+            f"field for {key!r}: {why}")
+
+    if not isinstance(rec.topic, str) or len(rec.topic) > MAX_TOPIC_CHARS:
+        raise bad(f"topic must be a string of at most "
+                  f"{MAX_TOPIC_CHARS} chars")
+    if not isinstance(rec.cluster, str) \
+            or len(rec.cluster) > MAX_CLUSTER_CHARS:
+        raise bad(f"cluster must be a string of at most "
+                  f"{MAX_CLUSTER_CHARS} chars")
+    if not isinstance(rec.tags, list) or len(rec.tags) > MAX_TAGS:
+        raise bad(f"tags must be a list of at most {MAX_TAGS} entries")
+    seen: set = set()
+    for t in rec.tags:
+        if not isinstance(t, str) or len(t) > MAX_TAG_CHARS:
+            raise bad(f"each tag must be a string of at most "
+                      f"{MAX_TAG_CHARS} chars")
+        if t in seen:
+            raise bad(f"duplicate tag {t!r}")
+        seen.add(t)
+    for fname in ("seed_topic_source", "seed_source_kind",
+                  "seed_source_origin", "seed_rule_version",
+                  "seed_operation_id"):
+        if not isinstance(getattr(rec, fname), str):
+            raise bad(f"{fname} must be a string")
 
 
 @dataclass
@@ -284,6 +541,22 @@ class Nursery:
     # so it is never serialized into the owner file.
     suppression_receipts: List[Dict[str, Any]] = field(
         default_factory=list, repr=False, compare=False)
+    # C5R.3: human organization EDIT receipts (operation_id ->
+    # receipt record, the storable form from
+    # build_organization_receipt — no file digest inside). Serialized
+    # under EDIT_RECEIPT_SECTION_KEY in the same atomic write as the
+    # proposals and dispositions. Phase 1 ships the plumbing only:
+    # the section starts empty and round-trips; the Phase 2 edit
+    # door appends receipts.
+    organization_edit_receipts: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict, repr=False, compare=False)
+    # C5R.3: the most recent organization operation's RETURNED
+    # receipt (receipt_with_file_digest form, including the
+    # canonical post-save digest). In-memory only, like the
+    # suppression receipts: the digest describes the file, so it is
+    # handed to the caller and never serialized into it.
+    last_organization_receipt: Optional[Dict[str, Any]] = field(
+        default=None, repr=False, compare=False)
 
     def _suppression_fresh(self) -> bool:
         """True when this instance provably sees the current owner
@@ -360,6 +633,13 @@ class Nursery:
         save (the historical origin[:120] / detail[:2000] /
         goals[:200]-and-[:8] silently destroyed admitted content, and
         non-string or empty goals were silently dropped).
+
+        C5R.3: a genuinely NEW proposal is automatically seeded at
+        construction (seed-rule v1: validated kind, else validated
+        origin family, else explicit "unclassified") with its
+        provenance persisted on the record in this same save; the
+        creation receipt's returned form (including the canonical
+        post-save digest) is exposed as last_organization_receipt.
         """
         if isinstance(label, str) and len(label) > MAX_LABEL_CHARS:
             raise NurseryLabelError(
@@ -446,6 +726,16 @@ class Nursery:
         # avoid exact id collision
         if pid in self.proposals:
             pid = pid + "_" + str(len(self.proposals))
+        # C5R.3 (AC-3.2): the creation seed is derived HERE, at
+        # construction of a genuinely NEW proposal — the GROW-DUP
+        # suppression path above returns its survivor BEFORE this
+        # point, so a suppressed add is never seeded, mutated, or
+        # saved. The seed rides the Proposal record itself, so the
+        # pop-on-failure path below keeps seed + proposal atomic:
+        # both persist or neither does.
+        seed_topic, seed_source = _derive_seed_topic(kind, origin)
+        validate_topic(seed_topic)
+        predecessor = self._seen
         p = Proposal(
             id=pid,
             label=label,
@@ -459,6 +749,12 @@ class Nursery:
             origin=origin if isinstance(origin, str) else "",
             detail=detail if isinstance(detail, str) else "",
             goals=list(goals) if goals else [],
+            topic=seed_topic,
+            seed_topic_source=seed_source,
+            seed_source_kind=kind if isinstance(kind, str) else "",
+            seed_source_origin=origin if isinstance(origin, str) else "",
+            seed_rule_version=SEED_RULE_VERSION,
+            seed_operation_id=f"seed:{pid}",
         )
         self.proposals[pid] = p
         try:
@@ -466,6 +762,21 @@ class Nursery:
         except Exception:
             self.proposals.pop(pid, None)
             raise
+        # The creation receipt's RETURNED form (Resolution 3): the
+        # canonical post-save digest is attached only now that the
+        # save has succeeded, and only to this in-memory copy — the
+        # storable provenance on the record carries no digest.
+        self.last_organization_receipt = receipt_with_file_digest(
+            build_organization_receipt(
+                operation_id=p.seed_operation_id,
+                actor="system_seed",
+                proposal_id=pid,
+                before={"topic": "", "tags": [], "cluster": ""},
+                after={"topic": p.topic, "tags": list(p.tags),
+                       "cluster": p.cluster},
+                rule_version=SEED_RULE_VERSION,
+                predecessor_generation=predecessor),
+            self._seen)
         return p
 
     def pending(self) -> List[Proposal]:
@@ -778,7 +1089,7 @@ class Nursery:
                       "first occurrence",
         }
 
-    def save(self, *, _fail_at: Optional[str] = None) -> None:
+    def save(self, *, _fail_at: Optional[str] = None) -> str:
         """Whole-file write of this owner's nursery via Persistence V2
         (crash-safe atomic replacement; DCC-XVII).
 
@@ -813,8 +1124,19 @@ class Nursery:
         payload[DISPOSITION_SECTION_KEY] = {
             cid: dict(rec) for cid, rec in self.conflict_dispositions.items()
         }
+        # C5R.3: the organization edit-receipt section rides the same
+        # atomic write under the same arrangement (empty until the
+        # Phase 2 edit door appends receipts).
+        payload[EDIT_RECEIPT_SECTION_KEY] = {
+            op_id: dict(rec)
+            for op_id, rec in self.organization_edit_receipts.items()
+        }
         blob = atomic_write_json(self.path, payload, _fail_at=_fail_at)
         self._seen = hashlib.sha256(blob).hexdigest()
+        # C5R.3 (Resolution 3): the canonical post-save digest is
+        # RETURNED to the caller — it is never embedded in the file
+        # it describes.
+        return self._seen
 
     @classmethod
     def load(cls, path: Optional[str] = None) -> "Nursery":
@@ -859,6 +1181,7 @@ class Nursery:
             )
         staged: Dict[str, Proposal] = {}
         staged_dispositions: Dict[str, Dict[str, Any]] = {}
+        staged_edit_receipts: Dict[str, Dict[str, Any]] = {}
         try:
             for k, v in raw.items():
                 # DCC-XIX: the reserved disposition section is staged
@@ -877,11 +1200,31 @@ class Nursery:
                             )
                     staged_dispositions = {cid: dict(rec) for cid, rec in v.items()}
                     continue
+                # C5R.3: the reserved organization edit-receipt
+                # section is staged separately under the same
+                # arrangement; it is never mistaken for a proposal.
+                if k == EDIT_RECEIPT_SECTION_KEY:
+                    if not isinstance(v, dict):
+                        raise NurseryLoadError(
+                            f"nursery file {os.path.basename(path)} has a malformed "
+                            f"{EDIT_RECEIPT_SECTION_KEY} section (not an object)"
+                        )
+                    for op_id, rec in v.items():
+                        if not isinstance(op_id, str) or not isinstance(rec, dict):
+                            raise NurseryLoadError(
+                                f"nursery file {os.path.basename(path)} has a malformed "
+                                f"organization edit receipt for {op_id!r}"
+                            )
+                    staged_edit_receipts = {
+                        op_id: dict(rec) for op_id, rec in v.items()}
+                    continue
                 if not isinstance(v, dict):
                     raise NurseryLoadError(
                         f"nursery file {os.path.basename(path)} has an invalid proposal record for {k!r}"
                     )
-                staged[k] = Proposal(**v)
+                rec = Proposal(**v)
+                _validate_loaded_organization(k, rec, path)
+                staged[k] = rec
         except NurseryLoadError:
             raise
         except Exception as exc:
@@ -891,5 +1234,6 @@ class Nursery:
         # Only now apply: nothing partial can escape.
         n.proposals = staged
         n.conflict_dispositions = staged_dispositions
+        n.organization_edit_receipts = staged_edit_receipts
         n._seen = hashlib.sha256(blob).hexdigest()
         return n
