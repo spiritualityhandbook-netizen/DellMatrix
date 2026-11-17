@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
 import re
 import uuid
@@ -479,6 +480,81 @@ class Proposal:
 # Director source review on PR #465, 2026-11-16.
 SEE_UNSET = object()
 
+# ── C5R.4 LENS (definitions v3, Director EXE 6945952130 + source
+# review 6946155095; Ace Q-C5R.2 fade-ladder ruling 2026-11-17) ──
+# Transparent Nursery ordering computed inside the SEE service from
+# stored Proposal fields and the matched set. S is the DEFAULT
+# ordering; newest/oldest/alphabetical are explicit alternatives.
+# The lens never writes and never changes membership.
+LENS_VERSION = "lens-v1"
+LENS_WEIGHTS = {"link": 0.40, "ace": 0.25, "fresh": 0.20,
+                "novel": 0.15}
+LENS_FADE_FUNCTION = "reciprocal-fade-v1"
+# Effective-topic -> tau days. Ace's ladder: 14 is the default AND
+# the minimum; a collection may be raised only to 24, 48, 96, or
+# 142. The default table maps every collection to 14.0 (the
+# "unclassified" key is the fallback for any collection, including
+# the C5R.3 effective topic of legacy records). A value outside the
+# ladder is a configuration error: the lens refuses
+# LENS_CONFIG_INVALID rather than dividing by it.
+LENS_FADE_DAYS = {"unclassified": 14.0}
+LENS_FADE_LADDER = (14.0, 24.0, 48.0, 96.0, 142.0)
+LENS_SORTS = ("lens", "newest", "oldest", "alphabetical")
+
+
+def _lens_config_identity() -> str:
+    """Digest of the effective lens configuration: weights, fade
+    function version, and the full effective LENS_FADE_DAYS table.
+    A cursor binds this identity; a configuration change between
+    pages refuses CURSOR_CONFIG_CHANGED (the nursery file digest
+    alone cannot see table mutation)."""
+    payload = {
+        "version": LENS_VERSION,
+        "weights": LENS_WEIGHTS,
+        "fade_function": LENS_FADE_FUNCTION,
+        "fade_days": {k: LENS_FADE_DAYS[k]
+                      for k in sorted(LENS_FADE_DAYS)},
+    }
+    raw = json.dumps(payload, separators=(",", ":"),
+                     sort_keys=True).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _lens_config_error() -> Optional[str]:
+    """None when every LENS_FADE_DAYS value is lawful under Ace's
+    ladder; otherwise a description of the configuration error."""
+    if not isinstance(LENS_FADE_DAYS, dict) or not LENS_FADE_DAYS:
+        return "LENS_FADE_DAYS must be a non-empty table"
+    for key, val in LENS_FADE_DAYS.items():
+        if isinstance(val, bool) or not isinstance(val, (int, float)) \
+                or not math.isfinite(float(val)) or float(val) <= 0 \
+                or float(val) not in LENS_FADE_LADDER:
+            return (f"LENS_FADE_DAYS[{key!r}]={val!r} is not on "
+                    f"Ace's fade ladder {list(LENS_FADE_LADDER)}")
+    return None
+
+
+def _lens_parse_instant(value: Any) -> Optional[datetime]:
+    """Parse a stored `created` value or a `lens_now` argument into
+    an aware UTC datetime. Canonical `%Y-%m-%dT%H:%M:%SZ` and
+    offset-bearing ISO-8601 parse; a naive or invalid value returns
+    None — no zone is ever invented."""
+    if not isinstance(value, str) or not value:
+        return None
+    text = value.strip()
+    try:
+        dt = datetime.strptime(text, "%Y-%m-%dT%H:%M:%SZ")
+        return dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        pass
+    try:
+        dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        return None
+    return dt.astimezone(timezone.utc)
+
 
 
 def _validate_loaded_organization(key: str, rec: "Proposal",
@@ -559,6 +635,15 @@ class Nursery:
     # handed to the caller and never serialized into it.
     last_organization_receipt: Optional[Dict[str, Any]] = field(
         default=None, repr=False, compare=False)
+    # C5R.4 LENS: per-record sets of field names PRESENT in the
+    # stored record at load (proposal id -> field names). Presence
+    # is what distinguishes a measured stored 0.0 from a key absent
+    # in a legacy file (dataclass default) — the default alone never
+    # masquerades as a measurement. In-memory only; records built
+    # in this process are fully present by construction (see
+    # _lens_present). Never serialized.
+    _present_fields: Dict[str, set] = field(
+        default_factory=dict, repr=False, compare=False)
 
     def _suppression_fresh(self) -> bool:
         """True when this instance provably sees the current owner
@@ -1013,7 +1098,10 @@ class Nursery:
 
     @staticmethod
     def _see_refusal(code: str, detail: str) -> Dict[str, Any]:
-        return {"ok": False, "error": code, "detail": detail}
+        # "error" is the C5R.2 key; "code" is the same value under
+        # the C5R.4 LENS contract's name. Both ride every refusal.
+        return {"ok": False, "error": code, "code": code,
+                "detail": detail}
 
     @staticmethod
     def _see_searchable(p: "Proposal") -> List[str]:
@@ -1111,11 +1199,155 @@ class Nursery:
                 "represent the current generation")
         return None
 
+    # ── C5R.4 LENS computation (read-only; definitions v3) ─────
+
+    def _lens_present(self, p: "Proposal", name: str) -> bool:
+        """True when field `name` was present in p's stored record
+        at load. Records constructed in this process (never loaded)
+        are fully present by construction."""
+        present = self._present_fields.get(p.id)
+        if present is None:
+            return True
+        return name in present
+
+    @staticmethod
+    def _lens_numeric(p: "Proposal", name: str,
+                      present: bool):
+        """(value, evidence) for a stored [0,1] numeric component:
+        absent key -> missing/0; non-numeric, non-finite, or
+        out-of-range -> malformed/0 (the stored value itself is
+        preserved untouched, never clamped); otherwise measured."""
+        if not present:
+            return 0.0, "missing"
+        val = getattr(p, name)
+        if isinstance(val, bool) or not isinstance(val, (int, float)) \
+                or not math.isfinite(float(val)) \
+                or float(val) < 0.0 or float(val) > 1.0:
+            return 0.0, "malformed"
+        return float(val), "measured"
+
+    def _lens_for(self, p: "Proposal", matched: List["Proposal"],
+                  token_sets: Dict[str, set],
+                  instant: datetime) -> Dict[str, Any]:
+        """The full lens breakdown for one record over the matched
+        corpus. S = .40*LINK + .25*ACE + .20*FRESH + .15*NOVEL with
+        weights lens-v1, never renormalized: a missing/malformed
+        component contributes 0 and flags the score partial. ACE is
+        explicitly MISSING in v1 (no trustworthy human-action source
+        exists); the confirmed-lineage ace_proxy is disclosed
+        separately and contributes nothing."""
+        # LINK — parents component: distinct parent IDs resolving
+        # to records in this store, capped at 2.
+        unresolved: List[str] = []
+        parents_ev = "measured"
+        raw_parents = p.parents
+        if not isinstance(raw_parents, list):
+            parents_c = 0.0
+            parents_ev = "malformed"
+        else:
+            valid = set()
+            for entry in raw_parents:
+                if not isinstance(entry, str):
+                    parents_ev = "malformed"
+                    continue
+                if entry in self.proposals:
+                    valid.add(entry)
+                else:
+                    unresolved.append(entry)
+            parents_c = min(len(valid), 2) / 2
+        graph_v, graph_ev = self._lens_numeric(
+            p, "graph_coherence",
+            self._lens_present(p, "graph_coherence"))
+        harmony_v, harmony_ev = self._lens_numeric(
+            p, "harmony", self._lens_present(p, "harmony"))
+        link = (parents_c + graph_v + harmony_v) / 3
+        # FRESH — reciprocal fade v1 against the bound instant.
+        created_dt = _lens_parse_instant(p.created)
+        future_dated = False
+        if created_dt is None:
+            fresh, fresh_ev = 0.0, "missing"
+        else:
+            age_days = (instant - created_dt).total_seconds() / 86400.0
+            if age_days < 0:
+                age_days = 0.0
+                future_dated = True
+            collection = p.topic or UNCLASSIFIED_TOPIC
+            tau = float(LENS_FADE_DAYS.get(
+                collection,
+                LENS_FADE_DAYS.get(UNCLASSIFIED_TOPIC, 14.0)))
+            fresh = 1.0 / (1.0 + age_days / tau)
+            fresh_ev = "measured"
+        # NOVEL — lexical dissimilarity proxy over the matched set:
+        # 1 - max Jaccard against every other matched record.
+        tokens = token_sets.get(p.id, set())
+        if not tokens:
+            novel, novel_ev = 0.0, "missing"
+        elif len(matched) <= 1:
+            novel, novel_ev = 1.0, "measured"
+        else:
+            best = 0.0
+            for q in matched:
+                if q.id == p.id:
+                    continue
+                other = token_sets.get(q.id, set())
+                union = tokens | other
+                if not union:
+                    continue
+                sim = len(tokens & other) / len(union)
+                if sim > best:
+                    best = sim
+            novel, novel_ev = 1.0 - best, "measured"
+        # ACE proxy — confirmed lineage via supersedes chain,
+        # cycle-safe, broken references disclosed. Contributes 0.
+        proxy = 0.0
+        proxy_ev = "measured"
+        visited = {p.id}
+        cur = p
+        while cur.supersedes_id:
+            nxt_id = cur.supersedes_id
+            if nxt_id in visited:
+                proxy_ev = "partial"
+                break
+            visited.add(nxt_id)
+            nxt = self.proposals.get(nxt_id)
+            if nxt is None:
+                proxy_ev = "partial"
+                break
+            if nxt.status == "confirmed":
+                proxy = 1.0
+            cur = nxt
+        score = (LENS_WEIGHTS["link"] * link
+                 + LENS_WEIGHTS["fresh"] * fresh
+                 + LENS_WEIGHTS["novel"] * novel)
+        partial = True  # ACE is missing in v1: every score partial.
+        lens = {
+            "score": score,
+            "link": link,
+            "ace": 0.0,
+            "fresh": fresh,
+            "novel": novel,
+            "partial": partial,
+            "evidence": {
+                "ace": "missing",
+                "link_parents": parents_ev,
+                "link_graph": graph_ev,
+                "link_harmony": harmony_ev,
+                "fresh": fresh_ev,
+                "novel": novel_ev,
+            },
+            "parents_unresolved": unresolved,
+        }
+        if future_dated:
+            lens["future_dated"] = True
+        return {"lens": lens, "ace_proxy": proxy,
+                "ace_proxy_evidence": proxy_ev}
+
     def query(self, *, owner: str, mode: str = "browse",
               status: Any = SEE_UNSET, term: Any = SEE_UNSET,
               page_size: Any = SEE_UNSET,
               topic: Any = SEE_UNSET, tag: Any = SEE_UNSET,
               cluster: Any = SEE_UNSET, group_by: Any = SEE_UNSET,
+              sort: Any = SEE_UNSET, lens_now: Any = SEE_UNSET,
               cursor: Optional[str] = None) -> Dict[str, Any]:
         """One page of a browse (term="") or search over this store.
 
@@ -1169,7 +1401,9 @@ class Nursery:
                     (topic, data.get("topic"), "topic filter"),
                     (tag, data.get("tag"), "tag filter"),
                     (cluster, data.get("cluster"), "cluster filter"),
-                    (group_by, data.get("group"), "grouping")):
+                    (group_by, data.get("group"), "grouping"),
+                    (sort, data.get("sort", "lens"), "sort lens"),
+                    (lens_now, data.get("now"), "evaluation instant")):
                 if passed is not SEE_UNSET and passed != bound:
                     return self._see_refusal(
                         "CURSOR_FILTER_MISMATCH",
@@ -1184,6 +1418,9 @@ class Nursery:
             tag = data.get("tag")
             cluster = data.get("cluster")
             group_by = data.get("group")
+            sort = data.get("sort", "lens")
+            lens_now = data.get("now")
+            cfg_bound = data.get("cfg")
             sig_bound = data["sig"]
             last = data["last"]
         else:
@@ -1201,6 +1438,58 @@ class Nursery:
                 cluster = None
             if group_by is SEE_UNSET:
                 group_by = None
+            if sort is SEE_UNSET:
+                sort = "lens"
+            if lens_now is SEE_UNSET:
+                lens_now = None
+            cfg_bound = None
+        if sort == "lens-v1":
+            sort = "lens"
+        if sort not in LENS_SORTS:
+            return self._see_refusal(
+                "SORT_UNSUPPORTED",
+                f"sort {sort!r} is not an implemented lens "
+                "(lens | newest | oldest | alphabetical); the "
+                "default ordering is the S lens (lens-v1)")
+        cfg_now = _lens_config_identity()
+        if cursor is not None and cfg_bound is not None \
+                and cfg_bound != cfg_now:
+            # A configuration change between pages is the cursor's
+            # own diagnosis and outranks the validity check: the
+            # changed table might itself be invalid, but what the
+            # continuation must hear is that its bound configuration
+            # no longer governs.
+            return self._see_refusal(
+                "CURSOR_CONFIG_CHANGED",
+                "the effective lens configuration (weights, fade "
+                "function, LENS_FADE_DAYS table) changed since the "
+                "previous page; restart the query from page 1")
+        cfg_error = _lens_config_error()
+        if cfg_error is not None:
+            return self._see_refusal("LENS_CONFIG_INVALID", cfg_error)
+        if lens_now is not None:
+            instant = _lens_parse_instant(lens_now)
+            if instant is None:
+                return self._see_refusal(
+                    "ARGUMENT_INVALID",
+                    f"lens_now {lens_now!r} is not an offset-aware "
+                    "ISO-8601 instant; a naive or invalid instant "
+                    "fixes no evaluation time")
+            # Bind the instant EXACTLY as passed, so a continuation
+            # restating the same lens_now string compares equal.
+            now_iso = lens_now if isinstance(lens_now, str) \
+                else instant.isoformat()
+        elif cursor is not None:
+            # The cursor's bound instant governs continuation; it
+            # was validated when page 1 was issued. A pre-LENS
+            # cursor binds no instant: the service clock governs.
+            instant = _lens_parse_instant(data.get("now"))
+            if instant is None:
+                instant = datetime.now(timezone.utc)
+            now_iso = instant.isoformat()
+        else:
+            instant = datetime.now(timezone.utc)
+            now_iso = instant.isoformat()
         if group_by is not None and group_by not in (
                 "topic", "tag", "cluster"):
             return self._see_refusal(
@@ -1304,13 +1593,53 @@ class Nursery:
             groups = [{"key": k, "count": counts[k]}
                       for k in sorted(counts)]
             groups.append({"key": None, "count": untagged})
-        matched.sort(key=lambda p: (p.created, p.id))
+        # C5R.4 LENS ordering. Ordering changes ORDER ONLY, never
+        # membership: every lens traverses exactly the matched set.
+        # The full ordering is computed over the whole matched set
+        # BEFORE the cursor bound is applied (the bound is a
+        # position in this ordering), so pages never repeat or skip
+        # even though the lens order is not the storage order.
+        token_sets = {
+            p.id: set(((p.label or "") + " " + (p.words or ""))
+                      .casefold().split())
+            for p in matched}
+        lens_by_id = {}
+        if sort == "oldest":
+            ordered = sorted(matched, key=lambda p: (p.created, p.id))
+        elif sort == "newest":
+            ordered = sorted(matched, key=lambda p: p.id)
+            ordered.sort(key=lambda p: p.created, reverse=True)
+        elif sort == "alphabetical":
+            ordered = sorted(
+                matched,
+                key=lambda p: ((p.label or "").casefold(), p.id))
+        else:
+            for p in matched:
+                lens_by_id[p.id] = self._lens_for(
+                    p, matched, token_sets, instant)
+            ordered = sorted(
+                matched,
+                key=lambda p: (-lens_by_id[p.id]["lens"]["score"],
+                               p.id))
+        if sort != "lens" and sort != "oldest":
+            # The non-default explicit lenses still disclose the S
+            # breakdown on every item (transparency is not opt-in).
+            for p in matched:
+                if p.id not in lens_by_id:
+                    lens_by_id[p.id] = self._lens_for(
+                        p, matched, token_sets, instant)
         if last is not None:
-            bound = (last[0], last[1])
-            matched = [p for p in matched
-                       if (p.created, p.id) > bound]
-        page = matched[:page_size]
-        exhausted = len(matched) <= page_size
+            bound_id = last[1]
+            pos = next((i for i, p in enumerate(ordered)
+                        if p.id == bound_id), None)
+            if pos is None:
+                return self._see_refusal(
+                    "STALE_CURSOR",
+                    "the cursor's position is no longer in the "
+                    "matched set; restart the query from page 1")
+            ordered = ordered[pos + 1:]
+        page = ordered[:page_size]
+        exhausted = len(ordered) <= page_size
         next_cursor = None
         if not exhausted and page:
             tail = page[-1]
@@ -1320,22 +1649,33 @@ class Nursery:
                 "size": page_size,
                 "topic": topic, "tag": tag, "cluster": cluster,
                 "group": group_by,
+                "sort": sort, "now": now_iso, "cfg": cfg_now,
                 "last": [tail.created, tail.id],
             })
+
+        def _item(p):
+            d = p.to_dict()
+            info = lens_by_id.get(p.id)
+            if info is not None:
+                d["lens"] = info["lens"]
+                d["ace_proxy"] = info["ace_proxy"]
+                d["ace_proxy_evidence"] = info["ace_proxy_evidence"]
+            return d
+
         return {
             "ok": True,
             "owner": owner,
             "mode": mode,
             "status_filter": status,
             "term": term or "",
-            "sort": "created,id",
+            "sort": "lens-v1" if sort == "lens" else sort,
             "snapshot": disk,
             "total_inventory": len(self.proposals),
             "total_searched": total_searched,
             "total_matches": total_matches,
             "shown": len(page),
             "page_size": page_size,
-            "items": [p.to_dict() for p in page],
+            "items": [_item(p) for p in page],
             "next_cursor": next_cursor,
             "exhausted": exhausted,
             # C5R.3: organization view state rides every response —
@@ -1352,6 +1692,27 @@ class Nursery:
             "group_distinct_total": (
                 total_matches if group_by is not None else None),
             "unseeded_in_scope": unseeded_total,
+            # C5R.4 LENS transparency: the weights version, the
+            # effective configuration identity, the bound
+            # evaluation instant, the fade policy, and the NOVEL
+            # comparison corpus (the matched set — filter changes
+            # can change NOVEL scores, and that is disclosed here,
+            # never hidden).
+            "lens_version": LENS_VERSION,
+            "lens_weights": dict(LENS_WEIGHTS),
+            "lens_config": cfg_now,
+            "lens_now": now_iso,
+            "lens_fade": {
+                "function": LENS_FADE_FUNCTION,
+                "table": {k: LENS_FADE_DAYS[k]
+                          for k in sorted(LENS_FADE_DAYS)},
+                "default_tau_days": float(LENS_FADE_DAYS.get(
+                    UNCLASSIFIED_TOPIC, 14.0)),
+            },
+            "lens_corpus_size": total_matches,
+            "lens_novel_basis": "lexical token dissimilarity over "
+                                "the matched set; filter changes "
+                                "can change scores",
         }
 
     def fetch_many(self, ids: List[str]) -> Dict[str, Any]:
@@ -1479,6 +1840,7 @@ class Nursery:
                 "(top-level JSON is not an object)"
             )
         staged: Dict[str, Proposal] = {}
+        staged_present: Dict[str, set] = {}
         staged_dispositions: Dict[str, Dict[str, Any]] = {}
         staged_edit_receipts: Dict[str, Dict[str, Any]] = {}
         try:
@@ -1524,6 +1886,7 @@ class Nursery:
                 rec = Proposal(**v)
                 _validate_loaded_organization(k, rec, path)
                 staged[k] = rec
+                staged_present[k] = set(v.keys())
         except NurseryLoadError:
             raise
         except Exception as exc:
@@ -1532,6 +1895,7 @@ class Nursery:
             ) from exc
         # Only now apply: nothing partial can escape.
         n.proposals = staged
+        n._present_fields = staged_present
         n.conflict_dispositions = staged_dispositions
         n.organization_edit_receipts = staged_edit_receipts
         n._seen = hashlib.sha256(blob).hexdigest()

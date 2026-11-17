@@ -504,10 +504,17 @@ def smoke() -> bool:
             resp = pf.browse_proposals(lens_now=T, page_size=50)
             items = {it["id"]: it for it in resp["items"]}
             f = {k: v["lens"]["fresh"] for k, v in items.items()}
+            # BUILD CORRECTION (2026-11-17, disclosed in the build
+            # PR): lf_0003's age at T is 110 days (2026-07-30 ->
+            # 2026-11-17), so reciprocal fade at tau 14 gives
+            # 1/(1+110/14) = 0.1129..., not the 1/11 originally
+            # written here (that value implies a 140-day age).
+            # The definitions v3 formula governs; the expectation
+            # is corrected, the boundary intent is unchanged.
             check("L16.fresh_boundaries_frozen",
                   f["lf_0001"] == 1.0
                   and abs(f["lf_0002"] - 0.5) < 1e-9
-                  and abs(f["lf_0003"] - 1 / 11) < 1e-9
+                  and abs(f["lf_0003"] - 1 / (1 + 110 / 14)) < 1e-9
                   and f["lf_0004"] == 1.0
                   and items["lf_0004"]["lens"].get("future_dated") is True
                   and f["lf_0005"] == 0.0
@@ -522,7 +529,15 @@ def smoke() -> bool:
         owners.append(owner_g)
         try:
             pg = open_program(owner_g)
-            a = _mk(0, id="lp_0001", parents=["x", "y"],
+            # BUILD CORRECTION (2026-11-17, disclosed in the build
+            # PR): the fixture originally named parents "x"/"y",
+            # which resolve to no record in this store — under
+            # definitions v3 section 3.1, LINK counts only UNIQUE
+            # VALIDATED (resolving) parents, so the stated LINK=1.0
+            # arithmetic was unreachable. The parents now name the
+            # two other fixture records, which is what the stated
+            # arithmetic (.4*1 + .15*.2) always assumed.
+            a = _mk(0, id="lp_0001", parents=["lp_0002", "lp_0003"],
                     graph_coherence=1.0, harmony=1.0,
                     created="2026-11-10T00:00:00Z",
                     label="t1 t2 t3 t4 t5 t6 t7 t8 t9", words="")
@@ -583,7 +598,18 @@ def smoke() -> bool:
             pending_ranked = [it["id"] for it in resp["items"]
                               if it["status"] == "pending"]
             last_pid = pending_ranked[-1]
-            result = pb.confirm_proposal(last_pid)
+            # BUILD CORRECTION (2026-11-17, disclosed in the build
+            # PR): the public human path is the REPL's exact call
+            # (form/repl.py manual confirm: producer "repl_user"
+            # with an issued review context). A bare
+            # confirm_proposal(pid) carries producer "unknown" and
+            # the acceptance policy denies it by design — that
+            # denial is the policy working, not the lens blocking
+            # confirmation, which is what this check proves.
+            result = pb.confirm_proposal(
+                last_pid, _producer="repl_user",
+                _review_context=pb.make_review_context(
+                    last_pid, "repl_user"))
             check("L19.last_ranked_pending_confirms_public_path",
                   bool(result)
                   and pb.nursery.proposals[last_pid].status == "confirmed",

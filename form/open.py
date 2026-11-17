@@ -1387,20 +1387,24 @@ class Program:
 
     def browse_proposals(self, status=SEE_UNSET, page_size=SEE_UNSET,
                          cursor=None, topic=SEE_UNSET, tag=SEE_UNSET,
-                         cluster=SEE_UNSET, group_by=SEE_UNSET):
+                         cluster=SEE_UNSET, group_by=SEE_UNSET,
+                         sort=SEE_UNSET, lens_now=SEE_UNSET):
         return self.nursery.query(
             owner=self.owner, mode="browse", status=status,
             page_size=page_size, cursor=cursor, topic=topic,
-            tag=tag, cluster=cluster, group_by=group_by)
+            tag=tag, cluster=cluster, group_by=group_by,
+            sort=sort, lens_now=lens_now)
 
     def search_proposals(self, term=SEE_UNSET, status=SEE_UNSET,
                          page_size=SEE_UNSET, cursor=None,
                          topic=SEE_UNSET, tag=SEE_UNSET,
-                         cluster=SEE_UNSET, group_by=SEE_UNSET):
+                         cluster=SEE_UNSET, group_by=SEE_UNSET,
+                         sort=SEE_UNSET, lens_now=SEE_UNSET):
         return self.nursery.query(
             owner=self.owner, mode="search", status=status,
             term=term, page_size=page_size, cursor=cursor,
-            topic=topic, tag=tag, cluster=cluster, group_by=group_by)
+            topic=topic, tag=tag, cluster=cluster, group_by=group_by,
+            sort=sort, lens_now=lens_now)
 
     def get_proposals(self, ids):
         return self.nursery.fetch_many(list(ids))
@@ -1543,30 +1547,36 @@ class Program:
 
 
     def ranked_proposals(self) -> List[Dict[str, Any]]:
-        props = self.list_proposals()
-        # P3 R3.6: harmony + graph coherence, persisted on each proposal by
-        # RingedGrowth.run, are consumed here as tie-breakers — this is the
-        # real consumer that reads the scores (repl, visual, and the
-        # executor leaf all render this ordering). Preference blending is
-        # untouched: harmony only orders proposals the preference model
-        # scores equally (blended ties), then graph coherence.
-        def _rank_key(p: Dict[str, Any]):
-            return (
-                -float(p.get("blended", p.get("affinity", 0)) or 0),
-                -float(p.get("harmony", 0) or 0),
-                -float(p.get("graph_coherence", 0) or 0),
-            )
-        try:
-            # Preference blend ≠ pure affinity imitation (NVIDIA-inspired)
-            ranked = self.inspire.prefs.rank_proposals(props)
-            ranked.sort(key=_rank_key)  # stable: keeps pref order, breaks ties
-            return ranked
-        except Exception:
-            return sorted(props, key=lambda p: (
-                -float(p.get("affinity", 0) or 0),
-                -float(p.get("harmony", 0) or 0),
-                -float(p.get("graph_coherence", 0) or 0),
-            ))
+        # C5R.4 LENS migration (definitions v3 section 6): the
+        # signature, pending scope, and membership are unchanged,
+        # but the ORDER is now the S lens order over that scope,
+        # served by the canonical SEE service (Nursery.query), with
+        # the full score breakdown on each returned record. The
+        # legacy recipe (Inspire preference blend with
+        # harmony/graph tie-breaks and an affinity fallback) is
+        # retired as this method's ordering authority — there is NO
+        # silent fallback: if the SEE traversal refuses, that
+        # refusal is the result's story, raised to the caller as an
+        # empty ranking only when the store itself is empty. The
+        # Inspire preference model itself is not modified; stored
+        # harmony/graph evidence still moves the order, now through
+        # LINK (re-proved by nursery_c5r4_lens_test L20, which
+        # supersedes the p3_r35/p3_r36 ranked assertions per the
+        # definitions' assertion mapping).
+        ranked: List[Dict[str, Any]] = []
+        cursor = None
+        while True:
+            resp = self.nursery.query(
+                owner=self.owner, mode="browse", status="pending",
+                page_size=200, cursor=cursor)
+            if not resp.get("ok"):
+                raise RuntimeError(
+                    f"ranked_proposals: SEE lens traversal refused: "
+                    f"{resp.get('error')} — {resp.get('detail')}")
+            ranked.extend(resp["items"])
+            if resp.get("exhausted") or not resp.get("next_cursor"):
+                return ranked
+            cursor = resp["next_cursor"]
 
     def _acceptance_data_for(self, pid: str,
                              operation: str = "confirm") -> dict:
