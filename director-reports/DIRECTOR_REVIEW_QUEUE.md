@@ -24,12 +24,12 @@ DIRECTOR PRIORITIES (restated by the 2026-11-17 EXE review):
   CORRECTION_REQUIRED stands at head 35d3acd9 (do not move the head).
 - PR #461 (Workflow v2): NOT adopted. ADOPTION HOLD (narrowed).
   Remaining: the SS43/44 references artifact (rides the
-  records-correction PR), Keeper review at the adoption head, and the
+  records-correction PR), Acting-Keeper (Gemini) review at the adoption head, and the
   Director's final adoption + SS32 cutover ruling.
 
-| PR | Head | CI at head | Mergeable | Keeper confirmation at head | Latest Director disposition | Unresolved decision / next gate |
+| PR | Head | CI at head | Mergeable | Acting-Keeper (Gemini) confirmation at head | Latest Director disposition | Unresolved decision / next gate |
 |---|---|---|---|---|---|---|
-| #461 Workflow v2 | 95f10f64 | 3 success | MERGEABLE/CLEAN | none at head | ADOPTION HOLD NARROWED (2026-11-16) | SS43/44 artifact; Keeper adoption-head review; final adoption + cutover ruling |
+| #461 Workflow v2 | 95f10f64 | 3 success | MERGEABLE/CLEAN | none at head | ADOPTION HOLD NARROWED (2026-11-16) | SS43/44 artifact; Acting-Keeper (Gemini) adoption-head review; final adoption + cutover ruling |
 | #445 Limits wave 5 (R22-R26) | b6a325dc | 3 success | CONFLICTING | none | none on PR | refresh-or-close decision; bounded repair authorizations (smallest first) |
 | #444 C5 grounding | d116b30a | 3 success | CONFLICTING | none | none on PR | disposition owed |
 | #443 FI-001 benchmark | 80c1dfc2 | 3 success | CONFLICTING | none | none on PR | disposition owed |
@@ -42,17 +42,26 @@ DIRECTOR PRIORITIES (restated by the 2026-11-17 EXE review):
 | #433 FI-010 Phase R census | 55fe3d1f | 3 success | CONFLICTING | none | none on PR | disposition owed |
 | #432 Limits wave 1 | 2e95b431 | 3 success | CONFLICTING | none | none on PR | refresh-or-close decision |
 | #431 SYSTEM-002 Q-S2.2/Q-S2.3 | 0365c71b | 3 success | CONFLICTING | none | Q-S2.2 answered via PR #451 batch (6946046074); none on this PR | closure/disposition decision on this PR |
-| #428 Grand Workflow first-night fix | cd7ab96a | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper) at head | none newer | union-refresh or close as superseded |
-| #427 LIMITS CENSUS + Q-LC.1/Q-LC.2 | 665a259a | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper) at head | none newer | Q-LC.1/Q-LC.2 rulings; refresh-or-close |
-| #426 SS7 Far Stratum opening file | 85f6fafe | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper) at head | none newer | union-refresh or close as superseded |
-| #425 G31 closure file | fc46c391 | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper) at head | none newer | union-refresh or close as superseded |
+| #428 Grand Workflow first-night fix | cd7ab96a | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper — historical evidence only, not a current approval) at head | none newer | union-refresh or close as superseded |
+| #427 LIMITS CENSUS + Q-LC.1/Q-LC.2 | 665a259a | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper — historical evidence only, not a current approval) at head | none newer | Q-LC.1/Q-LC.2 rulings; refresh-or-close |
+| #426 SS7 Far Stratum opening file | 85f6fafe | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper — historical evidence only, not a current approval) at head | none newer | union-refresh or close as superseded |
+| #425 G31 closure file | fc46c391 | 3 success | CONFLICTING | scoped records CONFIRM 2026-11-15 (prior Keeper — historical evidence only, not a current approval) at head | none newer | union-refresh or close as superseded |
 | #424 MWL-UNIFIED CROSSWALK | be62189b | 3 success | CONFLICTING | none at head | live-scoreboard rule disposition (6925729360 lineage): CURRENT verified MWL = 39/182 ACTIVE | content edits owed (182-entry mapping; drop the stale headline line), then pair refresh with #441; feeds #421 |
 | #421 THE GRAND PLAN — UNIFIED | 35d3acd9 | 3 success | CONFLICTING | none | CORRECTION_REQUIRED (6921699052); NO MERGE AUTHORIZATION | head FROZEN by Uni; correction runs through #424/#441 first; register/count NOT adopted |
 | #420 THL-SM-02 preservation | 24b34730 | 3 success | CONFLICTING | CONFIRM issued at an OLDER head (398e...), not at current head | INSUFFICIENT_EVIDENCE superseded by that older-head CONFIRM | re-present at current head |
-| #418 Sandbox FULL STUDY package | 54da969d | 3 success | CONFLICTING | CONFIRM 2026-11-14 (prior Keeper) at head | none newer | refresh-or-close decision |
+| #418 Sandbox FULL STUDY package | 54da969d | 3 success | CONFLICTING | CONFIRM 2026-11-14 (prior Keeper — historical evidence only, not a current approval) at head | none newer | refresh-or-close decision |
 | #308 72-06 Intent.args census | ee9e1fdd | 4 success | CONFLICTING | none | none on PR | FENCED — census-held; no action |
 | #294 Q1 audit (Exchange/recovery) | 56c9ed8d | 3 success | MERGEABLE/CLEAN | none | none on PR | FENCED — Q1 design/implementation GATE HOLD; never merge |
 | #233 CI-only certification run | e799e800 | 3 success | CONFLICTING | none | none on PR | FENCED — never merge |
+
+GOVERNANCE NOTE (Director EXE delta 6958458177, 2026-11-17): current
+Keeper gates are Gemini's as Acting Keeper (operative stamp). Grok is
+Brains — on-call evidence only; his automation shutdown is reported,
+not independently verified. Historical Grok/prior-Keeper stamps in
+this table are historical evidence, never automatic current
+approvals, and this queue never instructs waiting for Grok's dormant
+cycles. Reviewer-identity wording in this refresh corrected per that
+delta.
 
 Reading of the refresh (Uni): the limits waves, resource-guard and
 defect-repair packages (#431-#445 family) carry exact-head CI green
