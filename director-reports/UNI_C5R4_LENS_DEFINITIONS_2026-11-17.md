@@ -262,22 +262,42 @@ PR does so deliberately, assertion by assertion, per this map.
 
 ## 8. Proof contract
 
-`form/nursery_c5r4_lens_test.py` (failing-first, this package;
-v3: 21 checks, L1–L20 with L10 split in two). At this stage the suite is explicitly STANDALONE
-(Director registration clarification, 6946155095): it is not in
-form/regress.py, so plan-stage failure cannot break main
-regression. Mandatory registration rides the implementation
-candidate and is verified before admission. The build is complete
-only when the whole suite passes at an exact head, the SEE suite
-updates land with it, and the standard campaign/CI/checker gates
-close.
+The acceptance suite is `form/nursery_c5r4_lens_test.py`
+(failing-first; v3: 21 checks, L1–L20 with L10 split in two). It
+does NOT ride this PR. Placement ruling (Director §42 delta
+6946802282, choosing Uni's option (a) from 6946339794): the suite
+moves to the IMPLEMENTATION PR, where its registration in
+form/regress.py and its passing run land together, and this PR
+carries definitions/records only.
 
-## 9. Open items at contract close (Director's decision)
+The earlier statement in this section — that an unregistered
+on-disk suite cannot break regression — was FALSE and is
+corrected here: form/regress.py's `intended_entries()` includes
+`discovered_suites(src)`, so any suite file present on disk is an
+intended entry, and a regression pass that omits it is RED
+(observed: exact-head CI smoke FAILURE on this PR at 16676b7d and
+a3e4a7d7, `REGRESS OMITTED INTENDED ENTRY
+['form.nursery_c5r4_lens_test:smoke']`). That discovery mechanism
+is exactly why the suite cannot ride a plan-stage PR.
 
-- ACE: whether the traced human-action source (if any qualifies)
-  admits ACE into S in v1, or ACE remains missing until a reviewed
-  provenance mechanism exists. Uni's position: missing until
-  proven — no attention claim without a receipt.
+The failing-first evidence is preserved as history: the suite at
+PR head 7975af4393c3f8fd3bdb1c347acd4abdfca0e3d2 ran **0/21 PASS**
+— every check failing for the stated reason (the lens API does
+not exist yet) with no vacuous controls — published in PR comment
+6946296751, and the suite file itself is preserved verbatim in
+that head's tree for the implementation PR to adopt. The build is
+complete only when the whole suite passes at an exact head, the
+SEE suite updates land with it, and the standard
+campaign/CI/checker gates close.
+
+## 9. Items closed at contract close
+
+- ACE: RULED by the Director (6946802282) — no verified
+  human-action source presently qualifies; ACE stays explicitly
+  missing (zero, partial) in lens-v1. Any later trustworthy source
+  requires a separately reviewed, versioned contract — never an
+  unreviewed writer, never a silent substitute. (Uni's position
+  was the same: missing until proven.)
 - Q-C5R.2: ANSWERED by Ace 2026-11-17 — 14 days default and
   minimum; raisable per collection to 24, 48, 96, or 142 days
   (section 3.3). No longer open.
