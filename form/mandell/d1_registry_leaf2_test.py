@@ -381,13 +381,20 @@ def main():
                       "Loop: requested 1, executed 1.",
                       "Nursery pending: 3"]
          and set(_units(q)) == before_units, str(_msgs(r)))
+    # GROW-DUP amendment (Director 6931279746): the five clamped
+    # cycles re-derive the same 3 crosses already pending from the
+    # bare Loop — 15 add outcomes, all suppressed as duplicates
+    # (receipts are the per-cycle execution proof); pending stays 3.
+    _rcpts_before = len(q.nursery.suppression_receipts)
     r = _run(q, "13[Loop] :: 7")
     _rec("13 Loop (B2, step 6): label 7 is CLAMPED to Cycle's "
-         "1..5 bound (+15 evolved) and the clamp is reported",
-         _msgs(r) == ["Ringed growth: +0 new +15 evolved",
+         "1..5 bound (15 duplicate crosses suppressed) and the "
+         "clamp is reported",
+         _msgs(r) == ["Ringed growth: +0 new +0 evolved",
                       "Loop: requested 7, executed 5. "
                       "(clamped to 1..5)",
-                      "Nursery pending: 18"]
+                      "Nursery pending: 3"]
+         and len(q.nursery.suppression_receipts) - _rcpts_before == 15
          and set(_units(q)) == before_units, str(_msgs(r)))
     r = _run(q, "13[Loop] :: bogus")
     _rec("13 Loop (B2, step 6): a non-digit label refuses "
@@ -396,13 +403,13 @@ def main():
          and r.get("error") == "invalid_loop_count"
          and _msgs(r) == ["Loop refused: invalid count 'bogus' — "
                           "no cycles run."]
-         and q.nursery.summary()["pending"] == 18,
+         and q.nursery.summary()["pending"] == 3,
          str(_msgs(r)))
     # symbiosis: Keep's nursery line counts Loop's proposals
     r = _run(q, "10[Keep]")
     _rec("symbiosis: Keep (10) counts Loop's (13) proposals "
-         "in its nursery line (18 pending)",
-         _msgs(r)[1].endswith("nursery=18"), str(_msgs(r)))
+         "in its nursery line (3 pending)",
+         _msgs(r)[1].endswith("nursery=3"), str(_msgs(r)))
     _cleanup(owner3)
 
     # -- REAL_USER_PATH: literal REPL seed lines

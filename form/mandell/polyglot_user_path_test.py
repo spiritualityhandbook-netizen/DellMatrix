@@ -129,14 +129,20 @@ def _run_language(code: str, spec: dict) -> None:
         # previously expected exactly 1 proposal — they passed only
         # because translate() silently dropped the count to 1 cycle.
         # With the count honored, 2 cycles stage 2 proposals.
+        # GROW-DUP amendment (Director 6931279746): both cycles run
+        # (the count is still honored — the dedup suite proves the
+        # suppressed cycle from its receipts), but over a one-idea
+        # field the second cycle re-derives the identical cross,
+        # which is now suppressed instead of stored as a twin. The
+        # user path therefore stages ONE distinct proposal.
         check(f"{code}: grow stages a nursery proposal",
-              "Nursery pending: 2" in out, out[-600:])
+              "Nursery pending: 1" in out, out[-600:])
         check(f"{code}: proposals lists the staged proposal",
-              "Nursery has 2 proposal(s)" in out, out[-600:])
+              "Nursery has 1 proposal(s)" in out, out[-600:])
         check(f"{code}: rank ranks the proposal",
-              "Ranked 2 proposals" in out, out[-600:])
+              "Ranked 1 proposals" in out, out[-600:])
         check(f"{code}: confirm all confirms it",
-              "Confirmed 2 proposal(s)" in out, out[-600:])
+              "Confirmed 1 proposal(s)" in out, out[-600:])
         check(f"{code}: show renders the created idea",
               f"{label}@" in out, out[-600:])
         check(f"{code}: save persists the session",
