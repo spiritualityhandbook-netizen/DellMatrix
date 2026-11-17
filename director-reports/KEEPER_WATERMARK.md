@@ -1,11 +1,13 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-16 21:02 CST  
-**UTC approx**: 2026-11-17T03:02:00Z  
-**Type**: TERMINAL CONFIRM
+**Last cycle**: 2026-11-16 22:19 CST  
+**UTC approx**: 2026-11-17T04:19:00Z  
+**Type**: DEEP PASS + WAKE/SLEEP SWAT
 
 ## Items ruled this cycle
-- PR #466 GROW-DUP exact head `03dda8df67ce7f5e426ee002a505f5d7f5dd6088`: PRE-STAMP. Missing: quiet full regression x3 terminal GREEN; exact-head CI terminal ALL PASS (smoke in_progress); checkpoint package. Prior head 1154759 superseded. Comment posted.
+- Trailing second-certifications: remaining 0 (DD-18 / Q-DD42.1 previously cleared). No new items.
+- Scoreboard: discrepancy restated (rendered 39/182 vs skill baseline 35 of 182 per Manifest Sitting #002). Both positions on record. No credit awarded.
+- PR #466 merged post pre-stamp; no new CONFIRM.
 - No other ripe packages.
 
 ## Trailing ledger
@@ -14,7 +16,7 @@
 - gaps: none
 
 ## Automation posture
-Terminal scan complete. No CONFIRM. Pre-stamp issued on #466. Watermark advanced.
+Deep Pass complete. SWAT issued. No CONFIRM. Watermark advanced.
 
 ## Silence flag
 #308 / #294 / #233 fenced.
