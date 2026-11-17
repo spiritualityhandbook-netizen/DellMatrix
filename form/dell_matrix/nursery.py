@@ -20,6 +20,7 @@ import hashlib
 import json
 import os
 import re
+import uuid
 from form.utc_time import utc_now_str
 
 _STATE_DIR = os.path.join(os.path.dirname(__file__), "..", "state")
@@ -478,6 +479,12 @@ class Proposal:
 # Director source review on PR #465, 2026-11-16.
 SEE_UNSET = object()
 
+# Sentinel for "organization field not passed" in the C5R.3 edit
+# operation: an edit changes ONLY the fields explicitly passed, so
+# the operation must distinguish "not mentioned" (current value
+# governs) from any explicitly passed value, including "" / [].
+ORG_UNSET = object()
+
 
 def _validate_loaded_organization(key: str, rec: "Proposal",
                                   path: str) -> None:
@@ -825,6 +832,165 @@ class Nursery:
             "rejected": sum(1 for p in self.proposals.values() if p.status == "rejected"),
         }
 
+    # ── C5R.3 ORGANIZE Phase 2: trusted human organization edits ──
+    # The ONE organization mutation operation (Director 6936275880,
+    # Resolutions 1/3/4/5/7). It changes ONLY topic/tags/cluster,
+    # persists through this instance's canonical save() (the
+    # check_save_allowed recovery guard and the lost-update check
+    # ride along — never bypassed), and appends the edit's storable
+    # receipt to organization_edit_receipts in the SAME transaction.
+    # There is no undo stack here: Q-LC.1 generation rollback is
+    # the only undo authority, and per-edit organization undo is
+    # explicitly UNAVAILABLE (ORG_UNDO_NOTE is surfaced to callers).
+    ORG_UNDO_NOTE = (
+        "organization undo is unavailable at edit granularity: "
+        "Q-LC.1 generation rollback is the only undo authority; "
+        "no shadow undo stack exists")
+
+    def organize_proposal(
+        self,
+        pid: str,
+        *,
+        actor: str,
+        topic: Any = SEE_UNSET,
+        tags: Any = SEE_UNSET,
+        cluster: Any = SEE_UNSET,
+        expected_generation: Any = SEE_UNSET,
+        _fail_at: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Edit one proposal's organization metadata (topic/tags/
+        cluster), receipted, through the canonical save.
+
+        Boundary (Resolution 5): ``actor`` is the TRUSTED subject
+        established by the host caller (the REPL door passes
+        "repl:<owner>"; a Program caller passes its own traced
+        subject). It is never parsed from proposal content or from
+        the edited line — a model-supplied actor string is not
+        authentication, and this method is unreachable from the
+        connect-session dispatcher by construction. A missing/empty
+        actor is a caller bug and raises ValueError.
+
+        Binding: the edit resolves by stable ID in THIS owner-bound
+        store. When ``expected_generation`` is passed, it must equal
+        the owner file's current on-disk signature (_disk_sig) or
+        the edit refuses STALE_GENERATION before staging anything —
+        the STALE_CURSOR pattern applied to mutation. Independently,
+        save()'s own lost-update check still applies to a stale
+        instance (NurseryConflictError propagates, in-memory values
+        restored).
+
+        Values: fields left SEE_UNSET keep their current values;
+        passed fields are validated as one complete proposed state
+        by the Phase 1 admission validators (typed NurseryTopicError
+        / NurseryTagsError / NurseryClusterError, raised BEFORE any
+        mutation or staging). Only topic/tags/cluster change — id,
+        label, words, reason, detail, goals, parents, status,
+        lineage and the creation-seed provenance are byte-identical
+        after an edit; the seed history is retained under a human
+        override (the receipt records topic_source "human" when the
+        edit sets the topic).
+
+        Outcomes: success returns {"ok": True, "receipt": <returned
+        receipt form incl. the canonical post-save file_digest>,
+        "generation": <post-save digest>, "undo": ORG_UNDO_NOTE}.
+        Refusals that are caller-state facts (unknown ID, no fields,
+        stale expected generation) return {"ok": False, "error":
+        code, "detail": ..., "receipt": <truthful refusal receipt>,
+        "undo": ORG_UNDO_NOTE} and persist NOTHING — a refusal
+        receipt is returned to the caller, never written, because
+        writing it would itself mutate the generation it reports on.
+        A persistence failure restores the staged in-memory values
+        (Persistence V2: the old canonical generation stays intact)
+        and re-raises.
+        """
+        if not isinstance(actor, str) or not actor:
+            raise ValueError(
+                "organize_proposal requires a non-empty trusted "
+                "actor subject established by the host caller; a "
+                "model-supplied actor string is not authentication")
+        op_id = (f"edit:{pid}:"
+                 f"{len(self.organization_edit_receipts) + 1}")
+        refusal_base = {
+            "operation_id": op_id,
+            "actor": actor,
+            "proposal_id": pid,
+            "rule_version": SEED_RULE_VERSION,
+            "predecessor_generation": self._seen,
+            "outcome": "refused",
+        }
+
+        def refuse(code: str, detail: str) -> Dict[str, Any]:
+            receipt = dict(refusal_base, reason=code)
+            return {"ok": False, "error": code, "detail": detail,
+                    "receipt": receipt, "undo": self.ORG_UNDO_NOTE}
+
+        p = self.proposals.get(pid)
+        if p is None:
+            return refuse(
+                "PROPOSAL_NOT_FOUND",
+                f"no proposal {pid!r} in this owner's nursery")
+        if topic is SEE_UNSET and tags is SEE_UNSET \
+                and cluster is SEE_UNSET:
+            return refuse(
+                "NO_CHANGES",
+                "name at least one of topic, tags, or cluster")
+        if expected_generation is not SEE_UNSET:
+            current = _disk_sig(self.path) if self.path else self._seen
+            if expected_generation != current:
+                return refuse(
+                    "STALE_GENERATION",
+                    "the nursery generation the edit was prepared "
+                    "against is not the current on-disk generation; "
+                    "re-read the proposal and retry — nothing was "
+                    "staged or written")
+        # Compose and validate the ENTIRE proposed organization
+        # state before changing any value (typed refusals raise).
+        new_topic = validate_topic(
+            p.topic if topic is SEE_UNSET else topic)
+        new_tags = validate_tags(
+            list(p.tags) if tags is SEE_UNSET else tags)
+        new_cluster = validate_cluster(
+            p.cluster if cluster is SEE_UNSET else cluster)
+        before = {"topic": p.topic, "tags": list(p.tags),
+                  "cluster": p.cluster}
+        after = {"topic": new_topic, "tags": list(new_tags),
+                 "cluster": new_cluster}
+        predecessor = self._seen
+        receipt = build_organization_receipt(
+            operation_id=op_id,
+            actor=actor,
+            proposal_id=pid,
+            before=before,
+            after=after,
+            rule_version=SEED_RULE_VERSION,
+            predecessor_generation=predecessor)
+        receipt["kind"] = "human_organization_edit"
+        receipt["created"] = _ts()
+        if topic is not SEE_UNSET:
+            # The plan's override marker: the current topic is now
+            # human-set; the creation seed history stays on the
+            # record untouched (seed_* fields are never rewritten).
+            receipt["topic_source"] = "human"
+        old_tags = p.tags
+        prior_receipt = self.last_organization_receipt
+        p.topic = new_topic
+        p.tags = list(new_tags)
+        p.cluster = new_cluster
+        self.organization_edit_receipts[op_id] = receipt
+        try:
+            self.save(_fail_at=_fail_at)
+        except Exception:
+            p.topic = before["topic"]
+            p.tags = old_tags
+            p.cluster = before["cluster"]
+            self.organization_edit_receipts.pop(op_id, None)
+            self.last_organization_receipt = prior_receipt
+            raise
+        self.last_organization_receipt = receipt_with_file_digest(
+            receipt, self._seen)
+        return {"ok": True, "receipt": self.last_organization_receipt,
+                "generation": self._seen, "undo": self.ORG_UNDO_NOTE}
+
     # ── C5R.2 SEE: read-only query service (AC-2.1-AC-2.4) ──────
     # Complete Nursery visibility over THIS owner-bound store. The
     # query path never calls save/confirm/reject or any placement
@@ -860,6 +1026,16 @@ class Nursery:
                 p.status, p.lifecycle_state, p.origin, p.detail]
         vals.extend(p.parents or [])
         vals.extend(p.goals or [])
+        # C5R.3 (Resolution 6): organization fields are searchable
+        # ONLY because they are enumerated here deliberately —
+        # adding the dataclass fields alone changed nothing. The
+        # stored topic ("" for legacy records), every stored tag,
+        # and the stored cluster ("" = unset) are the search text;
+        # the derived effective topic used for grouping is a view
+        # projection and is not a stored field, so it is not added.
+        vals.append(p.topic)
+        vals.extend(p.tags or [])
+        vals.append(p.cluster)
         for extra in (p.supersedes_id, p.superseded_by_id,
                       p.revision_root_id):
             if extra:
@@ -916,6 +1092,17 @@ class Nursery:
             if (not isinstance(last, list) or len(last) != 2
                     or not all(isinstance(x, str) for x in last)):
                 return None
+        # C5R.3: the organization filter/group keys are OPTIONAL in
+        # the payload — cursors issued before C5R.3 lack them and
+        # bind None (no organization filter, no grouping). When
+        # present they are type-validated like every other field.
+        for key in ("topic", "tag", "cluster"):
+            if key in data and data[key] is not None \
+                    and not isinstance(data[key], str):
+                return None
+        if "group" in data and data["group"] not in (
+                None, "topic", "tag", "cluster"):
+            return None
         return data
 
     def _see_freshness(self) -> Optional[Dict[str, Any]]:
@@ -932,6 +1119,8 @@ class Nursery:
     def query(self, *, owner: str, mode: str = "browse",
               status: Any = SEE_UNSET, term: Any = SEE_UNSET,
               page_size: Any = SEE_UNSET,
+              topic: Any = SEE_UNSET, tag: Any = SEE_UNSET,
+              cluster: Any = SEE_UNSET, group_by: Any = SEE_UNSET,
               cursor: Optional[str] = None) -> Dict[str, Any]:
         """One page of a browse (term="") or search over this store.
 
@@ -942,6 +1131,22 @@ class Nursery:
         term, or page size refuses CURSOR_FILTER_MISMATCH, never a
         silent ignore (Director source review, PR #465). All
         refusals are typed dicts; nothing here writes.
+
+        C5R.3 (Resolution 6): topic/tag/cluster filters and a
+        group_by summary ride THIS service — never a separate
+        organization database. Filters narrow the searched scope
+        (total_searched reflects them, exactly as the status filter
+        does). The topic filter and topic grouping use the
+        EFFECTIVE topic: the stored topic when non-empty, else the
+        explicit "unclassified" group — a read-only projection for
+        legacy records; stored bytes are never rewritten by a view.
+        Tag and cluster filters match stored values exactly under
+        Unicode casefold. Grouping summarizes the matched set:
+        topic and cluster groups partition it (every record in
+        exactly one group, the unclassified / unset group always
+        present); tag groups may overlap, so the response carries
+        BOTH group_membership_total and group_distinct_total —
+        overlap is disclosed, never forced into a partition.
         """
         last = None
         sig_bound = None
@@ -965,7 +1170,11 @@ class Nursery:
             for passed, bound, field in (
                     (status, data["status"], "status filter"),
                     (term, data["term"], "search term"),
-                    (page_size, data["size"], "page size")):
+                    (page_size, data["size"], "page size"),
+                    (topic, data.get("topic"), "topic filter"),
+                    (tag, data.get("tag"), "tag filter"),
+                    (cluster, data.get("cluster"), "cluster filter"),
+                    (group_by, data.get("group"), "grouping")):
                 if passed is not SEE_UNSET and passed != bound:
                     return self._see_refusal(
                         "CURSOR_FILTER_MISMATCH",
@@ -976,6 +1185,10 @@ class Nursery:
             status = data["status"]
             term = data["term"]
             page_size = data["size"]
+            topic = data.get("topic")
+            tag = data.get("tag")
+            cluster = data.get("cluster")
+            group_by = data.get("group")
             sig_bound = data["sig"]
             last = data["last"]
         else:
@@ -985,6 +1198,20 @@ class Nursery:
                 term = ""
             if page_size is SEE_UNSET:
                 page_size = self.SEE_DEFAULT_PAGE
+            if topic is SEE_UNSET:
+                topic = None
+            if tag is SEE_UNSET:
+                tag = None
+            if cluster is SEE_UNSET:
+                cluster = None
+            if group_by is SEE_UNSET:
+                group_by = None
+        if group_by is not None and group_by not in (
+                "topic", "tag", "cluster"):
+            return self._see_refusal(
+                "GROUP_INVALID",
+                f"group_by {group_by!r} is not an organization "
+                "grouping (topic | tag | cluster)")
         if status is not None and status not in self.SEE_STATUSES:
             return self._see_refusal(
                 "STATUS_UNSUPPORTED",
@@ -1087,6 +1314,141 @@ class Nursery:
             "duplicates_collapsed": collapsed,
             "policy": "input order; duplicate IDs collapse to "
                       "first occurrence",
+        }
+
+    # ── C5R.3 ORGANIZE: trusted organization edit (Phase 2) ─────
+    # The ONE organization mutation operation (Director 6936275880
+    # Resolutions 3, 5, 7; plan §3). It changes ONLY topic/tags/
+    # cluster on an existing record, under three bindings resolved
+    # BEFORE anything is staged:
+    #   * stable ID — an unknown ID refuses PROPOSAL_NOT_FOUND;
+    #   * trusted actor — supplied by the CALLER LAYER (the
+    #     owner-bound Program builds "human:<owner>" host-side);
+    #     this operation records it verbatim and never derives
+    #     trust from command text or record content;
+    #   * expected generation — the file digest the human was
+    #     shown (e.g. a SEE browse snapshot). It must equal the
+    #     CURRENT on-disk digest or the edit refuses
+    #     STALE_GENERATION: the human never edits a generation
+    #     they did not see. save()'s own lost-update guard remains
+    #     the second fence for an instance behind disk.
+    # The full proposed state is validated with the Phase 1 typed
+    # bounds (validate_topic / validate_tags / validate_cluster)
+    # BEFORE staging. On success the record change and its edit
+    # receipt land in ONE save(); on any save exception the staged
+    # in-memory values AND the staged receipt are restored and the
+    # exception re-raised (Persistence V2: a pre-replace failure
+    # leaves the old generation on disk and in memory; nothing here
+    # asserts anything about a post-replace interruption, which
+    # lawfully exposes the complete new generation). The creation
+    # seed provenance fields are NEVER altered by an edit — the
+    # receipt below is where a human override is recorded. There
+    # is NO undo for an organization edit: no shadow stack, no
+    # inverse log; Q-LC.1 generation rollback is a separate
+    # authority and is not an edit undo.
+    # Refusals are typed dicts in the SEE family ({"ok": False,
+    # "error": CODE, "detail": ...}); nothing is staged, saved, or
+    # receipted on a refusal.
+
+    def edit_organization(self, proposal_id: str, *,
+                          actor: Any = None,
+                          expected_generation: Any = None,
+                          topic: Any = ORG_UNSET,
+                          tags: Any = ORG_UNSET,
+                          cluster: Any = ORG_UNSET,
+                          _fail_at: Optional[str] = None,
+                          **extra: Any) -> Dict[str, Any]:
+        """Edit one proposal's organization metadata, receipted.
+
+        Only fields explicitly passed (not ORG_UNSET) change.
+        Returns {"ok": True, "receipt": <returned receipt form>,
+        "proposal": <record copy>, "organization": <after state>}
+        on success, or a typed refusal dict. Save exceptions
+        propagate after in-memory restore (see class notes above).
+        """
+        if extra:
+            return self._see_refusal(
+                "FIELD_NOT_EDITABLE",
+                "organization edits change only topic/tags/cluster; "
+                f"field(s) {sorted(extra)} are not editable through "
+                "this operation — content, status, and lineage are "
+                "preserved exactly")
+        if not isinstance(actor, str) or not actor:
+            return self._see_refusal(
+                "ACTOR_REQUIRED",
+                "an organization edit must carry the trusted actor "
+                "established by the caller layer (host-side); an "
+                "unattributed edit is never receipted")
+        p = self.proposals.get(proposal_id)
+        if p is None:
+            return self._see_refusal(
+                "PROPOSAL_NOT_FOUND",
+                f"no proposal with id {proposal_id!r} exists in "
+                "this owner store; nothing was changed")
+        if expected_generation is None:
+            return self._see_refusal(
+                "EXPECTED_GENERATION_REQUIRED",
+                "pass expected_generation — the file digest shown "
+                "by the browse/search that displayed this record — "
+                "so the edit binds to the generation the human saw")
+        disk = _disk_sig(self.path) if self.path else None
+        if expected_generation != disk:
+            return self._see_refusal(
+                "STALE_GENERATION",
+                "the owner file has changed since the generation "
+                f"{expected_generation!r} was shown; re-browse and "
+                "edit the current generation — nothing was changed")
+        if topic is ORG_UNSET and tags is ORG_UNSET \
+                and cluster is ORG_UNSET:
+            return self._see_refusal(
+                "NO_ORGANIZATION_CHANGES",
+                "name at least one of topic/tags/cluster to change; "
+                "an edit with no changes is not receipted")
+        before = {"topic": p.topic, "tags": list(p.tags),
+                  "cluster": p.cluster}
+        after = {
+            "topic": p.topic if topic is ORG_UNSET else topic,
+            "tags": list(p.tags) if tags is ORG_UNSET else tags,
+            "cluster": p.cluster if cluster is ORG_UNSET else cluster,
+        }
+        # Validate the ENTIRE proposed state with the Phase 1 typed
+        # bounds before staging anything (pre-mutation refusal).
+        try:
+            validate_topic(after["topic"])
+            validate_tags(after["tags"])
+            validate_cluster(after["cluster"])
+        except (NurseryTopicError, NurseryTagsError,
+                NurseryClusterError) as exc:
+            return self._see_refusal(type(exc).__name__, str(exc))
+        after["tags"] = list(after["tags"])
+        operation_id = f"edit:{proposal_id}:{uuid.uuid4().hex[:12]}"
+        receipt = build_organization_receipt(
+            operation_id=operation_id,
+            actor=actor,
+            proposal_id=proposal_id,
+            before=before,
+            after=after,
+            rule_version=SEED_RULE_VERSION,
+            predecessor_generation=self._seen)
+        # Stage the record change + the receipt, then ONE save
+        # carries both; any failure restores both.
+        p.topic, p.tags, p.cluster = \
+            after["topic"], list(after["tags"]), after["cluster"]
+        self.organization_edit_receipts[operation_id] = receipt
+        try:
+            digest = self.save(_fail_at=_fail_at)
+        except Exception:
+            p.topic, p.tags, p.cluster = \
+                before["topic"], list(before["tags"]), before["cluster"]
+            self.organization_edit_receipts.pop(operation_id, None)
+            raise
+        self.last_organization_receipt = receipt_with_file_digest(
+            receipt, digest)
+        return {
+            "ok": True,
+            "receipt": self.last_organization_receipt,
+            "proposal": p.to_dict(),
+            "organization": after,
         }
 
     def save(self, *, _fail_at: Optional[str] = None) -> str:
