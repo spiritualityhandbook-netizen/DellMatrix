@@ -4619,14 +4619,20 @@ def _handle_connect_line(p, line: str, session):
                      f"token growth.")
         out = p.grow_ideas(cycles, session=session.docked)
         mode = out.get("growth_mode", "token")
+        _dup = out.get("duplicates_suppressed", 0)
         session.record(
             "grow", f"mode={mode} new={out.get('proposed_new', 0)} "
                     f"evolved={out.get('proposed_evolved', 0)} "
+                    f"suppressed={_dup} "
                     f"docked_new={out.get('docked_new', 0)} "
                     f"fallback={out.get('token_fallback', 0)}")
+        # G-DUP.2: disclose suppressions in the public transcript.
+        _dup_note = (f" ({_dup} duplicate"
+                     f"{'s' if _dup != 1 else ''} suppressed)"
+                     if _dup else "")
         _say(f"Growth ({mode}): {out.get('proposed_new', 0)} new + "
-             f"{out.get('proposed_evolved', 0)} evolved proposal(s) "
-             f"— all PENDING review.")
+             f"{out.get('proposed_evolved', 0)} evolved proposal(s)"
+             f"{_dup_note} — all PENDING review.")
         return p, session
 
     session.record(token or "unknown", f"rejected: {FAIL_OUT_OF_SCOPE}")

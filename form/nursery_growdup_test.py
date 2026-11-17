@@ -45,6 +45,10 @@ uses its own tagged owner under form/state and cleans up):
   same unchanged field twice stores each token cross once; the
   second run reports duplicates_suppressed > 0, adds zero new token
   proposals, and run totals reconcile with the nursery receipts.
+- G10 (G-DUP.2 transcript disclosure): on a repeat growth, the Loop
+  leaf line and the REPL grow door both disclose the suppressed
+  count — a duplicates-only run never reads as bare "+0 new
+  +0 evolved".
 
 Failing-first: on the unmodified base G1/G2/G6/G7/G8 fail (identical
 adds mint suffixed IDs and accumulate); G3/G4/G5 pass both before
@@ -239,12 +243,84 @@ def smoke() -> bool:
               and Nursery.load(pathA).proposals[pA.id].status
               == ("confirmed" if verb == "confirm" else "rejected"))
 
+    # G10 (G-DUP.2): public transcripts disclose suppressions.
+    check("G10.transcript_disclosure", _transcript_level())
+
     # G8: growth level via the public Program.grow_ideas path.
     check("G8.growth_level", _growth_level())
 
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"nursery_growdup_test: {passed}/{len(RESULTS)} PASS")
     return passed == len(RESULTS)
+
+
+def _transcript_level() -> bool:
+    """G-DUP.2 (Director delta on PR #466, 2026-11-16): when a
+    growth run suppresses duplicates, the PUBLIC transcript — the
+    Loop leaf line and the REPL grow door — must say so. A run
+    that only re-derived duplicates must not read as '+0 new
+    +0 evolved' with the suppressions hidden."""
+    import glob
+    import io
+    import shutil
+    from contextlib import redirect_stdout
+    from form.mandell.executor import execute_seed
+    from form.open import open_program
+    from form.repl import _dispatch_public_line
+
+    owner = "GROWDUP2116"
+    state = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "state")
+
+    def cleanup():
+        for f in glob.glob(os.path.join(state, f"*{owner}*")):
+            try:
+                if os.path.isdir(f):
+                    shutil.rmtree(f)
+                else:
+                    os.remove(f)
+            except FileNotFoundError:
+                pass
+            except OSError as e:
+                raise RuntimeError(f"cleanup failed for {f}: {e}")
+
+    field = [
+        ("ta", "harbor lantern keep",
+         "harbor lantern craft timber copper kettle song keep cellar vault"),
+        ("tb", "harbor lantern forge",
+         "harbor lantern craft timber copper kettle song forge cellar vault"),
+        ("tc", "harbor copper drift",
+         "harbor lantern craft copper song drift axolotl azurite basalt"),
+    ]
+    try:
+        cleanup()
+        p = open_program(owner)
+        plane = p.cube.session.plane
+        plane.units.clear()
+        plane.sandboxes.clear()
+        p.nursery.proposals.clear()
+        for uid, label, words in field:
+            p.place(uid, label, words=words, x=0.0, y=0.0)
+        r = execute_seed(p, "13[Loop] :: 2")
+        msgs = r.get("messages") or []
+        growth_lines = [m for m in msgs
+                        if m.startswith("Ringed growth:")]
+        # Cycle 1 stores the field's 3 crosses; cycle 2 re-derives
+        # them identically and suppresses all 3 — the line must
+        # disclose the suppressions, not hide them behind the
+        # stored counts.
+        loop_ok = (growth_lines == [
+            "Ringed growth: +3 new +0 evolved "
+            "(3 duplicates suppressed)"])
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            _dispatch_public_line(p, "grow ideas 1", "g10-repl")
+        repl_ok = ("Ringed growth: +0 new +0 evolved "
+                   "(3 duplicates suppressed)"
+                   in buf.getvalue())
+        return loop_ok and repl_ok
+    finally:
+        cleanup()
 
 
 def _growth_level() -> bool:

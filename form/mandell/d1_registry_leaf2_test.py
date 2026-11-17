@@ -390,7 +390,8 @@ def main():
     _rec("13 Loop (B2, step 6): label 7 is CLAMPED to Cycle's "
          "1..5 bound (15 duplicate crosses suppressed) and the "
          "clamp is reported",
-         _msgs(r) == ["Ringed growth: +0 new +0 evolved",
+         _msgs(r) == ["Ringed growth: +0 new +0 evolved "
+                      "(15 duplicates suppressed)",
                       "Loop: requested 7, executed 5. "
                       "(clamped to 1..5)",
                       "Nursery pending: 3"]
