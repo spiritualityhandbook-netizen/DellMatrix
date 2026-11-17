@@ -590,9 +590,18 @@ def _show_see_page(p: Program, verb: str, resp: dict) -> None:
         _say(f"groups by {resp.get('group_by')}: " + " · ".join(parts))
         _say(f"group memberships {resp.get('group_membership_total')} · "
              f"distinct proposals {resp.get('group_distinct_total')}")
+    _say(f"sort: {resp.get('sort')} · lens corpus "
+         f"{resp.get('lens_corpus_size')} · evaluated at "
+         f"{resp.get('lens_now')}")
     for i, item in enumerate(resp["items"], 1):
-        _say(f"  {i}. [{item.get('status')}] {item.get('id')} — "
-             f"{item.get('label')}")
+        line = (f"  {i}. [{item.get('status')}] {item.get('id')} — "
+                f"{item.get('label')}")
+        lens = item.get("lens")
+        if isinstance(lens, dict):
+            line += f" · S {float(lens.get('score', 0)):.2f}"
+            if lens.get("partial"):
+                line += " (partial)"
+        _say(line)
     if resp.get("next_cursor"):
         _say(f"next: proposals {verb} cursor:{resp['next_cursor']}")
     else:
@@ -653,6 +662,7 @@ def _see_dispatch(p: Program, lower: str) -> None:
     tag = SEE_UNSET
     cluster = SEE_UNSET
     group_by = SEE_UNSET
+    sort = SEE_UNSET
     term_words = []
     for tok in rest:
         if tok.startswith("status:"):
@@ -677,24 +687,38 @@ def _see_dispatch(p: Program, lower: str) -> None:
                      "use group:topic, group:tag, or group:cluster")
                 return
             group_by = raw
+        elif tok.startswith("sort:"):
+            raw = tok.split(":", 1)[1]
+            if raw not in ("lens", "lens-v1", "newest", "oldest",
+                          "alphabetical"):
+                _say(f"proposals {verb} refused: SORT_UNSUPPORTED — "
+                     f"sort:{raw} is not an implemented lens; use "
+                     "sort:lens, sort:newest, sort:oldest, or "
+                     "sort:alphabetical")
+                return
+            sort = raw
         elif verb == "search":
             term_words.append(tok)
         else:
             _say(f"proposals {verb} refused: ARGUMENT_INVALID — "
                  f"unexpected token {tok!r}; use status:<s>, "
                  "size:<n>, topic:<t>, tag:<t>, cluster:<c>, "
-                 "group:<topic|tag|cluster>, or cursor:<token>")
+                 "group:<topic|tag|cluster>, "
+                 "sort:<lens|newest|oldest|alphabetical>, or "
+                 "cursor:<token>")
             return
     if verb == "search":
         term = " ".join(term_words) if term_words else SEE_UNSET
         resp = p.search_proposals(term, status=status,
                                   page_size=size, cursor=cursor,
                                   topic=topic, tag=tag,
-                                  cluster=cluster, group_by=group_by)
+                                  cluster=cluster, group_by=group_by,
+                                  sort=sort)
     else:
         resp = p.browse_proposals(status=status, page_size=size,
                                   cursor=cursor, topic=topic, tag=tag,
-                                  cluster=cluster, group_by=group_by)
+                                  cluster=cluster, group_by=group_by,
+                                  sort=sort)
     _show_see_page(p, verb, resp)
 
 
@@ -1537,8 +1561,11 @@ def _handle_macro_rank(p: Program, lower: str, raw: str) -> bool:
             # C5R.1 (AC-1.2): a subset view states shown/total on its face.
             _say(f"  (showing 12 of {len(ranked)})")
         for i, prop in enumerate(ranked[:12], 1):
+            lens = prop.get("lens")
+            score = (f" S={float(lens.get('score', 0)):.3f}"
+                     if isinstance(lens, dict) else "")
             _say(
-                f"  {i}. aff={float(prop.get('affinity', 0)):.3f} "
+                f"  {i}. aff={float(prop.get('affinity', 0)):.3f}{score} "
                 f"[{prop.get('kind')}] {prop.get('id')} — {prop.get('label')}"
             )
         _echo_seed(mandel="46[Rank]")

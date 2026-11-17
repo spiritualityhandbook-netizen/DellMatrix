@@ -34,7 +34,12 @@ Design answers recorded per plan section 4 (Uni, with code anchors):
     IDs) plus canonical scalars (revision_number, affinity,
     harmony, graph_coherence via their str() form). Conflict
     dispositions are not proposal fields and are not searched.
-(4) Default sort (created, id) ascending, id the final tie-break.
+(4) Sort: at C5R.2 the default was (created, id) ascending.
+    SUPERSEDED by C5R.4 LENS (definitions v3 section 6 assertion
+    mapping): the default is now the S lens (sort "lens-v1"); the
+    historical (created, id) order is PRESERVED as the explicit
+    `oldest` lens pin, and S1/S2 below assert exact order under
+    `oldest` plus exact-set + determinism under the default.
     Page size default 50, max 200; invalid sizes refuse with
     PAGE_SIZE_INVALID — never silently clamped (Q-SEE.4/5).
     Duplicate IDs in a get request collapse to first occurrence;
@@ -166,8 +171,12 @@ def smoke() -> bool:
                            for k, v in pa.nursery.proposals.items()}
 
         # ---- S1: full traversal, stable order, truthful totals ----
+        # C5R.4: exact historical order is pinned under sort="oldest";
+        # the default traversal is the S lens — same exact set,
+        # deterministic across runs, reporting sort "lens-v1".
         try:
-            ids, pages = _traverse(pa.browse_proposals, page_size=200)
+            ids, pages = _traverse(pa.browse_proposals, page_size=200,
+                                   sort="oldest")
             check("S1.traversal_exact_set_and_order",
                   ids == expected_ids,
                   f"got {len(ids)} ids, pages={len(pages)}")
@@ -180,7 +189,13 @@ def smoke() -> bool:
                   and first.get("shown") == 200,
                   f"first={ {k: first.get(k) for k in ('total_inventory', 'total_searched', 'total_matches', 'shown')} }")
             ids2, _ = _traverse(pa.browse_proposals, page_size=200)
-            check("S1.second_run_byte_identical_order", ids2 == ids)
+            check("S1.second_run_byte_identical_order",
+                  sorted(ids2) == sorted(expected_ids)
+                  and len(ids2) == 1000)
+            check("S1.default_sort_is_lens",
+                  pages and _traverse(pa.browse_proposals,
+                                      page_size=200)[1][0].get("sort")
+                  == "lens-v1")
             dflt = pa.browse_proposals()
             check("S1.default_page_size_50",
                   dflt.get("ok") and dflt.get("shown") == 50
@@ -190,16 +205,22 @@ def smoke() -> bool:
             check("S1.no_repeats", False, "exc")
             check("S1.totals_on_page", False, "exc")
             check("S1.second_run_byte_identical_order", False, "exc")
+            check("S1.default_sort_is_lens", False, "exc")
             check("S1.default_page_size_50", False, "exc")
 
         # ---- S2: status-filtered browse keeps inventory separate ----
         try:
             rej_ids, rej_pages = _traverse(
-                pa.browse_proposals, status="rejected", page_size=200)
+                pa.browse_proposals, status="rejected", page_size=200,
+                sort="oldest")
             want_rej = [r.id for r in expected if r.status == "rejected"]
             check("S2.rejected_traversal_exact",
                   rej_ids == want_rej and len(rej_ids) == 150,
                   f"got {len(rej_ids)}")
+            rej_default, _ = _traverse(
+                pa.browse_proposals, status="rejected", page_size=200)
+            check("S2.rejected_default_lens_same_set",
+                  sorted(rej_default) == sorted(want_rej))
             p0 = rej_pages[0]
             check("S2.filtered_totals",
                   p0.get("total_searched") == 150
@@ -208,6 +229,7 @@ def smoke() -> bool:
                   f"searched={p0.get('total_searched')} inv={p0.get('total_inventory')}")
         except Exception as e:
             check("S2.rejected_traversal_exact", False, f"exc {e!r}")
+            check("S2.rejected_default_lens_same_set", False, "exc")
             check("S2.filtered_totals", False, "exc")
 
         # ---- S3: search every field, casefold, twin labels ----
