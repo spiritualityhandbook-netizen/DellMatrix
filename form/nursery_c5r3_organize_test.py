@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""C5R.3 ORGANIZE Phase 1 — data foundation (Director 6936275880).
+"""C5R.3 ORGANIZE — data foundation + edit door + SEE views
+(Director 6936275880).
 
-Phase 1 scope ONLY: the additive organization schema on Proposal,
-the deterministic creation seed (seed-rule v1), typed bound
-refusals, the receipt-identity plumbing, the reserved edit-receipt
-section's load/save round-trip, and legacy write-freedom. The edit
-door and the SEE view changes are Phase 2 and are NOT built here.
+Phase 1: the additive organization schema on Proposal, the
+deterministic creation seed (seed-rule v1), typed bound refusals,
+the receipt-identity plumbing, the reserved edit-receipt section's
+load/save round-trip, and legacy write-freedom.
+Phase 2: the trusted edit operation (Nursery.edit_organization +
+Program.organize_proposal + the REPL `proposals organize` door)
+and the SEE organization views (searchable topic/tags/cluster,
+cursor-bound filters, overlap-aware grouping).
 
 Checks (isolated temp paths throughout; no owner state touched):
 - O1: legacy-shaped file (no organization keys) loads with defaults;
@@ -48,9 +52,54 @@ Checks (isolated temp paths throughout; no owner state touched):
 - O14: the 1,000-proposal acceptance fixture shape — 1,000 mixed
   legacy records load and browse with honest totals, bytes
   unchanged, none seeded.
+- O15: edit happy path — only topic/tags/cluster change (every
+  other record field byte-identical), seed provenance retained,
+  the receipt persists in the reserved section WITHOUT a digest
+  while the returned form's file_digest equals the post-save disk
+  SHA and appears nowhere in the file.
+- O16: edit refusals — unknown ID and no-changes return typed
+  refusals whose refusal receipts are never persisted; caller
+  bugs raise instead (missing/empty actor ValueError, typed
+  bound violations, a non-organization field TypeError); an edit
+  WITHOUT expected_generation is lawful (the binding is opt-in
+  at this layer; save()'s lost-update guard still applies), and
+  after refused/raised attempts the record is byte-identical.
+- O17: expected-generation binding — a wrong or externally-moved
+  generation refuses STALE_GENERATION; a stale instance whose
+  save guard fires restores its in-memory values.
+- O18: an injected save failure during edit propagates, with the
+  in-memory record, the disk bytes, and the receipt state all
+  restored.
+- O19: crash controls (subprocess) — crash_before_replace leaves
+  the old generation byte-intact with no receipt;
+  crash_after_replace lawfully exposes the complete new
+  generation: new topic AND its receipt together.
+- O20: SEE organization views — topic grouping partitions with
+  the unclassified group holding legacy records; tag grouping
+  discloses overlap (memberships > distinct); cluster grouping
+  includes the unclustered group; topic/tag/cluster filters
+  narrow exactly; search finds stored topic/tag/cluster values;
+  an unknown grouping refuses GROUP_INVALID.
+- O21: cursor binding — continuing a cursor with a changed topic
+  filter or changed grouping refuses CURSOR_FILTER_MISMATCH; an
+  edit between pages refuses STALE_CURSOR.
+- O22: the REPL organize door — values parsed from the ORIGINAL
+  line are stored byte-exact (case/accents), the actor is the
+  host-bound repl:<owner>, an `actor:` token refuses
+  ARGUMENT_INVALID with no mutation, a confirmed proposal stays
+  confirmed after organizing, and grouped browse prints groups.
+- O23: model-origin refusal — a connect-session line naming the
+  organize door is not a connect command and changes nothing.
+- O24: a legacy record's first edit succeeds while its seed
+  fields stay empty (an edit never seeds).
+- O25: 1,000 organized records round-trip byte-exact, topic
+  grouping totals are exact over the full set, and one edit
+  leaves the other 999 records untouched.
+- O26: the dispositions section is byte-preserved across an
+  EDIT save (not only an add save).
 
 Labels: UNIT_SYNTHETIC / INTEGRATION (direct Nursery authority,
-isolated temp files) + CROSS_PROCESS for O5.
+isolated temp files) + CROSS_PROCESS for O5 and O19.
 """
 from __future__ import annotations
 
@@ -69,6 +118,7 @@ from form.dell_matrix.nursery import (
     SEED_RULE_VERSION,
     Nursery,
     NurseryClusterError,
+    NurseryConflictError,
     NurseryLoadError,
     NurseryTagsError,
     NurseryTopicError,
@@ -427,6 +477,445 @@ def smoke() -> bool:
           and _sha(p14) == disk14
           and all(p.seed_rule_version == ""
                   for p in n14.proposals.values()))
+
+    # ── Phase 2: trusted edit operation ────────────────────────
+
+    # O15: edit happy path — org fields only, receipt persisted.
+    p15 = os.path.join(tmp, "o15.json")
+    n15 = Nursery(path=p15)
+    e15 = n15.add(label="Edit Me", words="w", kind="design", origin="")
+    before15 = n15.proposals[e15.id].to_dict()
+    pre15 = _sha(p15)
+    resp15 = n15.organize_proposal(
+        e15.id, actor="human:Tester", topic="Roadmap",
+        tags=["alpha", "beta"], expected_generation=pre15)
+    after15 = n15.proposals[e15.id].to_dict()
+    changed15 = {k for k in before15 if before15[k] != after15[k]}
+    check("O15.edit_succeeds", resp15.get("ok") is True)
+    check("O15.only_org_fields_changed", changed15 == {"topic", "tags"},
+          f"changed={sorted(changed15)}")
+    check("O15.seed_provenance_retained",
+          after15["seed_topic_source"] == "kind"
+          and after15["seed_rule_version"] == SEED_RULE_VERSION
+          and after15["topic"] == "Roadmap")
+    r15 = resp15.get("receipt", {})
+    check("O15.receipt_identity",
+          r15.get("operation_id") == f"edit:{e15.id}:1"
+          and r15.get("actor") == "human:Tester"
+          and r15.get("kind") == "human_organization_edit"
+          and r15.get("topic_source") == "human"
+          and r15.get("predecessor_generation") == pre15)
+    check("O15.returned_digest_is_post_save_disk",
+          r15.get("file_digest") == _sha(p15) == n15._seen
+          and resp15.get("generation") == _sha(p15))
+    check("O15.undo_labeled_unavailable",
+          "unavailable" in resp15.get("undo", ""))
+    with open(p15, encoding="utf-8") as f:
+        text15 = f.read()
+    stored15 = Nursery.load(p15).organization_edit_receipts.get(
+        r15.get("operation_id"), {})
+    check("O15.receipt_persisted_without_digest",
+          stored15.get("after", {}).get("topic") == "Roadmap"
+          and "file_digest" not in stored15
+          and r15.get("file_digest") not in text15)
+
+    # O16: edit refusals change nothing. Returned refusals carry a
+    # refusal receipt that is NEVER persisted; caller bugs (missing
+    # actor, typed bound violations, a non-organization field) raise.
+    p16 = os.path.join(tmp, "o16.json")
+    n16 = Nursery(path=p16)
+    e16 = n16.add(label="Refuse Me", words="w", kind="new", origin="")
+    snap16 = _sha(p16)
+    before16 = n16.proposals[e16.id].to_dict()
+    gen16 = _sha(p16)
+    r16a = n16.organize_proposal(
+        "nope_0000", actor="human:T", expected_generation=gen16,
+        topic="X")
+    check("O16.refusal_unknown_id",
+          r16a.get("ok") is False
+          and r16a.get("error") == "PROPOSAL_NOT_FOUND")
+    r16b = n16.organize_proposal(
+        e16.id, actor="human:T", expected_generation=gen16)
+    check("O16.refusal_no_changes",
+          r16b.get("ok") is False and r16b.get("error") == "NO_CHANGES")
+    check("O16.refusal_receipts_not_persisted",
+          n16.organization_edit_receipts == {}
+          and "receipt" in r16a)
+    raised16 = 0
+    for kwargs16, exc16 in (
+            (dict(actor=None, topic="X"), ValueError),
+            (dict(actor="", topic="X"), ValueError),
+            (dict(actor="human:T", topic="t" * 201), NurseryTopicError),
+            (dict(actor="human:T", tags=["a", "a"]), NurseryTagsError),
+            (dict(actor="human:T",
+                  tags=[f"t{i}" for i in range(17)]), NurseryTagsError),
+            (dict(actor="human:T", cluster="c" * 201),
+             NurseryClusterError),
+            (dict(actor="human:T", topic="X", status="confirmed"),
+             TypeError)):
+        try:
+            n16.organize_proposal(e16.id, **kwargs16)
+        except exc16:
+            raised16 += 1
+    check("O16.caller_bugs_raise", raised16 == 7,
+          f"raised={raised16}/7")
+    check("O16.status_not_editable",
+          n16.proposals[e16.id].status == "pending")
+    resp16 = n16.organize_proposal(e16.id, actor="human:T", topic="Free")
+    check("O16.unbound_edit_allowed",
+          resp16.get("ok") is True
+          and n16.proposals[e16.id].topic == "Free")
+    n16.organize_proposal(e16.id, actor="human:T", topic="new")
+    check("O16.nothing_else_changed",
+          n16.proposals[e16.id].to_dict() == before16)
+
+    # O17: expected-generation binding.
+    p17 = os.path.join(tmp, "o17.json")
+    n17 = Nursery(path=p17)
+    e17 = n17.add(label="Gen Bind", words="w", kind="new", origin="")
+    r17a = n17.organize_proposal(
+        e17.id, actor="human:T", expected_generation="0" * 64,
+        topic="X")
+    check("O17.wrong_generation_refuses",
+          r17a.get("error") == "STALE_GENERATION")
+    other17 = Nursery.load(p17)
+    other17.add(label="External", words="w", kind="new", origin="")
+    r17b = n17.organize_proposal(
+        e17.id, actor="human:T", expected_generation=n17._seen,
+        topic="X")
+    check("O17.moved_generation_refuses",
+          r17b.get("error") == "STALE_GENERATION")
+    raised17 = False
+    try:
+        n17.organize_proposal(
+            e17.id, actor="human:T", expected_generation=_sha(p17),
+            topic="X")
+    except NurseryConflictError:
+        raised17 = True
+    check("O17.stale_instance_guard_restores",
+          raised17 and n17.proposals[e17.id].topic == "new"
+          and n17.organization_edit_receipts == {})
+
+    # O18: injected save failure restores everything.
+    p18 = os.path.join(tmp, "o18.json")
+    n18 = Nursery(path=p18)
+    e18 = n18.add(label="Fail Save", words="w", kind="design", origin="")
+    snap18 = _sha(p18)
+    receipt18_before = n18.last_organization_receipt
+    orig18 = n18.save
+    n18.save = lambda **kw: orig18(_fail_at="replace")
+    raised18 = False
+    try:
+        n18.organize_proposal(
+            e18.id, actor="human:T", expected_generation=_sha(p18),
+            topic="Nope")
+    except Exception:
+        raised18 = True
+    finally:
+        n18.save = orig18
+    check("O18.failure_restores_all",
+          raised18 and n18.proposals[e18.id].topic == "design"
+          and _sha(p18) == snap18
+          and n18.organization_edit_receipts == {}
+          and n18.last_organization_receipt is receipt18_before)
+
+    # O19: crash controls in a subprocess (Persistence V2).
+    helper19 = os.path.join(tmp, "edit_crash_worker.py")
+    with open(helper19, "w", encoding="utf-8") as f:
+        f.write(
+            "import hashlib, sys\n"
+            "sys.path.insert(0, sys.argv[1])\n"
+            "from form.dell_matrix.nursery import Nursery\n"
+            "path, mode = sys.argv[2], sys.argv[3]\n"
+            "n = Nursery.load(path)\n"
+            "pid = next(iter(n.proposals))\n"
+            "with open(path, 'rb') as fh:\n"
+            "    gen = hashlib.sha256(fh.read()).hexdigest()\n"
+            "n.organize_proposal(pid, actor='human:Crash',\n"
+            "                    topic='AfterCrash',\n"
+            "                    expected_generation=gen, _fail_at=mode)\n"
+            "print('EDIT RETURNED (crash hook did not fire)')\n")
+    root19 = os.path.abspath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    for mode19, want_topic19, want_receipts19 in (
+            ("crash_before_replace", "design", 0),
+            ("crash_after_replace", "AfterCrash", 1)):
+        p19 = os.path.join(tmp, f"o19_{mode19}.json")
+        n19 = Nursery(path=p19)
+        e19 = n19.add(label="Crash Edit", words="w", kind="design",
+                      origin="")
+        pre19 = _sha(p19)
+        proc19 = subprocess.run(
+            [sys.executable, helper19, root19, p19, mode19],
+            capture_output=True, text=True)
+        fresh19 = Nursery.load(p19)
+        check(f"O19.{mode19}",
+              proc19.returncode == 42
+              and fresh19.proposals[e19.id].topic == want_topic19
+              and len(fresh19.organization_edit_receipts)
+              == want_receipts19,
+              f"rc={proc19.returncode} "
+              f"err={proc19.stderr.strip()[:200]}")
+        if mode19 == "crash_before_replace":
+            check("O19.before_replace_bytes_intact",
+                  _sha(p19) == pre19)
+
+    # ── Phase 2: SEE organization views ────────────────────────
+
+    # O20: filters + grouping over stored organization.
+    p20 = os.path.join(tmp, "o20.json")
+    n20 = Nursery(path=p20)
+
+    def mk20(pid, topic, tags, cluster, seeded=True):
+        n20.proposals[pid] = Proposal(
+            id=pid, label=pid, words="w", kind="new", origin="",
+            topic=topic, tags=tags, cluster=cluster,
+            seed_topic_source="kind" if seeded else "",
+            seed_source_kind="new" if seeded else "",
+            seed_rule_version=SEED_RULE_VERSION if seeded else "",
+            seed_operation_id=f"seed:{pid}" if seeded else "")
+
+    mk20("r1", "alpha", ["red", "blue"], "c1")
+    mk20("r2", "beta", ["red"], "c1")
+    mk20("r3", "", [], "", seeded=False)
+    mk20("r4", "alpha", ["blue"], "")
+    n20.save()
+    base20 = n20.query(owner="o20", mode="browse")
+    check("O20.ungrouped_shape",
+          base20.get("ok") is True and base20.get("groups") is None
+          and base20.get("unseeded_in_scope") == 1
+          and base20.get("total_matches") == 4)
+    gt20 = n20.query(owner="o20", mode="browse", group_by="topic")
+    by_topic20 = {g["key"]: g["count"] for g in gt20["groups"]}
+    check("O20.topic_partition",
+          by_topic20 == {"alpha": 2, "beta": 1, "unclassified": 1}
+          and gt20["group_membership_total"] == 4
+          and gt20["group_distinct_total"] == 4,
+          f"groups={gt20.get('groups')}")
+    gtag20 = n20.query(owner="o20", mode="browse", group_by="tag")
+    by_tag20 = {g["key"]: g["count"] for g in gtag20["groups"]}
+    check("O20.tag_overlap_disclosed",
+          by_tag20.get("red") == 2 and by_tag20.get("blue") == 2
+          and by_tag20.get(None) == 1
+          and gtag20["group_membership_total"] == 5
+          and gtag20["group_distinct_total"] == 4,
+          f"groups={gtag20.get('groups')}")
+    gcl20 = n20.query(owner="o20", mode="browse", group_by="cluster")
+    by_cl20 = {g["key"]: g["count"] for g in gcl20["groups"]}
+    check("O20.cluster_groups", by_cl20 == {"c1": 2, "": 2},
+          f"groups={gcl20.get('groups')}")
+    check("O20.topic_filter",
+          n20.query(owner="o20", mode="browse",
+                    topic="ALPHA")["total_matches"] == 2)
+    f20 = n20.query(owner="o20", mode="browse", topic="unclassified")
+    check("O20.unclassified_filter_finds_legacy",
+          f20["total_matches"] == 1
+          and f20["items"][0]["id"] == "r3")
+    check("O20.tag_filter",
+          n20.query(owner="o20", mode="browse",
+                    tag="RED")["total_matches"] == 2)
+    check("O20.cluster_empty_filter",
+          n20.query(owner="o20", mode="browse",
+                    cluster="")["total_matches"] == 2)
+    s20a = n20.query(owner="o20", mode="search", term="beta")
+    check("O20.search_finds_topic",
+          s20a["total_matches"] == 1
+          and s20a["items"][0]["id"] == "r2")
+    check("O20.search_finds_tags",
+          n20.query(owner="o20", mode="search",
+                    term="red")["total_matches"] == 2)
+    check("O20.search_finds_cluster",
+          n20.query(owner="o20", mode="search",
+                    term="c1")["total_matches"] == 2)
+    bad20 = n20.query(owner="o20", mode="browse", group_by="status")
+    check("O20.bad_grouping_refused",
+          bad20.get("ok") is False
+          and bad20.get("error") == "GROUP_INVALID")
+
+    # O21: cursor binding for the new parameters.
+    p21 = os.path.join(tmp, "o21.json")
+    n21 = Nursery(path=p21)
+    for i21 in range(3):
+        pid21 = f"c{i21}"
+        n21.proposals[pid21] = Proposal(
+            id=pid21, label=pid21, words="w", kind="new", origin="",
+            topic="alpha", seed_topic_source="kind",
+            seed_source_kind="new",
+            seed_rule_version=SEED_RULE_VERSION,
+            seed_operation_id=f"seed:{pid21}")
+    n21.save()
+    page21 = n21.query(owner="o21", mode="browse", topic="alpha",
+                       page_size=1)
+    cur21 = page21.get("next_cursor")
+    check("O21.page_one_cursor", page21.get("ok") is True
+          and bool(cur21))
+    bad21a = n21.query(owner="o21", mode="browse", topic="beta",
+                       cursor=cur21)
+    check("O21.changed_topic_filter_refuses",
+          bad21a.get("error") == "CURSOR_FILTER_MISMATCH")
+    bad21b = n21.query(owner="o21", mode="browse", topic="alpha",
+                       group_by="topic", cursor=cur21)
+    check("O21.changed_grouping_refuses",
+          bad21b.get("error") == "CURSOR_FILTER_MISMATCH")
+    page21b = n21.query(owner="o21", mode="browse", topic="alpha",
+                        page_size=1, cursor=cur21)
+    check("O21.continuation_works",
+          page21b.get("ok") is True
+          and len(page21b.get("items", [])) == 1)
+    first21 = n21.query(owner="o21", mode="browse", page_size=1)
+    n21.organize_proposal(
+        "c0", actor="human:T", expected_generation=_sha(p21),
+        topic="moved")
+    stale21 = n21.query(owner="o21", mode="browse", page_size=1,
+                        cursor=first21.get("next_cursor"))
+    check("O21.edit_between_pages_refuses",
+          stale21.get("error") == "STALE_CURSOR",
+          f"got {stale21.get('error')}")
+
+    # ── Phase 2: doors ─────────────────────────────────────────
+
+    # O22: the REPL organize door (real owner store, cleaned up).
+    import uuid as _uuid
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.open import open_program
+    from form.repl import _dispatch_public_line, capture_output
+    owner22 = "C5R3O22" + _uuid.uuid4().hex[:8].upper()
+    path22 = owner_nursery_path(owner22)
+    try:
+        p22 = open_program(owner22)
+        e22 = p22.nursery.add(label="Door Case", words="w",
+                              kind="design", origin="")
+        _, out22 = capture_output(lambda: _dispatch_public_line(
+            p22, f"proposals organize {e22.id} topic:MixedCase "
+                 f"tag:Straße tag:News", "o22"))
+        stored22 = p22.nursery.proposals[e22.id]
+        check("O22.door_stores_byte_exact",
+              stored22.topic == "MixedCase"
+              and stored22.tags == ["Straße", "News"],
+              f"got {stored22.topic!r} {stored22.tags}")
+        check("O22.door_prints_undo_unavailable",
+              "organization undo is unavailable" in out22)
+        check("O22.door_actor_host_bound",
+              p22.nursery.last_organization_receipt["actor"]
+              == f"repl:{owner22}")
+        _, out22b = capture_output(lambda: _dispatch_public_line(
+            p22, f"proposals organize {e22.id} actor:evil topic:X",
+            "o22"))
+        check("O22.actor_token_refused",
+              "ARGUMENT_INVALID" in out22b
+              and p22.nursery.proposals[e22.id].topic == "MixedCase")
+        p22.nursery.confirm(e22.id)
+        capture_output(lambda: _dispatch_public_line(
+            p22, f"proposals organize {e22.id} cluster:PostConfirm",
+            "o22"))
+        check("O22.confirmed_stays_confirmed",
+              p22.nursery.proposals[e22.id].cluster == "PostConfirm"
+              and p22.nursery.proposals[e22.id].status == "confirmed")
+        _, out22c = capture_output(lambda: _dispatch_public_line(
+            p22, "proposals browse group:topic", "o22"))
+        check("O22.grouped_browse_prints_groups",
+              "groups by topic" in out22c and "MixedCase" in out22c)
+        _, out22d = capture_output(lambda: _dispatch_public_line(
+            p22, "proposals search Straße", "o22"))
+        check("O22.search_finds_tag_value", e22.id in out22d)
+    finally:
+        if os.path.exists(path22):
+            os.unlink(path22)
+
+    # O23: a connect-session line cannot reach the edit door.
+    from form.dell_matrix.connection_session import ConnectionSession
+    from form.repl import _handle_connect_line
+    owner23 = "C5R3O23" + _uuid.uuid4().hex[:8].upper()
+    path23 = owner_nursery_path(owner23)
+    try:
+        p23 = open_program(owner23)
+        e23 = p23.nursery.add(label="Dock Target", words="w",
+                              kind="design", origin="")
+        session23 = ConnectionSession.open(owner23)
+        _, out23 = capture_output(lambda: _handle_connect_line(
+            p23, f"proposals organize {e23.id} topic:Hacked",
+            session23))
+        check("O23.connect_line_cannot_edit",
+              "not a connect command" in out23
+              and p23.nursery.proposals[e23.id].topic == "design",
+              f"out={out23.strip()[:160]!r}")
+    finally:
+        if os.path.exists(path23):
+            os.unlink(path23)
+
+    # O24: a legacy record's first edit never seeds it.
+    p24 = os.path.join(tmp, "o24.json")
+    _write(p24, {"legacy1": _legacy_record("legacy1", "Legacy")})
+    n24 = Nursery.load(p24)
+    resp24 = n24.organize_proposal(
+        "legacy1", actor="human:T", expected_generation=_sha(p24),
+        topic="Filed")
+    after24 = n24.proposals["legacy1"]
+    check("O24.legacy_first_edit",
+          resp24.get("ok") is True and after24.topic == "Filed"
+          and after24.seed_topic_source == ""
+          and after24.seed_rule_version == ""
+          and after24.seed_operation_id == ""
+          and resp24["receipt"]["before"]["topic"] == "")
+
+    # O25: 1,000 organized records — round-trip + exact grouping.
+    p25 = os.path.join(tmp, "o25.json")
+    n25 = Nursery(path=p25)
+    for i25 in range(1000):
+        pid25 = f"m{i25:04d}"
+        n25.proposals[pid25] = Proposal(
+            id=pid25, label=f"Mass {i25}", words="w", kind="new",
+            origin="", topic=f"t{i25 % 10}",
+            tags=[f"g{i25 % 7}", "common"], cluster=f"c{i25 % 5}",
+            seed_topic_source="kind", seed_source_kind="new",
+            seed_rule_version=SEED_RULE_VERSION,
+            seed_operation_id=f"seed:{pid25}")
+    n25.save()
+    fresh25 = Nursery.load(p25)
+    check("O25.thousand_round_trip",
+          len(fresh25.proposals) == 1000
+          and all(fresh25.proposals[pid].to_dict()
+                  == n25.proposals[pid].to_dict()
+                  for pid in n25.proposals))
+    g25 = fresh25.query(owner="o25", mode="browse", group_by="topic")
+    by25 = {gr["key"]: gr["count"] for gr in g25["groups"]}
+    check("O25.grouping_totals_exact",
+          g25["group_membership_total"] == 1000
+          and g25["group_distinct_total"] == 1000
+          and len(by25) == 11
+          and all(by25[f"t{i}"] == 100 for i in range(10))
+          and by25["unclassified"] == 0,
+          f"groups={len(g25.get('groups', []))}")
+    snap25 = {pid: rec.to_dict()
+              for pid, rec in fresh25.proposals.items()}
+    resp25 = fresh25.organize_proposal(
+        "m0500", actor="human:T", expected_generation=_sha(p25),
+        cluster="moved")
+    check("O25.one_edit_one_record",
+          resp25.get("ok") is True
+          and all(fresh25.proposals[pid].to_dict() == snap25[pid]
+                  for pid in snap25 if pid != "m0500")
+          and len(fresh25.organization_edit_receipts) == 1)
+
+    # O26: dispositions byte-preserved across an EDIT save.
+    p26 = os.path.join(tmp, "o26.json")
+    n26 = Nursery(path=p26)
+    e26 = n26.add(label="Disp Guard", words="w", kind="new", origin="")
+    n26.conflict_dispositions["c1"] = {
+        "disposition": "operator_kept", "note": "Café ☕"}
+    n26.save()
+    with open(p26, encoding="utf-8") as f:
+        frag26_before = _section_fragment(
+            f.read(), DISPOSITION_SECTION_KEY)
+    resp26 = n26.organize_proposal(
+        e26.id, actor="human:T", expected_generation=_sha(p26),
+        topic="Filed")
+    with open(p26, encoding="utf-8") as f:
+        frag26_after = _section_fragment(
+            f.read(), DISPOSITION_SECTION_KEY)
+    check("O26.dispositions_preserved_across_edit",
+          resp26.get("ok") is True
+          and frag26_before == frag26_after and frag26_before != "")
 
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"nursery_c5r3_organize_test: {passed}/{len(RESULTS)} PASS")

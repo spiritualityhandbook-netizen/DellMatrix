@@ -63,7 +63,8 @@ Ideas / Growth
   create an idea called test
   grow ideas 2
   proposals | confirm <id> | confirm all | reject all
-  proposals browse [status:<s>] [size:<n>] | proposals search <term> | proposals get <id...>
+  proposals browse [status:<s>] [size:<n>] [topic:<t>] [tag:<t>] [cluster:<c>] [group:<g>] | proposals search <term> | proposals get <id...>
+  proposals organize <id> [topic:<v>] [tag:<v>] [cluster:<v>] [gen:<digest>]
   exchange export <id> <file> | exchange import <file>
   unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
   flow                      show the last chain execution as a trace + frames
@@ -189,7 +190,8 @@ Create — make and develop ideas
   create an idea called <name>
   grow ideas <n>
   proposals | confirm <id> | confirm all | reject all
-  proposals browse [status:<s>] [size:<n>] | proposals search <term> | proposals get <id...>
+  proposals browse [status:<s>] [size:<n>] [topic:<t>] [tag:<t>] [cluster:<c>] [group:<g>] | proposals search <term> | proposals get <id...>
+  proposals organize <id> [topic:<v>] [tag:<v>] [cluster:<v>] [gen:<digest>]
   exchange export <id> <file> | exchange import <file>
   unknowns [all] | unknowns resolve <id> <answer> | unknowns unknowable <id> <reason>
   flow                      show the last chain execution as a trace + frames
@@ -574,6 +576,20 @@ def _show_see_page(p: Program, verb: str, resp: dict) -> None:
          f"total_searched {resp['total_searched']} · "
          f"total_inventory {resp['total_inventory']} · "
          f"page size {resp['page_size']}")
+    if resp.get("groups") is not None:
+        # C5R.3 grouping: membership and distinct totals are shown
+        # together — for tags the membership total may exceed the
+        # distinct total (overlap), and that is the disclosure.
+        parts = []
+        for g in resp["groups"]:
+            key = g["key"]
+            label = ("(untagged)" if key is None
+                     else "(unclustered)" if key == ""
+                     else key)
+            parts.append(f"{label}: {g['count']}")
+        _say(f"groups by {resp.get('group_by')}: " + " · ".join(parts))
+        _say(f"group memberships {resp.get('group_membership_total')} · "
+             f"distinct proposals {resp.get('group_distinct_total')}")
     for i, item in enumerate(resp["items"], 1):
         _say(f"  {i}. [{item.get('status')}] {item.get('id')} — "
              f"{item.get('label')}")
@@ -586,9 +602,13 @@ def _show_see_page(p: Program, verb: str, resp: dict) -> None:
 def _see_dispatch(p: Program, lower: str) -> None:
     """C5R.2 SEE doors: proposals browse|search|get (read-only).
 
-    Grammar: browse [status:<s>] [size:<n>] [cursor:<token>];
-    search [status:<s>] [size:<n>] [cursor:<token>] <term...>;
+    Grammar: browse [status:<s>] [size:<n>] [cursor:<token>]
+    [topic:<t>] [tag:<t>] [cluster:<c>|cluster:none]
+    [group:topic|group:tag|group:cluster];
+    search [same options] <term...>;
     get <id> [id...]. The exact-match `proposals` door is untouched.
+    (C5R.3 added the organization options; grouping is a summary
+    over the matched set, printed with its dual totals.)
     """
     from form.dell_matrix.nursery import SEE_UNSET
     parts = lower.split()
@@ -620,9 +640,19 @@ def _see_dispatch(p: Program, lower: str) -> None:
     # "not mentioned" (cursor's bound value governs) from
     # "explicitly restated" (must match the bound value or the
     # query refuses CURSOR_FILTER_MISMATCH — never a silent ignore).
+    # C5R.3 adds topic:/tag:/cluster:/group: options on the same
+    # terms. NOTE: this door receives the lowercased line (SEE
+    # transport); organization matching is casefold-exact, so a
+    # lowercased filter value still matches the stored spelling —
+    # the EDIT door (_organize_dispatch) is the one that must parse
+    # values from the original line, and it does.
     status = SEE_UNSET
     size = SEE_UNSET
     cursor = None
+    topic = SEE_UNSET
+    tag = SEE_UNSET
+    cluster = SEE_UNSET
+    group_by = SEE_UNSET
     term_words = []
     for tok in rest:
         if tok.startswith("status:"):
@@ -632,21 +662,135 @@ def _see_dispatch(p: Program, lower: str) -> None:
             size = int(raw) if raw.lstrip("-").isdigit() else raw
         elif tok.startswith("cursor:"):
             cursor = tok.split(":", 1)[1]
+        elif tok.startswith("topic:"):
+            topic = tok.split(":", 1)[1]
+        elif tok.startswith("tag:"):
+            tag = tok.split(":", 1)[1]
+        elif tok.startswith("cluster:"):
+            raw = tok.split(":", 1)[1]
+            cluster = "" if raw == "none" else raw
+        elif tok.startswith("group:"):
+            raw = tok.split(":", 1)[1]
+            if raw not in ("topic", "tag", "cluster"):
+                _say(f"proposals {verb} refused: ARGUMENT_INVALID — "
+                     f"group:{raw} is not an organization grouping; "
+                     "use group:topic, group:tag, or group:cluster")
+                return
+            group_by = raw
         elif verb == "search":
             term_words.append(tok)
         else:
             _say(f"proposals {verb} refused: ARGUMENT_INVALID — "
                  f"unexpected token {tok!r}; use status:<s>, "
-                 "size:<n>, or cursor:<token>")
+                 "size:<n>, topic:<t>, tag:<t>, cluster:<c>, "
+                 "group:<topic|tag|cluster>, or cursor:<token>")
             return
     if verb == "search":
         term = " ".join(term_words) if term_words else SEE_UNSET
         resp = p.search_proposals(term, status=status,
-                                  page_size=size, cursor=cursor)
+                                  page_size=size, cursor=cursor,
+                                  topic=topic, tag=tag,
+                                  cluster=cluster, group_by=group_by)
     else:
         resp = p.browse_proposals(status=status, page_size=size,
-                                  cursor=cursor)
+                                  cursor=cursor, topic=topic, tag=tag,
+                                  cluster=cluster, group_by=group_by)
     _show_see_page(p, verb, resp)
+
+
+def _organize_dispatch(p: Program, line: str) -> None:
+    """C5R.3 ORGANIZE door: proposals organize (trusted human edit).
+
+    Grammar: proposals organize <id> [topic:<value>]
+    [tag:<value>]... [tags:<v1,v2,...>] [cluster:<value>]
+    [cluster:none] [gen:<digest>]. Tokens apply in order: tags:
+    replaces the tag list under construction, tag: appends to it;
+    the resulting list is the proposal's complete new tag list.
+
+    This door parses VALUES FROM THE ORIGINAL LINE — never the
+    lowercased dispatch copy — because topic/tag/cluster values are
+    user content whose exact accepted spelling (case, accents) is
+    stored byte-exact. Only the option KEYS are matched
+    case-insensitively. Values are single whitespace-delimited
+    tokens at this door (the Program API accepts full strings).
+    Any other token refuses ARGUMENT_INVALID — including an
+    `actor:` token: the trusted actor is established HERE, by the
+    host, as "repl:<owner>"; it is never taken from the line.
+
+    Reachable only from _dispatch_public_line (the public route).
+    The connect-session dispatcher never routes here, so no docked
+    or model-origin line can edit organization metadata.
+    """
+    from form.dell_matrix.nursery import (
+        SEE_UNSET, NurseryClusterError, NurseryConflictError,
+        NurseryTagsError, NurseryTopicError)
+
+    def undo_note() -> None:
+        _say("note: organization undo is unavailable at edit "
+             "granularity — Q-LC.1 generation rollback is the only "
+             "undo authority; no shadow undo stack exists.")
+
+    parts = line.strip().split()
+    if len(parts) < 3:
+        _say("proposals organize refused: NO_PROPOSAL_ID — use "
+             "proposals organize <id> [topic:<v>] [tag:<v>]... "
+             "[tags:<a,b>] [cluster:<v>|cluster:none] [gen:<digest>]")
+        undo_note()
+        return
+    pid = parts[2]
+    topic = SEE_UNSET
+    cluster = SEE_UNSET
+    gen = SEE_UNSET
+    tag_list = None
+    for tok in parts[3:]:
+        key, sep, value = tok.partition(":")
+        kind = key.lower() if sep else ""
+        if kind == "topic":
+            topic = value
+        elif kind == "tags":
+            tag_list = value.split(",") if value else []
+        elif kind == "tag":
+            if tag_list is None:
+                tag_list = []
+            tag_list.append(value)
+        elif kind == "cluster":
+            cluster = "" if value.lower() == "none" else value
+        elif kind == "gen":
+            gen = value
+        else:
+            _say(f"proposals organize refused: ARGUMENT_INVALID — "
+                 f"unexpected token {tok!r}; use topic:<v>, tag:<v>, "
+                 "tags:<a,b>, cluster:<v>|cluster:none, or "
+                 "gen:<digest> (the trusted actor is established "
+                 "by the host, never typed on the line)")
+            return
+    tags = tag_list if tag_list is not None else SEE_UNSET
+    try:
+        resp = p.organize_proposal(
+            pid, actor=f"repl:{p.owner}", topic=topic, tags=tags,
+            cluster=cluster, expected_generation=gen)
+    except (NurseryTopicError, NurseryTagsError,
+            NurseryClusterError) as exc:
+        _say(f"proposals organize refused: "
+             f"{type(exc).__name__} — {exc}")
+        return
+    except NurseryConflictError as exc:
+        _say(f"proposals organize refused: NurseryConflictError — "
+             f"{exc}")
+        return
+    if not resp.get("ok"):
+        _say(f"proposals organize refused: {resp.get('error')} — "
+             f"{resp.get('detail')}")
+        return
+    receipt = resp["receipt"]
+    before, after = receipt["before"], receipt["after"]
+    _say(f"proposals organize — saved {pid}")
+    _say(f"  topic: {before['topic']!r} -> {after['topic']!r} · "
+         f"tags: {before['tags']} -> {after['tags']} · "
+         f"cluster: {before['cluster']!r} -> {after['cluster']!r}")
+    _say(f"  receipt {receipt['operation_id']} · actor "
+         f"{receipt['actor']} · generation {resp['generation']}")
+    undo_note()
 
 
 def _show_proposals(p: Program) -> None:
@@ -3511,6 +3655,16 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
     interaction_id. All current parsing, routing, eligibility, guards, and
     special authorities apply. No historical authority is reused.
     """
+    # C5R.3 ORGANIZE door dispatches FIRST (same reasoning as SEE
+    # below): the ORIGINAL line goes to _organize_dispatch because
+    # organization values are user content stored byte-exact — the
+    # lowercased copy is used only to recognize the prefix.
+    _org_lower = line.lower()
+    if (_org_lower == "proposals organize"
+            or _org_lower.startswith("proposals organize ")):
+        _organize_dispatch(p, line)
+        return p
+
     # C5R.2 SEE doors dispatch FIRST: they are unambiguous prefix
     # commands, and content-based stages below would otherwise
     # swallow them — the chain parser claims any line containing

@@ -1239,6 +1239,24 @@ class Nursery:
             return stale
         scope = [p for p in self.proposals.values()
                  if status is None or p.status == status]
+        # C5R.3 organization filters narrow the searched scope, so
+        # total_searched reflects them exactly as it reflects the
+        # status filter. Matching is exact-value under Unicode
+        # casefold (the stored spelling is never rewritten).
+        if topic is not None:
+            want = str(topic).casefold()
+            scope = [p for p in scope
+                     if (p.topic or UNCLASSIFIED_TOPIC).casefold()
+                     == want]
+        if tag is not None:
+            want = str(tag).casefold()
+            scope = [p for p in scope
+                     if any(t.casefold() == want
+                            for t in (p.tags or []))]
+        if cluster is not None:
+            want = str(cluster).casefold()
+            scope = [p for p in scope
+                     if (p.cluster or "").casefold() == want]
         total_searched = len(scope)
         needle = (term or "").casefold()
         if needle:
@@ -1248,6 +1266,47 @@ class Nursery:
         else:
             matched = list(scope)
         total_matches = len(matched)
+        # C5R.3 grouping over the full matched set (before paging):
+        # topic/cluster groups partition the set; tag groups may
+        # overlap. Both membership and distinct totals are always
+        # reported together so overlap can never masquerade as
+        # inventory. The untagged pseudo-group (key None) keeps
+        # tag coverage complete: every matched record is either in
+        # at least one tag group or counted there.
+        groups = None
+        group_membership_total = None
+        if group_by == "topic":
+            counts: Dict[Any, int] = {UNCLASSIFIED_TOPIC: 0}
+            for p in matched:
+                key = p.topic or UNCLASSIFIED_TOPIC
+                counts[key] = counts.get(key, 0) + 1
+            groups = [{"key": k, "count": counts[k]}
+                      for k in sorted(counts)]
+            group_membership_total = sum(counts.values())
+        elif group_by == "cluster":
+            counts = {"": 0}
+            for p in matched:
+                counts[p.cluster] = counts.get(p.cluster, 0) + 1
+            groups = [{"key": k, "count": counts[k]}
+                      for k in sorted(counts)]
+            group_membership_total = sum(counts.values())
+        elif group_by == "tag":
+            counts = {}
+            untagged = 0
+            for p in matched:
+                if p.tags:
+                    for t in p.tags:
+                        counts[t] = counts.get(t, 0) + 1
+                else:
+                    untagged += 1
+            # Membership counts EVERY group membership, including
+            # the untagged pseudo-group below: memberships (5 in a
+            # 2+2+1 overlap fixture) vs distinct records (4) is
+            # exactly the overlap disclosure.
+            group_membership_total = sum(counts.values()) + untagged
+            groups = [{"key": k, "count": counts[k]}
+                      for k in sorted(counts)]
+            groups.append({"key": None, "count": untagged})
         matched.sort(key=lambda p: (p.created, p.id))
         if last is not None:
             bound = (last[0], last[1])
@@ -1262,6 +1321,8 @@ class Nursery:
                 "v": 1, "owner": owner, "mode": mode, "sig": disk,
                 "status": status, "term": term or "",
                 "size": page_size,
+                "topic": topic, "tag": tag, "cluster": cluster,
+                "group": group_by,
                 "last": [tail.created, tail.id],
             })
         return {
@@ -1280,6 +1341,21 @@ class Nursery:
             "items": [p.to_dict() for p in page],
             "next_cursor": next_cursor,
             "exhausted": exhausted,
+            # C5R.3: organization view state rides every response —
+            # the bound filters, the grouping (when requested) with
+            # its dual totals, and how many matched records are
+            # unseeded legacy records (seed_rule_version "") riding
+            # the view projection rather than stored seeds.
+            "topic_filter": topic,
+            "tag_filter": tag,
+            "cluster_filter": cluster,
+            "group_by": group_by,
+            "groups": groups,
+            "group_membership_total": group_membership_total,
+            "group_distinct_total": (
+                total_matches if group_by is not None else None),
+            "unseeded_in_scope": sum(
+                1 for p in matched if not p.seed_rule_version),
         }
 
     def fetch_many(self, ids: List[str]) -> Dict[str, Any]:
