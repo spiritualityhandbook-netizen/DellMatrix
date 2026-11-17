@@ -49,6 +49,16 @@ uses its own tagged owner under form/state and cleans up):
   leaf line and the REPL grow door both disclose the suppressed
   count — a duplicates-only run never reads as bare "+0 new
   +0 evolved".
+- G11 (G-DUP.4 receipt cycle-linkage, Director 6936222292): each
+  cycle step of a growth run itemizes ITS suppressions (survivor +
+  reason, from receipt deltas); the itemization reconciles with the
+  run total and the receipts the run appended, and a second run on
+  the same instance attributes only its own receipts to its steps.
+- G12 (G-DUP.4 quota control, Director 6936222292): with max_new=1,
+  cycle 2 of one run first suppresses cycle 1's winning cross and
+  a later DISTINCT candidate still lands in the same cycle —
+  suppression consumed no quota. G8 tested duplicate totals, not
+  quota reachability; this pins reachability.
 
 Failing-first: on the unmodified base G1/G2/G6/G7/G8 fail (identical
 adds mint suffixed IDs and accumulate); G3/G4/G5 pass both before
@@ -249,6 +259,13 @@ def smoke() -> bool:
     # G8: growth level via the public Program.grow_ideas path.
     check("G8.growth_level", _growth_level())
 
+    # G11 (G-DUP.4): per-cycle itemized suppression linkage.
+    check("G11.cycle_linkage", _cycle_linkage())
+
+    # G12 (G-DUP.4): suppression consumes no quota — a later
+    # distinct candidate in the same cycle still lands.
+    check("G12.quota_control", _quota_control())
+
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"nursery_growdup_test: {passed}/{len(RESULTS)} PASS")
     return passed == len(RESULTS)
@@ -377,6 +394,116 @@ def _growth_level() -> bool:
         return (after1 > 0 and after2 == after1 and suppressed2 > 0
                 and added2 == 0
                 and receipts2 - receipts1 == suppressed2)
+    finally:
+        cleanup()
+
+
+_FIELD = [
+    ("ga", "harbor lantern keep",
+     "harbor lantern craft timber copper kettle song keep cellar vault"),
+    ("gb", "harbor lantern forge",
+     "harbor lantern craft timber copper kettle song forge cellar vault"),
+    ("gc", "harbor copper drift",
+     "harbor lantern craft copper song drift axolotl azurite basalt"),
+]
+
+
+def _program_with_field(owner):
+    """Fresh tagged-owner program carrying the G8 3-idea field,
+    plus a loud cleanup callable (canonical glob, never swallowed)."""
+    import glob
+    import shutil
+    from form.open import open_program
+
+    state = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state")
+
+    def cleanup():
+        for f in glob.glob(os.path.join(state, f"*{owner}*")):
+            try:
+                if os.path.isdir(f):
+                    shutil.rmtree(f)
+                else:
+                    os.remove(f)
+            except FileNotFoundError:
+                pass
+            except OSError as e:
+                raise RuntimeError(f"cleanup failed for {f}: {e}")
+
+    cleanup()
+    p = open_program(owner)
+    plane = p.cube.session.plane
+    plane.units.clear()
+    plane.sandboxes.clear()
+    p.nursery.proposals.clear()
+    for uid, label, words in _FIELD:
+        p.place(uid, label, words=words, x=0.0, y=0.0)
+    return p, cleanup
+
+
+def _cycle_linkage() -> bool:
+    p, cleanup = _program_with_field("GROWDUPG11")
+    try:
+        res = p.grow_ideas(2)
+        steps = res.get("steps") or []
+        if len(steps) != 2:
+            return False
+        s1, s2 = steps
+        if s1.get("duplicates_suppressed") != 0 or s1.get("suppressions") != []:
+            return False
+        itemized = s2.get("suppressions") or []
+        if len(itemized) != 3 or s2.get("duplicates_suppressed") != 3:
+            return False
+        pending_ids = {q.id for q in p.nursery.proposals.values()
+                       if q.origin == "growth:token" and q.status == "pending"}
+        if not all(r.get("surviving_id") in pending_ids
+                   and r.get("reason") == "identical_pending_growth_token"
+                   for r in itemized):
+            return False
+        receipts = list(p.nursery.suppression_receipts)
+        if itemized != receipts:
+            return False
+        if sum(len(s.get("suppressions") or []) for s in steps) \
+                != res.get("duplicates_suppressed"):
+            return False
+        # A second run on the SAME instance attributes only its own
+        # receipts: its step itemizes exactly the receipts appended
+        # during that run, none of the first run's.
+        res2 = p.grow_ideas(1)
+        steps2 = res2.get("steps") or []
+        if len(steps2) != 1:
+            return False
+        new_receipts = list(p.nursery.suppression_receipts)[len(receipts):]
+        return (len(new_receipts) == 3
+                and (steps2[0].get("suppressions") or []) == new_receipts
+                and steps2[0].get("duplicates_suppressed") == 3)
+    finally:
+        cleanup()
+
+
+def _quota_control() -> bool:
+    p, cleanup = _program_with_field("GROWDUPG12")
+    try:
+        p.growth.max_new = 1
+        res = p.grow_ideas(2)
+        steps = res.get("steps") or []
+        if len(steps) != 2:
+            return False
+        s1, s2 = steps
+        if s1.get("proposed_new") != 1 or s1.get("duplicates_suppressed") != 0:
+            return False
+        # Cycle 2: the cycle-1 winner is re-derived and suppressed
+        # FIRST (stable affinity order), and the later distinct
+        # candidate still lands — the skip consumed no quota.
+        if s2.get("duplicates_suppressed") != 1 or s2.get("proposed_new") != 1:
+            return False
+        pend = [q for q in p.nursery.proposals.values()
+                if q.origin == "growth:token" and q.status == "pending"]
+        if len(pend) != 2:
+            return False
+        itemized = s2.get("suppressions") or []
+        return (len(itemized) == 1
+                and itemized[0].get("surviving_id")
+                in {q.id for q in pend})
     finally:
         cleanup()
 

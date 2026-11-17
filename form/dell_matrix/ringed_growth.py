@@ -523,6 +523,13 @@ class RingedGrowth:
         gcoh_vals: List[float] = []
 
         for cycle in range(max(1, cycles)):
+            # G-DUP.4 (Director 6936222292): receipt mark at cycle
+            # start. The step appended for this cycle itemizes the
+            # suppression receipts appended SINCE this mark (receipt
+            # deltas), so every skip is linked to the cycle that
+            # produced it and a later run never attributes receipts
+            # an earlier run (or a direct add) left on this instance.
+            cycle_receipt_mark = len(self.nursery.suppression_receipts)
             # --- BODY PULSE FIRST — sense organs before proposing rings ---
             body = _body_pulse_safe()
             blocked, vital_missing = _vital_block(body)
@@ -566,6 +573,8 @@ class RingedGrowth:
                     "cycle": cycle + 1,
                     "ok": False,
                     "reason": "no live ideas",
+                    "suppressions": [dict(r) for r in
+                                     self.nursery.suppression_receipts[cycle_receipt_mark:]],
                     "pairs_excluded_cross_sandbox": 0,
                     "pairs_excluded_malformed_box": 0,
                     "malformed_box_units_refused": [],
@@ -761,6 +770,14 @@ class RingedGrowth:
                     "malformed_box_units_refused": refused_cycle,
                     "proposed_new": new_this,
                     "duplicates_suppressed": dup_this,
+                    # G-DUP.4: itemized suppressions for THIS cycle —
+                    # each receipt names the survivor and the reason;
+                    # the step's "cycle" field supplies the cycle the
+                    # original authorization (6931279746) required.
+                    # Receipt deltas only: receipts from before this
+                    # run are never attributed to its cycles.
+                    "suppressions": [dict(r) for r in
+                                     self.nursery.suppression_receipts[cycle_receipt_mark:]],
                     "proposed_evolved": evo_this,
                     "docked_new": docked_this,
                     "rings": list(RINGS),

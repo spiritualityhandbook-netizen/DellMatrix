@@ -137,6 +137,21 @@ def _run_language(code: str, spec: dict) -> None:
         # user path therefore stages ONE distinct proposal.
         check(f"{code}: grow stages a nursery proposal",
               "Nursery pending: 1" in out, out[-600:])
+        # G-DUP.3 (Director 6936222292): the one-proposal outcome
+        # alone no longer discriminates 2 executed cycles from 1 —
+        # under dedup both leave one distinct proposal, so the
+        # SM-11 trap (translator silently dropping the count) could
+        # pass unseen. Pin count-sensitive witnesses from the
+        # EXECUTED run, per language: the Loop line reports the
+        # requested/executed counts, and the growth line discloses
+        # the second cycle's identical cross as exactly one
+        # suppressed duplicate for this fixture. A count dropped
+        # anywhere on the translated path — bridge or downstream —
+        # fails both.
+        check(f"{code}: grow count honored — Loop requested 2, executed 2",
+              "Loop: requested 2, executed 2." in out, out[-600:])
+        check(f"{code}: second translated cycle ran — 1 duplicate suppressed",
+              "(1 duplicate suppressed)" in out, out[-600:])
         check(f"{code}: proposals lists the staged proposal",
               "Nursery has 1 proposal(s)" in out, out[-600:])
         check(f"{code}: rank ranks the proposal",
