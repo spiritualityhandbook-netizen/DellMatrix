@@ -9,7 +9,8 @@ at main `001d8871009181bd41c1bebd63bd8e3a151a9d2f` (data blob
 `8da24d34069e24318e5837f1e40bca23cf72c236`), verified 2026-11-17. Denominator:
 the active scope — 185 numbered rows minus 3 SANDBOXED. Full board:
 [MASTER_WORK_LIST.md](MASTER_WORK_LIST.md). To refresh this block: pin a new
-main, run `python3 director-reports/master_list.py --line`, and replace the
+main, run `python3 director-reports/master_list.py --data director-reports/master_work_list_items.json --line`
+(from the repository root), and replace the
 line above verbatim together with its provenance — never hand-edit the figures.
 
 ## Director channel — 2026-11-01 response
