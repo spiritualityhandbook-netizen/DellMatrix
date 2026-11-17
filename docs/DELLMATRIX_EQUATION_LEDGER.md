@@ -111,6 +111,7 @@ The era-1 complex math was deliberately NOT ported. Live callers:
 - **Evidence:** code-map §M2; formula textually identical to sacred_geometry strength core.
 - **Honesty note:** This is an overlap *fraction* peaking at containment (`d → diff`), NOT at the classic lens shape (equal circles at `d = R` score exactly 0.5). The name "strength" must not be read as "meeting quality."
 - **Action:** R4-A1 (ledger §7) — reconcile to one authority; source change required.
+- **Current-state annotation (Q-S2R.1, 2026-11-17):** the `DUPLICATE` classification above is the historical entry text and stands unedited (append-only law, §12). The current relationship is **delegated-canonical**: the §13 R4-A1 append records DEDUP = EXECUTED — `verita.vesica_strength` is a delegating adapter and `sacred_geometry.vesica` (EQ-GEO-001) is the one live authority. Re-verified at main `dc328b8d` (2026-11-17): `form/dell_matrix/verita.py:45` imports `sacred_geometry`; `vesica_strength` (:56) delegates to `sacred_geometry.vesica` (call at :96), its docstring naming EQ-GEO-001 "live authority". Directive: Director §42 post-merge decisions on PR #451, comment 6946046074 (Q-S2R.1) — scoped annotation, old text/provenance preserved, no CODE credit.
 
 ### EQ-VER-002 — Solo integrity score
 - **Formula:** `score = 0.25·clarity + 0.20·density + 0.25·agreement + 0.15·goal_load + 0.15·structure`; grades: `≥0.55` strong (accept), `≥0.35` viable (accept), `≥0.18` weak (reject→residue), else fog (reject)
