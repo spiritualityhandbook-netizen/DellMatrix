@@ -97,6 +97,13 @@ Checks (isolated temp paths throughout; no owner state touched):
   leaves the other 999 records untouched.
 - O26: the dispositions section is byte-preserved across an
   EDIT save (not only an add save).
+- O27: unseeded_in_scope is a full-scope count, identical on
+  every continuation page (Codex 4595323423 disposition).
+- O28: rollback convergence (_eager_converge_live) preserves
+  the organization edit-receipt section (Codex 4595323417
+  disposition; throwaway owner state, cleaned up).
+- O29: the public Program edit path enforces the expected-
+  generation boundary (Director 6938343115 condition).
 
 Labels: UNIT_SYNTHETIC / INTEGRATION (direct Nursery authority,
 isolated temp files) + CROSS_PROCESS for O5 and O19.
@@ -916,6 +923,104 @@ def smoke() -> bool:
     check("O26.dispositions_preserved_across_edit",
           resp26.get("ok") is True
           and frag26_before == frag26_after and frag26_before != "")
+
+    # O27: unseeded_in_scope describes the FULL matched scope on
+    # every page (Codex finding 4595323423 disposition): with three
+    # legacy records and page_size 1, all three pages report 3 —
+    # the count is captured with total_matches, before the cursor
+    # boundary narrows the page.
+    p27 = os.path.join(tmp, "o27.json")
+    _write(p27, {
+        f"leg27_{i}": _legacy_record(f"leg27_{i}", f"Legacy {i}")
+        for i in range(3)})
+    n27 = Nursery.load(p27)
+    page27 = n27.query(owner="o27", mode="browse", page_size=1)
+    counts27 = [page27.get("unseeded_in_scope")]
+    totals27 = [page27.get("total_matches")]
+    while page27.get("next_cursor"):
+        page27 = n27.query(owner="o27", mode="browse", page_size=1,
+                           cursor=page27["next_cursor"])
+        counts27.append(page27.get("unseeded_in_scope"))
+        totals27.append(page27.get("total_matches"))
+    check("O27.unseeded_count_stable_across_pages",
+          counts27 == [3, 3, 3] and totals27 == [3, 3, 3],
+          f"counts={counts27} totals={totals27}")
+
+    # O28: rollback convergence preserves edit receipts (Codex
+    # finding 4595323417 disposition). Owner-state exception to
+    # this suite's temp-path discipline: the convergence machinery
+    # is owner-path based (r63 pattern); a throwaway owner is used
+    # and every state artifact is removed in the finally.
+    import glob as _glob
+    import shutil as _shutil
+    from form.open import open_program
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.mandell.core_i_recovery import _eager_converge_live
+    owner28 = "c5r3_o28_chk"
+    state_dir28 = os.path.dirname(owner_nursery_path(owner28))
+
+    def _cleanup28():
+        for entry in _glob.glob(
+                os.path.join(state_dir28, f"*{owner28}*")):
+            if os.path.isdir(entry):
+                _shutil.rmtree(entry, ignore_errors=True)
+            else:
+                os.remove(entry)
+
+    try:
+        prog28 = open_program(owner28)
+        prop28 = prog28.nursery.add(
+            label="Converge Guard", words="w", kind="new", origin="")
+        resp28 = prog28.nursery.organize_proposal(
+            prop28.id, actor="human:T", topic="Filed")
+        op28 = resp28["receipt"]["operation_id"]
+        _eager_converge_live(prog28, owner28)
+        with open(owner_nursery_path(owner28), encoding="utf-8") as f:
+            raw28 = json.load(f)
+        check("O28.rollback_converge_preserves_receipts",
+              resp28.get("ok") is True
+              and op28 in raw28.get(EDIT_RECEIPT_SECTION_KEY, {})
+              and raw28[prop28.id]["topic"] == "Filed")
+    finally:
+        _cleanup28()
+
+    # O29: the PUBLIC Program path enforces the generation boundary
+    # (Director 6938343115 condition on the optional internal
+    # binding): a stale bound generation refuses STALE_GENERATION
+    # with disk unchanged; the current generation succeeds.
+    owner29 = "c5r3_o29_chk"
+    state_dir29 = os.path.dirname(owner_nursery_path(owner29))
+
+    def _cleanup29():
+        for entry in _glob.glob(
+                os.path.join(state_dir29, f"*{owner29}*")):
+            if os.path.isdir(entry):
+                _shutil.rmtree(entry, ignore_errors=True)
+            else:
+                os.remove(entry)
+
+    try:
+        prog29 = open_program(owner29)
+        prop29 = prog29.nursery.add(
+            label="Public Bind", words="w", kind="new", origin="")
+        path29 = owner_nursery_path(owner29)
+        gen29_stale = _sha(path29)
+        prog29.nursery.add(
+            label="Mover", words="w", kind="new", origin="")
+        disk29_before = _sha(path29)
+        r29a = prog29.organize_proposal(
+            prop29.id, actor=f"repl:{owner29}",
+            expected_generation=gen29_stale, topic="Nope")
+        disk29_after_refusal = _sha(path29)
+        r29b = prog29.organize_proposal(
+            prop29.id, actor=f"repl:{owner29}",
+            expected_generation=disk29_before, topic="Filed")
+        check("O29.public_path_generation_boundary",
+              r29a.get("error") == "STALE_GENERATION"
+              and disk29_after_refusal == disk29_before
+              and r29b.get("ok") is True)
+    finally:
+        _cleanup29()
 
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"nursery_c5r3_organize_test: {passed}/{len(RESULTS)} PASS")

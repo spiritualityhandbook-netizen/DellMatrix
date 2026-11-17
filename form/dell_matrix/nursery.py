@@ -1261,6 +1261,8 @@ class Nursery:
         else:
             matched = list(scope)
         total_matches = len(matched)
+        unseeded_total = sum(
+            1 for p in matched if not p.seed_rule_version)
         # C5R.3 grouping over the full matched set (before paging):
         # topic/cluster groups partition the set; tag groups may
         # overlap. Both membership and distinct totals are always
@@ -1349,8 +1351,7 @@ class Nursery:
             "group_membership_total": group_membership_total,
             "group_distinct_total": (
                 total_matches if group_by is not None else None),
-            "unseeded_in_scope": sum(
-                1 for p in matched if not p.seed_rule_version),
+            "unseeded_in_scope": unseeded_total,
         }
 
     def fetch_many(self, ids: List[str]) -> Dict[str, Any]:
