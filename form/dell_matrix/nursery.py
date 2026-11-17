@@ -254,6 +254,14 @@ class Proposal:
         return asdict(self)
 
 
+# Sentinel for "argument not passed" in the SEE query API. A
+# continuation call must distinguish an absent filter argument
+# (the cursor's bound value governs) from an explicitly passed
+# one (which must equal the bound value or refuse loudly) —
+# Director source review on PR #465, 2026-11-16.
+SEE_UNSET = object()
+
+
 @dataclass
 class Nursery:
     """Quarantine for unconfirmed growth."""
@@ -504,6 +512,270 @@ class Nursery:
             "total": len(self.proposals),
             "confirmed": sum(1 for p in self.proposals.values() if p.status == "confirmed"),
             "rejected": sum(1 for p in self.proposals.values() if p.status == "rejected"),
+        }
+
+    # ── C5R.2 SEE: read-only query service (AC-2.1-AC-2.4) ──────
+    # Complete Nursery visibility over THIS owner-bound store. The
+    # query path never calls save/confirm/reject or any placement
+    # operation; it reads the in-memory records and returns copies
+    # (Proposal.to_dict). Design answers (Director plan
+    # DIRECTOR_PLAN_C5R2_SEE_2026-11-16.md section 4, Q-SEE.1-5):
+    # (1) cursor version = the owner file's on-disk SHA-256
+    #     (_disk_sig), re-read at every page; this instance's _seen
+    #     must equal it or the query refuses STALE_OWNER_STATE
+    #     before page 1, and a generation change between pages
+    #     refuses STALE_CURSOR — an old in-memory instance never
+    #     pretends to represent a newer on-disk version.
+    # (2) sort is (created, id) ascending, id the final tie-break.
+    # (3) search = Unicode casefold substring over every persisted
+    #     text field plus canonical scalars (str() of revision
+    #     number and the three scores); conflict dispositions are
+    #     not proposal fields and are never searched.
+    # (4) page size default 50, max 200; invalid sizes refuse with
+    #     PAGE_SIZE_INVALID — never silently clamped. Page size is
+    #     a work parameter, never a retention control.
+
+    SEE_STATUSES = ("pending", "confirmed", "rejected")
+    SEE_DEFAULT_PAGE = 50
+    SEE_MAX_PAGE = 200
+
+    @staticmethod
+    def _see_refusal(code: str, detail: str) -> Dict[str, Any]:
+        return {"ok": False, "error": code, "detail": detail}
+
+    @staticmethod
+    def _see_searchable(p: "Proposal") -> List[str]:
+        vals = [p.id, p.label, p.words, p.kind, p.reason, p.created,
+                p.status, p.lifecycle_state, p.origin, p.detail]
+        vals.extend(p.parents or [])
+        vals.extend(p.goals or [])
+        for extra in (p.supersedes_id, p.superseded_by_id,
+                      p.revision_root_id):
+            if extra:
+                vals.append(extra)
+        for scalar in (p.revision_number, p.affinity, p.harmony,
+                       p.graph_coherence):
+            if scalar is not None:
+                vals.append(str(scalar))
+        return vals
+
+    @staticmethod
+    def _see_cursor_encode(payload: Dict[str, Any]) -> str:
+        # Hex, not base64: the REPL lowercases every line before
+        # dispatch, and a cursor must survive that transport intact.
+        # Hex is lowercase-safe by construction.
+        raw = json.dumps(payload, separators=(",", ":"),
+                         sort_keys=True).encode("utf-8")
+        return raw.hex()
+
+    @staticmethod
+    def _see_cursor_decode(cursor: Any) -> Optional[Dict[str, Any]]:
+        if not isinstance(cursor, str) or not cursor:
+            return None
+        try:
+            raw = bytes.fromhex(cursor).decode("utf-8")
+            data = json.loads(raw)
+        except Exception:
+            return None
+        if not isinstance(data, dict) or data.get("v") != 1:
+            return None
+        for key in ("owner", "mode", "sig", "status", "term",
+                    "size", "last"):
+            if key not in data:
+                return None
+        # Field types are validated, not assumed: a hand-crafted
+        # cursor must refuse CURSOR_MALFORMED, never crash the
+        # query (Codex P2 on PR #465, accepted).
+        if not isinstance(data["owner"], str):
+            return None
+        if data["mode"] not in ("browse", "search"):
+            return None
+        if data["sig"] is not None and not isinstance(data["sig"], str):
+            return None
+        if (data["status"] is not None
+                and not isinstance(data["status"], str)):
+            return None
+        if not isinstance(data["term"], str):
+            return None
+        if (isinstance(data["size"], bool)
+                or not isinstance(data["size"], int)):
+            return None
+        last = data["last"]
+        if last is not None:
+            if (not isinstance(last, list) or len(last) != 2
+                    or not all(isinstance(x, str) for x in last)):
+                return None
+        return data
+
+    def _see_freshness(self) -> Optional[Dict[str, Any]]:
+        """None when this instance represents the on-disk file."""
+        disk = _disk_sig(self.path) if self.path else None
+        if disk != self._seen:
+            return self._see_refusal(
+                "STALE_OWNER_STATE",
+                "this instance's nursery state is behind the owner "
+                "file on disk; reload before querying so results "
+                "represent the current generation")
+        return None
+
+    def query(self, *, owner: str, mode: str = "browse",
+              status: Any = SEE_UNSET, term: Any = SEE_UNSET,
+              page_size: Any = SEE_UNSET,
+              cursor: Optional[str] = None) -> Dict[str, Any]:
+        """One page of a browse (term="") or search over this store.
+
+        With a cursor, the cursor's bound owner/mode/filter/sort/
+        page-size govern. An argument the caller did not pass
+        (SEE_UNSET) defers to the bound value; an argument passed
+        explicitly must EQUAL the bound value — a changed filter,
+        term, or page size refuses CURSOR_FILTER_MISMATCH, never a
+        silent ignore (Director source review, PR #465). All
+        refusals are typed dicts; nothing here writes.
+        """
+        last = None
+        sig_bound = None
+        if cursor is not None:
+            data = self._see_cursor_decode(cursor)
+            if data is None:
+                return self._see_refusal(
+                    "CURSOR_MALFORMED",
+                    "cursor is not a well-formed SEE cursor; "
+                    "restart the query from page 1")
+            if data["owner"] != owner:
+                return self._see_refusal(
+                    "CURSOR_OWNER_MISMATCH",
+                    "cursor was issued for a different owner; "
+                    "cursors never cross owner boundaries")
+            if data["mode"] != mode:
+                return self._see_refusal(
+                    "CURSOR_MALFORMED",
+                    f"cursor was issued for {data['mode']}; continue "
+                    f"with proposals {data['mode']} cursor:<token>")
+            for passed, bound, field in (
+                    (status, data["status"], "status filter"),
+                    (term, data["term"], "search term"),
+                    (page_size, data["size"], "page size")):
+                if passed is not SEE_UNSET and passed != bound:
+                    return self._see_refusal(
+                        "CURSOR_FILTER_MISMATCH",
+                        f"cursor was issued with {field} "
+                        f"{bound!r}; continuing with {passed!r} "
+                        "would silently change the query — restart "
+                        "from page 1 with the new filter")
+            status = data["status"]
+            term = data["term"]
+            page_size = data["size"]
+            sig_bound = data["sig"]
+            last = data["last"]
+        else:
+            if status is SEE_UNSET:
+                status = None
+            if term is SEE_UNSET:
+                term = ""
+            if page_size is SEE_UNSET:
+                page_size = self.SEE_DEFAULT_PAGE
+        if status is not None and status not in self.SEE_STATUSES:
+            return self._see_refusal(
+                "STATUS_UNSUPPORTED",
+                f"status {status!r} is not an implemented nursery "
+                "status (pending | confirmed | rejected); archived "
+                "arrives with C5R.5")
+        if (isinstance(page_size, bool)
+                or not isinstance(page_size, int)
+                or page_size < 1 or page_size > self.SEE_MAX_PAGE):
+            return self._see_refusal(
+                "PAGE_SIZE_INVALID",
+                f"page size must be an integer 1..{self.SEE_MAX_PAGE} "
+                f"(got {page_size!r}); sizes are never silently "
+                "clamped")
+        disk = _disk_sig(self.path) if self.path else None
+        if cursor is not None and sig_bound != disk:
+            # The between-pages generation change is the cursor's
+            # own diagnosis and outranks the instance-level one.
+            return self._see_refusal(
+                "STALE_CURSOR",
+                "the nursery changed since the previous page; "
+                "restart the query from page 1")
+        stale = self._see_freshness()
+        if stale is not None:
+            return stale
+        scope = [p for p in self.proposals.values()
+                 if status is None or p.status == status]
+        total_searched = len(scope)
+        needle = (term or "").casefold()
+        if needle:
+            matched = [p for p in scope
+                       if any(needle in str(v).casefold()
+                              for v in self._see_searchable(p))]
+        else:
+            matched = list(scope)
+        total_matches = len(matched)
+        matched.sort(key=lambda p: (p.created, p.id))
+        if last is not None:
+            bound = (last[0], last[1])
+            matched = [p for p in matched
+                       if (p.created, p.id) > bound]
+        page = matched[:page_size]
+        exhausted = len(matched) <= page_size
+        next_cursor = None
+        if not exhausted and page:
+            tail = page[-1]
+            next_cursor = self._see_cursor_encode({
+                "v": 1, "owner": owner, "mode": mode, "sig": disk,
+                "status": status, "term": term or "",
+                "size": page_size,
+                "last": [tail.created, tail.id],
+            })
+        return {
+            "ok": True,
+            "owner": owner,
+            "mode": mode,
+            "status_filter": status,
+            "term": term or "",
+            "sort": "created,id",
+            "snapshot": disk,
+            "total_inventory": len(self.proposals),
+            "total_searched": total_searched,
+            "total_matches": total_matches,
+            "shown": len(page),
+            "page_size": page_size,
+            "items": [p.to_dict() for p in page],
+            "next_cursor": next_cursor,
+            "exhausted": exhausted,
+        }
+
+    def fetch_many(self, ids: List[str]) -> Dict[str, Any]:
+        """Direct ID-set retrieval from this owner store (AC-2.4).
+
+        Found records return in input order; duplicate input IDs
+        collapse to their first occurrence (stated in `policy`);
+        missing IDs are named individually. No G-11 path, no cap.
+        """
+        stale = self._see_freshness()
+        if stale is not None:
+            return stale
+        seen: set = set()
+        found: List[Dict[str, Any]] = []
+        missing: List[str] = []
+        collapsed = 0
+        for pid in ids:
+            if pid in seen:
+                collapsed += 1
+                continue
+            seen.add(pid)
+            rec = self.proposals.get(pid)
+            if rec is None:
+                missing.append(pid)
+            else:
+                found.append(rec.to_dict())
+        return {
+            "ok": True,
+            "requested": len(ids),
+            "found": found,
+            "missing": missing,
+            "duplicates_collapsed": collapsed,
+            "policy": "input order; duplicate IDs collapse to "
+                      "first occurrence",
         }
 
     def save(self, *, _fail_at: Optional[str] = None) -> None:
