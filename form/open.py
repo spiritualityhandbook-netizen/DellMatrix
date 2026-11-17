@@ -19,7 +19,7 @@ try:
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
     from form.dell_matrix.sandbox_gate import SandboxGate
-    from form.dell_matrix.nursery import Nursery
+    from form.dell_matrix.nursery import Nursery, SEE_UNSET
     from form.dell_matrix.ringed_growth import RingedGrowth
     from form.dell_matrix.harmonic_lattice import HarmonicLattice
     from form.dell_matrix.harmonic_core import (
@@ -65,7 +65,7 @@ except ImportError:
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
     from form.dell_matrix.sandbox_gate import SandboxGate
-    from form.dell_matrix.nursery import Nursery
+    from form.dell_matrix.nursery import Nursery, SEE_UNSET
     from form.dell_matrix.ringed_growth import RingedGrowth
     from form.dell_matrix.harmonic_lattice import HarmonicLattice
     from form.dell_matrix.harmonic_core import (
@@ -736,7 +736,12 @@ class Program:
         else:
             key = normalize_persona_id(name)
             self.persona_lens = key or name.lower().replace(" ", "_").strip()
-            if hasattr(self, "persona_matrix") and key:
+            if hasattr(self, "persona_matrix"):
+                # Q-OD.2: the writer syncs in EVERY branch — an
+                # unrecognized persona (key None) clears the matrix
+                # highlight rather than leaving the previous persona
+                # active (Codex finding on PR #462; pinned by
+                # persona_purity_test t6).
                 self.persona_matrix.active = key
             # if BIMO slot exists, dock this persona into its slot
             pe = get_persona(key) if key else None
@@ -748,11 +753,12 @@ class Program:
         return render_roster(self.persona_lens)
 
     def persona_matrix_status(self) -> Dict[str, Any]:
-        self.persona_matrix.active = self.persona_lens
+        # Q-OD.2: pure read — writers own the lens->active sync
+        # (set_persona_lens, bimo_fuse, bimo pilot, persist load).
         return self.persona_matrix.to_dict()
 
     def persona_matrix_ascii(self) -> List[str]:
-        self.persona_matrix.active = self.persona_lens
+        # Q-OD.2: pure read — see persona_matrix_status.
         return self.persona_matrix.render_ascii()
 
     def bimo_status(self) -> Dict[str, Any]:
@@ -1372,6 +1378,57 @@ class Program:
 
     def list_proposals(self) -> List[Dict[str, Any]]:
         return [p.to_dict() for p in self.nursery.pending()]
+
+    # ── C5R.2 SEE: complete Nursery visibility (thin wrappers) ──
+    # The single read authority is Nursery.query / fetch_many over
+    # this program's owner-bound store; these wrappers only bind
+    # the owner at the trusted Program boundary. Read-only: no
+    # save/confirm/reject path is reachable from here.
+
+    def browse_proposals(self, status=SEE_UNSET, page_size=SEE_UNSET,
+                         cursor=None, topic=SEE_UNSET, tag=SEE_UNSET,
+                         cluster=SEE_UNSET, group_by=SEE_UNSET):
+        return self.nursery.query(
+            owner=self.owner, mode="browse", status=status,
+            page_size=page_size, cursor=cursor, topic=topic,
+            tag=tag, cluster=cluster, group_by=group_by)
+
+    def search_proposals(self, term=SEE_UNSET, status=SEE_UNSET,
+                         page_size=SEE_UNSET, cursor=None,
+                         topic=SEE_UNSET, tag=SEE_UNSET,
+                         cluster=SEE_UNSET, group_by=SEE_UNSET):
+        return self.nursery.query(
+            owner=self.owner, mode="search", status=status,
+            term=term, page_size=page_size, cursor=cursor,
+            topic=topic, tag=tag, cluster=cluster, group_by=group_by)
+
+    def get_proposals(self, ids):
+        return self.nursery.fetch_many(list(ids))
+
+    # ── C5R.3 ORGANIZE: designated edit authority ──────────────
+    # The v1 wrapper (commit a04c09b) and Nursery.edit_organization
+    # (commit 2110079) were removed by the main session's selective
+    # reconciliation per the 2026-11-16 22:14 CST coordination
+    # ruling; the designated design is
+    # Nursery.organize_proposal, and THIS definition — later in
+    # the class body, so it is the effective one — is its Program
+    # surface. Thin wrapper over the single organization mutation
+    # authority. The wrapper binds only the owner (this program's
+    # store); the ACTOR is the caller's traced trusted subject,
+    # established at the host boundary (the REPL door passes
+    # "repl:<owner>") — it is a required keyword here so no call
+    # site can forget it, and it is never read from proposal
+    # content or user-typed text. Reachable only through the
+    # public Program/REPL route; the connect-session dispatcher
+    # never routes here, so no docked or model-origin path can
+    # edit organization metadata.
+
+    def organize_proposal(self, pid, *, actor, topic=SEE_UNSET,
+                          tags=SEE_UNSET, cluster=SEE_UNSET,
+                          expected_generation=SEE_UNSET):
+        return self.nursery.organize_proposal(
+            pid, actor=actor, topic=topic, tags=tags,
+            cluster=cluster, expected_generation=expected_generation)
 
     # ── Track D TD-1: Unit -> canonical Idea binding (S1) ────────
     # Binding foundation only: bind itself performs no containment

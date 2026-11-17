@@ -1,22 +1,22 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-16 10:25 CST  
-**UTC approx**: 2026-11-16T16:25:00Z  
-**Type**: DEEP PASS
+**Last cycle**: 2026-11-17 01:29 CST  
+**UTC approx**: 2026-11-17T07:29:00Z  
+**Type**: DEEP PASS + WAKE/SLEEP SWAT
 
 ## Items ruled this cycle
-- Trailing ledger: DD-18 and Q-DD42.1 remain discharged from prior cycle (08:41 CST). This pass confirms remaining = 0. No new items.
-- Scoreboard: audited against dual-belt ledger (PLAN denom 242, CODE denom 198). Documented COMPLETE baseline 35 of 182 (Manifest Sitting #002). Ledger notes 37. Rendered MWL.md still shows retired 39/182 — flag for correction. No new COMPLETE credited.
-- Queue: every item carries position or explicit no-change awaiting named evidence. No ripe terminal packages for new CONFIRM.
-- SWAT (wake/sleep transition): confirmations challenged against receipts (held); coverage of trailing list complete; stale stamps on MWL 39 noted; no missed failures identified on verified heads; gate decisions consistent with record.
+- Trailing second-certifications: Q-DD42.1 discharged by scoped second CONFIRM (PR #359 comment 6941700427) on Uni refreshed receipt 6940914016 (tested merged-main 7721f128, suites terminal green, residuals named). DD-18 previously discharged.
+- Scoreboard: discrepancy restated (rendered 39/182 vs skill baseline 35 of 182 per Manifest Sitting #002; dual-belt PLAN 242 / CODE 198). Both positions on record. No credit awarded.
+- No new ripe packages for CONFIRM.
+- No other items.
 
 ## Trailing ledger
-- discharged this run: 0
+- discharged this run: 1 (Q-DD42.1)
 - remaining: 0
 - gaps: none
 
 ## Automation posture
-Deep Pass complete. Trailing clear. Watermark advanced. No HOLD.
+Deep Pass complete. SWAT issued. Trailing list cleared. No new product CONFIRM. Watermark advanced. Report: director-reports/GROK_DEEP_CYCLE_2026-11-17_0129CST.md
 
 ## Silence flag
 #308 / #294 / #233 fenced.

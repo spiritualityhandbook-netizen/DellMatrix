@@ -166,7 +166,16 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             n = 1
         n = max(1, min(n, 5))
         out = program.grow_ideas(n)
-        messages.append(f"Cycle x{n}: +{out.get('proposed_new', 0)} new +{out.get('proposed_evolved', 0)} evolved")
+        _cycle_line = (f"Cycle x{n}: +{out.get('proposed_new', 0)} new "
+                       f"+{out.get('proposed_evolved', 0)} evolved")
+        _dup = out.get("duplicates_suppressed", 0)
+        if _dup:
+            # G-DUP.2: the public transcript discloses suppressions;
+            # a growth run that only re-derived duplicates must not
+            # read as if nothing happened.
+            _cycle_line += (f" ({_dup} duplicate"
+                            f"{'s' if _dup != 1 else ''} suppressed)")
+        messages.append(_cycle_line)
         messages.append(f"rings: {' → '.join(program.duo.rings)}")
         if hasattr(program, "note_seed"):
             program.note_seed(6, "Cycle", str(n))
@@ -241,10 +250,15 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         requested = _parsed
         executed = max(1, min(requested, 5))
         out = program.grow_ideas(executed)
-        messages.append(
+        _growth_line = (
             f"Ringed growth: +{out.get('proposed_new', 0)} new "
-            f"+{out.get('proposed_evolved', 0)} evolved"
-        )
+            f"+{out.get('proposed_evolved', 0)} evolved")
+        _dup = out.get("duplicates_suppressed", 0)
+        if _dup:
+            # G-DUP.2: see the Cycle branch — disclose, never hide.
+            _growth_line += (f" ({_dup} duplicate"
+                             f"{'s' if _dup != 1 else ''} suppressed)")
+        messages.append(_growth_line)
         _count_line = f"Loop: requested {requested}, executed {executed}."
         if executed != requested:
             _count_line += " (clamped to 1..5)"
