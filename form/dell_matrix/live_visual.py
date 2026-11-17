@@ -604,6 +604,10 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
         out = program.bimo.set_pilot(name)
         if out.get("ok"):
             program.persona_lens = out["pilot"]
+            # Q-OD.2: sync the matrix at write time — the status
+            # readers are pure now and no longer lazily sync.
+            if hasattr(program, "persona_matrix"):
+                program.persona_matrix.active = out["pilot"]
         return {"ok": bool(out.get("ok")), "msg": f"pilot → {out.get('pilot')}", "result": out}
     if lower in ("guide", "guide me"):
         return {"ok": True, "msg": "\n".join(program.guide())}

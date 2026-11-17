@@ -488,9 +488,11 @@ def _durable_import_state(owner: str, pid: str) -> Dict[str, Any]:
     (program file). This — not a save call returning — is the
     durability evidence compensation is judged by."""
     nursery_raw, program_raw = _raw_state_files(owner)
-    from form.dell_matrix.nursery import DISPOSITION_SECTION_KEY
+    from form.dell_matrix.nursery import (
+        DISPOSITION_SECTION_KEY, EDIT_RECEIPT_SECTION_KEY)
     proposals = {k: v for k, v in nursery_raw.items()
                  if k != DISPOSITION_SECTION_KEY
+                 and k != EDIT_RECEIPT_SECTION_KEY
                  and isinstance(v, dict)}
     seeds = [e for e in _section_entries(program_raw,
                                          "exchange_seeds").values()
@@ -605,12 +607,14 @@ def recover_exchange_import(owner: str) -> str:
         return "none"
     from form.persist import _path
     from form.dell_matrix.nursery import (
-        DISPOSITION_SECTION_KEY, owner_nursery_path)
+        DISPOSITION_SECTION_KEY, EDIT_RECEIPT_SECTION_KEY,
+        owner_nursery_path)
     from form.dell_matrix.atomic_write import atomic_write_json
 
     nursery_raw, program_raw = _raw_state_files(owner)
     proposals = {k: v for k, v in nursery_raw.items()
                  if k != DISPOSITION_SECTION_KEY
+                 and k != EDIT_RECEIPT_SECTION_KEY
                  and isinstance(v, dict)}
     pid = journal.get("pid")
     if pid is None:
