@@ -203,6 +203,7 @@ LIST = [
     "form.nursery_words_bound_test",
     "form.nursery_c5r1_holding_test",
     "form.nursery_c5r1_readpath_test",
+    "form.nursery_growdup_test",
     "form.nursery_c5r2_see_test",
     "form.core_ii_version_validation_test",
     "form.atomic_write_boundaries_test",

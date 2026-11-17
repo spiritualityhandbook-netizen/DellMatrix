@@ -277,6 +277,23 @@ class Nursery:
     # hash suffix). Absence of a record means the default unresolved state.
     conflict_dispositions: Dict[str, Dict[str, Any]] = field(
         default_factory=dict, repr=False, compare=False)
+    # GROW-DUP (Director ruling 6931279746): receipts for token-growth
+    # adds suppressed as demonstrably identical to a still-pending
+    # growth:token proposal. In-memory only — a receipt is evidence
+    # about THIS instance's add stream, never stored proposal state,
+    # so it is never serialized into the owner file.
+    suppression_receipts: List[Dict[str, Any]] = field(
+        default_factory=list, repr=False, compare=False)
+
+    def _suppression_fresh(self) -> bool:
+        """True when this instance provably sees the current owner
+        file — the same signature comparison save() enforces
+        (``_disk_sig(self.path) == self._seen``). An ownerless
+        in-memory nursery has no external writer, so its view is
+        current by construction."""
+        if not self.path:
+            return True
+        return _disk_sig(self.path) == self._seen
 
     def repoint_to_live(self, live_path: str) -> None:
         """Re-point this instance's file ownership to the live owner file.
@@ -374,6 +391,57 @@ class Nursery:
                     raise NurseryGoalsError(
                         f"each goal must be a string of at most "
                         f"{MAX_GOAL_CHARS} chars; refused, nothing stored")
+        # GROW-DUP (Director ruling 6931279746, scoped): token growth
+        # re-derives the same pair cross every cycle, and the historical
+        # add stored each re-derivation as a new pending proposal (the
+        # _slug collision suffix minted a fresh ID per copy). Suppress
+        # ONLY a demonstrably identical still-PENDING growth:token add:
+        # both records carry origin="growth:token" (token provenance on
+        # both sides), and kind, full label, full words, detail, goals,
+        # parents, reason and the score fields (affinity, harmony,
+        # graph_coherence) are all exactly equal. Generated ID and
+        # creation time are excluded from equality. Parents compare as
+        # ordered lists: the growth enumeration emits a pair in one
+        # canonical order, and the lineage is spelled out in words, so
+        # a different parent order is a different authored proposal.
+        # Anything else — changed content, different provenance (human,
+        # dock, growth:body), different scores, a non-pending survivor —
+        # is stored as its own proposal, exactly as before. A skip
+        # mutates nothing, saves nothing, and returns the survivor with
+        # a receipt recorded on this instance.
+        #
+        # G-DUP.1 (Director 6933752017): suppression returns a record
+        # WITHOUT passing the save-time lost-update check, so it is
+        # lawful only when this instance provably sees the current
+        # owner file (freshness-before-suppression). A stale instance
+        # — whose in-memory "pending" survivor may already be
+        # confirmed, rejected, or removed on disk — falls through to
+        # the normal add path, whose save raises the canonical
+        # NurseryConflictError. A genuine skip (fresh instance) still
+        # performs no save and writes nothing.
+        if origin == "growth:token" and self._suppression_fresh():
+            for existing in self.proposals.values():
+                if (
+                    existing.status == "pending"
+                    and existing.origin == "growth:token"
+                    and existing.kind == kind
+                    and existing.label == label
+                    and existing.words == words
+                    and existing.detail == (detail if isinstance(detail, str) else "")
+                    and existing.goals == (list(goals) if goals else [])
+                    and existing.parents == (parents or [])
+                    and existing.reason == reason
+                    and existing.affinity == float(affinity)
+                    and existing.harmony == float(harmony)
+                    and existing.graph_coherence == float(graph_coherence)
+                ):
+                    self.suppression_receipts.append({
+                        "surviving_id": existing.id,
+                        "reason": "identical_pending_growth_token",
+                        "kind": kind,
+                        "label": label,
+                    })
+                    return existing
         pid = _slug(label, seed)
         # avoid exact id collision
         if pid in self.proposals:

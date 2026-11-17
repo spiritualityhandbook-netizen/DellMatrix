@@ -33,6 +33,16 @@ C. Controls that must hold before AND after the repair: bare
    executed count; a genuinely failing body atom still makes
    the chain report ok=False (first-failure truth, 72-19).
 
+GROW-DUP amendment (Director 6931279746; authority ask A1): the
+bare-Loop control's "+9" counted the token-growth twins — three
+rounds storing the same three crosses three times. With duplicate
+prevention the control stores the three distinct crosses ONCE
+(pending +3) and the remaining six add outcomes are suppressions.
+The C check therefore pins pending == 3 PLUS exactly 6 suppression
+receipts naming exactly the 3 survivors — the receipts are the
+per-round proof that all three Loop rounds still executed their
+growth. Scores and ok are unchanged.
+
 Evidence class: INTEGRATION / public seed path
 (form.mandell.executor.execute_seed on an attached Program,
 the same door the grounding probe used). Isolated synthetic
@@ -171,10 +181,16 @@ def main():
     owner = _owner("C1")
     p = _seeded(owner)
     r = _run(p, "13[Loop] :: 3")
+    _surv = {x["surviving_id"] for x in p.nursery.suppression_receipts}
+    _pend = {q.id for q in p.nursery.proposals.values()
+             if q.status == "pending"}
     _rec("C.bare_loop_unchanged",
-         r.get("ok") is True and p.nursery.summary()["pending"] == 9
+         r.get("ok") is True and p.nursery.summary()["pending"] == 3
+         and len(p.nursery.suppression_receipts) == 6
+         and _surv == _pend
          and p.scores() == {},
          f"ok={r.get('ok')} pending={p.nursery.summary()['pending']} "
+         f"receipts={len(p.nursery.suppression_receipts)} "
          f"scores={p.scores()}")
     _cleanup(owner)
 
