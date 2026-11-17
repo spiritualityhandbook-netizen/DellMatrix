@@ -1,12 +1,12 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-16 20:03 CST  
-**UTC approx**: 2026-11-17T02:03:00Z  
-**Type**: TERMINAL CONFIRM
+**Last cycle**: 2026-11-16 20:26 CST  
+**UTC approx**: 2026-11-17T02:26:00Z  
+**Type**: DEEP PASS
 
 ## Items ruled this cycle
-- PR #466 GROW-DUP exact head `115475914f20bbf265f4c4e1464ce3459bf54b23`: PRE-STAMP. Missing: quiet full regression x3 terminal GREEN; exact-head CI terminal ALL PASS (smoke in_progress); checkpoint package. Prior heads superseded. Comment posted.
-- #465 merged; no other ripe packages.
+- Deep Pass: trailing second-certifications remaining 0 (DD-18 / Q-DD42.1 previously discharged). Scoreboard audited against dual-belt (PLAN 242, CODE 198; COMPLETE baseline 35 of 182). No new ripe packages. #466 pre-stamp stands.
+- No CONFIRM. No HOLD.
 
 ## Trailing ledger
 - discharged this run: 0
@@ -14,7 +14,7 @@
 - gaps: none
 
 ## Automation posture
-Terminal scan complete. No CONFIRM. Pre-stamp issued on #466. Watermark advanced.
+Deep Pass complete. Trailing clear. Scoreboard discrepancy restated (39 vs 35 baseline). Watermark advanced.
 
 ## Silence flag
 #308 / #294 / #233 fenced.
