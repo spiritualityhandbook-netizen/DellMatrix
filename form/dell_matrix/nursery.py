@@ -254,6 +254,14 @@ class Proposal:
         return asdict(self)
 
 
+# Sentinel for "argument not passed" in the SEE query API. A
+# continuation call must distinguish an absent filter argument
+# (the cursor's bound value governs) from an explicitly passed
+# one (which must equal the bound value or refuse loudly) —
+# Director source review on PR #465, 2026-11-16.
+SEE_UNSET = object()
+
+
 @dataclass
 class Nursery:
     """Quarantine for unconfirmed growth."""
@@ -543,14 +551,18 @@ class Nursery:
         return None
 
     def query(self, *, owner: str, mode: str = "browse",
-              status: Optional[str] = None, term: str = "",
-              page_size: Any = SEE_DEFAULT_PAGE,
+              status: Any = SEE_UNSET, term: Any = SEE_UNSET,
+              page_size: Any = SEE_UNSET,
               cursor: Optional[str] = None) -> Dict[str, Any]:
         """One page of a browse (term="") or search over this store.
 
         With a cursor, the cursor's bound owner/mode/filter/sort/
-        page-size govern and the passed filter arguments are
-        ignored. All refusals are typed dicts; nothing here writes.
+        page-size govern. An argument the caller did not pass
+        (SEE_UNSET) defers to the bound value; an argument passed
+        explicitly must EQUAL the bound value — a changed filter,
+        term, or page size refuses CURSOR_FILTER_MISMATCH, never a
+        silent ignore (Director source review, PR #465). All
+        refusals are typed dicts; nothing here writes.
         """
         last = None
         sig_bound = None
@@ -571,11 +583,29 @@ class Nursery:
                     "CURSOR_MALFORMED",
                     f"cursor was issued for {data['mode']}; continue "
                     f"with proposals {data['mode']} cursor:<token>")
+            for passed, bound, field in (
+                    (status, data["status"], "status filter"),
+                    (term, data["term"], "search term"),
+                    (page_size, data["size"], "page size")):
+                if passed is not SEE_UNSET and passed != bound:
+                    return self._see_refusal(
+                        "CURSOR_FILTER_MISMATCH",
+                        f"cursor was issued with {field} "
+                        f"{bound!r}; continuing with {passed!r} "
+                        "would silently change the query — restart "
+                        "from page 1 with the new filter")
             status = data["status"]
             term = data["term"]
             page_size = data["size"]
             sig_bound = data["sig"]
             last = data["last"]
+        else:
+            if status is SEE_UNSET:
+                status = None
+            if term is SEE_UNSET:
+                term = ""
+            if page_size is SEE_UNSET:
+                page_size = self.SEE_DEFAULT_PAGE
         if status is not None and status not in self.SEE_STATUSES:
             return self._see_refusal(
                 "STATUS_UNSUPPORTED",

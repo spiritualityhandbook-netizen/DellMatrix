@@ -590,6 +590,7 @@ def _see_dispatch(p: Program, lower: str) -> None:
     search [status:<s>] [size:<n>] [cursor:<token>] <term...>;
     get <id> [id...]. The exact-match `proposals` door is untouched.
     """
+    from form.dell_matrix.nursery import SEE_UNSET
     parts = lower.split()
     verb = parts[1] if len(parts) > 1 else ""
     rest = parts[2:]
@@ -615,8 +616,12 @@ def _see_dispatch(p: Program, lower: str) -> None:
              f"{resp['duplicates_collapsed']} — policy: "
              f"{resp['policy']}")
         return
-    status = None
-    size = None
+    # Untyped options stay SEE_UNSET so a continuation can tell
+    # "not mentioned" (cursor's bound value governs) from
+    # "explicitly restated" (must match the bound value or the
+    # query refuses CURSOR_FILTER_MISMATCH — never a silent ignore).
+    status = SEE_UNSET
+    size = SEE_UNSET
     cursor = None
     term_words = []
     for tok in rest:
@@ -634,17 +639,13 @@ def _see_dispatch(p: Program, lower: str) -> None:
                  f"unexpected token {tok!r}; use status:<s>, "
                  "size:<n>, or cursor:<token>")
             return
-    if cursor is not None:
-        resp = (p.search_proposals("", cursor=cursor)
-                if verb == "search"
-                else p.browse_proposals(cursor=cursor))
-    elif verb == "search":
-        resp = p.search_proposals(
-            " ".join(term_words), status=status,
-            page_size=size if size is not None else 50)
+    if verb == "search":
+        term = " ".join(term_words) if term_words else SEE_UNSET
+        resp = p.search_proposals(term, status=status,
+                                  page_size=size, cursor=cursor)
     else:
-        resp = p.browse_proposals(
-            status=status, page_size=size if size is not None else 50)
+        resp = p.browse_proposals(status=status, page_size=size,
+                                  cursor=cursor)
     _show_see_page(p, verb, resp)
 
 

@@ -19,7 +19,7 @@ try:
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
     from form.dell_matrix.sandbox_gate import SandboxGate
-    from form.dell_matrix.nursery import Nursery
+    from form.dell_matrix.nursery import Nursery, SEE_UNSET
     from form.dell_matrix.ringed_growth import RingedGrowth
     from form.dell_matrix.harmonic_lattice import HarmonicLattice
     from form.dell_matrix.harmonic_core import (
@@ -65,7 +65,7 @@ except ImportError:
     from form.dell_matrix.enhance_gate import EnhanceGate
     from form.dell_matrix.ambient_gate import AmbientGate
     from form.dell_matrix.sandbox_gate import SandboxGate
-    from form.dell_matrix.nursery import Nursery
+    from form.dell_matrix.nursery import Nursery, SEE_UNSET
     from form.dell_matrix.ringed_growth import RingedGrowth
     from form.dell_matrix.harmonic_lattice import HarmonicLattice
     from form.dell_matrix.harmonic_core import (
@@ -1385,13 +1385,14 @@ class Program:
     # the owner at the trusted Program boundary. Read-only: no
     # save/confirm/reject path is reachable from here.
 
-    def browse_proposals(self, status=None, page_size=50, cursor=None):
+    def browse_proposals(self, status=SEE_UNSET, page_size=SEE_UNSET,
+                         cursor=None):
         return self.nursery.query(
             owner=self.owner, mode="browse", status=status,
             page_size=page_size, cursor=cursor)
 
-    def search_proposals(self, term, status=None, page_size=50,
-                         cursor=None):
+    def search_proposals(self, term=SEE_UNSET, status=SEE_UNSET,
+                         page_size=SEE_UNSET, cursor=None):
         return self.nursery.query(
             owner=self.owner, mode="search", status=status,
             term=term, page_size=page_size, cursor=cursor)

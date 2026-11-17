@@ -353,6 +353,32 @@ def smoke() -> bool:
                     crafted_ok = False
             check("S6.crafted_cursor_types_refused_not_crash",
                   crafted_ok)
+            # A continuation that changes the filter/term/size must
+            # refuse loudly, never silently ignore the change
+            # (Director source review on PR #465, 2026-11-16).
+            pg1 = fresh.browse_proposals(page_size=10)
+            cur = pg1.get("next_cursor")
+            chg_status = fresh.browse_proposals(
+                status="pending", cursor=cur)
+            chg_size = fresh.browse_proposals(
+                page_size=11, cursor=cur)
+            spg1 = fresh.search_proposals("see_", page_size=10)
+            chg_term = fresh.search_proposals(
+                "different", cursor=spg1.get("next_cursor"))
+            same_args = fresh.browse_proposals(
+                status=None, page_size=10, cursor=cur)
+            unset_args = fresh.search_proposals(
+                cursor=spg1.get("next_cursor"))
+            check("S6.changed_filter_on_continuation_refused",
+                  all((not r.get("ok"))
+                      and r.get("error") == "CURSOR_FILTER_MISMATCH"
+                      for r in (chg_status, chg_size, chg_term))
+                  and same_args.get("ok")
+                  and same_args.get("shown") == 10
+                  and unset_args.get("ok"),
+                  f"status={chg_status.get('error')} "
+                  f"size={chg_size.get('error')} "
+                  f"term={chg_term.get('error')}")
             pa = fresh  # continue on the fresh instance
         except Exception as e:
             for nm in ("S6.malformed_cursor_refused",
@@ -361,7 +387,8 @@ def smoke() -> bool:
                        "S6.stale_instance_refuses_page_one",
                        "S6.fresh_instance_retry_succeeds",
                        "S6.archived_status_refused_until_c5r5",
-                       "S6.crafted_cursor_types_refused_not_crash"):
+                       "S6.crafted_cursor_types_refused_not_crash",
+                       "S6.changed_filter_on_continuation_refused"):
                 check(nm, False, f"exc {e!r}")
 
         # ---- S7: ID-set retrieval, 1/16/17/100/1000, missing named ----
@@ -462,6 +489,16 @@ def smoke() -> bool:
                   f"head={outc.splitlines()[0] if outc else ''!r}")
             out1 = dispatch("proposals browse")
             m = re.search(r"cursor:(\S+)", out1)
+            if m:
+                outm = dispatch(
+                    f"proposals browse status:pending "
+                    f"cursor:{m.group(1)}")
+                check("S9.repl_changed_filter_refused_loudly",
+                      "CURSOR_FILTER_MISMATCH" in outm,
+                      f"head={outm.splitlines()[0] if outm else ''!r}")
+            else:
+                check("S9.repl_changed_filter_refused_loudly", False,
+                      "no cursor on page 1")
             check("S9.repl_browse_first_page",
                   "shown 50 of 60" in out1 and m is not None,
                   f"head={out1.splitlines()[0] if out1 else ''!r}")
