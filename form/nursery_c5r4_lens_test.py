@@ -397,22 +397,40 @@ def smoke() -> bool:
                    "L10.novel_duplicate_disjoint_partial_empty"], e)
 
         # ===== PlaneRank tripwire (subprocess import blocker) =====
+        # INSTRUMENT REPAIR (disclosed 2026-11-17, Uni): the original
+        # blocker used the legacy find_module/load_module finder
+        # protocol. That protocol was removed in Python 3.12, so on
+        # 3.12 the blocker silently never fired and this check passed
+        # vacuously; on 3.11 (the CI smoke interpreter) it fired at
+        # program-open time on form.dell_matrix.plane — the existing
+        # L3 Plane surface that form.open imports at module level —
+        # which is NOT PlaneRank (MWL 141, a planned component with
+        # no code). The contract intent is that the LENS shares no
+        # code/state with PlaneRank. This version arms a modern
+        # find_spec blocker AFTER the program is open and asserts
+        # the lens query itself imports no plane module and loads
+        # none — a proof that executes identically on 3.10/3.11/3.12.
         try:
             script = (
                 "import sys\n"
                 "class Blocker:\n"
-                "    def find_module(self, name, path=None):\n"
+                "    def find_spec(self, name, path=None, target=None):\n"
                 "        if 'plane' in name.casefold():\n"
-                "            return self\n"
+                "            raise ImportError(\n"
+                "                'plane import blocked during lens query: '\n"
+                "                + name)\n"
                 "        return None\n"
-                "    def load_module(self, name):\n"
-                "        raise ImportError('plane import blocked: ' + name)\n"
-                "sys.meta_path.insert(0, Blocker())\n"
                 f"sys.path.insert(0, {os.path.dirname(os.path.dirname(os.path.abspath(__file__)))!r})\n"
                 "from form.open import open_program\n"
                 f"p = open_program({owner_b!r})\n"
+                "before = {m for m in sys.modules\n"
+                "          if 'plane' in m.casefold()}\n"
+                "sys.meta_path.insert(0, Blocker())\n"
                 f"r = p.browse_proposals(lens_now={T!r}, page_size=5)\n"
+                "after = {m for m in sys.modules\n"
+                "         if 'plane' in m.casefold()}\n"
                 "assert r.get('ok'), r\n"
+                "assert after <= before, sorted(after - before)\n"
                 "print('TRIPWIRE_OK', r['items'][0]['id'])\n"
             )
             with tempfile.NamedTemporaryFile(
