@@ -39,6 +39,23 @@ Contract under test (definitions doc sections 1-5):
 - No PlaneRank dependency: the lens works on a nursery-only store
   with no graph/PlaneRank state at all.
 
+v2 additions (Director EXE 6945952130 on PR #444 — scope decisions +
+Keeper forward-check list):
+- Tie-break: equal FULL-precision S breaks by stable proposal ID
+  ascending; rounding is display-only.
+- Signal contract: measured zero is distinguished from missing
+  evidence; a missing component flags the score partial — weights
+  are never silently renormalized.
+- FRESH half-life is a PROVISIONAL policy (14.0 days, every
+  collection) with Ace's Q-C5R.2 choice still open; L16 pins the
+  boundaries under that provisional policy.
+- Lens family: lens / newest / oldest / alphabetical, one contract.
+- L17 is a weight-permutation control: the order must match the
+  STATED weights' hand computation where a permuted computation
+  disagrees.
+- L19: the last-ranked pending proposal still confirms through the
+  public path — ranking never gates confirmation.
+
 Labels: INTEGRATION (Program API over synthetic owner stores) +
 HIGH-FIDELITY DISPATCH (REPL dispatcher via capture_output).
 State touched: synthetic test owners only, removed at the end.
@@ -293,6 +310,186 @@ def smoke() -> bool:
                   f"head={out.splitlines()[0] if out else ''!r}")
         except Exception as e:
             _fail(["L12.repl_lens_door"], e)
+
+        # ---------- v2: lens family membership at 1,000 ----------
+        for lens_name in ("newest", "oldest", "alphabetical"):
+            try:
+                ids_l, _ = _traverse(pa.browse_proposals, sort=lens_name,
+                                     page_size=200)
+                check(f"L13.{lens_name}_membership_equals_default",
+                      sorted(ids_l) == sorted(ids_default)
+                      and len(ids_l) == len(set(ids_l)) == 1000,
+                      f"n={len(ids_l)}")
+            except Exception as e:
+                _fail([f"L13.{lens_name}_membership_equals_default"], e)
+        try:
+            ids_old, _ = _traverse(pa.browse_proposals, sort="oldest",
+                                   page_size=200)
+            check("L13.oldest_equals_default_order", ids_old == ids_default)
+        except Exception as e:
+            _fail(["L13.oldest_equals_default_order"], e)
+
+        # ---------- v2: equal-S tie-break by stable ID ----------
+        owner_c = "C5R4LC" + suffix
+        try:
+            pc = open_program(owner_c)
+            hi = _mk(0, id="lt_0002", label="tie twin", words="tie twin")
+            lo = _mk(1, id="lt_0001", label="tie twin", words="tie twin")
+            for r in (hi, lo):  # higher ID inserted first on purpose
+                pc.nursery.proposals[r.id] = r
+            pc.nursery.save()
+            resp = pc.browse_proposals(sort="lens", page_size=50)
+            order = [it["id"] for it in resp["items"]]
+            scores = [it["lens"]["score"] for it in resp["items"]]
+            check("L14.equal_score_id_tiebreak",
+                  order == ["lt_0001", "lt_0002"] and scores[0] == scores[1],
+                  f"order={order} scores={scores}")
+        except Exception as e:
+            _fail(["L14.equal_score_id_tiebreak"], e)
+        finally:
+            _cleanup(owner_c)
+
+        # ---------- v2: missing vs measured zero ----------
+        owner_d = "C5R4LD" + suffix
+        try:
+            import json as _json
+            pd_ = open_program(owner_d)
+            kept = _mk(0, id="lm_0001", harmony=0.0, graph_coherence=0.0)
+            stripped = _mk(1, id="lm_0002", harmony=0.0, graph_coherence=0.0)
+            for r in (kept, stripped):
+                pd_.nursery.proposals[r.id] = r
+            pd_.nursery.save()
+            raw = _json.loads(open(pd_.nursery.path).read())
+
+            def _find(node, pid):
+                if isinstance(node, dict):
+                    if node.get("id") == pid:
+                        return node
+                    for v in node.values():
+                        hit = _find(v, pid)
+                        if hit is not None:
+                            return hit
+                elif isinstance(node, list):
+                    for v in node:
+                        hit = _find(v, pid)
+                        if hit is not None:
+                            return hit
+                return None
+
+            rec = _find(raw, "lm_0002")
+            rec.pop("harmony", None)
+            rec.pop("graph_coherence", None)
+            with open(pd_.nursery.path, "w") as fh:
+                _json.dump(raw, fh)
+            pd2 = open_program(owner_d)  # fresh instance reads the file
+            resp = pd2.browse_proposals(sort="lens", page_size=50)
+            items = {it["id"]: it for it in resp["items"]}
+            ev_kept = items["lm_0001"]["lens"]["evidence"]
+            ev_stripped = items["lm_0002"]["lens"]["evidence"]
+            check("L15.measured_zero_not_missing",
+                  ev_kept.get("link_harmony") == "measured"
+                  and items["lm_0001"]["lens"]["partial"] is False,
+                  f"evidence={ev_kept}")
+            check("L15.missing_disclosed_partial",
+                  ev_stripped.get("link_harmony") == "missing"
+                  and ev_stripped.get("link_graph") == "missing"
+                  and items["lm_0002"]["lens"]["partial"] is True,
+                  f"evidence={ev_stripped}")
+        except Exception as e:
+            _fail(["L15.measured_zero_not_missing",
+                   "L15.missing_disclosed_partial"], e)
+        finally:
+            _cleanup(owner_d)
+
+        # ---------- v2: FRESH boundaries (provisional 14.0d) ----------
+        owner_e = "C5R4LE" + suffix
+        try:
+            from datetime import datetime, timedelta, timezone
+            pe = open_program(owner_e)
+            now = datetime.now(timezone.utc)
+            fmt = "%Y-%m-%dT%H:%M:%S+00:00"
+            recs = [
+                _mk(0, id="lf_0001", created=now.strftime(fmt)),
+                _mk(1, id="lf_0002",
+                    created=(now - timedelta(days=14)).strftime(fmt)),
+                _mk(2, id="lf_0003",
+                    created=(now - timedelta(days=140)).strftime(fmt)),
+            ]
+            for r in recs:
+                pe.nursery.proposals[r.id] = r
+            pe.nursery.save()
+            resp = pe.browse_proposals(sort="lens", page_size=50)
+            items = {it["id"]: it for it in resp["items"]}
+            f1 = items["lf_0001"]["lens"]["fresh"]
+            f2 = items["lf_0002"]["lens"]["fresh"]
+            f3 = items["lf_0003"]["lens"]["fresh"]
+            check("L16.fresh_boundaries_provisional_policy",
+                  f1 > 0.99 and 0.49 < f2 < 0.51 and f3 < 0.10,
+                  f"fresh={f1:.4f}/{f2:.4f}/{f3:.4f}")
+        except Exception as e:
+            _fail(["L16.fresh_boundaries_provisional_policy"], e)
+        finally:
+            _cleanup(owner_e)
+
+        # ---------- v2: weight-permutation control ----------
+        owner_f = "C5R4LF" + suffix
+        try:
+            pf = open_program(owner_f)
+            a = _mk(0, id="lp_0001", parents=["x", "y"],
+                    graph_coherence=1.0, harmony=1.0,
+                    label="t1 t2 t3 t4 t5 t6 t7 t8 t9", words="")
+            b = _mk(1, id="lp_0002", graph_coherence=0.3,
+                    label="z1 z2", words="")
+            c = _mk(2, id="lp_0003",
+                    label="t1 t2 t3 t4 t5 t6 t7 t8 u1", words="")
+            for r in (a, b, c):
+                pf.nursery.proposals[r.id] = r
+            pf.nursery.save()
+            # Stated weights: A LINK=1 NOVEL=0.2 -> .43+.2f;
+            # B LINK=0.1 NOVEL=1 -> .19+.2f; C LINK=0 NOVEL=0.2 -> .03+.2f
+            # => A > B > C. Permuted (LINK<->NOVEL): B .415+.2f > A
+            # .417+.2f? No: A .15+.08=.23+.2f < B .015+.4=.415+.2f
+            # => B > A. The two computations DISAGREE on the winner.
+            resp = pf.browse_proposals(sort="lens", page_size=50)
+            order = [it["id"] for it in resp["items"]]
+            items = {it["id"]: it for it in resp["items"]}
+            check("L17.weight_permutation_control",
+                  order[0] == "lp_0001"
+                  and abs(items["lp_0001"]["lens"]["link"] - 1.0) < 1e-9
+                  and abs(items["lp_0001"]["lens"]["novel"] - 0.2) < 1e-9
+                  and abs(items["lp_0002"]["lens"]["link"] - 0.1) < 1e-9
+                  and abs(items["lp_0002"]["lens"]["novel"] - 1.0) < 1e-9,
+                  f"order={order}")
+        except Exception as e:
+            _fail(["L17.weight_permutation_control"], e)
+        finally:
+            _cleanup(owner_f)
+
+        # ---------- v2: changed-lens cursor refusal ----------
+        try:
+            page1 = pb.browse_proposals(sort="lens", page_size=2)
+            cur = page1["next_cursor"]
+            bad = pb.browse_proposals(cursor=cur, sort="newest")
+            check("L18.changed_lens_cursor_refused",
+                  bad.get("ok") is False
+                  and bad.get("code") == "CURSOR_FILTER_MISMATCH",
+                  f"bad={bad.get('code')!r}")
+        except Exception as e:
+            _fail(["L18.changed_lens_cursor_refused"], e)
+
+        # ---------- v2: last-ranked pending still confirms ----------
+        try:
+            resp = pb.browse_proposals(sort="lens", page_size=50)
+            pending_ranked = [it["id"] for it in resp["items"]
+                              if it["status"] == "pending"]
+            last_pid = pending_ranked[-1]
+            result = pb.confirm_proposal(last_pid)
+            check("L19.last_ranked_pending_confirms_public_path",
+                  bool(result)
+                  and pb.nursery.proposals[last_pid].status == "confirmed",
+                  f"pid={last_pid}")
+        except Exception as e:
+            _fail(["L19.last_ranked_pending_confirms_public_path"], e)
     finally:
         for o in (owner_a, owner_b):
             _cleanup(o)
