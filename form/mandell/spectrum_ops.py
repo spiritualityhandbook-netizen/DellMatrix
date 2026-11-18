@@ -718,8 +718,10 @@ def _compose_bound(st: Any) -> Tuple[Optional[int], str]:
     DD-44's bound_detail — never through validate_bound's phantom
     branches. Returns (cap, "") for a stated bound (the word max
     states MAX_BOUND = 64), (None, "") when no bound was stated
-    (NO cap is applied and no number is invented), or
-    (None, "invalid_limit") for a stated-but-unlawful value.
+    (no number is invented; the caller refuses bound_unspecified
+    before any NONTERMINAL expansion, per the Director G2 ruling
+    on GP-E03A), or (None, "invalid_limit") for a
+    stated-but-unlawful value.
     The old contract returned the silent COMPOSE_BOUND = 8 for
     unspecified, "max", AND invalid input alike — the exact
     silent default DD-44 abolished in the loop domain."""
@@ -740,16 +742,6 @@ def _compose_seed(st: Any, body: str, stack=None, depth: int = 0) -> Tuple[str, 
         # A raw seed is terminal: it cannot recurse, so no bound
         # is consulted for it, at any depth (R17).
         return raw, ""
-    if depth > 0:
-        # The bound is consulted exactly where it can bite: a
-        # nested expansion. Termination without a stated cap is
-        # still guaranteed — the compose_cycle stack guard bounds
-        # expansion by the finite name set.
-        cap, berr = _compose_bound(st)
-        if berr:
-            return "", berr
-        if cap is not None and depth > cap:
-            return "", "compose_depth"
     stack = set(stack or [])
     parts = [p.strip() for p in raw.replace(",", ">").split(">") if p.strip()]
     atoms = []
@@ -766,6 +758,28 @@ def _compose_seed(st: Any, body: str, stack=None, depth: int = 0) -> Tuple[str, 
             inner = st.compositions.get(part) or st.compositions.get(resolved) or st.defs.get(resolved, "")
             if not inner:
                 return "", "malformed_composition"
+            if "[" not in inner:
+                # The bound is consulted HERE — at the one place a
+                # nested expansion actually happens (Director G2
+                # contract, PR #485 ruling 6978656808, sustaining
+                # Uni CH-11 on GP-E03A). A raw "[...]" inner body is
+                # terminal and never consults it. An inner body of
+                # flat digits is terminal too: it consumes one level
+                # of a STATED cap (depth accounting is unchanged
+                # from the pre-R17 semantics) but never requires a
+                # bound to exist. An inner body that itself names
+                # names is NONTERMINAL: with no bound stated it
+                # refuses bound_unspecified BEFORE expanding — never
+                # a fabricated 8, never uncapped recursion.
+                inner_parts = [q.strip() for q in inner.replace(",", ">").split(">") if q.strip()]
+                nonterminal = any(not q.isdigit() for q in inner_parts)
+                cap, berr = _compose_bound(st)
+                if berr:
+                    return "", berr
+                if cap is None and nonterminal:
+                    return "", "bound_unspecified"
+                if cap is not None and depth + 1 > cap:
+                    return "", "compose_depth"
             nested, nerr = _compose_seed(st, inner, stack | {part, resolved}, depth + 1)
             if nerr:
                 return "", nerr
