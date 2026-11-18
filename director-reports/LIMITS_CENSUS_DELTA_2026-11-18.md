@@ -13,7 +13,7 @@ exactly as pinned: NOT RECHECKED.
 
 ## Rechecked rows
 
-- **R26 (refusal-reason 200-char bound family) — CLOSED / MERGED.** Repaired
+- **R26 (DuoBeta ledger detail cut to 120 chars, two enforcements — census line 97) — CLOSED / MERGED.** Repaired
   and merged as PR #483 (merge c93e358b, 2026-11-18); merged-main proof
   29/29; Keeper CODE credit 6977388157; CODE +1 settled. The census row's
   defect no longer exists on main.
