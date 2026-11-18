@@ -108,3 +108,55 @@ NOT authorized.
 - No scoreboard credit is claimed by this report; CODE credit
   settles only under the standing rule (merged-main behavioral
   proof + both authorities' acts).
+
+## CORRECTION ROUND — Director 6986258354 (2026-11-18 :30 delta)
+
+The Director's source finding is CONFIRMED and reproduced
+failing-first at the public translate→execute door (probe saved at
+`hidden_files/r19_logs/probe_translate_prefix.txt`). Pre-repair,
+on a program already holding an idea: `cycle -3` executed 1;
+`cycle banana` executed 1; `cycle 20x` executed 20 (prefix
+theft); `cycle ²` executed 1; `cycle ２０` executed 20 (Unicode
+digit conversion); and an oversized digit operand CRASHED
+translate with an uncaught exception (int() digit limit) — worse
+than silent execution. The suite had not tested malformed
+English inputs; the gap was Uni's.
+
+Repair (`form/mandell/translate.py`, Cycle arm only): the
+operand is now consumed as a whole token after the keyword.
+Omitted (or the continuation word "times") → default 1. A valid
+count (ASCII digits, length checked BEFORE int conversion, or
+an established number word) travels as an int, still with no
+clamp/floor. ANY other explicit token travels RAW in the
+Intent args/seed, and the Dell 6 leaf refuses it typed
+(`invalid_cycle_count`, zero growth) — one grammar authority
+(the leaf), shared with the router/flow paths. Post-repair probe:
+all six malformed cases refuse typed with zero growth; bare
+`cycle`, `cycle 3 times`, `cycle three times`, `cycle 20` are
+unchanged.
+
+Sibling phrase, as directed: `run cycles -3` is NOT routed to
+Dell 06 — the earlier Drive arm claims every `run ...` phrase
+(verified identical on main: `run cycles 3`, `run cycles`, and
+`run cycles -3` all yield `19[Drive] :: run`). The Cycle arm's
+`run\s+cycles?` alternative is shadowed dead grammar. Per the
+directive it is NOT reassigned; the established Drive route for
+`run 20 cycles` is preserved and pinned in the suite.
+
+Durability label (directive point 3): the requested/executed/
+remaining disclosure is **RECEIPT-ONLY**. It is produced in the
+execution result at run time; no structured field carries it,
+and the persisted program history does not preserve it —
+demonstrated in the suite by save + reload after `cycle 20`
+(no count disclosure in the reloaded history). `note_seed`
+records the seed with the executed count only. No durable
+preservation is claimed.
+
+Suite is now 52/52 (13 new checks: the malformed-English
+matrix with no-growth, omitted/established forms, Drive-route
+preservation + run-cycles pin, receipt-only demonstration).
+Named neighbors re-run green: translate_word_counts 21/21,
+translate_intent_args 18/18, translate_dead_args 21/21,
+lm4_tollbooth 26/26, dirf13 17/17, core_i_arg_gate 92/92,
+loop_bounds 27/27, dd14 11/11, flow_executor 28/28,
+d1_registry_leaf 22/22.

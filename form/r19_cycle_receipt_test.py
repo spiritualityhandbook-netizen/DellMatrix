@@ -192,6 +192,69 @@ def _run():
              "requested 20" in j and "executed 5" in j
              and "remaining 15" in j, j[:160])
 
+        # --- Face 3b: malformed ENGLISH counts refuse at the public
+        # door (Director correction 6986258354). Failing-first
+        # evidence (pre-repair probe, r19_logs/probe_translate_
+        # prefix.txt): every case below silently executed 1 or 20,
+        # and the oversized case crashed translate outright. The
+        # repair consumes the operand as a whole token: omitted ->
+        # default 1; valid count -> travels; anything else travels
+        # RAW and the leaf refuses it typed, with zero growth on a
+        # program that already holds an idea.
+        for bad_text in ("cycle -3", "cycle banana", "cycle 20x",
+                         "cycle ²", "cycle ２０",
+                         "cycle " + "9" * 5000):
+            p_bad = prog()
+            h0 = len(list(getattr(p_bad, "history", []) or []))
+            bad_intent = translate(bad_text)
+            r = execute_seed(p_bad, bad_intent.mandel)
+            h1 = len(list(getattr(p_bad, "history", []) or []))
+            _rec(f"english {bad_text[:14]!r}: typed refusal, no growth",
+                 r.get("ok") is False
+                 and r.get("error") == "invalid_cycle_count"
+                 and h1 == h0,
+                 f"seed={bad_intent.mandel[:28]!r} ok={r.get('ok')} "
+                 f"err={r.get('error')} hist {h0}->{h1}")
+        # Omitted stays the default; established forms unchanged.
+        bare = translate("cycle")
+        _rec("english bare 'cycle': omitted count defaults to 1",
+             (bare.args or {}).get("count") == 1
+             and bare.mandel == "06[Cycle] :: 1", str(bare.mandel))
+        for phrase, want in (("cycle three times", 3),
+                             ("cycle 3 times", 3),
+                             ("cycle five times", 5)):
+            wi = translate(phrase)
+            _rec(f"english {phrase!r}: established count {want}",
+                 (wi.args or {}).get("count") == want
+                 and wi.mandel == f"06[Cycle] :: {want}",
+                 str(wi.mandel))
+        # The Drive route for "run 20 cycles" is a separate,
+        # earlier arm and is NOT reassigned by this repair; the
+        # "run cycles ..." phrase routes to Drive on main as well
+        # (the Cycle arm's run-cycles alternative is shadowed) —
+        # pinned as found, per the correction directive.
+        drive = translate("run 20 cycles")
+        _rec("english 'run 20 cycles': Drive route preserved",
+             drive.mandel.startswith("19[Drive]"), str(drive.mandel))
+        rc = translate("run cycles -3")
+        _rec("english 'run cycles -3': routes to Drive (not Dell 06), as on main",
+             rc.mandel.startswith("19[Drive]"), str(rc.mandel))
+
+        # Receipt durability, labeled honestly (correction point
+        # 3): the requested/executed/remaining disclosure is
+        # RECEIPT-ONLY. It is produced in the execution result at
+        # run time; no structured field carries it and the
+        # persisted program history does not preserve it —
+        # demonstrated here by save + reload.
+        p_dur = prog()
+        execute_seed(p_dur, "06[Cycle] :: 20")
+        p_dur.save()
+        p_re = prog()
+        hist_flat = str(list(getattr(p_re, "history", []) or []))
+        _rec("receipt-only: count disclosure does not survive save/reload",
+             "requested 20" not in hist_flat,
+             "label: receipt-only (no durable structured field)")
+
         # --- Face 4: flow args carry the request; the 99 ceiling is gone
         from form.mandell.flow_executor import _args_from_label
 
