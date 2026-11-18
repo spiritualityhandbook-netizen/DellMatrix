@@ -18,7 +18,7 @@ Inputs, resolved at one pinned GitHub revision:
 - Dell registry 00..99 and dispatcher/contract coverage.
 - SYSTEM-001 SYS-C01..C44 contract list (dated baseline) plus later scoped receipts.
 - Director Review Queue, PR head/status, exact-head CI, Keeper/Director/Uni comments and merge receipts.
-- **Feature Intake FI-001..FI-019**, with FI-010..019 source/status/placement from 09_FEATURE_INTAKE_FI010_FI019.md; explicitly flag missing goal-workspace original text for FI-013..017 and FI-017 as SOURCE_GAP. Unknowns UU-1..15, DC-1..11, decisions, hold fences.
+- **Feature Intake FI-001..FI-019**, with FI-010..019 source/status/placement from 09_FEATURE_INTAKE_FI010_FI019.md; explicitly flag missing original goal-workspace bytes for FI-013..017 while representing FI-017 as a source-reported, fully Director-designed Gemini three-depth Docked Operator (one session identity, three permission scopes), never coded or credited. Unknowns UU-1..15, DC-1..11, decisions, hold fences.
 - Current runtime/census/test evidence and, where available, linked artefact hashes.
 - Optional visual-perspective manifests and source-specified geometry fixture references.
 
