@@ -150,3 +150,24 @@ Director/Keeper review of the scoped-oracle repair and the leaf4
 UNPROVEN return. On acceptance, the main session runs the deferred
 campaign ×3 (this PR's head) and PR #489's gate re-presents with a
 hygiene-clean campaign. No merge is requested by this circuit.
+
+## REBASE ADDENDUM (2026-11-18)
+
+Rebased onto post-#491 main `389d360fa60dff1d8c8aee6d119a55062f01d8ac`
+(#491 merged); new head `130c8f206df783fb187f93accaa40dd9f27b07dd`.
+Conflicts: `director-reports/INDEX.md` only, resolved as a UNION
+(both the R19SIB row from main and this circuit's row kept);
+`form/regress.py` auto-merged — union verified in source: main's
+`form.r19sib_count_door_test` registration intact, and
+`form.test_isolation_hygiene_test:smoke` registered immediately
+after `form.c7profile_test:smoke` as originally placed. Diff vs new
+main is exactly this circuit's original 5-file set (+396/−4); the
+repair itself (`form/c7profile_test.py`,
+`form/test_isolation_hygiene_test.py`) is byte-identical to the
+pre-rebase head `45525bdae146e90edbfe04ad7778af6e2ef782a1`.
+Focused verification at the new head: test_isolation_hygiene 7/7,
+c7profile 36/36, r19sib_count_door 45/45. The gate campaign ×3 runs
+at this head from the main session, sequentially after the R19
+campaign. Campaign r2's leg-1 failure is classified as
+simultaneous-start concurrency interference in the p2 proof cluster
+(all failed suites pass standalone); that classification stands.
