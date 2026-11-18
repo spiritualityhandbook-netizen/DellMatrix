@@ -1,0 +1,636 @@
+{
+  "version": "director-gp-execution-dag-e1",
+  "source_main": "a8786f9c40cdeaaa8fe9ebeb6705a64d52490269",
+  "schema": "nodes[].id, phase, depends_on; separate authority_gates and CI gates are NOT dependency nodes",
+  "notes": [
+    "Dependency means completion of the necessary prerequisite contract for that downstream slice, not always 100% of its program family.",
+    "Analysis and design may run independently of downstream code gates.",
+    "GP-E03 contains two separately merged code circuits R17 and R19; do not merge in one unreviewed PR.",
+    "Independent current-main defences and role gates always apply.",
+    "No dependency of Muse read-only planning view GP-E25 on not-yet-built HCN.",
+    "Substantive Ace/geometry/persistence gates override schedule; this graph cannot lift them."
+  ],
+  "authority_gates": {
+    "GP_E11": "Ace substantive Dell semantics",
+    "GP_E15": "Q1 save-path gate and proposal+failing-first before change",
+    "GP_E17": "Exchange journaling under PR #294 HOLD",
+    "GP_E18": "Keeper reference regeneration and Director mathematical admission",
+    "GP_E20": "Human-only Nursery acceptance and Ace auto-confirm policy",
+    "GP_E28": "Ace promotion where necessary, Grand Sync first, each Far item separately certified"
+  },
+  "nodes": [
+    {
+      "id": "GP-E01",
+      "title": "Translate operand preservation R24",
+      "phase": 0,
+      "depends_on": [],
+      "work_ids": [
+        "MWL-024",
+        "SYS-C01"
+      ],
+      "risk": "HIGH_DATA_LOSS",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E02",
+      "title": "Outcome ledger complete evidence and search R23",
+      "phase": 0,
+      "depends_on": [],
+      "work_ids": [
+        "MWL-069"
+      ],
+      "risk": "HIGH_EVIDENCE_LOSS",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E03",
+      "title": "Compose R17 / Loop R19 separated repairs",
+      "phase": 0,
+      "depends_on": [],
+      "work_ids": [
+        "MWL-014",
+        "MWL-039"
+      ],
+      "risk": "HIGH_FALSE_SUCCESS",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E04",
+      "title": "Compare Threshold shorthand R25",
+      "phase": 1,
+      "depends_on": [
+        "GP-E09"
+      ],
+      "work_ids": [
+        "MWL-010",
+        "DELL-57",
+        "DELL-73"
+      ],
+      "risk": "HIGH_FALSE_SUCCESS",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E05",
+      "title": "History R5 and REPL R27 truthful bounds",
+      "phase": 0,
+      "depends_on": [],
+      "work_ids": [
+        "MWL-135",
+        "MWL-092"
+      ],
+      "risk": "DATA_LOSS",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E06",
+      "title": "R28-R42 full current-main limits audit",
+      "phase": 0,
+      "depends_on": [],
+      "work_ids": [
+        "LIMITS-WAVE6",
+        "LIMITS-WAVE7",
+        "LIMITS-WAVE8"
+      ],
+      "risk": "INTEGRITY",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E07",
+      "title": "All addressed Dells execution audit",
+      "phase": 1,
+      "depends_on": [],
+      "work_ids": [
+        "DELL-00..99",
+        "SYS-C07"
+      ],
+      "risk": "FOUNDATIONAL",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E08",
+      "title": "English LM typed AST admission",
+      "phase": 2,
+      "depends_on": [
+        "GP-E01",
+        "GP-E07"
+      ],
+      "work_ids": [
+        "MWL-024",
+        "SYS-C01..04"
+      ],
+      "risk": "SEMANTIC",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E09",
+      "title": "Shared predicate and control truth",
+      "phase": 1,
+      "depends_on": [
+        "GP-E07"
+      ],
+      "work_ids": [
+        "MWL-010",
+        "DELL-57",
+        "DELL-60",
+        "DELL-91",
+        "DELL-92"
+      ],
+      "risk": "FALSE_SUCCESS",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E10",
+      "title": "DD43 isolated Parallel and Join",
+      "phase": 2,
+      "depends_on": [
+        "GP-E09",
+        "GP-E12",
+        "GP-E14",
+        "GP-E15"
+      ],
+      "work_ids": [
+        "MWL-011",
+        "MWL-170",
+        "DELL-62"
+      ],
+      "risk": "DATA_CONFLICT",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E11",
+      "title": "Eight elder Dell semantics",
+      "phase": 2,
+      "depends_on": [
+        "GP-E07"
+      ],
+      "work_ids": [
+        "DELL-00",
+        "DELL-03",
+        "DELL-07",
+        "DELL-10",
+        "DELL-11",
+        "DELL-12",
+        "DELL-14",
+        "DELL-19"
+      ],
+      "risk": "ACE_SEMANTIC_GATE",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E12",
+      "title": "Typed measurement and inference",
+      "phase": 2,
+      "depends_on": [
+        "GP-E07",
+        "GP-E09"
+      ],
+      "work_ids": [
+        "MWL-151",
+        "SYS-C23"
+      ],
+      "risk": "MEASUREMENT",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E13",
+      "title": "SemanticGraph and Plane identity",
+      "phase": 1,
+      "depends_on": [],
+      "work_ids": [
+        "SYS-C09..14",
+        "MWL-055..058"
+      ],
+      "risk": "STATE_IDENTITY",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E14",
+      "title": "Isolated Simulate effects inventory",
+      "phase": 1,
+      "depends_on": [
+        "GP-E13"
+      ],
+      "work_ids": [
+        "MWL-167..170",
+        "DELL-31"
+      ],
+      "risk": "SIMULATION",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E15",
+      "title": "Everyday pair-save Q1 crash integrity",
+      "phase": 2,
+      "depends_on": [
+        "GP-E13"
+      ],
+      "work_ids": [
+        "MWL-046",
+        "PR-294"
+      ],
+      "risk": "GATED_SAVE_AUTHORITY",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E16",
+      "title": "Room/box histories and staged human editing",
+      "phase": 3,
+      "depends_on": [
+        "GP-E05",
+        "GP-E13",
+        "GP-E15"
+      ],
+      "work_ids": [
+        "MWL-134..136",
+        "MWL-144..147"
+      ],
+      "risk": "ROOM_SEMANTICS",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E17",
+      "title": "Exchange Bridge reference integrity",
+      "phase": 3,
+      "depends_on": [
+        "GP-E13",
+        "GP-E15"
+      ],
+      "work_ids": [
+        "MWL-048",
+        "MWL-138",
+        "MWL-164..166"
+      ],
+      "risk": "GATED_Q1",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E18",
+      "title": "FCC Tree L1-L5 evidence admission",
+      "phase": 3,
+      "depends_on": [
+        "GP-E13"
+      ],
+      "work_ids": [
+        "SYS-C18..22",
+        "PR-420"
+      ],
+      "risk": "KEEPER_DIRECTOR_MATH_GATE",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E19",
+      "title": "Resonance to Nursery candidate generation",
+      "phase": 4,
+      "depends_on": [
+        "GP-E09",
+        "GP-E13"
+      ],
+      "work_ids": [
+        "MWL-121..129",
+        "SYS-C23..26"
+      ],
+      "risk": "MODEL_ADMISSION",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E20",
+      "title": "Nursery full browse/gate/placement verification",
+      "phase": 4,
+      "depends_on": [
+        "GP-E13"
+      ],
+      "work_ids": [
+        "MWL-140..143",
+        "SYS-C27..29"
+      ],
+      "risk": "HUMAN_GATE",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E21",
+      "title": "DuoBeta learning and rollback",
+      "phase": 4,
+      "depends_on": [
+        "GP-E02",
+        "GP-E20"
+      ],
+      "work_ids": [
+        "MWL-069..072",
+        "PR-483"
+      ],
+      "risk": "LEARNING",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E22",
+      "title": "HCN R3 implementation contract",
+      "phase": 5,
+      "depends_on": [
+        "GP-E07",
+        "GP-E13",
+        "GP-E14",
+        "GP-E15"
+      ],
+      "work_ids": [
+        "SYS-C32",
+        "SEQ-HCN"
+      ],
+      "risk": "FROZEN_R3",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E23",
+      "title": "Dock and Psalm session governance",
+      "phase": 6,
+      "depends_on": [
+        "GP-E20",
+        "GP-E22"
+      ],
+      "work_ids": [
+        "SYS-C33..36",
+        "MWL-152..155"
+      ],
+      "risk": "PROVIDER_AUTH",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E24",
+      "title": "Studio Console five public pages and views",
+      "phase": 7,
+      "depends_on": [
+        "GP-E13",
+        "GP-E16",
+        "GP-E20",
+        "GP-E23"
+      ],
+      "work_ids": [
+        "SYS-C37..39",
+        "MWL-099..111"
+      ],
+      "risk": "PUBLIC_UX",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E25",
+      "title": "Living Muse Space Blueprint evidence view",
+      "phase": 1,
+      "depends_on": [],
+      "work_ids": [
+        "FI-002",
+        "FI-003",
+        "MUSE-SPACE"
+      ],
+      "risk": "READ_ONLY_FIRST",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E26",
+      "title": "Security offline perf full system probe",
+      "phase": 7,
+      "depends_on": [
+        "GP-E13",
+        "GP-E20",
+        "GP-E23",
+        "GP-E24"
+      ],
+      "work_ids": [
+        "SYS-C40..42"
+      ],
+      "risk": "SECURITY_PERF",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E27",
+      "title": "Grand Synchronization 25 public journeys",
+      "phase": 8,
+      "depends_on": [
+        "GP-E08",
+        "GP-E10",
+        "GP-E11",
+        "GP-E12",
+        "GP-E16",
+        "GP-E17",
+        "GP-E18",
+        "GP-E19",
+        "GP-E21",
+        "GP-E22",
+        "GP-E23",
+        "GP-E24",
+        "GP-E26"
+      ],
+      "work_ids": [
+        "J-01..25",
+        "SEQ-GRAND-SYNC"
+      ],
+      "risk": "WHOLE_SYSTEM",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    },
+    {
+      "id": "GP-E28",
+      "title": "Far Stratum gated program",
+      "phase": 9,
+      "depends_on": [
+        "GP-E18",
+        "GP-E27"
+      ],
+      "work_ids": [
+        "FAR-1..20",
+        "READER"
+      ],
+      "risk": "SANDBOX_ADOPTION_GATE",
+      "code_authority": "UNI_ONLY",
+      "design_status": "DIRECTOR_AUTHORED_UNREVIEWED",
+      "implementation_status": "MUST_RECHECK_CURRENT_MAIN",
+      "review_owner": "UNI",
+      "certification_owner": "KEEPER",
+      "merge_authority": "DIRECTOR_CONDITIONAL_THEN_UNI_EXECUTES"
+    }
+  ],
+  "topological_order": [
+    "GP-E01",
+    "GP-E02",
+    "GP-E03",
+    "GP-E05",
+    "GP-E06",
+    "GP-E07",
+    "GP-E13",
+    "GP-E25",
+    "GP-E09",
+    "GP-E14",
+    "GP-E08",
+    "GP-E11",
+    "GP-E15",
+    "GP-E18",
+    "GP-E20",
+    "GP-E04",
+    "GP-E12",
+    "GP-E16",
+    "GP-E17",
+    "GP-E19",
+    "GP-E21",
+    "GP-E22",
+    "GP-E10",
+    "GP-E23",
+    "GP-E24",
+    "GP-E26",
+    "GP-E27",
+    "GP-E28"
+  ],
+  "currently_independent_start_candidates": [
+    "GP-E01",
+    "GP-E02",
+    "GP-E03",
+    "GP-E05",
+    "GP-E06",
+    "GP-E07",
+    "GP-E13",
+    "GP-E25"
+  ],
+  "milestone_definition": {
+    "phase0": "Current-main source truth and silent-loss repair; no unbounded code change",
+    "phase1": "Core Dells and unambiguous control truth",
+    "phase2": "Language and state contracts",
+    "phase3": "Space and recoverable rooms/bridges",
+    "phase4": "Resonance/Nursery/learning with human gate",
+    "phase5": "HCN frozen R3",
+    "phase6": "Dock/Psalm",
+    "phase7": "Studio + safety/resources",
+    "phase8": "Grand Synchronization",
+    "phase9": "Far research promotion after exact prerequisite gates"
+  }
+}
