@@ -1,6 +1,6 @@
 # LIMITS CENSUS — CURRENT-MAIN DELTA CLASSIFICATION (2026-11-18)
 
-Companion to `LIMITS_CENSUS_2026-11-13.md`, landed on main by this PR per
+Companion to `LIMITS_CENSUS_2026-11-13.md`, proposed for landing on main by this PR per
 Director disposition 6980308495 (PR #427). The census itself is a PINNED
 2026-11-13 baseline (185 limits: 70 HINDERS / 88 GUARDS / 12 ELASTIC /
 15 UNKNOWN) and is preserved byte-identical (source blob
