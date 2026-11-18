@@ -192,6 +192,7 @@ LIST = [
     "form.translate_intent_args_test",
     "form.translate_word_counts_test",
     "form.translate_dead_args_test",
+    "form.r19sib_count_door_test",
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",
     "form.graph_journal_crash_test",

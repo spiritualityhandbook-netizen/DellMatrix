@@ -161,6 +161,29 @@ def _count_value(raw: Any, default: int = 1) -> int:
     return _COUNT_WORDS.get(s, default)
 
 
+def _count_operand(raw: Any, default: int):
+    """R19-SIB (Director ruling 6987078989, Q-A/Q-C): judge a
+    captured count operand by the shared count grammar
+    (executor_leaf._parse_count + the established count words).
+
+    Returns the int value for a valid count, `default` for an
+    absent/empty operand, or the RAW string for an explicitly
+    malformed operand — the executing authority refuses raw
+    counts typed. Nothing is silently defaulted (the _count_value
+    behavior this replaces at the count doors), no Unicode digit
+    is converted, and int() never sees an unbounded string.
+    """
+    s = str(raw or "").strip()
+    if not s:
+        return default
+    low = s.lower()
+    if low in _COUNT_WORDS:
+        return _COUNT_WORDS[low]
+    from form.mandell.executor_leaf import _parse_count
+    n = _parse_count(s)
+    return n if n is not None else s
+
+
 # ------------------------------------------------------------------
 # LM-4 THE TOLL BOOTH: the forced pass. translate() is a thin
 # wrapper over _translate_body() (the pre-LM-4 translator, every
@@ -562,7 +585,13 @@ def _translate_body(english: str) -> Intent:
             # was unreachable, so the user's count was silently
             # dropped while execution reported success.
             _lbl = str(hit.get("label") or "")
-            args = {"cycles": max(1, _count_value(_lbl, 1))}
+            # R19-SIB: "item" is match_phrase's no-capture sentinel
+            # (an omitted count), not an operand. A captured count
+            # is judged whole by _count_operand; the old
+            # max(1, _count_value(...)) silently defaulted garbage
+            # to 1, converted fullwidth digits, and floored 0.
+            args = {"cycles": _count_operand(
+                "" if _lbl == "item" else _lbl, 1)}
         elif action == "turn":
             args = {"direction": "left" if "left" in hint else "right"}
         elif action == "express":
@@ -579,7 +608,11 @@ def _translate_body(english: str) -> Intent:
             # handler reads steps from Intent.args. Hard-coding 1
             # silently dropped the user's count.
             _lbl = str(hit.get("label") or "")
-            args = {"steps": _count_value(_lbl, 1)}
+            # R19-SIB: same judgment as the grow arm — "item" is
+            # the omitted sentinel; malformed counts travel RAW
+            # and the consuming door refuses them typed.
+            args = {"steps": _count_operand(
+                "" if _lbl == "item" else _lbl, 1)}
         elif action == "strafe":
             args = {"direction": "left" if "left" in lower else "right"}
         elif action == "zoom":
@@ -593,9 +626,12 @@ def _translate_body(english: str) -> Intent:
             # was dead (no consumer) — retired.
             args = {}
         elif action == "english_expand":
-            n = 50
-            if hit.get("label"):
-                n = _count_value(hit["label"], 50)
+            # R19-SIB: default 50 only for a genuinely omitted
+            # count (no label, or the "item" sentinel); a captured
+            # count is judged whole — garbage no longer becomes a
+            # silent 50 and oversized input no longer crashes.
+            _lbl = str(hit.get("label") or "")
+            n = 50 if _lbl in ("", "item") else _count_operand(_lbl, 50)
             args = {"cycles": n}
         elif action == "form":
             # DCC-III: extract form name from hint (form_sphere) or mandel.
@@ -762,7 +798,14 @@ def _translate_body(english: str) -> Intent:
                          f'58[Match](pattern="{safe_pat}")', text)
 
     if re.search(r"\b(walk|go|move)\s+(forward|ahead)\b", lower) or lower in ("walk", "go forward"):
-        return Intent("walk", 19, "Drive", {"steps": 1}, "19[Drive] :: walk", text)
+        # R19-SIB: this fallback fires when the strict walk phrase
+        # did not claim the text — e.g. "walk forward banana". A
+        # token after the direction word is a count operand and is
+        # judged whole (RAW travel when malformed; the REPL walk
+        # handler refuses it typed). No token: the default 1.
+        _mtail = re.search(r"\b(?:forward|ahead)\b\s+(\S+)", lower)
+        _steps = _count_operand(_mtail.group(1), 1) if _mtail else 1
+        return Intent("walk", 19, "Drive", {"steps": _steps}, "19[Drive] :: walk", text)
     if re.search(r"\b(backstep|back\s*step|step\s+back)\b", lower) or lower in ("s", "back"):
         return Intent("backstep", 19, "Drive", {"steps": 1}, "19[Drive] :: backstep", text)
     if re.search(r"\bstrafe\s+(left|right|l|r)\b", lower):
@@ -815,7 +858,23 @@ def _translate_body(english: str) -> Intent:
     if re.search(r"\b(evolve\s+program|grow\s+program|level\s+up)\b", lower) or lower == "evolve":
         return Intent("evolve", 13, "Loop", {}, "13[Loop] :: evolve", text)
     if re.search(r"\bgrow\b", lower) or re.search(r"\bevolve\s+ideas?\b", lower):
-        return Intent("grow", 13, "Loop", {"cycles": 1}, "13[Loop] > 04[Transform] :: grow", text)
+        # R19-SIB (Q-C): this fallback catches every grow phrase
+        # the strict patterns did not claim — including ones with
+        # an explicit malformed count ("grow banana", "grow -3",
+        # "grow 20x"). The trailing operand is judged whole: a
+        # valid count travels, an absent/filler tail keeps the
+        # default 1, and anything else travels RAW so Dell 13
+        # refuses it typed. Malformed counts reach refusal, never
+        # fallback growth.
+        _toks = lower.split()
+        while _toks and _toks[-1] in ("idea", "ideas"):
+            _toks.pop()
+        _operand = ""
+        if _toks and _toks[-1] not in ("grow", "evolve"):
+            _operand = _toks[-1]
+        return Intent("grow", 13, "Loop",
+                      {"cycles": _count_operand(_operand, 1)},
+                      "13[Loop] > 04[Transform] :: grow", text)
     # DCC-III: expanded semantic vocabulary (all route through Dell authority).
     # Note: stamp/cycle/form (with args) checked before bare nouns to avoid
     # substring matches (e.g. "test" in "test-mark").

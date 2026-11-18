@@ -53,8 +53,13 @@ def run_all():
           translate("grow").args.get("cycles") == 1)
     check("grow ideas (no count) -> cycles 1",
           translate("grow ideas").args.get("cycles") == 1)
-    check("grow 0 -> cycles clamped to 1 (mirrors _seed_grow)",
-          translate("grow 0").args.get("cycles") == 1)
+    # R19-SIB re-pin (Director 6987078989, Q-A): the old pin here
+    # asserted translate clamps grow 0 -> 1 (mirroring _seed_grow's
+    # floor). That silent rewrite is exactly what the shared
+    # count-door contract abolished: the requested 0 now travels
+    # and Dell 13 clamps it WITH its requested/executed receipt.
+    check("grow 0 -> cycles 0 travels (leaf clamps + reports)",
+          translate("grow 0").args.get("cycles") == 0)
 
     # 2. translate level: explicit walk step counts survive.
     check("walk forward 3 -> steps 3",
@@ -66,8 +71,13 @@ def run_all():
     # 3. Adversarial: a non-numeric grow phrase must not fabricate a
     # count, and unrelated phrase args are unchanged.
     g = translate("grow abc")
-    check("grow abc -> no fabricated cycles",
-          g.action != "grow" or g.args.get("cycles") in (None, 1))
+    # R19-SIB re-pin (Director 6987078989, Q-A/Q-C): SM11's
+    # anti-fabrication intent stands — no invented number — but
+    # the old acceptance set (None or a defaulted 1) blessed the
+    # silent default. The malformed operand now travels RAW so
+    # Dell 13 refuses it typed (invalid_loop_count downstream).
+    check("grow abc -> malformed travels RAW (no fabricated cycles)",
+          g.action != "grow" or g.args.get("cycles") == "abc")
     check("turn left unchanged",
           translate("turn left").args.get("direction") == "left")
     check("cycle 3 (fallback path) unchanged",

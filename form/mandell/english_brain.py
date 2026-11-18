@@ -633,9 +633,22 @@ def _synonym_rewrite(lower: str, original: str = "") -> str:
     if canon == "grow":
         # 72-06 Class E: carry spelled-out counts too, not only
         # digits — the word is passed through verbatim and the
-        # phrase layer's _count_value converts it.
-        m = re.search(r"(\d+|once|twice|thrice|one|two|three|four|five)", rest)
-        return f"grow ideas {m.group(1)}" if m else "grow ideas"
+        # phrase layer converts it.
+        # R19-SIB (Director 6987078989, Q-C): the tail is carried
+        # VERBATIM. The previous unanchored re.search extracted the
+        # first digit run anywhere in the tail — "-3" became 3 and
+        # "20x" became 20 (prefix theft) — and a tail with no digit
+        # run had its operand silently DELETED ("cultivate ideas
+        # banana" -> "grow ideas", a default grow). The operand now
+        # reaches the phrase/translate layers whole, where the
+        # shared count grammar judges it and refuses it typed when
+        # malformed.
+        tail = rest.strip()
+        if not tail:
+            return "grow ideas"
+        if tail.startswith(("idea", "my ")):
+            return f"grow {tail}"
+        return f"grow ideas {tail}"
     if canon == "walk" and (not rest or rest in ("forward", "ahead", "on")):
         return "walk forward"
     if canon == "turn" and rest in ("left", "right"):
