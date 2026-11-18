@@ -52,8 +52,8 @@ floors with `max(1, …)`. Dell 13's own leaf already refuses
 malformed counts typed (`invalid_loop_count`, DIR-F13) — the
 malformation is destroyed upstream before the leaf can judge it.
 
-### F3 — Walk family (Dell 19 Drive, phrase-match): DEFECT AT
-### TRANSLATE, execution-inert via the routed door today
+### F3 — Walk family (Dell 19 Drive, phrase-match): DEFECT,
+### LATENT (translate-level; routed door refuses today)
 `translate.py` walk arm (~:582) uses `_count_value(label, 1)`:
 -3/banana/20x/² → steps=1 (SILENT_DEFAULT in the Intent);
 ２０ → steps=20 (CONVERTS); oversized → **translate CRASHES**.
@@ -64,8 +64,8 @@ own comment states the REPL walk handler reads steps from
 Intent.args — a second door, NOT probed in this pass. Probe owed
 before any closure claim.
 
-### F4 — english_expand (Dell 13, phrase-match): DEFECT AT
-### TRANSLATE, execution-inert via the routed door today
+### F4 — english_expand (Dell 13, phrase-match): DEFECT,
+### LATENT (translate-level; routed door refuses today)
 `translate.py` (~:598) uses `_count_value(label, 50)` — the
 default is **50**: a malformed label that reaches the arm puts
 cycles=50 in the Intent (SILENT_DEFAULT, fiftyfold); ２０
@@ -134,3 +134,47 @@ doors, missed malformed classes, classification disputes, and
 count-like operands hiding in the label doors. Her reply is
 GEMINI-REPORTED until Uni verifies each claim against the code;
 verified additions will ride a follow-up addendum to this audit.
+
+## Addendum — Gemini critique, Uni-verified (2026-11-18)
+
+Gemini's coverage critique was solicited in parallel; every
+claim below was checked against the code before entering this
+record (her raw reply is GEMINI-REPORTED material, saved at
+hidden_files/english_door_audit_2026-11-18/gemini_response.json).
+
+CONFIRMED — and it sharpens F5: the helper itself crashes on
+digit characters that are not decimal: _count_value('²') and
+_count_value('①') raise ValueError (str.isdigit() is True,
+int() rejects). The battery's grow-door ² case did not crash
+only because the phrase pattern never captured it as a label.
+So _count_value has TWO crash modes: oversized decimal strings
+(int digit limit) and non-decimal digit characters. Any future
+call site or capture change exposes both.
+
+CONFIRMED as battery additions (same SILENT_DEFAULT class, more
+members): '1_000', '1.5', '0x10', '1e2' all silently default at
+_count_value. Her crash hypothesis for these four is REFUTED
+(the isdigit gate keeps them from int()).
+
+ACCEPTED (classification): F3/F4 are relabeled LATENT, not
+"inert" — a routing refusal is a temporal defense; the
+malformed Intent exists and a routing-table change or the
+unprobed REPL walk door exposes it. The proposed circuit
+therefore treats walk/expand repairs as in-scope by default
+(question Q-B stands for the Director's confirmation).
+
+REFUTED by direct test: Core-II address bypasses ('dell 050',
+'dell +50', 'dell 0x32' all translate to unknown — no bypass,
+no crash); temporal/batch verbs sharing the helper (grep:
+_count_value has exactly three call sites — grow :565, walk
+:582, expand :598; the Retry arm carries no count); trailing
+text crashing no-operand arms ('help'/'save' + 5000 digits
+translate cleanly); Stamp's [:48] truncation splitting a
+character (Python slices by code point); numeric-label /
+slicing-syntax count collisions in the label doors (labels
+travel as strings; no int() is applied to them).
+
+UNPROVEN, noted out of scope: Match-pattern ReDoS/injection
+downstream (the translate arm strips quotes and truncates the
+pattern to 60 chars; downstream matching behavior was not
+probed in this pass — it is not part of the count class).
