@@ -163,14 +163,19 @@ def _seed_stamp(intent: Any, parsed: Any) -> str:
 
 
 def _seed_cycle(intent: Any, parsed: Any) -> str:
+    raw = (intent.args or {}).get("count", 1)
     try:
-        n = int((intent.args or {}).get("count", 1))
+        n = int(raw)
     except (TypeError, ValueError):
-        n = 1
-    # R19: no upper clamp here — the requested count travels in the
-    # seed (the Loop seed-builder precedent at _seed_grow) and the
-    # Dell 6 leaf is the single clamp + report authority.
-    n = max(1, n)
+        # R19 (Director ruling 2026-11-18, point 3): an explicitly
+        # malformed count travels RAW so the Dell 6 leaf can refuse
+        # it deterministically; it is never silently defaulted here.
+        token = str(raw).strip()
+        return f"06[Cycle] :: {token}" if token else "06[Cycle] :: 1"
+    # R19: no clamp and no floor here — the requested count travels
+    # in the seed exactly as supplied (the Loop seed-builder
+    # precedent at _seed_grow) and the Dell 6 leaf is the single
+    # clamp + report + refusal authority.
     return f"06[Cycle] :: {n}"
 
 

@@ -895,9 +895,9 @@ def _translate_body(english: str) -> Intent:
     m = re.search(r"\b(cycle|run\s+cycles?)\b\s*(\d+|once|twice|thrice|one|two|three|four|five)?", lower)
     if m:
         n = _count_value(m.group(2), 1) if m.group(2) else 1
-        # R19: no upper clamp here — the requested count travels in
-        # the Intent/seed and the Dell 6 leaf clamps + reports.
-        n = max(1, n)
+        # R19: no clamp and no floor here — the requested count
+        # travels in the Intent/seed exactly as supplied and the
+        # Dell 6 leaf clamps + reports (0 included).
         return Intent("cycle", 6, "Cycle", {"count": n}, f"06[Cycle] :: {n}", text)
     m = re.search(r"\bform\s+(cube|sphere|core|flower)\b", lower)
     if m:

@@ -158,18 +158,33 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         face = program.face.set(expr)
         messages.append(f"{face}  tone={expr.value}")
     elif primary == 6:
-        # DIR-F13: count grammar via _parse_count; labels outside it
-        # (non-ASCII digits, oversized, non-numeric) take Cycle's
-        # existing default of 1 instead of raising inside int().
-        n = _parse_count((label or "").strip())
-        if n is None:
-            n = 1
-        # R19 (Director ruling 2026-11-18): mirror the Loop B2 pattern —
-        # keep the requested count, clamp only the executed count, and
-        # disclose both (plus the unexecuted remainder) on the receipt.
-        # A request of 20 executing 5 must never read as a successful
-        # request for 20; no automatic continuation is authorized.
-        requested = n
+        # DIR-F13: count grammar via _parse_count; int() never sees an
+        # unvalidated string.
+        # R19 (Director ruling 2026-11-18, point 3): a genuinely
+        # omitted count keeps Cycle's default of 1, but an explicitly
+        # malformed count (non-ASCII, oversized, negative, garbage)
+        # is a typed refusal with no growth — consistently with
+        # Loop's B2 refusal — never a silent default.
+        raw_label = (label or "").strip()
+        _parsed = _parse_count(raw_label) if raw_label else 1
+        if raw_label and _parsed is None:
+            return {
+                "ok": False,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": messages + [
+                    f"Cycle refused: invalid count '{raw_label}' — "
+                    f"no cycles run."],
+                "new_program": new_program,
+                "error": "invalid_cycle_count",
+            }
+        # R19: mirror the Loop B2 pattern — keep the requested count,
+        # clamp only the executed count, and disclose both (plus the
+        # unexecuted remainder) on the receipt. A request of 20
+        # executing 5 must never read as a successful request for 20;
+        # no automatic continuation is authorized.
+        requested = _parsed
         n = max(1, min(requested, 5))
         out = program.grow_ideas(n)
         _cycle_line = (f"Cycle x{n}: +{out.get('proposed_new', 0)} new "

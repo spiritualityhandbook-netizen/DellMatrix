@@ -65,15 +65,21 @@ def _args_from_label(action: str, label: str) -> Dict[str, Any]:
     if action == "stamp":
         return {"mark": label[:48] if label else "mark"}
     if action == "cycle":
-        try:
-            # R19 (Director ruling 2026-11-18): the unruled 99 ceiling
-            # is removed. The requested count travels as-is; the Dell 6
-            # leaf applies the ruled 1..5 bound and reports all three
-            # numbers, so the flow step record and the receipt agree.
-            n = max(1, int(label))
-        except (ValueError, TypeError):
-            n = 1
-        return {"count": n}
+        # R19 (Director ruling 2026-11-18): the unruled 99 ceiling is
+        # removed. The count is read under the ONE shared count
+        # grammar (_parse_count): a valid count travels as-is and the
+        # Dell 6 leaf applies the ruled 1..5 bound and reports all
+        # three numbers, so the flow step record and the receipt
+        # agree; an explicitly malformed label travels RAW so the
+        # leaf refuses it deterministically (point 3) instead of the
+        # adapter silently defaulting it; an omitted label defaults.
+        from .executor_leaf import _parse_count
+        if not label:
+            return {"count": 1}
+        parsed = _parse_count(label)
+        if parsed is not None:
+            return {"count": parsed}
+        return {"count": label}
     if action == "form":
         f = label.lower() if label else "cube"
         if f not in ("cube", "sphere", "core", "flower"):

@@ -7,8 +7,10 @@ removed. The repair must preserve what the user originally requested:
 requesting 20 cycles may execute 5, but the receipt must explicitly
 show 20 requested, 5 executed, 15 remaining, without implying the
 full request succeeded. Invalid counts refuse without executing
-growth (Loop arm contract, unchanged). Automatic continuation beyond
-five is NOT authorized by the ruling.
+growth on every door (ruling point 3: an explicitly malformed count
+is a typed refusal, Loop B2 parity; only a genuinely omitted count
+keeps the default of 1). Automatic continuation beyond five is NOT
+authorized by the ruling.
 
 Defects pinned here (all reproduced on main 3a8b1412 by the R19
 census probe, hidden_files/R19_CENSUS_PROBE_2026-11-18.md):
@@ -99,10 +101,27 @@ def _run():
              "requested 3" in j and "executed 3" in j
              and "remaining" not in j and "clamped" not in j, j[:120])
 
-        # DIR-F13 regression guard: unparseable label still defaults to 1.
-        r = execute_seed(prog(), "06[Cycle] :: banana")
-        _rec("seed cycle unparseable: DIR-F13 default x1 preserved",
-             "Cycle x1:" in joined(r), joined(r)[:120])
+        # R19 point 3: a genuinely omitted count keeps the default of
+        # 1; an explicitly malformed count is a typed refusal with no
+        # growth (Loop B2 parity) — never a silent default.
+        r = execute_seed(prog(), "06[Cycle]")
+        _rec("seed cycle omitted: default x1 preserved",
+             r.get("ok") is True and "Cycle x1:" in joined(r),
+             joined(r)[:120])
+        p_ref = prog()
+        hist_before = len(list(getattr(p_ref, "history", []) or []))
+        for bad in ("banana", "-3", "²", "２０", "9" * 5000, "20x"):
+            r = execute_seed(p_ref, f"06[Cycle] :: {bad}")
+            j = joined(r)
+            _rec(f"seed cycle malformed {bad[:8]!r}: typed refusal, no growth",
+                 r.get("ok") is False
+                 and r.get("error") == "invalid_cycle_count"
+                 and "Cycle x" not in j
+                 and "Cycle refused:" in str(r.get("messages", "")),
+                 f"ok={r.get('ok')} err={r.get('error')}")
+        hist_after = len(list(getattr(p_ref, "history", []) or []))
+        _rec("refusals left no growth trace in history",
+             hist_after == hist_before, f"{hist_before} -> {hist_after}")
 
         # Loop arm regression guard: honest receipt unchanged.
         r = execute_seed(prog(), "13[Loop] :: 20")
@@ -129,6 +148,20 @@ def _run():
         _rec("router seed cycle 3 unchanged",
              _seed_cycle(_Intent(3), _Parsed()) == "06[Cycle] :: 3",
              _seed_cycle(_Intent(3), _Parsed()))
+        _rec("router seed cycle 0 carries 0 (leaf discloses the clamp-up)",
+             _seed_cycle(_Intent(0), _Parsed()) == "06[Cycle] :: 0",
+             _seed_cycle(_Intent(0), _Parsed()))
+        _rec("router seed cycle -3 carries -3 (leaf refuses the grammar)",
+             _seed_cycle(_Intent(-3), _Parsed()) == "06[Cycle] :: -3",
+             _seed_cycle(_Intent(-3), _Parsed()))
+        _rec("router seed cycle 'banana' travels raw to the leaf refusal",
+             _seed_cycle(_Intent("banana"), _Parsed()) == "06[Cycle] :: banana",
+             _seed_cycle(_Intent("banana"), _Parsed()))
+        r = execute_seed(prog(), _seed_cycle(_Intent("banana"), _Parsed()))
+        _rec("router-carried malformed count refuses at the leaf",
+             r.get("ok") is False
+             and r.get("error") == "invalid_cycle_count",
+             f"ok={r.get('ok')} err={r.get('error')}")
 
         # --- Face 3: translate keeps the requested count in the Intent
         from form.mandell.translate import translate
@@ -142,6 +175,14 @@ def _run():
         _rec("translate 'cycle 3' unchanged",
              (intent3.args or {}).get("count") == 3
              and intent3.mandel == "06[Cycle] :: 3", str(intent3.mandel))
+        intent0 = translate("cycle 0")
+        _rec("translate 'cycle 0': count 0 travels (leaf discloses)",
+             (intent0.args or {}).get("count") == 0
+             and intent0.mandel == "06[Cycle] :: 0", str(intent0.mandel))
+        r = execute_seed(prog(), intent0.mandel)
+        j = joined(r)
+        _rec("english cycle 0 end-to-end: requested 0, executed 1",
+             "requested 0" in j and "executed 1" in j, j[:140])
 
         # English end-to-end: the translated seed executes with a
         # truthful receipt.
@@ -160,9 +201,31 @@ def _run():
         _rec("flow args cycle 150 -> 150 (unruled 99 removed)",
              _args_from_label("cycle", "150") == {"count": 150},
              str(_args_from_label("cycle", "150")))
-        _rec("flow args cycle non-numeric -> default 1",
-             _args_from_label("cycle", "abc") == {"count": 1},
+        _rec("flow args cycle 99 -> 99 (the old ceiling value travels)",
+             _args_from_label("cycle", "99") == {"count": 99},
+             str(_args_from_label("cycle", "99")))
+        _rec("flow args cycle omitted -> default 1",
+             _args_from_label("cycle", "") == {"count": 1},
+             str(_args_from_label("cycle", "")))
+        _rec("flow args cycle malformed travels raw (leaf refuses)",
+             _args_from_label("cycle", "abc") == {"count": "abc"},
              str(_args_from_label("cycle", "abc")))
+        seed = _seed_cycle(_Intent(_args_from_label("cycle", "abc")["count"]),
+                           _Parsed())
+        r = execute_seed(prog(), seed)
+        _rec("flow malformed count refuses at the leaf, no growth",
+             r.get("ok") is False
+             and r.get("error") == "invalid_cycle_count"
+             and "Cycle x" not in joined(r),
+             f"seed={seed} ok={r.get('ok')} err={r.get('error')}")
+        seed99 = _seed_cycle(_Intent(_args_from_label("cycle", "99")["count"]),
+                             _Parsed())
+        r = execute_seed(prog(), seed99)
+        j = joined(r)
+        _rec("flow 99 reconciled: receipt 99/5/94",
+             seed99 == "06[Cycle] :: 99" and "requested 99" in j
+             and "executed 5" in j and "remaining 94" in j,
+             f"seed={seed99} receipt={j[:120]}")
 
         # Flow reconciliation end-to-end: flow args -> router seed ->
         # leaf execution; the step record and the receipt must agree.
@@ -181,6 +244,12 @@ def _run():
         _rec("chain cycle 20: receipt 20/5/15",
              "requested 20" in j and "executed 5" in j
              and "remaining 15" in j, j[:200])
+
+        # --- Chain leg: Loop atom in a chain keeps its honest receipt
+        r = execute_seed(prog(), "13[Loop] :: 20 >> 10[Keep]")
+        j = joined(r)
+        _rec("chain loop 20: receipt requested 20, executed 5",
+             "Loop: requested 20, executed 5." in j, j[:200])
     finally:
         _cleanup()
     return all(ok for _, ok in _RESULTS)

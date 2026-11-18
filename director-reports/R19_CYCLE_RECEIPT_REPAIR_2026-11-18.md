@@ -37,15 +37,28 @@ NOT authorized.
   B2 pattern — `Cycle: requested 20, executed 5, remaining 15.
   (clamped to 1..5)`; `requested 0, executed 1. (clamped to 1..5)`
   for under-range; unadorned `requested 3, executed 3.` in range.
-  DIR-F13 unparseable-label default of 1 preserved (pinned sibling
-  semantics, not changed). The `Cycle x{executed}:` growth line is
-  unchanged.
+  The `Cycle x{executed}:` growth line is unchanged.
+- **Malformed counts (ruling point 3):** a genuinely omitted count
+  keeps the default of 1, but an explicitly malformed count
+  (non-ASCII, oversized, negative, garbage, trailing tokens) is a
+  typed refusal at the leaf — `ok=False`,
+  `error="invalid_cycle_count"`, no growth — at Loop B2 parity.
+  Router and flow adapters carry a malformed count RAW to the leaf
+  instead of silently defaulting it. This supersedes the DIR-F13
+  Cycle default for explicit labels: the two DIR-F13 checks that
+  pinned malformed -> default-x1 (superscript, oversized) are
+  RE-PINNED to the refusal with disclosure in
+  `form/dirf13_loop_count_test.py`; DIR-F13's crash-safety contract
+  (int() never sees an unvalidated string) is preserved.
 - **semantic_router._seed_cycle / translate cycle arm:** early
-  upper clamp removed (floor kept); the requested count travels in
-  the Intent/seed; the leaf is the single clamp + report authority.
+  upper clamp AND floor removed; the requested count travels in
+  the Intent/seed exactly as supplied (0 and negatives included —
+  the leaf disposes); the leaf is the single clamp + report +
+  refusal authority.
 - **flow_executor._args_from_label:** the 99 ceiling removed; the
-  requested count travels as-is and the leaf receipt reconciles
-  with the flow step record.
+  count is read under the ONE shared grammar (`_parse_count`):
+  valid counts travel as-is, malformed labels travel raw to the
+  leaf refusal, omitted labels default.
 - **chain_exec.py:480:** verified consistent (Loop-body repetition
   re-derives from the effective label and clamps identically); no
   change.
@@ -53,18 +66,23 @@ NOT authorized.
 ## Evidence
 
 - Failing-first suite `form/r19_cycle_receipt_test.py` (registered
-  in `form/regress.py`): 21 checks — seed Cycle at 0/1/5/6/20/100,
-  in-range exactness, DIR-F13 default guard, Loop receipt guard,
-  router seeds, translate Intent + end-to-end, flow args +
-  reconciliation end-to-end, chain containing a Cycle atom at 20.
-  RED on base (clamps hid the request at every face; flow capped
-  at 99), GREEN 21/21 after the repair. Seed legs are
-  PUBLIC_ENTRY_PATH (real Program via execute_seed); router /
-  translate / flow-args legs are INTEGRATION.
+  in `form/regress.py`): 39 checks — seed Cycle at 0/1/5/6/20/100,
+  in-range exactness, omitted-count default, the malformed matrix
+  (garbage / negative / superscript / fullwidth / oversized /
+  trailing tokens -> typed refusal, no growth, no history trace),
+  Loop receipt guard, router seeds (incl. 0, -3, raw malformed
+  travel + leaf refusal), translate Intent + end-to-end (incl.
+  cycle 0), flow args (20 / 99 / 150 / omitted / malformed) +
+  reconciliation end-to-end, chains containing a Cycle atom and a
+  Loop atom at 20. RED on base (clamps hid the request at every
+  face; flow capped at 99), GREEN 39/39 after the repair. Seed
+  legs are PUBLIC_ENTRY_PATH (real Program via execute_seed);
+  router / translate / flow-args legs are INTEGRATION.
 - Named regressions GREEN after the repair: loop_bounds_test,
-  dirf13_loop_count_test, dd14_loop_body_test,
-  core_i_arg_gate_test, translate_word_counts_test,
-  d1_registry_leaf_test.
+  dirf13_loop_count_test (with the two disclosed re-pins),
+  dd14_loop_body_test, core_i_arg_gate_test,
+  translate_word_counts_test, d1_registry_leaf_test,
+  flow_executor_test.
 - Full regression campaign x3 + exact-head CI: see the PR's
   campaign receipt (posted on completion).
 

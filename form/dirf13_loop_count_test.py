@@ -19,9 +19,13 @@ Contracts proven here, through the public seed path
   '3' -> 3, '99' -> clamped 5, requested/executed receipt intact;
   malformed 'abc'/'2.5'/'-3' refuse exactly as before.
 - Siblings keep their existing default semantics, crash-free:
-  Cycle (6) with '²' runs the default x1; Macro (48) with a '²'
-  label/token does not raise; Decay (16) with a '²' factor does
-  not raise (default factor path / gate verdict, never ValueError).
+  Macro (48) with a '²' label/token does not raise; Decay (16)
+  with a '²' factor does not raise (default factor path / gate
+  verdict, never ValueError). Cycle (6) with '²' originally ran
+  the default x1 under DIR-F13; RE-PINNED by the Director's R19
+  ruling (2026-11-18, point 3): an explicitly malformed Cycle
+  count is now a typed refusal with no growth (Loop B2 parity) —
+  still crash-free, and only a genuinely omitted count defaults.
 - Chain path: a chained Loop '²' reports the atom failed, not ok.
 
 Labels: INTEGRATION / PUBLIC_ENTRY (real Program, real growth).
@@ -172,21 +176,27 @@ def _siblings() -> None:
     _run(p, "08[Create] :: Alpha")
     try:
         r = _run(p, f"06[Cycle] :: {SUPER2}")
-        _rec("W-cycle superscript: no crash, default x1 runs",
-             r.get("ok") is True
-             and any("Cycle x1" in m for m in _msgs(r)),
-             f"{r.get('ok')} / {_msgs(r)}")
+        _rec("W-cycle superscript: no crash, R19 typed refusal "
+             "(re-pinned from DIR-F13 default-x1 per Director R19 "
+             "ruling 2026-11-18 point 3)",
+             r.get("ok") is False
+             and r.get("error") == "invalid_cycle_count"
+             and not any("Cycle x" in m for m in _msgs(r)),
+             f"{r.get('ok')} / {r.get('error')} / {_msgs(r)}")
     except Exception as e:
-        _rec("W-cycle superscript: no crash, default x1 runs", False,
+        _rec("W-cycle superscript: no crash, R19 typed refusal", False,
              f"RAISED {type(e).__name__}: {e}")
     try:
         r = _run(p, f"06[Cycle] :: {'9' * 5000}")
-        _rec("W-cycle oversized: no crash, default x1 runs",
-             r.get("ok") is True
-             and any("Cycle x1" in m for m in _msgs(r)),
-             f"{r.get('ok')} / {_msgs(r)}")
+        _rec("W-cycle oversized: no crash, R19 typed refusal "
+             "(re-pinned from DIR-F13 default-x1 per Director R19 "
+             "ruling 2026-11-18 point 3)",
+             r.get("ok") is False
+             and r.get("error") == "invalid_cycle_count"
+             and not any("Cycle x" in m for m in _msgs(r)),
+             f"{r.get('ok')} / {r.get('error')} / {_msgs(r)}")
     except Exception as e:
-        _rec("W-cycle oversized: no crash, default x1 runs", False,
+        _rec("W-cycle oversized: no crash, R19 typed refusal", False,
              f"RAISED {type(e).__name__}: {e}")
     try:
         r = _run(p, f"48[Macro] :: {SUPER2}")
