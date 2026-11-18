@@ -433,8 +433,9 @@ def redo_last(program) -> Dict[str, Any]:
     again. Re-application goes through canonical doors only —
     Program.place for places (never a backdoor insert), direct field
     restoration for edits (the same inverse shape undo uses). Refusals
-    mutate nothing: a re-taken id, a revision-owned target, or a
-    missing unit all refuse visibly. Session-only, like undo: redo
+    mutate nothing: a re-taken id, a revision-owned target, a missing
+    unit, or a failed sandbox-membership restore (the re-place is
+    rolled back) all refuse visibly. Session-only, like undo: redo
     walks state, never records (DD-54 §6)."""
     redo = _redo_stack(program)
     if not redo:
@@ -501,8 +502,32 @@ def redo_last(program) -> Dict[str, Any]:
                 plane.box([uid], saved_box)
                 u.sandboxed = True
                 u.sandbox_id = saved_box
-        except Exception:
-            pass
+        except Exception as e:
+            # Refusal honesty (Director §42 DELTA 6968119456): a failed
+            # membership restore is a REFUSED redo, never a swallowed
+            # success — reporting ok=True here would claim the C3
+            # exact-membership guarantee while the unit sits unboxed or
+            # in the wrong box. Roll the re-place back so the refusal
+            # mutates nothing and the tail entry stays for a retry (the
+            # canonical removal door undo uses). The rollback cannot
+            # depend on the door that just failed — plane.remove routes
+            # through unbox — so a blocked door falls back to stripping
+            # the membership directly rather than leaving a
+            # half-restored unit behind.
+            try:
+                plane.remove(uid)
+            except Exception:
+                for sb in plane.sandboxes.values():
+                    if uid in sb.member_ids:
+                        sb.member_ids = [m for m in sb.member_ids if m != uid]
+                plane.units.pop(uid, None)
+            _clear_lattice_refs(program, uid)
+            return {
+                "ok": False,
+                "reason": f"redo sandbox restore refused: {e}",
+                "redid": None,
+                "hint": "Sandbox membership could not be restored; the redo entry was kept — fix the cause and retry.",
+            }
         if redo and redo[-1] is act:
             redo.pop()
         program.note_seed(24, "Unlock", f"redo_place_{uid}")

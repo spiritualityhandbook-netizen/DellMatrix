@@ -28,6 +28,11 @@ separate authority and must stay untouched):
      (gate auto-box membership is removed first — never dual member-
      ship, never a dangling entry after the next undo); C4 sibling of
      C2 on the undo side: a revision-refused undo keeps its entry.
+     C5/C6 Director §42 DELTA 6968119456 (PR #481, exact head 82e2dde6):
+     an injected plane.box (C5) or plane.unbox (C6) failure during
+     redo's sandbox-membership restore must refuse honestly — no
+     ok=True, no consumed redo entry, no half-restored unit — and the
+     kept entry must retry cleanly once the fault is removed.
 
 Isolation: every block uses its own owner; canonical state files for
 that owner are removed first and the starting stacks are verified
@@ -424,6 +429,82 @@ def run_all():
         _cleanup("qlc1_c4")
     except Exception as e:
         check("C4.block", False, f"{type(e).__name__}: {e}")
+    try:
+        # C5 (Director §42 DELTA 6968119456): an injected plane.box
+        # failure during redo's sandbox-membership restore must refuse
+        # honestly — no ok=True, no consumed redo entry, no
+        # half-restored unit left in the plane — and the kept entry
+        # must retry cleanly once the fault is removed.
+        p = _fresh("qlc1_c5")
+        res = _place(p, "Qdelta Boxfail")
+        uid = res["id"]
+        plane = p.cube.session.plane
+        plane.box([uid], "vault")
+        undo_last(p)  # record captured: sandboxed, sandbox_id=vault
+        orig_box = plane.box
+
+        def _boom_box(*a, **k):
+            raise RuntimeError("injected box failure")
+
+        plane.box = _boom_box
+        r = _redo(p)
+        plane.box = orig_box
+        member_of = [k for k, sb in plane.sandboxes.items() if uid in sb.member_ids]
+        check("C5.refusal_honest", r.get("ok") is False and "sandbox" in str(r.get("reason") or ""),
+              f"box-failed redo -> {r}")
+        check("C5.entry_kept", len(_redo_stack(p) or []) == 1,
+              f"tail after refused redo: {_redo_stack(p)!r}")
+        check("C5.membership_coherent", uid not in plane.units and not member_of,
+              f"unit present={uid in plane.units}, member_of={member_of}")
+        r = _redo(p)
+        u = plane.units.get(uid)
+        vault = plane.sandboxes.get("vault")
+        check("C5.retry_succeeds", r.get("ok") is True and u is not None
+              and u.sandbox_id == "vault" and vault is not None and uid in vault.member_ids,
+              f"retry redo -> {r}, sandbox_id={getattr(u, 'sandbox_id', None)!r}")
+        _cleanup("qlc1_c5")
+    except Exception as e:
+        check("C5.block", False, f"{type(e).__name__}: {e}")
+    try:
+        # C6 (C5 sibling on the unbox leg): the global gate auto-boxes
+        # the re-place; an injected plane.unbox failure while removing
+        # that auto membership must refuse the same way — and the
+        # rollback may not depend on the very door that is failing
+        # (plane.remove routes through unbox).
+        p = _fresh("qlc1_c6")
+        res = _place(p, "Qdelta Unboxfail")
+        uid = res["id"]
+        plane = p.cube.session.plane
+        plane.box([uid], "vault")
+        undo_last(p)  # record captured: sandboxed, sandbox_id=vault
+        p.sandbox.turn_on()
+        orig_unbox = plane.unbox
+
+        def _boom_unbox(*a, **k):
+            raise RuntimeError("injected unbox failure")
+
+        plane.unbox = _boom_unbox
+        r = _redo(p)
+        plane.unbox = orig_unbox
+        member_of = [k for k, sb in plane.sandboxes.items() if uid in sb.member_ids]
+        check("C6.refusal_honest", r.get("ok") is False and "sandbox" in str(r.get("reason") or ""),
+              f"unbox-failed redo -> {r}")
+        check("C6.entry_kept", len(_redo_stack(p) or []) == 1,
+              f"tail after refused redo: {_redo_stack(p)!r}")
+        check("C6.membership_coherent", uid not in plane.units and not member_of,
+              f"unit present={uid in plane.units}, member_of={member_of}")
+        r = _redo(p)
+        u = plane.units.get(uid)
+        auto = plane.sandboxes.get("auto_sandbox")
+        check("C6.retry_succeeds", r.get("ok") is True and u is not None
+              and u.sandbox_id == "vault"
+              and uid in (plane.sandboxes.get("vault").member_ids if plane.sandboxes.get("vault") else [])
+              and not (auto and uid in auto.member_ids),
+              f"retry redo -> {r}, sandbox_id={getattr(u, 'sandbox_id', None)!r}")
+        p.sandbox.turn_off()
+        _cleanup("qlc1_c6")
+    except Exception as e:
+        check("C6.block", False, f"{type(e).__name__}: {e}")
 
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"=== UNDO_REDO_DEPTH {passed}/{len(RESULTS)} ===")
