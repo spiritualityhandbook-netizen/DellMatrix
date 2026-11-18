@@ -30,9 +30,9 @@
 
 ## 2. Role/action allocation
 
-**Director (done this G2):** Designed and published architecture, 28 implementation circuits, individual 100-Dell minimum contracts, 25 journeys, Muse Space, decision register, all 19 FI entries (with FI-017 explicit source gap), edited G2 status corrections, R17 merge HOLD and source-time provenance. Not a CODE or product completion claim.
+**Director (done this G2):** Designed and published architecture, 28 implementation circuits, individual 100-Dell minimum contracts, 25 journeys, Muse Space, decision register, all 19 FI entries (with FI-017 three-depth Gemini design based on Uni report and original-file provenance check), edited G2 status corrections, R17 merge HOLD and source-time provenance. Not a CODE or product completion claim.
 
-**Uni (next G2 check; not redrafting):** verify every changed file, original source identity FI-013..017 and FI-017 exact intent, 185/49 mapping vs latest main, §32 time interpretation above, existing #485 safe no-bound patch tests, and whether the high-risk first-three repairs remain current. For FI-017 return the goal-workspace source including first utterance, accepted changes, exact role/permissions, placement and tests. For CH-15..17 return exact code counterexamples and missing evidence. Report PASS/CORRECTION_REQUIRED, avoid renaming missing evidence as verified.
+**Uni (next G2 check; not redrafting):** verify every changed file, original source identity FI-013..017 and FI-017 source-reported Gemini operator's three separate depth contracts, 185/49 mapping vs latest main, §32 time interpretation above, existing #485 safe no-bound patch tests, and whether the high-risk first-three repairs remain current. For FI-017 bring original goal-workspace bytes/ID and compare against Uni's reported 6978844101 and Director's file 09 three-depth contract; return exact mismatch, or a signed source-equivalence receipt. For CH-15..17 return exact code counterexamples and missing evidence. Report PASS/CORRECTION_REQUIRED, avoid renaming missing evidence as verified.
 
 **Keeper:** independent exact-new-head records and evidence review after Uni's delta. Prior stamp of original #486 head (if any) cannot transfer automatically to a new head.
 
