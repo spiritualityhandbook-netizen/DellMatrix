@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from typing import Any, Dict, List, Optional, Tuple
 
-from .predicate import partition_store_operand, result_cell
+from .predicate import MAX_BOUND, partition_store_operand, result_cell
 
 SPECTRUM_DELLS = set(range(80, 100))
 # COMPOSE_BOUND = 8 retired by R17: it was the phantom recursion
@@ -734,30 +734,89 @@ def _compose_bound(st: Any) -> Tuple[Optional[int], str]:
     return None, ""
 
 
-def _compose_cycle_ahead(st: Any, body: str, path) -> bool:
-    """Path-sensitive cycle pre-scan (R17/G2): True when expanding
-    body would re-enter a name already on the expansion path.
-    Mirrors _compose_seed's own name resolution so its verdict
-    matches the stack guard exactly. A cycle is a property of the
-    name graph, independent of any bound — a cyclic composition
-    cannot succeed under ANY bound — so it is reported before the
-    bound is consulted (preserves compose_indirect_cycle)."""
+_SCAN_VISIT_BUDGET = 100000
+
+
+def _compose_cycle_ahead(st: Any, body: str, path, depth_budget: int) -> str:
+    """Bounded, fail-closed cycle scan (R17, Director G2 round 2,
+    6978856860): "cycle" when expanding body would re-enter a name
+    already on the expansion path, "clear" when no cycle exists
+    within the authorized depth, "exhausted" when the finite visit
+    budget runs out first.
+
+    Iterative three-color DFS over the name graph: each name's
+    edges are walked at most once (gray = on the current DFS
+    stack, black = fully explored), so the scan is O(names +
+    edges) -- never path-exponential and never recursive. (The
+    first pre-scan recursed per path; a long acyclic chain of
+    unique names exhausted the Python stack inside the scan
+    itself, before any bound could refuse.) Branches deeper than
+    depth_budget (the stated cap, or MAX_BOUND when unspecified,
+    plus one) are pruned: a cycle beyond the authorized budget
+    need not be explored, because the expansion's own bound
+    refusal governs there. Mirrors _compose_seed's resolution;
+    raw [...] bodies and flat digit bodies are terminal and
+    contribute no edges."""
+    def _edges(name):
+        if name.isdigit():
+            return []
+        resolved = _resolve_name(st, name) or name
+        inner = (st.compositions.get(name)
+                 or st.compositions.get(resolved)
+                 or st.defs.get(resolved, ""))
+        if not inner or "[" in inner:
+            return []
+        return [q.strip() for q in
+                inner.replace(",", ">").split(">")
+                if q.strip() and not q.strip().isdigit()
+                and (q.strip() in st.defs
+                     or q.strip() in st.compositions
+                     or q.strip() in st.aliases)]
+
     raw = (body or "").strip()
     if not raw or "[" in raw:
-        return False
-    for part in [p.strip() for p in raw.replace(",", ">").split(">") if p.strip()]:
-        if part.isdigit():
+        return "clear"
+    roots = [p.strip() for p in raw.replace(",", ">").split(">")
+             if p.strip() and not p.strip().isdigit()
+             and (p.strip() in st.defs
+                  or p.strip() in st.compositions
+                  or p.strip() in st.aliases)]
+    for root in roots:
+        if root in path or (_resolve_name(st, root) or root) in path:
+            return "cycle"
+    color = {}
+    visits = 0
+    stack = []
+    for root in roots:
+        if color.get(root) == "black":
             continue
-        if part in path:
-            return True
-        if part in st.defs or part in st.compositions or part in st.aliases:
-            resolved = _resolve_name(st, part) or part
-            if resolved in path:
-                return True
-            inner = st.compositions.get(part) or st.compositions.get(resolved) or st.defs.get(resolved, "")
-            if inner and _compose_cycle_ahead(st, inner, path | {part, resolved}):
-                return True
-    return False
+        color[root] = "gray"
+        stack.append((root, 1, iter(_edges(root))))
+        while stack:
+            node, depth, it = stack[-1]
+            descended = False
+            for child in it:
+                visits += 1
+                if visits > _SCAN_VISIT_BUDGET:
+                    return "exhausted"
+                resolved = _resolve_name(st, child) or child
+                if (child in path or resolved in path
+                        or color.get(child) == "gray"
+                        or color.get(resolved) == "gray"):
+                    return "cycle"
+                if color.get(child) == "black":
+                    continue
+                if depth + 1 > depth_budget:
+                    continue
+                color[child] = "gray"
+                stack.append((child, depth + 1,
+                              iter(_edges(child))))
+                descended = True
+                break
+            if not descended:
+                color[node] = "black"
+                stack.pop()
+    return "clear"
 
 
 def _compose_seed(st: Any, body: str, stack=None, depth: int = 0) -> Tuple[str, str]:
@@ -768,8 +827,24 @@ def _compose_seed(st: Any, body: str, stack=None, depth: int = 0) -> Tuple[str, 
         # A raw seed is terminal: it cannot recurse, so no bound
         # is consulted for it, at any depth (R17).
         return raw, ""
-    if depth == 0 and _compose_cycle_ahead(st, raw, set(stack or [])):
-        return "", "compose_cycle"
+    if depth == 0:
+        # Cycle verdicts precede the bound (a cyclic composition
+        # cannot succeed under ANY bound), but the scan itself is
+        # bounded and fail-closed: on an invalid stated bound the
+        # scan is skipped (the expansion point refuses
+        # invalid_limit at the first name expansion, exactly as
+        # before); on scan exhaustion the bound-governed refusal
+        # is returned instead of an unproven cycle claim.
+        cap0, berr0 = _compose_bound(st)
+        if not berr0:
+            _budget = (cap0 if cap0 is not None else MAX_BOUND) + 1
+            _verdict = _compose_cycle_ahead(st, raw,
+                                            set(stack or []), _budget)
+            if _verdict == "cycle":
+                return "", "compose_cycle"
+            if _verdict == "exhausted":
+                return "", ("compose_depth" if cap0 is not None
+                            else "bound_unspecified")
     stack = set(stack or [])
     parts = [p.strip() for p in raw.replace(",", ">").split(">") if p.strip()]
     atoms = []

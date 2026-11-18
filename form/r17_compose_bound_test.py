@@ -146,6 +146,71 @@ def main() -> int:
     check("indirect cycle under stated bound -> compose_cycle",
           err == "compose_cycle", f"out={out!r} err={err!r}")
 
+    # ---- G2 round 2 (6978856860): the cycle pre-scan itself must --
+    # be bounded and fail-closed. Long ACYCLIC chains must reach the
+    # bound verdicts (compose_depth / bound_unspecified) as TYPED
+    # refusals — never a RecursionError out of the pre-scan, never
+    # an exponential fan-out walk.
+    def _chain_state(limit, n):
+        st = _state(limit)
+        for i in range(1, n):
+            st.compositions[f"a{i}"] = f"a{i + 1}"
+        st.compositions[f"a{n}"] = "70"
+        return st
+
+    def _guarded(st, body):
+        try:
+            return _seed(st, body)
+        except RecursionError:
+            return "", "RECURSION_ERROR"
+        except Exception as exc:  # surfaced as a failing verdict
+            return "", f"UNCAUGHT:{type(exc).__name__}"
+
+    out, err = _guarded(_chain_state("", 1100), "a1")
+    check("1100 unique names, no bound -> bound_unspecified (no RecursionError)",
+          err == "bound_unspecified" and out == "", f"err={err!r}")
+
+    out, err = _guarded(_chain_state("3", 1100), "a1")
+    check("1100 unique names, cap 3 -> compose_depth (scan prunes at budget)",
+          err == "compose_depth" and out == "", f"err={err!r}")
+
+    out, err = _guarded(_chain_state("max", 1100), "a1")
+    check("1100 unique names, max -> compose_depth (no RecursionError)",
+          err == "compose_depth" and out == "", f"err={err!r}")
+
+    out, err = _guarded(_chain_state("", 66), "a1")
+    check("66 unique names, no bound -> bound_unspecified",
+          err == "bound_unspecified" and out == "", f"err={err!r}")
+
+    out, err = _guarded(_chain_state("max", 66), "a1")
+    check("66 unique names, max -> compose_depth",
+          err == "compose_depth" and out == "", f"err={err!r}")
+
+    # Large fan-out: one name naming 60 terminal names under a
+    # stated cap succeeds (the fan expansion itself is nested
+    # nonterminal, so it lawfully needs the bound); a 12-level
+    # binary diamond (4096 naive paths, ~36 distinct names)
+    # under max completes — proof the scan is memoized, not
+    # path-exponential.
+    st = _state("3")
+    st.compositions["fan"] = ">".join(f"t{i}" for i in range(60))
+    for i in range(60):
+        st.compositions[f"t{i}"] = "70"
+    out, err = _guarded(st, "fan")
+    check("fan-out 60 terminal names, cap 3 -> success",
+          err == "" and "70" in out, f"err={err!r}")
+
+    st = _state("max")
+    st.compositions["d0"] = "d1a>d1b"
+    for lvl in range(1, 12):
+        for side in ("a", "b"):
+            st.compositions[f"d{lvl}{side}"] = f"d{lvl + 1}a>d{lvl + 1}b"
+    st.compositions["d12a"] = "70"
+    st.compositions["d12b"] = "89"
+    out, err = _guarded(st, "d0")
+    check("binary diamond depth 12 under max -> success (memoized scan)",
+          err == "" and "70" in out, f"err={err!r}")
+
     # ---- defect face 2: stated max must mean 64, not 8 ----------
     out, err = _seed(_state("max", chain=12), "c1")
     check("stated max: 12-deep chain admitted (cap 64, not phantom 8)",
