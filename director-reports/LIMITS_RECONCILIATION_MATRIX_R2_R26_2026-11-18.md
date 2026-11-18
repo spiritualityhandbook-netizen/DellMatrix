@@ -34,8 +34,11 @@ order; R1 and R27–R42 are not covered here).
 
 **Counts:** REPAIRED-ON-MAIN **6** (R2, R4, R13, R14, R15, R16) ·
 LEGITIMATE-GUARD **2** (R18, R21) · UNRESOLVED-DESIGN-VALUE **11**
-(R3, R5, R6, R7, R8, R9, R10, R11, R12, R20, R22) ·
-CONFIRMED-REMAINING-DEFECT **6** (R17, R19, R23, R24, R25, R26).
+(R3, R5-value, R6, R7, R8, R9, R10, R11, R12, R20, R22) ·
+CONFIRMED-REMAINING-DEFECT **7** (R17, R19, R23, R24, R25, R26, and
+R5-silence — R5 is a split row: its cap *values* are unruled, its
+silent cut/eviction mechanism is a defect; see the R5 row and the
+correction note in the reading notes).
 Total 25 rows. No item is UNPROVEN.
 
 ---
@@ -45,7 +48,7 @@ Total 25 rows. No item is UNPROVEN.
 | R2 | #432 (wave 1) | Dock prompt bound: default was 8,000 and the `dock()` validator ceiling 100,000 left zero headroom — no legal session bound could admit a legal context's assembled prompt | **REPAIRED-ON-MAIN** | `form/dell_matrix/inference_dock.py:54` `DEFAULT_MAX_PROMPT_CHARS = 1000000`; `dock()` defaults at `:2067-2068` draw on the constants; validator range rises with the default (wave-1 probe at 17ae4ce: `max_prompt_chars=100001` admitted, 9,000-char prompt `ok=True` at default). Repair: PR #416 (LM-4), merged | None. Item closed by merged repair; the wave-1 record stands as its evidence |
 | R3 | #432 (wave 1) | Docked-mind snapshot vision stack: snapshot windows 200 ideas / 200 units, entry text cut to 512, goals 8×128, `retrieve_for` capped at 16 ids with a hard error and no partial result | **UNRESOLVED-DESIGN-VALUE** | Constants unchanged on main: `form/dell_matrix/agent_coordinator.py:110` `_MAX_SNAPSHOT_IDEAS = 200`, `:111` `_MAX_SNAPSHOT_UNITS = 200`, `:112` `_MAX_RETRIEVE_IDS = 16`, `:119` `_MAX_STR_LEN = 512`. Wave-1 probe: 251 proposals → 200 returned; `retrieve_for`(17) → `CoordinatorError`, no partial. Mechanism is honest (coverage block reports totals + `truncated: True`); no ruling names any of the values | Authority decision on the values (raise/window-with-continuation) or accept as ruled caps; no repair circuit proposed in the smallest-first set |
 | R4 | #432 (wave 1) | Undo: depth hard-coded 32 against Ace's ruling of 30-and-adjustable; oldest entry silently evicted; **no redo existed anywhere** | **REPAIRED-ON-MAIN** | `form/dell_matrix/needs.py:193` `UNDO_DEPTH = 30` (the ruled value), `:194` `UNDO_DEPTH_MAX = 200`; per-owner adjustment via `set_undo_depth` (`:270`, explicit refusal above the ceiling `:285`); full redo implemented — `redo_last` at `:428`, dual stacks, DD-54 linear history; drops counted in `action_dropped_total` (`:223-240`) and surfaced in the status line (`:588-592`). Landed by PR #481 (merge `d17c6b4`; commits a33bd00/82e2dde/3aef8d0); suite `form/mandell/undo_redo_depth_test.py` 53/53 PASS on merged main | None. Q-LC.1 closed this item; CODE credit settles on the authorities' confirmation of the merged-main proof (trailing) |
-| R5 | #432 (wave 1) | Program history capped at 24, enforced by three independent literals (memory / save / load), entries also cut to 120 chars; earliest actions permanently lost to `replay`/`macro` | **UNRESOLVED-DESIGN-VALUE** | All three enforcements stand: `form/open.py:130` `history_max: int = 24`, trim `:348-349`, per-entry cut `:346` (`[:120]`); `form/persist.py:376` `[-24:]`; `form/persist_rest.py:641` `[str(h)[:120] for h in hist][-24:]`. Wave-1 probe: 25 notes → 24 kept. Loss is visible in effect (count), value unruled, and the triple-literal shape means no single-site lift works | Authority decision on the value + a single-owner bound; any lift must move all three sites together |
+| R5 | #432 (wave 1) | Program history capped at 24, enforced by three independent literals (memory / save / load), entries also cut to 120 chars; earliest actions permanently lost to `replay`/`macro` | **SPLIT: CONFIRMED-REMAINING-DEFECT (silence) + UNRESOLVED-DESIGN-VALUE (the values)** — corrected 2026-11-18 on Codex P2 review 4610565017; Uni first-hand re-verification agrees | All three enforcements stand: `form/open.py:130` `history_max: int = 24`; `note()` per-entry cut `[:120]` and eviction `self.history[-history_max:]` — **no marker, counter, or receipt at any site**; `form/persist.py:376` `[-24:]` at save; `form/persist_rest.py:641` `[str(h)[:120] for h in hist][-24:]` at load; no history dropped-counter exists anywhere in `form/`. Wave-1 probe: 25 notes → 24 kept. By this matrix's own R23 standard (a cut with no truncation marker is a defect) and DD-44 / §12.63a.2 (no silent cuts), the silence is a defect regardless of the values' status; the values 24 / 120 themselves remain unruled, and the triple-literal shape means no single-site fix works | Repair: carry a truncation marker / dropped counter at the owning site (or store whole), moving all three sites together. Separately: authority decision on the values 24 / 120 + a single-owner bound |
 | R6 | #432 (wave 1) | `MAX_PARENTS = 4`: synthesis across 5+ field entries impossible; `relate_field`'s judge is shown at most `MAX_PARENTS - 1` = 3 candidates however large the documented `limit` (1..20) | **UNRESOLVED-DESIGN-VALUE** | `form/dell_matrix/inference_dock.py:555` `MAX_PARENTS = 4`; enforcement `:611`; synthesize guard `2 <= len(ids) <= MAX_PARENTS` at `:1595`; `relate_field` shown cap `min(limit, MAX_PARENTS - 1)` at `:1822` (site comment concedes the limit's range is illusory). Wave-1 probe: 5-parent judgment rejected, 4 admitted. Refusals are explicit; the value is unruled | Authority decision on the value; if raised, the relate_field shown-cap arithmetic must move with it |
 | R7 | #435 (wave 2) | Dock `flag` verb: judge sees at most 40 neighbours, words cut to 120, detail to 200 — drawn from inside R3's already-windowed snapshot. (The item's second half — the assembled prompt refusing itself at the old 8,000 bound — was discharged by R2's repair) | **UNRESOLVED-DESIGN-VALUE** | Flag branch intact on main: `form/dell_matrix/inference_dock.py:1926-1929` — `words[:120]`, `detail[:200]`, list cut `[:40]`. Wave-2 probe at the raised 1,000,000 prompt default: prompt admitted (refusal half fixed), judge still saw exactly 40 of 44 neighbours, words 300→120. Values unruled | Authority decision on the window/cut values, jointly with R3 (the two windows stack) |
 | R8 | #435 (wave 2) | Dock response bound 8,000: any longer provider response is discarded **whole, pre-parse** — zero proposals land, nothing is salvaged | **UNRESOLVED-DESIGN-VALUE** | `form/dell_matrix/inference_dock.py:55` `DEFAULT_MAX_RESPONSE_CHARS = 8000`; discards are named receipts, not silence — `response_too_large` refusals at `:1299`, `:1325`, `:1957`. Bound is caller-raisable to 100,000 via `dock()` but no production caller overrides the default. Wave-2 probe: 8,001-char response discarded whole; a 9,812-char schema-valid output passed the schema yet was discarded by this bound | Authority decision: raise the default, or rule 8,000 as the intended session contract |
@@ -97,7 +100,19 @@ Total 25 rows. No item is UNPROVEN.
    not a code repair — except where a lift is later authorized, in
    which case R5's three-site shape and R3/R7's stacked windows must
    move together.
-5. **Records disposition is separate from this matrix.** The five
+5. **Correction (2026-11-18, Codex P2 4610565017 on PR #482):** R5
+   was originally classified UNRESOLVED-DESIGN-VALUE on the reasoning
+   that its loss is "visible in effect (count)." Codex disputed:
+   visible-in-effect is not a marker, and no site names the loss.
+   Uni re-verified first-hand on main `d17c6b4` — `note()`'s `[:120]`
+   cut and `[-max:]` eviction, the save `[-24:]`, and the load
+   `[str(h)[:120] for h in hist][-24:]` carry no marker, counter, or
+   receipt, and no history dropped-counter exists in `form/`. The
+   dispute is sustained: R5 is a split row (defect silence + unruled
+   values), and the defect count is 7, not 6. The original drafting
+   applied R23's standard to R23 and a weaker one to R5; the matrix
+   now applies one standard.
+6. **Records disposition is separate from this matrix.** The five
    source PRs remain open and conflicting; the B6 recommendation
    (confirm the records scoped, land waves 1–5 verbatim in one
    refreshed combined records PR on current main, close the five as
