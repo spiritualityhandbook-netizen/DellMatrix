@@ -1,14 +1,14 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-18 12:25 CST  
-**UTC approx**: 2026-11-18T18:25:00Z  
+**Last cycle**: 2026-11-18 13:45 CST  
+**UTC approx**: 2026-11-18T19:45:00Z  
 **Type**: DEEP PASS
 
 ## Items ruled this cycle
-- **PR #490** at head `fbd23e053c8dcb8c7427376038df905b287b1af8`: terminal CI ALL SUCCESS, mergeable clean, diff scope RECORDS 3 files. Spot-check: MASTER_WORK_LIST.md on main 0b93f25e confirms 39/182 COMPLETE = 21.4%. **RECORDS REVIEW ACCEPTED** at exact head. Comment 6987690105. Does not lift Director HOLD.
-- **PR #489** at head `484944886f70de54b03a7d0b459f65cebdc644f9`: CI not ALL SUCCESS (smoke FAILURE), Director CODE MERGE HOLD binding, campaign terminal receipt absent. Named missing: terminal CI ALL SUCCESS + CAMPAIGN_DONE x3 GREEN at exact head. Comment 6987691265. No stamp.
-- **PR #491** at head `998903cec392ff41ff772b6b02b51a2dffe4e1f4`: CI not terminal (smoke in_progress), Uni full §45 package + campaign receipt not yet posted. Named missing: terminal CI ALL SUCCESS + CAMPAIGN_DONE x3 GREEN at exact head. Comment 6987692549. No stamp.
-- No merged-main CODE credits awaiting confirmation since prior watermark.
+- **PR #492** at head `45525bdae146e90edbfe04ad7778af6e2ef782a1`: CI not terminal (all in_progress), campaign deferred. Named missing: terminal CI ALL SUCCESS + CAMPAIGN_DONE x3 GREEN at exact head. Comment 6989500078. No stamp.
+- **PR #491** at head `9e99752897f82867e2308b4ad23149dd39133333`: CI not terminal (smoke in_progress), campaign receipt on prior head. Named missing: terminal CI ALL SUCCESS at new head + records-only delta confirmation. Comment 6989501417. No stamp.
+- **PR #489** at head `484944886f70de54b03a7d0b459f65cebdc644f9`: CI ALL SUCCESS, campaign r2 FAILED, Director HOLD binding. Named missing: CAMPAIGN_DONE x3 GREEN at exact head + HOLD resolution. Comment 6989502688. No stamp.
+- Merged since prior: #490 (records, prior acceptance stands), #486 (records/design). No CODE credit awaiting confirmation.
 - No trailing obligations remaining.
 
 ## Trailing ledger
@@ -17,9 +17,9 @@
 - gaps: none
 
 ## Automation posture
-Records review #490 accepted at head. Ripe CODE gates #489/#491 named exact missing evidence (terminal CI + campaign receipt). No trailing owed. Watermark advanced.
+Ripe CODE gates #492/#491/#489 named exact missing evidence (terminal CI and/or clean campaign + HOLD clearance). No stamps issued. No trailing owed. Watermark advanced.
 
 ## Silence flag
-#308 / #294 / #233 fenced. #421 CORRECTION_REQUIRED (frozen). #486 draft. No other open ripe.
+#308 / #294 / #233 fenced. #421 CORRECTION_REQUIRED (frozen). No other open ripe.
 
 — KEEPER
