@@ -621,11 +621,14 @@ def main():
         nxt = "55" if i == 9 else f"d{i + 1}"
         _run(cp, f"97[Define] :: d{i}={nxt}")
     r = _run(cp, "99[Compose] :: deep=d1")
-    _rec("99 Compose: resolution nesting deeper "
-         "than the bound (default 8) is refused "
-         "compose_depth",
+    _rec("99 Compose: resolution nesting with NO "
+         "bound stated is refused bound_unspecified "
+         "(R17/G2 contract 6978656808: the phantom "
+         "default 8 this check once pinned is "
+         "retired; deep nesting is still refused, "
+         "never silently run)",
          r.get("ok") is False
-         and r.get("error") == "compose_depth",
+         and r.get("error") == "bound_unspecified",
          str(_msgs(r)))
     _run(cp, "93[Try]")
     r = _run(cp, "93[Try]")

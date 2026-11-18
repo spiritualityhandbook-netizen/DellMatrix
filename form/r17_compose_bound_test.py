@@ -298,5 +298,13 @@ def main() -> int:
     return 1 if failed else 0
 
 
+def smoke() -> bool:
+    try:
+        return main() == 0
+    except Exception as e:
+        print(f"R17-COMPOSE-BOUND SMOKE FAILED: {e}")
+        return False
+
+
 if __name__ == "__main__":
     sys.exit(main())
