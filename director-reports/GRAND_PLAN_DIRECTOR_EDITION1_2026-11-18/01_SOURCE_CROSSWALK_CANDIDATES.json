@@ -1,0 +1,2338 @@
+{
+  "schema_version": "director-crosswalk-e1-2026-11-18",
+  "verified_current_main": "a8786f9c40cdeaaa8fe9ebeb6705a64d52490269",
+  "main_source_file": "director-reports/master_work_list_items.json",
+  "source_blob_sha": "8da24d34069e24318e5837f1e40bca23cf72c236",
+  "proposal_source": "PR #421 head 35d3acd94f91173e28542bdf8575aa4df0e75693",
+  "published_live_board": {
+    "complete": 39,
+    "active": 182,
+    "sandboxed": 3,
+    "partial": 54,
+    "open": 86,
+    "gated": 3
+  },
+  "accounting": {
+    "main_rows_all": 185,
+    "main_active": 182,
+    "candidate_aliases": 4,
+    "grand_plan_unmapped_proposals": 49,
+    "arithmetic_if_all_original_assumptions_hold": 227,
+    "adopted_unified_total": null,
+    "reason": "2026-11-14 crosswalk predates MWL-183..185 and newer repairs; every proposed alias and addition requires current-main equivalence adjudication before denominator changes"
+  },
+  "historical_aliases": [
+    {
+      "from": "GP-G03",
+      "to": "MWL-015"
+    },
+    {
+      "from": "GP-G08",
+      "to": "MWL-138"
+    },
+    {
+      "from": "GP-G09",
+      "to": "MWL-131"
+    },
+    {
+      "from": "GP-G10",
+      "to": "MWL-151"
+    },
+    {
+      "from": "GP-G11",
+      "to": "MWL-011"
+    },
+    {
+      "from": "GP-G21",
+      "to": "MWL-046"
+    },
+    {
+      "from": "GP-G30",
+      "to": "FAR-17"
+    },
+    {
+      "from": "GP-G31",
+      "to": "MWL-034"
+    }
+  ],
+  "source_records": [
+    {
+      "canonical_id": "MWL-001",
+      "source_n": 1,
+      "title": "Loop chained-body repetition repair (PR #348 @ d1ae66d; ALL regression legs TERMINAL GREEN — fwd CI, --twice 266/266, rev 266/266; refreshed disposition package posted 6778799489; Director HOLD pending his disposition) [MERGED PR #348 as 41c3c96 2026-11-11; Keeper CONFIRM scoped at 490fc1a + Director authorization mail 1a1ca412; post-merge dd14 suite 11/11 on main c0fd0b7; COMPLETE only on authority-confirmed closure] [COMPLETE (scoped) 2026-11-11: Director final-check SCOPED_EVIDENCE_ACCEPTABLE + conditional closure, mail 1a1cb0e5402ecd4f; item receipt 6798979710. Residuals: Q-DD44.2/Q-DD44.3 open.]",
+      "source_ids": "DD-14 / C1.Loop",
+      "source_status": "COMPLETE",
+      "block": "A — Front line (in flight now)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-002",
+      "source_n": 2,
+      "title": "Loop bounds must be explicit — no silent 8 (PR #360 MERGED d58a3d5; Director SCOPED_CODE_PASS + Keeper CONFIRM at head 0773d13; local full regression GREEN at head; post-merge suite 16/16 on merged main; final-check CLOSED per citation) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
+      "source_ids": "DD-44 / C1.Bounds / Q-DD44.1",
+      "source_status": "COMPLETE",
+      "block": "A — Front line (in flight now)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-003",
+      "source_n": 3,
+      "title": "Chain parse-refusal must fail closed (PR #345; reconciliation COMPLETE: the one mutation is a PP3 unknowns-register entry, proven by dd45_recon_test.py 20/20; corrected claim + guard comment pushed @ 71098a5; hold-lift package posted 6778879305 — Director rules option A corrected-claim vs option B PP3-repeal) [MERGED PR #345 as 7e0d7fb 2026-11-11 under Director corrected-claim acceptance PASS (mail 1a1ca66a) + Keeper CONFIRM refreshed at 7ec9da5 (6794857774); regression x3 GREEN at rebased head; post-merge suites True on merged main; COMPLETE only on authority final check] [COMPLETE (scoped) 2026-11-11: Director final-check SCOPED_EVIDENCE_ACCEPTABLE + conditional closure, mail 1a1cb0e5402ecd4f; item receipt 6798980318. Residuals: PP3 diagnostic-entry mutation by design; Q-DD45.2/Q-DD45.3 open.]",
+      "source_ids": "DD-45 / C1.ParseRefusal",
+      "source_status": "COMPLETE",
+      "block": "A — Front line (in flight now)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-004",
+      "source_n": 4,
+      "title": "DD-31 diagnostic capture hardening — failure-only stderr capture in the regress harness (PR #350 MERGED e4aad9d; Director SCOPED_CODE_PASS + Keeper CONFIRM at head b6b0307; local full regression GREEN at head (266 suites); no capture files in repo (4 files verified); final-check CLOSED per citation; DD-31 root mechanism remains OPEN per Director) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
+      "source_ids": "PR #350 (DD-31 cascade)",
+      "source_status": "COMPLETE",
+      "block": "A — Front line (in flight now)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-005",
+      "source_n": 5,
+      "title": "DD31-CI-INTERMITTENT root-cause fix — dd31 suite residue check scoped to its own owner (PR #361 merged c13de21; Director + Keeper scoped confirmations; final-check CLOSED per citation) CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
+      "source_ids": "DD31-CI (extension)",
+      "source_status": "COMPLETE",
+      "block": "A — Front line (in flight now)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-006",
+      "source_n": 6,
+      "title": "Sibling whole-directory-assertion inventory (Q-DD31F.2): inventory COMPLETE (267 suites: 1 confirmed sibling, 17 suspect, 248 clean); sibling fix MERGED 5d2deb4 (PR #372 @ 1182e35 — p0 scan owner-scoped to the current manifest format; plant differential 12/13 -> 13/13; own-manifest mutants red; one test file only); local regression fwd/twice/rev TERMINAL GREEN at head; post-merge p0 smoke ALL GREEN on merged main; Director SCOPED PASS (P3 oracle only); final-check CLOSED per citation CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
+      "source_ids": "Q-DD31F.2",
+      "source_status": "COMPLETE",
+      "block": "A — Front line (in flight now)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-007",
+      "source_n": 7,
+      "title": "WORKFLOW role seeds implementation — 31 seeds landed as PENDING proposals, classified, isolated (PR #367 merged 70a478e; Director scoped certification + Keeper record-truth CONFIRM; final-check CLOSED as a RECORD per citation; the 31 proposals themselves await Ace's sovereign Nursery confirm — see appendix) CLOSED (scoped record closure ONLY): Director SCOPED_RECORD_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST) — covers the role-seed implementation evidence record (31 PENDING state-bound proposals; 269/272 run-2 reproduction with 3 conditional atoms explained). NOT an acceptance of the proposals, a live catalog, or general executable behavior; Ace’s Nursery confirm of the 31 proposals remains his separate sovereign step.",
+      "source_ids": "ROLE-SEEDS-IMPL / PR #367",
+      "source_status": "COMPLETE",
+      "block": "A — Front line (in flight now)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-008",
+      "source_n": 8,
+      "title": "Governance records publication batch — ALL MERGED: #351 4b1761d, #352 4b04f2f, #353 a7f59c9, #354 8bf09b5, #355 f8295f3, #356 554af27; Director Review Queue PR #368 MERGED 3651a5b; NEEDS_OVERSEER dispositions PR #371 MERGED da73ff9; final-check pending ITEM-SPECIFIC COMPLETION HELD: Director HOLD, mail 1a1c9225c1bae60f (2026-11-10) — one-unit definition + exhaustive batch manifest published in director-reports/MWL8_BATCH_MANIFEST_2026-11-10.md (unit = PRs #351-#356, #362-#366, #368, #371, #373, #374; missing SHA supplied: PR #365 merged 444a76062); closure criterion stated there; item completes only on an authority ruling against that manifest. CLOSED (records-only): Director CONDITIONAL SCOPED_RECORD_PASS, mail 1a1c9549bfb1581c (2026-11-11 00:38 CST); Uni verification 2026-11-11: all 15 PRs MERGED with exact manifest SHAs (script/gh), all merge commits ancestors of main 8f789ce, ZERO product-code files (form//gui/) in any of the 15 diffs, publication files present and unsuperseded on main; receipt appended to MWL8_BATCH_MANIFEST_2026-11-10.md.",
+      "source_ids": "Records batch",
+      "source_status": "COMPLETE",
+      "block": "A — Front line (in flight now)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-009",
+      "source_n": 9,
+      "title": "Pulse receipt truth — Dell 25 leaf receipt + Dell 26 disclosure (PR #357 merged fd88d3d; Director scoped certification Q-DD18.1; Keeper second certification trailing)",
+      "source_ids": "DD-18 / C1.PulseReceipt",
+      "source_status": "COMPLETE",
+      "block": "B — C1 Chain Truth, remainder and follow-ups",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-010",
+      "source_n": 10,
+      "title": "Predicate infix conditions refuse honestly instead of degrading to truthiness (PR #359 merged 47673cc; trailing Q-DD42.1 second certification outstanding)",
+      "source_ids": "DD-42 / C1.Predicate",
+      "source_status": "COMPLETE",
+      "block": "B — C1 Chain Truth, remainder and follow-ups",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-011",
+      "source_n": 11,
+      "title": "Parallel must mean parallel — concurrency design slice (needs C13 isolation, C3 comparison, C11 lifecycle, Ace multi-Psalm session)",
+      "source_ids": "DD-43 / C1.ConcurrencyDesign",
+      "source_status": "OPEN",
+      "block": "B — C1 Chain Truth, remainder and follow-ups",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-012",
+      "source_n": 12,
+      "title": "While/Until (64/65) loop conditions: honest refusal surface for unparseable infix conditions (fails closed today; no refusal receipt)",
+      "source_ids": "Q-DD42.2",
+      "source_status": "OPEN",
+      "block": "B — C1 Chain Truth, remainder and follow-ups",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-013",
+      "source_n": 13,
+      "title": "Loop 13 receipted grammar follow-up",
+      "source_ids": "Q-DD44.2",
+      "source_status": "OPEN",
+      "block": "B — C1 Chain Truth, remainder and follow-ups",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-014",
+      "source_n": 14,
+      "title": "Compose recursion cap follow-up",
+      "source_ids": "Q-DD44.3",
+      "source_status": "OPEN",
+      "block": "B — C1 Chain Truth, remainder and follow-ups",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-015",
+      "source_n": 15,
+      "title": "ForceField gravity wells + evolution levels restore on load (PR #317)",
+      "source_ids": "G-04 / DD-11",
+      "source_status": "COMPLETE",
+      "block": "C — Extension-register closures",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-016",
+      "source_n": 16,
+      "title": "Snapshot retrieval reachability — coverage truth + bounded retrieve_for + cross-process source identity (PRs #336/#337)",
+      "source_ids": "G-11 / Q-SNAP",
+      "source_status": "COMPLETE",
+      "block": "C — Extension-register closures",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-017",
+      "source_n": 17,
+      "title": "Dock Proposal B — sanitized failure transparency, one fenced-JSON tolerance, session response view (PR #340)",
+      "source_ids": "G-12 / Q-LD",
+      "source_status": "COMPLETE",
+      "block": "C — Extension-register closures",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-018",
+      "source_n": 18,
+      "title": "Dell 41 Sanitize copula redaction leak repaired (PR #342; Director scoped certification, Dell 41 only)",
+      "source_ids": "DD-31",
+      "source_status": "COMPLETE",
+      "block": "C — Extension-register closures",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-019",
+      "source_n": 19,
+      "title": "Finalize Studio browser acceptance on integrated revision (= SM-01; certified with noted exceptions — no human session, no network deployment)",
+      "source_ids": "72-01 / SM-01",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-020",
+      "source_n": 20,
+      "title": "Reconcile merged Core I gate with INDEX/archival status (= SM-05)",
+      "source_ids": "72-02 / SM-05",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-021",
+      "source_n": 21,
+      "title": "Independently reproduce DAF-09 session-escape cleanup (= SM-02; register BLOCKED — Director's independent 19/22 stands; local greens do not resolve it, §31.3)",
+      "source_ids": "72-03 / SM-02",
+      "source_status": "OPEN",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-022",
+      "source_n": 22,
+      "title": "Close or precisely retain identical-label/unit-ID ambiguity in Growth lenses (= SM-39, SM-54; limitation lifted for the unit-keyed path incl. round-trip; legacy label-only ambiguity retained as a documented boundary)",
+      "source_ids": "72-04 / SM-39 / SM-54",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-023",
+      "source_n": 23,
+      "title": "Repair Dell 37 REPL failure visibility (= SM-16)",
+      "source_ids": "72-05 / SM-16",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-024",
+      "source_n": 24,
+      "title": "Review English Intent.args as a separate end-to-end contract (= SM-11; DD-01 Class E and DD-02 Class D FIXED inside via PRs #309/#310; census PR #308 held; full-contract review has no report)",
+      "source_ids": "72-06 / SM-11 / DD-01 / DD-02",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-025",
+      "source_n": 25,
+      "title": "Dispose remaining per-scope admission/registry certification requests (= SM-04; A1 retained, A2 not certified)",
+      "source_ids": "72-07 / SM-04",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-026",
+      "source_n": 26,
+      "title": "Preserve CI-only #233 + long-lived certification artifacts (= SM-03, SM-06; standing preservation duty, compliant)",
+      "source_ids": "72-08 / SM-03 / SM-06",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-027",
+      "source_n": 27,
+      "title": "Harden Director–Uni next-best circuit handoff (= SM-07; workflow adopted; standing practice, no completion certificate)",
+      "source_ids": "72-09 / SM-07 (twin claim — see coverage note)",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-028",
+      "source_n": 28,
+      "title": "Stress Seed grammar + error precedence (= SM-58; stress battery landed PR #326, bounded scope confirmed; Q-72-10.1–.3 open)",
+      "source_ids": "72-10 / SM-58",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-029",
+      "source_n": 29,
+      "title": "Reconcile English create + direct REPL handlers with canonical Mandell (= SM-12, SM-13; investigation accepted, census outstanding)",
+      "source_ids": "72-11 / SM-12 / SM-13",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-030",
+      "source_n": 30,
+      "title": "Deepen reachability for already-supported English actions only (B-2: 37/100 reachable, 63 NO_ROUTE_FOUND; per-Dell probes)",
+      "source_ids": "72-12 / G-02 / SM-14",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-031",
+      "source_n": 31,
+      "title": "Audit 17 typed-signature error/coercion contracts (= SM-17, SM-19; per-signature audit landed PR #318 incl. Dell 55's four legacy quirks as permanent contract; wider SM-17/19 scope open)",
+      "source_ids": "72-13 / SM-17 / SM-19",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-032",
+      "source_n": 32,
+      "title": "Strengthen Core I single/chain/intercept/live refusal parity (certified with noted boundaries)",
+      "source_ids": "72-14",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-033",
+      "source_n": 33,
+      "title": "Challenge Core II unsupported-role control-head short circuits (certified with noted boundaries)",
+      "source_ids": "72-15",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-034",
+      "source_n": 34,
+      "title": "Reconcile legacy flow executor with canonical chain ownership (= SM-15; investigation complete — flow_executor is a composition-semantics divergence; R-1 proposal accepted for design review; implementation NOT authorized)",
+      "source_ids": "72-16 / SM-15 / DD-08",
+      "source_status": "GATED",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-035",
+      "source_n": 35,
+      "title": "Remove/relabel literal Show placeholder output — message-layer R-B repair Director-confirmed bounded (DD-03, PR #311); Studio console / browser-surface remedy ruling still listed as owed in the Director queue",
+      "source_ids": "72-17 / DD-03",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-036",
+      "source_n": 36,
+      "title": "Audit message-only Dell descriptions for truthful operations (= SM-23; systematic audit outstanding)",
+      "source_ids": "72-18 / SM-23",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-037",
+      "source_n": 37,
+      "title": "Preserve first-failure provenance through mixed chain receipts (bounded composition proof landed PR #319; Step-8 wider scope open)",
+      "source_ids": "72-19",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-038",
+      "source_n": 38,
+      "title": "Challenge Branch/Parallel/Sequence/Join reported guarantees (= SM-18; bounded recheck landed PR #320 — Dell 62 Parallel is sequential in listed order; wider scope open)",
+      "source_ids": "72-20 / SM-18",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-039",
+      "source_n": 39,
+      "title": "Stress Until/While/ForEach bounds + nested control inheritance (= SM-18; bounded circuit PR #321; the silent-default finding is superseded going forward by item 2 / DD-44)",
+      "source_ids": "72-21 / SM-18",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-040",
+      "source_n": 40,
+      "title": "Reverify Try/Catch error consumption + same-frame reuse",
+      "source_ids": "72-22",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-041",
+      "source_n": 41,
+      "title": "Challenge Commit/Revert exact state + side-effect boundaries",
+      "source_ids": "72-23",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-042",
+      "source_n": 42,
+      "title": "Stress Diff/Set missing-vs-None + baseline handling",
+      "source_ids": "72-24",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-043",
+      "source_n": 43,
+      "title": "Protect Define/Alias/Compose against failed-run persistence (fix landed PR #322 — failed runs publish nothing; register row retains wider scope)",
+      "source_ids": "72-25",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-044",
+      "source_n": 44,
+      "title": "Stress per-member ManifestSet + typed chainlink transport (= SM-21; member isolation landed PR #323; wider scope open)",
+      "source_ids": "72-26 / SM-21",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-045",
+      "source_n": 45,
+      "title": "Recheck Guard/Assert failure propagation across control frames (verdict propagation landed PR #324; wider scope open)",
+      "source_ids": "72-27",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-046",
+      "source_n": 46,
+      "title": "Audit Program/Nursery pair-atomic save + fresh-process load (= SM-35; everyday-save hybrid-pair defect OPEN; repair routed through the separate C-A circuit under the Q1 line)",
+      "source_ids": "72-28 / SM-35 / DD-06",
+      "source_status": "GATED",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-047",
+      "source_n": 47,
+      "title": "Stress checkpoint sealing, rollback, directory-sync failure (= SM-36; DD-04 checkpoint family repaired PR #312; sealed-snapshot path passed every crash test; row scope open)",
+      "source_ids": "72-29 / SM-36 / DD-04",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-048",
+      "source_n": 48,
+      "title": "Challenge Exchange journaled import/recovery + receipt disposal (= SM-33, SM-34; includes the G-03 Q1 Exchange owner-boundary audit leg — audit authorized, modification NOT authorized)",
+      "source_ids": "72-30 / SM-33 / SM-34 / G-03",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-049",
+      "source_n": 49,
+      "title": "Check Nursery optimistic concurrency + duplicate confirmation (= SM-31; DD-09 repaired inside, PR #314; row scope open)",
+      "source_ids": "72-31 / SM-31 / DD-09",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-050",
+      "source_n": 50,
+      "title": "Validate semantic-graph journals against derived Program effects (= SM-25; DD-05 graph journal repaired PR #313; row scope open)",
+      "source_ids": "72-32 / SM-25 / DD-05",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-051",
+      "source_n": 51,
+      "title": "Verify supersession crash + acceptance lineage across restart (= SM-30; replacement lineage landed PR #325; row scope open)",
+      "source_ids": "72-33 / SM-30",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-052",
+      "source_n": 52,
+      "title": "Test owner namespace collision + foreign-state rejection (DD-12 loud refusal confirmed for program-file-anchored flows, PR #327; nursery-file-alone and standalone graph/ideas corners open)",
+      "source_ids": "72-34 / DD-12",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-053",
+      "source_n": 53,
+      "title": "Recheck atomic-write orphan-temp + rollback cleanup bounds (crash suite confirmed 67/67, no defect; orphan-temp cleanup decision Q-35.1 owed by the Director)",
+      "source_ids": "72-35",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-054",
+      "source_n": 54,
+      "title": "Roundtrip persistent envelopes under corrupt/unknown versions (DD-10 repaired inside, PR #315; row scope open)",
+      "source_ids": "72-36 / DD-10",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-055",
+      "source_n": 55,
+      "title": "Plan + verify the Plane-to-Idea bridge / Track D (= SM-27, SM-28)",
+      "source_ids": "72-37 / SM-27 / SM-28",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-056",
+      "source_n": 56,
+      "title": "Reconcile Idea + semantic-graph node identity through lifecycle (= SM-26)",
+      "source_ids": "72-38 / SM-26",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-057",
+      "source_n": 57,
+      "title": "Prove nested Idea parent/child + promotion invariants (TD-2 containment BUILT as a candidate per plan §14.2; the register's G-01 text still says \"not yet built\" and its certification is recorded UNKNOWN — see appendix)",
+      "source_ids": "72-39 / G-01 / SM-26 / SM-28",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-058",
+      "source_n": 58,
+      "title": "Enforce active/faded/superseded participation across all consumers (= SM-29; DD-13 resonance fix landed PR #328; Q-72-40.2 harmonize open)",
+      "source_ids": "72-40 / SM-29 / DD-13",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-059",
+      "source_n": 59,
+      "title": "Reconcile GrowthForce label identity with stable Plane unit IDs",
+      "source_ids": "72-41",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-060",
+      "source_n": 60,
+      "title": "Stress knowledge selection, scope, lineage, dependencies (= SM-37)",
+      "source_ids": "72-42 / SM-37",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-061",
+      "source_n": 61,
+      "title": "Trace cause/depend/provenance explanations to real graph evidence (= SM-38; SM-64 theme)",
+      "source_ids": "72-43 / SM-38 / SM-64 (theme)",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-062",
+      "source_n": 62,
+      "title": "Test resonance/harmony-to-Nursery proposals at the human gate",
+      "source_ids": "72-44",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-063",
+      "source_n": 63,
+      "title": "Preserve epistemic source/status through views + spatial consumers",
+      "source_ids": "72-45",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-064",
+      "source_n": 64,
+      "title": "Verify dock COMPREHEND/relate_field through policy + Nursery (= SM-44)",
+      "source_ids": "72-46 / SM-44",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-065",
+      "source_n": 65,
+      "title": "Stress stale field-snapshot + agent reconnect boundaries",
+      "source_ids": "72-47",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-066",
+      "source_n": 66,
+      "title": "Exercise agent host-bound idempotency, retries, conflicting envelopes (= SM-45)",
+      "source_ids": "72-48 / SM-45",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-067",
+      "source_n": 67,
+      "title": "Challenge AcceptancePolicy delegation, expiry, revocation chains (= SM-32)",
+      "source_ids": "72-49 / SM-32",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-068",
+      "source_n": 68,
+      "title": "Prove DirectorSession remains recommendations-only (= SM-46)",
+      "source_ids": "72-50 / SM-46",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-069",
+      "source_n": 69,
+      "title": "Reconcile DuoBeta outcome evidence + learning ledger persistence (= SM-41)",
+      "source_ids": "72-51 / SM-41",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-070",
+      "source_n": 70,
+      "title": "Test learned-score saturation + opt-out reversibility (= SM-42)",
+      "source_ids": "72-52 / SM-42",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-071",
+      "source_n": 71,
+      "title": "Harden provider errors, prompt/output validation, protected values (= SM-43)",
+      "source_ids": "72-53 / SM-43",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-072",
+      "source_n": 72,
+      "title": "Keep selfgrow auxiliary ledger isolated from canonical state",
+      "source_ids": "72-54",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-073",
+      "source_n": 73,
+      "title": "Trigger real-browser acceptance for relevant Form runtime changes (= SM-49, SM-50)",
+      "source_ids": "72-55 / SM-49 / SM-50",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-074",
+      "source_n": 74,
+      "title": "Add browser refusal / PARTIAL / skipped-atom acceptance paths (= SM-49)",
+      "source_ids": "72-56 / SM-49",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-075",
+      "source_n": 75,
+      "title": "Drive Growth + Console tabs in browser acceptance (= SM-49)",
+      "source_ids": "72-57 / SM-49",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-076",
+      "source_n": 76,
+      "title": "Regression-test Studio Host/Origin/token + malformed HTTP (= SM-51)",
+      "source_ids": "72-58 / SM-51",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-077",
+      "source_n": 77,
+      "title": "Test Studio state refresh, stale owner state, receipt reconstruction",
+      "source_ids": "72-59",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-078",
+      "source_n": 78,
+      "title": "Prove identical executable semantics across GUI/API/REPL/Python (= SM-52; Director-confirmed COMPLETED, official 18/72)",
+      "source_ids": "72-60 / SM-52",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-079",
+      "source_n": 79,
+      "title": "Improve Studio keyboard, focus, constrained viewport behavior (= SM-56)",
+      "source_ids": "72-61 / SM-56",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-080",
+      "source_n": 80,
+      "title": "Reconcile offline visual snapshot with canonical state; clear non-live label (= SM-55)",
+      "source_ids": "72-62 / SM-55",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-081",
+      "source_n": 81,
+      "title": "Stress 2D spatial placement, rendering, restore invariants (= SM-40)",
+      "source_ids": "72-63 / SM-40",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-082",
+      "source_n": 82,
+      "title": "Refresh stale in-use docs + README suite-count claims (= SM-62)",
+      "source_ids": "72-64 / SM-62",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-083",
+      "source_n": 83,
+      "title": "Protect Form as source of truth vs frozen JS/preform drift (= SM-63)",
+      "source_ids": "72-65 / SM-63",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-084",
+      "source_n": 84,
+      "title": "Deepen changed-file lint + Python-version compatibility checks (= SM-61)",
+      "source_ids": "72-66 / SM-61",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-085",
+      "source_n": 85,
+      "title": "Harden GitHub workflow permissions + pin third-party actions (Director-approved COMPLETED after red-check triage, official 19/72)",
+      "source_ids": "72-67",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-086",
+      "source_n": 86,
+      "title": "Reconcile regression discovery, suite registration, mutation detection (= SM-57; SM-57 investigation closed-no-defect)",
+      "source_ids": "72-68 / SM-57",
+      "source_status": "COMPLETE",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-087",
+      "source_n": 87,
+      "title": "Create repeatable low-memory + large-state performance baselines (= SM-59, SM-60)",
+      "source_ids": "72-69 / SM-59 / SM-60",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-088",
+      "source_n": 88,
+      "title": "Incrementally reduce oversized live-module coupling, no behavior change (register OPEN)",
+      "source_ids": "72-70",
+      "source_status": "OPEN",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-089",
+      "source_n": 89,
+      "title": "End-to-end protected-value canaries across outward evidence surfaces (= SM-20; investigation closed-by-ruling — refusal diagnostics names-only; no redaction build authorized)",
+      "source_ids": "72-71 / SM-20",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-090",
+      "source_n": 90,
+      "title": "Automate morning-report reconciliation, staleness, next-best recommendations (= SM-09 theme)",
+      "source_ids": "72-72 / SM-09 (theme)",
+      "source_status": "PARTIAL",
+      "block": "D — Register: the 72 inventory rows",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-091",
+      "source_n": 91,
+      "title": "Strengthen exact-head / merge-tree / post-merge / fresh-clone gate reconciliation (register also claims SM-07 as 72-09's twin; carried separately because the stated scopes differ — see coverage report)",
+      "source_ids": "SM-07",
+      "source_status": "OPEN",
+      "block": "E — Register: SUS Omega-64 unique entries",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-092",
+      "source_n": 92,
+      "title": "Make workflow resumable: last-good checkpoint + completed-circuit records (partially embodied in practice, not verified as an objective)",
+      "source_ids": "SM-08",
+      "source_status": "OPEN",
+      "block": "E — Register: SUS Omega-64 unique entries",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-093",
+      "source_n": 93,
+      "title": "Standardize morning Director report format (register notes it folded operationally into 72-72's automation question; carried separately per the register's unique-entries table)",
+      "source_ids": "SM-09",
+      "source_status": "OPEN",
+      "block": "E — Register: SUS Omega-64 unique entries",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-094",
+      "source_n": 94,
+      "title": "Connect NBD ranking to real report status, dependencies, improvement candidates; deterministic stale-candidate detection (= SM-48, internal duplicate pair counted once)",
+      "source_ids": "SM-10",
+      "source_status": "OPEN",
+      "block": "E — Register: SUS Omega-64 unique entries",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-095",
+      "source_n": 95,
+      "title": "Strengthen Dell 08 naming, slug collision, skin, legacy-label regression coverage",
+      "source_ids": "SM-22",
+      "source_status": "OPEN",
+      "block": "E — Register: SUS Omega-64 unique entries",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-096",
+      "source_n": 96,
+      "title": "Reverify reserved-address refusal / honest unsupported behavior of Bridge and Embed",
+      "source_ids": "SM-24",
+      "source_status": "OPEN",
+      "block": "E — Register: SUS Omega-64 unique entries",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-097",
+      "source_n": 97,
+      "title": "Confirm BIMO/persona views remain advisory; cannot bypass host-bound authority (also a Psalm Matrix V-10 prerequisite fact)",
+      "source_ids": "SM-47",
+      "source_status": "OPEN",
+      "block": "E — Register: SUS Omega-64 unique entries",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-098",
+      "source_n": 98,
+      "title": "Improve traceability from runtime behavior to receipts, outcomes, persisted evidence (end-to-end traceability scope; theme overlaps item for 72-43)",
+      "source_ids": "SM-64",
+      "source_status": "OPEN",
+      "block": "E — Register: SUS Omega-64 unique entries",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-099",
+      "source_n": 99,
+      "title": "Nursery proposal CARDS (visual, glanceable; confirm / reject / modify) — register DEFERRED, not authorized",
+      "source_ids": "V-01",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-100",
+      "source_n": 100,
+      "title": "Custom idea shapes in the Nursery (circle, square/box, triangle, custom-drawn outline) — DEFERRED; depends V-01",
+      "source_ids": "V-02",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-101",
+      "source_n": 101,
+      "title": "AI-suggested looks (semantic icons + shape language) as Nursery proposals ONLY — DEFERRED; depends V-01",
+      "source_ids": "V-03",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-102",
+      "source_n": 102,
+      "title": "Nursery as THE primary decision screen (painting/building feel, fun, organized, never an info dump) — DEFERRED",
+      "source_ids": "V-04",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-103",
+      "source_n": 103,
+      "title": "SKY perspective (2D; ideas as clouds/shapes; persistent positions; same canonical data as ROOM) — DEFERRED",
+      "source_ids": "V-05",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-104",
+      "source_n": 104,
+      "title": "ROOM perspective (3D; walkable; stackable/openable boxes; never stagnant-looking) — DEFERRED",
+      "source_ids": "V-06",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-105",
+      "source_n": 105,
+      "title": "Navigation: zoom + tap-to-glide; recursive exploration of ideas within ideas — DEFERRED; depends G-01, V-05/V-06",
+      "source_ids": "V-07",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-106",
+      "source_n": 106,
+      "title": "Page set: Plane, Nursery, Dells, Dell Playground, Psalm Matrix — transitions preserve current idea/context — DEFERRED; depends V-09",
+      "source_ids": "V-08",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-107",
+      "source_n": 107,
+      "title": "Navigation placement RESEARCHED online before implementation — DEFERRED; precedes any V-08 build",
+      "source_ids": "V-09",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-108",
+      "source_n": 108,
+      "title": "PSALM MATRIX: the AI page — Psalms + personas + status + docking visible there; no second authority — DEFERRED; depends SM-47 fact base",
+      "source_ids": "V-10",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-109",
+      "source_n": 109,
+      "title": "AI-talk place: pure English, NOT a chat box — a new interaction concept to invent — DEFERRED",
+      "source_ids": "V-11",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-110",
+      "source_n": 110,
+      "title": "Human-validation gates: (a) a real AI docked live AND (b) Ace personally working the Matrix, both required before any usability acceptance — register BLOCKED: awaits V-circuits + live dock + Ace's own session",
+      "source_ids": "V-12",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-111",
+      "source_n": 111,
+      "title": "Reserved neural research: weight-space programming / targeted enhancement of a less powerful AI — DEFERRED (long-term); NO IMPLEMENTATION AUTHORIZED",
+      "source_ids": "V-13",
+      "source_status": "OPEN",
+      "block": "F — Register: V vision objectives",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-112",
+      "source_n": 112,
+      "title": "Whole-program certification + REAL_USER_PATH claims — register BLOCKED: certification WITHHELD by the Director; depends 72-03 (DAF-09) + 72-07 (A2)",
+      "source_ids": "G-05",
+      "source_status": "OPEN",
+      "block": "G — Register: G standing objectives (remainder)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-113",
+      "source_n": 113,
+      "title": "Symbiosis pairwise compatibility: 100×99 ordered pairs + standalone, classified with evidence; composition laws via held-out prediction test (pairwise v2 ledger executed; ledger v3 delta re-run under §14.6 outstanding)",
+      "source_ids": "G-06",
+      "source_status": "PARTIAL",
+      "block": "G — Register: G standing objectives (remainder)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-114",
+      "source_n": 114,
+      "title": "Full-registry D1 deepening: per-Dell deep-contract circuits until ALL 100 Dells reach a high standard (many Dells deepened; registry incomplete)",
+      "source_ids": "G-07",
+      "source_status": "PARTIAL",
+      "block": "G — Register: G standing objectives (remainder)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-115",
+      "source_n": 115,
+      "title": "SUSX100,000 execution run — the standing completion drive itself (Ace GO 2026-11-04; run concluded in wake mode, queue continues; the register's DEFERRED label is superseded by its own 2026-11-04 supersession note)",
+      "source_ids": "G-08",
+      "source_status": "PARTIAL",
+      "block": "G — Register: G standing objectives (remainder)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-116",
+      "source_n": 116,
+      "title": "DAF-09 catch-up Director report (owed per the 2026-10-31 reporting cadence; Uni-side writing)",
+      "source_ids": "G-09",
+      "source_status": "OPEN",
+      "block": "G — Register: G standing objectives (remainder)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-117",
+      "source_n": 117,
+      "title": "Exchange Phase G (cloud perspectives) — register DECLINED (deferred by adoption, Ace 2026-10-26); historical record, not reactivated",
+      "source_ids": "G-10",
+      "source_status": "OPEN",
+      "block": "G — Register: G standing objectives (remainder)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-118",
+      "source_n": 118,
+      "title": "Q1 family implementation — journaled Exchange import/recovery transactions (C-B) under the adopted Q1 plan; PR #294 held on Director design hold, never merge as-is; implementation awaits Director authorization",
+      "source_ids": "DD-07 / PR #294 / Q1",
+      "source_status": "GATED",
+      "block": "H — Gated family and Director-decision follow-ups",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-119",
+      "source_n": 119,
+      "title": "Atomic-write sweep wiring decision (Q-35.1): sweep_stale_tmps has no production caller — orphan .dmtmp cleanup is manual-only until the Director rules (follow-up of the 72-35 row)",
+      "source_ids": "Q-35.1 / 72-35 follow-up",
+      "source_status": "OPEN",
+      "block": "H — Gated family and Director-decision follow-ups",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-120",
+      "source_n": 120,
+      "title": "Historical verify-72-17 reproducer hygiene: give the stale pre-repair probe an explicit/manual historical purpose, keeping the current repair regression active (queued hygiene circuit from the 72-67 closure)",
+      "source_ids": "72-67 follow-up",
+      "source_status": "OPEN",
+      "block": "H — Gated family and Director-decision follow-ups",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-121",
+      "source_n": 121,
+      "title": "C2 bounded candidate: graded-input-to-verdict invariant test on one real canonical path (faded high-weight + stale/superseded candidates; exclusion/attenuation proven against the actual canonical inputs; grounded first, does not duplicate DD-13)",
+      "source_ids": "C2.Candidate (Director R1, §14.9)",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C2 Resonance Core",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-122",
+      "source_n": 122,
+      "title": "C2 relatedness model — resonance exposes with-whom / how-strong / why over agreed fixtures",
+      "source_ids": "C2.Relatedness",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C2 Resonance Core",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-123",
+      "source_n": 123,
+      "title": "C2 development-coupled growth — growth responds to agreed development evidence; attention the smallest factor, never mere existence (Ace design session gates)",
+      "source_ids": "C2.Growth",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C2 Resonance Core",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-124",
+      "source_n": 124,
+      "title": "C2 targeted Pulse — Pulse obeys selected targets and exclusions",
+      "source_ids": "C2.TargetedPulse",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C2 Resonance Core",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-125",
+      "source_n": 125,
+      "title": "C2 decline-coupled Decay",
+      "source_ids": "C2.Decay",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C2 Resonance Core",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-126",
+      "source_n": 126,
+      "title": "C2 fusion — Merge carries parent substance and provenance while preserving parents",
+      "source_ids": "DD-15 / C2.Fusion",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C2 Resonance Core",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-127",
+      "source_n": 127,
+      "title": "C2 partition — Split keeps each resonating cluster intact; zero/one cluster and ties handled honestly; parent never lost",
+      "source_ids": "DD-16 / C2.Partition",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C2 Resonance Core",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-128",
+      "source_n": 128,
+      "title": "C2 enhancement outcome — Enhance redefined per Ace's ruling (outcome leg of the resonance family)",
+      "source_ids": "DD-23 / C2.EnhancementOutcome",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C2 Resonance Core",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-129",
+      "source_n": 129,
+      "title": "C2 temperature design — Temp as a typed intensity control per consumer, not a secret global switch (DD-19 RULED by Ace; design session gates)",
+      "source_ids": "DD-19 / C2.TemperatureDesign",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C2 Resonance Core",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-130",
+      "source_n": 130,
+      "title": "Diff becomes the one comparison authority — Rings 1+2 (every declared writer and content slice compared, incl. absent-vs-None and transaction baselines; Ring-3 scopes later; slice count verified from the schema at the circuit SHA)",
+      "source_ids": "DD-51 / C3.Diff",
+      "source_status": "COMPLETE",
+      "block": "Plan §14.3 — C3 Failure & Time (witness family)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-131",
+      "source_n": 131,
+      "title": "Mirror gains the true compare — pair comparison through the C3 comparator, honest pagination (Ace directive §12.3; DD-43 Mirror wording per §14.8)",
+      "source_ids": "C3.MirrorCompare",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C3 Failure & Time (witness family)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-132",
+      "source_n": 132,
+      "title": "Trace covers the entire current process — full retrieval beyond 512 entries without silent loss; Trace is session-only, never history",
+      "source_ids": "DD-52 / C3.Trace",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C3 Failure & Time (witness family)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-133",
+      "source_n": 133,
+      "title": "Failure doors — Analyze / Revert / Retry per Ace's failure doctrine: Retry targets an identified FAILED attempt, once; wrappers never become targets; partial effects shown first",
+      "source_ids": "DD-32 / C3.FailureDoors",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C3 Failure & Time (witness family)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-134",
+      "source_n": 134,
+      "title": "Rooms are Ace's to close — chosen-room operations cannot overwrite another room's later work; session close names open rooms; overlapping-room write ownership is a design prerequisite",
+      "source_ids": "DD-53 / C3.Rooms",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C3 Failure & Time (witness family)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-135",
+      "source_n": 135,
+      "title": "Undo and redo like a real program — 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo",
+      "source_ids": "DD-54 / C3.Undo",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C3 Failure & Time (witness family)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-136",
+      "source_n": 136,
+      "title": "Alpha / history member + close ceremony — old generations freeze/confirm/restore under new code; save failure never pretends the session is safely closed (gate per §12.13)",
+      "source_ids": "C3.Alpha",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C3 Failure & Time (witness family)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-137",
+      "source_n": 137,
+      "title": "Zipper — Compress + Expand as one circuit: Compress preserves a resolvable source link; Expand retrieves the full intended source under a declared current-vs-versioned rule",
+      "source_ids": "DD-20 / C4.Zipper",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C4 Reference Family",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-138",
+      "source_n": 138,
+      "title": "Inject by reference + Reference dereferencing — Inject adds a reference, not a duplicate; cycles/missing/foreign/superseded targets resolve honestly; graph refs and Core II aliases reconcile through an adapter",
+      "source_ids": "DD-26 / C4.InjectRef",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C4 Reference Family",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-139",
+      "source_n": 139,
+      "title": "Distill = essence — uses actual words/detail/goals, carries provenance and disclosed omissions, usable without its source (mode RESOLVED by Ace 2026-11-10: docked AI distills; undocked deterministic — see item 179)",
+      "source_ids": "DD-28 / C4.Distill",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C4 Reference Family",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-140",
+      "source_n": 140,
+      "title": "Nursery ranking formula — exactly S = 0.40 LINK + 0.25 ACE + 0.20 FRESH + 0.15 NOVEL; top five per topic; pending cap 200; tombstoned evictions; deciding score displayed (machinery exists; FRESH aging RESOLVED by Ace 2026-11-10: staged 3/7/14-day aging, 30-day fade only under inflow — see item 177)",
+      "source_ids": "C5.Formula",
+      "source_status": "PARTIAL",
+      "block": "Plan §14.3 — C5 Nursery Door, Ranking & Discovery",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-141",
+      "source_n": 141,
+      "title": "Switchable Plane ranking — Rank measure is switchable per Ace's ruling (§12.35b)",
+      "source_ids": "C5.PlaneRank",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C5 Nursery Door, Ranking & Discovery",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-142",
+      "source_n": 142,
+      "title": "One search machinery, two faces — Discover + Resolve: stable ordered pages reach every authorized item, totals/coverage reported, identical labels handled by stable IDs",
+      "source_ids": "DD-25 / DD-49 / C5.Search",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C5 Nursery Door, Ranking & Discovery",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-143",
+      "source_n": 143,
+      "title": "Nursery door policy — auto-passage stays OFF until Ace supplies standards and scope; Cycle never approves its own proposals; receipts name policy version and authorizing rule",
+      "source_ids": "DD-27 / C5.Door",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C5 Nursery Door, Ranking & Discovery",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-144",
+      "source_n": 144,
+      "title": "Boxes — standing/named sandboxes: owner put/take, multiple boxes, the standing private box, all across reload; per-box interaction never leaks",
+      "source_ids": "DD-17 / C6.Boxes",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C6 Boxes, Freeze & Placement",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-145",
+      "source_n": 145,
+      "title": "Freeze — room/item pause: paused items stay visible, retain contents/position, stop aging/growth/resonance; Resume is the only release (Lock is isolation, not Pause)",
+      "source_ids": "DD-22 / C6.Freeze",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C6 Boxes, Freeze & Placement",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-146",
+      "source_n": 146,
+      "title": "Scope/Group integration — the 53<->82 partnership as one pair; a named Group is never automatically a security sandbox",
+      "source_ids": "C6.ScopeGroup",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C6 Boxes, Freeze & Placement",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-147",
+      "source_n": 147,
+      "title": "Placement — idea/body/both, AUTO/BIND: replacement retains intended position; child placement respects parents; manual placement cannot be bypassed by a model (grounding: locate the real Plane-position mutation authority)",
+      "source_ids": "C6.Placement / DD-50 (grounding note)",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C6 Boxes, Freeze & Placement",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-148",
+      "source_n": 148,
+      "title": "Schema = the nervous system — read-only baseline distinguishing exists / connected / available and OFF-by-design / degraded / unknown; probing never mutates user work [COMPLETE (scoped) 2026-11-12 — PROPOSED in the completion-register reconciliation PR; effective as authority-confirmed credit only on the authorities' confirmation of that PR: PR #397 MERGED 2e46272410d7bd6a262256b72d0fae3f9671858c (union head cd46c98); Director scoped PASS at e42f1ac (mail 1a1cfb3e5058e140) + conditional carry-forward to cd46c98 (mail 1a1cfbf8b93bc86f), conditions discharged; Keeper CONFIRM (scoped) at e42f1ac (6823464587) + refreshed at cd46c98 (6823706050); regression campaign 277/277 x3 TERMINAL GREEN at cd46c98; exact-head CI all-pass; merged-main verification on a fresh clone @2e46272: c7schema 33/33 + live 39[Schema]:: validate -> VALID, board 16/16 via execute_seed. DD-29 FIXED in this scope (defect dial 12 -> 13 FIXED / 3 GATED on confirmation). Scope = the read-only DD-29 board ONLY. Residuals NOT in this claim: DEGRADED disposition read-verified but not test-pinned; persona_matrix write-on-read hygiene (separate register step owed); Dell 39 operand semantics; operational liveness beyond provider-report shape.]",
+      "source_ids": "DD-29 / C7.Schema",
+      "source_status": "COMPLETE",
+      "block": "Plan §14.3 — C7 Self-Report & Quantitative Contracts",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-149",
+      "source_n": 149,
+      "title": "Profile is the speedometer — named stages with monotonic timing, environment/workload identity, overhead disclosed; real observations vs deliberate benchmarks distinct",
+      "source_ids": "DD-39 / C7.Profile",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C7 Self-Report & Quantitative Contracts",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-150",
+      "source_n": 150,
+      "title": "Token accounting + shorthand in harmony (§12.87a) — token census executed across Mandellistics; per-system counts labeled separately; longhand vs shorthand compared on canonical semantics (census work product exists; the harmonized contract is unbuilt)",
+      "source_ids": "DD-30 / C7.Tokens",
+      "source_status": "PARTIAL",
+      "block": "Plan §14.3 — C7 Self-Report & Quantitative Contracts",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-151",
+      "source_n": 151,
+      "title": "Universal measurement family + incorporation sweep — Measure / Threshold / Weight-Normalize with unit, source, timestamp, method on every quantity; subsystem-by-subsystem incorporation (forces, perspectives, personas, provider data)",
+      "source_ids": "DD-46 / DD-47 / DD-48 / C7.MeasureFamily",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C7 Self-Report & Quantitative Contracts",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-152",
+      "source_n": 152,
+      "title": "Dock roster repair — BUILT (PR #370 @ 2b95d86): two-tier dock_sessions (live uncapped + compact history archive with provenance digests; v1 loads whole, re-saves v2); failing-first 3/15 -> 15/15; mutant killed; main-session regression ALL LEGS TERMINAL GREEN (fwd/twice/rev at 2b95d86); MERGED ad2a12c (PR #370); Director SCOPED_CODE_PASS (mail 1a1c7e617ea7110a) + Keeper scoped CONFIRM (disposition file commit 9d39cdc); post-merge fresh-clone dd37_roster 15/15 + regress_capture 27/27; siblings + 50-proposal bound untouched; closure scope = C8.Roster (dock_sessions) ONLY CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main. CLOSED (scoped): Director SCOPED_CLOSURE_AUTHORIZED, mail 1a1c9225c1bae60f (2026-11-10 23:43 CST), on the final-check matrix (PR #375, merged b1f73ca); latest-main tree check 2026-11-10: merge commit is an ancestor of main b1f73ca and the focused suite passes on a fresh clone of latest main.",
+      "source_ids": "DD-37 / C8.Roster",
+      "source_status": "COMPLETE",
+      "block": "Plan §14.3 — C8 Dock & Psalms",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-153",
+      "source_n": 153,
+      "title": "Embedding provider binding — EmbedBind reports provider/model/vector-space identity (a vector database is not an embedding model); provider RESOLVED by Ace 2026-11-10: any docked AI, Gemini today — see item 178 [MERGED PR #378 as c0fd0b7 2026-11-11; Director SCOPED_CODE_PASS + conditional authorization mail 1a1ca412; Keeper CONFIRM scoped at 58b5518; post-merge embedbind suite 29/29 on main; live Gemini entitlement UNKNOWN; COMPLETE only on authority-confirmed closure] [COMPLETE (scoped) 2026-11-11: Director final-check SCOPED_EVIDENCE_ACCEPTABLE + conditional closure, mail 1a1cb0e5402ecd4f; item receipt 6798981215. Residuals: no live in-program Gemini entitlement certified; adapter DESIGN HOLD; Q1/Q2 open.]",
+      "source_ids": "C8.EmbedBind",
+      "source_status": "COMPLETE",
+      "block": "Plan §14.3 — C8 Dock & Psalms",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-154",
+      "source_n": 154,
+      "title": "Resident Psalm — visible start/stop, bounded work, proposal-only output; presence grants no authority (direction recorded §12.20; future build)",
+      "source_ids": "C8.Resident",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C8 Dock & Psalms",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-155",
+      "source_n": 155,
+      "title": "Multi-Psalm / BIMO execution design — persona execution needs actual instance semantics and Ace-approved roles; BIMO metadata alone is not execution (design sit-down owed, §12.36e)",
+      "source_ids": "C8.MultiPsalm",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C8 Dock & Psalms",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-156",
+      "source_n": 156,
+      "title": "Translate: honest no-intent — unknown text produces no invented Show seed; receipts name deterministic vs docked engine (a narrow DD-35 fix may be scoped without deciding the whole translator)",
+      "source_ids": "DD-35 / C9.NoIntent",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C9 Translate",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-157",
+      "source_n": 157,
+      "title": "Translate dual-mode / Adapt incorporation — Adapt adoption ruled by Ace (credit Mycroft AI team, Apache 2.0) but his \"not yet\" remains in force until he calls it",
+      "source_ids": "DD-36 / C9.DualMode",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C9 Translate",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-158",
+      "source_n": 158,
+      "title": "Harmonic stamps — item-attached stamps with provenance in stable order; moving an item never silently changes its note; stamps round-trip",
+      "source_ids": "DD-24 / C10.Stamp",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C10 Harmonic Plane",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-159",
+      "source_n": 159,
+      "title": "Harmonic lenses — harmony organization/retrieval + derived lens modes; views rearrange DISPLAY only and restore exact canonical placements on exit",
+      "source_ids": "C10.Lenses",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C10 Harmonic Plane",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-160",
+      "source_n": 160,
+      "title": "The private shelf / little notebook — Macro read back as one seed; Ace's private notebook design (§12.37a)",
+      "source_ids": "DD-38 / C11.Shelf",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C11 Idea Editing, Shelf & Manifest",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-161",
+      "source_n": 161,
+      "title": "Idea editing system — go inside, edit the parts, propose the change: contained-part drafts independent from live originals; proposals carry target revision, before/after/diff, impact coverage; stale or double confirmation refuses",
+      "source_ids": "DD-41 / C11.Edit",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C11 Idea Editing, Shelf & Manifest",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-162",
+      "source_n": 162,
+      "title": "Manifest split — Confirm is the yes, Manifest is the walk: confirmed-but-unmanifested is explicit, durable, recoverable; retry produces one result (lifecycle/persistence design review first)",
+      "source_ids": "DD-40 / C11.Manifest",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C11 Idea Editing, Shelf & Manifest",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-163",
+      "source_n": 163,
+      "title": "Universal Move — Move moves anything movable: dispatches by explicit object class to EXISTING engines, preserves identity, refuses ambiguity/collisions; Psalms are never freight; an AI move is pending until Ace confirms",
+      "source_ids": "DD-50 / C11.Move",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C11 Idea Editing, Shelf & Manifest",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-164",
+      "source_n": 164,
+      "title": "Bridge ledger — the ledger of all bridges: reports dock/Exchange facts without taking over their management; stores no raw secrets (Bridge's ruled purpose, §12.33a/b)",
+      "source_ids": "DD-34 / C12.Ledger",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C12 Bridge",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-165",
+      "source_n": 165,
+      "title": "Exchange front door — local Exchange export/import door: preview binds to payload, imports stay PENDING under the receiver's authority, corrupt/foreign/replayed packets get honest outcomes",
+      "source_ids": "C12.ExchangeDoor",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C12 Bridge",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-166",
+      "source_n": 166,
+      "title": "Room-to-room bridge — preview/transfer between rooms, only after C3 room semantics are settled; never claims staged isolation while writes are live",
+      "source_ids": "C12.RoomBridge",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C12 Bridge",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-167",
+      "source_n": 167,
+      "title": "Simulate: explicit effect inventory — the declared inventory of effects a simulation must account for",
+      "source_ids": "C13.Inventory",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C13 Simulate",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-168",
+      "source_n": 168,
+      "title": "Simulate: isolated executor adapter — the actual supported command executes against an isolated copy; the DD-21 finding (Simulate's current behavior) is rebuilt here",
+      "source_ids": "DD-21 / C13.Executor",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C13 Simulate",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-169",
+      "source_n": 169,
+      "title": "Simulate: supported dry-run — a bounded supported subset FIRST; per-atom outcomes and scoped diffs returned; ALL effects discarded; external-effect commands simulated through adapters or refused before dispatch",
+      "source_ids": "C13.DryRun",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C13 Simulate",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-170",
+      "source_n": 170,
+      "title": "Simulate: parallel preview — per-arm preview shows each arm and its conflicts, never one blended answer (later slice)",
+      "source_ids": "C13.ParallelPreview",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — C13 Simulate",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-171",
+      "source_n": 171,
+      "title": "Human Surface track (cross-cutting; separately authorized — no UI build started): Nursery cards and shapes, Plane ROOM/SKY with glide/zoom, the five context-preserving pages incl. the Psalm Matrix, personal identity page, AGE surfacing, animated face (Dell 05), Show, navigation research, Ace's live-use acceptance; wave-field SKY rendering is a display-only design option filed here (§14.9)",
+      "source_ids": "H track",
+      "source_status": "OPEN",
+      "block": "Plan §14.3 — H Human Surface track",
+      "proposed_alias": {
+        "kind": "ROLLUP_NOT_DELETE",
+        "parent": "MWL-099..111",
+        "excess": [
+          "personal_identity_page",
+          "AGE_surfacing",
+          "animated_face_Dell05"
+        ],
+        "decision": "must_rehome_excess"
+      },
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-172",
+      "source_n": 172,
+      "title": "Beyond-72 extension register framework (Director F1/F4): new extension objectives get distinct IDs checked against the current register, mapping to existing rows WITHOUT renumbering the original 72; no duplicate closure credit",
+      "source_ids": "F1/F4",
+      "source_status": "OPEN",
+      "block": "Plan §14.7/§14.8 — non-slice open items",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-173",
+      "source_n": 173,
+      "title": "Coordinated history retention/compaction contract — bounded navigable undo vs durable evidence; retention/compaction is an explicit open question (C3 design prerequisite; no promise of unlimited lossless history)",
+      "source_ids": "C3 design prerequisite (§14.7/§14.8)",
+      "source_status": "OPEN",
+      "block": "Plan §14.7/§14.8 — non-slice open items",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-174",
+      "source_n": 174,
+      "title": "Guard/Catch wording hygiene — a separate bounded hygiene opportunity (preserved contract; not a silent behavior change)",
+      "source_ids": "C1 hygiene (§14.7)",
+      "source_status": "OPEN",
+      "block": "Plan §14.7/§14.8 — non-slice open items",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-175",
+      "source_n": 175,
+      "title": "Q-SNAP.3 launch/signal-hardening proposal — proposal-only product change if still desired; no G-11 or DAF-09 certification inference (Director F6)",
+      "source_ids": "Q-SNAP.3 / F6",
+      "source_status": "OPEN",
+      "block": "Plan §14.7/§14.8 — non-slice open items",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-176",
+      "source_n": 176,
+      "title": "Literal wave-field instrument — INNOVATE_DEFERRED, parked (§14.9): read-only and nonauthoritative if ever built; never feeds resonance scores, Nursery admission, vote weights, or threshold decisions; any semantic path is an Ace-owned architecture decision",
+      "source_ids": "Waves study (§14.9)",
+      "source_status": "OPEN",
+      "block": "Research intake — parked (§14.9)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-177",
+      "source_n": 177,
+      "title": "FRESH aging — RULED by Ace 2026-11-10: proposals age at 3/7/14-day marks and fade at 30 days ONLY while new proposals are arriving (a quiet field never expires); implementation rides the C5 ranking circuit",
+      "source_ids": "Q-N3",
+      "source_status": "OPEN",
+      "block": "Ruled by Ace — decisions of 2026-11-10",
+      "proposed_alias": {
+        "kind": "OVERLAP_CANDIDATE",
+        "parent": "MWL-140",
+        "reason": "FRESH aged ranking implementation"
+      },
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-178",
+      "source_n": 178,
+      "title": "Embed provider — RULED by Ace 2026-11-10: provider-agnostic dock capability (any docked AI serves as embedder; currently Gemini; a Psalm must be docked); implementation = C8 EmbedBind (item 153)",
+      "source_ids": "Embed provider (§14.8)",
+      "source_status": "OPEN",
+      "block": "Ruled by Ace — decisions of 2026-11-10",
+      "proposed_alias": {
+        "kind": "OVERLAP_CANDIDATE",
+        "parent": "MWL-153",
+        "reason": "embed binding"
+      },
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-179",
+      "source_n": 179,
+      "title": "Distill mode — RULED by Ace 2026-11-10: conditional — a docked AI distills when one is docked, the deterministic recipe when none is (AI-first doctrine)",
+      "source_ids": "Distill mode (§14.8)",
+      "source_status": "OPEN",
+      "block": "Ruled by Ace — decisions of 2026-11-10",
+      "proposed_alias": {
+        "kind": "OVERLAP_CANDIDATE",
+        "parent": "MWL-139",
+        "reason": "Distill mode"
+      },
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-180",
+      "source_n": 180,
+      "title": "NVIDIA Inception website — SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only",
+      "source_ids": "NVIDIA (website)",
+      "source_status": "SANDBOXED",
+      "block": "Sandboxed — parked by Ace (2026-11-10)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-181",
+      "source_n": 181,
+      "title": "NVIDIA Inception incorporation — SANDBOXED by Ace 2026-11-10: real-life side mission, NOT DellMatrix work; parked indefinitely, help on his request only",
+      "source_ids": "NVIDIA (incorporation)",
+      "source_status": "SANDBOXED",
+      "block": "Sandboxed — parked by Ace (2026-11-10)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-182",
+      "source_n": 182,
+      "title": "Live-model demo step 6 — parked by Ace 2026-11-10 until he is at a computer; he will run the timed trials himself; no scheduling",
+      "source_ids": "Live-model demo step 6",
+      "source_status": "SANDBOXED",
+      "block": "Sandboxed — parked by Ace (2026-11-10)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-183",
+      "source_n": 183,
+      "title": "LM-2 THE SPLITTER — split_word over the LM table (census-whole -> table-recorded -> guarded greedy longest-match), the lm0_census_v1.json artifact, full-row-set receipts (accounted / morpheme_resolved), and the quarantine-eligibility predicate [COMPLETE (scoped) 2026-11-12 — PROPOSED as Q-LM2.1 in the LM-2 circuit report (PR #399) and entered by the completion-register reconciliation PR; effective as authority-confirmed credit only on the authorities' confirmation of that PR: PR #395 MERGED c414e710ea63d5c799d1b66d2b92a7d051507f18 (head 4d0de79); Director CONDITIONAL SCOPED PASS (mail 1a1ceddc6e1f5001) discharged by Keeper FINAL STAMP at 4d0de79 (6823425709); regression campaign 276/276 x3 TERMINAL GREEN at 4d0de79; exact-head CI all-pass; merged-main verification on a fresh clone @c414e71: lm2_splitter 66/66, live split_word('biology') -> bio + logy accounted 1.0, split_word('incredible') -> credible UNRESOLVED accounted 0.2. Scope = the splitter slice ONLY: no composition (LM-3), no translator wiring (LM-4), no external-gold claim; the two-cycle accounting question Q-LM2.2 stays the authorities' separately.]",
+      "source_ids": "LM-2 / Q-LM2.1",
+      "source_status": "COMPLETE",
+      "block": "Plan §15 — LatinMandell",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-184",
+      "source_n": 184,
+      "title": "GS-4 Growth Sandbox Integrity / cross-wall enumeration — CONFIRMED sandbox-integrity defect, previously OPEN with no completion credit, now scoped COMPLETE on the cited merged-main evidence: default RingedGrowth pair enumeration ignored Plane box walls (the wall entered only as _affinity's soft in_scope 0.2 penalty) and produced (a) two-parent Solstice proposals spanning the wall and (b) single-parent Equinox/Standstill drift offspring of boxed units carrying outside units' tokens under inside-only lineage; boxing changed nothing in default growth output (control-identical). Reproduced independently twice on merged main @074b30f (PR #403; PR #402 comment 6827580827); Keeper independently challenged and confirmed (comment 6828513382); Director scoped ACCEPTANCE mail 1a1d05d91f6401dc. Bounded repair AUTHORIZED by Director scope ruling mail 1a1d077edcbc82e2 (2026-11-12): wall-mate enumeration filter in form/dell_matrix/ringed_growth.py using the existing Plane box authority + receipted pairs_excluded_cross_sandbox count; unboxed output byte-for-byte, scope_ids / default-unset / affinity weights / DCC-XI..XV pins unchanged, no cross-wall bypass flag. Row was OPEN until merged-main proof under Keeper final confirmation + Director final code disposition; U1 (post-growth mutation), U2 (docked-session synthesis), U3 (multi-cycle compounding) remain UNPROVEN limitations — not repaired, not counted as repaired. [COMPLETE (scoped) 2026-11-12 — credit applied by this separate one-row register patch on the authorities' rulings, after the merged-main proof this row required: repair PR #405 MERGED c0742cedbdbc9bf7f4f2950815606f572f7625f8 (tree b1474f4dabf62d627c1515d7b3d53a05a0845dec); merged-main verification on main: gs4_sandbox_test 19/19; post-merge receipts PR #406 MERGED 471c8c81eb99e6136e24cee600b87d7e250f80b0; Keeper final code CONFIRM 6830347970 + records CONFIRM (scoped) 6833527733; Director scoped-credit ruling mail 1a1d13decabf9abd + final CONFIRM mail 1a1d217b62eeb4ba. SCOPED — cross-wall pair enumeration + malformed-box fail-closed only; U1 (post-growth mutation), U2 (docked-session synthesis), U3 (multi-cycle compounding) remain UNPROVEN and separately tracked; NO blanket sandbox certification.]",
+      "source_ids": "GS-4 / PR #403 / PR #404",
+      "source_status": "COMPLETE",
+      "block": "Growth Selection — GS-4 (PR #402)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    },
+    {
+      "canonical_id": "MWL-185",
+      "source_n": 185,
+      "title": "Sandbox dock-landing + confirm-placement wall blindness — CONFIRMED sandbox-boundary defect family, separately tracked per Director Q-U.1 SCOPED ACCEPT (mail 1a1d44118259b159, 2026-11-13) and linked to GS-4 / MWL 184: the GS-4 repair closed cross-wall pair ENUMERATION in RingedGrowth only; U-probe closure of the GS-4 UNPROVEN edges (defect record PR #410, MERGED d220196; report SANDBOX_DOCK_CONFIRM_DEFECT_2026-11-13.md) REPRODUCED two further wall-blind surfaces at main 6d5f821. (1) U2 dock landing (INTEGRATION, scripted-FakeProvider dock harness; landing provider-agnostic): inference-dock DIRECT verbs synthesize/relate/relate_field author cross-wall PENDING proposals (docked_cross_7748 + _1 + _2, SPANS_WALL) — 'sandbox' 0 occurrences in inference_dock.py and agent_coordinator.py; the field snapshot carries no wall fields; landing validation checks parents-subset only. Growth-path control SAFE (docked_pairs wall-mates only; pairs_excluded_cross_sandbox=6). (2) Confirm placement wall-blind for EVERY caller (PUBLIC_ENTRY_PATH, REPL-identical call repl.py:2852-2856) via the one shared writer: the auto-confirm sweep calls Program.confirm_proposal (open.py:1342, _producer='grow_auto'), which delegates (open.py:1670 -> 1748/1764) to confirm_lineage.confirm_proposal (confirm_lineage.py:109); placement place() at confirm_lineage.py:233-236 takes NO sandbox arguments and 'sandbox' occurs 0 times in confirm_lineage.py. Reproduced: both-parents-boxed offspring placed UNBOXED and NOT added to box membership (manual_both_boxed_cross_2158, reload-verified); mixed-parent cross-wall confirm SUCCEEDS unboxed; U1c opt-in sweep (set_auto_confirm_grow(True), default False) confirmed=5 failed=0 — a seeded cross-wall proposal went LIVE unboxed and boxed-parent offspring landed unboxed. Dock leaks are PENDING-only; liveness requires a confirm path. Boundaries that HOLD (PUBLIC_ENTRY_PATH): U1 default path (post-run stage never writes back to plane units) and U3 (wall filter composes over 5 cycles with save/reload); the MWL 184 U1/U3 scoped credits are unaffected as bounded, GS-4 / MWL 184 is NOT marked fully complete by this row, and U1/U2/U3 are NOT counted as universally discharged. Repair split per the Director's Q-U rulings: dock-landing circuit AUTHORIZED as a bounded safety circuit (Q-U.2); confirm-placement inheritance QUEUED (Q-U.3); auto-confirm sweep treatment QUEUED (Q-U.5); manual-confirm cross-wall semantics HOLD pending Ace's sovereignty ruling (Q-U.4). This row is OPEN — no repair implemented under it yet; NO completion credit and NO partial credit. Denominator disclosure (loud, per the Q-U.1 generator-consistency condition): this row moves the active total 181 -> 182; COMPLETE stays 39; headline 39/181 = 21.5% -> 39/182 = 21.4% — a denominator change only, not a regression and not a credit change.",
+      "source_ids": "U-PROBE / PR #410 / GS-4 residual",
+      "source_status": "OPEN",
+      "block": "Growth Selection — sandbox dock/confirm defect (Q-U.1)",
+      "proposed_alias": null,
+      "certification_changed_by_this_plan": false
+    }
+  ],
+  "grand_plan_addition_candidates": [
+    {
+      "candidate_id": "GP-G01",
+      "title": "SPACE",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G02",
+      "title": "WEATHER",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G04",
+      "title": "WATER & GROWTH CONTENTS",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G05",
+      "title": "FORCES RESTORE",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G06",
+      "title": "RESONANCE LOG CAP",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G07",
+      "title": "ROUTE",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G12",
+      "title": "suggest_preferred() (DuoBeta)",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G13",
+      "title": "logistic_map",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G14",
+      "title": "limitation_knowledge.py",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G15",
+      "title": "DELL 151[Harmonic]",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G16",
+      "title": "DUOBETA ROLLBACK & OFF-SWITCH",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G17",
+      "title": "SELFGROW",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G18",
+      "title": "gate_discipline",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G19",
+      "title": "EQUATION LEDGER DISCONNECTED CLASS",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G20",
+      "title": "NURSERY STORE 240-CHAR CUT",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G22",
+      "title": "STUDIO __RENDER__ DEFECT",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G23",
+      "title": "THE 'HARMONIC' NAME",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G24",
+      "title": "THE *_150_LOOP HARNESSES",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G25",
+      "title": "THE TREE, THE CHORD, THE NERVE",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G26",
+      "title": "SMITH'S FLOW SIDE",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G27",
+      "title": "LATINMANDELL LM-4..LM-7",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G28",
+      "title": "TREE VARIANTS",
+      "source_section": "Part III §4",
+      "status": "CANDIDATE_UNMAPPED_AT_2026_11_14",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-1",
+      "title": "THE FOURTH FLOOR (the D4 Tree study)",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-2",
+      "title": "THE DEMOTION CHECK",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-3",
+      "title": "RESONANCE MEDOIDS",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-4",
+      "title": "CONVERGENCE RECEIPTS",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-5",
+      "title": "ATTRACTOR READINGS",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-6",
+      "title": "THE RESIDUE RULE",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-7",
+      "title": "THE PROJECTION QUESTION",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-8",
+      "title": "THE MEMORIZATION AUDIT",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-9",
+      "title": "THE PERIODICITY PRINCIPLE",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-10",
+      "title": "THE THROAT RULE",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-11",
+      "title": "A SCALE LAW ON EVERY MAP",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-12",
+      "title": "FORMALIZATION AS THE TOP RUNG",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-13",
+      "title": "THE ESTIMATOR (blueprint N1: Kalman / Bayes / least squares as a service)",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-14",
+      "title": "THE SPECTRAL DESK (blueprint N2)",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-15",
+      "title": "THE CONSERVATION AUDITOR (blueprint N3; COMBO-8's home)",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-16",
+      "title": "SELF-HEALING HISTORY (COMBO-5)",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-17",
+      "title": "THE NERVE'S χ (see also G-30 — the same item, dual-filed)",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-18",
+      "title": "THE ENTROPY GAUGE (blueprint N5 + COMBO-1)",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-19",
+      "title": "THE EQUILIBRIUM FINDER (blueprint N4)",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "FAR-20",
+      "title": "THE SOUNDING FIELD (calculated sonification)",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "READER",
+      "title": "Reading chains from observable recorded streams, not minds",
+      "source_section": "Part IV §7",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "GP-G29",
+      "title": "Estimation coverage census",
+      "source_section": "Part IV provisional",
+      "status": "SANDBOX_FAR_NOT_PRODUCTION",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "SEQ-X11",
+      "title": "Runtime X11 + second-seat census",
+      "source_section": "Part I §5 sequence",
+      "status": "PROGRAM_PARENT_NOT_INDEPENDENT_CODE_CREDIT",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "SEQ-HCN",
+      "title": "HCN R3 implementation program",
+      "source_section": "Part I §5 sequence",
+      "status": "PROGRAM_PARENT_NOT_INDEPENDENT_CODE_CREDIT",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "SEQ-DOCK-LIVE",
+      "title": "Provider-agnostic live Dock program",
+      "source_section": "Part I §5 sequence",
+      "status": "PROGRAM_PARENT_NOT_INDEPENDENT_CODE_CREDIT",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "SEQ-CONSOLE",
+      "title": "Console and windowed workspace integration",
+      "source_section": "Part I §5 sequence",
+      "status": "PROGRAM_PARENT_NOT_INDEPENDENT_CODE_CREDIT",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    },
+    {
+      "candidate_id": "SEQ-GRAND-SYNC",
+      "title": "Grand Synchronization end-to-end certification",
+      "source_section": "Part I §5 sequence",
+      "status": "PROGRAM_PARENT_NOT_INDEPENDENT_CODE_CREDIT",
+      "current_main_equivalence": "RECHECK_REQUIRED",
+      "counted_in_proposed_49": true
+    }
+  ],
+  "review_contract": {
+    "machine_check": [
+      "source_records.length === 185",
+      "grand_plan_addition_candidates.length === 49",
+      "all MWL numbers 1..185 unique and contiguous",
+      "3 SANDBOXED explicitly excluded",
+      "no status changed by plan",
+      "aliases remain proposals until adjudicated",
+      "historical GP aliases cannot import statuses",
+      "FI-001 benchmarking not a new mandatory index build"
+    ],
+    "authority": "Director design / Uni independent row-level verification / Keeper certification / Ace adoption where reserved"
+  }
+}
