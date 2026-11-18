@@ -163,12 +163,24 @@ def _seed_stamp(intent: Any, parsed: Any) -> str:
 
 
 def _seed_cycle(intent: Any, parsed: Any) -> str:
-    try:
-        n = int((intent.args or {}).get("count", 1))
-    except (TypeError, ValueError):
-        n = 1
-    n = max(1, min(n, 5))  # Dell 6 caps at 5
-    return f"06[Cycle] :: {n}"
+    raw = (intent.args or {}).get("count", 1)
+    # R19 (Director ruling 2026-11-18, point 3): the count is judged
+    # by the leaf's own grammar (_parse_count), never by bare int() —
+    # int() silently converts non-ASCII digits (int('２０') == 20),
+    # signs and padding, which would smuggle a malformed explicit
+    # count past the leaf's typed refusal (found by the all-Dells
+    # English-door audit, 2026-11-18: route_intent('cycle ２０')
+    # executed where the seed door refused). A valid count travels
+    # exactly; anything else travels RAW so the leaf refuses it
+    # deterministically; it is never silently defaulted here.
+    if isinstance(raw, int) and not isinstance(raw, bool):
+        return f"06[Cycle] :: {raw}"
+    from .executor_leaf import _parse_count
+    n = _parse_count(str(raw)) if raw is not None else None
+    if n is not None:
+        return f"06[Cycle] :: {n}"
+    token = str(raw).strip() if raw is not None else ""
+    return f"06[Cycle] :: {token}" if token else "06[Cycle] :: 1"
 
 
 def _seed_form(intent: Any, parsed: Any) -> str:

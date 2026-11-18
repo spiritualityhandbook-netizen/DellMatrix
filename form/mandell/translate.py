@@ -892,10 +892,34 @@ def _translate_body(english: str) -> Intent:
         return Intent("simulate", 31, "Simulate", {}, "31[Simulate]", text)
     if re.search(r"\b(checkpoint|save\s+a\s+checkpoint|make\s+a\s+checkpoint)\b", lower):
         return Intent("checkpoint", 27, "Checkpoint", {}, "27[Checkpoint]", text)
-    m = re.search(r"\b(cycle|run\s+cycles?)\b\s*(\d+|once|twice|thrice|one|two|three|four|five)?", lower)
+    m = re.search(r"\b(cycle|run\s+cycles?)\b", lower)
     if m:
-        n = _count_value(m.group(2), 1) if m.group(2) else 1
-        n = max(1, min(n, 5))  # Dell 6 caps at 5
+        # R19 (Director correction 6986258354): distinguish an
+        # OMITTED count (default 1) from an EXPLICIT operand, and
+        # consume the operand as a whole token. The previous
+        # optional-capture regex silently executed 1 for
+        # "cycle banana" / "cycle -3" / "cycle ²", stole the
+        # prefix of "cycle 20x" (executed 20), converted the
+        # fullwidth "cycle ２０" to 20, and crashed outright on
+        # an oversized digit string (int() digit limit). Now: a
+        # valid count (ASCII digits within the leaf grammar's
+        # length bound, or an established number word) travels as
+        # an int with NO clamp and NO floor — the Dell 6 leaf
+        # clamps + reports (0 included). Any other explicit token
+        # travels RAW in the args/seed so the leaf refuses it
+        # typed (invalid_cycle_count, no growth), exactly as the
+        # router path carries raw labels. Length is checked
+        # before any int conversion.
+        tok_m = re.match(r"\s*(\S+)", lower[m.end():])
+        tok = tok_m.group(1) if tok_m else None
+        if tok is None or tok == "times":
+            n: Any = 1
+        elif tok in _COUNT_WORDS:
+            n = _COUNT_WORDS[tok]
+        elif tok.isascii() and tok.isdigit() and len(tok) <= 9:
+            n = int(tok)
+        else:
+            n = tok
         return Intent("cycle", 6, "Cycle", {"count": n}, f"06[Cycle] :: {n}", text)
     m = re.search(r"\bform\s+(cube|sphere|core|flower)\b", lower)
     if m:
