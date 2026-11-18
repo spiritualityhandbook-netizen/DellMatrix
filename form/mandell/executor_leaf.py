@@ -164,7 +164,13 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
         n = _parse_count((label or "").strip())
         if n is None:
             n = 1
-        n = max(1, min(n, 5))
+        # R19 (Director ruling 2026-11-18): mirror the Loop B2 pattern —
+        # keep the requested count, clamp only the executed count, and
+        # disclose both (plus the unexecuted remainder) on the receipt.
+        # A request of 20 executing 5 must never read as a successful
+        # request for 20; no automatic continuation is authorized.
+        requested = n
+        n = max(1, min(requested, 5))
         out = program.grow_ideas(n)
         _cycle_line = (f"Cycle x{n}: +{out.get('proposed_new', 0)} new "
                        f"+{out.get('proposed_evolved', 0)} evolved")
@@ -176,6 +182,16 @@ def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
             _cycle_line += (f" ({_dup} duplicate"
                             f"{'s' if _dup != 1 else ''} suppressed)")
         messages.append(_cycle_line)
+        if requested > n:
+            messages.append(
+                f"Cycle: requested {requested}, executed {n}, "
+                f"remaining {requested - n}. (clamped to 1..5)")
+        elif requested < n:
+            messages.append(
+                f"Cycle: requested {requested}, executed {n}. "
+                f"(clamped to 1..5)")
+        else:
+            messages.append(f"Cycle: requested {requested}, executed {n}.")
         messages.append(f"rings: {' → '.join(program.duo.rings)}")
         if hasattr(program, "note_seed"):
             program.note_seed(6, "Cycle", str(n))

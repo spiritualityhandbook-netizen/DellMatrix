@@ -66,8 +66,11 @@ def _args_from_label(action: str, label: str) -> Dict[str, Any]:
         return {"mark": label[:48] if label else "mark"}
     if action == "cycle":
         try:
-            n = int(label)
-            n = max(1, min(99, n))
+            # R19 (Director ruling 2026-11-18): the unruled 99 ceiling
+            # is removed. The requested count travels as-is; the Dell 6
+            # leaf applies the ruled 1..5 bound and reports all three
+            # numbers, so the flow step record and the receipt agree.
+            n = max(1, int(label))
         except (ValueError, TypeError):
             n = 1
         return {"count": n}

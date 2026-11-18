@@ -167,7 +167,10 @@ def _seed_cycle(intent: Any, parsed: Any) -> str:
         n = int((intent.args or {}).get("count", 1))
     except (TypeError, ValueError):
         n = 1
-    n = max(1, min(n, 5))  # Dell 6 caps at 5
+    # R19: no upper clamp here — the requested count travels in the
+    # seed (the Loop seed-builder precedent at _seed_grow) and the
+    # Dell 6 leaf is the single clamp + report authority.
+    n = max(1, n)
     return f"06[Cycle] :: {n}"
 
 
