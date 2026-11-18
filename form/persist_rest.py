@@ -605,6 +605,15 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         p.active_view = ux.get("active_view") or "growth"
         p.body_style = ux.get("body_style") or "stick"
         p.auto_confirm_grow = bool(ux.get("auto_confirm_grow", False))
+        # Q-LC.1: restore the undo-depth setting only when it is a
+        # valid in-range integer; anything else keeps the ruled
+        # default of 30 (legacy saves carry no key at all).
+        try:
+            _ud = int(ux.get("undo_depth", 30))
+            if 1 <= _ud <= 200:
+                p.undo_depth = _ud
+        except (TypeError, ValueError):
+            pass
     try:
         from form.dell_matrix.forces import ForceField
         p.forces = ForceField.from_dict(data.get("forces") or {})

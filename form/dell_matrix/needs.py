@@ -185,17 +185,113 @@ def format_idea_end(info: Dict[str, Any]) -> str:
 
 # ─── Action stack / undo ───────────────────────────────────────────────────
 
+# Q-LC.1 (DD-54 bounded slice; Director EXE 6965138959 on PR #434):
+# the session ACTION stack's depth is Ace's ruled 30 by default and
+# adjustable per owner (Program.undo_depth) under a named safety
+# ceiling. This governs ONLY the session action history — the Core II
+# snapshot stack (SNAPSHOTS_CAP) is a separate authority, untouched.
+UNDO_DEPTH = 30
+UNDO_DEPTH_MAX = 200
+
+
 def _stack(program) -> List[Dict[str, Any]]:
     if not hasattr(program, "action_stack") or program.action_stack is None:
         program.action_stack = []
     return program.action_stack
 
 
+def _redo_stack(program) -> List[Dict[str, Any]]:
+    if not hasattr(program, "redo_stack") or program.redo_stack is None:
+        program.redo_stack = []
+    return program.redo_stack
+
+
+def effective_undo_depth(program) -> int:
+    """The owner's effective action-history depth. A stored value
+    outside [1, UNDO_DEPTH_MAX] is not honored silently: the ruled
+    default applies (the set door refuses out-of-range values, so an
+    out-of-range stored value can only be legacy/corrupt state)."""
+    try:
+        d = int(getattr(program, "undo_depth", UNDO_DEPTH))
+    except (TypeError, ValueError):
+        return UNDO_DEPTH
+    if d < 1 or d > UNDO_DEPTH_MAX:
+        return UNDO_DEPTH
+    return d
+
+
+def _count_drops(program, n: int) -> None:
+    if n > 0:
+        try:
+            program.action_dropped_total = int(getattr(program, "action_dropped_total", 0) or 0) + n
+        except Exception:
+            pass
+
+
+def _trim_to_depth(program, stack: List[Dict[str, Any]]) -> int:
+    """Trim oldest-first to the effective depth; count every drop so
+    no loss at the bound is ever silent. Returns the drop count."""
+    depth = effective_undo_depth(program)
+    dropped = 0
+    while len(stack) > depth:
+        stack.pop(0)
+        dropped += 1
+    _count_drops(program, dropped)
+    return dropped
+
+
 def push_action(program, entry: Dict[str, Any]) -> None:
     st = _stack(program)
     st.append(entry)
-    while len(st) > 32:
-        st.pop(0)
+    # DD-54 §3 (linear history): any new action discards the redo tail.
+    redo = _redo_stack(program)
+    if redo:
+        redo.clear()
+    _trim_to_depth(program, st)
+
+
+def _push_back_from_redo(program, entry: Dict[str, Any]) -> None:
+    """Re-stack an entry redo just re-applied, so it is undoable again
+    (redo advances the SAME action stream). Unlike push_action this
+    must not clear the redo tail it is consuming."""
+    st = _stack(program)
+    st.append(entry)
+    _trim_to_depth(program, st)
+
+
+def _feed_redo(program, entry: Dict[str, Any]) -> None:
+    redo = _redo_stack(program)
+    redo.append(entry)
+    # The tail can only hold what undo popped; bound it by the same
+    # depth, dropping from the far (oldest-pushed) end first.
+    _trim_to_depth(program, redo)
+
+
+def set_undo_depth(program, n) -> Dict[str, Any]:
+    """Ace's adjustability door for the session action history.
+
+    Refuses honestly (changing nothing) below 1 or above the named
+    ceiling. A shrink trims BOTH stacks oldest-first and reports how
+    many inverses were dropped; a grow never resurrects drops."""
+    try:
+        value = int(n)
+    except (TypeError, ValueError):
+        return {"ok": False, "reason": f"undo depth must be an integer, got {n!r}"}
+    if str(n).strip() not in (str(value), f"+{value}") and not isinstance(n, int):
+        return {"ok": False, "reason": f"undo depth must be an integer, got {n!r}"}
+    if value < 1:
+        return {"ok": False, "reason": f"undo depth {value} refused: minimum is 1 (a 0-depth undo is a contradiction)"}
+    if value > UNDO_DEPTH_MAX:
+        return {"ok": False, "reason": f"undo depth {value} refused: ceiling is UNDO_DEPTH_MAX={UNDO_DEPTH_MAX}"}
+    program.undo_depth = value
+    dropped = _trim_to_depth(program, _stack(program))
+    dropped += _trim_to_depth(program, _redo_stack(program))
+    return {
+        "ok": True,
+        "depth": value,
+        "dropped": dropped,
+        "msg": f"Undo depth set to {value}" + (f" · dropped {dropped} oldest inverse(s)" if dropped else ""),
+    }
 
 
 def _revision_owned(program, uid: str) -> bool:
@@ -259,18 +355,46 @@ def undo_last(program) -> Dict[str, Any]:
         plane = program.cube.session.plane
         if uid and uid in plane.units:
             if _revision_owned(program, uid):
+                # A refused undo must not consume the entry: restore it
+                # to the top of the stack it was popped from, so the
+                # refusal loses no history (redo-side sibling law).
+                st.append(act)
                 return {
                     "ok": False,
                     "reason": "revision_authority",
                     "undid": None,
                     "hint": "Unit participates in a revision chain; undo cannot bypass supersession.",
                 }
+            # Q-LC.1 §3.2: capture the unit's FULL restorable record
+            # BEFORE removal — after plane.remove nothing remains for
+            # redo to re-place. Only a successful undo feeds the tail.
+            u = plane.units[uid]
+            record = {
+                "id": uid,
+                "label": u.label,
+                "words": u.words or "",
+                "detail": getattr(u, "detail", "") or "",
+                "goals": list(getattr(u, "goals", []) or []),
+                "skin": u.skin.value if hasattr(u.skin, "value") else str(u.skin),
+                "x": u.x,
+                "y": u.y,
+                "parents": list(getattr(u, "parents", []) or []),
+                "origin": getattr(u, "origin", "placed") or "placed",
+                "sandboxed": bool(getattr(u, "sandboxed", False)),
+                "sandbox_id": getattr(u, "sandbox_id", None),
+                # The canonical Idea pointer is part of the restorable
+                # record: dropping it here re-places the unit unbound
+                # (idea_id=None) and binding census then persists an
+                # unbound unit whose Idea is unreferenced.
+                "idea_id": getattr(u, "idea_id", None),
+            }
             # Delegate to the canonical one-way removal authority.
             removed = plane.remove(uid)
             _clear_lattice_refs(program, uid)
             if not removed:
                 return {"ok": False, "reason": f"idea {uid} already gone", "undid": None}
             program.note_seed(24, "Unlock", f"undo_place_{uid}")
+            _feed_redo(program, {**act, "record": record})
             return {
                 "ok": True,
                 "undid": "place",
@@ -286,6 +410,7 @@ def undo_last(program) -> Dict[str, Any]:
         if u is not None:
             u.detail = act.get("old") or ""
             program.note_seed(24, "Unlock", f"undo_edit_detail_{uid}")
+            _feed_redo(program, act)
             return {"ok": True, "undid": "edit_detail", "id": uid, "msg": f"Restored detail on {uid}"}
         return {"ok": False, "reason": "unit missing"}
     if kind == "edit_goals":
@@ -294,9 +419,154 @@ def undo_last(program) -> Dict[str, Any]:
         if u is not None:
             u.goals = list(act.get("old") or [])
             program.note_seed(24, "Unlock", f"undo_edit_goals_{uid}")
+            _feed_redo(program, act)
             return {"ok": True, "undid": "edit_goals", "id": uid, "msg": f"Restored goals on {uid}"}
         return {"ok": False, "reason": "unit missing"}
     return {"ok": False, "reason": f"cannot undo kind={kind}"}
+
+
+def redo_last(program) -> Dict[str, Any]:
+    """Re-apply the most recently undone action (DD-54 §2).
+
+    Redo walks the SAME action stream undo consumed: a successful redo
+    pushes the entry back onto the action stack, so it is undoable
+    again. Re-application goes through canonical doors only —
+    Program.place for places (never a backdoor insert), direct field
+    restoration for edits (the same inverse shape undo uses). Refusals
+    mutate nothing: a re-taken id, a revision-owned target, a missing
+    unit, or a failed sandbox-membership restore (the re-place is
+    rolled back) all refuse visibly. Session-only, like undo: redo
+    walks state, never records (DD-54 §6)."""
+    redo = _redo_stack(program)
+    if not redo:
+        return {
+            "ok": False,
+            "reason": "nothing to redo",
+            "hint": "Redo re-applies an undone place or edit. Undo first.",
+        }
+    # Peek, do not pop: the tail entry is consumed ONLY by a successful
+    # re-application. A refusal (re-taken id, revision authority,
+    # missing unit, failed place) leaves the entry in place, so the
+    # owner can remove the conflict and retry — popping first would
+    # permanently lose recoverable history on a refused operation.
+    act = redo[-1]
+    kind = act.get("kind")
+    if kind == "place":
+        uid = act.get("id")
+        record = act.get("record") or {}
+        plane = program.cube.session.plane
+        if not uid or not record:
+            return {"ok": False, "reason": "redo place record missing", "redid": None}
+        if uid in plane.units:
+            return {"ok": False, "reason": f"idea {uid} already exists", "redid": None}
+        if _revision_owned(program, uid):
+            return {
+                "ok": False,
+                "reason": "revision_authority",
+                "redid": None,
+                "hint": "Unit participates in a revision chain; redo cannot bypass supersession.",
+            }
+        from form.dell_matrix.plane import Skin
+        try:
+            skin = Skin(str(record.get("skin") or "cube"))
+        except ValueError:
+            skin = Skin.CUBE
+        try:
+            u = program.place(
+                uid,
+                record.get("label") or act.get("label") or uid,
+                words=record.get("words") or "",
+                detail=record.get("detail") or "",
+                goals=list(record.get("goals") or []),
+                skin=skin,
+                x=float(record.get("x") or 0.0),
+                y=float(record.get("y") or 0.0),
+                parents=list(record.get("parents") or []),
+                origin=str(record.get("origin") or "placed"),
+                idea_id=record.get("idea_id"),
+            )
+        except Exception as e:
+            return {"ok": False, "reason": f"redo place refused: {e}", "redid": None}
+        # Restore EXACTLY the captured sandbox membership. Program.place
+        # may already have auto-boxed the unit (global sandbox gate on):
+        # that membership is not in the record, so remove it through
+        # the canonical unbox door BEFORE boxing into the saved box —
+        # otherwise the unit sits in both member lists while sandbox_id
+        # names only one, and a later undo leaves a dangling entry.
+        saved_box = str(record["sandbox_id"]) if (
+            record.get("sandboxed") and record.get("sandbox_id")) else None
+        try:
+            if getattr(u, "sandboxed", False) and getattr(u, "sandbox_id", None) != saved_box:
+                plane.unbox(uid)
+            if saved_box:
+                plane.box([uid], saved_box)
+                u.sandboxed = True
+                u.sandbox_id = saved_box
+        except Exception as e:
+            # Refusal honesty (Director §42 DELTA 6968119456): a failed
+            # membership restore is a REFUSED redo, never a swallowed
+            # success — reporting ok=True here would claim the C3
+            # exact-membership guarantee while the unit sits unboxed or
+            # in the wrong box. Roll the re-place back so the refusal
+            # mutates nothing and the tail entry stays for a retry (the
+            # canonical removal door undo uses). The rollback cannot
+            # depend on the door that just failed — plane.remove routes
+            # through unbox — so a blocked door falls back to stripping
+            # the membership directly rather than leaving a
+            # half-restored unit behind.
+            try:
+                plane.remove(uid)
+            except Exception:
+                for sb in plane.sandboxes.values():
+                    if uid in sb.member_ids:
+                        sb.member_ids = [m for m in sb.member_ids if m != uid]
+                plane.units.pop(uid, None)
+            _clear_lattice_refs(program, uid)
+            return {
+                "ok": False,
+                "reason": f"redo sandbox restore refused: {e}",
+                "redid": None,
+                "hint": "Sandbox membership could not be restored; the redo entry was kept — fix the cause and retry.",
+            }
+        if redo and redo[-1] is act:
+            redo.pop()
+        program.note_seed(24, "Unlock", f"redo_place_{uid}")
+        _push_back_from_redo(program, {k: v for k, v in act.items() if k != "record"})
+        return {
+            "ok": True,
+            "redid": "place",
+            "id": uid,
+            "label": record.get("label") or act.get("label"),
+            "via": "program.place",
+            "msg": f'Redid place · restored "{record.get("label") or act.get("label")}" ({uid})',
+        }
+    if kind == "edit_detail":
+        uid = act.get("id")
+        u = program.cube.session.plane.units.get(uid)
+        if u is not None:
+            if _revision_owned(program, uid):
+                return {"ok": False, "reason": "revision_authority", "redid": None}
+            u.detail = act.get("new") or ""
+            if redo and redo[-1] is act:
+                redo.pop()
+            program.note_seed(24, "Unlock", f"redo_edit_detail_{uid}")
+            _push_back_from_redo(program, act)
+            return {"ok": True, "redid": "edit_detail", "id": uid, "msg": f"Re-applied detail on {uid}"}
+        return {"ok": False, "reason": "unit missing"}
+    if kind == "edit_goals":
+        uid = act.get("id")
+        u = program.cube.session.plane.units.get(uid)
+        if u is not None:
+            if _revision_owned(program, uid):
+                return {"ok": False, "reason": "revision_authority", "redid": None}
+            u.goals = list(act.get("new") or [])
+            if redo and redo[-1] is act:
+                redo.pop()
+            program.note_seed(24, "Unlock", f"redo_edit_goals_{uid}")
+            _push_back_from_redo(program, act)
+            return {"ok": True, "redid": "edit_goals", "id": uid, "msg": f"Re-applied goals on {uid}"}
+        return {"ok": False, "reason": "unit missing"}
+    return {"ok": False, "reason": f"cannot redo kind={kind}"}
 
 
 # ─── History ───────────────────────────────────────────────────────────────
@@ -314,7 +584,14 @@ def history_report(program, n: int = 16) -> List[str]:
         lines.append("Undo stack (latest last):")
         for s in stack:
             lines.append(f"  · {s.get('kind')} {s.get('id') or s.get('label') or ''}")
-    lines.append("  doors: undo | replay 3 | macro 5 | self")
+    depth = effective_undo_depth(program)
+    dropped = int(getattr(program, "action_dropped_total", 0) or 0)
+    redo_n = len(_redo_stack(program))
+    lines.append(
+        f"Undo depth: {len(_stack(program))}/{depth} (session action history; "
+        f"dropped {dropped} at the bound) · redo tail: {redo_n} · "
+        f"snapshot stack is separate")
+    lines.append("  doors: undo | redo | undo depth [n] | replay 3 | macro 5 | self")
     return lines
 
 

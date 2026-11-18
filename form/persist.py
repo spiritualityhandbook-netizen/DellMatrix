@@ -364,6 +364,9 @@ def serialize(program: Program) -> Dict[str, Any]:
             "active_view": getattr(program, "active_view", "growth"),
             "body_style": getattr(program, "body_style", "stick"),
             "auto_confirm_grow": bool(getattr(program, "auto_confirm_grow", False)),
+            # Q-LC.1: the undo-depth SETTING persists per owner; the
+            # action/redo stacks themselves stay ephemeral by design.
+            "undo_depth": int(getattr(program, "undo_depth", 30) or 30),
         },
         "forces": program.forces.to_dict() if hasattr(program, "forces") else {},
         "spatial": program.spatial.to_dict() if hasattr(program, "spatial") else {},

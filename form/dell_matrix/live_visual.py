@@ -746,7 +746,25 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
         out = program.undo() if hasattr(program, "undo") else {"ok": False, "reason": "no undo"}
         if not out.get("ok"):
             return {"ok": False, "error": out.get("reason") or "nothing to undo", "end": "undo_empty"}
-        return {"ok": True, "msg": (out.get("msg") or f"Undid {out.get('undid')}") + "\n  doors: history | create an idea called …", "undo": out, "end": "undo"}
+        return {"ok": True, "msg": (out.get("msg") or f"Undid {out.get('undid')}") + "\n  doors: history | redo | create an idea called …", "undo": out, "end": "undo"}
+    if lower in ("redo", "redo last", "r"):
+        out = program.redo() if hasattr(program, "redo") else {"ok": False, "reason": "no redo"}
+        if not out.get("ok"):
+            return {"ok": False, "error": out.get("reason") or "nothing to redo", "end": "redo_empty"}
+        return {"ok": True, "msg": (out.get("msg") or f"Redid {out.get('redid')}") + "\n  doors: history | undo | create an idea called …", "redo": out, "end": "redo"}
+    if lower == "undo depth" or lower.startswith("undo depth "):
+        from form.dell_matrix.needs import effective_undo_depth
+        parts = lower.split()
+        if len(parts) == 2:
+            return {"ok": True, "msg": f"Undo depth: {effective_undo_depth(program)} (session action history; stack {len(getattr(program, 'action_stack', []) or [])}, dropped {int(getattr(program, 'action_dropped_total', 0) or 0)} at the bound; snapshot stack is separate)", "end": "undo_depth"}
+        try:
+            n = int(parts[2])
+        except (IndexError, ValueError):
+            return {"ok": False, "error": "usage: undo depth <n>  (1..200)", "end": "usage"}
+        out = program.set_undo_depth(n) if hasattr(program, "set_undo_depth") else {"ok": False, "reason": "no undo depth"}
+        if not out.get("ok"):
+            return {"ok": False, "error": out.get("reason"), "end": "undo_depth_refused"}
+        return {"ok": True, "msg": out.get("msg") or f"Undo depth set to {n}", "undo_depth": out, "end": "undo_depth"}
     if lower in ("history", "hist", "notes") or lower.startswith("history "):
         n = 16
         for part in lower.split():
