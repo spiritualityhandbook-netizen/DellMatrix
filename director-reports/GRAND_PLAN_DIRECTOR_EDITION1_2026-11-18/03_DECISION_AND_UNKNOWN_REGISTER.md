@@ -1,7 +1,7 @@
 # GRAND PLAN — DIRECTOR DECISIONS, AUTHORITY, AND UNKNOWN CLOSURE
 ## No missing answer disguised as certainty
 
-**Source:** #421 Unified Unknowns UU-1..UU-15; SYSTEM-001 DC-1..DC-11 and Ace Feature Intake FI-001..FI-009; current main a8786f9c; latest #461/#433 GitHub decisions. **Scope:** Director-designed proposed resolutions. A design proposal becomes binding only under its governing authority.
+**Source:** #421 Unified Unknowns UU-1..UU-15; SYSTEM-001 DC-1..DC-11 and Ace Feature Intake FI-001..FI-009; Edition 1 original design main a8786f9c, G2 current-main check b73b1d29. **FI-010..FI-019 individual dispositions and source gaps are in 09_FEATURE_INTAKE_FI010_FI019.md.** PRs #420 and #433 have merged since the original pin. **Scope:** Director-designed proposed resolutions. A design proposal becomes binding only under its governing authority.
 
 ## A. Already ruled / already disproven: do not re-ask
 
@@ -15,7 +15,7 @@
 - **DC-6:** resonance's existing "vesica" token is non-geometric; no implied geometry.
 - **DC-7:** GP-G24/G29/FAR17 do not receive automatic COMPLETE credit merely because a report was written.
 - **Q-R.1 license:** Ace stated DellMatrix non-commercial use and discharged the MorphoLex non-commercial question in #433 (comment 6895172881, as reported in PR record). Any actual dataset inclusion still requires concrete version, license notice, attribution and distribution/use review. Do not mark commercial permission granted.
-- **Workflow v2:** design adopted prospectively on #461; GitHub-first §32 operational cutover completed at 2026-11-18 09:50 UTC by Director 6975138216. The mail-digest path remains a connector-outage rollback; PR #461 is still OPEN as a records artifact. Do not say adoption is still on HOLD, or that the PR merged.
+- **Workflow v2:** design adopted prospectively on #461. Uni receipt #6974842014 was **posted** at 2026-11-18T09:45:02Z while its own text states effective 09:50 UTC; Uni's second receipt #6974870306 states effective 09:46 UTC. Director verification #6975138216 explicitly selects **09:50 UTC as the conservative operational/audit boundary**, which remains the governing timestamp until a superseding authority ruling. A posted timestamp is not an operative-effective timestamp. The mail-digest path remains a connector-outage rollback; PR #461 remains OPEN as a records artifact.
 
 ## B. Fifteen unified unknowns: Director's design decisions and precise closure
 
@@ -26,7 +26,7 @@
 | UU-3 footprint unmeasured | Adopt one Footprint Receipt: owner, source generation, retained bytes by class, checkpoint growth, cache hits/invalidations, derive time, CPU/RSS and workload ID | Instrument read-only first; storage optimization needs measured wins and no source loss |
 | UU-4 nerve missing derivation | No live "nerve" mechanism until named measurable consumer, input domain, derivation, units, falsifier and tested alternative | Director math admission; harmless view label allowed only as UNAVAILABLE/PROPOSED |
 | UU-5 Q-F1 Idea radius | Fixed display marker size may be used solely for rendering. No idea-derived geometric radius, causality or resonance claim until calibrated meaning and fixtures | Director mathematical admission; dependency Tree L3; default fail closed for geometry-as-meaning |
-| UU-6 FCC Tree admission | FCC L1 reference geometry is a separate contract from semantics. Keeper independently regenerates #420 177-centre/shell/slice fixtures, Director rules after evidence | Current #420 head a3dcc14 reached terminal CI; latest known Keeper still owed refreshed exact-head stamp |
+| UU-6 FCC Tree admission | FCC L1 reference geometry is a separate contract from semantics. Keeper independently regenerates and verifies the 177-centre/shell/slice fixtures, Director rules after evidence | **PR #420 MERGED** at c7d7fcaf; Keeper current-head CONFIRM obtained before merge (review 5956192629). A records merge preserves the fixture/appendix but does NOT itself certify Tree L1 math or L3 semantic admission. Re-evaluate any still-pending regeneration/admission task against actual independent proof before closure |
 | UU-7 negative space | Define in first version only as measured unoccupied space within an explicitly bounded, specified projected region; report units, resolution, boundary policy and obstacles | No semantic or physical "flow through void" claim until a model and falsifier are admitted |
 | UU-8 irregular χ | Keep ideal proof separate; test ρ variation, R>=4, nonuniform occupancy, boundary conditions, 3D lift and observed Plane positions before a live χ reading | Far phase gate; no extrapolation from ideal R<=3 |
 | UU-9 estimator architecture | Design typed estimator interface {observations, time, units, noise model, estimate, interval, diagnostics, status}; evaluate deterministic least squares as a simple baseline, Kalman/Bayes as competing methods on held-out series | Far later; do not claim predictive confidence without coverage/calibration proof |
@@ -61,7 +61,7 @@
 
 **FI-003 One window, tabbed geometry:** binding presentation direction. Cube, Tree, Flower, Verita, Harmonic lattice, spatial map and future geometry readings belong under one navigational geometry workspace with view-specific labels. A tab cannot upgrade a projected relation into a canonical relation.
 
-**FI-004 Elastic storage:** elasticity means grow-on-demand where measured and safe; not unlimited RAM, acceptance of malformed objects or silent truncation. A bound is permissible if refusal, remaining capacity, continuation and recovery are honest. No second state authority to mimic a Cube shape.
+**FI-004 Elastic storage and FI-012 Elastic Intake:** end-state is demand-grown and chunked **any-size intake** with honest consumer-side windowing/continuations, bounded memory and no silent cuts; not a physically limitless device. Temporary explicit validation/refusal guards remain until their own streaming replacement is proven; document every transitional guard with owner, scope and caller, never call a hard current implementation limit the final doctrine. No second store authority created to mimic a Cube shape. See FI-012 in file 09.
 
 **FI-005 Harmonic geometry:** multiple shapes are views of the same admitted data if and only if a precise projection exists; unsupported shape/data pair returns typed UNSUPPORTED_PROJECTION. Link sets are switchable, with semantic graph edges separate from drawn proximity.
 
@@ -77,7 +77,7 @@
 
 **R25 shorthand:** ruling proposed by Director in GP-E04: an extra token rejects before verdict; tests pinning old dropped-token behavior must be explicitly challenged and re-pinned.
 
-**Human-only auto-confirm:** default OFF; pre-existing sandbox-first policy remains for explicitly authorized automatic flows; a new auto-confirm program cannot choose its own permission standards.
+**Human-declared auto-confirm (FI-011):** default OFF/PENDING. A user may pre-authorize exact strict deterministic gate conditions only after FI-011's separate design/authority gates; an AI or workflow cannot create, widen, impersonate or grant its own gate. Auto-placement stays sandbox-first unless user had explicitly authorized a wall. Pending workflows do not auto-confirm merely by existing. See file 09 for W1-W4 and unresolved Q-FI011.1/.2/.3/.4.
 
 **C5 organization undo:** current organization editing explicitly discloses no fine-grained undo; DD-54 session redo is not a magical cross-store rewind. A durable organization inverse needs a separate single-history design, not an independent shadow undo stack.
 
@@ -97,6 +97,10 @@
 
 **ACE-PACKET-06 (Muse Space publication permissions):** A read-only source-backed plan view and exportable pending drafts, B interactive approved edit bridge through the existing PR workflow, C direct authoritative mutation; recommend A for first shipped version, then B after audit; C must never bypass Uni/Director/Keeper gates.
 
-## F. Unresolved is not undefined: proof state
+## F. FI-010 through FI-019 cross-reference
+
+All ten additional intake IDs have explicit placement, minimum contract, test and status in **09_FEATURE_INTAKE_FI010_FI019.md**. For FI-013–FI-017, authoritative goal-workspace original wording is still required for final zero-loss identity verification. **FI-017 docked operator is reserved as a source gap, not misclassified implemented or dropped.** FI-010 PR #433 is merged; FI-011 and FI-012 doctrine are plan-side, and FI-018/019 remain intake only. These are not ten automatic additions to the canonical MWL denominator.
+
+## G. Unresolved is not undefined: proof state
 
 One object may be PLAN-DESIGNED / SOURCE-UNVERIFIED / CODE-PARTIAL / EVIDENCE-MISSING simultaneously. That is not a contradiction. Every unverified assertion in this edition gets a next test. No question is deleted to cosmetically achieve a zero-unknown headline. A plan is ready for implementation when no *implementation-step* requires inventing a contract; sovereign branches remain intentionally held, and independent authorized circuits proceed.
