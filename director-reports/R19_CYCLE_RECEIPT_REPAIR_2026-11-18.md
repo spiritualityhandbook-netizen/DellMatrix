@@ -186,3 +186,52 @@ growth; cycle 20 executes — and stands 58/58. The wider audit
 (grow/walk/expand families carry the same defect class) is
 packaged separately for a Director contract ruling; it does not
 expand this circuit's scope.
+
+## REBASE ADDENDUM — onto post-SIB main (2026-11-18)
+
+Per Director ruling 6990708328 (PR #491 final merge ruling), this
+branch was rebased onto main `389d360fa60dff1d8c8aee6d119a55062f01d8ac`
+(the R19-SIB merge). Rebase result head:
+`747af9b019fc827bf0a6fd7c7939b1c65e9a1d59` (this addendum rides as
+one further records-only commit on top).
+
+The rebase completed with ZERO textual conflicts. That alone would
+not prove the semantic union, so both contracts were verified on
+the combined state by inspection and execution:
+
+- translate.py carries BOTH the R19 fallback Cycle arm (whole-token
+  operand; valid travels as int with no clamp/floor; any other
+  explicit token travels RAW for the leaf's typed refusal) AND the
+  SIB `_count_operand` wiring (grow / walk / english_expand arms +
+  fallback grow/walk arms; defaults only for genuinely omitted
+  operands).
+- semantic_router.py carries BOTH `_seed_cycle` (R19: judged by the
+  leaf `_parse_count` grammar) and `_seed_grow` (SIB: mirrors it).
+- regress.py registers BOTH suites; INDEX carries both report rows.
+
+Focused results on the combined state (all at pre-rebase tallies;
+no re-pins were needed and none were made; the R19 suite count is
+unchanged at 58):
+
+- form.r19_cycle_receipt_test: 58/58
+- form.r19sib_count_door_test: 45/45
+- translate_word_counts 21/21; translate_intent_args 18/18 (SIB
+  re-pins intact); translate_dead_args 21/21; lm4_tollbooth 26/26;
+  core_i_arg_gate 92/92; loop_bounds 27/27; dd14_loop_body 11/11;
+  flow_executor 28/28; dirf13_loop_count 17/17 (R19 re-pins intact)
+
+REPL spot battery (routed+seeded, throwaway owner, combined state):
+`cycle banana` -> typed refusal invalid_cycle_count, no growth;
+`cycle 20` -> requested 20, executed 5, remaining 15 (clamped to
+1..5); `cycle ２０` -> typed refusal (the router-hole case);
+`grow banana` -> typed Loop refusal; `grow 20` -> executed under
+Dell 13's own clamp-with-receipt; `walk forward banana` -> Walk
+refused, no steps; `walk forward 3` -> walked 3.
+
+Remaining gates at the new head, run from the main session:
+regression campaign x3 and exact-head CI, then Keeper review and
+the Director's final merge decision under section 32. The r4
+campaign at the pre-rebase head failed leg 1 from simultaneous-
+start concurrency interference (p2 proof cluster; every failed
+suite passes standalone) — classified test-harness concurrency,
+not a product defect.
