@@ -2015,7 +2015,10 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         ):
             detail = "manual evolve"
             if el.startswith("evolve "):
-                detail = raw_line.split(None, 1)[1].strip()[:120] or detail
+                # R26: the evolve detail is passed WHOLE to the ledger
+                # (former [:120] pre-cut at this door silently cut the
+                # user's evolution detail before it reached evolve()).
+                detail = raw_line.split(None, 1)[1].strip() or detail
             out = p.evolve(detail)
             _say(f"Evolved · generation={out.get('generation')}")
             _say(f"Ledger: {detail}")

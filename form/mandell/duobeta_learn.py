@@ -131,7 +131,9 @@ def _append_learn_entry(program: Any, detail: str, meta: Dict[str, Any]) -> Any:
     from form.duobeta.growth import GrowthEntry
     duo = program.duo
     duo.generation += 1
-    entry = GrowthEntry(gen=duo.generation, detail=str(detail)[:120],
+    # R26 (Director ruling 6974763716): detail is stored WHOLE; the
+    # former [:120] cut silently destroyed learning-record text.
+    entry = GrowthEntry(gen=duo.generation, detail=str(detail),
                         ts=_ts(), meta=dict(meta))
     duo.ledger.append(entry)
     return entry
