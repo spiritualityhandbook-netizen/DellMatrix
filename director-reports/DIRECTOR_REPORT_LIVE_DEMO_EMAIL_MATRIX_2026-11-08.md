@@ -8,8 +8,18 @@ session's direct read of that message was flagged by a safety check
 and is recorded as unprocessed there; this package answers the
 relayed text, which Ace also pasted in full).
 
-No private email bodies or credentials appear in this package.
-Email-derived items are referenced by ID and subject label only.
+**TOMBSTONE — 2026-11-17 (Ace scrap ruling).** The Email Matrix was
+test material only. By Ace's ruling of 2026-11-17, the email-derived
+information in this report — aggregate ingest statistics, the
+top-sender table, the relation units, and all subject-derived unit
+IDs — has been SCRAPPED from the public tree (tree-level only; git
+history is not rewritten). The sections that carried it (§§2–4, and
+the email-derived identifiers in §5) are replaced by this tombstone.
+The live-model demonstration (§1), the snapshot-coverage engineering
+finding (§5, identifiers removed), and Proposal B (§6) are product
+work records and are retained. The U8 audit
+(2026-11-17) verified the dataset itself was never in the tree; only
+these derivatives were.
 
 ## 0. EXECUTED IDENTITY
 
@@ -66,71 +76,40 @@ Seed ideas (owner LIVEDEMO12DF79): "Build a House"
   ACHIEVED.** Step 6 (Ace's timed usefulness testing) and the
   recording/brief remain open.
 
-## 2. EMAIL MATRIX — INGEST (Ace's slice: last 90 days, Primary)
+## 2. EMAIL MATRIX — INGEST
 
-- Enumeration: 1,075 messages / 1,055 conversations
-  (`in:inbox category:primary after:2026/08/09`).
-- Metadata fetch (local only): **kept 1,048; excluded 7
-  credential-shaped** by subject screen BEFORE storage (including
-  the emailed Gemini API key message, never opened); 0 failed.
-- Build (owner EMAILFIELD8B0610): one confirmed unit per
-  conversation (label = subject; detail = correspondent + date +
-  count + Gmail snippet; origin `gmail:conversation`; reviewer
-  human:ace, producer email-ingest — Ace directed the ingest of
-  his own data; his gate applies to model proposals). 1,048/1,048
-  confirmed, 0 failures, saved.
-- Local shape (no model): top senders MyClaw Newsletter 64,
-  Ridge 61, NFL Daily 57, Acetoocold (Director relays) 54, Chase
-  alerts 45, Word Smarts 39, Aaron's 31, DistroKid 30, Experian
-  30; months Aug 244 / Sep 338 / Oct 334 / Nov (8 days) 132; only
-  20 of 1,055 threads are multi-message.
+**SCRAPPED 2026-11-17** (Ace scrap ruling; see the tombstone note at
+the head of this report). This section carried aggregate ingest
+statistics of Ace's personal inbox (message/conversation counts, the
+Gmail query, exclusion counts, a top-sender frequency table naming
+real senders with counts, and a month distribution). That derived
+content is removed from the public tree. What remains on the record:
+on 2026-11-08, at Ace's own direction, a bounded slice of his Primary
+inbox was ingested locally into a disposable Nursery field as test
+material for the live demonstration; the field itself was never
+committed to this repository (U8 audit, 2026-11-17).
 
 ## 3. EMAIL MATRIX — RELATIONS, APPROVALS, RECEIPTS
 
-Relate pass (real Gemini, docked session `host:email-test`):
+**SCRAPPED 2026-11-17** (Ace scrap ruling). This section carried two
+model-built relation units in full, including subject-derived unit
+IDs and parent IDs from Ace's personal mail. That derived content is
+removed from the public tree. What remains on the record: two
+relation proposals produced by the docked model over the test field
+were confirmed by Ace in chat on 2026-11-08 and applied exactly once
+each, with duplicate confirmations refused — the exactly-once and
+parent-link mechanics were verified in a fresh process. The receipts
+proved the dock mechanics; the email-derived content they carried is
+scrapped.
 
-1. **"DellMatrix Director Review Sequence: PRs #318, #328, #329,
-   #330"** — pid dellmatrix_director_review_s_9452, via
-   `relate_field` on a Director-review anchor. Parents (4):
-   dellmatrix_director_review_7_3780, _7_3542, _3_3136, _7_3674.
-   The model's reason narrates the sequence and #330's hold.
-2. **"Google Business Profile management for Ultimate Stain And
-   Seal (Oct-Nov 2026)"** — pid google_business_profile_mana_6542,
-   via `relate_field` on the mentor-business anchor. Parents (3):
-   ultimate_stain_and_seal_your_9688, ultimate_stain_and_seal_are__927,
-   action_required_ultimate_sta_4129. The model's reason explicitly
-   REJECTS a Director-review candidate as a false positive.
+## 4. CENSUS RECONCILIATION
 
-- Ace approval evidence: Ace tapped "Confirm both relation
-  proposals" in chat 2026-11-08 07:29 CST.
-- Application receipts: both confirms `{ok: true}`; units
-  1,049 → 1,051 (exactly +2); pending → 0; saved.
-- Exactly-once receipts: duplicate confirm on each pid returns
-  `{ok: false, reason: "not found or not pending"}`; unit count
-  unchanged (re-verified 2026-11-08 in a fresh process).
-- Parent-link verification (fresh process): relation 1 parents
-  4/4 resolve to Plane units; relation 2 parents 3/3 resolve.
-- Independent fresh-process reload: final census (§4) and both
-  relation units present with authored detail/goals intact.
-
-## 4. CENSUS RECONCILIATION (the 1,051 question)
-
-At the two-relation checkpoint:
-
-| Class | Count | Identity |
-|---|---|---|
-| Source conversations (origin `gmail:conversation`) | 1,048 | one unit per kept conversation |
-| Accepted relation ideas (origin `dock:host:email-test:gemini:gemini-3-flash-preview`) | 2 | §3 items 1–2 |
-| Pre-existing / system idea | 1 | uid `welcome`, label "Welcome" — the seed unit every new Program carries; no proposal record, origin None; position 0 in the units collection |
-| **Total Plane units** | **1,051** | 1,048 + 2 + 1 |
-| Proposal records | 1,050 | 1,048 ingest + 2 relations (Welcome has none) |
-| Pending proposals | 0 | |
-
-1,048 + 2 = 1,050 counts only email-derived + relation units;
-the +1 is the pre-existing system seed, not an ingest artifact.
-After §5's third relation was confirmed (Ace, 2026-11-08 07:37
-CST), the live census is **1,052 units / 1,051 proposals / 0
-pending**.
+**SCRAPPED 2026-11-17** (Ace scrap ruling). This section reconciled
+unit/proposal counts of the email-derived test field. Those counts
+are removed with the rest of the derived content. The census
+mechanics finding — a pre-existing system seed unit explains a +1
+difference between unit and proposal counts in a fresh field — is a
+product behavior note and is retained in this sentence only.
 
 ## 5. SNAPSHOT COVERAGE — VERIFIED CAP, OMISSION PROOF, THIRD RELATION
 
@@ -141,41 +120,40 @@ system. `AgentCoordinator.snapshot_for`
 `_MAX_SNAPSHOT_IDEAS = 200` Nursery proposals **separately**,
 first-slice in collection order, and exposes no coverage counts.
 
-Which collection the "200/1,049" figure describes: the **Plane
-units** slice — 200 of 1,049 units at the relate run (the ideas
-slice was independently 200 of 1,050 proposals at that census).
+Which collection the "200/N" figure describes: the **Plane
+units** slice — 200 of the field's units at the relate run (the
+ideas slice was independently 200 of the field's proposals at
+that census). (Field totals scrubbed 2026-11-17.)
 
 Omission proof (fresh-process probe, positions are 0-based
-indices in the Plane units collection):
+indices in the Plane units collection; unit identities scrubbed
+2026-11-17 under Ace's scrap ruling — positions and mechanics
+retained):
 
-- DistroKid target `problem_with_your_distrokid__1598`
-  ("Problem with your DistroKid account!"): **position 219 —
-  outside the 200 slice; NOT in the snapshot.** All 8
-  DistroKid-labeled units sit at positions 219–350+; none is in
-  the snapshot. `relate_field` on it returned
+- One email-derived target unit: **position 219 — outside the
+  200 slice; NOT in the snapshot.** All 8 units of its label
+  family sit at positions 219–350+; none is in the snapshot.
+  `relate_field` on it returned
   `{ok: false, reason: unknown_target}`.
-- Stripe unit `8_00_payment_to_x_was_unsucc_2745`
-  ("$8.00 payment to X was unsuccessful"): **position 107 —
-  inside the slice; present in the snapshot.** A verb relation
-  needs BOTH targets resolvable, so the pair was unrelatable
-  through the verbs. (This corrects any reading that both IDs
-  were omitted: one was, one was not.)
+- A second email-derived unit: **position 107 — inside the
+  slice; present in the snapshot.** A verb relation needs BOTH
+  targets resolvable, so the pair was unrelatable through the
+  verbs. (This corrects any reading that both units were
+  omitted: one was, one was not.)
 
 Third relation — demonstrating reach to omitted material through
 the dock's existing authorized explicit-context path
 (`propose(context=...)`, scoped to exactly the two source ideas,
-screens applied): Gemini authored **"Payment Failures"**
-(pid payment_failures_4286; raw output shown to Ace verbatim;
-detail: both vendors reported failed card payments within ten
-days, indicating a broader issue with the primary payment
-method). Ace confirmed in chat 2026-11-08 07:37 CST; applied
-exactly once (duplicate refused); units 1,051 → 1,052.
+screens applied): Gemini authored a relation grouping the two
+units by their shared subject matter (pid and subject-derived
+detail scrubbed 2026-11-17). Ace confirmed in chat 2026-11-08
+07:37 CST; applied exactly once (duplicate refused); unit count
+rose by exactly one.
 **Honest limit:** the `propose` new-idea schema carries no
-machine parent links (parents []); the linkage to
-problem_with_your_distrokid__1598 and
-8_00_payment_to_x_was_unsucc_2745 is recorded here as evidence,
-not as graph structure. Native parent-linked reach beyond the
-slice is the subject of the accompanying proposal
+machine parent links (parents []); the linkage to the two source
+units is recorded here as evidence, not as graph structure.
+Native parent-linked reach beyond the slice is the subject of
+the accompanying proposal
 (DIRECTOR_PROPOSAL_SNAPSHOT_COVERAGE_2026-11-08).
 
 ## 6. PROPOSAL B — DOCK READINESS (bounded; ruling requested)
@@ -222,11 +200,11 @@ output is dropped with a reason code only. Q-LD.2 below.
 - "Why is 'copilot' not the demo provider?" It returns canned
   text, not a model call (bridge.py); using it would fake the
   demonstration.
-- "Is the census inflated by duplicates?" 1,055 conversations
-  were enumerated from Gmail thread IDs; duplicate subjects
-  slug with _N suffixes as separate units (e.g. four
-  "Problem with your DistroKid account!" units) — they are
-  distinct conversations, counted once each.
+- "Is the census inflated by duplicates?" Conversations were
+  enumerated from Gmail thread IDs; duplicate subjects slug
+  with _N suffixes as separate units — they are distinct
+  conversations, counted once each. (Email-derived specifics
+  scrubbed 2026-11-17.)
 
 ## Questions for the Director
 

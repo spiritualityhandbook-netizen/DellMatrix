@@ -135,7 +135,7 @@ current main by many merges. No row in this table is merge-ready.
 - Headline after regeneration: 32/179 COMPLETE = 17.9%
   (PR #377, merged 42dbb52).
 
-## Final-check queue (hourly final check, WORKFLOW v1 SS4)
+## Final-check queue (hourly final check — THE GRAND WORKFLOW v1.0, in effect 2026-11-14 via PR #423; the WORKFLOW v1 SS4 final-check mechanism is retained per GW-02)
 
 Merged 2026-11-10, final-check PENDING (Director hourly lane;
 Keeper flags noted where cleared): PR #361, #362, #363, #365, #366,
@@ -196,7 +196,7 @@ credit), #370 (ad2a12c), #348 (41c3c96 — merged
 
 | Item | State | Ask |
 |---|---|---|
-| THE GRAND WORKFLOW — Uni examination + reconciled draft (director-reports/THE_GRAND_WORKFLOW_SYNTHESIS_UNI_2026-11-14.md, this PR): Keeper PLRC + Director architecture reconciled with measured cycle empirics and external research. Uni CONCURS as drafted; agreement completes when Director and Keeper each post explicit concurrence on this same packet, or Ace rules it live. WORKFLOW v1 governs until adoption. | Awaiting: Director + Keeper concurrence (or exact objections) | Director + Keeper |
+| THE GRAND WORKFLOW — ADOPTED AND IN EFFECT (PR #423, merged 1bf8dfff 2026-11-14 23:29 CST; Keeper FINAL CONCURRENCE + Director FINAL CONCURRENCE on record; Keeper scoped final-check CONFIRM on the merged adoption version 2026-11-15 01:03 CST, comment 6890820027). The synthesis packet (director-reports/THE_GRAND_WORKFLOW_SYNTHESIS_UNI_2026-11-14.md) is closed end to end. Governing workflow for all current queue items: THE GRAND WORKFLOW v1.0, with WORKFLOW v1 authority structure, HOLDs, certifications and safety obligations preserved per GW-02. First 7-day measured baseline due 2026-11-21. This row is retained as the adoption record; it awaits no disposition. | CLOSED — adopted | — |
 | FI-011 — PSALM WORKFLOW + NURSERY AUTO-CONFIRM GATES (Ace feature, stated 2026-11-15 15:00 CST; intake under the FI-002 law; full development: director-reports/FI011_PSALM_WORKFLOW_NURSERY_GATES_2026-11-15.md; this PR) | DEVELOPED + PLACED, not built. Mirrored against the whole plan: Freedom Clause sovereignty at the Nursery gate (a gate is a human decision made in advance — WHEN the human decides changes, never WHO), the C5/C5.Door AI hard line (gates set only by the user's hand; a Psalm may only PROPOSE a gate as a PENDING suggestion via C5R.6 machinery), placement law Q-U.4 (auto placement sandbox-first unless the gate names a wall), hard-law precedence (ungateable categories), Witness Law (every auto-confirm receipted + in the live feed), elastic limits, FI-009 strict-conjunction deterministic matching (an AI never evaluates a gate match). Placement: gate half = Nursery capability in the C5 lineage after C5R.5 MANAGE + C5R.6 AI ORGANIZER; workflow half = Grand Plan sequence step 4, the Psalm Matrix stage. ASKS: Q-FI011.1 (Director: is a user-set standing gate a human confirmation within C5.Door's meaning; does the PENDING-only Psalm-output doctrine admit the gate-matched refinement?) — Q-FI011.2 (Director: the ungateable category list under hard law) — Q-FI011.4 (Keeper: W4 adversarial scope) — Q-FI011.3 (Ace, non-blocking: sandbox-first placement default). No build is requested or authorized. | this PR head | 2026-11-15 |
 | CYCLE SYSTEM — phase-staggered pipeline design + activation (director-reports/CYCLE_SYSTEM_2026-11-15.md, this PR): researched platform limits (ChatGPT Tasks + Grok Automations hourly floor; fresh-conversation runs; state in the record), phase grid Director :00/:30 + Keeper :15/:45 + Uni watch 5m/execution 30m, lane contracts, ready-to-paste Keeper skills/slots + Director four-part task texts. Keeper ACK 2026-11-15 23:16 CST; Director CONDITIONAL CONFIRM 23:19 CST with five amendments folded (duty separation, Keeper-hourly verification, measured latency, verifiable transport, split PLAN/CODE ratios + three-lane SWAT). Ace ordered activation 23:33 CST ("Cycle System Live"). THIS PR IS THE ACTIVATION VEHICLE: the Director's standard requires one end-to-end proof transaction (Uni evidence -> Keeper stamp -> Director ruling by verified email -> Uni GitHub acknowledgment -> section 32 merge -> Director final check) plus a failed-gate drill on the same vehicle (package starts incomplete; the gate must hold). Records only; no code credit; status stays DESIGN until both proofs exist. | ACTIVATION IN PROOF — drill first, then the full lap | this PR head |
 
@@ -269,3 +269,53 @@ historical record of its own time.
    above (including Q-LC.1/Q-LC.2, the LM asks, the FI-011 asks, and
    the #421/#461 gates) remains open exactly as written; this
    addendum answers none of them and closes none of them.
+
+## ADDENDUM — 2026-11-17 (Uni records-correction bundle; Batch Sweep Phase A, lane A1)
+
+This addendum is ADDITIVE. Nothing above is rewritten except the two
+wording rescues named in item 1, which replace stale text in place
+with the exact text rescued. Current main at this addendum:
+`001d8871009181bd41c1bebd63bd8e3a151a9d2f` (PR #478 merge).
+
+1. PR #440 WORDING RESCUE (zero-loss closure preparation). Two
+   wordings that existed only in stale PR #440 (head ad383100) are
+   now carried by this queue, verbatim from that PR's diff:
+   (a) the Final-check queue header now cites THE GRAND WORKFLOW
+   v1.0 as governing (in effect 2026-11-14 via PR #423), with the
+   WORKFLOW v1 SS4 final-check mechanism retained per GW-02;
+   (b) the Grand Workflow synthesis row in the Grand Workflow
+   section is closed in place as ADOPTED AND IN EFFECT (PR #423,
+   merged 1bf8dfff; Keeper scoped final-check CONFIRM 6890820027).
+   With both wordings landed here, PR #440's remaining content is
+   fully superseded (its PR #420 row is carried by the current
+   queue per PR #474's merged refresh); #440 may now close
+   zero-loss on an authority's word. This bundle does not close it.
+
+2. PR #439 CLOSEOUT (A4 — LM-4 resource guard). MERGED
+   2026-11-16 as `7ed41b1f5919b6f2f016626cf91d2b8fdc7848fe`.
+   Terminal trail at head 903957cf: regression x3 TERMINAL GREEN;
+   exact-head CI TERMINAL ALL PASS; safety/performance checkpoint
+   accepted (Director EXE, mail 1a1e28f7380e7270); Keeper TERMINAL
+   CONFIRM 6907829055; merge receipt 6907870853 records merged-main
+   verification and A4 CODE COMPLETE. The guard remains an INTERIM
+   honest guard under FI-012. No queue item remains open on #439.
+
+3. PR #459 CLOSEOUT (Cycle System — design records + activation
+   proof vehicle). MERGED 2026-11-16 as
+   `c7b5da03521f582ccc7768dc789248db11a2236c`. The Cycle System is
+   LIVE (Director declaration on the PR); Director LIVE PASS
+   6936309251 and Uni acknowledgment/fold 6936449577 are the
+   terminal receipts. The Direct Posting Protocol first published
+   on this PR (6919579680) is now carried as a standalone file
+   (director-reports/DIRECT_POSTING_PROTOCOL_2026-11-16.md). No
+   queue item remains open on #459.
+
+4. QUEUE RECONCILIATION STATUS. The queue-hygiene finding
+   (Director 6928041134), the merged plan
+   (DIRECTOR_PLAN_REVIEW_QUEUE_TRUTH_2026-11-16.md), and the
+   records-implementation authorization (Director 6936250740) are
+   placed on the file record by the companion status document
+   (director-reports/QUEUE_RECONCILIATION_STATUS_2026-11-17.md),
+   which enumerates this queue at the bundle base and states what
+   remains of the authorized 1:1 row mapping. No row was dropped,
+   merged, or archived by this bundle.
