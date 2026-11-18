@@ -84,7 +84,20 @@ NOT authorized.
   translate_word_counts_test, d1_registry_leaf_test,
   flow_executor_test.
 - Full regression campaign x3 + exact-head CI: see the PR's
-  campaign receipt (posted on completion).
+  campaign receipt (posted on completion). CAMPAIGN NOTE: leg 1 at
+  head fe46c80 returned REGRESS 300/302 with two reds, both
+  diagnosed as NON-PRODUCT: (a) this suite was marked RED at rc=0
+  with smoke() returning True — the harness (form/regress.py)
+  scores a suite by the LAST N/M token in its stdout, and a check
+  detail ("20/5") was the last token because the suite printed no
+  final tally; the suite now prints `R19_CYCLE_RECEIPT: 39/39`
+  last. (b) d1_registry_leaf4_test's symbiosis check failed
+  in-campaign but passes standalone on BOTH the R19 tree and a
+  main tree, AND on an empty state dir (36/36) — the campaign had
+  run against form/state residue accumulated from this worktree's
+  earlier standalone test runs; the campaign was relaunched
+  against a clean state dir. Neither red reproduces against the
+  product code at this head.
 
 ## Scope / non-claims
 

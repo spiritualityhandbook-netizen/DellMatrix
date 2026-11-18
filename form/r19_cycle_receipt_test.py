@@ -259,12 +259,18 @@ def smoke() -> bool:
     global _RESULTS
     _RESULTS = []
     try:
-        return _run()
+        ok = _run()
     except Exception as exc:  # noqa: BLE001 — surface, never swallow
         import traceback
         traceback.print_exc()
         print(f"FAIL  r19 suite raised: {exc!r}")
-        return False
+        ok = False
+    passed = sum(1 for _, k in _RESULTS if k)
+    # Harness contract (form/regress.py): the LAST N/M token in the
+    # suite's stdout is its tally — print it last, after every check
+    # line (check details contain N/M-shaped fragments like "20/5").
+    print(f"R19_CYCLE_RECEIPT: {passed}/{len(_RESULTS)}")
+    return ok
 
 
 if __name__ == "__main__":
