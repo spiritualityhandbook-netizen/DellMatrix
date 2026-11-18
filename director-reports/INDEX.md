@@ -1,5 +1,18 @@
 # Director Reports — Index
 
+## Live board — canonical (refresh by re-rendering; never hand-edit the figures)
+
+`MWL 39/182 COMPLETE = 21.4% | PARTIAL 54 | OPEN 86 | GATED 3 | SANDBOXED 3 (outside active scope)`
+
+Rendered by `master_list.py` from [`master_work_list_items.json`](master_work_list_items.json)
+at main `001d8871009181bd41c1bebd63bd8e3a151a9d2f` (data blob
+`8da24d34069e24318e5837f1e40bca23cf72c236`), verified 2026-11-17. Denominator:
+the active scope — 185 numbered rows minus 3 SANDBOXED. Full board:
+[MASTER_WORK_LIST.md](MASTER_WORK_LIST.md). To refresh this block: pin a new
+main, run `python3 director-reports/master_list.py --data director-reports/master_work_list_items.json --line`
+(from the repository root), and replace the
+line above verbatim together with its provenance — never hand-edit the figures.
+
 ## Director channel — 2026-11-01 response
 - [DIR-WF-001: adopted shared workflow and Uni/Ace handoff](responses/DIR-WF-001.md)
 - [Workflow, 100 refinements and executable preflight](workflow/WORKFLOW.md)

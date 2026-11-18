@@ -593,14 +593,17 @@ keeps the two separate.
 
 **Production main:** `11933da` — the anchor recorded by the P12 closure audit
 (2026-10-30, full 100-Dell registry proof complete). Main has since advanced beyond
-that anchor (this refresh was written at main `610fb13`, 2026-11-11); the anchor
+that anchor (this refresh was written at main `001d887`, 2026-11-17); the anchor
 line is retained verbatim because the P12 audit's reconciliation is stated
 against it.
 
 **The scoreboard:** all remaining work is enumerated in one **Master Work List**
 ([`director-reports/MASTER_WORK_LIST.md`](director-reports/MASTER_WORK_LIST.md)) —
-179 items, strict counting, no partial credit. As of the render on this main:
-**36 / 179 COMPLETE = 20.1%** (54 PARTIAL, 86 OPEN, 3 GATED). The Director's hourly
+182 items, strict counting, no partial credit. As of the render on this main:
+**39 / 182 COMPLETE = 21.4%** (54 PARTIAL, 86 OPEN, 3 GATED) — rendered by
+`master_list.py` from `master_work_list_items.json` (data blob `8da24d34`) at
+main `001d8871`, verified 2026-11-17; the denominator is the active scope,
+185 numbered rows minus 3 SANDBOXED. The Director's hourly
 review disposes of a published queue
 ([`director-reports/DIRECTOR_REVIEW_QUEUE.md`](director-reports/DIRECTOR_REVIEW_QUEUE.md)).
 
@@ -619,7 +622,12 @@ chain parse-refusal failing closed (DD-45), Diff rings 1+2 as the comparison aut
 (C3), Embed bound to a docked provider (C8 EmbedBind), the dock-roster eviction fix,
 LatinMandell's in-repo morpheme harvest and tables (§3.10), the 31 Workflow role seeds
 landed as pending proposals, and the Email Matrix field (1,052 idea units built from
-Ace's mail under his confirmations)** — each merged with terminal-green regression and
+Ace's mail under his confirmations), Nursery organization — topic, tags, cluster
+and an automatic birth certificate on every idea, with rename/relabel under
+signed receipts (C5R.3 ORGANIZE), the growth-duplicate save fix (GROW-DUP), and
+the Lens smart-ranking as the default Nursery browse/search order, every score
+shown with its recipe and the ACE ingredient honestly labeled missing in v1
+(C5R.4)** — each merged with terminal-green regression and
 scoped authority confirmation, itemized on the Master Work List.
 
 **Certification picture (selected, all scoped):** DIR-CERT-2026-11-02 stands for its
@@ -627,7 +635,7 @@ named circuits with its exceptions retained; Studio security and the Core I
 unsupported-arg gate are certified in scope (Studio remains a functional **local-only**
 application; browser acceptance is still open); Workflow v1 is adopted and live;
 the LatinMandell LM-1 license boundary and import design are ruled and merged, with
-the import itself (PR #393) in Director review at this writing. Per-circuit reports
+the import itself (PR #393) merged 2026-11-12 (`c6f6fb5`). Per-circuit reports
 live in [`director-reports/`](director-reports/) with `INDEX.md` as the entry point.
 Nothing in this README sums bounded certificates into a whole-program claim:
 **whole-program certification is NOT issued.**
@@ -671,10 +679,11 @@ code is the thing that is behind (Ace ruling, 2026-11-11).
 | **1 — Form** | The Python runtime in `form/` becomes the live program: REPL, `Program`, persistence, Nursery/Plane, Exchange, DuoBeta, the dock. `src/` freezes. | Built |
 | **2 — Proof** | Per-Dell deepening circuits (D1) and the P-series drive the registry to a full 100-Dell proof (anchor `11933da`, 2026-10-30); DIR-CERT-2026-11-02 certifies its named circuits in scope. | Closed, with exceptions on record |
 | **3 — The completion drives** | SUS Ω-64, then SUSX100,000: a nonstop push at the whole queue. Ω-64 closed honestly (10 complete/verified, the rest partial, investigated, or deferred) and was **accepted with noted exceptions** — the project learned to count strictly or not at all. | Closed honestly |
-| **4 — The Dell Plan + Workflow v1** | Ace's Dell-by-Dell tour rewrites what many Dells are *supposed* to do (§12 rulings DD-43…DD-54+: Parallel must mean parallel, Loop bounds explicit, Diff the one comparison authority, Trace covers the whole process…). Workflow v1 seats the five roles; the Director Review Queue and the Master Work List (179 items) replace every older scoreboard. | Governing now |
+| **4 — The Dell Plan + Workflow v1** | Ace's Dell-by-Dell tour rewrites what many Dells are *supposed* to do (§12 rulings DD-43…DD-54+: Parallel must mean parallel, Loop bounds explicit, Diff the one comparison authority, Trace covers the whole process…). Workflow v1 seats the five roles; the Director Review Queue and the Master Work List (182 items) replace every older scoreboard. | Governing now |
 | **5 — NOW (2026-11-11)** | Foundation-order circuits closing one by one — Loop, Bounds, ParseRefusal, Diff rings 1+2, EmbedBind, the roster fix — plus the LatinMandell program (LM-0 census → LM-1 import in review → LM-2 splitter). **Board: 36/179 COMPLETE (20.1%).** | In progress |
+| **5b — NOW (2026-11-17)** | The scoreboard reconciled to the canonical register render under the Director's live-state rule; C5R.3 ORGANIZE, the GROW-DUP save fix, and the C5R.4 LENS settled as code-complete. **Board: 39/182 COMPLETE (21.4%).** | In progress |
 | **6 — The road to finish** | The remaining §14 foundation families in order (truth/receipts → roster → Diff's upper rings → the upper Dell families), the gated Q1 save-path decision, the withheld DAF-09 discrepancy, Studio browser acceptance — then Ace's vision items: Nursery proposal cards and custom shapes, the Plane as a walkable **Room** (3D) and **Sky** (2D), the page set ending in the **Psalm Matrix**, navigation researched before it is placed. | Ahead |
-| **FINISH** | The Master Work List reads **179/179 COMPLETE**, every item with executed evidence, and whole-program certification is issued by the Director with the Keeper's trailing certification on record. Human testing opens only through its gates: a real AI docked live **and** Ace working the Matrix himself. | The finish line |
+| **FINISH** | The Master Work List reads **182/182 COMPLETE**, every item with executed evidence, and whole-program certification is issued by the Director with the Keeper's trailing certification on record. Human testing opens only through its gates: a real AI docked live **and** Ace working the Matrix himself. | The finish line |
 
 Two rules keep the map honest: **merged is never certified** (a merge is an
 execution under authorization; certification is a separate authority act), and
@@ -697,7 +706,7 @@ percentage.
 | `form/persist.py`, `form/persist_rest.py` | Disk persistence (JSON under `form/state/`), load-time recovery hooks |
 | `form/regress.py` | The regression harness (canonical suite registry; count = length of LIST) |
 | `director-reports/` | Per-circuit evidence reports submitted for Director certification; `INDEX.md` is the entry point |
-| `director-reports/MASTER_WORK_LIST.md` | The single scoreboard: all 179 work items, machine-rendered by `master_list.py` from `master_work_list_items.json` |
+| `director-reports/MASTER_WORK_LIST.md` | The single scoreboard: all 182 work items, machine-rendered by `master_list.py` from `master_work_list_items.json` |
 | `director-reports/DIRECTOR_REVIEW_QUEUE.md` | Everything awaiting a Director disposition, with exact heads; the hourly review disposes of the whole queue |
 | `gui/` | DellMatrix Studio — the local visual application (local-only; not network-deployed) |
 | `docs/` | Documentation (large; currency varies — this README is the current-truth summary) |
@@ -761,7 +770,7 @@ and do not modify `src/` (frozen).
 - **Exchange** — file-based transfer of ideas *with their receipts*, imported as pending under the receiver's gate.
 - **Honest refusal** — the system's pattern of declining, with a reason, instead of fabricating a result.
 - **Director / Keeper** — the two independent review authorities (ChatGPT / Grok): the Director analyzes and gives the final check hourly; the Keeper confirms on a fast lane. Either can HOLD a work item instantly; only Uni writes code.
-- **Master Work List** — the single 179-item enumeration of all remaining work; COMPLETE means authority-confirmed closed, and the headline percentage allows no partial credit.
+- **Master Work List** — the single 182-item enumeration of all remaining work; COMPLETE means authority-confirmed closed, and the headline percentage allows no partial credit.
 - **LatinMandell** — the morpheme lens (§3.10): English decomposed into Latin/Greek pieces so word *function* is explicit; an aid to understanding, not a source of truth.
 - **Mandelmoji** — the glyph layer (§3.10): one character that references a Dell and carries a predisposed tone through 05[Tone].
 - **Psalm** — an AI docked into DellMatrix as a worker (proposals only, never authority). The **Psalm Matrix** is the planned all-AI page of the future page set.
