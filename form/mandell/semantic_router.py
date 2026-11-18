@@ -110,11 +110,23 @@ def _seed_save(intent: Any, parsed: Any) -> str:
 
 
 def _seed_grow(intent: Any, parsed: Any) -> str:
-    try:
-        cycles = int((intent.args or {}).get("cycles", 1))
-    except (TypeError, ValueError):
-        cycles = 1
-    return f"13[Loop] :: {max(1, cycles)}"
+    # R19-SIB (Director 6987078989, Q-A): the requested count is
+    # judged by the leaf grammar (_parse_count), never silently
+    # defaulted or floored here — the old body turned garbage into
+    # 1 via the except branch and 0 into 1 via max(1, ...), so
+    # Dell 13's own typed refusal (invalid_loop_count) and its
+    # requested/executed receipt never saw the user's operand.
+    # A valid count travels exactly (Dell 13 clamps + reports);
+    # anything else travels RAW and the leaf refuses it.
+    raw = (intent.args or {}).get("cycles", 1)
+    if isinstance(raw, int) and not isinstance(raw, bool):
+        return f"13[Loop] :: {raw}"
+    from .executor_leaf import _parse_count
+    n = _parse_count(str(raw)) if raw is not None else None
+    if n is not None:
+        return f"13[Loop] :: {n}"
+    token = str(raw).strip() if raw is not None else ""
+    return f"13[Loop] :: {token}" if token else "13[Loop] :: 1"
 
 
 def _seed_discover(intent: Any, parsed: Any) -> str:

@@ -3476,17 +3476,33 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
         _say(paths.get("easy") or paths.get("html", ""))
 
     elif action == "walk":
-        steps = int(args.get("steps", 1))
-        p.avatar.set_locomotion(Locomotion.WALK)
-        pos = p.avatar.step(steps)
-        if hasattr(p, "apply_grid_snap"):
-            p.apply_grid_snap()
-            pos = p.avatar.body.pos
-        if hasattr(p, "_push_user_trail"):
-            p._push_user_trail()
-        if hasattr(p, "note_seed"):
-            p.note_seed(19, "Drive", "walk")
-        _say(f"You walked forward {steps}. Now at {pos}.")
+        # R19-SIB (Director 6987078989, Q-B): steps are judged by
+        # the shared count grammar. A malformed explicit count
+        # (which translate now carries RAW) is a typed refusal
+        # with no movement — never int()-crashed and never
+        # silently defaulted. (Pre-repair this handler consumed
+        # translate's silently-defaulted args directly: "walk
+        # forward banana" walked 1 and "walk forward ２０"
+        # walked 20 at this real user path.)
+        _raw_steps = args.get("steps", 1)
+        if isinstance(_raw_steps, int) and not isinstance(_raw_steps, bool):
+            steps = _raw_steps
+        else:
+            from form.mandell.executor_leaf import _parse_count
+            steps = _parse_count(str(_raw_steps))
+        if steps is None:
+            _say(f"Walk refused: invalid count '{_raw_steps}' — no steps taken.")
+        else:
+            p.avatar.set_locomotion(Locomotion.WALK)
+            pos = p.avatar.step(steps)
+            if hasattr(p, "apply_grid_snap"):
+                p.apply_grid_snap()
+                pos = p.avatar.body.pos
+            if hasattr(p, "_push_user_trail"):
+                p._push_user_trail()
+            if hasattr(p, "note_seed"):
+                p.note_seed(19, "Drive", "walk")
+            _say(f"You walked forward {steps}. Now at {pos}.")
 
     elif action == "run":
         p.avatar.set_locomotion(Locomotion.RUN)
