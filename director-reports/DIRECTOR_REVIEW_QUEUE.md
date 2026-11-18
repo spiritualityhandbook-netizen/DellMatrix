@@ -326,3 +326,11 @@ with the exact text rescued. Current main at this addendum:
    which enumerates this queue at the bundle base and states what
    remains of the authorized 1:1 row mapping. No row was dropped,
    merged, or archived by this bundle.
+
+## Limits Census landing (2026-11-18, per Director 6980308495 on PR #427)
+
+The original Limits Census (LIMITS_CENSUS_2026-11-13.md, blob c4509c57)
+is proposed for landing on main byte-identical as a pinned 2026-11-13 baseline, with the
+dated delta classification LIMITS_CENSUS_DELTA_2026-11-18.md covering only
+rechecked rows. PR #427 closes as SUPERSEDED BY LANDED RECORD after this
+landing merges under section 32. Records only; no credit.
