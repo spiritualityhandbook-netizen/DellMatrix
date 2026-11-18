@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from .predicate import partition_store_operand, result_cell
 
 SPECTRUM_DELLS = set(range(80, 100))
-COMPOSE_BOUND = 8
+# COMPOSE_BOUND = 8 retired by R17: it was the phantom recursion
+# cap _compose_bound silently substituted for an unstated, "max",
+# or invalid Limit. The Compose bound now resolves through
+# bound_detail (see _compose_bound); no default is invented.
 ACTIVE_TX = ("open", "failed", "caught")
 TERMINAL_TX = ("committed", "reverted")
 TERMINAL_TX_KEEP = 16
@@ -710,21 +713,43 @@ def _resolve_name(st: Any, name: str) -> str:
     return resolved if not err else ""
 
 
-def _compose_bound(st: Any) -> int:
-    from .predicate import validate_bound
-    ok, n, _err = validate_bound(getattr(st, "limit", "") or "")
-    return n if ok else COMPOSE_BOUND
+def _compose_bound(st: Any) -> Tuple[Optional[int], str]:
+    """R17: resolve the Compose recursion bound HONESTLY, through
+    DD-44's bound_detail — never through validate_bound's phantom
+    branches. Returns (cap, "") for a stated bound (the word max
+    states MAX_BOUND = 64), (None, "") when no bound was stated
+    (NO cap is applied and no number is invented), or
+    (None, "invalid_limit") for a stated-but-unlawful value.
+    The old contract returned the silent COMPOSE_BOUND = 8 for
+    unspecified, "max", AND invalid input alike — the exact
+    silent default DD-44 abolished in the loop domain."""
+    from .control_runtime import bound_detail
+    d = bound_detail(st)
+    if d["status"] == "specified":
+        return d["value"], ""
+    if d["status"] == "invalid":
+        return None, d["error"] or "invalid_limit"
+    return None, ""
 
 
 def _compose_seed(st: Any, body: str, stack=None, depth: int = 0) -> Tuple[str, str]:
     raw = (body or "").strip()
     if not raw:
         return "", "malformed_composition"
-    bound = _compose_bound(st)
-    if depth > bound:
-        return "", "compose_depth"
     if "[" in raw:
+        # A raw seed is terminal: it cannot recurse, so no bound
+        # is consulted for it, at any depth (R17).
         return raw, ""
+    if depth > 0:
+        # The bound is consulted exactly where it can bite: a
+        # nested expansion. Termination without a stated cap is
+        # still guaranteed — the compose_cycle stack guard bounds
+        # expansion by the finite name set.
+        cap, berr = _compose_bound(st)
+        if berr:
+            return "", berr
+        if cap is not None and depth > cap:
+            return "", "compose_depth"
     stack = set(stack or [])
     parts = [p.strip() for p in raw.replace(",", ">").split(">") if p.strip()]
     atoms = []
