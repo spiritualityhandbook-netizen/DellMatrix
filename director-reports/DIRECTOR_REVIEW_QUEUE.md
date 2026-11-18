@@ -27,6 +27,14 @@ DIRECTOR PRIORITIES (restated by the 2026-11-17 EXE review):
   records-correction PR), Acting-Keeper (Gemini) review at the adoption head, and the
   Director's final adoption + SS32 cutover ruling.
 
+  CURRENT OVERLAY (2026-11-18, per Director 6980309489): the block above
+  is retained verbatim as a dated historical witness of the 2026-11-17
+  state. It is NO LONGER CURRENT. Workflow v2 was ADOPTED on PR #461
+  (Director 6974780263); the section 32 GitHub-only cutover is VERIFIED
+  with the 09:50 UTC 2026-11-18 conservative audit boundary (Director
+  6975138216); the section 44 email sunset is IN FORCE. Current truth:
+  director-reports/WORKFLOW_V2_ADOPTION_STATUS_2026-11-18.md.
+
 | PR | Head | CI at head | Mergeable | Acting-Keeper (Gemini) confirmation at head | Latest Director disposition | Unresolved decision / next gate |
 |---|---|---|---|---|---|---|
 | #461 Workflow v2 | 95f10f64 | 3 success | MERGEABLE/CLEAN | none at head | ADOPTION HOLD NARROWED (2026-11-16) | SS43/44 artifact; Acting-Keeper (Gemini) adoption-head review; final adoption + cutover ruling |
