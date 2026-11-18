@@ -1,8 +1,9 @@
 # WORKFLOW v2 — ADOPTION AND SECTION 32 CUTOVER STATUS (2026-11-18)
 
 Additive status record for `WORKFLOW_V2_DESIGN_2026-11-16.md` (revision 3),
-landed on main byte-identical from PR #461 per Director disposition
-6980309489. The design file is preserved exactly as authored, including
+carried byte-identical from PR #461 per Director disposition 6980309489.
+This PR carries the byte-identical adopted design. The merge receipt
+establishes its landing on main. The design file is preserved exactly as authored, including
 its historical "DRAFT FOR TWO-CHECKER REVIEW" status line; THIS document
 carries the current governance truth so the as-authored history is never
 rewritten and never masquerades as the present state.
