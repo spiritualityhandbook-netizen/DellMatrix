@@ -56,7 +56,10 @@ class DuoBeta:
         if "override floor" in detail.lower():
             return {"ok": False, "reason": "Floor hostile"}
         self.generation += 1
-        entry = GrowthEntry(gen=self.generation, detail=detail[:120], ts=self._ts())
+        # R26 (Director ruling 6974763716): detail is stored WHOLE.
+        # The former [:120] cut silently destroyed the durable growth
+        # record at capture; no bound is applied here.
+        entry = GrowthEntry(gen=self.generation, detail=detail, ts=self._ts())
         self.ledger.append(entry)
         return {"ok": True, "generation": self.generation, "entry": entry.detail}
 

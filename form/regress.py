@@ -288,6 +288,7 @@ LIST = [
     "form.mandell.lineage_label_test:smoke",
     "form.mandell.resonance_command_test:smoke",
     "form.mandell.duobeta_cross_session_test:smoke",
+    "form.duobeta_detail_whole_test:smoke",
     "form.mandell.polyglot_user_path_test:smoke",
     "form.mandell.launchers_test:smoke",
     "form.mandell.projects_groups_test:smoke",

@@ -468,7 +468,9 @@ def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> No
                 continue
             clean.append(GrowthEntry(
                 gen=gen,
-                detail=str(e.get("detail", ""))[:120],
+                # R26: detail restored WHOLE (former [:120] re-cut
+                # at load any whole entry written by repaired code).
+                detail=str(e.get("detail", "")),
                 ts=str(e.get("ts", "")),
                 # DBEL-I: restore learning metadata (additive; {} for legacy).
                 meta=dict(e.get("meta") or {}) if isinstance(e.get("meta"), dict) else {},
