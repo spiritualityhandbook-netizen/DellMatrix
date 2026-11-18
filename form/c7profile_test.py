@@ -84,6 +84,32 @@ def _program(owner):
     return open_program(owner)
 
 
+def _owner_artifacts(owner):
+    if not owner:
+        return []
+    return glob.glob(os.path.join(STATE_DIR, f"*{owner}*"))
+
+
+def _own_bench_artifacts():
+    """State artifacts of THIS process's disposable bench owners.
+
+    profile_board names a disposable owner
+    ProfileBench<pid>_<n>[tag] and every state artifact embeds
+    the owner name (ideas_<owner>, nursery_<owner>.json, and
+    the .dmtmp temps of its atomic saves), so this process's
+    artifacts are exactly the ones matching ProfileBench<pid>_.
+    Foreign artifacts — corpses of killed runs, other live
+    processes' benches — are a different owner's state: not this
+    test's to assert on, and never this test's to delete."""
+    return glob.glob(os.path.join(
+        STATE_DIR, f"*ProfileBench{os.getpid()}_*"))
+
+
+def _timing_files():
+    return {f for f in glob.glob(os.path.join(STATE_DIR, "*"))
+            if "profile_timing" in os.path.basename(f).lower()}
+
+
 def _msgs(r):
     return [m for m in r.get("messages", [])
             if not m.startswith(("Mandell:", "English:"))]
@@ -101,6 +127,11 @@ def _board_mod():
 def smoke() -> bool:
     print("=== C7.PROFILE (DD-39) ===")
     r = []
+    # TEST-ISOLATION HYGIENE (Director circuit, 2026-11-18):
+    # snapshot of profile_timing-named files BEFORE any benchmark
+    # runs. t10 asserts none APPEARED during this test; a foreign
+    # pre-existing file is not evidence about these runs.
+    timing_at_start = _timing_files()
 
     def rec(name, ok, detail=""):
         print(f"[{'PASS' if ok else 'FAIL'}] {name}"
@@ -380,7 +411,22 @@ def smoke() -> bool:
         and (ra.get("profile_report") or {}).get("verdict") == "COMPLETE"
         and (rb.get("profile_report") or {}).get("verdict") == "COMPLETE",
         f"{set_a} vs {set_b}")
-    leftovers = glob.glob(os.path.join(STATE_DIR, "*ProfileBench*"))
+    # Scoped hygiene (TEST-ISOLATION HYGIENE circuit, 2026-11-18):
+    # this check owns exactly the artifacts of the benchmark runs
+    # THIS process performed — the owners named on this section's
+    # receipts, plus anything carrying this pid (calibration
+    # owners and every earlier section's runs included). The
+    # previous form globbed the WHOLE shared state dir, so a
+    # corpse left by a KILLED bench — whose dispose step never
+    # ran — failed every later run forever, though the run under
+    # test had cleaned up perfectly. Proven failing-first by
+    # form/test_isolation_hygiene_test.py (foreign corpse set
+    # planted -> 34/36; scoped -> 36/36, corpses untouched).
+    own = _own_bench_artifacts()
+    for _rep in (ra.get("profile_report") or {},
+                 rb.get("profile_report") or {}):
+        own += _owner_artifacts((_rep.get("workload") or {}).get("owner"))
+    leftovers = sorted(set(own))
     rec("t9_disposable_cleaned", leftovers == [], str(leftovers))
 
     # -- 10. Receipt-only timings (Q-C7P.2 default (b), adapted
@@ -396,9 +442,15 @@ def smoke() -> bool:
             for n in TIMED_STAGES)
         and "previous" not in r1 and "history" not in r1,
         str([ (n, (st10.get(n) or {}).get("seconds")) for n in TIMED_STAGES]))
-    store_leftovers = [f for f in glob.glob(os.path.join(STATE_DIR, "*"))
-                       if "profilebench" in os.path.basename(f).lower()
-                       or "profile_timing" in os.path.basename(f).lower()]
+    # Scoped like t9 (same circuit): this process's own bench
+    # artifacts must be gone, and no timings-store file may have
+    # APPEARED during this test (diff against the snapshot taken
+    # before any benchmark ran). The old whole-dir glob also
+    # failed on any foreign profilebench/profile_timing file —
+    # the same corpse false-failure as t9.
+    store_leftovers = sorted(
+        set(_own_bench_artifacts())
+        | (_timing_files() - timing_at_start))
     rec("t10_no_timings_store", store_leftovers == [],
         str(store_leftovers))
     rec("t10_runs_independent",

@@ -353,6 +353,12 @@ LIST = [
     "form.c7schema_test:smoke",
     "form.c13_simulate_test:smoke",
     "form.c7profile_test:smoke",
+    # TEST-ISOLATION HYGIENE (Director fix-first circuit,
+    # 2026-11-18, PR #489 comment 6989087312): adversarial
+    # fixture — a foreign stale ProfileBench corpse set must
+    # not falsely fail c7profile, must survive untouched, and
+    # the run's own bench artifacts must all be cleaned.
+    "form.test_isolation_hygiene_test:smoke",
     "form.lm1_harvest_test:smoke",
     "form.lm1_import_test:smoke",
     "form.lm2_splitter_test:smoke",
