@@ -129,6 +129,23 @@ def main() -> int:
     check("unspecified: 40 unique-name chain refuses bound_unspecified",
           err == "bound_unspecified" and out == "", f"out={out!r} err={err!r}")
 
+    # ---- cycle precedence: a cycle cannot succeed under ANY ----
+    # bound, so compose_cycle is reported before the bound is
+    # consulted (preserves spectrum_closure compose_indirect_cycle).
+    st = _state("")
+    st.compositions["A"] = "B"
+    st.compositions["B"] = "A"
+    out, err = _seed(st, "A")
+    check("indirect cycle, no limit stated -> compose_cycle (not bound_unspecified)",
+          err == "compose_cycle", f"out={out!r} err={err!r}")
+
+    st = _state("5")
+    st.compositions["A"] = "B"
+    st.compositions["B"] = "A"
+    out, err = _seed(st, "A")
+    check("indirect cycle under stated bound -> compose_cycle",
+          err == "compose_cycle", f"out={out!r} err={err!r}")
+
     # ---- defect face 2: stated max must mean 64, not 8 ----------
     out, err = _seed(_state("max", chain=12), "c1")
     check("stated max: 12-deep chain admitted (cap 64, not phantom 8)",

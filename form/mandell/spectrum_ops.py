@@ -734,6 +734,32 @@ def _compose_bound(st: Any) -> Tuple[Optional[int], str]:
     return None, ""
 
 
+def _compose_cycle_ahead(st: Any, body: str, path) -> bool:
+    """Path-sensitive cycle pre-scan (R17/G2): True when expanding
+    body would re-enter a name already on the expansion path.
+    Mirrors _compose_seed's own name resolution so its verdict
+    matches the stack guard exactly. A cycle is a property of the
+    name graph, independent of any bound — a cyclic composition
+    cannot succeed under ANY bound — so it is reported before the
+    bound is consulted (preserves compose_indirect_cycle)."""
+    raw = (body or "").strip()
+    if not raw or "[" in raw:
+        return False
+    for part in [p.strip() for p in raw.replace(",", ">").split(">") if p.strip()]:
+        if part.isdigit():
+            continue
+        if part in path:
+            return True
+        if part in st.defs or part in st.compositions or part in st.aliases:
+            resolved = _resolve_name(st, part) or part
+            if resolved in path:
+                return True
+            inner = st.compositions.get(part) or st.compositions.get(resolved) or st.defs.get(resolved, "")
+            if inner and _compose_cycle_ahead(st, inner, path | {part, resolved}):
+                return True
+    return False
+
+
 def _compose_seed(st: Any, body: str, stack=None, depth: int = 0) -> Tuple[str, str]:
     raw = (body or "").strip()
     if not raw:
@@ -742,6 +768,8 @@ def _compose_seed(st: Any, body: str, stack=None, depth: int = 0) -> Tuple[str, 
         # A raw seed is terminal: it cannot recurse, so no bound
         # is consulted for it, at any depth (R17).
         return raw, ""
+    if depth == 0 and _compose_cycle_ahead(st, raw, set(stack or [])):
+        return "", "compose_cycle"
     stack = set(stack or [])
     parts = [p.strip() for p in raw.replace(",", ">").split(">") if p.strip()]
     atoms = []
