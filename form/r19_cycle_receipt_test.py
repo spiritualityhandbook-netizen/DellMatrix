@@ -240,6 +240,33 @@ def _run():
         _rec("english 'run cycles -3': routes to Drive (not Dell 06), as on main",
              rc.mandel.startswith("19[Drive]"), str(rc.mandel))
 
+        # --- Face 3c: the ROUTED English door (translate ->
+        # route_intent, the door the word-count suite exercises).
+        # The router must judge the count by the leaf grammar, not
+        # bare int(): int() silently converts non-ASCII digits and
+        # signs (all-Dells English-door audit finding, 2026-11-18:
+        # route_intent('cycle ２０') EXECUTED while the seed door
+        # refused). Failing-first: pre-fix probe showed ok=True with
+        # seed '06[Cycle] :: 20' for the fullwidth case.
+        from form.mandell.semantic_router import route_intent
+        for bad_text in ("cycle ２０", "cycle +3", "cycle ²",
+                         "cycle -3", "cycle banana"):
+            p_rt = prog()
+            h0 = len(list(getattr(p_rt, "history", []) or []))
+            r = route_intent(p_rt, translate(bad_text), bad_text)
+            h1 = len(list(getattr(p_rt, "history", []) or []))
+            _rec(f"routed english {bad_text!r}: typed refusal, no growth",
+                 (not r.ok)
+                 and getattr(r, "error", "") == "invalid_cycle_count"
+                 and h1 == h0,
+                 f"ok={r.ok} err={getattr(r, 'error', '')} "
+                 f"seed={r.seed!r} hist {h0}->{h1}")
+        p_ok = prog()
+        r = route_intent(p_ok, translate("cycle 20"), "cycle 20")
+        _rec("routed english 'cycle 20': valid count executes",
+             r.ok and r.seed == "06[Cycle] :: 20",
+             f"ok={r.ok} seed={r.seed!r}")
+
         # Receipt durability, labeled honestly (correction point
         # 3): the requested/executed/remaining disclosure is
         # RECEIPT-ONLY. It is produced in the execution result at

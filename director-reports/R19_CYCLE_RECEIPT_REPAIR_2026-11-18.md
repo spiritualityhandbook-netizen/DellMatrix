@@ -160,3 +160,29 @@ translate_intent_args 18/18, translate_dead_args 21/21,
 lm4_tollbooth 26/26, dirf13 17/17, core_i_arg_gate 92/92,
 loop_bounds 27/27, dd14 11/11, flow_executor 28/28,
 d1_registry_leaf 22/22.
+
+## ROUTER-HOLE ROUND — all-Dells English-door audit (2026-11-18)
+
+Ace ordered the English door tested on ALL Dells, not only Cycle.
+The audit probe (translate -> route_intent battery over every
+count-bearing English family; saved at
+hidden_files/r19_logs/probe_all_doors_2026-11-18.txt) found a
+residual hole INSIDE this circuit's own repair: _seed_cycle
+judged the routed count with bare int(), which silently converts
+non-ASCII digits — route_intent("cycle ２０") EXECUTED (seed
+06[Cycle] :: 20) while the seed door refused the same token.
+Signs converted the same way. The R19 suite had exercised the
+English door through execute_seed only, so the routed door's
+conversion was unobserved — an instrument gap in Uni's own
+testing, disclosed.
+
+Repair (this head): _seed_cycle judges the count with the leaf's
+own grammar (_parse_count): an int travels exactly; a string
+travels only if it is in the grammar; anything else travels RAW
+and the leaf refuses it typed. The suite gains six route-level
+checks (Face 3c) through the real routed door — cycle ２０,
+cycle +3, cycle ², cycle -3, cycle banana refuse with zero
+growth; cycle 20 executes — and stands 58/58. The wider audit
+(grow/walk/expand families carry the same defect class) is
+packaged separately for a Director contract ruling; it does not
+expand this circuit's scope.
