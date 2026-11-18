@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from .predicate import partition_store_operand, result_cell
+from .predicate import MAX_BOUND, partition_store_operand, result_cell
 
 SPECTRUM_DELLS = set(range(80, 100))
-COMPOSE_BOUND = 8
+# COMPOSE_BOUND = 8 retired by R17: it was the phantom recursion
+# cap _compose_bound silently substituted for an unstated, "max",
+# or invalid Limit. The Compose bound now resolves through
+# bound_detail (see _compose_bound); no default is invented.
 ACTIVE_TX = ("open", "failed", "caught")
 TERMINAL_TX = ("committed", "reverted")
 TERMINAL_TX_KEEP = 16
@@ -710,21 +713,138 @@ def _resolve_name(st: Any, name: str) -> str:
     return resolved if not err else ""
 
 
-def _compose_bound(st: Any) -> int:
-    from .predicate import validate_bound
-    ok, n, _err = validate_bound(getattr(st, "limit", "") or "")
-    return n if ok else COMPOSE_BOUND
+def _compose_bound(st: Any) -> Tuple[Optional[int], str]:
+    """R17: resolve the Compose recursion bound HONESTLY, through
+    DD-44's bound_detail — never through validate_bound's phantom
+    branches. Returns (cap, "") for a stated bound (the word max
+    states MAX_BOUND = 64), (None, "") when no bound was stated
+    (no number is invented; the caller refuses bound_unspecified
+    before any NONTERMINAL expansion, per the Director G2 ruling
+    on GP-E03A), or (None, "invalid_limit") for a
+    stated-but-unlawful value.
+    The old contract returned the silent COMPOSE_BOUND = 8 for
+    unspecified, "max", AND invalid input alike — the exact
+    silent default DD-44 abolished in the loop domain."""
+    from .control_runtime import bound_detail
+    d = bound_detail(st)
+    if d["status"] == "specified":
+        return d["value"], ""
+    if d["status"] == "invalid":
+        return None, d["error"] or "invalid_limit"
+    return None, ""
+
+
+_SCAN_VISIT_BUDGET = 100000
+
+
+def _compose_cycle_ahead(st: Any, body: str, path, depth_budget: int) -> str:
+    """Bounded, fail-closed cycle scan (R17, Director G2 round 2,
+    6978856860): "cycle" when expanding body would re-enter a name
+    already on the expansion path, "clear" when no cycle exists
+    within the authorized depth, "exhausted" when the finite visit
+    budget runs out first.
+
+    Iterative three-color DFS over the name graph: each name's
+    edges are walked at most once (gray = on the current DFS
+    stack, black = fully explored), so the scan is O(names +
+    edges) -- never path-exponential and never recursive. (The
+    first pre-scan recursed per path; a long acyclic chain of
+    unique names exhausted the Python stack inside the scan
+    itself, before any bound could refuse.) Branches deeper than
+    depth_budget (the stated cap, or MAX_BOUND when unspecified,
+    plus one) are pruned: a cycle beyond the authorized budget
+    need not be explored, because the expansion's own bound
+    refusal governs there. Mirrors _compose_seed's resolution;
+    raw [...] bodies and flat digit bodies are terminal and
+    contribute no edges."""
+    def _edges(name):
+        if name.isdigit():
+            return []
+        resolved = _resolve_name(st, name) or name
+        inner = (st.compositions.get(name)
+                 or st.compositions.get(resolved)
+                 or st.defs.get(resolved, ""))
+        if not inner or "[" in inner:
+            return []
+        return [q.strip() for q in
+                inner.replace(",", ">").split(">")
+                if q.strip() and not q.strip().isdigit()
+                and (q.strip() in st.defs
+                     or q.strip() in st.compositions
+                     or q.strip() in st.aliases)]
+
+    raw = (body or "").strip()
+    if not raw or "[" in raw:
+        return "clear"
+    roots = [p.strip() for p in raw.replace(",", ">").split(">")
+             if p.strip() and not p.strip().isdigit()
+             and (p.strip() in st.defs
+                  or p.strip() in st.compositions
+                  or p.strip() in st.aliases)]
+    for root in roots:
+        if root in path or (_resolve_name(st, root) or root) in path:
+            return "cycle"
+    color = {}
+    visits = 0
+    stack = []
+    for root in roots:
+        if color.get(root) == "black":
+            continue
+        color[root] = "gray"
+        stack.append((root, 1, iter(_edges(root))))
+        while stack:
+            node, depth, it = stack[-1]
+            descended = False
+            for child in it:
+                visits += 1
+                if visits > _SCAN_VISIT_BUDGET:
+                    return "exhausted"
+                resolved = _resolve_name(st, child) or child
+                if (child in path or resolved in path
+                        or color.get(child) == "gray"
+                        or color.get(resolved) == "gray"):
+                    return "cycle"
+                if color.get(child) == "black":
+                    continue
+                if depth + 1 > depth_budget:
+                    continue
+                color[child] = "gray"
+                stack.append((child, depth + 1,
+                              iter(_edges(child))))
+                descended = True
+                break
+            if not descended:
+                color[node] = "black"
+                stack.pop()
+    return "clear"
 
 
 def _compose_seed(st: Any, body: str, stack=None, depth: int = 0) -> Tuple[str, str]:
     raw = (body or "").strip()
     if not raw:
         return "", "malformed_composition"
-    bound = _compose_bound(st)
-    if depth > bound:
-        return "", "compose_depth"
     if "[" in raw:
+        # A raw seed is terminal: it cannot recurse, so no bound
+        # is consulted for it, at any depth (R17).
         return raw, ""
+    if depth == 0:
+        # Cycle verdicts precede the bound (a cyclic composition
+        # cannot succeed under ANY bound), but the scan itself is
+        # bounded and fail-closed: on an invalid stated bound the
+        # scan is skipped (the expansion point refuses
+        # invalid_limit at the first name expansion, exactly as
+        # before); on scan exhaustion the bound-governed refusal
+        # is returned instead of an unproven cycle claim.
+        cap0, berr0 = _compose_bound(st)
+        if not berr0:
+            _budget = (cap0 if cap0 is not None else MAX_BOUND) + 1
+            _verdict = _compose_cycle_ahead(st, raw,
+                                            set(stack or []), _budget)
+            if _verdict == "cycle":
+                return "", "compose_cycle"
+            if _verdict == "exhausted":
+                return "", ("compose_depth" if cap0 is not None
+                            else "bound_unspecified")
     stack = set(stack or [])
     parts = [p.strip() for p in raw.replace(",", ">").split(">") if p.strip()]
     atoms = []
@@ -741,6 +861,28 @@ def _compose_seed(st: Any, body: str, stack=None, depth: int = 0) -> Tuple[str, 
             inner = st.compositions.get(part) or st.compositions.get(resolved) or st.defs.get(resolved, "")
             if not inner:
                 return "", "malformed_composition"
+            if "[" not in inner:
+                # The bound is consulted HERE — at the one place a
+                # nested expansion actually happens (Director G2
+                # contract, PR #485 ruling 6978656808, sustaining
+                # Uni CH-11 on GP-E03A). A raw "[...]" inner body is
+                # terminal and never consults it. An inner body of
+                # flat digits is terminal too: it consumes one level
+                # of a STATED cap (depth accounting is unchanged
+                # from the pre-R17 semantics) but never requires a
+                # bound to exist. An inner body that itself names
+                # names is NONTERMINAL: with no bound stated it
+                # refuses bound_unspecified BEFORE expanding — never
+                # a fabricated 8, never uncapped recursion.
+                inner_parts = [q.strip() for q in inner.replace(",", ">").split(">") if q.strip()]
+                nonterminal = any(not q.isdigit() for q in inner_parts)
+                cap, berr = _compose_bound(st)
+                if berr:
+                    return "", berr
+                if cap is None and nonterminal:
+                    return "", "bound_unspecified"
+                if cap is not None and depth + 1 > cap:
+                    return "", "compose_depth"
             nested, nerr = _compose_seed(st, inner, stack | {part, resolved}, depth + 1)
             if nerr:
                 return "", nerr
