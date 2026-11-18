@@ -89,6 +89,7 @@ LIST = [
     # P3 R3.2 (Harmony): GDP-001 Phase 3, stream B.
     "form.mandell.p3_r32_harmony_proof",
     "form.mandell.pac_i_test",
+    "form.mandell.undo_redo_depth_test",
     "form.mandell.cac_i_test",
     "form.mandell.ssi_i_test",
     "form.mandell.eoc_i_test",

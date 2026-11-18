@@ -191,6 +191,14 @@ class Program:
     self_knowledge: SelfKnowledge = field(default_factory=SelfKnowledge)
     # Undo stack for place/edit (needs module)
     action_stack: List[Dict[str, Any]] = field(default_factory=list)
+    # Q-LC.1 (DD-54 bounded slice): redo tail beside the action stack
+    # (session-only, like the stack — never persisted), the per-owner
+    # adjustable depth (default Ace's ruled 30; the SETTING persists
+    # via the ux section, the stacks do not), and the visible drop
+    # counter (session-only; no loss at the bound is silent).
+    redo_stack: List[Dict[str, Any]] = field(default_factory=list)
+    undo_depth: int = 30
+    action_dropped_total: int = 0
     # Grow mode: when True, grow_ideas auto-confirms all pending nursery proposals
     auto_confirm_grow: bool = False
     # Owner-bound Mandell language {cells, customs}; None = never loaded/bound (form.mandell.language.bind)
@@ -1178,6 +1186,14 @@ class Program:
     def undo(self) -> Dict[str, Any]:
         from form.dell_matrix.needs import undo_last
         return undo_last(self)
+
+    def redo(self) -> Dict[str, Any]:
+        from form.dell_matrix.needs import redo_last
+        return redo_last(self)
+
+    def set_undo_depth(self, n) -> Dict[str, Any]:
+        from form.dell_matrix.needs import set_undo_depth
+        return set_undo_depth(self, n)
 
     def history_lines(self, n: int = 16) -> List[str]:
         from form.dell_matrix.needs import history_report

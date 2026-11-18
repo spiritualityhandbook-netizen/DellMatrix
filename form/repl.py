@@ -237,7 +237,7 @@ Save — persist and continue
     "recover": """
 Recover — history, undo, reissue
 
-  history [n] · history find <text> · undo · replay [n]
+  history [n] · history find <text> · undo · redo · undo depth [n] · replay [n]
   reissue <seq> · reissue confirm · reissue cancel
   what next | nbd
 """.strip(),
@@ -2539,6 +2539,29 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
     if lower in ("undo", "undo last"):
         out = p.undo() if hasattr(p, "undo") else {"ok": False, "reason": "no undo"}
         _say(out.get("msg") or out.get("reason") or "undo")
+        return p
+
+    if lower in ("redo", "redo last"):
+        out = p.redo() if hasattr(p, "redo") else {"ok": False, "reason": "no redo"}
+        _say(out.get("msg") or out.get("reason") or "redo")
+        return p
+
+    if lower == "undo depth" or lower.startswith("undo depth "):
+        from form.dell_matrix.needs import effective_undo_depth
+        parts = lower.split()
+        if len(parts) == 2:
+            _say(f"Undo depth: {effective_undo_depth(p)} (session action history; "
+                 f"stack {len(getattr(p, 'action_stack', []) or [])}, "
+                 f"dropped {int(getattr(p, 'action_dropped_total', 0) or 0)} at the bound; "
+                 f"snapshot stack is separate)")
+        else:
+            try:
+                n = int(parts[2])
+            except (IndexError, ValueError):
+                _say("usage: undo depth <n>  (1..200)")
+                return p
+            out = p.set_undo_depth(n) if hasattr(p, "set_undo_depth") else {"ok": False, "reason": "no undo depth"}
+            _say(out.get("msg") or out.get("reason") or "undo depth")
         return p
 
     if lower in ("history", "hist", "notes") or lower.startswith("history "):
