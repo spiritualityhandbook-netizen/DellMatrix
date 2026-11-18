@@ -355,6 +355,10 @@ def undo_last(program) -> Dict[str, Any]:
         plane = program.cube.session.plane
         if uid and uid in plane.units:
             if _revision_owned(program, uid):
+                # A refused undo must not consume the entry: restore it
+                # to the top of the stack it was popped from, so the
+                # refusal loses no history (redo-side sibling law).
+                st.append(act)
                 return {
                     "ok": False,
                     "reason": "revision_authority",
@@ -378,6 +382,11 @@ def undo_last(program) -> Dict[str, Any]:
                 "origin": getattr(u, "origin", "placed") or "placed",
                 "sandboxed": bool(getattr(u, "sandboxed", False)),
                 "sandbox_id": getattr(u, "sandbox_id", None),
+                # The canonical Idea pointer is part of the restorable
+                # record: dropping it here re-places the unit unbound
+                # (idea_id=None) and binding census then persists an
+                # unbound unit whose Idea is unreferenced.
+                "idea_id": getattr(u, "idea_id", None),
             }
             # Delegate to the canonical one-way removal authority.
             removed = plane.remove(uid)
@@ -434,7 +443,12 @@ def redo_last(program) -> Dict[str, Any]:
             "reason": "nothing to redo",
             "hint": "Redo re-applies an undone place or edit. Undo first.",
         }
-    act = redo.pop()
+    # Peek, do not pop: the tail entry is consumed ONLY by a successful
+    # re-application. A refusal (re-taken id, revision authority,
+    # missing unit, failed place) leaves the entry in place, so the
+    # owner can remove the conflict and retry — popping first would
+    # permanently lose recoverable history on a refused operation.
+    act = redo[-1]
     kind = act.get("kind")
     if kind == "place":
         uid = act.get("id")
@@ -468,20 +482,29 @@ def redo_last(program) -> Dict[str, Any]:
                 y=float(record.get("y") or 0.0),
                 parents=list(record.get("parents") or []),
                 origin=str(record.get("origin") or "placed"),
+                idea_id=record.get("idea_id"),
             )
         except Exception as e:
             return {"ok": False, "reason": f"redo place refused: {e}", "redid": None}
-        # Restore sandbox membership through the canonical plane door
-        # when the captured record was boxed and its box still exists
-        # in the record set (plane.box re-creates the record if the
-        # removal retired it — membership is the claim, restored whole).
-        if record.get("sandboxed") and record.get("sandbox_id"):
-            try:
-                plane.box([uid], str(record["sandbox_id"]))
+        # Restore EXACTLY the captured sandbox membership. Program.place
+        # may already have auto-boxed the unit (global sandbox gate on):
+        # that membership is not in the record, so remove it through
+        # the canonical unbox door BEFORE boxing into the saved box —
+        # otherwise the unit sits in both member lists while sandbox_id
+        # names only one, and a later undo leaves a dangling entry.
+        saved_box = str(record["sandbox_id"]) if (
+            record.get("sandboxed") and record.get("sandbox_id")) else None
+        try:
+            if getattr(u, "sandboxed", False) and getattr(u, "sandbox_id", None) != saved_box:
+                plane.unbox(uid)
+            if saved_box:
+                plane.box([uid], saved_box)
                 u.sandboxed = True
-                u.sandbox_id = str(record["sandbox_id"])
-            except Exception:
-                pass
+                u.sandbox_id = saved_box
+        except Exception:
+            pass
+        if redo and redo[-1] is act:
+            redo.pop()
         program.note_seed(24, "Unlock", f"redo_place_{uid}")
         _push_back_from_redo(program, {k: v for k, v in act.items() if k != "record"})
         return {
@@ -499,6 +522,8 @@ def redo_last(program) -> Dict[str, Any]:
             if _revision_owned(program, uid):
                 return {"ok": False, "reason": "revision_authority", "redid": None}
             u.detail = act.get("new") or ""
+            if redo and redo[-1] is act:
+                redo.pop()
             program.note_seed(24, "Unlock", f"redo_edit_detail_{uid}")
             _push_back_from_redo(program, act)
             return {"ok": True, "redid": "edit_detail", "id": uid, "msg": f"Re-applied detail on {uid}"}
@@ -510,6 +535,8 @@ def redo_last(program) -> Dict[str, Any]:
             if _revision_owned(program, uid):
                 return {"ok": False, "reason": "revision_authority", "redid": None}
             u.goals = list(act.get("new") or [])
+            if redo and redo[-1] is act:
+                redo.pop()
             program.note_seed(24, "Unlock", f"redo_edit_goals_{uid}")
             _push_back_from_redo(program, act)
             return {"ok": True, "redid": "edit_goals", "id": uid, "msg": f"Re-applied goals on {uid}"}

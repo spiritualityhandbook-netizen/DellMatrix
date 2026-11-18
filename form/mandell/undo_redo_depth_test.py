@@ -20,6 +20,14 @@ separate authority and must stay untouched):
   S  snapshot stack (Core II) compatibility: cap 64 + counted drops,
      fully independent of the action stack
   M  mixed place + edit_detail + edit_goals undo/redo round-trip
+  C  Codex P2 regressions on PR #481 (review 6965599145; Director HOLD
+     6965753487 requirement 1): C1 the place record preserves the
+     canonical Idea pointer (idea_id) across undo/redo; C2 a refused
+     redo keeps its tail entry so removing the conflict and retrying
+     succeeds; C3 redo restores exactly the saved sandbox membership
+     (gate auto-box membership is removed first — never dual member-
+     ship, never a dangling entry after the next undo); C4 sibling of
+     C2 on the undo side: a revision-refused undo keeps its entry.
 
 Isolation: every block uses its own owner; canonical state files for
 that owner are removed first and the starting stacks are verified
@@ -327,6 +335,95 @@ def run_all():
         _cleanup("qlc1_ts")
     except Exception as e:
         check("S.block", False, f"{type(e).__name__}: {e}")
+
+    # ── C: Codex P2 regressions (PR #481) ──────────────────────────────
+    try:
+        # C1: the captured place record carries the canonical Idea
+        # pointer; redo restores the unit still bound to its Idea.
+        p = _fresh("qlc1_c1")
+        p.place("c1unit", "Qcodex Bound", words="bound words", idea_id="idea-c1")
+        push_action(p, {"kind": "place", "id": "c1unit", "label": "Qcodex Bound"})
+        r = undo_last(p)
+        check("C1.undo_ok", r.get("ok") is True and "c1unit" not in p.cube.session.plane.units,
+              f"undo bound place -> {r}")
+        r = _redo(p)
+        u = p.cube.session.plane.units.get("c1unit")
+        check("C1.idea_id_preserved", r.get("ok") is True and u is not None
+              and getattr(u, "idea_id", None) == "idea-c1",
+              f"redo -> {r}, idea_id={getattr(u, 'idea_id', None)!r}")
+        _cleanup("qlc1_c1")
+    except Exception as e:
+        check("C1.block", False, f"{type(e).__name__}: {e}")
+    try:
+        # C2: a refused redo (re-taken id) keeps its tail entry; removing
+        # the conflict and retrying re-applies the original place.
+        p = _fresh("qlc1_c2")
+        res = _place(p, "Qcodex Retry")
+        xid = res["id"]
+        undo_last(p)  # X removed; redo tail holds its place record
+        p.place(xid, "Qcodex Impostor", words="impostor")
+        r = _redo(p)
+        check("C2.refusal_keeps_entry", r.get("ok") is False
+              and len(_redo_stack(p) or []) == 1,
+              f"refused redo -> {r}, tail={_redo_stack(p)!r}")
+        p.cube.session.plane.remove(xid)  # conflict removed
+        r = _redo(p)
+        u = p.cube.session.plane.units.get(xid)
+        check("C2.retry_succeeds", r.get("ok") is True and u is not None
+              and u.label == "Qcodex Retry",
+              f"retry redo -> {r}, unit={u}")
+        _cleanup("qlc1_c2")
+    except Exception as e:
+        check("C2.block", False, f"{type(e).__name__}: {e}")
+    try:
+        # C3: redo restores exactly the saved sandbox membership even
+        # when the global gate auto-boxes the re-place first.
+        p = _fresh("qlc1_c3")
+        res = _place(p, "Qcodex Boxed")
+        uid = res["id"]
+        plane = p.cube.session.plane
+        plane.box([uid], "vault")
+        undo_last(p)  # record captured: sandboxed, sandbox_id=vault
+        p.sandbox.turn_on()
+        r = _redo(p)
+        u = plane.units.get(uid)
+        auto = plane.sandboxes.get("auto_sandbox")
+        check("C3.single_membership", r.get("ok") is True and u is not None
+              and u.sandbox_id == "vault"
+              and uid in (plane.sandboxes.get("vault").member_ids if plane.sandboxes.get("vault") else [])
+              and not (auto and uid in auto.member_ids),
+              f"redo -> {r}, sandbox_id={getattr(u, 'sandbox_id', None)!r}, "
+              f"boxes={ {k: list(v.member_ids) for k, v in plane.sandboxes.items()} }")
+        undo_last(p)  # restored place undone again: no dangling member
+        dangling = [k for k, sb in plane.sandboxes.items() if uid in sb.member_ids]
+        check("C3.no_dangling_after_undo", uid not in plane.units and not dangling,
+              f"dangling memberships after undo: {dangling}")
+        p.sandbox.turn_off()
+        _cleanup("qlc1_c3")
+    except Exception as e:
+        check("C3.block", False, f"{type(e).__name__}: {e}")
+    try:
+        # C4 (C2 sibling, undo side): a revision-refused undo keeps its
+        # action-stack entry instead of silently consuming it.
+        from form.mandell.supersession import supersede_proposal
+        p = _fresh("qlc1_c4")
+        prop = p.nursery.add("Qcodex Rev")
+        p.confirm_proposal(prop.id, _producer="test", _review_context=p.make_review_context(prop.id, "test"))
+        pid = prop.id
+        p.place(pid, "Qcodex Rev", words="rev words")
+        p.acceptance_policy.grant_opt_in("test", scope="test")
+        sres = supersede_proposal(p, pid, "qcodex successor", label="Qcodex Rev 2", _producer="test")
+        check("C4.setup_supersede", sres.get("ok") is True, f"supersede setup: {sres}")
+        push_action(p, {"kind": "place", "id": pid, "label": "Qcodex Rev"})
+        depth_before = len(p.action_stack)
+        r = undo_last(p)
+        check("C4.refusal_keeps_entry", r.get("ok") is False
+              and r.get("reason") == "revision_authority"
+              and len(p.action_stack) == depth_before,
+              f"revision undo -> {r}, stack {depth_before}->{len(p.action_stack)}")
+        _cleanup("qlc1_c4")
+    except Exception as e:
+        check("C4.block", False, f"{type(e).__name__}: {e}")
 
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"=== UNDO_REDO_DEPTH {passed}/{len(RESULTS)} ===")
