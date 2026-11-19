@@ -7,6 +7,16 @@ queue complete and current; an item leaves the queue only when its
 disposition is on record. Dual-anchored: this file on main + the
 SUSX100,000 state file. Uni updates heads in place as lanes land.
 
+## CURRENT OVERLAY — 2026-11-18 (G5 status bridge)
+
+The refresh below is retained verbatim as a dated historical witness
+of the 2026-11-17 state. It is NO LONGER CURRENT. Current status —
+post-G5 merges #486/#491/#489/#492, their credit state, the fenced
+roster, and open provenance debt — lives in
+[G5_STATUS_BRIDGE_2026-11-18.md](G5_STATUS_BRIDGE_2026-11-18.md)
+(Director directive 6996840631; prepared by Uni; lands after Keeper
+records review + Director scoped merge authorization).
+
 ## QUEUE REFRESH — 2026-11-17 (Director EXE directive, mail 1a1eae0325277a00)
 
 Transport acknowledgment: Uni received the Director's EXE live-review
