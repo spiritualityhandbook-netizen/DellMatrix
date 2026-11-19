@@ -42,8 +42,8 @@ promotion of any proposal addition.
 
 | PR | Object | Merge commit | Status on this bridge |
 |---|---|---|---|
-| #491 | R19-SIB — English count-door integrity (grow/walk/expand) | `389d360fa60dff1d8c8aee6d119a55062f01d8ac` | CODE MERGED; post-merge evidence ACCEPTABLE (Director 6996839518); POSTMERGE CREDIT CONFIRMED (Gemini as fallback Keeper, 6999997968); Director settlement 7000248746; MWL reconciliation landed separately — no MWL row closes |
-| #489 | R19 — Cycle truthful receipts | `e3ca32d3071650d39c896f40ef4094781884bdc9` | CODE MERGED; post-merge evidence ACCEPTED (Director 6996839026); POSTMERGE CREDIT CONFIRMED (Gemini as fallback Keeper, 6999995447); Director settlement 7000248746; MWL reconciliation landed separately — no MWL row closes |
+| #491 | R19-SIB — English count-door integrity (grow/walk/expand) | `389d360fa60dff1d8c8aee6d119a55062f01d8ac` | CODE MERGED; post-merge evidence ACCEPTABLE (Director 6996839518); POSTMERGE CREDIT CONFIRMED (Gemini as fallback Keeper, 6999997968); Director settlement 7000248746; MWL identity reconciliation PREPARED in PR #495 (pending Keeper records review + Director section 32) — proves no MWL row closes |
+| #489 | R19 — Cycle truthful receipts | `e3ca32d3071650d39c896f40ef4094781884bdc9` | CODE MERGED; post-merge evidence ACCEPTED (Director 6996839026); POSTMERGE CREDIT CONFIRMED (Gemini as fallback Keeper, 6999995447); Director settlement 7000248746; MWL identity reconciliation PREPARED in PR #495 (pending Keeper records review + Director section 32) — proves no MWL row closes |
 | #492 | Test-isolation hygiene (c7profile t9/t10 oracle) | `480a3a0a3033e75f224966ef54b316ceef3393c6` | TEST-ONLY MERGED / RECORD COMPLETE / CODE CREDIT ZERO (Director final closeout 6996840050); no Keeper postmerge credit required |
 
 R19 / R19-SIB reconciliation (per Director 6996839518): the two
@@ -84,14 +84,15 @@ All OPEN, carried forward unchanged:
   across six slots), comment 6999995447 on PR #489, at merge
   `e3ca32d3` (Director basis: 6996839026; Uni merged-main package:
   6995931494). Director scoped settlement: 7000248746 on PR #493.
-  Canonical MWL identity reconciliation:
-  R19_R19SIB_MWL_RECONCILIATION_2026-11-18.md — no MWL row closes;
+  Canonical MWL identity reconciliation PREPARED in PR #495
+  (R19_R19SIB_MWL_RECONCILIATION_2026-11-18.md; pending Keeper
+  records review + Director section 32) — proves no MWL row closes;
   board unchanged 39/182.
 - R19-SIB CODE credit: **CONFIRMED** — Gemini as fallback Keeper,
   comment 6999997968 on PR #491, at merge `389d360f` (Director basis:
   6996839518). Director scoped settlement: 7000248746 on PR #493.
-  Same reconciliation record as R19 (distinct surface, one census
-  parent, no double count).
+  Same reconciliation record as R19, prepared in PR #495 (distinct
+  surface, one census parent, no double count).
 - #492: SETTLED ZERO — Director final closeout 6996840050; Uni
   merged-main package 6996285348.
 
