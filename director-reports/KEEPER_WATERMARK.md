@@ -1,12 +1,12 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-19 09:51 CST  
-**UTC approx**: 2026-11-19T15:51:00Z  
+**Last cycle**: 2026-11-19 12:23 CST  
+**UTC approx**: 2026-11-19T18:23:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- Ripe gates: #497 (eval_predicate surplus) at exact head 1abcbfba40ac6b9d1a3474dac9e97376c72d5a22 — Uni evidence package present in PR body + comment 7014270248 (solo campaign x3 CAMPAIGN_DONE in fresh clone 306/306 all legs); spot-checked predicate.py surplus refusal independent of Uni word; CI terminal ALL PASS; mergeable clean; Director dispositions present. SCOPED CONFIRM stamped on PR (7014284273). Scope named; no CODE credit; Director final §32 still owed.
-- Merged-main proofs: #496 (R25/GP-E04) merged at c13428cb5807cec9501c1296fd0520f934ff9f4f — terminal CI ALL PASS on attempt 2 of smoke run 44534366396; Uni behavioral proof (campaign x3 CAMPAIGN_DONE 305/305) present. NO CODE credit confirmation. Exact missing named on PR: Director reliability-gate ruling closing the classification OPEN status on the observed attempt-1 red.
+- Ripe gates: #499 (failure capture instrument) at exact head b126ed7735d5c0ae726e280d96ce5db3e1e6c0b7 — Uni evidence package in body (failing-first/after-fix/mutant); CI terminal ALL PASS; mergeable clean; Director authorization present on #496. Spot-checked c7profile_test.py [FAIL] format independent of Uni word. NO CONFIRM. Exact missing named on PR (7018121286): campaign x3 receipts CAMPAIGN_DONE at exact head, Director final exact-head assessment.
+- Merged-main proofs: none since last watermark (09:51 CST). #496 remains pending Director reliability-gate close as previously named.
 - Records reviews: none awaiting new disposition.
 - Trailing obligations: 0 discharged, 0 remaining.
 
@@ -16,12 +16,12 @@
 - gaps: none
 
 ## Scoreboard audit
-Live MWL at main: 39 / 182 COMPLETE. Skill baseline remains documented 35 of 182 (Manifest Sitting #002); Director live-rule 39/182 stands as current inventory. Dual-belt PLAN 242 / CODE 198 separate. No blend. #496/#497 claim none.
+Live MWL at main: 39 / 182 COMPLETE. Skill baseline remains documented 35 of 182 (Manifest Sitting #002); Director live-rule 39/182 stands as current inventory. Dual-belt PLAN 242 / CODE 198 separate. No blend. #499 claims none.
 
 ## Automation posture
-#497 stamped CONFIRM at exact head; #496 named missing Director close. Deep pass complete.
+#499 named missing campaign x3 + Director final. Deep pass complete.
 
 ## Silence flag
-#308 / #294 / #233 fenced. #421 CORRECTION_REQUIRED (frozen). #496 pending Director reliability close. #497 stamped.
+#308 / #294 / #233 fenced. #421 CORRECTION_REQUIRED (frozen). #496 pending Director reliability close. #497 stamped prior. #499 pending campaign receipts.
 
 — KEEPER
