@@ -75,19 +75,35 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
     elif n == 57:
         head = lab.lower().split(":")[0].split(" ")[0]
         _toks = [p for p in lab.replace(",", " ").split() if p]
-        if head not in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends") and len(_toks) >= 2 and _toks[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends"):
-            # DD-42: an infix condition (level gt 99) refuses
-            # honestly — the old rewrite silently re-answered
-            # "eq:level gt", a question nobody asked. (Tokens
-            # beyond two WITHOUT an operator in second place
-            # keep the pinned shorthand truncation contract —
-            # d1_dell57_compare_test rewrite_drops_tokens.)
+        _explicit57 = head in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends")
+        if not _explicit57 and lab.count('"') % 2 == 1:
+            # R25/GP-E04: malformed quoting in a shorthand
+            # condition is unparseable grammar — refuse, never
+            # guess which tokens the quote was meant to join.
             ok, err = False, "condition_unparseable"
             st.last_result = result_cell(value=None, matched=False, source="compare", predicate="unparseable", error=err, trace="57")
             messages.append(f"Compare refused ({err}) {lab}")
             expr = None
+        elif not _explicit57 and len(_toks) >= 2 and _toks[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends"):
+            # DD-42: an infix condition (level gt 99) refuses
+            # honestly — the old rewrite silently re-answered
+            # "eq:level gt", a question nobody asked.
+            ok, err = False, "condition_unparseable"
+            st.last_result = result_cell(value=None, matched=False, source="compare", predicate="unparseable", error=err, trace="57")
+            messages.append(f"Compare refused ({err}) {lab}")
+            expr = None
+        elif not _explicit57 and len(_toks) > 2:
+            # R25/GP-E04: the eq shorthand maps ONLY an
+            # exactly-two-operand question. A surplus token
+            # refuses typed fail-closed — the old rewrite
+            # silently dropped tokens beyond two and reported
+            # a verdict on a question nobody asked in full.
+            ok, err = False, "condition_extra_operand"
+            st.last_result = result_cell(value=None, matched=False, source="compare", predicate="extra_operand", error=err, trace="57")
+            messages.append(f"Compare refused ({err}) {lab}")
+            expr = None
         else:
-            expr = lab if head in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends") else ("eq:" + " ".join([p for p in lab.replace(",", " ").split() if p][:2]))
+            expr = lab if _explicit57 else ("eq:" + " ".join([p for p in lab.replace(",", " ").split() if p][:2]))
         if expr is not None:
             cmpd = eval_predicate(st, program, expr)
             st.last_result = result_cell(value=cmpd.get("matched"), matched=bool(cmpd.get("matched")), source="compare", predicate=cmpd.get("predicate") or "eq", error=cmpd.get("error") or "", trace="57")
@@ -163,20 +179,44 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
         expr = lab if lab else "gte:count 0"
         head = lab.lower().split(":")[0] if lab else ""
         _refuse73 = False
+        _refuse73_err = "condition_unparseable"
+        _refuse73_pred = "unparseable"
+        if lab and head == "threshold":
+            # The threshold: alias is this Dell's own rewrite
+            # into gte: — the R25 exactly-two-operand rule
+            # applies to the operands it carries.
+            _tparts = [p for p in lab.split(":", 1)[-1].replace(",", " ").split() if p]
+            if lab.count('"') % 2 == 1:
+                _refuse73 = True
+            elif len(_tparts) > 2:
+                _refuse73 = True
+                _refuse73_err = "condition_extra_operand"
+                _refuse73_pred = "extra_operand"
         if lab and head not in ("eq", "ne", "lt", "lte", "gt", "gte", "threshold"):
             parts = [p for p in lab.replace(",", " ").replace(":", " ").split() if p]
-            if len(parts) >= 2 and parts[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends"):
+            if lab.count('"') % 2 == 1:
+                # R25/GP-E04: malformed quoting refuses
+                # (condition_unparseable), as at 57.
+                _refuse73 = True
+            elif len(parts) >= 2 and parts[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends"):
                 # DD-42 sibling: an infix condition refuses
                 # honestly instead of comparing against the
-                # operator word (gte:level gt). Extra tokens
-                # without an operator in second place keep
-                # the shorthand truncation contract (as 57).
+                # operator word (gte:level gt).
                 _refuse73 = True
+            elif len(parts) > 2:
+                # R25/GP-E04: the gte shorthand maps ONLY an
+                # exactly-two-operand question. A surplus
+                # token refuses typed fail-closed — the old
+                # rewrite silently dropped tokens beyond two
+                # (the Dell 57 truncation defect, sibling site).
+                _refuse73 = True
+                _refuse73_err = "condition_extra_operand"
+                _refuse73_pred = "extra_operand"
             else:
                 expr = f"gte:{parts[0]} {parts[1]}" if len(parts) >= 2 else (f"gte:count {parts[0]}" if parts else expr)
         if _refuse73:
-            ok, err = False, "condition_unparseable"
-            st.last_result = result_cell(value=None, matched=False, source="threshold", predicate="unparseable", error=err, trace="73")
+            ok, err = False, _refuse73_err
+            st.last_result = result_cell(value=None, matched=False, source="threshold", predicate=_refuse73_pred, error=err, trace="73")
             messages.append(f"Threshold refused ({err}) {lab}")
         else:
             if expr.lower().startswith("threshold"):

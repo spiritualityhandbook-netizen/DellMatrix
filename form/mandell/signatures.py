@@ -446,7 +446,9 @@ _register(OperatorSignature(
            "(the selection size), selected, context, and "
            "last_result (the previous cell's matched)",
     failures="type_mismatch (incompatible operand types — the "
-             "atom FAILS, ok=False); a missing operand is soft: "
+             "atom FAILS, ok=False); condition_extra_operand "
+             "(more than two shorthand tokens — the atom FAILS, "
+             "ok=False, R25/GP-E04); a missing operand is soft: "
              "the atom stays ok=True and the cell carries "
              "error=\"missing\"",
 ))

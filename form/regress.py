@@ -335,6 +335,7 @@ LIST = [
     "form.step3c_sanitize_state_test:smoke",
     "form.dd31_sanitize_copula_test:smoke",
     "form.dd42_predicate_infix_test:smoke",
+    "form.r25_extra_operand_test:smoke",
     "form.dd44_bounds_explicit_test:smoke",
     "form.embedbind_test:smoke",
     "form.dd37_roster_test:smoke",
