@@ -241,6 +241,16 @@ def eval_predicate(st: Any, program: Any, expr: str) -> Dict[str, Any]:
         result["count"] = len(ids)
         return result
     if name in ("exists", "empty", "truthy", "falsey"):
+        if len(parts) > 1:
+            # eval_predicate surplus circuit (Director 7008502649):
+            # a unary predicate carries exactly ONE operand. A
+            # surplus token refuses typed fail-closed — the old
+            # branch resolved parts[0] only and silently discarded
+            # the rest, answering a question nobody asked in full.
+            # Under-arity (0 operands) is preserved below.
+            result["matched"] = False
+            result["error"] = "condition_extra_operand"
+            return result
         token = resolve_value(st, program, parts[0] if parts else rest)
         if name == "exists":
             result["matched"] = token.get("type") != "missing"
@@ -253,6 +263,15 @@ def eval_predicate(st: Any, program: Any, expr: str) -> Dict[str, Any]:
             result["matched"] = not _truthy(token)
         result["value"] = token.get("value")
         result["error"] = "missing" if token.get("type") == "missing" and name != "exists" else ""
+        return result
+    if len(parts) > 2:
+        # eval_predicate surplus circuit (Director 7008502649):
+        # a binary predicate carries exactly TWO operands. A
+        # surplus token refuses typed fail-closed — the old branch
+        # resolved parts[0]/parts[1] only and silently discarded
+        # the rest. Under-arity (0/1 operands) is preserved below.
+        result["matched"] = False
+        result["error"] = "condition_extra_operand"
         return result
     left_tok = parts[0] if parts else ""
     right_tok = parts[1] if len(parts) > 1 else ""
