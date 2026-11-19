@@ -753,11 +753,23 @@ class _Completed:
 # Director ruling 2026-11-10 01:40 CST, Q-DD31-D1) ----------------------
 # On a FAILED entry only, emit a bounded diagnostic block containing
 # ONLY: (a) assertion identifiers parsed from the child's FAIL lines
-# (strict identifier charset; the detail after the colon is NEVER
-# emitted - it can quote secrets or user data), (b) sanitized
-# metadata (line counts, traceback presence, verdict fields), and
-# (c) state metadata (file COUNT and total BYTES; filenames are
-# NEVER emitted). No raw child stdout/stderr is printed or filed.
+# (strict identifier charset; the detail after the identifier is
+# NEVER emitted - it can quote secrets or user data), (b) sanitized
+# metadata (line counts, traceback presence, verdict fields), (c) a
+# bounded allowlisted runner line (OS family, Python version, CPU
+# count, load average - no environment variables, paths, host
+# identifiers or secrets), and (d) state metadata (file COUNT and
+# total BYTES; filenames are NEVER emitted). No raw child
+# stdout/stderr is printed or filed.
+# Identifier formats recognized (Director diagnostic ruling
+# 2026-11-19, PR #496 - the original parser matched only the legacy
+# colon form, so suites printing "[FAIL] {name}" (c7profile) or
+# "FAIL  {name}  {detail}" (r19) yielded assertion_ids: none):
+#   FAIL <id>:            legacy, detail follows the colon
+#   FAIL <id> / FAIL  <id>  plain, first token only
+#   [FAIL] <id>           bracketed, first token only
+# Tokens are charset-strict and length-bounded; a token that runs
+# past the bound or contains other characters is rejected whole.
 # The block prints to the harness's own stdout (CI logs carry it)
 # and is filed under the capture directory.
 # Lifecycle/retention: the capture directory holds at most
@@ -774,8 +786,35 @@ class _Completed:
 import re as _re
 
 _FAIL_ID = _re.compile(r"^FAIL ([A-Za-z0-9_.\-]{1,80}):")
+_FAIL_ID_PLAIN = _re.compile(r"^FAIL +([A-Za-z0-9_.\-]{1,80})(?=\s|$)")
+_FAIL_ID_BRACKET = _re.compile(r"^\[FAIL\] ([A-Za-z0-9_.\-]{1,80})(?=\s|$)")
 _CAPTURE_KEEP = 50
 _STATE_COUNT_CAP = 100000
+
+
+def _runner_line() -> str:
+    # Allowlisted, bounded runner metadata (Director diagnostic
+    # ruling 2026-11-19): OS family, Python version, CPU count and
+    # 1-minute load average only. Never environment variables, paths,
+    # host identifiers or secrets. Every field is independently
+    # unavailable-safe; total failure degrades to a bare marker.
+    try:
+        import platform as _platform
+        os_name = _platform.system() or "unknown"
+        if not _re.fullmatch(r"[A-Za-z0-9_.\-]{1,32}", os_name):
+            os_name = "unknown"
+        py = "%d.%d.%d" % sys.version_info[:3]
+        try:
+            cpus = str(os.cpu_count() or "unknown")
+        except Exception:
+            cpus = "unknown"
+        try:
+            load = "%.2f" % os.getloadavg()[0]
+        except Exception:
+            load = "unavailable"
+        return f"runner: os={os_name} python={py} cpus={cpus} load1={load}"
+    except Exception:
+        return "runner: unavailable"
 
 
 def _capture_block(entry: str, label: str, why: str, stdout: str,
@@ -784,10 +823,12 @@ def _capture_block(entry: str, label: str, why: str, stdout: str,
     lines = [f"REGRESS-CAPTURE-BEGIN entry={entry} pass={label or '-'} {why_safe}"]
     ids = []
     for ln in stdout.splitlines():
-        m = _FAIL_ID.match(ln)
+        m = (_FAIL_ID.match(ln) or _FAIL_ID_BRACKET.match(ln)
+             or _FAIL_ID_PLAIN.match(ln))
         if m and m.group(1) not in ids:
             ids.append(m.group(1))
     lines.append("assertion_ids: " + (", ".join(ids[:25]) if ids else "none"))
+    lines.append(_runner_line())
     lines.append(
         f"child: stdout_lines={len(stdout.splitlines())} "
         f"stderr_lines={len(stderr.splitlines())} "

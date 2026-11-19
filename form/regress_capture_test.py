@@ -40,6 +40,17 @@ def smoke():
     return False
 '''
 
+FORMATFAIL = '''
+import sys
+def smoke():
+    print("[FAIL] bracket_probe_check")
+    print("FAIL  doublespace_probe  detail canary-format-31q here")
+    print("FAIL oversized_" + "x" * 90 + ": detail")
+    print("FAIL bad;token detail")
+    print("[PASS] some_passing_check")
+    return False
+'''
+
 GREENMOD = '''
 def smoke():
     print("GREENMOD: 1/1")
@@ -70,7 +81,7 @@ def main():
     state = os.path.join(work, "form", "state")
     os.makedirs(state)
     for mod, src in (("fakefail", FAKEFAIL), ("greenmod", GREENMOD),
-                     ("nestedmod", NESTEDMOD)):
+                     ("nestedmod", NESTEDMOD), ("formatfail", FORMATFAIL)):
         with open(os.path.join(work, mod + ".py"), "w") as fh:
             fh.write(src)
     with open(os.path.join(state, "current_DrPrivateNotes.json"), "w") as fh:
@@ -160,6 +171,31 @@ def main():
     remaining = os.listdir(capdir)
     check("retention_prunes_to_50", len(remaining) <= 50,
           f"remaining={len(remaining)}")
+
+    # 7. Real suite failure-line formats (Director diagnostic ruling
+    # 2026-11-19, PR #496): c7profile prints "[FAIL] {name}" and the
+    # r19 suite prints "FAIL  {name}  {detail}". The capture parser
+    # must extract the identifier from both, keep the detail out, and
+    # reject malformed / oversized tokens.
+    _before = set(os.listdir(capdir))
+    ok7, _, out7 = _run("formatfail:smoke", work, "passfmt")
+    check("format_verdict_false", not ok7)
+    check("bracket_id_emitted", "bracket_probe_check" in out7)
+    check("doublespace_id_emitted", "doublespace_probe" in out7)
+    check("format_canary_absent_stdout", "canary-format-31q" not in out7)
+    check("oversized_id_rejected", "oversized_" not in out7)
+    check("malformed_id_rejected", "bad" not in out7.split("assertion_ids:")[-1].split("\n")[0])
+    check("runner_line_present", "runner:" in out7 and "python=" in out7)
+    check("runner_line_no_paths", capdir not in out7 and tmp not in out7)
+    newfiles = sorted(set(os.listdir(capdir)) - _before)
+    check("format_capture_file_written", len(newfiles) == 1,
+          f"newfiles={newfiles}")
+    if newfiles:
+        body7 = open(os.path.join(capdir, newfiles[0])).read()
+        check("bracket_id_in_file", "bracket_probe_check" in body7)
+        check("doublespace_id_in_file", "doublespace_probe" in body7)
+        check("format_canary_absent_file", "canary-format-31q" not in body7)
+        check("runner_line_in_file", "runner:" in body7)
 
     n = sum(1 for _, okk in RESULTS if okk)
     print(f"REGRESS_CAPTURE: {n}/{len(RESULTS)}", flush=True)
