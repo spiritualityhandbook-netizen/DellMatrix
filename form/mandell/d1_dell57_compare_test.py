@@ -8,8 +8,13 @@ typed signature (role expression, required):
   head = lab's first token (before ':' or ' '), lowercased
   head in {eq, ne, lt, lte, gt, gte, contains, starts,
   ends} -> the expression is lab itself; otherwise the
-  lab is REWRITTEN to "eq:" + its first two tokens —
-  "N 5" means eq(N, 5), and any further tokens are dropped.
+  lab is REWRITTEN to "eq:" + its two tokens — "N 5"
+  means eq(N, 5). R25/GP-E04 (Director ruling
+  7005888828): MORE than two shorthand tokens REFUSE
+  typed fail-closed (ok=False,
+  error="condition_extra_operand"); the old
+  drop-tokens-beyond-two behavior was a defective
+  oracle and its pin is replaced below, not kept.
 
   Operands resolve (resolve_value): literals (numbers,
   true/false, strings), store keys (bare token or
@@ -139,8 +144,11 @@ def main():
          and lr.get("predicate") == "eq",
          f"pred={lr.get('predicate')} value={lr.get('value')}")
     r, lr = cmp("N 5 dropped")
-    _rec("rewrite_drops_tokens_beyond_two",
-         r.get("ok") and lr.get("value") is True,
+    _rec("rewrite_refuses_tokens_beyond_two",
+         not r.get("ok") and r.get("error") == "condition_extra_operand"
+         and lr.get("matched") is False
+         and lr.get("error") == "condition_extra_operand",
+         f"ok={r.get('ok')} err={r.get('error')} "
          f"value={lr.get('value')}")
     r1, lr1 = cmp("gt: store:N 3")
     r2, lr2 = cmp("lt: store:N 3")

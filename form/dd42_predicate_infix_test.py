@@ -150,8 +150,13 @@ def main():
           f"ok={ok} err={err} lr={lr}")
     ok, err = _atom(execute_seed(p, "57[Compare] :: level 5 dropped"))
     lr = st.last_result or {}
-    check("compare.truncation_contract_preserved",
-          ok is True and lr.get("matched") is True,
+    # R25/GP-E04 supersedes the DD-42-era truncation pin:
+    # a surplus shorthand token is no longer dropped with a
+    # success verdict — it refuses condition_extra_operand.
+    check("compare.extra_operand_refused_r25",
+          ok is False and err == "condition_extra_operand"
+          and lr.get("error") == "condition_extra_operand"
+          and lr.get("matched") is not True,
           f"ok={ok} err={err} lr={lr}")
 
     # ---------- English door (operator_bridge) ----------
