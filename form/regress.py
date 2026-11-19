@@ -336,6 +336,11 @@ LIST = [
     "form.dd31_sanitize_copula_test:smoke",
     "form.dd42_predicate_infix_test:smoke",
     "form.r25_extra_operand_test:smoke",
+    # eval_predicate surplus circuit (Director 7008502649):
+    # explicit binary/unary forms with surplus operands refuse
+    # condition_extra_operand at the engine and at 57/73 +
+    # Assert/Guard/Branch; exact-arity and under-arity preserved.
+    "form.eval_predicate_surplus_test:smoke",
     "form.dd44_bounds_explicit_test:smoke",
     "form.embedbind_test:smoke",
     "form.dd37_roster_test:smoke",

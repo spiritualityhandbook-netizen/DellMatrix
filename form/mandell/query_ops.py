@@ -110,6 +110,12 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
             st.last_result["mode"] = cmpd.get("mode") or ""
             if cmpd.get("error") == "type_mismatch":
                 ok, err = False, "type_mismatch"
+            elif cmpd.get("error") == "condition_extra_operand":
+                # eval_predicate surplus circuit (Director
+                # 7008502649): an explicit form with surplus
+                # operands fails the atom with the engine's
+                # refusal, never a verdict on the truncated form.
+                ok, err = False, "condition_extra_operand"
             messages.append(f"Compare {expr} matched={cmpd.get('matched')} mode={cmpd.get('mode')} err={cmpd.get('error')}")
     elif n == 58:
         ids = list(st.selected)
@@ -224,6 +230,11 @@ def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: Li
             cmpd = eval_predicate(st, program, expr)
             hit = bool(cmpd.get("matched"))
             st.last_result = result_cell(value=hit, matched=hit, source="threshold", predicate=cmpd.get("predicate") or "gte", error=cmpd.get("error") or "", trace="73")
+            if cmpd.get("error") == "condition_extra_operand":
+                # eval_predicate surplus circuit (Director
+                # 7008502649): propagate the engine refusal as an
+                # atom failure, as at Compare (57).
+                ok, err = False, "condition_extra_operand"
             messages.append(f"Threshold {expr} matched={hit}")
     elif n == 74:
         key, _, val = lab.partition("=")

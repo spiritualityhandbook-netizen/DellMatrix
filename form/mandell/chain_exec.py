@@ -536,8 +536,11 @@ def _run_control(program, seed, atoms, head, limit, depth, messages, ran, skippe
                 int(atoms[j].dell),
                 f"control head refused: {head_err}; "
                 f"body occurrence not executed"))
-    elif n == 60 and head_err == "condition_unparseable":
+    elif n == 60 and head_err in ("condition_unparseable", "condition_extra_operand"):
         # DD-42: the Branch head atom refused its condition —
+        # (eval_predicate surplus circuit, Director 7008502649:
+        # condition_extra_operand earns the same wholesale
+        # refusal — no arm, no body — as condition_unparseable.)
         # the same wholesale-refusal shape as the D1 gate
         # above: no arm executes, body occurrences receipt
         # honest skips, the frame fails with the engine error.
