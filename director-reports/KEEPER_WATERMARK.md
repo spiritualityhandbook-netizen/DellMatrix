@@ -1,12 +1,12 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-18 19:24 CST  
-**UTC approx**: 2026-11-19T01:24:00Z  
+**Last cycle**: 2026-11-19 04:18 CST  
+**UTC approx**: 2026-11-19T10:18:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
 - No ripe gates. Open PRs: #421 (CORRECTION_REQUIRED, head frozen 35d3acd9, dirty, prior scoped records stamps), #308/#294/#233 fenced. No new Uni evidence packages at unstamped heads.
-- Merged-main proofs: #492 and #489 already covered by prior watermark; no pending CODE credit confirmations identified requiring discharge this pass.
+- Merged-main proofs: #494 records confirmed prior and merged; #495 records merged post prior watermark, no pending CODE credit (records only, board unchanged). No pending CODE credit confirmations identified requiring discharge this pass.
 - Records reviews: none awaiting new disposition.
 - Trailing obligations: 0 discharged, 0 remaining (DD-18 / Q-DD42.1 prior second-certs hold; list empty).
 
