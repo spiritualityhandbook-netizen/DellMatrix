@@ -1,0 +1,42 @@
+PASS  control_sanitize_authority_redacts  password=[REDACTED]
+PASS  control_canonical_ensure_ascii_escapes  é-entry=14 a-entry=9 (BMP char = 6 canonical bytes vs 1)
+PASS  excl_save_writes_file_at_cap  save() purpose is a disk write; files change at cap
+PASS  excl_visual_writes_file_at_cap  write_visual writes snapshot files at cap
+PASS  excl_live_visual_starts_listener  start_live effect invisible to state-dir snapshot; ret={'ok': True, 'url': 'http://127.0.0.1:18777/', 'host': '127.0.0.1', 'port': 1877
+FAIL  s7_radial_drift_entrycap_refusal_clean  refused=False
+FAIL  s7_radial_drift_entrycap_minus1_admitted  refused=False len=24 last='16[Decay] :: drift_6'
+PASS  s7_radial_drift_bytecap_exact_fit_admitted  refused=False bytes=2097152
+FAIL  s7_radial_drift_bytecap_plus1_refusal_clean  refused=False
+FAIL  s7_internet_on_entrycap_refusal_clean  refused=False
+FAIL  s7_internet_on_entrycap_minus1_admitted  refused=False len=24 last='25[Pulse] :: internet_on'
+PASS  s7_internet_on_bytecap_exact_fit_admitted  refused=False bytes=2097152
+FAIL  s7_internet_on_bytecap_plus1_refusal_clean  refused=False
+FAIL  s7_internet_off_entrycap_refusal_clean  refused=False
+FAIL  s7_internet_off_entrycap_minus1_admitted  refused=False len=24 last='32[Pause] :: internet_off'
+PASS  s7_internet_off_bytecap_exact_fit_admitted  refused=False bytes=2097152
+FAIL  s7_internet_off_bytecap_plus1_refusal_clean  refused=False
+FAIL  s7_sandbox_on_entrycap_refusal_clean  refused=False
+FAIL  s7_sandbox_on_entrycap_minus1_admitted  refused=False len=24 last='23[Lock] :: sandbox_on'
+PASS  s7_sandbox_on_bytecap_exact_fit_admitted  refused=False bytes=2097152
+FAIL  s7_sandbox_on_bytecap_plus1_refusal_clean  refused=False
+FAIL  s7_sandbox_off_entrycap_refusal_clean  refused=False
+FAIL  s7_sandbox_off_entrycap_minus1_admitted  refused=False len=24 last='24[Unlock] :: sandbox_off'
+PASS  s7_sandbox_off_bytecap_exact_fit_admitted  refused=False bytes=2097152
+FAIL  s7_sandbox_off_bytecap_plus1_refusal_clean  refused=False
+FAIL  s7_enhance_on_entrycap_refusal_clean  refused=False
+FAIL  s7_enhance_on_entrycap_minus1_admitted  refused=False len=24 last='25[Pulse] :: enhance_on'
+PASS  s7_enhance_on_bytecap_exact_fit_admitted  refused=False bytes=2097152
+FAIL  s7_enhance_on_bytecap_plus1_refusal_clean  refused=False
+FAIL  s7_enhance_off_entrycap_refusal_clean  refused=False
+FAIL  s7_enhance_off_entrycap_minus1_admitted  refused=False len=24 last='32[Pause] :: enhance_off'
+PASS  s7_enhance_off_bytecap_exact_fit_admitted  refused=False bytes=2097152
+FAIL  s7_enhance_off_bytecap_plus1_refusal_clean  refused=False
+PASS  bytes_measured_not_chars  outcomes={'ascii': (False, True), 'accent': (False, True)} (accent entry costs 200 more bytes at equal chars; filler rebalanced to the same byte cap)
+FAIL  bytes_straddle_same_filler  ascii_refused=False accent_refused=False (char-count admission would treat them identically)
+PASS  sanitize_before_measure_straddle  refused=False stored_sanitized=True raw_bytes=2097176 san_bytes=2097152
+FAIL  sanitize_canary_at_cap_refused_no_leak  refused=False canary_in_state=False
+FAIL  toctou_threads_all_refused_state_stable  calls=28 refused=0
+NOT_TESTED  multiprocess_writers  UNKNOWN — no cross-process claim is made by this suite
+FAIL  saveload_restart_30_whole_SEPARATE_CONTRACT  err= (save/load contract; excluded from S7)
+PASS  cleanup_clean  
+R5SS 15/40 PASS (S7 7/28; exclusion probes and saveload counted separately)
