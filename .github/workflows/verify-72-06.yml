@@ -1,0 +1,68 @@
+name: verify-72-06
+
+# Exact-head reproduction for PR #308 (72-06 census + supplement),
+# required by the Director's 2026-11-05 INSUFFICIENT_EVIDENCE
+# review: pinned exact-head workflow with a HEAD assertion BEFORE
+# the manifest check and the probes (the 72-17 merge-ref lesson).
+# Runs the programmatic census probe (21/21) and the bare-REPL
+# real-user-path probe (4/4, transcripts in the job log).
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/verify-72-06.yml"
+      - "director-reports/evidence/72-06-intent-args/**"
+      - "director-reports/DIRECTOR_REPORT_72_06_INTENT_ARGS.md"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-72-06:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout the PR head SHA explicitly
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: ASSERT exact-head identity before anything else
+        run: |
+          EXPECTED="${{ github.event.pull_request.head.sha }}"
+          ACTUAL="$(git rev-parse HEAD)"
+          echo "expected: $EXPECTED"
+          echo "actual:   $ACTUAL"
+          test "$ACTUAL" = "$EXPECTED"
+          echo "EXACT_HEAD_ASSERTION: PASS"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Manifest verification
+        working-directory: director-reports/evidence/72-06-intent-args
+        run: sha256sum -c MANIFEST.sha256
+
+      - name: Census probe (21/21) at the exact head
+        run: |
+          set -o pipefail
+          python3 director-reports/evidence/72-06-intent-args/q06_probe.py ci 2>&1 \
+            | tee q06_probe_ci.log
+
+      - name: Bare-REPL probe (4/4) at the exact head
+        run: |
+          set -o pipefail
+          python3 director-reports/evidence/72-06-intent-args/q06_repl_probe.py ci 2>&1 \
+            | tee q06_repl_ci.log
+
+      - name: Upload verify-72-06 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-72-06-evidence
+          path: |
+            q06_probe_ci.log
+            q06_repl_ci.log
+          if-no-files-found: warn
