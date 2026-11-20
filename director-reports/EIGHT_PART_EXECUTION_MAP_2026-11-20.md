@@ -761,6 +761,18 @@ independent units (design/evidence class; no product code until its
 phase gate).
 
 **Non-row fold-ins:** FI-017's full development (the docked-Gemini role
+
+> **FI-017 PLACEMENT RULED (2026-11-20, Director FULL/DEEP on PR
+> #505):** Part IV is the vision/specification + owner-intake paper
+> HOME; the implementation HOME is Part I GP-E23/C8 (owner/actor
+> identity, sandbox-first gate). No second MWL row; the paper is
+> not installed code. Intake provenance labeled 'Uni-carried,
+> SOURCE CHALLENGE PENDING' until the Keeper's independent audit
+> of the original register row 127 completes. This note reconciles
+> the map's earlier 'Uni placement needing Director confirmation'
+> framing — that confirmation has now been given, with the
+> split-home refinement above.
+
 at three depths — Nursery operator, knowledge conductor, resident
 developer; intake Ace 2026-11-16, confirmed in his words 2026-11-17;
 register row of record lives in the goal-workspace decision register,
