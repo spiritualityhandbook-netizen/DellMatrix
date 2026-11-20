@@ -92,9 +92,9 @@
  },
  {
   "n": 14,
-  "title": "Compose recursion cap follow-up",
+  "title": "Compose recursion cap follow-up (R17: Compose recursion bound resolves honestly via bound_detail, no phantom 8 — PR #485 merged 9d7a65b6 2026-11-18; CODE CREDIT SETTLED 2026-11-18, Gemini fallback Keeper CONFIRM 6985521624; register write-in 2026-11-20 — row left OPEN in error after settlement)",
   "ids": "Q-DD44.3",
-  "status": "OPEN",
+  "status": "COMPLETE",
   "block": "B — C1 Chain Truth, remainder and follow-ups"
  },
  {
@@ -939,9 +939,9 @@
  },
  {
   "n": 135,
-  "title": "Undo and redo like a real program — 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo",
+  "title": "Undo and redo like a real program — 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo (Q-LC.1 undo/redo repair — PR #481 merged d17c6b48 2026-11-18; CODE CREDIT SETTLED 2026-11-18; register write-in 2026-11-20 — row left OPEN in error after settlement)",
   "ids": "DD-54 / C3.Undo",
-  "status": "OPEN",
+  "status": "COMPLETE",
   "block": "Plan §14.3 — C3 Failure & Time (witness family)"
  },
  {

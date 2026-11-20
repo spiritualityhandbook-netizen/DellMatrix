@@ -23,15 +23,15 @@ Data: master_work_list_items.json
 
 ## The count
 
-**PROGRESS: 39 / 182 COMPLETE = 21.4%**
+**PROGRESS: 41 / 182 COMPLETE = 22.5%**
 
 | Status | Items |
 |---|---|
-| COMPLETE | 39 |
+| COMPLETE | 41 |
 | MERGED_UNVERIFIED | 0 |
 | BUILT_HELD | 0 |
 | PARTIAL | 54 |
-| OPEN | 86 |
+| OPEN | 84 |
 | GATED | 3 |
 | NEEDS_OVERSEER | 0 |
 | **TOTAL (active)** | **182** |
@@ -67,7 +67,7 @@ parked items the 72 frame never counted.
 | 11 | Parallel must mean parallel — concurrency design slice (needs C13 isolation, C3 comparison, C11 lifecycle, Ace multi-Psalm session) | DD-43 / C1.ConcurrencyDesign | OPEN |
 | 12 | While/Until (64/65) loop conditions: honest refusal surface for unparseable infix conditions (fails closed today; no refusal receipt) | Q-DD42.2 | OPEN |
 | 13 | Loop 13 receipted grammar follow-up | Q-DD44.2 | OPEN |
-| 14 | Compose recursion cap follow-up | Q-DD44.3 | OPEN |
+| 14 | Compose recursion cap follow-up (R17: Compose recursion bound resolves honestly via bound_detail, no phantom 8 — PR #485 merged 9d7a65b6 2026-11-18; CODE CREDIT SETTLED 2026-11-18, Gemini fallback Keeper CONFIRM 6985521624; register write-in 2026-11-20 — row left OPEN in error after settlement) | Q-DD44.3 | COMPLETE |
 
 ## Block C — Extension-register closures
 
@@ -228,7 +228,7 @@ parked items the 72 frame never counted.
 | 132 | Trace covers the entire current process — full retrieval beyond 512 entries without silent loss; Trace is session-only, never history | DD-52 / C3.Trace | OPEN |
 | 133 | Failure doors — Analyze / Revert / Retry per Ace's failure doctrine: Retry targets an identified FAILED attempt, once; wrappers never become targets; partial effects shown first | DD-32 / C3.FailureDoors | OPEN |
 | 134 | Rooms are Ace's to close — chosen-room operations cannot overwrite another room's later work; session close names open rooms; overlapping-room write ownership is a design prerequisite | DD-53 / C3.Rooms | OPEN |
-| 135 | Undo and redo like a real program — 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo | DD-54 / C3.Undo | OPEN |
+| 135 | Undo and redo like a real program — 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo (Q-LC.1 undo/redo repair — PR #481 merged d17c6b48 2026-11-18; CODE CREDIT SETTLED 2026-11-18; register write-in 2026-11-20 — row left OPEN in error after settlement) | DD-54 / C3.Undo | COMPLETE |
 | 136 | Alpha / history member + close ceremony — old generations freeze/confirm/restore under new code; save failure never pretends the session is safely closed (gate per §12.13) | C3.Alpha | OPEN |
 
 ## Block Plan §14.3 — C4 Reference Family
