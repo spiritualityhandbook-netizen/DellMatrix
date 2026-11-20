@@ -39,9 +39,10 @@ changes on this side of the authority gate.
    ordinary save) — GATED.** Their recorded dispositions govern;
    #46's C-A scope is separately scoped, not authorized (see
    §1.3).
-4. **Row #155 (multi-Psalm/BIMO execution) — NEEDS_OVERSEER.**
-   Design placement only in this Part; no build until Ace
-   approves a persona roster.
+4. **Row #155 (multi-Psalm/BIMO execution) — RULED by Ace
+   2026-11-20** (see the closing ACE RULING section): the roster
+   is ALL of Ace's Psalm personas; the build is unblocked as
+   scoped there.
 5. **H-4 pulse rename — NEEDS_DIRECTOR.** Failing-first test
    first; rename only with Director approval.
 6. **30-video P05 — BLOCKED** (frozen holdout dataset does not
@@ -449,9 +450,9 @@ confirms, never in bulk ahead of proof.
      requested by the prep alone; requested on the design.
    - Director **H-4 pulse rename approval** (failing-first test
      precedes any rename).
-   - **Ace:** row #155 persona roster approval before any build
-     (NEEDS_OVERSEER); Q-U.4 manual-confirm cross-wall semantics
-     ruling (rides with the Q-U queue, Part VI).
+   - **Ace:** row #155 — RULED 2026-11-20 (closing section);
+     Q-U.4 — RULED 2026-11-20 in Part VI (mixed ideas fully
+     sandboxed first; Matrix placement decided as a whole).
 
 ---
 
@@ -482,3 +483,31 @@ confirms, never in bulk ahead of proof.
 spec files instead — §2); all product code; PR #294's branch;
 PR #498's branch; every other Part's files. No merges, no
 regression campaigns in this lane (plan stage).
+
+---
+
+## ACE RULING ON ROW #155 — PERSONAMATRIX (2026-11-20)
+
+Ace ruled (2026-11-20, answering the NEEDS_OVERSEER set): **he
+trusts all his Psalm personas — incorporate them ALL.** The
+build scope for row #155 / GP-E23 is therefore:
+
+- **Incorporate every Psalm persona**; analyze each persona's
+  abilities and place each in its proper position within
+  DellMatrix as the **general setting** (placement by analyzed
+  ability, not by arrival order).
+- **Users can create new personas.** The persona layer —
+  Ace's word: **personamatrix** — is a user experimentation
+  layer: customizable, fun to create and test.
+- The build stands on the EXISTING BIMO/persona machinery
+  (`form/dell_matrix/personas.py` — BIMOBody with dock slots;
+  docking confers no authority) — presentation, wiring,
+  analysis and placement on that authority, no second engine.
+- Fences unchanged: docking/persona presence grants no
+  authority; Nursery confirmation remains Ace's sovereign act;
+  personas propose, they do not land.
+
+This ruling supersedes the earlier "design only, build blocked
+on Ace's roster approval" framing wherever it appears in this
+plan (the row table's #155 line included): the roster question
+is answered — the roster is all of them.
