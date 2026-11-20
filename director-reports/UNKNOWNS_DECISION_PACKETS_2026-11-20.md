@@ -803,3 +803,26 @@ Q-FI016.1 / DAF-09 close only on their owners' acts above.
 4. **RECORDS-CONFIRM at exact head** when the plan is
    confirmed, so the code stage (the builds these packets
    gate, in their owning Parts) can proceed under §46.
+
+---
+
+## DECISION-INDEX DELTA (2026-11-20 — Director disposition 7044836836)
+
+The Director ruled the Director-owned questions in this packet set
+at head a770a8f6. Recorded here so the index and the rulings cannot
+drift apart; the packet texts above are unchanged.
+
+| Question | Director ruling (7044836836) | Consequence |
+|---|---|---|
+| Q-35.1 (Packet 1) | Manual-only sweep CONFIRMED — the 2026-11-06 ruling stands | Row #119 may flip OPEN → COMPLETE when Part VI's records land |
+| Q-SNAP.3 (Packet 2) | Option A chosen — bounded hardening | Row #175 stays OPEN; the hardening circuit is the discharge path |
+| Q-DD42.2 | Option A chosen — typed parse refusal | Row #12 stays OPEN; the refusal-receipt build proceeds under this reading (Part II) |
+| Q-DD18.2 | Continue + honest receipt RATIFIED | Stands as ruled; no further question |
+| R21 / DD-54 | Caps are independent | Row #135 stays PARTIAL; no merged-cap reading |
+| Q-FI011 family | Conditional standing-gate design as ruled | Gates Part I/II builds as the packets state |
+| Q-FI012 family | Baseline as ruled (Q-FI012.8 already discharged by probe in this PR) | Remainder rides the Director bundle items in the packets |
+| Q-GS family | Fail-closed defaults ruled | Ace retains PROJECT meaning (Q-ACE-GS.1) and the bare-grow surface (Q-ACE-GS.2) — presented to Ace 2026-11-20 with the full NEEDS_OVERSEER set |
+| DAF-09 / G-05 | Certification WITHHELD (restated) | Row #112 stays OPEN; no local evidence offered or accepted |
+
+Plan design accepted for Keeper review at the rebased head; this
+delta + the zero-loss rebase discharge Uni's items from 7044836836.
