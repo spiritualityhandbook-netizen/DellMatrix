@@ -1,0 +1,96 @@
+FAIL  pm_radial_drift_entrycap_typed_refusal  refused=False
+FAIL  pm_radial_drift_entrycap_history_unchanged  
+FAIL  pm_radial_drift_entrycap_state_unchanged  
+FAIL  pm_radial_drift_entrycap_subsystem_unchanged  
+PASS  pm_radial_drift_entrycap_files_unchanged  
+PASS  pm_radial_drift_entrycap_threads_unchanged  threads 1->1
+FAIL  pm_internet_on_entrycap_typed_refusal  refused=False
+FAIL  pm_internet_on_entrycap_history_unchanged  
+FAIL  pm_internet_on_entrycap_state_unchanged  
+FAIL  pm_internet_on_entrycap_subsystem_unchanged  
+PASS  pm_internet_on_entrycap_files_unchanged  
+PASS  pm_internet_on_entrycap_threads_unchanged  threads 1->1
+FAIL  pm_internet_off_entrycap_typed_refusal  refused=False
+FAIL  pm_internet_off_entrycap_history_unchanged  
+FAIL  pm_internet_off_entrycap_state_unchanged  
+FAIL  pm_internet_off_entrycap_subsystem_unchanged  
+PASS  pm_internet_off_entrycap_files_unchanged  
+PASS  pm_internet_off_entrycap_threads_unchanged  threads 1->1
+FAIL  pm_sandbox_on_entrycap_typed_refusal  refused=False
+FAIL  pm_sandbox_on_entrycap_history_unchanged  
+FAIL  pm_sandbox_on_entrycap_state_unchanged  
+FAIL  pm_sandbox_on_entrycap_subsystem_unchanged  
+PASS  pm_sandbox_on_entrycap_files_unchanged  
+PASS  pm_sandbox_on_entrycap_threads_unchanged  threads 1->1
+FAIL  pm_sandbox_off_entrycap_typed_refusal  refused=False
+FAIL  pm_sandbox_off_entrycap_history_unchanged  
+FAIL  pm_sandbox_off_entrycap_state_unchanged  
+FAIL  pm_sandbox_off_entrycap_subsystem_unchanged  
+PASS  pm_sandbox_off_entrycap_files_unchanged  
+PASS  pm_sandbox_off_entrycap_threads_unchanged  threads 1->1
+FAIL  pm_enhance_on_entrycap_typed_refusal  refused=False
+FAIL  pm_enhance_on_entrycap_history_unchanged  
+FAIL  pm_enhance_on_entrycap_state_unchanged  
+FAIL  pm_enhance_on_entrycap_subsystem_unchanged  
+PASS  pm_enhance_on_entrycap_files_unchanged  
+PASS  pm_enhance_on_entrycap_threads_unchanged  threads 1->1
+FAIL  pm_enhance_off_entrycap_typed_refusal  refused=False
+FAIL  pm_enhance_off_entrycap_history_unchanged  
+FAIL  pm_enhance_off_entrycap_state_unchanged  
+FAIL  pm_enhance_off_entrycap_subsystem_unchanged  
+PASS  pm_enhance_off_entrycap_files_unchanged  
+PASS  pm_enhance_off_entrycap_threads_unchanged  threads 1->1
+FAIL  pm_radial_drift_bytecap_plus1_typed_refusal  refused=False
+FAIL  pm_radial_drift_bytecap_plus1_history_unchanged  
+FAIL  pm_radial_drift_bytecap_plus1_state_unchanged  
+FAIL  pm_radial_drift_bytecap_plus1_subsystem_unchanged  
+PASS  pm_radial_drift_bytecap_plus1_files_unchanged  
+PASS  pm_radial_drift_bytecap_plus1_threads_unchanged  threads 1->1
+FAIL  pm_internet_on_bytecap_plus1_typed_refusal  refused=False
+FAIL  pm_internet_on_bytecap_plus1_history_unchanged  
+FAIL  pm_internet_on_bytecap_plus1_state_unchanged  
+FAIL  pm_internet_on_bytecap_plus1_subsystem_unchanged  
+PASS  pm_internet_on_bytecap_plus1_files_unchanged  
+PASS  pm_internet_on_bytecap_plus1_threads_unchanged  threads 1->1
+FAIL  pm_internet_off_bytecap_plus1_typed_refusal  refused=False
+FAIL  pm_internet_off_bytecap_plus1_history_unchanged  
+FAIL  pm_internet_off_bytecap_plus1_state_unchanged  
+FAIL  pm_internet_off_bytecap_plus1_subsystem_unchanged  
+PASS  pm_internet_off_bytecap_plus1_files_unchanged  
+PASS  pm_internet_off_bytecap_plus1_threads_unchanged  threads 1->1
+FAIL  pm_sandbox_on_bytecap_plus1_typed_refusal  refused=False
+FAIL  pm_sandbox_on_bytecap_plus1_history_unchanged  
+FAIL  pm_sandbox_on_bytecap_plus1_state_unchanged  
+FAIL  pm_sandbox_on_bytecap_plus1_subsystem_unchanged  
+PASS  pm_sandbox_on_bytecap_plus1_files_unchanged  
+PASS  pm_sandbox_on_bytecap_plus1_threads_unchanged  threads 1->1
+FAIL  pm_sandbox_off_bytecap_plus1_typed_refusal  refused=False
+FAIL  pm_sandbox_off_bytecap_plus1_history_unchanged  
+FAIL  pm_sandbox_off_bytecap_plus1_state_unchanged  
+FAIL  pm_sandbox_off_bytecap_plus1_subsystem_unchanged  
+PASS  pm_sandbox_off_bytecap_plus1_files_unchanged  
+PASS  pm_sandbox_off_bytecap_plus1_threads_unchanged  threads 1->1
+FAIL  pm_enhance_on_bytecap_plus1_typed_refusal  refused=False
+FAIL  pm_enhance_on_bytecap_plus1_history_unchanged  
+FAIL  pm_enhance_on_bytecap_plus1_state_unchanged  
+FAIL  pm_enhance_on_bytecap_plus1_subsystem_unchanged  
+PASS  pm_enhance_on_bytecap_plus1_files_unchanged  
+PASS  pm_enhance_on_bytecap_plus1_threads_unchanged  threads 1->1
+FAIL  pm_enhance_off_bytecap_plus1_typed_refusal  refused=False
+FAIL  pm_enhance_off_bytecap_plus1_history_unchanged  
+FAIL  pm_enhance_off_bytecap_plus1_state_unchanged  
+FAIL  pm_enhance_off_bytecap_plus1_subsystem_unchanged  
+PASS  pm_enhance_off_bytecap_plus1_files_unchanged  
+PASS  pm_enhance_off_bytecap_plus1_threads_unchanged  threads 1->1
+PASS  early_return_internet_off_no_gate_preserved  ret={'ok': True, 'on': False} err=
+PASS  ser_ensure_ascii_axis_parity  atomic_write_json omits ensure_ascii; default True
+PASS  ser_actual_file_is_dumps_serialize_indent2  file=17282B expect=17282B (no sort_keys; insertion order)
+PASS  ser_file_segment_differs_by_nesting_indent  segment=82B canonical=70B delta=12B predicted=12B
+PASS  ser_persisted_slice_diverges_from_admission_formula  full=2400152B (formula: REFUSE) vs persisted slice=1920122B (file: under cap) — the cap binds the logical history, never the written bytes
+FAIL  toctou_threads_all_refused_state_stable  calls=28 refused=0
+PASS  mp_children_executed_cross_process  rcs=[0, 0, 0] reports_ok=3
+FAIL  mp_all_refused_at_cap  reports=[{'radial_drift': {'refused': False, 'hist_len': 24}, 'sandbox_on': {'refused': False, 'hist_len': 24}}, {'radial_drift': {'refused': False, 'hist_len': 24}, 'sandbox_on': {'refused': False, 'hist_len': 24}}, {'radial_drift': {'refused': False, 'hist_len': 24}, 'sandbox_on': {'refused': False, 'hist_len': 24}}]
+PASS  mp_shared_file_valid_after_concurrent_saves  history_len_in_file=24 (atomic_write whole-generation guarantee)
+OBSERVED  cross-process admission: each process holds independent in-memory state; no admission coordination exists across processes — the only cross-process fence is owner_state_lock around canonical save, which does not re-check admission. Per-child outcomes above.
+PASS  cleanup_clean  
+R5RD 36/94 PASS
