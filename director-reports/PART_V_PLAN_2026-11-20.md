@@ -203,9 +203,11 @@ is main `7e593e0a`, 2026-11-04: a live exhibit of the failure).
 
 | Row | From | To | Basis |
 |---|---|---|---|
-| 90 | PARTIAL | COMPLETE | F1–F5 built + fixture tests green + the automation's first production morning run emitted in the §5 format |
-| 93 | OPEN | COMPLETE | The §5 format is the automation's output format — **paired closure with #90, counted once** (register's own fold note; dispositions §B2) |
+| 90 | PARTIAL | RETAINED (no flip proposed) | **CORRECTED 2026-11-20 (Director 7044777205, DEFAULT B):** the paired flip with #93 is withdrawn — one evidence set may not mint two completions. Row retained; completion paths per dispositions §B2 correction (independent evidence per row, or a separately certified row-fold) |
+| 93 | OPEN | RETAINED (no flip proposed) | **CORRECTED 2026-11-20 (Director 7044777205, DEFAULT B):** see row #90 — the paired flip is withdrawn; row retained as a distinct governed row |
 | 94 | OPEN | COMPLETE (or PARTIAL if the dependency feed lands without the improvement-pool ranking) | §6 connection built + determinism tests green; the PARTIAL fallback is named now so the landing never has to improvise it |
+
+**Correction note (2026-11-20):** the original §8 proposed flipping both #90 and #93 to COMPLETE on the pair's single closure evidence while calling it "counted once" — a double-count defect under one-unit-one-credit, caught by the Director's Part V source disposition (7044777205, CORRECTION_REQUIRED on this point). DEFAULT B is applied above and in dispositions §B2: both rows retained, no paired flip; the Sitting #002 evidence pack (§9) is unaffected, and no other proposed flip in this plan changes.
 
 No other register rows are edited by Part V. Candidate admissions, if
 ruled, are written by the **admitting Part's** landing (own-rows-only

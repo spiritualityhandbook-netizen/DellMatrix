@@ -415,6 +415,22 @@ evidence at Part V's landing. No ruling needed beyond the
 CODE/RECORDS-CONFIRM at that landing — the register's own text
 already states the fold.
 
+**CORRECTION (2026-11-20, Director 7044777205 — DEFAULT B applied).**
+The paragraph above is defective as written: it claims the pair is
+"counted once" while proposing that BOTH rows flip to COMPLETE on
+the same evidence — a +2 headline for one unit of credit, violating
+one-unit-one-credit. The Director's ruling: choose (A) two
+independently evidenced deliverables = 2 completions, or (B) one
+governed row-fold = 1 completion; under present evidence DEFAULT B
+governs. Corrected treatment: rows #90 and #93 are RETAINED as two
+distinct rows with their statuses unchanged; the paired flip is
+WITHDRAWN (plan §8 corrected in the same commit). A completion for
+this pair becomes available only via (A) independent evidence for
+each row's own deliverable, or (B) a separately certified row-fold
+ruling that first folds the two rows into one governed row — and
+under either path the headline counts this pair's completion once
+per completed governed row, never twice on one evidence set.
+
 ### B3. #61 ↔ #98 (SM-64) — PROPOSED: permanent flag, no merge
 #98's text concedes "theme overlaps item for 72-43." Theme overlap is
 not identity: #61 carries the SM-64 traceability substance inside a
