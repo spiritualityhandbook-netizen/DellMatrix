@@ -236,6 +236,12 @@ board point.
   lawful under either reading); infix *semantics* are built only
   if the ruling admits them, via a versioned contract with
   precedence tests.
+  **RULING FOLDED (2026-11-20, Director 7044836836 via Part VI):**
+  Q-DD42.2 is decided — the bounded behavioral contract for row
+  #12 is the TYPED While/Until condition-side REFUSAL. Infix
+  condition semantics are NOT admitted; the refusal-receipt build
+  proceeds under this contract, and row #12 stays OPEN pending
+  the actual fix. No second policy round.
 
 ### GP-E10 — DD-43 Parallel as real isolated arms (STAGED BUILD; row #11)
 
@@ -613,6 +619,20 @@ Uni's recommendation: #308 lands as its own records PR —
 its evidence directory is self-contained and its hold is
 already scoped there.
 
+**STATUS UPDATE (2026-11-20, Director FULL/DEEP disposition on
+PR #506):** the question above is ANSWERED by events and by the
+Director's decision. PR #308 MERGED as `f9a275ca` (head
+`295abf17`; Keeper SCOPED RECORDS CONFIRM 7043776253; the
+Director's modernization disposition satisfied on the record).
+Per the Director's decision, the already-landed #308 independent
+records PR is the source of record: Uni does NOT cherry-pick the
+old census files or merge them a second time. The modernized
+oracle and its merged-run tests stand as the explicit
+current-main baseline for this Part's §4/§6 citations, pinned at
+merge `f9a275ca`. The §11 caveat about the #308 branch moving is
+spent — the branch is merged; the citation pins the merge. This
+is a historical-status correction, not a new #308 CODE grant.
+
 ---
 
 ## 7. Gates and dependencies
@@ -714,12 +734,14 @@ from becoming either a orphan design or an ungated build.
 3. **Keeper scoped CODE CREDIT CONFIRM** for R25 / GP-E04 at
    merged SHA `c13428cb5807cec9501c1296fd0520f934ff9f4f`
    (renewed from package 7040793444).
-4. **Director ruling on Q-DD42.2** (row #12) and on row #35's
-   surface remedy, when his lane reaches them — neither blocks
-   the builds named in §2/§3.
-5. **Director confirmation of the #308 landing shape** (§6):
-   #308 lands as its own records PR (recommended) vs bundle
-   cherry-picked into this Part at integration.
+4. **Director ruling on Q-DD42.2** (row #12) — ANSWERED
+   2026-11-20 (7044836836: typed condition-side refusal; folded
+   at §2 above). Row #35's surface remedy remains open, owner-
+   specific; neither blocks the builds named in §2/§3.
+5. **Director confirmation of the #308 landing shape** (§6) —
+   ANSWERED 2026-11-20: #308 landed as its own records PR and
+   MERGED as `f9a275ca`; this Part consumes it by reference as
+   the current-main baseline (see the §6 status update).
 
 ---
 
