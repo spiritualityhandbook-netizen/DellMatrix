@@ -22,9 +22,21 @@ It never raises on malformed input — a malformed bundle is a
 REFUSED bundle (fail-closed). Refusal codes include:
 HEAD_DRIFT, TREE_DRIFT, CHECK_NOT_TERMINAL, CHECK_FAILED_UNCLASSIFIED,
 CHECK_FAILED_CANDIDATE, CHECK_FAILED_PREEXISTING_UNAUTHORIZED,
-SOURCE_DISAGREEMENT, MERGE_TREE_CONFLICT, MAIL_UNCHECKED, MAIL_HOLD,
-POST_MERGE_MISMATCH, FRESH_CLONE_MISSING, FRESH_CLONE_FAILED,
-FRESH_CLONE_REVISION, BUNDLE_INCOMPLETE.
+SOURCE_DISAGREEMENT, MERGE_TREE_CONFLICT, GITHUB_UNCHECKED,
+AUTHORITY_HOLD, POST_MERGE_MISMATCH, FRESH_CLONE_MISSING,
+FRESH_CLONE_FAILED, FRESH_CLONE_REVISION, BUNDLE_INCOMPLETE.
+
+Freshness doctrine (Workflow v2; Director correction 7052971505,
+2026-11-20): the operative freshness leg is the section-32 GitHub
+scan (``authority_freshness``) — exact PR, head, scan timestamp,
+latest comment/review ids, and both authorities' dispositions.
+Email is exception-only transport (AGENTS.md section 44); a legacy
+``mail_freshness`` block may ride in a bundle as a historical
+receipt alias when material, but it is never mandatory, never
+satisfies the GitHub leg, and never overrides a newer GitHub
+ruling. Historical bundles recorded MAIL_UNCHECKED / MAIL_HOLD;
+those codes are legacy aliases of GITHUB_UNCHECKED /
+AUTHORITY_HOLD.
 
 This suite is failing-first: at plan stage the reconciler does not
 exist, so every check fails with the absence recorded. The suite
@@ -84,9 +96,16 @@ def clean_pre():
              "sources": {"ci": "success", "pr_view": "success"}},
         ],
         "merge_tree": {"clean": True, "conflicts": []},
-        "mail_freshness": {
-            "watermark_checked": "1a1example",
-            "newest_ruling_id": "7000000001",
+        "authority_freshness": {
+            "source": "github",
+            "pr": 999,
+            "head_checked": HEAD,
+            "scan_timestamp": "2026-11-20T00:00:00Z",
+            "latest_comment_id": "7000000002",
+            "latest_review_id": "6000000001",
+            "director_disposition": "CONFIRM",
+            "keeper_disposition": "CONFIRM",
+            "newest_ruling_id": "7000000002",
             "newest_ruling_disposition": "CONFIRM",
         },
         "red_classifications": {},
@@ -207,22 +226,69 @@ def main():
           "a non-clean merge-tree refuses the gate")
 
     b = clean_pre()
-    del b["mail_freshness"]
-    check("mail_unchecked_refused",
-          refused_with(b, "MAIL_UNCHECKED"),
-          "no merge outruns an unread ruling about its own PR")
+    del b["authority_freshness"]
+    check("github_unchecked_refused",
+          refused_with(b, "GITHUB_UNCHECKED"),
+          "no merge outruns an unread ruling about its own PR; "
+          "the operative scan is the GitHub record (section 32), "
+          "not mail")
 
     b = clean_pre()
-    b["mail_freshness"]["newest_ruling_disposition"] = "HOLD"
-    check("mail_hold_refused", refused_with(b, "MAIL_HOLD"),
-          "a HOLD newer than the watermark stops the gate")
+    b["authority_freshness"]["newest_ruling_disposition"] = "HOLD"
+    check("authority_hold_refused",
+          refused_with(b, "AUTHORITY_HOLD"),
+          "a HOLD on the GitHub record stops the gate")
 
     b = clean_pre()
-    b["mail_freshness"]["newest_ruling_disposition"] = \
+    b["authority_freshness"]["newest_ruling_disposition"] = \
         "CORRECTION_REQUIRED"
-    check("mail_correction_required_refused",
-          refused_with(b, "MAIL_HOLD"),
+    check("authority_correction_required_refused",
+          refused_with(b, "AUTHORITY_HOLD"),
           "CORRECTION_REQUIRED is not a confirmation")
+
+    b = clean_pre()
+    v = verdict_of(b)
+    check("nc_github_checked_no_mail_reconciled",
+          "mail_freshness" not in b
+          and v is not None and v.get("verdict") == "RECONCILED",
+          "negative control (a): a complete GitHub scan with no "
+          "mail leg at all reconciles when every other leg is "
+          "valid — mail is not a mandatory leg (Workflow v2)")
+
+    b = clean_pre()
+    b["authority_freshness"]["newest_ruling_disposition"] = "HOLD"
+    b["mail_freshness"] = {
+        "watermark_checked": "1a1example",
+        "newest_ruling_id": "7000000001",
+        "newest_ruling_disposition": "CONFIRM",
+    }
+    check("nc_github_hold_overrides_stale_mail_confirm_refused",
+          refused_with(b, "AUTHORITY_HOLD"),
+          "negative control (b): a newer GitHub HOLD refuses the "
+          "gate even when an older mail receipt says CONFIRM — "
+          "stale mail never overshadows the GitHub record")
+
+    b = clean_pre()
+    del b["authority_freshness"]
+    b["mail_freshness"] = {
+        "watermark_checked": "1a1example",
+        "newest_ruling_id": "7000000001",
+        "newest_ruling_disposition": "CONFIRM",
+    }
+    check("nc_cached_email_only_refused",
+          refused_with(b, "GITHUB_UNCHECKED"),
+          "negative control (c): cached email alone, with no "
+          "GitHub scan, refuses — an unreachable GitHub scan "
+          "fails closed and never falls back to stale mail")
+
+    b = clean_pre()
+    b["authority_freshness"] = {"source": "email_exception"}
+    check("email_exception_without_receipt_refused",
+          refused_with(b, "GITHUB_UNCHECKED"),
+          "an email-exception transport is accepted only with a "
+          "named GitHub outage/rollback authority receipt and "
+          "later reconciliation to GitHub; without them it "
+          "refuses like any missing scan")
 
     v = verdict_of(clean_post())
     check("clean_post_bundle_reconciled",

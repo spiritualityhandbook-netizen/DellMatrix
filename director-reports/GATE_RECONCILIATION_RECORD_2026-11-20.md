@@ -20,7 +20,7 @@ the PR #340 section-32 receipt disclosure (INDEX, recorded
 2026-11-09) — Uni's pre-merge freshness check WAS performed and
 left **no independently retrievable timestamped receipt**, so the
 gate could not be reconstructed after the fact. Under the contract
-below, that merge's bundle is REFUSED (`MAIL_UNCHECKED`): a check
+below, that merge's bundle is REFUSED (`GITHUB_UNCHECKED`): a check
 that leaves no evidence is, for reconciliation purposes, a check
 that did not happen.
 
@@ -35,7 +35,7 @@ Legs:
 |---|---|---|
 | exact-head | Did every required check reach a terminal state AT this head, and what is each red check's classification? | completed CI runs / check records at the exact head |
 | merge-tree | Does the frozen head merge into current main cleanly? | merge-tree computation + PR mergeable state |
-| mail freshness | Has every authority ruling newer than the processed watermark been read, and is the newest disposition for THIS PR a confirmation-class act? | reviewer mail channel + GitHub rulings, watermark recorded in the bundle |
+| authority freshness | Has the operative GitHub record for THIS PR (comments + reviews) been scanned at the frozen head, and is the newest disposition a confirmation-class act? | GitHub PR comments/reviews scan recorded in the bundle (exact PR, head, scan timestamp, latest comment/review ids, both authorities' dispositions). Email is exception-only transport (Workflow v2, AGENTS.md section 44): a mail receipt is a legacy alias, never the operative leg |
 | post-merge | Did the merge land as the recorded commit, and are post-merge checks green? | repository authority (`gh pr view`, main HEAD) |
 | fresh-clone | Does the merged revision verify in a clean clone (suites + register render)? | a fresh clone's own run record at the merged revision |
 
@@ -57,8 +57,14 @@ remains the authorities' act.
               "run_id": 0,
               "sources": {"ci": "...", "pr_view": "..."}}],
   "merge_tree": {"clean": true, "conflicts": []},
-  "mail_freshness": {"watermark_checked": "<mail id>",
-                     "newest_ruling_id": "<comment/mail id>",
+  "authority_freshness": {"source": "github",
+                     "pr": 0, "head_checked": "<sha>",
+                     "scan_timestamp": "<iso8601>",
+                     "latest_comment_id": "<id>",
+                     "latest_review_id": "<id>",
+                     "director_disposition": "CONFIRM|...",
+                     "keeper_disposition": "CONFIRM|...",
+                     "newest_ruling_id": "<comment/review id>",
                      "newest_ruling_disposition": "CONFIRM|..."},
   "red_classifications": {"<check name>":
                           "pre-existing|candidate-caused|unexplained"},
@@ -87,8 +93,15 @@ ignored in phase `pre`. Every other field is required in both.
 | `CHECK_FAILED_PREEXISTING_UNAUTHORIZED` | pre-existing red without the governing authorization flag |
 | `SOURCE_DISAGREEMENT` | two sources disagree on a check's conclusion |
 | `MERGE_TREE_CONFLICT` | merge-tree is not clean |
-| `MAIL_UNCHECKED` | no mail-freshness leg in the bundle |
-| `MAIL_HOLD` | newest ruling for this PR is HOLD / CORRECTION_REQUIRED / INSUFFICIENT_EVIDENCE |
+| `GITHUB_UNCHECKED` | no authority-freshness GitHub scan in the bundle (cached mail alone never satisfies this leg; an unreachable scan fails closed) |
+| `AUTHORITY_HOLD` | newest ruling for this PR on the GitHub record is HOLD / CORRECTION_REQUIRED / INSUFFICIENT_EVIDENCE — a stale mail CONFIRM never overrides it |
+
+Legacy aliases: historical bundles recorded `MAIL_UNCHECKED` /
+`MAIL_HOLD`. Read them as aliases of `GITHUB_UNCHECKED` /
+`AUTHORITY_HOLD` when material; their presence is never mandatory
+on the normal path. An `email_exception` transport is accepted
+only with a named GitHub outage/rollback authority receipt in the
+bundle and a later reconciliation to the GitHub record.
 | `POST_MERGE_MISMATCH` | merge commit, main head, or a post-merge check disagrees with the record |
 | `FRESH_CLONE_MISSING` | fresh-clone leg did not run |
 | `FRESH_CLONE_FAILED` | fresh-clone verification failed |
@@ -120,8 +133,9 @@ first machine-issued verdict comes at code stage.
 Each merge files, inside its closing package: the frozen candidate
 (PR, head, tree), the bundle (or a durable link to it), the
 verdict with any refusal codes and their resolutions, the
-classification of every red check, the watermark checked and the
-newest ruling considered, the merge commit, and the post-merge +
+classification of every red check, the authority scan (PR, head,
+scan timestamp, latest comment/review ids) and the newest ruling
+considered, the merge commit, and the post-merge +
 fresh-clone results. A merge with no filed reconciliation record
 is, by this contract, an unreconciled merge — visible as such on
 the scoreboard.
