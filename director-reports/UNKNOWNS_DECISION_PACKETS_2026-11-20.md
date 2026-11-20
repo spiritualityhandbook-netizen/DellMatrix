@@ -826,3 +826,19 @@ drift apart; the packet texts above are unchanged.
 
 Plan design accepted for Keeper review at the rebased head; this
 delta + the zero-loss rebase discharge Uni's items from 7044836836.
+
+---
+
+## ACE RULINGS DELTA (2026-11-20 — Ace answering the NEEDS_OVERSEER set)
+
+| Question | Ace's ruling | Consequence |
+|---|---|---|
+| Q-U.4 (mixed-wall) | **NO** to the proposed ratification. Ace's rule: **ALL mixed ideas become fully sandboxed first**; placement into the actual Matrix is decided afterward, **as a whole** | Supersedes the auto-skip-with-receipt design. Sandboxing mixed arrivals is automatic; the decision point is sandbox → Matrix promotion of the whole unit. Consistent with the Director's Q-35.1 manual-only ruling for Matrix placement: promotion remains a decided act, never an automatic crossing |
+| Q-ACE-GS.1 ("What is a project?") | **B, confirmed** — a project is any idea and all the ideas within that idea (Ace notes this was already his standing definition) | PROJECT selection builds on B: the project = the root idea + its full contained set. No new machinery |
+| Q-ACE-GS.2 (bare "grow") | **Keep** | A bare grow remains a lawful no-op that says so; target must be named |
+| Q-FI016.1 (store capability) | **A for now** — reads count as the measured capability; the index / incremental-write build is DEFERRED until the program is in a more finished state, then revisited | No build owed now; revisit condition recorded (program reaches a more finished state) |
+
+With this delta, every question in this packet set carries a
+ruling from its proper owner: Director-ruled (7044836836),
+Ace-ruled (this delta), or probe-discharged (Q-FI012.8). No
+question in Part VI remains unanswered.
