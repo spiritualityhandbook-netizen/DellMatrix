@@ -1,0 +1,38 @@
+PASS  control_subset_named_10  radial_drift,internet_on,internet_off,sandbox_on,sandbox_off,enhance_on,enhance_off,save,visual,live_visual
+FAIL  atcap_radial_drift  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  over_radial_drift  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  atcap_internet_on  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  over_internet_on  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  atcap_internet_off  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  over_internet_off  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  atcap_sandbox_on  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  over_sandbox_on  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  atcap_sandbox_off  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  over_sandbox_off  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  atcap_enhance_on  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  over_enhance_on  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  atcap_enhance_off  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  over_enhance_off  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  atcap_save  refused=False unchanged=False files_same=False canary_leak=False
+FAIL  over_save  refused=False unchanged=False files_same=False canary_leak=False
+FAIL  atcap_visual  refused=False unchanged=False files_same=False canary_leak=False
+FAIL  over_visual  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  atcap_live_visual  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  over_live_visual  refused=False unchanged=False files_same=True canary_leak=False
+FAIL  utf8_parity_all_labels_refuse_identically  outcomes={'ascii': (False, False), 'accent': (False, False), 'cjk': (False, False), 'emoji': (False, False), 'combining': (False, False)}
+FAIL  sanitize_before_measure_canary  refused=False canary_in_state=False
+FAIL  toctou_concurrent_all_refused_state_stable  calls=40 refused=0
+FAIL  restart_atcap_roundtrip_whole  err=
+FAIL  legacy_over_cap_loads_whole  err= (silent truncation = FAIL)
+SKIP  caller_open.py:594_zoom_to  needs args ['ref']  inventory=BLOCKED  (excluded from subset; not a pass)
+SKIP  caller_open.py:599_zoom_to  needs args ['ref']  inventory=BLOCKED  (excluded from subset; not a pass)
+SKIP  caller_open.py:778_bimo_dock  needs args ['slot', 'persona']  inventory=BLOCKED  (excluded from subset; not a pass)
+SKIP  caller_open.py:806_set_view  needs args ['room_id']  inventory=CLEAN  (excluded from subset; not a pass)
+SKIP  caller_open.py:952_set_weather  needs args ['condition']  inventory=BLOCKED  (excluded from subset; not a pass)
+SKIP  caller_open.py:1011_enter_workshop  needs args ['workshop_id']  inventory=CLEAN  (excluded from subset; not a pass)
+SKIP  caller_open.py:1110_set_lattice_size  needs args ['size']  inventory=CLEAN  (excluded from subset; not a pass)
+SKIP  caller_open.py:1165_place  needs args ['id', 'label']  inventory=BLOCKED  (excluded from subset; not a pass)
+SKIP  caller_open.py:2052_reject_proposal  needs args ['pid']  inventory=BLOCKED  (excluded from subset; not a pass)
+SKIP  caller_open.py:2157_run_script  needs args ['script']  inventory=CLEAN  (excluded from subset; not a pass)
+PASS  cleanup_clean  
+R5CS 2/27 PASS (+10 documented SKIP, never PASS)
