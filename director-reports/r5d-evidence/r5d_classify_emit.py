@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Emit R5D_CLASSIFICATION_2026-11-19.md from r5d_sites.jsonl."""
+"""Emit R5D_CLASSIFICATION_2026-11-19.md from r5d_sites.jsonl.
+
+Checkout-relative (Director 7030045309): input and output resolve beside
+this script, so any clean checkout of this evidence directory reproduces
+the classification with no machine-specific paths.
+"""
 import json, pathlib
 
-H = pathlib.Path("/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files")
+H = pathlib.Path(__file__).resolve().parent
 rows = [json.loads(l) for l in (H / "r5d_sites.jsonl").read_text().splitlines()]
 
 C_KEYS = {
