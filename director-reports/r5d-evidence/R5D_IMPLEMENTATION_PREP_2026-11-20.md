@@ -117,3 +117,149 @@ and authorization.
 - On that head: R5RD applicable refusal assertions green, exact-head CI
   terminal, refreshed Keeper review.
 - Power-loss behavior remains UNKNOWN (not tested in any R5-D suite).
+
+---
+
+# REVISION 2026-11-20 — answering Director 7038920405 requirements (2)–(4)
+
+Zero product code. All line numbers re-verified against `form/` sources
+at evidence head 7aea4c2 / main 1f58c7d on 2026-11-20. Requirement (1) —
+Keeper independent challenge of 7aea4c2 — remains a Keeper act; this
+revision extends the challenge surface to include §§5–7 below.
+
+## 5. Enforceable lock scope (requirement 2)
+
+Director's correction stands: locking only preflight+note is
+INSUFFICIENT, because on radial_drift, internet_on, internet_off and
+enhance_on/off the method's effects precede its note. The specified
+scope is therefore the WHOLE method body:
+
+**Chosen mechanism — per-Program reentrant admission lock.**
+- Each `Program` instance owns one `threading.RLock` (admission lock),
+  created with the instance.
+- Every S7 method acquires the admission lock as its FIRST act (for
+  `internet_off`: before the no-gate early-return check, so the gate
+  test itself is inside the section) and holds it continuously through,
+  in order: (a) preflight (entry-count + logical-byte check over the
+  history as it would stand after this method's note), (b) ALL of the
+  method's effects, (c) the history append via `note`/`note_seed`.
+  Refusal raises/returns BEFORE any effect executes, while holding the
+  lock, so a refused call is atomic: no effect, no append.
+- Reservation/rollback was considered and REJECTED as the primary
+  mechanism: S7 effects include non-transactional subsystem mutations
+  (lattice soft-forget, gate creation + turn_on, enhance toggles) with
+  no existing undo path; a lock that prevents interleaving is the
+  enforceable primitive the codebase already patterns elsewhere
+  (`owner_state_lock`, form/owner_state_lock.py:135).
+
+**Other history writers — census (source-verified).** In
+`form/open.py` the ONLY mutator of `Program.history` is
+`Program.note` (open.py:345–349: append, then truncate to
+`history_max`), and `note_seed` (open.py:351) funnels into it
+(open.py:365 `self.note(body)`). Every other writer — all ~35
+`note_seed` call sites in open.py — reaches history exclusively
+through that funnel. The only other assignment is load-time restore
+(`persist_rest.py:643`), which runs before the instance serves calls.
+Therefore:
+- `note()` itself acquires the same admission lock (reentrant, so an
+  S7 method already holding it does not self-deadlock). Consequence:
+  no non-S7 writer can append between an S7 preflight and its append,
+  and the check-and-append pair is atomic against EVERY history writer
+  on the instance, not only against other S7 calls.
+- `Program.save`'s serializer reads history (`persist.py:378`); the
+  build must snapshot the history list under the admission lock so a
+  save cannot observe a half-appended state. The canonical-save
+  `owner_state_lock` (persist_rest.py:155–156) continues to govern the
+  file transaction; it is a different lock for a different boundary
+  and neither substitutes for the other.
+
+**Demonstration harness (for the authorized head):** the R5RD thread
+leg (4 threads × S7 at cap) must show all applicable refusals firing
+with serialized state stable, PLUS a mixed-writer leg (S7 calls racing
+non-S7 `note_seed` calls) showing no append interleaves a refused S7
+call. Neither is claimed green today.
+
+## 6. Per-process-only admission — user/API boundary statement (requirement 3)
+
+The user/API boundary for this design is the `Program` method surface
+itself: the REPL and every public entry path invoke these methods
+directly on one in-process instance. The admission guarantee is
+therefore stated AT that boundary, verbatim for the build's user-facing
+contract:
+
+> History admission (entry cap + logical byte cap) is enforced
+> PER PROCESS, on the single `Program` instance serving your calls in
+> that process. It is NOT a global limit for an owner. A second
+> process opened on the same owner holds an independent history,
+> admits independently up to the same caps, and saves whole
+> generations to the same canonical file; the last save wins the
+> whole generation (atomic replacement, persist_rest.save /
+> atomic_write_json). Cross-process outcomes — lost updates between
+> processes and combined admissions exceeding what one process would
+> allow — are a KNOWN HAZARD of multi-process use, explicitly outside
+> the S7 guarantee. No shared-owner global safety is claimed.
+
+`owner_state_lock` serializes canonical saves between processes; it
+does not re-check admission and does not convert per-process admission
+into cross-process admission (Director 7033305002: atomic file
+replacement is not atomic admission).
+
+## 7. Failing-first receipts, power-loss UNKNOWN, truncation accounting (requirement 4)
+
+**Failing-first receipts — preserved, not superseded.** R5RD at
+75661b6: 36/94 PASS, exit 1 (per-method battery 28/84; files+threads
+legs only). R5SS at 04fced4: 15/40 PASS / 25 FAIL, including the
+save/load truncation checks failing. This revision changes no receipt
+and claims no new pass; the receipts are the baseline the authorized
+implementation head must turn green.
+
+**Truncation accounting — every silent truncation on the history path
+(source-verified):**
+
+| # | point | effect today |
+|---|---|---|
+| T1 | `Program.note`, open.py:346 | each entry text cut to 120 chars (`[:120]`) |
+| T2 | `Program.note`, open.py:348–349 | list cut to last `history_max` = 24 entries (open.py:130) |
+| T3 | `persist.serialize`, persist.py:378 | persisted payload keeps only `history[-24:]` |
+| T4 | load restore, persist_rest.py:643 | each restored entry re-cut to 120 chars AND list cut to last 24 |
+
+Consequence stated plainly: until the R5 build removes/replaces
+T2–T4 per the retention design on PR #498, ANY admission-side
+retention above 24 entries is destroyed at note time (T2), never
+reaches disk beyond 24 (T3), and cannot be restored beyond 24 (T4) —
+admission correctness and save/load correctness are separate gates,
+and the item-(4) green run must cover both. T1 (120-char entry cut)
+is an entry-shape rule, retained or changed only as the retention
+design specifies; it is named here so it is never silent again.
+
+**Power loss — UNKNOWN, bounded by what the write path proves.**
+`atomic_write_json` (form/dell_matrix/atomic_write.py:123) serializes
+fully BEFORE touching the target, writes a sibling temp, fsyncs, and
+`os.replace`s; directory fsync is best-effort and its outcome is
+exposed (`_last_dir_fsynced`). From that mechanism alone:
+- Power loss BEFORE the replace boundary: the previous complete
+  generation remains the canonical file. No partial generation is
+  exposed through the replace boundary.
+- Power loss AFTER replace: the new complete generation is the file,
+  subject to the platform's fsync durability (directory fsync
+  best-effort → durability of the rename itself is platform-dependent).
+- What remains UNKNOWN and is NOT claimed: (a) admissions held only in
+  memory and never saved are lost on power loss — there is no journal,
+  so the count/content of lost admissions is UNKNOWN; an admission
+  receipt is NOT a durability receipt; (b) no R5-D suite has cut power
+  or killed a process mid-save, so mid-save crash behavior at the
+  exact replace boundary is demonstrated only by the atomic_write
+  mechanism's existing tests, not by any R5-D evidence. The authorized
+  head's evidence must either add a kill-mid-save leg or carry this
+  UNKNOWN forward explicitly.
+
+## 8. Revised remaining gate
+
+- (1) Keeper independent challenge — now covering 7aea4c2 AND this
+  revision (lock scope §5, boundary statement §6, truncation/power-loss
+  accounting §7).
+- Director bounded R5-D implementation authorization (at most S7) on a
+  separate implementation head, thereafter.
+- On that head: R5RD applicable assertions green (incl. the mixed-
+  writer thread leg, §5), exact-head CI terminal, refreshed Keeper
+  review. Power-loss UNKNOWN carried or closed per §7.
