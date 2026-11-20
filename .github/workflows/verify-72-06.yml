@@ -1,0 +1,80 @@
+name: verify-72-06
+
+# Exact-head verification for PR #308 (72-06 census record).
+# MODERNIZED 2026-11-20 per Director 7040506653: the 2026-11-05
+# census probes pin behavior the product has since deliberately
+# changed (16/21 against current main), so they are no longer
+# executed against the live product. This workflow instead:
+#   (a) verifies the preserved historical artifacts byte-for-byte
+#       (MANIFEST.sha256) and the new current-contract files
+#       (CURRENT_MANIFEST.sha256) WITHOUT reasserting the old
+#       semantics on the new product, and
+#   (b) executes the NEW current-contract probes at the exact head:
+#       q06_current_probe.py (7 checks, census path) and
+#       q06_current_repl_probe.py (8 checks, bare REPL).
+# The HEAD assertion still runs BEFORE any check (72-17 lesson).
+# See CURRENT_MAIN_DELTA_2026-11-20.md in the evidence directory.
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/verify-72-06.yml"
+      - "director-reports/evidence/72-06-intent-args/**"
+      - "director-reports/DIRECTOR_REPORT_72_06_INTENT_ARGS.md"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-72-06:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout the PR head SHA explicitly
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: ASSERT exact-head identity before anything else
+        run: |
+          EXPECTED="${{ github.event.pull_request.head.sha }}"
+          ACTUAL="$(git rev-parse HEAD)"
+          echo "expected: $EXPECTED"
+          echo "actual:   $ACTUAL"
+          test "$ACTUAL" = "$EXPECTED"
+          echo "EXACT_HEAD_ASSERTION: PASS"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Historical manifest verification (preservation only)
+        working-directory: director-reports/evidence/72-06-intent-args
+        run: sha256sum -c MANIFEST.sha256
+
+      - name: Current-contract manifest verification
+        working-directory: director-reports/evidence/72-06-intent-args
+        run: sha256sum -c CURRENT_MANIFEST.sha256
+
+      - name: Current-contract probe (7/7) at the exact head
+        run: |
+          set -o pipefail
+          python3 director-reports/evidence/72-06-intent-args/q06_current_probe.py ci 2>&1 \
+            | tee q06_current_probe_ci.log
+
+      - name: Current-contract bare-REPL probe (8/8) at the exact head
+        run: |
+          set -o pipefail
+          python3 director-reports/evidence/72-06-intent-args/q06_current_repl_probe.py ci 2>&1 \
+            | tee q06_current_repl_probe_ci.log
+
+      - name: Upload verify-72-06 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-72-06-evidence
+          path: |
+            q06_current_probe_ci.log
+            q06_current_repl_probe_ci.log
+          if-no-files-found: warn
