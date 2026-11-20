@@ -74,8 +74,10 @@ the proposal/seed pair plus its journal. Four properties:
 All C-B operations serialize on the per-owner state lock
 (`form/owner_state_lock.py`). Acquisition order is total and
 acyclic; inner helpers assume the lock is held and never
-re-acquire (the lock is not re-entrant by design; the outermost
-operation owns it).
+re-acquire (corrected 2026-11-20: the lock IS re-entrant per
+process+thread — see the CORRECTION block below §3; the
+no-re-acquire rule for inner helpers is a design discipline of
+this contract, not a property forced by the lock).
 
 | Step | Holder | Acquires / does | Releases |
 |---|---|---|---|
@@ -86,7 +88,34 @@ operation owns it).
 | 5 | `_clear_import_journal` | (assumes lock held) legacy clear path — must route through step 4's condition, never unconditional `os.remove` | — |
 
 Deadlock argument: one lock, one holder class, no nested
-acquisition, no second lock introduced by C-B. Reentrancy rule:
+acquisition, no second lock introduced by C-B.
+
+**CORRECTION (2026-11-20, Director 7044877059 — source-level
+safety correction).** The original §3 text claimed the owner
+lock "is not re-entrant by design" and argued deadlock-freedom
+from "no nested acquisition." Both statements are FALSE against
+the source of record: `form/owner_state_lock.py`'s own module
+contract states re-entrancy is per process+thread and
+token-free — the kernel lock is held once, and nested
+acquisitions by the same thread join by depth count; different
+threads/processes contend for real. Corrected semantics and
+consequences for this design:
+- Same-thread nesting is LAWFUL and cannot deadlock on this
+  lock; the helper no-re-acquire rule above stands as contract
+  discipline (it keeps ownership auditable), not as a lock
+  requirement.
+- The deadlock surface is cross-thread / cross-process
+  acquisition order against any SECOND lock; C-B introduces no
+  second lock, and the lock-order graph + two-thread /
+  two-process deadlock test owed under Director condition (1)
+  will be built against THESE semantics, not the original
+  claim.
+- Any C-B reasoning that relied on an inner re-acquisition
+  blocking or refusing is void and must be re-derived; the
+  journal/pair protocol in §2 does not rely on it (it assumes
+  the lock held, which the depth-counted join also satisfies).
+No product code changes under this correction; C-B remains
+DESIGN/RED only under the Q1 GATE HOLD. Reentrancy rule:
 public entry points acquire; private helpers (`_`-prefixed) never
 do. This is the same discipline the R5-D prep revision adopted
 for `Program.note` (full-method lock scope) — one pattern, two
