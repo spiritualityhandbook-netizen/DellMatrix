@@ -5,7 +5,11 @@ Prepared: 2026-11-19 (susx100000-execution cycle), per Director 7027509092:
 callers before asking for bounded implementation authorization."
 Census at main 702741969c6d2d1d020f85845912f1da84f31418 (fresh clone r5d_clone):
 111 capture call sites in non-test form/ code — 98 note_seed (18 files,
-exactly the R5-D preparation census), 13 direct note(), 1 door-internal.
+exactly the R5-D preparation census) + 13 direct note() = 111 total.
+The 1 door-internal site (inside note_seed itself) is one of those 13
+direct note() rows, counted in class DOOR below — it is NOT a 112th site
+and must not be added on top of 98 + 13. Class partition:
+A=26 + B=45 + C-HOLD=39 + DOOR=1 = 111.
 
 ## Classes (per R5D_PREP §2.2)
 
