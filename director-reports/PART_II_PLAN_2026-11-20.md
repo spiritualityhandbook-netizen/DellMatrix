@@ -767,3 +767,37 @@ from becoming either a orphan design or an ungated build.
   divergence is reported, never silently absorbed.
 - Rows #143, #157 and GP-E11's semantics are Ace-gated; this
   plan builds nothing that presumes his rulings.
+
+---
+
+## ACE RULINGS (2026-11-20 — answering this Part's NEEDS_OVERSEER set)
+
+- **DC-8 (151[Harmonic]): A.** The reserved example address
+  stays documented and NON-EXECUTING, with its explicit refusal.
+  Not a 101st Core Dell.
+- **DC-9 (orphan candidates): A, with Ace's maturation
+  directive.** Orphans stay intact and labeled, decided
+  case-by-case. Ace further directs: after the plan's code runs
+  properly, **each Dell is individually completed to its full
+  maturity and capability** — repeated as many times as needed
+  until the Dells are universal. Recorded as a post-code-stage
+  maturation program (future scope; not a current build).
+- **DC-10 (Space): A.** Space stands as the advisory
+  measured-capacity (negative-space) reading, not a new force.
+- **Row #143 (Nursery auto-passage door): A for now, with a
+  future directive.** The door stays OFF; the policy-receipts
+  half proceeds. Ace directs that an auto door be created
+  eventually — **fully customizable by the user, within safe
+  limits** — recorded as future scope for this row.
+- **Row #157 (Adapt): NOW.** Ace authorizes the DualMode build.
+- **GP-E11 (elder Dells) — premise corrected by Ace
+  (2026-11-20).** The elder Dells' meanings are NOT undefined
+  and were never awaiting definition: Ace adjudicated all 100
+  Dells one by one (the 2026-11-08/09 tour, Nova through 99 —
+  for each Dell he confirmed its function or gave the
+  instruction for what it should be), and that adjudication is
+  the meaning authority of record (ACE_FUTURE_DEVELOPMENT_PLAN
+  §12, in this repository). GP-E11 builds to those adjudicated
+  meanings. The "meanings Ace-gated / safe read-only fallbacks"
+  framing in this plan (including the §11 limitation line) is
+  WITHDRAWN; the question is not to be asked again.
