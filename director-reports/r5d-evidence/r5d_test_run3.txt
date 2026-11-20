@@ -1,0 +1,23 @@
+PASS  control_sanitize_authority_redacts  password=[REDACTED]
+FAIL  t1_capture_retains_30  len=24 (today: history_max=24 evicts)
+FAIL  t1_serialize_full_30  len=24 (today: persist.py [-24:])
+FAIL  t1_roundtrip_full_30  len=24
+FAIL  t2_restore_full_long_entry  len=24 lastlen=120 (today: persist_rest.py [:120] + [-24:])
+FAIL  t2b_note_seed_label_full  history=['09[Show] :: label-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'] (today: note_seed label [:40] cut)
+FAIL  t3_exact_fit_10000_admitted  len=24
+FAIL  t3_over_cap_typed_refusal  how=None
+FAIL  t4_refusal_atomicity  history/serialized state must be unchanged after refusal
+FAIL  t3c_canonical_byte_cap_refuses  CJK entries: canonical bytes exceed cap far below 10k entries
+PASS  t3c_history_within_canonical_cap  bytes=17426
+FAIL  t7_legacy_loads_whole  len=24 err=None
+FAIL  t7_legacy_marked  LEGACY_OVER_BUDGET marker absent
+FAIL  t7_legacy_write_through  written len=24
+FAIL  t7_legacy_growth_refused  new entry on legacy-over-budget must refuse pre-mutation
+FAIL  t8_canary_absent_history  keyword-shaped secret must be redacted at capture (P5)
+FAIL  t8_canary_absent_serialized  keyword-shaped secret must be redacted at capture (P5)
+FAIL  t8_canary_absent_macro_seed  keyword-shaped secret must be redacted at capture (P5)
+FAIL  t8_canary_absent_replay  keyword-shaped secret must be redacted at capture (P5)
+FAIL  t8_redacted_entries_marked_non_replayable  redaction-changed entries must carry NON-REPLAYABLE marking
+FAIL  t10_report_shows_total_and_shown  first line: 'History · 16 notes (last 16 shown):'
+PASS  cleanup_clean  
+R5D 3/22 PASS
