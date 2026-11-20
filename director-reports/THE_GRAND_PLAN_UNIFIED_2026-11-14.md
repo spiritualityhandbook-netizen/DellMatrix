@@ -1,5 +1,11 @@
 # THE GRAND PLAN — UNIFIED TOTAL EDITION
 
+> **STATUS (2026-11-20): RECORDS PUBLICATION OF NOV-14 UNIFIED DRAFT;
+> HISTORICAL AUTHOR-TIME ONE-PLAN INTENT BELOW PRESERVED; NOT NEW
+> ADOPTION OR REPLACEMENT OF DIRECTOR EDITION 1 #486; no MWL/PLAN
+> credit or code authority; updated living plan selection remains
+> separate Ace/Director act.**
+
 **One plan.** From this edition forward there are not several plans.
 The Dell Plan, the main plan, the Afterplan, the Grand Plan of
 2026-11-13, and the Far Plan are **one body: THE GRAND PLAN** — this
