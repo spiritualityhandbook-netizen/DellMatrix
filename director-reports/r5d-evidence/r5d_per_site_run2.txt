@@ -1,0 +1,97 @@
+PASS  control_buildable_sites_60  n=60
+PASS  control_inventory_covers_all_60  inv=60
+FAIL  door_allwhere.py:289_birth_character  inv=INVENTORY-ORDER-SENSITIVE refused=False unchanged=False how=None
+FAIL  door_allwhere.py:327_start_travel  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_allwhere.py:382_enter_room  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_allwhere.py:387_enter_room  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_allwhere.py:417_source_post  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_allwhere.py:475_activate_mission  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_allwhere.py:491_check_missions  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_allwhere.py:496_check_missions  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_allwhere.py:503_check_missions  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_code_evolution.py:76_ensure_root  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_code_evolution.py:201_research_with_internet  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_code_evolution.py:254_mark_complete  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_first_person.py:511_move_fp  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_first_person.py:523_turn_fp  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_first_person.py:537_look_fp  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_fourier.py:199_program_fourier_demo  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_linear_algebra.py:192_program_transform  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_matrices_hub.py:115_evolve_program  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_needs.py:132_set_detail  inv=INVENTORY-ORDER-SENSITIVE refused=False unchanged=False how=None
+FAIL  door_needs.py:144_set_goals  inv=INVENTORY-ORDER-SENSITIVE refused=False unchanged=False how=None
+FAIL  door_needs.py:533_redo_last  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_spatial_authority.py:473_tick  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_spatial_authority.py:530_tick  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_spatial_authority.py:573_settle  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_core_ii_exec.py:134_mark  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:487_look_around  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:594_zoom_to  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:599_zoom_to  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:605_unzoom  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:778_bimo_dock  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:786_bimo_defaults  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:795_bimo_fuse  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:806_set_view  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:887_force_tick  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:914_force_growth  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:927_force_water  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:939_force_breath  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:947_force_gravity  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:952_set_weather  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:1011_enter_workshop  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:1110_set_lattice_size  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:1116_radial_drift  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:1165_place  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:1221_internet_on  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:1228_internet_off  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:2052_reject_proposal  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:2056_sandbox_on  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:2063_sandbox_off  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:2068_enhance_on  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:2072_enhance_off  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:2083_pulse  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:2098_multilook  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:2131_attend  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:2152_glyph  inv=INVENTORY-BLOCKED refused=False unchanged=False how=None
+FAIL  door_open.py:2157_run_script  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:2166_save  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:2171_visual  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_open.py:2191_live_visual  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_repl.py:419__handle_latinmandell  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  door_repl.py:483__handle_latinmandell  inv=INVENTORY-CLEAN refused=False unchanged=False how=None
+FAIL  caller_open.py:487_look_around  refused=False unchanged=False how={'facing': 'N', 'range': 5.5, 'half_angle': 55.0, 'cone': [[0.0, 0.0], [4.505336243589455, 3.1546703999307533], [3.94523844285
+SKIP  caller_open.py:594_zoom_to  needs args ['ref']
+SKIP  caller_open.py:599_zoom_to  needs args ['ref']
+FAIL  caller_open.py:605_unzoom  refused=False unchanged=False how={'ok': True, 'zoom': None}
+SKIP  caller_open.py:778_bimo_dock  needs args ['slot', 'persona']
+FAIL  caller_open.py:786_bimo_defaults  refused=False unchanged=False how={'ok': True, 'slots': {'logic': 'manny', 'growth': 'melody', 'morph': 'aetheris', 'fusion': 'mathelody', 'ancient': 'the_ancie
+FAIL  caller_open.py:795_bimo_fuse  refused=False unchanged=False how={'ok': True, 'mode': 'fused', 'pilot': 'mathelody', 'threads': ['manny', 'melody', 'aetheris', 'mathelody', 'the_ancient', 'tr
+SKIP  caller_open.py:806_set_view  needs args ['room_id']
+FAIL  caller_open.py:887_force_tick  refused=False unchanged=False how={'ok': True, 'forces': ['breath', 'growth', 'water'], 'body': {'present': 23, 'missing': [], 'top_decision': {'action': 'advan
+FAIL  caller_open.py:914_force_growth  refused=False unchanged=False how={'ok': True, 'lines': ['  · Welcome [seed h=0.65]']}
+FAIL  caller_open.py:927_force_water  refused=False unchanged=False how={'ok': True, 'streams': 3, 'pools': 0, 'extra': '\n  Merged → Welcome ⇄ Welcome'}
+FAIL  caller_open.py:939_force_breath  refused=False unchanged=False how={'ok': True, 'cycle': 2, 'phase': 'exhale'}
+FAIL  caller_open.py:947_force_gravity  refused=False unchanged=False how={'ok': True, 'labels': 'Welcome'}
+SKIP  caller_open.py:952_set_weather  needs args ['condition']
+SKIP  caller_open.py:1011_enter_workshop  needs args ['workshop_id']
+SKIP  caller_open.py:1110_set_lattice_size  needs args ['size']
+FAIL  caller_open.py:1116_radial_drift  refused=False unchanged=False how={'ok': True, 'keyed': 1, 'soft_forgotten': 0, 'outer_shell': 6, 'ledger': {'keys': 1, 'with_payload': 1, 'soft_forgotten': 0, 
+SKIP  caller_open.py:1165_place  needs args ['id', 'label']
+FAIL  caller_open.py:1221_internet_on  refused=False unchanged=False how={'ok': True, 'on': True, 'msg': 'Internet ON · search_far_wide ready · Floor locked'}
+FAIL  caller_open.py:1228_internet_off  refused=False unchanged=False how={'ok': True, 'on': False, 'msg': 'Internet OFF'}
+SKIP  caller_open.py:2052_reject_proposal  needs args ['pid']
+FAIL  caller_open.py:2056_sandbox_on  refused=False unchanged=False how={'ok': True, 'on': True, 'boxed': ['welcome'], 'box': 'auto_sandbox'}
+FAIL  caller_open.py:2063_sandbox_off  refused=False unchanged=False how={'ok': True, 'on': False, 'unboxed': ['welcome']}
+FAIL  caller_open.py:2068_enhance_on  refused=False unchanged=False how=None
+FAIL  caller_open.py:2072_enhance_off  refused=False unchanged=False how=None
+FAIL  caller_open.py:2083_pulse  refused=True unchanged=False how={'ok': False, 'reason': 'enhance OFF', 'on': False, 'slopes': {}}
+FAIL  caller_open.py:2098_multilook  refused=False unchanged=False how={'layers': {'near': {'count': 0, 'nearest': None, 'ids': [], 'nodes': []}, 'mid': {'count': 0, 'nearest': None, 'ids': [], 'no
+FAIL  caller_open.py:2131_attend  refused=False unchanged=False how=[{'id': 'welcome', 'label': 'Welcome', 'score': -0.7159, 'text_preview': 'Welcome Blank cube on Dell Matrix. Place ideas with 
+FAIL  caller_open.py:2152_glyph  refused=False unchanged=False how='[cube] R5PSe9ef64e7 sc=0.00\n ·    ✮    \n   · █  ·  \n·   ╯●    ·\n  ·✶   ·  ·\n  ▌ ·    │ '
+SKIP  caller_open.py:2157_run_script  needs args ['script']
+FAIL  caller_open.py:2166_save  refused=False unchanged=False how='/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/r5d_clone/form/state/program_R5PSe9ef64e7.json'
+FAIL  caller_open.py:2171_visual  refused=False unchanged=False how={'svg': '/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/r5d_clone/form/dell_matrix/../state/visual/ma
+FAIL  caller_open.py:2191_live_visual  refused=False unchanged=False how={'ok': True, 'url': 'http://127.0.0.1:8765/', 'host': '127.0.0.1', 'port': 8765, 'note': 'Main menu + pages. Keep this process
+PASS  cleanup_clean  
+R5PS 3/86 PASS
