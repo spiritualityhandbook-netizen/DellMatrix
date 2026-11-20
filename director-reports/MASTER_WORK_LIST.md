@@ -23,14 +23,14 @@ Data: master_work_list_items.json
 
 ## The count
 
-**PROGRESS: 41 / 182 COMPLETE = 22.5%**
+**PROGRESS: 40 / 182 COMPLETE = 22.0%**
 
 | Status | Items |
 |---|---|
-| COMPLETE | 41 |
+| COMPLETE | 40 |
 | MERGED_UNVERIFIED | 0 |
 | BUILT_HELD | 0 |
-| PARTIAL | 54 |
+| PARTIAL | 55 |
 | OPEN | 84 |
 | GATED | 3 |
 | NEEDS_OVERSEER | 0 |
@@ -228,7 +228,7 @@ parked items the 72 frame never counted.
 | 132 | Trace covers the entire current process — full retrieval beyond 512 entries without silent loss; Trace is session-only, never history | DD-52 / C3.Trace | OPEN |
 | 133 | Failure doors — Analyze / Revert / Retry per Ace's failure doctrine: Retry targets an identified FAILED attempt, once; wrappers never become targets; partial effects shown first | DD-32 / C3.FailureDoors | OPEN |
 | 134 | Rooms are Ace's to close — chosen-room operations cannot overwrite another room's later work; session close names open rooms; overlapping-room write ownership is a design prerequisite | DD-53 / C3.Rooms | OPEN |
-| 135 | Undo and redo like a real program — 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo (Q-LC.1 undo/redo repair — PR #481 merged d17c6b48 2026-11-18; CODE CREDIT SETTLED 2026-11-18; register write-in 2026-11-20 — row left OPEN in error after settlement) | DD-54 / C3.Undo | COMPLETE |
+| 135 | Undo and redo like a real program — 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo (Q-LC.1 SESSION-LOCAL undo/redo repair SETTLED — PR #481 merged d17c6b48 2026-11-18; CODE CREDIT SETTLED 2026-11-18, scoped session-local per Keeper 6975649030; row PARTIAL per Director 7040476004: room/multi-actor undo and Core II snapshot-stack unification remain UNRESOLVED, deferred per Director §6.4 #6967292333; register settlement 2026-11-20) | DD-54 / C3.Undo | PARTIAL |
 | 136 | Alpha / history member + close ceremony — old generations freeze/confirm/restore under new code; save failure never pretends the session is safely closed (gate per §12.13) | C3.Alpha | OPEN |
 
 ## Block Plan §14.3 — C4 Reference Family

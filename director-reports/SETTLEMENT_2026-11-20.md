@@ -5,12 +5,18 @@ Authority: Ace reconciliation order, 2026-11-20 (in-chat, verified channel):
 it." Performed by Uni as a records act under §32 review; this file is the
 per-item provenance record for the register changes in this PR.
 
-## Rows flipped OPEN -> COMPLETE (verified per-row before flipping)
+## Rows settled (verified per-row before changing)
 
-1. **MWL 135 — DD-54 / C3.Undo (Q-LC.1 undo/redo).** Repair merged as
-   PR #481 (merge commit d17c6b48, 2026-11-18). CODE credit settled
-   2026-11-18. The row was left OPEN in error after settlement; now
-   COMPLETE with provenance appended to the row title.
+1. **MWL 135 — DD-54 / C3.Undo (Q-LC.1 undo/redo) — PARTIAL, scoped
+   settlement only.** Session-local undo/redo repair merged as PR #481
+   (merge commit d17c6b48, 2026-11-18); CODE credit settled 2026-11-18,
+   scoped SESSION-LOCAL (Keeper 6975649030). Per Director 7040476004
+   (2026-11-20), the broad row is NOT complete: room/multi-actor undo
+   and Core II snapshot-stack unification remain UNRESOLVED (deferred
+   per Director §6.4 #6967292333). Row set PARTIAL with the settled
+   scope and the retained remainder both stated in the row title. (An
+   earlier version of this settlement flipped the row to COMPLETE;
+   that overstated the scope and was corrected the same day.)
 2. **MWL 14 — Q-DD44.3 (Compose recursion cap follow-up; R17).** The
    item is Compose's `_compose_bound` per
    DIRECTOR_REPORT_DD44_BOUNDS_EXPLICIT_2026-11-10 (Q-DD44.3). R17 made
@@ -50,6 +56,8 @@ per-item provenance record for the register changes in this PR.
 
 ## Board effect
 
-COMPLETE 39 -> 41 of 182 (21.4% -> 22.5%). OPEN 86 -> 84. All other
-counts unchanged. Render regenerated with master_list.py from this
-directory; --check byte-diff clean at this PR's head.
+COMPLETE 39 -> 40 of 182 (21.4% -> 22.0%): MWL 14 flips to COMPLETE;
+MWL 135 moves OPEN -> PARTIAL (scoped settlement, remainder retained).
+OPEN 86 -> 84, PARTIAL 54 -> 55. All other counts unchanged. Render
+regenerated with master_list.py from this directory; --check
+byte-diff clean at this PR's head.

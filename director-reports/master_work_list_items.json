@@ -939,9 +939,9 @@
  },
  {
   "n": 135,
-  "title": "Undo and redo like a real program — 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo (Q-LC.1 undo/redo repair — PR #481 merged d17c6b48 2026-11-18; CODE CREDIT SETTLED 2026-11-18; register write-in 2026-11-20 — row left OPEN in error after settlement)",
+  "title": "Undo and redo like a real program — 30-step adjustable window, new-write tail invalidation, history preservation, room-vs-session undo (Q-LC.1 SESSION-LOCAL undo/redo repair SETTLED — PR #481 merged d17c6b48 2026-11-18; CODE CREDIT SETTLED 2026-11-18, scoped session-local per Keeper 6975649030; row PARTIAL per Director 7040476004: room/multi-actor undo and Core II snapshot-stack unification remain UNRESOLVED, deferred per Director §6.4 #6967292333; register settlement 2026-11-20)",
   "ids": "DD-54 / C3.Undo",
-  "status": "COMPLETE",
+  "status": "PARTIAL",
   "block": "Plan §14.3 — C3 Failure & Time (witness family)"
  },
  {
