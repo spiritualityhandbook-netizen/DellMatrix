@@ -1294,3 +1294,68 @@ P07 → Part IV; Q families → Part VI.
 *End of map. The eight build-ready packages above are the launch
 surface: on this map's acceptance, eight lanes open the eight branches
 and build in parallel under the serial laws named here.*
+
+---
+
+## GOVERNING LAW MIRROR — AGENTS.md §46 + §32 (added 2026-11-20, Director 7044797269)
+
+The Director's Part VII FULL/DEEP disposition (7044797269) found a
+provenance gap: all eight Part packages cite AGENTS.md §46, but the
+repository's own record did not carry the section. The governing
+texts are mirrored here verbatim from the workspace AGENTS.md (Ace
+rulings) so the in-repo record carries the law it cites. The mirror
+is a copy for provenance; the workspace AGENTS.md remains the
+governing source, and any divergence resolves in its favor.
+
+### §46. EIGHT-PART / EIGHT-PR EXECUTION RULE (Ace ruling, restated 2026-11-20)
+
+Ace ordered this before and restated it with finality on 2026-11-20:
+the drip of small one-item PRs is over.
+
+1. PLAN WHOLE FIRST. The entire detailed plan exists before execution:
+   every remaining object assigned to its Grand Plan Part.
+2. EIGHT PRs. Execution runs as one PR per Grand Plan Part —
+   0 Scoreboard, I Architecture, II Dell Plan, III Incompleteness
+   Register, IV Far Stratum, V Scoreboard Reconciliation, VI Unknowns,
+   VII Execution Order — each PR carrying a WHOLE SECTION of the plan,
+   built and proven as one body of work.
+3. NO NEW SMALL PRs. A standalone little circuit PR is a defect under
+   this rule. Work that arises mid-flight folds into its Part's PR;
+   it does not spawn its own PR. Records landings already built and
+   stamp-ready when this rule was restated finish as records.
+4. NO UNBOUNDED SWEEP PHASE. The Batch Sweep Law's phase (A) — sweep
+   non-Part work first — has NO open-ended run: the non-Part pile is
+   frozen at whatever stands when a Part starts; leftovers fold INTO
+   their Part. A sweep that never empties is how the Parts starved
+   2026-11-17 → 2026-11-20; never again. If the Parts have not started,
+   that fact is reported to Ace as a stall, not hidden behind busy
+   small-item progress.
+5. WITHIN A PART: plan -> confirm -> code -> confirm (Batch Sweep Law
+   section C), campaigns still serial and one at a time, merges still
+   section 32 main-session acts. The Part PR is the unit of delivery;
+   the register write rides inside the Part PR.
+6. WHOLE, IN PARALLEL — NOT ONE TASK (Ace, 2026-11-20 08:49 CST):
+   anything that presents as "just one thing" is re-analyzed into the
+   whole it belongs to before work starts. The 8 Parts are planned as
+   ONE body and built in PARALLEL lanes simultaneously — not one Part
+   at a time. Serial only where a safety law names it (merges,
+   state-sharing campaigns, shared mutable state); everything else —
+   planning, building, testing in isolated state — goes at once.
+   Correct whole-planning up front is what makes parallel execution
+   safe; collisions between lanes are planned away in the map, never
+   discovered mid-build.
+
+### §32. PRE-MERGE FRESHNESS GATE (Ace ruling, 2026-11-05) — operative form
+
+Before merging ANY PR: (1) check for Director review newer than the
+recorded watermark; (2) fold in every new ruling first; (3) if a new
+ruling carries HOLD, INSUFFICIENT_EVIDENCE, CORRECTION_REQUIRED, or
+any disposition other than an explicit confirmation FOR THAT PR,
+STOP — do not merge that PR; (4) only then apply the hard CI gate
+and merge. The gate is a freshness check, not a permission change:
+no merge may outrun an unread ruling about its own PR. Operative
+amendment (Workflow v2, PR #461, in force 2026-11-18; AGENTS.md
+§44): the freshness check runs on the GitHub record; email is
+exception-only transport and the mail digest is retained as rollback
+only. Merges are main-session acts, one at a time, on terminal
+evidence at the exact final head.
