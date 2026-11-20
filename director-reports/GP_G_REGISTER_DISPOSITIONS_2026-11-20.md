@@ -58,7 +58,7 @@ DISCIPLINE (no closure event exists by design) · OPEN-UNRESOLVED
 | G-18 | gate_discipline | — | BUILD — census reconciliation | Director (on census receipt) |
 | G-19 | Equation Ledger class | — | BUILD — census exhibits; enumeration owed | Director (on census receipt) |
 | G-20 | Nursery Store cut | — (repairs in Part I) | CLOSE WITH RECEIPT, subject to verification probe | Director + Keeper |
-| G-21 | Everyday Save Pair | #46 GATED | TRACKED-OPEN — Part I row #46 (build via C-A/Q1, Part II lane PR #294) | Director (Q1 line) |
+| G-21 | Everyday Save Pair | #46 GATED | TRACKED-OPEN — Part I row #46 (build via C-A/Q1, Part I lane GP-E15; PR #294 separately GATED — owner line corrected 2026-11-20, Director FULL/DEEP #501) | Director (Q1 line) |
 | G-22 | Studio __RENDER__ | — (adj. #35) | BUILD — bounded R-B proposal, authorization first | Director |
 | G-23 | 'Harmonic' name | — | STANDING DISCIPLINE — retire as operative item, with receipt | Director |
 | G-24 | *_150_loop harnesses | — | CLOSE WITH RECEIPT (closed by the register's own filing) | Director + Keeper |
@@ -318,8 +318,13 @@ Nerve leg only — a named absence, carried honestly.
 - **Evidence now:** §4 fact. MWL home: **#46** (72-28 / SM-35 / DD-06),
   GATED, Part I — "repair routed through the separate C-A circuit
   under the Q1 line." The Director adopted LOAD-TIME CONVERGENCE as
-  the C-A direction; PR #294 carries the Q1 lane (Part II build lane;
-  GATE HOLD stands there).
+  the C-A direction. OWNER LINE CORRECTED (2026-11-20, Director
+  FULL/DEEP disposition on PR #501): MWL #46 / C-A and Exchange Q1
+  belong to Part I (GP-E15), with C-A independently gated behind its
+  own source-based design/authorization; PR #294 is the separately
+  GATED Q1 prep PR and its GATE HOLD stands there. Part II holds
+  Dell contracts, not the owner-pair writer — the earlier "Part II
+  build lane" wording was an obsolete lane reference and is void.
 - **Disposition:** TRACKED-OPEN — closes when #46 closes, through the
   C-A circuit under Q1; this ledger takes no shortcut around the Q1
   gate.
