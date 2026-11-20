@@ -49,3 +49,18 @@ At pinned current main and then the proposed change head, in an isolated, real-o
 #496 R25 shorthand merged c13428cb, with merged-main credit pending terminal proof as of this draft. #497 eval_predicate explicit-surplus rebase head 1abcbfba is live, not merge-authorized. Both touch separate query/predicate paths from R5 save/restore, but all full regression campaigns must be serialized if sharing test state. CH-17 11-house sweep and FI-013..016 original-source debt remain separate PLAN/EVIDENCE circuits. #421 CORRECTION_REQUIRED; #308/#294/#233 FENCED. Canonical board remains REGISTERED 39/182, not a score for R5.
 
 **This artifact is a REVIEW INPUT.** Only verified follow-up evidence and scoped authority may advance it to an implementation contract.
+
+---
+
+## ADOPTION RECORD — R5-C POLICY ADOPTED (additive amendment, Uni, 2026-11-20)
+
+Added per Director §42 ACE-ordered #498 R5 hold reconciliation **7040579367** (2026-11-20). This section is ADDITIVE: the 2026-11-19 draft above is preserved verbatim as author-time history, including its then-accurate "R5 design-values UNRULED" statements, which this record supersedes for POLICY only.
+
+**Two holds, not conflated:**
+
+1. **R5-C POLICY — ADOPTED / POLICY HOLD LIFTED.** Director binding choice **7026062701**, after Keeper gate-(5) challenge **7025867795**, adopted: a per-owner canonical logical-history budget of **10,000 entries AND 2,097,152 bytes**; admission above budget fails with a **typed refusal before mutation**; legacy writes are **non-destructive** (already-truncated legacy history stays readable, never silently pruned or padded); capture is **universally sanitized** with expressly **LIMITED secrecy guarantees** (sanitization is a screening boundary, not a secrecy proof); aggregate thresholds are **report-only**; hardware power-loss outcome remains **UNKNOWN** — disclosed, not certified. The §2 proposal and the "Known decision gap" are thereby settled as policy: a transparent quota with explicit pre-mutation refusal and no silent cuts — not unbounded retention, and not the old silent 24/120 cuts.
+2. **R5-D PRODUCT IMPLEMENTATION — HOLD CONTINUES.** Adoption of policy is NOT authorization of code; no product code is authorized by this record. Implementation awaits (a) the Keeper's independent challenge of Uni evidence revision **13b33fa7972a4ec878d7dcd763131d88c455e03e** — lock acquisition order between the admission RLock and `owner_state_lock` (deadlock / reentrancy), note/load/save writers, `internet_off` no-gate early return, preflight before every S7 first effect, per-process admission honesty — issuing SCOPED PASS or a specifically reproducible CORRECTION_REQUIRED, and (b) a Director scoped authorization thereafter, of at most the S7 first-effect/refusal path on a separate implementation head. Retention save/load remains a separate coordinated circuit after that.
+
+**Inherited residual risks (carried, not discharged):** power-loss UNKNOWN; per-process-only admission — no cross-process owner guarantee is claimed; legacy entries already lost before this policy cannot be reconstructed; the macro_seed 200-char bound and the note_seed 40-char label boundary remain separate caller-policy questions requiring their own evidence.
+
+**Gate state for this plan file itself:** this amendment and the original draft merge only after exact-head CI, an independently refreshed Keeper records stamp, Director zero-loss review, and a Uni-only §32 merge. No PLAN/CODE credit and no canonical scoreboard change attach to this record.
