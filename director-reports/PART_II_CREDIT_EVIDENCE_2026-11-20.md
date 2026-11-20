@@ -37,7 +37,7 @@ SUCCESS, build (3.11) SUCCESS, smoke SUCCESS.
   ("12 ideas"), named stages (place, pulse, growth, save, load)
   with per-stage timings, and environment identity
   (python version + platform). Pinned in
-  `form/c7_measure_family_test.py` (pin.profile_benchmark_labeled).
+  `form/c7_measure_family_test_spec.py` (pin.profile_benchmark_labeled).
 - **Register identity:** DIRECT — MWL row **#149** (DD-39 /
   C7.Profile), current status **OPEN**. The shipped scope is the
   benchmark speedometer; the row's full contract (real-observation
@@ -63,7 +63,7 @@ SUCCESS, build (3.11) SUCCESS, smoke SUCCESS.
 - **What shipped:** every English Intent carries the LatinMandell
   decomposition receipt (the forced first READ). Live-verified
   2026-11-20 at current main: `Intent.lm` is attached on
-  translate() output (pinned in `form/c9_translate_honesty_test.py`,
+  translate() output (pinned in `form/c9_translate_honesty_test_spec.py`,
   pin.receipt_names_engine); the Intent dataclass documents the
   receipt as computed once by the translate() wrapper, None exactly
   when no decomposition exists (never fabricated).

@@ -44,18 +44,33 @@ break. Full failure output is in each suite's docstring.
 
 | Suite | Contract | Tally at base |
 |---|---|---|
-| `form/r24_operand_integrity_test.py` | GP-E01 operand byte-integrity | **3/11** — 100→80 label, 300→240 supersede, 80→60 find, 120→80 grow-context, 100→60 replace, 100→60 patch, 80→48 stamp, multibyte 100→80 all FAIL; 3 short-operand pins PASS |
-| `form/r23_outcome_evidence_test.py` | GP-E02 evidence completeness + search | **2/9** — input 250→200, error 400→300, message 250→200, 15→12 messages, note 400→300, flow 600→500, search 150→100 all FAIL; 2 pins PASS |
-| `form/c4_zipper_inject_distill_test.py` | Rows #137/#138/#139 | **6/10** — source link, Expand retrieval, Inject duplicate, Distill provenance FAIL; existence pins + cleanup PASS |
-| `form/c9_translate_honesty_test.py` | Rows #156/#157 | **2/4** — invented Show seed + cut query FAIL; routing + LM-4 receipt pins PASS |
-| `form/c10_harmonic_stamps_test.py` | Row #158 | **2/4** — item attachment + stable order FAIL; execution pin + cleanup PASS |
-| `form/c7_measure_family_test.py` | Rows #149/#150/#151, GP-E12 | **5/8** — Measure timestamp, provenance/method, TokenCount basis FAIL; cardinality + Profile pins PASS |
-| `form/c11_shelf_manifest_move_test.py` | Rows #160/#162/#163 | **2/6** — Manifest duplicate, Manifest state, Macro read-back, Move dispatch FAIL; pins + cleanup PASS |
+| `form/r24_operand_integrity_test_spec.py` | GP-E01 operand byte-integrity | **3/11** — 100→80 label, 300→240 supersede, 80→60 find, 120→80 grow-context, 100→60 replace, 100→60 patch, 80→48 stamp, multibyte 100→80 all FAIL; 3 short-operand pins PASS |
+| `form/r23_outcome_evidence_test_spec.py` | GP-E02 evidence completeness + search | **2/9** — input 250→200, error 400→300, message 250→200, 15→12 messages, note 400→300, flow 600→500, search 150→100 all FAIL; 2 pins PASS |
+| `form/c4_zipper_inject_distill_test_spec.py` | Rows #137/#138/#139 | **6/10** — source link, Expand retrieval, Inject duplicate, Distill provenance FAIL; existence pins + cleanup PASS |
+| `form/c9_translate_honesty_test_spec.py` | Rows #156/#157 | **2/4** — invented Show seed + cut query FAIL; routing + LM-4 receipt pins PASS |
+| `form/c10_harmonic_stamps_test_spec.py` | Row #158 | **2/4** — item attachment + stable order FAIL; execution pin + cleanup PASS |
+| `form/c7_measure_family_test_spec.py` | Rows #149/#150/#151, GP-E12 | **5/8** — Measure timestamp, provenance/method, TokenCount basis FAIL; cardinality + Profile pins PASS |
+| `form/c11_shelf_manifest_move_test_spec.py` | Rows #160/#162/#163 | **2/6** — Manifest duplicate, Manifest state, Macro read-back, Move dispatch FAIL; pins + cleanup PASS |
 
 Code-stage exit condition for every suite: **all checks PASS at
 the Part's exact head**, with no pin weakened. A check may be
 re-specified only by an authority ruling that changes the
 contract itself, recorded in this PR.
+
+**Naming / registration discipline (failure class proven on
+PR #503, smoke run 44758805458):** `form/regress.py`'s
+`intended_entries()` = its LIST + every discovered
+`form/**/*_test.py`; an unregistered `*_test.py` file fails CI
+smoke in seconds as OMITTED INTENDED ENTRY. These seven
+artifacts are therefore shipped as `*_test_spec.py` — they are
+plan-stage failing-first specifications, runnable directly by
+path (as measured above), and they are NOT yet campaign
+suites. **Code-stage step zero, per suite, in the same commit
+as the implementation that makes it pass:** rename
+`<name>_test_spec.py` → `<name>_test.py` AND register it in
+`form/regress.py`'s LIST. A spec is never renamed early
+(a red suite in the campaign would block every Part), and
+never registered under its spec name.
 
 ---
 
@@ -90,7 +105,7 @@ contract itself, recorded in this PR.
   object). Multibyte, delimiters, quoted operands, save/load and
   supersession acceptance hash are in the suite's code-stage
   extension list.
-- **Suite:** `form/r24_operand_integrity_test.py` (3/11 at base,
+- **Suite:** `form/r24_operand_integrity_test_spec.py` (3/11 at base,
   delivered in this PR) + existing `translate_intent_args_test`,
   `translate_word_counts_test`, `translate_dead_args_test` must
   stay green (their pins encode the count-door contract).
@@ -117,7 +132,7 @@ contract itself, recorded in this PR.
   truthful pagination: stable order, disclosed total, cursor with
   stale-cursor refusal; direct list/find parity; save/reload and
   DuoBeta consumer read the same preserved evidence.
-- **Suite:** `form/r23_outcome_evidence_test.py` (2/9 at base,
+- **Suite:** `form/r23_outcome_evidence_test_spec.py` (2/9 at base,
   delivered) + code-stage extensions (save/reload, privacy
   canaries, invalid owner).
 - **Register:** row #24's evidence half; row #142 consumes the
@@ -277,7 +292,7 @@ Dell gains live semantics from this Part without Ace.
 - **Current state (measured at base):** 71[Measure] carries
   value/count/unit/source but NO timestamp, provenance, method,
   scope, uncertainty or eligibility (suite
-  `form/c7_measure_family_test.py`, 5/8). 40[TokenCount] reports
+  `form/c7_measure_family_test_spec.py`, 5/8). 40[TokenCount] reports
   approx_units with no basis label. 49[Profile] (the #401
   speedometer) discloses kind/workload/stages/env — pinned.
 - **Build:** extend the Measure result contract in
@@ -354,7 +369,7 @@ Dell gains live semantics from this Part without Ace.
   Build site: Distill arm (38) + `distill_label` replacement
   (the current slug-shortener is retired as the Distill
   mechanism; it may survive only as a display label).
-- **Suite:** `form/c4_zipper_inject_distill_test.py` (6/10 at
+- **Suite:** `form/c4_zipper_inject_distill_test_spec.py` (6/10 at
   base, delivered) + code-stage extensions (cycle/missing/
   foreign reference cases, versioned Expand rule).
 
@@ -371,7 +386,7 @@ Dell gains live semantics from this Part without Ace.
   his "not yet" in force until he calls it. This Part pins the
   current lawful behavior (deterministic door, LM-4 receipt
   attached — suite pins) and flags the row NEEDS_OVERSEER.
-- **Suite:** `form/c9_translate_honesty_test.py` (2/4 at base,
+- **Suite:** `form/c9_translate_honesty_test_spec.py` (2/4 at base,
   delivered).
 
 ### C10 — Harmonic family (rows #158, #159)
@@ -395,7 +410,7 @@ Dell gains live semantics from this Part without Ace.
   placement; derived modes are named and reversible) and is
   deliberately NOT faked into this PR without a surface to
   measure.
-- **Suite:** `form/c10_harmonic_stamps_test.py` (2/4 at base,
+- **Suite:** `form/c10_harmonic_stamps_test_spec.py` (2/4 at base,
   delivered) + code-stage save/load round-trip extension.
 
 ### C11 — Editing / Shelf / Manifest family (rows #160–#163)
@@ -429,7 +444,7 @@ Dell gains live semantics from this Part without Ace.
   shelf, room/box membership), preserves identity, refuses
   ambiguity/collisions; Psalms are never freight; an AI move
   is a pending proposal, never a live act.
-- **Suite:** `form/c11_shelf_manifest_move_test.py` (2/6 at
+- **Suite:** `form/c11_shelf_manifest_move_test_spec.py` (2/6 at
   base, delivered) + code-stage extensions (idempotent retry,
   collision refusal, draft staleness for #161).
 
