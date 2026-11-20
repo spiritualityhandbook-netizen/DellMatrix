@@ -12,6 +12,14 @@ stratum logic, not a source ruling** — the Unified Edition has no FI
 Part; Edition 1 files FI-010..FI-019 in its file 09. This paper is
 presented **flagged for Director confirmation** (Part IV plan, Ask 2).
 
+**PLACEMENT RULED (2026-11-20, Director FULL/DEEP disposition on
+PR #505):** Part IV is ACCEPTED as the vision/specification and
+owner-intake **paper HOME** for FI-017. The implementation HOME
+for any actual future dock, Nursery confirmation machinery, and
+role execution is **Part I GP-E23/C8**, under owner/actor identity
+and the sandbox-first gate. No second MWL row is created, and this
+paper is not installed code and awards no credit.
+
 ## 1. Intake and provenance (the record, exactly)
 
 - **Ace, 2026-11-16 13:22 CST (intake):** "a great role for Gemini
@@ -43,7 +51,12 @@ presented **flagged for Director confirmation** (Part IV plan, Ask 2).
   row 127 (restored 2026-11-17 after the sweep's C2 lane found the
   silent gap — the intake had been recorded in memory but never
   carried into the register). FI-017 has **no MWL row** and this
-  paper creates none.
+  paper creates none. **Provenance label (Director, PR #505,
+  2026-11-20):** until the Keeper's independent audit of the
+  original register row 127 completes, FI-017's intake provenance
+  is labeled **'Uni-carried, SOURCE CHALLENGE PENDING'** — not
+  independently certified; secondary Uni-copied text is not
+  first-hand source verification.
 - **Edition 1 treatment:** file 09 (FI-010..FI-019), §FI-017 —
   INTAKE_SOURCE_REPORTED / DIRECTOR_DESIGNED / **NOT BUILT / NOT
   CODE AUTHORIZED**. Uni's source-equivalence report: PR #486
