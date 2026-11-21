@@ -196,6 +196,7 @@ LIST = [
     "form.r24_operand_integrity_test",
     "form.r23_outcome_evidence_test",
     "form.gpe08_admission_test",
+    "form.gpe07_audit_test",
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",
     "form.graph_journal_crash_test",
