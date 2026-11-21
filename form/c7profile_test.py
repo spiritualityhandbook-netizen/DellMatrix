@@ -378,9 +378,33 @@ def smoke() -> bool:
             pb.STAGE_FUNCS["place"] = orig_place
         rep8 = res.get("profile_report") or {}
         lg8 = rep8.get("largest_stage") or {}
+        # Director ruling 7062616678 (PR #509 post-merge CI
+        # exception, 2026-11-21): the original pin — winner named
+        # 'place' AND wall-clock share > 0.5 — asserted a timing
+        # DISTRIBUTION, not the naming contract. Under CPU
+        # contention the real stages' measured seconds inflate
+        # while the rigged sleep stays 1.5s, so the top share
+        # compresses to 0.481-0.492 and another stage can take
+        # the plurality (reproduced: investigation 7062401818).
+        # Repaired assertion (Option A): largest-stage naming is
+        # an OBSERVATION — the report must name a stage that is
+        # argmax by measured share within tolerance, and the
+        # named share must match the stage table. Tie behavior:
+        # any stage within TOL of the maximum share may lawfully
+        # be named; no winner name is hard-coded.
+        TOL = 0.02
+        timed8 = [s for s in (rep8.get("stages") or [])
+                  if s.get("status") == "TIMED"
+                  and s.get("share") is not None]
+        named8 = [s for s in timed8
+                  if s.get("name") == lg8.get("name")]
+        max_share8 = max((s["share"] for s in timed8), default=None)
         rec("t8_dominant_stage_named",
-            lg8.get("name") == "place" and lg8.get("share", 0) > 0.5,
-            str(lg8))
+            bool(named8) and max_share8 is not None
+            and abs(named8[0]["share"] - (lg8.get("share") or 0)) < 1e-9
+            and named8[0]["share"] >= max_share8 - TOL,
+            f"lg={lg8} max_share={max_share8} "
+            f"named={named8[0] if named8 else None}")
     except Exception as e:
         rec("t8_dominant_stage_named", False,
             f"setup: {type(e).__name__}: {e}")
