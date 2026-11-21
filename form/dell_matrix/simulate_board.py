@@ -145,13 +145,22 @@ def _snapshot(program: Any) -> Dict[str, Any]:
             proposals[str(pid)] = str(getattr(prop, "status", ""))
     except Exception:
         pass
+    compositions: Dict[str, str] = {}
+    try:
+        from form.persist_core_ii import serialize_core_ii
+        raw = (serialize_core_ii(program) or {}).get("compositions") or {}
+        compositions = {str(k): str(v) for k, v in raw.items()}
+    except Exception:
+        pass
     history = list(getattr(program, "history", []) or [])
-    return {"units": units, "proposals": proposals, "history": history}
+    return {"units": units, "proposals": proposals, "history": history,
+            "compositions": compositions}
 
 
 def _scoped_diff(before: Dict[str, Any], after: Dict[str, Any]) -> Dict[str, Any]:
     bu, au = before["units"], after["units"]
     bp, ap = before["proposals"], after["proposals"]
+    bc, ac = before.get("compositions") or {}, after.get("compositions") or {}
     return {
         "units_created": sorted(set(au) - set(bu)),
         "units_removed": sorted(set(bu) - set(au)),
@@ -160,10 +169,42 @@ def _scoped_diff(before: Dict[str, Any], after: Dict[str, Any]) -> Dict[str, Any
         "proposals_added": sorted(set(ap) - set(bp)),
         "proposals_changed": sorted(
             p for p in set(bp) & set(ap) if bp[p] != ap[p]),
+        "compositions_created": sorted(set(ac) - set(bc)),
+        "compositions_removed": sorted(set(bc) - set(ac)),
+        "compositions_changed": sorted(
+            c for c in set(bc) & set(ac) if bc[c] != ac[c]),
         "history_before": len(before["history"]),
         "history_after": len(after["history"]),
         "history_delta": len(after["history"]) - len(before["history"]),
     }
+
+
+# The declared effect-inventory vocabulary (#167): every state
+# class a rehearsal can touch, in declaration order. The receipt's
+# effect_inventory names the classes the run MEASURED as touched
+# (scoped diff + Core II compositions diff + the rehearsed atoms
+# themselves for "chains") — a declaration derived from the run's
+# own evidence, never a static claim.
+EFFECT_CLASSES = ("chains", "compositions", "planes", "nursery",
+                  "history")
+
+
+def _effect_inventory(atoms: List[Dict[str, Any]],
+                      diff: Dict[str, Any]) -> List[str]:
+    touched = set()
+    if atoms:
+        touched.add("chains")
+    if (diff.get("compositions_created") or diff.get("compositions_removed")
+            or diff.get("compositions_changed")):
+        touched.add("compositions")
+    if (diff.get("units_created") or diff.get("units_removed")
+            or diff.get("units_modified")):
+        touched.add("planes")
+    if diff.get("proposals_added") or diff.get("proposals_changed"):
+        touched.add("nursery")
+    if diff.get("history_delta"):
+        touched.add("history")
+    return [c for c in EFFECT_CLASSES if c in touched]
 
 
 # ------------------------------------------------------------------
@@ -232,6 +273,7 @@ def _base_receipt(seed_text: str) -> Dict[str, Any]:
         "atom_results": [],
         "would_ok": None,
         "diff": None,
+        "effect_inventory": [],
         "lines": [],
         "live_fingerprint_unchanged": None,
     }
@@ -374,6 +416,7 @@ def run_simulation(program: Any, seed_text: str) -> Dict[str, Any]:
         rcpt["would_ok"] = bool(out.get("ok", False)) \
             if isinstance(out, dict) else False
         rcpt["diff"] = diff
+        rcpt["effect_inventory"] = _effect_inventory(atoms, diff)
 
         fp_after = _live_fingerprint(program)
         files_after = _live_files(program)
@@ -418,6 +461,22 @@ def run_simulation(program: Any, seed_text: str) -> Dict[str, Any]:
             lines.append(
                 "  proposals_changed: "
                 f"{', '.join(diff['proposals_changed'])}")
+        if diff["compositions_created"]:
+            lines.append(
+                "  compositions_created: "
+                f"{', '.join(diff['compositions_created'])}")
+        if diff["compositions_removed"]:
+            lines.append(
+                "  compositions_removed: "
+                f"{', '.join(diff['compositions_removed'])}")
+        if diff["compositions_changed"]:
+            lines.append(
+                "  compositions_changed: "
+                f"{', '.join(diff['compositions_changed'])}")
+        lines.append(
+            "  effect_inventory: "
+            + (", ".join(rcpt["effect_inventory"])
+               if rcpt["effect_inventory"] else "none"))
         lines.append(
             f"  history_delta: {diff['history_delta']:+d} (copy only)")
         lines.append(
@@ -438,3 +497,53 @@ def run_simulation(program: Any, seed_text: str) -> Dict[str, Any]:
     if cleanup_error:
         rcpt["lines"].append(f"  cleanup: {cleanup_error}")
     return rcpt
+
+
+# ------------------------------------------------------------------
+# Parallel preview (#170)
+# ------------------------------------------------------------------
+
+def run_parallel_preview(program: Any,
+                         seed_texts: Any) -> Dict[str, Any]:
+    """Rehearse several seeds side by side — one isolated copy per
+    arm (DD-21 holds per arm; no arm sees another arm's copy) — and
+    report each arm's own receipt PLUS the cross-arm conflicts:
+    the plane units / nursery proposals more than one arm would
+    create, remove, modify, add or change. The arms are never
+    blended into one answer: a caller reads each arm's outcome and
+    the named conflicts, exactly as #170 contracts. Never raises;
+    a bad arm list yields an honest empty preview."""
+    seeds = [str(s) for s in (seed_texts or [])]
+    arms = [run_simulation(program, s) for s in seeds]
+
+    def _touched(rcpt: Dict[str, Any]) -> Dict[str, set]:
+        d = rcpt.get("diff") or {}
+        return {
+            "planes": (set(d.get("units_created") or [])
+                       | set(d.get("units_removed") or [])
+                       | set(d.get("units_modified") or [])),
+            "nursery": (set(d.get("proposals_added") or [])
+                        | set(d.get("proposals_changed") or [])),
+            "compositions": (set(d.get("compositions_created") or [])
+                             | set(d.get("compositions_removed") or [])
+                             | set(d.get("compositions_changed") or [])),
+        }
+
+    touched = [_touched(a) for a in arms]
+    conflicts: List[Dict[str, Any]] = []
+    for i in range(len(arms)):
+        for j in range(i + 1, len(arms)):
+            for cls in ("planes", "nursery", "compositions"):
+                for item in sorted(touched[i][cls] & touched[j][cls]):
+                    conflicts.append({"class": cls, "id": item,
+                                      "arms": [i, j]})
+    lines = [f"Parallel preview: {len(arms)} arm(s), "
+             f"{len(conflicts)} conflict(s)"]
+    for idx, arm in enumerate(arms):
+        lines.append(
+            f"  arm {idx}: {arm.get('outcome')} — {arm.get('seed')}")
+    for c in conflicts:
+        lines.append(
+            f"  conflict: {c['class']} {c['id']} in arms {c['arms']}")
+    return {"ok": True, "kind": "PARALLEL_PREVIEW", "arms": arms,
+            "conflicts": conflicts, "lines": lines}
