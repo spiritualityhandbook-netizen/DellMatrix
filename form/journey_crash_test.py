@@ -49,8 +49,9 @@ written):
     write, canonical files untouched by it) and exercises the
     accounting mechanism explicitly; it does not re-litigate
     the pin.
-  - A checkpoint seal killed mid-flight (SIGSTOP frozen while a
-    member temp is in flight, then SIGKILL) never moves the
+  - A checkpoint seal killed mid-flight (SIGSTOP frozen while
+    the seal is in flight — a member temp or the checkpoint
+    intent journal sighted — then SIGKILL) never moves the
     CURRENT pointer: the pointer commit is the last stage, so
     the previously committed generation stays authoritative,
     the live pair converges to a complete old or complete new
@@ -116,6 +117,31 @@ REPAIR (this section, three seams, no other behavior change):
     as a printed diagnosis + recovery offer and exit 1; every
     other exception keeps its traceback.
 
+INSTRUMENT REPAIR (post-CI, 2026-11-21 — the suite itself,
+not the product): CI run 44956493651 at this section's first
+head (dc8c1c53) failed BOTH regress passes with this suite
+dying on a traceback at 0/0, after exactly the nine checks
+preceding the mid-seal leg, on an idle runner — while all
+318 other suites passed, including every persistence/crash
+neighbor. Classification (reproduced locally by slowing the
+temp poll 50x: identical death signature, ~72s runtime vs
+CI's ~73s): TEST-INSTRUMENT DEFECT. The kill legs triggered
+on sighting a `.dmtmp.` temp by polling the SHARED state
+dir; in the regress copy that dir holds thousands of files
+accumulated by the suites before this one, so a poll cycle
+can outlast a small write's whole temp window. When the
+mid-seal sighting missed, the leg's bare proc.wait(timeout)
+raised TimeoutExpired and killed the suite before it could
+report — a missed trigger became a harness crash instead of
+a named check failure. Repair (this suite only): the seal
+leg now triggers on the temp OR the checkpoint intent
+journal (present for the whole seal, not one write window);
+every spawned-REPL write goes through write_line (a REPL
+that died at startup fails its leg's checks, never the
+suite); every spawned-REPL wait goes through wait_exit
+(never raises — a missed trigger degrades to the leg's own
+named FAILs and the suite always reports its full count).
+
 Findings recorded, NOT fixed in this family (packet + Annex):
   - Missing-member residue: deleting the nursery file loads
     the program exactly and silently drops every pending
@@ -173,6 +199,7 @@ from form.dell_matrix.nursery import NurseryLoadError, owner_nursery_path
 from form.dell_matrix.atomic_write import sweep_stale_tmps
 from form.mandell.checkpoint_generation import (
     _pointer_path, current_generation_id)
+from form.mandell.core_i_recovery import _checkpoint_journal_path
 
 RESULTS = []
 _CLEANUP_ERRORS = []
@@ -248,6 +275,55 @@ def wait_for_tmp(owner, timeout=30.0):
             return tmps
         time.sleep(0.0005)
     return []
+
+
+def write_line(proc, line):
+    """Write one command line to a spawned REPL. Returns False
+    when the REPL has already died (broken pipe) instead of
+    raising: a dead REPL is a leg outcome the checks classify,
+    never a suite-killing traceback (instrument repair, below)."""
+    try:
+        proc.stdin.write(line + "\n")
+        proc.stdin.flush()
+        return True
+    except (BrokenPipeError, OSError):
+        return False
+
+
+def wait_exit(proc, timeout=30):
+    """Wait for a spawned REPL to exit; returns its exit code,
+    or None when it is still running at the timeout. Never
+    raises TimeoutExpired: a missed crash trigger must degrade
+    to the leg's own named check failures, not kill the whole
+    suite before it can report (instrument repair, below)."""
+    try:
+        return proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return None
+
+
+def wait_for_seal_flight(owner, timeout=30.0):
+    """Poll until the owner's checkpoint seal is observably in
+    flight. Two triggers, in sighting order: a `.dmtmp.` temp
+    (a member/save write in flight), or the checkpoint intent
+    journal — written before the seal's first save and cleared
+    only after the pointer commit, so it marks the WHOLE seal
+    as in flight, not one millisecond-lived write window.
+    Returns ("tmp", names) / ("journal", path) / (None, None).
+    The temp-only trigger this replaces could miss every write
+    window on a slow runner with a large shared state dir,
+    leaving the leg's bare proc.wait to raise TimeoutExpired
+    and kill the suite (CI 44956493651, both passes)."""
+    journal = _checkpoint_journal_path(owner)
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        tmps = tmp_files(owner)
+        if tmps:
+            return "tmp", tmps
+        if os.path.isfile(journal):
+            return "journal", journal
+        time.sleep(0.0005)
+    return None, None
 
 
 def snap(owner):
@@ -341,11 +417,10 @@ def main():
               f"{sorted(snap0['units'])}")
         proc = spawn_repl(mid_owner)
         try:
-            proc.stdin.write(CC + "\n")
-            proc.stdin.flush()
+            write_line(proc, CC)
             time.sleep(3.0)  # the create is processed in-memory
             proc.send_signal(signal.SIGKILL)
-            proc.wait(timeout=30)
+            wait_exit(proc)
         finally:
             if proc.poll() is None:
                 proc.kill()
@@ -386,15 +461,18 @@ def main():
         proc = spawn_repl(write_owner)
         caught = []
         try:
-            proc.stdin.write(CC + "\n")
-            proc.stdin.flush()
+            write_line(proc, CC)
             time.sleep(3.0)
-            proc.stdin.write("save\n")
-            proc.stdin.flush()
+            write_line(proc, "save")
             caught = wait_for_tmp(write_owner)
             if caught:
                 proc.send_signal(signal.SIGKILL)
-            proc.wait(timeout=30)
+            # A missed sighting (slow runner, large state dir)
+            # leaves the REPL alive at its prompt: wait_exit
+            # returns None, the finally below kills it, and the
+            # leg's checks fail by name — the baseline code let
+            # this wait raise TimeoutExpired and kill the suite.
+            wait_exit(proc)
         finally:
             if proc.poll() is None:
                 proc.kill()
@@ -456,26 +534,30 @@ def main():
               "the killed seal was converging toward")
         proc = spawn_repl(seal_owner)
         inflight_pointer = None
+        flight_trigger = None
         try:
-            proc.stdin.write(CC + "\n")
-            proc.stdin.flush()
+            write_line(proc, CC)
             time.sleep(3.0)
-            proc.stdin.write("27[Checkpoint] :: seal_two\n")
-            proc.stdin.flush()
-            seen = wait_for_tmp(seal_owner)
-            if seen:
+            write_line(proc, "27[Checkpoint] :: seal_two")
+            flight_trigger, _seen = wait_for_seal_flight(seal_owner)
+            if flight_trigger:
                 proc.send_signal(signal.SIGSTOP)
                 inflight_pointer = current_generation_id(seal_owner)
                 proc.send_signal(signal.SIGKILL)
-            proc.wait(timeout=30)
+            # No sighting within the window: wait_exit returns
+            # None, the finally below kills the REPL, and the
+            # checks below fail by name — the baseline code let
+            # this wait raise TimeoutExpired and kill the suite
+            # (CI 44956493651: this leg, both passes, 0/0).
+            wait_exit(proc)
         finally:
             if proc.poll() is None:
                 proc.kill()
                 proc.wait()
         check("j12_kill_midseal_pointer_unmoved_in_flight",
               inflight_pointer == "seal_one",
-              f"frozen mid-seal (temp in flight), the CURRENT "
-              f"pointer still names seal_one "
+              f"frozen mid-seal ({flight_trigger} in flight), "
+              f"the CURRENT pointer still names seal_one "
               f"(observed={inflight_pointer!r}) — the pointer "
               f"commit is the last stage, so a crash anywhere "
               f"in the seal leaves the old generation "

@@ -1798,6 +1798,28 @@ ASSESSED until its closure evidence exists.
   family 5 / R6.3 territory. REAL_USER_PATH not claimed
   (piped REPL is PUBLIC_ENTRY_PATH)
 - timestamp: 2026-11-21T22:21Z
+- CI repair addendum (2026-11-21, post-first-CI): CI run
+  44956493651 at head dc8c1c53 FAILED both regress passes —
+  this suite died on a traceback at 0/0 after the nine
+  checks preceding the mid-seal leg; all 318 other suites
+  passed. Classification: TEST-INSTRUMENT DEFECT (no
+  product behavior implicated). The kill legs triggered on
+  sighting a `.dmtmp.` temp by polling the shared state
+  dir (thousands of accumulated files in the regress
+  copy); when the mid-seal sighting missed, the leg's bare
+  proc.wait(timeout) raised TimeoutExpired and killed the
+  suite before it could report. Reproduced locally by
+  slowing the temp poll (identical death signature).
+  Repair, suite-only: the seal leg triggers on the temp
+  OR the checkpoint intent journal (present for the whole
+  seal); spawned-REPL writes/waits go through
+  non-raising helpers, so a missed trigger degrades to
+  named check FAILs and the suite always reports its full
+  count (forced total-miss run: 22/25, three named FAILs,
+  no traceback; mutant restoring the raising wait
+  resurrected the exact baseline death). Suite re-proven
+  25/25 at the repair head; the CI red is closed only by
+  terminal CI at the repair head, not by this record.
 
 ## Annex B — harness construction status (plan §5.2 families)
 
@@ -1812,7 +1834,7 @@ ASSESSED until its closure evidence exists.
 | journey_growth_test.py | J-09, J-14 | BUILT — baseline 25/25 (Annex A.14–A.15; J-09 FULL_SCOPE_PASS public-path scope, J-14 PARTIAL_SCOPE — "stopped" case uncovered, no stopped state in the machinery at this head; no product defect found) |
 | journey_dock_test.py | J-10, J-22 | BUILT — baseline 25/25 (Annex A.16–A.17; J-10 PARTIAL_SCOPE — Finding 1: origin-blind auto-confirm sweep accepts docked proposals under the explicit opt-in, Part VI A12, repair in flight on Part I; Finding 2: docked-growth receipt label vs token provenance; J-22 FULL_SCOPE_PASS public-path scope; no product defect fixed, no product code touched) |
 | journey_hcn_test.py | J-11 | not built (subject NOT BUILT until GP-E22 lands) |
-| journey_crash_test.py | J-12 | BUILT — baseline 25/25 (Annex A.18; PARTIAL_SCOPE — per-phase + dir-sync crash matrix is API-level only (dcc_xviii A–W, checkpoint_generation_stress), cited not duplicated; TWO product defects found + fixed: corrupt program envelope escaped the typed ProgramLoadError contract and died as a raw REPL traceback (decode wrap + diagnosed REPL presentation), missing program member with a surviving sealed generation exposed a hybrid fresh-program/orphaned-proposals pair (fresh-arm guard on positive generation evidence); findings left standing: missing-nursery silent proposal loss, missing-program-without-generation residue) |
+| journey_crash_test.py | J-12 | BUILT — baseline 25/25 (Annex A.18; PARTIAL_SCOPE — per-phase + dir-sync crash matrix is API-level only (dcc_xviii A–W, checkpoint_generation_stress), cited not duplicated; TWO product defects found + fixed: corrupt program envelope escaped the typed ProgramLoadError contract and died as a raw REPL traceback (decode wrap + diagnosed REPL presentation), missing program member with a surviving sealed generation exposed a hybrid fresh-program/orphaned-proposals pair (fresh-arm guard on positive generation evidence); findings left standing: missing-nursery silent proposal loss, missing-program-without-generation residue; post-CI instrument repair at the repair head: first CI (44956493651) died 0/0 on a missed temp-sighting + raising wait — classified TEST-INSTRUMENT DEFECT, seal trigger widened to the checkpoint intent journal, all spawned-REPL writes/waits non-raising, re-proven 25/25; see the A.18 CI repair addendum) |
 | journey_exchange_test.py | J-18, J-19 | not built (J-19 known gap: duplicate-replay idempotency absent — the rehearsal reports the program as it is) |
 | journey_offline_test.py | J-20 | not built (trace record exists from plan stage) |
 | journey_index_test.py | J-15 | not built |
