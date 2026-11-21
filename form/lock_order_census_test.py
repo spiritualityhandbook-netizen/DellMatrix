@@ -4,20 +4,30 @@ evidence; PART_I_PLAN_2026-11-20 §5.2).
 
 WHAT THIS SUITE PROVES (and what it does not):
 
-1. STATIC CENSUS (the pin): in form/ PRODUCTION code there is
-   exactly ONE lock primitive — form/owner_state_lock.py (a
-   per-owner kernel file lock) — and exactly FOUR acquisition
-   sites, one per file, each taking the program's OWN owner:
+1. STATIC CENSUS (the pin): in form/ PRODUCTION code the
+   owner-state domain has exactly ONE lock primitive —
+   form/owner_state_lock.py (a per-owner kernel file lock) —
+   and exactly FOUR acquisition sites, one per file, each
+   taking the program's OWN owner:
 
      form/mandell/unit_binding.py      bind transaction
      form/persist_rest.py              save funnel
      form/dell_matrix/confirm_lineage.py  confirm commit lock
      form/mandell/unit_containment.py  containment _LockGate
 
-   No threading.Lock/RLock/Semaphore/Condition/Event/Barrier, no
-   flock, no msvcrt.locking anywhere else in production code.
-   A fifth site, a second primitive, or a site locking a FOREIGN
-   owner turns this suite RED — that is the tripwire working.
+   Kernel-lock homes are pinned at exactly TWO, by domain
+   (bounded correction, Director ruling 7063000901 on PR #508,
+   2026-11-21): form/owner_state_lock.py (owner-state domain,
+   above) and form/resume_checkpoint.py (checkpoint-file
+   multiwriter lock, Part 0 SM-08, Director correction
+   7056433688 — a blocking flock on a .lock fd guarding the
+   checkpoint read-check-replace section; a different domain
+   from owner state). No threading.Lock/RLock/Semaphore/
+   Condition/Event/Barrier anywhere in production code, and
+   no flock or msvcrt.locking outside the two pinned homes.
+   A fifth acquisition site, a THIRD kernel-lock home, or a
+   site locking a FOREIGN owner turns this suite RED — that
+   is the tripwire working.
 
    Classification (pinned, explicit): production = every .py
    under form/ EXCEPT test/proof/harness files: *_test.py,
@@ -173,8 +183,13 @@ def _static_census():
         real = [c for c in calls]
         if real:
             acq[rel] = real
-    check("census_kernel_lock_lives_only_in_the_one_primitive",
-          kernel_homes == {"form/owner_state_lock.py": True},
+    # Pinned kernel-lock homes by domain (Director 7063000901):
+    # owner-state primitive + checkpoint multiwriter lock.
+    # Fail-closed both ways: a third home OR a missing pinned
+    # home turns this check RED.
+    check("census_kernel_locks_live_only_in_the_two_pinned_homes",
+          kernel_homes == {"form/owner_state_lock.py": True,
+                           "form/resume_checkpoint.py": True},
           f"kernel lock patterns found in: {sorted(kernel_homes)}")
     check("census_no_threading_or_multiprocessing_locks_in_form",
           threading_homes == {},
