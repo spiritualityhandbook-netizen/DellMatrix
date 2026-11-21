@@ -45,7 +45,7 @@ _ROWS = [
     (89, "Diff", "Produce exact change-set", "diff", "query", "object", "Diff Delta Changeset"),
     (90, "Trace", "Follow provenance/execution/data path", "trace", "query", "audit", "Trace Follow Provenance"),
     (91, "Assert", "Require invariant; fail if false", "assert", "control", "audit", "Assert Require Must"),
-    (92, "Guard", "Prevent execution unless conditions hold", "guard", "control", "audit", "Guard Unless OnlyIf"),
+    (92, "Guard", "Ask 'may this proceed?': ALLOW when conditions hold, BLOCK when they do not", "guard", "control", "audit", "Guard Unless OnlyIf"),
     (93, "Try", "Begin recoverable/failable operation", "try", "control", "transaction", "Try Attempt"),
     (94, "Catch", "Handle failure/error class", "catch", "control", "transaction", "Catch Handle OnError"),
     (95, "Commit", "Mark/accept current live state (live mark/accept only - no atomic isolation, no staging area; Revert covers only the Try checkpoint fields)", "commit", "mutate", "transaction", "Commit Accept Apply"),

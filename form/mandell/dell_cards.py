@@ -773,7 +773,8 @@ DEEP_NOTES: Dict[int, str] = {
          "AND marks an open transaction frame "
          "failed."),
     92: ("D1 circuit 22 DEEP NOTE: Guard is "
-         "Assert's gate form — ALLOW passes; BLOCK "
+         "Assert's gate form — it asks 'may this "
+         "proceed?': ALLOW passes; BLOCK "
          "fails the atom (guard_block), records "
          "last_guard, and marks an open frame "
          "failed; 'block'/'deny' labels force BLOCK."),
