@@ -226,13 +226,267 @@ ASSESSED until its closure evidence exists.
   `mandel:` source labels) but not pinned in this baseline suite
 - timestamp: 2026-11-21T20:33Z
 
+### A.4 — J-04 Create/persist Idea (family suite `form/journey_idea_lifecycle_test.py`)
+
+- journey_id: J-04
+- feature_scope: create an Idea with detail/goals at the public
+  door — stable canonical ID, chosen position — then cold reload
+  with all text/provenance/links identical; the file 06 failure
+  oracle (invalid Unicode, 5000 words limit, idempotent retry;
+  the interrupted pair-save clause is graded below)
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1; suite executed in the PR #502 clone)
+- PR/head: #502 @ e434797206a930eacfc28d33e69a1f5bc8b84edd
+  (baseline run executed before this section's commit; the suite
+  and the product fix below are carried by this PR)
+- public_action: literal `python3 -m form.repl --owner <isolated>`
+  subprocess sessions (piped stdin) — PUBLIC_ENTRY_PATH
+- owner: per-run isolated owners (JLife<run>, JLong<run> for this
+  packet), cleaned up after; the isolation boundary is proven
+  in-suite (no state files exist for any of the family's five
+  owners before the sessions start)
+- input_fixture_digest: suite file sha256
+  bea0567993af62d37d0ab4fa406433612eb73fd45eb9bdf608dd324069339e97
+  (inputs are fixed strings in the suite)
+- raw command/log: `python3 -m form.journey_idea_lifecycle_test` —
+  failing-first run 29/34 (only the five long-text checks failing,
+  for the reason below); after the fix, **34/34 PASS** (tally line
+  `JOURNEY_IDEA_LIFECYCLE`, printed last; this packet covers the
+  11 J-04 checks)
+- expected_state_diff: the strong create lands `Lifecycle Oak`
+  under canonical id `lifecycle_oak` with its detail/goals whole
+  and the spatial authority's chosen position; the Unicode unit
+  (accented Latin + CJK + emoji label, combining-mark detail)
+  stores byte-exact; reissuing the create mints the canonical
+  suffixed `lifecycle_oak_1` and leaves the first unit untouched
+  (P3/TD-5 dedup — the door's explicit retry behavior); `save`
+  issued twice converges (two receipts, reloaded state identical,
+  no duplicate, no hybrid); a 5,000-word detail and 13 goals
+  store whole
+- observed_state_diff: exactly the expected diff, in-session and
+  after cold reload (loader snapshot before/after reload equal
+  on id, label, detail, goals, words, position, idea binding)
+- refusal_class: none exercised on this journey's happy path; the
+  oracle's refusal-shaped point (interrupted pair-save) is graded
+  below, not silently passed
+- persistence_generation: save executed in-session, twice
+  ("Session saved." x2); reload in a second process with --load
+- cold_restart: YES — second REPL process; full loader snapshot
+  identical after reload, including the 31,009-char detail
+- consumer_views: REPL create receipt + idea view +
+  persistence-loader snapshot (reloaded vs reloaded basis)
+- test_suite: form/journey_idea_lifecycle_test.py (34 checks
+  across J-04/J-16/J-17, plus the shared isolation and cleanup
+  checks; 11 are J-04's)
+- DEFECT FOUND AND FIXED IN THIS SECTION: the 5000-words oracle
+  point failed at baseline — `form/idea_create.py`
+  `parse_create_line` carried `"detail": detail[:2000]` and
+  `"goals": goals[:12]`, silently cutting a 5,000-word admissible
+  detail at exactly 2,000 chars (tail and end marker lost) and
+  dropping a 13th goal, no provenance, no refusal. Mechanism:
+  REPL create door → `needs.parse_and_place` →
+  `parse_create_line` → `Program.place`. Fix: detail and goals
+  are stored whole (the SYS-C29 family contract: admitted
+  content byte-exact or refused typed before mutation). The
+  sibling edit-door cut (`needs.set_detail` `[:2000]`) is fixed
+  under J-17 below. Observed siblings NOT touched here:
+  `needs.set_goals`' parts[:12] (no journey in this family edits
+  goals) and the `words` summary field's detail[:120] (the words
+  contract is Part I's FI-012 remediation item, PR #507 matrix;
+  this suite checks words for persistence fidelity only).
+  Neighbor suites after the fix: journey_chain 16/16,
+  journey_language 19/19, d1_dell8_create 21/21,
+  undo_redo_depth 53/53, set_detail_goals 7/7, idea_create
+  smoke 4/4, needs smoke 10/10. Mutant control: the create-door
+  detail cut reintroduced by inverse edit on the fixed tree →
+  33/34, failing exactly `j04_long_detail_stored_whole`;
+  reverted by inverse edit, suite back to 34/34.
+- CI run: pending — this PR's CI at the section head (see the §45
+  package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending (code-stage confirm; PR #502 is
+  under the Director MERGE HOLD 7068847023 — new-section code
+  review pending; this section builds under the standing Part
+  workflow, no merge sought)
+- completion_status: **BASELINE — PARTIAL_SCOPE** (baseline
+  grade: evidence about the harness and the current program
+  only; the rehearsal grade is assigned at rehearsal time,
+  plan §5.1). Executed scope: create/persist with detail/goals,
+  canonical ID, chosen position, Unicode round-trip, the
+  5000-words limit point, save-retry idempotency, cold-reload
+  identity. The one oracle clause not executed is named below.
+- uncovered_cases: literal mid-save interruption injection
+  (kill during the pair-save) is NOT executed in this family —
+  crash injection at each save phase is J-12's family
+  (journey_crash_test.py); the coherent-pair behavior it
+  protects is evidenced here by save-retry convergence and
+  byte-identical reload, and J-04 is graded PARTIAL_SCOPE for
+  exactly this gap; invalid Unicode in the strict byte sense
+  (undecodable bytes) cannot traverse the text REPL door — the
+  suite exercises non-ASCII, combining-mark, CJK and emoji
+  content byte-exact; REAL_USER_PATH not claimed (piped REPL is
+  PUBLIC_ENTRY_PATH); the position is the spatial authority's
+  chosen placement at this door (explicit x/y exists at the
+  Program.place API level, not on the English create door) —
+  what is proven is the chosen position's persistence
+- timestamp: 2026-11-21T20:59Z
+
+### A.5 — J-16 Nested Idea → promote (family suite `form/journey_idea_lifecycle_test.py`)
+
+- journey_id: J-16
+- feature_scope: the plan §5.2.1 designed oracle — create a
+  nested Idea via the public path, promote to top-level;
+  association/lineage preserved, old history intact after cold
+  reload, stable canonical ID unchanged; negative: promotion by
+  a non-owner refuses
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1)
+- PR/head: #502 @ e434797206a930eacfc28d33e69a1f5bc8b84edd
+  (baseline run executed before this section's commit)
+- public_action: literal `python3 -m form.repl --owner <isolated>`
+  subprocess sessions (piped stdin) — PUBLIC_ENTRY_PATH;
+  containment door (`nest` / `promote` / `containment`, ID refs)
+- owner: per-run isolated owners (JNest<run>, JForeign<run>),
+  cleaned up after; isolation boundary proven in-suite
+- input_fixture_digest: suite file sha256
+  bea0567993af62d37d0ab4fa406433612eb73fd45eb9bdf608dd324069339e97
+  (inputs are fixed strings in the suite)
+- raw command/log: `python3 -m form.journey_idea_lifecycle_test`
+  — **34/34 PASS** (this packet covers the 11 J-16 checks; no
+  J-16 check failed at baseline — no product defect found on
+  this journey)
+- expected_state_diff: `nest child_lifecycle under
+  parent_lifecycle` binds both units to canonical Idea IDs and
+  records the CONTAINS edge; the containment view shows path
+  "Parent Lifecycle > Child Lifecycle" and the parent's
+  children; `promote child_lifecycle` supersedes the edge and
+  the path becomes the child itself; a second promote is an
+  honest no-op ("Already top level"); unit IDs and Idea IDs
+  unchanged throughout and after cold reload
+- observed_state_diff: exactly the expected diff; after reload
+  the SemanticGraph log for the pair holds the ACTIVE entry and
+  its SUPERSEDED successor under one rel_id, the folded current
+  parent is None, and the public containment view in a fresh
+  process still shows the child at top level
+- refusal_class: NON-OWNER refusal — a foreign owner's REPL
+  answers `Containment refused (unit_not_found): no unit with
+  id or label 'child_lifecycle'`; the attempt created no state
+  file and mutated nothing
+- persistence_generation: save executed in-session ("Session
+  saved."); graph log persisted by the containment mutations
+  themselves; reload in a second process with --load
+- cold_restart: YES — second REPL process + SemanticGraph loader
+  on the persisted log
+- consumer_views: REPL containment receipts + containment view +
+  persistence-loader snapshot + SemanticGraph loader (the
+  canonical relationship authority's own log)
+- test_suite: form/journey_idea_lifecycle_test.py (11 J-16
+  checks)
+- CI run: pending — this PR's CI at the section head (see the
+  §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending (as A.4)
+- completion_status: **BASELINE — PARTIAL_SCOPE** (baseline
+  grade, as A.4). Executed scope: nest, promote, lineage and
+  history after cold reload, stable canonical IDs, the
+  non-owner negative, the already-top-level honesty point.
+- uncovered_cases: the wall-breaking negative (promotion/nest
+  that would break a sandbox wall refuses with receipt —
+  the mechanism's `sandbox_boundary` kind, TD7) is NOT
+  executed: no public REPL path in this baseline scope mints
+  a sandboxed unit to attempt the crossing with, and J-16 is
+  graded PARTIAL_SCOPE for exactly this gap; REAL_USER_PATH
+  not claimed
+- timestamp: 2026-11-21T20:59Z
+
+### A.6 — J-17 Undo/redo across the save/session boundary (family suite `form/journey_idea_lifecycle_test.py`)
+
+- journey_id: J-17
+- feature_scope: the plan §5.2.1 designed oracle — create + edit
+  an Idea and its detail, undo/redo within the session, save,
+  cold reload, and verify the exact retained history the Q-LC.1
+  contract promises (Q-LC.1's settled credit is session-local)
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1)
+- PR/head: #502 @ e434797206a930eacfc28d33e69a1f5bc8b84edd
+  (baseline run executed before this section's commit; the
+  suite and the edit-door fix below are carried by this PR)
+- public_action: literal `python3 -m form.repl --owner <isolated>`
+  subprocess sessions (piped stdin) — PUBLIC_ENTRY_PATH
+- owner: per-run isolated owner (JUndo<run>), cleaned up after;
+  isolation boundary proven in-suite
+- input_fixture_digest: suite file sha256
+  bea0567993af62d37d0ab4fa406433612eb73fd45eb9bdf608dd324069339e97
+  (inputs are fixed strings in the suite)
+- raw command/log: `python3 -m form.journey_idea_lifecycle_test` —
+  the three long-edit checks failed at baseline (reason below);
+  after the fix, **34/34 PASS** (this packet covers the 10
+  J-17 checks)
+- expected_state_diff: create pushes a place action; `set detail
+  undo_oak revised detail text` applies and pushes an edit;
+  `undo` restores the original detail ("Restored detail on
+  undo_oak"); `redo` re-applies it; `undo depth` names the
+  ruled default 30 over the session action history; a final
+  >2,000-char edit applies whole; save persists exactly that
+  state under the same canonical ID; the undo/redo evidence
+  notes (24[Unlock]) persist in program history; after cold
+  reload the stacks are honestly empty ("nothing to undo" /
+  "nothing to redo") and the state is byte-identical to the
+  saved state
+- observed_state_diff: exactly the expected diff at every step,
+  in-session (public idea view) and after cold reload (loader
+  snapshot equal to the post-save snapshot)
+- refusal_class: BOUNDARY honesty — the reloaded session's
+  undo/redo answer explicit "nothing to undo" / "nothing to
+  redo" refusals with hints; no stack is silently reconstructed
+  across the boundary (the action/redo stacks are not persisted;
+  `undo_depth` the setting is, and persists)
+- persistence_generation: save executed in-session ("Session
+  saved."); reload in a second process with --load
+- cold_restart: YES — second REPL process; state identical,
+  stacks empty, evidence notes retained
+- consumer_views: REPL receipts + idea view + undo-depth surface
+  + persistence-loader snapshot (incl. persisted program
+  history)
+- test_suite: form/journey_idea_lifecycle_test.py (10 J-17
+  checks)
+- DEFECT FOUND AND FIXED IN THIS SECTION: the edit door's
+  sibling of the J-04 cut — `form/dell_matrix/needs.py`
+  `set_detail` carried `u.detail = (detail or "").strip()[:2000]`,
+  silently truncating a >2,000-char edited detail (end marker
+  lost) with no provenance or refusal. Fix: the edited detail
+  is stored whole. Neighbors and mutant as A.4.
+- CI run: pending — this PR's CI at the section head (see the
+  §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending (as A.4)
+- completion_status: **BASELINE — FULL_SCOPE_PASS** (baseline
+  grade: evidence about the harness and the current program
+  only). Every step of the plan §5.2.1 oracle has executable
+  public-path proof at this head: create + edit, in-session
+  undo/redo, save, cold reload, and the exact Q-LC.1 retention
+  (state + evidence notes persist; stacks do not).
+- uncovered_cases: the room/multi-actor remainder (register
+  row #135's retained scope) is explicitly uncovered, per the
+  plan oracle's own scope-honesty clause — not a silent pass;
+  the Core II snapshot stack is a separate authority and is
+  not exercised here (the undo-depth surface names the
+  separation); undo of a place and redo-of-place restoration
+  are covered by form/mandell/undo_redo_depth_test.py (53/53)
+  and are not re-exercised at the public path in this baseline;
+  REAL_USER_PATH not claimed
+- timestamp: 2026-11-21T20:59Z
+
 ## Annex B — harness construction status (plan §5.2 families)
 
 | Family suite | Journeys | Status |
 |---|---|---|
 | journey_chain_test.py | J-01, J-02 | BUILT — baseline 16/16 (Annex A) |
 | journey_language_test.py | J-03 | BUILT — baseline 19/19 (Annex A.3; one product defect found + fixed) |
-| journey_idea_lifecycle_test.py | J-04, J-16, J-17 | not built (J-20 trace exists from plan stage; suite not built) |
+| journey_idea_lifecycle_test.py | J-04, J-16, J-17 | BUILT — baseline 34/34 (Annex A.4–A.6; two product defects found + fixed: create-door detail/goals silent cuts, edit-door detail silent cut) |
 | journey_confirm_test.py | J-05, J-21 | not built |
 | journey_rollback_test.py | J-06 | not built |
 | journey_views_test.py | J-07, J-08, J-13, J-23 | not built |

@@ -46,8 +46,16 @@ def parse_create_line(raw: str) -> Dict[str, Any]:
         # silently cut admissible operands at this door (the stored
         # unit label lost its tail with no provenance or refusal).
         "label": label,
-        "detail": detail[:2000],
-        "goals": goals[:12],
+        # J-04 (GP-E27 file 06 oracle: create with detail/goals, then
+        # cold reload — "all text/provenance/links remain identical";
+        # 5000-words test point): detail and goals are stored WHOLE.
+        # The former detail[:2000] / goals[:12] silently cut admitted
+        # content at this door (a 5,000-word detail stored exactly
+        # 2,000 chars, tail and end marker lost; a 13th goal dropped)
+        # with no provenance or refusal — the SYS-C29 family defect
+        # (byte-exact or typed refusal, never silent truncation).
+        "detail": detail,
+        "goals": goals,
         "words": words[:500],
         "complete": len(missing) == 0,
         "missing": missing,

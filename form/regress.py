@@ -440,6 +440,11 @@ LIST = [
     # LatinMandell journey harness (plan section 5.2); registered in
     # the same commit that renames the plan-stage spec to *_test.py.
     "form.journey_language_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 3: J-04 Create/
+    # persist Idea + J-16 Promote + J-17 Undo/redo boundary journey
+    # harness (plan section 5.2); registered in the same commit as
+    # the suite it names (omitted-entry law).
+    "form.journey_idea_lifecycle_test:smoke",
 ]
 
 TIMEOUT_S = 900
