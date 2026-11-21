@@ -44,6 +44,17 @@ class NurseryLoadError(ValueError):
     fabricated."""
 
 
+class NurseryConfirmError(ValueError):
+    """A confirmation was attempted at the core store door without an
+    identified actor (FI-011 remediation A8, PR #507 matrix row 3).
+
+    Confirmation is the owner's sovereign act or a capability grant
+    strictly bound to an actor; the store door itself now enforces
+    that. A raw ``Nursery.confirm(pid)`` with no actor is refused
+    with this typed error BEFORE any mutation or save — enforcement
+    no longer lives only in the Program writer path."""
+
+
 class NurseryReasonError(ValueError):
     """Proposal reason exceeds the Nursery's admitted bound (Q-S2.2).
 
@@ -270,6 +281,15 @@ DISPOSITION_SECTION_KEY = "__conflict_dispositions__"
 # canonical post-save digest is returned to the caller, never
 # embedded in the file that digest describes.
 EDIT_RECEIPT_SECTION_KEY = "__organization_edit_receipts__"
+
+# FI-011 remediation (A8): reserved nursery-file key for CONFIRMATION
+# receipts — one attributed record per successful confirmation
+# (actor, grant, target), written by the store door itself or staged
+# by the canonical writer inside its checkpoint transaction. Same
+# section precedent as the edit receipts above; can never collide
+# with a proposal ID for the same _slug() reason. Stored receipts
+# carry no file digest.
+CONFIRMATION_RECEIPT_SECTION_KEY = "__confirmation_receipts__"
 
 # C5R.3 creation-seed rule (seed-rule v1). Deterministic, applied
 # ONLY at Nursery.add() construction of a genuinely NEW proposal:
@@ -628,6 +648,16 @@ class Nursery:
     # door appends receipts.
     organization_edit_receipts: Dict[str, Dict[str, Any]] = field(
         default_factory=dict, repr=False, compare=False)
+    # FI-011 remediation (A8): CONFIRMATION receipts (receipt_id ->
+    # record {proposal_id, actor, grant_seq, at}). Serialized under
+    # CONFIRMATION_RECEIPT_SECTION_KEY in the same atomic write as
+    # the proposals, so a confirmed status never persists without
+    # its attribution. Appended by Nursery.confirm (store door) and
+    # by the canonical writer (confirm_lineage) at staging time;
+    # discarded again on every compensation path that reverts the
+    # confirmation, so a receipt exists iff the confirmation stands.
+    confirmation_receipts: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict, repr=False, compare=False)
     # C5R.3: the most recent organization operation's RETURNED
     # receipt (receipt_with_file_digest form, including the
     # canonical post-save digest). In-memory only, like the
@@ -869,15 +899,74 @@ class Nursery:
     def pending(self) -> List[Proposal]:
         return [p for p in self.proposals.values() if p.status == "pending"]
 
-    def confirm(self, pid: str) -> Optional[Proposal]:
+    def stage_confirmation_receipt(self, pid: str, *, actor: str,
+                                   grant_seq: Optional[int] = None) -> str:
+        """Append an attributed CONFIRMATION receipt (in memory only).
+
+        The record names the proposal (target), the identified actor
+        that confirmed it, and the capability grant it rode on, if
+        any (FI-011 A8: every confirmation is receipted and
+        attributable — the Witness Law binds the store too). The
+        grant is named by its policy issuance SEQUENCE, never by
+        handle value: the handle is a secret and is never logged or
+        persisted (R6.1 no-leak rule). The caller owns persistence:
+        Nursery.confirm saves immediately; the canonical writer
+        stages the receipt inside its checkpoint transaction and
+        discards it again on any compensation path that reverts the
+        confirmation. Returns the receipt_id.
+        """
+        receipt_id = (f"confirm:{pid}:"
+                      f"{len(self.confirmation_receipts) + 1}")
+        self.confirmation_receipts[receipt_id] = {
+            "receipt_id": receipt_id,
+            "proposal_id": pid,
+            "actor": actor,
+            "grant_seq": grant_seq,
+            "at": utc_now_str(),
+        }
+        return receipt_id
+
+    def discard_confirmation_receipt(self, receipt_id: Optional[str]) -> None:
+        """Drop a staged confirmation receipt (compensation paths)."""
+        if receipt_id:
+            self.confirmation_receipts.pop(receipt_id, None)
+
+    def confirm(self, pid: str, *, actor: Optional[str] = None,
+                grant_seq: Optional[int] = None) -> Optional[Proposal]:
+        """Confirm a pending proposal AT THE CORE STORE DOOR.
+
+        FI-011 remediation (A8): this door previously confirmed with
+        no actor, no grant, and no receipt — all enforcement lived
+        only in the Program writer path. Now the door itself refuses
+        a confirm that names no identified actor (typed
+        NurseryConfirmError, before any mutation), and every
+        successful confirm writes an attributed confirmation receipt
+        in the same save. Callers acting for an authorized principal
+        pass that principal as ``actor`` (and the grant's policy
+        issuance sequence as ``grant_seq`` when the confirm rides a
+        capability grant — the handle itself is never recorded).
+
+        A missing or non-pending proposal still returns None (no
+        transition exists to refuse). A save failure reverts the
+        status AND the staged receipt, and propagates (A11).
+        """
         p = self.proposals.get(pid)
         if not p or p.status != "pending":
             return None
+        if not isinstance(actor, str) or not actor:
+            raise NurseryConfirmError(
+                "Nursery.confirm requires an identified actor: "
+                "confirmation is the owner's sovereign act or a "
+                "grant-bound act, never an unattributed one "
+                f"(proposal {pid!r})")
+        receipt_id = self.stage_confirmation_receipt(
+            pid, actor=actor, grant_seq=grant_seq)
         p.status = "confirmed"
         try:
             self.save()
         except Exception:
             p.status = "pending"
+            self.discard_confirmation_receipt(receipt_id)
             raise
         return p
 
@@ -1819,6 +1908,14 @@ class Nursery:
             op_id: dict(rec)
             for op_id, rec in self.organization_edit_receipts.items()
         }
+        # FI-011 (A8): the confirmation-receipt section rides the
+        # same atomic write, so a confirmed status and its
+        # attribution always persist together — never one without
+        # the other.
+        payload[CONFIRMATION_RECEIPT_SECTION_KEY] = {
+            rid: dict(rec)
+            for rid, rec in self.confirmation_receipts.items()
+        }
         blob = atomic_write_json(self.path, payload, _fail_at=_fail_at)
         self._seen = hashlib.sha256(blob).hexdigest()
         # C5R.3 (Resolution 3): the canonical post-save digest is
@@ -1871,6 +1968,7 @@ class Nursery:
         staged_present: Dict[str, set] = {}
         staged_dispositions: Dict[str, Dict[str, Any]] = {}
         staged_edit_receipts: Dict[str, Dict[str, Any]] = {}
+        staged_confirmation_receipts: Dict[str, Dict[str, Any]] = {}
         try:
             for k, v in raw.items():
                 # DCC-XIX: the reserved disposition section is staged
@@ -1907,6 +2005,24 @@ class Nursery:
                     staged_edit_receipts = {
                         op_id: dict(rec) for op_id, rec in v.items()}
                     continue
+                # FI-011 (A8): the reserved confirmation-receipt
+                # section is staged separately under the same
+                # arrangement; it is never mistaken for a proposal.
+                if k == CONFIRMATION_RECEIPT_SECTION_KEY:
+                    if not isinstance(v, dict):
+                        raise NurseryLoadError(
+                            f"nursery file {os.path.basename(path)} has a malformed "
+                            f"{CONFIRMATION_RECEIPT_SECTION_KEY} section (not an object)"
+                        )
+                    for rid, rec in v.items():
+                        if not isinstance(rid, str) or not isinstance(rec, dict):
+                            raise NurseryLoadError(
+                                f"nursery file {os.path.basename(path)} has a malformed "
+                                f"confirmation receipt for {rid!r}"
+                            )
+                    staged_confirmation_receipts = {
+                        rid: dict(rec) for rid, rec in v.items()}
+                    continue
                 if not isinstance(v, dict):
                     raise NurseryLoadError(
                         f"nursery file {os.path.basename(path)} has an invalid proposal record for {k!r}"
@@ -1926,5 +2042,6 @@ class Nursery:
         n._present_fields = staged_present
         n.conflict_dispositions = staged_dispositions
         n.organization_edit_receipts = staged_edit_receipts
+        n.confirmation_receipts = staged_confirmation_receipts
         n._seen = hashlib.sha256(blob).hexdigest()
         return n

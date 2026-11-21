@@ -127,11 +127,11 @@ def case_nursery():
         check("N.both_see_pending",
               a.proposals[pid].status == "pending"
               and b.proposals[pid].status == "pending")
-        ra = a.confirm(pid)
+        ra = a.confirm(pid, actor="suite:race")
         check("N.first_confirm_ok",
               ra is not None and ra.status == "confirmed")
         try:
-            b.confirm(pid)
+            b.confirm(pid, actor="suite:race")
             bout = "no-raise"
         except NurseryConflictError:
             bout = "conflict"

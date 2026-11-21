@@ -137,6 +137,14 @@ class AcceptancePolicy:
         # R6.1: grant_id -> grant issuance record (opaque handles).
         self._issued_grants: Dict[str, Dict[str, Any]] = {}
         self._revoked_grants: set = set()
+        # FI-011 remediation (A7): grant_id -> consumption record for
+        # a COMPLETED confirmation. Grants are single-use: the first
+        # successful confirmation consumes the grant, and any later
+        # check under the same handle denies (see _check_grant).
+        # Recorded only at the commit point by the canonical writer —
+        # never by check() itself, which runs several times inside
+        # one legitimate confirmation.
+        self._consumed_grants: Dict[str, Dict[str, Any]] = {}
         # R6.1: issuance sequence; audit references grants by seq, never
         # by handle value.
         self._grant_seq: int = 0
@@ -620,6 +628,45 @@ class AcceptancePolicy:
             return False
         return self._grant_chain_valid(parent, seen)
 
+    # -- FI-011 (A7): single-use grant consumption ------------------
+
+    def record_grant_consumption(self, grant_id: str,
+                                 target: str) -> Dict[str, Any]:
+        """Record that ``grant_id`` completed a confirmation of
+        ``target``. Called by the canonical writer at its commit
+        point ONLY (a denied or compensated confirmation consumes
+        nothing). Grants are single-use: after this record exists,
+        _check_grant denies the handle for any further confirmation,
+        so one grant can never silently confirm two proposals (the
+        A7 replay). Returns the consumption record, whose ``use``
+        ordinal names this use in the confirm receipt.
+        """
+        rec = {"grant_id": grant_id, "target": target, "use": 1,
+               "at": time.time()}
+        self._consumed_grants[grant_id] = rec
+        self._audit.append({
+            "action": "grant_consumed",
+            "grant_seq": (self._issued_grants.get(grant_id) or {}).get("seq"),
+            "target": target,
+            "at": rec["at"],
+        })
+        return dict(rec)
+
+    def grant_consumption(self, grant_id: str) -> Optional[Dict[str, Any]]:
+        """The consumption record for a grant, or None if unused."""
+        rec = self._consumed_grants.get(grant_id)
+        return dict(rec) if rec else None
+
+    def grant_seq_for(self, grant_id: str) -> Optional[int]:
+        """The issuance sequence number for a grant handle, or None.
+
+        The seq is the audit vocabulary for grants: receipts and logs
+        name a grant by seq, NEVER by its handle value (the handle
+        is a secret; R6.1 no-leak rule, pinned by r61 B6).
+        """
+        rec = self._issued_grants.get(grant_id)
+        return rec.get("seq") if rec else None
+
     def _check_grant(self, producer: str, pid: str, grant_id: Any,
                      proposal_version: Optional[str], operation: str,
                      subject: Optional[str],
@@ -643,6 +690,10 @@ class AcceptancePolicy:
                         "unissued_grant")
         if grant_id in self._revoked_grants:
             return deny("Grant has been revoked.", "revoked_grant")
+        if grant_id in self._consumed_grants:
+            return deny("Grant has already been consumed by a "
+                        "completed confirmation (grants are "
+                        "single-use).", "consumed_grant")
         if rec.get("session_id") != self._session_id:
             return deny("Grant belongs to a foreign session.",
                         "foreign_session_grant")
@@ -857,6 +908,7 @@ class AcceptancePolicy:
         self._revoked_approvals.clear()
         self._issued_grants.clear()
         self._revoked_grants.clear()
+        self._consumed_grants.clear()
         self._session_id = f"session_{uuid.uuid4().hex}"
         self._audit.append({
             "action": "session_reset",

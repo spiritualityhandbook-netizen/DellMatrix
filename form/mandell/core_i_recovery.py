@@ -1044,7 +1044,8 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     from form.mandell.checkpoint_generation import _check_fail, CheckpointError
     from form.dell_matrix.atomic_write import atomic_write_json
     from form.dell_matrix.nursery import (
-        DISPOSITION_SECTION_KEY, EDIT_RECEIPT_SECTION_KEY, _disk_sig,
+        CONFIRMATION_RECEIPT_SECTION_KEY, DISPOSITION_SECTION_KEY,
+        EDIT_RECEIPT_SECTION_KEY, _disk_sig,
         NurseryConflictError, owner_nursery_path,
     )
 
@@ -1064,6 +1065,15 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     nursery_payload[EDIT_RECEIPT_SECTION_KEY] = {
         op_id: dict(rec)
         for op_id, rec in nursery.organization_edit_receipts.items()
+    }
+    # FI-011 (A8): the confirmation-receipt section rides the same
+    # reconstruction — a rollback must preserve the selected
+    # generation's confirmation attribution, not silently drop it
+    # (a confirmed status restored without its receipt would
+    # re-create the unattributed-confirmation hole at restore time).
+    nursery_payload[CONFIRMATION_RECEIPT_SECTION_KEY] = {
+        rid: dict(rec)
+        for rid, rec in nursery.confirmation_receipts.items()
     }
     # R2: Ideas payload. The ideas_snapshot_path_for_rollback is passed
     # explicitly to avoid guessing. It points to the sealed generation's

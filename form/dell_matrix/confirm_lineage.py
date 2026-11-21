@@ -499,6 +499,33 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     # The checkpoint transaction will persist both Program and Nursery atomically.
     # ARGUS-3: All persistence failures must preserve/restore pre-operation state.
     prop.status = "confirmed"
+    # FI-011 remediation (A8): stage the attributed CONFIRMATION
+    # receipt in the same in-memory step, so the checkpoint
+    # transaction persists status and attribution atomically — a
+    # confirmed proposal never exists without its receipt. Every
+    # compensation path below that reverts the status discards this
+    # receipt again. The actor is the trusted subject binding when
+    # one rides the auth snapshot, else the authorized producer;
+    # a grant the confirm rode on is named by issuance seq only —
+    # the handle value is a secret and is never recorded (R6.1).
+    _fi011_actor = None
+    _fi011_grant_id = None
+    _fi011_grant_seq = None
+    if isinstance(_auth, dict):
+        _fi011_actor = _auth.get("subject") or _auth.get("producer")
+        _rc = _auth.get("review_context")
+        if isinstance(_rc, dict):
+            _fi011_grant_id = _rc.get("grant_id")
+        if _fi011_grant_id:
+            # The receipt names the grant by issuance seq only; the
+            # handle value itself is never written anywhere (R6.1).
+            _pol = getattr(program, "acceptance_policy", None)
+            if _pol is not None:
+                _fi011_grant_seq = _pol.grant_seq_for(_fi011_grant_id)
+    _fi011_receipt_id = None
+    if _fi011_actor:
+        _fi011_receipt_id = nursery.stage_confirmation_receipt(
+            pid, actor=_fi011_actor, grant_seq=_fi011_grant_seq)
     # Director 2026-10-05 (boundary): validate carried authorization
     # immediately before durable publish. Revocation or content mutation
     # after staging denies; staged in-memory state is reverted via the
@@ -523,6 +550,7 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         _v2 = {"ok": False, "detail": _hook_err}
     if not _v2["ok"]:
         prop.status = "pending"
+        nursery.discard_confirmation_receipt(_fi011_receipt_id)
         _comp = {"ok": True, "failures": [], "removed": []}
         if not existed:
             _comp = _remove_newly_placed()
@@ -582,6 +610,7 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             _commit_lock.__enter__()
         except Exception:
             prop.status = "pending"
+            nursery.discard_confirmation_receipt(_fi011_receipt_id)
             if not existed:
                 _lk = _remove_newly_placed()
                 if not _lk["ok"]:
@@ -684,6 +713,7 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
             # handler completes the revert, clear the journal. If the process
             # dies before clearing, recovery will use the journal.
             prop.status = "pending"
+            nursery.discard_confirmation_receipt(_fi011_receipt_id)
             _ckpt_comp = {"ok": True, "failures": []}
             if not existed:
                 _ckpt_comp = _remove_newly_placed()
@@ -821,6 +851,7 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
                 clear_confirm_intent(program.owner)
         except Exception:
             prop.status = "pending"
+            nursery.discard_confirmation_receipt(_fi011_receipt_id)
             if not existed:
                 _sk = _remove_newly_placed()
                 # Director 2026-10-06 (close unsafe save): incomplete
@@ -834,6 +865,18 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
                          "removed": _sk.get("removed", [])})
             # Leave journal for recovery (do not clear).
             raise
+    # FI-011 remediation (A7): the confirmation is committed — if it
+    # rode a capability grant, consume the grant NOW (single-use).
+    # Recording happens only here, past every compensation path, so
+    # a denied or reverted confirmation consumes nothing, and the
+    # multi-stage policy checks inside this one confirmation (which
+    # all ran before this point) are never mistaken for a replay.
+    _fi011_consumption = None
+    if _fi011_grant_id:
+        _policy = getattr(program, "acceptance_policy", None)
+        if _policy is not None:
+            _fi011_consumption = _policy.record_grant_consumption(
+                _fi011_grant_id, pid)
     try:
         text = " ".join([str(prop.label or ""), str(getattr(prop, "words", "") or ""), str(getattr(prop, "detail", "") or "")])
         aff = float(getattr(prop, "affinity", 1.0) or 1.0)
@@ -841,7 +884,19 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     except Exception:
         pass
     program.note_seed(50, "Manifest", prop.label)
+    # FI-011 (A7/A8): surface the attributed confirmation receipt on
+    # the confirm result; a grant-riding confirm also names the
+    # grant's use ordinal, so a first use is distinguishable from
+    # any later presentation of the same handle (which now denies).
+    _fi011_receipt = None
+    if _fi011_receipt_id:
+        _rec = nursery.confirmation_receipts.get(_fi011_receipt_id)
+        if _rec:
+            _fi011_receipt = dict(_rec)
+            if _fi011_consumption:
+                _fi011_receipt["grant_use"] = _fi011_consumption.get("use")
     return {"ok": True, "id": prop.id, "label": prop.label, "kind": prop.kind,
+            "confirmation_receipt": _fi011_receipt,
             "placement": {
                 "mode": _placement.get("mode"),
                 "sandbox_id": _placement.get("sandbox_id"),

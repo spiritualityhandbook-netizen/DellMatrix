@@ -170,7 +170,7 @@ def smoke() -> bool:
     # G5: status separation.
     n5, _ = _fresh(tmp, "g5.json")
     q1 = n5.add(**BASE)
-    n5.confirm(q1.id)
+    n5.confirm(q1.id, actor="suite:growdup")
     q2 = n5.add(**BASE)
     check("G5.after_confirm_stored", q2.id != q1.id and q2.status == "pending")
     n5.reject(q2.id)
@@ -242,7 +242,10 @@ def smoke() -> bool:
         nA, pathA = _fresh(tmp, f"g9_{verb}.json")
         pA = nA.add(**BASE)
         nB = Nursery.load(pathA)
-        getattr(nB, act)(pA.id)
+        if act == "confirm":
+            nB.confirm(pA.id, actor="suite:growdup")
+        else:
+            nB.reject(pA.id)
         refused = False
         try:
             nA.add(**BASE)

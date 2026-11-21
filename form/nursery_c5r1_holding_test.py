@@ -170,7 +170,7 @@ def smoke() -> bool:
     n6, path6 = _fresh(tmp, "h6.json")
     ids = [n6.add(f"s{i}", words="w", seed=i).id for i in range(15)]
     for pid in ids[:3]:
-        n6.confirm(pid)
+        n6.confirm(pid, actor="suite:c5r1")
     for pid in ids[3:5]:
         n6.reject(pid)
     fresh6 = Nursery.load(path6)
@@ -228,7 +228,7 @@ def smoke() -> bool:
     # H9: no side-effect removal; clear_rejected is explicit + exact.
     n9, path9 = _fresh(tmp, "h9.json")
     ids9 = [n9.add(f"k{i}", words="w", seed=i).id for i in range(6)]
-    n9.confirm(ids9[0])
+    n9.confirm(ids9[0], actor="suite:c5r1")
     n9.reject(ids9[1])
     n9.reject(ids9[2])
     check("H9.no_side_effect_removal", len(n9.proposals) == 6,

@@ -1364,7 +1364,24 @@ class Program:
             fail_n = 0
             labels: List[str] = []
             skipped_ids: List[str] = []
+            origin_refusals: List[Dict[str, Any]] = []
             for prop in pending:
+                # FI-011 remediation (A12): the sweep is a standing
+                # gate, and its terms are origin-aware. A proposal
+                # authored by a docked-AI / agent producer (origin
+                # classes "agent:" / "dock:") may only ever sit
+                # PENDING for a human confirm — the sweep refuses it
+                # with a typed refusal recorded in the sweep receipt,
+                # never confirms it by origin-blindness.
+                _origin = str(prop.get("origin") or "")
+                _origin_class = _origin.split(":", 1)[0]
+                if _origin_class in ("agent", "dock"):
+                    origin_refusals.append({
+                        "id": prop["id"],
+                        "origin": _origin,
+                        "reason": "auto_origin_ineligible",
+                    })
+                    continue
                 res = self.confirm_proposal(prop["id"], _producer="grow_auto")
                 if res.get("ok"):
                     ok_n += 1
@@ -1384,6 +1401,7 @@ class Program:
                 "labels": labels[:20],
                 "skipped_noneligible": len(skipped_ids),
                 "skipped_ids": skipped_ids,
+                "skipped_origin_ineligible": origin_refusals,
             }
             result["nursery_pending"] = len(self.list_proposals())
             result["ideas_now"] = len(self.cube.session.plane.units)

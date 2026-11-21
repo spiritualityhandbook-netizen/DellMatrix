@@ -811,7 +811,7 @@ def smoke() -> bool:
         check("O22.actor_token_refused",
               "ARGUMENT_INVALID" in out22b
               and p22.nursery.proposals[e22.id].topic == "MixedCase")
-        p22.nursery.confirm(e22.id)
+        p22.nursery.confirm(e22.id, actor="suite:c5r3")
         capture_output(lambda: _dispatch_public_line(
             p22, f"proposals organize {e22.id} cluster:PostConfirm",
             "o22"))
