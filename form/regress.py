@@ -450,6 +450,10 @@ LIST = [
     # section 5.2); registered in the same commit as the suite it
     # names (omitted-entry law).
     "form.journey_confirm_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 5: J-06 Rollback
+    # journey harness (plan section 5.2); registered in the same
+    # commit as the suite it names (omitted-entry law).
+    "form.journey_rollback_test:smoke",
 ]
 
 TIMEOUT_S = 900

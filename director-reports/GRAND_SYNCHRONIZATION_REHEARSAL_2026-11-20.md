@@ -699,6 +699,139 @@ ASSESSED until its closure evidence exists.
   PUBLIC_ENTRY_PATH)
 - timestamp: 2026-11-21T21:17Z
 
+### A.9 — J-06 Rollback (family suite `form/journey_rollback_test.py`)
+
+- journey_id: J-06
+- feature_scope: the file 06 oracle executed verbatim — seal
+  named generation, make further edits, invoke authorized
+  freeze/grant/confirm rollback, cold reload and compare exact
+  restored scope; the failure oracle (bare rollback refuses;
+  cross-owner and stale-grant refusal, injected partial
+  restore, evidence remains immutable and current status not
+  faked)
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1; suite executed in the PR #502 clone)
+- PR/head: #502 @ af81d457f5a36ba6e5e652dae2916ddab57cfc23
+  (baseline run executed before this section's commit; the
+  suite is carried by this PR)
+- public_action: literal `python3 -m form.repl --owner
+  <isolated>` subprocess sessions (piped stdin) —
+  PUBLIC_ENTRY_PATH for every journey action (create, Dell 27
+  seal, bare restore, Dell 28 seed, restore confirm)
+- owner: per-run isolated owners (JRoll<run>, JAlias<run>,
+  JStale<run>, JCross<run>, JTamper<run>), cleaned up after;
+  the isolation boundary is proven in-suite (no state files
+  exist for any of the family's five owners before the
+  sessions start)
+- input_fixture_digest: suite file sha256
+  b72f486140a0ecbcfaf4dcac854dfc95d505207e2ebb696c29d885e1b2b9b10e
+  (inputs are fixed strings in the suite; the compensating
+  generation IDs are date-stamped by the product and parsed
+  from its receipts, never assumed)
+- fixture note (disclosed): two fixture mechanics only — the
+  tamper injection flips one byte in the sealed target's
+  program member file on disk (the fault being injected; the
+  rollback attempt itself runs at the public path, and the
+  member's original bytes are restored in a finally block),
+  and the aliasing probe compares the target's frozen member
+  fingerprints through the read-only freeze door
+  (freeze_rollback_target performs no writes). All journey
+  actions run at the public path.
+- raw command/log: `python3 -m form.journey_rollback_test` —
+  **28/28 PASS** (tally line `JOURNEY_ROLLBACK`, printed
+  last; expectations were grounded in scratch-owner probes
+  run before the suite was written, and the suite passed its
+  first full run — no product defect was exposed by this
+  journey). Mutant sensitivity: disabling the freeze re-hash
+  in rollback_authority.freeze_rollback_target (inverse-edit
+  mutant) fails exactly j06_tampered_member_refused_at_freeze
+  (27/28); reverted by inverse edit, suite back to 28/28.
+- expected_state_diff: `27[Checkpoint] :: alpha_base` seals
+  the named generation and CURRENT names it; further edits +
+  `27[Checkpoint] :: beta_base` advance CURRENT; bare
+  `restore` describes the beta_base rollback and executes
+  nothing; a bare `28[Rollback]` seed is denied
+  (acceptance_policy_denied, no issued approval) with zero
+  mutation; `restore confirm alpha_base` prints the restored
+  receipt + compensating checkpoint ID, and after cold reload
+  the live scope equals the alpha_base seal-time scope
+  EXACTLY (units with content fields, nursery statuses,
+  boxes, history — Gamma gone, nothing of the later state
+  leaking in); confirming the compensating generation undoes
+  the rollback exactly; a post-rollback live mutation leaves
+  the sealed generation's frozen fingerprints (four members
+  + manifest) untouched, and a second rollback to the same
+  target restores the exact sealed scope again (the mutation
+  is gone, not merged into the seal — rollback copies the
+  sealed target into independent live state, never aliases)
+- observed_state_diff: exactly the expected diff, in the
+  loader snapshots and after cold reload, on every leg
+- refusal_class: acceptance_policy_denied (bare Dell 28 seed:
+  "Producer 'dell28' has no issued approval or active
+  opt-in"); RollbackTargetError surfaced at the REPL as
+  "Restore denied: cannot freeze target: ..." for the pruned
+  generation gen_a and the unknown gen_bogus_999
+  ("unreadable"), for the cross-owner attempt (owner-
+  namespaced manifests; the foreign attempt created no state
+  files at all), and for the tampered target ("member
+  'program' fingerprint mismatch"); bare restore with no
+  committed generation answers "Restore unavailable: no
+  committed generation for owner ..."
+- persistence_generation: named generations alpha_base /
+  beta_base, seal_one / seal_two, gen_a / gen_b / gen_c,
+  vault_one / vault_two, plus the product's compensating
+  (pre-rollback safety) generations; retention pruned gen_a
+  once gen_c committed (CURRENT + previous kept)
+- cold_restart: YES — every scope comparison is a fresh
+  loader snapshot; the restored scope also survives a fresh
+  `--load` REPL session unchanged
+- consumer_views: REPL restore description + confirm
+  receipts, Dell 27/Dell 28 route receipts, persistence-
+  loader snapshot (units/nursery/boxes/history), CURRENT
+  pointer (checkpoint_generation.current_generation_id),
+  read-only freeze fingerprints
+- test_suite: form/journey_rollback_test.py (28 checks across
+  the seal/edit/rollback/undo, aliasing, stale/unknown,
+  cross-owner and tamper legs, plus the shared isolation and
+  cleanup checks)
+- CI run: pending — this PR's CI at the section head (see the
+  §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending; PR #502 stands under the
+  Director MERGE HOLD (7068847023), which bars merging only
+- completion_status: **BASELINE — FULL_SCOPE_PASS
+  (public-path scope)** (baseline grade: evidence about the
+  harness and the current program only). Every oracle point
+  constructible at the public entry path has public-path
+  proof at this head: named seal, further edits, bare-restore
+  refusal, no-grant Dell 28 denial, authorized
+  freeze/grant/confirm rollback, exact restored scope after
+  cold reload, compensating-checkpoint undo, the aliasing
+  probe (sealed generation immutable under post-rollback
+  live mutation), stale (retention-pruned) and unknown
+  target refusals, cross-owner refusal, and the injected
+  tamper refused at the freeze door with the status quo
+  preserved and no restored status faked. Grounded behavior
+  recorded: after a rollback the CURRENT pointer names the
+  compensating generation (the newest committed generation)
+  while live state converges to the target — a bare restore
+  afterwards therefore describes the undo point.
+- uncovered_cases: grant staleness proper (a grant issued,
+  live state then drifting, execution denying at live
+  revalidation) is NOT constructible through the REPL text
+  door — issuance and execution are a single command there —
+  and is exercised by the R6.3 authority circuits at API
+  level (form.mandell.r63_rollback_test, green as a
+  neighbor); mid-flight crash injection into a running
+  rollback (the _fail_at points) is likewise API-level,
+  covered by the checkpoint crash-matrix circuits — the
+  injected fault exercised here is sealed-member tampering,
+  refused at the freeze door before any restore step runs;
+  REAL_USER_PATH not claimed (piped REPL is
+  PUBLIC_ENTRY_PATH)
+- timestamp: 2026-11-21T21:38Z
+
 ## Annex B — harness construction status (plan §5.2 families)
 
 | Family suite | Journeys | Status |
@@ -707,7 +840,7 @@ ASSESSED until its closure evidence exists.
 | journey_language_test.py | J-03 | BUILT — baseline 19/19 (Annex A.3; one product defect found + fixed) |
 | journey_idea_lifecycle_test.py | J-04, J-16, J-17 | BUILT — baseline 34/34 (Annex A.4–A.6; two product defects found + fixed: create-door detail/goals silent cuts, edit-door detail silent cut) |
 | journey_confirm_test.py | J-05, J-21 | BUILT — baseline 38/38 (Annex A.7–A.8; no product defect found; one receipt-freshness finding recorded in A.7) |
-| journey_rollback_test.py | J-06 | not built |
+| journey_rollback_test.py | J-06 | BUILT — baseline 28/28 (Annex A.9; no product defect found) |
 | journey_views_test.py | J-07, J-08, J-13, J-23 | not built |
 | journey_growth_test.py | J-09, J-14 | not built |
 | journey_dock_test.py | J-10, J-22 | not built |
