@@ -1627,6 +1627,178 @@ ASSESSED until its closure evidence exists.
   REAL_USER_PATH not claimed
 - timestamp: 2026-11-21T22:05Z
 
+### A.18 — J-12 Crash-save (family suite `form/journey_crash_test.py`)
+
+- journey_id: J-12
+- feature_scope: the file 06 oracle executed verbatim
+  where constructible at the public path — "Inject crash
+  at each phase of owner save/checkpoint/Program-Nursery
+  convergence, restart and show old or complete new
+  generation, never hybrid"; failure oracle: "Broken/
+  corrupt envelope refuses and offers diagnosed recovery;
+  no false success on directory sync failure; all temp
+  cleanup bounded and accounted"
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1)
+- PR/head: #502 @ 742988a19459f7b4dcc0f72ba27b7749b9e1ffaf
+  (baseline run executed before this section's commit)
+- public_action: literal `python3 -m form.repl --owner
+  <isolated>` subprocess sessions — PUBLIC_ENTRY_PATH;
+  crashes are real signals delivered to the REPL process
+  (SIGKILL mid-session; SIGKILL on the save's `.dmtmp.`
+  temp sighting; SIGSTOP-frozen mid-seal then SIGKILL).
+  Disclosed fixture mechanics: the corruption legs write
+  bytes directly to a live member file (the fault being
+  injected; the restart runs at the public path), and the
+  temp-accounting leg invokes
+  atomic_write.sweep_stale_tmps explicitly — the
+  documented mechanism, whose production wiring is pinned
+  as an explicit-call-only posture by
+  form/atomic_write_boundaries_test.py control G (that pin
+  is untouched by this section and still passes)
+- owner: per-run isolated owners (JCrashMid/JCrashWrite/
+  JCrashWriteRef/JCrashSeal/JCrashSealRef/JCrashProg/
+  JCrashNurs/JCrashTorn/JCrashPtr/JCrashFresh <run>),
+  cleaned up after; isolation boundary proven in-suite
+- input_fixture_digest: suite file sha256
+  e1571de1bee6cd895645b218ddb81be7c208ac3e5b9ddd5cb2e8c7c6dae16d62
+  (inputs are fixed strings in the suite)
+- raw command/log: `python3 -m form.journey_crash_test` —
+  **25/25 PASS**. Failing-first: the pre-fix run was
+  **19/24** (the suite then had 24 checks), failing
+  exactly the four corrupt-envelope checks of Defect 1
+  below and the missing-program check of Defect 2.
+  Expectations were grounded in scratch-owner probes
+  before the suite was written (kill windows, orphan
+  temp, corrupt-member restarts, pointer behavior,
+  grow-before-first-save state). Mutant: the
+  ProgramLoadError decode wrap in persist_rest._load_impl
+  disabled by inverse edit → **22/25**, failing exactly
+  j12_corrupt_program_loader_typed_refusal,
+  j12_corrupt_program_repl_diagnosed_refusal and
+  j12_truncated_program_repl_diagnosed_refusal; reverted
+  by inverse edit (diff verified to be exactly the fix),
+  suite back to 25/25. One in-flight suite run was killed
+  by a VM restart mid-mutant-check (NO RESULT, not a
+  failure); its leftover per-run state files were removed
+  and the mutant run was re-executed to its terminal
+  result above.
+- expected_state_diff: a mid-session kill loses exactly
+  the unsaved work and nothing else; a mid-save kill
+  leaves the complete old or the complete new generation;
+  a mid-seal kill leaves CURRENT on the previously
+  committed generation with the live pair complete on one
+  side; corrupt members refuse diagnosed with bytes
+  preserved; temp orphans number exactly one per killed
+  write and are reaped by the explicit sweep
+- observed_state_diff: exactly the expected diff on the
+  loader basis after cold restart, in every leg. Kill
+  legs landed on the old-generation arm in the recorded
+  runs (membership in the two-arm disjunction is the
+  asserted invariant, per the oracle's "old or complete
+  new"). The committed generation restored exactly after
+  the mid-seal kill. TWO PRODUCT DEFECTS were found and
+  FIXED in this section (the family's failing-first run
+  caught both; the fixes are product code in
+  form/persist_rest.py + form/repl.py):
+  (1) corrupt PROGRAM envelope escaped the loader's typed
+  refusal contract — the raw decode in _load_impl raised
+  UnicodeDecodeError/JSONDecodeError where every other
+  loader step raises ProgramLoadError, and the REPL died
+  on the traceback: refusal in effect, but no diagnosed
+  recovery offer, unlike the nursery member
+  (NurseryLoadError) and the CURRENT pointer (in-session
+  diagnosed refusal — this suite's control leg, passing
+  at baseline). Fixed: the decode is wrapped in
+  ProgramLoadError (file, diagnosis, bytes, preserved),
+  and repl startup presents both typed refusals as a
+  printed diagnosis naming the surviving sealed
+  generation as the recovery source, exit 1, no
+  traceback; other exceptions keep their traceback.
+  (2) a missing program member with a surviving sealed
+  generation exposed a HYBRID — the D2 fresh-owner arm
+  fabricated a fresh program and the restart exposed it
+  wearing the destroyed book's nursery proposals (their
+  parent units absent from the exposed scope). Fixed:
+  on the default owner path, a missing program file
+  with a committed generation raises ProgramLoadError
+  naming the generation as the recovery source.
+  Boundary control pinned in-suite: a first session that
+  grows before its first save (proposals on disk, no
+  program file, NO generation — a legitimate
+  program-produced state) still opens with its proposals
+  carried; nursery content alone is never treated as
+  destruction evidence.
+- refusal_class: ProgramLoadError (corrupt program
+  member; missing program member with surviving
+  generation); NurseryLoadError (corrupt nursery
+  member); "Restore unavailable: ... committed CURRENT
+  pointer unreadable" (corrupt pointer, in-session)
+- persistence_generation: live pair + named generations
+  (base_one, seal_one/seal_two); every comparison is a
+  fresh loader snapshot in a later process (--load)
+- cold_restart: YES — every leg's verdict is read from a
+  cold restart's loader scope, never the killed session
+- consumer_views: persistence-loader snapshots, REPL
+  startup output (diagnosed refusals), restore door
+  (committed-generation survival), state-dir file census
+  (temp accounting)
+- test_suite: form/journey_crash_test.py (family 10),
+  registered in form/regress.py LIST in the same commit.
+  Neighbors at the section head, all green: journey_chain
+  16/16, journey_language 19/19, journey_idea_lifecycle
+  34/34, journey_confirm 38/38, journey_rollback 28/28,
+  journey_views 29/29, journey_growth 25/25,
+  journey_dock 25/25, checkpoint_generation_stress
+  15/15, atomic_write_boundaries 67/67 (control G pin
+  intact), sm35_pair_atomic GREEN,
+  resumability_checkpoint rc=0, graph_journal_crash
+  12/12, owner_namespace_collision 12/12,
+  nursery_confirm_race 57/57, dcc_xviii GREEN,
+  dcc_xvii GREEN, persist_full_roundtrip rc=0,
+  test_isolation_hygiene rc=0,
+  repl_seed_error_visibility 13/13, growth_persistence
+  12/12, water_persistence 14/14
+- CI run: pending — this PR's CI at the section head (see
+  the §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending (code-stage confirm; PR
+  #502 is under the Director MERGE HOLD 7068847023 — the
+  hold bars merging only; this section builds under the
+  standing Part workflow, no merge sought)
+- completion_status: **BASELINE — PARTIAL_SCOPE**
+  (baseline grade: evidence about the harness and the
+  current program only; the rehearsal grade is assigned
+  at rehearsal time, plan §5.1). Executed scope:
+  mid-session kill, mid-live-save kill, mid-seal kill at
+  the pointer commit boundary, corrupt program/nursery/
+  pointer restarts with diagnosed recovery, missing-
+  member legs, temp boundedness + explicit accounting.
+  The oracle clauses not executed at this tier are named
+  below; two product defects found by the journey were
+  fixed in-section and are re-proven by the suite at the
+  section head.
+- uncovered_cases: crash at EACH seal phase and
+  directory-sync failure are not constructible at the
+  public path — the _fail_at seam (incl. "dir_fsync_fail")
+  is a module-global test hook with no REPL door; that
+  matrix is covered at API level by
+  form/mandell/dcc_xviii_test.py controls A–W and
+  form/checkpoint_generation_stress_test.py (directory-
+  sync degradation observable in the commit receipt),
+  cited, not duplicated. Findings left standing:
+  deleting the nursery member loads the program exactly
+  and silently drops all pending proposals (no hybrid —
+  the loss is the silent part); deleting the program
+  member when NO generation survives still starts fresh
+  over surviving proposals, indistinguishable from the
+  legitimate grow-before-first-save state, so no honest
+  loader rule can refuse it. Kill-during-rollback is
+  family 5 / R6.3 territory. REAL_USER_PATH not claimed
+  (piped REPL is PUBLIC_ENTRY_PATH)
+- timestamp: 2026-11-21T22:21Z
+
 ## Annex B — harness construction status (plan §5.2 families)
 
 | Family suite | Journeys | Status |
@@ -1640,7 +1812,7 @@ ASSESSED until its closure evidence exists.
 | journey_growth_test.py | J-09, J-14 | BUILT — baseline 25/25 (Annex A.14–A.15; J-09 FULL_SCOPE_PASS public-path scope, J-14 PARTIAL_SCOPE — "stopped" case uncovered, no stopped state in the machinery at this head; no product defect found) |
 | journey_dock_test.py | J-10, J-22 | BUILT — baseline 25/25 (Annex A.16–A.17; J-10 PARTIAL_SCOPE — Finding 1: origin-blind auto-confirm sweep accepts docked proposals under the explicit opt-in, Part VI A12, repair in flight on Part I; Finding 2: docked-growth receipt label vs token provenance; J-22 FULL_SCOPE_PASS public-path scope; no product defect fixed, no product code touched) |
 | journey_hcn_test.py | J-11 | not built (subject NOT BUILT until GP-E22 lands) |
-| journey_crash_test.py | J-12 | not built |
+| journey_crash_test.py | J-12 | BUILT — baseline 25/25 (Annex A.18; PARTIAL_SCOPE — per-phase + dir-sync crash matrix is API-level only (dcc_xviii A–W, checkpoint_generation_stress), cited not duplicated; TWO product defects found + fixed: corrupt program envelope escaped the typed ProgramLoadError contract and died as a raw REPL traceback (decode wrap + diagnosed REPL presentation), missing program member with a surviving sealed generation exposed a hybrid fresh-program/orphaned-proposals pair (fresh-arm guard on positive generation evidence); findings left standing: missing-nursery silent proposal loss, missing-program-without-generation residue) |
 | journey_exchange_test.py | J-18, J-19 | not built (J-19 known gap: duplicate-replay idempotency absent — the rehearsal reports the program as it is) |
 | journey_offline_test.py | J-20 | not built (trace record exists from plan stage) |
 | journey_index_test.py | J-15 | not built |

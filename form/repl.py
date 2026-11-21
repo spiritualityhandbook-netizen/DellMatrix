@@ -4991,7 +4991,39 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         from form.persist import _path as _persist_path
         import os as _os
         _session_existed = _os.path.isfile(_persist_path(owner))
-        p = persist_load(owner)
+        try:
+            p = persist_load(owner)
+        except Exception as _load_exc:
+            # J-12 (PR #502 family 10): the loader's typed
+            # corrupt-envelope refusals (ProgramLoadError /
+            # NurseryLoadError) present at the public door as a
+            # diagnosis with a recovery offer — never a raw
+            # traceback. Any other exception is a genuine defect
+            # and keeps its traceback.
+            from form.persist_rest import ProgramLoadError as _PLE
+            from form.dell_matrix.nursery import (
+                NurseryLoadError as _NLE)
+            if not isinstance(_load_exc, (_PLE, _NLE)):
+                raise
+            _say(f"Load refused for {owner}: {_load_exc}")
+            _say("No state was loaded and no file was changed.")
+            try:
+                from form.mandell.checkpoint_generation import (
+                    current_generation_id as _cgid)
+                _gen = _cgid(owner)
+            except Exception:
+                _gen = None
+            if _gen:
+                _say(f"Recovery: sealed checkpoint generation "
+                     f"'{_gen}' survives for this owner and is "
+                     f"the recovery source — repair or replace "
+                     f"the corrupt live file from that "
+                     f"generation, then restart with --load.")
+            else:
+                _say("Recovery: no sealed checkpoint generation "
+                     "exists for this owner; the corrupt file "
+                     "is preserved on disk for manual recovery.")
+            raise SystemExit(1)
     else:
         p = open_program(owner)
     if not do_load:

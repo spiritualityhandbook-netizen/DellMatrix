@@ -470,6 +470,12 @@ LIST = [
     # section 5.2); registered in the same commit as the suite
     # it names (omitted-entry law).
     "form.journey_dock_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 10: J-12
+    # Crash-save journey harness (plan section 5.2; family 9 /
+    # J-11 HCN remains unbuilt until GP-E22 lands); registered
+    # in the same commit as the suite it names (omitted-entry
+    # law).
+    "form.journey_crash_test:smoke",
 ]
 
 TIMEOUT_S = 900
