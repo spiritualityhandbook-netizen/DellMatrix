@@ -460,6 +460,11 @@ LIST = [
     # registered in the same commit as the suite it names
     # (omitted-entry law).
     "form.journey_views_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 7: J-09
+    # Resonance to Nursery + J-14 Scoped growth journey harness
+    # (plan section 5.2); registered in the same commit as the
+    # suite it names (omitted-entry law).
+    "form.journey_growth_test:smoke",
 ]
 
 TIMEOUT_S = 900

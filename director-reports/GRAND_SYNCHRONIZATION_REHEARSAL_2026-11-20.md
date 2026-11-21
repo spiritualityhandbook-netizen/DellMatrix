@@ -1198,6 +1198,192 @@ ASSESSED until its closure evidence exists.
   family against it
 - timestamp: 2026-11-21T21:45Z
 
+### A.14 — J-09 Resonance to Nursery (family suite `form/journey_growth_test.py`)
+
+- journey_id: J-09
+- feature_scope: the file 06 oracle executed verbatim — two
+  active eligible Ideas yield an explainable pair score and a
+  distinct pending candidate; human accepts with a
+  source-bound record; the failure oracle (faded/superseded/
+  sandboxed excluded per policy; no fake 'vesica' geometry,
+  no automatic graph edge from score; reload accepted
+  relationship and provenance)
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1; suite executed in the PR #502 clone)
+- PR/head: #502 @ 767058efbd2d259d7df650cc1460a7728ea9c8f9
+  (baseline run executed before this section's commit; the
+  suite is carried by this PR)
+- public_action: literal `python3 -m form.repl --owner
+  <isolated>` subprocess sessions (piped stdin) —
+  PUBLIC_ENTRY_PATH for every journey action (create, grow
+  ideas, proposals, lineage, confirm, fade, supersede,
+  group create/add)
+- owner: per-run isolated owners (JRes<run>, JFade<run>,
+  JSup<run>, JWall<run> for this journey; J-14's owners are
+  recorded in A.15), cleaned up after; the isolation
+  boundary is proven in-suite (no state files exist for any
+  of the family's seven owners before the sessions start)
+- input_fixture_digest: suite file sha256
+  d0dc8f7b881a1c0d421bc623b0d122238df7ac7e007765afb774fa89ac23d2ea
+  (inputs are fixed strings in the suite)
+- raw command/log: `python3 -m form.journey_growth_test` —
+  **25/25 PASS** for the family (J-09 checks: 13 of 25,
+  incl. shared isolation/cleanup); expectations were
+  grounded in scratch-owner probes run before the suite was
+  written. Mutant sensitivity: disabling the lifecycle
+  participation gate in ringed_growth._affinity
+  (inverse-edit mutant) fails exactly
+  j09_faded_pair_never_scores and
+  j09_superseded_never_parent_successor_grows (23/25);
+  reverted by inverse edit (diff verified empty), suite
+  back to 25/25.
+- expected_state_diff: the Harbor pair's cross candidate is
+  born pending with affinity 0.674 and the component reason
+  (Solstice harm=0.76 goals=0.02 hs=0.42 gcoh=0.00) on the
+  review face and in the stored record; the canonical graph
+  gains no entry from scoring or from acceptance; confirm
+  places the unit with both parents as lineage while the
+  proposal record keeps origin/reason/affinity; faded,
+  superseded and cross-wall pairs produce no candidate
+  parented by the excluded unit.
+- observed_state_diff: exactly the expected diff, on the
+  loader basis and after cold reload, on every leg. The
+  graph held zero entries before the grow, after the grow
+  and after the confirm. The superseded leg's successor
+  unit grew its own crosses in the same grow that excluded
+  the predecessor — the exclusion is the state. No product
+  defect was exposed by this journey; no product code was
+  touched by this section.
+- refusal_class: supersession of a never-nursery-born unit
+  refuses "unknown_predecessor" (observed in probes; the
+  public supersede door acts on nursery-born records) —
+  recorded as the door's honest boundary, not a defect
+- persistence_generation: saves executed in-session
+  ("Session saved."); every comparison is a fresh loader
+  snapshot in a later process (--load)
+- cold_restart: YES — relationship and provenance compared
+  across separate REPL processes after reload
+- consumer_views: REPL proposals view, lineage view, idea
+  view, persistence-loader snapshots, SemanticGraph loader
+- test_suite: form/journey_growth_test.py (family 7),
+  registered in form/regress.py LIST in the same commit
+  (317 entries, membership verified exactly once)
+- CI run: pending — this PR's CI at the section head (see
+  the §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending; MERGE HOLD 7068847023
+  stands (merging only)
+- completion_status: **BASELINE — FULL_SCOPE_PASS
+  (public-path scope)** — every mandatory step of the
+  file 06 oracle has executable public-path proof at this
+  head
+- uncovered_cases: REAL_USER_PATH not claimed (piped REPL
+  is PUBLIC_ENTRY_PATH); the docked-mind growth path
+  (SD-3 SYNTHESIZE crosses) is J-10's family, not
+  exercised here — this family's grows ran the token path
+  (origin growth:token on every record)
+- timestamp: 2026-11-21T21:56Z
+
+### A.15 — J-14 Scoped growth (family suite `form/journey_growth_test.py`)
+
+- journey_id: J-14
+- feature_scope: the file 06 oracle executed verbatim
+  where constructible at this head — select a named
+  eligible idea scope and grow; only that scope receives
+  the new candidate and logged effect; bare grow discloses
+  mode; the failure oracle's partial-evidence case
+  executed (a context matching one of two eligible units
+  selects exactly that one, disclosed as 1 of 2)
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1)
+- PR/head: #502 @ 767058efbd2d259d7df650cc1460a7728ea9c8f9
+  (baseline run executed before this section's commit)
+- public_action: literal `python3 -m form.repl --owner
+  <isolated>` subprocess sessions — PUBLIC_ENTRY_PATH for
+  every journey action (create, grow ideas, exchange
+  export/import, confirm, grow using knowledge about
+  <context>, grow mode)
+- owner: per-run isolated owners (JBare<run>,
+  JScopeSrc<run>, JScopeDst<run> for this journey),
+  cleaned up after; isolation boundary proven in-suite
+  (see A.14)
+- input_fixture_digest: suite file sha256
+  d0dc8f7b881a1c0d421bc623b0d122238df7ac7e007765afb774fa89ac23d2ea
+  (the two exchange packets are generated in-run from the
+  fixed fixture strings and deleted after the run)
+- raw command/log: `python3 -m form.journey_growth_test` —
+  25/25 PASS for the family (J-14 checks: 11 of 25);
+  expectations grounded in scratch-owner probes before
+  the suite was written, including the eligibility probes
+  that established WHY ordinary REPL state selects
+  nothing (next field). Mutant sensitivity: see A.14 (the
+  family mutant targets the shared growth gate).
+- expected_state_diff: the scoped door with no eligible
+  knowledge discloses Eligible 0 / Selected 0 / scope []
+  and grows nothing; with two eligible units a
+  harbor-only context selects exactly one (scope IDs =
+  [harbor unit], no growth), a both-covering context
+  selects both and grows exactly one pending candidate
+  parented by exactly the scope pair; no live unit's
+  record changes at any scoped step.
+- observed_state_diff: exactly the expected diff, on the
+  loader basis and after cold reload. Manufacturing the
+  eligible scope itself ran the public path end to end:
+  exchange export in the source owner, exchange import
+  landing both records PENDING and parentless in the
+  destination, human confirm landing them as parentless
+  units. The probes also established the negative space
+  honestly: directly-created ideas are not knowledge-store
+  records at all, and a confirmed growth candidate whose
+  parents are unconfirmed direct units is
+  dependency-INVALID under DCC-XV (disclosed on the
+  receipt as "Dependency exclusions: 1") — so the
+  selection law's eligibility is a real gate, not a
+  formality, and the scoped door never broadens past it.
+  The built-in Welcome unit never appears as a parent of
+  any destination proposal. No product defect was
+  exposed; no product code was touched by this section.
+- refusal_class: none issued by the scoped door itself —
+  an empty selection is a disclosed no-op ("Reason: no
+  eligible knowledge"), never a silent full-plane grow;
+  bare `grow ideas` in the same state grows the cross,
+  proving the door, not the engine, withheld growth
+- persistence_generation: saves executed in-session;
+  every comparison is a fresh loader snapshot in a later
+  process (--load)
+- cold_restart: YES — destination units and proposal
+  records compared across a cold reload
+- consumer_views: REPL contextual-grow receipt (eligible/
+  selected/routable counts, reason, scope mode, consumer
+  scope IDs), proposals view, grow-mode face,
+  persistence-loader snapshots
+- test_suite: form/journey_growth_test.py (family 7),
+  registered in form/regress.py LIST in the same commit
+- CI run: pending — this PR's CI at the section head (see
+  the §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending; MERGE HOLD 7068847023
+  stands (merging only)
+- completion_status: **BASELINE — PARTIAL_SCOPE** — the
+  scoped-growth mechanism, its selection accounting, its
+  no-broaden discipline, the partial-evidence case and
+  the no-silent-mutation clause all have executable
+  public-path proof at this head; the grade is partial
+  because the failure oracle's "stopped" case is
+  uncovered (below) and its cross-wall/faded/superseded
+  negatives stand on J-09's legs over the same mechanisms
+  rather than on J-14-local legs
+- uncovered_cases: the "stopped" case — no stopped state
+  exists in the growth/selection machinery at this head
+  (searches of ringed_growth, knowledge_selector,
+  canonical_lifecycle and open.py return no stopped
+  state; reported as unproven, never as "not there" —
+  a future stopped-state build lands its check in this
+  family); REAL_USER_PATH not claimed
+- timestamp: 2026-11-21T21:56Z
+
 ## Annex B — harness construction status (plan §5.2 families)
 
 | Family suite | Journeys | Status |
@@ -1208,7 +1394,7 @@ ASSESSED until its closure evidence exists.
 | journey_confirm_test.py | J-05, J-21 | BUILT — baseline 38/38 (Annex A.7–A.8; no product defect found; one receipt-freshness finding recorded in A.7) |
 | journey_rollback_test.py | J-06 | BUILT — baseline 28/28 (Annex A.9; no product defect found) |
 | journey_views_test.py | J-07, J-08, J-13, J-23 | BUILT — baseline 29/29 (Annex A.10–A.13; J-07 FULL_SCOPE_PASS public-path scope, J-13 PARTIAL_SCOPE with the REPL<->Studio load gap + DAF-09 D1 recorded as findings, J-08/J-23 NOT BUILT at baseline — subjects unlanded) |
-| journey_growth_test.py | J-09, J-14 | not built |
+| journey_growth_test.py | J-09, J-14 | BUILT — baseline 25/25 (Annex A.14–A.15; J-09 FULL_SCOPE_PASS public-path scope, J-14 PARTIAL_SCOPE — "stopped" case uncovered, no stopped state in the machinery at this head; no product defect found) |
 | journey_dock_test.py | J-10, J-22 | not built |
 | journey_hcn_test.py | J-11 | not built (subject NOT BUILT until GP-E22 lands) |
 | journey_crash_test.py | J-12 | not built |
