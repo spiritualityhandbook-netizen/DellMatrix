@@ -465,6 +465,11 @@ LIST = [
     # (plan section 5.2); registered in the same commit as the
     # suite it names (omitted-entry law).
     "form.journey_growth_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 8: J-10 AI
+    # assist + J-22 Outage/reconnect journey harness (plan
+    # section 5.2); registered in the same commit as the suite
+    # it names (omitted-entry law).
+    "form.journey_dock_test:smoke",
 ]
 
 TIMEOUT_S = 900

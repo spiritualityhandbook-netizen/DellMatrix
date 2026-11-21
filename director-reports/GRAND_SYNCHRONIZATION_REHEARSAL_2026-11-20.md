@@ -1384,6 +1384,249 @@ ASSESSED until its closure evidence exists.
   family); REAL_USER_PATH not claimed
 - timestamp: 2026-11-21T21:56Z
 
+### A.16 — J-10 AI assist (family suite `form/journey_dock_test.py`)
+
+- journey_id: J-10
+- feature_scope: the file 06 oracle executed verbatim
+  where constructible at this head — dock a permitted
+  provider as Psalm through the Connected World session,
+  submit a scoped suggestion (`ask`), display provider/
+  model + reason on the receipt and the review face; the
+  Nursery receives PENDING, never auto confirmed by the
+  dock path itself; the failure oracle's provider outage,
+  prompt over-cap, protected-value canary, and
+  cross-owner injection legs executed; local Matrix
+  continues offline
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1)
+- PR/head: #502 @ 9347881c2a9be98b7983b6c57994321b5453380b
+  (baseline run executed before this section's commit)
+- public_action: literal `python3 -m form.repl --owner
+  <isolated>` subprocess sessions — PUBLIC_ENTRY_PATH for
+  every journey action (connect, provider, ask, leave,
+  proposals, lineage, confirm, reject, grow ideas,
+  auto confirm on, grow mode, create)
+- owner: per-run isolated owners (JDock<run>,
+  JHuman<run>, JOut<run>, JCanary<run>, JSweep<run>,
+  JForeign<run>, JGrow<run>), cleaned up after; isolation
+  boundary proven in-suite (no state files for any of
+  the seven owners before the sessions start)
+- input_fixture_digest: suite file sha256
+  3d5c5c08db3a038f07eecc6f9797873711161ef7cfd53da2421457dcccdddd25
+- raw command/log: `python3 -m form.journey_dock_test` —
+  25/25 PASS for the family (J-10 checks: 18 of 25, plus
+  the shared isolation check); expectations grounded in
+  scratch-owner probes before the suite was written.
+  Mutant sensitivity: the connect session's fail-closed
+  input screen (`_studio_screen_input` in form/repl.py)
+  disabled by inverse edit → 24/25, failing exactly
+  j10_protected_canary_refused_and_never_echoed; reverted
+  by inverse edit (diff verified empty), suite back to
+  25/25.
+- expected_state_diff: the ask creates exactly one
+  PENDING proposal and no unit; the review face and the
+  loader record agree on origin
+  "dock:connect:<owner>:fake:fake:valid" and the derived
+  reason; the human confirm lands it exactly once; the
+  refusals (canary, over-cap) create nothing; a foreign
+  owner holds neither the proposal nor a unit under its
+  pid.
+- observed_state_diff: exactly the expected diff, on the
+  loader basis and after cold reload. The ask receipt
+  displays provider=fake, model=fake:valid and states the
+  proposal "is not confirmed and carries no authority";
+  the review face adds the SD-1 evidence join ("task:
+  propose · session <id8>"), and the program's durable
+  dock_sessions evidence links the pid to task "propose"
+  and the ACTUAL model "fake:valid". On file 06's
+  "grant" display point: no grant is issued, displayed,
+  or carried anywhere — the proposal record and the
+  evidence entry hold no grant field; docking confers no
+  authority by construction, and the suite asserts the
+  absence rather than a displayed grant. The docked
+  context itself holds no confirm power: `confirm <pid>`
+  inside the connect session refuses as out of scope; the
+  human's confirm outside it is the only landing, and a
+  second confirm refuses "not found or not pending". The
+  canary ask (grant-handle format) is rejected
+  "PROTECTED_MATERIAL" before routing and the canary
+  string appears nowhere in the transcript; the
+  1,000,005-char prompt refuses "prompt_too_large"
+  against the disclosed 1,000,000 cap; a local create
+  after `leave` succeeds — the Matrix continues offline.
+  FINDING 1 (recorded, not fixed here): the auto-confirm
+  sweep is ORIGIN-BLIND at this head. Default OFF: a bare
+  grow never touches the docked proposal. Under the
+  human's explicit `auto confirm on` opt-in (banner
+  disclosing "every grow accepts all nursery proposals")
+  the next grow sweeps the docked proposal too — status
+  "confirmed", landed as a live unit inside the
+  auto_staging sandbox box (sandbox-first, never the
+  open plane). This is Part VI matrix row A12, whose
+  origin-aware repair is already in flight on Part I's
+  PR #508; per the lane rule for Part I overlaps the fix
+  is NOT duplicated on this branch. The suite pins the
+  baseline-true fence parts (default OFF never sweeps;
+  opt-in disclosed on its face; swept placement is the
+  staging sandbox). FINDING 2 (recorded, not fixed):
+  growth inside the connect session prints "Growth
+  (docked): 1 new + 2 evolved — all PENDING review",
+  but all three proposals carry origin "growth:token"
+  (the fake provider's SYNTHESIZE response fails the
+  semantic schema; SD-3's per-pair token fallback
+  authored them). Proposal-level provenance is truthful;
+  the one-line receipt does not disclose the fallback —
+  a receipt-precision wart of A.7's class. No product
+  code was touched by this section.
+- refusal_class: PROTECTED_MATERIAL (canary, fail-closed
+  screen, before routing); prompt_too_large (over-cap);
+  DOCK_FAILED (unknown provider — J-22's leg, A.17);
+  provider_failure (credential-less bridge provider);
+  out-of-scope refusal for confirm inside the docked
+  session; "not found or not pending" for re-confirm and
+  for cross-owner confirm/reject
+- persistence_generation: saves executed in-session;
+  every comparison is a fresh loader snapshot in a later
+  process (--load)
+- cold_restart: YES — proposal records, units, boxes,
+  and dock evidence compared across cold reloads
+- consumer_views: connect status face, ask receipt,
+  proposals review face (origin / reason / SD-1 task ·
+  session join), lineage face, grow-mode face,
+  persistence-loader snapshots
+- test_suite: form/journey_dock_test.py (family 8),
+  registered in form/regress.py LIST in the same commit
+- CI run: pending — this PR's CI at the section head (see
+  the §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending; MERGE HOLD 7068847023
+  stands (merging only)
+- completion_status: **BASELINE — PARTIAL_SCOPE** — the
+  mandatory core (dock by name, scoped ask, provider/
+  model/reason displayed, PENDING-only landing, the
+  human gate as the sole landing path, outage/canary/
+  over-cap/cross-owner refusals, offline continuation)
+  has executable public-path proof at this head; the
+  grade is partial because Finding 1 leaves "never auto
+  confirmed" untrue under the explicit opt-in until
+  Part I's A12 repair lands, and two failure-oracle
+  cases are not constructible at the public path (below)
+- uncovered_cases: the failure oracle's "response
+  stop_reason" case — a bridge transport outcome; the
+  credential-less provider refuses before any response
+  exists (exercised), but no stop_reason-bearing
+  response can be produced offline at the public path.
+  The "revoked grant" case as a presented object: no
+  grant is ever issued to a docked session, so there is
+  no grant object to revoke or present — refusal is by
+  construction, evidenced by the no-grant checks. The
+  hostile FakeProvider modes (authority, canary_error,
+  reflect, timeout, failure, malformed, empty) are not
+  selectable at the public path — the connect `provider`
+  command takes a name only and the host dock() call
+  never exposes fake_mode there, by design; no suite at
+  this head was found exercising the non-valid modes
+  (the module comment's r62 pointer does not resolve to
+  a file at this head — unproven, never "not there").
+  REAL_USER_PATH not claimed
+- timestamp: 2026-11-21T22:05Z
+
+### A.17 — J-22 Outage/reconnect (family suite `form/journey_dock_test.py`)
+
+- journey_id: J-22
+- feature_scope: the plan §5.2.1 oracle executed
+  verbatim where constructible at this head — dock a
+  provider, sever it mid-session, reconnect; no
+  duplicate confirmation; grant state consistent;
+  in-flight suggestion either completed once or refused
+  with receipt, never landed twice
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1)
+- PR/head: #502 @ 9347881c2a9be98b7983b6c57994321b5453380b
+  (baseline run executed before this section's commit)
+- public_action: literal `python3 -m form.repl --owner
+  <isolated>` subprocess sessions — PUBLIC_ENTRY_PATH
+  (grow mode, connect, provider <name>, ask, leave,
+  proposals, confirm, save)
+- owner: per-run isolated owner (JOut<run>), cleaned up
+  after; isolation boundary proven in-suite (see A.16)
+- input_fixture_digest: suite file sha256
+  3d5c5c08db3a038f07eecc6f9797873711161ef7cfd53da2421457dcccdddd25
+- raw command/log: `python3 -m form.journey_dock_test` —
+  25/25 PASS for the family (J-22 checks: 5 of 25);
+  expectations grounded in scratch-owner probes before
+  the suite was written, including the two sever forms
+  and the reconnect tally. Mutant sensitivity: see A.16
+  (the family mutant targets the shared connect screen).
+- expected_state_diff: the two in-flight asks during the
+  sever land zero proposals between them; the retried
+  ask after reconnect creates exactly one pending
+  proposal; one human confirm lands exactly one unit;
+  policy state reads identically before and after.
+- observed_state_diff: exactly the expected diff, on
+  the loader basis and after cold reload. Sever form 1:
+  `provider nosuchthing` refuses the ask at the dock —
+  "DOCK_FAILED: unknown provider 'nosuchthing'". Sever
+  form 2: `provider gemini` (a real bridge provider, no
+  host credentials in this environment) refuses the ask
+  as "Ask failed (provider_failure)" with the sanitized
+  cause on the receipt (the suite pins the refusal
+  class, not the environment-specific detail). Neither
+  sever created a proposal or a session record entry for
+  a proposal. Reconnect (`provider fake`) completes the
+  retried suggestion exactly once: one creation receipt,
+  one pending proposal on the review face. The human
+  confirm lands it; an immediate second confirm refuses
+  "not found or not pending"; the reload shows one live
+  unit, a confirmed record, nothing pending. Grant
+  state consistency: no grant exists in this machinery
+  to drift (A.16), and the one policy state the journey
+  can observe — the auto-confirm mode — reads
+  auto_confirm_grow=OFF before the sever and after the
+  reconnect/confirm sequence; the landed record's
+  provenance still names the reconnected provider
+  (dock:connect:<owner>:fake:fake:valid). A second
+  probe dimension, recorded in A.16's grounding:
+  reconnecting across separate connect sessions mints
+  distinct suffixed pids per ask, each attributed to
+  its own session's evidence — no cross-session
+  duplication either. No product defect was exposed; no
+  product code was touched by this section.
+- refusal_class: DOCK_FAILED (unknown provider);
+  provider_failure (credential-less bridge provider);
+  "not found or not pending" (duplicate confirm)
+- persistence_generation: saves executed in-session;
+  every comparison is a fresh loader snapshot in a later
+  process (--load)
+- cold_restart: YES — the post-reconnect confirm and the
+  final reconciliation are verified across a cold reload
+- consumer_views: connect provider/ask receipts,
+  proposals review face, grow-mode face,
+  persistence-loader snapshots
+- test_suite: form/journey_dock_test.py (family 8),
+  registered in form/regress.py LIST in the same commit
+- CI run: pending — this PR's CI at the section head (see
+  the §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending; MERGE HOLD 7068847023
+  stands (merging only)
+- completion_status: **BASELINE — FULL_SCOPE_PASS
+  (public-path scope)** — every §5.2.1 oracle point has
+  executable public-path proof at this head: mid-session
+  sever in both constructible forms, in-flight
+  suggestions refused with receipts and landed zero
+  times, the retried suggestion completed exactly once,
+  no duplicate confirmation, and grant/policy state
+  consistent across the outage
+- uncovered_cases: transport-level mid-response
+  severance (the fake provider's timeout/failure modes)
+  is not selectable at the public path — the connect
+  `provider` command takes a name only (see A.16);
+  REAL_USER_PATH not claimed
+- timestamp: 2026-11-21T22:05Z
+
 ## Annex B — harness construction status (plan §5.2 families)
 
 | Family suite | Journeys | Status |
@@ -1395,7 +1638,7 @@ ASSESSED until its closure evidence exists.
 | journey_rollback_test.py | J-06 | BUILT — baseline 28/28 (Annex A.9; no product defect found) |
 | journey_views_test.py | J-07, J-08, J-13, J-23 | BUILT — baseline 29/29 (Annex A.10–A.13; J-07 FULL_SCOPE_PASS public-path scope, J-13 PARTIAL_SCOPE with the REPL<->Studio load gap + DAF-09 D1 recorded as findings, J-08/J-23 NOT BUILT at baseline — subjects unlanded) |
 | journey_growth_test.py | J-09, J-14 | BUILT — baseline 25/25 (Annex A.14–A.15; J-09 FULL_SCOPE_PASS public-path scope, J-14 PARTIAL_SCOPE — "stopped" case uncovered, no stopped state in the machinery at this head; no product defect found) |
-| journey_dock_test.py | J-10, J-22 | not built |
+| journey_dock_test.py | J-10, J-22 | BUILT — baseline 25/25 (Annex A.16–A.17; J-10 PARTIAL_SCOPE — Finding 1: origin-blind auto-confirm sweep accepts docked proposals under the explicit opt-in, Part VI A12, repair in flight on Part I; Finding 2: docked-growth receipt label vs token provenance; J-22 FULL_SCOPE_PASS public-path scope; no product defect fixed, no product code touched) |
 | journey_hcn_test.py | J-11 | not built (subject NOT BUILT until GP-E22 lands) |
 | journey_crash_test.py | J-12 | not built |
 | journey_exchange_test.py | J-18, J-19 | not built (J-19 known gap: duplicate-replay idempotency absent — the rehearsal reports the program as it is) |
