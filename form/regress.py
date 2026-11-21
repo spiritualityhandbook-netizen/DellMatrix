@@ -390,6 +390,18 @@ LIST = [
     # fail-closed; the F-d stale state still reads UNBOXED.
     "form.fd_consistency_test:smoke",
     "form.confirm_placement_test:smoke",
+    # Part VI — Unknowns probe evidence (2026-11-20): read-only
+    # census/behavior/capability probes discharging or narrowing
+    # the open-question packets (Q-FI012.8 census; #119/#175
+    # censuses; DD-42.2/DD-18.2/R21 current-main behavior;
+    # Q-U.3/.4/.5 re-verification; Q-GS.1 caller census;
+    # Q-FI016.1 measured capability + scale). They pin CURRENT
+    # behavior: a deliberate future change to a probed behavior
+    # updates the probe in the same circuit, like the
+    # atomic_write no-production-caller pin.
+    "form.fi012_q8_census_probe_test:smoke",
+    "form.part6_unknowns_probe_test:smoke",
+    "form.fi016_capability_probe_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
     "form.dirf14_catch_consumed_test:smoke",
