@@ -419,6 +419,10 @@ LIST = [
     # 6924026251): persona readers are observationally pure and the
     # Bimo pilot writer syncs persona_matrix.active beside the lens.
     "form.persona_purity_test:smoke",
+    # Part VII (PR #502): Edition 1 DAG edge ledger — machine-checkable
+    # transcription of 08_DEPENDENCY_DAG.json with one negative bypass
+    # test per divergent edge (D1-D4, Director 7044797269).
+    "form.dag_edge_ledger_test:smoke",
 ]
 
 TIMEOUT_S = 900
