@@ -348,6 +348,14 @@ def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> Dict[str, Any
             removed.append("proposal")
         except Exception as e:
             failures.append(f"proposal:{type(e).__name__}")
+        # FI-011 (A8): the successor's confirmation receipts stand
+        # only while its confirmation stands — this rollback removes
+        # the confirmation, so its receipts are removed with it.
+        try:
+            program.nursery.discard_confirmation_receipts_for(succ_id)
+            removed.append("confirmation_receipts")
+        except Exception as e:
+            failures.append(f"confirmation_receipts:{type(e).__name__}")
         # Remove plane unit
         try:
             program.cube.session.plane.remove(succ_id)
@@ -448,6 +456,14 @@ def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
             removed.append("proposal")
         except Exception as e:
             failures.append(f"proposal:{type(e).__name__}")
+        # FI-011 (A8): drop the successor's confirmation receipts
+        # with its confirmation (receipt invariant — see
+        # _rollback_unconfirmed).
+        try:
+            program.nursery.discard_confirmation_receipts_for(succ_id)
+            removed.append("confirmation_receipts")
+        except Exception as e:
+            failures.append(f"confirmation_receipts:{type(e).__name__}")
         try:
             program.cube.session.plane.remove(succ_id)
             removed.append("unit")

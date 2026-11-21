@@ -931,6 +931,21 @@ class Nursery:
         if receipt_id:
             self.confirmation_receipts.pop(receipt_id, None)
 
+    def discard_confirmation_receipts_for(self, pid: str) -> int:
+        """Drop EVERY confirmation receipt naming ``pid``.
+
+        For enclosing-transaction rollbacks (supersession) that
+        remove a proposal whose confirmation was staged/performed
+        inside their boundary: the receipt invariant is that a
+        receipt exists iff the confirmation stands, so removing the
+        confirmation removes its receipts. Returns the count dropped.
+        """
+        doomed = [rid for rid, rec in self.confirmation_receipts.items()
+                  if isinstance(rec, dict) and rec.get("proposal_id") == pid]
+        for rid in doomed:
+            self.confirmation_receipts.pop(rid, None)
+        return len(doomed)
+
     def confirm(self, pid: str, *, actor: Optional[str] = None,
                 grant_seq: Optional[int] = None) -> Optional[Proposal]:
         """Confirm a pending proposal AT THE CORE STORE DOOR.
