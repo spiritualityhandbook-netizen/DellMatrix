@@ -37,6 +37,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # 4 CI entries (form-smoke.yml history) + 17 *_test suites + core_ii_smoke.
 LIST = [
     "form.open",
+    "form.morning_reconciliation_test:smoke",
     "form.mandell.phrase_tests",
     "form.mandell.polyglot_tests",
     "form.accept:run",
