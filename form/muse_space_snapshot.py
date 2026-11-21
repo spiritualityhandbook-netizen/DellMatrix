@@ -10,6 +10,17 @@ a local checkout and emits the read model (file 04 section 2 fields)
 plus a content identity (sha256 over the canonical serialization).
 Same canonical source bytes + same pin -> byte-identical output.
 
+Provenance law (Director 7066270619, CORRECTION REQUIRED at
+10b1f2a8): in pinned mode every source is read from the specified
+Git pin itself (git show <pin>:<path>) and the recorded blob SHA is
+the blob id of the bytes actually parsed, verified against the
+pin's recorded blob -- worktree bytes are never reduced under a
+pin's AS_OF/SHA attribution. An explicit pin that does not resolve
+to a commit is a typed refusal (PinUnavailable), never a silent
+fallback. Worktree reads survive only in the unpinned fallback
+(no Git HEAD at all), where source_main_sha stays
+EVIDENCE_UNAVAILABLE and no pin attribution is claimed.
+
 Honesty law (file 04): a missing input yields EVIDENCE_UNAVAILABLE
 and a named unresolved_sources entry -- never a fabricated count.
 Crosswalk candidates ride as PROPOSED-class input (Part V owns
@@ -54,6 +65,11 @@ INPUTS = {
 _DELL_ROW = re.compile(r"^\|\s*(\d{1,3})\s*\|\s*([^|]+?)\s*\|", re.M)
 
 
+class PinUnavailable(Exception):
+    """Typed refusal: an explicit pin does not resolve to a commit
+    in this checkout, so no snapshot may be attributed to it."""
+
+
 def _git(root, *args):
     try:
         out = subprocess.run(["git", "-C", root] + list(args),
@@ -65,15 +81,58 @@ def _git(root, *args):
     return out.stdout.strip()
 
 
+def _git_bytes(root, *args):
+    try:
+        out = subprocess.run(["git", "-C", root] + list(args),
+                             capture_output=True, timeout=30)
+    except Exception:
+        return None
+    if out.returncode != 0:
+        return None
+    return out.stdout
+
+
 def git_head(root):
     return _git(root, "rev-parse", "HEAD")
 
 
-def _blob_sha(root, pin, rel, raw):
+def _resolve_pin(root, pin):
+    """Resolve `pin` to a commit SHA in `root`. An explicit pin that
+    does not resolve raises PinUnavailable -- never a silent
+    fallback to worktree bytes under a false attribution. With no
+    explicit pin, defaults to HEAD (None when the checkout has no
+    Git HEAD at all: the unpinned fallback)."""
     if pin:
-        sha = _git(root, "rev-parse", "%s:%s" % (pin, rel))
-        if sha:
-            return sha
+        resolved = _git(root, "rev-parse", "--verify",
+                        "%s^{commit}" % pin)
+        if not resolved:
+            raise PinUnavailable(
+                "pin does not resolve to a commit: %s" % pin)
+        return resolved
+    return git_head(root)
+
+
+def _read_at_pin(root, pin, rel):
+    """Bytes of `rel` exactly as committed at `pin` (None when the
+    path is absent at that revision). Worktree bytes are never read
+    in pinned mode."""
+    return _git_bytes(root, "show", "%s:%s" % (pin, rel))
+
+
+def _blob_id(raw):
+    """Git blob object id of `raw` (sha1 over the blob header)."""
+    return hashlib.sha1(b"blob %d\x00" % len(raw) + raw).hexdigest()
+
+
+def _blob_sha(root, pin, rel, raw):
+    """SHA of the bytes actually parsed. Pinned mode: the git blob
+    id of `raw`, verified against the pin's recorded blob; a
+    mismatch returns None so unverified bytes are never labeled
+    with a pin SHA. Unpinned fallback: content sha256."""
+    if pin:
+        blob = _blob_id(raw)
+        recorded = _git(root, "rev-parse", "%s:%s" % (pin, rel))
+        return blob if recorded == blob else None
     return "sha256:" + hashlib.sha256(raw).hexdigest()
 
 
@@ -143,19 +202,24 @@ def build_snapshot(root, pin=None):
     """Reduce the canonical inputs under `root` at `pin` (default:
     the checkout's HEAD) into the GP-E25 read model. Never raises on
     a missing input; missing inputs are named in unresolved_sources.
+    Raises PinUnavailable when an explicit pin does not resolve to
+    a commit. In pinned mode every input is read from the pin
+    itself; a path absent at the pin is EVIDENCE_UNAVAILABLE even
+    when the worktree holds a copy.
     """
-    pin = pin or git_head(root)
+    pin = _resolve_pin(root, pin)
     raw, blob_shas, coverage, unresolved = {}, {}, {}, []
     for key, rel in INPUTS.items():
-        data = _read(root, rel)
-        if data is None:
+        data = _read_at_pin(root, pin, rel) if pin else _read(root, rel)
+        blob = _blob_sha(root, pin, rel, data) if data is not None else None
+        if data is None or (pin and blob is None):
             coverage[key] = EVIDENCE_UNAVAILABLE
             unresolved.append("%s (%s)" % (key, rel))
             blob_shas[key] = None
         else:
             raw[key] = data
             coverage[key] = "RETRIEVED"
-            blob_shas[key] = _blob_sha(root, pin, rel, data)
+            blob_shas[key] = blob
 
     nodes, edges = [], []
 
@@ -339,21 +403,24 @@ def validate_snapshot(model):
 
 def revalidate(model, root):
     """S3: compare the snapshot's pin and per-source blob SHAs with
-    the checkout's current state. Changed main or changed source
-    blob -> that evidence is STALE until re-read."""
+    the checkout's current HEAD commit -- pin against pin, never
+    worktree bytes against a pin SHA (a dirty worktree is not a
+    revision and can neither falsify nor certify a pin). Changed
+    main or changed source blob -> that evidence is STALE until
+    re-read."""
     head = git_head(root)
     sources = {}
     any_stale = False
     all_current = head is not None
     for key, rel in INPUTS.items():
         recorded = model.get("source_blob_shas", {}).get(key)
-        data = _read(root, rel)
-        if data is None or recorded is None:
+        current = (_git(root, "rev-parse", "%s:%s" % (head, rel))
+                   if head else None)
+        if recorded is None or current is None:
             sources[key] = {"status": EVIDENCE_UNAVAILABLE,
                             "file": rel}
             all_current = False
             continue
-        current = _blob_sha(root, head, rel, data)
         status = "CURRENT" if current == recorded else "STALE"
         if status == "STALE":
             any_stale = True
@@ -395,7 +462,11 @@ def main(argv=None):
     ap.add_argument("--root", default=".")
     ap.add_argument("--pin", default=None)
     args = ap.parse_args(argv)
-    model = build_snapshot(args.root, args.pin)
+    try:
+        model = build_snapshot(args.root, args.pin)
+    except PinUnavailable as exc:
+        sys.stderr.write("PIN UNAVAILABLE: %s\n" % exc)
+        return 2
     sys.stdout.write(canonical_bytes(model).decode("utf-8") + "\n")
     return 0
 

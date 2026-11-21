@@ -34,7 +34,9 @@ import copy
 import importlib
 import json
 import os
+import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -63,6 +65,63 @@ def mwl_rows():
         return json.load(fh)
 
 
+# ---- synthetic git fixtures -----------------------------------------
+# The pin/revalidation checks build their own temp git repos with
+# known pins and pinned commit dates instead of leaning on the
+# ambient checkout's git state: CI runs in a detached/shallow
+# checkout whose HEAD/history the suite may not assume (Form smoke
+# 44927573770 failed s1_pin_is_checkout_head, s3_same_pin_all_current
+# and s3_offline_disables_authority_actions at 10b1f2a8 for exactly
+# that ambient dependence). Assertions keep their full meaning --
+# they are evaluated against a repo whose pins are known by
+# construction.
+
+FIXTURE_DATE = "2026-11-20T00:00:00+00:00"
+
+
+def _fx_git(root, *args):
+    env = dict(os.environ)
+    env["GIT_AUTHOR_DATE"] = FIXTURE_DATE
+    env["GIT_COMMITTER_DATE"] = FIXTURE_DATE
+    return subprocess.run(["git", "-C", root] + list(args),
+                          capture_output=True, text=True, env=env)
+
+
+def _fx_write(root, rel, data):
+    path = os.path.join(root, rel)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as fh:
+        fh.write(data)
+
+
+def _fx_init(root):
+    os.makedirs(root)
+    _fx_git(root, "init", "-q")
+    _fx_git(root, "config", "user.email", "fixture@example.invalid")
+    _fx_git(root, "config", "user.name", "Muse Space Fixture")
+    return root
+
+
+def _fx_commit_all(root, msg):
+    _fx_git(root, "add", "-A")
+    _fx_git(root, "commit", "-q", "-m", msg)
+    return _fx_git(root, "rev-parse", "HEAD").stdout.strip()
+
+
+def make_fixture_repo(snap, td, register_rows=None):
+    """Temp git repo holding the canonical inputs copied from this
+    checkout (register optionally replaced), committed once with a
+    pinned date. Returns (root, head_sha)."""
+    root = _fx_init(os.path.join(td, "fx"))
+    for rel in snap.INPUTS.values():
+        with open(os.path.join(ROOT, rel), "rb") as fh:
+            _fx_write(root, rel, fh.read())
+    if register_rows is not None:
+        _fx_write(root, MWL_REL,
+                  json.dumps(register_rows).encode("utf-8"))
+    return root, _fx_commit_all(root, "fixture A")
+
+
 def main():
     try:
         snap = load_snapshot_module()
@@ -73,6 +132,12 @@ def main():
 
     model = snap.build_snapshot(ROOT)
 
+    # Fixture repo with known pins for every git-state-dependent
+    # check (see the fixture-builder note above).
+    fx_td = tempfile.TemporaryDirectory()
+    fx_root, fx_head = make_fixture_repo(snap, fx_td.name)
+    fx_model = snap.build_snapshot(fx_root)
+
     # ---- S1: read model shape -------------------------------------
     fields = ("schema_version", "github_snapshot_time", "source_main_sha",
               "source_blob_shas", "retrieval_coverage", "unresolved_sources",
@@ -82,8 +147,9 @@ def main():
           all(f in model for f in fields),
           "file 04 section 2 read model fields + content identity")
     check("s1_pin_is_checkout_head",
-          model["source_main_sha"] == snap.git_head(ROOT),
-          "snapshot is pinned to this checkout's exact HEAD")
+          fx_model["source_main_sha"] == fx_head ==
+          snap.git_head(fx_root),
+          "snapshot is pinned to the fixture checkout's exact HEAD")
 
     rows = mwl_rows()
     work = [n for n in model["nodes"] if n["type"] == "WORK"]
@@ -136,7 +202,6 @@ def main():
           "file 04 M-04: 100 core addresses; 151 marked reserved example")
 
     # ---- S1: honest absence ----------------------------------------
-    import tempfile
     with tempfile.TemporaryDirectory() as td:
         os.makedirs(os.path.join(td, "director-reports"))
         with open(os.path.join(td, MWL_REL), "w", encoding="utf-8") as fh:
@@ -202,31 +267,104 @@ def main():
           "&lt;script&gt;" in evil_html,
           "source text cannot control scripts (M-14)")
 
-    # ---- S3: live revalidation --------------------------------------
-    rev = snap.revalidate(model, ROOT)
+    # ---- S3: live revalidation (fixture repo, known pins) -----------
+    rev = snap.revalidate(fx_model, fx_root)
     check("s3_same_pin_all_current",
           rev["overall"] == "CURRENT" and
           all(s["status"] == "CURRENT" for s in rev["sources"].values()),
           "unchanged sources revalidate CURRENT at the same pin")
-    stale = copy.deepcopy(model)
+    stale = copy.deepcopy(fx_model)
     stale["source_main_sha"] = "0" * 40
-    rev2 = snap.revalidate(stale, ROOT)
+    rev2 = snap.revalidate(stale, fx_root)
     check("s3_changed_main_marks_stale",
           rev2["overall"] == "STALE",
           "a changed main marks the snapshot STALE until re-read")
-    stale2 = copy.deepcopy(model)
+    stale2 = copy.deepcopy(fx_model)
     stale2["source_blob_shas"]["master_work_list"] = "0" * 40
-    rev3 = snap.revalidate(stale2, ROOT)
+    rev3 = snap.revalidate(stale2, fx_root)
     check("s3_changed_blob_marks_that_source_stale",
           rev3["sources"]["master_work_list"]["status"] == "STALE",
           "staleness is per-source and named, not a blanket guess")
-    off = snap.offline_status(model, now_iso="2026-11-21T12:00:00+00:00")
+    off = snap.offline_status(fx_model, now_iso="2026-11-21T12:00:00+00:00")
     check("s3_offline_disables_authority_actions",
           off["authority_actions_enabled"] is False and
           off["snapshot_age_seconds"] is not None and
           off["mode"] == "OFFLINE",
           "offline shows the pinned snapshot + age; authority actions "
           "disabled (file 04 section 2)")
+
+    # ---- S1: pinned-snapshot provenance (Director 7066270619) -------
+    # CORRECTION REQUIRED at 10b1f2a8: build_snapshot read worktree
+    # bytes but attached the pin's blob SHA, so checkout B + pin A (or
+    # dirty edits at HEAD=A) could publish B's values under AS_OF A.
+    # These fixtures are the failing-first proof: every source must be
+    # read from the specified Git pin, with the recorded SHA verified
+    # against the bytes actually parsed.
+    with tempfile.TemporaryDirectory() as td:
+        fx, pin_a = make_fixture_repo(snap, td, register_rows=rows[:2])
+        _fx_write(fx, MWL_REL, json.dumps(rows[:3]).encode("utf-8"))
+        _fx_commit_all(fx, "fixture B")  # checkout now at B
+        snap_a = snap.build_snapshot(fx, pin=pin_a)
+        a_blob = _fx_git(fx, "rev-parse",
+                         pin_a + ":" + MWL_REL).stdout.strip()
+    check("s1_pin_a_checkout_b_register_not_misattributed",
+          snap_a["source_main_sha"] == pin_a and
+          snap_a["derived_metrics"]["mwl_rows_total"] == 2 and
+          snap_a["source_blob_shas"]["master_work_list"] == a_blob and
+          "mwl:003" not in {n["id"] for n in snap_a["nodes"]},
+          "pin A against checkout B reduces A's register: no B row "
+          "values, counts, or nodes under AS_OF A / A's blob SHA")
+
+    with tempfile.TemporaryDirectory() as td:
+        fx, pin_a = make_fixture_repo(snap, td)
+        dirty = rows + [dict(rows[0], n=999, title="DIRTY MARKER",
+                             status="OPEN")]
+        _fx_write(fx, MWL_REL, json.dumps(dirty).encode("utf-8"))
+        m_dirty = snap.build_snapshot(fx)  # pin defaults to HEAD=pin_a
+        rev_dirty = snap.revalidate(m_dirty, fx)
+    check("s1_dirty_worktree_register_not_published_under_pin",
+          m_dirty["source_main_sha"] == pin_a and
+          m_dirty["derived_metrics"]["mwl_rows_total"] == len(rows) and
+          all("DIRTY MARKER" not in n.get("label", "")
+              for n in m_dirty["nodes"]) and
+          rev_dirty["overall"] == "CURRENT",
+          "uncommitted register edits never enter a pinned snapshot; "
+          "revalidate compares pin-vs-pin, so no dirty byte is "
+          "certified and no false CURRENT is issued")
+
+    with tempfile.TemporaryDirectory() as td:
+        fx = _fx_init(os.path.join(td, "fx3"))
+        with open(os.path.join(ROOT, MWL_REL), "rb") as fh:
+            _fx_write(fx, MWL_REL, fh.read())
+        pin_a = _fx_commit_all(fx, "fixture A (no crosswalk)")
+        cw_rel = snap.INPUTS["crosswalk_candidates"]
+        _fx_write(fx, cw_rel, json.dumps({
+            "grand_plan_addition_candidates": [{
+                "candidate_id": "GP-WORKTREE-ONLY",
+                "title": "worktree only", "status": "PROPOSED"}],
+            "historical_aliases": []}).encode("utf-8"))
+        m_wt = snap.build_snapshot(fx, pin=pin_a)
+    check("s1_absent_at_pin_worktree_only_input_unavailable",
+          m_wt["retrieval_coverage"].get(
+              "crosswalk_candidates") == "EVIDENCE_UNAVAILABLE" and
+          any("01_SOURCE_CROSSWALK" in u
+              for u in m_wt["unresolved_sources"]) and
+          "gp:worktree-only" not in {n["id"] for n in m_wt["nodes"]},
+          "a path absent at the pin is EVIDENCE_UNAVAILABLE even "
+          "when the worktree holds a copy; worktree bytes are never "
+          "consumed as pin evidence")
+
+    with tempfile.TemporaryDirectory() as td:
+        fx, pin_a = make_fixture_repo(snap, td)
+        refused = False
+        try:
+            snap.build_snapshot(fx, pin="0" * 40)
+        except snap.PinUnavailable:
+            refused = True
+    check("s1_unknown_pin_typed_refusal",
+          refused,
+          "an unresolvable pin raises the typed PinUnavailable "
+          "refusal; no snapshot is fabricated under a false pin")
 
     return finish()
 
