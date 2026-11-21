@@ -382,6 +382,14 @@ def run_item(item_id, argv, repo_root, out_dir, subdir):
 # is a REFUSED bundle (fail-closed). It is an instrument, not a
 # certificate: a RECONCILED verdict states that the evidence
 # reconciles; certification remains the authorities' act.
+# Tightened per Director 7056433688 (2026-11-20): the checks leg
+# refuses an empty or arbitrary check list (the bundle must declare
+# its applicable expected_checks set, and every run must be bound
+# to the frozen head), and the authority leg requires affirmative,
+# scope-matching dispositions from both authorities plus the
+# newest ruling — PENDING / NO_STAMP / unknown strings refuse.
+# An email-exception receipt must be a named record and never
+# substitutes for affirmative dispositions.
 # ---------------------------------------------------------------------
 
 _HOLD_DISPOSITIONS = frozenset({
@@ -400,6 +408,29 @@ _FRESHNESS_REQUIRED = (
 
 def _refused(refusals, legs):
     return {"verdict": "REFUSED", "refusals": refusals, "legs": legs}
+
+
+def _is_affirmative(disposition, gate_scope, disposition_scope):
+    """True only for an operative affirmative disposition.
+
+    Affirmative means CONFIRM or a scope-qualified *_CONFIRM token.
+    When the bundle declares a gate_scope (e.g. "CODE"), the
+    disposition must match that scope: CODE_CONFIRM (or a longer
+    *_CODE_CONFIRM token), or a bare CONFIRM whose scan carries the
+    same disposition_scope. Everything else — PENDING, NO_STAMP,
+    unknown strings, None — is not affirmative and refuses.
+    """
+    if not isinstance(disposition, str):
+        return False
+    if gate_scope:
+        if disposition == "%s_CONFIRM" % gate_scope \
+                or disposition.endswith("_%s_CONFIRM" % gate_scope):
+            return True
+        return disposition == "CONFIRM" \
+            and disposition_scope == gate_scope
+    return disposition == "CONFIRM" \
+        or disposition.endswith("_CONFIRM")
+
 
 
 def reconcile_gate(bundle):
@@ -463,12 +494,26 @@ def reconcile_gate(bundle):
             red_classes = red_classes if isinstance(red_classes, dict) \
                 else {}
         allow_pre = bundle.get("allow_preexisting") is True
+        expected = bundle.get("expected_checks")
+        if not isinstance(expected, list) or not expected \
+                or not all(isinstance(n, str) for n in expected):
+            refuse("BUNDLE_INCOMPLETE")
+            checks_state = "incomplete"
+            expected = []
+        if isinstance(checks, list) and len(checks) == 0:
+            refuse("CHECKS_MISSING")
+            checks_state = "refused"
+        seen_checks = set()
         for chk in checks:
             if not isinstance(chk, dict) or "name" not in chk:
                 refuse("BUNDLE_INCOMPLETE")
                 checks_state = "incomplete"
                 continue
             name = chk.get("name")
+            seen_checks.add(name)
+            if chk.get("head") != frozen_head:
+                refuse("CHECK_HEAD_MISMATCH")
+                checks_state = "refused"
             sources = chk.get("sources")
             if isinstance(sources, dict) and len(sources) >= 2 \
                     and len(set(sources.values())) > 1:
@@ -502,6 +547,10 @@ def reconcile_gate(bundle):
                 # check must carry an adequate classification.
                 refuse("CHECK_FAILED_UNCLASSIFIED")
                 checks_state = "refused"
+        for name in expected:
+            if name not in seen_checks:
+                refuse("CHECK_MISSING")
+                checks_state = "refused"
         legs["checks"] = {"state": checks_state,
                           "classifications": classifications}
 
@@ -526,34 +575,63 @@ def reconcile_gate(bundle):
             fresh_state = "missing"
         else:
             source = fresh.get("source")
+            transport_ok = False
             if source == "github":
                 if any(fresh.get(k) is None for k in _FRESHNESS_REQUIRED) \
                         or fresh.get("pr") != bundle.get("pr") \
                         or fresh.get("head_checked") != frozen_head:
                     refuse("GITHUB_UNCHECKED")
                     fresh_state = "incomplete"
+                else:
+                    transport_ok = True
             elif source == "email_exception":
                 # Exception-only transport (AGENTS.md section 44):
-                # accepted only with a named GitHub outage/rollback
-                # authority receipt in the bundle; without one it
-                # refuses like any missing scan and never falls back
-                # to cached mail.
-                if not fresh.get("exception_receipt"):
+                # accepted only with a NAMED GitHub outage/rollback
+                # authority receipt (a record with authority +
+                # receipt_id) and the same complete, head-bound
+                # freshness fields as the GitHub leg. A bare truthy
+                # receipt value manufactures nothing, and the
+                # exception never substitutes for affirmative
+                # authority dispositions below.
+                receipt = fresh.get("exception_receipt")
+                named = isinstance(receipt, dict) \
+                    and isinstance(receipt.get("authority"), str) \
+                    and bool(receipt.get("authority")) \
+                    and isinstance(receipt.get("receipt_id"), str) \
+                    and bool(receipt.get("receipt_id"))
+                if not named:
                     refuse("GITHUB_UNCHECKED")
                     fresh_state = "exception_without_receipt"
+                elif any(fresh.get(k) is None
+                         for k in _FRESHNESS_REQUIRED) \
+                        or fresh.get("pr") != bundle.get("pr") \
+                        or fresh.get("head_checked") != frozen_head:
+                    refuse("GITHUB_UNCHECKED")
+                    fresh_state = "incomplete"
+                else:
+                    transport_ok = True
             else:
                 # Cached mail alone (or any other transport) never
                 # satisfies the operative GitHub leg.
                 refuse("GITHUB_UNCHECKED")
                 fresh_state = "not_github"
-            if fresh_state == "ok":
-                for key in ("newest_ruling_disposition",
-                            "director_disposition",
-                            "keeper_disposition"):
-                    if fresh.get(key) in _HOLD_DISPOSITIONS:
-                        refuse("AUTHORITY_HOLD")
-                        fresh_state = "hold"
-                        break
+            if transport_ok:
+                dispositions = [
+                    fresh.get("newest_ruling_disposition"),
+                    fresh.get("director_disposition"),
+                    fresh.get("keeper_disposition"),
+                ]
+                if any(d in _HOLD_DISPOSITIONS for d in dispositions):
+                    # Latest-ruling precedence: any HOLD-class
+                    # disposition on the scan refuses the gate.
+                    refuse("AUTHORITY_HOLD")
+                    fresh_state = "hold"
+                elif not all(
+                        _is_affirmative(d, bundle.get("gate_scope"),
+                                        fresh.get("disposition_scope"))
+                        for d in dispositions):
+                    refuse("AUTHORITY_NOT_AFFIRMATIVE")
+                    fresh_state = "not_affirmative"
         legs["authority_freshness"] = {"state": fresh_state}
 
         # --- post-merge + fresh-clone legs (phase "post" only) -------
@@ -579,7 +657,8 @@ def reconcile_gate(bundle):
                     for chk in post_checks:
                         if not isinstance(chk, dict) \
                                 or chk.get("status") != "completed" \
-                                or chk.get("conclusion") != "success":
+                                or chk.get("conclusion") != "success" \
+                                or chk.get("head") != merge_commit:
                             refuse("POST_MERGE_MISMATCH")
                             post_state = "refused"
                             break

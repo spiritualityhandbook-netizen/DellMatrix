@@ -29,7 +29,11 @@ with these laws:
     checkpoint that drops a completed phase is refused at write;
   * unknown extra fields round-trip untouched (forward compatibility);
   * a checkpoint written by one process is readable by another
-    (the recovery reader is a different OS process than the writer).
+    (the recovery reader is a different OS process than the writer);
+  * multiwriter contract (Director 7056433688, 2026-11-20): the
+    append-only law holds across concurrent writers — a write may
+    be loudly refused (and retried by its caller) but a phase from
+    a write that reported success is NEVER silently lost.
 
 Written failing-first at plan stage (0/9 while the module was
 absent); the module landed at code stage and the suite now judges
@@ -192,6 +196,72 @@ def main():
     except Exception as exc:
         check("extra_fields_round_trip", False, "probe raised: %r"
               % (exc,))
+
+
+    # --- two-writer adversarial probe (Director 7056433688) --------
+    try:
+        wdir = os.path.join(tmp, "writers")
+        os.makedirs(wdir, exist_ok=True)
+        wpath = os.path.join(wdir, "shared.json")
+        base = full_state()
+        RC.write_checkpoint(wpath, base)
+        writer_src = os.path.join(wdir, "writer.py")
+        with open(writer_src, "w", encoding="utf-8") as fh:
+            fh.write(
+                "import os, sys\n"
+                "sys.path.insert(0, sys.argv[3])\n"
+                "from form import resume_checkpoint as RC\n"
+                "path, tag, log = sys.argv[1], sys.argv[2], sys.argv[4]\n"
+                "ok = []\n"
+                "for i in range(20):\n"
+                "    st = RC.read_checkpoint(path)\n"
+                "    st['COMPLETED_PHASES'] = list("
+                "st['COMPLETED_PHASES']) + ['%s-%d' % (tag, i)]\n"
+                "    try:\n"
+                "        RC.write_checkpoint(path, st)\n"
+                "        ok.append('%s-%d' % (tag, i))\n"
+                "    except Exception:\n"
+                "        pass\n"
+                "for attempt in range(100):\n"
+                "    st = RC.read_checkpoint(path)\n"
+                "    if tag + '-FINAL' in st['COMPLETED_PHASES']:\n"
+                "        break\n"
+                "    st['COMPLETED_PHASES'] = list("
+                "st['COMPLETED_PHASES']) + [tag + '-FINAL']\n"
+                "    try:\n"
+                "        RC.write_checkpoint(path, st)\n"
+                "        ok.append(tag + '-FINAL')\n"
+                "        break\n"
+                "    except Exception:\n"
+                "        continue\n"
+                "with open(log, 'w', encoding='utf-8') as fh:\n"
+                "    fh.write('\\n'.join(ok))\n")
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        procs = []
+        logs = {}
+        for tag in ("WA", "WB"):
+            log = os.path.join(wdir, tag + ".log")
+            logs[tag] = log
+            procs.append(subprocess.Popen(
+                [sys.executable, writer_src, wpath, tag, root, log]))
+        for proc in procs:
+            proc.wait(timeout=120)
+        final = RC.read_checkpoint(wpath)
+        succeeded = set()
+        for log in logs.values():
+            with open(log, encoding="utf-8") as fh:
+                succeeded.update(
+                    line.strip() for line in fh if line.strip())
+        lost = sorted(ph for ph in succeeded
+                      if ph not in final["COMPLETED_PHASES"])
+        check("two_writer_no_silent_loss",
+              not lost and "WA-FINAL" in final["COMPLETED_PHASES"]
+              and "WB-FINAL" in final["COMPLETED_PHASES"],
+              "phases from successful writes silently lost: %s; "
+              "final phases: %s" % (lost, final["COMPLETED_PHASES"]))
+    except Exception as exc:
+        check("two_writer_no_silent_loss", False,
+              "probe raised: %r" % (exc,))
 
     residue = [f for f in os.listdir(tmp)
                if f.endswith((".tmp", ".part", "~"))]

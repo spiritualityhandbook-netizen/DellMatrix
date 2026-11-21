@@ -2,12 +2,14 @@
 
 ## Live board — canonical (refresh by re-rendering; never hand-edit the figures)
 
-`MWL 39/182 COMPLETE = 21.4% | PARTIAL 54 | OPEN 86 | GATED 3 | SANDBOXED 3 (outside active scope)`
+`MWL 40/182 COMPLETE = 22.0% | PARTIAL 55 | OPEN 84 | GATED 3 | SANDBOXED 3 (outside active scope)`
 
 Rendered by `master_list.py` from [`master_work_list_items.json`](master_work_list_items.json)
-at main `27d009f7a1759775cf8f99bd1cc4abfb44cce570` (data blob
-`8da24d34069e24318e5837f1e40bca23cf72c236`), re-rendered and verified
-2026-11-18. Current post-G5 status (merges #486/#491/#489/#492 and
+at main `c6ee38d97ce929850f1321004db681b2a6f619ca` (data blob
+`3b502dcd93daf8de466234dc45ba9e679c1ce29f`), re-rendered and verified
+2026-11-20 (Director 7056445974: the 39/182 heading was stale against
+the canonical JSON, MASTER_WORK_LIST.md and SETTLEMENT_2026-11-20.md,
+which all establish 40/182). Current post-G5 status (merges #486/#491/#489/#492 and
 their credit state): [G5_STATUS_BRIDGE_2026-11-18.md](G5_STATUS_BRIDGE_2026-11-18.md). Denominator:
 the active scope — 185 numbered rows minus 3 SANDBOXED. Full board:
 [MASTER_WORK_LIST.md](MASTER_WORK_LIST.md). To refresh this block: pin a new

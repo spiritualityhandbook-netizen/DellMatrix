@@ -18,6 +18,13 @@ Laws (Part 0 plan, director-reports/PART_0_PLAN_2026-11-20.md §3.2):
     no temp residue; a torn checkpoint is never silently trusted;
   * COMPLETED_PHASES is append-only across writes to the same
     path: a write that drops a completed phase is refused;
+  * multiwriter contract (Director 7056433688, 2026-11-20): the
+    read-check-replace section of write_checkpoint runs under an
+    advisory lock file (fcntl.flock where available), so the
+    append-only check reads the CURRENT on-disk phases — a
+    concurrent writer is loudly refused (and may retry), never
+    silently overwritten; proven by a real two-process probe in
+    the suite (14 phases were silently lost without the lock);
   * unknown extra fields round-trip untouched (forward
     compatibility);
   * compactness discipline: the writer refuses a state whose
@@ -31,10 +38,16 @@ envelope fields at top level, and ``read_checkpoint`` strips the
 checksum key so the caller's state round-trips exactly. Standard
 library only; no network; the module never touches form/state.
 """
+import contextlib
 import hashlib
 import json
 import os
 import tempfile
+
+try:
+    import fcntl
+except ImportError:  # non-POSIX fallback: contract degrades to
+    fcntl = None       # single-writer; see module laws above.
 
 ENVELOPE_FIELDS = [
     "DIRECTIVE_ID", "PARENT_GOAL", "BASE", "BRANCH", "HEAD",
@@ -100,6 +113,32 @@ def verify_checkpoint(state):
     return problems
 
 
+@contextlib.contextmanager
+def _writer_lock(path):
+    """Serialize writers of one checkpoint path (advisory flock).
+
+    The lock guards the read-prior / append-only-check / replace
+    section so the check is made against current on-disk state.
+    Readers stay lock-free: replace is atomic, so a reader always
+    sees one complete generation.
+    """
+    if fcntl is None:
+        yield
+        return
+    directory = os.path.dirname(os.path.abspath(path))
+    os.makedirs(directory, exist_ok=True)
+    fd = os.open(path + ".lock", os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
+
+
+
 def write_checkpoint(path, state):
     """Atomically write ``state`` to ``path``; return ``path``.
 
@@ -113,35 +152,36 @@ def write_checkpoint(path, state):
     if problems:
         raise ValueError("refusing to write unsound checkpoint: "
                          + "; ".join(problems))
-    if os.path.exists(path):
-        existing = read_checkpoint(path)
-        prior = existing.get("COMPLETED_PHASES") or []
-        new = state.get("COMPLETED_PHASES") or []
-        dropped = [p for p in prior if p not in new]
-        if dropped:
-            raise ValueError(
-                "COMPLETED_PHASES is append-only; write drops: %s"
-                % (", ".join(str(d) for d in dropped),))
-    payload = {k: v for k, v in state.items() if k != "checksum"}
-    record = dict(payload)
-    record["checksum"] = _checksum(payload)
-    text = json.dumps(record, sort_keys=True, indent=1,
-                      ensure_ascii=False)
-    directory = os.path.dirname(os.path.abspath(path))
-    os.makedirs(directory, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=".checkpoint-", dir=directory)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(text)
-            fh.flush()
-            os.fsync(fh.fileno())
-        os.replace(tmp, path)
-    except BaseException:
+    with _writer_lock(path):
+        if os.path.exists(path):
+            existing = read_checkpoint(path)
+            prior = existing.get("COMPLETED_PHASES") or []
+            new = state.get("COMPLETED_PHASES") or []
+            dropped = [p for p in prior if p not in new]
+            if dropped:
+                raise ValueError(
+                    "COMPLETED_PHASES is append-only; write drops: %s"
+                    % (", ".join(str(d) for d in dropped),))
+        payload = {k: v for k, v in state.items() if k != "checksum"}
+        record = dict(payload)
+        record["checksum"] = _checksum(payload)
+        text = json.dumps(record, sort_keys=True, indent=1,
+                          ensure_ascii=False)
+        directory = os.path.dirname(os.path.abspath(path))
+        os.makedirs(directory, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(prefix=".checkpoint-", dir=directory)
         try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(text)
+                fh.flush()
+                os.fsync(fh.fileno())
+            os.replace(tmp, path)
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
     return path
 
 

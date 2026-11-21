@@ -23,7 +23,8 @@ REFUSED bundle (fail-closed). Refusal codes include:
 HEAD_DRIFT, TREE_DRIFT, CHECK_NOT_TERMINAL, CHECK_FAILED_UNCLASSIFIED,
 CHECK_FAILED_CANDIDATE, CHECK_FAILED_PREEXISTING_UNAUTHORIZED,
 SOURCE_DISAGREEMENT, MERGE_TREE_CONFLICT, GITHUB_UNCHECKED,
-AUTHORITY_HOLD, POST_MERGE_MISMATCH, FRESH_CLONE_MISSING,
+AUTHORITY_HOLD, AUTHORITY_NOT_AFFIRMATIVE, CHECKS_MISSING,
+CHECK_MISSING, CHECK_HEAD_MISMATCH, POST_MERGE_MISMATCH, FRESH_CLONE_MISSING,
 FRESH_CLONE_FAILED, FRESH_CLONE_REVISION, BUNDLE_INCOMPLETE.
 
 Freshness doctrine (Workflow v2; Director correction 7052971505,
@@ -90,12 +91,13 @@ def clean_pre():
         "frozen_tree": TREE,
         "checks": [
             {"name": "build", "status": "completed",
-             "conclusion": "success", "run_id": 111,
+             "conclusion": "success", "run_id": 111, "head": HEAD,
              "sources": {"ci": "success", "pr_view": "success"}},
             {"name": "smoke", "status": "completed",
-             "conclusion": "success", "run_id": 222,
+             "conclusion": "success", "run_id": 222, "head": HEAD,
              "sources": {"ci": "success", "pr_view": "success"}},
         ],
+        "expected_checks": ["build", "smoke"],
         "merge_tree": {"clean": True, "conflicts": []},
         "authority_freshness": {
             "source": "github",
@@ -124,9 +126,9 @@ def clean_post():
         "main_head_after": MERGE,
         "post_checks": [
             {"name": "build", "status": "completed",
-             "conclusion": "success", "run_id": 333},
+             "conclusion": "success", "run_id": 333, "head": MERGE},
             {"name": "smoke", "status": "completed",
-             "conclusion": "success", "run_id": 444},
+             "conclusion": "success", "run_id": 444, "head": MERGE},
         ],
     }
     b["fresh_clone"] = {"ran": True, "revision": MERGE,
@@ -325,6 +327,107 @@ def main():
     check("fresh_clone_wrong_revision_refused",
           refused_with(b, "FRESH_CLONE_REVISION"),
           "fresh-clone proof must be at the merged revision")
+
+
+    # --- Director 7056433688 correction (2026-11-20): fail-open paths
+    # in the checks and authority legs. A bundle with NO CI executions
+    # or with non-affirmative authority dispositions must never reach
+    # RECONCILED.
+    b = clean_pre()
+    b["checks"] = []
+    check("empty_checks_refused",
+          refused_with(b, "CHECKS_MISSING"),
+          "a bundle with zero CI executions is not evidence; the "
+          "checks leg must refuse, not skip")
+
+    b = clean_pre()
+    b["checks"] = [{"name": "lint", "status": "completed",
+                    "conclusion": "success", "run_id": 999,
+                    "head": HEAD}]
+    check("arbitrary_check_set_refused",
+          refused_with(b, "CHECK_MISSING"),
+          "a nonempty arbitrary list does not satisfy the gate; the "
+          "applicable expected check set must be present")
+
+    b = clean_pre()
+    del b["expected_checks"]
+    check("expected_checks_undeclared_refused",
+          refused_with(b, "BUNDLE_INCOMPLETE"),
+          "the bundle must declare its applicable expected check set")
+
+    b = clean_pre()
+    b["checks"][0]["head"] = "d" * 40
+    check("check_head_mismatch_refused",
+          refused_with(b, "CHECK_HEAD_MISMATCH"),
+          "every check run must be bound to the frozen head")
+
+    b = clean_pre()
+    b["authority_freshness"]["director_disposition"] = "PENDING"
+    check("pending_director_disposition_refused",
+          refused_with(b, "AUTHORITY_NOT_AFFIRMATIVE"),
+          "PENDING is not an affirmative Director disposition")
+
+    b = clean_pre()
+    b["authority_freshness"]["keeper_disposition"] = "NO_STAMP"
+    check("no_stamp_keeper_disposition_refused",
+          refused_with(b, "AUTHORITY_NOT_AFFIRMATIVE"),
+          "NO_STAMP is not an affirmative Keeper disposition")
+
+    b = clean_pre()
+    b["authority_freshness"]["newest_ruling_disposition"] = "PENDING"
+    check("pending_newest_ruling_refused",
+          refused_with(b, "AUTHORITY_NOT_AFFIRMATIVE"),
+          "latest-ruling precedence: a PENDING newest ruling cannot "
+          "ride under older affirmative dispositions")
+
+    b = clean_pre()
+    b["authority_freshness"]["director_disposition"] = "WHATEVER"
+    check("unknown_disposition_refused",
+          refused_with(b, "AUTHORITY_NOT_AFFIRMATIVE"),
+          "an unknown disposition string must refuse, never pass")
+
+    b = clean_pre()
+    b["gate_scope"] = "CODE"
+    for k in ("director_disposition", "keeper_disposition",
+              "newest_ruling_disposition"):
+        b["authority_freshness"][k] = "PLAN_CONFIRM"
+    check("plan_scope_disposition_for_code_gate_refused",
+          refused_with(b, "AUTHORITY_NOT_AFFIRMATIVE"),
+          "a PLAN-scope confirmation does not authorize a CODE gate")
+
+    b = clean_pre()
+    b["gate_scope"] = "CODE"
+    for k in ("director_disposition", "keeper_disposition",
+              "newest_ruling_disposition"):
+        b["authority_freshness"][k] = "CODE_CONFIRM"
+    v = verdict_of(b)
+    check("code_scope_dispositions_reconciled",
+          v is not None and v.get("verdict") == "RECONCILED",
+          "scope-matching affirmative CODE dispositions reconcile")
+
+    b = clean_pre()
+    b["authority_freshness"]["source"] = "email_exception"
+    b["authority_freshness"]["exception_receipt"] = "outage-2026"
+    check("email_exception_truthy_string_receipt_refused",
+          refused_with(b, "GITHUB_UNCHECKED"),
+          "a bare truthy receipt value cannot manufacture "
+          "authorization; the receipt must be a named record")
+
+    b = clean_pre()
+    b["authority_freshness"]["source"] = "email_exception"
+    b["authority_freshness"]["exception_receipt"] = {
+        "authority": "Director", "receipt_id": "OUTAGE-1"}
+    b["authority_freshness"]["director_disposition"] = "PENDING"
+    check("email_exception_receipt_cannot_manufacture_authorization",
+          refused_with(b, "AUTHORITY_NOT_AFFIRMATIVE"),
+          "even a named exception receipt never substitutes for "
+          "affirmative authority dispositions")
+
+    b = clean_post()
+    b["post_merge"]["post_checks"][0]["head"] = HEAD
+    check("post_check_head_mismatch_refused",
+          refused_with(b, "POST_MERGE_MISMATCH"),
+          "post-merge checks must be bound to the merge commit")
 
     for idx, bad in enumerate(
             (None, {}, {"phase": "pre"}, {"phase": "sideways"})):
