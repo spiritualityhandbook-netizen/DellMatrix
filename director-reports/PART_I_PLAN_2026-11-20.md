@@ -281,7 +281,7 @@ file is renamed without its implementation landing.
 | #68 DirectorSession remains recommendations-only | PARTIAL → COMPLETE | Remainder of SM-46: a DirectorSession can recommend; any actuation path is refused and receipted. | code-stage spec suite (to be authored) |
 | #97 BIMO/persona views advisory; cannot bypass host-bound authority | OPEN → COMPLETE | SM-47: persona views are advisory surfaces; authority checks bind at the host door regardless of the active persona. | code-stage spec suite (to be authored) |
 | #154 Resident Psalm | OPEN → COMPLETE | Visible start/stop, bounded work, proposal-only output; presence grants no authority. | code-stage spec suite (to be authored) |
-| #155 multi-Psalm / BIMO execution design | OPEN → OPEN (design only) | Design placement in this Part: instance semantics + the Ace-approved-roster requirement recorded. **Build blocked on Ace's roster approval (NEEDS_OVERSEER).** | — (no build) |
+| #155 multi-Psalm / BIMO execution design | OPEN → COMPLETE | PERSONAMATRIX build (Ace ruling 2026-11-20, closing section of this plan): incorporate ALL Psalm personas — each analyzed and placed by ability as the general setting — on the existing BIMO/persona machinery (form/dell_matrix/personas.py); the personamatrix is a user experimentation layer (users can create new personas). The roster question is ANSWERED (the roster is all of them); no longer NEEDS_OVERSEER. | code-stage spec suite (to be authored) |
 
 ### §5.12 C2 — Resonance Core (GP-E19)
 
@@ -410,9 +410,9 @@ at base af2519b6 (70 rows: PARTIAL 35, OPEN 32, GATED 3).
 #89, #135 — each on its retained remainder closing with battery +
 campaign + exact-head CI evidence at code-confirm.
 
-**OPEN → COMPLETE (28):** #97, #98, #121, #122, #123, #124, #125,
+**OPEN → COMPLETE (29):** #97, #98, #121, #122, #123, #124, #125,
 #126, #127, #128, #129, #131, #132, #133, #134, #136, #144, #145,
-#146, #147, #154, #164, #165, #166, #167, #168, #169, #170 — on
+#146, #147, #154, #155, #164, #165, #166, #167, #168, #169, #170 — on
 their first builds closing the named circuit scope.
 
 **OPEN → PARTIAL (3):** #88 (incremental coupling — one Part's
@@ -420,16 +420,15 @@ pass cannot honestly complete it), #173 (retention contract
 lands; COMPLETE only with R5-D built), #185 (dock-landing
 circuit lands; full close awaits Part VI Q-U answers).
 
-**Unchanged (4):** #34 **GATED**, #46 **GATED**, #118 **GATED**
-(their recorded dispositions govern), #155 **OPEN** (design
-placement only; build blocked on Ace's roster approval).
+**Unchanged (3):** #34 **GATED**, #46 **GATED**, #118 **GATED**
+(their recorded dispositions govern).
 
 **Credit settlements (no status arithmetic invented):** #413
 and #417 settlements land in the same register write exactly as
 the authorities decide them (Director triage 7040622309).
 
 Projected board effect IF every proposed flip confirms: 40/182 →
-up to 103/182 COMPLETE over the Part's life — stated as a
+up to 104/182 COMPLETE over the Part's life — stated as a
 projection, not a promise; flips land per-cluster as evidence
 confirms, never in bulk ahead of proof.
 
