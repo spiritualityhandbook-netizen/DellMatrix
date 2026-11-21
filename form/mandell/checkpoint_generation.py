@@ -214,6 +214,7 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
     }
     _check_fail("before_members", _fail_at)  # crash here: no G2 member file exists
     fps: Dict[str, str] = {}
+    members_dir_fsynced = True
     for kind in _MEMBER_KINDS:
         if not os.path.isfile(live[kind]):
             raise CheckpointCommitError(f"live {kind} file missing after save; commit aborted")
@@ -229,6 +230,14 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
             # (and thus commit_checkpoint's eager-convergence handler),
             # never as a raw OSError bypassing it.
             raise CheckpointCommitError(f"member copy failed for {kind}; commit aborted: {exc}") from exc
+        # Row #47 (Part I section 5.1): capture this member copy's
+        # directory-fsync outcome immediately, before the next write
+        # overwrites atomic_write's function-object surface, so the
+        # commit receipt can report the member seam independently of
+        # the pointer seam (the 72-29 D2 surface covered only the
+        # pointer). Degradation stays best-effort; it is never silent.
+        members_dir_fsynced = members_dir_fsynced and bool(
+            getattr(atomic_write_bytes, "_last_dir_fsynced", False))
         # Fingerprint validation: the sealed bytes are exactly what we sealed.
         if _sha256_file(_member_path(owner, kind, generation_id)) != fps[kind]:
             raise CheckpointCommitError(f"member fingerprint mismatch after write for {kind}; commit aborted")
@@ -259,12 +268,18 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
     except (AtomicWriteError, OSError) as exc:
         # 72-29 (D3): see the member-copy wrap above.
         raise CheckpointCommitError(f"manifest write failed; commit aborted: {exc}") from exc
+    # Row #47: capture the manifest write's directory-fsync outcome
+    # immediately, before the pointer write overwrites the surface.
+    manifest_dir_fsynced = bool(
+        getattr(atomic_write_json, "_last_dir_fsynced", False))
     _check_fail("after_members", _fail_at)  # crash here: members+manifest sealed, pointer still old
     return {
         "generation_id": generation_id,
         "previous_generation_id": previous_generation_id,
         "members": manifest["members"],
         "manifest_path": _manifest_path(owner, generation_id),
+        "dir_fsynced_members": members_dir_fsynced,
+        "dir_fsynced_manifest": manifest_dir_fsynced,
     }
 
 
@@ -392,6 +407,11 @@ def commit_checkpoint(program, generation_id: Optional[str] = None,
         "members": sealed["members"],
         "committed": True,
         "dir_fsynced": dir_fsynced,
+        # Row #47: per-seam directory-sync outcomes for the seal
+        # writes before the commit boundary; ``dir_fsynced`` above
+        # remains the pointer write's outcome (pinned by 72-29 D2).
+        "dir_fsynced_members": sealed["dir_fsynced_members"],
+        "dir_fsynced_manifest": sealed["dir_fsynced_manifest"],
         "retention": retention,
     }
 
