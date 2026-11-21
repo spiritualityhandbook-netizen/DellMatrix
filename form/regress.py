@@ -195,6 +195,7 @@ LIST = [
     "form.r19sib_count_door_test",
     "form.r24_operand_integrity_test",
     "form.r23_outcome_evidence_test",
+    "form.gpe08_admission_test",
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",
     "form.graph_journal_crash_test",
