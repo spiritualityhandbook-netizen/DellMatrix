@@ -375,7 +375,8 @@ def serialize(program: Program) -> Dict[str, Any]:
         "bimo": program.bimo.to_dict() if hasattr(program, "bimo") else {},
         # Row #155 PERSONAMATRIX: user persona records (experimentation
         # layer). Absent = legacy (no user personas). The records are
-        # validated again on restore by activate_custom_personas.
+        # validated again on restore by activate_custom_personas into
+        # the loaded program's own owner-scoped layer.
         "custom_personas": [dict(r) for r in getattr(program, "user_personas", []) or []],
         "nursery": _serialize_nursery(program),
         "lattice": _serialize_lattice(program),

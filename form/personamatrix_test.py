@@ -43,9 +43,17 @@ Contract under test:
   piloting, confirm_proposal under persona producers is denied by the
   AcceptancePolicy and the proposal stays pending; docking changes
   nothing about confirmation outcomes.
+- S6: owner isolation (Director CORRECTION REQUIRED 7069171691) —
+  the user layer is scoped per Program/owner, never a process-wide
+  mutable global: two live Programs in one process cannot read,
+  overwrite, or remove each other's custom personas across the full
+  A→B→A sequence (construct B, create in B, load B, remove in A,
+  save/reload B); the same persona id may exist in both owners'
+  layers with different records; Program operations never touch the
+  module default layer.
 
 Labels: INTEGRATION (Program state is isolated per test owner via
-the canonical state-dir cleanup pattern; the module-level user
+the canonical state-dir cleanup pattern; the module-level default
 layer is emptied again before the suite exits).
 """
 from __future__ import annotations
@@ -64,6 +72,8 @@ CANONICAL_IDS = {
 }
 
 OWNER = "pmx155owner"
+ISO_A = "pmx155isoa"
+ISO_B = "pmx155isob"
 STATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state")
 
 
@@ -205,7 +215,7 @@ def run_all():
         from form import persist_rest
         saved_path = p.save()
         p2 = persist_rest.load(OWNER, saved_path, activate=False)
-        got2 = get_persona("harbor_light")
+        got2 = get_persona("harbor_light", layer=p2.persona_layer)
         cells2 = p2.persona_matrix_status()["cells"]
         check("pm_persistence_roundtrip", got2 is not None
               and got2.get("custom") is True
@@ -218,6 +228,7 @@ def run_all():
 
         # ---------------- S4: guidance / fusion ---------------------
         b = BIMOBody()
+        b.layer = p2.persona_layer
         b.clear()
         b.dock("logic", "manny")
         f1 = b.fuse()
@@ -234,7 +245,7 @@ def run_all():
         b.dock("quality", "della")
         b.dock("watch", "harbor_light")
         f3 = b.fuse()
-        harbor = get_persona("harbor_light")
+        harbor = get_persona("harbor_light", layer=p2.persona_layer)
         della = get_persona("della")
         melody = get_persona("melody")
         union = set(della["limits"]) | set(melody["limits"]) | set(harbor["limits"])
@@ -269,9 +280,96 @@ def run_all():
               and not hasattr(b2, "confirm")
               and not hasattr(b2, "confirm_proposal")
               and not hasattr(personas, "confirm_proposal"))
+
+        # ---------------- S6: owner isolation (7069171691) ----------
+        def _iso_kwargs(name, focus):
+            return dict(
+                name=name, category="AutoLog", role="watch", focus=focus,
+                directives=["watch quietly"], abilities=["drift sensing"],
+                limits=["observes only"], prefer_skins=["sphere"],
+                bimo_slot="watch", matrix={"h": -1, "v": 1, "shell": 2})
+
+        _cleanup(ISO_A)
+        _cleanup(ISO_B)
+        pa = open_program(ISO_A)
+        ra = pa.create_persona(**_iso_kwargs("Iso Alpha", "alpha focus"))
+        cells_a = pa.persona_matrix_status()["cells"]
+        check("pm_iso_a_create_scoped",
+              ra.get("ok") is True
+              and get_persona("iso_alpha", layer=pa.persona_layer) is not None
+              and get_persona("iso_alpha", layer=pa.persona_layer)["focus"]
+              == "alpha focus"
+              and any(c["id"] == "iso_alpha" for c in cells_a))
+        # B merely CONSTRUCTS in the same process: A's layer must survive.
+        pb = open_program(ISO_B)
+        check("pm_iso_b_construction_preserves_a",
+              get_persona("iso_alpha", layer=pa.persona_layer) is not None
+              and any(c["id"] == "iso_alpha"
+                      for c in pa.persona_matrix_status()["cells"]))
+        # Cross-owner READ: B cannot see A's persona by any surface.
+        check("pm_iso_b_cannot_read_a",
+              get_persona("iso_alpha", layer=pb.persona_layer) is None
+              and not any(c["id"] == "iso_alpha"
+                          for c in pb.persona_matrix_status()["cells"])
+              and pb.bimo.dock("watch", "iso_alpha").get("ok") is False)
+        # Program operations never leak into the module default layer.
+        check("pm_iso_default_layer_untouched",
+              all(p["id"] not in ("iso_alpha", "iso_beta")
+                  for p in custom_personas()))
+        # Same id, two owners, different records — neither overwrites.
+        rb_same = pb.create_persona(**_iso_kwargs("Iso Alpha", "beta alpha"))
+        check("pm_iso_same_id_two_owners",
+              rb_same.get("ok") is True
+              and get_persona("iso_alpha", layer=pa.persona_layer)["focus"]
+              == "alpha focus"
+              and get_persona("iso_alpha", layer=pb.persona_layer)["focus"]
+              == "beta alpha")
+        rb = pb.create_persona(**_iso_kwargs("Iso Beta", "beta focus"))
+        check("pm_iso_b_create_own",
+              rb.get("ok") is True
+              and get_persona("iso_beta", layer=pb.persona_layer) is not None
+              and get_persona("iso_beta", layer=pa.persona_layer) is None)
+        # LOAD: reloading A restores A's layer only; live B is untouched.
+        path_a = pa.save()
+        path_b = pb.save()
+        pa2 = persist_rest.load(ISO_A, path_a, activate=False)
+        check("pm_iso_load_does_not_clobber",
+              get_persona("iso_alpha", layer=pa2.persona_layer) is not None
+              and get_persona("iso_alpha", layer=pa2.persona_layer)["focus"]
+              == "alpha focus"
+              and get_persona("iso_beta", layer=pa2.persona_layer) is None
+              and get_persona("iso_beta", layer=pb.persona_layer) is not None)
+        # REMOVAL is scoped: A removes its iso_alpha; B's survives.
+        rm = pa.remove_persona("Iso Alpha")
+        check("pm_iso_removal_scoped",
+              rm.get("ok") is True
+              and get_persona("iso_alpha", layer=pa.persona_layer) is None
+              and get_persona("iso_alpha", layer=pb.persona_layer) is not None
+              and get_persona("iso_alpha", layer=pb.persona_layer)["focus"]
+              == "beta alpha")
+        # SAVE/RELOAD B: B's own two personas round-trip in B's scope.
+        path_b2 = pb.save()
+        pb2 = persist_rest.load(ISO_B, path_b2, activate=False)
+        check("pm_iso_save_reload_b",
+              get_persona("iso_alpha", layer=pb2.persona_layer) is not None
+              and get_persona("iso_alpha", layer=pb2.persona_layer)["focus"]
+              == "beta alpha"
+              and get_persona("iso_beta", layer=pb2.persona_layer) is not None
+              and set(PERSONAS.keys()) == CANONICAL_IDS)
+        # CONSTRUCTION with records: a Program built carrying
+        # user_personas activates them into its OWN layer only.
+        from form.open import Program as _Program
+        rec_beta = get_persona("iso_beta", layer=pb.persona_layer)
+        pc = _Program(owner=ISO_B, user_personas=[dict(rec_beta)])
+        check("pm_iso_construct_with_records",
+              get_persona("iso_beta", layer=pc.persona_layer) is not None
+              and get_persona("iso_beta", layer=pa.persona_layer) is None
+              and all(p["id"] != "iso_beta" for p in custom_personas()))
     finally:
         activate_custom_personas([])
         _cleanup(OWNER)
+        _cleanup(ISO_A)
+        _cleanup(ISO_B)
 
     passed = sum(1 for _, ok in CHECKS if ok)
     print(f"Personamatrix: {passed}/{len(CHECKS)} checks passed")

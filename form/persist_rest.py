@@ -638,15 +638,21 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         p.persona_matrix = PersonaMatrix(active=getattr(p, "persona_lens", None))
     except Exception:
         pass
-    # Row #155 PERSONAMATRIX: restore the user persona layer. Absent
-    # section = legacy (no user personas). Records are re-validated
-    # by activate_custom_personas; invalid ones are skipped there,
-    # never half-applied.
+    # Row #155 PERSONAMATRIX: restore the user persona layer into the
+    # loaded program's OWN layer (owner-scoped, Director 7069171691 —
+    # never the module default layer, so loading owner B cannot clear
+    # or expose owner A's personas). Absent section = legacy (no user
+    # personas). Records are re-validated by activate_custom_personas;
+    # invalid ones are skipped there, never half-applied. The BIMO /
+    # matrix surfaces replaced just above are re-bound to the layer.
     try:
         from form.dell_matrix.personas import activate_custom_personas
         recs = data.get("custom_personas") or []
         p.user_personas = [dict(r) for r in recs if isinstance(r, dict)]
-        activate_custom_personas(p.user_personas)
+        _player = getattr(p, "persona_layer", None)
+        if _player is not None:
+            activate_custom_personas(p.user_personas, layer=_player)
+            p._bind_persona_layer()
     except Exception:
         pass
     hist = data.get("history") or []

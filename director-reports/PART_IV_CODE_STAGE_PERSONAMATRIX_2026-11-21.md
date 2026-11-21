@@ -136,3 +136,70 @@ Date: 2026-11-21 · Lane: PR #505 (`uni/part-4-far-stratum`) · Actor: Uni
 Keeper + Director: **scoped CODE review of this section** (row #155
 PERSONAMATRIX user layer) at the section head named in the PR #505
 package comment. No merge is requested.
+
+---
+
+## Correction addendum — Director CORRECTION REQUIRED 7069171691 (2026-11-21)
+
+**Defect (as ruled):** at S2 head c572a215 the user layer lived in
+`CUSTOM_PERSONAS`, a mutable module-global dict: `create_custom_persona`
+wrote it, the lookups read it, and `activate_custom_personas()` cleared
+and replaced it on every Program construction/load — process-wide, not
+owner-scoped. Two live Programs in one process could expose or
+overwrite each other's custom personas; loading owner B cleared owner
+A's active registry. The S2 "Limitations" note above described that
+wholesale-replacement behavior; it is SUPERSEDED by this addendum.
+
+**Reproduction (failing-first, pre-fix):** two-owner A→B→A in one
+process — A creates `iso_alpha` (resolves); B merely constructs →
+A's persona is GONE from the active registry; A can no longer dock
+its own persona (`unknown persona: iso_alpha`); B's later creation is
+visible through the unscoped global lookup. Defect reproduced exactly
+as ruled.
+
+**Repair — smallest canonical owner-scoped seam, no parallel
+registry:** `form/dell_matrix/personas.py` gains `UserPersonaLayer`,
+the one layer object inside the canonical module. Each Program owns
+exactly one layer (`Program.persona_layer`, created at construction,
+activated from its own `user_personas` records); every Program
+surface addresses only that layer — create/remove (`open.py`),
+lens/status/guide/roster reads, `BIMOBody` and `PersonaMatrix`
+(bound via `Program._bind_persona_layer()`, re-bound after persist
+restore replaces them), and the persist load path
+(`persist_rest.py` activates into the loaded program's own layer).
+All personas.py lookups gained an optional `layer=` parameter;
+canonical-first resolution is unchanged. Calls without a layer
+address the process DEFAULT layer (`CUSTOM_PERSONAS` is now that
+default layer's records dict) — the surface for single-program tools
+(REPL, vision, standalone BIMOBody). A Program never writes the
+default layer.
+
+**Evidence:**
+- New failing-first isolation section S6 in
+  `form/personamatrix_test.py` (10 checks): cross-owner read,
+  creation (incl. same id in both owners with different records),
+  construction-preservation A→B→A, load non-clobber, scoped removal,
+  save/reload per owner, construction-with-records activation, and
+  default-layer untouched. RED pre-fix (behavioral repro above +
+  suite failure at the first scoped surface); GREEN post-fix.
+- Suite: **38/38** (all 28 S2 checks preserved and passing + 10 new).
+  S3/S4 reads re-pointed at the owner scope they always meant.
+- Mutants (inverse-edit reverts only): (1) canonical-collision
+  refusal disabled → FAIL at `pm_create_collision_canonical`;
+  (2) oracle id corrupted → FAIL at `pm_roster_complete`;
+  (3) Program construction activation misdirected to the default
+  layer → FAIL at `pm_iso_construct_with_records` (a check added
+  after the mutant first slipped the suite — the construction-with-
+  records path is now pinned).
+- Neighbors (all PASS): personas smoke · persona_purity 6/6 ·
+  pp4_bimo_dock 35/35 · r75_forge 69/69 · persist_full_roundtrip
+  114/114 · open smoke 7/7 · c9_dualmode 26/26.
+- Post-fix A→B→A verification: A's persona intact after B
+  constructs, A docks it, B cannot read it, default layer clean.
+
+**Limitations (current, honest):** module-level calls without a
+layer still address the shared default layer by design (single-
+program tools); multi-Program processes must use Program surfaces or
+pass a layer — that is the seam the correction ordered. No merge
+requested; CODE-CONFIRM remains withheld pending the Director's
+re-review and the independent Keeper delta challenge at the new head.
