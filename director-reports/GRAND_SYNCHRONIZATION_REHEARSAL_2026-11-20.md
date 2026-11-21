@@ -480,6 +480,225 @@ ASSESSED until its closure evidence exists.
   REAL_USER_PATH not claimed
 - timestamp: 2026-11-21T20:59Z
 
+### A.7 — J-05 Human confirm (family suite `form/journey_confirm_test.py`)
+
+- journey_id: J-05
+- feature_scope: the file 06 oracle executed verbatim — create a
+  pending cross-Idea candidate, inspect reason and source,
+  manually confirm; the unit appears with inherited wall or
+  explicitly selected mixed-parent wall; the failure oracle
+  (rejected remains non-live; stale proposal ID/conflicting
+  generation refuses; actor-supplied text is not authentication;
+  auto-confirm stays sandbox-first only where already permitted)
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1; suite executed in the PR #502 clone)
+- PR/head: #502 @ 3ab62f41368c0ac8aa18e1d189fe20ec461518a0
+  (baseline run executed before this section's commit; the suite
+  is carried by this PR)
+- public_action: literal `python3 -m form.repl --owner <isolated>`
+  subprocess sessions (piped stdin) — PUBLIC_ENTRY_PATH
+- owner: per-run isolated owners (JConf<run>, JWall<run>,
+  JMixed<run>, JOutside<run>, JActor<run>, JAuto<run>,
+  JAutoMix<run> for this packet), cleaned up after; the
+  isolation boundary is proven in-suite (no state files exist
+  for any of the family's eight owners before the sessions start)
+- input_fixture_digest: suite file sha256
+  7aa4b9978c5624390c6f7b07e48b6eb83ed861810ce818c44f1abb211e4b2376
+  (inputs are fixed strings in the suite)
+- raw command/log: `python3 -m form.journey_confirm_test` —
+  **38/38 PASS** (tally line `JOURNEY_CONFIRM`, printed last;
+  this packet covers the 26 J-05 checks; expectations were
+  grounded in scratch-owner probes run before the suite was
+  written, and the suite passed its first full run — no product
+  defect was exposed by this journey; the one observation is
+  recorded as a finding below, not a fix)
+- expected_state_diff: `grow ideas` over two word-sharing ideas
+  yields the [new] cross-Idea candidate with origin
+  growth:token and its Solstice reason on the review face;
+  manual confirm places the unit under the proposal's ID with
+  both parents as lineage and origin "confirmed"; same-wall
+  parents (both grouped before growth) → the unit inherits the
+  wall (unit flags AND box member_ids, the canonical pair);
+  a parent grouped after the proposal exists → bare confirm
+  refuses placement_choice_required with the choice prompt, and
+  the explicit `in <box>` / `outside` choices land it in the
+  chosen wall / on the open field; reject leaves the proposal
+  rejected and never a unit; the auto-confirm sweep (explicit
+  opt-in) stages every eligible proposal into auto_staging and
+  skips the mixed-wall candidate
+- observed_state_diff: exactly the expected diff, in-session and
+  after cold reload (loader snapshots equal before/after reload
+  for the confirm and same-wall journeys, statuses included)
+- refusal_class: STALE_ID ("not found or not pending" —
+  confirm-after-confirm, confirm-after-reject,
+  reject-after-reject, unknown ID, and the same stale confirm
+  repeated after cold reload); PLACEMENT_CHOICE_REQUIRED
+  (mixed-wall bare confirm, with the lawful choices named);
+  INVALID_PLACEMENT_CHOICE (a real non-parent box and a
+  nonexistent box both refuse — a caller can never name an
+  arbitrary box); MISSING_PARENT (confirm whose parents are
+  absent from the loaded program refuses fail-closed — observed
+  in probes when a nursery outlives an unsaved program; correct
+  behavior, recorded here because the probes exposed it)
+- persistence_generation: save executed in-session ("Session
+  saved."); reload in second processes with --load
+- cold_restart: YES — second/third REPL processes; statuses,
+  units, walls and memberships identical after reload, and the
+  stale confirm refuses identically after reload
+- consumer_views: REPL proposals view (origin + reason on the
+  review face), `lineage <pid>`, `proposals get <pid>`, idea
+  view, group views + persistence-loader snapshot (units,
+  boxes/member_ids, proposal statuses, program history)
+- test_suite: form/journey_confirm_test.py (38 checks across
+  J-05/J-21, plus the shared isolation and cleanup checks; 26
+  are J-05's)
+- FINDING RECORDED, NOT FIXED HERE (receipt freshness at the
+  grow door): the Dell-13 route receipt for `grow ideas` prints
+  the growth stage's nursery snapshot ("Nursery pending: 3")
+  even when the auto-confirm sweep inside the same grow_ideas
+  call has already confirmed every proposal. grow_ideas' own
+  result carries the correct post-sweep count
+  (result["nursery_pending"]), and the proposals view, status
+  and the loader reconcile in the same session — the stale
+  figure is confined to that one receipt line, and no J-05
+  oracle point reads it. Not a confirm-path defect; recorded
+  for the growth-receipt owner. FI-011 overlap check (Part I's
+  remediation wave on PR #508 owns A7 replay receipts, A8 raw
+  Nursery.confirm without actor/grant/receipt, A12 origin-blind
+  auto-confirm): NONE of A7/A8/A12 is exposed at the public path
+  by this journey — the REPL confirm door is policy-mediated
+  end to end (dispatch-fixed producer "repl_user", session
+  review context, writer revalidation, placement law), the
+  sweep is opt-in-only and mixed-wall-noneligible, and replay
+  of a confirm refuses as stale. No confirm-path fix is made
+  on this branch.
+- Mutant control: the placement-choice gate in
+  confirm_lineage._resolve_confirm_placement mutated (a
+  mixed-wall confirm without a choice silently places into the
+  first wall key) → 34/38, failing exactly the four mixed-wall
+  checks (requires-choice, stays-pending, invalid-choices,
+  in-box placement); reverted by inverse edit, suite back to
+  38/38, worktree diff verified clean of the mutant.
+- CI run: pending — this PR's CI at the section head (see the
+  §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending (code-stage confirm; PR #502 is
+  under the Director MERGE HOLD 7068847023 — new-section code
+  review pending; this section builds under the standing Part
+  workflow, no merge sought)
+- completion_status: **BASELINE — FULL_SCOPE_PASS** (baseline
+  grade: evidence about the harness and the current program
+  only; the rehearsal grade is assigned at rehearsal time,
+  plan §5.1). Every file 06 oracle point has executable
+  public-path proof at this head: cross-Idea candidate created
+  pending, reason/source inspected, manual confirm, inherited
+  wall, explicitly selected mixed-parent wall (both choices),
+  rejected non-live, stale-ID refusals (incl. after reload),
+  actor-supplied text not authentication, auto-confirm
+  sandbox-first under opt-in with mixed-wall non-eligibility.
+- uncovered_cases: the "conflicting generation" clause at the
+  durable-file level (NurseryConflictError on a stale store
+  generation) is evidenced at the API level by
+  form/confirm_placement_test.py T18 (generation race) and
+  form/nursery_confirm_race_test.py, not re-exercised at the
+  public path here — the public-path stale cases (double
+  confirm, post-reject, post-reload) are this packet's proof;
+  a docked (agent-origin) proposal's human confirm is J-10's
+  family (no dock connected at baseline); REAL_USER_PATH not
+  claimed (piped REPL is PUBLIC_ENTRY_PATH)
+- timestamp: 2026-11-21T21:17Z
+
+### A.8 — J-21 Visual Nursery at scale (family suite `form/journey_confirm_test.py`)
+
+- journey_id: J-21
+- feature_scope: the plan §5.2.1 designed oracle — seed a large
+  proposal set (1,000 proposals), browse with shown/total on
+  every view, confirm and reject through the visual path;
+  counts reconcile exactly with the store after cold reload;
+  the docked organizer clause is graded below
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1; suite executed in the PR #502 clone)
+- PR/head: #502 @ 3ab62f41368c0ac8aa18e1d189fe20ec461518a0
+  (baseline run executed before this section's commit; the suite
+  is carried by this PR)
+- public_action: literal `python3 -m form.repl --owner <isolated>`
+  subprocess sessions (piped stdin) — PUBLIC_ENTRY_PATH for
+  every journey action (browse, search, get, confirm, reject)
+- owner: per-run isolated owner (JScale<run>), cleaned up after;
+  the isolation boundary is proven in-suite
+- input_fixture_digest: suite file sha256 as A.7; the seeded
+  fixture's own digest (sha256 over pid|label|words in creation
+  order, first 16 hex) printed by the suite: 2dbccede7779ca82
+  for the recorded run (IDs are deterministic given the fixture
+  strings; the digest is per-run evidence, recomputed each run)
+- fixture note (disclosed): the plan's own word for the setup is
+  "seed" — the 1,000 proposals are added through the canonical
+  Nursery.add door (the same door growth uses; origin
+  "suite:seeded", parentless), with the per-add saves batched
+  into one canonical save at the end. Every stored record is
+  add()'s own (validation, bounds, seed-rule metadata); only
+  the save cadence is batched. Seeding is fixture setup, not a
+  journey action; all journey actions run at the public path.
+- raw command/log: `python3 -m form.journey_confirm_test` —
+  **38/38 PASS** (tally line `JOURNEY_CONFIRM`, printed last;
+  this packet covers the 10 J-21 checks)
+- expected_state_diff: the store holds exactly 1,000 pending
+  proposals; the plain proposals face states "showing 20 of
+  1000"; browse headers state shown/total_matches/
+  total_searched/total_inventory on every page; five size:200
+  cursor pages walk the whole set (shown sums to 1,000, each
+  page's item lines count equals its shown figure) and end at
+  end-of-results; search states its totals (unique term 1 of 1,
+  common term 50 of 1000 on the default page); an over-max page
+  size (500) refuses typed; three confirms and two rejects at
+  the public path move the store to 995 pending / 3 confirmed /
+  2 rejected / 1,000 total, with the confirmed live and the
+  rejected non-live, identical after cold reload
+- observed_state_diff: exactly the expected diff, in-session,
+  in the loader snapshot, and after cold reload (post-reload
+  browse: status:pending total_matches 995, status:confirmed
+  shown 3 of 3; loader summary and per-proposal statuses
+  identical before/after reload)
+- refusal_class: PAGE_SIZE_INVALID (browse size:500 — "page
+  size must be an integer 1..200 (got 500); sizes are never
+  silently clamped": the SEE door refuses typed rather than
+  silently clamping to SEE_MAX_PAGE)
+- persistence_generation: fixture save + in-session "Session
+  saved." after the decisions; reload in further processes
+  with --load
+- cold_restart: YES — the reconciliation session and the loader
+  snapshots are post-reload
+- consumer_views: REPL proposals face, SEE browse/search pages
+  (headers + item lines), status-filtered browse +
+  persistence-loader snapshot (summary + per-proposal statuses
+  + units)
+- test_suite: form/journey_confirm_test.py (38 checks across
+  J-05/J-21, plus the shared isolation and cleanup checks; 10
+  are J-21's)
+- CI run: pending — this PR's CI at the section head (see the
+  §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending (as A.7)
+- completion_status: **BASELINE — FULL_SCOPE_PASS** (baseline
+  grade: evidence about the harness and the current program
+  only). Every executed oracle step has public-path proof at
+  this head: 1,000-proposal set, shown/total on every view
+  exercised, full cursor walk reconciling to the store,
+  confirm/reject through the path, exact post-reload
+  reconciliation.
+- uncovered_cases: the docked-organizer clause ("if present,
+  proposes only PENDING suggestions") is NOT exercised — no
+  dock is connected at baseline; the clause's condition is
+  unmet, and dock behavior is J-10's family
+  (journey_dock_test.py); the Studio visual surface is J-13's
+  family — at baseline the "visual path" is the REPL's
+  proposals/SEE views, the consumer views this suite exercises;
+  REAL_USER_PATH not claimed (piped REPL is
+  PUBLIC_ENTRY_PATH)
+- timestamp: 2026-11-21T21:17Z
+
 ## Annex B — harness construction status (plan §5.2 families)
 
 | Family suite | Journeys | Status |
@@ -487,7 +706,7 @@ ASSESSED until its closure evidence exists.
 | journey_chain_test.py | J-01, J-02 | BUILT — baseline 16/16 (Annex A) |
 | journey_language_test.py | J-03 | BUILT — baseline 19/19 (Annex A.3; one product defect found + fixed) |
 | journey_idea_lifecycle_test.py | J-04, J-16, J-17 | BUILT — baseline 34/34 (Annex A.4–A.6; two product defects found + fixed: create-door detail/goals silent cuts, edit-door detail silent cut) |
-| journey_confirm_test.py | J-05, J-21 | not built |
+| journey_confirm_test.py | J-05, J-21 | BUILT — baseline 38/38 (Annex A.7–A.8; no product defect found; one receipt-freshness finding recorded in A.7) |
 | journey_rollback_test.py | J-06 | not built |
 | journey_views_test.py | J-07, J-08, J-13, J-23 | not built |
 | journey_growth_test.py | J-09, J-14 | not built |

@@ -445,6 +445,11 @@ LIST = [
     # harness (plan section 5.2); registered in the same commit as
     # the suite it names (omitted-entry law).
     "form.journey_idea_lifecycle_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 4: J-05 Human
+    # confirm + J-21 Visual Nursery at scale journey harness (plan
+    # section 5.2); registered in the same commit as the suite it
+    # names (omitted-entry law).
+    "form.journey_confirm_test:smoke",
 ]
 
 TIMEOUT_S = 900
