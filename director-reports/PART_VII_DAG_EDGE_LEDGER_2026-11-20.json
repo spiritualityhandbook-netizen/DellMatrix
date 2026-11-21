@@ -1,0 +1,718 @@
+{
+ "ledger_version": "part-vii-dag-edge-ledger-1",
+ "generated_from": {
+  "source": "director-reports/GRAND_PLAN_DIRECTOR_EDITION1_2026-11-18/08_DEPENDENCY_DAG.json",
+  "source_sha256": "8e0f75b9ff50bc9acfb37008899fa72c18cbd7b9c0de85573a080fd976da8a26",
+  "dag_version": "director-gp-execution-dag-e1",
+  "dag_source_main": "a8786f9c40cdeaaa8fe9ebeb6705a64d52490269"
+ },
+ "authority": "Director D1-D4 binding (PR #502 comment 7044797269): the Edition 1 DAG is the prerequisite/code-order truth; the Unified section 5 sequence is demonstration only. Divergence texts: PART_VII_PLAN_2026-11-20.md section 7.",
+ "readiness_rule": "A node is build-ready iff every depends_on prerequisite in this ledger is complete. The Unified section 5 order alone never suffices. Authority gates and CI gates are NOT dependency edges (source DAG schema note).",
+ "node_count": 28,
+ "edge_count": 53,
+ "nodes": [
+  {
+   "id": "GP-E01",
+   "title": "Translate operand preservation R24",
+   "phase": 0,
+   "phase_name": "P0 Integrity",
+   "depends_on": [],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E02",
+   "title": "Outcome ledger complete evidence and search R23",
+   "phase": 0,
+   "phase_name": "P0 Integrity",
+   "depends_on": [],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E03",
+   "title": "Compose R17 / Loop R19 separated repairs",
+   "phase": 0,
+   "phase_name": "P0 Integrity",
+   "depends_on": [],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E04",
+   "title": "Compare Threshold shorthand R25",
+   "phase": 1,
+   "phase_name": "P1 Dell Plan",
+   "depends_on": [
+    "GP-E09"
+   ],
+   "unified_step": "SEQ1"
+  },
+  {
+   "id": "GP-E05",
+   "title": "History R5 and REPL R27 truthful bounds",
+   "phase": 0,
+   "phase_name": "P0 Integrity",
+   "depends_on": [],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E06",
+   "title": "R28-R42 full current-main limits audit",
+   "phase": 0,
+   "phase_name": "P0 Integrity",
+   "depends_on": [],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E07",
+   "title": "All addressed Dells execution audit",
+   "phase": 1,
+   "phase_name": "P1 Dell Plan",
+   "depends_on": [],
+   "unified_step": "SEQ1"
+  },
+  {
+   "id": "GP-E08",
+   "title": "English LM typed AST admission",
+   "phase": 2,
+   "phase_name": "P2 Language and state",
+   "depends_on": [
+    "GP-E01",
+    "GP-E07"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E09",
+   "title": "Shared predicate and control truth",
+   "phase": 1,
+   "phase_name": "P1 Dell Plan",
+   "depends_on": [
+    "GP-E07"
+   ],
+   "unified_step": "SEQ1"
+  },
+  {
+   "id": "GP-E10",
+   "title": "DD43 isolated Parallel and Join",
+   "phase": 2,
+   "phase_name": "P2 Language and state",
+   "depends_on": [
+    "GP-E09",
+    "GP-E12",
+    "GP-E14",
+    "GP-E15"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E11",
+   "title": "Eight elder Dell semantics",
+   "phase": 2,
+   "phase_name": "P2 Language and state",
+   "depends_on": [
+    "GP-E07"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E12",
+   "title": "Typed measurement and inference",
+   "phase": 2,
+   "phase_name": "P2 Language and state",
+   "depends_on": [
+    "GP-E07",
+    "GP-E09"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E13",
+   "title": "SemanticGraph and Plane identity",
+   "phase": 1,
+   "phase_name": "P1 Dell Plan",
+   "depends_on": [],
+   "unified_step": "SEQ1"
+  },
+  {
+   "id": "GP-E14",
+   "title": "Isolated Simulate effects inventory",
+   "phase": 1,
+   "phase_name": "P1 Dell Plan",
+   "depends_on": [
+    "GP-E13"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E15",
+   "title": "Everyday pair-save Q1 crash integrity",
+   "phase": 2,
+   "phase_name": "P2 Language and state",
+   "depends_on": [
+    "GP-E13"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E16",
+   "title": "Room/box histories and staged human editing",
+   "phase": 3,
+   "phase_name": "P3 Spatial/Tree",
+   "depends_on": [
+    "GP-E05",
+    "GP-E13",
+    "GP-E15"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E17",
+   "title": "Exchange Bridge reference integrity",
+   "phase": 3,
+   "phase_name": "P3 Spatial/Tree",
+   "depends_on": [
+    "GP-E13",
+    "GP-E15"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E18",
+   "title": "FCC Tree L1-L5 evidence admission",
+   "phase": 3,
+   "phase_name": "P3 Spatial/Tree",
+   "depends_on": [
+    "GP-E13"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E19",
+   "title": "Resonance to Nursery candidate generation",
+   "phase": 4,
+   "phase_name": "P4 Resonance/Nursery",
+   "depends_on": [
+    "GP-E09",
+    "GP-E13"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E20",
+   "title": "Nursery full browse/gate/placement verification",
+   "phase": 4,
+   "phase_name": "P4 Resonance/Nursery",
+   "depends_on": [
+    "GP-E13"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E21",
+   "title": "DuoBeta learning and rollback",
+   "phase": 4,
+   "phase_name": "P4 Resonance/Nursery",
+   "depends_on": [
+    "GP-E02",
+    "GP-E20"
+   ],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E22",
+   "title": "HCN R3 implementation contract",
+   "phase": 5,
+   "phase_name": "P5 HCN R3",
+   "depends_on": [
+    "GP-E07",
+    "GP-E13",
+    "GP-E14",
+    "GP-E15"
+   ],
+   "unified_step": "SEQ2"
+  },
+  {
+   "id": "GP-E23",
+   "title": "Dock and Psalm session governance",
+   "phase": 6,
+   "phase_name": "P6 Dock/Psalm",
+   "depends_on": [
+    "GP-E20",
+    "GP-E22"
+   ],
+   "unified_step": "SEQ3+SEQ4"
+  },
+  {
+   "id": "GP-E24",
+   "title": "Studio Console five public pages and views",
+   "phase": 7,
+   "phase_name": "P7 Surfaces",
+   "depends_on": [
+    "GP-E13",
+    "GP-E16",
+    "GP-E20",
+    "GP-E23"
+   ],
+   "unified_step": "SEQ5"
+  },
+  {
+   "id": "GP-E25",
+   "title": "Living Muse Space Blueprint evidence view",
+   "phase": 1,
+   "phase_name": "P1 Dell Plan",
+   "depends_on": [],
+   "unified_step": null
+  },
+  {
+   "id": "GP-E26",
+   "title": "Security offline perf full system probe",
+   "phase": 7,
+   "phase_name": "P7 Surfaces",
+   "depends_on": [
+    "GP-E13",
+    "GP-E20",
+    "GP-E23",
+    "GP-E24"
+   ],
+   "unified_step": "SEQ5"
+  },
+  {
+   "id": "GP-E27",
+   "title": "Grand Synchronization 25 public journeys",
+   "phase": 8,
+   "phase_name": "P8 Grand Synchronization",
+   "depends_on": [
+    "GP-E08",
+    "GP-E10",
+    "GP-E11",
+    "GP-E12",
+    "GP-E16",
+    "GP-E17",
+    "GP-E18",
+    "GP-E19",
+    "GP-E21",
+    "GP-E22",
+    "GP-E23",
+    "GP-E24",
+    "GP-E26"
+   ],
+   "unified_step": "SEQ6"
+  },
+  {
+   "id": "GP-E28",
+   "title": "Far Stratum gated program",
+   "phase": 9,
+   "phase_name": "P9 Far Stratum",
+   "depends_on": [
+    "GP-E18",
+    "GP-E27"
+   ],
+   "unified_step": "Far Stratum (Unified step 7)"
+  }
+ ],
+ "edges": [
+  {
+   "from": "GP-E09",
+   "to": "GP-E04",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E01",
+   "to": "GP-E08",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E07",
+   "to": "GP-E08",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E07",
+   "to": "GP-E09",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E09",
+   "to": "GP-E10",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E12",
+   "to": "GP-E10",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E14",
+   "to": "GP-E10",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E15",
+   "to": "GP-E10",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E07",
+   "to": "GP-E11",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E07",
+   "to": "GP-E12",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E09",
+   "to": "GP-E12",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E13",
+   "to": "GP-E14",
+   "kind": "depends_on",
+   "divergent": "D2"
+  },
+  {
+   "from": "GP-E13",
+   "to": "GP-E15",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E05",
+   "to": "GP-E16",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E13",
+   "to": "GP-E16",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E15",
+   "to": "GP-E16",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E13",
+   "to": "GP-E17",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E15",
+   "to": "GP-E17",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E13",
+   "to": "GP-E18",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E09",
+   "to": "GP-E19",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E13",
+   "to": "GP-E19",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E13",
+   "to": "GP-E20",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E02",
+   "to": "GP-E21",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E20",
+   "to": "GP-E21",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E07",
+   "to": "GP-E22",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E13",
+   "to": "GP-E22",
+   "kind": "depends_on",
+   "divergent": "D1"
+  },
+  {
+   "from": "GP-E14",
+   "to": "GP-E22",
+   "kind": "depends_on",
+   "divergent": "D1"
+  },
+  {
+   "from": "GP-E15",
+   "to": "GP-E22",
+   "kind": "depends_on",
+   "divergent": "D1"
+  },
+  {
+   "from": "GP-E20",
+   "to": "GP-E23",
+   "kind": "depends_on",
+   "divergent": "D3"
+  },
+  {
+   "from": "GP-E22",
+   "to": "GP-E23",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E13",
+   "to": "GP-E24",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E16",
+   "to": "GP-E24",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E20",
+   "to": "GP-E24",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E23",
+   "to": "GP-E24",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E13",
+   "to": "GP-E26",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E20",
+   "to": "GP-E26",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E23",
+   "to": "GP-E26",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E24",
+   "to": "GP-E26",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E08",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E10",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E11",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E12",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E16",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E17",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E18",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E19",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E21",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E22",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E23",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E24",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E26",
+   "to": "GP-E27",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E18",
+   "to": "GP-E28",
+   "kind": "depends_on",
+   "divergent": null
+  },
+  {
+   "from": "GP-E27",
+   "to": "GP-E28",
+   "kind": "depends_on",
+   "divergent": null
+  }
+ ],
+ "topological_order": [
+  "GP-E01",
+  "GP-E02",
+  "GP-E03",
+  "GP-E05",
+  "GP-E06",
+  "GP-E07",
+  "GP-E13",
+  "GP-E25",
+  "GP-E09",
+  "GP-E14",
+  "GP-E08",
+  "GP-E11",
+  "GP-E15",
+  "GP-E18",
+  "GP-E20",
+  "GP-E04",
+  "GP-E12",
+  "GP-E16",
+  "GP-E17",
+  "GP-E19",
+  "GP-E21",
+  "GP-E22",
+  "GP-E10",
+  "GP-E23",
+  "GP-E24",
+  "GP-E26",
+  "GP-E27",
+  "GP-E28"
+ ],
+ "authority_gates": {
+  "GP_E11": "Ace substantive Dell semantics",
+  "GP_E15": "Q1 save-path gate and proposal+failing-first before change",
+  "GP_E17": "Exchange journaling under PR #294 HOLD",
+  "GP_E18": "Keeper reference regeneration and Director mathematical admission",
+  "GP_E20": "Human-only Nursery acceptance and Ace auto-confirm policy",
+  "GP_E28": "Ace promotion where necessary, Grand Sync first, each Far item separately certified"
+ },
+ "authority_gates_are_edges": false,
+ "divergences": {
+  "D1": {
+   "summary": "HCN position. Unified section 5 places HCN at step 2, immediately after the Census; the DAG places GP-E22 at phase 5 on GP-E07 + GP-E13 + GP-E14 + GP-E15. The GP-E07 edge is common to both orders and is not divergent; the three edges below are the constraints section 5 does not express.",
+   "edges": [
+    "GP-E13->GP-E22",
+    "GP-E14->GP-E22",
+    "GP-E15->GP-E22"
+   ]
+  },
+  "D2": {
+   "summary": "Simulate (GP-E14) is staged at phase 1 on GP-E13 only. Unified section 5 has no Simulate step at all (Simulate exists there only as house cluster C13), so a section-5-citing readiness claim cannot even name this prerequisite -- yet GP-E10 and GP-E22 mechanically depend on it.",
+   "edges": [
+    "GP-E13->GP-E14"
+   ]
+  },
+  "D3": {
+   "summary": "Dock/Psalm granularity. Unified section 5 splits Dock (SEQ3) and Psalm Matrix (SEQ4) into two sequential steps after HCN; the DAG's single phase-6 circuit GP-E23 depends on GP-E20 (Nursery) as well as GP-E22. The GP-E22 edge is common to both orders; the GP-E20 edge is the constraint section 5 does not express.",
+   "edges": [
+    "GP-E20->GP-E23"
+   ]
+  },
+  "D4": {
+   "summary": "Phases with no Unified step: P0 Integrity, P2 Language and state, P3 Spatial/Tree and P4 Resonance/Nursery have no SEQ counterparts (plus GP-E14 per D2 and GP-E25, which no section 5 step sequences). Structural divergence: it carries no single edge; the unmapped node set below is the machine-checkable form, pinned by the checker suite.",
+   "edges": [],
+   "unmapped_nodes": [
+    "GP-E01",
+    "GP-E02",
+    "GP-E03",
+    "GP-E05",
+    "GP-E06",
+    "GP-E08",
+    "GP-E10",
+    "GP-E11",
+    "GP-E12",
+    "GP-E14",
+    "GP-E15",
+    "GP-E16",
+    "GP-E17",
+    "GP-E18",
+    "GP-E19",
+    "GP-E20",
+    "GP-E21",
+    "GP-E25"
+   ]
+  }
+ },
+ "checker": "form/dag_edge_ledger_test.py (suite DAG_EDGE_LEDGER)"
+}
