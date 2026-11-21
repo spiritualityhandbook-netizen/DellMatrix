@@ -832,6 +832,372 @@ ASSESSED until its closure evidence exists.
   PUBLIC_ENTRY_PATH)
 - timestamp: 2026-11-21T21:38Z
 
+### A.10 — J-07 Cross-view space (family suite `form/journey_views_test.py`)
+
+- journey_id: J-07
+- feature_scope: the file 06 oracle executed verbatim where
+  constructible at this head — at least two noncoincident
+  Ideas created, the same typed relation drawn and inspected
+  in 2D (plane table) / Flower / cube / text projections,
+  distinct projection facts vs canonical graph facts; the
+  failure oracle (pure visual proximity creates no semantic
+  relation; same Idea IDs/status after zoom and reload)
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1; suite executed in the PR #502 clone)
+- PR/head: #502 @ 5f6dcaefabaf4d7251e8c84e1dac58755f1f4beb
+  (baseline run executed before this section's commit; the
+  suite is carried by this PR)
+- public_action: literal `python3 -m form.repl --owner
+  <isolated>` subprocess sessions (piped stdin) —
+  PUBLIC_ENTRY_PATH for every journey action (create, nest,
+  show, cube, zoom/page, flower, flower geometry, vesica,
+  verita, rooms)
+- owner: per-run isolated owners (JView<run>, JGeom<run>,
+  JMany<run>, JStudio<run>), cleaned up after; the isolation
+  boundary is proven in-suite (no state files exist for any
+  of the family's four owners before the sessions start)
+- input_fixture_digest: suite file sha256
+  2a9623a58d634fd73cb51e84ce16f9151eee0dcf1fc2da8c62d9a7c572d49390
+  (inputs are fixed strings in the suite)
+- raw command/log: `python3 -m form.journey_views_test` —
+  **29/29 PASS** for the family (J-07 checks: 11 of 29,
+  incl. shared isolation/cleanup); expectations were
+  grounded in scratch-owner probes run before the suite was
+  written. Mutant sensitivity: removing the rooms
+  overflow-disclosure line in
+  view_rooms.render_room_ascii (inverse-edit mutant) fails
+  exactly j07_room_overflow_disclosed (28/29); reverted by
+  inverse edit, suite back to 29/29.
+- expected_state_diff: four created Ideas land at distinct
+  spatial-authority positions (welcome + 4 created = five
+  distinct (x, y) pairs); `nest beta_stone under
+  alpha_stone` adds exactly one ACTIVE contains entry
+  (alpha idea_id -> beta idea_id) to the canonical graph;
+  every projection (table `show`, cube-form idea page,
+  Flower geometry, rooms) presents the same unit ids,
+  positions and detail; view commands mutate nothing.
+- observed_state_diff: exactly the expected diff, in the
+  loader snapshots and after cold reload, on every leg.
+  The Flower projection additionally rendered Verita edges
+  for the proximate pairs welcome<->beta_stone and
+  beta_stone<->gamma_stone (d=1.0), labeled
+  "coherence-of-meet between ideas"; the canonical graph
+  gained NO entry for either pair — projection weather
+  stayed projection, graph truth stayed exactly the one
+  drawn relation. The growth room, given 19 units, listed
+  12 and disclosed "… +7 more".
+- refusal_class: none exercised by this journey's legs
+  (no refusal is in the J-07 oracle); the honest-absence
+  answers (`tree`/`space`/`sync` not understood) are
+  recorded under A.11/A.13.
+- persistence_generation: saves executed in-session
+  ("Session saved."); every comparison is a fresh loader
+  snapshot in a later process (--load)
+- cold_restart: YES — projections and graph compared
+  across separate REPL processes after reload
+- consumer_views: REPL plane table render, idea page,
+  containment + lineage text views, Flower geometry /
+  vesica / verita renders, view rooms, persistence-loader
+  snapshot, SemanticGraph loader
+- test_suite: form/journey_views_test.py (family 6;
+  registered in form/regress.py LIST in the same commit)
+- CI run: pending — this PR's CI at the section head (see
+  the §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending; PR #502 stands under the
+  Director MERGE HOLD (7068847023), which bars merging only
+- completion_status: **BASELINE — FULL_SCOPE_PASS
+  (public-path scope)** (baseline grade: evidence about
+  the harness and the current program only). Every oracle
+  point constructible at the public entry path has
+  public-path proof at this head: noncoincident creation,
+  the drawn typed relation visible in text views and the
+  canonical graph, the same facts under table/cube/Flower
+  projections, proximity creating no semantic relation,
+  identity/status stable across zoom, form switches and
+  cold reload, and rooms shown/total disclosure.
+- uncovered_cases: the oracle's pan/move leg is narrowed
+  honestly — the public path offers zoom (a pan to a unit)
+  but no idea-move verb preserving identity was found in
+  the probed REPL surface (movement verbs move the
+  avatar/viewer), so identity stability is proven across
+  zoom, form switches and reload instead; geometry values
+  in the renders carry coordinates and the FoL fixture's
+  own parameters (rings/centers/verita/dist), while the
+  fixture-assumption labeling the oracle asks of admitted
+  geometry belongs to J-08's subject (A.11); REAL_USER_PATH
+  not claimed (piped REPL is PUBLIC_ENTRY_PATH)
+- timestamp: 2026-11-21T21:45Z
+
+### A.11 — J-08 Tree 3D (family suite `form/journey_views_test.py`)
+
+- journey_id: J-08
+- feature_scope: the file 06 oracle — render admitted FCC
+  geometry as a typed Tree L1 view and compare rendered
+  centers, shells, slices, occupancy and UI scale to
+  deterministic fixtures; the failure oracle (before
+  Director admission show RESEARCH/PROJECTION only;
+  unproven geometry does not alter the kernel; guard
+  missing inputs)
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1)
+- PR/head: #502 @ 5f6dcaefabaf4d7251e8c84e1dac58755f1f4beb
+  (baseline run executed before this section's commit)
+- public_action: literal `python3 -m form.repl` subprocess
+  sessions — PUBLIC_ENTRY_PATH (flower geometry, vesica,
+  geometry, lattice, shell, chord, tree probe)
+- owner: per-run isolated owners (JGeom<run>, JView<run>),
+  cleaned up after; isolation boundary proven in-suite
+- input_fixture_digest: suite file sha256
+  2a9623a58d634fd73cb51e84ce16f9151eee0dcf1fc2da8c62d9a7c572d49390
+- raw command/log: `python3 -m form.journey_views_test` —
+  29/29 PASS for the family (J-08 checks: 4 of 29)
+- expected_state_diff: NONE — the journey's subject does
+  not exist at this head; the expected baseline outcome is
+  an honest absence plus a geometry layer that labels
+  itself projection and mutates nothing.
+- observed_state_diff: exactly that. No FCC geometry and
+  no Tree L1 view exists under form/ or gui/ at this head
+  (repository search: no FCC, face-centered, Tree L1 or
+  tree-render surface — GP-E18 unlanded, #420 independent
+  proof outstanding), and the REPL answers `tree` with
+  "Not understood" rather than faking a surface. The
+  geometry surfaces that DO exist behave per the failure
+  oracle's spirit: the sacred-geometry layer labels its
+  outputs "Vesica/Verita is coherence-of-meet · Voynich
+  rings are organizational · Fractals are deterministic
+  pattern tools"; on an owner with no nearby ideas the
+  Flower reports "Verita edges=0" with the honest hint
+  "(place nearby ideas or grow scores to form vesica
+  meets)"; and a full geometry battery (lattice, shell 0,
+  chord 0 0, flower geometry, geometry) changed no unit,
+  no nursery state and no graph entry — unproven geometry
+  does not alter the kernel.
+- refusal_class: honest absence ("Not understood") — no
+  fabricated surface, no refusal faked as a render
+- persistence_generation: saves executed in-session;
+  kernel-invariance compared on fresh loader snapshots
+- cold_restart: YES — battery run in a --load process
+  against the sealed-by-save state
+- consumer_views: REPL geometry renders, harmonic lattice
+  render, persistence-loader snapshot, SemanticGraph
+  loader (empty)
+- test_suite: form/journey_views_test.py (family 6)
+- CI run: pending — this PR's CI at the section head (see
+  the §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending; MERGE HOLD 7068847023
+  stands (merging only)
+- completion_status: **NOT BUILT at baseline** — a
+  finding, not a harness failure (plan §5.1(iii)): the
+  admitted-FCC Tree L1 subject (GP-E18, #420) has not
+  landed, so no rendered-centers/shells/slices/occupancy
+  comparison is constructible. The suite's J-08 checks
+  pin the baseline contract durably: any future Tree
+  surface that answers without RESEARCH/PROJECTION
+  labeling fails j08_tree_fcc_surface_projection_labeled_
+  or_absent, and the projection-honesty / missing-input /
+  no-kernel-mutation legs stand as regression evidence
+  for the geometry layer that exists today.
+- uncovered_cases: the entire admitted-geometry
+  comparison (centers, shells, slices, occupancy, UI
+  scale vs deterministic fixtures) awaits GP-E18 +
+  Director admission; L3 idea-radius and HCP variant are
+  unproven and, per this baseline's evidence, currently
+  alter nothing
+- timestamp: 2026-11-21T21:45Z
+
+### A.12 — J-13 Studio coherence (family suite `form/journey_views_test.py`)
+
+- journey_id: J-13
+- feature_scope: the file 06 oracle — navigate the public
+  pages/perspectives, edit an approved idea in one, verify
+  refreshed same canonical truth in the other views and
+  REPL; the failure oracle (empty/plantless Idea truthfully
+  represented; stale token, bad Origin, interrupted load;
+  no phantom live nodes)
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1)
+- PR/head: #502 @ 5f6dcaefabaf4d7251e8c84e1dac58755f1f4beb
+  (baseline run executed before this section's commit)
+- public_action: literal `python3 -m form.repl` subprocess
+  sessions AND the real Studio HTTP server
+  (`python3 -m gui.server --owner <isolated> --port
+  <ephemeral>`) driven over HTTP with its own client
+  protocol (session token served inside the index page) —
+  PUBLIC_ENTRY_PATH; the Studio/API surface is the plan's
+  named surface for a surface journey (§5.2)
+- owner: per-run isolated owners (JView<run>, JMany<run>,
+  JStudio<run>), cleaned up after; isolation proven
+  in-suite; the Studio server subprocess is terminated
+  before cleanup
+- input_fixture_digest: suite file sha256
+  2a9623a58d634fd73cb51e84ce16f9151eee0dcf1fc2da8c62d9a7c572d49390
+- raw command/log: `python3 -m form.journey_views_test` —
+  29/29 PASS for the family (J-13 checks: 10 of 29)
+- expected_state_diff: an edit made once at the REPL
+  (set detail) is the same truth in the receipt, the idea
+  page and the cold loader, with identity and position
+  preserved; pending Nursery proposals never appear as
+  live nodes in any projection; inside the Studio surface,
+  an executed seed's effect round-trips through /api/state
+  for its owner only.
+- observed_state_diff: exactly the expected diff on every
+  constructible leg. REPL legs: the edit receipt, idea
+  page and loader agree; growth left 10 proposals pending
+  and the plane projection still showed exactly the 5
+  live units, no pending id rendered as a node; the bare
+  Pebble (no detail, no goals) is stored and rendered as
+  empty — nothing fabricated (A.10). Studio legs: index
+  200 with wordmark + per-launch token; /api/dells =
+  exactly the canonical 100; POST without token 401,
+  stale token 401, valid token + foreign Origin 403;
+  `55[Set] :: tempo=120` executed and tempo=120 /
+  store_count=1 read back from a fresh /api/state; a
+  foreign owner's state was empty and the first owner's
+  intact on return; /api/growth served the server
+  program's canonical nodes with stage=None /
+  stage_source="unplanted" for the unplanted node — no
+  fabricated stage.
+- FINDING 1 (cross-surface gap, mechanism named): the
+  Studio server opens its program via
+  gui.server._get_program -> form.open.open_program,
+  which constructs a fresh Program and never consults the
+  persisted pair (form.persist.load is the REPL --load
+  door; the server never calls it). REPL-created Ideas
+  saved to disk therefore do NOT appear in the Studio's
+  /api/growth nodes at this head, so the oracle's
+  edit-in-one-surface / verify-in-the-other leg across
+  the REPL<->Studio boundary is NOT BUILT at baseline.
+  This is the GP-E24/E25 windowed-workspace scope (Part
+  0, in flight on PR #510), recorded here as a finding
+  for that scope — not repaired from Part VII's harness
+  PR, and no suite check asserts the gap as desired
+  behavior.
+- FINDING 2 (DAF-09 D1, exercised at the public path,
+  recorded precisely for its home circuit): with 19 true
+  history notes (loader count), the REPL `history` view
+  lists the last 16 entries truthfully (the listed tail
+  matches the loader tail exactly — asserted in-suite)
+  but its header prints "History · 16 notes (last 16
+  shown)" (form/dell_matrix/needs.py history_report):
+  the shown window's size is presented as the note count
+  and the true total (19) never appears — the shown/total
+  conflation named as DAF-09 defect D1. NOT fixed here:
+  the family 6 oracles do not name the history view and
+  D1 is a post-completion item with its own circuit; the
+  reproduction (19 total vs "16 notes" header, public
+  path, this head) is the precise record that circuit
+  needs.
+- refusal_class: Studio HTTP refusals — 401 "missing or
+  invalid session token" (absent and stale token), 403
+  "origin not allowed" (foreign Origin with valid token)
+- persistence_generation: REPL saves in-session; Studio
+  state is the server program's live state (no save door
+  exercised — see Finding 1)
+- cold_restart: YES for the REPL legs (loader-compared
+  across processes); the Studio legs compare the execute
+  response against a fresh HTTP read of the same live
+  server state
+- consumer_views: REPL idea page + plane render +
+  containment/lineage, Studio index page, /api/dells,
+  /api/state, /api/growth, persistence loader
+- test_suite: form/journey_views_test.py (family 6)
+- CI run: pending — this PR's CI at the section head (see
+  the §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending; MERGE HOLD 7068847023
+  stands (merging only)
+- completion_status: **BASELINE — PARTIAL_SCOPE**
+  (baseline grade). Proven at this head: within-REPL
+  cross-view coherence of an edit; empty-Idea truthful
+  representation; no phantom live nodes; Studio
+  token/Origin security legs; Studio within-surface
+  execute<->state coherence and owner isolation; honest
+  stage attribution in the growth lens. Not proven /
+  not built: the five-public-pages navigation (the
+  GP-E24/E25 pages do not exist at this head; the
+  Studio at this head is a single-page surface),
+  REPL<->Studio canonical-truth coherence (Finding 1),
+  and the browser-tier legs below.
+- uncovered_cases: five-pages web navigation,
+  interrupted load, screen-reader/keyboard and narrow
+  viewport are browser-surface acts
+  (gui/browser_acceptance.py territory), not
+  constructible from this harness's REPL/HTTP tier;
+  REAL_USER_PATH not claimed
+- timestamp: 2026-11-21T21:45Z
+
+### A.13 — J-23 Plan-change sync into Muse Space (family suite `form/journey_views_test.py`)
+
+- journey_id: J-23
+- feature_scope: the plan §5.2.1 designed oracle — change
+  the plan record, sync; the Space shows the new state
+  with provenance, and a stale mirror is labeled stale,
+  never presented as current truth
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1)
+- PR/head: #502 @ 5f6dcaefabaf4d7251e8c84e1dac58755f1f4beb
+  (baseline run executed before this section's commit)
+- public_action: dynamic surface probe from the suite
+  (import of form.muse_space_snapshot /
+  form.muse_space_views) plus the REPL absence answers
+  recorded under A.11 — no sync action exists to execute
+  at this head
+- owner: n/a (no state touched by this journey's probe;
+  the family's owners are recorded in A.10)
+- input_fixture_digest: suite file sha256
+  2a9623a58d634fd73cb51e84ce16f9151eee0dcf1fc2da8c62d9a7c572d49390
+- raw command/log: `python3 -m form.journey_views_test` —
+  29/29 PASS for the family (J-23 checks: 1 of 29 — the
+  dynamic provenance-contract-or-absent probe)
+- expected_state_diff: NONE at baseline — the subject
+  does not exist on this branch; the expected outcome is
+  an honest absence with no surface claiming a sync.
+- observed_state_diff: exactly that. No form.muse_space_*
+  module exists on this branch (repository search across
+  form/ and gui/: zero hits) and no public surface claims
+  a plan sync (the REPL answers `sync` / `space` as not
+  understood). GP-E25 — the Muse Space snapshot/views
+  build that is this journey's subject — was placed under
+  Part 0 by Director ruling and is built on PR #510,
+  unmerged; nothing on this head presents a plan mirror,
+  stale or otherwise.
+- refusal_class: honest absence ("Not understood") — no
+  fake sync surface
+- persistence_generation: n/a (no state touched)
+- cold_restart: n/a at baseline
+- consumer_views: none exist for this journey at this
+  head
+- test_suite: form/journey_views_test.py (family 6) —
+  the probe is dynamic: when a future head provides the
+  Muse Space modules, the same check requires the
+  snapshot code to carry provenance and staleness
+  handling before any sync claim is accepted, and the
+  full change-record -> sync -> provenance/stale-label
+  execution must then be built into this family and
+  graded in a successor packet
+- CI run: pending — this PR's CI at the section head (see
+  the §45 package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending; MERGE HOLD 7068847023
+  stands (merging only)
+- completion_status: **NOT BUILT at baseline** — a
+  finding, not a harness failure (plan §5.1(iii)): the
+  Muse Space surface (GP-E25) is in flight on PR #510
+  and unmerged, so no plan-change sync is constructible
+  from this head.
+- uncovered_cases: the whole designed oracle (plan
+  record change -> sync -> Space shows new state with
+  provenance; stale mirror labeled stale) awaits the
+  GP-E25 landing and a successor execution of this
+  family against it
+- timestamp: 2026-11-21T21:45Z
+
 ## Annex B — harness construction status (plan §5.2 families)
 
 | Family suite | Journeys | Status |
@@ -841,7 +1207,7 @@ ASSESSED until its closure evidence exists.
 | journey_idea_lifecycle_test.py | J-04, J-16, J-17 | BUILT — baseline 34/34 (Annex A.4–A.6; two product defects found + fixed: create-door detail/goals silent cuts, edit-door detail silent cut) |
 | journey_confirm_test.py | J-05, J-21 | BUILT — baseline 38/38 (Annex A.7–A.8; no product defect found; one receipt-freshness finding recorded in A.7) |
 | journey_rollback_test.py | J-06 | BUILT — baseline 28/28 (Annex A.9; no product defect found) |
-| journey_views_test.py | J-07, J-08, J-13, J-23 | not built |
+| journey_views_test.py | J-07, J-08, J-13, J-23 | BUILT — baseline 29/29 (Annex A.10–A.13; J-07 FULL_SCOPE_PASS public-path scope, J-13 PARTIAL_SCOPE with the REPL<->Studio load gap + DAF-09 D1 recorded as findings, J-08/J-23 NOT BUILT at baseline — subjects unlanded) |
 | journey_growth_test.py | J-09, J-14 | not built |
 | journey_dock_test.py | J-10, J-22 | not built |
 | journey_hcn_test.py | J-11 | not built (subject NOT BUILT until GP-E22 lands) |

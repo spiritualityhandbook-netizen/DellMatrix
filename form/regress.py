@@ -454,6 +454,12 @@ LIST = [
     # journey harness (plan section 5.2); registered in the same
     # commit as the suite it names (omitted-entry law).
     "form.journey_rollback_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 6: J-07 Cross-
+    # view space + J-08 Tree 3D + J-13 Studio coherence + J-23
+    # Plan-change sync journey harness (plan section 5.2);
+    # registered in the same commit as the suite it names
+    # (omitted-entry law).
+    "form.journey_views_test:smoke",
 ]
 
 TIMEOUT_S = 900
