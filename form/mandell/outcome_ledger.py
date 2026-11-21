@@ -79,18 +79,32 @@ RESULT_BLOCKED = "blocked"
 RESULT_SKIPPED = "skipped"
 RESULTS = (RESULT_COMPLETED, RESULT_FAILED, RESULT_BLOCKED, RESULT_SKIPPED)
 
-# Bounds: records carry bounded evidence, never huge arbitrary snapshots.
-_MAX_INPUT = 200
-_MAX_ERROR = 300
-_MAX_MESSAGE = 200
-_MAX_MESSAGES = 12
-_MAX_STATE_NOTE = 300
-_MAX_FLOW_PROGRAM = 500
+# Evidence storage budget (GP-E02 / FI-012): records carry evidence
+# whole. The budget is a disclosed STORAGE bound, not a content limit:
+# a field past the budget refuses the WHOLE capture explicitly —
+# build_outcome raises EvidenceOverBudget before any append and
+# capture_outcome returns None with nothing stored — instead of the
+# old behavior, which silently truncated fields to a prefix and
+# silently dropped messages past the count cap.
+_MAX_INPUT = 100_000
+_MAX_ERROR = 100_000
+_MAX_MESSAGE = 100_000
+_MAX_MESSAGES = 10_000
+_MAX_STATE_NOTE = 100_000
+_MAX_FLOW_PROGRAM = 100_000
 
 
-def _bound(text: Any, limit: int) -> str:
+class EvidenceOverBudget(ValueError):
+    """One evidence field exceeds the disclosed storage budget."""
+
+
+def _bound(text: Any, limit: int, field: str = "field") -> str:
     s = str(text or "")
-    return s[:limit]
+    if len(s) > limit:
+        raise EvidenceOverBudget(
+            f"outcome evidence field {field!r} length {len(s)} exceeds "
+            f"storage budget {limit}; capture refused, nothing stored")
+    return s
 
 
 def _content_fingerprint(proposal: Any) -> str:
@@ -349,6 +363,11 @@ def build_outcome(program: Any, receipt: Any,
     if _sanitize_receipt:
         from .redaction import sanitize_text as _st
         messages = [_st(str(m)) for m in messages]
+    if len(messages) > _MAX_MESSAGES:
+        raise EvidenceOverBudget(
+            f"outcome evidence field 'messages' count {len(messages)} "
+            f"exceeds storage budget {_MAX_MESSAGES}; capture refused, "
+            f"nothing stored")
 
     record: Dict[str, Any] = {
         "outcome_version": OUTCOME_VERSION,
@@ -359,11 +378,11 @@ def build_outcome(program: Any, receipt: Any,
         "mandell": mandell,
         "dell": dell_n,
         "semantic": semantic,
-        "input": _bound(sanitize_text(str(getattr(receipt, "input", "") or "")) if _sanitize_receipt else getattr(receipt, "input", ""), _MAX_INPUT),
+        "input": _bound(sanitize_text(str(getattr(receipt, "input", "") or "")) if _sanitize_receipt else getattr(receipt, "input", ""), _MAX_INPUT, "input"),
         "result": result,
-        "error": _bound(sanitize_text(str(getattr(receipt, "error", "") or "")) if _sanitize_receipt else getattr(receipt, "error", ""), _MAX_ERROR),
-        "messages": [_bound(m, _MAX_MESSAGE) for m in messages[:_MAX_MESSAGES]],
-        "state_note": _bound(sanitize_text(str(getattr(receipt, "state_note", "") or "")) if _sanitize_receipt else getattr(receipt, "state_note", ""), _MAX_STATE_NOTE),
+        "error": _bound(sanitize_text(str(getattr(receipt, "error", "") or "")) if _sanitize_receipt else getattr(receipt, "error", ""), _MAX_ERROR, "error"),
+        "messages": [_bound(m, _MAX_MESSAGE, "message") for m in messages],
+        "state_note": _bound(sanitize_text(str(getattr(receipt, "state_note", "") or "")) if _sanitize_receipt else getattr(receipt, "state_note", ""), _MAX_STATE_NOTE, "state_note"),
         "knowledge": knowledge,
         "conflicts": conflict["conflicts"],
         "policy_exclusions": conflict["policy_exclusions"],
@@ -401,7 +420,7 @@ def build_outcome(program: Any, receipt: Any,
     }
     if composition is not None and isinstance(composition, dict):
         record["composition"] = {
-            "flow_program": _bound(composition.get("flow_program", ""), _MAX_FLOW_PROGRAM),
+            "flow_program": _bound(composition.get("flow_program", ""), _MAX_FLOW_PROGRAM, "flow_program"),
             "node_index": int(composition.get("node_index", 0) or 0),
         }
     return record
@@ -492,7 +511,9 @@ def find_outcomes(program: Any, query: str, limit: int = 20) -> List[Dict[str, A
             out.append(dict(rec))
     out.sort(key=lambda r: int(r.get("outcome_seq", 0) or 0), reverse=True)
     try:
-        n = max(1, min(int(limit), 100))
+        # GP-E02: the caller's limit is honored exactly — the old
+        # silent clamp to 100 hid matches the caller asked for.
+        n = max(1, int(limit))
     except (TypeError, ValueError):
         n = 20
     return out[:n]
