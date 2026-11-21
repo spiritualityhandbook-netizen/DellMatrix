@@ -38,9 +38,10 @@ ruling. Historical bundles recorded MAIL_UNCHECKED / MAIL_HOLD;
 those codes are legacy aliases of GITHUB_UNCHECKED /
 AUTHORITY_HOLD.
 
-This suite is failing-first: at plan stage the reconciler does not
-exist, so every check fails with the absence recorded. The suite
-plants synthetic bundles only — no network, no gh, no form/state.
+Written failing-first at plan stage (0/28 while the reconciler was
+absent); the reconciler landed at code stage and the suite now
+judges it. The suite plants synthetic bundles only — no network,
+no gh, no form/state.
 """
 import copy
 import importlib.util

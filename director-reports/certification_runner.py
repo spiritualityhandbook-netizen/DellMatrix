@@ -372,6 +372,241 @@ def run_item(item_id, argv, repo_root, out_dir, subdir):
     return code, secs
 
 
+# ---------------------------------------------------------------------
+# SM-07 (Part 0, register row #91): the unified merge-gate reconciler.
+# Contract: director-reports/GATE_RECONCILIATION_RECORD_2026-11-20.md
+# and director-reports/PART_0_PLAN_2026-11-20.md section 3.1.
+# reconcile_gate(bundle) is a pure, offline, standard-library function:
+# it consumes ONE evidence bundle for ONE frozen candidate and returns
+# ONE verdict. It never raises on malformed input — a malformed bundle
+# is a REFUSED bundle (fail-closed). It is an instrument, not a
+# certificate: a RECONCILED verdict states that the evidence
+# reconciles; certification remains the authorities' act.
+# ---------------------------------------------------------------------
+
+_HOLD_DISPOSITIONS = frozenset({
+    "HOLD", "CORRECTION_REQUIRED", "INSUFFICIENT_EVIDENCE",
+    # Legacy receipt alias (historical bundles): MAIL_HOLD reads as
+    # AUTHORITY_HOLD; it is never a mandatory leg on the normal path.
+    "MAIL_HOLD",
+})
+
+_FRESHNESS_REQUIRED = (
+    "pr", "head_checked", "scan_timestamp", "latest_comment_id",
+    "latest_review_id", "director_disposition", "keeper_disposition",
+    "newest_ruling_id", "newest_ruling_disposition",
+)
+
+
+def _refused(refusals, legs):
+    return {"verdict": "REFUSED", "refusals": refusals, "legs": legs}
+
+
+def reconcile_gate(bundle):
+    """Reconcile one evidence bundle into one gate verdict.
+
+    Returns {"verdict": "RECONCILED" | "REFUSED",
+             "refusals": [<refusal code>, ...],
+             "legs": {leg name -> state}}.
+    Never raises: any malformed input returns REFUSED.
+    """
+    legs = {}
+    refusals = []
+
+    def refuse(code):
+        if code not in refusals:
+            refusals.append(code)
+
+    try:
+        if not isinstance(bundle, dict):
+            return _refused(["BUNDLE_INCOMPLETE"], legs)
+        phase = bundle.get("phase")
+        if phase not in ("pre", "post"):
+            refuse("BUNDLE_INCOMPLETE")
+            legs["phase"] = {"phase": phase, "state": "unknown"}
+            return _refused(refusals, legs)
+        legs["phase"] = {"phase": phase, "state": "ok"}
+
+        # --- frozen candidate identity -------------------------------
+        head = bundle.get("head")
+        tree = bundle.get("tree")
+        frozen_head = bundle.get("frozen_head")
+        frozen_tree = bundle.get("frozen_tree")
+        if bundle.get("pr") is None or head is None or tree is None \
+                or frozen_head is None or frozen_tree is None:
+            refuse("BUNDLE_INCOMPLETE")
+        if head is not None and frozen_head is not None \
+                and head != frozen_head:
+            refuse("HEAD_DRIFT")
+        if tree is not None and frozen_tree is not None \
+                and tree != frozen_tree:
+            refuse("TREE_DRIFT")
+        legs["exact_head"] = {
+            "head": head, "frozen_head": frozen_head,
+            "tree": tree, "frozen_tree": frozen_tree,
+            "state": "refused" if ("HEAD_DRIFT" in refusals
+                                   or "TREE_DRIFT" in refusals)
+            else "ok",
+        }
+
+        # --- checks leg (exact-head CI) ------------------------------
+        classifications = {}
+        checks_state = "ok"
+        checks = bundle.get("checks")
+        red_classes = bundle.get("red_classifications")
+        if not isinstance(checks, list) \
+                or not isinstance(red_classes, dict) \
+                or "allow_preexisting" not in bundle:
+            refuse("BUNDLE_INCOMPLETE")
+            checks_state = "incomplete"
+            checks = checks if isinstance(checks, list) else []
+            red_classes = red_classes if isinstance(red_classes, dict) \
+                else {}
+        allow_pre = bundle.get("allow_preexisting") is True
+        for chk in checks:
+            if not isinstance(chk, dict) or "name" not in chk:
+                refuse("BUNDLE_INCOMPLETE")
+                checks_state = "incomplete"
+                continue
+            name = chk.get("name")
+            sources = chk.get("sources")
+            if isinstance(sources, dict) and len(sources) >= 2 \
+                    and len(set(sources.values())) > 1:
+                refuse("SOURCE_DISAGREEMENT")
+                checks_state = "refused"
+            if chk.get("status") != "completed":
+                refuse("CHECK_NOT_TERMINAL")
+                checks_state = "refused"
+                continue
+            conclusion = chk.get("conclusion")
+            if conclusion == "success":
+                continue
+            if conclusion != "failure":
+                # A terminal state that is neither a pass nor a
+                # classified red is not a passed check.
+                refuse("CHECK_NOT_TERMINAL")
+                checks_state = "refused"
+                continue
+            cls = red_classes.get(name)
+            if cls is not None:
+                classifications[name] = cls
+            if cls == "candidate-caused":
+                refuse("CHECK_FAILED_CANDIDATE")
+                checks_state = "refused"
+            elif cls == "pre-existing":
+                if not allow_pre:
+                    refuse("CHECK_FAILED_PREEXISTING_UNAUTHORIZED")
+                    checks_state = "refused"
+            else:
+                # Missing, "unexplained", or unrecognized: every red
+                # check must carry an adequate classification.
+                refuse("CHECK_FAILED_UNCLASSIFIED")
+                checks_state = "refused"
+        legs["checks"] = {"state": checks_state,
+                          "classifications": classifications}
+
+        # --- merge-tree leg ------------------------------------------
+        merge_tree = bundle.get("merge_tree")
+        if not isinstance(merge_tree, dict):
+            refuse("BUNDLE_INCOMPLETE")
+            legs["merge_tree"] = {"state": "incomplete"}
+        elif merge_tree.get("clean") is not True \
+                or merge_tree.get("conflicts"):
+            refuse("MERGE_TREE_CONFLICT")
+            legs["merge_tree"] = {"state": "refused",
+                                  "conflicts": merge_tree.get("conflicts")}
+        else:
+            legs["merge_tree"] = {"state": "ok"}
+
+        # --- authority freshness leg (GitHub-first, section 32) ------
+        fresh = bundle.get("authority_freshness")
+        fresh_state = "ok"
+        if not isinstance(fresh, dict):
+            refuse("GITHUB_UNCHECKED")
+            fresh_state = "missing"
+        else:
+            source = fresh.get("source")
+            if source == "github":
+                if any(fresh.get(k) is None for k in _FRESHNESS_REQUIRED) \
+                        or fresh.get("pr") != bundle.get("pr") \
+                        or fresh.get("head_checked") != frozen_head:
+                    refuse("GITHUB_UNCHECKED")
+                    fresh_state = "incomplete"
+            elif source == "email_exception":
+                # Exception-only transport (AGENTS.md section 44):
+                # accepted only with a named GitHub outage/rollback
+                # authority receipt in the bundle; without one it
+                # refuses like any missing scan and never falls back
+                # to cached mail.
+                if not fresh.get("exception_receipt"):
+                    refuse("GITHUB_UNCHECKED")
+                    fresh_state = "exception_without_receipt"
+            else:
+                # Cached mail alone (or any other transport) never
+                # satisfies the operative GitHub leg.
+                refuse("GITHUB_UNCHECKED")
+                fresh_state = "not_github"
+            if fresh_state == "ok":
+                for key in ("newest_ruling_disposition",
+                            "director_disposition",
+                            "keeper_disposition"):
+                    if fresh.get(key) in _HOLD_DISPOSITIONS:
+                        refuse("AUTHORITY_HOLD")
+                        fresh_state = "hold"
+                        break
+        legs["authority_freshness"] = {"state": fresh_state}
+
+        # --- post-merge + fresh-clone legs (phase "post" only) -------
+        if phase == "post":
+            post = bundle.get("post_merge")
+            if not isinstance(post, dict):
+                refuse("BUNDLE_INCOMPLETE")
+                legs["post_merge"] = {"state": "incomplete"}
+            else:
+                post_state = "ok"
+                merge_commit = post.get("merge_commit")
+                if post.get("merged") is not True \
+                        or merge_commit is None \
+                        or merge_commit != post.get("expected_merge_commit") \
+                        or post.get("main_head_after") != merge_commit:
+                    refuse("POST_MERGE_MISMATCH")
+                    post_state = "refused"
+                post_checks = post.get("post_checks")
+                if not isinstance(post_checks, list):
+                    refuse("BUNDLE_INCOMPLETE")
+                    post_state = "incomplete"
+                else:
+                    for chk in post_checks:
+                        if not isinstance(chk, dict) \
+                                or chk.get("status") != "completed" \
+                                or chk.get("conclusion") != "success":
+                            refuse("POST_MERGE_MISMATCH")
+                            post_state = "refused"
+                            break
+                legs["post_merge"] = {"state": post_state,
+                                      "merge_commit": merge_commit}
+            fc = bundle.get("fresh_clone")
+            if not isinstance(fc, dict) or fc.get("ran") is not True:
+                refuse("FRESH_CLONE_MISSING")
+                legs["fresh_clone"] = {"state": "missing"}
+            elif fc.get("result") != "success":
+                refuse("FRESH_CLONE_FAILED")
+                legs["fresh_clone"] = {"state": "failed"}
+            elif isinstance(post, dict) \
+                    and fc.get("revision") != post.get("merge_commit"):
+                refuse("FRESH_CLONE_REVISION")
+                legs["fresh_clone"] = {"state": "wrong_revision"}
+            else:
+                legs["fresh_clone"] = {"state": "ok"}
+
+        if refusals:
+            return _refused(refusals, legs)
+        return {"verdict": "RECONCILED", "refusals": [], "legs": legs}
+    except Exception:
+        # Fail-closed: the reconciler never raises.
+        return _refused(["BUNDLE_INCOMPLETE"], legs)
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Independent certification runner "
@@ -380,7 +615,26 @@ def main():
                     help="output directory (default: "
                          "certification_run_<UTC timestamp> "
                          "under the current directory)")
+    ap.add_argument("--reconcile", default=None, metavar="BUNDLE_JSON",
+                    help="SM-07 gate reconciliation only: read one "
+                         "evidence-bundle JSON file, print the "
+                         "reconcile_gate verdict as JSON, and exit "
+                         "(0 = RECONCILED, 1 = REFUSED); the full "
+                         "certification run is skipped")
     args = ap.parse_args()
+
+    if args.reconcile is not None:
+        import json
+        try:
+            with open(args.reconcile) as fh:
+                bundle = json.load(fh)
+        except Exception as exc:
+            bundle = None
+            print(f"[reconcile] bundle unreadable: {exc}",
+                  file=sys.stderr)
+        verdict = reconcile_gate(bundle)
+        print(json.dumps(verdict, indent=2, sort_keys=True))
+        return 0 if verdict.get("verdict") == "RECONCILED" else 1
 
     script_path = os.path.abspath(__file__)
     repo_root = os.path.dirname(os.path.dirname(script_path))
