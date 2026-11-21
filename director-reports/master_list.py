@@ -34,8 +34,7 @@ STATUSES = [
 ]
 
 
-def load_and_validate(path):
-    items = json.load(open(path))
+def validate_items(items):
     errors = []
     ns = [i["n"] for i in items]
     if ns != list(range(1, len(items) + 1)):
@@ -45,11 +44,31 @@ def load_and_validate(path):
             errors.append(f"item {i['n']}: unknown status {i['status']!r}")
         if not i.get("title") or not i.get("ids") or not i.get("block"):
             errors.append(f"item {i['n']}: missing title/ids/block")
+    return errors
+
+
+def load_and_validate(path):
+    items = json.load(open(path))
+    errors = validate_items(items)
     if errors:
         for e in errors:
             print(f"VALIDATION ERROR: {e}", file=sys.stderr)
         sys.exit(2)
     return items
+
+
+def load_register_soft(path):
+    """Morning-pass loader: (items, None) or (None, error). Never raises,
+    never substitutes — an unreadable register is an UNVERIFIED result
+    (Part V plan section 4, failure behavior)."""
+    try:
+        items = json.load(open(path))
+    except Exception as e:
+        return None, f"unreadable: {e}"
+    errors = validate_items(items)
+    if errors:
+        return None, "invalid: " + "; ".join(errors)
+    return items, None
 
 
 def summarize(items):
@@ -155,6 +174,243 @@ def census(items):
     return found, missing
 
 
+# ---------------------------------------------------------------------------
+# Morning reconciliation pass (register rows #90 / #93 / #94; Part V plan
+# sections 4-6). ONE pin per report: every figure derives from the register
+# at the stated pin. A behind-main figure is labeled STALE, never presented
+# as current; an unreadable input yields UNVERIFIED sections, never a
+# guessed figure; PARTIAL never blends into the COMPLETE headline.
+# ---------------------------------------------------------------------------
+
+import re as _re
+
+_CANDIDATE_STATUSES = ("PARTIAL", "OPEN")
+
+
+def parse_crosswalk_rows(text):
+    """Parse a crosswalk section-1 table into {n: {status, title}}.
+    Rows are markdown lines `| n | title | STATUS | disposition |`;
+    anything else is ignored. Titles in the crosswalk are truncated
+    register titles (prefix-comparable, never equality-compared)."""
+    rows = {}
+    for line in text.splitlines():
+        m = _re.match(r"\|\s*(\d+)\s*\|", line)
+        if not m:
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 4 and cells[2] in STATUSES:
+            rows[int(cells[0])] = {"title": cells[1], "status": cells[2]}
+    return rows
+
+
+def drift_diff(items, crosswalk_rows):
+    """F3: register vs crosswalk pin. A status change, a title change, a
+    register row with no crosswalk line, or a crosswalk line with no
+    register row is a DRIFT alarm line — never a footnote. Sorted by row
+    number; deterministic."""
+    by_n = {i["n"]: i for i in items}
+    out = []
+    for n in sorted(set(by_n) | set(crosswalk_rows)):
+        if n not in crosswalk_rows:
+            out.append(f"DRIFT #{n}: register row has no crosswalk line")
+        elif n not in by_n:
+            out.append(f"DRIFT #{n}: crosswalk line has no register row")
+        else:
+            cw, cur = crosswalk_rows[n], by_n[n]
+            if cw["status"] != cur["status"]:
+                out.append(
+                    f"DRIFT #{n}: status {cw['status']} -> {cur['status']} "
+                    f"since the crosswalk pin")
+            ct, rt = cw["title"], cur["title"]
+            if not (rt.startswith(ct) or ct.startswith(rt)):
+                out.append(f"DRIFT #{n}: title changed since the crosswalk pin")
+    return out
+
+
+def staleness(pin_sha, live_sha, pin_items, live_items):
+    """F2: (is_stale, delta lines). Stale iff a live main SHA is supplied
+    and differs from the pin. The delta names every row whose status
+    changed between the pin register and the live register; without a
+    live register the delta itself is UNVERIFIED, never guessed."""
+    if not live_sha or not pin_sha or live_sha == pin_sha:
+        return False, []
+    if pin_items is None or live_items is None:
+        return True, ["register delta UNVERIFIED (live register not supplied)"]
+    pin_by = {i["n"]: i for i in pin_items}
+    live_by = {i["n"]: i for i in live_items}
+    delta = []
+    for n in sorted(set(pin_by) | set(live_by)):
+        if n not in pin_by:
+            delta.append(f"#{n}: row added since the pin")
+        elif n not in live_by:
+            delta.append(f"#{n}: row removed since the pin")
+        elif pin_by[n]["status"] != live_by[n]["status"]:
+            delta.append(
+                f"#{n}: {pin_by[n]['status']} -> {live_by[n]['status']}")
+    return True, delta
+
+
+def rank_next_best(current_items, pin_items, deps=None, limit=10):
+    """F5 / row #94 engine. Candidates are PARTIAL / OPEN rows. A
+    candidate whose row changed (status, title, ids — or existence)
+    between the ranking's input pin and the current register is a STALE
+    candidate: flagged with the changed field, excluded from the
+    ranking, and listed — never silently re-ranked, never silently
+    dropped. Deterministic: PARTIAL (the improvement pool — finishing
+    precedes starting) before OPEN, ties by MWL number. Every
+    recommendation carries a reason string, never a bare score."""
+    deps = deps or {}
+    pin_by = {i["n"]: i for i in pin_items}
+    cur_by = {i["n"]: i for i in current_items}
+    cand = {n for n, i in cur_by.items() if i["status"] in _CANDIDATE_STATUSES}
+    cand |= {n for n, i in pin_by.items() if i["status"] in _CANDIDATE_STATUSES}
+    ranked, stale = [], []
+    for n in sorted(cand):
+        p, c = pin_by.get(n), cur_by.get(n)
+        if p is None:
+            stale.append({"n": n, "field": "row",
+                          "detail": "absent at the ranking input pin"})
+            continue
+        if c is None:
+            stale.append({"n": n, "field": "row",
+                          "detail": "absent from the current register"})
+            continue
+        changed = None
+        for f in ("status", "title", "ids"):
+            if p[f] != c[f]:
+                changed = f
+                break
+        if changed:
+            stale.append({"n": n, "field": changed,
+                          "pin": p[changed], "current": c[changed]})
+            continue
+        if c["status"] not in _CANDIDATE_STATUSES:
+            continue
+        if c["status"] == "PARTIAL":
+            reason = ("PARTIAL — verified work exists, scope unclosed; "
+                      "improvement pool: finishing precedes starting")
+        else:
+            reason = "OPEN — not started"
+        dep_ns = sorted(deps.get(n, []))
+        if dep_ns:
+            facts = []
+            for d in dep_ns:
+                dst = cur_by[d]["status"] if d in cur_by else "UNKNOWN"
+                facts.append(f"dependency #{d} is {dst}")
+            reason += "; " + "; ".join(facts)
+        else:
+            reason += "; no dependency recorded"
+        ranked.append({"n": n, "status": c["status"], "reason": reason})
+    ranked.sort(key=lambda x: (0 if x["status"] == "PARTIAL" else 1, x["n"]))
+    return {"ranked": ranked[:limit], "stale": stale}
+
+
+def render_morning(board_items, pin_sha, live_sha=None, live_items=None,
+                   crosswalk_rows=None, facts=None, prev_complete=None,
+                   sitting=None, top=5):
+    """Row #93: the standard morning Director report format — the #90
+    pass's output. Six fixed sections; a section that cannot be filled
+    prints UNVERIFIED or its stated empty state, never omitted."""
+    facts = facts or {}
+    out = ["# MORNING REPORT — DellMatrix (standard format, Part V #90/#93/#94)",
+           ""]
+    # 1. Board line (F1 + F2)
+    out.append("## 1. Board")
+    if board_items is None:
+        out.append(f"UNVERIFIED — register unreadable at pin {pin_sha}; "
+                   f"no figure substituted.")
+        complete = None
+    else:
+        counts, total, complete, pct = summarize(board_items)
+        stale, delta = staleness(pin_sha, live_sha, board_items, live_items)
+        line = one_line(board_items) + f" at pin {pin_sha[:8]}"
+        if stale:
+            line += f" — STALE (live main {live_sha[:8]} is ahead of the pin)"
+        out.append(line)
+        if prev_complete is not None:
+            out.append(f"Delta since previous report: "
+                       f"{complete - prev_complete:+d} COMPLETE")
+        for d in delta:
+            out.append(f"Register delta: {d}")
+    out.append("")
+    # 2. Gate table (F4)
+    out.append("## 2. Gates")
+    prs = facts.get("prs")
+    if prs is None:
+        out.append("UNVERIFIED — gate facts not supplied.")
+    elif not prs:
+        out.append("No open PRs (stated empty state).")
+    else:
+        out.append("| PR | Head | Checks | Outstanding | Next owner |")
+        out.append("|---|---|---|---|---|")
+        for p in prs:
+            out.append(f"| #{p['n']} | {p['head']} | {p['checks']} | "
+                       f"{p['outstanding']} | {p['next_owner']} |")
+    out.append("")
+    # 3. Holds table (F4)
+    out.append("## 3. Holds")
+    holds = facts.get("holds")
+    if holds is None:
+        out.append("UNVERIFIED — hold facts not supplied.")
+    elif not holds:
+        out.append("No standing holds (stated empty state).")
+    else:
+        out.append("| Hold | Authority | Date | Release condition |")
+        out.append("|---|---|---|---|")
+        for h in holds:
+            out.append(f"| {h['name']} | {h['authority']} | {h['date']} | "
+                       f"{h['release']} |")
+    out.append("")
+    # 4. Drift (F3)
+    out.append("## 4. Drift")
+    if board_items is None or crosswalk_rows is None:
+        out.append("UNVERIFIED — crosswalk or register not supplied.")
+    else:
+        drift = drift_diff(board_items, crosswalk_rows)
+        if drift:
+            out.extend(drift)
+        else:
+            out.append("no drift")
+    out.append("")
+    # 5. Next-best (F5 / #94)
+    out.append("## 5. Next-best")
+    if board_items is None:
+        out.append("UNVERIFIED — register unreadable; no ranking computed.")
+    else:
+        current = live_items if live_items is not None else board_items
+        r = rank_next_best(current, board_items, deps=facts.get("deps"),
+                           limit=top)
+        if r["ranked"]:
+            for k, x in enumerate(r["ranked"], 1):
+                out.append(f"{k}. #{x['n']} — {x['reason']}")
+        else:
+            out.append("No rankable candidates (stated empty state).")
+        for s in r["stale"]:
+            out.append(f"STALE candidate #{s['n']}: {s['field']} changed "
+                       f"since the ranking input pin; excluded from ranking")
+    out.append("")
+    # 6. Sitting line
+    out.append("## 6. Sitting")
+    if board_items is None:
+        out.append("UNVERIFIED — register unreadable; no sitting figure.")
+    elif sitting is None:
+        out.append("No sitting target supplied (stated empty state).")
+    else:
+        counts, total, complete, pct = summarize(board_items)
+        out.append(
+            f"{sitting['label']}: {complete}/{total} COMPLETE; "
+            f"primary target >={sitting['primary']} — distance "
+            f"{max(0, sitting['primary'] - complete)}; "
+            f"secondary target >={sitting['secondary']} — distance "
+            f"{max(0, sitting['secondary'] - complete)}")
+    out.append("")
+    return "\n".join(out)
+
+
+SITTING_002 = {"label": "Sitting #002 (Mon 2026-11-23)", "primary": 42,
+               "secondary": 39}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default="master_work_list_items.json")
@@ -164,7 +420,52 @@ def main():
                     help="re-render and byte-diff against this committed render; exit 3 on drift")
     ap.add_argument("--census", action="store_true",
                     help="print the series-ID presence census and fail on unexpected absences")
+    ap.add_argument("--morning", action="store_true",
+                    help="run the morning reconciliation pass (rows #90/#93/#94) "
+                         "and print the standard-format report")
+    ap.add_argument("--pin", default=None,
+                    help="morning pass: the main SHA the register is pinned at")
+    ap.add_argument("--live-sha", default=None,
+                    help="morning pass: live main HEAD for the staleness check")
+    ap.add_argument("--live-data", default=None,
+                    help="morning pass: register JSON at live main (delta source)")
+    ap.add_argument("--crosswalk", default=None,
+                    help="morning pass: crosswalk markdown file for the drift diff")
+    ap.add_argument("--facts", default=None,
+                    help="morning pass: JSON facts file {prs, holds, deps}")
+    ap.add_argument("--prev-complete", type=int, default=None,
+                    help="morning pass: previous report's COMPLETE count")
+    ap.add_argument("--top", type=int, default=5,
+                    help="morning pass: number of next-best recommendations")
     args = ap.parse_args()
+    if args.morning:
+        items, err = load_register_soft(args.data)
+        pin = args.pin or "unknown-pin"
+        live_items = None
+        if args.live_data:
+            live_items, _ = load_register_soft(args.live_data)
+        crosswalk_rows = None
+        if args.crosswalk:
+            try:
+                crosswalk_rows = parse_crosswalk_rows(
+                    open(args.crosswalk).read())
+            except Exception:
+                crosswalk_rows = None
+        facts = None
+        if args.facts:
+            try:
+                facts = json.load(open(args.facts))
+            except Exception:
+                facts = None
+        print(render_morning(items, pin, live_sha=args.live_sha,
+                             live_items=live_items,
+                             crosswalk_rows=crosswalk_rows, facts=facts,
+                             prev_complete=args.prev_complete,
+                             sitting=SITTING_002, top=args.top))
+        if items is None:
+            print(f"morning pass UNVERIFIED: {err}", file=sys.stderr)
+            sys.exit(5)
+        return
     items = load_and_validate(args.data)
     if args.census:
         found, missing = census(items)

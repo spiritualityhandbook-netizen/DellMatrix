@@ -68,3 +68,45 @@ None found that require Director arbitration today. Recorded dependencies that c
 ## 7. Stop condition
 
 Per the addendum: this register and reconciliation are presented for Director review **before** any implementation priority changes. TD-2, B-2, and the Q1 audit continue under their existing authorizations; nothing else in this document starts work.
+
+---
+
+## ADDENDUM 2026-11-20 — the ranking connection, as built (MWL row #94)
+
+Part V code stage (PR #504; Director FINAL SCOPED PLAN-CONFIRM
+7052953889). The NBD ranking is no longer computed from this
+register's own aging snapshot. As built in
+`director-reports/master_list.py` (the ONE register parser):
+
+- **Status feed.** `rank_next_best(current_items, pin_items, deps)`
+  reads candidate status from the canonical MWL register at the
+  morning pass's single pin — the same pin as the board line, never
+  a second pin. This register's baseline line has been refreshed to
+  the Part V landing pin (`c6ee38d9`); the 2026-11-04 baseline
+  (`7e593e0a`) is preserved on its face as history.
+- **Deterministic stale-candidate rule.** A candidate (PARTIAL /
+  OPEN row) whose register row changed status, title, or IDs between
+  the ranking's input pin and the current register — or that exists
+  on only one side of the pin pair — is flagged a STALE candidate
+  with the changed field named, excluded from the ranking, and
+  listed in the report. It is never silently re-ranked on new data
+  and never silently dropped (a candidate that reached COMPLETE
+  since the pin appears in the stale list, not in the ranking and
+  not nowhere).
+- **Determinism.** Same inputs → byte-identical output: PARTIAL
+  rows (the improvement pool) rank before OPEN rows — finishing
+  precedes starting — ties broken by MWL number; every
+  recommendation carries a reason string naming its status and its
+  dependency facts (a dependency that is OPEN/GATED/PARTIAL is named
+  in the reason, never hidden by a score).
+- **Dependency feed.** Dependencies are supplied to the engine as an
+  explicit map read from the register's block/ID structure and,
+  where a row maps to a circuit, Edition 1's
+  `08_DEPENDENCY_DAG.json`; rows with no recorded dependency say so
+  in their reason string (plan section 12 limitation, carried).
+- **Proof.** `form/morning_reconciliation_test.py` 16/16, including
+  the stale-candidate, never-silently-dropped, completed-never-
+  recommended, and byte-determinism checks; the reconciler's first
+  production-shaped run at pin `c6ee38d9` reported the board
+  40/182, no drift against the current crosswalk, and the sitting
+  distances (+2 primary / 0 secondary).
