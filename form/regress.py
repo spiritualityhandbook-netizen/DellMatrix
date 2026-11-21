@@ -436,6 +436,10 @@ LIST = [
     # J-02 Refusal journey harness (plan section 5.2); registered in
     # the same commit that renames the plan-stage spec to *_test.py.
     "form.journey_chain_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 2: J-03 English ->
+    # LatinMandell journey harness (plan section 5.2); registered in
+    # the same commit that renames the plan-stage spec to *_test.py.
+    "form.journey_language_test:smoke",
 ]
 
 TIMEOUT_S = 900

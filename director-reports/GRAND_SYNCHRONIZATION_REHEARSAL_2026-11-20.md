@@ -136,12 +136,102 @@ ASSESSED until its closure evidence exists.
   case here is the reserved-address execution attempt, stated openly
 - timestamp: 2026-11-21T15:47Z
 
+### A.3 — J-03 English → LatinMandell (family suite `form/journey_language_test.py`)
+
+- journey_id: J-03
+- feature_scope: a documented supported English action end to end —
+  recognized intent and typed roles, LM stage / translation basis,
+  Mandell seed, exact executed operation; the file 06 failure oracle
+  (long admissible operand whole; uncertain analysis declines; no
+  fabricated fallback Show; truthful source labels on the offline
+  deterministic path)
+- source_main_sha: b9cebf72446c7a76af8754945c0399aff34c4e27
+  (branch base, as A.1; suite executed in the PR #502 clone)
+- PR/head: #502 @ a65f498db054bc5765abbebda8ac52324d0883ae
+  (baseline run executed before this section's commit; the suite and
+  the one-line product fix below are carried by this PR)
+- public_action: literal `python3 -m form.repl --owner <isolated>`
+  subprocess sessions (piped stdin) — PUBLIC_ENTRY_PATH
+- owner: per-run isolated owners (JLang<run>, JDecline<run>),
+  cleaned up after; the isolation boundary is proven in-suite (no
+  state files exist for either owner before the sessions start)
+- input_fixture_digest: suite file sha256
+  9ab6404827ab638c8749a5b1240ecc9335e8734448527c15f0743563ac08e687
+  (inputs are fixed strings in the suite)
+- raw command/log: `python3 -m form.journey_language_test` —
+  failing-first spec run 17/19 (only the two long-operand checks
+  failing, for the reason below); after the fix, **19/19 PASS**
+  (tally line `JOURNEY_LANGUAGE`, printed last)
+- expected_state_diff: the `mandell` door shows the seed
+  `08[Create](name="Seed Probe") > 15[Map] :: Seed_Probe` and
+  executes nothing; `create an idea called Journey Language Oak`
+  lands exactly that idea, its LM trace naming the intent basis
+  (curated governs: Dell 08), the operands typed as user data
+  (traced, not routed), and the spine labeled a projection;
+  `grow ideas 1` executes Dell 13 with the full route receipt
+  (ARGUMENTS cycles=1); the 189-char long-operand idea lands with
+  its label whole; both declines change no state
+- observed_state_diff: exactly the expected diff, in-session and
+  after cold reload; reloaded labels = [Journey Language Oak,
+  JourneyLongOperand <160 x's> ZzEndmark (whole, 189 chars),
+  Welcome]; the decline owner's session shows ideas=1, nursery=0,
+  and no state file was ever created for it
+- refusal_class: NOT_UNDERSTOOD decline (uncertain analysis —
+  gibberish input, no intent fabricated; the unknown intent's seed
+  echo `09[Show] :: unknown` is a labeled translation artifact, NOT
+  an executed Show — no Dell executed, no state changed);
+  AMBIGUITY decline (bare `restore`: checkpoint vs session reading,
+  genuinely ambiguous, not guessed — `Restore unavailable:`,
+  nothing executed)
+- persistence_generation: save executed in-session ("Session
+  saved."); reload in a second process with --load
+- cold_restart: YES — second REPL process; labels and counts
+  identical after reload
+- consumer_views: REPL receipt text (route receipt + LM-4
+  decomposition trace) + persistence-loader snapshot (reloaded vs
+  reloaded basis)
+- test_suite: form/journey_language_test.py (19 checks; J-03 is the
+  family's only journey)
+- DEFECT FOUND AND FIXED IN THIS SECTION: the long-operand oracle
+  point failed at baseline — `form/idea_create.py`
+  `parse_create_line` carried `"label": label[:80]`, silently
+  cutting an admissible 189-char operand's stored label at exactly
+  80 chars (tail and end marker lost, no provenance, no refusal).
+  Mechanism: REPL create door → `dell_matrix/needs.parse_and_place`
+  → `parse_create_line` → `Program.place` (the cut label is the
+  stored unit label). Fix: the label is stored whole (one line;
+  the canonical 40-char `slug_id` address cap is a separate,
+  disclosed constraint and is unchanged). Neighbor suites after
+  the fix: idea_create smoke 4/4, d1_dell8_create 21/21,
+  p3_wiring 26/26, journey_chain 16/16. Sibling cuts in the same
+  function (`detail[:2000]`, `goals[:12]`, and the `words`
+  detail[:120] at line 33) were observed and NOT touched here —
+  the words-cap provenance item already belongs to Part I's
+  FI-012 remediation wave (PR #507 matrix); the J-03 operand is
+  the label.
+- CI run: pending — this PR's CI at the section head (see the §45
+  package on PR #502)
+- checker: Uni (author); Keeper independent check at
+  CODE/RECORDS-CONFIRM
+- Director disposition: pending (code-stage confirm)
+- completion_status: **BASELINE — FULL_SCOPE_PASS** (baseline grade:
+  evidence about the harness and the current program only; the
+  rehearsal grade is assigned at rehearsal time, plan §5.1)
+- uncovered_cases: REAL_USER_PATH not claimed (piped REPL is
+  PUBLIC_ENTRY_PATH); no dock was connected on this path — the
+  dock-optional label evidence is the offline deterministic path's
+  own labels (curated LM basis; spine labeled projection); the
+  docked path itself is J-10's family; LatinMandell `la` door
+  exercised in probes (translates and executes with `english:` /
+  `mandel:` source labels) but not pinned in this baseline suite
+- timestamp: 2026-11-21T20:33Z
+
 ## Annex B — harness construction status (plan §5.2 families)
 
 | Family suite | Journeys | Status |
 |---|---|---|
 | journey_chain_test.py | J-01, J-02 | BUILT — baseline 16/16 (Annex A) |
-| journey_language_test.py | J-03 | not built |
+| journey_language_test.py | J-03 | BUILT — baseline 19/19 (Annex A.3; one product defect found + fixed) |
 | journey_idea_lifecycle_test.py | J-04, J-16, J-17 | not built (J-20 trace exists from plan stage; suite not built) |
 | journey_confirm_test.py | J-05, J-21 | not built |
 | journey_rollback_test.py | J-06 | not built |

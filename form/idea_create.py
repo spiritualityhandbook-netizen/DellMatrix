@@ -41,7 +41,11 @@ def parse_create_line(raw: str) -> Dict[str, Any]:
     strength = strength_score(detail, goals)
 
     return {
-        "label": label[:80],
+        # J-03 (GP-E27 file 06 oracle: "Long admissible operand remains
+        # whole"): the label is stored WHOLE. The former label[:80]
+        # silently cut admissible operands at this door (the stored
+        # unit label lost its tail with no provenance or refusal).
+        "label": label,
         "detail": detail[:2000],
         "goals": goals[:12],
         "words": words[:500],
