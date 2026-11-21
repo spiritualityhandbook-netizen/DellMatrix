@@ -489,6 +489,32 @@ def smoke() -> bool:
                 for cf in (pv2.get("conflicts") or []))
             and "c13_pp_same" not in p.cube.session.plane.units,
             f"conflicts={pv2.get('conflicts')}")
+        # -- 19c/19d. Malformed arm-list inputs honor the documented
+        # contract ("Never raises; a bad arm list yields an honest
+        # empty preview") — Director wake-pass defect, 2026-11-21:
+        # an int raised TypeError and a bare string was shredded
+        # into one preview arm per character.
+        pv3 = parallel_preview(p, 5)
+        rec("t19c_parallel_preview_int_input_never_raises",
+            pv3.get("kind") == "PARALLEL_PREVIEW"
+            and pv3.get("arms") == []
+            and pv3.get("conflicts") == [],
+            f"kind={pv3.get('kind')} arms={pv3.get('arms')}")
+        pv4 = parallel_preview(p, None)
+        rec("t19d_parallel_preview_none_input_empty",
+            pv4.get("kind") == "PARALLEL_PREVIEW"
+            and pv4.get("arms") == [],
+            f"kind={pv4.get('kind')} arms={pv4.get('arms')}")
+        pv5 = parallel_preview(p, "08[Create] :: c13_pp_solo")
+        arms5 = pv5.get("arms") or []
+        rec("t19e_parallel_preview_bare_string_is_one_arm",
+            pv5.get("kind") == "PARALLEL_PREVIEW"
+            and len(arms5) == 1
+            and arms5[0].get("outcome") == "executed"
+            and "c13_pp_solo" in ((arms5[0].get("diff") or {})
+                                  .get("units_created") or [])
+            and "c13_pp_solo" not in p.cube.session.plane.units,
+            f"arms={len(arms5)}")
     finally:
         for o in owners:
             _cleanup(o)

@@ -513,7 +513,18 @@ def run_parallel_preview(program: Any,
     blended into one answer: a caller reads each arm's outcome and
     the named conflicts, exactly as #170 contracts. Never raises;
     a bad arm list yields an honest empty preview."""
-    seeds = [str(s) for s in (seed_texts or [])]
+    if isinstance(seed_texts, str):
+        # A bare string is ONE seed text, never one arm per character.
+        seeds = [seed_texts]
+    elif seed_texts is None:
+        seeds = []
+    else:
+        try:
+            seeds = [str(s) for s in seed_texts]
+        except TypeError:
+            # A non-iterable arm list is a bad arm list: the honest
+            # empty preview the contract promises, never a raise.
+            seeds = []
     arms = [run_simulation(program, s) for s in seeds]
 
     def _touched(rcpt: Dict[str, Any]) -> Dict[str, set]:
