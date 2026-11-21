@@ -1,12 +1,12 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-21 ~04:17 CST  
-**UTC approx**: 2026-11-21T10:17:00Z  
+**Last cycle**: 2026-11-21 ~06:23 CST  
+**UTC approx**: 2026-11-21T12:23:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- Ripe gates: #509 (head b9f70da09e5b9eb160dc9f7f4c2a6ee26bb3858f) — SCOPED CODE CONFIRM (terminal CI ALL SUCCESS, spot-check workflows HISTORICAL workflow_dispatch only). #503 (head f67f7d3a12554c30b7f815bc68bc4e35778b9d06) — SCOPED CODE CONFIRM (terminal CI ALL SUCCESS, corrections + campaign x3 discharged). #502 (head 49cb88267f26a26460b54de7655f2a0315eb7310) — SCOPED PLAN CONFIRM residual (DAG ledger + negative tests + J16-J25 traces verified). #504/#505 heads advanced; prior residuals stand pending content challenge. Other Part PRs unchanged. #294 fenced.
-- Merged-main proofs: No new merges since last watermark. Prior #498/#501 stand.
+- Ripe gates: No new ripe gates at current heads. Existing stamps (Gemini carrier on #508 d0cfb0d2 PLAN, #507 da3f9c1e) and Director SCOPED PLAN-CONFIRM on #508 stand. #294 fenced under Q1 GATE HOLD. Other open Parts not ripe for new stamp.
+- Merged-main proofs: #509 merged 2026-11-21T11:33:00Z (merge SHA d1e1fb25). Pre-merge CODE CONFIRM at head stands. Post-merge Form smoke 44899637603 FAILURE; Uni diagnosis timing-oracle instrument defect in c7profile t8 (product not implicated). Exact missing for CODE credit: terminal merged-main CI ALL SUCCESS or Director close of the OPEN exception. Comment posted on PR. #504/#503 prior merges stand (no new credit owed this pass).
 - Records reviews: No new records packages awaiting review.
 - Trailing obligations: 0 discharged, 0 remaining.
 
@@ -16,12 +16,12 @@
 - gaps: none
 
 ## Scoreboard audit
-Live main post-#501 / #498. Board remains 40/182 COMPLETE. Dual-belt PLAN 242 / CODE 198 separate. Documented baseline 35 of 182 (Manifest Sitting #002) unchanged. No blend.
+Live main post-#509. Claimed board 43/182 COMPLETE (from #509 register flips #120/#172/#174). Dual-belt PLAN 242 / CODE 198 separate. Documented baseline 35 of 182 (Manifest Sitting #002) unchanged. No blend. #21 remains OPEN.
 
 ## Automation posture
-Stamped #509 CODE, #503 CODE, #502 PLAN residual. Prior residuals on #504/#505 restated by head move. Deep pass complete. Nothing needed from Ace. Next: Director CODE/merge rulings on stamped heads; Uni on remaining Part residuals.
+Named exact missing on #509 merged-main CODE credit (post-merge CI exception OPEN). No new stamps. Deep pass complete. Nothing needed from Ace. Next: Director ruling on #509 instrument diagnosis/repair path; Uni re-run merged-main smoke post-resolution.
 
 ## Silence flag
-#294/#233 fenced. #496 CREDIT HOLD. #504/#505-#508 pending content challenges. #502 PLAN residual stamped. #503/#509 CODE stamped. #501 closed with PLAN + RECORDS CONFIRM.
+#294/#233 fenced. #496 CREDIT HOLD. Open Part PRs have stamps or named holds at current heads. #509 CODE credit pending exception close. #501 closed with PLAN + RECORDS CONFIRM.
 
 — KEEPER
