@@ -161,3 +161,16 @@ def execute_seed(program: Any, seed_text: str, _leaf: bool = False) -> Dict[str,
 
     from .executor_leaf import execute_seed as execute_leaf
     return execute_leaf(program, seed_text)
+
+
+def parallel_preview(program: Any, seed_texts) -> Dict[str, Any]:
+    """C13 #170 — the named parallel-preview surface.
+
+    Rehearse several seeds side by side against the simulate
+    board (one isolated copy per arm) and receive each arm's own
+    receipt plus the cross-arm conflicts — never one blended
+    answer. Delegates to form.dell_matrix.simulate_board's
+    run_parallel_preview; the executor-level name is the public
+    contract a caller asks for."""
+    from form.dell_matrix.simulate_board import run_parallel_preview
+    return run_parallel_preview(program, seed_texts)
