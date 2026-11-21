@@ -17,8 +17,12 @@ Contract under test:
   AI's understanding; residue is marked proposal-only (the dock may
   propose a translation as pending work — the door never invents one).
 - Every dual-door result carries an engine receipt naming the layer
-  that translated (adapt / router / dock / guard / none) + confidence
-  where meaningful (DD-36 receipt labeling).
+  that ACTUALLY translated (adapt / router / guard / none) +
+  confidence where meaningful (DD-36 receipt labeling). Docked mode
+  is a requested mode, not an invoked layer — no dock exists until
+  FI-017 — so docked receipts carry dock_invoked False /
+  dock_status "not_invoked" and never layer "dock" (Director
+  7066274038, correction of the original C9 labeling).
 - DD-35 in both modes: text beyond the honest deterministic subset
   yields an explicit no_intent at the dual door — dell None, mandel
   "" — never an invented Show seed. Safety guards (conditional /
@@ -139,8 +143,10 @@ def run_all():
     i = translate_dual("grow 3", docked=True)
     check("c9_dual_docked_grow",
           i.action == "grow" and i.args.get("cycles") == 3
-          and i.engine.get("layer") == "dock"
+          and i.engine.get("layer") == "router"
           and i.engine.get("mode") == "docked"
+          and i.engine.get("dock_invoked") is False
+          and i.engine.get("dock_status") == "not_invoked"
           and i.engine.get("residue") is False)
     i = translate_dual("the weather is nice today", docked=True)
     c = translate("the weather is nice today")
@@ -148,6 +154,35 @@ def run_all():
           i.action == "unknown" and i.mandel == c.mandel
           and i.engine.get("residue") is True
           and i.engine.get("proposal_only") is True)
+
+    # --- docked receipt truth (Director 7066274038, CORRECTION) --------
+    # docked=True is a REQUESTED mode only: no dock exists until FI-017,
+    # so the receipt must name the layer that ACTUALLY determined the
+    # result and state dock_invoked False / dock_status "not_invoked".
+    # layer "dock" must never be emitted for a call that did not happen.
+    i = translate_dual("grow 3", docked=True)
+    check("c9_dual_docked_router_receipt_truth",
+          i.action == "grow" and i.args.get("cycles") == 3
+          and i.engine.get("mode") == "docked"
+          and i.engine.get("layer") == "router"
+          and i.engine.get("dock_invoked") is False
+          and i.engine.get("dock_status") == "not_invoked")
+    i = translate_dual("the weather is nice today", docked=True)
+    check("c9_dual_docked_residue_receipt_truth",
+          i.action == "unknown"
+          and i.engine.get("mode") == "docked"
+          and i.engine.get("layer") == "none"
+          and i.engine.get("dock_invoked") is False
+          and i.engine.get("dock_status") == "not_invoked"
+          and i.engine.get("residue") is True
+          and i.engine.get("proposal_only") is True)
+    i = translate_dual("delete the oak if it rains", docked=True)
+    check("c9_dual_docked_guard_receipt_truth",
+          i.action == "unknown"
+          and i.engine.get("mode") == "docked"
+          and i.engine.get("layer") == "guard"
+          and i.engine.get("dock_invoked") is False
+          and i.engine.get("dock_status") == "not_invoked")
 
     # --- Translate as the dock's tool ----------------------------------
     d = adapt_determine("save")

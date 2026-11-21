@@ -91,3 +91,27 @@ stands in `form/mandell/adapt_intent.py` (ADAPT_CREDIT).
 - Row #157 is NOT flipped: credit settles only via the normal
   post-merge path (merged-main proof + both authorities). Row #155
   PERSONAMATRIX is the next section in this lane. No V/FAR row moves.
+
+## Correction addendum (2026-11-21) — docked receipt truth
+
+Director §42 code challenge 7066274038 (CORRECTION REQUIRED) found a
+receipt-integrity defect in the original build above: under
+`docked=True`, `translate_dual` called only the canonical local
+router yet wrote `layer: "dock"` on the engine receipt, falsely
+attributing the result to a dock that was never invoked (the live
+dock integration is FI-017, not built). The §"What was built"
+receipt list above ("adapt / router / dock / guard / none") records
+that original labeling and is superseded by this addendum.
+
+Repair (this PR, corrected head): `mode="docked"` remains the
+REQUESTED mode, but the receipt now names the layer that ACTUALLY
+determined the result — "guard" when the safety guard binds,
+"router" when the canonical cascade constructs the command, "none"
+when nothing determines an intent — and explicitly carries
+`dock_invoked: False` / `dock_status: "not_invoked"`. Residue stays
+proposal-only; canonical `translate()` is unchanged. Failing-first:
+3 new checks (router-recognized / unknown residue / guarded
+conditional destructive, all under `docked=True`) RED at the
+original head, GREEN after repair; suite 26/26 (one pre-existing
+assertion, `c9_dual_docked_grow`, updated — it had encoded the
+false "dock" label).

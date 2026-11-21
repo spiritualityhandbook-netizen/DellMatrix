@@ -26,10 +26,14 @@ class Intent:
     # decomposition exists (empty input -- never fabricated).
     lm: Optional[Dict[str, Any]] = None
     # C9 DUAL MODE (DD-36): the engine receipt, attached ONLY by the
-    # translate_dual() door — which layer translated (adapt / router
-    # / dock / guard / none), the mode, and the deterministic layer's
-    # confidence where meaningful. Canonical translate() never sets
-    # it (None), so existing consumers see no change.
+    # translate_dual() door — which layer ACTUALLY translated (adapt
+    # / router / guard / none), the requested mode, and the
+    # deterministic layer's confidence where meaningful. Docked mode
+    # is a requested mode only — no dock exists until FI-017 — so a
+    # docked receipt additionally carries dock_invoked False /
+    # dock_status "not_invoked" and never claims layer "dock"
+    # (Director 7066274038). Canonical translate() never sets it
+    # (None), so existing consumers see no change.
     engine: Optional[Dict[str, Any]] = None
 
 
@@ -1008,6 +1012,10 @@ def _translate_body(english: str) -> Intent:
 # docked mode the canonical cascade stands in for the docked AI's
 # understanding, and residue is marked proposal-only: the dock may
 # PROPOSE a translation as pending work, this door never invents one.
+# RECEIPT TRUTH (Director 7066274038): docked is a REQUESTED mode,
+# not an invoked layer — no dock exists until FI-017, so docked
+# receipts name the layer that actually ran (router / guard / none)
+# and carry dock_invoked False / dock_status "not_invoked".
 # DD-35 binds both modes: beyond the honest deterministic subset, the
 # undocked door returns an explicit no_intent — dell None, mandel ""
 # — never an invented Show seed. Canonical translate() is unchanged.
@@ -1048,10 +1056,17 @@ def translate_dual(english: str, *, docked: bool = False) -> Intent:
     adapt_mismatch; when neither layer honestly parses the text,
     DD-35: an explicit no_intent (layer "none").
 
-    Docked: the canonical result stands (layer "dock"); an unknown
-    result is residue — receipt residue/proposal_only True — the
-    docked AI may propose a translation as pending work under the
-    dock's proposal discipline; nothing is invented here.
+    Docked: mode "docked" records the REQUESTED mode only — no
+    docked AI is invoked by this door (the live dock integration is
+    FI-017, not built), so the receipt names the layer that ACTUALLY
+    determined the result — "guard" when the safety guard binds,
+    "router" when the canonical cascade constructs the command,
+    "none" when nothing determines an intent — and explicitly
+    carries dock_invoked False / dock_status "not_invoked". An
+    unknown result is residue — receipt residue/proposal_only True —
+    the docked AI may propose a translation as pending work under
+    the dock's proposal discipline; nothing is invented here, and a
+    dock call that did not occur is never reported.
     """
     text = (english or "").strip()
     mode = "docked" if docked else "undocked"
@@ -1059,13 +1074,24 @@ def translate_dual(english: str, *, docked: bool = False) -> Intent:
         base = _translate_body(english)
         base.engine = {"mode": mode, "layer": "none", "confidence": None,
                        "intent_type": None, "reason": "empty_input"}
+        if docked:
+            base.engine["dock_invoked"] = False
+            base.engine["dock_status"] = "not_invoked"
         return base
     if docked:
         intent = translate(english)
         residue = intent.action == "unknown"
-        intent.engine = {"mode": mode, "layer": "dock", "confidence": None,
+        if _safety_blocked(text.lower()):
+            layer = "guard"
+        elif residue:
+            layer = "none"
+        else:
+            layer = "router"
+        intent.engine = {"mode": mode, "layer": layer, "confidence": None,
                          "intent_type": None, "residue": residue,
-                         "proposal_only": residue}
+                         "proposal_only": residue,
+                         "dock_invoked": False,
+                         "dock_status": "not_invoked"}
         return intent
     if _safety_blocked(text.lower()):
         intent = translate(english)
