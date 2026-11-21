@@ -1,4 +1,4 @@
-"""SM-08 failing-first suite — durable resumability checkpoints.
+"""SM-08 suite — durable resumability checkpoints.
 
 Register row #92 (SM-08): make the workflow resumable — last-good
 checkpoint + completed-circuit records. The practice exists today
@@ -31,9 +31,10 @@ with these laws:
   * a checkpoint written by one process is readable by another
     (the recovery reader is a different OS process than the writer).
 
-This suite is failing-first: at plan stage the module does not
-exist, so every check fails with the absence recorded. All writes
-go to a private temp directory — no form/state contact.
+Written failing-first at plan stage (0/9 while the module was
+absent); the module landed at code stage and the suite now judges
+it. All writes go to a private temp directory — no form/state
+contact.
 """
 import os
 import subprocess
@@ -80,8 +81,7 @@ def full_state():
 
 def main():
     check("module_present", RC is not None,
-          "form/resume_checkpoint.py does not exist yet "
-          "(SM-08 unbuilt — expected at plan stage)")
+          "form/resume_checkpoint.py does not exist " "(SM-08 module missing)")
     if RC is None:
         for name in ("round_trip", "cross_process_read",
                      "torn_checkpoint_refused",

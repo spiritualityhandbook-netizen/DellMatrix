@@ -419,6 +419,10 @@ LIST = [
     # 6924026251): persona readers are observationally pure and the
     # Bimo pilot writer syncs persona_matrix.active beside the lens.
     "form.persona_purity_test:smoke",
+    # Part 0 SM-08 (register row #92): resumability checkpoints —
+    # code-stage step zero registers the suite in the same change
+    # that lands form/resume_checkpoint.py (plan §4 / line-430 note).
+    "form.resumability_checkpoint_test:smoke",
 ]
 
 TIMEOUT_S = 900
