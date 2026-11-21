@@ -194,6 +194,12 @@ LIST = [
     "form.translate_word_counts_test",
     "form.translate_dead_args_test",
     "form.c9_dualmode_test",
+    # Part IV row #155 PERSONAMATRIX (C8.MultiPsalm; Ace ruling
+    # 2026-11-20 item 11): user persona layer on the canonical
+    # BIMO/persona machinery — roster placement, user creation +
+    # persistence round-trip, fusion guidance/limits union, and the
+    # no-authority fence (a docked persona cannot confirm).
+    "form.personamatrix_test",
     "form.r19sib_count_door_test",
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",

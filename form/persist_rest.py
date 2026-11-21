@@ -638,6 +638,17 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         p.persona_matrix = PersonaMatrix(active=getattr(p, "persona_lens", None))
     except Exception:
         pass
+    # Row #155 PERSONAMATRIX: restore the user persona layer. Absent
+    # section = legacy (no user personas). Records are re-validated
+    # by activate_custom_personas; invalid ones are skipped there,
+    # never half-applied.
+    try:
+        from form.dell_matrix.personas import activate_custom_personas
+        recs = data.get("custom_personas") or []
+        p.user_personas = [dict(r) for r in recs if isinstance(r, dict)]
+        activate_custom_personas(p.user_personas)
+    except Exception:
+        pass
     hist = data.get("history") or []
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]

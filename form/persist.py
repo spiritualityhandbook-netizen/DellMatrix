@@ -373,6 +373,10 @@ def serialize(program: Program) -> Dict[str, Any]:
         "forces": program.forces.to_dict() if hasattr(program, "forces") else {},
         "spatial": program.spatial.to_dict() if hasattr(program, "spatial") else {},
         "bimo": program.bimo.to_dict() if hasattr(program, "bimo") else {},
+        # Row #155 PERSONAMATRIX: user persona records (experimentation
+        # layer). Absent = legacy (no user personas). The records are
+        # validated again on restore by activate_custom_personas.
+        "custom_personas": [dict(r) for r in getattr(program, "user_personas", []) or []],
         "nursery": _serialize_nursery(program),
         "lattice": _serialize_lattice(program),
         "history": list(getattr(program, "history", []) or [])[-24:],

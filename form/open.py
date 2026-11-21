@@ -181,6 +181,13 @@ class Program:
     body_style: str = "stick"  # ascii body: stick|block|shadow|robot
     bimo: BIMOBody = field(default_factory=BIMOBody)
     persona_matrix: PersonaMatrix = field(default_factory=PersonaMatrix)
+    # Row #155 PERSONAMATRIX: user-created persona records (the
+    # experimentation layer). The ACTIVE layer lives in
+    # form.dell_matrix.personas.CUSTOM_PERSONAS and is (re)activated
+    # from these records at construction/load; these records are what
+    # persist (persist section "custom_personas"). Settings only —
+    # a persona never carries authority (see personas.py layer law).
+    user_personas: List[Dict[str, Any]] = field(default_factory=list)
     # First-person matrix walk (inside centerpoints)
     center_f: int = 0  # up/down lattice axis (frequency / height)
     look_pitch: str = "level"  # down | level | up
@@ -232,6 +239,11 @@ class Program:
         # WO-5.1: Initialize session-scoped acceptance policy (default DENY).
         from form.dell_matrix.acceptance_policy import AcceptancePolicy
         self.acceptance_policy = AcceptancePolicy()
+        # Row #155: activate this program's user persona layer (empty
+        # for a fresh program; persist restore re-activates from the
+        # saved records after construction).
+        from form.dell_matrix.personas import activate_custom_personas
+        activate_custom_personas(getattr(self, "user_personas", []) or [])
         from form.dell_matrix.nursery import owner_nursery_path
         # Private injection hook for generation-member loads: when open_program
         # is given a staged Nursery, __post_init__ uses it instead of reading
@@ -759,6 +771,45 @@ class Program:
 
     def personas_roster(self) -> List[str]:
         return render_roster(self.persona_lens)
+
+    def create_persona(self, name=None, category=None, role=None,
+                       focus=None, directives=None, abilities=None,
+                       limits=None, prefer_skins=None, bimo_slot=None,
+                       matrix=None, emoji="🧩",
+                       color="#888888") -> Dict[str, Any]:
+        """Row #155 PERSONAMATRIX: create a user persona on this
+        program (experimentation layer).
+
+        The persona resolves/docks immediately through the canonical
+        personas machinery and is carried in this program's persisted
+        records (call save() to make it durable). A persona is a
+        setting: creating or docking one confers NO authority and
+        cannot confirm Nursery proposals — confirmation stays behind
+        this program's AcceptancePolicy.
+        """
+        from form.dell_matrix.personas import create_custom_persona
+        res = create_custom_persona(
+            name, category, role, focus, directives, abilities, limits,
+            prefer_skins=prefer_skins, bimo_slot=bimo_slot,
+            matrix=matrix, emoji=emoji, color=color)
+        if res.get("ok"):
+            rec = res["persona"]
+            self.user_personas = [
+                r for r in self.user_personas if r.get("id") != rec["id"]
+            ] + [dict(rec)]
+        return res
+
+    def remove_persona(self, name=None) -> Dict[str, Any]:
+        """Row #155: remove a USER persona from this program. The
+        canonical roster is read-only — removing a built-in persona
+        is refused by the personas layer."""
+        from form.dell_matrix.personas import remove_custom_persona
+        res = remove_custom_persona(name)
+        if res.get("ok"):
+            self.user_personas = [
+                r for r in self.user_personas if r.get("id") != res["removed"]
+            ]
+        return res
 
     def persona_matrix_status(self) -> Dict[str, Any]:
         # Q-OD.2: pure read — writers own the lens->active sync
