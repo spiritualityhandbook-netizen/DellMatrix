@@ -66,6 +66,7 @@ is invented here.
 from __future__ import annotations
 
 import hashlib
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 OUTCOME_VERSION = 1
@@ -86,16 +87,43 @@ RESULTS = (RESULT_COMPLETED, RESULT_FAILED, RESULT_BLOCKED, RESULT_SKIPPED)
 # capture_outcome returns None with nothing stored — instead of the
 # old behavior, which silently truncated fields to a prefix and
 # silently dropped messages past the count cap.
+#
+# The budget binds at three levels (Director 7066282827): per field,
+# per message count, and per TOTAL record — the sum of every evidence
+# field in one record. Per-field/count caps alone would still admit
+# 10,000 messages x 100,000 chars (~10^9 chars retained); the total
+# cap bounds one record's evidence at _MAX_TOTAL_EVIDENCE chars
+# regardless of distribution. The total is audited from field lengths
+# BEFORE the record (and its bounded copies) is materialized, so the
+# refusal itself allocates nothing proportional to the evidence.
+#
+# A refused capture is never a silent bare None: capture_outcome
+# records a typed CaptureDiagnostic on the program for EVERY attempt
+# (see last_capture_diagnostic) distinguishing evidence_over_budget
+# from ledger_absent / ledger_invalid / capture_error.
 _MAX_INPUT = 100_000
 _MAX_ERROR = 100_000
 _MAX_MESSAGE = 100_000
 _MAX_MESSAGES = 10_000
 _MAX_STATE_NOTE = 100_000
 _MAX_FLOW_PROGRAM = 100_000
+_MAX_TOTAL_EVIDENCE = 1_000_000
 
 
 class EvidenceOverBudget(ValueError):
-    """One evidence field exceeds the disclosed storage budget."""
+    """Evidence exceeds the disclosed storage budget.
+
+    Carries structured provenance (field / length / budget) so the
+    refusal is auditable without parsing the message.
+    """
+
+    def __init__(self, message: str, *, field: Optional[str] = None,
+                 length: Optional[int] = None,
+                 budget: Optional[int] = None) -> None:
+        super().__init__(message)
+        self.field = field
+        self.length = length
+        self.budget = budget
 
 
 def _bound(text: Any, limit: int, field: str = "field") -> str:
@@ -103,7 +131,8 @@ def _bound(text: Any, limit: int, field: str = "field") -> str:
     if len(s) > limit:
         raise EvidenceOverBudget(
             f"outcome evidence field {field!r} length {len(s)} exceeds "
-            f"storage budget {limit}; capture refused, nothing stored")
+            f"storage budget {limit}; capture refused, nothing stored",
+            field=field, length=len(s), budget=limit)
     return s
 
 
@@ -367,7 +396,43 @@ def build_outcome(program: Any, receipt: Any,
         raise EvidenceOverBudget(
             f"outcome evidence field 'messages' count {len(messages)} "
             f"exceeds storage budget {_MAX_MESSAGES}; capture refused, "
-            f"nothing stored")
+            f"nothing stored",
+            field="messages", length=len(messages), budget=_MAX_MESSAGES)
+
+    # Evidence text fields, hoisted so the total-record budget can be
+    # audited from lengths BEFORE the record is materialized. The
+    # sanitize/bound treatment below is unchanged: Dell 41 receipts
+    # are sanitized first, then every field passes _bound.
+    raw_input = getattr(receipt, "input", "")
+    raw_error = getattr(receipt, "error", "")
+    raw_note = getattr(receipt, "state_note", "")
+    if _sanitize_receipt:
+        from .redaction import sanitize_text as _stf
+        input_text: Any = _stf(str(raw_input or ""))
+        error_text: Any = _stf(str(raw_error or ""))
+        note_text: Any = _stf(str(raw_note or ""))
+    else:
+        input_text, error_text, note_text = raw_input, raw_error, raw_note
+    flow_text: Any = ""
+    if isinstance(composition, dict):
+        flow_text = composition.get("flow_program", "")
+
+    def _evidence_len(value: Any) -> int:
+        return len(value) if isinstance(value, str) else len(str(value or ""))
+
+    total_evidence = (
+        _evidence_len(input_text) + _evidence_len(error_text)
+        + _evidence_len(note_text)
+        + sum(_evidence_len(m) for m in messages)
+        + _evidence_len(flow_text)
+    )
+    if total_evidence > _MAX_TOTAL_EVIDENCE:
+        raise EvidenceOverBudget(
+            f"outcome evidence total length {total_evidence} exceeds "
+            f"total storage budget {_MAX_TOTAL_EVIDENCE}; capture "
+            f"refused, nothing stored",
+            field="total", length=total_evidence,
+            budget=_MAX_TOTAL_EVIDENCE)
 
     record: Dict[str, Any] = {
         "outcome_version": OUTCOME_VERSION,
@@ -378,11 +443,11 @@ def build_outcome(program: Any, receipt: Any,
         "mandell": mandell,
         "dell": dell_n,
         "semantic": semantic,
-        "input": _bound(sanitize_text(str(getattr(receipt, "input", "") or "")) if _sanitize_receipt else getattr(receipt, "input", ""), _MAX_INPUT, "input"),
+        "input": _bound(input_text, _MAX_INPUT, "input"),
         "result": result,
-        "error": _bound(sanitize_text(str(getattr(receipt, "error", "") or "")) if _sanitize_receipt else getattr(receipt, "error", ""), _MAX_ERROR, "error"),
+        "error": _bound(error_text, _MAX_ERROR, "error"),
         "messages": [_bound(m, _MAX_MESSAGE, "message") for m in messages],
-        "state_note": _bound(sanitize_text(str(getattr(receipt, "state_note", "") or "")) if _sanitize_receipt else getattr(receipt, "state_note", ""), _MAX_STATE_NOTE, "state_note"),
+        "state_note": _bound(note_text, _MAX_STATE_NOTE, "state_note"),
         "knowledge": knowledge,
         "conflicts": conflict["conflicts"],
         "policy_exclusions": conflict["policy_exclusions"],
@@ -426,6 +491,74 @@ def build_outcome(program: Any, receipt: Any,
     return record
 
 
+# Capture diagnostic vocabulary (GP-E02 correction, Director
+# 7066282827). A capture attempt ends exactly one of two ways:
+# captured, or capture_unavailable with one of these typed reasons.
+# The reasons are mutually distinguishable — an over-budget refusal
+# can never be mistaken for a missing ledger, and vice versa.
+CAPTURED = "captured"
+CAPTURE_UNAVAILABLE = "capture_unavailable"
+REASON_EVIDENCE_OVER_BUDGET = "evidence_over_budget"
+REASON_LEDGER_ABSENT = "ledger_absent"
+REASON_LEDGER_INVALID = "ledger_invalid"
+REASON_CAPTURE_ERROR = "capture_error"
+
+
+@dataclass(frozen=True)
+class CaptureDiagnostic:
+    """Typed outcome of one capture_outcome attempt.
+
+    ``status`` is CAPTURED (``reason`` None, ``outcome_id`` set) or
+    CAPTURE_UNAVAILABLE (``reason`` one of the REASON_* constants;
+    for evidence_over_budget, ``field``/``length``/``budget`` carry
+    the refusal provenance). Observation only — never a truth claim.
+    """
+
+    status: str
+    reason: Optional[str] = None
+    detail: str = ""
+    field: Optional[str] = None
+    length: Optional[int] = None
+    budget: Optional[int] = None
+    outcome_id: Optional[str] = None
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "status": self.status,
+            "reason": self.reason,
+            "detail": self.detail,
+            "field": self.field,
+            "length": self.length,
+            "budget": self.budget,
+            "outcome_id": self.outcome_id,
+        }
+
+
+def last_capture_diagnostic(program: Any) -> Optional[Dict[str, Any]]:
+    """The typed diagnostic of the most recent capture attempt.
+
+    This is the disclosed surface a consumer reads to distinguish
+    "the latest execution was captured" (status captured, outcome_id
+    set) from "its outcome is unavailable, and why" (status
+    capture_unavailable + reason). Returns None only when no capture
+    has been attempted on this program through capture_outcome.
+    """
+    diag = getattr(program, "last_capture_diagnostic", None)
+    if isinstance(diag, CaptureDiagnostic):
+        return diag.as_dict()
+    if isinstance(diag, dict):
+        return dict(diag)
+    return None
+
+
+def _store_capture_diagnostic(program: Any,
+                              diagnostic: CaptureDiagnostic) -> None:
+    try:
+        program.last_capture_diagnostic = diagnostic
+    except Exception:
+        pass
+
+
 def capture_outcome(program: Any, receipt: Any,
                     composition: Optional[Dict[str, Any]] = None,
                     nurture_fresh: bool = False,
@@ -438,29 +571,64 @@ def capture_outcome(program: Any, receipt: Any,
     dependency authority. Returns the record, or None if the program
     cannot host a ledger.
 
+    A None return is never silent: EVERY attempt records a typed
+    CaptureDiagnostic on the program (read it via
+    last_capture_diagnostic) distinguishing evidence_over_budget from
+    ledger_absent / ledger_invalid / capture_error. The observed
+    routing action is never vetoed by a refusal — the refusal is
+    reported, not raised.
+
     ``nurture_fresh`` (from the route_intent wrapper) gates provenance
     attribution: only a receipt slot replaced by THIS call is read.
 
     ``interaction_id`` (EIC-I): optional explicit correlation.
     None = UNKNOWN.
     """
+    record: Optional[Dict[str, Any]] = None
+    diagnostic: Optional[CaptureDiagnostic] = None
     try:
         records = getattr(program, "outcome_records", None)
         if records is None:
-            return None
-        if not isinstance(records, dict):
-            return None
-        record = build_outcome(program, receipt, composition,
-                                nurture_fresh=nurture_fresh,
-                                interaction_id=interaction_id)
-        # Deterministic: the sequence counter advances exactly once per
-        # captured outcome, in the same step as the append.
-        program.outcome_seq = int(record["outcome_seq"])
-        records[record["outcome_id"]] = record
-        program.last_outcome = record
-        return record
-    except Exception:
-        return None
+            diagnostic = CaptureDiagnostic(
+                status=CAPTURE_UNAVAILABLE, reason=REASON_LEDGER_ABSENT,
+                detail="program has no outcome_records ledger")
+        elif not isinstance(records, dict):
+            diagnostic = CaptureDiagnostic(
+                status=CAPTURE_UNAVAILABLE, reason=REASON_LEDGER_INVALID,
+                detail="program outcome_records is not a dict")
+        else:
+            try:
+                record = build_outcome(program, receipt, composition,
+                                       nurture_fresh=nurture_fresh,
+                                       interaction_id=interaction_id)
+            except EvidenceOverBudget as exc:
+                diagnostic = CaptureDiagnostic(
+                    status=CAPTURE_UNAVAILABLE,
+                    reason=REASON_EVIDENCE_OVER_BUDGET,
+                    detail=str(exc), field=exc.field,
+                    length=exc.length, budget=exc.budget)
+            except Exception as exc:  # observer contract: never raise
+                diagnostic = CaptureDiagnostic(
+                    status=CAPTURE_UNAVAILABLE,
+                    reason=REASON_CAPTURE_ERROR,
+                    detail=f"{type(exc).__name__}: {exc}"[:300])
+            if record is not None:
+                # Deterministic: the sequence counter advances exactly
+                # once per captured outcome, in the same step as the
+                # append.
+                program.outcome_seq = int(record["outcome_seq"])
+                records[record["outcome_id"]] = record
+                program.last_outcome = record
+                diagnostic = CaptureDiagnostic(
+                    status=CAPTURED, outcome_id=record["outcome_id"])
+    except Exception as exc:  # observer contract: never raise
+        record = None
+        diagnostic = CaptureDiagnostic(
+            status=CAPTURE_UNAVAILABLE, reason=REASON_CAPTURE_ERROR,
+            detail=f"{type(exc).__name__}: {exc}"[:300])
+    if diagnostic is not None:
+        _store_capture_diagnostic(program, diagnostic)
+    return record
 
 
 def get_outcome(program: Any, outcome_id: str) -> Optional[Dict[str, Any]]:

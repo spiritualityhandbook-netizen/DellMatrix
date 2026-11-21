@@ -139,6 +139,138 @@ def run_all():
     found = find_outcomes(host, "short", limit=500)
     check("pin: small search returns the match", len(found) == 1)
 
+    # --- GP-E02 correction (Director 7066282827, CORRECTION REQUIRED):
+    # capture_outcome must not swallow EvidenceOverBudget into a bare
+    # None indistinguishable from ledger-absent/invalid. Every capture
+    # attempt leaves a typed diagnostic (status capture_unavailable +
+    # reason) readable via outcome_ledger.last_capture_diagnostic, and
+    # the budget binds at total-record level, not only per field/count.
+    from form.mandell import outcome_ledger as _ol
+    from form.mandell.outcome_ledger import get_outcome_by_seq, list_outcomes
+
+    diag_of = getattr(_ol, "last_capture_diagnostic", None)
+    total_cap = getattr(_ol, "_MAX_TOTAL_EVIDENCE", 1_000_000)
+
+    def _diag(h):
+        if diag_of is None:
+            return None
+        try:
+            return diag_of(h)
+        except Exception:
+            return None
+
+    # (1a) Oversized single field: zero append, seq unmoved, typed
+    # budget provenance (field/length/budget), not a bare None.
+    host = _host()
+    ok_rec = capture_outcome(host, _receipt(input="baseline capture"))
+    rec = capture_outcome(host, _receipt(input="B" * 100_001))
+    d = _diag(host)
+    check("gpe02 oversized input: zero append + typed budget provenance",
+          rec is None and ok_rec is not None
+          and len(host.outcome_records) == 1 and host.outcome_seq == 1
+          and d is not None and d.get("status") == "capture_unavailable"
+          and d.get("reason") == "evidence_over_budget"
+          and d.get("field") == "input"
+          and d.get("length") == 100_001
+          and d.get("budget") == 100_000,
+          f"diag={d}")
+
+    # (1b) Oversized message count: zero append + typed provenance.
+    host = _host()
+    rec = capture_outcome(host, _receipt(messages=["m"] * 10_001))
+    d = _diag(host)
+    check("gpe02 oversized message count: zero append + typed provenance",
+          rec is None and len(host.outcome_records) == 0
+          and d is not None and d.get("reason") == "evidence_over_budget"
+          and d.get("field") == "messages",
+          f"diag={d}")
+
+    # (5) Total-record budget: every field under its per-field cap and
+    # the count under its cap, but the composed total over the total
+    # cap -> typed refusal, zero append. (Pre-repair this CAPTURES:
+    # 20 x 60,000 chars would be retained by the ledger.)
+    host = _host()
+    many = ["T" * 60_000 for _ in range(20)]
+    rec = capture_outcome(host, _receipt(messages=many))
+    d = _diag(host)
+    check("gpe02 total-record budget: over total -> typed refusal",
+          rec is None and len(host.outcome_records) == 0
+          and d is not None and d.get("reason") == "evidence_over_budget"
+          and d.get("field") == "total"
+          and d.get("length") == 1_200_000
+          and d.get("budget") == total_cap,
+          f"diag={d}")
+
+    # (1c) Budget refusal is distinguishable from ledger absent and
+    # ledger invalid — three different typed reasons.
+    host_absent = SimpleNamespace(owner="R23Probe", outcome_seq=0,
+                                  outcome_records=None, last_outcome=None,
+                                  last_nurture=None)
+    rec_a = capture_outcome(host_absent, _receipt(input="x"))
+    d_absent = _diag(host_absent)
+    host_invalid = SimpleNamespace(owner="R23Probe", outcome_seq=0,
+                                   outcome_records=[], last_outcome=None,
+                                   last_nurture=None)
+    rec_i = capture_outcome(host_invalid, _receipt(input="x"))
+    d_invalid = _diag(host_invalid)
+    check("gpe02 ledger absent/invalid reasons distinct from budget",
+          rec_a is None and rec_i is None
+          and d_absent is not None
+          and d_absent.get("reason") == "ledger_absent"
+          and d_invalid is not None
+          and d_invalid.get("reason") == "ledger_invalid",
+          f"absent={d_absent} invalid={d_invalid}")
+
+    # (2) The observed action is unaffected: through the real
+    # production observer caller, an already-executed action stands,
+    # capture returns None without raising, refusal is typed.
+    from form.mandell.execution_observer import observe_specialized_execution
+    host = _host()
+    effects = ["routing effect applied"]  # the action already ran
+    out = observe_specialized_execution(host, action="probe",
+                                        input_text="Z" * 100_001, ok=True)
+    d = _diag(host)
+    check("gpe02 observer path: action stands, refusal typed, no raise",
+          out is None and effects == ["routing effect applied"]
+          and len(host.outcome_records) == 0
+          and d is not None and d.get("reason") == "evidence_over_budget",
+          f"diag={d}")
+
+    # (3) A refused capture leaves nothing a downstream consumer can
+    # present as the captured record for that execution: no record at
+    # the next seq, not findable, list unchanged; last_outcome still
+    # points at the real prior capture while the diagnostic discloses
+    # the latest attempt was unavailable (outcome_id None).
+    host = _host()
+    first = capture_outcome(host, _receipt(input="first captured"))
+    marker = "UNIQUEOVERSIZEDMARKER" + "Q" * 100_001
+    rec = capture_outcome(host, _receipt(input=marker))
+    d = _diag(host)
+    check("gpe02 refused capture: no presentable record, diagnostic discloses",
+          rec is None and first is not None
+          and get_outcome_by_seq(host, 2) is None
+          and find_outcomes(host, "UNIQUEOVERSIZEDMARKER") == []
+          and len(list_outcomes(host, limit=10)) == 1
+          and host.last_outcome is first
+          and d is not None and d.get("status") == "capture_unavailable"
+          and d.get("outcome_id") is None,
+          f"diag={d}")
+
+    # (4) Valid near-cap evidence stays byte-exact, and a successful
+    # capture reports a captured diagnostic naming the record.
+    host = _host()
+    inp = "V" * 99_999
+    m1, m2 = "a" * 50_000, "b" * 49_999
+    rec = capture_outcome(host, _receipt(input=inp, messages=[m1, m2]))
+    d = _diag(host)
+    check("gpe02 valid near-cap evidence byte-exact + captured diagnostic",
+          rec is not None and rec.get("input") == inp
+          and rec.get("messages") == [m1, m2]
+          and d is not None and d.get("status") == "captured"
+          and d.get("reason") is None
+          and d.get("outcome_id") == rec.get("outcome_id"),
+          f"diag={d}")
+
 
 def main():
     run_all()
