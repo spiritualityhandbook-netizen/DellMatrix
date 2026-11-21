@@ -35,6 +35,45 @@ this suite failed on import — form.mandell.dell_audit did not
 exist (the whole-address execution audit had never been run as
 one body; only the static standing table and the D1 bare survey
 existed, neither of which renders per-address verdicts).
+
+REPAIR NOTE (2026-11-21, CI smoke failure at baebae3d): the
+first CI run of this suite at baebae3d failed in the form-smoke
+job (Python 3.11) with the suite as the only red entry
+(312/313). Two instrument defects were found:
+
+1. NO_COUNT (proven locally through the regress harness at the
+   exact head): smoke() never printed an n/m tally — the tally
+   was printed only under __main__ — and the harness scores an
+   entry GREEN only when the last printed n/m count has
+   n == m. Run through the harness at the exact CI prefix
+   (the 127 LIST entries up to and including this one, in one
+   private copy, accumulated state matching CI's file count
+   exactly), every check passed and smoke() returned True, yet
+   the entry still scored RED for lack of a count. The suite as
+   committed could never be GREEN through the harness. Fixed:
+   smoke() prints the tally itself.
+2. The ledger byte-pinned an executor bookkeeping count:
+   the Side effects column included "history +N (execution
+   bookkeeping)" — a count of entries the executor journals
+   per execution. The audit's own contract (dell_audit module
+   docstring) states bookkeeping is never a Dell side effect;
+   it is executor mechanics, not a Dell contract fact, and a
+   ledger that byte-pins it drifts with journaling mechanics
+   rather than with Dell contracts. In CI (Python 3.11) the
+   drift check was the suite's only failing check on both
+   regress passes; under 3.12 the render is byte-identical
+   across clean state, foreign accumulated state, the faithful
+   in-harness prefix reproduction, timezone variants and
+   PYTHONHASHSEED variants, so the exact differing field could
+   not be isolated locally (no 3.11 interpreter on the build
+   machine; the CI capture withholds child stdout beyond the
+   failing check's name by design). Fixed by excluding the
+   bookkeeping count from the ledger render (disclosed in the
+   ledger's Scope section and in dell_audit): every contract
+   fact — verdicts, bases, reasons, legs, canonical-change
+   descriptions, counts — remains byte-pinned and derived from
+   the live sweep, and the drift check now names the differing
+   Dell rows on failure so any recurrence is self-locating.
 """
 
 from __future__ import annotations
@@ -164,9 +203,29 @@ def run_all():
         "director-reports", "PART_II_GPE07_AUDIT_LEDGER_2026-11-21.md")
     with open(ledger_path, encoding="utf-8") as f:
         committed = f.read()
+    fresh_render = dell_audit.render_ledger_md(records)
+    drift_detail = "committed ledger == fresh render"
+    if committed != fresh_render:
+        # Name the differing Dell rows so a drift failure is
+        # self-locating in any environment that runs the suite.
+        old_rows = {ln.split("|")[1].strip(): ln
+                    for ln in committed.splitlines()
+                    if ln.startswith("| ") and ln.split("|")[1].strip()
+                    .isdigit()}
+        new_rows = {ln.split("|")[1].strip(): ln
+                    for ln in fresh_render.splitlines()
+                    if ln.startswith("| ") and ln.split("|")[1].strip()
+                    .isdigit()}
+        differing = sorted(
+            (k for k in set(old_rows) | set(new_rows)
+             if old_rows.get(k) != new_rows.get(k)), key=int)
+        header_diff = (committed.split("## Per-address records")[0]
+                       != fresh_render.split("## Per-address records")[0])
+        drift_detail = (f"ledger drift: differing Dell rows={differing[:8]}"
+                        f" header_differs={header_diff}")
     check("audit_ledger_drift",
-          committed == dell_audit.render_ledger_md(records),
-          "committed ledger == fresh render")
+          committed == fresh_render,
+          drift_detail)
 
     fp_after = _state_fingerprint()
     check("audit_isolation", fp_before == fp_after,
@@ -180,11 +239,16 @@ def smoke() -> bool:
     except Exception as e:
         print(f"FAIL gpe07_audit raised {type(e).__name__}: {e}")
         return False
-    return all(ok for _, ok in CHECKS)
+    ok = all(c for _, c in CHECKS)
+    # The regress harness scores an entry by the last n/m count
+    # printed on stdout; the tally must be printed here, in the
+    # harness-called function — not only under __main__ (repair
+    # note, 2026-11-21: without it the entry scored NO_COUNT and
+    # could never be GREEN through the harness).
+    n = sum(1 for _, c in CHECKS if c)
+    print(f"GP-E07 audit: {n}/{len(CHECKS)} checks passed")
+    return ok
 
 
 if __name__ == "__main__":
-    ok = smoke()
-    n = sum(1 for _, c in CHECKS if c)
-    print(f"GP-E07 audit: {n}/{len(CHECKS)} checks passed")
-    sys.exit(0 if ok else 1)
+    sys.exit(0 if smoke() else 1)

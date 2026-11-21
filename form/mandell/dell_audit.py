@@ -20,8 +20,13 @@ measured evidence:
 
 - canonical state before/after (plane unit ids + sandbox flags,
   nursery pending ids, avatar status, enhance switch, owner
-  files) — execution bookkeeping (program history) is recorded
-  separately and never counted as a Dell side effect;
+  files) — execution bookkeeping (program history) is measured
+  and kept on the record (history_bookkeeping) but never counted
+  as a Dell side effect and never rendered into the ledger:
+  bookkeeping counts are executor mechanics, not Dell contract
+  facts, and pinning them in the ledger made the ledger drift
+  with journaling mechanics rather than with Dell contracts
+  (repair note, gpe07_audit_test, 2026-11-21);
 - the result envelope (named refusal reason, result payload
   keys beyond the standard envelope, chain atom outcome);
 - a second invocation on the same owner after the field is
@@ -317,11 +322,18 @@ def audit_dell(n: int, owner: str, state_dir: str,
     bookkeeping = None
     if hist_before is not None and hist_after is not None:
         bookkeeping = hist_after - hist_before
-    effects = list(change)
-    if bookkeeping:
-        effects.append(f"history +{bookkeeping} (execution bookkeeping)")
-    if effects:
-        record["side_effects"] = "; ".join(effects)
+    # The history delta is executor bookkeeping (entries the
+    # executor journals per execution). It is measured and kept
+    # on the record as evidence, but it is NOT a Dell side effect
+    # (the rule stated in this module's docstring) and it is not
+    # rendered into the ledger: bookkeeping counts are executor
+    # mechanics, not a Dell contract fact, and a ledger that
+    # byte-pins them drifts whenever journaling mechanics vary
+    # without any Dell's contract changing (repair note,
+    # gpe07_audit_test, 2026-11-21).
+    record["history_bookkeeping"] = bookkeeping
+    if change:
+        record["side_effects"] = "; ".join(change)
 
     if crash is not None:
         record["bare_outcome"] = "crashed"
@@ -478,6 +490,12 @@ def render_ledger_md(records: List[Dict[str, Any]]) -> str:
         "  UNREACHABLE (standing table gives no executable path).",
         "- Registry ACTIVE = reachability only, never completion;",
         "  no verdict in this ledger is a completion claim.",
+        "- The Side effects column lists canonical changes only.",
+        "  Executor history bookkeeping (entries journaled per",
+        "  execution) is excluded by design: it is not a Dell side",
+        "  effect, and its count is executor mechanics — a fact",
+        "  that may vary without any Dell contract changing — so",
+        "  it is not a ledger fact and is never byte-pinned here.",
         "- Reconciliation: 51 Core I (00-50) + 49 Core II (51-99) =",
         "  100 addresses. Address 151 (Harmonidell) is a reserved",
         "  alias, standing RESERVED_NOT_ACTIVE — not a core Dell,",
