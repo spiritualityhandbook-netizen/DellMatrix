@@ -428,6 +428,10 @@ LIST = [
     # code-stage step zero registers the suite in the same change
     # that lands reconcile_gate in director-reports/certification_runner.py.
     "form.gate_reconciliation_test:smoke",
+    # Part VII (PR #502): Edition 1 DAG edge ledger — machine-checkable
+    # transcription of 08_DEPENDENCY_DAG.json with one negative bypass
+    # test per divergent edge (D1-D4, Director 7044797269).
+    "form.dag_edge_ledger_test:smoke",
 ]
 
 TIMEOUT_S = 900
