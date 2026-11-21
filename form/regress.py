@@ -407,6 +407,7 @@ LIST = [
     "form.track_d_td1_test:smoke",
     "form.track_d_td1_r1_test:smoke",
     "form.track_d_td1_r2_test:smoke",
+    "form.lock_order_census_test:smoke",
     # Track D TD-2: canonical Idea containment operations.
     "form.track_d_td2_test:smoke",
     # 72-49 (= SM-32): AcceptancePolicy revocation-chain invalidation
