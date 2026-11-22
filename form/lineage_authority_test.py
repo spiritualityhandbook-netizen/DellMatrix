@@ -33,7 +33,14 @@ def smoke() -> bool:
     hop = inspect.getsource(open_mod.Program.confirm_proposal)
     body = inspect.getsource(confirm_mod.confirm_proposal)
     rec("runtime_works_without_lineage_bind_import", lineage_bind.RETIRED is True and "confirm_lineage" in hop)
-    rec("confirm_native_delegation", "confirm_lineage" in hop and "return _confirm_proposal" in hop)
+    # FI-011 A7 supersession (Director 7085151190 item 1): the native
+    # delegation itself is unchanged, but Program.confirm_proposal now
+    # holds the writer's result in a local so its finally backstop can
+    # release the grant reservation on any non-ok exit; the literal
+    # text "return _confirm_proposal" no longer exists. The semantic
+    # property this check pins — the method delegates to the
+    # confirm_lineage writer — is asserted on the delegation call.
+    rec("confirm_native_delegation", "confirm_lineage" in hop and "_confirm_proposal(self, pid" in hop)
     rec("confirm_authority_uses_assign_lineage", "assign_lineage" in body and "lineage_bind" not in body)
     rec("confirm_native_lineage", "confirm_lineage" in hop and "assign_lineage" in body and "lineage_bind" not in hop)
     rec("no_program_method_monkey_patch", not getattr(open_mod.Program.confirm_proposal, "_lineage_bound", False))
@@ -133,8 +140,9 @@ def _hash(path):
 
 
 def auto_contract(rec) -> None:
-    """DC: AUTO PROPOSE > Program.confirm_proposal > VALIDATE > PLACE > Nursery.confirm > PERSIST > {ok:True}
-    > COUNT SUCCESS. No direct Nursery.confirm, failures/errors count nothing, restart keeps the result."""
+    """DC: AUTO PROPOSE > Program.confirm_proposal > VALIDATE > PLACE > STAGE STATUS > PERSIST > {ok:True}
+    > COUNT SUCCESS. No direct Nursery.confirm (the raw door is RETIRED under FI-011 A8 — the canonical
+    writer stages status directly), failures/errors count nothing, restart keeps the result."""
     import sys
     import form.persist as persist_mod
     import form.dell_matrix.auto_growth as ag
@@ -146,7 +154,17 @@ def auto_contract(rec) -> None:
     a.owner = owner
     legacy_h = _hash(nmod.NURSERY_PATH)
     calls = {"authority": 0, "direct": 0}
-    orig_auth, orig_nconfirm = cl.confirm_proposal, nmod.Nursery.confirm
+    orig_auth = cl.confirm_proposal
+    # FI-011 A8 supersession (Director 7085151190 item 1): the raw
+    # Nursery.confirm door is RETIRED, so there is no door left to
+    # wrap with the direct-call counter. The counter below stays armed
+    # only if a door ever reappears; while it is absent, a direct
+    # store-door confirm is impossible by construction, and
+    # auto_no_raw_nursery_confirm_door pins that absence. (The packet
+    # census missed this attribute-reference caller; the migration is
+    # the packet-sanctioned one — never resurrect the door to count
+    # calls through it.)
+    orig_nconfirm = getattr(nmod.Nursery, "confirm", None)
 
     def authority(program, pid, _auth=None):
         calls["authority"] += 1
@@ -157,7 +175,9 @@ def auto_contract(rec) -> None:
             calls["direct"] += 1
         return orig_nconfirm(self, pid)
 
-    cl.confirm_proposal, nmod.Nursery.confirm = authority, nconfirm
+    cl.confirm_proposal = authority
+    if orig_nconfirm is not None:
+        nmod.Nursery.confirm = nconfirm
     # Lineage test: mock policy to allow (policy tested separately)
     from form.dell_matrix import acceptance_policy as ap_mod
     orig_check = ap_mod.AcceptancePolicy.check
@@ -171,9 +191,12 @@ def auto_contract(rec) -> None:
     try:
         res = a._nursery_auto("Auto canonical probe", "w", judge, "probe")
     finally:
-        cl.confirm_proposal, nmod.Nursery.confirm = orig_auth, orig_nconfirm
+        cl.confirm_proposal = orig_auth
+        if orig_nconfirm is not None:
+            nmod.Nursery.confirm = orig_nconfirm
         ap_mod.AcceptancePolicy.check = orig_check
     pid = res.get("id")
+    rec("auto_no_raw_nursery_confirm_door", orig_nconfirm is None)
     rec("auto_confirms_only_via_program_authority",
         res.get("status") == "auto_confirmed" and calls["authority"] == 1 and calls["direct"] == 0, f"{res} {calls}")
     rec("auto_success_counted_exactly_once", a.confirmed_total == 1)
