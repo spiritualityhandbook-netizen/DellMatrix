@@ -212,6 +212,7 @@ LIST = [
     "form.nursery_c5r3_organize_test",
     "form.nursery_c5r4_lens_test",
     "form.fi011_remediation_test:smoke",
+    "form.fi012_remediation_test:smoke",
     "form.core_ii_version_validation_test",
     "form.atomic_write_boundaries_test",
     "form.forcefield_gravity_evolution_test",

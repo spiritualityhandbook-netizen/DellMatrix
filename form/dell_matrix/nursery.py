@@ -639,6 +639,16 @@ class Nursery:
     # so it is never serialized into the owner file.
     suppression_receipts: List[Dict[str, Any]] = field(
         default_factory=list, repr=False, compare=False)
+    # FI-012 row 9: DUPLICATE-INTAKE receipts. An add demonstrably
+    # identical to a still-PENDING proposal (full content equality,
+    # same (seed, label) ID stream, freshness-guarded) is STORED as
+    # its own proposal — the standing duplicate policy (DCC-VII:
+    # duplicate adds are allowed, each gets a unique ID, both can be
+    # confirmed) — and the duplicate event is receipted here, so it
+    # is never silent. In-memory only, same lifecycle as
+    # suppression_receipts; never serialized into the owner file.
+    duplicate_receipts: List[Dict[str, Any]] = field(
+        default_factory=list, repr=False, compare=False)
     # C5R.3: human organization EDIT receipts (operation_id ->
     # receipt record, the storable form from
     # build_organization_receipt — no file digest inside). Serialized
@@ -757,7 +767,36 @@ class Nursery:
         provenance persisted on the record in this same save; the
         creation receipt's returned form (including the canonical
         post-save digest) is exposed as last_organization_receipt.
+
+        FI-012 row 9: for the label, the typed refusal covers type
+        and emptiness, not only size — a non-string or empty label
+        raises NurseryLabelError BEFORE any mutation (the historical
+        code crashed untyped inside _slug on label=None/123 and
+        silently stored label=""). The refusal is label-only by
+        design (standing non-string usages exist for other fields).
+        An identical still-PENDING intake is stored as its own
+        proposal under the standing duplicate policy (DCC-VII) and
+        receipted on duplicate_receipts, so a duplicate intake is
+        never silent (see the duplicate block).
         """
+        # FI-012 row 9: for the LABEL, the typed refusal covers TYPE
+        # and EMPTINESS, not only size. The historical isinstance-
+        # guard let a non-string label fall through to _slug and
+        # crash untyped (AttributeError), and an empty label was
+        # silently stored. The refusal is deliberately LABEL-ONLY:
+        # the other fields have standing non-string usages a type
+        # refusal would break (the lock-order census — a real
+        # operation under lock instrumentation — adds with words as
+        # a token LIST, and this wave's first cut refused it and
+        # crashed that suite deterministically; row 9's legs name
+        # the label, so the label is where the refusal lives).
+        if not isinstance(label, str):
+            raise NurseryLabelError(
+                f"label must be a string, not "
+                f"{type(label).__name__}; refused, nothing stored")
+        if label == "":
+            raise NurseryLabelError(
+                "label must not be empty; refused, nothing stored")
         if isinstance(label, str) and len(label) > MAX_LABEL_CHARS:
             raise NurseryLabelError(
                 f"label length {len(label)} exceeds the admitted bound "
@@ -816,6 +855,7 @@ class Nursery:
         # the normal add path, whose save raises the canonical
         # NurseryConflictError. A genuine skip (fresh instance) still
         # performs no save and writes nothing.
+        #
         if origin == "growth:token" and self._suppression_fresh():
             for existing in self.proposals.values():
                 if (
@@ -839,6 +879,45 @@ class Nursery:
                         "label": label,
                     })
                     return existing
+        # FI-012 row 9 (PR #507 matrix 7065903337, Director-accepted
+        # 7066291209) — duplicate intake, resolved against the
+        # standing duplicate policy. The matrix's observed failure
+        # was SILENCE: an identical intake added twice landed as two
+        # live duplicates with no dedup signal or receipt. True
+        # suppression of non-token adds is NOT available here: the
+        # certified duplicate policy (DCC-VII) holds that duplicate
+        # adds are allowed, each gets a unique ID, and both can be
+        # confirmed and landed — production propose/synthesize paths
+        # rely on it. So this add proceeds and stores its own
+        # record; if it is demonstrably identical to a still-PENDING
+        # proposal from the same (seed, label) ID stream (full
+        # content equality, G-DUP.1 freshness guard), the duplicate
+        # event is receipted on duplicate_receipts after the save —
+        # never silent, never a false suppression claim, and never
+        # written into suppression_receipts (whose entries growth
+        # accounting reconciles as true suppressions).
+        dup_twin_id = None
+        if self._suppression_fresh():
+            base_pid = _slug(label, seed)
+            for existing in self.proposals.values():
+                if (
+                    existing.status == "pending"
+                    and existing.origin == origin
+                    and existing.kind == kind
+                    and existing.label == label
+                    and existing.words == words
+                    and existing.detail == (detail if isinstance(detail, str) else "")
+                    and existing.goals == (list(goals) if goals else [])
+                    and existing.parents == (parents or [])
+                    and existing.reason == reason
+                    and existing.affinity == float(affinity)
+                    and existing.harmony == float(harmony)
+                    and existing.graph_coherence == float(graph_coherence)
+                    and (existing.id == base_pid
+                         or existing.id.startswith(base_pid + "_"))
+                ):
+                    dup_twin_id = existing.id
+                    break
         pid = _slug(label, seed)
         # avoid exact id collision
         if pid in self.proposals:
@@ -894,6 +973,16 @@ class Nursery:
                 rule_version=SEED_RULE_VERSION,
                 predecessor_generation=predecessor),
             self._seen)
+        if dup_twin_id is not None:
+            # FI-012 row 9: the save stands, so the duplicate event
+            # is receipted — both records named, nothing silent.
+            self.duplicate_receipts.append({
+                "existing_id": dup_twin_id,
+                "stored_id": pid,
+                "reason": "identical_pending_duplicate_stored",
+                "kind": kind,
+                "label": label,
+            })
         return p
 
     def pending(self) -> List[Proposal]:

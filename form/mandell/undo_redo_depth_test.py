@@ -188,7 +188,12 @@ def run_all():
     # ── T4: redo re-applies in order, place record restored whole ──────
     try:
         p = _fresh("qlc1_t4")
-        res = _place(p, "Qfour B", detail="orig detail", goals="goal one")
+        # FI-012 ruled form: the goals section is a separator-
+        # delimited list; the original single undelimited goal
+        # ("goal one") is detail text under the marker law, so this
+        # fixture authors its goals in the delimited form.
+        res = _place(p, "Qfour B", detail="orig detail",
+                     goals="goal one; goal two")
         bid = res["id"]
         set_detail(p, bid, "edited detail")
         r = undo_last(p)
@@ -202,7 +207,8 @@ def run_all():
         u = p.cube.session.plane.units.get(bid)
         check("T4.redo_place_full_record", r.get("ok") and u is not None
               and u.label == "Qfour B" and u.detail == "orig detail"
-              and list(u.goals) == ["goal one"] and (u.words or "") != "",
+              and list(u.goals) == ["goal one", "goal two"]
+              and (u.words or "") != "",
               f"redo place -> {r}, unit={u}")
         r = _redo(p)
         u = p.cube.session.plane.units.get(bid)
