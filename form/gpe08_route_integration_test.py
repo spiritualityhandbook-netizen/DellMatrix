@@ -39,13 +39,13 @@ that CAN be proven honestly at this head:
        Admitted lines must traverse the real route without refusal
        or crash. For rejected lines the bare route's behavior is
        printed as the baseline record; one contrast is asserted —
-       the malformed seed fragment "10[Keep", which the bare route
-       classifies as English and EXECUTES (a save[Keep] intent is
-       formed and the interaction recorded), while the mediated
-       contract refuses it at the door with zero mutation. That
-       fall-through is exactly what the admission layer exists to
-       close; the layer's absence from the dispatch is a wiring
-       fact (Director 7069840264), not relitigated here.
+       the malformed seed fragment "10[Keep". Before the Scope A
+       gate landed (Director 7079028132), the bare route classified
+       it as English and EXECUTED it while the mediated contract
+       refused it at the door; the gate has since been wired into
+       the dispatch, and the contrast now asserts the two routes
+       AGREE: refusal at the boundary with zero mutation. The full
+       gate contract lives in form/gpe08_admission_gate_test.py.
 
 Isolation: every check uses its own uniquely-named Program owner;
 state is fingerprinted before/after, never assumed empty.
@@ -208,10 +208,16 @@ def run_all():
               f"line={line!r} err={err!r} state {before} -> {after} "
               f"out_head={[ln for ln in buf.getvalue().splitlines() if ln.strip()][:2]}")
 
-    # The asserted contrast: the bare route EXECUTES the malformed
-    # seed fragment as English (interaction recorded: history
-    # grows), while the mediated contract (section C, GPE08INTNEG2)
-    # refused the same line with zero calls and zero mutation.
+    # The asserted contrast, CORRECTED under Director 7079028132
+    # (GP-E08 Scope A build authorization): before the gate landed,
+    # the bare route EXECUTED the malformed seed fragment as
+    # English (history grew) while the mediated contract refused
+    # it — that fall-through was the gap Scope A closed. The gate
+    # is now wired into _dispatch_public_line, so the bare route
+    # refuses the same line at the same boundary with zero
+    # mutation, agreeing with the mediated contract (section C,
+    # GPE08INTNEG2). The full gate contract lives in
+    # form/gpe08_admission_gate_test.py.
     p = Program(owner="GPE08INTFRAG")
     before = _snap(p)
     buf = io.StringIO()
@@ -219,10 +225,11 @@ def run_all():
         _dispatch_public_line(p, "10[Keep", interaction_id="gpe08int")
     after = _snap(p)
     check("diff_fragment_fallthrough_contrast",
-          after[1] > before[1],
-          f"bare route on '10[Keep': history {before[1]} -> {after[1]} "
-          f"(executed as English save[Keep]); mediated contract refused "
-          f"it at the door — see neg_neg2")
+          after == before
+          and "Seed admission refused" in buf.getvalue(),
+          f"bare route on '10[Keep': state {before} -> {after} "
+          f"(gate refusal at the public boundary, zero mutation); "
+          f"mediated contract refused it at the door — see neg_neg2")
 
     passed = sum(1 for _, ok in CHECKS if ok)
     print(f"GP-E08 route integration: {passed}/{len(CHECKS)} checks passed")

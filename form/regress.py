@@ -198,6 +198,7 @@ LIST = [
     "form.r23_outcome_evidence_test",
     "form.gpe08_admission_test",
     "form.gpe08_route_integration_test",
+    "form.gpe08_admission_gate_test",
     "form.gpe07_audit_test",
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",
