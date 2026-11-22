@@ -1,12 +1,15 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-21 ~07:06 CST  
-**UTC approx**: 2026-11-21T13:06:00Z  
-**Type**: FAST PASS :15
+**Last cycle**: 2026-11-21 ~19:20 CST  
+**UTC approx**: 2026-11-22T01:20:00Z  
+**Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- Ripe gates: #508 head ffcec1d9cf6a48e61139a5c6f05149da06884bb1 has Uni §45 package + correction. Terminal CI not all SUCCESS (Form smoke 44905007843 FAILURE, lock_order_census_test 12/13). Exact missing named on PR. No stamp. Other open PRs (#507/#506/#505/#502/#294) terminal SUCCESS at heads but no new ripe packages without prior stamps or holds.
-- No new stamps. #294 remains Q1 GATE HOLD.
+- Ripe gates: #510 at exact head 3dd91f31174b55ac9953e38dcc1ea13843a72c61 (unchanged). Terminal CI all 4 check runs SUCCESS. Prior scoped CONFIRM (S1 pinned-source integrity + S3 revision comparison only, 7070800272) remains valid. Spot-checked source at head: _read_at_pin uses git show pin:path; _blob_sha verifies parsed blob against pin recorded (mismatch → None). Uni serial regression x3 receipt (7069745856) noted as submitted evidence — logs not in repo (unproven this pass). No new stamp. Other open PRs drafts or fenced (#294 Q1 GATE HOLD). No other ripe packages.
+- Stamped: none new this pass. Prior #510 scoped CONFIRM (S1/S3 at 3dd91f3) stands.
+- Merged-main proofs: no merges since prior watermark.
+- Records reviews: none awaiting new disposition.
+- Trailing obligations: none remaining.
 
 ## Trailing ledger
 - discharged this run: 0
@@ -14,6 +17,6 @@
 - gaps: none
 
 ## Silence flag
-Proof of pass: comment posted on #508 naming exact missing (smoke SUCCESS at ffcec1d9). Uni to resolve smoke failure then re-package at new head.
+Proof of pass: this watermark advance. #510 prior scoped stamp remains valid at exact head; full GP-E25 still awaits UI acceptance, independent x3 verification, Director final merge word.
 
 — KEEPER
