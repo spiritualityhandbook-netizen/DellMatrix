@@ -92,3 +92,27 @@ record: Edition 1 file `04_MUSE_SPACE_DESIGN.md`.
 2. The 15-case UI acceptance at the landed head.
 3. Belt derivation once Part V's reconciled crosswalk / a
    canonical belt source lands.
+
+## Consumer wiring — UNIMPLEMENTED (2026-11-22)
+
+Director 7075379361 (PR #510) withdrew the seven-day pin freshness
+gate and clarified the governing consumer contract: AS_OF/source
+pin explicit, STALE marking on revalidation, offline age display
+with authority actions disabled. That contract is implemented at
+LIBRARY level only (`revalidate()` / `offline_status()` in
+`form/muse_space_snapshot.py`) and is now pinned by the suite's
+`contract_*` checks, including the negative control that no age
+refusal exists. The wiring is **UNIMPLEMENTED** and awaits
+placement:
+
+- No production consumer calls `offline_status()` or
+  `revalidate()`; their only caller is the suite.
+- The S2 export CLI (`form/muse_space_views.py`) accepts no pin
+  argument; it always renders at the checkout HEAD.
+- No surface displays the offline age or acts on a STALE
+  revalidation result.
+
+Until a consumer is placed, the contract holds only where the
+suite exercises it; nothing in the shipped tooling refuses,
+warns, or labels on pin age, and no action is disabled by
+`offline_status()` in any live path.

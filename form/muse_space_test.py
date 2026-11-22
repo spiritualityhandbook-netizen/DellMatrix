@@ -122,6 +122,39 @@ def make_fixture_repo(snap, td, register_rows=None):
     return root, _fx_commit_all(root, "fixture A")
 
 
+def _fx_git_on(root, date_iso, *args):
+    env = dict(os.environ)
+    env["GIT_AUTHOR_DATE"] = date_iso
+    env["GIT_COMMITTER_DATE"] = date_iso
+    return subprocess.run(["git", "-C", root] + list(args),
+                          capture_output=True, text=True, env=env)
+
+
+def _fx_commit_all_on(root, date_iso, msg):
+    _fx_git_on(root, date_iso, "add", "-A")
+    _fx_git_on(root, date_iso, "commit", "-q", "-m", msg)
+    return _fx_git_on(root, date_iso, "rev-parse", "HEAD").stdout.strip()
+
+
+def make_dated_fixture_repo(snap, td, first_date, second_date=None,
+                            second_rows=None):
+    """Temp git repo like make_fixture_repo, but its commits carry
+    explicit dates, so each pin's AGE is known by construction.
+    With second_date, a second commit rewrites the register to
+    second_rows at that date. Returns (root, [pin, ...])."""
+    root = _fx_init(os.path.join(td, "fxd"))
+    for rel in snap.INPUTS.values():
+        with open(os.path.join(ROOT, rel), "rb") as fh:
+            _fx_write(root, rel, fh.read())
+    pins = [_fx_commit_all_on(root, first_date, "dated fixture A")]
+    if second_date is not None:
+        _fx_write(root, MWL_REL,
+                  json.dumps(second_rows).encode("utf-8"))
+        pins.append(_fx_commit_all_on(root, second_date,
+                                       "dated fixture B"))
+    return root, pins
+
+
 def main():
     try:
         snap = load_snapshot_module()
@@ -365,6 +398,118 @@ def main():
           refused,
           "an unresolvable pin raises the typed PinUnavailable "
           "refusal; no snapshot is fabricated under a false pin")
+
+    # ---- Consumer contract (Director 7075379361) -------------------
+    # The seven-day pin freshness gate is WITHDRAWN; the governing
+    # contract is: AS_OF/source pin explicit, STALE marking on
+    # revalidation, offline age display with authority actions
+    # disabled. These checks pin that contract -- including the
+    # negative control that NO age refusal exists -- at library
+    # level. Consumer wiring (a production caller of revalidate /
+    # offline_status; a pin argument on the S2 CLI) is UNIMPLEMENTED
+    # and is marked as such in the build addendum; nothing here
+    # claims a consumer exists.
+
+    # (a) AS_OF / source pin explicit at a NON-HEAD pin.
+    with tempfile.TemporaryDirectory() as td:
+        fx, pins = make_dated_fixture_repo(
+            snap, td, "2026-11-10T00:00:00+00:00",
+            second_date="2026-11-20T00:00:00+00:00",
+            second_rows=rows[:3])
+        pin_old, pin_new = pins
+        m_old = snap.build_snapshot(fx, pin=pin_old)
+        html_old = views.render_html(m_old)
+        off_old = snap.offline_status(
+            m_old, now_iso="2026-11-22T00:00:00+00:00")
+    check("contract_as_of_explicit_at_non_head_pin",
+          m_old["source_main_sha"] == pin_old and
+          pin_old != pin_new and
+          "AS_OF" in html_old and pin_old in html_old and
+          pin_new not in html_old and
+          off_old["as_of"] == pin_old,
+          "a snapshot built at an older pin names that pin -- in "
+          "the model, in the export's AS_OF label, and in the "
+          "offline descriptor -- never the checkout HEAD")
+
+    # (b) Offline age is numeric, grows with pin age, actions off.
+    with tempfile.TemporaryDirectory() as td:
+        fx, pins = make_dated_fixture_repo(
+            snap, td, "2026-11-01T00:00:00+00:00",
+            second_date="2026-11-20T00:00:00+00:00",
+            second_rows=rows[:3])
+        now = "2026-11-22T00:00:00+00:00"
+        off_a = snap.offline_status(
+            snap.build_snapshot(fx, pin=pins[0]), now_iso=now)
+        off_b = snap.offline_status(
+            snap.build_snapshot(fx, pin=pins[1]), now_iso=now)
+    check("contract_offline_age_grows_with_pin_age",
+          isinstance(off_a["snapshot_age_seconds"], int) and
+          isinstance(off_b["snapshot_age_seconds"], int) and
+          off_a["snapshot_age_seconds"] >
+          off_b["snapshot_age_seconds"] > 0 and
+          off_a["authority_actions_enabled"] is False and
+          off_b["authority_actions_enabled"] is False,
+          "offline age is a real number ordered by pin age; "
+          "authority actions are disabled at every age (no "
+          "threshold)")
+
+    # (c) Real revalidation: a source blob that actually changed on
+    # HEAD after the pin marks THAT source STALE; untouched sources
+    # stay CURRENT; at HEAD every source is CURRENT.
+    with tempfile.TemporaryDirectory() as td:
+        fx, pins = make_dated_fixture_repo(
+            snap, td, "2026-11-10T00:00:00+00:00",
+            second_date="2026-11-20T00:00:00+00:00",
+            second_rows=rows[:3])
+        m_pin = snap.build_snapshot(fx, pin=pins[0])
+        rev_real = snap.revalidate(m_pin, fx)  # HEAD is pins[1]
+        m_head = snap.build_snapshot(fx, pin=pins[1])
+        rev_head = snap.revalidate(m_head, fx)
+    check("contract_revalidate_real_blob_change_marks_source_stale",
+          rev_real["sources"]["master_work_list"]["status"] ==
+          "STALE" and
+          rev_real["sources"]["design"]["status"] == "CURRENT" and
+          rev_real["overall"] == "STALE" and
+          rev_head["overall"] == "CURRENT" and
+          all(s["status"] == "CURRENT"
+              for s in rev_head["sources"].values()),
+          "a register blob genuinely rewritten after the pin "
+          "revalidates STALE by name while untouched sources stay "
+          "CURRENT; at HEAD every source is CURRENT")
+
+    # (d) NEGATIVE CONTROL (withdrawn gate): a pin far older than
+    # seven days builds and exports successfully -- no age refusal
+    # exists anywhere in the path. The pin is a real commit in the
+    # fixture repo's own git history, dated 2026-10-01; the suite
+    # never leans on the ambient checkout's history (see the
+    # fixture-builder note above).
+    with tempfile.TemporaryDirectory() as td:
+        fx, pins = make_dated_fixture_repo(
+            snap, td, "2026-10-01T00:00:00+00:00")
+        m_ancient = snap.build_snapshot(fx, pin=pins[0])
+        html_ancient = views.render_html(m_ancient)
+        off_ancient = snap.offline_status(
+            m_ancient, now_iso="2026-11-22T00:00:00+00:00")
+    check("contract_no_age_refusal_old_pin_builds",
+          m_ancient["source_main_sha"] == pins[0] and
+          pins[0] in html_ancient and
+          off_ancient["snapshot_age_seconds"] > 7 * 86400,
+          "a 52-day-old pin (fixture-dated 2026-10-01 against the "
+          "2026-11-22 reference now) builds and renders with no "
+          "refusal; if an age gate is ever silently added, this "
+          "check turns red")
+
+    # (e) CLI surface of the typed refusal: exit 2, named on stderr,
+    # no snapshot on stdout.
+    cli = subprocess.run(
+        [sys.executable, "-m", "form.muse_space_snapshot",
+         "--root", fx_root, "--pin", "0" * 40],
+        cwd=ROOT, capture_output=True, text=True)
+    check("contract_cli_unresolvable_pin_exit_2",
+          cli.returncode == 2 and "PIN UNAVAILABLE" in cli.stderr and
+          cli.stdout == "",
+          "the S1 CLI refuses an unresolvable pin with exit 2 and "
+          "a named stderr refusal; nothing is printed as a snapshot")
 
     return finish()
 
