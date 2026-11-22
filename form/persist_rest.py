@@ -227,6 +227,11 @@ def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
     # authored lattice or be made permanent by a later save.
     if "lattice" not in data:
         return
+    # KNOWN RESIDUAL (cited per Director 7079022510; NOT repaired
+    # here): the serialized "modules" field carries SnapModule IDs
+    # only and this restore does not rebuild the snap registry — a
+    # clean save/load loses it. Separately scoped placement:
+    # hidden_files/MODULES_REGISTRY_RESIDUAL_2026-11-22.md.
     raw = data["lattice"]
     if not isinstance(raw, dict):
         raise ProgramLoadError(
@@ -281,6 +286,23 @@ def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
                     f"lattice cell {key!r} has non-integer {axis}: "
                     f"{value!r}; refusing load")
             coords[axis] = value
+        # Finding B (Director CORRECTION_REQUIRED 7079022510): the
+        # saved key is part of the cell's identity. The writer emits
+        # exactly the canonical "h,v,f" key for a cell's own
+        # coordinates, one cell per coordinate — so a key that
+        # disagrees with its cell's coordinates, or a second cell
+        # claiming coordinates already restored, is not
+        # legacy-producible and fails closed instead of silently
+        # overwriting (HarmonicLattice.put assigns by coordinate).
+        canonical = f"{coords['h']},{coords['v']},{coords['f']}"
+        if key != canonical:
+            raise ProgramLoadError(
+                f"lattice cell key {key!r} does not match its "
+                f"coordinates {canonical!r}; refusing load")
+        if (coords["h"], coords["v"], coords["f"]) in staged.cells:
+            raise ProgramLoadError(
+                f"lattice cell {key!r} duplicates coordinates "
+                f"{canonical!r}; refusing load")
         tags = cell.get("tags", [])
         members = cell.get("members", [])
         if not isinstance(tags, list) or not isinstance(members, list):
@@ -717,29 +739,60 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
             raise ProgramLoadError(
                 "outcome_ledger.outcome_seq is not an integer: "
                 f"{seq!r}; refusing load")
+        # Findings A/C (Director CORRECTION_REQUIRED 7079022510):
+        # identity and counter consistency are part of the malformed-
+        # present contract. The ledger's sole writer (build_outcome /
+        # capture_outcome, DCC-XX) always emits records owned by the
+        # program owner, keyed by their own outcome_id, each with a
+        # positive integer outcome_seq, under a section counter equal
+        # to the highest record sequence — and no production path
+        # deletes or trims records. None of the states refused below
+        # is therefore legacy-producible, so each fails closed with a
+        # typed refusal: no silent counter normalize, auto-advance, or
+        # reset. A counter AHEAD of the records is a harmless gap and
+        # is preserved verbatim (never reset downward).
+        if seq < 0:
+            raise ProgramLoadError(
+                "outcome_ledger.outcome_seq is negative: "
+                f"{seq!r}; refusing load")
         raw_records = ledger.get("records", {})
         if not isinstance(raw_records, dict):
             raise ProgramLoadError(
                 "outcome_ledger.records is not an object: "
                 f"{type(raw_records).__name__}; refusing load")
         restored: Dict[str, Dict[str, Any]] = {}
+        max_record_seq = 0
         for oid, rec in raw_records.items():
             if not isinstance(oid, str) or not validate_record_shape(rec):
                 raise ProgramLoadError(
                     f"outcome_ledger record {oid!r} fails shape "
                     "validation; refusing load")
+            if rec.get("outcome_id") != oid:
+                raise ProgramLoadError(
+                    f"outcome_ledger record key {oid!r} does not match "
+                    f"its outcome_id {rec.get('outcome_id')!r}; "
+                    "refusing load")
+            if rec.get("owner") != p.owner:
+                raise ProgramLoadError(
+                    f"outcome_ledger record {oid!r} owner "
+                    f"{rec.get('owner')!r} does not match the loaded "
+                    f"owner {p.owner!r}; refusing load")
+            rseq = rec.get("outcome_seq")
+            if (isinstance(rseq, bool) or not isinstance(rseq, int)
+                    or rseq < 1):
+                raise ProgramLoadError(
+                    f"outcome_ledger record {oid!r} outcome_seq is "
+                    f"not a positive integer: {rseq!r}; refusing load")
+            if rseq > max_record_seq:
+                max_record_seq = rseq
             restored[oid] = dict(rec)
+        if seq < max_record_seq:
+            raise ProgramLoadError(
+                "outcome_ledger.outcome_seq "
+                f"{seq} is behind the records' highest sequence "
+                f"{max_record_seq}; refusing load")
         p.outcome_records = restored
-        # The durable sequence must never fall behind the restored records.
-        max_seq = max(0, seq)
-        for rec in restored.values():
-            try:
-                s = int(rec.get("outcome_seq", 0) or 0)
-            except (TypeError, ValueError):
-                s = 0
-            if s > max_seq:
-                max_seq = s
-        p.outcome_seq = max_seq
+        p.outcome_seq = seq
     # R7.2: restore Perspective Studio session evidence with the shared
     # strict schema. Closed records only; the active studio mode is
     # session-only and never restored. validate_section never raises;
