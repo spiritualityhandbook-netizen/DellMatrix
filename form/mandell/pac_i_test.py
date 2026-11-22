@@ -334,13 +334,13 @@ def test_h():
     p = _fresh(owner)
     p.place("uk1", "K One", words="k1")
     p.nursery.conflict_dispositions["q1"] = {"disposition": "prefer", "unit_id": "uk1"}
-    p.outcome_records["out1:o1"] = {"outcome_version": 1, "outcome_id": "out1:o1", "result": "completed", "op": "grow", "outcome_is_observation": True}
+    p.outcome_records["out1:o1"] = {"outcome_version": 1, "outcome_id": "out1:o1", "result": "completed", "op": "grow", "outcome_is_observation": True, "owner": owner, "outcome_seq": 1}
     p.outcome_seq = 1
     g1 = cir.checkpoint(p)
     k1, d1, o1 = _snap_state(p)
     p.place("uk2", "K Two", words="k2")
     p.nursery.conflict_dispositions["q2"] = {"disposition": "coexist", "unit_id": "uk2"}
-    p.outcome_records["out1:o2"] = {"outcome_version": 1, "outcome_id": "out1:o2", "result": "blocked", "op": "grow", "outcome_is_observation": True}
+    p.outcome_records["out1:o2"] = {"outcome_version": 1, "outcome_id": "out1:o2", "result": "blocked", "op": "grow", "outcome_is_observation": True, "owner": owner, "outcome_seq": 2}
     p.outcome_seq = 2
     k2, d2, o2 = _snap_state(p)
     try:
@@ -365,12 +365,14 @@ def test_i():
     p.place("ui1", "I One", words="i1")
     p.outcome_records["out1:oi1"] = {"outcome_version": 1, "outcome_id": "out1:oi1",
                                 "result": "completed", "op": "grow",
-                                "outcome_is_observation": True}
+                                "outcome_is_observation": True, "owner": owner,
+                                "outcome_seq": 1}
     p.outcome_seq = 1
     g1 = cir.checkpoint(p)
     p.outcome_records["out1:oi2"] = {"outcome_version": 1, "outcome_id": "out1:oi2",
                                 "result": "blocked", "op": "grow",
-                                "outcome_is_observation": True}
+                                "outcome_is_observation": True, "owner": owner,
+                                "outcome_seq": 2}
     p.outcome_seq = 2
     g2 = cir.checkpoint(p)
     prog2, _r = _load_generation(owner, g2, False, None)
