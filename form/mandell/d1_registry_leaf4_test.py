@@ -55,9 +55,17 @@ through the public seed path:
   Show intent — the former empty-string Show report
   was the B6 defect.
 - 46 Rank: "Ranked <n> proposals:" plus one line per
-  PENDING proposal, affinity-descending (equal
-  affinities keep insertion order), format
-  "<i>. aff=<aff:.3f> [<kind>] <id> — <label>".
+  PENDING proposal, affinity-descending, format
+  "<i>. aff=<aff:.3f> [<kind>] <id> — <label>". The
+  order Rank prints is the order ranked_proposals()
+  serves — since C5R.4 the S lens order (Director
+  7074761282: the lens governs this caller; the
+  pre-C5R.4 insertion-order assumption is obsolete):
+  fresher first on the FRESH fade, exact score ties
+  broken by proposal id. Dell 46's own affinity sort
+  is stable: at equal affinity it preserves the
+  input order it was served (proven in isolation in
+  the symbiosis block below).
 - 47 Embed (core_i_ops): HONEST REFUSAL — ok=False
   embed_unavailable, representation "none", no
   provider; labeled and bare refuse identically.
@@ -81,8 +89,11 @@ through the public seed path:
   with zero mutation.
 
 Cluster symbiosis: Rank (46) ranks the pending
-proposals Nurture (37) wrote, and returns to zero
-after Nurture confirms/rejects them all; Discover
+proposals Nurture (37) wrote — in S lens order,
+pinned with controlled created stamps so no
+wall-clock straddle can move the result — and
+returns to zero after Nurture confirms/rejects
+them all; Discover
 (35, circuit 18) find_idea locates the unit Nurture's
 confirm promoted; TokenCount (40) counts the units
 Manifest (50) and Distill (38) minted. One literal-
@@ -182,15 +193,95 @@ def main():
     r = _run(p, "37[Nurture] :: Second Idea")
     pid2 = getattr(p, "last_nurture", {}).get("pid", "")
 
-    # -- symbiosis: Rank reads Nurture's pending set
+    # -- symbiosis: Rank reads Nurture's pending set.
+    #    Director 7074761282 (PR #506): the S lens governs
+    #    ranked_proposals() for this caller; the former
+    #    insertion-order pin was the pre-C5R.4 contract
+    #    and flaked whenever the two adds straddled a
+    #    wall-clock second (campaign leg-3 red;
+    #    LEAF4_CLASSIFICATION). The lens contract is
+    #    pinned here with CONTROLLED created stamps —
+    #    set directly on the stored proposals, so no
+    #    wall clock can move the result:
+    #    (a) the 1s-fresher proposal outranks its
+    #        equal-affinity elder (the leg-3 ordering,
+    #        reproduced deterministically);
+    #    (b) an exact score tie breaks by proposal id;
+    #    (c) the id tie-break governs even when id
+    #        order opposes insertion order;
+    #    (d) Dell 46's own stable sort, isolated from
+    #        the lens, preserves its served input order
+    #        at equal affinity (the surviving half of
+    #        the old pin, tested at its own layer).
+    p.nursery.proposals[pid1].created = "2026-01-01T00:00:00Z"
+    p.nursery.proposals[pid2].created = "2026-01-01T00:00:01Z"
     r = _run(p, "46[Rank]")
     _rec("symbiosis: Rank (46) ranks Nurture's (37) two "
-         "pending proposals in insertion order at "
-         "aff=0.000 [new]",
+         "pending proposals in S lens order — the "
+         "1s-fresher proposal first at aff=0.000 [new] "
+         "(controlled stamps; the campaign leg-3 order)",
+         _msgs(r) == ["Ranked 2 proposals:",
+                      f"  1. aff=0.000 [new] {pid2} — Second Idea",
+                      f"  2. aff=0.000 [new] {pid1} — First Idea"],
+         str(_msgs(r)))
+    p.nursery.proposals[pid2].created = "2026-01-01T00:00:00Z"
+    r = _run(p, "46[Rank]")
+    _rec("symbiosis: Rank (46) at an exact lens tie "
+         "(identical created stamps, equal affinity) "
+         "breaks the tie by proposal id — first_idea "
+         "before second_idea",
          _msgs(r) == ["Ranked 2 proposals:",
                       f"  1. aff=0.000 [new] {pid1} — First Idea",
                       f"  2. aff=0.000 [new] {pid2} — Second Idea"],
          str(_msgs(r)))
+
+    # -- symbiosis (c): the id tie-break is NOT
+    #    insertion order — a pair whose slugs sort
+    #    against their insertion order still comes
+    #    out in id order at identical stamps.
+    owner_c = "D1RegLeaf4Lens"
+    pc = _program(owner_c)
+    _run(pc, "37[Nurture] :: Zebra Idea")
+    pidz = getattr(pc, "last_nurture", {}).get("pid", "")
+    _run(pc, "37[Nurture] :: Apple Idea")
+    pida = getattr(pc, "last_nurture", {}).get("pid", "")
+    pc.nursery.proposals[pidz].created = "2026-01-01T00:00:00Z"
+    pc.nursery.proposals[pida].created = "2026-01-01T00:00:00Z"
+    r = _run(pc, "46[Rank]")
+    _rec("symbiosis: Rank (46) tie-break follows "
+         "proposal id against insertion order — Apple "
+         "(added second) ranks before Zebra (added "
+         "first) at identical stamps",
+         _msgs(r) == ["Ranked 2 proposals:",
+                      f"  1. aff=0.000 [new] {pida} — Apple Idea",
+                      f"  2. aff=0.000 [new] {pidz} — Zebra Idea"],
+         str(_msgs(r)))
+    _cleanup(owner_c)
+
+    # -- symbiosis (d): Dell 46 isolated from the
+    #    lens — served a pre-ranked list directly, its
+    #    stable affinity sort preserves the input
+    #    order at equal affinity.
+    owner_s = "D1RegLeaf4Rank46"
+    ps = _program(owner_s)
+    feed = [{"id": "zz_feed", "label": "Zeta Feed",
+             "kind": "new", "affinity": 0.0},
+            {"id": "aa_feed", "label": "Alpha Feed",
+             "kind": "new", "affinity": 0.0},
+            {"id": "mm_feed", "label": "Mid Feed",
+             "kind": "new", "affinity": 0.0}]
+    ps.ranked_proposals = lambda: [dict(d) for d in feed]
+    r = _run(ps, "46[Rank]")
+    _rec("symbiosis: Dell 46 in isolation preserves "
+         "its served input order at equal affinity — "
+         "zz_feed, aa_feed, mm_feed print in feed "
+         "order, not id order",
+         _msgs(r) == ["Ranked 3 proposals:",
+                      "  1. aff=0.000 [new] zz_feed — Zeta Feed",
+                      "  2. aff=0.000 [new] aa_feed — Alpha Feed",
+                      "  3. aff=0.000 [new] mm_feed — Mid Feed"],
+         str(_msgs(r)))
+    _cleanup(owner_s)
 
     # -- 44 Bridge: honest refusal, bare and labeled
     before = list(_units(p))
