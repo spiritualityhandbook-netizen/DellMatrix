@@ -51,6 +51,22 @@ the G31 expectation: the gate does not claim a line containing
 the T19/T20 pair (same unknown Dell, with and without the flow
 operator) and the T21 known-Dell FlowOver control.
 
+OPERATOR-AWARE REFINEMENT (Director 7080979829; bounded build
+authorization 7081319284): the precedence carve-out above is no
+longer the raw substring test. A `>>>` the canonical flow
+tokenizer never REACHES as an operator — inside an unterminated
+quoted arg value, an unclosed bracket's swallowed term, behind
+an args group (the flow grammar has no args production), inside
+a segment label, or behind an earlier non-executable operator's
+refusal — is data or debris inside a seed claim, and the gate
+owns the refusal (typed, zero-mutation). _flow_over_reached
+replays _tokenize_program's own scan discipline with seed.py's
+_ATOM/_FLOW and flow_executor.EXECUTABLE_FLOWS; a `>>>` the scan
+does reach keeps the D-6 precedence exactly (T19/T21 unchanged).
+Pinned by T22–T29, folded from the operator oracle battery
+(hidden_files/pr506_operator_oracle_2026-11-22: S1–S5 plus the
+ruling-mandated earlier-operator and quoted/label cases).
+
 TWO REVISION-1 PREMISES FALSIFIED BY THE CANONICAL CODE ITSELF
 (probe-verified at head a2221e4c before this build; filed as
 unresolved-design cases for a separate Director ruling — the gate
@@ -510,6 +526,97 @@ def t21_known_dell_flow_line_flows_normally():
           f"history {before[1]} -> {_snap(p)[1]}")
 
 
+# --------------------------------------- T22–T29 operator-aware
+def _gate_owned(owner, line):
+    """A declined whole-line claim whose ">>>" is never reached
+    as an operator belongs to the gate: typed admission refusal,
+    not-executed receipt, NO flow-door surface, zero mutation."""
+    p = _fresh(owner)
+    before = _snap(p)
+    p, out = _drive(p, line)
+    ok = (GATE_REFUSAL in out and NOT_EXECUTED in out
+          and "Flow refused" not in out and _snap(p) == before)
+    return ok, f"state {before} -> {_snap(p)}"
+
+
+def t22_unterminated_quote_flowover_gate_owned():
+    # Oracle S1: the ">>>" sits inside an unterminated quoted arg
+    # value; the tokenizer expects an operator at "(" and
+    # parse-misses, so no operator is reached. At cf30f6e7 this
+    # fell to the legacy branch and recorded an outcome.
+    ok, detail = _gate_owned("GPE08GateT22",
+                             '08[Create](name="a >>> b"')
+    check("T22_unterminated_quote_flowover_gate_owned", ok, detail)
+
+
+def t23_unclosed_bracket_flowover_gate_owned():
+    # Oracle S2: the unclosed bracket makes _ATOM swallow the
+    # whole line as one atom whose term contains ">>>"; no
+    # operator position ever exists.
+    ok, detail = _gate_owned("GPE08GateT23",
+                             "70[Count >>> 51[Select]")
+    check("T23_unclosed_bracket_flowover_gate_owned", ok, detail)
+
+
+def t24_args_group_before_flowover_gate_owned():
+    # Oracle S3: the flow grammar has no args production, so the
+    # tokenizer parse-misses at "(" and never reaches the genuine
+    # ">>>" behind the args group.
+    ok, detail = _gate_owned("GPE08GateT24",
+                             "70[Count](count=3) >>> 51[Select]")
+    check("T24_args_group_before_flowover_gate_owned", ok, detail)
+
+
+def t25_leading_flowover_gate_owned():
+    # Oracle S4: a leading ">>>" is never reached as an operator
+    # (an atom is expected at position 0).
+    ok, detail = _gate_owned("GPE08GateT25", ">>> 150[Future]")
+    check("T25_leading_flowover_gate_owned", ok, detail)
+
+
+def t26_valid_args_before_unknown_dell_gate_owned():
+    # Oracle S5: a valid args group precedes the operator
+    # position; the tokenizer cannot step past it, so the claim
+    # (declined for the unknown Dell) is the gate's.
+    ok, detail = _gate_owned(
+        "GPE08GateT26", '55[Set](key="m", value="v") >>> 150[Future]')
+    check("T26_valid_args_before_unknown_dell_gate_owned", ok, detail)
+
+
+def t27_earlier_nonexecutable_operator_gate_owned():
+    # Ruling 7081319284 mandatory negative: an earlier
+    # NON-EXECUTABLE operator (<:>) refuses in the tokenizer
+    # before any later ">>>" is reached, so the gate — not the
+    # DCC-IV door — owns this declined claim's refusal. The
+    # helper's False answer is what moves the door; the flow
+    # surface must NOT appear.
+    ok, detail = _gate_owned(
+        "GPE08GateT27", "150[Future] <:> 70[Count] >>> 51[Select]")
+    check("T27_earlier_nonexecutable_operator_gate_owned", ok, detail)
+
+
+def t28_quoted_data_then_genuine_operator_gate_owned():
+    # Oracle additions A4: a terminated quoted value carries
+    # ">>>" as data AND a genuine ">>>" follows the args group —
+    # the tokenizer still parse-misses at "(", so neither is
+    # reached and the gate owns the declined claim.
+    ok, detail = _gate_owned(
+        "GPE08GateT28", '08[Create](name="a >>> b") >>> 150[Future]')
+    check("T28_quoted_data_then_genuine_operator_gate_owned",
+          ok, detail)
+
+
+def t29_embedded_label_colons_gate_owned():
+    # Oracle additions A7: an embedded "::" inside a label is a
+    # seed-grammar error but label DATA to the tokenizer, whose
+    # label then runs to end of line (the trailing ">>>" is
+    # followed by a word, not an atom). No operator is reached;
+    # the gate owns the declined claim.
+    ok, detail = _gate_owned("GPE08GateT29",
+                             "70[Count] :: alpha :: >>> beta")
+    check("T29_embedded_label_colons_gate_owned", ok, detail)
+
+
 def run_all():
     t1_piped_repl()
     t2_dispatch_refusal()
@@ -533,6 +640,14 @@ def run_all():
     t19_flow_shaped_claim_belongs_to_flow_door()
     t20_plain_seed_claim_still_admission_refused()
     t21_known_dell_flow_line_flows_normally()
+    t22_unterminated_quote_flowover_gate_owned()
+    t23_unclosed_bracket_flowover_gate_owned()
+    t24_args_group_before_flowover_gate_owned()
+    t25_leading_flowover_gate_owned()
+    t26_valid_args_before_unknown_dell_gate_owned()
+    t27_earlier_nonexecutable_operator_gate_owned()
+    t28_quoted_data_then_genuine_operator_gate_owned()
+    t29_embedded_label_colons_gate_owned()
     passed = sum(1 for _, ok in CHECKS if ok)
     print(f"GP-E08 admission gate: {passed}/{len(CHECKS)} checks passed")
     if passed != len(CHECKS):

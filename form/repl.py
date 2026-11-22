@@ -3800,6 +3800,111 @@ def _seed_claim(line: str) -> bool:
     return True
 
 
+def _flow_over_reached(line: str) -> bool:
+    """True iff the canonical flow tokenizer's own scan reaches a
+    ">>>" AT AN OPERATOR POSITION on this line — the exact point
+    where form.mandell.flow_executor._tokenize_program raises its
+    D-6 FlowRefusal for the correspondence operator — before any
+    parse miss and before any earlier operator's refusal.
+
+    GP-E08 Scope A precedence (Director 7079919649, refined by
+    7080979829; bounded build authorization 7081319284): the D-6
+    flow precedence applies only where a flow operator is REACHED
+    AS AN OPERATOR, not to arbitrary ">>>" characters inside
+    malformed seed text (an unterminated quoted arg value, an
+    unclosed bracket's swallowed term, text behind an args group
+    the flow grammar cannot step past, label data). This helper
+    answers the gate's precedence question by REPLAYING
+    _tokenize_program's scan discipline with the grammar's own
+    primitives — seed.py's _ATOM and _FLOW (the very objects
+    flow_executor imports) and flow_executor.EXECUTABLE_FLOWS —
+    so there is one grammar authority, not two. It builds
+    nothing, executes nothing, and reads no Program state; it is
+    a pure function of the line.
+
+    Scan discipline, step for step with _tokenize_program: an
+    atom is expected at _ATOM; a "::" NOT followed by an atom
+    opens a label that ends at the first _FLOW match whose end
+    is followed (after whitespace) by an _ATOM, or at end of
+    line; at an operator position a matched ">>>" is reached
+    (True); any other non-executable operator refuses THERE, so
+    no later ">>>" is reached (False); an executable operator
+    (">", ">>") must be followed by an atom and the scan
+    continues — a ">>>" at a LATER operator position is still
+    reached (full-scan replay, no first-operator shortcut).
+    Every parse miss (no atom where one is expected, no flow
+    operator at an operator position, an executable operator not
+    followed by an atom) answers False: the tokenizer never
+    reaches an operator there.
+    """
+    from form.mandell.flow_executor import (
+        EXECUTABLE_FLOWS as _executable_flows,
+    )
+    from form.mandell.seed import (
+        _ATOM as _flow_atom,
+        _FLOW as _flow_op,
+    )
+    body = (line or "").strip()
+    n = len(body)
+
+    def _skip_ws(p: int) -> int:
+        while p < n and body[p].isspace():
+            p += 1
+        return p
+
+    pos = _skip_ws(0)
+    while pos < n:
+        pos = _skip_ws(pos)
+        # Expect atom (the tokenizer raises ValueError here on a
+        # miss: no operator position is ever reached).
+        am = _flow_atom.match(body, pos)
+        if not am:
+            return False
+        pos = am.end()
+
+        # Optional :: label (only if NOT followed by atom) — the
+        # tokenizer's own rule, mirrored literally: the label
+        # ends at the first _FLOW match whose end is followed
+        # (after whitespace) by an _ATOM, or runs to end of line.
+        p2 = _skip_ws(pos)
+        if body[p2:p2 + 2] == "::":
+            after = _skip_ws(p2 + 2)
+            if _flow_atom.match(body, after):
+                # Flow ::, not a label. Leave for the operator
+                # position below.
+                pass
+            else:
+                label_end = n
+                for fm in _flow_op.finditer(body, after):
+                    if _flow_atom.match(body, _skip_ws(fm.end())):
+                        label_end = fm.start()
+                        break
+                pos = label_end
+
+        pos = _skip_ws(pos)
+        if pos >= n:
+            return False
+
+        # Expect flow operator.
+        fm = _flow_op.match(body, pos)
+        if not fm:
+            return False
+        op = fm.group(0)
+        if op not in _executable_flows:
+            # The tokenizer raises its FlowRefusal at exactly
+            # this point — BEFORE its followed-by-atom check —
+            # so a ">>>" here is reached even with a dangling or
+            # unclosed operand; any OTHER non-executable operator
+            # refuses here and no later ">>>" is ever reached.
+            return op == ">>>"
+        # Executable operator: the tokenizer requires a
+        # following atom, then continues the scan.
+        if not _flow_atom.match(body, _skip_ws(fm.end())):
+            return False
+        pos = fm.end()
+    return False
+
+
 def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program:
     """IRI-I: Canonical public execution boundary for one input line.
 
@@ -3881,7 +3986,18 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
     # grammar for valid chains: those parse, are admitted, and
     # execute via P10 exactly as before — the carve-out only
     # decides which door REFUSES a declined flow-shaped line.
-    if _seed_claim(line) and ">>>" not in line:
+    # Operator-aware refinement (Director 7080979829; bounded
+    # build authorization 7081319284): the carve-out is no longer
+    # the raw substring test. ">>>" characters that the canonical
+    # flow tokenizer never REACHES as an operator — inside an
+    # unterminated quoted arg value, an unclosed bracket's term,
+    # an args group (the flow grammar has no args production), a
+    # segment label, or behind an earlier operator's refusal —
+    # are data or debris inside a seed claim, and the gate owns
+    # the claim: _flow_over_reached replays the tokenizer's own
+    # scan discipline to decide. A ">>>" the scan does reach at
+    # an operator position keeps the D-6 precedence exactly.
+    if _seed_claim(line) and not _flow_over_reached(line):
         from form.mandell.admission import admit as _admit_gate
         try:
             _adm_gate = _admit_gate(line)
