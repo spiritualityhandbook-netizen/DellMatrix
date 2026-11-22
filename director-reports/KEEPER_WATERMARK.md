@@ -1,23 +1,24 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-22 ~08:33 CST  
-**UTC approx**: 2026-11-22T14:33:00Z  
+**Last cycle**: 2026-11-22 ~11:23 CST  
+**UTC approx**: 2026-11-22T17:23:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- Ripe gates: #513 at exact head b43e2b545645ad26be68b73a776f469d64159215. Uni package present (repair + classification). Terminal CI ALL SUCCESS (build 3.10/3.11, browser, smoke). Spot-checked: __getstate__/__setstate__ excludes _history_admission_lock (deepcopy path green in CI). Director 7080635172: MERGE HOLD, classification SUBMITTED not waived. Exact missing named on PR (serial x3 GREEN at head, Director advance past HOLD, composed-tree). No stamp. Other open PRs drafts or fenced (#294 Q1 GATE HOLD). No other ripe packages.
+- Ripe gates: #514 at exact head 7ab16dc2808652e060f299b96b07b677797291c7. Uni package present (oracle correction). Terminal CI ALL SUCCESS (build 3.10/3.11, browser, smoke). Spot-checked: persist_rest.py unchanged in latest diff (test-only). Director 7082175007: RECEIVED/HOLD. Exact missing named on PR (serial x3 GREEN at head, Director advance past HOLD). No stamp.
+- #513 at exact head 54008c5c7a713786b1c1388ec144828cc4b0ce15. Uni package present (oracle correction + composed). Terminal CI ALL SUCCESS. Spot-checked: __getstate__/__setstate__ excludes lock. Director HOLD continues. Exact missing named on PR (serial x3 GREEN at head, Director advance). No stamp. Other open PRs drafts or fenced (#294 Q1 GATE HOLD).
 - Stamped: none new on open PRs.
-- Merged-main proofs: none new since last pass (#510 already credited scoped).
+- Merged-main proofs: none new since last pass.
 - Records reviews: none awaiting new disposition.
-- Trailing obligations: #496 postmerge credit stamp still pending (Uni package 7040793444 awaits independent review).
+- Trailing obligations: #496 postmerge credit stamp still pending (Director reliability HOLD; package reviewed as submitted).
 
 ## Trailing ledger
 - discharged this run: 0
 - remaining: 1 (#496 postmerge credit stamp)
-- gaps: #496 package 7040793444 awaits independent review
+- gaps: #496 Director reliability HOLD not advanced; independent review of combined record does not support credit
 
 ## Silence flag
-Proof of pass: this watermark advance. #513 held for named missing evidence (x3 + Director).
+Proof of pass: this watermark advance. #514 and #513 held for named missing evidence (x3 + Director).
 
 — KEEPER
 
