@@ -608,6 +608,70 @@ def _validate_companion_section(raw: Any) -> None:
             _point(pt, f"'trail' point {i}")
 
 
+def _validate_self_knowledge_section(raw: Any) -> None:
+    """Stage-validate a PRESENT self_knowledge section (MEDIUM-four C).
+
+    Raises ProgramLoadError before any state is touched. The writer
+    (SelfKnowledge.to_dict) emits mastery as a dict of floats in
+    [0, 1], the counters probes/hits/generations_seen as non-negative
+    ints with hits <= probes, and the three inventories as lists of
+    strings. Anything failing that shape refuses the whole load: the
+    former restore wrapped from_dict in a blanket except/pass, so one
+    non-numeric mastery value silently blanked the entire self-model,
+    and list() on a string inventory silently rewrote it into single
+    characters (SK-E corruption). The derived keys (hit_rate,
+    ledger_len, avg_mastery) are serializer-computed and stay ignored
+    — recomputed from the restored fields, never trusted, never
+    validated. The dataclass fields last_reflect/ledger are NOT
+    serialized (ledger survives only as its length); that asymmetry is
+    intended nonpersistence, not corruption, and is left untouched.
+    """
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"program file 'self_knowledge' section is not an object "
+            f"(got {type(raw).__name__}): refusing load")
+    mastery = raw.get("mastery")
+    if mastery is not None:
+        if not isinstance(mastery, dict):
+            raise ProgramLoadError(
+                f"program file 'self_knowledge' field 'mastery' is not an object "
+                f"(got {type(mastery).__name__}): refusing load")
+        for k, v in mastery.items():
+            if isinstance(v, bool) or not isinstance(v, (int, float)) \
+                    or not math.isfinite(v) or not (0.0 <= v <= 1.0):
+                raise ProgramLoadError(
+                    f"program file 'self_knowledge' mastery[{k!r}] is not a "
+                    f"finite number in [0, 1] (got {v!r}): refusing load")
+    counters: Dict[str, int] = {}
+    for field in ("probes", "hits", "generations_seen"):
+        v = raw.get(field)
+        if v is None:
+            counters[field] = 0
+            continue
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            raise ProgramLoadError(
+                f"program file 'self_knowledge' field {field!r} is not a "
+                f"non-negative integer (got {v!r}): refusing load")
+        counters[field] = v
+    if counters["hits"] > counters["probes"]:
+        raise ProgramLoadError(
+            f"program file 'self_knowledge' hits ({counters['hits']}) exceeds "
+            f"probes ({counters['probes']}): refusing load")
+    for field in ("known_matrices", "known_snaps", "gaps_closed"):
+        v = raw.get(field)
+        if v is None:
+            continue
+        if not isinstance(v, list):
+            raise ProgramLoadError(
+                f"program file 'self_knowledge' field {field!r} is not a list "
+                f"(got {type(v).__name__}): refusing load")
+        for i, item in enumerate(v):
+            if not isinstance(item, str):
+                raise ProgramLoadError(
+                    f"program file 'self_knowledge' field {field!r} entry {i} "
+                    f"is not a string (got {type(item).__name__}): refusing load")
+
+
 def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program:
     """PREPARE a private Program from validated data. Touches no process language state.
 
@@ -709,11 +773,18 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         p.inspire = InspireState.from_dict(data.get("inspire") or {})
     except Exception:
         pass
-    try:
-        from form.dell_matrix.self_model import SelfKnowledge
-        p.self_knowledge = SelfKnowledge.from_dict(data.get("self_knowledge") or {})
-    except Exception:
-        pass
+    # MEDIUM-four C: a PRESENT self_knowledge section is stage-validated
+    # whole (_validate_self_knowledge_section) and refuses typed before
+    # the swap; the former blanket except/pass silently blanked the
+    # whole self-model on any single bad scalar, and list() on a string
+    # inventory silently character-split it. An ABSENT section keeps
+    # the documented blank model.
+    from form.dell_matrix.self_model import SelfKnowledge
+    if "self_knowledge" in data:
+        _validate_self_knowledge_section(data["self_knowledge"])
+        p.self_knowledge = SelfKnowledge.from_dict(data["self_knowledge"])
+    else:
+        p.self_knowledge = SelfKnowledge.from_dict({})
     ux = data.get("ux") or {}
     if ux:
         try:

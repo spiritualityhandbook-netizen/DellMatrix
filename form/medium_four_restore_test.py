@@ -372,7 +372,196 @@ def run_companion():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-SECTIONS = [run_duo, run_companion]
+# ============================================================ C: self_knowledge
+
+def run_self_knowledge():
+    owner, other = "MediumFourSK", "MediumFourSKOther"
+    expected = {"mastery": {"floor": 0.9, "grow": 0.5}, "probes": 10,
+                "hits": 7, "generations_seen": 4,
+                "known_matrices": ["alpha-matrix", "beta-matrix"],
+                "known_snaps": ["snap-one"], "gaps_closed": ["gap-a"]}
+    blank = {"mastery": {}, "probes": 0, "hits": 0, "generations_seen": 0,
+             "known_matrices": [], "known_snaps": [], "gaps_closed": []}
+
+    def build(own, path):
+        p = open_program(own)
+        sk = p.self_knowledge
+        sk.mastery = {"floor": 0.9, "grow": 0.5}
+        sk.probes = 10
+        sk.hits = 7
+        sk.generations_seen = 4
+        sk.known_matrices = ["alpha-matrix", "beta-matrix"]
+        sk.known_snaps = ["snap-one"]
+        sk.gaps_closed = ["gap-a"]
+        persist_rest.save(p, str(path))
+        return path
+
+    def fields(sk):
+        return {"mastery": dict(sk.mastery), "probes": sk.probes,
+                "hits": sk.hits, "generations_seen": sk.generations_seen,
+                "known_matrices": list(sk.known_matrices),
+                "known_snaps": list(sk.known_snaps),
+                "gaps_closed": list(sk.gaps_closed)}
+
+    tmp = Path(tempfile.mkdtemp(prefix="medium4_sk_"))
+    try:
+        base = build(owner, tmp / "sk_base.json")
+        orig_section = json.loads(base.read_text())["self_knowledge"]
+
+        p = _load(owner, base)
+        rec("SK clean load preserves all fields",
+            fields(p.self_knowledge) == expected)
+        resaved = tmp / "sk_resaved.json"
+        persist_rest.save(p, str(resaved))
+        rec("SK clean save->load->resave parity (section identical)",
+            json.loads(resaved.read_text())["self_knowledge"] == orig_section)
+        p2 = _load(owner, resaved)
+        rec("SK second-generation continuity (clean): load of resave identical",
+            fields(p2.self_knowledge) == expected)
+
+        def _absent(data):
+            del data["self_knowledge"]
+        f = _mutated(base, tmp / "sk_absent.json", _absent)
+        p = _load(owner, f)
+        rec("SK legacy ABSENT section loads as the documented blank model",
+            fields(p.self_knowledge) == blank)
+
+        def _extra_key(data):
+            data["self_knowledge"]["future_field"] = "additive"
+        f = _mutated(base, tmp / "sk_extrakey.json", _extra_key)
+        try:
+            p = _load(owner, f)
+            ok = fields(p.self_knowledge) == expected
+        except Exception:
+            ok = False
+        rec("SK negative mutant: extra unknown key loads whole (no over-refusal)",
+            ok)
+
+        def _stale_derived(data):
+            data["self_knowledge"]["hit_rate"] = 0.1234
+            data["self_knowledge"]["avg_mastery"] = 9.99
+        f = _mutated(base, tmp / "sk_derived.json", _stale_derived)
+        try:
+            p = _load(owner, f)
+            ok = (fields(p.self_knowledge) == expected
+                  and p.self_knowledge.to_dict()["hit_rate"] == 0.7)
+        except Exception:
+            ok = False
+        rec("SK negative mutant: stale derived keys are ignored and recomputed, not trusted",
+            ok)
+
+        def _as_list(data):
+            data["self_knowledge"] = ["not-a-mapping"]
+        f = _mutated(base, tmp / "sk_list.json", _as_list)
+        before = f.read_bytes()
+        rec("SK-A wrong container (list) refuses load (typed), no silent blanking",
+            _refuses(owner, f))
+        rec("SK-A refused load leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        def _as_str(data):
+            data["self_knowledge"] = "GARBAGE-STRING"
+        f = _mutated(base, tmp / "sk_str.json", _as_str)
+        rec("SK-B garbage scalar section refuses load (typed)",
+            _refuses(owner, f))
+
+        def _as_null(data):
+            data["self_knowledge"] = None
+        f = _mutated(base, tmp / "sk_null.json", _as_null)
+        rec("SK explicit-null section refuses load (typed) — present != absent",
+            _refuses(owner, f))
+
+        def _badmastery(data):
+            data["self_knowledge"]["mastery"] = {"floor": "not-a-number",
+                                                  "grow": 0.5}
+        f = _mutated(base, tmp / "sk_badmastery.json", _badmastery)
+        before = f.read_bytes()
+        rec("SK-C one corrupt mastery value refuses load (typed), no whole-model blanking",
+            _refuses(owner, f))
+        rec("SK-C refused load leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        def _badprobes(data):
+            data["self_knowledge"]["probes"] = "not-a-number"
+        f = _mutated(base, tmp / "sk_badprobes.json", _badprobes)
+        rec("SK-D one corrupt counter (probes:=string) refuses load (typed)",
+            _refuses(owner, f))
+
+        def _strmatrices(data):
+            data["self_knowledge"]["known_matrices"] = "GARBAGE-STRING"
+        f = _mutated(base, tmp / "sk_strmatrices.json", _strmatrices)
+        rec("SK-E string in a list field refuses load (typed) — no character splitting",
+            _refuses(owner, f))
+        try:
+            p = _load(owner, f)
+            mangled = p.self_knowledge.known_matrices == list("GARBAGE-STRING")
+            detail = ("loaded as 14 single characters" if mangled else "")
+            ok = not mangled and p.self_knowledge.known_matrices == ["alpha-matrix", "beta-matrix"]
+        except ProgramLoadError:
+            ok, detail = True, ""
+        rec("SK-E loaded known_matrices is never a character list",
+            ok, detail)
+        try:
+            p = _load(owner, f)
+            resave2 = tmp / "sk_strmatrices_resaved.json"
+            persist_rest.save(p, str(resave2))
+            kept = json.loads(resave2.read_text())["self_knowledge"]["known_matrices"]
+            ok = kept == ["alpha-matrix", "beta-matrix"]
+            detail = f"resaved known_matrices = {kept!r}" if not ok else ""
+        except ProgramLoadError:
+            ok, detail = True, ""
+        rec("SK-E second-generation continuity: load+resave keeps the original inventory",
+            ok, detail)
+
+        def _strsnaps(data):
+            data["self_knowledge"]["known_snaps"] = "snap-one"
+        f = _mutated(base, tmp / "sk_strsnaps.json", _strsnaps)
+        rec("SK string in known_snaps refuses load (typed) — no character splitting",
+            _refuses(owner, f))
+
+        def _mastery_high(data):
+            data["self_knowledge"]["mastery"] = {"floor": 1.5, "grow": 0.5}
+        f = _mutated(base, tmp / "sk_mastery_high.json", _mastery_high)
+        rec("SK mastery value above 1.0 refuses load (typed) — documented range 0..1",
+            _refuses(owner, f))
+
+        def _mastery_neg(data):
+            data["self_knowledge"]["mastery"] = {"floor": -0.25, "grow": 0.5}
+        f = _mutated(base, tmp / "sk_mastery_neg.json", _mastery_neg)
+        rec("SK negative mastery value refuses load (typed)",
+            _refuses(owner, f))
+
+        def _probes_neg(data):
+            data["self_knowledge"]["probes"] = -3
+        f = _mutated(base, tmp / "sk_probes_neg.json", _probes_neg)
+        rec("SK negative counter (probes:=-3) refuses load (typed)",
+            _refuses(owner, f))
+
+        def _hits_gt(data):
+            data["self_knowledge"]["hits"] = 99
+        f = _mutated(base, tmp / "sk_hits_gt.json", _hits_gt)
+        rec("SK hits > probes refuses load (typed) — writer invariant",
+            _refuses(owner, f))
+
+        def _probes_bool(data):
+            data["self_knowledge"]["probes"] = True
+        f = _mutated(base, tmp / "sk_probes_bool.json", _probes_bool)
+        rec("SK bool counter refuses load (typed) — JSON type confusion (int(True)==1)",
+            _refuses(owner, f))
+
+        other_path = build(other, tmp / "sk_other.json")
+        obefore = other_path.read_bytes()
+        f = _mutated(base, tmp / "sk_badmastery2.json", _badmastery)
+        refused = _refuses(owner, f)
+        p = _load(other, other_path)
+        rec("SK cross-owner: corrupt load refuses; foreign file untouched + loads intact",
+            refused and other_path.read_bytes() == obefore
+            and fields(p.self_knowledge) == expected)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+SECTIONS = [run_duo, run_companion, run_self_knowledge]
 
 
 def run_all():
