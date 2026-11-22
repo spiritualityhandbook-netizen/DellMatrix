@@ -1820,6 +1820,57 @@ ASSESSED until its closure evidence exists.
   resurrected the exact baseline death). Suite re-proven
   25/25 at the repair head; the CI red is closed only by
   terminal CI at the repair head, not by this record.
+- CI repair addendum ROUND 2 (2026-11-21, post-second-CI):
+  CI run 44962227931 at the round-1 repair head 32336f8
+  FAILED both regress passes at 24/25 — the suite now
+  reported its full count (round-1 degradation working as
+  designed) with exactly one named failure both passes:
+  j12_kill_midwrite_landed (state 5,684 files pass 1 /
+  7,905 pass 2, runner idle, Python 3.11.18; the other
+  three checks at the head were SUCCESS). Classification:
+  TEST-INSTRUMENT DEFECT, same family one level deeper —
+  no product behavior implicated (the save completed on
+  both passes; the new-generation arm checks passed). The
+  seal legs landed via the round-1 journal trigger; only
+  the mid-WRITE leg still triggered on the shared-directory
+  poll alone. Measured mechanism: the directory poll's
+  cycle grows with the shared state dir (0.23ms at 671
+  files -> 1.76ms median / 2.11ms p95 at 6,000 files,
+  local) while the temp window is one small write+fsync
+  (13-35ms on this VM's disk; 0/6 local misses at both
+  volumes) — on the CI runner the faster disk collapses
+  the window below the poll cycle, so no directory sample
+  fell inside the temp's life. Reproduced locally by
+  padding the state dir to 8,000 files and slowing only
+  the directory sampling (+50ms/call, cycle above the
+  local window): 24/25, sole FAIL j12_kill_midwrite_landed,
+  seal legs landed, no traceback — the exact CI signature.
+  Repair, suite-only: the write leg's trigger gains a
+  second sighting source independent of directory size —
+  the writer holds its temp open for the whole
+  write+fsync and the temp name embeds the writer's pid,
+  so a watcher thread polling /proc/<repl-pid>/fd
+  (~0.1ms/cycle) sees the temp for its entire life; the
+  directory poll remains as union trigger and as the
+  fallback where /proc is unavailable. The landed check
+  additionally pins the kill's effect (REPL exit is
+  -SIGKILL), so it asserts sighting AND delivery. Controls
+  at the round-2 head: suite 25/25 x4 clean runs; under
+  the identical slowed-directory diagnostic, 25/25 with
+  the kill landed (exit=-9); forced total-miss (both
+  triggers disabled): 22/25, the same three named FAILs,
+  no traceback; kill-disabled mutant (SIGKILL -> signal
+  0): temp sighted but the REPL survived (exit=None) ->
+  sole FAIL j12_kill_midwrite_landed, 24/25 (reverted by
+  inverse edit); no-temp product mutant in a scratch copy
+  (atomic write replaced by a direct write): sole FAIL
+  j12_kill_midwrite_landed, 24/25 — the check is not
+  vacuous. Neighbors green: journey family 8/8 (16/16,
+  19/19, 34/34, 38/38, 28/28, 29/29, 25/25, 25/25),
+  checkpoint_generation_stress 15/15,
+  atomic_write_boundaries 67/67. The CI red is closed
+  only by terminal CI at the round-2 head, not by this
+  record.
 
 ## Annex B — harness construction status (plan §5.2 families)
 
@@ -1834,7 +1885,7 @@ ASSESSED until its closure evidence exists.
 | journey_growth_test.py | J-09, J-14 | BUILT — baseline 25/25 (Annex A.14–A.15; J-09 FULL_SCOPE_PASS public-path scope, J-14 PARTIAL_SCOPE — "stopped" case uncovered, no stopped state in the machinery at this head; no product defect found) |
 | journey_dock_test.py | J-10, J-22 | BUILT — baseline 25/25 (Annex A.16–A.17; J-10 PARTIAL_SCOPE — Finding 1: origin-blind auto-confirm sweep accepts docked proposals under the explicit opt-in, Part VI A12, repair in flight on Part I; Finding 2: docked-growth receipt label vs token provenance; J-22 FULL_SCOPE_PASS public-path scope; no product defect fixed, no product code touched) |
 | journey_hcn_test.py | J-11 | not built (subject NOT BUILT until GP-E22 lands) |
-| journey_crash_test.py | J-12 | BUILT — baseline 25/25 (Annex A.18; PARTIAL_SCOPE — per-phase + dir-sync crash matrix is API-level only (dcc_xviii A–W, checkpoint_generation_stress), cited not duplicated; TWO product defects found + fixed: corrupt program envelope escaped the typed ProgramLoadError contract and died as a raw REPL traceback (decode wrap + diagnosed REPL presentation), missing program member with a surviving sealed generation exposed a hybrid fresh-program/orphaned-proposals pair (fresh-arm guard on positive generation evidence); findings left standing: missing-nursery silent proposal loss, missing-program-without-generation residue; post-CI instrument repair at the repair head: first CI (44956493651) died 0/0 on a missed temp-sighting + raising wait — classified TEST-INSTRUMENT DEFECT, seal trigger widened to the checkpoint intent journal, all spawned-REPL writes/waits non-raising, re-proven 25/25; see the A.18 CI repair addendum) |
+| journey_crash_test.py | J-12 | BUILT — baseline 25/25 (Annex A.18; PARTIAL_SCOPE — per-phase + dir-sync crash matrix is API-level only (dcc_xviii A–W, checkpoint_generation_stress), cited not duplicated; TWO product defects found + fixed: corrupt program envelope escaped the typed ProgramLoadError contract and died as a raw REPL traceback (decode wrap + diagnosed REPL presentation), missing program member with a surviving sealed generation exposed a hybrid fresh-program/orphaned-proposals pair (fresh-arm guard on positive generation evidence); findings left standing: missing-nursery silent proposal loss, missing-program-without-generation residue; post-CI instrument repair at the repair head: first CI (44956493651) died 0/0 on a missed temp-sighting + raising wait — classified TEST-INSTRUMENT DEFECT, seal trigger widened to the checkpoint intent journal, all spawned-REPL writes/waits non-raising, re-proven 25/25; see the A.18 CI repair addendum; ROUND 2 at the next head: second CI (44962227931) reported the full count at 24/25 with sole named failure j12_kill_midwrite_landed on both passes — the write leg's directory-poll trigger missed systematically at CI state volume / disk speed; classified TEST-INSTRUMENT DEFECT, write trigger gained a /proc/<writer-pid>/fd sighting thread (directory poll kept as union/fallback), landed check strengthened to pin the kill's effect (-SIGKILL exit), re-proven 25/25 incl. under the slowed-directory diagnostic that reproduced the CI signature pre-repair; see the A.18 round-2 addendum) |
 | journey_exchange_test.py | J-18, J-19 | not built (J-19 known gap: duplicate-replay idempotency absent — the rehearsal reports the program as it is) |
 | journey_offline_test.py | J-20 | not built (trace record exists from plan stage) |
 | journey_index_test.py | J-15 | not built |

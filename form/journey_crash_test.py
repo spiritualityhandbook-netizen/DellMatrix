@@ -117,6 +117,42 @@ REPAIR (this section, three seams, no other behavior change):
     as a printed diagnosis + recovery offer and exit 1; every
     other exception keeps its traceback.
 
+INSTRUMENT REPAIR ROUND 2 (post-CI, 2026-11-21 — the suite
+itself, not the product): CI run 44962227931 at the round-1
+head (32336f8) ran this suite to its full count on both
+passes — the round-1 degradation worked as designed — but
+reported 24/25 with exactly one named failure both passes:
+j12_kill_midwrite_landed. The seal legs landed (journal
+trigger); only the mid-WRITE leg still triggered on the
+directory poll alone, and it missed systematically.
+Classification: TEST-INSTRUMENT DEFECT, same family, one
+level deeper. Measured locally: the directory poll's cycle
+grows with the shared state dir (0.23ms at 671 files ->
+1.76ms median / 2.11ms p95 at 6,000 files) while the temp
+window is a single small write+fsync (13-35ms on this VM's
+disk, 0/6 misses at both volumes locally). On the CI runner
+(5,684 / 7,905 files, load1 0.80/0.70 idle, Python 3.11.18)
+the faster disk collapses the window below the poll cycle:
+the poll never samples the directory during the temp's
+life, the save completes, and the check fails by name.
+Reproduced locally by padding the state dir to 8,000 files
+and slowing only the directory sampling (+50ms/call, cycle
+above the local window): 24/25, sole FAIL
+j12_kill_midwrite_landed, seal legs landed, no traceback —
+the exact CI signature. Repair (this suite only): the write
+leg's trigger gains a second sighting source that does not
+degrade with directory size — the writer holds its temp
+open for the whole write+fsync, and the temp's name embeds
+the writer's pid, so a watcher thread polling
+/proc/<repl-pid>/fd (~0.1ms per cycle, a handful of
+entries) sees the temp for its entire life; the directory
+poll remains as the union trigger and as the fallback where
+/proc is unavailable. The landed check additionally pins
+the kill's effect (the REPL's exit is -SIGKILL), so the
+check now asserts sighting AND delivery, not sighting
+alone. Under the identical slowed-directory diagnostic the
+repaired suite lands the kill (25/25).
+
 INSTRUMENT REPAIR (post-CI, 2026-11-21 — the suite itself,
 not the product): CI run 44956493651 at this section's first
 head (dc8c1c53) failed BOTH regress passes with this suite
@@ -188,6 +224,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 import uuid
 
@@ -265,16 +302,82 @@ def spawn_repl(owner):
         stderr=subprocess.DEVNULL, text=True, cwd=ROOT)
 
 
-def wait_for_tmp(owner, timeout=30.0):
+def _fd_tmp_name(fd_dir, safe):
+    """Name of the writer's in-flight `.dmtmp.` temp, seen
+    through /proc/<writer-pid>/fd, or None. The writer holds
+    its temp open for the whole write+fsync (atomic_write's
+    contract), so the temp is visible here for its entire
+    life — and the fd directory holds a handful of entries,
+    so this sighting's cost does NOT grow with the shared
+    state directory's population (round-2 repair, below)."""
+    try:
+        fds = os.listdir(fd_dir)
+    except OSError:
+        return None
+    for fd in fds:
+        try:
+            target = os.readlink(os.path.join(fd_dir, fd))
+        except OSError:
+            continue
+        base = os.path.basename(target)
+        if ".dmtmp." in base and safe in base:
+            return base
+    return None
+
+
+def wait_for_tmp(owner, timeout=30.0, proc=None):
     """Poll until a `.dmtmp.` temp for this owner appears (a
-    write is in flight) — the deterministic crash trigger."""
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        tmps = tmp_files(owner)
-        if tmps:
-            return tmps
-        time.sleep(0.0005)
-    return []
+    write is in flight) — the deterministic crash trigger.
+
+    Two sighting sources, unioned (round-2 repair): the
+    shared-directory poll (tmp_files) and — when the writer
+    process is given and /proc is available — a watcher
+    thread polling the writer's fd table for the temp it
+    holds open. The directory poll alone missed
+    systematically in CI (run 44962227931, both passes,
+    24/25 with only j12_kill_midwrite_landed failing): its
+    cycle grows with the thousands of files the preceding
+    suites leave in the shared state dir, while the CI
+    runner's faster disk collapses the single small
+    write+fsync window below that cycle, so no directory
+    sample ever fell inside the temp's life. The fd
+    sighting's cycle is ~0.1ms regardless of directory
+    population, and the temp is open for the whole window
+    it must be caught in. Where /proc is unavailable the
+    directory poll remains, exactly as before."""
+    safe = _safe_owner(owner)
+    fd_dir = f"/proc/{proc.pid}/fd" if proc is not None else None
+    if fd_dir and not os.path.isdir(fd_dir):
+        fd_dir = None
+    found = []
+    stop = threading.Event()
+
+    def watch():
+        while not stop.is_set():
+            name = _fd_tmp_name(fd_dir, safe)
+            if name:
+                found.append(name)
+                return
+            stop.wait(0.0002)
+
+    watcher = None
+    if fd_dir:
+        watcher = threading.Thread(target=watch, daemon=True)
+        watcher.start()
+    try:
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if found:
+                return list(found)
+            tmps = tmp_files(owner)
+            if tmps:
+                return tmps
+            time.sleep(0.0005)
+        return list(found)
+    finally:
+        stop.set()
+        if watcher is not None:
+            watcher.join(timeout=2)
 
 
 def write_line(proc, line):
@@ -460,11 +563,12 @@ def main():
               "writing toward")
         proc = spawn_repl(write_owner)
         caught = []
+        kill_rc = None
         try:
             write_line(proc, CC)
             time.sleep(3.0)
             write_line(proc, "save")
-            caught = wait_for_tmp(write_owner)
+            caught = wait_for_tmp(write_owner, proc=proc)
             if caught:
                 proc.send_signal(signal.SIGKILL)
             # A missed sighting (slow runner, large state dir)
@@ -472,16 +576,17 @@ def main():
             # returns None, the finally below kills it, and the
             # leg's checks fail by name — the baseline code let
             # this wait raise TimeoutExpired and kill the suite.
-            wait_exit(proc)
+            kill_rc = wait_exit(proc)
         finally:
             if proc.poll() is None:
                 proc.kill()
                 proc.wait()
         check("j12_kill_midwrite_landed",
-              bool(caught),
-              f"the SIGKILL was delivered while a write temp "
-              f"({caught}) was in flight — the crash landed "
-              f"inside the save, not before or after it")
+              bool(caught) and kill_rc == -signal.SIGKILL,
+              f"a write temp ({caught}) was sighted in flight "
+              f"and the SIGKILL took the REPL down mid-save "
+              f"(exit={kill_rc}) — the crash landed inside "
+              f"the save, not before or after it")
         snap_after = snap(write_owner)
         old_arm = snap_after == snap_pre
         new_arm = scope_view(snap_after) == scope_view(snap_new)
