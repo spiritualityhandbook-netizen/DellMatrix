@@ -12,7 +12,7 @@ from form.mandell.language import bind, empty_language, parse_language
 from form.dell_matrix.plane import Perspective, Skin
 from form.dell_matrix.resonance import ResonanceState
 from form.dell_matrix.main_field import MainContribution, PullRecord
-from form.dell_matrix.harmonic_lattice import HarmonicLattice, OverlayMode, Perspective as LatPerspective
+from form.dell_matrix.harmonic_lattice import HarmonicLattice, OverlayMode, Perspective as LatPerspective, SnapModule
 from form.dell_matrix.perception import Form
 from form.avatar import Facing, Posture, Locomotion, Reach, Expression
 from form.open import Program, open_program
@@ -215,10 +215,130 @@ def _restore_avatar(p: Program, data: Dict[str, Any]) -> None:
     p.face.custom_face = av.get("custom_face")
 
 
+# P0-R (Director 7085151190 item 2): lattice SnapModule registry format.
+# Lattice-local marker inside the lattice section (NOT an envelope
+# version bump): modules_format == 2 means `modules` is a list of
+# lossless records {id, kind, axis, index, meta, cells:[[h,v,f],...]}
+# whose coordinates reference the serialized lattice cells. Absence of
+# the marker is the legacy shape: the pre-fix writer emitted module IDs
+# only, so the records were never written.
+_LATTICE_MODULES_FORMAT = 2
+_LATTICE_MODULE_KEYS = frozenset(("id", "kind", "axis", "index", "meta", "cells"))
+
+
+def _stage_lattice_modules(raw: Dict[str, Any], owner: str):
+    """Validate the lattice modules field and return staged specs
+    [(id, kind, axis, index, meta, coords)] in file order.
+
+    Runs BEFORE the lattice is rebuilt and raises ProgramLoadError on
+    any violation; _load_impl builds a private Program and load never
+    writes, so a refusal swaps nothing and preserves the source bytes.
+
+    Legacy rule: with no format marker, an absent or empty modules
+    field is supported (empty registry). A NONEMPTY IDs-only list is
+    IRRECOVERABLE -- the payloads were never written -- so it fails
+    closed here; IDs are never dressed up as empty modules and no
+    facts are reconstructed from geometry.
+    """
+    fmt = raw.get("modules_format")
+    mods = raw.get("modules")
+    if fmt is None:
+        if mods is None or mods == []:
+            return []
+        if isinstance(mods, list) and all(isinstance(m, str) for m in mods):
+            raise ProgramLoadError(
+                "lattice modules field is a legacy IDs-only list: the module "
+                "records were never written and are irrecoverable; refusing "
+                "load rather than fabricating modules from IDs")
+        raise ProgramLoadError(
+            "lattice modules field is malformed (records without the "
+            "modules_format marker): refusing load")
+    if isinstance(fmt, bool) or not isinstance(fmt, int) or fmt != _LATTICE_MODULES_FORMAT:
+        raise ProgramLoadError(
+            f"lattice modules_format {fmt!r} is not supported "
+            f"(current {_LATTICE_MODULES_FORMAT}): refusing load")
+    if not isinstance(mods, list):
+        raise ProgramLoadError(
+            "lattice modules field must be a list of module records "
+            "under modules_format 2: refusing load")
+    cells_raw = raw.get("cells") or {}
+    if not isinstance(cells_raw, dict):
+        raise ProgramLoadError("lattice cells field is not an object: refusing load")
+    seen_ids = set()
+    claimed: Dict[Any, str] = {}
+    staged = []
+    for i, item in enumerate(mods):
+        if not isinstance(item, dict):
+            raise ProgramLoadError(
+                f"lattice module record #{i} is not an object: refusing load")
+        if "owner" in item and item["owner"] != owner:
+            raise ProgramLoadError(
+                f"lattice module record #{i} carries foreign owner "
+                f"{item['owner']!r} (file owner {owner!r}): refusing load")
+        keys = set(item.keys())
+        if keys != _LATTICE_MODULE_KEYS:
+            raise ProgramLoadError(
+                f"lattice module record #{i} has inconsistent keys "
+                f"{sorted(keys)} (expected {sorted(_LATTICE_MODULE_KEYS)}): refusing load")
+        mid = item["id"]
+        if not isinstance(mid, str) or not mid:
+            raise ProgramLoadError(
+                f"lattice module record #{i} has invalid id {mid!r}: refusing load")
+        if mid in seen_ids:
+            raise ProgramLoadError(
+                f"duplicate lattice module id {mid!r}: refusing load")
+        seen_ids.add(mid)
+        kind, axis, index, meta = item["kind"], item["axis"], item["index"], item["meta"]
+        if not isinstance(kind, str) or not kind:
+            raise ProgramLoadError(
+                f"lattice module {mid!r} has invalid kind {kind!r}: refusing load")
+        if not isinstance(axis, str) or not axis:
+            raise ProgramLoadError(
+                f"lattice module {mid!r} has invalid axis {axis!r}: refusing load")
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise ProgramLoadError(
+                f"lattice module {mid!r} has invalid index {index!r}: refusing load")
+        if not isinstance(meta, dict):
+            raise ProgramLoadError(
+                f"lattice module {mid!r} meta is not an object: refusing load")
+        cells_field = item["cells"]
+        if not isinstance(cells_field, list):
+            raise ProgramLoadError(
+                f"lattice module {mid!r} cells is not a coordinate list: refusing load")
+        coords = []
+        local = set()
+        for c in cells_field:
+            if (not isinstance(c, (list, tuple)) or len(c) != 3
+                    or any(isinstance(x, bool) or not isinstance(x, int) for x in c)):
+                raise ProgramLoadError(
+                    f"lattice module {mid!r} has invalid cell coordinate {c!r}: refusing load")
+            coord = (c[0], c[1], c[2])
+            if coord in local:
+                raise ProgramLoadError(
+                    f"lattice module {mid!r} lists cell {coord} twice: refusing load")
+            local.add(coord)
+            if f"{coord[0]},{coord[1]},{coord[2]}" not in cells_raw:
+                raise ProgramLoadError(
+                    f"lattice module {mid!r} references cell {coord} absent "
+                    "from the lattice cells: refusing load")
+            if coord in claimed:
+                raise ProgramLoadError(
+                    f"lattice modules {claimed[coord]!r} and {mid!r} overlap "
+                    f"at cell {coord}: refusing load")
+            claimed[coord] = mid
+            coords.append(coord)
+        staged.append((mid, kind, axis, index, meta, coords))
+    return staged
+
+
 def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
     raw = data.get("lattice") or {}
     if not raw:
         return
+    # P0-R: validate the modules field STAGED, above this section's
+    # permissive cell restore -- a malformed registry refuses the whole
+    # load typed instead of being swallowed into a default lattice.
+    staged_modules = _stage_lattice_modules(raw, p.owner)
     try:
         p.lattice = HarmonicLattice(size=int(raw.get("size", 12)))
         try:
@@ -241,6 +361,22 @@ def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
                 continue
     except Exception:
         p.lattice = HarmonicLattice(size=12)
+    # Bind staged modules to the restored lattice cells by coordinate
+    # (Option B). A referenced coordinate that did not survive the
+    # cell restore refuses the load rather than binding a partial
+    # membership; `p` is still the private prepared Program, so the
+    # refusal swaps nothing.
+    for mid, kind, axis, index, meta, coords in staged_modules:
+        bound = {}
+        for coord in coords:
+            cell = p.lattice.cells.get(coord)
+            if cell is None:
+                raise ProgramLoadError(
+                    f"lattice module {mid!r} references cell {coord} that did "
+                    "not survive lattice restore: refusing load")
+            bound[coord] = cell
+        p.lattice.modules[mid] = SnapModule(
+            id=mid, kind=kind, axis=axis, index=index, cells=bound, meta=dict(meta))
 
 
 class ProgramLoadError(ValueError):

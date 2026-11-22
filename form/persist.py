@@ -72,6 +72,17 @@ class OwnerCollisionError(RuntimeError):
     is a separate gated circuit — never done silently here."""
 
 
+class LatticeModuleSaveError(RuntimeError):
+    """P0-R: a lattice SnapModule cannot be represented losslessly in
+    the modules_format=2 record shape (bad identity fields, non-dict
+    or non-JSON-serializable meta, malformed cell coordinates).
+
+    Raised inside serialize(), i.e. before any bytes are written, so
+    the previous generation at the target path stays intact. The
+    alternative -- silently dropping or stringifying module identity
+    data -- is the write-time loss this circuit repairs."""
+
+
 def stored_program_owner(path: str) -> Optional[str]:
     """Raw owner recorded in the program file at ``path``.
 
@@ -131,6 +142,63 @@ def _serialize_nursery(program: Program) -> Dict[str, Any]:
     return {k: v.to_dict() for k, v in program.nursery.proposals.items()}
 
 
+def _serialize_lattice_modules(lat) -> List[Dict[str, Any]]:
+    """P0-R (Director 7085151190 item 2): lossless SnapModule records.
+
+    Each record carries the module's full id/kind/axis/index/meta and
+    its EXACT membership as sorted [h, v, f] coordinate references
+    into the serialized lattice cells (Option B). Membership is the
+    module's OWN cell set -- including coordinates snap_in did not
+    copy because they were already occupied; restore rebinds those
+    coordinates to the restored lattice cells and never reconstructs
+    membership from geometry.
+
+    Writer honesty: any module that cannot be represented exactly
+    raises LatticeModuleSaveError here, inside serialize(), before
+    any bytes are written.
+    """
+    records: List[Dict[str, Any]] = []
+    for key, mod in lat.modules.items():
+        mid = getattr(mod, "id", None)
+        if not isinstance(mid, str) or not mid or mid != key:
+            raise LatticeModuleSaveError(
+                f"lattice module registry key {key!r} does not match module id {mid!r}: refusing save")
+        kind = getattr(mod, "kind", None)
+        if not isinstance(kind, str) or not kind:
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} has invalid kind {kind!r}: refusing save")
+        axis = getattr(mod, "axis", None)
+        if not isinstance(axis, str) or not axis:
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} has invalid axis {axis!r}: refusing save")
+        index = getattr(mod, "index", None)
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} has invalid index {index!r}: refusing save")
+        meta = getattr(mod, "meta", None)
+        if not isinstance(meta, dict) or any(not isinstance(k, str) for k in meta):
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} meta is not a string-keyed object: refusing save")
+        try:
+            json.dumps(meta)
+        except (TypeError, ValueError) as e:
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} meta is not JSON-serializable ({e}): refusing save")
+        coords: List[List[int]] = []
+        for coord in mod.cells.keys():
+            if (not isinstance(coord, tuple) or len(coord) != 3
+                    or any(isinstance(c, bool) or not isinstance(c, int) for c in coord)):
+                raise LatticeModuleSaveError(
+                    f"lattice module {mid!r} has malformed cell coordinate {coord!r}: refusing save")
+            coords.append([coord[0], coord[1], coord[2]])
+        coords.sort()
+        records.append({
+            "id": mid, "kind": kind, "axis": axis, "index": index,
+            "meta": dict(meta), "cells": coords,
+        })
+    return records
+
+
 def _serialize_lattice(program: Program) -> Dict[str, Any]:
     lat = program.lattice
     cells = {}
@@ -150,7 +218,12 @@ def _serialize_lattice(program: Program) -> Dict[str, Any]:
         "form": lat.perception.form.value,
         "origin_note": lat.origin_note,
         "cells": cells,
-        "modules": list(lat.modules.keys()),
+        # P0-R: versioned lossless module records + lattice-local
+        # format marker (NOT an envelope version bump). Pre-fix files
+        # carry an IDs-only list with no marker; restore treats a
+        # nonempty one as irrecoverable and fails closed.
+        "modules": _serialize_lattice_modules(lat),
+        "modules_format": 2,
     }
 
 
