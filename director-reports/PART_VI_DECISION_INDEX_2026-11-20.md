@@ -18,11 +18,77 @@ rather than smoothed over.
 
 ---
 
+## A0. FINAL PLAN RULING — SCOPED (PARTIAL) PLAN ACCEPTANCE
+## (Director 7079043239, 2026-11-22)
+
+**Verdict:** the Director's final plan-stage disposition at
+PR #507 head 5a0bb10ea7dd91984e533dcc3ed7b3e555262a9e is a
+**SCOPED (PARTIAL) PLAN ACCEPTANCE** of this unknowns
+decision index, the adversarial source maps
+(`PART_VI_ADVERSARIAL_ARTIFACTS_2026-11-21.md`), and the
+work-order/artifact designs. The two adverse sets materially
+satisfy the requirement to DOCUMENT the FI-011 W4 and
+FI-012 intake attack surfaces and their planned negative
+oracles.
+
+**What this verdict is NOT:** it is not whole-Part plan
+completion, not code, not an implementation-success claim,
+and not an all-questions-cleared claim. No completion
+credit is awarded. The existing MERGE HOLD remains pending
+a separately scoped co-equal reconciliation of the held
+claims below, and a clean §32 transaction remains required
+for any lawful records-only disposition or future code
+merge.
+
+**HELD — Q-FI011.4 and Q-FI012.10 remain UNRESOLVED WITH
+LIVE HOLDS** for the product stage and for any claim they
+are closed:
+
+- **Q-FI011.4 — HELD (FI-011 W4).** Affected paths:
+  the confirmation surfaces the W4 hardening wave inherits —
+  AcceptancePolicy grants + the canonical (Program) writer
+  path, the raw Nursery store (`Nursery.confirm`), the
+  owner opt-in auto-confirm sweep, and persisted store-file
+  load. Owner of the resolution: the FI-011 W4
+  implementation home, Part I. Must resolve: A7 grant
+  reuse/single-use receipts; A8 raw `Nursery.confirm`
+  actor/receipt bypass; A12 docked-agent origin-blind
+  auto-confirm; A9 unknown-status load refusal — while
+  explicitly retaining the local file-tamper trust-boundary
+  disclosure.
+- **Q-FI012.10 — HELD (FI-012 elastic intake).** Affected
+  paths: the parse door (`form/idea_create.py`
+  `parse_create_line`), the store door (`Nursery.add`), and
+  the composed public path (`needs.parse_and_place`).
+  Owner of the resolution: the FI-012 intake waves home,
+  Part I. Must resolve: parse-door oversize/malformed;
+  marker injection/forged line; effective words 120 vs
+  declared 500 (Director selected 500 where authorized);
+  boundary exact behavior; duplicate-add allowed with
+  distinct IDs/receipts; plain public-path errors.
+  Candidate Q1/R5-D/file-atomic code is EXCLUDED — no
+  hidden re-authorizations.
+
+**Red-outcome scope:** the red outcomes in the adversarial
+artifacts are factual failing-first probes of EXISTING
+behavior, not regressions introduced by this records/spec
+PR; the claims are scoped to the measured entry paths, not
+every runtime caller.
+
+**Uni next (per the ruling):** present the next CODE attempt
+at a new exact head with failing-first tests flipped for the
+right reason and independent Keeper challenge.
+
+---
+
 ## A. DECISION INDEX
 
 Legend: **RULED** = owner's ruling on the record, verified.
 **DISCHARGED** = closed by evidence in this PR. **OWED** =
-no ruling exists yet; the named owner owes it. **UNPROVEN** =
+no ruling exists yet; the named owner owes it. **HELD** =
+plan-stage documentation accepted, but the question remains
+UNRESOLVED under a live HOLD for the product stage and for
+any closure claim. **UNPROVEN** =
 a ruling is asserted in the packet record but is not pinned
 to a verifiable GitHub comment ID.
 
@@ -38,11 +104,11 @@ to a verifiable GitHub comment ID.
 | 8 | Q-U.4 — manual-confirm cross-wall semantics | Ace | **RULED** — NO to the proposed ratification: ALL mixed ideas become fully sandboxed first; Matrix placement decided afterward, as a whole. Supersedes the shipped auto-skip-with-receipt semantics | Ace rulings recorded 7045163243 (after Director kept it ACE-RESERVED, 7044836836 item 9) | 2026-11-20 |
 | 9 | Q-FI011.1 / .2 — standing-gate doctrine; ungateable list | Director | **RULED** — conditional standing-gate confirmation design (Ace-created, authenticated, revocable, exact-match only; receipt names the gate); ungateable categories named (other actors' state, security/permission changes, sandbox-crossing placement, destructive irreversible ops, hard eligibility/safety refusals, external effects needing fresh confirmation, undeclared side effects, unbounded blast radius). Design only — no product auto-confirm code authorized yet | Director 7044836836 item 6 | 2026-11-20 |
 | 10 | Q-FI011.3 — gate placement default | Ace | Answered per the FI-011 development record (sandbox-first); not re-asked. **UNPROVEN by comment ID** — no GitHub comment ID is cited for it in the packet record | FI-011 development record (as cited in Packet 4) | pre-2026-11-20 |
-| 11 | Q-FI011.4 — W4 adversarial scope | Keeper | **OWED** — Keeper must independently challenge gate widen / spoof / replay / cross-wall / partial-save surfaces before any FI-011 W1–W4 implementation | Obligation stated in Director 7044836836 item 6 | — |
+| 11 | Q-FI011.4 — W4 adversarial scope | Keeper | **HELD — UNRESOLVED WITH LIVE HOLD** (plan-stage documentation ACCEPTED under the Director's SCOPED/PARTIAL plan acceptance; NOT closed, and no product-stage claim may treat it as closed). FI-011 W4 must resolve A7 grant reuse/single-use receipts, A8 raw `Nursery.confirm` actor/receipt bypass, A12 docked-agent origin-blind auto-confirm, A9 unknown-status load refusal, retaining the local file-tamper trust-boundary disclosure. Affected paths: AcceptancePolicy grants + canonical writer path, raw Nursery store, auto-confirm sweep, store-file load. Owner: Part I (FI-011 W4 implementation home) | Director final plan ruling 7079043239 (SCOPED/PARTIAL plan acceptance; Q-FI011.4 HELD); obligation stated in Director 7044836836 item 6 | 2026-11-22 |
 | 12 | Q-FI012.1/.2/.4/.5/.6/.7/.9 — elastic-intake technical baseline | Director | **RULED** — technical baseline (owner/caller-boundary placement; amortized doubling where measured; counts AND canonical bytes; MAX_PARENTS refuses, never prunes; paged snapshots with shown/total + cursor/checksum; A4 done-state defined; Exchange via authenticated journaled gates; R5-C 2MiB/10k policy NOT repealed) | Director 7044836836 item 7 | 2026-11-20 |
 | 13 | Q-FI012.3 — soft alert threshold | Ace | Treated as answered/excluded per the program map; not re-asked. **UNPROVEN by comment ID** — no GitHub comment ID is cited for it in the packet record | Program map (as cited in Packet 5) | pre-2026-11-20 |
 | 14 | Q-FI012.8 — idea_create parse-path census | Uni | **DISCHARGED** — census delivered by probe in this PR (`FI012_Q8_CENSUS 8/8`): caps at `form/idea_create.py parse_create_line` (`label[:80]`, `detail[:2000]`, `goals[:12]`, `words[:500]`), all silently truncating; effective words cap is 120, not 500; store layer already honest | This PR (probe suite + CI) | 2026-11-20 |
-| 15 | Q-FI012.10 — elastic-intake adversarial matrix | Keeper | **OWED** — "Keeper .10 adversarial matrix remains independently owed" | Director 7044836836 item 7 | — |
+| 15 | Q-FI012.10 — elastic-intake adversarial matrix | Keeper | **HELD — UNRESOLVED WITH LIVE HOLD** (plan-stage documentation ACCEPTED under the Director's SCOPED/PARTIAL plan acceptance; NOT closed). FI-012 must resolve parse-door oversize/malformed, marker injection/forged line, effective words 120 vs declared 500 (Director selected 500 where authorized), boundary exact behavior, duplicate-add allowed with distinct IDs/receipts, plain public-path errors. Candidate Q1/R5-D/file-atomic code EXCLUDED. Affected paths: parse door `form/idea_create.py parse_create_line`, store door `Nursery.add`, composed public path `needs.parse_and_place`. Owner: Part I (FI-012 intake waves home) | Director final plan ruling 7079043239 (SCOPED/PARTIAL plan acceptance; Q-FI012.10 HELD); Director 7044836836 item 7 | 2026-11-22 |
 | 16 | Q-FI016.1 — database/SQL-style operations on ideas | Ace | **RULED** — A for now: measured read capability counts as the capability; index / incremental-write build DEFERRED until the program is in a more finished state, then revisited | Ace rulings recorded 7045163243; measured evidence in Packet 6 (FI016_CAPABILITY 12/12) | 2026-11-20 |
 | 17 | Q-DD42.2 — While/Until refusal surfaces (row #12 remainder) | Director | **RULED** — Option A: typed condition-parse refusal at BOTH boundaries, before bound evaluation; zero-iterations + ok=True prohibited; `bound_unspecified` must not mask a parse failure | Director 7044836836 item 3 | 2026-11-20 |
 | 18 | Q-DD18.2 — Pulse refusal chain policy | Director | **RULED** — ratified: continue + honest atom receipt (Pulse ok=false, chain ok=false); no universal chain-abort inference | Director 7044836836 item 4 | 2026-11-20 |
@@ -58,7 +124,11 @@ to a verifiable GitHub comment ID.
 **Completeness count:** 26 index entries covering every
 packet in Part VI's scope (Packets 1–10 + the Edition 1
 index). **23 carry a verified ruling or discharge on the
-record; 2 are OWED (both Keeper: Q-FI011.4, Q-FI012.10);
+record; 2 are HELD (both Keeper: Q-FI011.4, Q-FI012.10 —
+plan-stage documentation accepted 2026-11-22 under the
+Director's SCOPED/PARTIAL plan acceptance 7079043239, but
+both remain UNRESOLVED WITH LIVE HOLDS for the product
+stage and for any closure claim);
 2 ruling-assertions are UNPROVEN by comment ID (Q-FI011.3,
 Q-FI012.3 — both already answered/excluded and outside the
 ask; Q-U.2's status is corroborated by 7044836836 with its
@@ -135,14 +205,25 @@ OPEN, and what UNI STILL OWES.
   form (a gate is Ace's own prior act; exact match only;
   anything ambiguous/widened/unmatched/stale stays PENDING;
   receipt names the gate) and the ungateable category list.
-- **Leaves open:** Q-FI011.4 — the Keeper's W4 adversarial
-  scope/challenge (widen / spoof / replay / cross-wall /
-  partial-save), which must land BEFORE any FI-011 W1–W4
-  implementation.
-- **Uni owes:** nothing until the Keeper challenge lands;
-  then the W1–W4 builds in Part I under the ruled design.
-  Gate authoring is never a Psalm/agent act under any
-  outcome.
+- **Leaves open:** Q-FI011.4 is **HELD** (Director
+  7079043239, 2026-11-22): the plan-stage documentation of
+  the W4 adversarial scope is ACCEPTED under the SCOPED
+  (PARTIAL) plan acceptance, but the question remains
+  UNRESOLVED WITH A LIVE HOLD for the product stage and
+  for any claim it is closed. FI-011 W4 must resolve A7
+  grant reuse/single-use receipts, A8 raw `Nursery.confirm`
+  actor/receipt bypass, A12 docked-agent origin-blind
+  auto-confirm, and A9 unknown-status load refusal, while
+  explicitly retaining the local file-tamper trust-boundary
+  disclosure. Affected paths: AcceptancePolicy grants +
+  canonical writer path, raw Nursery store, auto-confirm
+  sweep, store-file load.
+- **Uni owes:** the next CODE attempt at a new exact head
+  with failing-first tests flipped for the right reason and
+  independent Keeper challenge; then the W1–W4 builds in
+  Part I (the FI-011 W4 implementation home) under the
+  ruled design, only where separately authorized. Gate
+  authoring is never a Psalm/agent act under any outcome.
 
 ### B6. FI-012 elastic intake — Q-FI012.1–.10 (Packet 5)
 - **Settles:** the technical baseline for waves W1–W5
@@ -150,14 +231,30 @@ OPEN, and what UNI STILL OWES.
   2MiB/10k owner-history policy is NOT repealed by the
   doctrine's "any size" language, and that Q1 holds take
   precedence over elastic intake.
-- **Leaves open:** Q-FI012.10 (Keeper adversarial matrix —
-  owed). Implementation of every wave.
+- **Leaves open:** Q-FI012.10 is **HELD** (Director
+  7079043239, 2026-11-22): the plan-stage documentation of
+  the adversarial matrix is ACCEPTED under the SCOPED
+  (PARTIAL) plan acceptance, but the question remains
+  UNRESOLVED WITH A LIVE HOLD for the product stage and
+  for any claim it is closed. FI-012 must resolve
+  parse-door oversize/malformed, marker injection/forged
+  line, effective words 120 vs declared 500 (Director
+  selected 500 where authorized), boundary exact behavior,
+  duplicate-add allowed with distinct IDs/receipts, and
+  plain public-path errors. Candidate Q1/R5-D/file-atomic
+  code is EXCLUDED. Affected paths: parse door
+  `form/idea_create.py parse_create_line`, store door
+  `Nursery.add`, composed public path
+  `needs.parse_and_place`. Implementation of every wave.
 - **Uni owes:** Q-FI012.8 is discharged, BUT the Director
   requires a reproducible public-path failing-first for the
   four silent truncations + the unreachable words cap
   BEFORE the W4 parse-wave implementation (the probe is
   accepted as source hypothesis, not as the failing-first).
-  Waves build in Part I.
+  Waves build in Part I (the FI-012 intake waves home);
+  the next CODE attempt is presented at a new exact head
+  with failing-first tests flipped for the right reason and
+  independent Keeper challenge.
 
 ### B7. FI-016 — Q-FI016.1 (Packet 6)
 - **Settles:** the classification for now — measured native
@@ -221,24 +318,33 @@ OPEN, and what UNI STILL OWES.
 
 ---
 
-## C. WHAT STANDS BETWEEN THIS INDEX AND PLAN-CONFIRM
+## C. PLAN VERDICT AND WHAT REMAINS
 
-Per the Director's live disposition (7056445974, #507 line):
-"Director/Ace question rulings already filed; PLAN-CONFIRM
-WITHHELD pending Gemini's independent decision-index and
-evidence challenge. Do not reopen answered Qs."
+The Director's final plan ruling landed 2026-11-22
+(7079043239): **SCOPED (PARTIAL) PLAN ACCEPTANCE** of this
+index, the adversarial source maps, and the
+work-order/artifact designs — integrated at §A0 above. The
+earlier withholding position (Director 7056445974:
+PLAN-CONFIRM withheld pending the Keeper's independent
+challenge, discharged via the Keeper-carried Gemini
+CHALLENGE PASS 7065606534 and Director design rulings
+7065729752 / 7066291209) is superseded by that ruling as
+the plan-stage disposition of record. This acceptance is
+PARTIAL: it is not whole-Part plan completion, not code,
+and not an all-questions-cleared claim.
 
-Per the Keeper's deep pass (7055054831): exact missing =
-"full independent content challenge of decision packets
-(Q-35.1, Q-DD42.2, Q-DD18.2 etc.) + per-family rulings
-disposition."
+What remains:
 
-This file supplies the per-family rulings disposition and
-the verified decision index. The remaining act is the
-Keeper's independent challenge of both at the exact head —
-carried to Gemini by Uni's relay under the current Keeper
-arrangement (Grok first; Gemini acts on a verified Grok
-miss — Ace ruling 2026-11-20 21:21 CST, record 7056545779),
-with the Director's finalization thereafter. No merge is
-requested or implied by this record; register flips ride
-the records-landing stage as ruled (B1).
+- **Q-FI011.4 and Q-FI012.10 stay HELD** — UNRESOLVED WITH
+  LIVE HOLDS (§A0, index rows 11 and 15, B5, B6). The held
+  claims may not be merged as closed without a separately
+  scoped co-equal reconciliation.
+- **MERGE HOLD stands** pending that reconciliation; a
+  clean §32 transaction remains required for any lawful
+  records-only disposition or future code merge.
+- **Uni next:** present the next CODE attempt at a new
+  exact head with failing-first tests flipped for the right
+  reason and independent Keeper challenge.
+
+No merge is requested or implied by this record; register
+flips ride the records-landing stage as ruled (B1).

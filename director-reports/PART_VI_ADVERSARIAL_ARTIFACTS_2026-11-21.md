@@ -11,6 +11,18 @@ Director SCOPED ACCEPTANCE 7061260190 with both HOLDs preserved).
 The artifacts are the evidence; the scope rulings remain the
 authorities' acts.
 
+**Final plan ruling integrated (Director 7079043239,
+2026-11-22):** SCOPED (PARTIAL) PLAN ACCEPTANCE of the
+unknowns decision index, these adversarial source maps, and
+the work-order/artifact designs. The red outcomes here are
+factual failing-first probes of EXISTING behavior, scoped to
+the measured entry paths — not regressions introduced by
+this PR. Q-FI011.4 / Q-FI012.10 remain UNRESOLVED WITH LIVE
+HOLDS; this acceptance is not whole-Part plan completion,
+not code, and not an all-questions-cleared claim. The full
+verdict integration lives in
+`PART_VI_DECISION_INDEX_2026-11-20.md` §A0.
+
 ## How to run
 
 ```bash
