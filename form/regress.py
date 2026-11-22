@@ -428,6 +428,12 @@ LIST = [
     # code-stage step zero registers the suite in the same change
     # that lands reconcile_gate in director-reports/certification_runner.py.
     "form.gate_reconciliation_test:smoke",
+    # Part 0 GP-E25 (Edition 1 circuit): Muse Space snapshot
+    # reducer (S1), static exported view (S2), live revalidation
+    # (S3) -- code-stage step zero registers the suite in the same
+    # change that lands form/muse_space_snapshot.py and
+    # form/muse_space_views.py (build record 2026-11-20 section 5).
+    "form.muse_space_test:smoke",
 ]
 
 TIMEOUT_S = 900
