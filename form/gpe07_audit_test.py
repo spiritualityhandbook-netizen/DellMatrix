@@ -74,6 +74,51 @@ job (Python 3.11) with the suite as the only red entry
    descriptions, counts — remains byte-pinned and derived from
    the live sweep, and the drift check now names the differing
    Dell rows on failure so any recurrence is self-locating.
+
+REPAIR NOTE — ROUND 2 (2026-11-21, CI smoke failure at
+e084b82, the round-1 repair head): audit_ledger_drift failed
+again in CI on both regress passes (15/16, drift the only red),
+while every local run at the branch head stayed green. The
+round-1 disclosure stood: the differing byte could not be
+isolated without a 3.11 interpreter. With Python 3.11.18
+installed, the bisection was completed and the cause is NOT
+an interpreter, state, hash-seed or environment effect:
+
+- Clean-state sweeps under 3.11.18 and 3.12.3 are
+  byte-identical to the committed ledger; a faithful harness
+  repro (regress._copy_tree + the 126-entry prefix as harness
+  children under 3.11.18, 3,556 accumulated state files) is
+  also byte-identical. Hash seeds 0-5 identical; the eleven
+  MESSAGE_ONLY Dells' raw receipts are byte-identical before
+  and after field enrichment.
+- PR CI does not sweep the branch tree: it sweeps the PR's
+  MERGE tree (branch merged into current main). In that tree
+  exactly one record field differs — Dell 92 [Guard]'s
+  `manor`, the declared registry description sourced from
+  form/mandell/core_ii.py. Main revised that declared fact
+  after this branch's ledger was generated ("Prevent
+  execution unless conditions hold" -> "Ask 'may this
+  proceed?': ALLOW when conditions hold, BLOCK when they do
+  not"; dell_cards DEEP_NOTES and DELL_PROOF_CARDS moved with
+  it). A suite run in the merge tree under 3.11.18 reproduces
+  the CI signature exactly: 15/16, sole FAIL
+  audit_ledger_drift, "differing Dell rows=['92']".
+
+Classification: the varying field is a DECLARED CONTRACT
+FACT (the GP-E07 contract requires declared name/manor per
+address), revised on main by landed Part III work — not
+executor mechanics, so it is NOT normalized or excluded;
+the ledger keeps byte-pinning it. No verdict was derived
+from it (Dell 92 is CONTRACT_PROVEN with identical legs and
+basis in both trees; totals stay 89/11). The repair is the
+honest one for a stale generated artifact: sync the branch
+with main (merge ace82fa) and regenerate the ledger at the
+new head — the regenerated ledger differs from the old one
+in exactly the Dell 92 manor cell. Standing consequence,
+disclosed: a ledger that byte-pins declared registry facts
+goes stale whenever main revises a declared fact ahead of
+the branch; the cure is branch sync + regeneration, never
+editing the ledger to match an un-synced sweep.
 """
 
 from __future__ import annotations
