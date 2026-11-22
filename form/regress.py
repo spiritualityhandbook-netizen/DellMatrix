@@ -37,6 +37,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # 4 CI entries (form-smoke.yml history) + 17 *_test suites + core_ii_smoke.
 LIST = [
     "form.open",
+    "form.morning_reconciliation_test:smoke",
     "form.mandell.phrase_tests",
     "form.mandell.polyglot_tests",
     "form.accept:run",
@@ -423,6 +424,14 @@ LIST = [
     # 6924026251): persona readers are observationally pure and the
     # Bimo pilot writer syncs persona_matrix.active beside the lens.
     "form.persona_purity_test:smoke",
+    # Part 0 SM-08 (register row #92): resumability checkpoints —
+    # code-stage step zero registers the suite in the same change
+    # that lands form/resume_checkpoint.py (plan §4 / line-430 note).
+    "form.resumability_checkpoint_test:smoke",
+    # Part 0 SM-07 (register row #91): unified merge-gate reconciler —
+    # code-stage step zero registers the suite in the same change
+    # that lands reconcile_gate in director-reports/certification_runner.py.
+    "form.gate_reconciliation_test:smoke",
 ]
 
 TIMEOUT_S = 900

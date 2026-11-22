@@ -1,0 +1,13 @@
+REGRESS-CAPTURE-BEGIN entry=form.daf09_fixture_hang:smoke pass=- TIMEOUT
+assertion_ids: none
+runner: os=Linux python=3.12.3 cpus=4 load1=2.55
+child: stdout_lines=0 stderr_lines=0 traceback=no
+state: files=9 bytes=94 (names withheld)
+REGRESS-CAPTURE-END
+REGRESS-CAPTURE-BEGIN entry=form.daf09_fixture_escape:smoke pass=- TIMEOUT
+assertion_ids: none
+runner: os=Linux python=3.12.3 cpus=4 load1=3.31
+child: stdout_lines=0 stderr_lines=0 traceback=no
+state: files=9 bytes=94 (names withheld)
+REGRESS-CAPTURE-END
+DAF09_TIMEOUT_TREE: 31/31

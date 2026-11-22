@@ -1,5 +1,16 @@
-name: verify-72-17
+name: HISTORICAL — verify-72-17
 
+# HISTORICAL — manual dispatch only (row #120 hygiene, Part III
+# code stage, 2026-11-20). This workflow certified the 72-17
+# Show-sentinel correction (PR #304; records:
+# director-reports/DIRECTOR_REPORT_72_17_RENDER_DIRECTIVE_REPAIR.md
+# and DIRECTOR_REPORT_72_17_SHOW_SENTINEL.md). That repair is
+# landed on main; the live regression that now carries it is the
+# in-tree suite form/show_render_directive_test.py (registered in
+# form/regress.py), NOT this workflow. Kept runnable by hand as
+# the historical certification record; it is not live verification
+# machinery and no longer fires on pull requests.
+#
 # Independent verification for the 72-17 Show-sentinel correction
 # (Director review 2026-11-05, INSUFFICIENT_EVIDENCE on PR #304):
 # at the PR's exact head, in a fresh clone —
@@ -14,10 +25,6 @@ name: verify-72-17
 # Artifacts are uploaded for archival into the evidence bundle.
 
 on:
-  pull_request:
-    paths:
-      - "director-reports/evidence/72-17-show-sentinel/**"
-      - ".github/workflows/verify-72-17.yml"
   workflow_dispatch:
 
 permissions:
