@@ -21,6 +21,29 @@ Contract under test (form/persist_rest.py restore logic):
     swapped only after complete validation, so one corrupt value can
     never wipe the owner's authored lattice.
   * one owner's corrupt file never touches another owner's file.
+
+Director CORRECTION_REQUIRED 7079022510 (PR #508 source-to-test
+review) added three adversarial families, with the refusal-vs-legacy
+policy ruled from the writer's own evidence: the outcome ledger's
+sole writer (build_outcome/capture_outcome, DCC-XX) ALWAYS emits a
+record whose owner is the program owner, whose outcome_seq is a
+positive integer, keyed by its own outcome_id, under a section
+counter equal to the highest record sequence — and no production
+path ever deletes or trims records. Therefore:
+  * A — a negative section counter, or a counter BEHIND the records'
+    highest sequence, is not legacy-producible: typed refusal, never
+    a silent normalize/auto-advance/reset. A counter AHEAD of the
+    records is accepted verbatim (a harmless gap; never reset down).
+  * B — a lattice cell's saved key must equal the canonical
+    "h,v,f" of its own coordinates, and no two cells may share
+    coordinates: typed refusal. (The writer emits exactly the
+    canonical key per cell, one cell per coordinate.)
+  * C — every record's owner must equal the loaded program's owner,
+    its dict key must equal its outcome_id, and its outcome_seq must
+    be a positive non-bool integer: typed refusal. A record missing
+    owner or outcome_seq is likewise not writer-producible.
+The one legacy case remains the ABSENT section (pre-ledger /
+pre-lattice saves), unchanged.
 """
 from __future__ import annotations
 
@@ -197,6 +220,82 @@ def run_all():
         rec("OL legacy absent section loads as an empty ledger",
             p.outcome_records == {} and p.outcome_seq == 0)
 
+        # -------------------------------------- Finding A (7079022510)
+        f = _mutated(base, tmp / "ol_negseq.json", "outcome_ledger",
+                     lambda s: s.update(outcome_seq=-1))
+        before = f.read_bytes()
+        rec("OL-A negative section counter refuses load (typed)",
+            _refuses("IntegLedger", f))
+        rec("OL-A refused load leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        f = _mutated(base, tmp / "ol_behind.json", "outcome_ledger",
+                     lambda s: s.update(outcome_seq=1))
+        rec("OL-A counter behind the records' max seq refuses (typed)",
+            _refuses("IntegLedger", f))
+
+        f = _mutated(base, tmp / "ol_ahead.json", "outcome_ledger",
+                     lambda s: s.update(outcome_seq=10))
+        p = _load("IntegLedger", f)
+        rec("OL-A counter ahead of records loads verbatim, never reset",
+            p.outcome_seq == 10
+            and sorted(p.outcome_records.keys()) == ids)
+
+        # -------------------------------------- Finding C (7079022510)
+        def _foreign_owner(section):
+            section["records"][ids[0]] = dict(
+                section["records"][ids[0]], owner="IntegLedgerForeign")
+        f = _mutated(base, tmp / "ol_foreign.json", "outcome_ledger",
+                     _foreign_owner)
+        before = f.read_bytes()
+        rec("OL-C foreign-owner record refuses load (typed)",
+            _refuses("IntegLedger", f))
+        rec("OL-C refused load leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        def _id_field_mismatch(section):
+            section["records"][ids[0]] = dict(
+                section["records"][ids[0]], outcome_id=ids[1])
+        f = _mutated(base, tmp / "ol_idfield.json", "outcome_ledger",
+                     _id_field_mismatch)
+        rec("OL-C record outcome_id != its key refuses load (typed)",
+            _refuses("IntegLedger", f))
+
+        def _rekeyed(section):
+            section["records"]["out1:rekeyed0000000000000000000cc"] = (
+                section["records"].pop(ids[0]))
+        f = _mutated(base, tmp / "ol_rekeyed.json", "outcome_ledger",
+                     _rekeyed)
+        rec("OL-C record stored under a foreign key refuses (typed)",
+            _refuses("IntegLedger", f))
+
+        def _owner_missing(section):
+            rec0 = dict(section["records"][ids[0]])
+            del rec0["owner"]
+            section["records"][ids[0]] = rec0
+        f = _mutated(base, tmp / "ol_noowner.json", "outcome_ledger",
+                     _owner_missing)
+        rec("OL-C record missing owner refuses load (typed)",
+            _refuses("IntegLedger", f))
+
+        for label, bad in (("zero", 0), ("negative", -2), ("bool", True)):
+            def _bad_rec_seq(section, bad=bad):
+                section["records"][ids[0]] = dict(
+                    section["records"][ids[0]], outcome_seq=bad)
+            f = _mutated(base, tmp / f"ol_recseq_{label}.json",
+                         "outcome_ledger", _bad_rec_seq)
+            rec(f"OL-C record outcome_seq {label} refuses load (typed)",
+                _refuses("IntegLedger", f))
+
+        def _rec_seq_missing(section):
+            rec0 = dict(section["records"][ids[0]])
+            del rec0["outcome_seq"]
+            section["records"][ids[0]] = rec0
+        f = _mutated(base, tmp / "ol_recseq_missing.json",
+                     "outcome_ledger", _rec_seq_missing)
+        rec("OL-C record missing outcome_seq refuses load (typed)",
+            _refuses("IntegLedger", f))
+
         other = tmp / "ol_other.json"
         other_ids = _build_ledger("IntegLedgerOther", other)
         before = other.read_bytes()
@@ -279,6 +378,36 @@ def run_all():
         f = _mutated(lbase, tmp / "lat_scalar_cell.json", "lattice",
                      lambda s: s["cells"].update({"9,9,9": 42}))
         rec("LAT non-object cell refuses load (typed)",
+            _refuses("IntegLattice", f))
+
+        # -------------------------------------- Finding B (7079022510)
+        def _lying_key(section):
+            section["cells"]["9,9,9"] = {
+                "h": 1, "v": 2, "f": 0, "content": "idea-intruder",
+                "label": "Intruder cell", "tags": [], "members": []}
+        f = _mutated(lbase, tmp / "lat_lyingkey.json", "lattice",
+                     _lying_key)
+        before = f.read_bytes()
+        rec("LAT-B key/coords mismatch refuses load (typed)",
+            _refuses("IntegLattice", f))
+        rec("LAT-B refused load leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        def _dup_coords(section):
+            section["cells"]["01,2,0"] = {
+                "h": 1, "v": 2, "f": 0, "content": "idea-intruder",
+                "label": "Intruder cell", "tags": [], "members": []}
+        f = _mutated(lbase, tmp / "lat_dupcoords.json", "lattice",
+                     _dup_coords)
+        rec("LAT-B duplicate coordinates refuse load (typed)",
+            _refuses("IntegLattice", f))
+
+        def _moved_cell(section):
+            section["cells"]["1,2,0"] = dict(
+                section["cells"]["1,2,0"], h=5)
+        f = _mutated(lbase, tmp / "lat_movedcell.json", "lattice",
+                     _moved_cell)
+        rec("LAT-B cell coords disagreeing with its key refuse (typed)",
             _refuses("IntegLattice", f))
 
         data = json.loads(lbase.read_text())
