@@ -271,6 +271,25 @@ DISPOSITION_SECTION_KEY = "__conflict_dispositions__"
 # embedded in the file that digest describes.
 EDIT_RECEIPT_SECTION_KEY = "__organization_edit_receipts__"
 
+# FI-011 A7 (Director 7085151190 item 1; packet A7.3): reserved
+# nursery-file key for durable GRANT-USE receipts - one record per
+# consumed nursery.confirm grant, staged by the canonical writer
+# inside the same checkpoint transaction as the confirmation it
+# authorizes, so receipt and confirmation live or die together.
+# Receipts name grants by issuance seq only; a handle value is
+# never written. Emitted ONLY when non-empty, so grant-free owners'
+# files stay byte-compatible with pre-A7 readers.
+GRANT_USE_RECEIPT_SECTION_KEY = "__grant_use_receipts__"
+
+# FI-011 A9 (Director 7085151190 item 1; packet A9.1): the lawful
+# proposal status set. The complete production writer census
+# produces exactly these values (confirm_lineage writes
+# "confirmed"/"pending"; Nursery.reject writes "rejected";
+# supersession uses the separate lifecycle_state field, never
+# status). A PRESENT status outside this set at load is refused
+# typed; an ABSENT status key keeps the legacy "pending" default.
+LAWFUL_STATUSES = frozenset({"pending", "confirmed", "rejected"})
+
 # C5R.3 creation-seed rule (seed-rule v1). Deterministic, applied
 # ONLY at Nursery.add() construction of a genuinely NEW proposal:
 #   primary  = validated kind — the canonical validated-kind set for
@@ -628,6 +647,15 @@ class Nursery:
     # door appends receipts.
     organization_edit_receipts: Dict[str, Dict[str, Any]] = field(
         default_factory=dict, repr=False, compare=False)
+    # FI-011 A7: durable grant-use receipts (receipt_id -> record),
+    # serialized under GRANT_USE_RECEIPT_SECTION_KEY in the same
+    # atomic write as the proposals - but ONLY when non-empty (see
+    # the constant's note). Staged by the canonical writer at its
+    # commit point; discarded again on every compensation path that
+    # reverts the confirmation, so a receipt exists iff the
+    # confirmation it authorizes stands.
+    grant_use_receipts: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict, repr=False, compare=False)
     # C5R.3: the most recent organization operation's RETURNED
     # receipt (receipt_with_file_digest form, including the
     # canonical post-save digest). In-memory only, like the
@@ -869,17 +897,35 @@ class Nursery:
     def pending(self) -> List[Proposal]:
         return [p for p in self.proposals.values() if p.status == "pending"]
 
-    def confirm(self, pid: str) -> Optional[Proposal]:
-        p = self.proposals.get(pid)
-        if not p or p.status != "pending":
-            return None
-        p.status = "confirmed"
-        try:
-            self.save()
-        except Exception:
-            p.status = "pending"
-            raise
-        return p
+    # FI-011 A8 (Director 7085151190 item 1): the raw store-door
+    # confirm method that used to live here is RETIRED - deleted,
+    # not guarded. It confirmed with no actor, no grant, and no
+    # receipt, bypassing every enforcement in the canonical writer
+    # (Program.confirm_proposal / confirm_lineage), and it had zero
+    # production callers. Confirmation is the owner's sovereign act
+    # or a grant-bound act through the canonical writer only; there
+    # is no second door. (Nursery.reject and clear_rejected are
+    # sibling doors under separate review - untouched by A8.)
+
+    def stage_grant_use_receipt(self, receipt: Dict[str, Any]) -> str:
+        """Stage a grant-use receipt in memory (FI-011 A7.3).
+
+        The caller (the canonical writer) owns persistence: the
+        receipt rides the checkpoint transaction that persists the
+        confirmation, and the writer discards it again on any
+        compensation path that reverts the confirmation. Returns
+        the receipt_id.
+        """
+        receipt_id = receipt.get("receipt_id")
+        if not isinstance(receipt_id, str) or not receipt_id:
+            raise ValueError("grant-use receipt requires a receipt_id")
+        self.grant_use_receipts[receipt_id] = dict(receipt)
+        return receipt_id
+
+    def discard_grant_use_receipt(self, receipt_id: Optional[str]) -> None:
+        """Drop a staged grant-use receipt (compensation paths)."""
+        if receipt_id:
+            self.grant_use_receipts.pop(receipt_id, None)
 
     def reject(self, pid: str) -> Optional[Proposal]:
         p = self.proposals.get(pid)
@@ -1819,6 +1865,18 @@ class Nursery:
             op_id: dict(rec)
             for op_id, rec in self.organization_edit_receipts.items()
         }
+        # FI-011 A7: the grant-use receipt section rides the same
+        # atomic write - but ONLY when non-empty, a deliberate
+        # deviation from the sibling sections' always-emit pattern:
+        # pre-A7 readers refuse files carrying unknown sections, so
+        # grant-free owners' files must stay byte-compatible with
+        # them. Receipts are evidentiary only; no proposal, status,
+        # or placement semantics depend on them.
+        if self.grant_use_receipts:
+            payload[GRANT_USE_RECEIPT_SECTION_KEY] = {
+                rid: dict(rec)
+                for rid, rec in self.grant_use_receipts.items()
+            }
         blob = atomic_write_json(self.path, payload, _fail_at=_fail_at)
         self._seen = hashlib.sha256(blob).hexdigest()
         # C5R.3 (Resolution 3): the canonical post-save digest is
@@ -1871,6 +1929,7 @@ class Nursery:
         staged_present: Dict[str, set] = {}
         staged_dispositions: Dict[str, Dict[str, Any]] = {}
         staged_edit_receipts: Dict[str, Dict[str, Any]] = {}
+        staged_grant_use_receipts: Dict[str, Dict[str, Any]] = {}
         try:
             for k, v in raw.items():
                 # DCC-XIX: the reserved disposition section is staged
@@ -1907,11 +1966,48 @@ class Nursery:
                     staged_edit_receipts = {
                         op_id: dict(rec) for op_id, rec in v.items()}
                     continue
+                # FI-011 A7: the reserved grant-use receipt section
+                # is staged separately under the same arrangement;
+                # it is never mistaken for a proposal. (Pre-A7
+                # readers refuse files carrying this section - the
+                # reason save() emits it only when non-empty.)
+                if k == GRANT_USE_RECEIPT_SECTION_KEY:
+                    if not isinstance(v, dict):
+                        raise NurseryLoadError(
+                            f"nursery file {os.path.basename(path)} has a malformed "
+                            f"{GRANT_USE_RECEIPT_SECTION_KEY} section (not an object)"
+                        )
+                    for rid, rec in v.items():
+                        if not isinstance(rid, str) or not isinstance(rec, dict):
+                            raise NurseryLoadError(
+                                f"nursery file {os.path.basename(path)} has a malformed "
+                                f"grant-use receipt for {rid!r}"
+                            )
+                    staged_grant_use_receipts = {
+                        rid: dict(rec) for rid, rec in v.items()}
+                    continue
                 if not isinstance(v, dict):
                     raise NurseryLoadError(
                         f"nursery file {os.path.basename(path)} has an invalid proposal record for {k!r}"
                     )
                 rec = Proposal(**v)
+                # FI-011 A9: status membership, checked inside
+                # private staging before anything is applied. A
+                # PRESENT status outside the lawful set refuses the
+                # WHOLE load typed - an unknown status is a zombie
+                # no counter, query, or sweep can ever see. An
+                # ABSENT status key keeps the legacy dataclass
+                # default ("pending") and loads exactly as before.
+                # A forged VALID value (e.g. "confirmed") is not
+                # distinguishable here and stays inside the retained
+                # file-tamper disclosure by design.
+                if "status" in v and rec.status not in LAWFUL_STATUSES:
+                    raise NurseryLoadError(
+                        f"nursery file {os.path.basename(path)} has a "
+                        f"proposal record for {k!r} with unknown "
+                        f"status {rec.status!r} (lawful: "
+                        f"{sorted(LAWFUL_STATUSES)!r})"
+                    )
                 _validate_loaded_organization(k, rec, path)
                 staged[k] = rec
                 staged_present[k] = set(v.keys())
@@ -1926,5 +2022,6 @@ class Nursery:
         n._present_fields = staged_present
         n.conflict_dispositions = staged_dispositions
         n.organization_edit_receipts = staged_edit_receipts
+        n.grant_use_receipts = staged_grant_use_receipts
         n._seen = hashlib.sha256(blob).hexdigest()
         return n

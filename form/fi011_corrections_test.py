@@ -620,8 +620,12 @@ def a12_legs():
           and pid_t6 in (ac6.get("skipped_ids") or [])
           and status_of(p, pid_t6) == "pending",
           f"reason={r6.get('reason')} ac={ac6}")
-    # T7 - legacy "" origin stays sweep-eligible.
-    pid_t7 = seed(p, "fi011 a12 t7 legacy", origin="")
+    # T7 - legacy "" origin stays sweep-eligible. Seeded
+    # parentless: by this point in the shared sequence the w4
+    # parents sit on diverged walls, so a default-parents seed
+    # would fall to the mixed-wall term instead - this leg
+    # isolates the ORIGIN term only.
+    pid_t7 = seed(p, "fi011 a12 t7 legacy", origin="", parents=())
     res7 = p.grow_ideas(1)
     check("A12_T7_legacy_empty_origin_eligible",
           status_of(p, pid_t7) == "confirmed",
@@ -646,7 +650,10 @@ def a12_legs():
     # dock-origin proposal confirmed through the grant path is
     # governed by grant law, not the sweep term.
     from form.dell_matrix.agent_authority import bind_agent, issue_root_grant
-    pid_t10 = seed(p, "fi011 a12 t10 grant path", origin="dock:x:y")
+    # Seeded parentless for the same reason as T7: this leg
+    # isolates producer-scoping, not placement.
+    pid_t10 = seed(p, "fi011 a12 t10 grant path", origin="dock:x:y",
+                   parents=())
     g10 = issue_root_grant(p, issuer="ace", subject="helper",
                            target=pid_t10, content_pid=pid_t10)
     r10 = bind_agent(p, "helper").confirm(pid_t10, g10["grant_id"])
