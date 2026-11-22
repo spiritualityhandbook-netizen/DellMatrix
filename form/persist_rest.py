@@ -762,6 +762,7 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
                 f"{type(raw_records).__name__}; refusing load")
         restored: Dict[str, Dict[str, Any]] = {}
         max_record_seq = 0
+        seen_seqs: Dict[int, str] = {}
         for oid, rec in raw_records.items():
             if not isinstance(oid, str) or not validate_record_shape(rec):
                 raise ProgramLoadError(
@@ -783,6 +784,19 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
                 raise ProgramLoadError(
                     f"outcome_ledger record {oid!r} outcome_seq is "
                     f"not a positive integer: {rseq!r}; refusing load")
+            # Finding D (Director 7079147473): per-record sequences
+            # are unique across the ledger. The capture writer
+            # advances the counter exactly once per accepted record,
+            # in the same step as the append, so two different
+            # outcome_ids sharing one sequence are not writer-
+            # producible; left standing, the duplicate would make
+            # get_outcome_by_seq select a record by dict order.
+            if rseq in seen_seqs:
+                raise ProgramLoadError(
+                    f"outcome_ledger records {seen_seqs[rseq]!r} and "
+                    f"{oid!r} share outcome_seq {rseq}; "
+                    "refusing load")
+            seen_seqs[rseq] = oid
             if rseq > max_record_seq:
                 max_record_seq = rseq
             restored[oid] = dict(rec)

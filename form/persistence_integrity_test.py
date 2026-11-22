@@ -42,6 +42,15 @@ path ever deletes or trims records. Therefore:
     its dict key must equal its outcome_id, and its outcome_seq must
     be a positive non-bool integer: typed refusal. A record missing
     owner or outcome_seq is likewise not writer-producible.
+Director 7079147473 (PR #508 new-head A/B/C reconciliation) added
+one further receipt-integrity negative to the same family:
+  * D — no two records may share one per-record outcome_seq across
+    different outcome_ids: typed refusal. The capture writer advances
+    the section counter exactly once per accepted record, in the same
+    step as the append (and no production path deletes/trims records
+    or lowers the counter while records persist), so a shared
+    sequence is not legacy-producible; left standing it would make
+    get_outcome_by_seq select between the two records by dict order.
 The one legacy case remains the ABSENT section (pre-ledger /
 pre-lattice saves), unchanged.
 """
@@ -57,7 +66,7 @@ from types import SimpleNamespace
 from form.open import open_program
 from form import persist_rest
 from form.persist_rest import ProgramLoadError
-from form.mandell.outcome_ledger import capture_outcome
+from form.mandell.outcome_ledger import capture_outcome, get_outcome_by_seq
 from form.dell_matrix.harmonic_lattice import (
     HarmonicLattice, OverlayMode, Perspective)
 
@@ -295,6 +304,30 @@ def run_all():
                      "outcome_ledger", _rec_seq_missing)
         rec("OL-C record missing outcome_seq refuses load (typed)",
             _refuses("IntegLedger", f))
+
+        # -------------------------------------- Finding D (7079147473)
+        def _dup_rec_seq(section):
+            section["records"][ids[1]] = dict(
+                section["records"][ids[1]],
+                outcome_seq=section["records"][ids[0]]["outcome_seq"])
+        f = _mutated(base, tmp / "ol_dupseq.json", "outcome_ledger",
+                     _dup_rec_seq)
+        before = f.read_bytes()
+        rec("OL-D duplicate per-record outcome_seq across different "
+            "outcome_ids refuses load (typed)",
+            _refuses("IntegLedger", f))
+        rec("OL-D refused load leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        p = _load("IntegLedger", base)
+        by_seq = {r["outcome_seq"]: oid
+                  for oid, r in p.outcome_records.items()}
+        rec("OL-D control: writer-produced distinct sequences load and "
+            "resolve deterministically by seq",
+            len(by_seq) == 3
+            and all(get_outcome_by_seq(p, s) is not None
+                    and get_outcome_by_seq(p, s)["outcome_id"] == by_seq[s]
+                    for s in (1, 2, 3)))
 
         other = tmp / "ol_other.json"
         other_ids = _build_ledger("IntegLedgerOther", other)
