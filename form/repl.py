@@ -3871,7 +3871,17 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
     # mutation. Valid claims pass through untouched; non-claims
     # never reach admit() at all. A classifier exception on a
     # candidate fails CLOSED (never falls through to English).
-    if _seed_claim(line):
+    # Precedence carve-out (Director CORRECTION REQUIRED
+    # 7079919649, reconciling G31-CONTRACT-01 D-6): a line
+    # carrying the correspondence flow operator ">>>" is a FLOW
+    # claim, not a seed claim — when the canonical grammar
+    # declines it, the DCC-IV door below owns its observable
+    # refusal ("Flow refused ... REQUIRES_RUNTIME_SUPPORT"), so
+    # the gate does not claim it. ">>>" remains genuine seed
+    # grammar for valid chains: those parse, are admitted, and
+    # execute via P10 exactly as before — the carve-out only
+    # decides which door REFUSES a declined flow-shaped line.
+    if _seed_claim(line) and ">>>" not in line:
         from form.mandell.admission import admit as _admit_gate
         try:
             _adm_gate = _admit_gate(line)

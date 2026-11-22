@@ -34,6 +34,23 @@ exception from admit() fails CLOSED (typed classifier_failure
 receipt, no execution, no mutation). For a NONcandidate, admit()
 is never invoked at all (T8b negative spy).
 
+FLOW-DOOR PRECEDENCE (Director CORRECTION REQUIRED 7079919649,
+on Uni classification 7079801602): the gate's claim class is
+SEED claims. A line carrying the correspondence flow operator
+`>>>` is a FLOW claim: when parse_seed declines it (e.g. an
+unknown head Dell), the adopted G31-CONTRACT-01 D-6 contract
+gives the refusal to the DCC-IV flow door ("Flow refused ...
+REQUIRES_RUNTIME_SUPPORT"), not to this gate. The built gate
+claimed such lines whole-line (their every character IS seed
+grammar material, `>>>` included) and answered with the
+admission surface, silently replacing the older contract's
+observable refusal — g31_contract_test went 19/20. The
+reconciliation narrows the GATE, not the discriminator and not
+the G31 expectation: the gate does not claim a line containing
+`>>>`; both refusal paths keep their typed surfaces, proven by
+the T19/T20 pair (same unknown Dell, with and without the flow
+operator) and the T21 known-Dell FlowOver control.
+
 TWO REVISION-1 PREMISES FALSIFIED BY THE CANONICAL CODE ITSELF
 (probe-verified at head a2221e4c before this build; filed as
 unresolved-design cases for a separate Director ruling — the gate
@@ -446,6 +463,53 @@ def t18_no_foreign_owner_mutation():
           f"foreign state {before_b} -> {_snap(pb)}")
 
 
+# --------------------------------------- T19/T20/T21 precedence
+def t19_flow_shaped_claim_belongs_to_flow_door():
+    # The classification case: same unknown Dell as T20, but the
+    # line carries the correspondence flow operator, so the
+    # DCC-IV door's D-6 refusal surface governs. The gate must
+    # not claim the line at all (admit() never invoked).
+    p = _fresh("GPE08GateT19")
+    before = _snap(p)
+    spy = _AdmitSpy()
+    with _patched_admit(spy):
+        p, out = _drive(p, "150[Future] >>> 70[Count]")
+    check("T19_flow_claim_unknown_dell_flow_door_refusal_surface",
+          spy.calls == [] and "Flow refused" in out
+          and "REQUIRES_RUNTIME_SUPPORT" in out
+          and GATE_REFUSAL not in out and _snap(p) == before,
+          f"calls={spy.calls} state {before} -> {_snap(p)}")
+
+
+def t20_plain_seed_claim_still_admission_refused():
+    # The other half of the pair: a plain whole-line seed claim
+    # with the same unknown Dell keeps the gate's typed admission
+    # refusal — the precedence narrowing must not reopen the
+    # fall-through Scope A was built to close.
+    p = _fresh("GPE08GateT20")
+    before = _snap(p)
+    p, out = _drive(p, "150[Future]")
+    check("T20_plain_claim_unknown_dell_admission_refusal_preserved",
+          GATE_REFUSAL in out and "seed_parse_refusal" in out
+          and NOT_EXECUTED in out and "Flow refused" not in out
+          and _snap(p) == before,
+          f"state {before} -> {_snap(p)}")
+
+
+def t21_known_dell_flow_line_flows_normally():
+    # Control (g31 T-1's line): a FlowOver chain over known Dells
+    # is a valid canonical seed — it executes under the chain
+    # profile exactly as before, refused by neither door.
+    p = _fresh("GPE08GateT21")
+    before = _snap(p)
+    p, out = _drive(p, "51[Select] >>> 70[Count] >> 61[Join]")
+    check("T21_known_dell_flowover_chain_executes_canonical",
+          GATE_REFUSAL not in out and "Flow refused" not in out
+          and "skipped by FlowOver" in out
+          and _snap(p)[1] > before[1],
+          f"history {before[1]} -> {_snap(p)[1]}")
+
+
 def run_all():
     t1_piped_repl()
     t2_dispatch_refusal()
@@ -466,6 +530,9 @@ def run_all():
     t16_classifier_raise_on_candidate_no_effect()
     t17_prefix_doors_never_reach_gate()
     t18_no_foreign_owner_mutation()
+    t19_flow_shaped_claim_belongs_to_flow_door()
+    t20_plain_seed_claim_still_admission_refused()
+    t21_known_dell_flow_line_flows_normally()
     passed = sum(1 for _, ok in CHECKS if ok)
     print(f"GP-E08 admission gate: {passed}/{len(CHECKS)} checks passed")
     if passed != len(CHECKS):
