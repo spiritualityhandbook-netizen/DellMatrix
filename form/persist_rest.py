@@ -488,6 +488,51 @@ def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> No
         p.duo.generation = target_gen
 
 
+def _admit_custom_personas(section: List[Any]) -> None:
+    """Scope A restore admission (Director §5 ruling 7079370876).
+
+    A PRESENT custom_personas list is admitted only if EVERY record
+    is a mapping passing validate_custom_persona AND the normalized
+    ids (same strip().lower() as _normalize_record) are unique.
+    Otherwise PersonaLoadError naming the record index / id and the
+    reason — raised BEFORE activate_custom_personas or
+    _bind_persona_layer run, so a refusal mutates nothing: not the
+    input list, not the bound Program, not the source file, not the
+    default global persona layer, not any other owner's state.
+
+    Why refusal, not the previous skip-and-report: every saved
+    custom_personas record is user-authored. The skip policy dropped
+    a skipped record from user_personas, so the next ordinary save
+    destroyed its original bytes durably (isolation evidence
+    PR505_ISOLATION_EVIDENCE_2026-11-22 §4(1)), and duplicate
+    normalized ids silently overwrote last-write-wins (§4(2)). The
+    standalone activate_custom_personas skip contract is unchanged
+    for its other callers — this gate localizes to the persist
+    restore path only. No quarantine field is introduced (forbidden
+    this circuit: a downgraded v7 writer could silently delete an
+    unknown persisted field on ordinary save)."""
+    from form.dell_matrix.personas import (
+        PersonaLoadError, validate_custom_persona)
+    seen: Dict[str, int] = {}
+    for index, record in enumerate(section):
+        if not isinstance(record, dict):
+            raise PersonaLoadError(
+                f"custom_personas record {index}: "
+                "persona record must be a mapping")
+        reason = validate_custom_persona(record)
+        if reason:
+            raise PersonaLoadError(
+                f"custom_personas record {index} "
+                f"(id {record.get('id')!r}): {reason}")
+        norm_id = record["id"].strip().lower()
+        if norm_id in seen:
+            raise PersonaLoadError(
+                f"custom_personas record {index} "
+                f"(id {record.get('id')!r}): duplicate normalized id "
+                f"{norm_id!r} (first at record {seen[norm_id]})")
+        seen[norm_id] = index
+
+
 def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program:
     """PREPARE a private Program from validated data. Touches no process language state.
 
@@ -646,13 +691,17 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     # above (except-pass finding 7075379118): a present-but-malformed
     # section (not a list) or any activation / re-bind failure refuses
     # the load with PersonaLoadError — never a silent empty layer.
-    # Records are re-validated by activate_custom_personas; invalid
-    # ones are skipped there, never half-applied, and the skip report
-    # LANDS on the loaded program (p.persona_restore_report) while
-    # user_personas keeps only the activated records — a skipped
-    # record is dropped once, accounted for, and never re-saved as a
-    # zombie. The BIMO / matrix surfaces replaced just above are
-    # re-bound to the layer.
+    # Scope A admission (_admit_custom_personas, Director 7079370876)
+    # runs BEFORE activation: every record of a present list must be
+    # lawful with a unique normalized id, or the load refuses with
+    # the file untouched — a malformed or duplicate user-authored
+    # record is never skipped-and-dropped (its bytes would be
+    # destroyed by the next save) and never silently overwritten.
+    # Admitted records all activate, so the report that LANDS on the
+    # loaded program (p.persona_restore_report) accounts for every
+    # record exactly once and user_personas mirrors the layer. The
+    # BIMO / matrix surfaces replaced just above are re-bound to
+    # the layer.
     from form.dell_matrix.personas import (
         PersonaLoadError, activate_custom_personas)
     if "custom_personas" in data:
@@ -661,6 +710,7 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
             raise PersonaLoadError(
                 "custom_personas section is not a list: "
                 f"{type(_section).__name__}")
+        _admit_custom_personas(_section)
         _player = getattr(p, "persona_layer", None)
         if _player is None:
             raise PersonaLoadError(
