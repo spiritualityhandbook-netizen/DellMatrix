@@ -9,7 +9,10 @@ enhance_on/off enforce the adopted R5-C budget (10,000 entries AND
 history, json.dumps(..., indent=2, ensure_ascii=True) UTF-8) as a
 typed pre-mutation refusal, under ONE shared per-Program reentrant
 admission RLock that Program.note also funnels through, plus the
-locked history-snapshot reader the save serializer uses.
+locked history-snapshot reader the save serializer uses. Leg 15
+additionally pins deepcopy safety: the RLock is excluded from
+Program copy state (__getstate__) so simulate_board's deepcopy
+isolation works and every copy carries its own fresh lock.
 
 Companion receipts (kept outside form/ so the canonical regression
 never has to carry their by-design deferred REDs):
@@ -518,6 +521,34 @@ def main():
              "not the cap (Director 7079092723 authorizes S7 "
              "method entries only)")
 
+    # ── 15. DEEPCOPY SAFETY (regression pin, #513 c13 defect) ──
+    # simulate_board (Dell 31 [Simulate]) isolates a rehearsal by
+    # deepcopying the live Program; the per-Program RLock can be
+    # neither deepcopied nor shared with the copy. Program
+    # __getstate__ excludes the lock from copied state and the
+    # copy recreates its OWN fresh lock via _admission_lock().
+    # At the pre-repair head this leg's deepcopy raised TypeError
+    # and every simulation returned ok=False (c13 9/20).
+    import copy as _copy
+    from form.dell_matrix.simulate_board import run_simulation
+    d = open_program(f"{OWNER}D")
+    d.note("deepcopy pin entry")
+    clone = None
+    dc_error = ""
+    try:
+        clone = _copy.deepcopy(d)
+    except Exception as exc:  # recorded as the check's detail
+        dc_error = f"{type(exc).__name__}: {exc}"
+    sim = run_simulation(d, "08[Create] :: s7_deepcopy_pin")
+    check("deepcopy_safe_own_lock_simulation_executes",
+          clone is not None
+          and clone._admission_lock() is not d._admission_lock()
+          and clone.history_snapshot() == list(d.history)
+          and sim.get("ok") is True
+          and sim.get("outcome") == "executed",
+          f"deepcopy_error={dc_error} sim_ok={sim.get('ok')} "
+          f"sim_error={sim.get('error', '')}")
+
     _cleanup()
     check("cleanup_clean", not _CLEANUP_ERRORS,
           "; ".join(_CLEANUP_ERRORS))
@@ -531,7 +562,7 @@ def _cleanup():
     from form.dell_matrix.nursery import owner_nursery_path
     state = Path(_STATE_DIR)
     for owner in (OWNER, f"{OWNER}L", f"{OWNER}S", f"{OWNER}A",
-                  f"{OWNER}B", f"{OWNER}G"):
+                  f"{OWNER}B", f"{OWNER}G", f"{OWNER}D"):
         safe = _safe_owner(owner)
         cands = [state / f"program_{safe}.json",
                  Path(owner_nursery_path(owner))]

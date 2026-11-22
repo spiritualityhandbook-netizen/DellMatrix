@@ -166,6 +166,9 @@ class Program:
     # saves, so the order owner -> admission is the only nesting and
     # no circular wait exists (incl. save/restore and note recursion;
     # the RLock makes note_seed -> note re-entry safe).
+    # Copy/pickle: excluded from instance state by __getstate__
+    # below and recreated fresh per materialized instance — an RLock
+    # is uncopyable and a copy must never share admission state.
     _history_admission_lock: Any = field(
         default_factory=threading.RLock, init=False,
         repr=False, compare=False)
@@ -384,6 +387,25 @@ class Program:
         self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
 
     # ─── R5-D S7 admission machinery (Director 7079092723) ──────
+    def __getstate__(self):
+        """Copy/pickle state: the FULL instance __dict__ minus the
+        admission RLock. A threading.RLock can be neither deepcopied
+        nor pickled, and it must never be shared with a copy anyway:
+        form.dell_matrix.simulate_board isolates a simulation by
+        deepcopying the live Program, and the copy's admission state
+        must be its own. Excluding exactly this one key makes
+        deepcopy/pickle safe without dropping any other field; the
+        materialized instance recreates a FRESH lock lazily through
+        _admission_lock()'s __dict__ fallback. (Save serialization
+        never carried the lock — form.persist builds its payload
+        field-by-field — so persisted bytes are unchanged.)"""
+        state = dict(self.__dict__)
+        state.pop("_history_admission_lock", None)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
     def _admission_lock(self):
         """The per-Program reentrant admission RLock. The dataclass
         field covers normal construction; the __dict__ fallback
