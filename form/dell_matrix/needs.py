@@ -574,7 +574,8 @@ def redo_last(program) -> Dict[str, Any]:
 def history_report(program, n: int = 16) -> List[str]:
     hist = list(getattr(program, "history", []) or [])[-max(1, n):]
     stack = list(_stack(program))[-8:]
-    lines = [f"History · {len(hist)} notes (last {len(hist)} shown):"]
+    retained = len(getattr(program, "history", []) or [])
+    lines = [f"History · {retained} retained notes (last {len(hist)} shown):"]
     if not hist:
         lines.append("  (empty — act, then history fills)")
     else:
