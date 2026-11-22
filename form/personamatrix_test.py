@@ -663,8 +663,26 @@ def run_all():
                                     layer=val_i2.persona_layer)["focus"]
                     == "two focus")
         s8["i"] = ok_i
+        # (k)/(l) hostile category TYPES (Director ruling
+        # 7081077306): a writer-shaped record whose category is a
+        # JSON list / dict must refuse with the typed
+        # PersonaLoadError — at the pre-fix head the dict membership
+        # test in validate_custom_persona raised a raw
+        # TypeError: unhashable type instead (RED receipts:
+        # hidden_files/pr505_category_fix_2026-11-22/red_*.log).
+        for tag, hostile in (("k", []), ("l", {})):
+            path_h = _write_variant(f"s8{tag}", [
+                _rec(id=f"scopea_{tag}", name=f"Scopea {tag}",
+                     category=hostile)])
+            with open(path_h, "rb") as fh:
+                h_bytes_before = fh.read()
+            ok_hc, exc_hc = _refused_as(R_OWNER, path_h)
+            with open(path_h, "rb") as fh:
+                h_bytes_after = fh.read()
+            s8[tag] = (ok_hc and "category" in str(exc_hc)
+                       and h_bytes_after == h_bytes_before)
         for tag in ("a", "b1", "b2", "b3", "c", "d", "e", "f", "g",
-                    "h", "i"):
+                    "h", "i", "k", "l"):
             print(f"[{'PASS' if s8[tag] else 'FAIL'}] "
                   f"pm_scopea_{tag}_outcome")
         check("pm_scopea_nonmapping_refused", s8["a"])
@@ -678,6 +696,8 @@ def run_all():
         check("pm_scopea_clean_owner_recovers", s8["g"])
         check("pm_scopea_refusal_mutates_nothing", s8["h"])
         check("pm_scopea_valid_records_lossless", s8["i"])
+        check("pm_scopea_hostile_category_list_refused", s8["k"])
+        check("pm_scopea_hostile_category_dict_refused", s8["l"])
     finally:
         activate_custom_personas([])
         _cleanup(OWNER)

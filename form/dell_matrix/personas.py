@@ -369,8 +369,11 @@ def validate_custom_persona(record: Any) -> Optional[str]:
         return "persona id must be lowercase letters/digits/underscores"
     if not isinstance(record.get("name"), str) or not record["name"].strip():
         return "persona name is required"
-    if record.get("category") not in CATEGORIES:
-        return f"unknown category: {record.get('category')!r}"
+    category = record.get("category")
+    if not isinstance(category, str) or not category.strip():
+        return "persona category is required"
+    if category not in CATEGORIES:
+        return f"unknown category: {category!r}"
     for f in ("role", "focus"):
         if not isinstance(record.get(f), str) or not record[f].strip():
             return f"{f} is required"
