@@ -116,6 +116,39 @@ def run_duo():
             p.duo.generation == 3 and len(p.duo.ledger) == 1
             and "prior history not recorded" in p.duo.ledger[0].detail)
 
+        def _present_empty(data):
+            data["duo_ledger"] = []
+        f = _mutated(base, tmp / "duo_present_empty.json", _present_empty)
+        before = f.read_bytes()
+        rec("DUO present-but-EMPTY ledger with positive generation refuses load (typed) — no invented marker",
+            _refuses(owner, f))
+        rec("DUO present-empty refusal leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        def _present_empty_gen0(data):
+            data["duo_ledger"] = []
+            data["duo_generation"] = 0
+        f = _mutated(base, tmp / "duo_present_empty_gen0.json",
+                     _present_empty_gen0)
+        load_ok = False
+        resave_ok = False
+        try:
+            p = _load(owner, f)
+            load_ok = entries(p) == [] and p.duo.generation == 0
+            if load_ok:
+                resave0 = tmp / "duo_present_empty_gen0_resaved.json"
+                persist_rest.save(p, str(resave0))
+                rdata = json.loads(resave0.read_text())
+                resave_ok = (rdata["duo_ledger"] == []
+                             and rdata["duo_generation"] == 0)
+        except Exception:
+            load_ok = False
+            resave_ok = False
+        rec("DUO present-empty gen=0 control loads lawful (empty ledger, generation 0)",
+            load_ok)
+        rec("DUO present-empty gen=0 resave parity (section stays empty, generation 0)",
+            resave_ok)
+
         def _extra_key(data):
             data["duo_ledger"][1]["future_field"] = "additive"
         f = _mutated(base, tmp / "duo_extrakey.json", _extra_key)

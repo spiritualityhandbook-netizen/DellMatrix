@@ -520,6 +520,13 @@ def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> No
     with ProgramLoadError before the ledger is touched — the former
     skip-and-continue restore silently dropped malformed entries and
     emptied non-dict meta, and the next save made the loss permanent.
+
+    Present-but-empty with a positive generation is malformed, not legacy:
+    the writer pairs every generation increment with exactly one ledger
+    append (DuoBeta.evolve; duobeta_learn._append_learn_entry) and never
+    removes entries, so the serializer cannot emit it. It refuses typed
+    instead of receiving the legacy marker, which is for ABSENT keys only
+    (Director CORRECTION REQUIRED 7083412844).
     """
     from datetime import datetime, timezone
     from form.duobeta.growth import GrowthEntry
@@ -528,6 +535,11 @@ def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> No
     staged: List[Dict[str, Any]] = []
     if "duo_ledger" in data:
         staged = _validate_duo_ledger_section(data["duo_ledger"])
+        if not staged and target_gen > 0:
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' section is present but empty while "
+                f"'duo_generation' is {target_gen} (the writer pairs every "
+                f"generation with a ledger entry): refusing load")
     clean = [GrowthEntry(
         gen=s["gen"],
         # R26: detail restored WHOLE (former [:120] re-cut
