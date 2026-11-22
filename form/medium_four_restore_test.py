@@ -561,7 +561,162 @@ def run_self_knowledge():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-SECTIONS = [run_duo, run_companion, run_self_knowledge]
+# ============================================================ D: bimo / persona_matrix
+
+def run_bimo():
+    owner, other = "MediumFourBimo", "MediumFourBimoOther"
+    filled = {"logic": "manny", "growth": "melody"}
+
+    def build(own, path):
+        p = open_program(own)
+        p.bimo.slots["logic"] = "manny"
+        p.bimo.slots["growth"] = "melody"
+        p.bimo.active = True
+        p.bimo.pilot = "manny"
+        p.bimo.mode = "docked"
+        p.persona_lens = "manny"
+        persist_rest.save(p, str(path))
+        return path
+
+    def filled_of(bimo):
+        return {s: pid for s, pid in bimo.slots.items() if pid}
+
+    tmp = Path(tempfile.mkdtemp(prefix="medium4_bimo_"))
+    try:
+        base = build(owner, tmp / "bimo_base.json")
+        orig_section = json.loads(base.read_text())["bimo"]
+
+        p = _load(owner, base)
+        rec("BIMO clean load preserves slots/pilot/mode/active",
+            filled_of(p.bimo) == filled and p.bimo.pilot == "manny"
+            and p.bimo.mode == "docked" and p.bimo.active is True)
+        rec("BIMO clean load rebuilds persona_matrix from the lens",
+            getattr(p.persona_matrix, "active", None) == "manny")
+        resaved = tmp / "bimo_resaved.json"
+        persist_rest.save(p, str(resaved))
+        rec("BIMO clean save->load->resave parity (section identical)",
+            json.loads(resaved.read_text())["bimo"] == orig_section)
+        p2 = _load(owner, resaved)
+        rec("BIMO second-generation continuity (clean): load of resave identical",
+            filled_of(p2.bimo) == filled and p2.bimo.pilot == "manny"
+            and getattr(p2.persona_matrix, "active", None) == "manny")
+
+        def _absent(data):
+            del data["bimo"]
+        f = _mutated(base, tmp / "bimo_absent.json", _absent)
+        p = _load(owner, f)
+        rec("BIMO legacy ABSENT section loads defaults AND persona_matrix still rebuilds",
+            filled_of(p.bimo) == {} and p.bimo.pilot == "mathelody"
+            and getattr(p.persona_matrix, "active", None) == "manny")
+
+        def _extra_key(data):
+            data["bimo"]["future_field"] = "additive"
+        f = _mutated(base, tmp / "bimo_extrakey.json", _extra_key)
+        try:
+            p = _load(owner, f)
+            ok = (filled_of(p.bimo) == filled and p.bimo.pilot == "manny"
+                  and getattr(p.persona_matrix, "active", None) == "manny")
+        except Exception:
+            ok = False
+        rec("BIMO negative mutant: extra unknown top-level key loads whole (no over-refusal)",
+            ok)
+
+        def _as_list(data):
+            data["bimo"] = ["not-a-mapping"]
+        f = _mutated(base, tmp / "bimo_list.json", _as_list)
+        before = f.read_bytes()
+        rec("BIMO-A wrong container (list) refuses load (typed), no default substitution",
+            _refuses(owner, f))
+        rec("BIMO-A refused load leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        def _as_str(data):
+            data["bimo"] = "GARBAGE-STRING"
+        f = _mutated(base, tmp / "bimo_str.json", _as_str)
+        rec("BIMO-B garbage scalar section refuses load (typed)",
+            _refuses(owner, f))
+
+        def _as_null(data):
+            data["bimo"] = None
+        f = _mutated(base, tmp / "bimo_null.json", _as_null)
+        rec("BIMO explicit-null section refuses load (typed) — present != absent",
+            _refuses(owner, f))
+
+        def _badslots(data):
+            data["bimo"]["slots"] = "GARBAGE-STRING"
+        f = _mutated(base, tmp / "bimo_badslots.json", _badslots)
+        before = f.read_bytes()
+        rec("BIMO-C garbage slots sub-value refuses load (typed), valid pilot not discarded",
+            _refuses(owner, f))
+        rec("BIMO-C refused load leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+        try:
+            p = _load(owner, f)
+            active = getattr(p.persona_matrix, "active", None)
+            ok = active == "manny"
+            detail = f"persona_matrix.active = {active!r} after bimo defect" if not ok else ""
+        except ProgramLoadError:
+            ok, detail = True, ""
+        rec("BIMO-C decoupling: a malformed bimo section does not destroy persona_matrix",
+            ok, detail)
+
+        def _unknown_slot(data):
+            data["bimo"]["slots"]["no_such_slot"] = "manny"
+        f = _mutated(base, tmp / "bimo_unknownslot.json", _unknown_slot)
+        rec("BIMO-D unknown slot key among valid refuses load (typed), no silent per-entry drop",
+            _refuses(owner, f))
+        try:
+            p = _load(owner, f)
+            resave2 = tmp / "bimo_unknownslot_resaved.json"
+            persist_rest.save(p, str(resave2))
+            kept = json.loads(resave2.read_text())["bimo"]["slots"]
+            ok = kept.get("no_such_slot") == "manny"
+            detail = "unknown slot assignment erased by resave" if not ok else ""
+        except ProgramLoadError:
+            ok, detail = True, ""
+        rec("BIMO-D second-generation continuity: load+resave keeps every slot assignment",
+            ok, detail)
+
+        def _slots_pairs(data):
+            data["bimo"]["slots"] = [["logic", "manny"]]
+        f = _mutated(base, tmp / "bimo_slotspairs.json", _slots_pairs)
+        rec("BIMO-E slots as list-of-pairs refuses load (typed)",
+            _refuses(owner, f))
+
+        def _intslot(data):
+            data["bimo"]["slots"]["logic"] = 42
+        f = _mutated(base, tmp / "bimo_intslot.json", _intslot)
+        rec("BIMO non-string slot value (logic:=42) refuses load (typed) — type confusion",
+            _refuses(owner, f))
+
+        def _intpilot(data):
+            data["bimo"]["pilot"] = 42
+        f = _mutated(base, tmp / "bimo_intpilot.json", _intpilot)
+        rec("BIMO non-string pilot (pilot:=42) refuses load (typed) — no str() coercion",
+            _refuses(owner, f))
+
+        # Owner A->B->A (the #505 composition fence): owner B's valid
+        # file loads with B's own arrangement and lens; returning to
+        # owner A restores A's arrangement exactly — neither owner's
+        # persona surface leaks into the other's.
+        other_path = build(other, tmp / "bimo_other.json")
+        obefore = other_path.read_bytes()
+        f = _mutated(base, tmp / "bimo_badslots2.json", _badslots)
+        refused = _refuses(owner, f)
+        pb = _load(other, other_path)
+        pa = _load(owner, base)
+        rec("BIMO cross-owner + A->B->A: corrupt load refuses; foreign file untouched; "
+            "each owner's arrangement + active persona restored as its own",
+            refused and other_path.read_bytes() == obefore
+            and filled_of(pb.bimo) == filled
+            and getattr(pb.persona_matrix, "active", None) == "manny"
+            and filled_of(pa.bimo) == filled
+            and getattr(pa.persona_matrix, "active", None) == "manny")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+SECTIONS = [run_duo, run_companion, run_self_knowledge, run_bimo]
 
 
 def run_all():

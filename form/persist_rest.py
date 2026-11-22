@@ -672,6 +672,52 @@ def _validate_self_knowledge_section(raw: Any) -> None:
                     f"is not a string (got {type(item).__name__}): refusing load")
 
 
+def _validate_bimo_section(raw: Any) -> None:
+    """Stage-validate a PRESENT bimo section (MEDIUM-four D).
+
+    Raises ProgramLoadError before any state is touched. The writer
+    (BIMOBody.to_dict) emits slots as a dict over the canonical
+    BIMO_SLOTS roster with persona-id-or-None values, active as a
+    bool, and pilot/mode as strings. An unknown slot key is a
+    malformed present entry and refuses — the former restore silently
+    FILTERED unknown keys, so a renamed or newer-version slot
+    assignment vanished with no report — and a non-string slot value
+    or pilot is type confusion the writer cannot produce. Extra
+    unknown TOP-LEVEL keys are forward compatibility, not refusal.
+    """
+    from form.dell_matrix.personas import BIMO_SLOTS
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"program file 'bimo' section is not an object "
+            f"(got {type(raw).__name__}): refusing load")
+    slots = raw.get("slots")
+    if slots is not None:
+        if not isinstance(slots, dict):
+            raise ProgramLoadError(
+                f"program file 'bimo' field 'slots' is not an object "
+                f"(got {type(slots).__name__}): refusing load")
+        for slot, pid in slots.items():
+            if slot not in BIMO_SLOTS:
+                raise ProgramLoadError(
+                    f"program file 'bimo' slots key {slot!r} is not a canonical "
+                    f"BIMO slot: refusing load")
+            if pid is not None and not isinstance(pid, str):
+                raise ProgramLoadError(
+                    f"program file 'bimo' slot {slot!r} value is not a persona "
+                    f"id string or null (got {type(pid).__name__}): refusing load")
+    active = raw.get("active")
+    if active is not None and not isinstance(active, bool):
+        raise ProgramLoadError(
+            f"program file 'bimo' field 'active' is not a boolean "
+            f"(got {type(active).__name__}): refusing load")
+    for field in ("pilot", "mode"):
+        v = raw.get(field)
+        if v is not None and not isinstance(v, str):
+            raise ProgramLoadError(
+                f"program file 'bimo' field {field!r} is not a string "
+                f"(got {type(v).__name__}): refusing load")
+
+
 def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program:
     """PREPARE a private Program from validated data. Touches no process language state.
 
@@ -829,12 +875,22 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         raise
     except Exception as exc:
         raise SpatialLoadError(f"spatial restore failed: {exc}")
-    try:
-        from form.dell_matrix.personas import BIMOBody, PersonaMatrix
-        p.bimo = BIMOBody.from_dict(data.get("bimo") or {})
-        p.persona_matrix = PersonaMatrix(active=getattr(p, "persona_lens", None))
-    except Exception:
-        pass
+    # MEDIUM-four D: BIMO and PersonaMatrix are staged SEPARATELY — the
+    # former single try/except-pass coupled them, so one malformed bimo
+    # section silently dropped BOTH the dock arrangement and the
+    # PersonaMatrix rebuild (persona_matrix.active lost). A PRESENT
+    # bimo section is stage-validated whole (_validate_bimo_section)
+    # and refuses typed before any bound state mutates; the matrix
+    # rebuild from the owner's persona lens is its own step with its
+    # own failure domain and proceeds independently of the bimo
+    # section's presence. An ABSENT bimo section keeps the default body.
+    from form.dell_matrix.personas import BIMOBody, PersonaMatrix
+    if "bimo" in data:
+        _validate_bimo_section(data["bimo"])
+        p.bimo = BIMOBody.from_dict(data["bimo"])
+    else:
+        p.bimo = BIMOBody.from_dict({})
+    p.persona_matrix = PersonaMatrix(active=getattr(p, "persona_lens", None))
     hist = data.get("history") or []
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]
