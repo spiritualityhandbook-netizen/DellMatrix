@@ -116,3 +116,16 @@ Until a consumer is placed, the contract holds only where the
 suite exercises it; nothing in the shipped tooling refuses,
 warns, or labels on pin age, and no action is disabled by
 `offline_status()` in any live path.
+
+## Post-merge addendum (Uni Δ, 2026-11-22)
+
+PR #510 MERGED to main 2026-11-22T11:06:28Z, merge commit
+d424526939beb410134135a07b27eedcad6c7344, candidate head
+55b14ab008f582265fe850e5d1e25b58c61d34a9. Fast lane per Director ruling
+7076602058 + Keeper SCOPED CONFIRM 7078189868 + clean section-32 scan;
+merge record 7078231463 on PR #510; post-merge fresh-clone verification
+40/40. MERGED is not CERTIFIED: the Director's trailing whole-program
+check stands as PENDING_FINAL_CHECK. The file-04 section-9 M-01..M-15
+UI cases and production consumer wiring remain UNIMPLEMENTED, owed a
+Director placement/deferral decision. Consistent with section 6 of the
+build record, GP-E25 claims no MWL register credit for this merge.
