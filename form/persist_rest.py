@@ -437,6 +437,75 @@ def _load_impl(owner: str, path: str, nursery, activate: bool) -> Program:
     return p
 
 
+def _duo_target_generation(data: Dict[str, Any]) -> int:
+    """The saved duo_generation counter, type-checked (MEDIUM-four A).
+
+    The writer (form/persist.py) always emits an int. Anything else
+    present under the key is malformed and refuses typed instead of
+    crashing int() with an untyped error.
+    """
+    raw = data.get("duo_generation", 0)
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        raise ProgramLoadError(
+            f"program file 'duo_generation' is not an integer (got {raw!r}): refusing load")
+    return raw
+
+
+def _validate_duo_ledger_section(raw: Any) -> List[Dict[str, Any]]:
+    """Stage-validate a PRESENT duo_ledger section (MEDIUM-four A).
+
+    Returns the staged entry dicts in file order; raises ProgramLoadError
+    before any state is touched. The writer emits a list of
+    {gen:int, detail:str, ts:str, meta:dict} entries with gen >= 1 and
+    strictly increasing gens (generation gaps are lawful — the counter
+    can advance without an entry surviving — duplicates and regressions
+    are not). A malformed entry refuses the whole load: no silent entry
+    drops, no per-field emptying. Extra unknown keys on an entry are
+    forward compatibility, not refusal.
+    """
+    if not isinstance(raw, list):
+        raise ProgramLoadError(
+            f"program file 'duo_ledger' section is not a list "
+            f"(got {type(raw).__name__}): refusing load")
+    staged: List[Dict[str, Any]] = []
+    last = 0
+    for i, e in enumerate(raw):
+        if not isinstance(e, dict):
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} is not an object "
+                f"(got {type(e).__name__}): refusing load")
+        gen = e.get("gen")
+        if isinstance(gen, bool) or not isinstance(gen, int):
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has non-integer gen {gen!r}: refusing load")
+        if gen < 1:
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has gen {gen} < 1 "
+                f"(writer generations start at 1): refusing load")
+        if gen <= last:
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has gen {gen} not greater than "
+                f"the previous entry's gen {last} (duplicate or non-monotonic): refusing load")
+        detail = e.get("detail", "")
+        if not isinstance(detail, str):
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has non-string detail "
+                f"(got {type(detail).__name__}): refusing load")
+        ts = e.get("ts", "")
+        if not isinstance(ts, str):
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has non-string ts "
+                f"(got {type(ts).__name__}): refusing load")
+        meta = e.get("meta", {})
+        if not isinstance(meta, dict):
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has non-object meta "
+                f"(got {type(meta).__name__}): refusing load")
+        staged.append({"gen": gen, "detail": detail, "ts": ts, "meta": dict(meta)})
+        last = gen
+    return staged
+
+
 def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> None:
     """Restore the DuoBeta growth ledger faithfully (DCC-I).
 
@@ -444,38 +513,35 @@ def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> No
     are restored exactly, in order, with no synthetic entries. Legacy envelopes
     (no duo_ledger) restore the generation count with a single honest marker
     entry instead of fabricating per-generation history.
+
+    MEDIUM-four A: a PRESENT duo_ledger section is stage-validated whole
+    (_validate_duo_ledger_section) and any malformed entry refuses the load
+    with ProgramLoadError before the ledger is touched — the former
+    skip-and-continue restore silently dropped malformed entries and
+    emptied non-dict meta, and the next save made the loss permanent.
     """
     from datetime import datetime, timezone
     from form.duobeta.growth import GrowthEntry
+
+    # Stage first: validation raises before any mutation below.
+    staged: List[Dict[str, Any]] = []
+    if "duo_ledger" in data:
+        staged = _validate_duo_ledger_section(data["duo_ledger"])
+    clean = [GrowthEntry(
+        gen=s["gen"],
+        # R26: detail restored WHOLE (former [:120] re-cut
+        # at load any whole entry written by repaired code).
+        detail=s["detail"],
+        ts=s["ts"],
+        # DBEL-I: restore learning metadata (additive; {} for legacy).
+        meta=s["meta"],
+    ) for s in staged]
 
     # The fresh Program from open_program() already carries one startup entry
     # ("Open"); the saved ledger is the truth, so reset before restoring.
     p.duo.ledger.clear()
     p.duo.generation = 0
 
-    clean: List[GrowthEntry] = []
-    raw = data.get("duo_ledger")
-    if isinstance(raw, list):
-        last = 0
-        for e in raw:
-            if not isinstance(e, dict):
-                continue
-            try:
-                gen = int(e.get("gen", 0))
-            except (TypeError, ValueError):
-                continue
-            if gen <= last:
-                continue
-            clean.append(GrowthEntry(
-                gen=gen,
-                # R26: detail restored WHOLE (former [:120] re-cut
-                # at load any whole entry written by repaired code).
-                detail=str(e.get("detail", "")),
-                ts=str(e.get("ts", "")),
-                # DBEL-I: restore learning metadata (additive; {} for legacy).
-                meta=dict(e.get("meta") or {}) if isinstance(e.get("meta"), dict) else {},
-            ))
-            last = gen
     if clean:
         p.duo.ledger.extend(clean)
         p.duo.generation = max(target_gen, clean[-1].gen)
@@ -566,7 +632,7 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     p.main.pulls = []
     for pr in data.get("main", {}).get("pulls", []):
         p.main.pulls.append(PullRecord(unit_id=pr.get("unit_id", ""), tag=pr.get("tag", ""), weight=float(pr.get("weight", 0)), ts=pr.get("ts", "")))
-    target_gen = int(data.get("duo_generation", 0))
+    target_gen = _duo_target_generation(data)
     _restore_duo_ledger(p, data, target_gen)
     _restore_avatar(p, data)
     # Nursery decisions are NOT restored from the serialized "nursery" field (kept in the file format for
