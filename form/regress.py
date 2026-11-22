@@ -168,6 +168,11 @@ LIST = [
     # vocabulary (profile annotation, D-6 refusal visibility,
     # T-1..T-6 incl. T-5a/b/c boundary cases).
     "form.mandell.g31_contract_test",
+    # Director 7085151190 item 4 — FlowOver (`>>>`) immediately
+    # before 61[Join] non-termination fix: both lawful triggers
+    # terminate, Join dispatched exactly once, per-gap one-time
+    # flow consumption, shipped-shape controls unchanged.
+    "form.mandell.chain_exec_flowover_test",
     # Master plan P11 — satellite disposition guards (sandbox
     # matrices retired per Ace's ruling; useful survivors live).
     "form.mandell.p11_satellites_test",
