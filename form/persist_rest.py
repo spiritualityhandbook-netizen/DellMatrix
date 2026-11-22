@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 import json
+import math
 import os
 import sys
 
@@ -554,6 +555,59 @@ def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> No
         p.duo.generation = target_gen
 
 
+def _validate_companion_section(raw: Any) -> None:
+    """Stage-validate a PRESENT companion section (MEDIUM-four B).
+
+    Raises ProgramLoadError before any state is touched. The writer
+    (AICompanion.to_dict) emits a dict of string fields, a 2-number pos,
+    and a trail of 2-number points. Any field failing that shape —
+    wrong container, non-string scalar in a string field, a bool or
+    nonfinite or non-numeric coordinate, a truncated pos, one malformed
+    trail point — refuses the whole load: the former restore wrapped
+    from_dict in a blanket except/pass, so a single bad trail point
+    silently reset the companion's entire continuity state (identity,
+    position, mode, full trail) to the constructor default. Missing
+    fields keep from_dict's per-field defaults; extra unknown keys are
+    forward compatibility, not refusal; the derived z key is ignored.
+    """
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"program file 'companion' section is not an object "
+            f"(got {type(raw).__name__}): refusing load")
+    for field in ("name", "label", "facing", "mode", "doing", "last_action"):
+        v = raw.get(field)
+        if v is not None and not isinstance(v, str):
+            raise ProgramLoadError(
+                f"program file 'companion' field {field!r} is not a string "
+                f"(got {type(v).__name__}): refusing load")
+
+    def _coord(v: Any, where: str) -> None:
+        if isinstance(v, bool) or not isinstance(v, (int, float)) \
+                or not math.isfinite(v):
+            raise ProgramLoadError(
+                f"program file 'companion' {where} is not a finite number "
+                f"(got {v!r}): refusing load")
+
+    def _point(pt: Any, where: str) -> None:
+        if not isinstance(pt, (list, tuple)) or len(pt) < 2:
+            raise ProgramLoadError(
+                f"program file 'companion' {where} is not a 2-number point: refusing load")
+        _coord(pt[0], where)
+        _coord(pt[1], where)
+
+    pos = raw.get("pos")
+    if pos is not None:
+        _point(pos, "'pos'")
+    trail = raw.get("trail")
+    if trail is not None:
+        if not isinstance(trail, list):
+            raise ProgramLoadError(
+                f"program file 'companion' field 'trail' is not a list "
+                f"(got {type(trail).__name__}): refusing load")
+        for i, pt in enumerate(trail):
+            _point(pt, f"'trail' point {i}")
+
+
 def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program:
     """PREPARE a private Program from validated data. Touches no process language state.
 
@@ -639,11 +693,17 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     # back-compat only). p.nursery is the owner's live nursery file loaded by Program; restore never
     # creates pending/confirmed/rejected transitions and never writes any nursery file.
     _restore_lattice(p, data)
-    try:
-        from form.dell_matrix.companion import AICompanion
-        p.companion = AICompanion.from_dict(data.get("companion") or {})
-    except Exception:
-        pass
+    # MEDIUM-four B: a PRESENT companion section is stage-validated whole
+    # (_validate_companion_section) and refuses typed before the swap;
+    # the former blanket except/pass silently substituted the constructor
+    # default for the whole section on any single malformed field. An
+    # ABSENT section keeps the documented constructor default.
+    from form.dell_matrix.companion import AICompanion
+    if "companion" in data:
+        _validate_companion_section(data["companion"])
+        p.companion = AICompanion.from_dict(data["companion"])
+    else:
+        p.companion = AICompanion.from_dict({})
     try:
         from form.dell_matrix.inspire_pack import InspireState
         p.inspire = InspireState.from_dict(data.get("inspire") or {})

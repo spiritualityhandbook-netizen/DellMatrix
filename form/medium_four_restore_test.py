@@ -216,7 +216,163 @@ def run_duo():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-SECTIONS = [run_duo]
+# ============================================================ B: companion
+
+def run_companion():
+    from form.dell_matrix.companion import AICompanion
+
+    owner, other = "MediumFourCom", "MediumFourComOther"
+    expected = {"name": "ProbePal", "label": "Probe Pal", "pos": [7.0, 3.0],
+                "facing": "SE", "mode": "follow", "doing": "testing",
+                "last_action": "probe-setup",
+                "trail": [[1.0, 1.0], [2.0, 2.0], [3.0, 3.0]]}
+    defaults = {"name": "AI", "label": "AI", "pos": [2.0, 1.0],
+                "facing": "N", "mode": "manual", "doing": "idle", "trail": []}
+
+    def build(own, path):
+        p = open_program(own)
+        c = AICompanion(name="ProbePal", label="Probe Pal", pos=[7.0, 3.0],
+                        facing="SE", mode="follow", doing="testing",
+                        last_action="probe-setup")
+        c.trail = [[1.0, 1.0], [2.0, 2.0], [3.0, 3.0]]
+        p.companion = c
+        persist_rest.save(p, str(path))
+        return path
+
+    def fields(c):
+        return {"name": c.name, "label": c.label,
+                "pos": [float(c.pos[0]), float(c.pos[1])],
+                "facing": c.facing, "mode": c.mode, "doing": c.doing,
+                "last_action": c.last_action,
+                "trail": [[float(pt[0]), float(pt[1])] for pt in c.trail]}
+
+    tmp = Path(tempfile.mkdtemp(prefix="medium4_com_"))
+    try:
+        base = build(owner, tmp / "com_base.json")
+        orig_section = json.loads(base.read_text())["companion"]
+
+        p = _load(owner, base)
+        rec("COM clean load preserves all fields",
+            fields(p.companion) == expected)
+        resaved = tmp / "com_resaved.json"
+        persist_rest.save(p, str(resaved))
+        rec("COM clean save->load->resave parity (section identical)",
+            json.loads(resaved.read_text())["companion"] == orig_section)
+        p2 = _load(owner, resaved)
+        rec("COM second-generation continuity (clean): load of resave identical",
+            fields(p2.companion) == expected)
+
+        def _absent(data):
+            del data["companion"]
+        f = _mutated(base, tmp / "com_absent.json", _absent)
+        p = _load(owner, f)
+        got = fields(p.companion)
+        rec("COM legacy ABSENT section loads as the documented constructor default",
+            all(got[k] == v for k, v in defaults.items()))
+
+        def _extra_key(data):
+            data["companion"]["future_field"] = "additive"
+        f = _mutated(base, tmp / "com_extrakey.json", _extra_key)
+        try:
+            p = _load(owner, f)
+            ok = fields(p.companion) == expected
+        except Exception:
+            ok = False
+        rec("COM negative mutant: extra unknown key loads whole (no over-refusal)",
+            ok)
+
+        def _missing_field(data):
+            del data["companion"]["doing"]
+        f = _mutated(base, tmp / "com_missing.json", _missing_field)
+        try:
+            p = _load(owner, f)
+            got = fields(p.companion)
+            ok = (got["doing"] == "idle"
+                  and all(got[k] == v for k, v in expected.items()
+                          if k != "doing"))
+        except Exception:
+            ok = False
+        rec("COM negative mutant: missing optional field falls back per-field, siblings intact",
+            ok)
+
+        def _as_list(data):
+            data["companion"] = ["not-a-mapping", 42]
+        f = _mutated(base, tmp / "com_list.json", _as_list)
+        before = f.read_bytes()
+        rec("COM-A wrong container (list) refuses load (typed), no default substitution",
+            _refuses(owner, f))
+        rec("COM-A refused load leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        def _as_str(data):
+            data["companion"] = "GARBAGE-STRING"
+        f = _mutated(base, tmp / "com_str.json", _as_str)
+        rec("COM-B garbage scalar section refuses load (typed)",
+            _refuses(owner, f))
+
+        def _as_null(data):
+            data["companion"] = None
+        f = _mutated(base, tmp / "com_null.json", _as_null)
+        rec("COM explicit-null section refuses load (typed) — present != absent",
+            _refuses(owner, f))
+
+        def _badpos(data):
+            data["companion"]["pos"] = 42
+        f = _mutated(base, tmp / "com_badpos.json", _badpos)
+        before = f.read_bytes()
+        rec("COM-C one corrupt scalar (pos:=42) refuses load (typed), no total default substitution",
+            _refuses(owner, f))
+        rec("COM-C refused load leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        def _badtrail(data):
+            data["companion"]["trail"] = [[1.0, 1.0], ["x", "y"], [3.0, 3.0]]
+        f = _mutated(base, tmp / "com_badtrail.json", _badtrail)
+        rec("COM-D one malformed trail point among valid refuses load (typed)",
+            _refuses(owner, f))
+        try:
+            p = _load(owner, f)
+            resave2 = tmp / "com_badtrail_resaved.json"
+            persist_rest.save(p, str(resave2))
+            kept = json.loads(resave2.read_text())["companion"]
+            ok = kept == orig_section
+            detail = "resaved section is the constructor default" if not ok else ""
+        except ProgramLoadError:
+            ok, detail = True, ""
+        rec("COM-D second-generation continuity: load+resave preserves the original section",
+            ok, detail)
+
+        def _shortpos(data):
+            data["companion"]["pos"] = [5]
+        f = _mutated(base, tmp / "com_shortpos.json", _shortpos)
+        rec("COM-E truncated pos ([5]) refuses load (typed)",
+            _refuses(owner, f))
+
+        def _boolpos(data):
+            data["companion"]["pos"] = [True, 3.0]
+        f = _mutated(base, tmp / "com_boolpos.json", _boolpos)
+        rec("COM bool pos element refuses load (typed) — JSON type confusion (float(True)==1.0)",
+            _refuses(owner, f))
+
+        def _intfacing(data):
+            data["companion"]["facing"] = 42
+        f = _mutated(base, tmp / "com_intfacing.json", _intfacing)
+        rec("COM non-string scalar in a string field (facing:=42) refuses load (typed)",
+            _refuses(owner, f))
+
+        other_path = build(other, tmp / "com_other.json")
+        obefore = other_path.read_bytes()
+        f = _mutated(base, tmp / "com_badtrail2.json", _badtrail)
+        refused = _refuses(owner, f)
+        p = _load(other, other_path)
+        rec("COM cross-owner: corrupt load refuses; foreign file untouched + loads intact",
+            refused and other_path.read_bytes() == obefore
+            and fields(p.companion) == expected)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+SECTIONS = [run_duo, run_companion]
 
 
 def run_all():
