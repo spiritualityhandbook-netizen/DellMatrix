@@ -468,13 +468,26 @@ def _remove_from(records: Dict[str, Dict[str, Any]],
     return {"ok": True, "removed": key}
 
 
+class PersonaLoadError(Exception):
+    """Fail-closed: malformed persisted user-persona state is never
+    valid state. Raised by the persist restore path when the saved
+    custom-persona section cannot be honored as recorded — the load
+    refuses rather than presenting a silently emptied layer."""
+
+
 def _activate_into(records: Dict[str, Dict[str, Any]],
                    recs: Any) -> Dict[str, Any]:
     """Replace ONE layer's contents with validated records (the
     Program load path). Mutates the dict in place. Invalid records
     are skipped and reported — never half-applied, never silently
-    dropped without a count."""
-    records.clear()
+    dropped without a count.
+
+    Staging: every record is validated and normalized into a fresh
+    dict BEFORE the layer is touched, and the swap is clear+update
+    only after the whole loop succeeds — a failure mid-loop (e.g.
+    inside normalization) leaves the prior layer fully intact,
+    never cleared-and-partial."""
+    staged: Dict[str, Dict[str, Any]] = {}
     activated: List[str] = []
     skipped: List[str] = []
     for rec in recs or []:
@@ -486,8 +499,10 @@ def _activate_into(records: Dict[str, Dict[str, Any]],
             skipped.append(f"{rec.get('id')}: {reason}")
             continue
         norm = _normalize_record(rec)
-        records[norm["id"]] = norm
+        staged[norm["id"]] = norm
         activated.append(norm["id"])
+    records.clear()
+    records.update(staged)
     return {"ok": True, "activated": activated, "skipped": skipped}
 
 

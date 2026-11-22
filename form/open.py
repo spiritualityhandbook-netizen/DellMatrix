@@ -194,6 +194,14 @@ class Program:
     # created in __post_init__ when unset. Runtime state only — the
     # durable form is user_personas above.
     persona_layer: Any = field(default=None, repr=False, compare=False)
+    # Persist-restore diagnostic for the user persona layer: the
+    # activation report of the last persist load,
+    # {"activated": [...], "skipped": [...]}. Skipped records are
+    # dropped from user_personas at load (never silently re-saved as
+    # zombies) and are accounted for HERE, on the loaded program.
+    # None = no persist restore has run for this program.
+    persona_restore_report: Optional[Dict[str, Any]] = field(
+        default=None, repr=False, compare=False)
     # First-person matrix walk (inside centerpoints)
     center_f: int = 0  # up/down lattice axis (frequency / height)
     look_pitch: str = "level"  # down | level | up

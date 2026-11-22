@@ -642,19 +642,41 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     # loaded program's OWN layer (owner-scoped, Director 7069171691 —
     # never the module default layer, so loading owner B cannot clear
     # or expose owner A's personas). Absent section = legacy (no user
-    # personas). Records are re-validated by activate_custom_personas;
-    # invalid ones are skipped there, never half-applied. The BIMO /
-    # matrix surfaces replaced just above are re-bound to the layer.
-    try:
-        from form.dell_matrix.personas import activate_custom_personas
-        recs = data.get("custom_personas") or []
-        p.user_personas = [dict(r) for r in recs if isinstance(r, dict)]
+    # personas). FAIL CLOSED, like the spatial / agent-local sections
+    # above (except-pass finding 7075379118): a present-but-malformed
+    # section (not a list) or any activation / re-bind failure refuses
+    # the load with PersonaLoadError — never a silent empty layer.
+    # Records are re-validated by activate_custom_personas; invalid
+    # ones are skipped there, never half-applied, and the skip report
+    # LANDS on the loaded program (p.persona_restore_report) while
+    # user_personas keeps only the activated records — a skipped
+    # record is dropped once, accounted for, and never re-saved as a
+    # zombie. The BIMO / matrix surfaces replaced just above are
+    # re-bound to the layer.
+    from form.dell_matrix.personas import (
+        PersonaLoadError, activate_custom_personas)
+    if "custom_personas" in data:
+        _section = data["custom_personas"]
+        if not isinstance(_section, list):
+            raise PersonaLoadError(
+                "custom_personas section is not a list: "
+                f"{type(_section).__name__}")
         _player = getattr(p, "persona_layer", None)
-        if _player is not None:
-            activate_custom_personas(p.user_personas, layer=_player)
+        if _player is None:
+            raise PersonaLoadError(
+                "user persona restore failed: program has no persona layer")
+        try:
+            _report = activate_custom_personas(_section, layer=_player)
             p._bind_persona_layer()
-    except Exception:
-        pass
+        except PersonaLoadError:
+            raise
+        except Exception as exc:
+            raise PersonaLoadError(f"user persona restore failed: {exc}")
+        p.persona_restore_report = {
+            "activated": list(_report.get("activated", [])),
+            "skipped": list(_report.get("skipped", [])),
+        }
+        p.user_personas = _player.all()
     hist = data.get("history") or []
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]

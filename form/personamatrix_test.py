@@ -51,6 +51,14 @@ Contract under test:
   save/reload B); the same persona id may exist in both owners'
   layers with different records; Program operations never touch the
   module default layer.
+- S7: restore honesty (except-pass finding 7075379118) — the persona
+  restore fails closed like the spatial / agent-local sections: a
+  present-but-malformed custom_personas section (not a list) or an
+  activation failure refuses the load with PersonaLoadError, never
+  a silent empty layer; per-record skips land in the loaded
+  program's persona_restore_report and the skipped record is
+  dropped from user_personas — accounted for once, never re-saved
+  as a zombie.
 
 Labels: INTEGRATION (Program state is isolated per test owner via
 the canonical state-dir cleanup pattern; the module-level default
@@ -74,6 +82,7 @@ CANONICAL_IDS = {
 OWNER = "pmx155owner"
 ISO_A = "pmx155isoa"
 ISO_B = "pmx155isob"
+R_OWNER = "pmx155restore"
 STATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state")
 
 
@@ -365,11 +374,121 @@ def run_all():
               get_persona("iso_beta", layer=pc.persona_layer) is not None
               and get_persona("iso_beta", layer=pa.persona_layer) is None
               and all(p["id"] != "iso_beta" for p in custom_personas()))
+
+        # ---------------- S7: restore honesty (7075379118) ----------
+        # Probes C1-C4 of the except-pass record, as checks. Each
+        # scenario's outcome is computed first (loads either return a
+        # program or raise), then asserted — so one run reports every
+        # scenario even when an early one fails.
+        import copy as _copy
+        import json as _json
+        from form.dell_matrix.personas import PersonaLoadError
+        from form.persist import serialize as _serialize
+
+        _cleanup(R_OWNER)
+        pr = open_program(R_OWNER)
+        rres = pr.create_persona(**_iso_kwargs("Restore Probe",
+                                               "probe focus"))
+        check("pm_restore_setup_create", rres.get("ok") is True)
+        good_path = pr.save()
+        with open(good_path, "r", encoding="utf-8") as fh:
+            good_data = _json.load(fh)
+        good_recs = good_data["custom_personas"]
+        check("pm_restore_setup_saved", len(good_recs) == 1
+              and good_recs[0]["id"] == "restore_probe")
+
+        def _write_variant(tag, section):
+            d = _copy.deepcopy(good_data)
+            d["custom_personas"] = section
+            path = os.path.join(STATE_DIR, f"corrupt_{R_OWNER}_{tag}.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                _json.dump(d, fh)
+            return path
+
+        def _try_load(path):
+            try:
+                return ("loaded",
+                        persist_rest.load(R_OWNER, path, activate=False))
+            except Exception as exc:
+                return ("raised", exc)
+
+        outcomes = {}
+        # C1: wrong-typed section (a dict) -> typed refusal.
+        st, val = _try_load(_write_variant("c1", {"bogus": 1}))
+        outcomes["c1"] = (st == "raised"
+                          and isinstance(val, PersonaLoadError))
+        # C2: junk entries -> load succeeds, every entry skipped and
+        # reported, nothing left in the layer or user_personas.
+        st, val = _try_load(_write_variant("c2", ["junk", 42, None]))
+        rep = getattr(val, "persona_restore_report", None) \
+            if st == "loaded" else None
+        outcomes["c2"] = (
+            st == "loaded" and val.user_personas == []
+            and rep is not None and rep["activated"] == []
+            and len(rep["skipped"]) == 3
+            and get_persona("restore_probe", layer=val.persona_layer) is None)
+        # C3: valid + invalid record -> the valid one activates; the
+        # invalid one is reported AND dropped from user_personas, so
+        # serialize never writes it back (no zombie re-skip cycle).
+        bad = dict(good_recs[0])
+        bad["id"] = "restore_bad"
+        bad["name"] = "Restore Bad"
+        bad["category"] = "NoSuchCategory"
+        st, val = _try_load(
+            _write_variant("c3", [dict(good_recs[0]), bad]))
+        rep = getattr(val, "persona_restore_report", None) \
+            if st == "loaded" else None
+        c3_ok = (
+            st == "loaded"
+            and get_persona("restore_probe", layer=val.persona_layer)
+            is not None
+            and [r["id"] for r in val.user_personas] == ["restore_probe"]
+            and rep is not None and len(rep["skipped"]) == 1
+            and rep["activated"] == ["restore_probe"])
+        if c3_ok:
+            resaved = _serialize(val)
+            c3_ok = ([r["id"] for r in resaved["custom_personas"]]
+                     == ["restore_probe"])
+        if c3_ok:
+            path3 = os.path.join(STATE_DIR, f"corrupt_{R_OWNER}_c3b.json")
+            with open(path3, "w", encoding="utf-8") as fh:
+                _json.dump(resaved, fh)
+            st3, val3 = _try_load(path3)
+            rep3 = getattr(val3, "persona_restore_report", None) \
+                if st3 == "loaded" else None
+            c3_ok = (st3 == "loaded" and rep3 is not None
+                     and rep3["skipped"] == []
+                     and rep3["activated"] == ["restore_probe"])
+        outcomes["c3"] = c3_ok
+        # C4: fault injection at the activation seam (the untouched,
+        # valid save) -> typed refusal, not a silent empty layer.
+        orig_activate = personas.activate_custom_personas
+
+        def _boom(records, layer=None):
+            if records:
+                raise RuntimeError("injected activation failure")
+            return orig_activate(records, layer=layer)
+
+        personas.activate_custom_personas = _boom
+        try:
+            st, val = _try_load(good_path)
+        finally:
+            personas.activate_custom_personas = orig_activate
+        outcomes["c4"] = (st == "raised"
+                          and isinstance(val, PersonaLoadError))
+        for tag in ("c1", "c2", "c3", "c4"):
+            print(f"[{'PASS' if outcomes[tag] else 'FAIL'}] "
+                  f"pm_restore_{tag}_outcome")
+        check("pm_restore_wrong_type_refused", outcomes["c1"])
+        check("pm_restore_junk_entries_reported", outcomes["c2"])
+        check("pm_restore_partial_skip_no_zombie", outcomes["c3"])
+        check("pm_restore_activation_failure_refused", outcomes["c4"])
     finally:
         activate_custom_personas([])
         _cleanup(OWNER)
         _cleanup(ISO_A)
         _cleanup(ISO_B)
+        _cleanup(R_OWNER)
 
     passed = sum(1 for _, ok in CHECKS if ok)
     print(f"Personamatrix: {passed}/{len(CHECKS)} checks passed")
