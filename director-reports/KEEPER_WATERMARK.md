@@ -20,3 +20,17 @@
 Proof of pass: this watermark advance. #510 prior scoped stamp remains valid at exact head; full GP-E25 still awaits UI acceptance, independent x3 verification, Director final merge word.
 
 — KEEPER
+
+## Uni records note (2026-11-22, per Director 7056445974 — the Keeper's text above is untouched)
+
+- #496 wording correction: the credit FREEZE on #496 was LIFTED (Ace
+  7040200362; Director 7040318415 / 7047136277). The one smoke failure
+  is permanently NOTED / ROOT CAUSE UNKNOWN, not deleted. What remains
+  pending is the separate postmerge CREDIT STAMP: the normal independent
+  Keeper postmerge credit review on Uni package 7040793444. The lifted
+  freeze and the pending stamp are different things; no auto-credit.
+- Currency note: PR #510 has since MERGED to main (2026-11-22T11:06:28Z,
+  merge commit d424526939beb410134135a07b27eedcad6c7344) under Keeper
+  SCOPED CONFIRM 7078189868 at head 55b14ab0; the Director's trailing
+  whole-program check stands as PENDING_FINAL_CHECK. The GP-E25 line in
+  the watermark above predates that merge.
