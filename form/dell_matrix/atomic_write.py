@@ -66,8 +66,11 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import stat
+import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 PERSISTENCE_PROTOCOL_VERSION = 2
 
@@ -77,9 +80,23 @@ TMP_INFIX = ".dmtmp."
 #: Test-only failure injection (see module docstring). Production leaves None.
 _FAIL_AT: Optional[str] = None
 
+#: Test-only race injection for sweep_stale_tmps (same convention as
+#: _FAIL_AT): when set, it is called with a removal candidate's path after
+#: classification and immediately before the pre-unlink identity
+#: revalidation, letting a test replace the candidate mid-sweep.
+#: Production leaves None.
+_SWEEP_HOOK: Optional[Callable[[str], None]] = None
+
 
 class AtomicWriteError(OSError):
     """Honest failure of an atomic write; the canonical target was not replaced."""
+
+
+class SweepRefusalError(AtomicWriteError):
+    """Typed refusal by sweep_stale_tmps: the sweep root itself is unsafe
+    (e.g. a symlink), so nothing was scanned for removal and nothing was
+    deleted. Per-file ambiguity never raises; it keeps the file and is
+    reported with a typed reason instead (see sweep_stale_tmps)."""
 
 
 def _fail_at() -> Optional[str]:
@@ -272,41 +289,184 @@ def _atomic_replace(path: str, blob: bytes, fail: Optional[str]) -> bool:
 atomic_write_json._last_dir_fsynced = False  # type: ignore[attr-defined]
 
 
-def sweep_stale_tmps(directory: str) -> Dict[str, int]:
+#: The exact basename shape _temp_path_for mints:
+#: ``<base>.dmtmp.<pid>.<rand8>`` with rand8 = 8 lowercase hex chars
+#: (uuid4().hex[:8]). A name that does not match this shape in FULL was
+#: not minted by this helper, whatever substrings it contains.
+_TMP_NAME_RE = re.compile(
+    r"^(?P<base>.+)\.dmtmp\.(?P<pid>[0-9]+)\.(?P<rand>[0-9a-f]{8})$")
+
+
+def _pid_liveness(pid: int) -> Optional[bool]:
+    """True = a process with this number exists now; False = proven dead
+    (ProcessLookupError); None = unknowable (never probed / probe error).
+    Only False may ever lead to removal: a live number may be the writer
+    or an unrelated process that reused the number (PID reuse resolves
+    to KEEP), and an unknowable answer is ambiguity, which also keeps."""
+    if pid <= 0:
+        return None
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True  # pid exists but is not ours
+    except (OSError, OverflowError):
+        return None
+    return True
+
+
+def _identity(st: os.stat_result) -> tuple:
+    """The file identity a removal decision is bound to."""
+    return (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns)
+
+
+def sweep_stale_tmps(directory: str, *,
+                     min_age_seconds: float = 0.0,
+                     report: Optional[List[Dict[str, Any]]] = None
+                     ) -> Dict[str, int]:
     """Remove helper-owned temp files whose writer pid is no longer alive.
 
-    Returns {"scanned": n, "removed": m}. Never touches the canonical file or
-    any temp whose pid is still running (a live concurrent writer).
+    MANUAL-ONLY: this helper has no production caller and is never
+    invoked automatically; removal happens only when an operator (or a
+    test) calls it explicitly (Q-35.1, Director ruling 7085151190
+    item 7).
+
+    A file is removed ONLY when every check passes, in this order:
+
+    1. Its name matches the exact mint shape ``<base>.dmtmp.<pid>.
+       <rand8>`` in full (``_TMP_NAME_RE``), and the base does not
+       itself contain the infix. A substring match proves nothing:
+       foreign names that merely contain ``.dmtmp.`` are kept with
+       reason MALFORMED_NAME.
+    2. ``os.lstat`` shows a regular file owned by this process's uid.
+       Symlinks are never followed and never unlinked
+       (NOT_A_REGULAR_FILE); another owner's file is kept (NOT_OWNER).
+    3. The pid is PROVEN dead by two probes (at classification and
+       again immediately before unlink). Alive or unknowable keeps
+       the file (LIVE_PID / PID_UNPROBEABLE) — the PID-reuse-safe
+       direction.
+    4. The file's age meets the caller's grace rail
+       (``min_age_seconds``; default 0 preserves the proven
+       immediate-sweep contract of the 72-35 suites). Younger is kept
+       (TOO_YOUNG).
+    5. Identity revalidation: the root directory and the candidate are
+       re-``lstat``-ed immediately before unlink; any change of
+       (dev, ino, size, mtime_ns) since classification keeps the file
+       (CHANGED_SINCE_SCAN / ROOT_CHANGED).
+
+    Ambiguity always resolves to KEEP with a typed reason; nothing
+    ambiguous is ever deleted. Unlink failures are never swallowed:
+    they are reported as REMOVE_FAILED with the error class.
+
+    The sweep root itself must be trustworthy: a symlinked or
+    non-directory root raises SweepRefusalError before anything is
+    scanned or removed. A missing/unreadable directory keeps the
+    proven legacy contract: exactly ``{"scanned": 0, "removed": 0}``,
+    no raise (atomic_write_boundaries E3).
+
+    Returns exactly ``{"scanned": n, "removed": m}`` (scanned = names
+    containing the infix). When ``report`` is a list, one entry per
+    scanned candidate is appended: {"name", "action":
+    "removed"|"kept"|"failed", "reason": <typed code or None>,
+    "error": <exception class name for REMOVE_FAILED else None>,
+    "pid": <int or None>}.
     """
-    scanned = removed = 0
+    if os.path.islink(directory):
+        raise SweepRefusalError(
+            f"sweep refused: root is a symlink, nothing removed: "
+            f"{directory!r}")
+    try:
+        root_st = os.lstat(directory)
+    except OSError:
+        return {"scanned": 0, "removed": 0}
+    if not stat.S_ISDIR(root_st.st_mode):
+        raise SweepRefusalError(
+            f"sweep refused: root is not a directory, nothing removed: "
+            f"{directory!r}")
+    root_identity = (root_st.st_dev, root_st.st_ino)
     try:
         names = os.listdir(directory)
     except OSError:
         return {"scanned": 0, "removed": 0}
-    for name in names:
+
+    getuid = getattr(os, "getuid", None)
+    scanned = removed = 0
+
+    def _emit(name, action, reason, pid=None, error=None):
+        if report is not None:
+            report.append({"name": name, "action": action,
+                           "reason": reason, "pid": pid,
+                           "error": error})
+
+    for name in sorted(names):
         if TMP_INFIX not in name:
             continue
         scanned += 1
-        # name pattern: <base>.dmtmp.<pid>.<rand8>
+        match = _TMP_NAME_RE.match(name)
+        if match is None or TMP_INFIX in match.group("base"):
+            _emit(name, "kept", "MALFORMED_NAME")
+            continue
+        pid = int(match.group("pid"))
+        if pid <= 0:
+            _emit(name, "kept", "INVALID_PID", pid=pid)
+            continue
+        path = os.path.join(directory, name)
         try:
-            pid = int(name.split(TMP_INFIX, 1)[1].split(".", 1)[0])
-        except (ValueError, IndexError):
+            st = os.lstat(path)
+        except OSError:
+            _emit(name, "kept", "STAT_FAILED", pid=pid)
+            continue
+        if stat.S_ISLNK(st.st_mode) or not stat.S_ISREG(st.st_mode):
+            _emit(name, "kept", "NOT_A_REGULAR_FILE", pid=pid)
+            continue
+        if getuid is not None and st.st_uid != getuid():
+            _emit(name, "kept", "NOT_OWNER", pid=pid)
+            continue
+        alive = _pid_liveness(pid)
+        if alive is True:
+            _emit(name, "kept", "LIVE_PID", pid=pid)
+            continue
+        if alive is None:
+            _emit(name, "kept", "PID_UNPROBEABLE", pid=pid)
+            continue
+        if min_age_seconds > 0 and \
+                (time.time() - st.st_mtime) < min_age_seconds:
+            _emit(name, "kept", "TOO_YOUNG", pid=pid)
+            continue
+        identity = _identity(st)
+
+        # Removal phase: re-prove everything before the unlink.
+        if _SWEEP_HOOK is not None:
+            _SWEEP_HOOK(path)
+        alive = _pid_liveness(pid)
+        if alive is True:
+            _emit(name, "kept", "LIVE_PID", pid=pid)
+            continue
+        if alive is None:
+            _emit(name, "kept", "PID_UNPROBEABLE", pid=pid)
             continue
         try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
-            dead = True
-        except PermissionError:
-            dead = False  # pid exists but not ours; leave it alone
+            root_now = os.lstat(directory)
+            st_now = os.lstat(path)
         except OSError:
-            dead = False
-        else:
-            dead = False
-        if not dead:
+            _emit(name, "kept", "STAT_FAILED", pid=pid)
+            continue
+        if (root_now.st_dev, root_now.st_ino) != root_identity or \
+                stat.S_ISLNK(root_now.st_mode):
+            _emit(name, "kept", "ROOT_CHANGED", pid=pid)
+            continue
+        if _identity(st_now) != identity or \
+                stat.S_ISLNK(st_now.st_mode) or \
+                not stat.S_ISREG(st_now.st_mode):
+            _emit(name, "kept", "CHANGED_SINCE_SCAN", pid=pid)
             continue
         try:
-            os.unlink(os.path.join(directory, name))
-            removed += 1
-        except OSError:
-            pass
+            os.unlink(path)
+        except OSError as exc:
+            _emit(name, "failed", "REMOVE_FAILED", pid=pid,
+                  error=type(exc).__name__)
+            continue
+        removed += 1
+        _emit(name, "removed", None, pid=pid)
     return {"scanned": scanned, "removed": removed}
