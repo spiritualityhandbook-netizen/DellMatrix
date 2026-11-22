@@ -216,31 +216,87 @@ def _restore_avatar(p: Program, data: Dict[str, Any]) -> None:
 
 
 def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
-    raw = data.get("lattice") or {}
-    if not raw:
+    # Persistence-integrity (Part I SAVE/JOURNAL; Director clearance
+    # PR #505 comment 7076723491): the lattice is user-authored content.
+    # An ABSENT section is a legacy save and leaves the prepared
+    # program's default lattice. A PRESENT but malformed section (wrong
+    # type, unparseable scalar, invalid setting, malformed cell) FAILS
+    # CLOSED with ProgramLoadError, raised before any swap or write —
+    # the candidate is staged privately and swapped only after complete
+    # validation, so one corrupt value can never wipe the owner's
+    # authored lattice or be made permanent by a later save.
+    if "lattice" not in data:
         return
-    try:
-        p.lattice = HarmonicLattice(size=int(raw.get("size", 12)))
+    raw = data["lattice"]
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            "lattice section is not an object: "
+            f"{type(raw).__name__}; refusing load")
+
+    def _int_field(name: str, default: int) -> int:
+        value = raw.get(name, default)
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ProgramLoadError(
+                f"lattice.{name} is not an integer: {value!r}; "
+                "refusing load")
+        return value
+
+    staged = HarmonicLattice(size=_int_field("size", 12))
+    if "overlay" in raw:
         try:
-            p.lattice.overlay = OverlayMode(raw.get("overlay", "harmonic"))
-        except Exception:
-            pass
+            staged.overlay = OverlayMode(raw["overlay"])
+        except (TypeError, ValueError):
+            raise ProgramLoadError(
+                "lattice.overlay is not a known overlay: "
+                f"{raw['overlay']!r}; refusing load")
+    if "perspective" in raw:
         try:
-            p.lattice.perspective = LatPerspective(raw.get("perspective", "top"))
-        except Exception:
-            pass
+            staged.perspective = LatPerspective(raw["perspective"])
+        except (TypeError, ValueError):
+            raise ProgramLoadError(
+                "lattice.perspective is not a known perspective: "
+                f"{raw['perspective']!r}; refusing load")
+    if "form" in raw:
         try:
-            p.lattice.perception.set_form(Form(raw.get("form", "cube")))
-        except Exception:
-            p.lattice.perception.set_form(Form.CUBE)
-        p.lattice.origin_note = int(raw.get("origin_note", 0))
-        for _key, cell in (raw.get("cells") or {}).items():
-            try:
-                p.lattice.put(int(cell.get("h", 0)), int(cell.get("v", 0)), int(cell.get("f", 0)), content=cell.get("content"), label=cell.get("label", ""), tags=list(cell.get("tags") or []), members=list(cell.get("members") or []))
-            except Exception:
-                continue
-    except Exception:
-        p.lattice = HarmonicLattice(size=12)
+            staged.perception.set_form(Form(raw["form"]))
+        except (TypeError, ValueError):
+            raise ProgramLoadError(
+                "lattice.form is not a known form: "
+                f"{raw['form']!r}; refusing load")
+    staged.origin_note = _int_field("origin_note", 0)
+    raw_cells = raw.get("cells", {})
+    if not isinstance(raw_cells, dict):
+        raise ProgramLoadError(
+            "lattice.cells is not an object: "
+            f"{type(raw_cells).__name__}; refusing load")
+    for key, cell in raw_cells.items():
+        if not isinstance(cell, dict):
+            raise ProgramLoadError(
+                f"lattice cell {key!r} is not an object; refusing load")
+        coords: Dict[str, int] = {}
+        for axis in ("h", "v", "f"):
+            value = cell.get(axis, 0)
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ProgramLoadError(
+                    f"lattice cell {key!r} has non-integer {axis}: "
+                    f"{value!r}; refusing load")
+            coords[axis] = value
+        tags = cell.get("tags", [])
+        members = cell.get("members", [])
+        if not isinstance(tags, list) or not isinstance(members, list):
+            raise ProgramLoadError(
+                f"lattice cell {key!r} has non-list tags/members; "
+                "refusing load")
+        try:
+            staged.put(coords["h"], coords["v"], coords["f"],
+                       content=cell.get("content"),
+                       label=cell.get("label", ""),
+                       tags=list(tags), members=list(members))
+        except Exception as exc:
+            raise ProgramLoadError(
+                f"lattice cell {key!r} failed to restore: {exc}; "
+                "refusing load")
+    p.lattice = staged
 
 
 class ProgramLoadError(ValueError):
@@ -641,26 +697,41 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     hist = data.get("history") or []
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]
-    # DCC-XX: restore the durable execution-outcome ledger. Shape-checked;
-    # a malformed section never poisons the load (empty ledger instead).
-    # Records are historical evidence: never reinterpreted, never rewritten.
-    try:
+    # DCC-XX: restore the durable execution-outcome ledger. Records are
+    # historical evidence: non-derivable, never reinterpreted, never
+    # rewritten — so a PRESENT but malformed section FAILS CLOSED
+    # (ProgramLoadError, raised before any swap or write), exactly as
+    # the spatial and agent_local restores do (persistence-integrity,
+    # Part I SAVE/JOURNAL; Director clearance PR #505 comment
+    # 7076723491). An ABSENT section is a legacy save (pre-ledger
+    # writer): the prepared program's empty ledger stands, as before.
+    if "outcome_ledger" in data:
         from form.mandell.outcome_ledger import validate_record_shape
-        ledger = data.get("outcome_ledger") or {}
+        ledger = data["outcome_ledger"]
+        if not isinstance(ledger, dict):
+            raise ProgramLoadError(
+                "outcome_ledger section is not an object: "
+                f"{type(ledger).__name__}; refusing load")
         seq = ledger.get("outcome_seq", 0)
-        try:
-            p.outcome_seq = max(0, int(seq))
-        except (TypeError, ValueError):
-            p.outcome_seq = 0
-        raw_records = ledger.get("records") or {}
+        if isinstance(seq, bool) or not isinstance(seq, int):
+            raise ProgramLoadError(
+                "outcome_ledger.outcome_seq is not an integer: "
+                f"{seq!r}; refusing load")
+        raw_records = ledger.get("records", {})
+        if not isinstance(raw_records, dict):
+            raise ProgramLoadError(
+                "outcome_ledger.records is not an object: "
+                f"{type(raw_records).__name__}; refusing load")
         restored: Dict[str, Dict[str, Any]] = {}
-        if isinstance(raw_records, dict):
-            for oid, rec in raw_records.items():
-                if isinstance(oid, str) and validate_record_shape(rec):
-                    restored[oid] = dict(rec)
+        for oid, rec in raw_records.items():
+            if not isinstance(oid, str) or not validate_record_shape(rec):
+                raise ProgramLoadError(
+                    f"outcome_ledger record {oid!r} fails shape "
+                    "validation; refusing load")
+            restored[oid] = dict(rec)
         p.outcome_records = restored
         # The durable sequence must never fall behind the restored records.
-        max_seq = p.outcome_seq
+        max_seq = max(0, seq)
         for rec in restored.values():
             try:
                 s = int(rec.get("outcome_seq", 0) or 0)
@@ -669,8 +740,6 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
             if s > max_seq:
                 max_seq = s
         p.outcome_seq = max_seq
-    except Exception:
-        pass
     # R7.2: restore Perspective Studio session evidence with the shared
     # strict schema. Closed records only; the active studio mode is
     # session-only and never restored. validate_section never raises;

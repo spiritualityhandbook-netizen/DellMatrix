@@ -410,6 +410,11 @@ LIST = [
     # SM-39 persistence closure: growth plant records survive save/load.
     "form.growth_persistence_test:smoke",
     "form.water_persistence_test:smoke",
+    # Persistence-integrity (Part I SAVE/JOURNAL; Director clearance
+    # PR #505 comment 7076723491): present-but-malformed outcome_ledger
+    # and lattice sections fail closed at load with ProgramLoadError;
+    # absent sections keep legacy behavior.
+    "form.persistence_integrity_test:smoke",
     # Track D TD-1: Unit -> Idea binding foundation (S1).
     "form.track_d_td1_test:smoke",
     "form.track_d_td1_r1_test:smoke",
