@@ -375,7 +375,17 @@ def serialize(program: Program) -> Dict[str, Any]:
         "bimo": program.bimo.to_dict() if hasattr(program, "bimo") else {},
         "nursery": _serialize_nursery(program),
         "lattice": _serialize_lattice(program),
-        "history": list(getattr(program, "history", []) or [])[-24:],
+        # R5-D S7: history is read ONLY through the locked snapshot
+        # reader (Program.history_snapshot, per-Program admission
+        # RLock) so a save cannot observe a half-appended state.
+        # Lock order: owner_state_lock (outer, save transaction) ->
+        # admission lock (inner, brief) — the only nesting. The
+        # [-24:] slice of the snapshot is the DEFERRED T3 cut,
+        # unchanged by this build.
+        "history": (program.history_snapshot()
+                    if hasattr(program, "history_snapshot")
+                    else list(getattr(program, "history", []) or [])
+                    )[-24:],
         # One language source per owner (form.mandell.language.language_of): both keys carry the same customs.
         "latinmandell_customs": {k: dict(v) for k, v in lang["customs"].items()},
         "mandell_language": dump_language(lang),
