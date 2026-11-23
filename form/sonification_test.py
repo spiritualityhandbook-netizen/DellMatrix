@@ -476,6 +476,77 @@ def main():
               proc.returncode == 0 and proc.stdout.strip() == "supported"
               and leftover == [],
               f"rc={proc.returncode} files={leftover} err={proc.stderr[-200:]}")
+    # ---- never-raises input contract (Director 7088588966) ---------
+    # Failing-first at head cdaf9e5d: listener pos None/missing/scalar
+    # raised TypeError from list() on unvalidated values in measured
+    # provenance; float(10**1000) raised OverflowError in
+    # _is_finite_number. Both must fail closed, never raise.
+    def no_raise(name, fn, want_status=None, want_reason=None):
+        try:
+            d = fn()
+        except Exception as exc:  # noqa: BLE001 - the contract is no raise
+            check(name, False, f"raised {type(exc).__name__}: {exc}")
+            return
+        ok = True
+        if want_status is not None:
+            ok = ok and d.status == want_status
+        if want_reason is not None:
+            ok = ok and want_reason in d.reasons
+        check(name, ok, f"status={d.status} reasons={d.reasons}")
+
+    base = copy.deepcopy(IDEA_A)
+    no_raise("listener_none_is_valid_omission",
+             lambda: son.sonify_idea(copy.deepcopy(base), listener=None),
+             want_status="supported")
+    no_raise("listener_empty_map_invalid_no_raise",
+             lambda: son.sonify_idea(copy.deepcopy(base), listener={}),
+             want_reason="invalid_listener")
+    no_raise("listener_pos_none_invalid_no_raise",
+             lambda: son.sonify_idea(
+                 copy.deepcopy(base),
+                 listener={"pos": None, "facing": "N"}),
+             want_reason="invalid_listener")
+    no_raise("listener_pos_scalar_invalid_no_raise",
+             lambda: son.sonify_idea(
+                 copy.deepcopy(base),
+                 listener={"pos": 123, "facing": "N"}),
+             want_reason="invalid_listener")
+    no_raise("listener_pos_bad_map_invalid_no_raise",
+             lambda: son.sonify_idea(
+                 copy.deepcopy(base),
+                 listener={"pos": {"x": "bad", "y": 0}, "facing": "N"}),
+             want_reason="invalid_listener")
+    valid_listener = son.sonify_idea(
+        copy.deepcopy(base), listener={"pos": [0, 0], "facing": "N"})
+    check("listener_valid_list_still_supported",
+          valid_listener.status == "supported"
+          and valid_listener.spatial is not None
+          and valid_listener.measured_inputs.get("listener")
+          == {"pos": [0.0, 0.0], "facing": "N"},
+          f"measured={valid_listener.measured_inputs.get('listener')}")
+    invalid_listener = son.sonify_idea(
+        copy.deepcopy(base), listener={"pos": None, "facing": "N"})
+    check("listener_invalid_measured_is_parsed_not_raw",
+          invalid_listener.measured_inputs.get("listener")
+          == {"pos": None, "facing": None},
+          f"measured={invalid_listener.measured_inputs.get('listener')}")
+    huge = 10 ** 1000
+    no_coords = {k: v for k, v in copy.deepcopy(base).items()
+                 if k != "coords"}
+    no_raise("huge_int_position_unavailable_no_raise",
+             lambda: son.sonify_idea(
+                 dict(no_coords, position={"x": huge, "y": 0})),
+             want_status="unavailable", want_reason="invalid_position")
+    no_raise("huge_int_listener_pos_invalid_no_raise",
+             lambda: son.sonify_idea(
+                 copy.deepcopy(base),
+                 listener={"pos": [huge, 0], "facing": "N"}),
+             want_reason="invalid_listener")
+    no_raise("huge_int_relation_no_raise",
+             lambda: son.sonify_relation(
+                 dict(copy.deepcopy(base), position={"x": huge, "y": 0}),
+                 copy.deepcopy(IDEA_B)))
+
     import form.dell_matrix.sonification as _mod
     src = open(_mod.__file__, encoding="utf-8").read()
     banned = ("socket", "urllib", "requests", "subprocess", "shutil",

@@ -185,8 +185,15 @@ def _is_int(value: Any) -> bool:
 
 
 def _is_finite_number(value: Any) -> bool:
-    return (isinstance(value, (int, float)) and not isinstance(value, bool)
-            and math.isfinite(float(value)))
+    if not (isinstance(value, (int, float)) and not isinstance(value, bool)):
+        return False
+    try:
+        return math.isfinite(float(value))
+    except (OverflowError, TypeError, ValueError):
+        # Huge ints (float(10**1000)) overflow float conversion; they are
+        # not finite measured numbers, never an exception (Director
+        # 7088588966: the projection never raises on bad input).
+        return False
 
 
 def _identity(idea: Any) -> Tuple[Optional[str], Optional[str], List[str]]:
@@ -319,12 +326,21 @@ def _score_neighborhood(idea: Mapping, owner: Optional[str],
 
 def _spatial_cue(idea: Mapping, coords: Optional[Tuple[int, int, int]],
                  raw_position: Optional[Tuple[float, float]],
-                 listener: Any) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-    """spatial_audio cue geometry for this idea from a listener context."""
+                 listener: Any) -> Tuple[Optional[Dict[str, Any]], Optional[str],
+                                         Optional[Dict[str, Any]]]:
+    """spatial_audio cue geometry for this idea from a listener context.
+
+    Returns (cue, reason, parsed_listener). parsed_listener is the ONE
+    validated representation of the listener — the same values the cue
+    geometry consumed — so measured provenance never re-reads raw
+    caller values (Director 7088588966: never invoke list() on
+    unvalidated input; an invalid listener discloses pos/facing None).
+    """
     if listener is None:
-        return None, None
+        return None, None, None
+    parsed: Dict[str, Any] = {"pos": None, "facing": None}
     if not isinstance(listener, Mapping):
-        return None, "invalid_listener"
+        return None, "invalid_listener", parsed
     pos = listener.get("pos")
     src: Optional[Tuple[float, float]] = None
     if isinstance(pos, Mapping):
@@ -334,16 +350,18 @@ def _spatial_cue(idea: Mapping, coords: Optional[Tuple[int, int, int]],
         if _is_finite_number(pos[0]) and _is_finite_number(pos[1]):
             src = (float(pos[0]), float(pos[1]))
     if src is None:
-        return None, "invalid_listener"
+        return None, "invalid_listener", parsed
+    parsed["pos"] = [src[0], src[1]]
     facing = listener.get("facing", "N")
     if not isinstance(facing, str):
-        return None, "invalid_listener"
+        return None, "invalid_listener", parsed
+    parsed["facing"] = facing
     if raw_position is not None:
         source = raw_position
     elif coords is not None:
         source = (float(coords[0]), float(coords[1]))
     else:
-        return None, "coordinate_missing"
+        return None, "coordinate_missing", parsed
     dist, bearing = _rel_polar(src, facing, source)
     pan = pan_from_bearing(bearing)
     cue = {
@@ -354,7 +372,7 @@ def _spatial_cue(idea: Mapping, coords: Optional[Tuple[int, int, int]],
         "band": band_from_distance(dist),
         "ear": ear_from_pan(pan),
     }
-    return cue, None
+    return cue, None, parsed
 
 
 def _revision_of(idea: Mapping, reasons: List[str]) -> Any:
@@ -413,14 +431,12 @@ def sonify_idea(idea: Any, *, neighborhood: Any = None,
             measured_inputs=measured)
 
     pitch_class, note_name, octave, frequency = _pitch(coords, int(origin))
-    cue, cue_reason = _spatial_cue(idea, coords, raw_position, listener)
+    cue, cue_reason, parsed_listener = _spatial_cue(
+        idea, coords, raw_position, listener)
     if cue_reason:
         reasons.append(cue_reason)
     if listener is not None:
-        measured["listener"] = {"pos": list(listener.get("pos"))
-                                 if isinstance(listener, Mapping) else None,
-                                 "facing": listener.get("facing")
-                                 if isinstance(listener, Mapping) else None}
+        measured["listener"] = parsed_listener
     return SonicDescriptor(
         kind="idea", idea_id=idea_id, owner=owner, source_revision=revision,
         projection_version=PROJECTION_VERSION, status="supported",
