@@ -322,10 +322,22 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
         st = attach(program)
     i = start
     last_ok = True
+    # FlowOver/Join fix (Director 7085151190 item 4): index of a
+    # 61[Join] that was itself the target of a `>>>` flow already
+    # consumed exactly once by the "over" skip below (the skip
+    # advanced zero atoms to reach it); -1 when none. Without this
+    # mark the next iteration re-applied the same `>>>` (which
+    # returns "over" unconditionally) at the same index and the
+    # Join was never dispatched — a deterministic hang. i never
+    # decreases, so a stale mark can never match a later index;
+    # every zero-advance "over" application is followed within one
+    # iteration by the Join dispatch advancing i past it (strict
+    # monotonic progress).
+    over_join_at = -1
     while i < end:
         atom = atoms[i]
         n = int(atom.dell)
-        if i > start:
+        if i > start and i != over_join_at:
             if st is None:
                 # Q-C13.O-FIN.1 deferred attach (see execute_range
                 # entry): flow machinery is the first real consumer
@@ -343,6 +355,7 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
                 i += 1
                 continue
             if action == "over":
+                over_from = i
                 while i < end and int(atoms[i].dell) != 61:
                     skipped.append(int(atoms[i].dell))
                     # Step 7 (DAF-08): a FlowOver-skipped occurrence
@@ -355,6 +368,19 @@ def execute_range(program, seed, atoms, start, end, depth, messages, ran, skippe
                         "skipped by FlowOver (>>> — skip forward to Join); not executed"))
                     messages.append(f"skipped by FlowOver {int(atoms[i].dell)}")
                     i += 1
+                if i < end and i == over_from:
+                    # The skip advanced ZERO atoms: the atom this
+                    # gap's FlowOver was applied to IS the 61[Join],
+                    # and that flow is now consumed (exactly once).
+                    # Mark the Join so the next iteration dispatches
+                    # it through the canonical path below — one Join
+                    # handling, no skip receipt for it, no second
+                    # application of the same flow. (When the skip
+                    # advanced >= 1 atom, the next iteration applies
+                    # a DIFFERENT gap's flow — canonical behavior,
+                    # e.g. the shipped `>>> 70 >> 61` shape — and no
+                    # mark is set.)
+                    over_join_at = i
                 continue
         if n in CONTROL_HEADS:
             if depth >= MAX_DEPTH:
