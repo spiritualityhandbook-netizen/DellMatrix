@@ -29,7 +29,9 @@ Controls:
   S  byte preservation for every pre-replace failure
   T  load failure atomicity (stage/validate before apply)
   U  literal cross-process matrix (distinct PIDs, no-memory canary)
-  V  cleanup (no temp accumulation; stale-temp sweep)
+  V  cleanup (no temp accumulation; stale-temp sweep — a
+     hand-planted stale temp is KEPT as NOT_PROVEN_OWNED under
+     the provenance law, Director SUPERSESSION 7088845962)
 
 AUTONOMY = NO.
 """
@@ -467,14 +469,24 @@ def control_v_cleanup() -> None:
     except AtomicWriteError:
         pass
     check("V.no_tmps_after_fail", tmps_in_state() == [])
-    # stale temp with a dead pid is swept; live pid is kept
+    # SUPERSEDED ORACLE (Director 7088845962): the hand-planted
+    # stale temp below has no writer-minted provenance, so the
+    # provenance law KEEPS it byte-identical with typed reason
+    # NOT_PROVEN_OWNED; the pre-supersession V.sweep_removes_dead
+    # asserted the deletion ruling 7088554768 forbids. A live-pid
+    # temp is kept as before.
     dead = STATE / ("sweep_probe.json.dmtmp.99999997.deadbeef")
     dead.write_bytes(b"partial")
     live = STATE / (f"sweep_probe.json.dmtmp.{os.getpid()}.livebeef")
     live.write_bytes(b"partial")
     try:
-        res = sweep_stale_tmps(str(STATE))
-        check("V.sweep_removes_dead", not dead.exists() and res["removed"] >= 1)
+        report = []
+        res = sweep_stale_tmps(str(STATE), report=report)
+        check("V.sweep_keeps_dead_unprovenanced",
+              dead.exists() and dead.read_bytes() == b"partial")
+        check("V.sweep_dead_reason_not_proven_owned",
+              {e["name"]: e.get("reason") for e in report}.get(
+                  dead.name) == "NOT_PROVEN_OWNED")
         check("V.sweep_keeps_live", live.exists())
     finally:
         for f in (dead, live):
