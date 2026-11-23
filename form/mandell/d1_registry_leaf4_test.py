@@ -56,7 +56,9 @@ through the public seed path:
   was the B6 defect.
 - 46 Rank: "Ranked <n> proposals:" plus one line per
   PENDING proposal, affinity-descending (equal
-  affinities keep insertion order), format
+  affinities keep the lens order — score descending,
+  then id; the lens has no insertion-order term, see
+  the symbiosis oracle correction), format
   "<i>. aff=<aff:.3f> [<kind>] <id> — <label>".
 - 47 Embed (core_i_ops): HONEST REFUSAL — ok=False
   embed_unavailable, representation "none", no
@@ -182,15 +184,55 @@ def main():
     r = _run(p, "37[Nurture] :: Second Idea")
     pid2 = getattr(p, "last_nurture", {}).get("pid", "")
 
-    # -- symbiosis: Rank reads Nurture's pending set
+    # -- symbiosis: Rank reads Nurture's pending set.
+    #    ORACLE CORRECTION (Director §42 delta 7080635172;
+    #    classification D1_LEAF4_CLASSIFICATION_2026-11-22):
+    #    the adopted lens orders by (-score, id) — there is
+    #    no insertion-order term — and the score's FRESH
+    #    term reads the created stamp at ONE-SECOND
+    #    granularity, so two uncontrolled adds that straddle
+    #    a wall-clock second boundary score ~1e-7 apart and
+    #    the younger proposal legitimately ranks first. The
+    #    old oracle asserted insertion order against
+    #    uncontrolled stamps (the campaign leg-1 35/36 red).
+    #    Pin the second proposal's created stamp to the
+    #    first's (in-memory only) so this check tests the
+    #    adopted semantics deterministically: exactly equal
+    #    scores fall to the id tie-break.
+    from datetime import datetime, timedelta
+    _stamp = p.nursery.proposals[pid1].created
+    p.nursery.proposals[pid2].created = _stamp
     r = _run(p, "46[Rank]")
     _rec("symbiosis: Rank (46) ranks Nurture's (37) two "
-         "pending proposals in insertion order at "
-         "aff=0.000 [new]",
+         "pending proposals under the adopted lens "
+         "semantics — created stamps pinned equal, the "
+         "exactly equal scores tie-break by id (which is "
+         "insertion order for these ids) at aff=0.000 [new]",
          _msgs(r) == ["Ranked 2 proposals:",
                       f"  1. aff=0.000 [new] {pid1} — First Idea",
                       f"  2. aff=0.000 [new] {pid2} — Second Idea"],
          str(_msgs(r)))
+
+    # -- symbiosis boundary control: with the second
+    #    proposal's created stamp exactly one second
+    #    younger, its strictly larger FRESH score MUST
+    #    rank it first — the freshness ordering is the
+    #    adopted semantics, not noise. This is the exact
+    #    configuration the uncontrolled oracle mistook
+    #    for a defect.
+    _dt = datetime.strptime(_stamp, "%Y-%m-%dT%H:%M:%SZ")
+    p.nursery.proposals[pid2].created = (
+        _dt + timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    r = _run(p, "46[Rank]")
+    _rec("symbiosis: Rank (46) boundary control — the "
+         "second proposal one second younger ranks FIRST "
+         "on its strictly larger FRESH score (adopted "
+         "freshness semantics)",
+         _msgs(r) == ["Ranked 2 proposals:",
+                      f"  1. aff=0.000 [new] {pid2} — Second Idea",
+                      f"  2. aff=0.000 [new] {pid1} — First Idea"],
+         str(_msgs(r)))
+    p.nursery.proposals[pid2].created = _stamp
 
     # -- 44 Bridge: honest refusal, bare and labeled
     before = list(_units(p))
