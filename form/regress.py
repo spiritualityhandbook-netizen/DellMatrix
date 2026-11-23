@@ -439,6 +439,9 @@ LIST = [
     # change that lands form/muse_space_snapshot.py and
     # form/muse_space_views.py (build record 2026-11-20 section 5).
     "form.muse_space_test:smoke",
+    # DAF-09 D1 (Director ruling 7085151190 item 3): history header
+    # must report the retained total, not the display-slice length.
+    "form.daf09_history_header_test:smoke",
     "form.r5d_s7_admission_test:smoke",
 ]
 
