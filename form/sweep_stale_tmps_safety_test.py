@@ -20,20 +20,26 @@ helper:
   S3  a temp whose pid number is held by a live unrelated process
       (the PID-reuse shape) is KEPT with reason LIVE_PID.
   S4  a genuine helper-minted orphan (real crash_before_replace
-      worker) and a valid-shape dead-pid temp ARE swept; canonical
+      worker) IS swept; a hand-planted valid-shape dead-pid temp is
+      KEPT byte-identical with typed reason NOT_PROVEN_OWNED —
+      filename shape is not provenance (Director CORRECTION_REQUIRED
+      7088554768; CONTRACT SUPERSESSION 7088845962). Canonical
       neighbours stay byte-identical.
   S5  canonical neighbouring files are byte-identical after every
       sweep in this suite (asserted per section via snapshots).
-  S6  the age rail: a fresh dead-pid temp is KEPT (TOO_YOUNG) under
-      min_age_seconds=300 and swept once aged past the rail.
-  S7  identity race: a candidate replaced between scan and unlink
-      (test hook) is KEPT (CHANGED_SINCE_SCAN); replacement bytes
-      intact.
-  S8  partial failure is reported: a forced unlink failure appears in
-      the report as REMOVE_FAILED with the error class, the failed
-      file remains, and the other candidate is still removed.
+  S6  the age rail, on a genuine helper-minted orphan: a fresh one
+      is KEPT (TOO_YOUNG) under min_age_seconds=300 and swept once
+      aged past the rail.
+  S7  identity race: a genuine orphan replaced between scan and
+      unlink (test hook) is KEPT (CHANGED_SINCE_SCAN); replacement
+      bytes intact.
+  S8  partial failure is reported: a forced unlink failure on one
+      genuine orphan appears in the report as REMOVE_FAILED with
+      the error class, the failed file remains, and the other
+      genuine orphan is still removed.
   S9  receipt truth: report entries cover every scanned candidate
-      exactly once and the removed count matches the entries.
+      exactly once and the removed count matches the entries (the
+      one removed entry is a genuine helper-minted orphan).
   S10 missing directory keeps the proven legacy contract:
       exactly {"scanned": 0, "removed": 0}, no raise.
   S11 a temp owned by a different uid is KEPT (NOT_OWNER) — exercised
@@ -103,6 +109,36 @@ def _snapshot(d):
 
 def _report_reasons(report):
     return {e["name"]: e.get("reason") for e in report}
+
+
+def _crash_orphan(d, target_name):
+    """Mint ONE genuine helper orphan in d: a subprocess runs the real
+    atomic_write_bytes with crash_before_replace against a target
+    named target_name inside d and dies (exit 42) after temp fsync,
+    leaving exactly one helper-minted temp. Returns (proc, [names]).
+    The orphan carries durable writer-minted provenance; a
+    hand-planted file never does."""
+    target = os.path.join(d, target_name)
+    if not os.path.exists(target):
+        _plant(d, target_name, b"PRED")
+    fd, wpath = tempfile.mkstemp(suffix=".py")
+    os.close(fd)
+    with open(wpath, "w", encoding="utf-8") as f:
+        f.write(
+            "import sys\n"
+            "sys.path.insert(0, sys.argv[1])\n"
+            "from form.dell_matrix.atomic_write import"
+            " atomic_write_bytes\n"
+            "atomic_write_bytes(sys.argv[2], b'NEWX',"
+            " _fail_at=sys.argv[3])\n"
+        )
+    proc = subprocess.run(
+        [sys.executable, wpath, REPO, target, "crash_before_replace"],
+        capture_output=True, text=True, timeout=120)
+    os.unlink(wpath)
+    orphans = [n for n in os.listdir(d)
+               if ".dmtmp." in n and n.startswith(target_name + ".")]
+    return proc, orphans
 
 
 # ---------------------------------------------------------------- S1
@@ -195,22 +231,7 @@ def section_s3(d):
 def section_s4(d):
     # genuine helper-minted orphan via the real crash fixture shape
     canon = _plant(d, "canon.bin", b"PRED")
-    fd, wpath = tempfile.mkstemp(suffix=".py")
-    os.close(fd)
-    with open(wpath, "w", encoding="utf-8") as f:
-        f.write(
-            "import sys\n"
-            "sys.path.insert(0, sys.argv[1])\n"
-            "from form.dell_matrix.atomic_write import"
-            " atomic_write_bytes\n"
-            "atomic_write_bytes(sys.argv[2], b'NEWX',"
-            " _fail_at=sys.argv[3])\n"
-        )
-    proc = subprocess.run(
-        [sys.executable, wpath, REPO, canon, "crash_before_replace"],
-        capture_output=True, text=True, timeout=120)
-    os.unlink(wpath)
-    orphans = [n for n in os.listdir(d) if ".dmtmp." in n]
+    proc, orphans = _crash_orphan(d, "canon.bin")
     check("S4.crash_worker_exit_42", proc.returncode == 42,
           f"rc={proc.returncode}")
     check("S4.exactly_one_genuine_orphan", len(orphans) == 1,
@@ -226,24 +247,41 @@ def section_s4(d):
     with open(canon, "rb") as f:
         check("S5.s4_canonical_byte_identical", f.read() == b"PRED")
 
-    # hand-planted valid-shape dead-pid temp, default invocation shape
+    # FAILING-FIRST (7088554768): a hand-planted foreign file whose
+    # name matches the exact full mint pattern (dead pid, random
+    # 8 hex) is NOT helper-owned: filename shape is not provenance.
+    # The sweep must leave its bytes intact (7088845962).
     dead = _dead_pid()
-    planted = _plant(d, f"x.json.dmtmp.{dead}.cafebabe")
-    res = sweep_stale_tmps(d)
-    check("S4.valid_shape_dead_pid_swept",
-          res["removed"] == 1 and not os.path.exists(planted), str(res))
+    foreign_name = f"x.json.dmtmp.{dead}.cafebabe"
+    planted = _plant(d, foreign_name, b"foreign-bytes")
+    report = []
+    res = sweep_stale_tmps(d, report=report)
+    check("S4.foreign_exact_shape_kept",
+          res["removed"] == 0 and os.path.exists(planted), str(res))
+    check("S4.foreign_reason_not_proven_owned",
+          _report_reasons(report).get(foreign_name) ==
+          "NOT_PROVEN_OWNED", str(report))
+    intact = os.path.exists(planted)
+    if intact:
+        with open(planted, "rb") as f:
+            intact = f.read() == b"foreign-bytes"
+    check("S4.foreign_bytes_intact", intact)
 
 
 # ---------------------------------------------------------------- S6
 def section_s6(d):
     _plant(d, "canon.json", b"{}")
-    dead = _dead_pid()
-    name = f"x.json.dmtmp.{dead}.deadbeef"
-    pth = _plant(d, name)
+    # the age rail is exercised on a GENUINE helper-minted orphan:
+    # a hand-planted file is kept as NOT_PROVEN_OWNED before age is
+    # ever consulted (7088845962).
+    proc, orphans = _crash_orphan(d, "canon.json")
+    name = orphans[0] if orphans else "<none>"
+    pth = os.path.join(d, name)
     report = []
     res = sweep_stale_tmps(d, min_age_seconds=300, report=report)
     check("S6.fresh_temp_too_young_kept",
-          os.path.exists(pth) and res["removed"] == 0, str(res))
+          len(orphans) == 1 and os.path.exists(pth) and
+          res["removed"] == 0, str(res))
     check("S6.too_young_reason_typed",
           _report_reasons(report).get(name) == "TOO_YOUNG", str(report))
     old = time.time() - 3600
@@ -256,9 +294,13 @@ def section_s6(d):
 # ---------------------------------------------------------------- S7
 def section_s7(d):
     _plant(d, "canon.json", b"{}")
-    dead = _dead_pid()
-    name = f"x.json.dmtmp.{dead}.deadbeef"
-    pth = _plant(d, name, b"ORIGINAL")
+    # hostile race/swap (7088554768): the candidate is a GENUINE
+    # helper-minted orphan; the hook replaces it with foreign bytes
+    # between classification and unlink. Identity revalidation must
+    # keep the replacement.
+    proc, orphans = _crash_orphan(d, "canon.json")
+    name = orphans[0] if orphans else "<none>"
+    pth = os.path.join(d, name)
 
     def _swap(path):
         staging = path + ".staging"
@@ -273,7 +315,8 @@ def section_s7(d):
     finally:
         AW._SWEEP_HOOK = None
     check("S7.replaced_candidate_kept",
-          os.path.exists(pth) and res["removed"] == 0, str(res))
+          len(orphans) == 1 and os.path.exists(pth) and
+          res["removed"] == 0, str(res))
     check("S7.changed_reason_typed",
           _report_reasons(report).get(name) == "CHANGED_SINCE_SCAN",
           str(report))
@@ -284,11 +327,14 @@ def section_s7(d):
 # ---------------------------------------------------------------- S8
 def section_s8(d):
     _plant(d, "canon.json", b"{}")
-    dead = _dead_pid()
-    bad_name = f"a.json.dmtmp.{dead}.deadbeef"
-    good_name = f"b.json.dmtmp.{dead}.cafebabe"
-    bad = _plant(d, bad_name)
-    good = _plant(d, good_name)
+    # both candidates are GENUINE helper-minted orphans (only a
+    # proven-owned candidate ever reaches the unlink).
+    _, bad_orphans = _crash_orphan(d, "a.json")
+    _, good_orphans = _crash_orphan(d, "b.json")
+    bad_name = bad_orphans[0] if bad_orphans else "<none-a>"
+    good_name = good_orphans[0] if good_orphans else "<none-b>"
+    bad = os.path.join(d, bad_name)
+    good = os.path.join(d, good_name)
     real_unlink = os.unlink
 
     def flaky_unlink(path, *a, **k):
@@ -303,6 +349,7 @@ def section_s8(d):
     finally:
         os.unlink = real_unlink
     check("S8.partial_failure_counts",
+          len(bad_orphans) == 1 and len(good_orphans) == 1 and
           res["removed"] == 1 and os.path.exists(bad) and
           not os.path.exists(good), str(res))
     entry = {e["name"]: e for e in report}.get(bad_name, {})
@@ -316,13 +363,16 @@ def section_s8(d):
 def section_s9(d):
     _plant(d, "canon.json", b"{}")
     dead = _dead_pid()
+    # the removed entry is a GENUINE helper-minted orphan; the
+    # hand-planted entries are all kept under the provenance law.
+    _, orphans = _crash_orphan(d, "a.json")
     names = [
-        f"a.json.dmtmp.{dead}.deadbeef",                 # removed
+        orphans[0] if orphans else "<none>",             # removed
         f"b.json.dmtmp.{os.getpid()}.deadbeef",          # live (self)
         f"c.json.dmtmp.{dead}.DEADBEEF",                 # malformed
         f"ddir.json.dmtmp.{dead}.deadbeef",              # directory
     ]
-    for n in names[:3]:
+    for n in names[1:3]:
         _plant(d, n)
     os.mkdir(os.path.join(d, names[3]))
     report = []
