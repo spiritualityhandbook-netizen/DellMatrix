@@ -387,6 +387,30 @@ def run_companion():
         rec("COM bool pos element refuses load (typed) — JSON type confusion (float(True)==1.0)",
             _refuses(owner, f))
 
+        def _hugepos(data):
+            data["companion"]["pos"] = [10 ** 1000, 3.0]
+        f = _mutated(base, tmp / "com_hugepos.json", _hugepos)
+        rec("COM-F oversized integer coordinate (10**1000) refuses load (typed), no OverflowError escape",
+            _refuses(owner, f))
+
+        def _extracoordpos(data):
+            data["companion"]["pos"] = [1, 2, 3]
+        f = _mutated(base, tmp / "com_extracoord.json", _extracoordpos)
+        rec("COM-G extra-coordinate pos ([1,2,3]) refuses load (typed), no silent resave truncation",
+            _refuses(owner, f))
+
+        def _extracoordtrail(data):
+            data["companion"]["trail"] = [[1, 2, 3]]
+        f = _mutated(base, tmp / "com_extracoordtrail.json", _extracoordtrail)
+        rec("COM-H extra-coordinate trail point refuses load (typed), no silent resave truncation",
+            _refuses(owner, f))
+
+        def _overtrail(data):
+            data["companion"]["trail"] = [[float(i), float(i)] for i in range(17)]
+        f = _mutated(base, tmp / "com_overtrail.json", _overtrail)
+        rec("COM-I trail longer than the writer cap (17 > 16) refuses load (typed), no silent next-save cut",
+            _refuses(owner, f))
+
         def _intfacing(data):
             data["companion"]["facing"] = 42
         f = _mutated(base, tmp / "com_intfacing.json", _intfacing)
@@ -513,6 +537,13 @@ def run_self_knowledge():
             _refuses(owner, f))
         rec("SK-C refused load leaves the source file bytes unchanged",
             f.read_bytes() == before)
+
+        def _hugemastery(data):
+            data["self_knowledge"]["mastery"] = {"floor": 10 ** 1000,
+                                                 "grow": 0.5}
+        f = _mutated(base, tmp / "sk_hugemastery.json", _hugemastery)
+        rec("SK oversized integer mastery (10**1000) refuses load (typed), no OverflowError escape",
+            _refuses(owner, f))
 
         def _badprobes(data):
             data["self_knowledge"]["probes"] = "not-a-number"
