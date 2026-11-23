@@ -5,7 +5,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
+import json
 import sys
+import threading
 
 try:
     from form.mandell.floor import FLOOR, assert_floor_intact, floor_status
@@ -99,6 +101,30 @@ except ImportError:
     from form.avatar import Avatar, FaceController, Expression, build_default_registry
 
 
+# ─── R5-D S7 history admission (Director ruling 7079092723) ──────
+# Adopted R5-C budget (PR #498): the LOGICAL in-memory history of one
+# Program admits at most HISTORY_ENTRY_CAP entries AND
+# HISTORY_BYTE_CAP canonical bytes, canonical bytes =
+# len(json.dumps(history, indent=2, ensure_ascii=True).encode()).
+# Enforcement scope is EXACTLY the seven S7 methods (radial_drift,
+# internet_on/off, sandbox_on/off, enhance_on/off) at their entries,
+# under the one per-Program reentrant admission RLock that
+# Program.note also funnels through. Admission is PER-PROCESS and
+# per-instance; no cross-process coordination is claimed.
+# DEFERRED and visibly NOT fixed by this build (separate save/load
+# phase): T1 note() 120-char entry cut, T2 note() history_max list
+# cut, T3 serializer [-24:] slice, T4 restore [:120]/[-24:] cuts.
+HISTORY_ENTRY_CAP = 10_000
+HISTORY_BYTE_CAP = 2_097_152
+
+
+class HistoryAdmissionRefusal(Exception):
+    """Typed R5-D S7 refusal: the prospective SANITIZED logical
+    history would exceed the adopted budget. Raised BEFORE any
+    mutation — no effect, no append, no file change. The message
+    carries counts/bytes only, never history content."""
+
+
 @dataclass
 class Program:
     owner: str = "Operator"
@@ -128,6 +154,24 @@ class Program:
     keys: KeyLedger = field(default_factory=KeyLedger)
     history: List[str] = field(default_factory=list)
     history_max: int = 24
+    # R5-D S7: the ONE per-Program reentrant history-admission lock.
+    # Held across S7 preflight + effects + note append, and taken by
+    # Program.note itself (the funnel every history writer reaches),
+    # so check-and-append is atomic against every writer on this
+    # instance. Lock hierarchy: owner_state_lock (cross-process file
+    # transaction, form.owner_state_lock) is the OUTER lock — the
+    # save path takes it first and the serializer's history snapshot
+    # takes this lock briefly inside it. Code holding THIS lock must
+    # never acquire owner_state_lock: no S7 effect and no note path
+    # saves, so the order owner -> admission is the only nesting and
+    # no circular wait exists (incl. save/restore and note recursion;
+    # the RLock makes note_seed -> note re-entry safe).
+    # Copy/pickle: excluded from instance state by __getstate__
+    # below and recreated fresh per materialized instance — an RLock
+    # is uncopyable and a copy must never share admission state.
+    _history_admission_lock: Any = field(
+        default_factory=threading.RLock, init=False,
+        repr=False, compare=False)
     # DCC-XX: durable execution-outcome evidence (Outcome Record V1).
     # outcome_id -> outcome record; outcome_seq is the per-owner durable
     # sequence counter used for stable outcome identity. Persisted via
@@ -342,11 +386,103 @@ class Program:
             )
         self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
 
+    # ─── R5-D S7 admission machinery (Director 7079092723) ──────
+    def __getstate__(self):
+        """Copy/pickle state: the FULL instance __dict__ minus the
+        admission RLock. A threading.RLock can be neither deepcopied
+        nor pickled, and it must never be shared with a copy anyway:
+        form.dell_matrix.simulate_board isolates a simulation by
+        deepcopying the live Program, and the copy's admission state
+        must be its own. Excluding exactly this one key makes
+        deepcopy/pickle safe without dropping any other field; the
+        materialized instance recreates a FRESH lock lazily through
+        _admission_lock()'s __dict__ fallback. (Save serialization
+        never carried the lock — form.persist builds its payload
+        field-by-field — so persisted bytes are unchanged.)"""
+        state = dict(self.__dict__)
+        state.pop("_history_admission_lock", None)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+    def _admission_lock(self):
+        """The per-Program reentrant admission RLock. The dataclass
+        field covers normal construction; the __dict__ fallback
+        covers instances materialized without __init__ (restore /
+        copy paths), created atomically via setdefault."""
+        lock = self.__dict__.get("_history_admission_lock")
+        if lock is None:
+            lock = self.__dict__.setdefault(
+                "_history_admission_lock", threading.RLock())
+        return lock
+
+    def history_snapshot(self) -> List[str]:
+        """Atomic snapshot of the logical history under the
+        admission lock — the save serializer reads history ONLY
+        through here, so a save can never observe a half-appended
+        state. (The serializer's [-24:] slice of this snapshot is
+        the DEFERRED T3 cut, unchanged.)"""
+        with self._admission_lock():
+            return list(self.history)
+
+    def _s7_entry(self, dell: int, term: str, label: str = "") -> str:
+        """The exact entry an S7 note appends: note_seed's format
+        over the SANITIZED label — the adopted sanitize screening
+        (form.mandell.redaction.sanitize_text) runs BEFORE admission
+        measurement and before storage — shaped by note()'s own
+        strip/[:120] rule, so the measured entry is byte-identical
+        to the stored entry."""
+        if label:
+            from form.mandell.redaction import sanitize_text
+
+            label = sanitize_text(label)
+        body = f"{dell:02d}[{term}]"
+        if label:
+            body = f"{body} :: {label[:40]}"
+        return body.strip()[:120]
+
+    def _s7_admit(self, dell: int, term: str, label: str = "") -> str:
+        """Preflight ONE S7 note against the adopted R5-C budget.
+        MUST be called with the admission lock held, BEFORE the
+        method's first effect. Computes count and UTF-8 bytes on
+        the exact prospective SANITIZED logical history via
+        json.dumps(..., indent=2, ensure_ascii=True). Returns the
+        exact prospective entry on admission (exact fits pass);
+        raises HistoryAdmissionRefusal — counts/bytes only, never
+        history content — before any mutation when the prospective
+        history would exceed the entry or byte budget."""
+        entry = self._s7_entry(dell, term, label)
+        prospective = list(self.history) + [entry]
+        count = len(prospective)
+        if count > HISTORY_ENTRY_CAP:
+            raise HistoryAdmissionRefusal(
+                f"history admission refused: {count} entries would "
+                f"exceed the {HISTORY_ENTRY_CAP}-entry budget "
+                "(R5-D S7; no state mutated)")
+        nbytes = len(json.dumps(prospective, indent=2,
+                                ensure_ascii=True).encode("utf-8"))
+        if nbytes > HISTORY_BYTE_CAP:
+            raise HistoryAdmissionRefusal(
+                f"history admission refused: {nbytes} canonical "
+                f"bytes would exceed the {HISTORY_BYTE_CAP}-byte "
+                "budget (R5-D S7; no state mutated)")
+        return entry
+
     def note(self, action: str) -> None:
-        text = (action or "").strip()[:120]
-        self.history.append(text)
-        if len(self.history) > self.history_max:
-            self.history = self.history[-self.history_max :]
+        # R5-D S7 funnel: EVERY history append takes the per-Program
+        # admission RLock, so a non-S7 writer can never interleave
+        # between an S7 preflight and its append. Admission itself
+        # is enforced ONLY at the seven S7 method entries
+        # (_s7_admit); note() never refuses.
+        # DEFERRED (separate save/load phase; Director 7079092723):
+        # the T1 [:120] entry cut and the T2 history_max list cut
+        # below remain in force — unfixed, and visible here.
+        with self._admission_lock():
+            text = (action or "").strip()[:120]
+            self.history.append(text)
+            if len(self.history) > self.history_max:
+                self.history = self.history[-self.history_max :]
 
     def note_seed(self, dell: int, term: str, label: str = "") -> None:
         # Step 3b (DAF-02 chain follow-up): while a chain containing
@@ -1112,9 +1248,13 @@ class Program:
 
     def radial_drift(self, outer_shell: int = 6) -> Dict[str, Any]:
         """Soft-forget far-shell payloads; keys remain (Existence rule)."""
-        out = apply_radial_soft_forget(self.lattice, self.keys, outer_shell=outer_shell)
-        self.note_seed(16, "Decay", f"drift_{outer_shell}")
-        return out
+        # R5-D S7: lock + preflight BEFORE the first effect
+        # (apply_radial_soft_forget precedes the note here).
+        with self._admission_lock():
+            entry = self._s7_admit(16, "Decay", f"drift_{outer_shell}")
+            out = apply_radial_soft_forget(self.lattice, self.keys, outer_shell=outer_shell)
+            self.note(entry)
+            return out
 
     def place(self, id: str, label: str, **kwargs):
         # Phase 4: coordinate selection is decided by the canonical spatial
@@ -1214,19 +1354,30 @@ class Program:
     # ─── Internet (opt-in) + Code Evolution root ─────────────────────
 
     def internet_on(self) -> Dict[str, Any]:
-        if not self.internet:
-            from form.dell_matrix.internet_gate import InternetGate
-            self.internet = InternetGate()
-        out = self.internet.turn_on()
-        self.note_seed(25, "Pulse", "internet_on")
-        return out
+        # R5-D S7: lock + preflight BEFORE the first effect
+        # (gate creation + turn_on precede the note here).
+        with self._admission_lock():
+            entry = self._s7_admit(25, "Pulse", "internet_on")
+            if not self.internet:
+                from form.dell_matrix.internet_gate import InternetGate
+                self.internet = InternetGate()
+            out = self.internet.turn_on()
+            self.note(entry)
+            return out
 
     def internet_off(self) -> Dict[str, Any]:
-        if not self.internet:
-            return {"ok": True, "on": False}
-        out = self.internet.turn_off()
-        self.note_seed(32, "Pause", "internet_off")
-        return out
+        # R5-D S7: the lock is taken first so the gate test itself is
+        # inside the section; the legitimate no-gate no-note no-op
+        # return is preserved BEFORE history preflight — a refusal
+        # can never create a gate or mutate other state. With a gate,
+        # preflight precedes turn_off (the first effect).
+        with self._admission_lock():
+            if not self.internet:
+                return {"ok": True, "on": False}
+            entry = self._s7_admit(32, "Pause", "internet_off")
+            out = self.internet.turn_off()
+            self.note(entry)
+            return out
 
     def internet_status(self) -> Dict[str, Any]:
         if not self.internet:
@@ -2053,23 +2204,36 @@ class Program:
         return {"ok": True, "id": prop.id, "label": prop.label}
 
     def sandbox_on(self, all_units: bool = True) -> Dict[str, Any]:
-        self.note_seed(23, "Lock", "sandbox_on")
-        if all_units:
-            return self.sandbox.apply_on(self.cube.session.plane)
-        self.sandbox.turn_on()
-        return {"ok": True, "on": True}
+        # R5-D S7: lock + preflight first; the note remains the
+        # method's first effect, apply_on/apply_off after it.
+        with self._admission_lock():
+            entry = self._s7_admit(23, "Lock", "sandbox_on")
+            self.note(entry)
+            if all_units:
+                return self.sandbox.apply_on(self.cube.session.plane)
+            self.sandbox.turn_on()
+            return {"ok": True, "on": True}
 
     def sandbox_off(self) -> Dict[str, Any]:
-        self.note_seed(24, "Unlock", "sandbox_off")
-        return self.sandbox.apply_off(self.cube.session.plane)
+        # R5-D S7: lock + preflight first; note first effect.
+        with self._admission_lock():
+            entry = self._s7_admit(24, "Unlock", "sandbox_off")
+            self.note(entry)
+            return self.sandbox.apply_off(self.cube.session.plane)
 
     def enhance_on(self) -> None:
-        self.enhance.turn_on()
-        self.note_seed(25, "Pulse", "enhance_on")
+        # R5-D S7: lock + preflight BEFORE turn_on (first effect).
+        with self._admission_lock():
+            entry = self._s7_admit(25, "Pulse", "enhance_on")
+            self.enhance.turn_on()
+            self.note(entry)
 
     def enhance_off(self) -> None:
-        self.enhance.turn_off()
-        self.note_seed(32, "Pause", "enhance_off")
+        # R5-D S7: lock + preflight BEFORE turn_off (first effect).
+        with self._admission_lock():
+            entry = self._s7_admit(32, "Pause", "enhance_off")
+            self.enhance.turn_off()
+            self.note(entry)
 
     def pulse(self) -> Dict[str, Any]:
         out = self.enhance.pulse(self.cube.session.plane, program=self)

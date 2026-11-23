@@ -438,6 +438,7 @@ LIST = [
     # manual-only safety repair — exact mint-shape ownership, lstat
     # no-symlink, identity revalidation, typed refusals/reasons.
     "form.sweep_stale_tmps_safety_test:smoke",
+    "form.r5d_s7_admission_test:smoke",
 ]
 
 TIMEOUT_S = 900
