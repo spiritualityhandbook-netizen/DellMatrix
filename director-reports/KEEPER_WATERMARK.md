@@ -1,26 +1,22 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-22 ~20:18 CST  
-**UTC approx**: 2026-11-23T02:18:00Z  
+**Last cycle**: 2026-11-23 ~16:20 CST  
+**UTC approx**: 2026-11-23T22:20:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- Ripe gates: #520 at exact head e86e06ba45bb0926ede70eee356656d4c0ed0125. Uni §45 package (A7 receipt-collision) present. Director 7089628036 retains Q-FI011.4 CODE/MERGE HOLD (no CODE-CONFIRM). Exact missing named on PR: terminal CI ALL PASS at head (no runs yet) + exact-head serial ×3 GREEN (dcedd0ad 933/933 does not carry) + composition/§32. No stamp. Prior at dcedd0ad voided by head move.
-- #519 at 04b135868a182e97fd21f207a1446dbf01941abb: Uni package present. Exact missing: terminal CI ALL PASS (checks empty). Prior stamp at f276369c voided. No stamp.
-- #516 at 72bff63ad697d7e94a02f95b0ffdf3f0886de5cf: Uni package present (7089085017). Exact missing: terminal CI ALL PASS + serial ×3 at head. Prior stamp at a090646d voided. No stamp.
-- #518 at 592dbb0db381188a19af407a2fab2f089996440f: Uni package present. Exact missing: terminal CI ALL PASS. Prior stamp at cdaf9e5d voided. No stamp.
-- Prior stamps remain valid (heads unchanged): #517 at 49bf004c, #515 at 769434b9.
-- #514 at 24443618678101dc8fc110761d803b13123c45ec: no change; prior named missing (serial x3 GREEN at head + stateful challenge / Director advance) still open. #294 fenced Q1 GATE HOLD. Drafts skipped.
-- Merged-main proofs: none new since last pass.
+- #516 SCOPED CONFIRM at head 114a423807061fda6197a847b6577928b73a81ad (root check/open TOCTOU identity pin). Terminal CI ALL PASS; Uni §45 package present. Spot-check: O_NOFOLLOW + fstat pin + typed refusal. Scope: bounded root-open repair only. Mergeable dirty noted.
+- #515 MERGED-MAIN CODE CREDIT CONFIRMED at merge commit f4364616198f5f9da407b1c5e2f3331de7fa3bae. Uni postmerge package verified; prior head stamp + serial ×3 + Director authorization carried. Scope: DAF-09 D1 history-header retained total only.
+- Reaffirmed: other open heads unchanged (#522, #518, #521, #519, #514, #520). Prior stamps stand where heads match. Drafts/#294 skipped.
 - Records reviews: none awaiting new disposition.
-- Trailing obligations: #496 postmerge credit stamp still pending (Director reliability HOLD; package reviewed as submitted).
+- Trailing obligations: none remaining.
 
 ## Trailing ledger
-- discharged this run: 0
-- remaining: 1 (#496 postmerge credit stamp)
-- gaps: #496 Director reliability HOLD not advanced; independent review of combined record does not support credit
+- discharged this run: 2 (#516 CONFIRM, #515 merged-main credit)
+- remaining: 0
+- gaps: #516 serial ×3 + composition/§32 at current head (not blocking stamp)
 
 ## Silence flag
-Proof of pass: this watermark advance. Named exact missing on #520/#519/#516/#518 at current heads. No new stamps.
+Proof of pass: this watermark advance. #516 stamped. #515 credit confirmed. No other ripe unstamped open heads. No trailing owed.
 
 — KEEPER
