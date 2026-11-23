@@ -327,7 +327,15 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         if _ctx is None:
             return
         _grant_receipt = {
-            "receipt_id": f"gu_{_ctx['seq']}_{pid}",
+            # Director delta 7088557617: the identity is
+            # session-bound. grant_seq restarts in a new session
+            # and proposal IDs are deterministic, so seq+pid alone
+            # can collide across sessions for a recreated proposal;
+            # the session identity (already carried on the receipt)
+            # makes each issuance's receipt uniquely identified,
+            # and Nursery.stage_grant_use_receipt refuses any
+            # residual collision before commit.
+            "receipt_id": f"gu_{_ctx['session_id']}_{_ctx['seq']}_{pid}",
             "grant_seq": _ctx["seq"],
             "pid": pid,
             "subject": _ctx["subject"],

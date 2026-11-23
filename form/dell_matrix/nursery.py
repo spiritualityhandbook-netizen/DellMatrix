@@ -34,6 +34,15 @@ class NurseryConflictError(RuntimeError):
     """The owner's nursery file changed on disk since this instance loaded/saved it (lost update refused)."""
 
 
+class NurseryGrantReceiptCollisionError(RuntimeError):
+    """A grant-use receipt identity is already held by a DIFFERENT
+    receipt (FI-011 A7, Director delta 7088557617). Durable grant-use
+    receipts are append-only audit records: staging a colliding
+    different receipt is refused typed before any commit, so an old
+    receipt can never be silently overwritten. Re-staging the
+    identical record is idempotent, not a collision."""
+
+
 class NurseryLoadError(ValueError):
     """The owner's canonical nursery file exists but is not a complete valid
     generation (truncated/malformed JSON or invalid proposal records).
@@ -914,11 +923,25 @@ class Nursery:
         receipt rides the checkpoint transaction that persists the
         confirmation, and the writer discards it again on any
         compensation path that reverts the confirmation. Returns
-        the receipt_id.
+        the receipt_id. Raises NurseryGrantReceiptCollisionError
+        if the identity is already held by a different receipt.
         """
         receipt_id = receipt.get("receipt_id")
         if not isinstance(receipt_id, str) or not receipt_id:
             raise ValueError("grant-use receipt requires a receipt_id")
+        # FI-011 A7 (Director delta 7088557617): receipts are
+        # append-only audit records. A DIFFERENT receipt arriving
+        # under an identity already held is refused typed HERE -
+        # before any commit - so the stored record is never
+        # overwritten. The canonical writer treats the refusal as a
+        # failed commit: the confirmation is refused and the staged
+        # state is discarded, leaving the old receipt intact.
+        existing = self.grant_use_receipts.get(receipt_id)
+        if existing is not None and existing != dict(receipt):
+            raise NurseryGrantReceiptCollisionError(
+                f"grant-use receipt identity {receipt_id!r} is "
+                "already held by a different receipt; refusing to "
+                "overwrite a durable audit record")
         self.grant_use_receipts[receipt_id] = dict(receipt)
         return receipt_id
 
