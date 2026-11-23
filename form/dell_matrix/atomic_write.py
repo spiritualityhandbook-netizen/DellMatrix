@@ -44,7 +44,16 @@ Temp-file contract:
       masquerade as canonical state.
     - Best-effort unlink on ordinary failure. A hard crash may leave a stale
       temp; loaders ignore it. ``sweep_stale_tmps()`` removes helper-owned
-      temps whose writer pid is no longer alive.
+      temps whose writer pid is no longer alive AND whose writer-minted
+      provenance record (see below) still binds the file's identity.
+    - Provenance: at temp creation the writer appends a durable record
+      (name, dev, inode) to a per-directory ledger,
+      ``.dmtmp-ledger.jsonl``, and fsyncs it BEFORE any payload byte is
+      written, so a crash at any later point leaves a provably
+      helper-owned orphan. A successful replace (or an ordinary-failure
+      cleanup unlink) appends a consumed tombstone. Filename shape is
+      NOT provenance: a file with no binding ledger record is never
+      swept (Director rulings 7088554768 and 7088845962).
 
 persistence_protocol_version = 2 marks the WRITE MECHANICS. The JSON schema
 is unchanged from V1, so valid V1 files load without migration and the next
@@ -215,6 +224,20 @@ def _atomic_replace(path: str, blob: bytes, fail: Optional[str]) -> bool:
         fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
     except OSError as exc:
         raise AtomicWriteError(f"cannot create temp file for {path}: {exc}") from exc
+    # Durable provenance (Q-35.1 provenance law, 7088845962): record
+    # the mint BEFORE any payload byte is written, so a crash at any
+    # later point in this call leaves a sweepable orphan. If the
+    # record cannot be written the save still proceeds; the temp
+    # simply carries no provenance and a later sweep will KEEP it
+    # (the safe direction — see _ledger_append).
+    tmp_name = os.path.basename(tmp)
+    tmp_ino: Optional[int] = None
+    try:
+        _st0 = os.fstat(fd)
+        tmp_ino = _st0.st_ino
+        _record_mint(directory, tmp_name, _st0.st_dev, _st0.st_ino)
+    except OSError:
+        tmp_ino = None
     try:
         with os.fdopen(fd, "wb") as f:
             if fail == "temp_write":
@@ -242,6 +265,8 @@ def _atomic_replace(path: str, blob: bytes, fail: Optional[str]) -> bool:
         if fail != "temp_write":
             try:
                 os.unlink(tmp)
+                if tmp_ino is not None:
+                    _record_consumed(directory, tmp_name, tmp_ino)
             except OSError:
                 pass
         # 72-29 (D3): a real write/fsync OSError must surface as the
@@ -263,6 +288,8 @@ def _atomic_replace(path: str, blob: bytes, fail: Optional[str]) -> bool:
     if fail == "replace":
         try:
             os.unlink(tmp)
+            if tmp_ino is not None:
+                _record_consumed(directory, tmp_name, tmp_ino)
         except OSError:
             pass
         raise AtomicWriteError("injected pre-replace failure (canonical untouched)")
@@ -273,9 +300,16 @@ def _atomic_replace(path: str, blob: bytes, fail: Optional[str]) -> bool:
     except OSError as exc:
         try:
             os.unlink(tmp)
+            if tmp_ino is not None:
+                _record_consumed(directory, tmp_name, tmp_ino)
         except OSError:
             pass
         raise AtomicWriteError(f"atomic replace failed; canonical untouched: {exc}") from exc
+    if tmp_ino is not None:
+        # The temp name is consumed: tombstone its mint record so a
+        # later file recycling BOTH the name and the inode still
+        # carries no provenance.
+        _record_consumed(directory, tmp_name, tmp_ino)
 
     if fail == "crash_after_replace":
         os._exit(42)  # noqa: SIO171 - literal process death after replace
@@ -321,6 +355,146 @@ def _identity(st: os.stat_result) -> tuple:
     return (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns)
 
 
+#: Durable provenance ledger, one per directory that receives helper
+#: temps. The name deliberately contains neither TMP_INFIX nor the
+#: "*.dmtmp.*" glob shape, so no temp census or sweep scan ever
+#: mistakes the ledger for a temp.
+PROVENANCE_LEDGER_NAME = ".dmtmp-ledger.jsonl"
+
+
+def _ledger_append(directory: str, record: Dict[str, Any], *,
+                   fsync: bool) -> None:
+    """Append one JSON record to the directory's provenance ledger.
+
+    Best-effort BY DESIGN: a ledger failure never fails a save. Its
+    only consequence is that the temp it described carries no (or
+    stale) provenance, and a later sweep resolves that ambiguity to
+    KEEP. The ledger path is opened with O_NOFOLLOW: a symlinked
+    ledger is not written through."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(os.path.join(directory, PROVENANCE_LEDGER_NAME),
+                     flags, 0o644)
+    except OSError:
+        return
+    try:
+        line = (json.dumps(record, separators=(",", ":")) + "\n"
+                ).encode("utf-8")
+        while line:
+            try:
+                n = os.write(fd, line)
+            except OSError:
+                return
+            line = line[n:]
+        if fsync:
+            try:
+                os.fsync(fd)
+            except OSError:
+                pass
+    finally:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+
+
+def _record_mint(directory: str, name: str, dev: int, ino: int) -> None:
+    """Record, durably (fsync), that THIS writer minted temp ``name``
+    with identity (dev, ino). Called at temp creation, before any
+    payload byte is written, so the record survives a writer crash
+    or SIGKILL at any later point (7088845962)."""
+    _ledger_append(directory,
+                   {"v": 1, "op": "mint", "name": name, "dev": dev,
+                    "ino": ino, "pid": os.getpid()},
+                   fsync=True)
+
+
+def _record_consumed(directory: str, name: str, ino: int) -> None:
+    """Tombstone a mint record: the temp name was consumed (replaced
+    onto its canonical target, or cleaned up after an ordinary
+    failure), so its provenance must not transfer to any later file
+    that recycles the name."""
+    _ledger_append(directory,
+                   {"v": 1, "op": "consumed", "name": name, "ino": ino},
+                   fsync=False)
+
+
+def _read_provenance(dir_fd: int) -> Dict[str, tuple]:
+    """{name: (dev, ino)} of temps the writer minted and has not
+    consumed, from the ledger in the directory pinned by ``dir_fd``.
+
+    Malformed lines are ignored: a torn final append (crash during
+    the ledger write itself) degrades to missing provenance, which
+    the sweep resolves to KEEP. A symlinked ledger is not read
+    through (O_NOFOLLOW); it degrades to no provenance."""
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(PROVENANCE_LEDGER_NAME, flags, dir_fd=dir_fd)
+    except OSError:
+        return {}
+    out: Dict[str, tuple] = {}
+    try:
+        with os.fdopen(fd, "rb") as f:
+            for raw in f:
+                try:
+                    rec = json.loads(raw.decode("utf-8"))
+                    name = rec["name"]
+                    ino = int(rec["ino"])
+                    op = rec["op"]
+                except (ValueError, KeyError, TypeError,
+                        UnicodeDecodeError):
+                    continue
+                if op == "mint":
+                    try:
+                        out[name] = (int(rec["dev"]), ino)
+                    except (ValueError, KeyError, TypeError):
+                        continue
+                elif op == "consumed":
+                    if out.get(name, (None, None))[1] == ino:
+                        out.pop(name, None)
+    except OSError:
+        return {}
+    return out
+
+
+def _prune_provenance(dir_fd: int, live: Dict[str, tuple]) -> None:
+    """Rewrite the ledger keeping only the mint records in ``live``
+    (records whose file still exists with the recorded identity).
+    Best-effort housekeeping run at the end of a sweep: it bounds
+    ledger growth and drops records for files that are gone. Failure
+    leaves the previous ledger, which stays sound — a stale record
+    cannot authorize a removal unless a file exists with BOTH the
+    recorded name and the recorded inode, and consumed temps are
+    tombstoned at replace time."""
+    try:
+        if not live:
+            try:
+                os.unlink(PROVENANCE_LEDGER_NAME, dir_fd=dir_fd)
+            except OSError:
+                pass
+            return
+        blob = "".join(
+            json.dumps({"v": 1, "op": "mint", "name": n, "dev": dv,
+                        "ino": io}, separators=(",", ":")) + "\n"
+            for n, (dv, io) in sorted(live.items())).encode("utf-8")
+        tmp_name = PROVENANCE_LEDGER_NAME + ".prune"
+        fd = os.open(tmp_name,
+                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644,
+                     dir_fd=dir_fd)
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(blob)
+                f.flush()
+                os.fsync(f.fileno())
+        except OSError:
+            return
+        os.replace(tmp_name, PROVENANCE_LEDGER_NAME,
+                   src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+    except OSError:
+        pass
+
+
 def sweep_stale_tmps(directory: str, *,
                      min_age_seconds: float = 0.0,
                      report: Optional[List[Dict[str, Any]]] = None
@@ -339,21 +513,43 @@ def sweep_stale_tmps(directory: str, *,
        itself contain the infix. A substring match proves nothing:
        foreign names that merely contain ``.dmtmp.`` are kept with
        reason MALFORMED_NAME.
-    2. ``os.lstat`` shows a regular file owned by this process's uid.
-       Symlinks are never followed and never unlinked
-       (NOT_A_REGULAR_FILE); another owner's file is kept (NOT_OWNER).
+    2. A directory-fd-relative stat (never following symlinks) shows
+       a regular file owned by this process's uid. Symlinks are never
+       followed and never unlinked (NOT_A_REGULAR_FILE); another
+       owner's file is kept (NOT_OWNER).
     3. The pid is PROVEN dead by two probes (at classification and
        again immediately before unlink). Alive or unknowable keeps
        the file (LIVE_PID / PID_UNPROBEABLE) — the PID-reuse-safe
        direction.
-    4. The file's age meets the caller's grace rail
+    4. PROVENANCE: the writer's durable ledger record for this exact
+       name binds the file's CURRENT (dev, ino). Filename shape and
+       uid are not proof of helper origin (7088554768): a same-uid
+       foreign file wearing an exact-shaped fabricated name has no
+       record and is kept with reason NOT_PROVEN_OWNED, bytes intact.
+       A record whose inode does not match the file (recycled name)
+       is likewise not provenance.
+    5. The file's age meets the caller's grace rail
        (``min_age_seconds``; default 0 preserves the proven
-       immediate-sweep contract of the 72-35 suites). Younger is kept
-       (TOO_YOUNG).
-    5. Identity revalidation: the root directory and the candidate are
-       re-``lstat``-ed immediately before unlink; any change of
-       (dev, ino, size, mtime_ns) since classification keeps the file
-       (CHANGED_SINCE_SCAN / ROOT_CHANGED).
+       immediate-sweep contract of the 72-35 suites — the age rail is
+       a grace period, never permission to delete an unproven file).
+       Younger is kept (TOO_YOUNG).
+    6. Identity revalidation: the candidate is re-stated through the
+       pinned directory fd immediately before unlink; any change of
+       (dev, ino, size, mtime_ns) since classification keeps the
+       file (CHANGED_SINCE_SCAN). The unlink itself is issued
+       relative to the pinned directory fd, so a swapped or renamed
+       sweep root cannot redirect it.
+
+    Removal guarantee, stated exactly: a candidate is unlinked only
+    when the writer's own ledger record binds its name to the
+    (dev, ino) the file still has at the final revalidation, its pid
+    is proven dead twice, and the age rail passes. The ledger is
+    durable evidence, not a cryptographic proof: a same-uid actor
+    who can rewrite the ledger could forge provenance, so the
+    guarantee is "no file is removed without writer-minted
+    provenance", not "provenance cannot be forged by the owning
+    uid". Temps minted before the provenance law existed carry no
+    record and are kept.
 
     Ambiguity always resolves to KEEP with a typed reason; nothing
     ambiguous is ever deleted. Unlink failures are never swallowed:
@@ -384,11 +580,23 @@ def sweep_stale_tmps(directory: str, *,
         raise SweepRefusalError(
             f"sweep refused: root is not a directory, nothing removed: "
             f"{directory!r}")
-    root_identity = (root_st.st_dev, root_st.st_ino)
+    # Pin the sweep root with a directory fd: every stat and the
+    # unlink itself are issued relative to it, so a swapped or
+    # renamed root cannot redirect a removal after classification.
     try:
-        names = os.listdir(directory)
+        dir_fd = os.open(directory,
+                         os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    except OSError as exc:
+        raise SweepRefusalError(
+            f"sweep refused: root cannot be opened, nothing removed: "
+            f"{directory!r}: {exc}") from exc
+    try:
+        names = os.listdir(dir_fd)
     except OSError:
+        os.close(dir_fd)
         return {"scanned": 0, "removed": 0}
+    provenance = _read_provenance(dir_fd)
+    provenance_before = dict(provenance)
 
     getuid = getattr(os, "getuid", None)
     scanned = removed = 0
@@ -399,74 +607,92 @@ def sweep_stale_tmps(directory: str, *,
                            "reason": reason, "pid": pid,
                            "error": error})
 
-    for name in sorted(names):
-        if TMP_INFIX not in name:
-            continue
-        scanned += 1
-        match = _TMP_NAME_RE.match(name)
-        if match is None or TMP_INFIX in match.group("base"):
-            _emit(name, "kept", "MALFORMED_NAME")
-            continue
-        pid = int(match.group("pid"))
-        if pid <= 0:
-            _emit(name, "kept", "INVALID_PID", pid=pid)
-            continue
-        path = os.path.join(directory, name)
-        try:
-            st = os.lstat(path)
-        except OSError:
-            _emit(name, "kept", "STAT_FAILED", pid=pid)
-            continue
-        if stat.S_ISLNK(st.st_mode) or not stat.S_ISREG(st.st_mode):
-            _emit(name, "kept", "NOT_A_REGULAR_FILE", pid=pid)
-            continue
-        if getuid is not None and st.st_uid != getuid():
-            _emit(name, "kept", "NOT_OWNER", pid=pid)
-            continue
-        alive = _pid_liveness(pid)
-        if alive is True:
-            _emit(name, "kept", "LIVE_PID", pid=pid)
-            continue
-        if alive is None:
-            _emit(name, "kept", "PID_UNPROBEABLE", pid=pid)
-            continue
-        if min_age_seconds > 0 and \
-                (time.time() - st.st_mtime) < min_age_seconds:
-            _emit(name, "kept", "TOO_YOUNG", pid=pid)
-            continue
-        identity = _identity(st)
+    try:
+        for name in sorted(names):
+            if TMP_INFIX not in name:
+                continue
+            scanned += 1
+            match = _TMP_NAME_RE.match(name)
+            if match is None or TMP_INFIX in match.group("base"):
+                _emit(name, "kept", "MALFORMED_NAME")
+                continue
+            pid = int(match.group("pid"))
+            if pid <= 0:
+                _emit(name, "kept", "INVALID_PID", pid=pid)
+                continue
+            path = os.path.join(directory, name)
+            try:
+                st = os.stat(name, dir_fd=dir_fd, follow_symlinks=False)
+            except OSError:
+                _emit(name, "kept", "STAT_FAILED", pid=pid)
+                continue
+            if stat.S_ISLNK(st.st_mode) or not stat.S_ISREG(st.st_mode):
+                _emit(name, "kept", "NOT_A_REGULAR_FILE", pid=pid)
+                continue
+            if getuid is not None and st.st_uid != getuid():
+                _emit(name, "kept", "NOT_OWNER", pid=pid)
+                continue
+            alive = _pid_liveness(pid)
+            if alive is True:
+                _emit(name, "kept", "LIVE_PID", pid=pid)
+                continue
+            if alive is None:
+                _emit(name, "kept", "PID_UNPROBEABLE", pid=pid)
+                continue
+            if provenance.get(name) != (st.st_dev, st.st_ino):
+                _emit(name, "kept", "NOT_PROVEN_OWNED", pid=pid)
+                continue
+            if min_age_seconds > 0 and \
+                    (time.time() - st.st_mtime) < min_age_seconds:
+                _emit(name, "kept", "TOO_YOUNG", pid=pid)
+                continue
+            identity = _identity(st)
 
-        # Removal phase: re-prove everything before the unlink.
-        if _SWEEP_HOOK is not None:
-            _SWEEP_HOOK(path)
-        alive = _pid_liveness(pid)
-        if alive is True:
-            _emit(name, "kept", "LIVE_PID", pid=pid)
-            continue
-        if alive is None:
-            _emit(name, "kept", "PID_UNPROBEABLE", pid=pid)
-            continue
-        try:
-            root_now = os.lstat(directory)
-            st_now = os.lstat(path)
-        except OSError:
-            _emit(name, "kept", "STAT_FAILED", pid=pid)
-            continue
-        if (root_now.st_dev, root_now.st_ino) != root_identity or \
-                stat.S_ISLNK(root_now.st_mode):
-            _emit(name, "kept", "ROOT_CHANGED", pid=pid)
-            continue
-        if _identity(st_now) != identity or \
-                stat.S_ISLNK(st_now.st_mode) or \
-                not stat.S_ISREG(st_now.st_mode):
-            _emit(name, "kept", "CHANGED_SINCE_SCAN", pid=pid)
-            continue
-        try:
-            os.unlink(path)
-        except OSError as exc:
-            _emit(name, "failed", "REMOVE_FAILED", pid=pid,
-                  error=type(exc).__name__)
-            continue
-        removed += 1
-        _emit(name, "removed", None, pid=pid)
+            # Removal phase: re-prove everything before the unlink.
+            if _SWEEP_HOOK is not None:
+                _SWEEP_HOOK(path)
+            alive = _pid_liveness(pid)
+            if alive is True:
+                _emit(name, "kept", "LIVE_PID", pid=pid)
+                continue
+            if alive is None:
+                _emit(name, "kept", "PID_UNPROBEABLE", pid=pid)
+                continue
+            try:
+                st_now = os.stat(name, dir_fd=dir_fd,
+                                 follow_symlinks=False)
+            except OSError:
+                _emit(name, "kept", "STAT_FAILED", pid=pid)
+                continue
+            if _identity(st_now) != identity or \
+                    stat.S_ISLNK(st_now.st_mode) or \
+                    not stat.S_ISREG(st_now.st_mode):
+                _emit(name, "kept", "CHANGED_SINCE_SCAN", pid=pid)
+                continue
+            try:
+                os.unlink(name, dir_fd=dir_fd)
+            except OSError as exc:
+                _emit(name, "failed", "REMOVE_FAILED", pid=pid,
+                      error=type(exc).__name__)
+                continue
+            removed += 1
+            _emit(name, "removed", None, pid=pid)
+    finally:
+        # Ledger housekeeping: drop records whose file is gone or
+        # whose identity no longer matches (removed candidates,
+        # consumed temps, torn state). Records for files that still
+        # exist with their recorded identity stay live.
+        live = {}
+        for rec_name, rec_ident in provenance.items():
+            try:
+                st = os.stat(rec_name, dir_fd=dir_fd,
+                             follow_symlinks=False)
+            except OSError:
+                continue
+            if (st.st_dev, st.st_ino) == rec_ident and \
+                    stat.S_ISREG(st.st_mode):
+                live[rec_name] = rec_ident
+        if live != provenance_before:
+            _prune_provenance(dir_fd, live)
+        os.close(dir_fd)
     return {"scanned": scanned, "removed": removed}
