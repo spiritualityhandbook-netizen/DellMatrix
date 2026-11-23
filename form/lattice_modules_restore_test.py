@@ -23,6 +23,19 @@ Contract under test (Option B + lattice-local format marker):
 Registration paths exercised are the only ones that exist
 (latch_plane / snap_in; latch_plane has no production callers today --
 this suite pins the persistence contract, it does not wire latch_plane).
+
+Correction addendum (Director CORRECTION_REQUIRED 7088548924 + CORRECTION
+CHOICE 7088582500 + clarification 7088600824): the writer must prove,
+per module coordinate, before any bytes move -- (1) the coordinate
+exists in lat.cells, (2) coordinate membership is valid with the
+canonical lat.cells[coord] as the persisted cell (Option B shadow
+binding stays legal; no object/content identity with mod.cells is
+required), (3) no coordinate is claimed by two modules, (4) coordinate/
+meta fields carry reader-compatible types and finite JSON values. Any
+failure raises LatticeModuleSaveError pre-byte. snap_in and
+rebuild_from_plane are NOT changed: their live overlap/orphan behavior
+is a documented limitation the save refusal makes explicit. Sections
+13-15 pin A/B/D/E of the choice.
 """
 from __future__ import annotations
 
@@ -32,11 +45,12 @@ import os
 import subprocess
 import sys
 import tempfile
+import types
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from form.open import open_program
-from form.persist import serialize, save, load
+from form.persist import serialize, save, load, LatticeModuleSaveError
 from form.persist_rest import ProgramLoadError
 from form.dell_matrix.harmonic_lattice import Cell, SnapModule
 
@@ -352,6 +366,155 @@ def smoke() -> bool:
         rec("writer_non_dict_meta_refuses", False, "save succeeded with list meta")
     except Exception:
         rec("writer_non_dict_meta_refuses", True)
+
+    # ---- 13. closure A: rebuild-orphaned module refuses at save ----------
+    # (Director 7088582500 item A: latch_plane then rebuild_from_plane
+    # removing the module's cells; save must refuse typed, target SHA
+    # identical, second owner unaffected. snap_in/rebuild unchanged.)
+    path13o = _tmp()
+    save(_build("P0ROther13"), path13o)
+    p13 = open_program("P0RThirteen")
+    p13.lattice.latch_plane("mod-orphan", axis="H", index=2, width=2, depth=2,
+                            label_prefix="orphan")
+    p13.lattice.rebuild_from_plane(types.SimpleNamespace(units={}))
+    target13 = _tmp()
+    save(_build("P0RGood13"), target13)
+    sha13 = _sha(target13)
+    try:
+        save(p13, target13)
+        rec("closure_rebuild_orphan_save_refuses_typed", False,
+            "save succeeded with a module whose cells were rebuilt away")
+    except LatticeModuleSaveError:
+        rec("closure_rebuild_orphan_save_refuses_typed", True)
+    except Exception as e:
+        rec("closure_rebuild_orphan_save_refuses_typed", False,
+            f"raised {type(e).__name__}, not LatticeModuleSaveError")
+    rec("closure_rebuild_orphan_bytes_identical", _sha(target13) == sha13,
+        "refused save changed the previous canonical file")
+    try:
+        qo13 = load("P0ROther13", path=path13o)
+        rec("closure_second_owner_unaffected",
+            sorted(qo13.lattice.modules) == ["alpha-latch", "beta-rich"],
+            f"registry={sorted(qo13.lattice.modules)}")
+    except Exception as e:
+        rec("closure_second_owner_unaffected", False,
+            f"raised {type(e).__name__}: {e}")
+    # control: a module whose coordinate survives the rebuild round-trips
+    p13b = open_program("P0RThirteenB")
+    p13b.lattice.snap_in(SnapModule(
+        id="mod-keep", kind="lattice2d", axis="H", index=0,
+        cells={(6, 6, 0): Cell(h=6, v=6, f=0, content="keep", label="keep")},
+        meta={}))
+    unit13 = types.SimpleNamespace(x=6.0, y=6.0, label="keep")
+    p13b.lattice.rebuild_from_plane(types.SimpleNamespace(units={"u1": unit13}))
+    path13b = _tmp()
+    try:
+        save(p13b, path13b)
+        q13b = load("P0RThirteenB", path=path13b)
+        mod13b = q13b.lattice.modules.get("mod-keep")
+        rec("closure_surviving_module_roundtrips",
+            mod13b is not None and sorted(mod13b.cells) == [(6, 6, 0)],
+            f"module={mod13b}")
+    except Exception as e:
+        rec("closure_surviving_module_roundtrips", False,
+            f"raised {type(e).__name__}: {e}")
+
+    # ---- 14. closure B + D: live overlap and poisoned meta refuse at save -
+    # (Director 7088582500 items B/D: two live overlapping modules still
+    # register in memory -- no mutation-time change is authorized -- but
+    # the save refuses typed with identical bytes; non-finite meta is a
+    # writer refusal too, original preserved.)
+    p14 = open_program("P0RFourteen")
+    p14.lattice.snap_in(SnapModule(
+        id="mod-first", kind="lattice2d", axis="H", index=0,
+        cells={(4, 4, 0): Cell(h=4, v=4, f=0, content="one", label="one")},
+        meta={}))
+    p14.lattice.snap_in(SnapModule(
+        id="mod-second", kind="lattice2d", axis="H", index=0,
+        cells={(4, 4, 0): Cell(h=4, v=4, f=0, content="two", label="two")},
+        meta={}))
+    rec("overlap_live_registers_both",
+        sorted(p14.lattice.modules) == ["mod-first", "mod-second"],
+        f"registry={sorted(p14.lattice.modules)}")
+    target14 = _tmp()
+    save(_build("P0RGood14"), target14)
+    sha14 = _sha(target14)
+    try:
+        save(p14, target14)
+        rec("overlap_save_refuses_typed", False,
+            "save succeeded with two modules claiming one coordinate")
+    except LatticeModuleSaveError:
+        rec("overlap_save_refuses_typed", True)
+    except Exception as e:
+        rec("overlap_save_refuses_typed", False,
+            f"raised {type(e).__name__}, not LatticeModuleSaveError")
+    rec("overlap_save_bytes_identical", _sha(target14) == sha14,
+        "refused save changed the previous canonical file")
+    p14d = open_program("P0RFourteenD")
+    p14d.lattice.snap_in(SnapModule(id="mod-nan", kind="lattice2d", axis="H",
+                                    index=0, cells={},
+                                    meta={"bad": float("nan")}))
+    target14d = _tmp()
+    save(_build("P0RGood14D"), target14d)
+    sha14d = _sha(target14d)
+    try:
+        save(p14d, target14d)
+        rec("poisoned_nan_meta_save_refuses_typed", False,
+            "save succeeded with NaN in module meta (not finite JSON)")
+    except LatticeModuleSaveError:
+        rec("poisoned_nan_meta_save_refuses_typed", True)
+    except Exception as e:
+        rec("poisoned_nan_meta_save_refuses_typed", False,
+            f"raised {type(e).__name__}, not LatticeModuleSaveError")
+    rec("poisoned_nan_meta_bytes_unchanged", _sha(target14d) == sha14d,
+        "refused save changed the previous canonical file")
+
+    # ---- 15. closure E: every writer-accepted output loads ---------------
+    # (Director 7088582500 item E: for each registry shape, save either
+    # refuses typed (LatticeModuleSaveError) or the written file loads;
+    # never save-succeeds + load-refuses.)
+    def _closure(name, prog, owner):
+        pth = _tmp()
+        try:
+            save(prog, pth)
+        except LatticeModuleSaveError:
+            rec(name, True)
+            return
+        except Exception as e:
+            rec(name, False,
+                f"save raised {type(e).__name__}, not LatticeModuleSaveError")
+            return
+        try:
+            load(owner, path=pth)
+            rec(name, True)
+        except Exception as e:
+            rec(name, False,
+                f"writer accepted but loader refused: {type(e).__name__}: {e}")
+
+    _closure("closure_property_clean", _build("P0REClean"), "P0REClean")
+    p15s = open_program("P0REShadow")
+    p15s.lattice.put(5, 5, 0, content="pre-existing", label="native")
+    p15s.lattice.snap_in(SnapModule(
+        id="gamma-shadow", kind="lattice2d", axis="H", index=0,
+        cells={(5, 5, 0): Cell(h=5, v=5, f=0, content="shadow-payload",
+                               label="shadow")}, meta={}))
+    _closure("closure_property_shadowed", p15s, "P0REShadow")
+    _closure("closure_property_empty", open_program("P0REEmpty"), "P0REEmpty")
+    p15d = open_program("P0REDangle")
+    p15d.lattice.latch_plane("mod-dangle", axis="H", index=2, width=2,
+                             depth=2, label_prefix="dangle")
+    p15d.lattice.rebuild_from_plane(types.SimpleNamespace(units={}))
+    _closure("closure_property_dangling", p15d, "P0REDangle")
+    p15o = open_program("P0REOverlap")
+    p15o.lattice.snap_in(SnapModule(
+        id="mod-o1", kind="lattice2d", axis="H", index=0,
+        cells={(4, 4, 0): Cell(h=4, v=4, f=0, content="one", label="one")},
+        meta={}))
+    p15o.lattice.snap_in(SnapModule(
+        id="mod-o2", kind="lattice2d", axis="H", index=0,
+        cells={(4, 4, 0): Cell(h=4, v=4, f=0, content="two", label="two")},
+        meta={}))
+    _closure("closure_property_overlap", p15o, "P0REOverlap")
 
     print(f"LATTICE MODULES RESTORE: {sum(r)}/{len(r)}")
     return all(r)
