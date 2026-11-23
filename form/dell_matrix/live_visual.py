@@ -191,7 +191,19 @@ def _state_payload(program) -> Dict[str, Any]:
     # Cap keeps lattice page responsive without dropping graph capability elsewhere.
     _EDGE_CAP = 480
     raw_edges = list(view.edges or [])
-    edges = [e.to_dict() for e in raw_edges[:_EDGE_CAP]]
+    # Truth-in-counts (Director challenge 7097430407): the client draws
+    # an edge only when BOTH endpoints resolve in the shipped node set
+    # (nodes_payload ids). Sandbox-kind edges target a sandbox id,
+    # which is never a shipped node, so shipping them would make
+    # edges_shown exceed what is actually drawn. Ship only resolvable
+    # edges and disclose the excluded count; never manufacture a node
+    # for a box. The room filter annotates nodes but never drops ids,
+    # so `nodes` here is the same id set the payload ships.
+    node_ids = {str(n.get("id")) for n in nodes if isinstance(n, dict)}
+    resolvable = [e for e in raw_edges
+                  if str(getattr(e, "source", "")) in node_ids
+                  and str(getattr(e, "target", "")) in node_ids]
+    edges = [e.to_dict() for e in resolvable[:_EDGE_CAP]]
     form = lat.get("form", "cube")
     # form grammar colors
     form_theme = {
@@ -265,6 +277,7 @@ def _state_payload(program) -> Dict[str, Any]:
         "edges": edges,
         "edges_total": len(raw_edges),
         "edges_shown": len(edges),
+        "edges_unresolvable": len(raw_edges) - len(resolvable),
         "nursery": nursery[:20],
         "nursery_total": len(nursery),
         "nursery_shown": min(20, len(nursery)),
