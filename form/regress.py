@@ -438,6 +438,7 @@ LIST = [
     # persistence -- lossless modules_format=2 records, staged typed
     # restore, legacy IDs-only fail-closed.
     "form.lattice_modules_restore_test:smoke",
+    "form.r5d_s7_admission_test:smoke",
 ]
 
 TIMEOUT_S = 900
