@@ -547,6 +547,41 @@ def main():
                  dict(copy.deepcopy(base), position={"x": huge, "y": 0}),
                  copy.deepcopy(IDEA_B)))
 
+    # Director 7095214624: huge integer COORDS (h/v/f) passed _is_int
+    # with no representability check, then _spatial_cue's float(coords)
+    # raised OverflowError with a valid listener. Same safe-finite
+    # boundary as position/listener: typed invalid_coordinate, no raise,
+    # no fabricated cue, inputs untouched.
+    def _with_coords(**kw):
+        d = copy.deepcopy(base)
+        d["coords"] = dict(d["coords"], **kw)
+        return d
+
+    good_listener = {"pos": [0, 0], "facing": "N"}
+    no_raise("huge_int_coord_h_valid_listener_invalid_coordinate",
+             lambda: son.sonify_idea(_with_coords(h=huge),
+                                     listener=dict(good_listener)),
+             want_status="unavailable", want_reason="invalid_coordinate")
+    no_raise("huge_int_coord_v_valid_listener_invalid_coordinate",
+             lambda: son.sonify_idea(_with_coords(v=huge),
+                                     listener=dict(good_listener)),
+             want_status="unavailable", want_reason="invalid_coordinate")
+    no_raise("huge_int_coord_h_no_listener_invalid_coordinate",
+             lambda: son.sonify_idea(_with_coords(h=huge)),
+             want_status="unavailable", want_reason="invalid_coordinate")
+    no_raise("huge_int_coord_f_invalid_coordinate",
+             lambda: son.sonify_idea(_with_coords(f=huge),
+                                     listener=dict(good_listener)),
+             want_status="unavailable", want_reason="invalid_coordinate")
+    _probe = _with_coords(h=huge)
+    _before = copy.deepcopy(_probe)
+    try:
+        son.sonify_idea(_probe, listener=dict(good_listener))
+        _unmutated = _probe == _before
+    except Exception:  # noqa: BLE001
+        _unmutated = False
+    check("huge_int_coord_input_unmutated", _unmutated)
+
     import form.dell_matrix.sonification as _mod
     src = open(_mod.__file__, encoding="utf-8").read()
     banned = ("socket", "urllib", "requests", "subprocess", "shutil",

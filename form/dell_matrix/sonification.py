@@ -246,6 +246,13 @@ def _coords_of(idea: Mapping) -> Tuple[Optional[Tuple[int, int, int]],
         f = coords_raw.get("f", 0)
         if not (_is_int(h) and _is_int(v) and _is_int(f)):
             return None, None, "invalid_coordinate", raw_position
+        if not (_is_finite_number(h) and _is_finite_number(v)
+                and _is_finite_number(f)):
+            # An integer too large to represent as a finite float is
+            # outside safe spatial geometry: refuse it typed here
+            # rather than let a downstream float() conversion raise
+            # OverflowError (Director 7095214624).
+            return None, None, "invalid_coordinate", raw_position
         return (int(h), int(v), int(f)), "coords", None, raw_position
     if pos is not None:
         if raw_position is None:
