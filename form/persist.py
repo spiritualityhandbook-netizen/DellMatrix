@@ -75,7 +75,9 @@ class OwnerCollisionError(RuntimeError):
 class LatticeModuleSaveError(RuntimeError):
     """P0-R: a lattice SnapModule cannot be represented losslessly in
     the modules_format=2 record shape (bad identity fields, non-dict
-    or non-JSON-serializable meta, malformed cell coordinates).
+    or non-finite-JSON meta, malformed cell coordinates, a coordinate
+    absent from the lattice cells, or a coordinate claimed by two
+    modules).
 
     Raised inside serialize(), i.e. before any bytes are written, so
     the previous generation at the target path stays intact. The
@@ -156,8 +158,20 @@ def _serialize_lattice_modules(lat) -> List[Dict[str, Any]]:
     Writer honesty: any module that cannot be represented exactly
     raises LatticeModuleSaveError here, inside serialize(), before
     any bytes are written.
+
+    Writer/reader closure (Director CORRECTION CHOICE 7088582500):
+    the writer proves every record loader-acceptable before writing:
+    each module coordinate must exist in lat.cells (a module orphaned
+    by rebuild_from_plane is unrepresentable -- no geometry is
+    manufactured to repair it), no coordinate may be claimed by two
+    modules (mirroring the loader's disjoint-ownership check), and
+    meta must be finite JSON. Live snap_in / rebuild_from_plane
+    semantics are unchanged; the refusal makes their documented
+    limitation explicit at the save door instead of persisting a
+    file the next load would refuse.
     """
     records: List[Dict[str, Any]] = []
+    claimed = {}
     for key, mod in lat.modules.items():
         mid = getattr(mod, "id", None)
         if not isinstance(mid, str) or not mid or mid != key:
@@ -180,16 +194,27 @@ def _serialize_lattice_modules(lat) -> List[Dict[str, Any]]:
             raise LatticeModuleSaveError(
                 f"lattice module {mid!r} meta is not a string-keyed object: refusing save")
         try:
-            json.dumps(meta)
+            json.dumps(meta, allow_nan=False)
         except (TypeError, ValueError) as e:
             raise LatticeModuleSaveError(
-                f"lattice module {mid!r} meta is not JSON-serializable ({e}): refusing save")
+                f"lattice module {mid!r} meta is not finite JSON-serializable ({e}): refusing save")
         coords: List[List[int]] = []
         for coord in mod.cells.keys():
             if (not isinstance(coord, tuple) or len(coord) != 3
                     or any(isinstance(c, bool) or not isinstance(c, int) for c in coord)):
                 raise LatticeModuleSaveError(
                     f"lattice module {mid!r} has malformed cell coordinate {coord!r}: refusing save")
+            if coord not in lat.cells:
+                raise LatticeModuleSaveError(
+                    f"lattice module {mid!r} references cell {coord} absent "
+                    "from the lattice cells: refusing save (the loader "
+                    "refuses this record; membership is proven here, "
+                    "before any bytes move)")
+            if coord in claimed:
+                raise LatticeModuleSaveError(
+                    f"lattice modules {claimed[coord]!r} and {mid!r} overlap "
+                    f"at cell {coord}: refusing save")
+            claimed[coord] = mid
             coords.append([coord[0], coord[1], coord[2]])
         coords.sort()
         records.append({
