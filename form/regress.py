@@ -443,6 +443,7 @@ LIST = [
     # unknown_is_silence / solo_not_pair_harmony / view_audio_parity /
     # no_authority.
     "form.sonification_test:smoke",
+    "form.r5d_s7_admission_test:smoke",
 ]
 
 TIMEOUT_S = 900
