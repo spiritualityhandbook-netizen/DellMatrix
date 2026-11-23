@@ -390,6 +390,7 @@ LIST = [
     # 2026-11-13): the three malformed-claim consumers refuse
     # fail-closed; the F-d stale state still reads UNBOXED.
     "form.fd_consistency_test:smoke",
+    "form.v08_truth_counts_test:smoke",
     "form.confirm_placement_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",

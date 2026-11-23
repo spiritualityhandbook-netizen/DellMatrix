@@ -266,6 +266,8 @@ def _state_payload(program) -> Dict[str, Any]:
         "edges_total": len(raw_edges),
         "edges_shown": len(edges),
         "nursery": nursery[:20],
+        "nursery_total": len(nursery),
+        "nursery_shown": min(20, len(nursery)),
         "avatar": avatar,
         "user": body,
         "user_trail": list(getattr(program, "user_trail", []) or []),
@@ -707,7 +709,8 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
                 f"{i:2}. [{p.get('id')}] {p.get('label') or p.get('id')} · aff={p.get('affinity','—')} · "
                 f"{(p.get('words') or '')[:80]}"
             )
-        return {"ok": True, "msg": "\n".join(lines), "nursery": props[:20]}
+        return {"ok": True, "msg": "\n".join(lines), "nursery": props[:20],
+                "nursery_total": len(props), "nursery_shown": min(20, len(props))}
     # ─── Needs: strong create · edit · undo · history · nbd · ready ───
     if lower.startswith("create an idea") or lower.startswith("create idea") or lower.startswith("plant "):
         from form.dell_matrix.needs import parse_and_place, format_create_end
