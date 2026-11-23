@@ -557,7 +557,12 @@ def sweep_stale_tmps(directory: str, *,
 
     The sweep root itself must be trustworthy: a symlinked or
     non-directory root raises SweepRefusalError before anything is
-    scanned or removed. A missing/unreadable directory keeps the
+    scanned or removed. The root open is identity-pinned to the
+    root check (7113892787): it does not follow symlinks
+    (O_NOFOLLOW where supported) and the opened fd's fstat
+    (dev, ino) must equal the checked lstat identity, so a root
+    swapped between check and open — by symlink or by rename — is
+    a typed refusal, never a redirected sweep. A missing/unreadable directory keeps the
     proven legacy contract: exactly ``{"scanned": 0, "removed": 0}``,
     no raise (atomic_write_boundaries E3).
 
@@ -583,13 +588,44 @@ def sweep_stale_tmps(directory: str, *,
     # Pin the sweep root with a directory fd: every stat and the
     # unlink itself are issued relative to it, so a swapped or
     # renamed root cannot redirect a removal after classification.
+    # The open itself is identity-pinned against the check above
+    # (Director CORRECTION_REQUIRED 7113892787): islink/lstat and
+    # open are separate path lookups, so a rename/symlink swap
+    # between them could otherwise pin a DIFFERENT directory than
+    # the one that was checked. The open does not follow a swapped
+    # symlink (O_NOFOLLOW where supported), and the opened fd's
+    # fstat identity must equal the checked lstat identity — same
+    # (dev, ino), still a directory — or the sweep refuses before
+    # anything is scanned. The fstat comparison is unconditional
+    # and load-bearing: where O_NOFOLLOW is unavailable, an fd
+    # opened through a swapped symlink stats the TARGET directory,
+    # whose identity cannot equal the lstat identity of the symlink
+    # path itself, and a renamed replacement directory carries its
+    # own identity — so the contract is not silently weakened on
+    # platforms without the flag.
     try:
         dir_fd = os.open(directory,
-                         os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+                         os.O_RDONLY
+                         | getattr(os, "O_DIRECTORY", 0)
+                         | getattr(os, "O_NOFOLLOW", 0))
     except OSError as exc:
         raise SweepRefusalError(
             f"sweep refused: root cannot be opened, nothing removed: "
             f"{directory!r}: {exc}") from exc
+    try:
+        opened_st = os.fstat(dir_fd)
+    except OSError as exc:
+        os.close(dir_fd)
+        raise SweepRefusalError(
+            f"sweep refused: opened root cannot be stated, nothing "
+            f"removed: {directory!r}: {exc}") from exc
+    if (opened_st.st_dev, opened_st.st_ino) != \
+            (root_st.st_dev, root_st.st_ino) or \
+            not stat.S_ISDIR(opened_st.st_mode):
+        os.close(dir_fd)
+        raise SweepRefusalError(
+            f"sweep refused: root changed between check and open, "
+            f"nothing removed: {directory!r}")
     try:
         names = os.listdir(dir_fd)
     except OSError:

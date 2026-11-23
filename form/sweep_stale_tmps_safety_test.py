@@ -45,6 +45,19 @@ helper:
   S11 a temp owned by a different uid is KEPT (NOT_OWNER) — exercised
       only where chown is permitted; otherwise a NOTE is printed and
       the check is not recorded (never vacuous).
+  S12 root check/open TOCTOU (Director CORRECTION_REQUIRED
+      7113892787): the root islink/lstat check and the root open are
+      separate path lookups. A swap executed deterministically
+      between them — (a) the checked directory replaced by a symlink
+      to a foreign directory, (b) the checked directory replaced by
+      a renamed foreign directory — must end in a typed
+      SweepRefusalError with the foreign directory byte-identical
+      (its genuine helper orphan NOT removed) and no fd leaked.
+      Failing-first: at the pre-fix head the open carried no
+      O_NOFOLLOW and no fstat identity pin, so both swaps redirected
+      the sweep into the foreign directory and removed its orphan.
+      An ordinary unswapped root still sweeps a genuine orphan
+      (the pin must not over-refuse).
 
 Labels: INTEGRATION (helper level, temp dirs) + CROSS_PROCESS (S4).
 State hygiene: temp directories only; nothing touches form/state.
@@ -416,6 +429,113 @@ def section_s11(d):
           _report_reasons(report).get(name) == "NOT_OWNER", str(report))
 
 
+# --------------------------------------------------------------- S12
+def _fd_count():
+    try:
+        return len(os.listdir("/proc/self/fd"))
+    except OSError:
+        return None
+
+
+def _sweep_with_root_swap(root, swap):
+    """Run sweep_stale_tmps(root) with ``swap`` executed
+    deterministically between the root check (islink/lstat) and the
+    root open: the wrapper intercepts the sweep's own root os.open
+    call (the root path itself, no dir_fd), performs the swap, then
+    delegates to the real os.open. Returns the SweepRefusalError
+    raised, or None."""
+    real_open = os.open
+    fired = []
+
+    def swapping_open(path, flags, *a, **k):
+        if not fired and str(path) == str(root) \
+                and k.get("dir_fd") is None:
+            fired.append(True)
+            swap()
+        return real_open(path, flags, *a, **k)
+
+    os.open = swapping_open
+    try:
+        sweep_stale_tmps(root)
+    except AW.SweepRefusalError as exc:
+        return exc
+    finally:
+        os.open = real_open
+    return None
+
+
+def section_s12(d):
+    # (a) symlink swap: checked real directory -> symlink to foreign
+    root = os.path.join(d, "root")
+    os.mkdir(root)
+    _plant(root, "canon.json", b"ROOT-CANON")
+    foreign = os.path.join(d, "foreign")
+    os.mkdir(foreign)
+    _, orphans = _crash_orphan(foreign, "victim.json")
+    orphan_name = orphans[0] if orphans else "<none>"
+    foreign_before = _snapshot(foreign)
+    aside = os.path.join(d, "root_aside")
+
+    def swap_to_symlink():
+        os.rename(root, aside)
+        os.symlink(foreign, root)
+
+    raised = _sweep_with_root_swap(root, swap_to_symlink)
+    check("S12.symlink_swap_typed_refusal",
+          isinstance(raised, AW.SweepRefusalError), str(raised))
+    check("S12.symlink_swap_foreign_orphan_intact",
+          len(orphans) == 1 and
+          os.path.exists(os.path.join(foreign, orphan_name)),
+          orphan_name)
+    check("S5.s12_symlink_foreign_bytes_identical",
+          _snapshot(foreign) == foreign_before and
+          os.path.islink(root) and
+          _snapshot(aside).get("canon.json") == b"ROOT-CANON")
+
+    # (b) rename swap: checked real directory -> renamed foreign dir
+    root2 = os.path.join(d, "root2")
+    os.mkdir(root2)
+    _plant(root2, "canon.json", b"ROOT2-CANON")
+    foreign2 = os.path.join(d, "foreign2")
+    os.mkdir(foreign2)
+    _, orphans2 = _crash_orphan(foreign2, "victim.json")
+    orphan2_name = orphans2[0] if orphans2 else "<none>"
+    foreign2_before = _snapshot(foreign2)
+    aside2 = os.path.join(d, "root2_aside")
+
+    def swap_to_replacement():
+        os.rename(root2, aside2)
+        os.rename(foreign2, root2)
+
+    fds_before = _fd_count()
+    raised = _sweep_with_root_swap(root2, swap_to_replacement)
+    fds_after = _fd_count()
+    check("S12.rename_swap_typed_refusal",
+          isinstance(raised, AW.SweepRefusalError), str(raised))
+    check("S12.rename_swap_foreign_orphan_intact",
+          len(orphans2) == 1 and
+          os.path.exists(os.path.join(root2, orphan2_name)),
+          orphan2_name)
+    check("S5.s12_rename_foreign_bytes_identical",
+          _snapshot(root2) == foreign2_before and
+          _snapshot(aside2).get("canon.json") == b"ROOT2-CANON")
+    check("S12.rename_swap_fd_closed",
+          fds_before is None or fds_after == fds_before,
+          f"fds {fds_before} -> {fds_after}")
+
+    # ordinary-root regression: an unswapped root still sweeps a
+    # genuine helper orphan (the identity pin must not over-refuse).
+    plain = os.path.join(d, "plain")
+    os.mkdir(plain)
+    _plant(plain, "canon.json", b"{}")
+    _, plain_orphans = _crash_orphan(plain, "canon.json")
+    res = sweep_stale_tmps(plain)
+    check("S12.ordinary_root_still_sweeps",
+          len(plain_orphans) == 1 and res["removed"] == 1 and
+          not any(".dmtmp." in n for n in os.listdir(plain)),
+          str(res))
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="q351_") as d:
         section_s1(d)
@@ -437,6 +557,8 @@ def main():
         section_s10(d)
     with tempfile.TemporaryDirectory(prefix="q351_") as d:
         section_s11(d)
+    with tempfile.TemporaryDirectory(prefix="q351_") as d:
+        section_s12(d)
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"sweep_stale_tmps_safety_test: {passed}/{len(RESULTS)} PASS")
     return 0 if passed == len(RESULTS) else 1
