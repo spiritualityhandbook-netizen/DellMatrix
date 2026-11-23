@@ -14,6 +14,11 @@ the build every leg must hold WITHOUT weakening the controls:
   __grant_use_receipts__ section, committed atomically with the
   confirmation; denials/aborted writes never consume; replay refuses
   typed (via="grant_replay"). checkpoint.rollback grants excluded.
+  Receipt identity is session-bound (Director delta 7088557617):
+  grant_seq restarts in a new session and proposal IDs are
+  deterministic, so a second session's issuance for a recreated
+  proposal must never overwrite the first session's durable receipt
+  (T10: cross-session collision negative + typed staging refusal).
 - A8 raw Nursery.confirm RETIRED: the direct store door no longer
   exists; the Lane C attack shape gets AttributeError, zero
   mutation, original bytes identical. A grep gate keeps any
@@ -194,7 +199,8 @@ def a7_t1_t4_t9():
     check("A7_T4_durable_receipt_atomic_with_confirmation",
           status_of(p2, pid1) == "confirmed" and len(recs) == 1
           and len(section) == 1
-          and recs[0].get("receipt_id") == f"gu_{seq}_{pid1}"
+          and recs[0].get("receipt_id") == (
+              f"gu_{p.acceptance_policy.session_id}_{seq}_{pid1}")
           and recs[0].get("grant_seq") == seq
           and recs[0].get("subject") == "helper"
           and recs[0].get("operation") == "nursery.confirm"
@@ -449,6 +455,103 @@ def a7_t8():
           and g["grant_id"] not in getattr(policy, "_consumed_grants", {})
           and g["grant_id"] not in getattr(policy, "_reserved_grants", {}),
           f"allowed={d.get('allowed')}")
+    cleanup(owner)
+
+
+def a7_t10():
+    # Director delta 7088557617 (A7 receipt collision): grant_seq
+    # restarts in a new session (reset_session mints a new session
+    # but the durable receipts outlive it; a fresh runtime session
+    # restarts the counter at 0) and proposal IDs are deterministic
+    # (_slug(label, seed)), so a recreated proposal in a second
+    # session can regenerate the first session's receipt key. The
+    # old receipt must NEVER be overwritten: receipt identity is
+    # session-bound, and the staging door refuses a colliding
+    # different receipt typed, before any commit.
+    from form.dell_matrix import nursery as nursery_mod
+    from form.dell_matrix.agent_authority import bind_agent, issue_root_grant
+    from form.dell_matrix.nursery import owner_nursery_path
+    from form.open import Program
+    collision_error = getattr(
+        nursery_mod, "NurseryGrantReceiptCollisionError", None)
+    owner = "FI011CI"
+    # Session 1 (genuine): grant confirm -> durable receipt R1.
+    p = build(owner)
+    pid = seed(p, "fi011 a7 t10 collision target")
+    g = issue_root_grant(p, issuer="ace", subject="helper",
+                         target=pid, content_pid=pid)
+    gid = g["grant_id"]
+    seq = p.acceptance_policy._issued_grants[gid]["seq"]
+    sid1 = p.acceptance_policy.session_id
+    r1 = bind_agent(p, "helper").confirm(pid, gid)
+    stored1 = grant_receipts(Program.load(owner), pid)
+    r1_rec = dict(stored1[0]) if stored1 else {}
+    check("A7_T10_first_receipt_session_bound_identity",
+          bool(r1.get("ok")) and len(stored1) == 1
+          and r1_rec.get("receipt_id") == f"gu_{sid1}_{seq}_{pid}"
+          and r1_rec.get("session_id") == sid1,
+          f"ok={r1.get('ok')} rec={r1_rec.get('receipt_id')}")
+    # Session 2 (genuine): a fresh load is a new runtime session -
+    # new session_id, issuance counter back at 0 - while the owner
+    # retains R1. Recreate the proposal as pending (the proposals
+    # dict is compensated away exactly as exchange compensation
+    # pops a proposal; the receipts section is independent of
+    # proposal presence and survives the save), then re-add the
+    # same label through the real add door: the deterministic pid
+    # is reproduced.
+    p2 = Program.load(owner)
+    sid2 = p2.acceptance_policy.session_id
+    p2.nursery.proposals.pop(pid, None)
+    p2.nursery.save()
+    with open(owner_nursery_path(owner), "r", encoding="utf-8") as f:
+        section = json.load(f).get("__grant_use_receipts__") or {}
+    pid2 = seed(p2, "fi011 a7 t10 collision target")
+    g2 = issue_root_grant(p2, issuer="ace", subject="helper",
+                          target=pid, content_pid=pid)
+    seq2 = p2.acceptance_policy._issued_grants[g2["grant_id"]]["seq"]
+    check("A7_T10_second_session_equal_seq_pid_recreated",
+          sid2 != sid1 and seq2 == seq
+          and list(section) == [r1_rec.get("receipt_id")]
+          and pid2 == pid and status_of(p2, pid) == "pending",
+          f"sid2={sid2} seq2={seq2} pid2={pid2}")
+    r2 = bind_agent(p2, "helper").confirm(pid, g2["grant_id"])
+    mine = grant_receipts(Program.load(owner), pid)
+    by_id = {r.get("receipt_id"): r for r in mine}
+    old = by_id.get(r1_rec.get("receipt_id")) or {}
+    new = by_id.get(f"gu_{sid2}_{seq}_{pid}") or {}
+    check("A7_T10_old_receipt_never_overwritten",
+          bool(r2.get("ok")) and len(mine) == 2
+          and old == r1_rec
+          and new.get("session_id") == sid2
+          and new.get("grant_seq") == seq,
+          f"ok={r2.get('ok')} n={len(mine)} "
+          f"old_intact={old == r1_rec}")
+    # Staging-door backstop: a writer-shaped receipt reusing R1's
+    # identity with different content is refused typed, and the
+    # stored record is untouched; re-staging the identical record
+    # is idempotent.
+    p3 = Program.load(owner)
+    hostile = dict(r1_rec)
+    hostile["session_id"] = sid2
+    hostile["at"] = (r1_rec.get("at") or 0) + 1.0
+    refused = False
+    try:
+        p3.nursery.stage_grant_use_receipt(hostile)
+    except Exception as exc:
+        refused = (collision_error is not None
+                   and isinstance(exc, collision_error))
+    same_ok = False
+    try:
+        same_ok = (p3.nursery.stage_grant_use_receipt(dict(r1_rec))
+                   == r1_rec.get("receipt_id"))
+    except Exception:
+        same_ok = False
+    after = (p3.nursery.grant_use_receipts or {}).get(
+        r1_rec.get("receipt_id")) or {}
+    check("A7_T10_staging_collision_refusal_typed",
+          refused and same_ok and after == r1_rec,
+          f"refused={refused} idempotent={same_ok} "
+          f"intact={after == r1_rec}")
     cleanup(owner)
 
 
@@ -836,6 +939,7 @@ def main() -> int:
     a7_t6()
     a7_t7()
     a7_t8()
+    a7_t10()
     a8_legs()
     a12_legs()
     a9_legs()
