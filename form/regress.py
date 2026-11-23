@@ -439,6 +439,7 @@ LIST = [
     # A8 raw Nursery.confirm retirement, A12 grow_auto origin
     # allowlist, A9 staged typed status refusal.
     "form.fi011_corrections_test:smoke",
+    "form.r5d_s7_admission_test:smoke",
 ]
 
 TIMEOUT_S = 900
