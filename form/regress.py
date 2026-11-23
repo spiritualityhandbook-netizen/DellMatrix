@@ -438,6 +438,7 @@ LIST = [
     # 7081067283): fail-closed staged restore for duo_ledger, companion,
     # self_knowledge, bimo/persona_matrix in form/persist_rest.py.
     "form.medium_four_restore_test:smoke",
+    "form.r5d_s7_admission_test:smoke",
 ]
 
 TIMEOUT_S = 900
