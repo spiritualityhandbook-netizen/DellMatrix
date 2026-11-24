@@ -239,10 +239,15 @@ def _stage_lattice_modules(raw: Dict[str, Any], owner: str):
     IRRECOVERABLE -- the payloads were never written -- so it fails
     closed here; IDs are never dressed up as empty modules and no
     facts are reconstructed from geometry.
+
+    Marker pin (Director REVIEW 7137053864): legacy treatment keys on
+    the marker being ABSENT from the record. A PRESENT marker --
+    including an explicit null -- is never legacy; it falls through
+    to the format check below and refuses typed when it is not the
+    supported format.
     """
-    fmt = raw.get("modules_format")
     mods = raw.get("modules")
-    if fmt is None:
+    if "modules_format" not in raw:
         if mods is None or mods == []:
             return []
         if isinstance(mods, list) and all(isinstance(m, str) for m in mods):
@@ -253,6 +258,7 @@ def _stage_lattice_modules(raw: Dict[str, Any], owner: str):
         raise ProgramLoadError(
             "lattice modules field is malformed (records without the "
             "modules_format marker): refusing load")
+    fmt = raw["modules_format"]
     if isinstance(fmt, bool) or not isinstance(fmt, int) or fmt != _LATTICE_MODULES_FORMAT:
         raise ProgramLoadError(
             f"lattice modules_format {fmt!r} is not supported "

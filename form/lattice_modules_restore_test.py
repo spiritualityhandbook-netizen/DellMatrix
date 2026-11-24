@@ -46,6 +46,14 @@ tuples, non-finite numbers and unrepresentable types refuse typed at
 save (target bytes identical); a persisted nested non-finite refuses
 typed at load before binding (source bytes preserved); valid nested
 string-keyed structures round-trip exactly.
+
+Residual addendum (Director REVIEW 7137053864): the recursive checker
+tracks the ACTIVE recursion path, so a circular live meta is a typed
+violation (never a raw RecursionError) while a shared-but-acyclic
+sub-value stays valid; and the reader's legacy boundary is pinned to
+marker ABSENCE -- a present invalid marker (explicit null included)
+refuses typed through the format check instead of becoming legacy.
+Section 17 pins both.
 """
 from __future__ import annotations
 
@@ -583,6 +591,72 @@ def smoke() -> bool:
             f"got={got16!r}")
     except Exception as e:
         rec("valid_nested_meta_roundtrips_exactly", False,
+            f"raised {type(e).__name__}: {e}")
+
+    # ---- 17. validator cycle protection + legacy-marker pin ---------------
+    # (Director REVIEW 7137053864: the recursive checker runs BEFORE the
+    # json.dumps backstop, so a circular live meta died with a raw
+    # RecursionError instead of the typed refusal; and the reader's
+    # legacy branch keyed on .get() returning None, conflating an
+    # ABSENT marker with a PRESENT null one. Now: cycles refuse typed
+    # via active-path tracking -- a shared-but-acyclic sub-value stays
+    # valid -- and legacy treatment requires the marker key to be
+    # absent; a present invalid marker (null included) refuses typed
+    # through the format check.)
+    circ17 = {}
+    circ17["self"] = circ17
+    _expect_save_refusal("circular_dict_meta_save_refuses_typed",
+                         _meta_prog("P0RCircDict", circ17), "P0RCircDict")
+    lst17 = []
+    lst17.append(lst17)
+    _expect_save_refusal("circular_list_meta_save_refuses_typed",
+                         _meta_prog("P0RCircList", {"items": lst17}), "P0RCircList")
+
+    shared17 = {"x": [1, 2], "y": "s"}
+    meta17 = {"a": shared17, "b": shared17, "c": [shared17]}
+    path17 = _tmp()
+    try:
+        save(_meta_prog("P0RShared", meta17), path17)
+        q17 = load("P0RShared", path=path17)
+        got17 = q17.lattice.modules["nested-mod"].meta if "nested-mod" in q17.lattice.modules else None
+        rec("shared_acyclic_meta_roundtrips_exactly", got17 == meta17,
+            f"got={got17!r}")
+    except Exception as e:
+        rec("shared_acyclic_meta_roundtrips_exactly", False,
+            f"raised {type(e).__name__}: {e}")
+
+    path17n = _tmp()
+    save(_build("P0RNullMark"), path17n)
+    sha17n = _mutate(path17n, lambda d: d["lattice"].__setitem__("modules_format", None))
+    try:
+        load("P0RNullMark", path=path17n)
+        rec("present_null_marker_records_refuses_typed", False,
+            "load succeeded with a present null marker")
+    except ProgramLoadError as e:
+        rec("present_null_marker_records_refuses_typed",
+            "not supported" in str(e) and _sha(path17n) == sha17n,
+            f"refused via the wrong path or bytes changed: {e}")
+    except Exception as e:
+        rec("present_null_marker_records_refuses_typed", False,
+            f"raised {type(e).__name__}, not ProgramLoadError")
+
+    path17e = _tmp()
+    save(_build("P0RNullEmpty"), path17e)
+    sha17e = _mutate(path17e, lambda d: (d["lattice"].__setitem__("modules_format", None),
+                                          d["lattice"].__setitem__("modules", [])))
+    _expect_refusal(rec, "present_null_marker_empty_refuses_typed",
+                    path17e, "P0RNullEmpty", sha17e)
+
+    path17a = _tmp()
+    save(_build("P0RAbsentMark"), path17a)
+    _mutate(path17a, lambda d: (d["lattice"].pop("modules_format", None),
+                                d["lattice"].pop("modules", None)))
+    try:
+        q17a = load("P0RAbsentMark", path=path17a)
+        rec("absent_marker_absent_modules_loads", q17a.lattice.modules == {},
+            f"registry={q17a.lattice.modules}")
+    except Exception as e:
+        rec("absent_marker_absent_modules_loads", False,
             f"raised {type(e).__name__}: {e}")
 
     print(f"LATTICE MODULES RESTORE: {sum(r)}/{len(r)}")

@@ -86,7 +86,8 @@ class LatticeModuleSaveError(RuntimeError):
     data -- is the write-time loss this circuit repairs."""
 
 
-def _finite_json_violation(value: Any, where: str = "meta") -> Optional[str]:
+def _finite_json_violation(value: Any, where: str = "meta",
+                           _active: frozenset = frozenset()) -> Optional[str]:
     """P0-R nested metadata contract (Director CORRECTION_REQUIRED
     7136690717): return a short description of the first way ``value``
     falls outside the finite-JSON value contract, or None when it is
@@ -99,18 +100,31 @@ def _finite_json_violation(value: Any, where: str = "meta") -> Optional[str]:
     None / bool / int / finite float / str / list / dict. Types that
     json.dumps would silently coerce (non-string keys become text,
     tuples become lists) are violations here, as are non-finite
-    numbers at any depth and any other unrepresentable type."""
+    numbers at any depth and any other unrepresentable type.
+
+    Cycle rule (Director REVIEW 7137053864): a circular container is
+    a violation, reported typed by the callers -- never a raw
+    RecursionError. ``_active`` holds the ids of the containers on
+    the CURRENT recursion path only, so an ordinary shared-but-
+    acyclic sub-value (the same dict/list referenced from two
+    places) remains valid."""
     if isinstance(value, dict):
+        if id(value) in _active:
+            return f"{where} is a circular reference"
+        active = _active | {id(value)}
         for k, v in value.items():
             if not isinstance(k, str):
                 return f"{where} has a non-string key {k!r}"
-            bad = _finite_json_violation(v, f"{where}.{k}")
+            bad = _finite_json_violation(v, f"{where}.{k}", active)
             if bad is not None:
                 return bad
         return None
     if isinstance(value, list):
+        if id(value) in _active:
+            return f"{where} is a circular reference"
+        active = _active | {id(value)}
         for i, v in enumerate(value):
-            bad = _finite_json_violation(v, f"{where}[{i}]")
+            bad = _finite_json_violation(v, f"{where}[{i}]", active)
             if bad is not None:
                 return bad
         return None
