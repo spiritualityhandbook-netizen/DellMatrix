@@ -117,6 +117,32 @@ REPAIR (this section, three seams, no other behavior change):
     as a printed diagnosis + recovery offer and exit 1; every
     other exception keeps its traceback.
 
+WORDING NARROWING (Director 7137035559, at composed head
+914699e3): the startup refusal's second sentence formerly read
+"No state was loaded and no file was changed." That blanket
+claim quantifies over the whole load attempt, but
+persist_rest.load runs checkpoint, rollback, confirmation,
+supersession and exchange recovery BEFORE the final envelope
+is validated, and that journal work may legitimately write
+files before a refusal is raised — so the sentence claimed
+more than the refusing boundary can prove. The sentence now
+reads "No state was loaded, and this refusal itself changed
+no file.": both halves are facts at the refusing boundary
+(the session never starts; from the raise, the load path
+performs no further writes and the handler only prints and
+probes the generation id). The diagnosed refusal and the
+recovery offer are unchanged. This suite pins the narrowed
+sentence at all three typed-refusal surfacings (corrupt
+program, corrupt nursery, missing program with surviving
+generation), asserts the blanket sentence is gone, and —
+for the no-journal corrupt-program fixture — additionally
+pins the strong form the fixture CAN prove: the whole owner
+file set byte-identical across both refused attempts. No
+recovery-before-refusal fixture is needed to defend the
+narrowed wording, because the narrowed claim is independent
+of what recovery did earlier in the load; such a fixture
+would only have served the withdrawn blanket claim.
+
 INSTRUMENT REPAIR ROUND 2 (post-CI, 2026-11-21 — the suite
 itself, not the product): CI run 44962227931 at the round-1
 head (32336f8) ran this suite to its full count on both
@@ -696,6 +722,9 @@ def main():
         good_bytes = read_bytes(prog_path)
         bad_bytes = flipped(good_bytes)
         write_bytes(prog_path, bad_bytes)
+        files_before = {n: read_bytes(os.path.join(_STATE_DIR, n))
+                        for n in state_files(prog_owner)
+                        if os.path.isfile(os.path.join(_STATE_DIR, n))}
         try:
             try:
                 persist_load(prog_owner)
@@ -727,6 +756,33 @@ def main():
                   "recovery source, and the corrupt file is "
                   "preserved byte-exact (never overwritten by a "
                   "fresh book, no false success)")
+            files_after = {n: read_bytes(os.path.join(_STATE_DIR, n))
+                           for n in state_files(prog_owner)
+                           if os.path.isfile(os.path.join(_STATE_DIR, n))}
+            check("j12_refusal_wording_narrowed_to_boundary",
+                  "No state was loaded, and this refusal itself "
+                  "changed no file." in out
+                  and "no file was changed" not in out
+                  and "Recovery:" in out,
+                  "Director 7137035559: the door's second sentence "
+                  "claims only what the refusing boundary proves "
+                  "— no state was loaded and the refusal itself "
+                  "changed no file — and the recovery offer still "
+                  "follows it; the former blanket sentence ('no "
+                  "file was changed', quantifying over the whole "
+                  "load attempt including the loader's five "
+                  "recovery steps) is gone")
+            check("j12_refusal_changed_no_file_in_nojournal_fixture",
+                  files_after == files_before,
+                  "in THIS fixture (no recovery journal pending, "
+                  "so every recovery step is a no-op) the whole "
+                  "owner file set is byte-identical across both "
+                  "refused attempts (loader probe + public "
+                  "restart) — the strong statement the fixture "
+                  "can prove, pinned as fixture evidence; the "
+                  "printed wording above stays narrow because "
+                  "journal cases exist where recovery writes "
+                  "before the refusal")
             write_bytes(prog_path, good_bytes[: len(good_bytes) // 2])
             rc, out = run_repl(prog_owner, ["status", "quit"],
                                load=True)
@@ -780,6 +836,15 @@ def main():
                   "diagnosed refusal at the public door — no "
                   "traceback, and neither file is touched by the "
                   "refused restart")
+            check("j12_nursery_refusal_wording_narrowed",
+                  "No state was loaded, and this refusal itself "
+                  "changed no file." in out
+                  and "no file was changed" not in out
+                  and "Recovery:" in out,
+                  "the nursery member's typed refusal surfaces "
+                  "the same narrowed sentence and recovery offer "
+                  "— the narrowing holds at every typed-refusal "
+                  "surfacing, not only the program member's")
         finally:
             write_bytes(nurs_path, good_nurs)
         rc, out = run_repl(nurs_owner, ["status", "quit"], load=True)
@@ -824,6 +889,15 @@ def main():
                   "the destroyed book's orphaned proposals "
                   "(parents absent from the exposed scope), a "
                   "hybrid pair. The refusal fabricates no file")
+            check("j12_missing_program_wording_narrowed",
+                  "No state was loaded, and this refusal itself "
+                  "changed no file." in out
+                  and "no file was changed" not in out
+                  and "Recovery:" in out,
+                  "the destroyed-envelope refusal (raised by "
+                  "the loader's missing-member arm, after its "
+                  "recovery preamble) also surfaces the "
+                  "narrowed sentence and the recovery offer")
         finally:
             write_bytes(prog_path, good_prog)
         # Control for the refusal's boundary: the legitimate

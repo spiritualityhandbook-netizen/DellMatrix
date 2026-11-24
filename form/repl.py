@@ -5010,7 +5010,21 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
             if not isinstance(_load_exc, (_PLE, _NLE)):
                 raise
             _say(f"Load refused for {owner}: {_load_exc}")
-            _say("No state was loaded and no file was changed.")
+            # J-12 wording scope (Director 7137035559): the
+            # sentence below claims only what THIS boundary can
+            # prove — no state was loaded (the session never
+            # starts) and the refusal itself wrote nothing (from
+            # the raise, the load path performs no further
+            # writes and this handler only prints and probes the
+            # generation id). It deliberately does NOT claim
+            # "no file was changed" for the whole load attempt:
+            # persist_rest.load runs checkpoint, rollback,
+            # confirmation, supersession and exchange recovery
+            # BEFORE the final envelope is validated, and that
+            # journal work may legitimately write files before
+            # a refusal is ever raised.
+            _say("No state was loaded, and this refusal itself "
+                 "changed no file.")
             try:
                 from form.mandell.checkpoint_generation import (
                     current_generation_id as _cgid)
