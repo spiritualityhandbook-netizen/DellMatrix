@@ -582,6 +582,58 @@ def main():
         _unmutated = False
     check("huge_int_coord_input_unmutated", _unmutated)
 
+    # Director 7136695481: two individually FINITE positions can have a
+    # separation outside the float range — _rel_polar's subtraction
+    # overflows and the descriptor carried dist=inf, which strict JSON
+    # (allow_nan=False) cannot serialize. Different case from the huge
+    # single integer above: every endpoint passes the finite checks.
+    # The repair suppresses ONLY the unrepresentable spatial cue with a
+    # typed reason; pitch and measured provenance survive.
+    far_idea = {"idea_id": "idea-far", "owner": "ace",
+                "source_revision": "rev-7", "active": True,
+                "idea_state": "active", "title": "far shore",
+                "properties": {"mood": "calm water"},
+                "position": {"x": 1e308, "y": 0.0}, "origin_note": 0}
+    far_alone = son.sonify_idea(copy.deepcopy(far_idea))
+    far_over = son.sonify_idea(
+        copy.deepcopy(far_idea),
+        listener={"pos": [-1e308, 0.0], "facing": "N"})
+    check("spatial_overflow_separation_cue_suppressed",
+          far_over.status == "supported" and far_over.spatial is None
+          and "spatial_distance_unrepresentable" in far_over.reasons
+          and far_over.pitch_class == far_alone.pitch_class
+          and far_over.note_name == far_alone.note_name
+          and approx(far_over.frequency_hz, far_alone.frequency_hz, 1e-9),
+          f"spatial={far_over.spatial} reasons={far_over.reasons}")
+    try:
+        json.dumps(far_over.to_dict(), allow_nan=False)
+        _strict_ok = True
+    except (ValueError, OverflowError):
+        _strict_ok = False
+    check("spatial_overflow_strict_serialization", _strict_ok)
+    check("spatial_overflow_provenance_preserved",
+          far_over.measured_inputs.get("position") == [1e308, 0.0]
+          and far_over.measured_inputs.get("listener")
+          == {"pos": [-1e308, 0.0], "facing": "N"},
+          f"measured={far_over.measured_inputs}")
+    # Nearby representable control: same idea, listener at the origin —
+    # the 1e308 separation IS representable, so the cue survives whole
+    # and strict serialization succeeds with no suppression reason.
+    far_ctrl = son.sonify_idea(
+        copy.deepcopy(far_idea),
+        listener={"pos": [0.0, 0.0], "facing": "N"})
+    try:
+        json.dumps(far_ctrl.to_dict(), allow_nan=False)
+        _ctrl_strict_ok = True
+    except (ValueError, OverflowError):
+        _ctrl_strict_ok = False
+    check("spatial_near_overflow_control_cue_present",
+          far_ctrl.spatial is not None
+          and far_ctrl.spatial["dist"] == 1e308
+          and "spatial_distance_unrepresentable" not in far_ctrl.reasons
+          and _ctrl_strict_ok,
+          f"spatial={far_ctrl.spatial} reasons={far_ctrl.reasons}")
+
     import form.dell_matrix.sonification as _mod
     src = open(_mod.__file__, encoding="utf-8").read()
     banned = ("socket", "urllib", "requests", "subprocess", "shutil",

@@ -370,6 +370,14 @@ def _spatial_cue(idea: Mapping, coords: Optional[Tuple[int, int, int]],
     else:
         return None, "coordinate_missing", parsed
     dist, bearing = _rel_polar(src, facing, source)
+    if not math.isfinite(dist):
+        # Both endpoints passed the finite checks individually, but
+        # their separation can still lie outside the float range:
+        # _rel_polar's subtraction overflows to inf, which a strict
+        # JSON consumer cannot serialize. Suppress ONLY the spatial
+        # cue with a typed reason; pitch and measured provenance are
+        # unaffected (Director 7136695481).
+        return None, "spatial_distance_unrepresentable", parsed
     pan = pan_from_bearing(bearing)
     cue = {
         "dist": round(dist, 2),
