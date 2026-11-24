@@ -2503,7 +2503,9 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
                 input_text=raw,
                 ok=bool(res.get("ok", True)),
                 error="" if res.get("ok", True) else str(res.get("error") or ""),
-                messages=[f"Created idea: {res.get('label', '')} id={res.get('id', '')}"],
+                messages=([f"Created idea: {res.get('label', '')} id={res.get('id', '')}"]
+                          if res.get("ok", True) else
+                          [f"Create refused ({res.get('error') or 'refused'}): nothing was placed."]),
                 semantic="place[Create:specialized]",
                 interaction_id=interaction_id,
             )
@@ -3387,7 +3389,9 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
                     input_text=raw,
                     ok=bool(res.get("ok", True)),
                     error="" if res.get("ok", True) else str(res.get("error") or ""),
-                    messages=[f"Created idea: {res.get('label', '')} id={res.get('id', '')}"],
+                    messages=([f"Created idea: {res.get('label', '')} id={res.get('id', '')}"]
+                              if res.get("ok", True) else
+                              [f"Create refused ({res.get('error') or 'refused'}): nothing was placed."]),
                     semantic="place[Create:specialized]",
                     interaction_id=interaction_id,
                 )

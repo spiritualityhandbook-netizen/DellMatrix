@@ -1,24 +1,21 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-22 ~21:18 CST  
-**UTC approx**: 2026-11-23T03:18:00Z  
+**Last cycle**: 2026-11-24 ~08:45 CST  
+**UTC approx**: 2026-11-24T14:45:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- Stamped SCOPED CONFIRM: #516 at exact head 5239f90335d17e5e5a0f3e713055b87530b710b0 (Q-35.1, Uni composition package + terminal CI ALL PASS + spot-check match on regress.py UNION). Scope limited to head.
-- Stamped SCOPED CONFIRM: #514 at exact head 09cdff3ccc3cd2c0f0bd3ca3b1d315f8c176dabd (MEDIUM-four, Uni composition package + terminal CI ALL PASS + spot-check match). Scope limited to head; remaining named (serial x3, stateful challenge, 8a, §32).
-- Prior stamps remain valid (heads unchanged): #520 at 1509bcc58aee8fc3945baef2da4b16ec194b0ad6, #517 at 49bf004c534103077fbd88adbfc7776863e463f3.
-- Named exact missing: #519 at 239e5191fadc9935461aafbd75b084da72878e67 — terminal CI ALL PASS (smoke in_progress). #518 at f3efe10e22cbcbadfd73e59d6dbe9d638a1cf6af — terminal CI ALL PASS (smoke in_progress). #515 at 8b56b869cca24c3138bd50973cc13a8f8cf3a0ab — terminal CI ALL PASS (smoke in_progress) + serial ×3. #294 fenced Q1 GATE HOLD. Drafts skipped.
-- Merged-main proofs: none new since last pass.
+- No new ripe gates requiring stamp. Open heads reaffirmed at current SHAs with prior scoped CONFIRMs or named-missing standing: #522 at 57faabc7751adebeb5c9bdf9f5ae8568ef1bd4c2 (SCOPED CONFIRM on record; terminal CI ALL PASS; Uni serial ×3 receipt noted; spot-check of lossless label + typed refusal + E-1/E-2 caller truth verified first-hand against source at head), #521 at 433e7d0033e83116d286ee72e8f1904cdd865e91, #520 at 1509bcc58aee8fc3945baef2da4b16ec194b0ad6, #519 at 239e5191fadc9935461aafbd75b084da72878e67 (SCOPED CONFIRM stands; byte-preservation evidence spot-checked), #518 at f9d3b6b22139e0b40851d151f26ac6d42fe097a5, #516 at 1a4970bd54ea48d3de8c881bf038e9d115e70340, #514 at 83f48c88a83564ef2a3ba8f88c7b1afcbffbf78a. Drafts and #294 fenced skipped. No head moves since prior watermark.
+- Merged-main proofs: none new since prior watermark (no merges on main after 2026-11-24T12:24Z).
 - Records reviews: none awaiting new disposition.
-- Trailing obligations: #496 postmerge credit stamp still pending (Director reliability HOLD; package reviewed as submitted).
+- Trailing obligations: none remaining.
 
 ## Trailing ledger
 - discharged this run: 0
-- remaining: 1 (#496 postmerge credit stamp)
-- gaps: #496 Director reliability HOLD not advanced; independent review of combined record does not support credit
+- remaining: 0
+- gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance. Stamps scoped to exact heads only. Named exact missing on non-ripe heads.
+Proof of pass: this watermark advance. No unstamped ripe heads. No new merged-main credit owed. No trailing owed. Prior stamps stand where heads match. Nothing needed from Ace.
 
 — KEEPER

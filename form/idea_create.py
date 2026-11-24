@@ -45,6 +45,11 @@ def parse_create_line(raw: str) -> Dict[str, Any]:
         # whole"): the label is stored WHOLE. The former label[:80]
         # silently cut admissible operands at this door (the stored
         # unit label lost its tail with no provenance or refusal).
+        # R24-L (Director 7098988693, composed 2026-11-24): the
+        # canonical label budget (200 chars, Nursery Q-S2.1) is
+        # enforced as a typed refusal BEFORE mutation in
+        # needs.parse_and_place, never by slicing here — so the whole
+        # label below and main's refusal reporting coexist.
         "label": label,
         # J-04 (GP-E27 file 06 oracle: create with detail/goals, then
         # cold reload — "all text/provenance/links remain identical";
