@@ -140,12 +140,19 @@
       </header>`;
   }
 
+  /* Counts are shown/total whenever the payload discloses a total;
+     the shipped slice length alone is never printed as the count. */
+  function nurseryCountText(s) {
+    const shown = (s && s.nursery) ? s.nursery.length : 0;
+    const total = (s && typeof s.nursery_total === 'number') ? s.nursery_total : shown;
+    return total > shown ? `${shown}/${total}` : `${total}`;
+  }
   /* syncux:foot-sync */
   function renderFoot(s) {
     const fp = (s && s.fp) || {};
     const mandel = fp.mandel || '15[Map] :: …';
     const left = s
-      ? `Floor locked · ${s.owner || 'Operator'} · ideas ${s.ideas ?? 0} · nursery ${(s.nursery || []).length} · gen ${s.generation ?? 0} · form ${s.form || '?'}`
+      ? `Floor locked · ${s.owner || 'Operator'} · ideas ${s.ideas ?? 0} · nursery ${nurseryCountText(s)} · gen ${s.generation ?? 0} · form ${s.form || '?'}`
       : 'DellMatrix · Nursery law · Floor locked';
     return `
       <footer class="foot">
@@ -198,7 +205,7 @@
     const fp = s.fp || {};
     const c = fp.center || [0, 0, 0];
     const pil = s.pillars || {};
-    return `owner=${s.owner || '?'} · ideas=${s.ideas ?? 0} · form=${s.form || '?'} · gen=${s.generation ?? 0} · nursery=${(s.nursery || []).length} · ${pil.label || '—'} · @ (${c.join(',')})`;
+    return `owner=${s.owner || '?'} · ideas=${s.ideas ?? 0} · form=${s.form || '?'} · gen=${s.generation ?? 0} · nursery=${nurseryCountText(s)} · ${pil.label || '—'} · @ (${c.join(',')})`;
   }
   /* syncux:sync-line */
 function pageCard(title, bodyHtml, actionsHtml) {
@@ -285,7 +292,7 @@ function pageCard(title, bodyHtml, actionsHtml) {
       sandbox: 'rgba(180,120,40,0.4)',
       verita: 'rgba(52,211,153,0.35)',
     };
-    edges.slice(0, 400).forEach((e) => {
+    edges.forEach((e) => {
       const a = byId[String(e.a || e.source || e.from)];
       const b = byId[String(e.b || e.target || e.to)];
       if (!a || !b) return;
