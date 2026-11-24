@@ -29,6 +29,28 @@ def parse_and_place(program, raw: str) -> Dict[str, Any]:
 
     parsed = parse_create_line(raw)
     label = parsed["label"]
+    # R24-L no-silent-truncation contract (Director 7098988693): the
+    # canonical label budget is MAX_LABEL_CHARS = 200 (Nursery Q-S2.1;
+    # the inference dock enforces the same bound by explicit refusal).
+    # Labels within budget place losslessly; an over-budget label is
+    # refused BEFORE any mutation — never sliced to fit.
+    from form.dell_matrix.nursery import MAX_LABEL_CHARS
+    if len(label) > MAX_LABEL_CHARS:
+        return {
+            "ok": False,
+            "error": "label_over_budget",
+            "label": label,
+            "label_chars": len(label),
+            "max_label_chars": MAX_LABEL_CHARS,
+            "detail": parsed.get("detail") or "",
+            "goals": list(parsed.get("goals") or []),
+            "complete": parsed.get("complete"),
+            "strength": parsed.get("strength"),
+            "grade": parsed.get("grade"),
+            "missing": parsed.get("missing") or [],
+            "hint": parsed.get("hint") or "",
+            "report": format_report(parsed),
+        }
     # Canonical slug + collision dedup (idea_create.unique_unit_id).
     uid = unique_unit_id(program.cube.session.plane.units, label)
 
@@ -70,6 +92,13 @@ def parse_and_place(program, raw: str) -> Dict[str, Any]:
 
 
 def format_create_end(res: Dict[str, Any]) -> str:
+    if not res.get("ok", True):
+        return "\n".join([
+            f'Create refused ({res.get("error") or "refused"}): '
+            f'label is {res.get("label_chars")} chars; the bound is '
+            f'{res.get("max_label_chars")} chars — nothing was placed.',
+            "  tip: shorten the label and create again.",
+        ])
     lines = [
         f'Created idea: "{res.get("label")}" id={res.get("id")}',
         f"  strength={res.get('strength')} ({res.get('grade')}) complete={res.get('complete')}",

@@ -716,6 +716,23 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
             name = raw.split(maxsplit=1)[1].strip()
             line = f"create an idea called {name}"
         res = parse_and_place(program, line)
+        if not res.get("ok", True):
+            # E-1 (Director 7100595543): a refused create stays a refusal
+            # through this envelope — propagate the real ok and the typed
+            # error, no create_strong end signal, and do not echo the
+            # refused label back inside the machine-readable result.
+            return {
+                "ok": False,
+                "error": str(res.get("error") or "create_refused"),
+                "msg": format_create_end(res),
+                "create": {
+                    "ok": False,
+                    "error": str(res.get("error") or "create_refused"),
+                    "label_chars": res.get("label_chars"),
+                    "max_label_chars": res.get("max_label_chars"),
+                },
+                "end": "create_refused",
+            }
         return {"ok": True, "msg": format_create_end(res), "create": res, "end": "create_strong"}
     if lower.startswith("set detail "):
         rest = raw[len("set detail "):].strip().split(None, 1)
