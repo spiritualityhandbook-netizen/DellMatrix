@@ -17,7 +17,7 @@ from form.dell_matrix.perception import Form
 from form.avatar import Facing, Posture, Locomotion, Reach, Expression
 from form.open import Program, open_program
 from form.persist_core_ii import restore_core_ii
-from form.persist import serialize, _path, _cp_path, _safe_owner, _STATE_DIR, VERSION
+from form.persist import serialize, _path, _cp_path, _safe_owner, _STATE_DIR, VERSION, _finite_json_violation
 
 
 class BindingLossSaveError(Exception):
@@ -301,6 +301,11 @@ def _stage_lattice_modules(raw: Dict[str, Any], owner: str):
         if not isinstance(meta, dict):
             raise ProgramLoadError(
                 f"lattice module {mid!r} meta is not an object: refusing load")
+        violation = _finite_json_violation(meta)
+        if violation is not None:
+            raise ProgramLoadError(
+                f"lattice module {mid!r} meta is not finite JSON "
+                f"({violation}): refusing load")
         cells_field = item["cells"]
         if not isinstance(cells_field, list):
             raise ProgramLoadError(

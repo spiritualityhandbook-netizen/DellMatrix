@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 import json
+import math
 import os
 import sys
 from datetime import datetime, timezone
@@ -83,6 +84,41 @@ class LatticeModuleSaveError(RuntimeError):
     the previous generation at the target path stays intact. The
     alternative -- silently dropping or stringifying module identity
     data -- is the write-time loss this circuit repairs."""
+
+
+def _finite_json_violation(value: Any, where: str = "meta") -> Optional[str]:
+    """P0-R nested metadata contract (Director CORRECTION_REQUIRED
+    7136690717): return a short description of the first way ``value``
+    falls outside the finite-JSON value contract, or None when it is
+    exactly representable.
+
+    ONE contract at both doors: the save door (here) and the load
+    door (persist_rest._stage_lattice_modules) both apply this
+    checker, so neither door can accept what the other refuses.
+    Object keys must be strings at EVERY depth; values may only be
+    None / bool / int / finite float / str / list / dict. Types that
+    json.dumps would silently coerce (non-string keys become text,
+    tuples become lists) are violations here, as are non-finite
+    numbers at any depth and any other unrepresentable type."""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            if not isinstance(k, str):
+                return f"{where} has a non-string key {k!r}"
+            bad = _finite_json_violation(v, f"{where}.{k}")
+            if bad is not None:
+                return bad
+        return None
+    if isinstance(value, list):
+        for i, v in enumerate(value):
+            bad = _finite_json_violation(v, f"{where}[{i}]")
+            if bad is not None:
+                return bad
+        return None
+    if value is None or isinstance(value, (str, bool, int)):
+        return None
+    if isinstance(value, float):
+        return None if math.isfinite(value) else f"{where} is a non-finite number"
+    return f"{where} has unrepresentable type {type(value).__name__}"
 
 
 def stored_program_owner(path: str) -> Optional[str]:
@@ -190,9 +226,13 @@ def _serialize_lattice_modules(lat) -> List[Dict[str, Any]]:
             raise LatticeModuleSaveError(
                 f"lattice module {mid!r} has invalid index {index!r}: refusing save")
         meta = getattr(mod, "meta", None)
-        if not isinstance(meta, dict) or any(not isinstance(k, str) for k in meta):
+        if not isinstance(meta, dict):
             raise LatticeModuleSaveError(
                 f"lattice module {mid!r} meta is not a string-keyed object: refusing save")
+        violation = _finite_json_violation(meta)
+        if violation is not None:
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} meta is not finite JSON ({violation}): refusing save")
         try:
             json.dumps(meta, allow_nan=False)
         except (TypeError, ValueError) as e:

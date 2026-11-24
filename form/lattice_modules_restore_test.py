@@ -36,6 +36,16 @@ failure raises LatticeModuleSaveError pre-byte. snap_in and
 rebuild_from_plane are NOT changed: their live overlap/orphan behavior
 is a documented limitation the save refusal makes explicit. Sections
 13-15 pin A/B/D/E of the choice.
+
+Nested-contract addendum (Director CORRECTION_REQUIRED 7136690717):
+the finite-JSON meta contract is RECURSIVE and shared by both doors --
+_form.persist._finite_json_violation_ is applied by the writer in
+_serialize_lattice_modules and by the loader in
+_stage_lattice_modules. Section 16 pins it: nested non-string keys,
+tuples, non-finite numbers and unrepresentable types refuse typed at
+save (target bytes identical); a persisted nested non-finite refuses
+typed at load before binding (source bytes preserved); valid nested
+string-keyed structures round-trip exactly.
 """
 from __future__ import annotations
 
@@ -515,6 +525,65 @@ def smoke() -> bool:
         cells={(4, 4, 0): Cell(h=4, v=4, f=0, content="two", label="two")},
         meta={}))
     _closure("closure_property_overlap", p15o, "P0REOverlap")
+
+    # ---- 16. nested metadata contract at BOTH doors -----------------------
+    # (Director CORRECTION_REQUIRED 7136690717: save and load must apply
+    # ONE recursive finite-JSON contract to module meta. At the pre-fix
+    # head a nested numeric key was silently stringified by the writer
+    # and a nested tuple silently became a list, while the loader bound
+    # a nested non-finite number the writer then refused -- the two
+    # doors disagreed. Now: valid nested structures round-trip exactly;
+    # unrepresentable live values refuse typed at save before any byte
+    # moves; invalid persisted values refuse typed at load before
+    # binding, source bytes preserved.)
+    def _meta_prog(owner, meta):
+        pp = open_program(owner)
+        pp.lattice.snap_in(SnapModule(
+            id="nested-mod", kind="lattice2d", axis="H", index=0,
+            cells={(1, 1, 0): Cell(h=1, v=1, f=0, content="c", label="c")},
+            meta=meta))
+        return pp
+
+    def _expect_save_refusal(name, prog, owner):
+        tgt = _tmp()
+        save(_build(owner + "Good"), tgt)
+        sha_t = _sha(tgt)
+        try:
+            save(prog, tgt)
+            rec(name, False, "save succeeded with unrepresentable nested meta")
+        except LatticeModuleSaveError:
+            rec(name, _sha(tgt) == sha_t, "refused typed but target bytes changed")
+        except Exception as e:
+            rec(name, False, f"raised {type(e).__name__}, not LatticeModuleSaveError")
+
+    _expect_save_refusal("nested_numeric_key_save_refuses_typed",
+                         _meta_prog("P0RNNumKey", {"outer": {7: "x"}}), "P0RNNumKey")
+    _expect_save_refusal("nested_tuple_save_refuses_typed",
+                         _meta_prog("P0RNTuple", {"pair": (1, 2)}), "P0RNTuple")
+    _expect_save_refusal("nested_nonfinite_save_refuses_typed",
+                         _meta_prog("P0RNNaN", {"outer": {"score": float("inf")}}), "P0RNNaN")
+    _expect_save_refusal("nested_unrepresentable_save_refuses_typed",
+                         _meta_prog("P0RNSet", {"bag": {1, 2}}), "P0RNSet")
+
+    path16 = _tmp()
+    save(_meta_prog("P0RNested", {"outer": {"score": 1.5}}), path16)
+    sha16 = _mutate(path16, lambda d: [rec_.__setitem__("meta", {"outer": {"score": float("nan")}})
+                                       for rec_ in d["lattice"]["modules"]
+                                       if rec_["id"] == "nested-mod"])
+    _expect_refusal(rec, "nested_nonfinite_load_refuses_typed", path16, "P0RNested", sha16)
+
+    nested_ok = {"outer": {"name": "x", "vals": [1, 2.5, True, None, "s"],
+                           "deep": {"deeper": [{"k": "v"}]}}, "n": 3}
+    path16b = _tmp()
+    try:
+        save(_meta_prog("P0RValid", nested_ok), path16b)
+        q16 = load("P0RValid", path=path16b)
+        got16 = q16.lattice.modules["nested-mod"].meta if "nested-mod" in q16.lattice.modules else None
+        rec("valid_nested_meta_roundtrips_exactly", got16 == nested_ok,
+            f"got={got16!r}")
+    except Exception as e:
+        rec("valid_nested_meta_roundtrips_exactly", False,
+            f"raised {type(e).__name__}: {e}")
 
     print(f"LATTICE MODULES RESTORE: {sum(r)}/{len(r)}")
     return all(r)
