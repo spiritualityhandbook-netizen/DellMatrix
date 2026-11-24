@@ -370,15 +370,23 @@ def _ledger_append(directory: str, record: Dict[str, Any], *,
     only consequence is that the temp it described carries no (or
     stale) provenance, and a later sweep resolves that ambiguity to
     KEEP. The ledger path is opened with O_NOFOLLOW: a symlinked
-    ledger is not written through."""
+    ledger is not written through. It is also opened with
+    O_NONBLOCK and accepted only if the opened file is a regular
+    file (Director CORRECTION_REQUIRED 7136552041): an unsupported
+    file type at the ledger path — a FIFO blocks a plain open
+    indefinitely — must fail fast so auxiliary bookkeeping can
+    never block or corrupt an ordinary save."""
     flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
     flags |= getattr(os, "O_NOFOLLOW", 0)
+    flags |= getattr(os, "O_NONBLOCK", 0)
     try:
         fd = os.open(os.path.join(directory, PROVENANCE_LEDGER_NAME),
                      flags, 0o644)
     except OSError:
         return
     try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return
         line = (json.dumps(record, separators=(",", ":")) + "\n"
                 ).encode("utf-8")
         while line:
@@ -427,11 +435,25 @@ def _read_provenance(dir_fd: int) -> Dict[str, tuple]:
     Malformed lines are ignored: a torn final append (crash during
     the ledger write itself) degrades to missing provenance, which
     the sweep resolves to KEEP. A symlinked ledger is not read
-    through (O_NOFOLLOW); it degrades to no provenance."""
+    through (O_NOFOLLOW); it degrades to no provenance. An
+    unsupported file type at the ledger path (a FIFO can block a
+    plain open) likewise degrades to no provenance: the read opens
+    with O_NONBLOCK and accepts only a regular file (7136552041)."""
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    flags |= getattr(os, "O_NONBLOCK", 0)
     try:
         fd = os.open(PROVENANCE_LEDGER_NAME, flags, dir_fd=dir_fd)
     except OSError:
+        return {}
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            os.close(fd)
+            return {}
+    except OSError:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
         return {}
     out: Dict[str, tuple] = {}
     try:
@@ -456,43 +478,6 @@ def _read_provenance(dir_fd: int) -> Dict[str, tuple]:
     except OSError:
         return {}
     return out
-
-
-def _prune_provenance(dir_fd: int, live: Dict[str, tuple]) -> None:
-    """Rewrite the ledger keeping only the mint records in ``live``
-    (records whose file still exists with the recorded identity).
-    Best-effort housekeeping run at the end of a sweep: it bounds
-    ledger growth and drops records for files that are gone. Failure
-    leaves the previous ledger, which stays sound — a stale record
-    cannot authorize a removal unless a file exists with BOTH the
-    recorded name and the recorded inode, and consumed temps are
-    tombstoned at replace time."""
-    try:
-        if not live:
-            try:
-                os.unlink(PROVENANCE_LEDGER_NAME, dir_fd=dir_fd)
-            except OSError:
-                pass
-            return
-        blob = "".join(
-            json.dumps({"v": 1, "op": "mint", "name": n, "dev": dv,
-                        "ino": io}, separators=(",", ":")) + "\n"
-            for n, (dv, io) in sorted(live.items())).encode("utf-8")
-        tmp_name = PROVENANCE_LEDGER_NAME + ".prune"
-        fd = os.open(tmp_name,
-                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644,
-                     dir_fd=dir_fd)
-        try:
-            with os.fdopen(fd, "wb") as f:
-                f.write(blob)
-                f.flush()
-                os.fsync(f.fileno())
-        except OSError:
-            return
-        os.replace(tmp_name, PROVENANCE_LEDGER_NAME,
-                   src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
-    except OSError:
-        pass
 
 
 def sweep_stale_tmps(directory: str, *,
@@ -632,7 +617,6 @@ def sweep_stale_tmps(directory: str, *,
         os.close(dir_fd)
         return {"scanned": 0, "removed": 0}
     provenance = _read_provenance(dir_fd)
-    provenance_before = dict(provenance)
 
     getuid = getattr(os, "getuid", None)
     scanned = removed = 0
@@ -714,21 +698,18 @@ def sweep_stale_tmps(directory: str, *,
             removed += 1
             _emit(name, "removed", None, pid=pid)
     finally:
-        # Ledger housekeeping: drop records whose file is gone or
-        # whose identity no longer matches (removed candidates,
-        # consumed temps, torn state). Records for files that still
-        # exist with their recorded identity stay live.
-        live = {}
-        for rec_name, rec_ident in provenance.items():
-            try:
-                st = os.stat(rec_name, dir_fd=dir_fd,
-                             follow_symlinks=False)
-            except OSError:
-                continue
-            if (st.st_dev, st.st_ino) == rec_ident and \
-                    stat.S_ISREG(st.st_mode):
-                live[rec_name] = rec_ident
-        if live != provenance_before:
-            _prune_provenance(dir_fd, live)
+        # The ledger is APPEND-ONLY: the sweep never rewrites or
+        # unlinks it (Director CORRECTION_REQUIRED 7136552041 —
+        # compaction deferred). The former end-of-sweep prune
+        # rebuilt the ledger from the snapshot read at sweep start,
+        # so an ordinary save appending mint/consumed records during
+        # the sweep could lose its new evidence or have a consumed
+        # record resurrected; and its rewrite went through a fixed
+        # working filename opened with O_TRUNC and no exclusive
+        # creation, destroying any unrelated file at that path.
+        # Stale records are harmless under the provenance law: a
+        # record authorizes nothing unless a file exists with BOTH
+        # the recorded name and the recorded inode, and consumed
+        # temps are tombstoned at replace time.
         os.close(dir_fd)
     return {"scanned": scanned, "removed": removed}

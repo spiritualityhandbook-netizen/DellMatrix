@@ -58,6 +58,23 @@ helper:
       the sweep into the foreign directory and removed its orphan.
       An ordinary unswapped root still sweeps a genuine orphan
       (the pin must not over-refuse).
+  S13 ledger housekeeping (Director CORRECTION_REQUIRED 7136552041):
+      the end-of-sweep prune rewrote or unlinked the ledger from a
+      snapshot taken at sweep start, through a fixed working file
+      opened with O_TRUNC and no exclusive creation. Three defects,
+      all forced deterministically (the save-side appends are driven
+      through the S7 removal hook, which fires after the snapshot
+      and before the prune): (a) an unrelated file planted at the
+      prune working-file path loses its bytes; (b) an ordinary save
+      overlapping the sweep loses its fresh mint record to the
+      rewrite (and to the empty-live unlink), and a consumed
+      tombstone appended during the sweep is resurrected by the
+      rewrite; (c) a FIFO at the ledger path blocks an ordinary
+      save's bookkeeping open indefinitely. The repair defers
+      compaction (the ledger stays append-only; the sweep never
+      rewrites or unlinks it) and hardens ledger appends/reads
+      against unsupported file types. A genuine provenanced orphan
+      remains sweepable throughout (control).
 
 Labels: INTEGRATION (helper level, temp dirs) + CROSS_PROCESS (S4).
 State hygiene: temp directories only; nothing touches form/state.
@@ -536,6 +553,179 @@ def section_s12(d):
           str(res))
 
 
+# --------------------------------------------------------------- S13
+def _read_prov(d):
+    fd = os.open(d, os.O_RDONLY)
+    try:
+        return AW._read_provenance(fd)
+    finally:
+        os.close(fd)
+
+
+def _mint_live_file(d, name, data=b"LIVE"):
+    """Plant a real file and record its genuine mint in the ledger."""
+    pth = _plant(d, name, data)
+    st = os.stat(pth)
+    AW._record_mint(d, name, st.st_dev, st.st_ino)
+    return pth, st
+
+
+def section_s13(d):
+    ledger_name = AW.PROVENANCE_LEDGER_NAME
+    prune_path = os.path.join(d, ledger_name + ".prune")
+    live_name = f"a.json.dmtmp.{os.getpid()}.deadbeef"
+
+    # (a) foreign bytes at the prune working-file path survive a
+    # sweep that (at the pre-fix head) runs the rewrite prune: the
+    # ledger holds one live record (this process's own temp, kept
+    # LIVE_PID) and one stale record (file gone), so live != before.
+    _plant(d, "canon.json", b"{}")
+    _mint_live_file(d, live_name)
+    dst = os.stat(d)
+    AW._record_mint(d, "gone.json.dmtmp.1.deadbeef",
+                    dst.st_dev, 4242424242)
+    _plant(d, ledger_name + ".prune", b"FOREIGN-WORK-BYTES")
+    res = sweep_stale_tmps(d)
+    intact = os.path.exists(prune_path)
+    if intact:
+        with open(prune_path, "rb") as f:
+            intact = f.read() == b"FOREIGN-WORK-BYTES"
+    check("S13.foreign_workfile_bytes_survive",
+          intact and res["removed"] == 0, str(res))
+
+    # (b1) an ordinary save overlapping the sweep (mint + consumed
+    # appends driven through the removal hook, i.e. after the
+    # sweep's provenance snapshot, before its prune): its fresh
+    # mint record must survive, and its consumed tombstone must not
+    # be resurrected by a snapshot rewrite.
+    d1 = os.path.join(d, "b1")
+    os.mkdir(d1)
+    _plant(d1, "canon.json", b"{}")
+    _, a_st = _mint_live_file(d1, live_name)
+    dst1 = os.stat(d1)
+    AW._record_mint(d1, "gone.json.dmtmp.1.deadbeef",
+                    dst1.st_dev, 4242424242)
+    _, orphans1 = _crash_orphan(d1, "victim.json")
+    c_name = f"c.json.dmtmp.{os.getpid()}.cafebabe"
+    c_path = os.path.join(d1, c_name)
+
+    def _overlap_save(path):
+        cfd = os.open(c_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                      0o644)
+        c_st = os.fstat(cfd)
+        os.close(cfd)
+        AW._record_mint(d1, c_name, c_st.st_dev, c_st.st_ino)
+        AW._record_consumed(d1, live_name, a_st.st_ino)
+
+    AW._SWEEP_HOOK = _overlap_save
+    try:
+        res1 = sweep_stale_tmps(d1)
+    finally:
+        AW._SWEEP_HOOK = None
+    prov1 = _read_prov(d1)
+    check("S13.concurrent_mint_record_kept",
+          len(orphans1) == 1 and res1["removed"] == 1 and
+          prov1.get(c_name) is not None,
+          f"removed={res1['removed']} prov={sorted(prov1)}")
+    check("S13.consumed_record_not_resurrected",
+          live_name not in prov1, f"prov={sorted(prov1)}")
+
+    # (b2) the empty-live unlink branch: the ledger holds only a
+    # stale record plus the genuine orphan's mint; the overlapping
+    # save's mint (appended via the hook) must not be unlinked away
+    # with the whole ledger.
+    d2 = os.path.join(d, "b2")
+    os.mkdir(d2)
+    _plant(d2, "canon.json", b"{}")
+    dst2 = os.stat(d2)
+    AW._record_mint(d2, "gone.json.dmtmp.1.deadbeef",
+                    dst2.st_dev, 4242424242)
+    _, orphans2 = _crash_orphan(d2, "victim.json")
+    c2_name = f"c.json.dmtmp.{os.getpid()}.cafebabe"
+    c2_path = os.path.join(d2, c2_name)
+
+    def _overlap_mint(path):
+        cfd = os.open(c2_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                      0o644)
+        c_st = os.fstat(cfd)
+        os.close(cfd)
+        AW._record_mint(d2, c2_name, c_st.st_dev, c_st.st_ino)
+
+    AW._SWEEP_HOOK = _overlap_mint
+    try:
+        res2 = sweep_stale_tmps(d2)
+    finally:
+        AW._SWEEP_HOOK = None
+    prov2 = _read_prov(d2)
+    check("S13.ledger_survives_empty_prune_with_concurrent_mint",
+          len(orphans2) == 1 and res2["removed"] == 1 and
+          os.path.exists(os.path.join(d2, ledger_name)) and
+          prov2.get(c2_name) is not None,
+          f"removed={res2['removed']} prov={sorted(prov2)}")
+
+    # (c) unsupported file type at the ledger path: a FIFO must not
+    # block an ordinary save (its bookkeeping append fails fast and
+    # the save completes), and a ledger read degrades to no
+    # provenance instead of blocking. Both run in subprocesses with
+    # a timeout: at the pre-fix head the append's blocking open
+    # never returns.
+    if hasattr(os, "mkfifo"):
+        d3 = os.path.join(d, "fifo")
+        os.mkdir(d3)
+        os.mkfifo(os.path.join(d3, ledger_name))
+        fd, wpath = tempfile.mkstemp(suffix=".py")
+        os.close(fd)
+        with open(wpath, "w", encoding="utf-8") as f:
+            f.write(
+                "import os, sys\n"
+                "sys.path.insert(0, sys.argv[1])\n"
+                "from form.dell_matrix import atomic_write as AW\n"
+                "d = sys.argv[2]\n"
+                "if sys.argv[3] == 'read':\n"
+                "    dfd = os.open(d, os.O_RDONLY)\n"
+                "    prov = AW._read_provenance(dfd)\n"
+                "    os.close(dfd)\n"
+                "    print('READ', prov == {})\n"
+                "else:\n"
+                "    AW.atomic_write_bytes("
+                "os.path.join(d, 't.json'), b'FIFO-SAVE')\n"
+                "    with open(os.path.join(d, 't.json'), 'rb')"
+                " as fh:\n"
+                "        print('SAVE', fh.read() == b'FIFO-SAVE')\n"
+            )
+        try:
+            proc = subprocess.run(
+                [sys.executable, wpath, REPO, d3, "read"],
+                capture_output=True, text=True, timeout=30)
+            read_ok = "READ True" in proc.stdout
+        except subprocess.TimeoutExpired:
+            read_ok = False
+        check("S13.fifo_ledger_read_degrades", read_ok)
+        try:
+            proc = subprocess.run(
+                [sys.executable, wpath, REPO, d3, "save"],
+                capture_output=True, text=True, timeout=30)
+            save_ok = "SAVE True" in proc.stdout
+        except subprocess.TimeoutExpired:
+            save_ok = False
+        check("S13.fifo_ledger_save_not_blocked", save_ok)
+        os.unlink(wpath)
+    else:
+        print("NOTE  S13 fifo checks not exercised: mkfifo "
+              "unavailable")
+
+    # (3) control: a genuine provenanced orphan remains sweepable.
+    d4 = os.path.join(d, "ctl")
+    os.mkdir(d4)
+    _plant(d4, "canon.json", b"{}")
+    _, orphans4 = _crash_orphan(d4, "canon.json")
+    res4 = sweep_stale_tmps(d4)
+    check("S13.genuine_orphan_still_swept",
+          len(orphans4) == 1 and res4["removed"] == 1 and
+          not any(".dmtmp." in n for n in os.listdir(d4)
+                  if n != ledger_name), str(res4))
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="q351_") as d:
         section_s1(d)
@@ -559,6 +749,8 @@ def main():
         section_s11(d)
     with tempfile.TemporaryDirectory(prefix="q351_") as d:
         section_s12(d)
+    with tempfile.TemporaryDirectory(prefix="q351_") as d:
+        section_s13(d)
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"sweep_stale_tmps_safety_test: {passed}/{len(RESULTS)} PASS")
     return 0 if passed == len(RESULTS) else 1
