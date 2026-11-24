@@ -108,6 +108,17 @@ class SweepRefusalError(AtomicWriteError):
     reported with a typed reason instead (see sweep_stale_tmps)."""
 
 
+class SweepProvenanceError(AtomicWriteError):
+    """The provenance ledger's content is structurally unusable
+    (Director residual CORRECTION_REQUIRED 7136945087): a record that
+    parses as JSON but is not a writer-shaped object — a non-object
+    record, a non-string name or op — cannot have come from the
+    writer or from a torn append, so the ledger cannot be trusted
+    as provenance at all. Raised by _read_provenance; the sweep
+    converts it to a SweepRefusalError (nothing removed), never a
+    raw exception and never a silent pass."""
+
+
 def _fail_at() -> Optional[str]:
     return _FAIL_AT
 
@@ -407,6 +418,72 @@ def _ledger_append(directory: str, record: Dict[str, Any], *,
             pass
 
 
+def _ledger_append_at(dir_fd: int, record: Dict[str, Any], *,
+                      fsync: bool) -> bool:
+    """Append one JSON record to the ledger of the directory pinned
+    by ``dir_fd`` and report success — the fd-relative twin of
+    _ledger_append, for callers (the sweep's ownership retirement)
+    that must KNOW the append landed and must write through the
+    pinned directory, never through a path a swapped root could
+    redirect. Same hardening: O_NOFOLLOW, O_NONBLOCK, regular
+    files only. Returns False on any failure; the caller resolves
+    that ambiguity to KEEP."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    flags |= getattr(os, "O_NONBLOCK", 0)
+    try:
+        fd = os.open(PROVENANCE_LEDGER_NAME, flags, 0o644,
+                     dir_fd=dir_fd)
+    except OSError:
+        return False
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return False
+        line = (json.dumps(record, separators=(",", ":")) + "\n"
+                ).encode("utf-8")
+        while line:
+            try:
+                n = os.write(fd, line)
+            except OSError:
+                return False
+            line = line[n:]
+        if fsync:
+            try:
+                os.fsync(fd)
+            except OSError:
+                return False
+        return True
+    except OSError:
+        return False
+    finally:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+
+
+def _retire_mint(dir_fd: int, name: str, dev: int, ino: int) -> bool:
+    """Durably retire the mint record binding ``name`` to (dev, ino),
+    through the pinned directory, and PROVE the retirement with a
+    fresh ledger read: the tombstone append must be fsynced AND a
+    re-read must no longer bind the name to that identity.
+
+    The ledger stays append-only (7136552041): retirement is a
+    consumed tombstone, never a rewrite. Returns False whenever
+    retirement cannot be established — the caller keeps the
+    candidate rather than deleting it over live ownership."""
+    if not _ledger_append_at(dir_fd,
+                             {"v": 1, "op": "consumed", "name": name,
+                              "ino": ino},
+                             fsync=True):
+        return False
+    try:
+        fresh = _read_provenance(dir_fd)
+    except SweepProvenanceError:
+        return False
+    return fresh.get(name) != (dev, ino)
+
+
 def _record_mint(directory: str, name: str, dev: int, ino: int) -> None:
     """Record, durably (fsync), that THIS writer minted temp ``name``
     with identity (dev, ino). Called at temp creation, before any
@@ -438,7 +515,14 @@ def _read_provenance(dir_fd: int) -> Dict[str, tuple]:
     through (O_NOFOLLOW); it degrades to no provenance. An
     unsupported file type at the ledger path (a FIFO can block a
     plain open) likewise degrades to no provenance: the read opens
-    with O_NONBLOCK and accepts only a regular file (7136552041)."""
+    with O_NONBLOCK and accepts only a regular file (7136552041).
+
+    Structurally unusable content is different from a torn line
+    (7136945087): a line that parses as JSON but is not an object,
+    or whose name/op is not a string, cannot be writer output or a
+    torn append — it raises SweepProvenanceError, the conservative
+    typed outcome, and every descriptor opened here is closed on
+    every path."""
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     flags |= getattr(os, "O_NONBLOCK", 0)
     try:
@@ -455,28 +539,51 @@ def _read_provenance(dir_fd: int) -> Dict[str, tuple]:
         except OSError:
             pass
         return {}
+    try:
+        f = os.fdopen(fd, "rb")
+    except OSError:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        return {}
     out: Dict[str, tuple] = {}
     try:
-        with os.fdopen(fd, "rb") as f:
-            for raw in f:
+        for raw in f:
+            try:
+                rec = json.loads(raw.decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                continue
+            if not isinstance(rec, dict):
+                raise SweepProvenanceError(
+                    f"provenance record is not an object: {rec!r}")
+            try:
+                name = rec["name"]
+                ino = int(rec["ino"])
+                op = rec["op"]
+            except (ValueError, KeyError, TypeError):
+                continue
+            if not isinstance(name, str) or not isinstance(op, str):
+                raise SweepProvenanceError(
+                    f"provenance record has non-string name/op: "
+                    f"{rec!r}")
+            if op == "mint":
                 try:
-                    rec = json.loads(raw.decode("utf-8"))
-                    name = rec["name"]
-                    ino = int(rec["ino"])
-                    op = rec["op"]
-                except (ValueError, KeyError, TypeError,
-                        UnicodeDecodeError):
+                    out[name] = (int(rec["dev"]), ino)
+                except (ValueError, KeyError, TypeError):
                     continue
-                if op == "mint":
-                    try:
-                        out[name] = (int(rec["dev"]), ino)
-                    except (ValueError, KeyError, TypeError):
-                        continue
-                elif op == "consumed":
-                    if out.get(name, (None, None))[1] == ino:
-                        out.pop(name, None)
+            elif op == "consumed":
+                if out.get(name, (None, None))[1] == ino:
+                    out.pop(name, None)
+    except SweepProvenanceError:
+        raise
     except OSError:
         return {}
+    finally:
+        try:
+            f.close()
+        except OSError:
+            pass
     return out
 
 
@@ -524,11 +631,21 @@ def sweep_stale_tmps(directory: str, *,
        file (CHANGED_SINCE_SCAN). The unlink itself is issued
        relative to the pinned directory fd, so a swapped or renamed
        sweep root cannot redirect it.
+    7. Ownership retirement (7136945087): before the unlink, the
+       candidate's mint record is durably retired — a fsynced
+       consumed tombstone appended through the pinned directory
+       (the ledger stays append-only) and proven by a fresh read
+       that no longer binds the name to the candidate's identity.
+       If retirement cannot be established, the candidate is kept
+       (RETIREMENT_UNPROVEN). A removal therefore never leaves
+       reusable ownership behind: no later file, even one recycling
+       the name and inode, can inherit the swept file's provenance.
 
     Removal guarantee, stated exactly: a candidate is unlinked only
     when the writer's own ledger record binds its name to the
     (dev, ino) the file still has at the final revalidation, its pid
-    is proven dead twice, and the age rail passes. The ledger is
+    is proven dead twice, the age rail passes, and its mint has been
+    durably retired and the retirement proven by a fresh read. The ledger is
     durable evidence, not a cryptographic proof: a same-uid actor
     who can rewrite the ledger could forge provenance, so the
     guarantee is "no file is removed without writer-minted
@@ -616,7 +733,6 @@ def sweep_stale_tmps(directory: str, *,
     except OSError:
         os.close(dir_fd)
         return {"scanned": 0, "removed": 0}
-    provenance = _read_provenance(dir_fd)
 
     getuid = getattr(os, "getuid", None)
     scanned = removed = 0
@@ -628,6 +744,17 @@ def sweep_stale_tmps(directory: str, *,
                            "error": error})
 
     try:
+        # The provenance read sits INSIDE the descriptor's cleanup
+        # block (7136945087): a provenance failure of any kind —
+        # including structurally unusable ledger content — closes
+        # dir_fd on its way out, and unusable provenance is a typed
+        # refusal (nothing removed), never a raw exception.
+        try:
+            provenance = _read_provenance(dir_fd)
+        except SweepProvenanceError as exc:
+            raise SweepRefusalError(
+                f"sweep refused: provenance ledger unusable, "
+                f"nothing removed: {directory!r}: {exc}") from exc
         for name in sorted(names):
             if TMP_INFIX not in name:
                 continue
@@ -689,6 +816,23 @@ def sweep_stale_tmps(directory: str, *,
                     not stat.S_ISREG(st_now.st_mode):
                 _emit(name, "kept", "CHANGED_SINCE_SCAN", pid=pid)
                 continue
+            # Ownership retirement (7136945087): durably retire the
+            # mint through the pinned directory BEFORE the unlink,
+            # so the removal never leaves reusable ownership behind
+            # — a later file recycling this name AND inode would
+            # otherwise inherit the live mint and look deletable.
+            # The ledger stays append-only: retirement is a fsynced
+            # consumed tombstone, proven by a fresh read. If
+            # retirement cannot be established, the candidate is
+            # KEPT and the reason disclosed. An interruption after
+            # retirement but before unlink leaves the file in place
+            # with its mint retired — later sweeps keep it
+            # NOT_PROVEN_OWNED; the safe direction on every path.
+            if not _retire_mint(dir_fd, name, st_now.st_dev,
+                                st_now.st_ino):
+                _emit(name, "kept", "RETIREMENT_UNPROVEN", pid=pid)
+                continue
+            provenance.pop(name, None)
             try:
                 os.unlink(name, dir_fd=dir_fd)
             except OSError as exc:

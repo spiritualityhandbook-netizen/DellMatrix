@@ -75,6 +75,25 @@ helper:
       rewrites or unlinks it) and hardens ledger appends/reads
       against unsupported file types. A genuine provenanced orphan
       remains sweepable throughout (control).
+  S14 ownership retirement + provenance-read hygiene (Director
+      residual CORRECTION_REQUIRED 7136945087): the sweep unlinked a
+      genuine orphan WITHOUT retiring its mint record, so a later
+      file reusing the basename + (dev, ino) could inherit deletion
+      permission; and a malformed ledger record (a consumed record
+      whose name is a JSON array) raised a raw TypeError outside
+      the sweep's descriptor cleanup, leaking the pinned directory
+      fd. The repair retires the mint BEFORE the unlink — a fsynced
+      consumed tombstone appended through the pinned directory,
+      proven by a fresh read (the ledger stays append-only); if
+      retirement cannot be established the candidate is KEPT with
+      reason RETIREMENT_UNPROVEN — and structurally unusable
+      provenance raises a typed SweepRefusalError with every
+      descriptor closed. An interrupted removal (unlink failing
+      after retirement) leaves the file in place with its mint
+      retired: later sweeps keep it. Failing-first at 1a330ab2:
+      the mint stayed live after removal, a failed unlink left the
+      file sweepable, and the malformed record escaped as a raw
+      TypeError with the fd count up by one.
 
 Labels: INTEGRATION (helper level, temp dirs) + CROSS_PROCESS (S4).
 State hygiene: temp directories only; nothing touches form/state.
@@ -726,6 +745,111 @@ def section_s13(d):
                   if n != ledger_name), str(res4))
 
 
+# --------------------------------------------------------------- S14
+def section_s14(d):
+    import json as _json
+
+    _plant(d, "canon.json", b"{}")
+
+    # (1) a swept orphan's mint is retired: a FRESH reader no longer
+    # binds the name, so no later file can inherit the ownership.
+    _, orphans = _crash_orphan(d, "victim.json")
+    name = orphans[0] if orphans else "<none>"
+    res = sweep_stale_tmps(d)
+    prov = _read_prov(d)
+    check("S14.mint_retired_after_removal",
+          len(orphans) == 1 and res["removed"] == 1 and
+          name not in prov,
+          f"removed={res['removed']} prov={sorted(prov)}")
+
+    # (2) a repeat sweep is a no-op.
+    res2 = sweep_stale_tmps(d)
+    check("S14.repeat_sweep_noop", res2["removed"] == 0, str(res2))
+
+    # (3) interrupted removal: the unlink fails AFTER retirement.
+    # The file remains, its mint is retired, and a later sweep
+    # keeps it — the ownership is never reusable.
+    d3 = os.path.join(d, "intr")
+    os.mkdir(d3)
+    _plant(d3, "canon.json", b"{}")
+    _, orphans3 = _crash_orphan(d3, "victim.json")
+    name3 = orphans3[0] if orphans3 else "<none>"
+    real_unlink = os.unlink
+
+    def _flaky(path, *a, **kw):
+        if os.path.basename(path) == name3:
+            raise PermissionError("forced retirement interruption")
+        return real_unlink(path, *a, **kw)
+
+    os.unlink = _flaky
+    try:
+        sweep_stale_tmps(d3)
+    finally:
+        os.unlink = real_unlink
+    prov3 = _read_prov(d3)
+    res3b = sweep_stale_tmps(d3)
+    check("S14.interrupted_removal_safe_state",
+          os.path.exists(os.path.join(d3, name3)) and
+          name3 not in prov3 and res3b["removed"] == 0 and
+          os.path.exists(os.path.join(d3, name3)),
+          f"prov={sorted(prov3)} res3b={res3b}")
+
+    # (4) structurally unusable provenance: a consumed record whose
+    # name is a JSON array raises a TYPED refusal, removes nothing,
+    # and leaks no descriptor.
+    d4 = os.path.join(d, "malformed")
+    os.mkdir(d4)
+    _plant(d4, "canon.json", b"{}")
+    _, orphans4 = _crash_orphan(d4, "victim.json")
+    with open(os.path.join(d4, AW.PROVENANCE_LEDGER_NAME), "a",
+              encoding="utf-8") as f:
+        f.write(_json.dumps({"v": 1, "op": "consumed",
+                             "name": ["not", "a", "string"],
+                             "ino": 1}) + "\n")
+    have_proc = os.path.isdir("/proc/self/fd")
+    fds_before = len(os.listdir("/proc/self/fd")) if have_proc else -1
+    raised = None
+    try:
+        sweep_stale_tmps(d4)
+    except AW.SweepRefusalError as exc:
+        raised = exc
+    except Exception as exc:  # noqa: BLE001
+        raised = f"wrong-type:{type(exc).__name__}"
+    fds_after = len(os.listdir("/proc/self/fd")) if have_proc else -1
+    check("S14.malformed_provenance_typed_refusal",
+          isinstance(raised, AW.SweepRefusalError) and
+          len(orphans4) == 1 and
+          os.path.exists(os.path.join(d4, orphans4[0])),
+          str(raised))
+    if have_proc:
+        check("S14.malformed_provenance_no_fd_leak",
+              fds_after == fds_before, f"{fds_before}->{fds_after}")
+    else:
+        print("NOTE  S14 fd-leak check not exercised: /proc/self/fd "
+              "unavailable")
+
+    # (5) retirement that cannot be established keeps the candidate
+    # with a typed reason: the tombstone append is forced to fail.
+    d5 = os.path.join(d, "unproven")
+    os.mkdir(d5)
+    _plant(d5, "canon.json", b"{}")
+    _, orphans5 = _crash_orphan(d5, "victim.json")
+    name5 = orphans5[0] if orphans5 else "<none>"
+    real_append_at = AW._ledger_append_at
+    AW._ledger_append_at = lambda *a, **kw: False
+    try:
+        report5 = []
+        res5 = sweep_stale_tmps(d5, report=report5)
+    finally:
+        AW._ledger_append_at = real_append_at
+    check("S14.retirement_unproven_keeps_candidate",
+          len(orphans5) == 1 and res5["removed"] == 0 and
+          os.path.exists(os.path.join(d5, name5)) and
+          _report_reasons(report5).get(name5) ==
+          "RETIREMENT_UNPROVEN",
+          f"res={res5} report={report5}")
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="q351_") as d:
         section_s1(d)
@@ -751,6 +875,8 @@ def main():
         section_s12(d)
     with tempfile.TemporaryDirectory(prefix="q351_") as d:
         section_s13(d)
+    with tempfile.TemporaryDirectory(prefix="q351_") as d:
+        section_s14(d)
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"sweep_stale_tmps_safety_test: {passed}/{len(RESULTS)} PASS")
     return 0 if passed == len(RESULTS) else 1
