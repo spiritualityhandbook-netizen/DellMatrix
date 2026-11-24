@@ -599,14 +599,21 @@ def _validate_companion_section(raw: Any) -> None:
     position, mode, full trail) to the constructor default. Missing
     fields keep from_dict's per-field defaults; extra unknown keys are
     forward compatibility, not refusal; the derived z key is ignored.
+    A field PRESENT with an explicit null is not missing (Director
+    CORRECTION_REQUIRED 7136700328): the writer never emits null for
+    any companion field, so a present null refuses typed instead of
+    receiving from_dict's default substitution (pos -> [2, 1], a
+    string field -> its default, trail -> []).
     """
     if not isinstance(raw, dict):
         raise ProgramLoadError(
             f"program file 'companion' section is not an object "
             f"(got {type(raw).__name__}): refusing load")
     for field in ("name", "label", "facing", "mode", "doing", "last_action"):
-        v = raw.get(field)
-        if v is not None and not isinstance(v, str):
+        if field not in raw:
+            continue
+        v = raw[field]
+        if not isinstance(v, str):
             raise ProgramLoadError(
                 f"program file 'companion' field {field!r} is not a string "
                 f"(got {type(v).__name__}): refusing load")
@@ -624,11 +631,10 @@ def _validate_companion_section(raw: Any) -> None:
         _coord(pt[0], where)
         _coord(pt[1], where)
 
-    pos = raw.get("pos")
-    if pos is not None:
-        _point(pos, "'pos'")
-    trail = raw.get("trail")
-    if trail is not None:
+    if "pos" in raw:
+        _point(raw["pos"], "'pos'")
+    if "trail" in raw:
+        trail = raw["trail"]
         if not isinstance(trail, list):
             raise ProgramLoadError(
                 f"program file 'companion' field 'trail' is not a list "
@@ -659,13 +665,19 @@ def _validate_self_knowledge_section(raw: Any) -> None:
     validated. The dataclass fields last_reflect/ledger are NOT
     serialized (ledger survives only as its length); that asymmetry is
     intended nonpersistence, not corruption, and is left untouched.
+    A field PRESENT with an explicit null is not missing (Director
+    CORRECTION_REQUIRED 7136700328): the writer never emits null for
+    mastery, the counters, or the inventories, so a present null
+    refuses typed instead of receiving from_dict's default
+    substitution ({} / 0 / []). The derived keys stay exempt: they
+    are never read on restore, so a null there substitutes nothing.
     """
     if not isinstance(raw, dict):
         raise ProgramLoadError(
             f"program file 'self_knowledge' section is not an object "
             f"(got {type(raw).__name__}): refusing load")
-    mastery = raw.get("mastery")
-    if mastery is not None:
+    if "mastery" in raw:
+        mastery = raw["mastery"]
         if not isinstance(mastery, dict):
             raise ProgramLoadError(
                 f"program file 'self_knowledge' field 'mastery' is not an object "
@@ -677,10 +689,10 @@ def _validate_self_knowledge_section(raw: Any) -> None:
                     f"finite number in [0, 1] (got {v!r}): refusing load")
     counters: Dict[str, int] = {}
     for field in ("probes", "hits", "generations_seen"):
-        v = raw.get(field)
-        if v is None:
+        if field not in raw:
             counters[field] = 0
             continue
+        v = raw[field]
         if isinstance(v, bool) or not isinstance(v, int) or v < 0:
             raise ProgramLoadError(
                 f"program file 'self_knowledge' field {field!r} is not a "
@@ -691,9 +703,9 @@ def _validate_self_knowledge_section(raw: Any) -> None:
             f"program file 'self_knowledge' hits ({counters['hits']}) exceeds "
             f"probes ({counters['probes']}): refusing load")
     for field in ("known_matrices", "known_snaps", "gaps_closed"):
-        v = raw.get(field)
-        if v is None:
+        if field not in raw:
             continue
+        v = raw[field]
         if not isinstance(v, list):
             raise ProgramLoadError(
                 f"program file 'self_knowledge' field {field!r} is not a list "
@@ -717,14 +729,21 @@ def _validate_bimo_section(raw: Any) -> None:
     assignment vanished with no report — and a non-string slot value
     or pilot is type confusion the writer cannot produce. Extra
     unknown TOP-LEVEL keys are forward compatibility, not refusal.
+    A field PRESENT with an explicit null is not missing (Director
+    CORRECTION_REQUIRED 7136700328): the writer emits slots as an
+    object, active as a bool, and pilot/mode as strings, so a present
+    null in any of them refuses typed instead of receiving
+    from_dict's default substitution (active -> false). Null remains
+    lawful exactly where the writer emits it: a slot VALUE (an
+    undocked slot), which still loads whole.
     """
     from form.dell_matrix.personas import BIMO_SLOTS
     if not isinstance(raw, dict):
         raise ProgramLoadError(
             f"program file 'bimo' section is not an object "
             f"(got {type(raw).__name__}): refusing load")
-    slots = raw.get("slots")
-    if slots is not None:
+    if "slots" in raw:
+        slots = raw["slots"]
         if not isinstance(slots, dict):
             raise ProgramLoadError(
                 f"program file 'bimo' field 'slots' is not an object "
@@ -738,14 +757,17 @@ def _validate_bimo_section(raw: Any) -> None:
                 raise ProgramLoadError(
                     f"program file 'bimo' slot {slot!r} value is not a persona "
                     f"id string or null (got {type(pid).__name__}): refusing load")
-    active = raw.get("active")
-    if active is not None and not isinstance(active, bool):
-        raise ProgramLoadError(
-            f"program file 'bimo' field 'active' is not a boolean "
-            f"(got {type(active).__name__}): refusing load")
+    if "active" in raw:
+        active = raw["active"]
+        if not isinstance(active, bool):
+            raise ProgramLoadError(
+                f"program file 'bimo' field 'active' is not a boolean "
+                f"(got {type(active).__name__}): refusing load")
     for field in ("pilot", "mode"):
-        v = raw.get(field)
-        if v is not None and not isinstance(v, str):
+        if field not in raw:
+            continue
+        v = raw[field]
+        if not isinstance(v, str):
             raise ProgramLoadError(
                 f"program file 'bimo' field {field!r} is not a string "
                 f"(got {type(v).__name__}): refusing load")

@@ -12,6 +12,14 @@ never touches another owner's file.
 
 Sections land one subscope per commit, in the ruling's order:
 A duo_ledger, B companion, C self_knowledge, D bimo/persona_matrix.
+
+Correction round (Director CORRECTION_REQUIRED 7136700328): a field
+PRESENT with an explicit null is not an absent field. Where the writer
+never emits null for a field, a present null refuses typed instead of
+receiving the from_dict default substitution (bimo active -> false,
+companion pos -> [2, 1], and every sibling field of the same class);
+absent fields keep their documented per-field defaults, and the lawful
+null BIMO slot assignments still load whole.
 """
 from __future__ import annotations
 
@@ -237,6 +245,33 @@ def run_duo():
         rec("DUO bool gen refuses load (typed) — JSON type confusion (int(True)==1)",
             _refuses(owner, f))
 
+        def _nullgen(data):
+            data["duo_generation"] = None
+        f = _mutated(base, tmp / "duo_nullgen.json", _nullgen)
+        rec("DUO present-null duo_generation refuses load (typed) — counter already distinguishes present from absent",
+            _refuses(owner, f))
+
+        for _fld in ("gen", "detail", "ts", "meta"):
+            def _nullfield(data, fld=_fld):
+                data["duo_ledger"][1][fld] = None
+            f = _mutated(base, tmp / f"duo_null_{_fld}.json", _nullfield)
+            rec(f"DUO present-null entry field ({_fld}) refuses load (typed) — ledger validator already distinguishes present from absent",
+                _refuses(owner, f))
+
+        def _absentdetail(data):
+            del data["duo_ledger"][1]["detail"]
+        f = _mutated(base, tmp / "duo_absentdetail.json", _absentdetail)
+        try:
+            p = _load(owner, f)
+            got = entries(p)
+            ok = (got[1]["detail"] == ""
+                  and got[0] == expected[0] and got[2] == expected[2]
+                  and p.duo.generation == 3)
+        except Exception:
+            ok = False
+        rec("DUO absent entry field keeps the documented per-field default (detail=''), siblings intact",
+            ok)
+
         other_path = build(other, tmp / "duo_other.json")
         obefore = other_path.read_bytes()
         f = _mutated(base, tmp / "duo_mixed2.json", _mixed)
@@ -416,6 +451,42 @@ def run_companion():
         f = _mutated(base, tmp / "com_intfacing.json", _intfacing)
         rec("COM non-string scalar in a string field (facing:=42) refuses load (typed)",
             _refuses(owner, f))
+
+        def _nullpos(data):
+            data["companion"]["pos"] = None
+        f = _mutated(base, tmp / "com_nullpos.json", _nullpos)
+        before = f.read_bytes()
+        rec("COM present-null pos refuses load (typed) — present != absent, no default [2, 1] substitution",
+            _refuses(owner, f))
+        rec("COM present-null pos refusal leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        def _absentpos(data):
+            del data["companion"]["pos"]
+        f = _mutated(base, tmp / "com_absentpos.json", _absentpos)
+        try:
+            p = _load(owner, f)
+            got = fields(p.companion)
+            ok = (got["pos"] == [2.0, 1.0]
+                  and all(got[k] == v for k, v in expected.items()
+                          if k != "pos"))
+        except Exception:
+            ok = False
+        rec("COM absent pos keeps the documented per-field default, siblings intact",
+            ok)
+
+        def _nulltrail(data):
+            data["companion"]["trail"] = None
+        f = _mutated(base, tmp / "com_nulltrail.json", _nulltrail)
+        rec("COM present-null trail refuses load (typed) — writer emits a list",
+            _refuses(owner, f))
+
+        for _fld in ("name", "label", "facing", "mode", "doing", "last_action"):
+            def _nullstr(data, fld=_fld):
+                data["companion"][fld] = None
+            f = _mutated(base, tmp / f"com_null_{_fld}.json", _nullstr)
+            rec(f"COM present-null string field ({_fld}) refuses load (typed) — writer emits a string",
+                _refuses(owner, f))
 
         other_path = build(other, tmp / "com_other.json")
         obefore = other_path.read_bytes()
@@ -613,6 +684,68 @@ def run_self_knowledge():
         rec("SK bool counter refuses load (typed) — JSON type confusion (int(True)==1)",
             _refuses(owner, f))
 
+        def _nullmastery(data):
+            data["self_knowledge"]["mastery"] = None
+        f = _mutated(base, tmp / "sk_nullmastery.json", _nullmastery)
+        rec("SK present-null mastery refuses load (typed) — writer emits an object",
+            _refuses(owner, f))
+
+        for _fld in ("probes", "hits", "generations_seen"):
+            def _nullcounter(data, fld=_fld):
+                data["self_knowledge"][fld] = None
+            f = _mutated(base, tmp / f"sk_null_{_fld}.json", _nullcounter)
+            rec(f"SK present-null counter ({_fld}) refuses load (typed) — writer emits an int, no silent 0",
+                _refuses(owner, f))
+
+        for _fld in ("known_matrices", "known_snaps", "gaps_closed"):
+            def _nulllist(data, fld=_fld):
+                data["self_knowledge"][fld] = None
+            f = _mutated(base, tmp / f"sk_null_{_fld}.json", _nulllist)
+            rec(f"SK present-null inventory ({_fld}) refuses load (typed) — writer emits a list",
+                _refuses(owner, f))
+
+        def _absentcounter(data):
+            del data["self_knowledge"]["generations_seen"]
+        f = _mutated(base, tmp / "sk_absentcounter.json", _absentcounter)
+        try:
+            p = _load(owner, f)
+            got = fields(p.self_knowledge)
+            ok = (got["generations_seen"] == 0
+                  and all(got[k] == v for k, v in expected.items()
+                          if k != "generations_seen"))
+        except Exception:
+            ok = False
+        rec("SK absent counter keeps the documented per-field default (0), siblings intact",
+            ok)
+
+        def _absentmastery(data):
+            del data["self_knowledge"]["mastery"]
+        f = _mutated(base, tmp / "sk_absentmastery.json", _absentmastery)
+        try:
+            p = _load(owner, f)
+            got = fields(p.self_knowledge)
+            ok = (got["mastery"] == {}
+                  and all(got[k] == v for k, v in expected.items()
+                          if k != "mastery"))
+        except Exception:
+            ok = False
+        rec("SK absent mastery keeps the documented per-field default ({}), siblings intact",
+            ok)
+
+        def _null_derived(data):
+            data["self_knowledge"]["hit_rate"] = None
+            data["self_knowledge"]["ledger_len"] = None
+            data["self_knowledge"]["avg_mastery"] = None
+        f = _mutated(base, tmp / "sk_null_derived.json", _null_derived)
+        try:
+            p = _load(owner, f)
+            ok = (fields(p.self_knowledge) == expected
+                  and p.self_knowledge.to_dict()["hit_rate"] == 0.7)
+        except Exception:
+            ok = False
+        rec("SK negative mutant: null derived keys are ignored and recomputed, never trusted (derived keys are not restored fields)",
+            ok)
+
         other_path = build(other, tmp / "sk_other.json")
         obefore = other_path.read_bytes()
         f = _mutated(base, tmp / "sk_badmastery2.json", _badmastery)
@@ -758,6 +891,70 @@ def run_bimo():
         f = _mutated(base, tmp / "bimo_intpilot.json", _intpilot)
         rec("BIMO non-string pilot (pilot:=42) refuses load (typed) — no str() coercion",
             _refuses(owner, f))
+
+        def _nullactive(data):
+            data["bimo"]["active"] = None
+        f = _mutated(base, tmp / "bimo_nullactive.json", _nullactive)
+        before = f.read_bytes()
+        rec("BIMO present-null active refuses load (typed) — present != absent, no bool(null) substitution",
+            _refuses(owner, f))
+        rec("BIMO present-null active refusal leaves the source file bytes unchanged",
+            f.read_bytes() == before)
+
+        def _absentactive(data):
+            del data["bimo"]["active"]
+        f = _mutated(base, tmp / "bimo_absentactive.json", _absentactive)
+        try:
+            p = _load(owner, f)
+            ok = (p.bimo.active is True and filled_of(p.bimo) == filled
+                  and p.bimo.pilot == "manny")
+        except Exception:
+            ok = False
+        rec("BIMO absent active keeps the documented default (True), siblings intact",
+            ok)
+
+        def _nullslots(data):
+            data["bimo"]["slots"] = None
+        f = _mutated(base, tmp / "bimo_nullslots.json", _nullslots)
+        rec("BIMO present-null slots refuses load (typed) — writer emits an object",
+            _refuses(owner, f))
+
+        def _absentslots(data):
+            del data["bimo"]["slots"]
+        f = _mutated(base, tmp / "bimo_absentslots.json", _absentslots)
+        try:
+            p = _load(owner, f)
+            ok = (filled_of(p.bimo) == {} and p.bimo.pilot == "manny"
+                  and p.bimo.active is True)
+        except Exception:
+            ok = False
+        rec("BIMO absent slots keeps the documented empty roster, siblings intact",
+            ok)
+
+        def _nullpilot(data):
+            data["bimo"]["pilot"] = None
+        f = _mutated(base, tmp / "bimo_nullpilot.json", _nullpilot)
+        rec("BIMO present-null pilot refuses load (typed) — writer emits a string",
+            _refuses(owner, f))
+
+        def _nullmode(data):
+            data["bimo"]["mode"] = None
+        f = _mutated(base, tmp / "bimo_nullmode.json", _nullmode)
+        rec("BIMO present-null mode refuses load (typed) — writer emits a string",
+            _refuses(owner, f))
+
+        def _nullslotvalue(data):
+            data["bimo"]["slots"]["logic"] = None
+        f = _mutated(base, tmp / "bimo_nullslotvalue.json", _nullslotvalue)
+        try:
+            p = _load(owner, f)
+            ok = (filled_of(p.bimo) == {"growth": "melody"}
+                  and p.bimo.slots["logic"] is None
+                  and p.bimo.pilot == "manny")
+        except Exception:
+            ok = False
+        rec("BIMO lawful-null control: an explicit null slot assignment loads whole (undocked slot), siblings intact",
+            ok)
 
         # Owner A->B->A (the #505 composition fence): owner B's valid
         # file loads with B's own arrangement and lens; returning to
