@@ -204,6 +204,7 @@ LIST = [
     "form.graph_journal_crash_test",
     "form.snapshot_retrieval_test",
     "form.snapshot_revalidation_test",
+    "form.p0s_restore_refusal_test",
     "form.dock_proposal_b_test",
     "form.nursery_confirm_race_test",
     "form.nursery_reason_bound_test",
