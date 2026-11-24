@@ -510,7 +510,15 @@ def _admit_custom_personas(section: List[Any]) -> None:
     for its other callers — this gate localizes to the persist
     restore path only. No quarantine field is introduced (forbidden
     this circuit: a downgraded v7 writer could silently delete an
-    unknown persisted field on ordinary save)."""
+    unknown persisted field on ordinary save).
+
+    Admission validates with persisted=True (Director
+    CORRECTION_REQUIRED 7136802347): a PRESENT matrix /
+    prefer_skins field must carry its lawful container type as
+    recorded — the validator's permissive ``or {}`` / ``or []``
+    coercions are for the standalone contract only, since on this
+    path a coerced record is normalized into user_personas and
+    the next ordinary save erases the original form."""
     from form.dell_matrix.personas import (
         PersonaLoadError, validate_custom_persona)
     seen: Dict[str, int] = {}
@@ -519,7 +527,7 @@ def _admit_custom_personas(section: List[Any]) -> None:
             raise PersonaLoadError(
                 f"custom_personas record {index}: "
                 "persona record must be a mapping")
-        reason = validate_custom_persona(record)
+        reason = validate_custom_persona(record, persisted=True)
         if reason:
             raise PersonaLoadError(
                 f"custom_personas record {index} "

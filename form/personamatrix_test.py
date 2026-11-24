@@ -75,6 +75,18 @@ Contract under test:
   untouched". The standalone activate_custom_personas skip
   contract is unchanged; the refusal localizes to persist restore
   admission.
+- S9: persisted present-field SHAPES (Director CORRECTION_REQUIRED
+  7136802347) — on the persisted path a PRESENT matrix /
+  prefer_skins field must already carry its lawful container type:
+  an empty list where matrix must be an object, an empty object
+  where prefer_skins must be a list, or an explicit null refuses
+  the load typed, source bytes untouched. (The `or {}` / `or []`
+  coercions in validate_custom_persona passed those shapes and
+  _normalize_record substituted defaults, so the next ordinary
+  save erased the recorded form — the same silent-default class
+  repaired on #514/#508.) Absence and valid empty values ({} /
+  []) load with the documented defaults, and the standalone
+  activation contract keeps its permissive coercions.
 
 Labels: INTEGRATION (Program state is isolated per test owner via
 the canonical state-dir cleanup pattern; the module-level default
@@ -698,6 +710,82 @@ def run_all():
         check("pm_scopea_valid_records_lossless", s8["i"])
         check("pm_scopea_hostile_category_list_refused", s8["k"])
         check("pm_scopea_hostile_category_dict_refused", s8["l"])
+
+        # ---------------- S9: persisted present-field shapes --------
+        # Director CORRECTION_REQUIRED 7136802347. Same compute-first
+        # pattern as S7/S8. At the pre-fix head validate_custom_persona
+        # coerced through `or {}` / `or []`, so a recorded EMPTY LIST
+        # where matrix must be an object, an EMPTY OBJECT where
+        # prefer_skins must be a list, and explicit nulls all passed;
+        # _normalize_record substituted defaults and the next ordinary
+        # save erased the recorded form. Absence and VALID empty
+        # values ({} matrix, [] prefer_skins) stay lawful; the
+        # standalone activation contract keeps its permissive
+        # coercions (control (w)).
+        s9 = {}
+        for tag, over, field in (
+                ("m", {"matrix": []}, "matrix"),
+                ("n", {"prefer_skins": {}}, "prefer_skins"),
+                ("o", {"matrix": None}, "matrix"),
+                ("p", {"prefer_skins": None}, "prefer_skins")):
+            path_w = _write_variant(f"s9{tag}", [
+                _rec(id=f"scopea_s9{tag}", name=f"Scopea S9{tag}",
+                     **over)])
+            with open(path_w, "rb") as fh:
+                w_bytes_before = fh.read()
+            ok_w, exc_w = _refused_as(R_OWNER, path_w)
+            with open(path_w, "rb") as fh:
+                w_bytes_after = fh.read()
+            s9[tag] = (ok_w and field in str(exc_w)
+                       and w_bytes_after == w_bytes_before)
+        # (r) a VALID empty matrix object loads and normalizes to
+        # the category default placement.
+        st_r, val_r = _try_load_as(R_OWNER, _write_variant("s9r", [
+            _rec(id="scopea_s9r", name="Scopea S9r", matrix={})]))
+        s9["r"] = (
+            st_r == "loaded"
+            and val_r.user_personas[0]["matrix"]
+            == personas._default_matrix(good_recs[0]["category"]))
+        # (s) a VALID empty prefer_skins list loads as empty.
+        st_s, val_s = _try_load_as(R_OWNER, _write_variant("s9s", [
+            _rec(id="scopea_s9s", name="Scopea S9s",
+                 prefer_skins=[])]))
+        s9["s"] = (
+            st_s == "loaded"
+            and val_s.user_personas[0]["prefer_skins"] == [])
+        # (t) ABSENT matrix / prefer_skins stay legitimate: the
+        # record loads with the documented defaults.
+        rec_t = _rec(id="scopea_s9t", name="Scopea S9t")
+        rec_t.pop("matrix", None)
+        rec_t.pop("prefer_skins", None)
+        st_t, val_t = _try_load_as(
+            R_OWNER, _write_variant("s9t", [rec_t]))
+        s9["t"] = (
+            st_t == "loaded"
+            and val_t.user_personas[0]["matrix"]
+            == personas._default_matrix(good_recs[0]["category"])
+            and val_t.user_personas[0]["prefer_skins"] == [])
+        # (w) the STANDALONE activation contract is NOT tightened:
+        # the same wrong-shaped values still activate there with
+        # normalized defaults, exactly as before this correction.
+        rep_w = activate_custom_personas([
+            _rec(id="scopea_s9w", name="Scopea S9w",
+                 matrix=[], prefer_skins={})])
+        s9["w"] = (rep_w.get("ok") is True
+                   and rep_w.get("activated") == ["scopea_s9w"]
+                   and rep_w.get("skipped") == [])
+        activate_custom_personas([])
+        for tag in ("m", "n", "o", "p", "r", "s", "t", "w"):
+            print(f"[{'PASS' if s9[tag] else 'FAIL'}] "
+                  f"pm_persisted_shape_{tag}_outcome")
+        check("pm_persisted_matrix_empty_list_refused", s9["m"])
+        check("pm_persisted_skins_empty_object_refused", s9["n"])
+        check("pm_persisted_matrix_null_refused", s9["o"])
+        check("pm_persisted_skins_null_refused", s9["p"])
+        check("pm_persisted_valid_empty_matrix_loads", s9["r"])
+        check("pm_persisted_valid_empty_skins_loads", s9["s"])
+        check("pm_persisted_absent_fields_default", s9["t"])
+        check("pm_standalone_wrong_shape_still_permissive", s9["w"])
     finally:
         activate_custom_personas([])
         _cleanup(OWNER)

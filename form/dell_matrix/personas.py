@@ -352,9 +352,24 @@ def _default_matrix(category: Optional[str]) -> Dict[str, int]:
     }
 
 
-def validate_custom_persona(record: Any) -> Optional[str]:
+def validate_custom_persona(record: Any,
+                            persisted: bool = False) -> Optional[str]:
     """Return a refusal reason, or None when the record is a lawful
-    user persona. Pure: never mutates anything."""
+    user persona. Pure: never mutates anything.
+
+    ``persisted`` (Director CORRECTION_REQUIRED 7136802347): the
+    record comes from a saved file (the persist restore admission
+    path). A PRESENT matrix / prefer_skins field must then already
+    carry its lawful container type — a wrong-type value (an empty
+    list where matrix must be an object, an empty object where
+    prefer_skins must be a list, an explicit null) refuses instead
+    of passing through the ``or {}`` / ``or []`` coercions below:
+    on the persisted path those coercions let _normalize_record
+    substitute a default, and the next ordinary save erased the
+    recorded form durably. Absence stays legitimate, and valid
+    empty values ({} matrix, [] prefer_skins) pass. The standalone
+    create/activate contract (persisted=False) keeps its
+    intentionally permissive coercions unchanged."""
     if not isinstance(record, dict):
         return "persona record must be a mapping"
     pid = record.get("id")
@@ -381,6 +396,13 @@ def validate_custom_persona(record: Any) -> Optional[str]:
         _, reason = _clean_str_list(record.get(f), f)
         if reason:
             return reason
+    if persisted:
+        if "prefer_skins" in record and not isinstance(
+                record["prefer_skins"], (list, tuple)):
+            return "prefer_skins must be a list of strings"
+        if "matrix" in record and not isinstance(
+                record["matrix"], dict):
+            return "matrix must be a mapping {h, v, shell}"
     skins = record.get("prefer_skins") or []
     if not isinstance(skins, (list, tuple)) or any(
         not isinstance(s, str) or not s.strip() for s in skins
