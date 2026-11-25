@@ -443,6 +443,10 @@ LIST = [
     # change that lands form/muse_space_snapshot.py and
     # form/muse_space_views.py (build record 2026-11-20 section 5).
     "form.muse_space_test:smoke",
+    # MEDIUM-four persistence-restore family (Director Gate 2 clearance
+    # 7081067283): fail-closed staged restore for duo_ledger, companion,
+    # self_knowledge, bimo/persona_matrix in form/persist_rest.py.
+    "form.medium_four_restore_test:smoke",
     # DAF-09 D1 (Director ruling 7085151190 item 3): history header
     # must report the retained total, not the display-slice length.
     "form.daf09_history_header_test:smoke",
