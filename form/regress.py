@@ -454,6 +454,10 @@ LIST = [
     # change that lands form/muse_space_snapshot.py and
     # form/muse_space_views.py (build record 2026-11-20 section 5).
     "form.muse_space_test:smoke",
+    # P0-R (Director 7085151190 item 2): lattice SnapModule registry
+    # persistence -- lossless modules_format=2 records, staged typed
+    # restore, legacy IDs-only fail-closed.
+    "form.lattice_modules_restore_test:smoke",
     # Part 0 GP-E25 C1 (Director BUILD AUTHORIZATION 7136743763):
     # views CLI pin wiring -- optional explicit pin, revalidation
     # verdict + offline age surfaced in the export, typed refusal
