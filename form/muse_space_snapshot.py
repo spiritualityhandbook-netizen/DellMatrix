@@ -33,6 +33,10 @@ writes the register, GitHub, or the Nursery.
 S3: revalidate() compares a snapshot's pin and per-source blob SHAs
 against a checkout's current state; a changed main or changed
 source blob marks the affected evidence STALE until re-read.
+STALE requires proof -- both pins real and differing, or a
+compared blob that changed; when one side carries no evidence
+(unpinned snapshot, checkout without a HEAD) the verdict is
+EVIDENCE_UNAVAILABLE, never STALE.
 offline_status() reports the pinned snapshot's age and disables
 actions that require current authority.
 
@@ -99,10 +103,12 @@ def git_head(root):
 def _resolve_pin(root, pin):
     """Resolve `pin` to a commit SHA in `root`. An explicit pin that
     does not resolve raises PinUnavailable -- never a silent
-    fallback to worktree bytes under a false attribution. With no
-    explicit pin, defaults to HEAD (None when the checkout has no
-    Git HEAD at all: the unpinned fallback)."""
-    if pin:
+    fallback to worktree bytes under a false attribution. Only an
+    OMITTED pin (None) defaults to HEAD (None when the checkout has
+    no Git HEAD at all: the unpinned fallback); an explicitly
+    supplied empty value is an explicit pin, does not resolve, and
+    is refused -- it never silently becomes HEAD."""
+    if pin is not None:
         resolved = _git(root, "rev-parse", "--verify",
                         "%s^{commit}" % pin)
         if not resolved:
@@ -427,9 +433,19 @@ def revalidate(model, root):
         sources[key] = {"status": status, "file": rel,
                         "recorded_blob_sha": recorded,
                         "current_blob_sha": current}
-    if model.get("source_main_sha") != head:
-        any_stale = True
+    pinned = model.get("source_main_sha")
+    if pinned != head:
         all_current = False
+        if head is not None and pinned not in (None,
+                                               EVIDENCE_UNAVAILABLE):
+            # Both sides are real revisions and they differ: the
+            # snapshot is provably behind the current main.
+            any_stale = True
+        # Otherwise one side carries no evidence at all (an
+        # unpinned snapshot, or a checkout with no HEAD): a
+        # sentinel-vs-absent mismatch proves nothing, so it must
+        # not be reported STALE -- the verdict stays
+        # EVIDENCE_UNAVAILABLE via the per-source statuses.
     if any_stale:
         overall = "STALE"
     elif all_current:

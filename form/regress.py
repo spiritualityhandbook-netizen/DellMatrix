@@ -449,6 +449,11 @@ LIST = [
     # change that lands form/muse_space_snapshot.py and
     # form/muse_space_views.py (build record 2026-11-20 section 5).
     "form.muse_space_test:smoke",
+    # Part 0 GP-E25 C1 (Director BUILD AUTHORIZATION 7136743763):
+    # views CLI pin wiring -- optional explicit pin, revalidation
+    # verdict + offline age surfaced in the export, typed refusal
+    # on a bad pin, STALE distinguished from EVIDENCE_UNAVAILABLE.
+    "form.muse_space_views_pin_test:smoke",
     # MEDIUM-four persistence-restore family (Director Gate 2 clearance
     # 7081067283): fail-closed staged restore for duo_ledger, companion,
     # self_knowledge, bimo/persona_matrix in form/persist_rest.py.
