@@ -18,6 +18,10 @@ Contract pinned here, exercised through the USER-FACING CLI
     with verdict STALE, the changed source named STALE.
   * --pin <unresolvable> is the library's existing typed refusal:
     exit 2, PIN UNAVAILABLE on stderr, no export files written.
+  * --pin "" (explicitly supplied empty value) is refused the same
+    way: argparse distinguishes it from an omitted --pin, and it
+    must never silently resolve to HEAD and export under HEAD's
+    attribution.
   * A snapshot with no Git evidence (unpinned fallback) reports
     EVIDENCE_UNAVAILABLE -- provably distinct from STALE -- and
     its offline age is unavailable, never fabricated.
@@ -206,6 +210,21 @@ def main():
               out, "muse_space_provenance.json")),
           "an unresolvable explicit pin is refused by name (exit "
           "2, PIN UNAVAILABLE) and writes no export at all")
+
+    # ---- empty pin: explicit empty value, NOT an omitted --pin -------
+    out = os.path.join(td.name, "out_empty")
+    cli = run_views_cli(fx, out, pin="")
+    check("c1_cli_empty_pin_typed_refusal",
+          cli.returncode == 2 and "PIN UNAVAILABLE" in cli.stderr and
+          not os.path.exists(os.path.join(out, "index.html")) and
+          not os.path.exists(os.path.join(
+              out, "muse_space_snapshot.json")) and
+          not os.path.exists(os.path.join(
+              out, "muse_space_provenance.json")),
+          "an explicitly supplied empty --pin is refused by name "
+          "(exit 2, PIN UNAVAILABLE) and writes no export at all -- "
+          "it never silently resolves to HEAD, unlike an omitted "
+          "--pin")
 
     # ---- stale vs unavailable evidence --------------------------------
     plain = make_plain_dir(snap, td.name)

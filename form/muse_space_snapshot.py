@@ -103,10 +103,12 @@ def git_head(root):
 def _resolve_pin(root, pin):
     """Resolve `pin` to a commit SHA in `root`. An explicit pin that
     does not resolve raises PinUnavailable -- never a silent
-    fallback to worktree bytes under a false attribution. With no
-    explicit pin, defaults to HEAD (None when the checkout has no
-    Git HEAD at all: the unpinned fallback)."""
-    if pin:
+    fallback to worktree bytes under a false attribution. Only an
+    OMITTED pin (None) defaults to HEAD (None when the checkout has
+    no Git HEAD at all: the unpinned fallback); an explicitly
+    supplied empty value is an explicit pin, does not resolve, and
+    is refused -- it never silently becomes HEAD."""
+    if pin is not None:
         resolved = _git(root, "rev-parse", "--verify",
                         "%s^{commit}" % pin)
         if not resolved:
