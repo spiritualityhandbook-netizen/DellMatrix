@@ -869,6 +869,24 @@ def apply_core_i(program: Any, seed_text: str, seed: Any) -> Optional[Dict[str, 
                 messages.append(
                     "Add idea failed: add idea requires a label")
                 return {**base, "ok": False, "error": "add idea requires a label"}
+            # R24-L sibling (Director 7136782069): the canonical label
+            # budget is MAX_LABEL_CHARS = 200 (Nursery Q-S2.1). Labels
+            # within budget add losslessly (translate no longer slices
+            # them to 80); an over-budget label is refused HERE with the
+            # typed refusal, BEFORE nursery.add mutates anything.
+            from form.dell_matrix.nursery import MAX_LABEL_CHARS
+            if len(lab) > MAX_LABEL_CHARS:
+                program.last_nurture = {
+                    "action": "add", "ok": False,
+                    "error": "label_over_budget",
+                    "label_chars": len(lab),
+                    "max_label_chars": MAX_LABEL_CHARS,
+                }
+                messages.append(
+                    f"Add idea refused (label_over_budget): label is "
+                    f"{len(lab)} chars; the bound is {MAX_LABEL_CHARS} "
+                    f"chars — nothing was added.")
+                return {**base, "ok": False, "error": "label_over_budget"}
             proposal = program.nursery.add(lab)
             program.last_nurture = {"action": "add", "pid": proposal.id,
                                    "label": proposal.label, "ok": True}
