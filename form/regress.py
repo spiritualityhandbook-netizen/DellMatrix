@@ -342,6 +342,9 @@ LIST = [
     "form.dd31_sanitize_copula_test:smoke",
     "form.dd42_predicate_infix_test:smoke",
     "form.r25_extra_operand_test:smoke",
+    "form.r24l_label_lossless_test:smoke",
+    "form.r24l_sibling_labels_test:smoke",
+    "form.ud2_english_routing_test:smoke",
     # eval_predicate surplus circuit (Director 7008502649):
     # explicit binary/unary forms with surplus operands refuse
     # condition_extra_operand at the engine and at 57/73 +
@@ -395,6 +398,7 @@ LIST = [
     # 2026-11-13): the three malformed-claim consumers refuse
     # fail-closed; the F-d stale state still reads UNBOXED.
     "form.fd_consistency_test:smoke",
+    "form.v08_truth_counts_test:smoke",
     "form.confirm_placement_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
@@ -443,6 +447,10 @@ LIST = [
     # manual-only safety repair — exact mint-shape ownership, lstat
     # no-symlink, identity revalidation, typed refusals/reasons.
     "form.sweep_stale_tmps_safety_test:smoke",
+    # MEDIUM-four persistence-restore family (Director Gate 2 clearance
+    # 7081067283): fail-closed staged restore for duo_ledger, companion,
+    # self_knowledge, bimo/persona_matrix in form/persist_rest.py.
+    "form.medium_four_restore_test:smoke",
     # DAF-09 D1 (Director ruling 7085151190 item 3): history header
     # must report the retained total, not the display-slice length.
     "form.daf09_history_header_test:smoke",

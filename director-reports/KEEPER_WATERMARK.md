@@ -1,22 +1,28 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-23 ~16:20 CST  
-**UTC approx**: 2026-11-23T22:20:00Z  
+**Last cycle**: 2026-11-25 ~06:24 CST  
+**UTC approx**: 2026-11-25T12:24:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- #516 SCOPED CONFIRM at head 114a423807061fda6197a847b6577928b73a81ad (root check/open TOCTOU identity pin). Terminal CI ALL PASS; Uni §45 package present. Spot-check: O_NOFOLLOW + fstat pin + typed refusal. Scope: bounded root-open repair only. Mergeable dirty noted.
-- #515 MERGED-MAIN CODE CREDIT CONFIRMED at merge commit f4364616198f5f9da407b1c5e2f3331de7fa3bae. Uni postmerge package verified; prior head stamp + serial ×3 + Director authorization carried. Scope: DAF-09 D1 history-header retained total only.
-- Reaffirmed: other open heads unchanged (#522, #518, #521, #519, #514, #520). Prior stamps stand where heads match. Drafts/#294 skipped.
+- Ripe gates:
+  - Prior SCOPED CONFIRM stands: #523 at d212f78bbe7f37626661ae8658535a16abe0f09d (no head move).
+  - Named missing exactly:
+    - #520 at 412f1d340702d7374addf4cd983dd646da92f4fc: Uni composition + Director acceptance + terminal CI ALL PASS + mergeable clean. Exact missing: independent stateful probes under 7095139761 at this head. SECURITY HOLD remains. No stamp.
+    - #516 at e93b6b8870b33ce8e94db244b195919077c9c96f: Uni residual package + terminal CI ALL PASS + mergeable clean. Exact missing: Director residual re-check at this head. Prior stamps voided. No stamp.
+    - #519 at 6a9fcbb1221a8fa0059debfd59a397bdc3c8d8bc: Uni §45 recomposition package + terminal CI ALL PASS + mergeable clean. Spot-check residual section 17 held. Exact missing: Director residual re-check at this head. Prior stamps voided by head move. No stamp.
+    - #514 at 25fe0659fd2d4c65a5d45423b05d9b8837a2825a: Uni §45 recomposition package + terminal CI ALL PASS + mergeable clean. Spot-check suite claims held. Exact missing: Director residual re-check at this head. Prior stamps voided by head move. No stamp.
+    - #518 stamp at d19fb5af stands (prior). Drafts and #294 fenced skipped.
+- Merged-main proofs: none new since last pass (#524 and #525 prior confirmed).
 - Records reviews: none awaiting new disposition.
 - Trailing obligations: none remaining.
 
 ## Trailing ledger
-- discharged this run: 2 (#516 CONFIRM, #515 merged-main credit)
+- discharged this run: 0
 - remaining: 0
-- gaps: #516 serial ×3 + composition/§32 at current head (not blocking stamp)
+- gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance. #516 stamped. #515 credit confirmed. No other ripe unstamped open heads. No trailing owed.
+Proof of pass: this watermark advance + comments on #523/#520/#516/#519/#514. Nothing needed from Ace. Next step: Uni stateful probes on #520; Director residual re-checks on #516/#519/#514.
 
 — KEEPER
