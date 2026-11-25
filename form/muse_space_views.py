@@ -20,17 +20,34 @@ validated (build record section 5). The export is read-only: it
 writes nothing to the register, GitHub, or the Nursery.
 
 CLI: python3 -m form.muse_space_views [--root PATH] [--out DIR]
-writes <out>/muse_space_snapshot.json and <out>/index.html.
+     [--pin SHA]
+writes <out>/muse_space_snapshot.json, <out>/index.html and
+<out>/muse_space_provenance.json.
+
+GP-E25 C1 (Director BUILD AUTHORIZATION 7136743763): an optional
+explicit --pin is wired through to the snapshot library, and the
+export surfaces the library's existing S3 verdicts -- the pin, the
+revalidation verdict (CURRENT / STALE / EVIDENCE_UNAVAILABLE, with
+per-source detail), and the offline snapshot age (or unavailable)
+-- in the provenance record and on the page, so a reader can tell
+which revision the page describes and whether it is still
+current. A bad explicit pin is refused by the library's typed
+PinUnavailable (exit 2, no export written). The snapshot model
+itself is never modified by the wiring: its canonical identity is
+preserved byte-for-byte.
 """
 import argparse
 import html
 import json
 import os
 import sys
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from form.muse_space_snapshot import build_snapshot, canonical_bytes
+from form.muse_space_snapshot import (PinUnavailable, build_snapshot,
+                                      canonical_bytes, offline_status,
+                                      revalidate)
 
 
 def esc(value):
@@ -74,7 +91,52 @@ def _web_section(model):
     return _section("Connection Web", body)
 
 
-def render_html(model):
+def export_provenance(model, root, now_iso=None):
+    """C1 provenance for one exported snapshot: the pin it was
+    rendered from, the S3 revalidation verdict against the
+    checkout's current HEAD, and the S3 offline descriptor (mode,
+    snapshot age in seconds or None when the snapshot time is not
+    evidence, authority actions disabled). The model is read-only
+    here -- provenance rides beside it, never inside it, so the
+    snapshot's canonical identity is untouched."""
+    if now_iso is None:
+        now_iso = datetime.now(timezone.utc).isoformat()
+    return {
+        "pin": model.get("source_main_sha"),
+        "revalidation": revalidate(model, root),
+        "offline": offline_status(model, now_iso),
+    }
+
+
+def _provenance_section(provenance):
+    if provenance is None:
+        body = ("<p>Revalidation verdict "
+                "<strong>EVIDENCE_UNAVAILABLE</strong> (not performed "
+                "for this render); offline snapshot age "
+                "unavailable.</p>")
+        return _section("Snapshot Provenance", body)
+    rev = provenance["revalidation"]
+    off = provenance["offline"]
+    age = off.get("snapshot_age_seconds")
+    age_text = ("%d seconds" % age) if age is not None else "unavailable"
+    sources = "".join(
+        "<li>%s: %s</li>" % (esc(key), esc(src.get("status", "")))
+        for key, src in sorted(rev.get("sources", {}).items()))
+    body = (
+        "<p>Pin <code>%s</code>. Revalidation verdict "
+        "<strong>%s</strong> (pinned main <code>%s</code>, current "
+        "main <code>%s</code>). Offline descriptor: mode "
+        "<strong>%s</strong>, snapshot age %s, authority actions "
+        "enabled: %s.</p><ul>%s</ul>"
+        % (esc(provenance.get("pin")), esc(rev.get("overall")),
+           esc(rev.get("pinned_main_sha")),
+           esc(rev.get("current_main_sha")), esc(off.get("mode")),
+           esc(age_text), esc(off.get("authority_actions_enabled")),
+           sources))
+    return _section("Snapshot Provenance", body)
+
+
+def render_html(model, provenance=None):
     pin = model["source_main_sha"]
     nodes = model["nodes"]
     by_type = {}
@@ -134,9 +196,10 @@ def render_html(model):
         "<p>Static export labeled <strong>AS_OF</strong> pin "
         "<code>%s</code>; snapshot time %s; content identity "
         "<code>%s</code>. Read-only witness surface: never a source "
-        "of truth.</p>%s%s%s%s%s%s%s</body></html>\n"
+        "of truth.</p>%s%s%s%s%s%s%s%s</body></html>\n"
         % (esc(pin), esc(model["github_snapshot_time"]),
            esc(model["content_identity"]),
+           _provenance_section(provenance),
            _section("Blueprint Map", map_body),
            _belts_section(model),
            _web_section(model),
@@ -150,19 +213,35 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="muse_space_views")
     ap.add_argument("--root", default=".")
     ap.add_argument("--out", default="muse_space_export")
+    ap.add_argument("--pin", default=None,
+                    help="optional explicit snapshot pin (commit "
+                         "SHA); an unresolvable pin is refused by "
+                         "name and no export is written")
     args = ap.parse_args(argv)
-    model = build_snapshot(args.root)
+    try:
+        model = build_snapshot(args.root, args.pin)
+    except PinUnavailable as exc:
+        sys.stderr.write("PIN UNAVAILABLE: %s\n" % exc)
+        return 2
+    provenance = export_provenance(model, args.root)
     os.makedirs(args.out, exist_ok=True)
     snap_path = os.path.join(args.out, "muse_space_snapshot.json")
     with open(snap_path, "w", encoding="utf-8") as fh:
         fh.write(json.dumps(json.loads(canonical_bytes(model)),
                             indent=1, sort_keys=True) + "\n")
+    prov_path = os.path.join(args.out, "muse_space_provenance.json")
+    with open(prov_path, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(provenance, indent=1, sort_keys=True) + "\n")
     html_path = os.path.join(args.out, "index.html")
     with open(html_path, "w", encoding="utf-8") as fh:
-        fh.write(render_html(model))
-    print("wrote %s and %s (pin %s, identity %s)"
-          % (snap_path, html_path, model["source_main_sha"],
-             model["content_identity"]))
+        fh.write(render_html(model, provenance))
+    age = provenance["offline"]["snapshot_age_seconds"]
+    print("wrote %s, %s and %s (pin %s, identity %s, revalidation "
+          "%s, offline age %s)"
+          % (snap_path, html_path, prov_path,
+             model["source_main_sha"], model["content_identity"],
+             provenance["revalidation"]["overall"],
+             ("%ds" % age) if age is not None else "unavailable"))
     return 0
 
 

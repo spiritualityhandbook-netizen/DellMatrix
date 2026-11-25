@@ -374,51 +374,133 @@ def _stage_lattice_modules(raw: Dict[str, Any], owner: str):
 
 
 def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
-    raw = data.get("lattice") or {}
-    if not raw:
+    # Persistence-integrity (Part I SAVE/JOURNAL; Director clearance
+    # PR #505 comment 7076723491): the lattice is user-authored content.
+    # An ABSENT section is a legacy save and leaves the prepared
+    # program's default lattice. A PRESENT but malformed section (wrong
+    # type, unparseable scalar, invalid setting, malformed cell) FAILS
+    # CLOSED with ProgramLoadError, raised before any swap or write —
+    # the candidate is staged privately and swapped only after complete
+    # validation, so one corrupt value can never wipe the owner's
+    # authored lattice or be made permanent by a later save.
+    #
+    # Composition (PR #519 x PR #526, Uni, 2026-11-25): the staged
+    # fail-closed cell restore above is main's body; the modules
+    # registry staging and binding below is PR #519's P0-R repair,
+    # retargeted onto the staged lattice so both contracts hold at
+    # once — a malformed registry refuses the whole load typed, and a
+    # module referencing a cell that did not survive the staged cell
+    # restore refuses before the swap. This discharges the former
+    # KNOWN RESIDUAL noted against the modules field.
+    if "lattice" not in data:
         return
-    # P0-R: validate the modules field STAGED, above this section's
-    # permissive cell restore -- a malformed registry refuses the whole
-    # load typed instead of being swallowed into a default lattice.
+    raw = data["lattice"]
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            "lattice section is not an object: "
+            f"{type(raw).__name__}; refusing load")
+    # P0-R: validate the modules field STAGED, before the cell
+    # restore — a malformed registry refuses the whole load typed
+    # instead of being swallowed into a default lattice.
     staged_modules = _stage_lattice_modules(raw, p.owner)
-    try:
-        p.lattice = HarmonicLattice(size=int(raw.get("size", 12)))
+
+    def _int_field(name: str, default: int) -> int:
+        value = raw.get(name, default)
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ProgramLoadError(
+                f"lattice.{name} is not an integer: {value!r}; "
+                "refusing load")
+        return value
+
+    staged = HarmonicLattice(size=_int_field("size", 12))
+    if "overlay" in raw:
         try:
-            p.lattice.overlay = OverlayMode(raw.get("overlay", "harmonic"))
-        except Exception:
-            pass
+            staged.overlay = OverlayMode(raw["overlay"])
+        except (TypeError, ValueError):
+            raise ProgramLoadError(
+                "lattice.overlay is not a known overlay: "
+                f"{raw['overlay']!r}; refusing load")
+    if "perspective" in raw:
         try:
-            p.lattice.perspective = LatPerspective(raw.get("perspective", "top"))
-        except Exception:
-            pass
+            staged.perspective = LatPerspective(raw["perspective"])
+        except (TypeError, ValueError):
+            raise ProgramLoadError(
+                "lattice.perspective is not a known perspective: "
+                f"{raw['perspective']!r}; refusing load")
+    if "form" in raw:
         try:
-            p.lattice.perception.set_form(Form(raw.get("form", "cube")))
-        except Exception:
-            p.lattice.perception.set_form(Form.CUBE)
-        p.lattice.origin_note = int(raw.get("origin_note", 0))
-        for _key, cell in (raw.get("cells") or {}).items():
-            try:
-                p.lattice.put(int(cell.get("h", 0)), int(cell.get("v", 0)), int(cell.get("f", 0)), content=cell.get("content"), label=cell.get("label", ""), tags=list(cell.get("tags") or []), members=list(cell.get("members") or []))
-            except Exception:
-                continue
-    except Exception:
-        p.lattice = HarmonicLattice(size=12)
-    # Bind staged modules to the restored lattice cells by coordinate
+            staged.perception.set_form(Form(raw["form"]))
+        except (TypeError, ValueError):
+            raise ProgramLoadError(
+                "lattice.form is not a known form: "
+                f"{raw['form']!r}; refusing load")
+    staged.origin_note = _int_field("origin_note", 0)
+    raw_cells = raw.get("cells", {})
+    if not isinstance(raw_cells, dict):
+        raise ProgramLoadError(
+            "lattice.cells is not an object: "
+            f"{type(raw_cells).__name__}; refusing load")
+    for key, cell in raw_cells.items():
+        if not isinstance(cell, dict):
+            raise ProgramLoadError(
+                f"lattice cell {key!r} is not an object; refusing load")
+        coords: Dict[str, int] = {}
+        for axis in ("h", "v", "f"):
+            value = cell.get(axis, 0)
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ProgramLoadError(
+                    f"lattice cell {key!r} has non-integer {axis}: "
+                    f"{value!r}; refusing load")
+            coords[axis] = value
+        # Finding B (Director CORRECTION_REQUIRED 7079022510): the
+        # saved key is part of the cell's identity. The writer emits
+        # exactly the canonical "h,v,f" key for a cell's own
+        # coordinates, one cell per coordinate — so a key that
+        # disagrees with its cell's coordinates, or a second cell
+        # claiming coordinates already restored, is not
+        # legacy-producible and fails closed instead of silently
+        # overwriting (HarmonicLattice.put assigns by coordinate).
+        canonical = f"{coords['h']},{coords['v']},{coords['f']}"
+        if key != canonical:
+            raise ProgramLoadError(
+                f"lattice cell key {key!r} does not match its "
+                f"coordinates {canonical!r}; refusing load")
+        if (coords["h"], coords["v"], coords["f"]) in staged.cells:
+            raise ProgramLoadError(
+                f"lattice cell {key!r} duplicates coordinates "
+                f"{canonical!r}; refusing load")
+        tags = cell.get("tags", [])
+        members = cell.get("members", [])
+        if not isinstance(tags, list) or not isinstance(members, list):
+            raise ProgramLoadError(
+                f"lattice cell {key!r} has non-list tags/members; "
+                "refusing load")
+        try:
+            staged.put(coords["h"], coords["v"], coords["f"],
+                       content=cell.get("content"),
+                       label=cell.get("label", ""),
+                       tags=list(tags), members=list(members))
+        except Exception as exc:
+            raise ProgramLoadError(
+                f"lattice cell {key!r} failed to restore: {exc}; "
+                "refusing load")
+    # Bind staged modules to the staged lattice cells by coordinate
     # (Option B). A referenced coordinate that did not survive the
-    # cell restore refuses the load rather than binding a partial
-    # membership; `p` is still the private prepared Program, so the
+    # staged cell restore refuses the load rather than binding a
+    # partial membership; the swap below has not happened yet, so the
     # refusal swaps nothing.
-    for mid, kind, axis, index, meta, coords in staged_modules:
+    for mid, kind, axis, index, meta, coords_list in staged_modules:
         bound = {}
-        for coord in coords:
-            cell = p.lattice.cells.get(coord)
+        for coord in coords_list:
+            cell = staged.cells.get(coord)
             if cell is None:
                 raise ProgramLoadError(
                     f"lattice module {mid!r} references cell {coord} that did "
                     "not survive lattice restore: refusing load")
             bound[coord] = cell
-        p.lattice.modules[mid] = SnapModule(
+        staged.modules[mid] = SnapModule(
             id=mid, kind=kind, axis=axis, index=index, cells=bound, meta=dict(meta))
+    p.lattice = staged
 
 
 class ProgramLoadError(ValueError):
@@ -1109,36 +1191,94 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     hist = data.get("history") or []
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]
-    # DCC-XX: restore the durable execution-outcome ledger. Shape-checked;
-    # a malformed section never poisons the load (empty ledger instead).
-    # Records are historical evidence: never reinterpreted, never rewritten.
-    try:
+    # DCC-XX: restore the durable execution-outcome ledger. Records are
+    # historical evidence: non-derivable, never reinterpreted, never
+    # rewritten — so a PRESENT but malformed section FAILS CLOSED
+    # (ProgramLoadError, raised before any swap or write), exactly as
+    # the spatial and agent_local restores do (persistence-integrity,
+    # Part I SAVE/JOURNAL; Director clearance PR #505 comment
+    # 7076723491). An ABSENT section is a legacy save (pre-ledger
+    # writer): the prepared program's empty ledger stands, as before.
+    if "outcome_ledger" in data:
         from form.mandell.outcome_ledger import validate_record_shape
-        ledger = data.get("outcome_ledger") or {}
+        ledger = data["outcome_ledger"]
+        if not isinstance(ledger, dict):
+            raise ProgramLoadError(
+                "outcome_ledger section is not an object: "
+                f"{type(ledger).__name__}; refusing load")
         seq = ledger.get("outcome_seq", 0)
-        try:
-            p.outcome_seq = max(0, int(seq))
-        except (TypeError, ValueError):
-            p.outcome_seq = 0
-        raw_records = ledger.get("records") or {}
+        if isinstance(seq, bool) or not isinstance(seq, int):
+            raise ProgramLoadError(
+                "outcome_ledger.outcome_seq is not an integer: "
+                f"{seq!r}; refusing load")
+        # Findings A/C (Director CORRECTION_REQUIRED 7079022510):
+        # identity and counter consistency are part of the malformed-
+        # present contract. The ledger's sole writer (build_outcome /
+        # capture_outcome, DCC-XX) always emits records owned by the
+        # program owner, keyed by their own outcome_id, each with a
+        # positive integer outcome_seq, under a section counter equal
+        # to the highest record sequence — and no production path
+        # deletes or trims records. None of the states refused below
+        # is therefore legacy-producible, so each fails closed with a
+        # typed refusal: no silent counter normalize, auto-advance, or
+        # reset. A counter AHEAD of the records is a harmless gap and
+        # is preserved verbatim (never reset downward).
+        if seq < 0:
+            raise ProgramLoadError(
+                "outcome_ledger.outcome_seq is negative: "
+                f"{seq!r}; refusing load")
+        raw_records = ledger.get("records", {})
+        if not isinstance(raw_records, dict):
+            raise ProgramLoadError(
+                "outcome_ledger.records is not an object: "
+                f"{type(raw_records).__name__}; refusing load")
         restored: Dict[str, Dict[str, Any]] = {}
-        if isinstance(raw_records, dict):
-            for oid, rec in raw_records.items():
-                if isinstance(oid, str) and validate_record_shape(rec):
-                    restored[oid] = dict(rec)
+        max_record_seq = 0
+        seen_seqs: Dict[int, str] = {}
+        for oid, rec in raw_records.items():
+            if not isinstance(oid, str) or not validate_record_shape(rec):
+                raise ProgramLoadError(
+                    f"outcome_ledger record {oid!r} fails shape "
+                    "validation; refusing load")
+            if rec.get("outcome_id") != oid:
+                raise ProgramLoadError(
+                    f"outcome_ledger record key {oid!r} does not match "
+                    f"its outcome_id {rec.get('outcome_id')!r}; "
+                    "refusing load")
+            if rec.get("owner") != p.owner:
+                raise ProgramLoadError(
+                    f"outcome_ledger record {oid!r} owner "
+                    f"{rec.get('owner')!r} does not match the loaded "
+                    f"owner {p.owner!r}; refusing load")
+            rseq = rec.get("outcome_seq")
+            if (isinstance(rseq, bool) or not isinstance(rseq, int)
+                    or rseq < 1):
+                raise ProgramLoadError(
+                    f"outcome_ledger record {oid!r} outcome_seq is "
+                    f"not a positive integer: {rseq!r}; refusing load")
+            # Finding D (Director 7079147473): per-record sequences
+            # are unique across the ledger. The capture writer
+            # advances the counter exactly once per accepted record,
+            # in the same step as the append, so two different
+            # outcome_ids sharing one sequence are not writer-
+            # producible; left standing, the duplicate would make
+            # get_outcome_by_seq select a record by dict order.
+            if rseq in seen_seqs:
+                raise ProgramLoadError(
+                    f"outcome_ledger records {seen_seqs[rseq]!r} and "
+                    f"{oid!r} share outcome_seq {rseq}; "
+                    "refusing load")
+            seen_seqs[rseq] = oid
+            if rseq > max_record_seq:
+                max_record_seq = rseq
+            restored[oid] = dict(rec)
+        if seq < max_record_seq:
+            raise ProgramLoadError(
+                "outcome_ledger.outcome_seq "
+                f"{seq} is behind the records' highest sequence "
+                f"{max_record_seq}; refusing load")
         p.outcome_records = restored
-        # The durable sequence must never fall behind the restored records.
-        max_seq = p.outcome_seq
-        for rec in restored.values():
-            try:
-                s = int(rec.get("outcome_seq", 0) or 0)
-            except (TypeError, ValueError):
-                s = 0
-            if s > max_seq:
-                max_seq = s
-        p.outcome_seq = max_seq
-    except Exception:
-        pass
+        p.outcome_seq = seq
     # R7.2: restore Perspective Studio session evidence with the shared
     # strict schema. Closed records only; the active studio mode is
     # session-only and never restored. validate_section never raises;
