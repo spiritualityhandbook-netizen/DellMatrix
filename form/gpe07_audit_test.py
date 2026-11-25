@@ -59,6 +59,22 @@ pre-existing real ledger and unrelated owner bytes survive
 repeated audits byte-identically, and the 100-Dell report
 still returns.
 
+CORRECTION (2026-11-25, Director ruling 7177000122): the
+repair above briefly placed the isolation wrapper in THIS
+suite (_run_audit_isolated). That proved only that the test
+could isolate itself — a caller invoking
+form.mandell.dell_audit.run_audit() directly still entered
+the original loop over the shared form.persist._STATE_DIR,
+cleanup included, and kept the shared-state behavior
+identified in 7175094313. The wrapper is removed from this
+suite; the isolation now lives behind the public
+run_audit(owner_prefix) boundary itself, which re-executes
+the sweep in a child process rooted at a private disposable
+tree copy. This suite invokes that public entry directly,
+exactly as any caller does, and audit_isolation keeps its
+full-strength fingerprint over the ENTIRE real state
+directory.
+
 FAILING-FIRST RECORD (at Part head 53368fb1, before the build):
 this suite failed on import — form.mandell.dell_audit did not
 exist (the whole-address execution audit had never been run as
@@ -153,12 +169,8 @@ editing the ledger to match an un-synced sweep.
 from __future__ import annotations
 
 import hashlib
-import json
 import os
-import shutil
-import subprocess
 import sys
-import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -181,75 +193,6 @@ def _state_fingerprint():
     return fp
 
 
-def _tree_root():
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-def _run_audit_isolated():
-    """Run the audit's two sweeps through the normal
-    dell_audit.run_audit entry point in a child process whose
-    tree is a private disposable copy of this one (Director
-    contract ruling 7176510943; see the module docstring's
-    audit-boundary repair note).
-
-    State paths across form/persist and form/dell_matrix are
-    derived from file locations, so a copied tree redirects
-    every one of them — nursery writes and .dmtmp-ledger.jsonl
-    creation included — into the private copy, which starts
-    with NO state directory (the codebase's own regress
-    _copy_tree idiom) and is deleted whole afterwards. The
-    real state directory is never written by the audit, so the
-    audit_isolation fingerprint over it stays at full strength.
-    Returns (records, records2) — the two sweeps, run back to
-    back in the child exactly as they ran in-process before.
-    """
-    root = _tree_root()
-    tmp = tempfile.mkdtemp(prefix="gpe07_audit_")
-    try:
-        def ignore(d, names):
-            skip = {n for n in names
-                    if n == "__pycache__" or n.endswith((".pyc", ".pyo"))}
-            if os.path.abspath(d) == os.path.abspath(root):
-                skip |= {".git"} & set(names)
-            if os.path.abspath(d) == os.path.join(root, "form"):
-                # The private copy starts with no state directory
-                # at all: the state dir is created fresh inside
-                # the copy by the code under audit.
-                skip |= {"state"} & set(names)
-            return skip
-
-        work = os.path.join(tmp, "src")
-        shutil.copytree(root, work, ignore=ignore, symlinks=True)
-        out_path = os.path.join(tmp, "records.json")
-        child = os.path.join(work, "form", "gpe07_audit_test.py")
-        env = dict(os.environ)
-        env["PYTHONPATH"] = work
-        proc = subprocess.run(
-            [sys.executable, child, "--audit-child", out_path],
-            cwd=work, env=env, capture_output=True, text=True)
-        if proc.returncode != 0:
-            raise RuntimeError(
-                "isolated audit child failed "
-                f"(rc={proc.returncode}): {(proc.stderr or '')[-800:]}")
-        with open(out_path, encoding="utf-8") as f:
-            sweeps = json.load(f)["sweeps"]
-        return sweeps[0], sweeps[1]
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
-
-
-def _audit_child_main(argv):
-    """Child-process entry (private disposable tree): run the
-    normal audit entry point twice and write both sweeps'
-    records as JSON to the path named by --audit-child."""
-    from form.mandell import dell_audit
-    out_path = argv[argv.index("--audit-child") + 1]
-    sweeps = [dell_audit.run_audit(), dell_audit.run_audit()]
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump({"sweeps": sweeps}, f)
-    return 0
-
-
 def run_all():
     from form.mandell import dell_audit
     from form.mandell.dell_cards import english_named_dells
@@ -257,7 +200,12 @@ def run_all():
         NAMED, active_core_count, execution_standing)
 
     fp_before = _state_fingerprint()
-    records, records2 = _run_audit_isolated()
+    # The public entry point, invoked directly — the isolation
+    # is inside run_audit() itself (Director correction
+    # 7177000122), so this suite gets exactly what any direct
+    # caller gets.
+    records = dell_audit.run_audit()
+    records2 = dell_audit.run_audit()
     by_dell = {r["dell"]: r for r in records}
 
     check("audit_coverage_exactly_100",
@@ -397,6 +345,4 @@ def smoke() -> bool:
 
 
 if __name__ == "__main__":
-    if "--audit-child" in sys.argv:
-        sys.exit(_audit_child_main(sys.argv))
     sys.exit(0 if smoke() else 1)
