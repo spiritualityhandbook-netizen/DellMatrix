@@ -413,6 +413,18 @@ LIST = [
     "form.fd_consistency_test:smoke",
     "form.v08_truth_counts_test:smoke",
     "form.confirm_placement_test:smoke",
+    # Part VI — Unknowns probe evidence (2026-11-20): read-only
+    # census/behavior/capability probes discharging or narrowing
+    # the open-question packets (Q-FI012.8 census; #119/#175
+    # censuses; DD-42.2/DD-18.2/R21 current-main behavior;
+    # Q-U.3/.4/.5 re-verification; Q-GS.1 caller census;
+    # Q-FI016.1 measured capability + scale). They pin CURRENT
+    # behavior: a deliberate future change to a probed behavior
+    # updates the probe in the same circuit, like the
+    # atomic_write no-production-caller pin.
+    "form.fi012_q8_census_probe_test:smoke",
+    "form.part6_unknowns_probe_test:smoke",
+    "form.fi016_capability_probe_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
     "form.dirf14_catch_consumed_test:smoke",
@@ -461,6 +473,19 @@ LIST = [
     # change that lands form/muse_space_snapshot.py and
     # form/muse_space_views.py (build record 2026-11-20 section 5).
     "form.muse_space_test:smoke",
+    # SOUND S0 (Director ruling 7085160720 on PR #505): pure read-only
+    # sonification projection (form/dell_matrix/sonification.py) --
+    # pitch from the harmonic_lattice chromatic law, set harmony only
+    # from harmony.harmony_score on a named active neighborhood of 2+,
+    # spatial cues from spatial_audio; fail-first acceptance
+    # one_state_one_sound / different_actual_math_changes_sound /
+    # unknown_is_silence / solo_not_pair_harmony / view_audio_parity /
+    # no_authority.
+    "form.sonification_test:smoke",
+    # P0-R (Director 7085151190 item 2): lattice SnapModule registry
+    # persistence -- lossless modules_format=2 records, staged typed
+    # restore, legacy IDs-only fail-closed.
+    "form.lattice_modules_restore_test:smoke",
     # Part 0 GP-E25 C1 (Director BUILD AUTHORIZATION 7136743763):
     # views CLI pin wiring -- optional explicit pin, revalidation
     # verdict + offline age surfaced in the export, typed refusal

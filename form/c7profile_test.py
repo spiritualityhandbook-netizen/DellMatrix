@@ -124,6 +124,41 @@ def _board_mod():
     return profile_board
 
 
+def _t12_diag(rep) -> None:
+    """Fixed-label diagnostics for a failed t12 clean-run check
+    (Director option C, ruling 7174327493).
+
+    The regress capture (DD-31, unchanged) carries assertion
+    IDENTIFIERS only — detail text is never emitted, because it
+    can quote runtime values. So when t12 fails, the suite itself
+    prints companion [FAIL]-shaped lines whose identifiers are
+    selected ONLY from a closed enumeration: the five timed stage
+    names (TIMED_STAGES) plus the fixed tokens "none" and
+    "other". No runtime value, error string or repr is ever
+    interpolated into a label; a value outside the enumeration
+    maps to "other". The labels identify which stage was largest
+    and which stages were dragging, and they reach the capture
+    report through the harness's existing identifier parser.
+    A passing t12 prints nothing extra (this helper runs only on
+    failure), and the lines are plain prints — they never enter
+    the rec() tally, so the suite's count is unchanged.
+    """
+    largest = (rep.get("largest_stage") or {}).get("name")
+    print("[FAIL] t12_diag_largest_is_"
+          + (largest if largest in TIMED_STAGES else "other"))
+    dragging = rep.get("dragging")
+    if dragging == []:
+        print("[FAIL] t12_diag_dragging_none")
+    elif isinstance(dragging, list):
+        for entry in dragging:
+            name = (entry or {}).get("name") \
+                if isinstance(entry, dict) else None
+            print("[FAIL] t12_diag_dragging_is_"
+                  + (name if name in TIMED_STAGES else "other"))
+    else:
+        print("[FAIL] t12_diag_dragging_is_other")
+
+
 def smoke() -> bool:
     print("=== C7.PROFILE (DD-39) ===")
     r = []
@@ -476,11 +511,15 @@ def smoke() -> bool:
     p = _program("C7ProfileT12")
     res = execute_seed(p, "49[Profile]")
     rep12 = res.get("profile_report") or {}
+    t12_clean = (rep12.get("dragging") == []
+                 and (rep12.get("largest_stage") or {}).get("name")
+                 == "growth")
     rec("t12_clean_largest_not_dragging",
-        rep12.get("dragging") == []
-        and (rep12.get("largest_stage") or {}).get("name") == "growth",
+        t12_clean,
         f"dragging={rep12.get('dragging')} "
         f"largest={rep12.get('largest_stage')}")
+    if not t12_clean:
+        _t12_diag(rep12)
     rec("t12_dragging_line_none_wording",
         any(m.startswith("  dragging: none") and "impaired function" in m
             for m in _msgs(res)),
