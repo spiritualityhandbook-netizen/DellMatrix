@@ -64,6 +64,22 @@ Each refusal case asserts four legs:
   no_silent_clear  refusal, or the loaded state is whole
   resave_preserves refusal, or a save + reload keeps the section
                    whole (including preserved malformed originals)
+
+Active-binding control (chat Director 7166488998 on issue #512):
+the legs above load with activate=False, so no live program is ever
+bound and the harness cannot support a claim about the ACTIVE
+binding (its resave leg is also vacuous when an exception occurs).
+One control therefore binds a live program through the real load
+path (activate=True), snapshots its agent_audit state, attempts the
+proven malformed load (section-seq 1e309) through the same active
+path, and asserts the previously bound program is still the bound
+program with its state readable and unchanged.
+
+Tally vs current main (verified at the fixture head): 19/41 —
+controls + isolation 12/13 (the active-binding control is the one
+failing control: the malformed load succeeds silently and the
+binding is swapped to the section-cleared program, records 0/3,
+seq 0), refusal legs 7/28 (only bytes_unchanged passes today).
 """
 from __future__ import annotations
 
@@ -79,6 +95,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from form.open import open_program
 from form.persist import save
 from form.persist_rest import load, ProgramLoadError
+from form.mandell.language import bound_program
 from form.dell_matrix.agent_coordinator import (
     capture_agent_action, AUDIT_COMMITTED, AUDIT_DENIED, AUDIT_ATTEMPTED)
 
@@ -155,7 +172,7 @@ def smoke() -> bool:
         r.append(bool(ok))
 
     pid = os.getpid()
-    owner_a, owner_b = f"P0sFxA{pid}", f"P0sFxB{pid}"
+    owner_a, owner_b, owner_c = f"P0sFxA{pid}", f"P0sFxB{pid}", f"P0sFxC{pid}"
     tmp = tempfile.mkdtemp(prefix="p0s_fixtures_")
     try:
         # ---- writer-shaped bases -------------------------------------
@@ -395,12 +412,67 @@ def smoke() -> bool:
             exc_b is None and st.get("ids") == sorted(ids_b) and st.get("seq") == 2
             and st.get("malformed") == [],
             f"exc={exc_b!r} audit={st}")
+
+        # ---- active-binding preservation control -------------------------
+        # Director 7166488998: every leg above loads with activate=False,
+        # so no live program is ever bound and the harness cannot support
+        # a claim about the ACTIVE binding (and its resave leg is vacuous
+        # when an exception occurs). This control binds a live program
+        # through the real load path (activate=True), snapshots its
+        # agent_audit state, then attempts the proven malformed load
+        # (section-seq 1e309, the non-finite family) through the same
+        # active path and observes the live binding afterwards: the
+        # previously bound program must still BE the bound program, with
+        # its state readable and unchanged.
+        pc = open_program(owner_c)
+        ids_c = []
+        for i in range(3):
+            made = capture_agent_action(
+                pc, subject=f"fixture-subject-c{i + 1}",
+                request_id=f"req-{owner_c}-{i + 1}", operation="fixture_op",
+                target="fixture-target", result=_RESULTS[i],
+                detail=f"binding record {i + 1} for {owner_c}")
+            ids_c.append(made["audit_id"])
+        live_path = os.path.join(tmp, "bind_live.json")
+        save(pc, live_path)
+        with open(live_path, encoding="utf-8") as f:
+            live_data = json.load(f)
+        live, exc_live = None, None
+        try:
+            live = load(owner_c, live_path, activate=True)
+        except Exception as exc:  # noqa: BLE001 — the outcome IS the observation
+            exc_live = exc
+        snap = _audit_state(live) if live is not None else None
+        premise = (exc_live is None and live is not None
+                   and bound_program() is live
+                   and snap["ids"] == sorted(ids_c) and snap["seq"] == 3
+                   and snap["malformed"] == [])
+        d = json.loads(json.dumps(live_data))
+        d["agent_audit"]["audit_seq"] = _SENT
+        poisoned_c = _write(tmp, "bind_poisoned.json", d, "1e309")
+        p2, exc2 = None, None
+        try:
+            p2 = load(owner_c, poisoned_c, activate=True)
+        except Exception as exc:  # noqa: BLE001 — the outcome IS the observation
+            exc2 = exc
+        bound_after = bound_program()
+        after = _audit_state(bound_after) if bound_after is not None else None
+        preserved = bool(premise and bound_after is live and after == snap)
+        if exc2 is not None:
+            attempt_desc = f"attempt raised {type(exc2).__name__}"
+        elif p2 is not None:
+            attempt_desc = "attempt load ok; " + describe(p2, "aa")
+        else:
+            attempt_desc = "attempt returned no program"
+        rec("ctl_active_binding_preserved_after_malformed_load", preserved,
+            f"premise_ok={premise}; {attempt_desc}; "
+            f"bound_is_live={bound_after is live}; bound audit={after}")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
         try:
             from form.persist import _path
             from form.dell_matrix.nursery import owner_nursery_path
-            for o in (owner_a, owner_b):
+            for o in (owner_a, owner_b, owner_c):
                 for path in (_path(o), owner_nursery_path(o)):
                     if path and os.path.exists(path):
                         os.remove(path)
