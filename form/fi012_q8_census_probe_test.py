@@ -32,6 +32,32 @@ This probe IS that census refresh, run at the Part VI base pin
 Labels: UNIT (source census) + INTEGRATION (parse door behavior,
 the same function the production door calls). State hygiene: the
 Nursery contrast uses a temp file; nothing touches real state.
+
+UPDATE (2026-11-25, Director ruling 7166339462; PR #507 repair):
+the census above is the dated historical record at the Part VI
+base pin and stands. Two expectations were superseded by the
+#522 / R24-L landing on main (labels carried losslessly; the
+canonical 200-char budget enforced as a typed refusal BEFORE
+placement at needs.parse_and_place, never by slicing):
+
+  S1  the label leg of the source census no longer counts the
+      literal text "label[:80]" — the landed source carries that
+      string in a comment, which satisfied the old census while
+      the behavior had already changed. The census now reads the
+      function's AST: the returned record's label entry must be
+      the unsliced name and no [:80] slice bound may exist in the
+      function's code. The detail/goals/words caps are censused
+      the same way (AST slice bounds, not text).
+  B1  now tests the observable #522 contract at the normal entry
+      point (needs.parse_and_place): a 100-char label is
+      preserved whole through placement, and a 201-char label is
+      refused (label_over_budget) before any placement.
+
+All other census items (S2, B2-B5, C1) are unchanged: the
+detail[:2000] / goals[:12] / words[:500] parse slices remain on
+main by design. State hygiene extended: the entry-point legs use
+a dedicated probe owner via form.open.open_program and never
+save, so no state file is created.
 """
 from __future__ import annotations
 
@@ -81,15 +107,36 @@ def main() -> int:
 
     print("=== FI012 Q8 CENSUS (M-34 refresh at Part VI base) ===")
 
-    # --- S1: site + census values, from the function's own source
-    src = inspect.getsource(parse_create_line)
-    caps = {"label[:80]": "label[:80]" in src,
-            "detail[:2000]": "detail[:2000]" in src,
-            "goals[:12]": "goals[:12]" in src,
-            "words[:500]": "words[:500]" in src}
+    # --- S1: site + census values, from the function's own AST.
+    # Post-#522 census (Director 7166339462): the old text census
+    # counted the literal "label[:80]", which the landed source
+    # carries in a comment — a comment satisfied it while the
+    # behavior had already changed. The census now reads CODE:
+    # slice bounds actually present in the function, plus the
+    # shape of the returned record's label entry (must be the
+    # unsliced name; the [:80] bound must not exist as code).
+    fn_tree = ast.parse(inspect.getsource(parse_create_line))
+    slice_uppers = set()
+    label_is_unsliced_name = False
+    for node in ast.walk(fn_tree):
+        if (isinstance(node, ast.Subscript)
+                and isinstance(node.slice, ast.Slice)
+                and isinstance(node.slice.upper, ast.Constant)):
+            slice_uppers.add(node.slice.upper.value)
+        if isinstance(node, ast.Dict):
+            for k, v in zip(node.keys, node.values):
+                if (isinstance(k, ast.Constant)
+                        and k.value == "label"):
+                    label_is_unsliced_name = isinstance(v, ast.Name)
+    caps = {"detail[:2000]": 2000 in slice_uppers,
+            "goals[:12]": 12 in slice_uppers,
+            "words[:500]": 500 in slice_uppers,
+            "label_unsliced": label_is_unsliced_name
+            and 80 not in slice_uppers}
     check("S1_site_and_census_values",
           all(caps.values()),
-          f"form/idea_create.py parse_create_line caps={caps}")
+          f"form/idea_create.py parse_create_line caps={caps} "
+          f"slice_uppers={sorted(slice_uppers)}")
 
     # --- S2: caller census (single parse authority)
     callers = _production_callers("parse_create_line",
@@ -100,16 +147,46 @@ def main() -> int:
           "form/dell_matrix/needs.py" in callers and len(callers) >= 1,
           f"callers={callers}")
 
-    # --- B1: label cap — silent truncation, no signal
+    # --- B1: label contract at the normal entry point (#522 /
+    # R24-L, Director 7166339462). Historical pin (superseded):
+    # B1_label_100_to_80_silent — parse_create_line sliced a
+    # 100-char label to 80 with no signal. The landed contract:
+    # the label is carried losslessly and the canonical budget
+    # (200) is enforced by typed refusal BEFORE placement at
+    # needs.parse_and_place. Both legs are tested here at that
+    # entry point.
+    from form.open import open_program
+    from form.dell_matrix.needs import parse_and_place
+    prog = open_program("FI012Q8PROBE")
+
+    def _unit_labels():
+        return [u.label for u in
+                prog.cube.session.plane.units.values()]
+
     r = parse_create_line(
         "create an idea called " + "L" * 100 +
         " detail: d goals: g")
-    keys = sorted(r.keys())
-    check("B1_label_100_to_80_silent",
-          len(r["label"]) == 80
-          and not any("trunc" in k or "cap" in k or "refus" in k
-                      for k in keys),
-          f"label_len={len(r['label'])} keys={keys}")
+    res = parse_and_place(
+        prog, "create an idea called " + "L" * 100 +
+        " detail: d goals: g")
+    check("B1_label_100_preserved_whole_at_entry",
+          len(r["label"]) == 100
+          and res.get("ok") is True
+          and res.get("label") == "L" * 100
+          and "L" * 100 in _unit_labels(),
+          f"parse_len={len(r['label'])} ok={res.get('ok')} "
+          f"placed_whole={'L' * 100 in _unit_labels()}")
+
+    before = len(_unit_labels())
+    res = parse_and_place(
+        prog, "create an idea called " + "M" * 201 +
+        " detail: d goals: g")
+    check("B1b_label_201_refused_before_placement",
+          res.get("ok") is False
+          and res.get("error") == "label_over_budget"
+          and len(_unit_labels()) == before,
+          f"ok={res.get('ok')} error={res.get('error')} "
+          f"units {before} -> {len(_unit_labels())}")
 
     # --- B2: detail cap
     r = parse_create_line(
@@ -153,12 +230,14 @@ def main() -> int:
     check("C1_store_stores_150_whole",
           stored == "y" * 150,
           f"nursery stored label_len={len(stored)} "
-          f"(store bound 200, typed refusal; parse cap 80 is "
-          f"parse-layer only)")
+          f"(store bound 200, typed refusal; since #522 the parse "
+          f"layer no longer slices the label either — see B1)")
 
     print("CENSUS TABLE — M-34 at current main:")
-    print("  label : cap 80   @ form/idea_create.py parse_create_line"
-          " — SILENT truncation")
+    print("  label : NO parse cap @ form/idea_create.py"
+          " parse_create_line — carried losslessly; budget 200"
+          " enforced by typed refusal at needs.parse_and_place"
+          " (#522/R24-L; historical cap 80 silent slice superseded)")
     print("  detail: cap 2000 @ form/idea_create.py parse_create_line"
           " — SILENT truncation")
     print("  goals : cap 12   @ form/idea_create.py parse_create_line"
