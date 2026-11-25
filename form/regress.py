@@ -470,6 +470,11 @@ LIST = [
     # manual-only safety repair — exact mint-shape ownership, lstat
     # no-symlink, identity revalidation, typed refusals/reasons.
     "form.sweep_stale_tmps_safety_test:smoke",
+    # FI-011 corrections (Director 7085151190 item 1): A7 bound
+    # single-use grant presentment + atomic grant-use receipts,
+    # A8 raw Nursery.confirm retirement, A12 grow_auto origin
+    # allowlist, A9 staged typed status refusal.
+    "form.fi011_corrections_test:smoke",
     # SOUND S0 (Director ruling 7085160720 on PR #505): pure read-only
     # sonification projection (form/dell_matrix/sonification.py) --
     # pitch from the harmonic_lattice chromatic law, set harmony only

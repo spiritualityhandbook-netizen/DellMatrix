@@ -185,6 +185,16 @@ def test_malformed_status_excluded():
     check("garbage_status_excluded",
           not cl.is_participating(p, pid, "ordinary")
           and not cl.is_participating(p, pid, "historical"))
+    # FI-011 A9 hygiene (Director 7085151190 item 1): this test's
+    # subject is the in-memory lifecycle exclusion above, which is
+    # unchanged. The corrupted record must NOT be left in the shared
+    # owner file: under A9 a nursery file carrying a present-but-
+    # unknown status refuses whole at load, so leaving the corruption
+    # behind poisons every later load of this owner (the load-side
+    # law itself is pinned in test_malformed_restart). Restore the
+    # lawful status and re-save.
+    pr.status = "confirmed"
+    p.nursery.save()
 
 
 def test_malformed_presence_excluded():
@@ -205,20 +215,49 @@ def test_malformed_presence_excluded():
 
 
 def test_malformed_restart():
-    """Malformed status/presence survive restart as excluded."""
+    """Malformed status/presence: excluded in memory; at restart the
+    nursery file refuses whole under FI-011 A9 (superseded load law)."""
     clean()
+    import hashlib
     from form import persist_rest
+    from form.dell_matrix.nursery import (NurseryLoadError,
+                                          owner_nursery_path)
     p = open_program(OWNER)
     pr = p.nursery.add("BadRestart", words="w")
     pid = _confirm(p, pr)
     pr.status = None
     set_presence(p, pid, presence="vaporized")
+    # In-memory half — the unchanged law: the lifecycle layer excludes
+    # the malformed record in every context.
+    check("restart_malformed_excluded_in_memory",
+          not cl.is_participating(p, pid, "ordinary")
+          and not cl.is_participating(p, pid, "historical"))
     p.nursery.save()
     persist_rest.save(p)
-    p2 = persist_rest.load(OWNER, activate=False)
-    check("restart_malformed_excluded",
-          not cl.is_participating(p2, pid, "ordinary")
-          and not cl.is_participating(p2, pid, "historical"))
+    # FI-011 A9 SUPERSESSION (Director 7085151190 item 1): this
+    # scenario's original subject — a nursery file carrying an
+    # unknown status loads with the record merely excluded — is the
+    # load law A9 replaced. A present-but-unknown status now refuses
+    # the WHOLE load, typed, naming the record, and the refused load
+    # writes nothing. The exclusion outcome is strictly stronger:
+    # nothing in the file participates, because nothing loads.
+    npath = owner_nursery_path(OWNER)
+    with open(npath, "rb") as f:
+        before = hashlib.sha256(f.read()).hexdigest()
+    refused = None
+    try:
+        persist_rest.load(OWNER, activate=False)
+    except NurseryLoadError as e:
+        refused = e
+    check("restart_unknown_status_refuses_whole_load",
+          refused is not None and pid in str(refused), str(refused))
+    with open(npath, "rb") as f:
+        after = hashlib.sha256(f.read()).hexdigest()
+    check("restart_refused_load_writes_nothing", before == after)
+    # Hygiene (see test_malformed_status_excluded): leave a lawful
+    # file behind for later tests and later runs.
+    pr.status = "confirmed"
+    p.nursery.save()
 
 
 def smoke():

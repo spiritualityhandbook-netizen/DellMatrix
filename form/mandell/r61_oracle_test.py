@@ -60,6 +60,12 @@ class Oracle:
         self.session = "oracle-session-1"
         self.grants = {}
         self.revoked = set()
+        # FI-011 A7.2: in-flight single-use reservations
+        # (grant_id -> pid), recorded by an allowing check and
+        # never cleared inside a scenario except by reset -
+        # mirroring production, where the writer settles or
+        # releases the reservation outside check().
+        self.reserved = {}
         self._n = 0
 
     def _new_id(self):
@@ -151,6 +157,7 @@ class Oracle:
         self.session = "oracle-session-2"
         self.grants.clear()
         self.revoked.clear()
+        self.reserved.clear()
 
     def _ancestors(self, rec):
         out, seen, cur = [], {rec["id"]}, rec["parent"]
@@ -207,6 +214,26 @@ class Oracle:
         if (r["content_hash"] is not None
                 and r["content_hash"] != content_version):
             return False, "content mismatch"
+        # FI-011 A7.1 + A7.2 (Director ruling 7085151190 item 1;
+        # packet A7.1/A7.2): for nursery.confirm ONLY, presentment
+        # must be BOUND - target and content_hash both non-None
+        # (the mismatch checks above then pin them to this pid and
+        # the live hash). None stays a lawful RECORD value (a
+        # delegation parent may leave a dimension unbound), but an
+        # unbound grant may no longer be PRESENTED. An allowing
+        # check also RESERVES the grant for this pid: a later check
+        # of the same grant for a different pid denies. This block
+        # runs after every validation above, mirroring production's
+        # order, so consumption state is never probed by a
+        # presenter who fails subject/owner/chain validation.
+        if want == "nursery.confirm":
+            if r["target"] is None or r["content_hash"] is None:
+                return False, "unbound presentment"
+            res = self.reserved.get(gid)
+            if res is not None and res != target:
+                return False, "grant reserved"
+            if res is None:
+                self.reserved[gid] = target
         return True, "allow"
 
 
@@ -314,7 +341,14 @@ SCENARIOS = [
      ]},
     {"name": "empty_content_binds",
      "steps": [
-         ("issue", {"subject": "a", "content": {}, "depth": 0}, "g"),
+         # FI-011 A7.1 AMENDED (Director ruling 7085151190 item 1):
+         # this scenario's subject is CONTENT binding ({} hashes
+         # and binds); the grant is now also TARGET-bound, because
+         # presentment requires both dimensions bound. The
+         # expectations are unchanged: exact-hash allows, changed
+         # content denies.
+         ("issue", {"subject": "a", "target": "p1", "content": {},
+                    "depth": 0}, "g"),
          ("check", {"gid": "g", "subject": "a", "owner": "oracle-owner",
                     "operation": "confirm", "target": "p1",
                     "content": {}}, True),
@@ -324,10 +358,18 @@ SCENARIOS = [
      ]},
     {"name": "none_content_unconstrained",
      "steps": [
+         # FI-011 A7.1 AMENDED (Director ruling 7085151190 item 1):
+         # the 2026-10-07 "content=None = UNCONSTRAINED documented
+         # positive" PRESENTMENT semantics are superseded for
+         # nursery.confirm. None remains a lawful RECORD value (a
+         # delegation parent may leave content unbound), but
+         # presenting such a grant now DENIES as unbound - the
+         # expectation is flipped to False, mirroring the
+         # r61_authority J1 amendment in the same ruling.
          ("issue", {"subject": "a", "target": "p1", "depth": 0}, "g"),
          ("check", {"gid": "g", "subject": "a", "owner": "oracle-owner",
                     "operation": "confirm", "target": "p1",
-                    "content": C2}, True),
+                    "content": C2}, False),
      ]},
     {"name": "multi_ancestor_chain",
      "steps": [
@@ -346,7 +388,15 @@ SCENARIOS = [
      ]},
     {"name": "revoke_middle_ancestor",
      "steps": [
-         ("issue", {"subject": "a", "depth": 3}, "g1"),
+         # FI-011 A7.1 AMENDED: the root is now fully bound
+         # (target + content, inherited by the children), so the
+         # scenario's subject - revocation of the middle ancestor
+         # - stays the only reason the g3 check denies, and the
+         # g1 check still allows. This also restores the
+         # sensitivity test: under weakened chain validation the
+         # bound g3 check now diverges again.
+         ("issue", {"subject": "a", "target": "p1", "content": C1,
+                    "depth": 3}, "g1"),
          ("attenuate", {"parent": "g1"}, "g2"),
          ("attenuate", {"parent": "g2"}, "g3"),
          ("revoke", "g2"),
@@ -359,7 +409,12 @@ SCENARIOS = [
      ]},
     {"name": "sibling_grants",
      "steps": [
-         ("issue", {"subject": "a", "depth": 2}, "g1"),
+         # FI-011 A7.1 AMENDED: the root is now content-bound
+         # (inherited by both siblings), so the surviving
+         # sibling's check still allows and the scenario's subject
+         # - sibling isolation after one sibling's revocation -
+         # is what the outcomes prove.
+         ("issue", {"subject": "a", "content": C1, "depth": 2}, "g1"),
          ("attenuate", {"parent": "g1", "target": "p1"}, "sib1"),
          ("attenuate", {"parent": "g1", "target": "p2"}, "sib2"),
          ("revoke", "sib1"),
@@ -404,7 +459,14 @@ SCENARIOS = [
      ]},
     {"name": "revoke_root_denies_descendants",
      "steps": [
-         ("issue", {"subject": "a", "depth": 2}, "g1"),
+         # FI-011 A7.1 AMENDED: the root is now fully bound
+         # (target + content, inherited by the descendants), so
+         # the checks' denials are proved by the revocation
+         # alone - and the sensitivity test diverges again when
+         # chain validation is weakened, instead of the
+         # unbound-presentment denial masking it.
+         ("issue", {"subject": "a", "target": "p1", "content": C1,
+                    "depth": 2}, "g1"),
          ("attenuate", {"parent": "g1"}, "g2"),
          ("attenuate", {"parent": "g2"}, "g3"),
          ("revoke", "g1"),

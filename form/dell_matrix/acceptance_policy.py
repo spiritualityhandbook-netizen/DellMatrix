@@ -137,6 +137,16 @@ class AcceptancePolicy:
         # R6.1: grant_id -> grant issuance record (opaque handles).
         self._issued_grants: Dict[str, Dict[str, Any]] = {}
         self._revoked_grants: set = set()
+        # FI-011 A7 (Director 7085151190 item 1; packet A7.2):
+        # two-phase single-use consumption for nursery.confirm
+        # grants. _reserved_grants maps grant_id -> pid for a
+        # confirmation in flight (memory only; a crash ends the
+        # session and the grant with it). _consumed_grants maps
+        # grant_id -> the durable receipt dict, recorded ONLY by
+        # commit_grant_use at the writer's commit point - a denial
+        # or an aborted write never consumes.
+        self._consumed_grants: Dict[str, Dict[str, Any]] = {}
+        self._reserved_grants: Dict[str, str] = {}
         # R6.1: issuance sequence; audit references grants by seq, never
         # by handle value.
         self._grant_seq: int = 0
@@ -581,19 +591,79 @@ class AcceptancePolicy:
         })
         return {"ok": True, "revoked": existed}
 
+    # -- FI-011 A7: single-use consumption settlement ---------------
+
+    def grant_use_context(self, grant_id: Any) -> Optional[Dict[str, Any]]:
+        """Non-secret context for a grant-use receipt, or None.
+
+        The canonical writer stages the durable receipt from this
+        context; the handle value itself is never part of it (R6.1
+        no-leak rule - receipts name grants by seq only).
+        """
+        rec = (self._issued_grants.get(grant_id)
+               if isinstance(grant_id, str) and grant_id else None)
+        if rec is None:
+            return None
+        return {"seq": rec.get("seq"), "subject": rec.get("subject"),
+                "owner": rec.get("owner"),
+                "operation": rec.get("operation"),
+                "session_id": rec.get("session_id")}
+
+    def commit_grant_use(self, grant_id: str,
+                         receipt: Mapping[str, Any]) -> None:
+        """Settle a reservation into consumption (FI-011 A7.2).
+
+        Called by the canonical writer immediately after the
+        checkpoint commit that persisted the confirmation and its
+        staged receipt - never earlier, so a denied or aborted
+        confirmation consumes nothing. Audited by seq only.
+        """
+        self._reserved_grants.pop(grant_id, None)
+        self._consumed_grants[grant_id] = dict(receipt)
+        self._audit.append({
+            "action": "grant_use",
+            "grant_seq": receipt.get("grant_seq"),
+            "pid": receipt.get("pid"),
+            "at": receipt.get("at"),
+        })
+
+    def release_grant_reservation(self, grant_id: Any,
+                                  pid: Optional[str] = None) -> None:
+        """Release an in-flight reservation without consuming.
+
+        Runs on every non-commit exit of a grant-riding confirmation
+        (denial, placement refusal, aborted/failed write). A
+        consumed grant is never released back into circulation.
+        """
+        if not isinstance(grant_id, str) or not grant_id:
+            return
+        if grant_id in self._consumed_grants:
+            return
+        if pid is None or self._reserved_grants.get(grant_id) == pid:
+            self._reserved_grants.pop(grant_id, None)
+
     def describe_grants(self) -> List[Dict[str, Any]]:
         """Trusted-operator visibility: active grants WITHOUT handles."""
-        return [
-            {"seq": r.get("seq"), "issuer": r.get("issuer"),
-             "subject": r.get("subject"), "owner": r.get("owner"),
-             "operation": r.get("operation"), "target": r.get("target"),
-             "parent_seq": (self._issued_grants.get(r.get("parent_id"), {})
-                            .get("seq") if r.get("parent_id") else None),
-             "max_depth": r.get("max_depth"),
-             "issued_at": r.get("issued_at")}
-            for gid, r in self._issued_grants.items()
-            if gid not in self._revoked_grants
-        ]
+        out = []
+        for gid, r in self._issued_grants.items():
+            if gid in self._revoked_grants:
+                continue
+            consumed = self._consumed_grants.get(gid)
+            out.append(
+                {"seq": r.get("seq"), "issuer": r.get("issuer"),
+                 "subject": r.get("subject"), "owner": r.get("owner"),
+                 "operation": r.get("operation"), "target": r.get("target"),
+                 "parent_seq": (self._issued_grants.get(
+                     r.get("parent_id"), {}).get("seq")
+                     if r.get("parent_id") else None),
+                 "max_depth": r.get("max_depth"),
+                 "issued_at": r.get("issued_at"),
+                 # FI-011 A7 (T9): consumption is operator-visible -
+                 # a used grant shows its receipt's pid and time.
+                 "consumed": consumed is not None,
+                 "receipt_pid": (consumed or {}).get("pid"),
+                 "receipt_at": (consumed or {}).get("at")})
+        return out
 
     def _grant_chain_valid(self, record: Mapping[str, Any],
                            _seen: Optional[set] = None) -> bool:
@@ -672,6 +742,41 @@ class AcceptancePolicy:
                 and rec["content_hash"] != proposal_version):
             return deny("Reviewed content changed after grant issuance.",
                         "content_mismatch_grant")
+        # FI-011 A7.1 + A7.2 (Director 7085151190 item 1): for
+        # nursery.confirm ONLY, presentment must be BOUND (target ==
+        # pid and content_hash == the live acceptance hash - both
+        # are guaranteed non-None here by the checks above once this
+        # binding holds) and the grant must be unconsumed. This block
+        # runs AFTER subject/owner/operation/target/content
+        # validation, so a foreign presenter can neither consume nor
+        # reserve another owner's grant nor probe its consumption
+        # state, and after revocation, so a revoked consumed grant
+        # still reports revoked. checkpoint.rollback grants are
+        # excluded by the operation gate.
+        if want_op == "nursery.confirm":
+            if rec.get("target") is None or rec.get("content_hash") is None:
+                return deny(
+                    "Grant presented unbound: a "
+                    "nursery.confirm grant must be bound to the "
+                    "target proposal and its reviewed content - "
+                    "attenuate the grant to the target first.",
+                    "unbound_grant_presentment")
+            consumed = self._consumed_grants.get(grant_id)
+            if consumed is not None:
+                return deny(
+                    f"Grant seq {rec.get('seq')} was already used to "
+                    f"confirm {consumed.get('pid')} at "
+                    f"{consumed.get('at')}; grants are single-use - "
+                    "issue or attenuate a new grant.",
+                    "grant_replay")
+            reserved_pid = self._reserved_grants.get(grant_id)
+            if reserved_pid is not None and reserved_pid != pid:
+                return deny(
+                    "Grant is reserved by an in-flight confirmation "
+                    "of another proposal.",
+                    "grant_reserved")
+            if reserved_pid is None:
+                self._reserved_grants[grant_id] = pid
         self._audit.append({
             "action": "allow",
             "via": "grant",
@@ -857,6 +962,8 @@ class AcceptancePolicy:
         self._revoked_approvals.clear()
         self._issued_grants.clear()
         self._revoked_grants.clear()
+        self._consumed_grants.clear()
+        self._reserved_grants.clear()
         self._session_id = f"session_{uuid.uuid4().hex}"
         self._audit.append({
             "action": "session_reset",
