@@ -127,10 +127,17 @@ def test_bounded_learning():
     assert ranked_back == ranked_on, "Learned preference must return (suggest)"
     assert sel_back_ids == sel_on_ids, "Learned preference must return (selector)"
 
-    # Truth hash unchanged by learning ON/OFF
+    # Truth hash unchanged by learning ON/OFF. The OFF hash must be
+    # computed with influence genuinely OFF (Director 7169882997: the
+    # prior code set True again before hash_off, so the comparison
+    # never exercised the OFF state).
+    assert p.learning_influence is True, "Precondition: influence ON for hash_on"
     hash_on = _truth_hash(p)
-    p.learning_influence = True
+    p.learning_influence = False
+    assert p.learning_influence is False, "Influence flag must read OFF for hash_off"
     hash_off = _truth_hash(p)
+    p.learning_influence = True
+    assert p.learning_influence is True, "Influence flag must be restored ON afterward"
     assert hash_on == hash_off, "Truth hash must not change with learning"
     print(f"9. Truth hash unchanged: {hash_on}")
 
