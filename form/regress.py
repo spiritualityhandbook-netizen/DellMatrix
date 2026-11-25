@@ -447,6 +447,10 @@ LIST = [
     # persistence -- lossless modules_format=2 records, staged typed
     # restore, legacy IDs-only fail-closed.
     "form.lattice_modules_restore_test:smoke",
+    # MEDIUM-four persistence-restore family (Director Gate 2 clearance
+    # 7081067283): fail-closed staged restore for duo_ledger, companion,
+    # self_knowledge, bimo/persona_matrix in form/persist_rest.py.
+    "form.medium_four_restore_test:smoke",
     # DAF-09 D1 (Director ruling 7085151190 item 3): history header
     # must report the retained total, not the display-slice length.
     "form.daf09_history_header_test:smoke",
