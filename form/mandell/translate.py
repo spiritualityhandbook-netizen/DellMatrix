@@ -535,11 +535,11 @@ def _translate_body(english: str) -> Intent:
                          f"37[Nurture] :: grow_using_knowledge_about {context}", text)
     m = re.search(r"\badd\s+idea\s+(.+)$", raw_lower)
     if m:
-        label = m.group(1).strip()[:80]
+        label = m.group(1).strip()
         if not label:
             return Intent("unknown", None, "", {}, "09[Show] :: unknown", text)
         m_orig = re.search(r"\badd\s+idea\s+(.+)$", text, re.IGNORECASE)
-        label_orig = m_orig.group(1).strip()[:80] if m_orig else label
+        label_orig = m_orig.group(1).strip() if m_orig else label
         return Intent("nurture", 37, "Nurture", {"label": label_orig},
                       f"37[Nurture] :: {label_orig}", text)
     m = re.search(r"\bconfirm\s+(\S+)$", raw_lower)
