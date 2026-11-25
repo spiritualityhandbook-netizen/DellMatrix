@@ -25,6 +25,16 @@ class Intent:
     # attached at its single exit point; None exactly when no
     # decomposition exists (empty input -- never fabricated).
     lm: Optional[Dict[str, Any]] = None
+    # C9 DUAL MODE (DD-36): the engine receipt, attached ONLY by the
+    # translate_dual() door — which layer ACTUALLY translated (adapt
+    # / router / guard / none), the requested mode, and the
+    # deterministic layer's confidence where meaningful. Docked mode
+    # is a requested mode only — no dock exists until FI-017 — so a
+    # docked receipt additionally carries dock_invoked False /
+    # dock_status "not_invoked" and never claims layer "dock"
+    # (Director 7066274038). Canonical translate() never sets it
+    # (None), so existing consumers see no change.
+    engine: Optional[Dict[str, Any]] = None
 
 
 # hint → action used by REPL
@@ -315,6 +325,34 @@ def _lm4_receipt(intent: Intent, sentence: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+# MPC-001 Track C2 / MPC-002: SEMANTIC LOSS GUARD markers (safety
+# critical). If English contains conditional/qualifying clauses that
+# would be silently dropped by translation, the result must be
+# UNKNOWN rather than a weakened (especially destructive)
+# instruction. A destructive operation may not execute after its
+# limiting condition has been lost in translation. Extracted to
+# module level (2026-11-21, C9) so _translate_body and the dual-mode
+# door share ONE guard — no second copy to drift.
+_CONDITIONAL_MARKERS = [
+    r"\bif\b", r"\bunless\b", r"\bwhen\b", r"\bwhile\b", r"\buntil\b",
+    r"\bprovided\b", r"\bassuming\b",
+]
+_NEGATION_MARKERS = [
+    r"\bdon't\b", r"\bdo not\b", r"\bnever\b", r"\bnot\b",
+]
+_DESTRUCTIVE_VERBS = [
+    r"\bdelete\b", r"\bremove\b", r"\bdestroy\b", r"\bclear\b",
+    r"\bmove\b", r"\breplace\b", r"\boverwrite\b",
+]
+
+
+def _safety_blocked(raw_lower: str) -> bool:
+    has_conditional = any(re.search(p, raw_lower) for p in _CONDITIONAL_MARKERS)
+    has_negation = any(re.search(p, raw_lower) for p in _NEGATION_MARKERS)
+    is_destructive = any(re.search(p, raw_lower) for p in _DESTRUCTIVE_VERBS)
+    return (has_conditional or has_negation) and is_destructive
+
+
 def translate(english: str) -> Intent:
     """English -> Intent, with the LM-4 decomposition attached.
 
@@ -356,28 +394,11 @@ def _translate_body(english: str) -> Intent:
     # the get/find sites below capture them verbatim, because
     # Dell 55 stores lab keys raw; see the R5 note there.)
     orig_text = text
-    # MPC-001 Track C2: SEMANTIC LOSS GUARD (safety critical).
-    # If English contains conditional/qualifying clauses that would be
-    # silently dropped by translation, return UNKNOWN rather than executing
-    # a weakened (especially destructive) instruction.
-    # A destructive operation may not execute after its limiting condition
-    # has been lost in translation.
-    _CONDITIONAL_MARKERS = [
-        r"\bif\b", r"\bunless\b", r"\bwhen\b", r"\bwhile\b", r"\buntil\b",
-        r"\bprovided\b", r"\bassuming\b",
-    ]
-    # MPC-002: Added negation markers (don't, do not, never, not)
-    _NEGATION_MARKERS = [
-        r"\bdon't\b", r"\bdo not\b", r"\bnever\b", r"\bnot\b",
-    ]
-    _DESTRUCTIVE_VERBS = [
-        r"\bdelete\b", r"\bremove\b", r"\bdestroy\b", r"\bclear\b",
-        r"\bmove\b", r"\breplace\b", r"\boverwrite\b",
-    ]
-    has_conditional = any(re.search(p, raw_lower) for p in _CONDITIONAL_MARKERS)
-    has_negation = any(re.search(p, raw_lower) for p in _NEGATION_MARKERS)
-    is_destructive = any(re.search(p, raw_lower) for p in _DESTRUCTIVE_VERBS)
-    if (has_conditional or has_negation) and is_destructive:
+    # MPC-001 Track C2: SEMANTIC LOSS GUARD (safety critical) — the
+    # marker logic lives in _safety_blocked() (module level) so the
+    # C9 dual-mode door applies the identical guard; behavior here
+    # is unchanged.
+    if _safety_blocked(raw_lower):
         return Intent("unknown", None, "", {}, "09[Show] :: unknown", text)
     # MPC-001 Track C1: MULTI-INTENT SEGMENTATION.
     # If English contains explicit sequencing ("then", "and then"), try to
@@ -978,3 +999,130 @@ def _translate_body(english: str) -> Intent:
     )
 
 
+
+
+# ---------------------------------------------------------------------------
+# C9 DUAL MODE (DD-36 as amended by SS12.34b; Ace "not yet" lifted by
+# his 2026-11-20 ruling, item 10 — row #157 Adapt: NOW).
+#
+# Layering inside Dell 45: (1) the deterministic Adapt-architecture
+# layer (adapt_intent.py) determines intent + entities + confidence
+# FIRST; (2) the canonical cascade above still CONSTRUCTS the Intent —
+# operands and canonical meaning have exactly one authority; (3) in
+# docked mode the canonical cascade stands in for the docked AI's
+# understanding, and residue is marked proposal-only: the dock may
+# PROPOSE a translation as pending work, this door never invents one.
+# RECEIPT TRUTH (Director 7066274038): docked is a REQUESTED mode,
+# not an invoked layer — no dock exists until FI-017, so docked
+# receipts name the layer that actually ran (router / guard / none)
+# and carry dock_invoked False / dock_status "not_invoked".
+# DD-35 binds both modes: beyond the honest deterministic subset, the
+# undocked door returns an explicit no_intent — dell None, mandel ""
+# — never an invented Show seed. Canonical translate() is unchanged.
+# ---------------------------------------------------------------------------
+from .adapt_intent import build_default_engine  # noqa: E402
+
+_DUAL_ENGINE = None
+_DUAL_CONFIDENCE_FLOOR = 0.5
+
+
+def _dual_engine():
+    global _DUAL_ENGINE
+    if _DUAL_ENGINE is None:
+        _DUAL_ENGINE = build_default_engine()
+    return _DUAL_ENGINE
+
+
+def adapt_determine(english: str):
+    """Translate as a TOOL (SS12.34b item 3): the deterministic layer,
+    callable on its own — by the docked AI or any caller — so the
+    model does not have to do the grind of command-shaped English.
+    Returns a Determination or None. Never calls translate(): the
+    layer is determination-only, so no Translate<->dock loop exists.
+    """
+    return _dual_engine().determine((english or "").strip())
+
+
+def translate_dual(english: str, *, docked: bool = False) -> Intent:
+    """The dual-mode door (DD-36). Every result carries an engine
+    receipt on Intent.engine naming the layer that translated.
+
+    Undocked: safety guard first (layer "guard"); then the Adapt
+    layer — when its determination agrees with the canonical
+    construction, the receipt names layer "adapt" with its
+    confidence; when the canonical router carries a text the Adapt
+    layer did not determine (compounds, richer families), the
+    receipt names layer "router" and records any disagreement as
+    adapt_mismatch; when neither layer honestly parses the text,
+    DD-35: an explicit no_intent (layer "none").
+
+    Docked: mode "docked" records the REQUESTED mode only — no
+    docked AI is invoked by this door (the live dock integration is
+    FI-017, not built), so the receipt names the layer that ACTUALLY
+    determined the result — "guard" when the safety guard binds,
+    "router" when the canonical cascade constructs the command,
+    "none" when nothing determines an intent — and explicitly
+    carries dock_invoked False / dock_status "not_invoked". An
+    unknown result is residue — receipt residue/proposal_only True —
+    the docked AI may propose a translation as pending work under
+    the dock's proposal discipline; nothing is invented here, and a
+    dock call that did not occur is never reported.
+    """
+    text = (english or "").strip()
+    mode = "docked" if docked else "undocked"
+    if not text:
+        base = _translate_body(english)
+        base.engine = {"mode": mode, "layer": "none", "confidence": None,
+                       "intent_type": None, "reason": "empty_input"}
+        if docked:
+            base.engine["dock_invoked"] = False
+            base.engine["dock_status"] = "not_invoked"
+        return base
+    if docked:
+        intent = translate(english)
+        residue = intent.action == "unknown"
+        if _safety_blocked(text.lower()):
+            layer = "guard"
+        elif residue:
+            layer = "none"
+        else:
+            layer = "router"
+        intent.engine = {"mode": mode, "layer": layer, "confidence": None,
+                         "intent_type": None, "residue": residue,
+                         "proposal_only": residue,
+                         "dock_invoked": False,
+                         "dock_status": "not_invoked"}
+        return intent
+    if _safety_blocked(text.lower()):
+        intent = translate(english)
+        intent.engine = {"mode": mode, "layer": "guard", "confidence": None,
+                         "intent_type": None,
+                         "reason": "conditional_or_negated_destructive"}
+        return intent
+    det = adapt_determine(text)
+    intent = translate(english)
+    if (det is not None and det.confidence >= _DUAL_CONFIDENCE_FLOOR
+            and intent.action == det.action):
+        intent.engine = {"mode": mode, "layer": "adapt",
+                         "confidence": det.confidence,
+                         "intent_type": det.intent_type,
+                         "entities": det.entities}
+        return intent
+    if intent.action != "unknown":
+        receipt = {"mode": mode, "layer": "router",
+                   "confidence": det.confidence if det else None,
+                   "intent_type": det.intent_type if det else None}
+        if det is not None and det.action != intent.action:
+            receipt["adapt_mismatch"] = det.intent_type
+        intent.engine = receipt
+        return intent
+    # DD-35: honest no-intent. The canonical unknown's LM-4 receipt is
+    # carried over (the decomposition exists and is real); the
+    # invented Show seed form is NOT carried — mandel stays "".
+    ni = Intent("no_intent", None, "", {}, "", text)
+    ni.lm = intent.lm
+    ni.engine = {"mode": mode, "layer": "none",
+                 "confidence": det.confidence if det else None,
+                 "intent_type": det.intent_type if det else None,
+                 "reason": "no_deterministic_intent"}
+    return ni

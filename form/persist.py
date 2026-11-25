@@ -525,6 +525,11 @@ def serialize(program: Program) -> Dict[str, Any]:
         "forces": program.forces.to_dict() if hasattr(program, "forces") else {},
         "spatial": program.spatial.to_dict() if hasattr(program, "spatial") else {},
         "bimo": program.bimo.to_dict() if hasattr(program, "bimo") else {},
+        # Row #155 PERSONAMATRIX: user persona records (experimentation
+        # layer). Absent = legacy (no user personas). The records are
+        # validated again on restore by activate_custom_personas into
+        # the loaded program's own owner-scoped layer.
+        "custom_personas": [dict(r) for r in getattr(program, "user_personas", []) or []],
         "nursery": _serialize_nursery(program),
         "lattice": _serialize_lattice(program),
         # R5-D S7: history is read ONLY through the locked snapshot
