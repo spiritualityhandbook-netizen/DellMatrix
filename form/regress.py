@@ -168,6 +168,11 @@ LIST = [
     # vocabulary (profile annotation, D-6 refusal visibility,
     # T-1..T-6 incl. T-5a/b/c boundary cases).
     "form.mandell.g31_contract_test",
+    # Director 7085151190 item 4 — FlowOver (`>>>`) immediately
+    # before 61[Join] non-termination fix: both lawful triggers
+    # terminate, Join dispatched exactly once, per-gap one-time
+    # flow consumption, shipped-shape controls unchanged.
+    "form.mandell.chain_exec_flowover_test",
     # Master plan P11 — satellite disposition guards (sandbox
     # matrices retired per Ace's ruling; useful survivors live).
     "form.mandell.p11_satellites_test",
@@ -201,6 +206,12 @@ LIST = [
     # no-authority fence (a docked persona cannot confirm).
     "form.personamatrix_test",
     "form.r19sib_count_door_test",
+    "form.r24_operand_integrity_test",
+    "form.r23_outcome_evidence_test",
+    "form.gpe08_admission_test",
+    "form.gpe08_route_integration_test",
+    "form.gpe08_admission_gate_test",
+    "form.gpe07_audit_test",
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",
     "form.graph_journal_crash_test",
@@ -344,6 +355,9 @@ LIST = [
     "form.dd31_sanitize_copula_test:smoke",
     "form.dd42_predicate_infix_test:smoke",
     "form.r25_extra_operand_test:smoke",
+    "form.r24l_label_lossless_test:smoke",
+    "form.r24l_sibling_labels_test:smoke",
+    "form.ud2_english_routing_test:smoke",
     # eval_predicate surplus circuit (Director 7008502649):
     # explicit binary/unary forms with surplus operands refuse
     # condition_extra_operand at the engine and at 57/73 +
@@ -397,6 +411,7 @@ LIST = [
     # 2026-11-13): the three malformed-claim consumers refuse
     # fail-closed; the F-d stale state still reads UNBOXED.
     "form.fd_consistency_test:smoke",
+    "form.v08_truth_counts_test:smoke",
     "form.confirm_placement_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
@@ -410,6 +425,11 @@ LIST = [
     # SM-39 persistence closure: growth plant records survive save/load.
     "form.growth_persistence_test:smoke",
     "form.water_persistence_test:smoke",
+    # Persistence-integrity (Part I SAVE/JOURNAL; Director clearance
+    # PR #505 comment 7076723491): present-but-malformed outcome_ledger
+    # and lattice sections fail closed at load with ProgramLoadError;
+    # absent sections keep legacy behavior.
+    "form.persistence_integrity_test:smoke",
     # Track D TD-1: Unit -> Idea binding foundation (S1).
     "form.track_d_td1_test:smoke",
     "form.track_d_td1_r1_test:smoke",
@@ -435,6 +455,25 @@ LIST = [
     # code-stage step zero registers the suite in the same change
     # that lands reconcile_gate in director-reports/certification_runner.py.
     "form.gate_reconciliation_test:smoke",
+    # Part 0 GP-E25 (Edition 1 circuit): Muse Space snapshot
+    # reducer (S1), static exported view (S2), live revalidation
+    # (S3) -- code-stage step zero registers the suite in the same
+    # change that lands form/muse_space_snapshot.py and
+    # form/muse_space_views.py (build record 2026-11-20 section 5).
+    "form.muse_space_test:smoke",
+    # Part 0 GP-E25 C1 (Director BUILD AUTHORIZATION 7136743763):
+    # views CLI pin wiring -- optional explicit pin, revalidation
+    # verdict + offline age surfaced in the export, typed refusal
+    # on a bad pin, STALE distinguished from EVIDENCE_UNAVAILABLE.
+    "form.muse_space_views_pin_test:smoke",
+    # MEDIUM-four persistence-restore family (Director Gate 2 clearance
+    # 7081067283): fail-closed staged restore for duo_ledger, companion,
+    # self_knowledge, bimo/persona_matrix in form/persist_rest.py.
+    "form.medium_four_restore_test:smoke",
+    # DAF-09 D1 (Director ruling 7085151190 item 3): history header
+    # must report the retained total, not the display-slice length.
+    "form.daf09_history_header_test:smoke",
+    "form.r5d_s7_admission_test:smoke",
 ]
 
 TIMEOUT_S = 900

@@ -140,7 +140,15 @@ def smoke() -> bool:
             and [e.gen for e in p2.duo.ledger] == sorted(e.gen for e in p2.duo.ledger),
         )
 
-        # --- 8a. malformed duo_ledger in envelope fails safely
+        # --- 8a. malformed duo_ledger in envelope refuses typed, fails closed
+        # Gate-2 fail-closed contract (Director 7081067283): a PRESENT
+        # malformed duo_ledger refuses the whole load with ProgramLoadError
+        # before any state swap. The former skip-and-continue expectation
+        # (load succeeds keeping only gen 5) was a legacy oracle for these
+        # shapes, superseded by the legacy oracle correction (Director
+        # 7081695306). Fixture kept intact from the original check.
+        from form.persist_rest import ProgramLoadError
+
         bad = dict(data)
         bad["duo_ledger"] = [
             {"gen": "not-an-int", "detail": "x", "ts": "t"},
@@ -150,12 +158,26 @@ def smoke() -> bool:
         ]
         bad_path = _path(_OWNER)
         json.dump(bad, open(bad_path, "w", encoding="utf-8"))
-        p3 = load(_OWNER)
-        gens = [e.gen for e in p3.duo.ledger]
+        bad_bytes = open(bad_path, "rb").read()
+        refused = False
+        try:
+            load(_OWNER)
+        except ProgramLoadError:
+            refused = True
         rec(
             "malformed_ledger_fails_safe",
-            gens == [5] and p3.duo.generation == 5,
-            f"gens={gens}",
+            refused and open(bad_path, "rb").read() == bad_bytes,
+            "load did not refuse typed, or the refused load changed source bytes",
+        )
+        # No state swap: the good envelope still restores exactly afterwards.
+        json.dump(data, open(bad_path, "w", encoding="utf-8"))
+        p3 = load(_OWNER)
+        rec(
+            "malformed_ledger_no_state_swap",
+            [(e.gen, e.detail) for e in p3.duo.ledger]
+            == [(e.gen, e.detail) for e in p.duo.ledger]
+            and p3.duo.generation == p.duo.generation,
+            f"restored={[(e.gen, e.detail) for e in p3.duo.ledger]}",
         )
 
         # --- 8b. legacy envelope (no duo_ledger) restores honestly, no crash
@@ -169,6 +191,40 @@ def smoke() -> bool:
             and len(p4.duo.ledger) == 1
             and "28[Rollback]" not in p4.duo.ledger[0].detail,
             f"ledger={[e.detail for e in p4.duo.ledger]}",
+        )
+
+        # --- 8d. writer-shaped ledger with a lawful generation gap restores
+        # exactly and continues (parity/continuity; generation gaps are
+        # lawful — the counter can advance without an entry surviving).
+        # Not pinned by the MEDIUM-four restore suite, whose clean base
+        # ledger is contiguous.
+        gap = dict(data)
+        gap["duo_generation"] = 3
+        gap["duo_ledger"] = [
+            {"gen": 1, "detail": "gap-first", "ts": "2026-11-20T00:00:00Z",
+             "meta": {"probe": "g1"}},
+            {"gen": 3, "detail": "gap-third", "ts": "2026-11-22T00:00:00Z",
+             "meta": {"probe": "g3"}},
+        ]
+        json.dump(gap, open(bad_path, "w", encoding="utf-8"))
+        p5 = load(_OWNER)
+        rec(
+            "gapped_ledger_restores_exactly",
+            [(e.gen, e.detail, dict(getattr(e, "meta", None) or {}))
+             for e in p5.duo.ledger]
+            == [(1, "gap-first", {"probe": "g1"}),
+                (3, "gap-third", {"probe": "g3"})]
+            and p5.duo.generation == 3,
+            f"ledger={[(e.gen, e.detail) for e in p5.duo.ledger]} gen={p5.duo.generation}",
+        )
+        with redirect_stdout(io.StringIO()):
+            p5 = repl_mod._execute_intent(p5, translate("evolve fourth intent"), raw_line="evolve fourth intent")
+        rec(
+            "gapped_ledger_continues_in_order",
+            p5.duo.generation == 4
+            and [e.gen for e in p5.duo.ledger] == [1, 3, 4]
+            and p5.duo.ledger[-1].detail == "fourth intent",
+            f"gens={[e.gen for e in p5.duo.ledger]} gen={p5.duo.generation}",
         )
 
         # --- 8c. malformed REPL input fails safely (no exception, no state change)

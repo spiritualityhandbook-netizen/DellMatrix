@@ -2503,7 +2503,9 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
                 input_text=raw,
                 ok=bool(res.get("ok", True)),
                 error="" if res.get("ok", True) else str(res.get("error") or ""),
-                messages=[f"Created idea: {res.get('label', '')} id={res.get('id', '')}"],
+                messages=([f"Created idea: {res.get('label', '')} id={res.get('id', '')}"]
+                          if res.get("ok", True) else
+                          [f"Create refused ({res.get('error') or 'refused'}): nothing was placed."]),
                 semantic="place[Create:specialized]",
                 interaction_id=interaction_id,
             )
@@ -3387,7 +3389,9 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
                     input_text=raw,
                     ok=bool(res.get("ok", True)),
                     error="" if res.get("ok", True) else str(res.get("error") or ""),
-                    messages=[f"Created idea: {res.get('label', '')} id={res.get('id', '')}"],
+                    messages=([f"Created idea: {res.get('label', '')} id={res.get('id', '')}"]
+                              if res.get("ok", True) else
+                              [f"Create refused ({res.get('error') or 'refused'}): nothing was placed."]),
                     semantic="place[Create:specialized]",
                     interaction_id=interaction_id,
                 )
@@ -3715,6 +3719,203 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
     return p
 
 
+# GP-E08 Scope A (Director 7079028132): whole-line seed-claim
+# discriminator for the admission-refusal gate in
+# _dispatch_public_line below. UD-2 (Director 7085151190
+# decision 5): the raw-seed branch in _dispatch_public_line
+# routes on this same discriminator (mechanism identical to
+# the GP-E08 boundary exercised on #506). It derives from the
+# established seed grammar itself — it consumes the line using
+# seed.py's OWN token definitions (atom, typed args, FLOW_OPS,
+# and the AF-2 segment-label rule via seed's _scan_label_end) —
+# never a second grammar. A malformed atom (unclosed bracket)
+# still counts as grammar material: the canonical parser can
+# never read past one, so its tail is claim territory, not prose.
+# An atom fragment with ANY unconsumed residue around it is
+# English content (e.g. an idea name), never a claim on the line:
+# `create an idea called 12[Harmonic]` is an English request
+# whose operand is the literal `12[Harmonic]`.
+_SEED_CLAIM_FRAGMENT = re.compile(r"\d{1,3}\s*\[")
+_SEED_CLAIM_ATOM_OPEN = re.compile(r"\d{1,3}\s*\[[^\]]*\]?")
+_SEED_ARGS_ATTEMPT = re.compile(r"\(\s*[A-Za-z_][A-Za-z0-9_]*\s*=")
+_SEED_ARGS_GROUP = re.compile(r"\([^)]*\)?")
+
+
+def _seed_claim(line: str) -> bool:
+    """True iff the line is a WHOLE-LINE seed claim: an atom-shaped
+    fragment is present and every character of the line is seed
+    grammar material (atoms, typed arg lists, flow operators,
+    segment labels). Any unconsumed residue makes the line
+    content-bearing English — atom fragments inside it are content
+    (e.g. an idea name), never a claim on the line. A
+    parenthesized group after an atom that is not role-shaped
+    (the grammar's args are role="value" pairs) is residue, not
+    an args attempt. A line parse_seed accepts is trivially a
+    claim; the consumption scan decides the malformed ones."""
+    from form.mandell.seed import (
+        _ARGS as _seed_args,
+        _ATOM as _seed_atom,
+        _FLOW as _seed_flow,
+        _scan_label_end as _seed_scan_label_end,
+        parse_seed as _parse_seed_claim,
+    )
+    body = (line or "").strip()
+    if not _SEED_CLAIM_FRAGMENT.search(body):
+        return False
+    if _parse_seed_claim(body).ok:
+        return True
+    pos, end_of = 0, len(body)
+    while pos < end_of:
+        while pos < end_of and body[pos].isspace():
+            pos += 1
+        if pos >= end_of:
+            break
+        m = _seed_atom.match(body, pos) or \
+            _SEED_CLAIM_ATOM_OPEN.match(body, pos)
+        if m:
+            pos = m.end()
+            # Optional typed argument list, in the grammar's own
+            # position (immediately after the atom).
+            am = _seed_args.match(body, pos)
+            if am:
+                pos = am.end()
+            elif pos < end_of and body[pos] == "(":
+                if not _SEED_ARGS_ATTEMPT.match(body, pos):
+                    return False
+                gm = _SEED_ARGS_GROUP.match(body, pos)
+                pos = gm.end() if gm else end_of
+            # Optional segment label (AF-2): "::" NOT followed by
+            # an atom opens a label; "::" followed by an atom is
+            # the DeepFlowBy flow operator and is left for the
+            # flow match below.
+            p2 = pos
+            while p2 < end_of and body[p2].isspace():
+                p2 += 1
+            if body[p2:p2 + 2] == "::":
+                after = p2 + 2
+                while after < end_of and body[after].isspace():
+                    after += 1
+                if not _seed_atom.match(body, after):
+                    end, embedded = _seed_scan_label_end(body, p2 + 2)
+                    if embedded >= 0:
+                        # A second "::" inside a label is a
+                        # grammar error, still claim territory.
+                        return True
+                    pos = end
+            continue
+        m2 = _seed_flow.match(body, pos)
+        if m2:
+            pos = m2.end()
+            continue
+        return False
+    return True
+
+
+def _flow_over_reached(line: str) -> bool:
+    """True iff the canonical flow tokenizer's own scan reaches a
+    ">>>" AT AN OPERATOR POSITION on this line — the exact point
+    where form.mandell.flow_executor._tokenize_program raises its
+    D-6 FlowRefusal for the correspondence operator — before any
+    parse miss and before any earlier operator's refusal.
+
+    GP-E08 Scope A precedence (Director 7079919649, refined by
+    7080979829; bounded build authorization 7081319284): the D-6
+    flow precedence applies only where a flow operator is REACHED
+    AS AN OPERATOR, not to arbitrary ">>>" characters inside
+    malformed seed text (an unterminated quoted arg value, an
+    unclosed bracket's swallowed term, text behind an args group
+    the flow grammar cannot step past, label data). This helper
+    answers the gate's precedence question by REPLAYING
+    _tokenize_program's scan discipline with the grammar's own
+    primitives — seed.py's _ATOM and _FLOW (the very objects
+    flow_executor imports) and flow_executor.EXECUTABLE_FLOWS —
+    so there is one grammar authority, not two. It builds
+    nothing, executes nothing, and reads no Program state; it is
+    a pure function of the line.
+
+    Scan discipline, step for step with _tokenize_program: an
+    atom is expected at _ATOM; a "::" NOT followed by an atom
+    opens a label that ends at the first _FLOW match whose end
+    is followed (after whitespace) by an _ATOM, or at end of
+    line; at an operator position a matched ">>>" is reached
+    (True); any other non-executable operator refuses THERE, so
+    no later ">>>" is reached (False); an executable operator
+    (">", ">>") must be followed by an atom and the scan
+    continues — a ">>>" at a LATER operator position is still
+    reached (full-scan replay, no first-operator shortcut).
+    Every parse miss (no atom where one is expected, no flow
+    operator at an operator position, an executable operator not
+    followed by an atom) answers False: the tokenizer never
+    reaches an operator there.
+    """
+    from form.mandell.flow_executor import (
+        EXECUTABLE_FLOWS as _executable_flows,
+    )
+    from form.mandell.seed import (
+        _ATOM as _flow_atom,
+        _FLOW as _flow_op,
+    )
+    body = (line or "").strip()
+    n = len(body)
+
+    def _skip_ws(p: int) -> int:
+        while p < n and body[p].isspace():
+            p += 1
+        return p
+
+    pos = _skip_ws(0)
+    while pos < n:
+        pos = _skip_ws(pos)
+        # Expect atom (the tokenizer raises ValueError here on a
+        # miss: no operator position is ever reached).
+        am = _flow_atom.match(body, pos)
+        if not am:
+            return False
+        pos = am.end()
+
+        # Optional :: label (only if NOT followed by atom) — the
+        # tokenizer's own rule, mirrored literally: the label
+        # ends at the first _FLOW match whose end is followed
+        # (after whitespace) by an _ATOM, or runs to end of line.
+        p2 = _skip_ws(pos)
+        if body[p2:p2 + 2] == "::":
+            after = _skip_ws(p2 + 2)
+            if _flow_atom.match(body, after):
+                # Flow ::, not a label. Leave for the operator
+                # position below.
+                pass
+            else:
+                label_end = n
+                for fm in _flow_op.finditer(body, after):
+                    if _flow_atom.match(body, _skip_ws(fm.end())):
+                        label_end = fm.start()
+                        break
+                pos = label_end
+
+        pos = _skip_ws(pos)
+        if pos >= n:
+            return False
+
+        # Expect flow operator.
+        fm = _flow_op.match(body, pos)
+        if not fm:
+            return False
+        op = fm.group(0)
+        if op not in _executable_flows:
+            # The tokenizer raises its FlowRefusal at exactly
+            # this point — BEFORE its followed-by-atom check —
+            # so a ">>>" here is reached even with a dangling or
+            # unclosed operand; any OTHER non-executable operator
+            # refuses here and no later ">>>" is ever reached.
+            return op == ">>>"
+        # Executable operator: the tokenizer requires a
+        # following atom, then continues the scan.
+        if not _flow_atom.match(body, _skip_ws(fm.end())):
+            return False
+        pos = fm.end()
+    return False
+
+
 def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program:
     """IRI-I: Canonical public execution boundary for one input line.
 
@@ -3778,6 +3979,54 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
         _say(msg)
         return p
 
+    # GP-E08 Scope A (Director 7079028132): admission-refusal
+    # gate. A whole-line seed CLAIM (see _seed_claim) that the
+    # canonical grammar rejects is refused HERE — after every
+    # prefix/meta door above, before P10/flow/English below —
+    # with a typed, user-visible non-execution receipt and zero
+    # mutation. Valid claims pass through untouched; non-claims
+    # never reach admit() at all. A classifier exception on a
+    # candidate fails CLOSED (never falls through to English).
+    # Precedence carve-out (Director CORRECTION REQUIRED
+    # 7079919649, reconciling G31-CONTRACT-01 D-6): a line
+    # carrying the correspondence flow operator ">>>" is a FLOW
+    # claim, not a seed claim — when the canonical grammar
+    # declines it, the DCC-IV door below owns its observable
+    # refusal ("Flow refused ... REQUIRES_RUNTIME_SUPPORT"), so
+    # the gate does not claim it. ">>>" remains genuine seed
+    # grammar for valid chains: those parse, are admitted, and
+    # execute via P10 exactly as before — the carve-out only
+    # decides which door REFUSES a declined flow-shaped line.
+    # Operator-aware refinement (Director 7080979829; bounded
+    # build authorization 7081319284): the carve-out is no longer
+    # the raw substring test. ">>>" characters that the canonical
+    # flow tokenizer never REACHES as an operator — inside an
+    # unterminated quoted arg value, an unclosed bracket's term,
+    # an args group (the flow grammar has no args production), a
+    # segment label, or behind an earlier operator's refusal —
+    # are data or debris inside a seed claim, and the gate owns
+    # the claim: _flow_over_reached replays the tokenizer's own
+    # scan discipline to decide. A ">>>" the scan does reach at
+    # an operator position keeps the D-6 precedence exactly.
+    if _seed_claim(line) and not _flow_over_reached(line):
+        from form.mandell.admission import admit as _admit_gate
+        try:
+            _adm_gate = _admit_gate(line)
+        except Exception as _exc_gate:
+            print()
+            print(f"Seed admission refused (classifier_failure): "
+                  f"{type(_exc_gate).__name__}: {_exc_gate}")
+            print("This line was not executed.")
+            print()
+            return p
+        if _adm_gate.verdict != "admitted":
+            print()
+            print(f"Seed admission refused ({_adm_gate.reason}): "
+                  f"{_adm_gate.detail}")
+            print("This line was not executed.")
+            print()
+            return p
+
     # P10 (flow-grammar conformance): a raw multi-atom Mandell
     # seed line executes with the canonical chain semantics
     # (chain_exec, via the seed path below) — ONE composed-
@@ -3831,7 +4080,16 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
         except ValueError:
             pass  # Not a valid flow program; fall through.
 
-    if looks_like_seed(line):
+    if _seed_claim(line):
+        # UD-2 (Director 7085151190 decision 5): the raw-seed door
+        # answers only WHOLE-LINE seed claims. The legacy
+        # looks_like_seed search claimed any line containing an
+        # atom fragment, so English prose carrying an atom-shaped
+        # operand (`create an idea called 12[Harmonic]`) died here
+        # with a Seed error and created nothing. Non-claims fall
+        # through to the English doors below with the fragment as
+        # literal content; malformed claims are refused by this
+        # door's parse (Seed error) before any mutation.
         # EOC-I: raw execution with Outcome V1 observation.
         from form.mandell.execution_observer import observe_seed_execution
         result = observe_seed_execution(p, line, interaction_id=interaction_id)

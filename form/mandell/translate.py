@@ -498,7 +498,7 @@ def _translate_body(english: str) -> Intent:
     m = re.search(r"\bfind\s+idea\s+(.+)$", raw_lower)
     if m:
         m = re.search(r"\bfind\s+idea\s+(.+)$", orig_text, re.IGNORECASE) or m
-        query = m.group(1).strip()[:60]
+        query = m.group(1).strip()
         if query:
             return Intent("discover", 35, "Discover", {},
                          f"35[Discover] :: find_idea {query}", text)
@@ -509,7 +509,7 @@ def _translate_body(english: str) -> Intent:
     if m:
         m = re.search(r"\bsupersede\s+idea\s+(\S+)\s+with\s+(.+)$", orig_text, re.IGNORECASE) or m
         old_id = m.group(1).strip()
-        words = m.group(2).strip()[:240]
+        words = m.group(2).strip()
         if old_id and words:
             return Intent("nurture", 37, "Nurture", {},
                          f"37[Nurture] :: supersede {old_id} with {words}", text)
@@ -550,17 +550,17 @@ def _translate_body(english: str) -> Intent:
     m = re.search(r"\bgrow\s+using\s+knowledge\s+about\s+(.+)$", raw_lower)
     if m:
         m = re.search(r"\bgrow\s+using\s+knowledge\s+about\s+(.+)$", orig_text, re.IGNORECASE) or m
-        context = m.group(1).strip()[:80]
+        context = m.group(1).strip()
         if context:
             return Intent("nurture", 37, "Nurture", {},
                          f"37[Nurture] :: grow_using_knowledge_about {context}", text)
     m = re.search(r"\badd\s+idea\s+(.+)$", raw_lower)
     if m:
-        label = m.group(1).strip()[:80]
+        label = m.group(1).strip()
         if not label:
             return Intent("unknown", None, "", {}, "09[Show] :: unknown", text)
         m_orig = re.search(r"\badd\s+idea\s+(.+)$", text, re.IGNORECASE)
-        label_orig = m_orig.group(1).strip()[:80] if m_orig else label
+        label_orig = m_orig.group(1).strip() if m_orig else label
         return Intent("nurture", 37, "Nurture", {"label": label_orig},
                       f"37[Nurture] :: {label_orig}", text)
     m = re.search(r"\bconfirm\s+(\S+)$", raw_lower)
@@ -730,7 +730,7 @@ def _translate_body(english: str) -> Intent:
     if m:
         m = re.search(r"\breplace\s+(\S+)\s+with\s+(.+)$", orig_text, re.IGNORECASE) or m
         old = _strip_article(m.group(1))
-        new = _strip_article(m.group(2).strip()[:60])
+        new = _strip_article(m.group(2).strip())
         if old and new:
             return Intent("replace", 87, "Replace",
                          {"old": old, "new": new},
@@ -739,7 +739,7 @@ def _translate_body(english: str) -> Intent:
     if m:
         m = re.search(r"\bpatch\s+(\S+)\s+to\s+(.+)$", orig_text, re.IGNORECASE) or m
         key = _strip_article(m.group(1))
-        val = m.group(2).strip()[:60]
+        val = m.group(2).strip()
         if key and val:
             return Intent("patch", 88, "Patch",
                          {"key": key, "value": val},
@@ -804,7 +804,7 @@ def _translate_body(english: str) -> Intent:
         pred = _strip_article(m.group(1))
         if pred and not _is_ambiguous_find(pred):
             # Use typed format (validates via new signature)
-            safe_pred = pred.replace('"', '')[:60]
+            safe_pred = pred.replace('"', '')
             return Intent("select", 51, "Select",
                          {"predicate": safe_pred},
                          f'51[Select](predicate="{safe_pred}")', text)
@@ -813,7 +813,7 @@ def _translate_body(english: str) -> Intent:
         m = re.search(r"\bsearch\s+for\s+(.+?)\s*$", orig_text, re.IGNORECASE) or m
         pat = _strip_article(m.group(1))
         if pat:
-            safe_pat = pat.replace('"', '')[:60]
+            safe_pat = pat.replace('"', '')
             return Intent("match", 58, "Match",
                          {"pattern": safe_pat},
                          f'58[Match](pattern="{safe_pat}")', text)
@@ -866,12 +866,12 @@ def _translate_body(english: str) -> Intent:
         from form.idea_create import slug_id
         uid = slug_id(label_only)
         # TOAM-I: preserve name argument in Seed (Dell 8 signature requires 'name')
-        safe_name = (label_only or body[:48]).replace('"', '')
+        safe_name = (label_only or body).replace('"', '')
         return Intent(
             "place",
             8,
             "Create",
-            {"id": uid, "label": label_only or body[:48], "words": body[:120], "raw": text},
+            {"id": uid, "label": label_only or body, "words": body, "raw": text},
             f'08[Create](name="{safe_name}") > 15[Map] :: {uid}',
             text,
         )
@@ -901,7 +901,7 @@ def _translate_body(english: str) -> Intent:
     # substring matches (e.g. "test" in "test-mark").
     m = re.search(r"\b(stamp|mark)\s+(.+)$", text, re.IGNORECASE)
     if m:
-        mark = m.group(2).strip()[:48] or "mark"
+        mark = m.group(2).strip() or "mark"
         return Intent("stamp", 34, "Stamp", {"mark": mark}, f"34[Stamp] :: {mark}", text)
     if re.search(r"\b(measure|session\s+weight|how\s+heavy)\b", lower):
         return Intent("measure", 40, "TokenCount", {}, "40[TokenCount]", text)
@@ -993,7 +993,7 @@ def _translate_body(english: str) -> Intent:
         "unknown",
         9,
         "Show",
-        {"query": text[:80]},
+        {"query": text},
         "09[Show] :: unknown",
         text,
     )

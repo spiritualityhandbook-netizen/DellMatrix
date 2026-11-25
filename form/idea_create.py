@@ -41,7 +41,12 @@ def parse_create_line(raw: str) -> Dict[str, Any]:
     strength = strength_score(detail, goals)
 
     return {
-        "label": label[:80],
+        # R24-L (Director 7098988693): the authored label is carried
+        # losslessly. The historical label[:80] silently destroyed
+        # authored content; the canonical label budget (200 chars,
+        # Nursery Q-S2.1) is enforced as a typed refusal BEFORE
+        # mutation in needs.parse_and_place, never by slicing here.
+        "label": label,
         "detail": detail[:2000],
         "goals": goals[:12],
         "words": words[:500],
