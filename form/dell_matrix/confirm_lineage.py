@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 import uuid
 from typing import Any, Dict, List
 
@@ -180,6 +181,26 @@ def _resolve_confirm_placement(program, prop, auth) -> Dict[str, Any]:
         r.update(extra)
         return r
 
+    # FI-011 A12 (Director 7085151190 item 1; packet A12.1/A12.2):
+    # origin eligibility for the auto-confirm sweep ONLY. Positive
+    # allowlist - a proposal is auto-eligible iff its origin FAMILY
+    # is in {"", "repl_user", "growth"}; every other family (dock,
+    # agent, exchange, host, anything unrecognized) defaults to
+    # pending-for-a-human, the fail-closed direction for a standing
+    # delegation. Legacy "" (unrecorded, pre-provenance owner-era
+    # content) stays eligible, disclosed in the packet. Evaluated
+    # BEFORE the mixed-wall term below: authorship is the more
+    # fundamental property, and a proposal failing both reports the
+    # origin reason. Scoped strictly to producer == "grow_auto" -
+    # no other producer's path consults origin, so the owner's
+    # manual confirm of an agent-origin proposal is untouched.
+    if auto:
+        _origin = getattr(prop, "origin", "")
+        _family = (_origin.split(":", 1)[0]
+                   if isinstance(_origin, str) else None)
+        if _family not in ("", "repl_user", "growth"):
+            return _refuse("auto_origin_noneligible", origin=_origin)
+
     def _staging_or_refusal(parent_keys):
         # AUTO => SANDBOX FIRST staging, fail-closed on collision:
         # use the designated box only on POSITIVE verification that
@@ -277,6 +298,64 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
     prop = nursery.proposals.get(pid)
     if not prop or prop.status != "pending":
         return {"ok": False, "reason": "not found or not pending"}
+    # FI-011 A7 (Director 7085151190 item 1; packet A7.2/A7.3): if
+    # this confirmation rides a capability grant, the policy holds
+    # a reservation for it (recorded by the entry/live checks).
+    # The writer settles it exactly once: the durable receipt is
+    # STAGED into the nursery instance just before the checkpoint
+    # commit (so it persists in the same generation transaction as
+    # the status change), the reservation is CONVERTED to
+    # consumption immediately after a successful commit, and every
+    # non-commit exit DISCARDS the staged receipt and RELEASES the
+    # reservation - a denial or an aborted write never consumes.
+    _grant_id = None
+    if isinstance(_auth, dict):
+        _rc = _auth.get("review_context")
+        if isinstance(_rc, dict):
+            _grant_id = _rc.get("grant_id")
+    _grant_receipt = None
+    _grant_receipt_id = None
+
+    def _stage_grant_receipt():
+        nonlocal _grant_receipt, _grant_receipt_id
+        if not _grant_id or _grant_receipt is not None:
+            return
+        _pol = getattr(program, "acceptance_policy", None)
+        if _pol is None:
+            return
+        _ctx = _pol.grant_use_context(_grant_id)
+        if _ctx is None:
+            return
+        _grant_receipt = {
+            # Director delta 7088557617: the identity is
+            # session-bound. grant_seq restarts in a new session
+            # and proposal IDs are deterministic, so seq+pid alone
+            # can collide across sessions for a recreated proposal;
+            # the session identity (already carried on the receipt)
+            # makes each issuance's receipt uniquely identified,
+            # and Nursery.stage_grant_use_receipt refuses any
+            # residual collision before commit.
+            "receipt_id": f"gu_{_ctx['session_id']}_{_ctx['seq']}_{pid}",
+            "grant_seq": _ctx["seq"],
+            "pid": pid,
+            "subject": _ctx["subject"],
+            "owner": _ctx["owner"],
+            "operation": _ctx["operation"],
+            "session_id": _ctx["session_id"],
+            "at": time.time(),
+            "content_hash": _auth.get("data_hash"),
+        }
+        _grant_receipt_id = nursery.stage_grant_use_receipt(
+            _grant_receipt)
+
+    def _discard_grant_receipt():
+        if _grant_receipt_id:
+            nursery.discard_grant_use_receipt(_grant_receipt_id)
+
+    def _commit_grant():
+        _pol = getattr(program, "acceptance_policy", None)
+        if _pol is not None and _grant_id and _grant_receipt is not None:
+            _pol.commit_grant_use(_grant_id, _grant_receipt)
     units = program.cube.session.plane.units
     rec = assign_lineage(units, getattr(prop, "parents", None), origin="confirmed", child_id=prop.id)
     if not rec.get("ok"):
@@ -663,12 +742,26 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
                     "baseline capture failed; failure compensation "
                     "cannot be verified — confirm refused before "
                     "any durable write")
+            # FI-011 A7: stage the grant-use receipt into the live
+            # nursery instance NOW, so the checkpoint transaction
+            # below persists it in the same generation as the
+            # confirmation it authorizes - never one without the
+            # other.
+            _stage_grant_receipt()
             commit_checkpoint(program, generation_id=_our_gen)
             # Success: clear the intent journal (unless supersession manages it).
             if not _skip_journal:
                 clear_confirm_intent(program.owner)
             _release_commit_lock()
+            # FI-011 A7: the confirmation is durable - convert the
+            # reservation into consumption (single-use settles).
+            _commit_grant()
         except Exception as exc:
+            # FI-011 A7: the commit did not land - the staged
+            # receipt dies with the confirmation it would have
+            # authorized (the reservation itself is released by
+            # Program.confirm_proposal's non-ok handling).
+            _discard_grant_receipt()
             # Transaction failed: revert in-memory state to OLD.
             # Proposal stays pending (retryable), Idea removed if newly placed.
             # Never claim success, never silently discard, never expose hybrid.
@@ -814,12 +907,15 @@ def confirm_proposal(program, pid: str, _auth: Dict[str, Any] = None) -> Dict[st
         # Write intent journal for this confirmation as well, so crash
         # recovery can distinguish it from historical records.
         try:
+            _stage_grant_receipt()
             nursery.save()
             from form import persist_rest
             persist_rest.save(program)
             if not _skip_journal:
                 clear_confirm_intent(program.owner)
+            _commit_grant()
         except Exception:
+            _discard_grant_receipt()
             prop.status = "pending"
             if not existed:
                 _sk = _remove_newly_placed()

@@ -127,8 +127,16 @@ def build(owner):
 
 
 def seed(p, label, words, parents):
+    # FI-011 A12 migration (Director 7085151190 item 1; packet
+    # A12.1): the grow_auto sweep now enforces a POSITIVE origin
+    # allowlist {"", "repl_user", "growth"} - the former fixture
+    # origin "suite:seeded" is an unrecognized family and defaults
+    # to pending-for-a-human by design. This suite's subject is
+    # PLACEMENT; its seeds stand for ordinary owner-side content,
+    # so they carry the eligible "repl_user" family. No placement
+    # assertion in this suite depends on the origin value.
     prop = p.nursery.add(label=label, words=words, kind="new",
-                         parents=list(parents), origin="suite:seeded",
+                         parents=list(parents), origin="repl_user:seeded",
                          reason="confirm-placement suite")
     return prop.id
 
