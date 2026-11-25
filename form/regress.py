@@ -37,6 +37,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # 4 CI entries (form-smoke.yml history) + 17 *_test suites + core_ii_smoke.
 LIST = [
     "form.open",
+    "form.morning_reconciliation_test:smoke",
     "form.mandell.phrase_tests",
     "form.mandell.polyglot_tests",
     "form.accept:run",
@@ -167,6 +168,11 @@ LIST = [
     # vocabulary (profile annotation, D-6 refusal visibility,
     # T-1..T-6 incl. T-5a/b/c boundary cases).
     "form.mandell.g31_contract_test",
+    # Director 7085151190 item 4 — FlowOver (`>>>`) immediately
+    # before 61[Join] non-termination fix: both lawful triggers
+    # terminate, Join dispatched exactly once, per-gap one-time
+    # flow consumption, shipped-shape controls unchanged.
+    "form.mandell.chain_exec_flowover_test",
     # Master plan P11 — satellite disposition guards (sandbox
     # matrices retired per Ace's ruling; useful survivors live).
     "form.mandell.p11_satellites_test",
@@ -336,6 +342,9 @@ LIST = [
     "form.dd31_sanitize_copula_test:smoke",
     "form.dd42_predicate_infix_test:smoke",
     "form.r25_extra_operand_test:smoke",
+    "form.r24l_label_lossless_test:smoke",
+    "form.r24l_sibling_labels_test:smoke",
+    "form.ud2_english_routing_test:smoke",
     # eval_predicate surplus circuit (Director 7008502649):
     # explicit binary/unary forms with surplus operands refuse
     # condition_extra_operand at the engine and at 57/73 +
@@ -389,6 +398,7 @@ LIST = [
     # 2026-11-13): the three malformed-claim consumers refuse
     # fail-closed; the F-d stale state still reads UNBOXED.
     "form.fd_consistency_test:smoke",
+    "form.v08_truth_counts_test:smoke",
     "form.confirm_placement_test:smoke",
     # Part VI — Unknowns probe evidence (2026-11-20): read-only
     # census/behavior/capability probes discharging or narrowing
@@ -431,6 +441,28 @@ LIST = [
     # 6924026251): persona readers are observationally pure and the
     # Bimo pilot writer syncs persona_matrix.active beside the lens.
     "form.persona_purity_test:smoke",
+    # Part 0 SM-08 (register row #92): resumability checkpoints —
+    # code-stage step zero registers the suite in the same change
+    # that lands form/resume_checkpoint.py (plan §4 / line-430 note).
+    "form.resumability_checkpoint_test:smoke",
+    # Part 0 SM-07 (register row #91): unified merge-gate reconciler —
+    # code-stage step zero registers the suite in the same change
+    # that lands reconcile_gate in director-reports/certification_runner.py.
+    "form.gate_reconciliation_test:smoke",
+    # Part 0 GP-E25 (Edition 1 circuit): Muse Space snapshot
+    # reducer (S1), static exported view (S2), live revalidation
+    # (S3) -- code-stage step zero registers the suite in the same
+    # change that lands form/muse_space_snapshot.py and
+    # form/muse_space_views.py (build record 2026-11-20 section 5).
+    "form.muse_space_test:smoke",
+    # MEDIUM-four persistence-restore family (Director Gate 2 clearance
+    # 7081067283): fail-closed staged restore for duo_ledger, companion,
+    # self_knowledge, bimo/persona_matrix in form/persist_rest.py.
+    "form.medium_four_restore_test:smoke",
+    # DAF-09 D1 (Director ruling 7085151190 item 3): history header
+    # must report the retained total, not the display-slice length.
+    "form.daf09_history_header_test:smoke",
+    "form.r5d_s7_admission_test:smoke",
 ]
 
 TIMEOUT_S = 900

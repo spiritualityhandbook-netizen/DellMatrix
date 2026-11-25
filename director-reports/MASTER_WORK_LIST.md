@@ -23,15 +23,15 @@ Data: master_work_list_items.json
 
 ## The count
 
-**PROGRESS: 40 / 182 COMPLETE = 22.0%**
+**PROGRESS: 43 / 182 COMPLETE = 23.6%**
 
 | Status | Items |
 |---|---|
-| COMPLETE | 40 |
+| COMPLETE | 43 |
 | MERGED_UNVERIFIED | 0 |
 | BUILT_HELD | 0 |
 | PARTIAL | 55 |
-| OPEN | 84 |
+| OPEN | 81 |
 | GATED | 3 |
 | NEEDS_OVERSEER | 0 |
 | **TOTAL (active)** | **182** |
@@ -203,7 +203,7 @@ parked items the 72 frame never counted.
 |---|---|---|---|
 | 118 | Q1 family implementation — journaled Exchange import/recovery transactions (C-B) under the adopted Q1 plan; PR #294 held on Director design hold, never merge as-is; implementation awaits Director authorization | DD-07 / PR #294 / Q1 | GATED |
 | 119 | Atomic-write sweep wiring decision (Q-35.1): sweep_stale_tmps has no production caller — orphan .dmtmp cleanup is manual-only until the Director rules (follow-up of the 72-35 row) | Q-35.1 / 72-35 follow-up | OPEN |
-| 120 | Historical verify-72-17 reproducer hygiene: give the stale pre-repair probe an explicit/manual historical purpose, keeping the current repair regression active (queued hygiene circuit from the 72-67 closure) | 72-67 follow-up | OPEN |
+| 120 | Historical verify-72-17 reproducer hygiene: give the stale pre-repair probe an explicit/manual historical purpose, keeping the current repair regression active (queued hygiene circuit from the 72-67 closure) | 72-67 follow-up | COMPLETE |
 
 ## Block Plan §14.3 — C2 Resonance Core
 
@@ -325,9 +325,9 @@ parked items the 72 frame never counted.
 
 | # | Item | Source IDs | Status |
 |---|---|---|---|
-| 172 | Beyond-72 extension register framework (Director F1/F4): new extension objectives get distinct IDs checked against the current register, mapping to existing rows WITHOUT renumbering the original 72; no duplicate closure credit | F1/F4 | OPEN |
+| 172 | Beyond-72 extension register framework (Director F1/F4): new extension objectives get distinct IDs checked against the current register, mapping to existing rows WITHOUT renumbering the original 72; no duplicate closure credit | F1/F4 | COMPLETE |
 | 173 | Coordinated history retention/compaction contract — bounded navigable undo vs durable evidence; retention/compaction is an explicit open question (C3 design prerequisite; no promise of unlimited lossless history) | C3 design prerequisite (§14.7/§14.8) | OPEN |
-| 174 | Guard/Catch wording hygiene — a separate bounded hygiene opportunity (preserved contract; not a silent behavior change) | C1 hygiene (§14.7) | OPEN |
+| 174 | Guard/Catch wording hygiene — a separate bounded hygiene opportunity (preserved contract; not a silent behavior change) | C1 hygiene (§14.7) | COMPLETE |
 | 175 | Q-SNAP.3 launch/signal-hardening proposal — proposal-only product change if still desired; no G-11 or DAF-09 certification inference (Director F6) | Q-SNAP.3 / F6 | OPEN |
 
 ## Block Research intake — parked (§14.9)

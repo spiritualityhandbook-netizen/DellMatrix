@@ -1,5 +1,17 @@
-name: verify-72-17-exact-head
+name: HISTORICAL — verify-72-17-exact-head
 
+# HISTORICAL — manual dispatch only (row #120 hygiene, Part III
+# code stage, 2026-11-20). This workflow certified the exact head
+# of the FROZEN PR #304 candidate (72-17 Show-sentinel correction;
+# records: director-reports/DIRECTOR_REPORT_72_17_RENDER_
+# DIRECTIVE_REPAIR.md and DIRECTOR_REPORT_72_17_SHOW_SENTINEL.md).
+# That repair is landed on main; the live regression that now
+# carries it is the in-tree suite
+# form/show_render_directive_test.py (registered in
+# form/regress.py), NOT this workflow. Kept runnable by hand as
+# the historical certification record; it is not live verification
+# machinery and no longer fires on pull requests.
+#
 # Exact-head verification for the FROZEN PR #304 candidate
 # cc8ea8b53ea7bfc8d22fc58ff9669b008fc06986, per the Director's
 # 2026-11-05 TARGETED_CORRECTION_REQUIRED on the 72-17
@@ -15,10 +27,7 @@ name: verify-72-17-exact-head
 # runs stay distinct, permanently.
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/verify-72-17-exact-head.yml"
-      - "director-reports/evidence/72-17-show-sentinel/EXACT_HEAD_RUN.md"
+  workflow_dispatch:
 
 permissions:
   contents: read

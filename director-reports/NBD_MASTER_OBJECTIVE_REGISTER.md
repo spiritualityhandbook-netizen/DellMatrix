@@ -1,7 +1,7 @@
 # NBD MASTER OBJECTIVE REGISTER — DellMatrix / Mandell / DuoBeta
 
 **Date:** 2026-11-04 · **Mode:** A — Planning / Reconciliation (Director Addendum, 2026-11-04)
-**Baseline:** main `7e593e0a5b5a47a36111734e35b6464f61b511b6` (verified at reconciliation).
+**Baseline:** main `c6ee38d97ce929850f1321004db681b2a6f619ca` (refreshed 2026-11-20 by the Part V code stage, row #94 — the ranking now reads the canonical register at the morning pass's pin; see the addendum in `NBD_OBJECTIVE_RECONCILIATION.md`). Previous baseline, preserved as history: main `7e593e0a5b5a47a36111734e35b6464f61b511b6` (verified at reconciliation, 2026-11-04).
 **Authority:** ACE (Overseer) > DIRECTOR > UNI. This register authorizes nothing by itself.
 
 ## How to read this register

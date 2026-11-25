@@ -71,6 +71,10 @@ packets cite.
 | post_post3_saturated.stdout.log | 744b65eb56923071261c2d487511327202bb065569d5f39e7e1489ca2274bc83 | 26 |
 | post_post4_saturated.jsonl | 96d38bd012feeff4d42765e3c6508dcdf64af5e688f128b29740ad57755e7c06 | 47245 |
 | post_post4_saturated.stdout.log | 744b65eb56923071261c2d487511327202bb065569d5f39e7e1489ca2274bc83 | 26 |
+| DAF09_CHAIN_UPDATE_2026-11-20.md | 92d8e0f3f847a00ff8f07cccffa45ddecd9ee9bb5473a99576aa6d0bb30e6339 | 4387 |
+| part3_codestage_timeout_tree_2026-11-20.log | 96fdd750900119408a0578f9a1a312f7abe7855b068bec539bc2796d5124158b | 534 |
+| part3_codestage_instr_run1_2026-11-20.jsonl | 9f55be62487bb1a2bc76b309c5c286d451a55ad68253d327d0ed99b135fb20a4 | 40327 |
+| part3_codestage_instr_run1_2026-11-20.stdout.log | b2a7530f6e92d70c11cd25dd0272e714205732dbcbe4c37a39580c9087329ae1 | 534 |
 
 Digests computed at publication time from the
 files as copied from the originating workspaces;

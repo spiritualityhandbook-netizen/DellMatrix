@@ -836,7 +836,7 @@
   "n": 120,
   "title": "Historical verify-72-17 reproducer hygiene: give the stale pre-repair probe an explicit/manual historical purpose, keeping the current repair regression active (queued hygiene circuit from the 72-67 closure)",
   "ids": "72-67 follow-up",
-  "status": "OPEN",
+  "status": "COMPLETE",
   "block": "H — Gated family and Director-decision follow-ups"
  },
  {
@@ -1200,7 +1200,7 @@
   "n": 172,
   "title": "Beyond-72 extension register framework (Director F1/F4): new extension objectives get distinct IDs checked against the current register, mapping to existing rows WITHOUT renumbering the original 72; no duplicate closure credit",
   "ids": "F1/F4",
-  "status": "OPEN",
+  "status": "COMPLETE",
   "block": "Plan §14.7/§14.8 — non-slice open items"
  },
  {
@@ -1214,7 +1214,7 @@
   "n": 174,
   "title": "Guard/Catch wording hygiene — a separate bounded hygiene opportunity (preserved contract; not a silent behavior change)",
   "ids": "C1 hygiene (§14.7)",
-  "status": "OPEN",
+  "status": "COMPLETE",
   "block": "Plan §14.7/§14.8 — non-slice open items"
  },
  {
