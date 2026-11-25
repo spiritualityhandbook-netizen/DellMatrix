@@ -466,6 +466,15 @@ LIST = [
     # change that lands form/muse_space_snapshot.py and
     # form/muse_space_views.py (build record 2026-11-20 section 5).
     "form.muse_space_test:smoke",
+    # SOUND S0 (Director ruling 7085160720 on PR #505): pure read-only
+    # sonification projection (form/dell_matrix/sonification.py) --
+    # pitch from the harmonic_lattice chromatic law, set harmony only
+    # from harmony.harmony_score on a named active neighborhood of 2+,
+    # spatial cues from spatial_audio; fail-first acceptance
+    # one_state_one_sound / different_actual_math_changes_sound /
+    # unknown_is_silence / solo_not_pair_harmony / view_audio_parity /
+    # no_authority.
+    "form.sonification_test:smoke",
     # P0-R (Director 7085151190 item 2): lattice SnapModule registry
     # persistence -- lossless modules_format=2 records, staged typed
     # restore, legacy IDs-only fail-closed.
