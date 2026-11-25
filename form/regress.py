@@ -199,6 +199,12 @@ LIST = [
     "form.translate_word_counts_test",
     "form.translate_dead_args_test",
     "form.r19sib_count_door_test",
+    "form.r24_operand_integrity_test",
+    "form.r23_outcome_evidence_test",
+    "form.gpe08_admission_test",
+    "form.gpe08_route_integration_test",
+    "form.gpe08_admission_gate_test",
+    "form.gpe07_audit_test",
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",
     "form.graph_journal_crash_test",
@@ -412,6 +418,11 @@ LIST = [
     # SM-39 persistence closure: growth plant records survive save/load.
     "form.growth_persistence_test:smoke",
     "form.water_persistence_test:smoke",
+    # Persistence-integrity (Part I SAVE/JOURNAL; Director clearance
+    # PR #505 comment 7076723491): present-but-malformed outcome_ledger
+    # and lattice sections fail closed at load with ProgramLoadError;
+    # absent sections keep legacy behavior.
+    "form.persistence_integrity_test:smoke",
     # Track D TD-1: Unit -> Idea binding foundation (S1).
     "form.track_d_td1_test:smoke",
     "form.track_d_td1_r1_test:smoke",
@@ -452,6 +463,11 @@ LIST = [
     # unknown_is_silence / solo_not_pair_harmony / view_audio_parity /
     # no_authority.
     "form.sonification_test:smoke",
+    # Part 0 GP-E25 C1 (Director BUILD AUTHORIZATION 7136743763):
+    # views CLI pin wiring -- optional explicit pin, revalidation
+    # verdict + offline age surfaced in the export, typed refusal
+    # on a bad pin, STALE distinguished from EVIDENCE_UNAVAILABLE.
+    "form.muse_space_views_pin_test:smoke",
     # MEDIUM-four persistence-restore family (Director Gate 2 clearance
     # 7081067283): fail-closed staged restore for duo_ledger, companion,
     # self_knowledge, bimo/persona_matrix in form/persist_rest.py.

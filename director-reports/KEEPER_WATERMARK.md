@@ -1,19 +1,18 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-25 ~06:24 CST  
-**UTC approx**: 2026-11-25T12:24:00Z  
+**Last cycle**: 2026-11-25 ~13:19 CST  
+**UTC approx**: 2026-11-25T19:19:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
 - Ripe gates:
-  - Prior SCOPED CONFIRM stands: #523 at d212f78bbe7f37626661ae8658535a16abe0f09d (no head move).
-  - Named missing exactly:
-    - #520 at 412f1d340702d7374addf4cd983dd646da92f4fc: Uni composition + Director acceptance + terminal CI ALL PASS + mergeable clean. Exact missing: independent stateful probes under 7095139761 at this head. SECURITY HOLD remains. No stamp.
-    - #516 at e93b6b8870b33ce8e94db244b195919077c9c96f: Uni residual package + terminal CI ALL PASS + mergeable clean. Exact missing: Director residual re-check at this head. Prior stamps voided. No stamp.
-    - #519 at 6a9fcbb1221a8fa0059debfd59a397bdc3c8d8bc: Uni §45 recomposition package + terminal CI ALL PASS + mergeable clean. Spot-check residual section 17 held. Exact missing: Director residual re-check at this head. Prior stamps voided by head move. No stamp.
-    - #514 at 25fe0659fd2d4c65a5d45423b05d9b8837a2825a: Uni §45 recomposition package + terminal CI ALL PASS + mergeable clean. Spot-check suite claims held. Exact missing: Director residual re-check at this head. Prior stamps voided by head move. No stamp.
-    - #518 stamp at d19fb5af stands (prior). Drafts and #294 fenced skipped.
-- Merged-main proofs: none new since last pass (#524 and #525 prior confirmed).
+  - #519 at 84c0e3cbeb85feb74ae5a91f88c84a2e0ca195fc: Uni package present. Terminal CI not ALL PASS (smoke in_progress). Exact missing named: terminal CI ALL PASS. No stamp.
+  - #520 at ed53c59d658ec4054912340490267c22810abd5e: prior SCOPED CONFIRM stands. Terminal CI SUCCESS. mergeable_state dirty (main advance). SECURITY HOLD / Q-FI011.4 residual retained per Director. No new evidence.
+  - Other open heads: no new ripe packages with terminal CI. Drafts and #294 fenced skipped.
+- Merged-main proofs:
+  - #526 (merged 2026-11-25T18:27:39Z, merge 1e764ec2): Uni terminal merged-main CI receipt verified. CODE credit CONFIRMED on PR.
+  - #523 (merged 2026-11-25T18:23:12Z, merge ca6f7e6a): Uni terminal merged-main CI receipt verified. CODE credit CONFIRMED on PR.
+  - #514 and #506: still exact missing Uni merged-main evidence (terminal CI on merge commit + behavioral proof). No credit.
 - Records reviews: none awaiting new disposition.
 - Trailing obligations: none remaining.
 
@@ -23,6 +22,6 @@
 - gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance + comments on #523/#520/#516/#519/#514. Nothing needed from Ace. Next step: Uni stateful probes on #520; Director residual re-checks on #516/#519/#514.
+Proof of pass: this watermark advance + comments on #526/#523/#519. Nothing needed from Ace. Next step: Uni terminal CI on #519; Uni merged-main proofs on #514/#506 if still owed.
 
 — KEEPER
