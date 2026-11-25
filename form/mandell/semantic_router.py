@@ -433,10 +433,17 @@ def route_intent(program: Any, intent: Any, raw_line: str = "",
                      and isinstance(nurture_after, dict))
     # DCC-XX capture: post-hoc, never raises, never alters routing.
     try:
-        from .outcome_ledger import capture_outcome
+        from .outcome_ledger import capture_outcome, last_capture_diagnostic
         capture_outcome(program, receipt, composition,
                         nurture_fresh=nurture_fresh,
                         interaction_id=interaction_id)
+        # GP-E02 correction (Director 7066282827): surface the typed
+        # capture_unavailable reason on the receipt itself — None when
+        # the outcome was captured, otherwise the reason (e.g.
+        # evidence_over_budget) — so a refused capture is disclosed to
+        # the routing caller, never a silent omission.
+        _diag = last_capture_diagnostic(program)
+        receipt.capture_unavailable = (_diag or {}).get("reason")
     except Exception:
         pass
     return receipt

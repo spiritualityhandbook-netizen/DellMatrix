@@ -199,6 +199,12 @@ LIST = [
     "form.translate_word_counts_test",
     "form.translate_dead_args_test",
     "form.r19sib_count_door_test",
+    "form.r24_operand_integrity_test",
+    "form.r23_outcome_evidence_test",
+    "form.gpe08_admission_test",
+    "form.gpe08_route_integration_test",
+    "form.gpe08_admission_gate_test",
+    "form.gpe07_audit_test",
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",
     "form.graph_journal_crash_test",
@@ -400,6 +406,18 @@ LIST = [
     "form.fd_consistency_test:smoke",
     "form.v08_truth_counts_test:smoke",
     "form.confirm_placement_test:smoke",
+    # Part VI — Unknowns probe evidence (2026-11-20): read-only
+    # census/behavior/capability probes discharging or narrowing
+    # the open-question packets (Q-FI012.8 census; #119/#175
+    # censuses; DD-42.2/DD-18.2/R21 current-main behavior;
+    # Q-U.3/.4/.5 re-verification; Q-GS.1 caller census;
+    # Q-FI016.1 measured capability + scale). They pin CURRENT
+    # behavior: a deliberate future change to a probed behavior
+    # updates the probe in the same circuit, like the
+    # atomic_write no-production-caller pin.
+    "form.fi012_q8_census_probe_test:smoke",
+    "form.part6_unknowns_probe_test:smoke",
+    "form.fi016_capability_probe_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
     "form.dirf14_catch_consumed_test:smoke",
@@ -412,6 +430,11 @@ LIST = [
     # SM-39 persistence closure: growth plant records survive save/load.
     "form.growth_persistence_test:smoke",
     "form.water_persistence_test:smoke",
+    # Persistence-integrity (Part I SAVE/JOURNAL; Director clearance
+    # PR #505 comment 7076723491): present-but-malformed outcome_ledger
+    # and lattice sections fail closed at load with ProgramLoadError;
+    # absent sections keep legacy behavior.
+    "form.persistence_integrity_test:smoke",
     # Track D TD-1: Unit -> Idea binding foundation (S1).
     "form.track_d_td1_test:smoke",
     "form.track_d_td1_r1_test:smoke",
@@ -448,6 +471,15 @@ LIST = [
     # A8 raw Nursery.confirm retirement, A12 grow_auto origin
     # allowlist, A9 staged typed status refusal.
     "form.fi011_corrections_test:smoke",
+    # P0-R (Director 7085151190 item 2): lattice SnapModule registry
+    # persistence -- lossless modules_format=2 records, staged typed
+    # restore, legacy IDs-only fail-closed.
+    "form.lattice_modules_restore_test:smoke",
+    # Part 0 GP-E25 C1 (Director BUILD AUTHORIZATION 7136743763):
+    # views CLI pin wiring -- optional explicit pin, revalidation
+    # verdict + offline age surfaced in the export, typed refusal
+    # on a bad pin, STALE distinguished from EVIDENCE_UNAVAILABLE.
+    "form.muse_space_views_pin_test:smoke",
     # MEDIUM-four persistence-restore family (Director Gate 2 clearance
     # 7081067283): fail-closed staged restore for duo_ledger, companion,
     # self_knowledge, bimo/persona_matrix in form/persist_rest.py.

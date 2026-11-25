@@ -29,8 +29,13 @@ Contract pinned here:
     still executes through the seed door; nothing is created as an
     idea by the English door.
   - Malformed whole-line claims (`12[Harmonic`, `12[Harmonic] >`)
-    are refused by the seed door (Seed error), never rerouted to
-    English, and create nothing.
+    are refused before mutation, never rerouted to English, and
+    create nothing. On main's tree the refusing door is the seed
+    door's own parse ("Seed error"); on #506's composed tree the
+    GP-E08 admission gate refuses first with its typed receipt
+    ("Seed admission refused (seed_parse_refusal)"). UD2-4/UD2-5
+    pin the composed tree's refusing door; the
+    refusal-before-mutation substance is unchanged.
   - Prose carrying an atom fragment (plain, with operators, or with
     a typed-args atom) is never claimed by the seed door.
 
@@ -129,19 +134,30 @@ def smoke() -> bool:
         "Created idea" not in out)
 
     # 4. Malformed whole-line claim: refused as a seed claim, never
-    # rerouted to English.
+    # rerouted to English. On this composed tree the GP-E08
+    # admission gate pre-empts the seed door's parse and refuses
+    # with its typed receipt ("Seed admission refused
+    # (seed_parse_refusal)") before any mutation — the UD-2
+    # contract's refusal substance is unchanged, only the
+    # refusing door's text differs from main's "Seed error".
     out = _session(_owner("D"), ["12[Harmonic", "ideas"])
     rec("UD2-4 malformed claim refused by the seed door",
-        "Seed error" in out, "malformed claim fell through to English")
+        "Seed admission refused" in out
+        and "This line was not executed." in out,
+        "malformed claim fell through to English")
     rec("UD2-4 malformed claim not treated as English",
         "Not understood" not in out)
     rec("UD2-4 malformed claim creates nothing",
         "Created idea" not in out)
 
-    # 5. Malformed claim with a trailing flow operator.
+    # 5. Malformed claim with a trailing flow operator. Same
+    # composed-tree refusal as UD2-4: the GP-E08 gate's typed
+    # receipt, before mutation, never rerouted to English.
     out = _session(_owner("E"), ["12[Harmonic] >"])
     rec("UD2-5 trailing-flow claim refused by the seed door",
-        "Seed error" in out, "trailing-flow claim not refused as seed")
+        "Seed admission refused" in out
+        and "This line was not executed." in out,
+        "trailing-flow claim not refused as seed")
     rec("UD2-5 trailing-flow claim creates nothing",
         "Created idea" not in out)
 
