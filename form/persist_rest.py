@@ -240,6 +240,13 @@ def _stage_lattice_modules(raw: Dict[str, Any], owner: str):
     closed here; IDs are never dressed up as empty modules and no
     facts are reconstructed from geometry.
 
+    Presence pin (Director CORRECTION_REQUIRED 7166217199): the
+    modules field itself is presence-checked, exactly like the format
+    marker below. A PRESENT null modules field is NOT an absent one:
+    the lawful legacy shapes are only a missing field or an empty
+    list, so a present null refuses typed here instead of loading as
+    an empty registry that a later save would rewrite as fact.
+
     Marker pin (Director REVIEW 7137053864): legacy treatment keys on
     the marker being ABSENT from the record. A PRESENT marker --
     including an explicit null -- is never legacy; it falls through
@@ -248,6 +255,12 @@ def _stage_lattice_modules(raw: Dict[str, Any], owner: str):
     """
     mods = raw.get("modules")
     if "modules_format" not in raw:
+        if "modules" in raw and mods is None:
+            raise ProgramLoadError(
+                "lattice modules field is present but null (records "
+                "without the modules_format marker): refusing load "
+                "rather than treating a present null as an absent "
+                "field or an empty registry")
         if mods is None or mods == []:
             return []
         if isinstance(mods, list) and all(isinstance(m, str) for m in mods):

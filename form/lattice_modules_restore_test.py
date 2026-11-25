@@ -54,6 +54,16 @@ sub-value stays valid; and the reader's legacy boundary is pinned to
 marker ABSENCE -- a present invalid marker (explicit null included)
 refuses typed through the format check instead of becoming legacy.
 Section 17 pins both.
+
+Correction addendum (Director CORRECTION_REQUIRED 7166217199): the
+same presence discipline applies to the modules FIELD itself. With
+the marker omitted, a PRESENT null modules field loaded as an empty
+registry (the legacy branch keyed on .get() returning None) and a
+later save would rewrite that as fact. The lawful legacy shapes are
+only a missing field or an empty list; a present null now refuses
+typed (ProgramLoadError, pre-binding), leaving the source bytes and
+the previously bound program intact. Section 5 pins it beside the
+two lawful legacy controls.
 """
 from __future__ import annotations
 
@@ -68,6 +78,7 @@ import types
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from form.open import open_program
+from form.mandell.language import bound_program
 from form.persist import serialize, save, load, LatticeModuleSaveError
 from form.persist_rest import ProgramLoadError
 from form.dell_matrix.harmonic_lattice import Cell, SnapModule
@@ -255,6 +266,26 @@ def smoke() -> bool:
             rec(name, qq.lattice.modules == {}, f"registry={qq.lattice.modules}")
         except Exception as e:
             rec(name, False, f"raised {type(e).__name__}: {e}")
+
+    # ---- 5b. legacy present-null modules field: refuse typed -----------
+    # (Director CORRECTION_REQUIRED 7166217199: lawful legacy shapes are
+    # only the missing field and the empty list -- the two controls
+    # above. A present null is neither; the refusal must leave the
+    # source bytes and the previously bound program untouched.)
+    prev_path = _tmp()
+    save(_build("P0RNullPrev"), prev_path)
+    prev = load("P0RNullPrev", path=prev_path)
+    bound_before = bound_program()
+    path5n = _tmp()
+    save(_build("P0RNullField"), path5n)
+    sha5n = _mutate(path5n, lambda d: (d["lattice"].__setitem__("modules", None),
+                                       d["lattice"].pop("modules_format", None)))
+    _expect_refusal(rec, "legacy_modules_null_refuses_typed",
+                    path5n, "P0RNullField", sha5n)
+    rec("legacy_modules_null_previous_binding_intact",
+        bound_program() is bound_before
+        and sorted(prev.lattice.modules) == ["alpha-latch", "beta-rich"],
+        f"bound changed or registry={sorted(prev.lattice.modules)}")
 
     # new-writer empty registry is NOT a legacy refusal
     pth = _tmp()
