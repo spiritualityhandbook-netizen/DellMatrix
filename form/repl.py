@@ -3721,13 +3721,20 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
 
 # GP-E08 Scope A (Director 7079028132): whole-line seed-claim
 # discriminator for the admission-refusal gate in
-# _dispatch_public_line below. The discriminator derives from the
+# _dispatch_public_line below. UD-2 (Director 7085151190
+# decision 5): the raw-seed branch in _dispatch_public_line
+# routes on this same discriminator (mechanism identical to
+# the GP-E08 boundary exercised on #506). It derives from the
 # established seed grammar itself — it consumes the line using
 # seed.py's OWN token definitions (atom, typed args, FLOW_OPS,
 # and the AF-2 segment-label rule via seed's _scan_label_end) —
 # never a second grammar. A malformed atom (unclosed bracket)
 # still counts as grammar material: the canonical parser can
 # never read past one, so its tail is claim territory, not prose.
+# An atom fragment with ANY unconsumed residue around it is
+# English content (e.g. an idea name), never a claim on the line:
+# `create an idea called 12[Harmonic]` is an English request
+# whose operand is the literal `12[Harmonic]`.
 _SEED_CLAIM_FRAGMENT = re.compile(r"\d{1,3}\s*\[")
 _SEED_CLAIM_ATOM_OPEN = re.compile(r"\d{1,3}\s*\[[^\]]*\]?")
 _SEED_ARGS_ATTEMPT = re.compile(r"\(\s*[A-Za-z_][A-Za-z0-9_]*\s*=")
@@ -4073,7 +4080,16 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
         except ValueError:
             pass  # Not a valid flow program; fall through.
 
-    if looks_like_seed(line):
+    if _seed_claim(line):
+        # UD-2 (Director 7085151190 decision 5): the raw-seed door
+        # answers only WHOLE-LINE seed claims. The legacy
+        # looks_like_seed search claimed any line containing an
+        # atom fragment, so English prose carrying an atom-shaped
+        # operand (`create an idea called 12[Harmonic]`) died here
+        # with a Seed error and created nothing. Non-claims fall
+        # through to the English doors below with the fragment as
+        # literal content; malformed claims are refused by this
+        # door's parse (Seed error) before any mutation.
         # EOC-I: raw execution with Outcome V1 observation.
         from form.mandell.execution_observer import observe_seed_execution
         result = observe_seed_execution(p, line, interaction_id=interaction_id)

@@ -77,16 +77,24 @@ canonical parser/door, outside 7079028132):
   parse_seed returns ok. `47[Embed] > 12[Harmonik]` is ADMITTED
   by admit() and executes today. T11 is therefore a
   grammar-fidelity control: the gate must NOT refuse it.
-  UD-2 (was T9/T10 "idea created"): today `create an idea called
-  12[Harmonic]` (quoted or not) never reaches the English door —
-  the pre-existing looks_like_seed branch claims any line with a
-  closed atom fragment and answers "Seed error", recording an
-  outcome, creating nothing. That branch is a prior door whose
-  authority Scope A does not alter. T9/T10 therefore assert the
-  gate's actual contract: no gate refusal, admit() not invoked,
-  and today's path preserved exactly (legacy seed-branch receipt,
-  outcome recorded by that branch, no idea created BY THE GATE's
-  action or inaction).
+  UD-2 (was T9/T10 "idea created"): at this suite's original head
+  `create an idea called 12[Harmonic]` (quoted or not) never
+  reached the English door — the pre-existing looks_like_seed
+  branch claimed any line with a closed atom fragment and
+  answered "Seed error", recording an outcome, creating nothing.
+  T9/T10/T14 then pinned that legacy path exactly. SUPERSEDED:
+  Director ruling 7085151190 decision 5 (UD-2) replaced the
+  looks_like_seed routing with the grammar-aware whole-line
+  claim boundary (_seed_claim); PR #525 landed it on main and
+  this branch's recomposition composes both changes. T9/T10/T14
+  are RE-PINNED to the composed contract: no gate refusal,
+  admit() not invoked, embedded-fragment English lines pass
+  through the English door with NO "Seed error" (T9/T10 create
+  the idea whole; T14's prose is simply not understood, and no
+  legacy seed-branch outcome is recorded). The legacy pin is
+  preserved in git history at 9702ba30. Re-pin disclosed in the
+  PR #506 recomposition package; Director confirmation of the
+  re-pin is asked at his whole-PR review.
 
 Realism labels: T1 drives the literal program entry point
 (`python3 -m form.repl`, piped stdin) = REAL_USER_PATH limited to
@@ -342,14 +350,20 @@ def t9_quoted_content_control():
     with _patched_admit(spy):
         p, out = _drive(p, "create an idea called '12[Harmonic]'")
     after = _snap(p)
-    # UD-2: the legacy looks_like_seed branch answers this line
-    # today ("Seed error", outcome recorded, no idea). The gate
-    # must add NOTHING: no gate refusal, no admit() call, and the
-    # legacy branch's own footprint preserved exactly.
+    # UD-2 RE-PIN (see header; Director ruling 7085151190
+    # decision 5): routing is by whole-line claim now, not the
+    # legacy looks_like_seed fragment branch. The gate must add
+    # NOTHING — no gate refusal, no admit() call — and the
+    # English door creates the idea whole: no "Seed error", the
+    # create lands in history, its outcome is recorded. (Legacy
+    # pin — "Seed error", outcome +1, no idea — preserved in git
+    # history at 9702ba30.)
     check("T9_quoted_embedded_content_gate_silent_path_preserved",
           spy.calls == [] and GATE_REFUSAL not in out
-          and "Seed error" in out
-          and after[0] == before[0] and after[2] == before[2] + 1,
+          and "Seed error" not in out
+          and 'Created idea: "12[Harmonic]"' in out
+          and after[1] == before[1] + 1
+          and after[2] == before[2] + 1,
           f"state {before} -> {after}")
 
 
@@ -361,10 +375,15 @@ def t10_unquoted_content_control():
     with _patched_admit(spy):
         p, out = _drive(p, "create an idea called 12[Harmonic]")
     after = _snap(p)
+    # UD-2 RE-PIN: same composed contract as T9 (see header) —
+    # gate silent, English door creates the idea whole, no
+    # "Seed error". (Legacy pin preserved at 9702ba30.)
     check("T10_unquoted_embedded_content_gate_silent_path_preserved",
           spy.calls == [] and GATE_REFUSAL not in out
-          and "Seed error" in out
-          and after[0] == before[0] and after[2] == before[2] + 1,
+          and "Seed error" not in out
+          and 'Created idea: "12[Harmonic]"' in out
+          and after[1] == before[1] + 1
+          and after[2] == before[2] + 1,
           f"state {before} -> {after}")
 
 
@@ -413,11 +432,19 @@ def t14_english_embedding_bracketed_literal():
         p, out1 = _drive(p, "my favorite atom is 12[Harmonic] today")
         mid = _snap(p)
         p, out2 = _drive(p, "12[Harmonic] (see notes)")
+    # UD-2 RE-PIN (see header): both prose lines now pass the
+    # whole-line claim boundary to the English door, which does
+    # not understand them — no gate refusal, no "Seed error",
+    # and NO legacy seed-branch outcome is recorded. (The legacy
+    # pin asserted mid[2] == before[2] + 1, the old branch's
+    # footprint; preserved in git history at 9702ba30.) Neither
+    # line mutates state.
     check("T14_english_with_bracketed_literal_content_not_refused",
           spy.calls == [] and GATE_REFUSAL not in out1
           and GATE_REFUSAL not in out2
-          and mid[2] == before[2] + 1,
-          f"calls={spy.calls} outcomes {before[2]} -> {mid[2]}")
+          and "Seed error" not in out1 and "Seed error" not in out2
+          and mid == before and _snap(p) == before,
+          f"calls={spy.calls} state {before} -> {mid} -> {_snap(p)}")
 
 
 # --------------------------------------------------------------- T15
