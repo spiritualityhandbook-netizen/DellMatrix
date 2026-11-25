@@ -187,9 +187,10 @@ def _supersession_checks():
         _rec("S4.supersession_short_text_end_to_end_exact",
              succ2 is not None and succ2.words == short,
              f"stored len={len(succ2.words) if succ2 else 'none'}")
-        # Scope guard: the sibling label slice at the same site is NOT
-        # part of this circuit (Q-S2.1's field) — a 100-char explicit
-        # label still lands at the unchanged 80-char bound.
+        # Sibling label scope: this circuit originally scoped the
+        # label slice OUT (a 100-char explicit label landed cut at 80).
+        # Director 7136782069 superseded that scope guard and authorized
+        # the R24-L sibling repair: the label now lands WHOLE.
         pred3 = p.nursery.add("PredLabel", words="predecessor three")
         ctx3 = p.make_review_context(pred3.id, OWNER_S)
         p.confirm_proposal(pred3.id, _producer=OWNER_S,
@@ -198,8 +199,8 @@ def _supersession_checks():
             p, pred3.id, words="label scope probe",
             label="L" * 100, _producer=OWNER_S)
         succ3 = p.nursery.proposals.get(rec3.get("new_id", ""))
-        _rec("S5.sibling_label_slice_untouched",
-             succ3 is not None and len(succ3.label) == 80,
+        _rec("S5.sibling_label_preserved_whole",
+             succ3 is not None and succ3.label == "L" * 100,
              f"label len={len(succ3.label) if succ3 else 'none'}")
     finally:
         _cleanup(OWNER_S)

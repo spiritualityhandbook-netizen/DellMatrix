@@ -1,12 +1,19 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-24 ~08:45 CST  
-**UTC approx**: 2026-11-24T14:45:00Z  
+**Last cycle**: 2026-11-25 ~06:24 CST  
+**UTC approx**: 2026-11-25T12:24:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- No new ripe gates requiring stamp. Open heads reaffirmed at current SHAs with prior scoped CONFIRMs or named-missing standing: #522 at 57faabc7751adebeb5c9bdf9f5ae8568ef1bd4c2 (SCOPED CONFIRM on record; terminal CI ALL PASS; Uni serial ×3 receipt noted; spot-check of lossless label + typed refusal + E-1/E-2 caller truth verified first-hand against source at head), #521 at 433e7d0033e83116d286ee72e8f1904cdd865e91, #520 at 1509bcc58aee8fc3945baef2da4b16ec194b0ad6, #519 at 239e5191fadc9935461aafbd75b084da72878e67 (SCOPED CONFIRM stands; byte-preservation evidence spot-checked), #518 at f9d3b6b22139e0b40851d151f26ac6d42fe097a5, #516 at 1a4970bd54ea48d3de8c881bf038e9d115e70340, #514 at 83f48c88a83564ef2a3ba8f88c7b1afcbffbf78a. Drafts and #294 fenced skipped. No head moves since prior watermark.
-- Merged-main proofs: none new since prior watermark (no merges on main after 2026-11-24T12:24Z).
+- Ripe gates:
+  - Prior SCOPED CONFIRM stands: #523 at d212f78bbe7f37626661ae8658535a16abe0f09d (no head move).
+  - Named missing exactly:
+    - #520 at 412f1d340702d7374addf4cd983dd646da92f4fc: Uni composition + Director acceptance + terminal CI ALL PASS + mergeable clean. Exact missing: independent stateful probes under 7095139761 at this head. SECURITY HOLD remains. No stamp.
+    - #516 at e93b6b8870b33ce8e94db244b195919077c9c96f: Uni residual package + terminal CI ALL PASS + mergeable clean. Exact missing: Director residual re-check at this head. Prior stamps voided. No stamp.
+    - #519 at 6a9fcbb1221a8fa0059debfd59a397bdc3c8d8bc: Uni §45 recomposition package + terminal CI ALL PASS + mergeable clean. Spot-check residual section 17 held. Exact missing: Director residual re-check at this head. Prior stamps voided by head move. No stamp.
+    - #514 at 25fe0659fd2d4c65a5d45423b05d9b8837a2825a: Uni §45 recomposition package + terminal CI ALL PASS + mergeable clean. Spot-check suite claims held. Exact missing: Director residual re-check at this head. Prior stamps voided by head move. No stamp.
+    - #518 stamp at d19fb5af stands (prior). Drafts and #294 fenced skipped.
+- Merged-main proofs: none new since last pass (#524 and #525 prior confirmed).
 - Records reviews: none awaiting new disposition.
 - Trailing obligations: none remaining.
 
@@ -16,6 +23,6 @@
 - gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance. No unstamped ripe heads. No new merged-main credit owed. No trailing owed. Prior stamps stand where heads match. Nothing needed from Ace.
+Proof of pass: this watermark advance + comments on #523/#520/#516/#519/#514. Nothing needed from Ace. Next step: Uni stateful probes on #520; Director residual re-checks on #516/#519/#514.
 
 — KEEPER
