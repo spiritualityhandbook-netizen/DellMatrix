@@ -30,6 +30,35 @@ sha256) before and after and requires byte-identical state —
 a fresh Program() is never assumed empty, and the sweep must
 leave no residue in the real state directory.
 
+REPAIR NOTE — AUDIT BOUNDARY (2026-11-25, Director contract
+ruling 7176510943 on classification 7175094313): two product
+contracts collided on any tree carrying both. Q-35.1's
+atomic_write appends a mint/tombstone record to the written
+directory's .dmtmp-ledger.jsonl on EVERY save (append-only
+provenance ledger), and ordinary Program construction during
+the sweep saves each audit owner's nursery file through it —
+so the sweep deterministically grew a ledger file in the real
+state directory that is not owner-named and that cleanup may
+never touch, and the byte-identical fingerprint could never
+match. Neither contract moves: GP-E07's byte-identical
+real-state guarantee and Q-35.1's append-only ledger both
+stand at full strength. The repair moves the AUDIT BOUNDARY
+instead, exactly as the ruling directs: the sweep's real
+Program operations — nursery writes and ledger creation
+included — run through the normal dell_audit.run_audit entry
+point in a child process whose tree is a private disposable
+copy of this one (state paths are file-location-relative
+across form/persist and form/dell_matrix, i.e. process-global,
+so process isolation is the lawful seam). The fingerprint over
+the ENTIRE real state directory is kept unchanged and now
+passes by construction: the audit never writes to the real
+directory at all. The shared ledger is never truncated,
+filtered or restored by audit cleanup — it is simply never
+the audit's directory. Demonstrated at the repair head: a
+pre-existing real ledger and unrelated owner bytes survive
+repeated audits byte-identically, and the 100-Dell report
+still returns.
+
 FAILING-FIRST RECORD (at Part head 53368fb1, before the build):
 this suite failed on import — form.mandell.dell_audit did not
 exist (the whole-address execution audit had never been run as
@@ -124,8 +153,12 @@ editing the ledger to match an un-synced sweep.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import shutil
+import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -148,6 +181,75 @@ def _state_fingerprint():
     return fp
 
 
+def _tree_root():
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _run_audit_isolated():
+    """Run the audit's two sweeps through the normal
+    dell_audit.run_audit entry point in a child process whose
+    tree is a private disposable copy of this one (Director
+    contract ruling 7176510943; see the module docstring's
+    audit-boundary repair note).
+
+    State paths across form/persist and form/dell_matrix are
+    derived from file locations, so a copied tree redirects
+    every one of them — nursery writes and .dmtmp-ledger.jsonl
+    creation included — into the private copy, which starts
+    with NO state directory (the codebase's own regress
+    _copy_tree idiom) and is deleted whole afterwards. The
+    real state directory is never written by the audit, so the
+    audit_isolation fingerprint over it stays at full strength.
+    Returns (records, records2) — the two sweeps, run back to
+    back in the child exactly as they ran in-process before.
+    """
+    root = _tree_root()
+    tmp = tempfile.mkdtemp(prefix="gpe07_audit_")
+    try:
+        def ignore(d, names):
+            skip = {n for n in names
+                    if n == "__pycache__" or n.endswith((".pyc", ".pyo"))}
+            if os.path.abspath(d) == os.path.abspath(root):
+                skip |= {".git"} & set(names)
+            if os.path.abspath(d) == os.path.join(root, "form"):
+                # The private copy starts with no state directory
+                # at all: the state dir is created fresh inside
+                # the copy by the code under audit.
+                skip |= {"state"} & set(names)
+            return skip
+
+        work = os.path.join(tmp, "src")
+        shutil.copytree(root, work, ignore=ignore, symlinks=True)
+        out_path = os.path.join(tmp, "records.json")
+        child = os.path.join(work, "form", "gpe07_audit_test.py")
+        env = dict(os.environ)
+        env["PYTHONPATH"] = work
+        proc = subprocess.run(
+            [sys.executable, child, "--audit-child", out_path],
+            cwd=work, env=env, capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise RuntimeError(
+                "isolated audit child failed "
+                f"(rc={proc.returncode}): {(proc.stderr or '')[-800:]}")
+        with open(out_path, encoding="utf-8") as f:
+            sweeps = json.load(f)["sweeps"]
+        return sweeps[0], sweeps[1]
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _audit_child_main(argv):
+    """Child-process entry (private disposable tree): run the
+    normal audit entry point twice and write both sweeps'
+    records as JSON to the path named by --audit-child."""
+    from form.mandell import dell_audit
+    out_path = argv[argv.index("--audit-child") + 1]
+    sweeps = [dell_audit.run_audit(), dell_audit.run_audit()]
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump({"sweeps": sweeps}, f)
+    return 0
+
+
 def run_all():
     from form.mandell import dell_audit
     from form.mandell.dell_cards import english_named_dells
@@ -155,7 +257,7 @@ def run_all():
         NAMED, active_core_count, execution_standing)
 
     fp_before = _state_fingerprint()
-    records = dell_audit.run_audit()
+    records, records2 = _run_audit_isolated()
     by_dell = {r["dell"]: r for r in records}
 
     check("audit_coverage_exactly_100",
@@ -235,7 +337,6 @@ def run_all():
           all(r["english_named"] == (r["dell"] in named) for r in records),
           f"english_named={sum(1 for r in records if r['english_named'])}")
 
-    records2 = dell_audit.run_audit()
     seq1 = [(r["dell"], r["verdict"], r["basis"], r["reason"])
             for r in records]
     seq2 = [(r["dell"], r["verdict"], r["basis"], r["reason"])
@@ -296,4 +397,6 @@ def smoke() -> bool:
 
 
 if __name__ == "__main__":
+    if "--audit-child" in sys.argv:
+        sys.exit(_audit_child_main(sys.argv))
     sys.exit(0 if smoke() else 1)
