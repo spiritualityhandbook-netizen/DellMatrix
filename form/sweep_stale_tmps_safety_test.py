@@ -94,6 +94,24 @@ helper:
       the mint stayed live after removal, a failed unlink left the
       file sweepable, and the malformed record escaped as a raw
       TypeError with the fd count up by one.
+  S15 verification-read strictness + post-retirement revalidation
+      (Director CORRECTION_REQUIRED 7166216637): the lenient
+      provenance read returned the same empty dict for a successful
+      empty ledger and for an open/fstat/read failure, and
+      _retire_mint treated absence from that dict as positive proof
+      of retirement — a failed re-read silently authorized deletion
+      (fail-open at retirement, against the positive-evidence law).
+      And the last identity check preceded retirement's ledger
+      append + fsync + full re-read, so it was not immediately
+      before the unlink. The repair makes the verification read
+      strict (any failure to obtain the ledger raises
+      SweepProvenanceError; only a successful read may report
+      absence, and a failed verification keeps the candidate with
+      RETIREMENT_UNPROVEN) and re-stats the candidate after
+      retirement, just before the relative removal (a change in
+      the interval keeps it, CHANGED_SINCE_SCAN). The manual-only
+      API and swept-orphan retirement are preserved; the ledger
+      stays append-only.
 
 Labels: INTEGRATION (helper level, temp dirs) + CROSS_PROCESS (S4).
 State hygiene: temp directories only; nothing touches form/state.
@@ -850,6 +868,156 @@ def section_s14(d):
           f"res={res5} report={report5}")
 
 
+# --------------------------------------------------------------- S15
+def section_s15(d):
+    ledger_name = AW.PROVENANCE_LEDGER_NAME
+
+    _plant(d, "canon.json", b"{}")
+
+    # (1) the strict verification read: on a healthy ledger it
+    # agrees with the lenient read; an absent ledger and an
+    # unsupported file type at the ledger path are UNAVAILABLE
+    # evidence and raise — they never degrade to the empty dict
+    # that a lenient consumer could mistake for proven absence.
+    _, orphans1 = _crash_orphan(d, "victim.json")
+    dfd = os.open(d, os.O_RDONLY)
+    try:
+        lenient1 = AW._read_provenance(dfd)
+        strict1 = AW._read_provenance(dfd, strict=True)
+    finally:
+        os.close(dfd)
+    check("S15.strict_read_matches_lenient_on_healthy_ledger",
+          len(orphans1) == 1 and strict1 == lenient1 and
+          orphans1[0] in strict1, f"strict={sorted(strict1)}")
+
+    d_absent = os.path.join(d, "absent")
+    os.mkdir(d_absent)
+    dfd = os.open(d_absent, os.O_RDONLY)
+    try:
+        try:
+            AW._read_provenance(dfd, strict=True)
+            absent_raised = False
+        except AW.SweepProvenanceError:
+            absent_raised = True
+        absent_lenient = AW._read_provenance(dfd)
+    finally:
+        os.close(dfd)
+    check("S15.strict_read_absent_ledger_raises",
+          absent_raised and absent_lenient == {},
+          f"raised={absent_raised} lenient={absent_lenient}")
+
+    if hasattr(os, "mkfifo"):
+        d_fifo = os.path.join(d, "fifo")
+        os.mkdir(d_fifo)
+        os.mkfifo(os.path.join(d_fifo, ledger_name))
+        dfd = os.open(d_fifo, os.O_RDONLY)
+        try:
+            try:
+                AW._read_provenance(dfd, strict=True)
+                fifo_raised = False
+            except AW.SweepProvenanceError:
+                fifo_raised = True
+        finally:
+            os.close(dfd)
+        check("S15.strict_read_fifo_ledger_raises", fifo_raised)
+    else:
+        print("NOTE  S15 fifo check not exercised: mkfifo "
+              "unavailable")
+
+    # (2) verification-read failure during retirement: the fsynced
+    # tombstone append lands, but the proving re-read is
+    # unavailable — retirement is UNPROVEN, the candidate is KEPT
+    # with the typed reason, and its bytes are intact. (At the
+    # pre-fix head the failed re-read degraded to {} and the
+    # candidate was removed over unavailable evidence.)
+    d2 = os.path.join(d, "readfail")
+    os.mkdir(d2)
+    _plant(d2, "canon.json", b"{}")
+    _, orphans2 = _crash_orphan(d2, "victim.json")
+    name2 = orphans2[0] if orphans2 else "<none>"
+    path2 = os.path.join(d2, name2)
+    with open(path2, "rb") as f:
+        bytes2_before = f.read()
+    real_read = AW._read_provenance
+
+    def _failing_verification_read(dir_fd, *a, **kw):
+        if kw.get("strict"):
+            raise AW.SweepProvenanceError(
+                "forced verification read failure")
+        return real_read(dir_fd, *a, **kw)
+
+    AW._read_provenance = _failing_verification_read
+    try:
+        report2 = []
+        res2 = sweep_stale_tmps(d2, report=report2)
+    finally:
+        AW._read_provenance = real_read
+    bytes2_after = None
+    if os.path.exists(path2):
+        with open(path2, "rb") as f:
+            bytes2_after = f.read()
+    check("S15.verification_read_failure_keeps_candidate",
+          len(orphans2) == 1 and res2["removed"] == 0 and
+          _report_reasons(report2).get(name2) ==
+          "RETIREMENT_UNPROVEN",
+          f"res={res2} report={report2}")
+    check("S15.verification_read_failure_bytes_intact",
+          bytes2_after is not None and
+          bytes2_after == bytes2_before and len(bytes2_before) > 0,
+          f"before={bytes2_before!r} after={bytes2_after!r}")
+
+    # (3) candidate changed between retirement and unlink: the
+    # post-retirement revalidation keeps the replacement file
+    # (CHANGED_SINCE_SCAN) with its bytes intact — the identity
+    # check that matters is the one immediately before removal.
+    d3 = os.path.join(d, "changed")
+    os.mkdir(d3)
+    _plant(d3, "canon.json", b"{}")
+    _, orphans3 = _crash_orphan(d3, "victim.json")
+    name3 = orphans3[0] if orphans3 else "<none>"
+    real_retire = AW._retire_mint
+
+    def _retire_then_swap(dir_fd, name, dev, ino):
+        ok = real_retire(dir_fd, name, dev, ino)
+        if ok and name == name3:
+            os.unlink(os.path.join(d3, name))
+            _plant(d3, name, b"REPLACEMENT-BYTES")
+        return ok
+
+    AW._retire_mint = _retire_then_swap
+    try:
+        report3 = []
+        res3 = sweep_stale_tmps(d3, report=report3)
+    finally:
+        AW._retire_mint = real_retire
+    path3 = os.path.join(d3, name3)
+    bytes3 = None
+    if os.path.exists(path3):
+        with open(path3, "rb") as f:
+            bytes3 = f.read()
+    check("S15.changed_candidate_kept_after_retirement",
+          len(orphans3) == 1 and res3["removed"] == 0 and
+          _report_reasons(report3).get(name3) ==
+          "CHANGED_SINCE_SCAN" and bytes3 == b"REPLACEMENT-BYTES",
+          f"res={res3} report={report3} bytes={bytes3!r}")
+
+    # (4) control: the normal successful sweep still removes a
+    # genuine provenanced orphan at the corrected tree and retires
+    # its mint.
+    d4 = os.path.join(d, "ctl")
+    os.mkdir(d4)
+    _plant(d4, "canon.json", b"{}")
+    _, orphans4 = _crash_orphan(d4, "canon.json")
+    name4 = orphans4[0] if orphans4 else "<none>"
+    res4 = sweep_stale_tmps(d4)
+    prov4 = _read_prov(d4)
+    check("S15.normal_sweep_still_removes_and_retires",
+          len(orphans4) == 1 and res4["removed"] == 1 and
+          not os.path.exists(os.path.join(d4, name4)) and
+          name4 not in prov4,
+          f"res={res4} prov={sorted(prov4)}")
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="q351_") as d:
         section_s1(d)
@@ -877,6 +1045,8 @@ def main():
         section_s13(d)
     with tempfile.TemporaryDirectory(prefix="q351_") as d:
         section_s14(d)
+    with tempfile.TemporaryDirectory(prefix="q351_") as d:
+        section_s15(d)
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"sweep_stale_tmps_safety_test: {passed}/{len(RESULTS)} PASS")
     return 0 if passed == len(RESULTS) else 1

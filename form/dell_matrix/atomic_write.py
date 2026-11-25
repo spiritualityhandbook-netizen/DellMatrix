@@ -116,7 +116,10 @@ class SweepProvenanceError(AtomicWriteError):
     writer or from a torn append, so the ledger cannot be trusted
     as provenance at all. Raised by _read_provenance; the sweep
     converts it to a SweepRefusalError (nothing removed), never a
-    raw exception and never a silent pass."""
+    raw exception and never a silent pass. A strict (verification)
+    read also raises it when the ledger cannot be obtained at all
+    (Director CORRECTION_REQUIRED 7166216637): unavailable evidence
+    is not trustworthy absence."""
 
 
 def _fail_at() -> Optional[str]:
@@ -471,14 +474,24 @@ def _retire_mint(dir_fd: int, name: str, dev: int, ino: int) -> bool:
     The ledger stays append-only (7136552041): retirement is a
     consumed tombstone, never a rewrite. Returns False whenever
     retirement cannot be established — the caller keeps the
-    candidate rather than deleting it over live ownership."""
+    candidate rather than deleting it over live ownership.
+
+    The proving read is STRICT (Director CORRECTION_REQUIRED
+    7166216637): the lenient read returns the same empty dict for a
+    successful empty ledger and for an open/fstat/read failure, so
+    absence from that dict was not positive proof of retirement —
+    a failed re-read silently "proved" a retirement it never
+    observed and the candidate was deleted over unavailable
+    evidence. The strict read raises SweepProvenanceError on any
+    failure to obtain the ledger, and this function resolves that
+    to False: retirement UNPROVEN, candidate kept."""
     if not _ledger_append_at(dir_fd,
                              {"v": 1, "op": "consumed", "name": name,
                               "ino": ino},
                              fsync=True):
         return False
     try:
-        fresh = _read_provenance(dir_fd)
+        fresh = _read_provenance(dir_fd, strict=True)
     except SweepProvenanceError:
         return False
     return fresh.get(name) != (dev, ino)
@@ -505,7 +518,8 @@ def _record_consumed(directory: str, name: str, ino: int) -> None:
                    fsync=False)
 
 
-def _read_provenance(dir_fd: int) -> Dict[str, tuple]:
+def _read_provenance(dir_fd: int, *, strict: bool = False
+                     ) -> Dict[str, tuple]:
     """{name: (dev, ino)} of temps the writer minted and has not
     consumed, from the ledger in the directory pinned by ``dir_fd``.
 
@@ -522,69 +536,101 @@ def _read_provenance(dir_fd: int) -> Dict[str, tuple]:
     or whose name/op is not a string, cannot be writer output or a
     torn append — it raises SweepProvenanceError, the conservative
     typed outcome, and every descriptor opened here is closed on
-    every path."""
+    every path.
+
+    STRICT mode (``strict=True``, Director CORRECTION_REQUIRED
+    7166216637) is the verification read used to PROVE a state of
+    the ledger — ownership retirement. The lenient read above
+    cannot distinguish a trustworthy absence (a ledger that was
+    successfully opened and read, and does not bind a name) from
+    unavailable evidence (the open, fstat, file-type check, or
+    read failed), because both return the same empty dict. A
+    consumer that treats absence as positive proof — retirement
+    proven, deletion permitted — fails open on unavailable
+    evidence. In strict mode every failure to obtain the ledger
+    raises SweepProvenanceError instead: absence is reported only
+    when the read actually succeeded. The lenient default is
+    unchanged for classification reads, whose consumers resolve
+    missing provenance to KEEP."""
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     flags |= getattr(os, "O_NONBLOCK", 0)
+
+    def _unavailable(what: str, exc: Optional[BaseException] = None):
+        raise SweepProvenanceError(
+            f"provenance ledger unavailable ({what}): "
+            f"{PROVENANCE_LEDGER_NAME}") from exc
+
     try:
         fd = os.open(PROVENANCE_LEDGER_NAME, flags, dir_fd=dir_fd)
-    except OSError:
+    except OSError as exc:
+        if strict:
+            _unavailable("open failed", exc)
         return {}
     try:
-        if not stat.S_ISREG(os.fstat(fd).st_mode):
-            os.close(fd)
+        try:
+            opened_mode = os.fstat(fd).st_mode
+        except OSError as exc:
+            if strict:
+                _unavailable("fstat failed", exc)
             return {}
-    except OSError:
+        if not stat.S_ISREG(opened_mode):
+            if strict:
+                _unavailable("ledger path is not a regular file")
+            return {}
         try:
-            os.close(fd)
-        except OSError:
-            pass
-        return {}
-    try:
-        f = os.fdopen(fd, "rb")
-    except OSError:
+            f = os.fdopen(fd, "rb")
+        except OSError as exc:
+            if strict:
+                _unavailable("fdopen failed", exc)
+            return {}
+        fd = -1  # descriptor ownership transferred to f
+        out: Dict[str, tuple] = {}
         try:
-            os.close(fd)
-        except OSError:
-            pass
-        return {}
-    out: Dict[str, tuple] = {}
-    try:
-        for raw in f:
-            try:
-                rec = json.loads(raw.decode("utf-8"))
-            except (ValueError, UnicodeDecodeError):
-                continue
-            if not isinstance(rec, dict):
-                raise SweepProvenanceError(
-                    f"provenance record is not an object: {rec!r}")
-            try:
-                name = rec["name"]
-                ino = int(rec["ino"])
-                op = rec["op"]
-            except (ValueError, KeyError, TypeError):
-                continue
-            if not isinstance(name, str) or not isinstance(op, str):
-                raise SweepProvenanceError(
-                    f"provenance record has non-string name/op: "
-                    f"{rec!r}")
-            if op == "mint":
+            for raw in f:
                 try:
-                    out[name] = (int(rec["dev"]), ino)
+                    rec = json.loads(raw.decode("utf-8"))
+                except (ValueError, UnicodeDecodeError):
+                    continue
+                if not isinstance(rec, dict):
+                    raise SweepProvenanceError(
+                        f"provenance record is not an object: {rec!r}")
+                try:
+                    name = rec["name"]
+                    ino = int(rec["ino"])
+                    op = rec["op"]
                 except (ValueError, KeyError, TypeError):
                     continue
-            elif op == "consumed":
-                if out.get(name, (None, None))[1] == ino:
-                    out.pop(name, None)
-    except SweepProvenanceError:
-        raise
-    except OSError:
-        return {}
+                if not isinstance(name, str) or \
+                        not isinstance(op, str):
+                    raise SweepProvenanceError(
+                        f"provenance record has non-string name/op: "
+                        f"{rec!r}")
+                if op == "mint":
+                    try:
+                        out[name] = (int(rec["dev"]), ino)
+                    except (ValueError, KeyError, TypeError):
+                        continue
+                elif op == "consumed":
+                    if out.get(name, (None, None))[1] == ino:
+                        out.pop(name, None)
+        except SweepProvenanceError:
+            raise
+        except OSError as exc:
+            if strict:
+                _unavailable("read failed", exc)
+            return {}
+        finally:
+            try:
+                f.close()
+            except OSError:
+                pass
+        return out
     finally:
-        try:
-            f.close()
-        except OSError:
-            pass
-    return out
+        if fd >= 0:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
 
 
 def sweep_stale_tmps(directory: str, *,
@@ -626,26 +672,35 @@ def sweep_stale_tmps(directory: str, *,
        a grace period, never permission to delete an unproven file).
        Younger is kept (TOO_YOUNG).
     6. Identity revalidation: the candidate is re-stated through the
-       pinned directory fd immediately before unlink; any change of
-       (dev, ino, size, mtime_ns) since classification keeps the
-       file (CHANGED_SINCE_SCAN). The unlink itself is issued
-       relative to the pinned directory fd, so a swapped or renamed
-       sweep root cannot redirect it.
+       pinned directory fd before the removal phase proceeds; any
+       change of (dev, ino, size, mtime_ns) since classification
+       keeps the file (CHANGED_SINCE_SCAN). The unlink itself is
+       issued relative to the pinned directory fd, so a swapped or
+       renamed sweep root cannot redirect it.
     7. Ownership retirement (7136945087): before the unlink, the
        candidate's mint record is durably retired — a fsynced
        consumed tombstone appended through the pinned directory
        (the ledger stays append-only) and proven by a fresh read
        that no longer binds the name to the candidate's identity.
-       If retirement cannot be established, the candidate is kept
+       The proving read is strict (7166216637): a read failure is
+       unavailable evidence, not proof of absence, so retirement
+       that cannot be positively proven keeps the candidate
        (RETIREMENT_UNPROVEN). A removal therefore never leaves
        reusable ownership behind: no later file, even one recycling
        the name and inode, can inherit the swept file's provenance.
+    8. Post-retirement identity revalidation (7166216637): because
+       step 7 itself appends, fsyncs, and re-reads the ledger, the
+       step-6 check is not immediately before the unlink — so the
+       candidate is re-stated once more after retirement, just
+       before the relative removal, and any change of identity in
+       the interval keeps the candidate (CHANGED_SINCE_SCAN).
 
     Removal guarantee, stated exactly: a candidate is unlinked only
     when the writer's own ledger record binds its name to the
-    (dev, ino) the file still has at the final revalidation, its pid
-    is proven dead twice, the age rail passes, and its mint has been
-    durably retired and the retirement proven by a fresh read. The ledger is
+    (dev, ino) the file still has at the final (post-retirement)
+    revalidation, its pid is proven dead twice, the age rail
+    passes, and its mint has been durably retired and the
+    retirement proven by a fresh strict read. The ledger is
     durable evidence, not a cryptographic proof: a same-uid actor
     who can rewrite the ledger could forge provenance, so the
     guarantee is "no file is removed without writer-minted
@@ -833,6 +888,29 @@ def sweep_stale_tmps(directory: str, *,
                 _emit(name, "kept", "RETIREMENT_UNPROVEN", pid=pid)
                 continue
             provenance.pop(name, None)
+            # Final identity revalidation (Director
+            # CORRECTION_REQUIRED 7166216637): the identity check
+            # above precedes retirement, and retirement itself
+            # appends a tombstone, fsyncs, and re-reads the whole
+            # ledger — so that check is NOT immediately before the
+            # unlink. Re-stat the candidate through the pinned
+            # directory NOW, after retirement and just before the
+            # relative removal; any change of identity in the
+            # interval keeps the candidate. (The mint is already
+            # retired at this point; a kept candidate therefore
+            # stays kept by later sweeps as NOT_PROVEN_OWNED — the
+            # safe direction, as with an interrupted removal.)
+            try:
+                st_final = os.stat(name, dir_fd=dir_fd,
+                                   follow_symlinks=False)
+            except OSError:
+                _emit(name, "kept", "STAT_FAILED", pid=pid)
+                continue
+            if _identity(st_final) != identity or \
+                    stat.S_ISLNK(st_final.st_mode) or \
+                    not stat.S_ISREG(st_final.st_mode):
+                _emit(name, "kept", "CHANGED_SINCE_SCAN", pid=pid)
+                continue
             try:
                 os.unlink(name, dir_fd=dir_fd)
             except OSError as exc:
