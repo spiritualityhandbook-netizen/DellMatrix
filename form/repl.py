@@ -3719,6 +3719,97 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
     return p
 
 
+# UD-2 (Director 7085151190 decision 5): whole-line seed-claim
+# discriminator for the raw-seed branch in _dispatch_public_line
+# below. Mechanism identical to the boundary exercised on #506
+# (GP-E08 Scope A, Director 7079028132): it derives from the
+# established seed grammar itself — it consumes the line using
+# seed.py's OWN token definitions (atom, typed args, FLOW_OPS,
+# and the AF-2 segment-label rule via seed's _scan_label_end) —
+# never a second grammar. A malformed atom (unclosed bracket)
+# still counts as grammar material: the canonical parser can
+# never read past one, so its tail is claim territory, not prose.
+# An atom fragment with ANY unconsumed residue around it is
+# English content (e.g. an idea name), never a claim on the line:
+# `create an idea called 12[Harmonic]` is an English request
+# whose operand is the literal `12[Harmonic]`.
+_SEED_CLAIM_FRAGMENT = re.compile(r"\d{1,3}\s*\[")
+_SEED_CLAIM_ATOM_OPEN = re.compile(r"\d{1,3}\s*\[[^\]]*\]?")
+_SEED_ARGS_ATTEMPT = re.compile(r"\(\s*[A-Za-z_][A-Za-z0-9_]*\s*=")
+_SEED_ARGS_GROUP = re.compile(r"\([^)]*\)?")
+
+
+def _seed_claim(line: str) -> bool:
+    """True iff the line is a WHOLE-LINE seed claim: an atom-shaped
+    fragment is present and every character of the line is seed
+    grammar material (atoms, typed arg lists, flow operators,
+    segment labels). Any unconsumed residue makes the line
+    content-bearing English — atom fragments inside it are content
+    (e.g. an idea name), never a claim on the line. A
+    parenthesized group after an atom that is not role-shaped
+    (the grammar's args are role="value" pairs) is residue, not
+    an args attempt. A line parse_seed accepts is trivially a
+    claim; the consumption scan decides the malformed ones."""
+    from form.mandell.seed import (
+        _ARGS as _seed_args,
+        _ATOM as _seed_atom,
+        _FLOW as _seed_flow,
+        _scan_label_end as _seed_scan_label_end,
+        parse_seed as _parse_seed_claim,
+    )
+    body = (line or "").strip()
+    if not _SEED_CLAIM_FRAGMENT.search(body):
+        return False
+    if _parse_seed_claim(body).ok:
+        return True
+    pos, end_of = 0, len(body)
+    while pos < end_of:
+        while pos < end_of and body[pos].isspace():
+            pos += 1
+        if pos >= end_of:
+            break
+        m = _seed_atom.match(body, pos) or \
+            _SEED_CLAIM_ATOM_OPEN.match(body, pos)
+        if m:
+            pos = m.end()
+            # Optional typed argument list, in the grammar's own
+            # position (immediately after the atom).
+            am = _seed_args.match(body, pos)
+            if am:
+                pos = am.end()
+            elif pos < end_of and body[pos] == "(":
+                if not _SEED_ARGS_ATTEMPT.match(body, pos):
+                    return False
+                gm = _SEED_ARGS_GROUP.match(body, pos)
+                pos = gm.end() if gm else end_of
+            # Optional segment label (AF-2): "::" NOT followed by
+            # an atom opens a label; "::" followed by an atom is
+            # the DeepFlowBy flow operator and is left for the
+            # flow match below.
+            p2 = pos
+            while p2 < end_of and body[p2].isspace():
+                p2 += 1
+            if body[p2:p2 + 2] == "::":
+                after = p2 + 2
+                while after < end_of and body[after].isspace():
+                    after += 1
+                if not _seed_atom.match(body, after):
+                    end, embedded = _seed_scan_label_end(body, p2 + 2)
+                    if embedded >= 0:
+                        # A second "::" inside a label is a
+                        # grammar error, still claim territory.
+                        return True
+                    pos = end
+            continue
+        m2 = _seed_flow.match(body, pos)
+        if m2:
+            pos = m2.end()
+            continue
+        return False
+    return True
+
+
+
 def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program:
     """IRI-I: Canonical public execution boundary for one input line.
 
@@ -3835,7 +3926,16 @@ def _dispatch_public_line(p: Program, line: str, interaction_id: str) -> Program
         except ValueError:
             pass  # Not a valid flow program; fall through.
 
-    if looks_like_seed(line):
+    if _seed_claim(line):
+        # UD-2 (Director 7085151190 decision 5): the raw-seed door
+        # answers only WHOLE-LINE seed claims. The legacy
+        # looks_like_seed search claimed any line containing an
+        # atom fragment, so English prose carrying an atom-shaped
+        # operand (`create an idea called 12[Harmonic]`) died here
+        # with a Seed error and created nothing. Non-claims fall
+        # through to the English doors below with the fragment as
+        # literal content; malformed claims are refused by this
+        # door's parse (Seed error) before any mutation.
         # EOC-I: raw execution with Outcome V1 observation.
         from form.mandell.execution_observer import observe_seed_execution
         result = observe_seed_execution(p, line, interaction_id=interaction_id)
