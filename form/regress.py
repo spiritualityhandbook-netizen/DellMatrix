@@ -343,6 +343,7 @@ LIST = [
     "form.dd42_predicate_infix_test:smoke",
     "form.r25_extra_operand_test:smoke",
     "form.r24l_label_lossless_test:smoke",
+    "form.ud2_english_routing_test:smoke",
     # eval_predicate surplus circuit (Director 7008502649):
     # explicit binary/unary forms with surplus operands refuse
     # condition_extra_operand at the engine and at 57/73 +
