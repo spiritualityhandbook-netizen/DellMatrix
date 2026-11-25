@@ -268,6 +268,70 @@ def main():
     check("solo_not_pair_harmony_one_member_set",
           h_solo.harmony_score is None
           and h_solo.harmony_status == "unavailable")
+    # Director 7166216146: the scored set is a set of IDENTITIES, not
+    # of supplied rows. Repeating one otherwise-valid active idea in
+    # the member list must not manufacture the second member a harmony
+    # claim requires: the identity is counted and scored once, so a
+    # repeated solo idea publishes no harmony and no brightness,
+    # while its measured pitch and the supplied-row count stand.
+    repeated = {"name": "repeated-set", "members": [IDEA_A, IDEA_A]}
+    h_rep = son.sonify_idea(copy.deepcopy(IDEA_A),
+                            neighborhood=copy.deepcopy(repeated))
+    check("neighborhood_repeated_identity_counts_once",
+          h_rep.harmony_score is None
+          and h_rep.harmony_status == "unavailable"
+          and h_rep.brightness is None
+          and "neighborhood_below_two_scored" in h_rep.reasons
+          and h_rep.measured_inputs["neighborhood_members_supplied"] == 2
+          and h_rep.measured_inputs["neighborhood_members_scored"] == 1
+          and h_rep.note_name == "G"
+          and approx(h_rep.frequency_hz, 391.995, 1e-9))
+    # A repeated identity inside a real set is likewise scored once:
+    # [A, B, A] scores exactly the {A, B} harmony, disclosed as 2 of 3.
+    rep_set = {"name": "rep-set", "members": [IDEA_A, IDEA_B, IDEA_A]}
+    h_rep_set = son.sonify_idea(copy.deepcopy(IDEA_A),
+                                neighborhood=copy.deepcopy(rep_set))
+    check("neighborhood_repeated_identity_deduped_in_set",
+          h_rep_set.harmony_score is not None
+          and approx(h_rep_set.harmony_score,
+                     harmony_score([RefIdea(IDEA_A["title"], IDEA_A["properties"]),
+                                    RefIdea(IDEA_B["title"], IDEA_B["properties"])]),
+                     1e-9)
+          and h_rep_set.measured_inputs["neighborhood_members_supplied"] == 3
+          and h_rep_set.measured_inputs["neighborhood_members_scored"] == 2)
+    # Two DISTINCT identities remain a lawful scored pair.
+    distinct = {"name": "distinct-set", "members": [IDEA_A, IDEA_B]}
+    h_distinct = son.sonify_idea(copy.deepcopy(IDEA_A),
+                                 neighborhood=copy.deepcopy(distinct))
+    check("neighborhood_two_distinct_identities_scored",
+          h_distinct.harmony_score is not None
+          and h_distinct.harmony_status == "available"
+          and approx(h_distinct.harmony_score,
+                     harmony_score([RefIdea(IDEA_A["title"], IDEA_A["properties"]),
+                                    RefIdea(IDEA_B["title"], IDEA_B["properties"])]),
+                     1e-9)
+          and h_distinct.measured_inputs["neighborhood_members_supplied"] == 2
+          and h_distinct.measured_inputs["neighborhood_members_scored"] == 2)
+    # Repeated records for one identity that DISAGREE on the scored
+    # data cannot be resolved from canonical input: the harmony is
+    # explicitly unavailable (never computed over an arbitrary one of
+    # the conflicting records), even beside a valid distinct partner.
+    conflicted = {"name": "conflict-set", "members": [
+        IDEA_A, IDEA_B,
+        dict(IDEA_A, title="harbor light keeper rewritten",
+             properties={"mood": "storm water"}),
+    ]}
+    h_conf = son.sonify_idea(copy.deepcopy(IDEA_A),
+                             neighborhood=copy.deepcopy(conflicted))
+    check("neighborhood_conflicting_duplicate_unavailable",
+          h_conf.harmony_score is None
+          and h_conf.harmony_status == "unavailable"
+          and h_conf.brightness is None
+          and "neighborhood_conflicting_duplicate" in h_conf.reasons
+          and h_conf.measured_inputs["neighborhood_members_supplied"] == 3
+          and h_conf.measured_inputs["neighborhood_members_scored"] == 2
+          and h_conf.status == "supported"
+          and approx(h_conf.frequency_hz, 391.995, 1e-9))
     # Inactive and cross-owner members are excluded and disclosed.
     mixed = {"name": "mixed", "members": [
         IDEA_A, IDEA_B,

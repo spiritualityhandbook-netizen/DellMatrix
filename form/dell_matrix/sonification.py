@@ -21,10 +21,14 @@ MATH SOURCES (the actual functions, never re-derived):
   * Set harmony — form/dell_matrix/harmony.py::harmony_score over a
     real, named, active neighborhood supplied by the caller. The
     scored set is exactly the supplied members that are active,
-    well-formed and owned by the idea's owner; exclusions are counted
-    in measured_inputs. Fewer than 2 scored members -> the relation
-    score is unavailable. A solo idea is NEVER scored: harmony_score's
-    solo shortcut (1.0) does not license a harmony claim.
+    well-formed and owned by the idea's owner, counted once per
+    (owner, idea_id) identity — a repeated record of one identity is
+    one member, never two, and repeated records that disagree on the
+    scored data make the harmony explicitly unavailable; exclusions
+    are counted in measured_inputs. Fewer than 2 scored members -> the
+    relation score is unavailable. A solo idea is NEVER scored:
+    harmony_score's solo shortcut (1.0) does not license a harmony
+    claim.
   * Space — spatial cue fields reuse form/dell_matrix/spatial_audio.py
     listener/view geometry (relative polar bearing, pan, gain, band,
     ear). spatial_audio's hz_hint is a spatial cue hint only; it is
@@ -310,7 +314,20 @@ def _member_adapter(member: Any, owner: Optional[str]) -> Optional[_TokenSource]
 def _score_neighborhood(idea: Mapping, owner: Optional[str],
                         neighborhood: Any,
                         measured: Dict[str, Any]) -> Tuple[Optional[float], Optional[str], List[str]]:
-    """harmony_score over the named active set, or (None, None, reasons)."""
+    """harmony_score over the named active set, or (None, name, reasons).
+
+    The scored set is a set of IDENTITIES, not of supplied rows: each
+    eligible (owner, idea_id) identity is counted and scored exactly
+    once, however many times its record is repeated in the member
+    list. Repeating one identity can therefore never manufacture the
+    second member a harmony claim requires (Director 7166216146: a
+    repeated solo idea published a harmony score + brightness for one
+    identity). When the repeated records for one identity disagree on
+    the scored data (title, properties, lifecycle state) the conflict
+    cannot be resolved from canonical input, so the harmony is
+    explicitly unavailable rather than computed over an arbitrary one
+    of the conflicting records.
+    """
     if neighborhood is None:
         return None, None, []
     if not isinstance(neighborhood, Mapping):
@@ -320,12 +337,25 @@ def _score_neighborhood(idea: Mapping, owner: Optional[str],
     if not (isinstance(name, str) and name.strip()) or not isinstance(members, list):
         return None, None, ["neighborhood_malformed"]
     adapters: List[_TokenSource] = []
+    by_identity: Dict[Tuple[Optional[str], str], _TokenSource] = {}
+    conflict = False
     for member in members:
         adapter = _member_adapter(member, owner)
-        if adapter is not None:
+        if adapter is None:
+            continue
+        identity = (owner, member.get("idea_id"))
+        prior = by_identity.get(identity)  # type: ignore[arg-type]
+        if prior is None:
+            by_identity[identity] = adapter  # type: ignore[index]
             adapters.append(adapter)
+        elif (prior.title != adapter.title
+              or prior._props != adapter._props
+              or prior.idea_state != adapter.idea_state):
+            conflict = True
     measured["neighborhood_members_supplied"] = len(members)
     measured["neighborhood_members_scored"] = len(adapters)
+    if conflict:
+        return None, name, ["neighborhood_conflicting_duplicate"]
     if len(adapters) < 2:
         return None, name, ["neighborhood_below_two_scored"]
     return float(harmony_score(adapters)), name, []
