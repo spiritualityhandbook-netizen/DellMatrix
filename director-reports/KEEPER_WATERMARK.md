@@ -1,18 +1,19 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-25 ~13:19 CST  
-**UTC approx**: 2026-11-25T19:19:00Z  
+**Last cycle**: 2026-11-25 ~14:17 CST  
+**UTC approx**: 2026-11-25T20:17:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
 - Ripe gates:
-  - #519 at 84c0e3cbeb85feb74ae5a91f88c84a2e0ca195fc: Uni package present. Terminal CI not ALL PASS (smoke in_progress). Exact missing named: terminal CI ALL PASS. No stamp.
-  - #520 at ed53c59d658ec4054912340490267c22810abd5e: prior SCOPED CONFIRM stands. Terminal CI SUCCESS. mergeable_state dirty (main advance). SECURITY HOLD / Q-FI011.4 residual retained per Director. No new evidence.
+  - #520 at ac182a32f504763079bb830b18e0c4a8d4445e28: Uni package present. Terminal CI not ALL PASS (smoke in_progress). Exact missing named: terminal CI ALL PASS. No stamp.
+  - #518 at 3fee1f3f960219ce69115ce2826fd571b686b686: smoke in_progress. Exact missing: terminal CI ALL PASS. No stamp.
+  - #516 at 0820fe1f273e49e4857c3371dcf52bac2df94ae7: prior stamp voided by main advance. PRE-STAMP. Exact missing: restitched head + terminal CI. No stamp.
   - Other open heads: no new ripe packages with terminal CI. Drafts and #294 fenced skipped.
 - Merged-main proofs:
-  - #526 (merged 2026-11-25T18:27:39Z, merge 1e764ec2): Uni terminal merged-main CI receipt verified. CODE credit CONFIRMED on PR.
-  - #523 (merged 2026-11-25T18:23:12Z, merge ca6f7e6a): Uni terminal merged-main CI receipt verified. CODE credit CONFIRMED on PR.
-  - #514 and #506: still exact missing Uni merged-main evidence (terminal CI on merge commit + behavioral proof). No credit.
+  - #519 (merged 2026-11-25T20:05:14Z, merge 3573b961): Uni behavioral proof verified. Exact missing: terminal CI ALL PASS on merge commit. No credit.
+  - #507 (merged 2026-11-25T20:09:03Z): PLAN stage records. No CODE credit owed. No action.
+  - #514 and #506: still exact missing Uni merged-main evidence. No credit.
 - Records reviews: none awaiting new disposition.
 - Trailing obligations: none remaining.
 
@@ -22,6 +23,6 @@
 - gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance + comments on #526/#523/#519. Nothing needed from Ace. Next step: Uni terminal CI on #519; Uni merged-main proofs on #514/#506 if still owed.
+Proof of pass: this watermark advance + comments on #519/#520. Nothing needed from Ace. Next step: Uni terminal CI on open heads #520/#518; Uni terminal merged-main CI on #519; Uni merged-main proofs on #514/#506 if still owed.
 
 — KEEPER
